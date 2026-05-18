@@ -494,3 +494,82 @@ test('GET /post-orchestrator/analytics returns fixture analytics', async () => {
   assert.equal(body.analytics.every((item) => item.safety.writesExternalPlatform === false), true);
   assert.equal(body.analytics.every((item) => item.safety.writesToMind === false), true);
 });
+
+test('GET /post-orchestrator/pipeline/github-release-event-fixture returns pipeline', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/pipeline/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as {
+    pipeline: {
+      eventId: string;
+      status: string;
+      steps: Array<{ id: string; label: string; status: string; itemCount: number; blockedCount: number; approvalRequiredCount: number }>;
+      totals: { draftCount: number; reviewItemCount: number; schedulePreviewItemCount: number; analyticsFixtureCount: number; blockerCount: number; approvalRequiredCount: number };
+      safety: { endToEndPreviewOnly: boolean; publishingEnabled: boolean; schedulingEnabled: boolean; executionEnabled: boolean; writesExternalPlatform: boolean; writesToMind: boolean; callsExternalApi: boolean; callsExternalAI: boolean; usesCookies: boolean; usesPlaywright: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.pipeline.eventId, 'github-release-event-fixture');
+  assert.ok(body.pipeline.steps.some((step) => step.id === 'event'));
+  assert.ok(body.pipeline.steps.some((step) => step.id === 'dry-run'));
+  assert.ok(body.pipeline.steps.some((step) => step.id === 'review'));
+  assert.ok(body.pipeline.steps.some((step) => step.id === 'schedule-preview'));
+  assert.ok(body.pipeline.steps.some((step) => step.id === 'analytics-feedback'));
+  assert.ok(body.pipeline.steps.some((step) => step.id === 'readiness'));
+  assert.equal(body.pipeline.totals.draftCount > 0, true);
+  assert.equal(body.pipeline.totals.reviewItemCount > 0, true);
+  assert.equal(body.pipeline.totals.schedulePreviewItemCount > 0, true);
+  assert.equal(body.pipeline.totals.analyticsFixtureCount > 0, true);
+  assert.equal(body.pipeline.safety.endToEndPreviewOnly, true);
+  assert.equal(body.pipeline.safety.publishingEnabled, false);
+  assert.equal(body.pipeline.safety.schedulingEnabled, false);
+  assert.equal(body.pipeline.safety.executionEnabled, false);
+  assert.equal(body.pipeline.safety.writesExternalPlatform, false);
+  assert.equal(body.pipeline.safety.writesToMind, false);
+  assert.equal(body.pipeline.safety.callsExternalApi, false);
+  assert.equal(body.pipeline.safety.callsExternalAI, false);
+  assert.equal(body.pipeline.safety.usesCookies, false);
+  assert.equal(body.pipeline.safety.usesPlaywright, false);
+});
+
+test('GET /post-orchestrator/pipeline/unknown-event returns blocked pipeline', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/pipeline/unknown-event' });
+  const body = JSON.parse(response.body) as { pipeline: { status: string; blockers: string[] } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.pipeline.status, 'blocked');
+  assert.ok(body.pipeline.blockers.includes('Unknown event fixture'));
+});
+
+test('GET /post-orchestrator/readiness/github-release-event-fixture returns readiness', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/readiness/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as {
+    readiness: {
+      score: number;
+      grade: string;
+      status: string;
+      blockers: Array<{ id: string; source: string; title: string }>;
+      safety: { readOnly: boolean; publishingEnabled: boolean; schedulingEnabled: boolean; executionEnabled: boolean; writesExternalPlatform: boolean; writesToMind: boolean; callsExternalApi: boolean; callsExternalAI: boolean; canAutoFix: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(typeof body.readiness.score, 'number');
+  assert.equal(body.readiness.grade, 'blocked');
+  assert.equal(body.readiness.status, 'blocked');
+  assert.ok(body.readiness.blockers.some((blocker) => blocker.id === 'publishing-disabled'));
+  assert.ok(body.readiness.blockers.some((blocker) => blocker.id === 'scheduling-disabled'));
+  assert.equal(body.readiness.safety.readOnly, true);
+  assert.equal(body.readiness.safety.publishingEnabled, false);
+  assert.equal(body.readiness.safety.schedulingEnabled, false);
+  assert.equal(body.readiness.safety.executionEnabled, false);
+  assert.equal(body.readiness.safety.canAutoFix, false);
+});
+
+test('GET /post-orchestrator/readiness/unknown-event returns blocked readiness', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/readiness/unknown-event' });
+  const body = JSON.parse(response.body) as { readiness: { status: string; blockers: Array<{ id: string }> } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.readiness.status, 'blocked');
+  assert.ok(body.readiness.blockers.some((blocker) => blocker.id === 'unknown-event'));
+});

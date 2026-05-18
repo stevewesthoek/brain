@@ -603,6 +603,104 @@ export interface BrainCorePostAnalyticsFixturesResponse {
   analytics: BrainCorePostAnalyticsFixture[];
 }
 
+export type BrainCorePostPipelineStepId = 'event' | 'dry-run' | 'review' | 'schedule-preview' | 'analytics-feedback' | 'readiness';
+export type BrainCorePostPipelineStepStatus = 'available' | 'preview' | 'blocked' | 'disabled' | 'missing';
+
+export interface BrainCorePostPipelineStepSummary {
+  id: BrainCorePostPipelineStepId;
+  label: string;
+  status: BrainCorePostPipelineStepStatus;
+  itemCount: number;
+  blockedCount: number;
+  approvalRequiredCount: number;
+  summary: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    previewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostPipelineSummary {
+  id: string;
+  eventId: string;
+  title: string;
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  steps: BrainCorePostPipelineStepSummary[];
+  totals: {
+    draftCount: number;
+    reviewItemCount: number;
+    schedulePreviewItemCount: number;
+    analyticsFixtureCount: number;
+    blockerCount: number;
+    approvalRequiredCount: number;
+  };
+  nextSafeStep: string;
+  blockers: string[];
+  safety: {
+    endToEndPreviewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    callsExternalApi: false;
+    callsExternalAI: false;
+    usesCookies: false;
+    usesPlaywright: false;
+  };
+}
+
+export interface BrainCorePostPipelineSummaryResponse {
+  pipeline: BrainCorePostPipelineSummary;
+}
+
+export type BrainCorePostReadinessSeverity = 'info' | 'warning' | 'error';
+
+export interface BrainCorePostReadinessBlocker {
+  id: string;
+  severity: BrainCorePostReadinessSeverity;
+  source: 'event' | 'dry-run' | 'review' | 'schedule-preview' | 'analytics' | 'publishing' | 'security' | 'contracts';
+  title: string;
+  summary: string;
+  nextSafeStep: string;
+  blocksPublishing: true;
+  canAutoFix: false;
+}
+
+export interface BrainCorePostReadinessScore {
+  id: string;
+  eventId: string;
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'blocked';
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  blockers: BrainCorePostReadinessBlocker[];
+  checks: Array<{ id: string; label: string; passed: boolean; summary: string }>;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    callsExternalApi: false;
+    callsExternalAI: false;
+    canAutoFix: false;
+  };
+}
+
+export interface BrainCorePostReadinessScoreResponse {
+  readiness: BrainCorePostReadinessScore;
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
@@ -813,6 +911,11 @@ export interface BrainCorePostSchedulePreviewQueueSummary extends BrainCorePostS
 export interface BrainCorePostSchedulePreviewApprovalRequestSummary extends BrainCorePostSchedulePreviewApprovalRequest {}
 export interface BrainCorePostAnalyticsFixtureSummary extends BrainCorePostAnalyticsFixture {}
 export interface BrainCorePostAnalyticsFixturesResponseSummary extends BrainCorePostAnalyticsFixturesResponse {}
+
+export interface BrainCorePostPipelineSummarySummary extends BrainCorePostPipelineSummary {}
+export interface BrainCorePostPipelineSummaryResponseSummary extends BrainCorePostPipelineSummaryResponse {}
+export interface BrainCorePostReadinessScoreSummary extends BrainCorePostReadinessScore {}
+export interface BrainCorePostReadinessScoreResponseSummary extends BrainCorePostReadinessScoreResponse {}
 
 export interface BrainCoreExecutionPlanStep {
   id: string;
@@ -1270,6 +1373,26 @@ export async function readBrainCorePostAnalyticsFixtures(
   baseUrl: string,
 ): Promise<HttpResult<BrainCorePostAnalyticsFixturesResponse>> {
   return fetchJson<BrainCorePostAnalyticsFixturesResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/analytics');
+}
+
+export async function readBrainCorePostPipelineSummary(
+  baseUrl: string,
+  eventId: string,
+): Promise<HttpResult<BrainCorePostPipelineSummaryResponse>> {
+  return fetchJson<BrainCorePostPipelineSummaryResponse>(
+    normalizeBaseUrl(baseUrl),
+    `/post-orchestrator/pipeline/${encodeURIComponent(eventId)}`,
+  );
+}
+
+export async function readBrainCorePostReadinessScore(
+  baseUrl: string,
+  eventId: string,
+): Promise<HttpResult<BrainCorePostReadinessScoreResponse>> {
+  return fetchJson<BrainCorePostReadinessScoreResponse>(
+    normalizeBaseUrl(baseUrl),
+    `/post-orchestrator/readiness/${encodeURIComponent(eventId)}`,
+  );
 }
 
 export async function readBrainCoreStbStatus(

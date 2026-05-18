@@ -25,6 +25,15 @@ import type {
   BrainCorePostPlatform,
   BrainCorePostAnalyticsFixture,
   BrainCorePostAnalyticsFixturesResponse,
+  BrainCorePostPipelineSummary,
+  BrainCorePostPipelineSummaryResponse,
+  BrainCorePostPipelineStepId,
+  BrainCorePostPipelineStepStatus,
+  BrainCorePostPipelineStepSummary,
+  BrainCorePostReadinessBlocker,
+  BrainCorePostReadinessScore,
+  BrainCorePostReadinessScoreResponse,
+  BrainCorePostReadinessSeverity,
 } from '../types/api.js';
 
 const STATUS: BrainCorePostOrchestratorStatusResponse = {
@@ -1003,6 +1012,352 @@ export function readPostOrchestratorEventFixtures(): BrainCorePostEventFixturesR
 
 export function readPostAnalyticsFixtures(): BrainCorePostAnalyticsFixturesResponse {
   return ANALYTICS_FIXTURES;
+}
+
+export function readPostPipelineSummary(eventId: string): BrainCorePostPipelineSummaryResponse {
+  const event = EVENT_FIXTURES.events.find((item) => item.id === eventId);
+  const dryRun = readPostOrchestratorDryRunPlan(eventId).plan;
+  const reviewQueue = readPostDraftReviewQueue(eventId).queue;
+  const schedulePreviewQueue = readPostSchedulePreviewQueue(eventId).queue;
+  const analytics = readPostAnalyticsFixtures().analytics;
+  const generatedAt = new Date().toISOString();
+
+  if (!event) {
+    return {
+      pipeline: {
+        id: `pipeline-${eventId}`,
+        eventId,
+        title: 'Unknown event fixture',
+        status: 'blocked',
+        generatedAt,
+        steps: [
+          buildPipelineStep('event', 'Event', 'missing', 0, 0, 0, 'Unknown event fixture.', 'Use a known event fixture.'),
+          buildPipelineStep('dry-run', 'Dry-run', 'missing', 0, 0, 0, 'No dry-run plan is available.', 'Use a known event fixture.'),
+          buildPipelineStep('review', 'Review', 'missing', 0, 0, 0, 'No review queue is available.', 'Use a known event fixture.'),
+          buildPipelineStep('schedule-preview', 'Schedule Preview', 'missing', 0, 0, 0, 'No schedule preview queue is available.', 'Use a known event fixture.'),
+          buildPipelineStep('analytics-feedback', 'Analytics Feedback', 'missing', 0, 0, 0, 'No analytics fixtures are available.', 'Use a known event fixture.'),
+          buildPipelineStep('readiness', 'Readiness', 'blocked', 0, 0, 0, 'Readiness cannot be scored without a known event fixture.', 'Use a known event fixture.'),
+        ],
+        totals: {
+          draftCount: 0,
+          reviewItemCount: 0,
+          schedulePreviewItemCount: 0,
+          analyticsFixtureCount: 0,
+          blockerCount: 1,
+          approvalRequiredCount: 0,
+        },
+        nextSafeStep: 'Use a known event fixture.',
+        blockers: ['Unknown event fixture'],
+        safety: {
+          endToEndPreviewOnly: true,
+          publishingEnabled: false,
+          schedulingEnabled: false,
+          executionEnabled: false,
+          writesExternalPlatform: false,
+          writesToMind: false,
+          callsExternalApi: false,
+          callsExternalAI: false,
+          usesCookies: false,
+          usesPlaywright: false,
+        },
+      },
+    };
+  }
+
+  const dryRunDraftCount = dryRun.drafts.length;
+  const reviewItemCount = reviewQueue.items.length;
+  const schedulePreviewItemCount = schedulePreviewQueue.items.length;
+  const analyticsFixtureCount = analytics.length;
+  const blockerCount = dryRun.blockers.length + reviewQueue.blockedCount + schedulePreviewQueue.blockedCount;
+  const approvalRequiredCount =
+    dryRun.drafts.filter((draft) => draft.approvalRequired).length +
+    reviewQueue.items.filter((item) => item.approvalRequired).length +
+    schedulePreviewQueue.items.filter((item) => item.approvalRequired).length;
+  const blocked = blockerCount > 0 || dryRun.status === 'blocked' || reviewQueue.status === 'blocked' || schedulePreviewQueue.status === 'blocked';
+
+  const steps = [
+    buildPipelineStep(
+      'event',
+      'Event',
+      'available',
+      1,
+      0,
+      0,
+      `Fixture event available: ${event.title}.`,
+      'Move to dry-run planning.',
+    ),
+    buildPipelineStep(
+      'dry-run',
+      'Dry-run',
+      dryRun.status === 'preview' ? 'preview' : 'blocked',
+      dryRunDraftCount,
+      dryRun.blockers.length,
+      dryRunDraftCount,
+      dryRun.status === 'preview'
+        ? 'Preview-only drafts generated from fixture data.'
+        : 'Dry-run is blocked by fixture gaps.',
+      dryRun.nextSafeStep,
+    ),
+    buildPipelineStep(
+      'review',
+      'Review',
+      reviewQueue.status === 'preview' ? 'preview' : 'blocked',
+      reviewItemCount,
+      reviewQueue.blockedCount,
+      reviewQueue.items.filter((item) => item.approvalRequired).length,
+      reviewQueue.status === 'preview'
+        ? 'Review queue is ready for approval requests.'
+        : 'Review queue is blocked by draft blockers.',
+      reviewQueue.items.find((item) => item.canRequestApproval)?.nextSafeStep ?? 'Keep review approval requests read-only.',
+    ),
+    buildPipelineStep(
+      'schedule-preview',
+      'Schedule Preview',
+      schedulePreviewQueue.status === 'preview' ? 'preview' : 'blocked',
+      schedulePreviewItemCount,
+      schedulePreviewQueue.blockedCount,
+      schedulePreviewQueue.items.filter((item) => item.approvalRequired).length,
+      schedulePreviewQueue.status === 'preview'
+        ? 'Schedule preview items are ready for review.'
+        : 'Schedule preview is blocked by review blockers.',
+      schedulePreviewQueue.items.find((item) => item.canRequestApproval)?.nextSafeStep ?? 'Keep schedule preview approval requests read-only.',
+    ),
+    buildPipelineStep(
+      'analytics-feedback',
+      'Analytics Feedback',
+      analyticsFixtureCount > 0 ? 'available' : 'missing',
+      analyticsFixtureCount,
+      0,
+      0,
+      analyticsFixtureCount > 0
+        ? 'Fixture analytics are available for post-flow feedback.'
+        : 'No analytics fixtures are defined yet.',
+      analyticsFixtureCount > 0 ? 'Review analytics fixtures and keep external calls disabled.' : 'Add fixture analytics before extending feedback loops.',
+    ),
+    buildPipelineStep(
+      'readiness',
+      'Readiness',
+      blocked ? 'blocked' : 'preview',
+      1,
+      blockerCount,
+      approvalRequiredCount,
+      'Readiness remains review-only while publishing and scheduling are disabled.',
+      'Review pipeline summary and keep publishing disabled.',
+    ),
+  ];
+
+  return {
+    pipeline: {
+      id: `pipeline-${eventId}`,
+      eventId,
+      title: event.title,
+      status: blocked ? 'blocked' : 'preview',
+      generatedAt,
+      steps,
+      totals: {
+        draftCount: dryRunDraftCount,
+        reviewItemCount,
+        schedulePreviewItemCount,
+        analyticsFixtureCount,
+        blockerCount,
+        approvalRequiredCount,
+      },
+      nextSafeStep: blocked
+        ? 'Review the pipeline summary and keep publishing disabled.'
+        : 'Continue review-only validation with publishing disabled.',
+      blockers: [
+        ...dryRun.blockers,
+        ...reviewQueue.items.flatMap((item) => item.blockers),
+        ...schedulePreviewQueue.items.flatMap((item) => item.blockers),
+      ],
+      safety: {
+        endToEndPreviewOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        callsExternalApi: false,
+        callsExternalAI: false,
+        usesCookies: false,
+        usesPlaywright: false,
+      },
+    },
+  };
+}
+
+export function readPostReadinessScore(eventId: string): BrainCorePostReadinessScoreResponse {
+  const pipeline = readPostPipelineSummary(eventId).pipeline;
+  const generatedAt = new Date().toISOString();
+
+  if (pipeline.title === 'Unknown event fixture') {
+    return {
+      readiness: {
+        id: `readiness-${eventId}`,
+        eventId,
+        score: 0,
+        grade: 'blocked',
+        status: 'blocked',
+        generatedAt,
+        blockers: [
+          {
+            id: 'unknown-event',
+            severity: 'error',
+            source: 'event',
+            title: 'Unknown event fixture',
+            summary: 'The event fixture does not exist.',
+            nextSafeStep: 'Use a known event fixture.',
+            blocksPublishing: true,
+            canAutoFix: false,
+          },
+        ],
+        checks: [
+          { id: 'event', label: 'Event fixture exists', passed: false, summary: 'Event fixture is missing.' },
+          { id: 'dry-run', label: 'Dry-run draft plan exists', passed: false, summary: 'No dry-run plan exists.' },
+          { id: 'review', label: 'Review queue exists', passed: false, summary: 'No review queue exists.' },
+          { id: 'schedule-preview', label: 'Schedule preview exists', passed: false, summary: 'No schedule preview exists.' },
+          { id: 'analytics', label: 'Analytics fixture exists', passed: false, summary: 'No analytics fixture exists.' },
+          { id: 'publishing', label: 'Publishing disabled', passed: true, summary: 'Publishing is disabled.' },
+          { id: 'external-writes', label: 'External writes disabled', passed: true, summary: 'External writes are disabled.' },
+          { id: 'playwright', label: 'Playwright disabled', passed: true, summary: 'Playwright is disabled.' },
+        ],
+        nextSafeStep: 'Use a known event fixture.',
+        safety: {
+          readOnly: true,
+          publishingEnabled: false,
+          schedulingEnabled: false,
+          executionEnabled: false,
+          writesExternalPlatform: false,
+          writesToMind: false,
+          callsExternalApi: false,
+          callsExternalAI: false,
+          canAutoFix: false,
+        },
+      },
+    };
+  }
+
+  const blockers: BrainCorePostReadinessBlocker[] = [
+    {
+      id: 'publishing-disabled',
+      severity: 'error',
+      source: 'publishing',
+      title: 'Publishing disabled',
+      summary: 'Publishing is disabled in this phase.',
+      nextSafeStep: 'Keep publishing disabled.',
+      blocksPublishing: true,
+      canAutoFix: false,
+    },
+    {
+      id: 'scheduling-disabled',
+      severity: 'error',
+      source: 'schedule-preview',
+      title: 'Scheduling disabled',
+      summary: 'Scheduling is disabled in this phase.',
+      nextSafeStep: 'Keep scheduling disabled.',
+      blocksPublishing: true,
+      canAutoFix: false,
+    },
+    {
+      id: 'platform-security-review-required',
+      severity: 'warning',
+      source: 'security',
+      title: 'Platform security review required',
+      summary: 'Platform posting remains review-only.',
+      nextSafeStep: 'Review platform security before any future execution phase.',
+      blocksPublishing: true,
+      canAutoFix: false,
+    },
+    {
+      id: 'no-real-provider-integration',
+      severity: 'warning',
+      source: 'contracts',
+      title: 'No real provider integration',
+      summary: 'Proofly and Xgrow remain migration references only.',
+      nextSafeStep: 'Keep provider integrations read-only.',
+      blocksPublishing: true,
+      canAutoFix: false,
+    },
+    {
+      id: 'no-dual-run-validation',
+      severity: 'warning',
+      source: 'analytics',
+      title: 'No dual-run validation',
+      summary: 'No dual-run evidence exists for a live publishing path.',
+      nextSafeStep: 'Validate future execution in a separate phase.',
+      blocksPublishing: true,
+      canAutoFix: false,
+    },
+  ];
+
+  const checks = [
+    { id: 'event', label: 'Event fixture exists', passed: true, summary: 'Event fixture is available.' },
+    { id: 'dry-run', label: 'Dry-run draft plan exists', passed: pipeline.totals.draftCount > 0, summary: 'Dry-run plan is available.' },
+    { id: 'review', label: 'Review queue exists', passed: pipeline.totals.reviewItemCount > 0, summary: 'Review queue is available.' },
+    { id: 'schedule-preview', label: 'Schedule preview exists', passed: pipeline.totals.schedulePreviewItemCount > 0, summary: 'Schedule preview queue is available.' },
+    { id: 'analytics', label: 'Analytics fixture exists', passed: pipeline.totals.analyticsFixtureCount > 0, summary: 'Analytics fixtures are available.' },
+    { id: 'publishing', label: 'Publishing disabled', passed: true, summary: 'Publishing is disabled.' },
+    { id: 'external-writes', label: 'External writes disabled', passed: true, summary: 'External writes are disabled.' },
+    { id: 'playwright', label: 'Playwright disabled', passed: true, summary: 'Playwright is disabled.' },
+  ];
+
+  const score = 50 - blockers.length * 5;
+
+  return {
+    readiness: {
+      id: `readiness-${eventId}`,
+      eventId,
+      score,
+      grade: 'blocked',
+      status: 'blocked',
+      generatedAt,
+      blockers,
+      checks,
+      nextSafeStep: 'Review pipeline summary and keep publishing disabled.',
+      safety: {
+        readOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        callsExternalApi: false,
+        callsExternalAI: false,
+        canAutoFix: false,
+      },
+    },
+  };
+}
+
+function buildPipelineStep(
+  id: BrainCorePostPipelineStepId,
+  label: string,
+  status: BrainCorePostPipelineStepStatus,
+  itemCount: number,
+  blockedCount: number,
+  approvalRequiredCount: number,
+  summary: string,
+  nextSafeStep: string,
+): BrainCorePostPipelineStepSummary {
+  return {
+    id,
+    label,
+    status,
+    itemCount,
+    blockedCount,
+    approvalRequiredCount,
+    summary,
+    nextSafeStep,
+    safety: {
+      readOnly: true,
+      previewOnly: true,
+      publishingEnabled: false,
+      schedulingEnabled: false,
+      executionEnabled: false,
+      writesExternalPlatform: false,
+      writesToMind: false,
+    },
+  };
 }
 
 export function readPostOrchestratorDryRunPlan(eventId: string): BrainCorePostDryRunPlanResponse {

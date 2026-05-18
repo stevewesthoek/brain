@@ -59,6 +59,15 @@ export interface DashboardSnapshot {
   postAnalyticsPlatformCount: number;
   postAnalyticsExternalApiCallsEnabled: boolean;
   postAnalyticsNextSafeStep: string;
+  postPipelineStepCount: number;
+  postPipelineBlockerCount: number;
+  postPipelineApprovalRequiredCount: number;
+  postPipelineNextSafeStep: string;
+  postReadinessScore: number;
+  postReadinessGrade?: string;
+  postReadinessBlockerCount: number;
+  postReadinessStatus?: string;
+  postReadinessNextSafeStep: string;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -172,6 +181,15 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postAnalyticsNextSafeStep = postAnalyticsFixtureCount > 0
     ? 'Review fixture analytics and keep all external analytics calls disabled.'
     : 'Add fixture analytics summaries before extending feedback loops.';
+  const postPipelineStepCount = state.postOrchestratorPipeline?.pipeline?.steps?.length ?? 0;
+  const postPipelineBlockerCount = state.postOrchestratorPipeline?.pipeline?.totals.blockerCount ?? 0;
+  const postPipelineApprovalRequiredCount = state.postOrchestratorPipeline?.pipeline?.totals.approvalRequiredCount ?? 0;
+  const postPipelineNextSafeStep = state.postOrchestratorPipeline?.pipeline?.nextSafeStep ?? 'Review the pipeline summary.';
+  const postReadinessScore = state.postOrchestratorReadiness?.readiness?.score ?? 0;
+  const postReadinessGrade = state.postOrchestratorReadiness?.readiness?.grade;
+  const postReadinessBlockerCount = state.postOrchestratorReadiness?.readiness?.blockers?.length ?? 0;
+  const postReadinessStatus = state.postOrchestratorReadiness?.readiness?.status;
+  const postReadinessNextSafeStep = state.postOrchestratorReadiness?.readiness?.nextSafeStep ?? 'Review the readiness score.';
   const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
@@ -347,6 +365,15 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postAnalyticsPlatformCount,
     postAnalyticsExternalApiCallsEnabled,
     postAnalyticsNextSafeStep,
+    postPipelineStepCount,
+    postPipelineBlockerCount,
+    postPipelineApprovalRequiredCount,
+    postPipelineNextSafeStep,
+    postReadinessScore,
+    postReadinessGrade,
+    postReadinessBlockerCount,
+    postReadinessStatus,
+    postReadinessNextSafeStep,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

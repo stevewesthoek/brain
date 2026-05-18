@@ -1717,3 +1717,33 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - No external analytics API calls are introduced
 - No cookies, secrets, publishing, or scheduling are introduced
 - Fixture-only state remains explicit in UI and API
+
+### Phase P7: End-to-End Pipeline Summary (2026-06-02+)
+
+**Objective:** Combine the event → dry-run → review → schedule preview → analytics feedback chain into a single read-only pipeline summary.
+
+**Tasks:**
+- Pipeline summary endpoint for a fixed event fixture
+- Compose the pipeline from existing fixture stages
+- Brain Console pipeline summary card
+- Safety verification for end-to-end preview-only semantics
+
+**Exit criteria:**
+- Pipeline summary renders from Brain Core
+- No publishing, scheduling, or execution is introduced
+- Preview-only state remains explicit in UI and API
+
+### Phase P8: Readiness Score and Blockers (2026-06-02+)
+
+**Objective:** Add read-only readiness scoring and blocker modeling for the pipeline.
+
+**Tasks:**
+- Readiness score endpoint for event fixtures
+- Blocker model with severity and next safe steps
+- Brain Console readiness / quality score card
+- Safety verification for review-only semantics
+
+**Exit criteria:**
+- Readiness score renders from Brain Core
+- No publishing or scheduling is introduced
+- Readiness remains review-only and blocked while execution is disabled

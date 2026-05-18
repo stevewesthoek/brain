@@ -34,6 +34,8 @@ import {
   readBrainCorePostDraftReviewQueue,
   readBrainCorePostSchedulePreviewQueue,
   readBrainCorePostAnalyticsFixtures,
+  readBrainCorePostPipelineSummary,
+  readBrainCorePostReadinessScore,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
@@ -71,6 +73,8 @@ import {
   type BrainCorePostDraftReviewQueueResponse,
   type BrainCorePostSchedulePreviewQueueResponse,
   type BrainCorePostAnalyticsFixturesResponse,
+  type BrainCorePostPipelineSummaryResponse,
+  type BrainCorePostReadinessScoreResponse,
   type BrainCorePostEventFixturesResponse,
   type BrainCorePostOrchestratorIntegration,
   type BrainCorePostOrchestratorRecoveryItem,
@@ -130,6 +134,8 @@ export interface BrainConsoleViewState {
   postOrchestratorReviewQueue?: BrainCorePostDraftReviewQueueResponse;
   postOrchestratorSchedulePreview?: BrainCorePostSchedulePreviewQueueResponse;
   postOrchestratorAnalytics?: BrainCorePostAnalyticsFixturesResponse;
+  postOrchestratorPipeline?: BrainCorePostPipelineSummaryResponse;
+  postOrchestratorReadiness?: BrainCorePostReadinessScoreResponse;
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
@@ -155,7 +161,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -184,6 +190,8 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostDraftReviewQueue(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostSchedulePreviewQueue(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostAnalyticsFixtures(baseUrl),
+    readBrainCorePostPipelineSummary(baseUrl, 'github-release-event-fixture'),
+    readBrainCorePostReadinessScore(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
@@ -212,7 +220,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -266,6 +274,8 @@ export async function loadBrainConsoleViewState(
     postOrchestratorReviewQueue: postOrchestratorReviewQueue.value,
     postOrchestratorSchedulePreview: postOrchestratorSchedulePreview.value,
     postOrchestratorAnalytics: postOrchestratorAnalytics.value,
+    postOrchestratorPipeline: postOrchestratorPipeline.value,
+    postOrchestratorReadiness: postOrchestratorReadiness.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -480,6 +490,8 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
   renderCard(grid, 'Draft Fixtures / Preview Examples', renderDraftFixturesCard(state));
   renderCard(grid, 'Safety State', renderSafetyStateCard(state));
   renderCard(grid, 'Analytics Feedback Fixtures', renderPostAnalyticsFixturesCard(state));
+  renderCard(grid, 'End-to-End Pipeline Summary', renderPostPipelineSummaryCard(state));
+  renderCard(grid, 'Readiness / Quality Score', renderPostReadinessScoreCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
   renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
   renderCard(grid, 'Publishing Disabled', renderPublishingDisabledCard());
@@ -1748,6 +1760,81 @@ function renderPostAnalyticsFixturesCard(state: BrainConsoleViewState): HTMLElem
     });
     li.createEl('div', { cls: 'brain-console__list-sub', text: item.interpretation });
     li.createEl('div', { cls: 'brain-console__list-note', text: item.feedbackForFlow });
+  });
+
+  return el;
+}
+
+function renderPostPipelineSummaryCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const pipeline = state.postOrchestratorPipeline?.pipeline;
+  if (!pipeline) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No pipeline summary available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Event', value: pipeline.title },
+    { label: 'Status', value: pipeline.status },
+    { label: 'Drafts', value: String(pipeline.totals.draftCount) },
+    { label: 'Review items', value: String(pipeline.totals.reviewItemCount) },
+    { label: 'Schedule previews', value: String(pipeline.totals.schedulePreviewItemCount) },
+    { label: 'Analytics fixtures', value: String(pipeline.totals.analyticsFixtureCount) },
+    { label: 'Blockers', value: String(pipeline.totals.blockerCount) },
+    { label: 'Approval required', value: String(pipeline.totals.approvalRequiredCount) },
+    { label: 'Next safe step', value: pipeline.nextSafeStep },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Preview only · no publishing · no scheduling · no execution · no external API calls.' });
+  safety.addClass('brain-console__post-safe-note');
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  pipeline.steps.forEach((step) => {
+    const li = list.createEl('li');
+    li.createEl('div', { text: `${step.label} · ${step.status} · items:${step.itemCount} · blocked:${step.blockedCount} · approvals:${step.approvalRequiredCount}` });
+    li.createEl('div', { cls: 'brain-console__list-sub', text: step.summary });
+    li.createEl('div', { cls: 'brain-console__list-note', text: step.nextSafeStep });
+  });
+
+  return el;
+}
+
+function renderPostReadinessScoreCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const readiness = state.postOrchestratorReadiness?.readiness;
+  if (!readiness) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No readiness score available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Score', value: String(readiness.score) },
+    { label: 'Grade', value: readiness.grade },
+    { label: 'Status', value: readiness.status },
+    { label: 'Blockers', value: String(readiness.blockers.length) },
+    { label: 'Next safe step', value: readiness.nextSafeStep },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const note = el.createEl('div', { cls: 'brain-console__list-note', text: 'Readiness is for review only. Publishing and scheduling remain disabled.' });
+  note.addClass('brain-console__post-safe-note');
+
+  const blockList = el.createEl('ul', { cls: 'brain-console__list' });
+  readiness.blockers.slice(0, 5).forEach((blocker) => {
+    blockList.createEl('li', { text: `${blocker.title} · ${blocker.summary}` });
+  });
+  const checkList = el.createEl('ul', { cls: 'brain-console__list' });
+  readiness.checks.slice(0, 8).forEach((check) => {
+    checkList.createEl('li', { text: `${check.label}: ${check.passed ? 'pass' : 'fail'} · ${check.summary}` });
   });
 
   return el;

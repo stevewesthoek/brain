@@ -2154,3 +2154,51 @@ Validation:
 Next safe task:
 
 - Phase P7: read-only end-to-end Post Orchestrator pipeline summary combining event → dry-run → review → schedule preview → analytics feedback.
+
+## Phase P7 — End-to-End Pipeline Summary
+
+Implemented:
+
+- Pipeline summary endpoint added for event-backed post orchestration fixtures.
+- Pipeline summary composes event, dry-run, review, schedule preview, analytics feedback, and readiness steps.
+- Brain Console now shows an End-to-End Pipeline Summary card.
+
+Safety status:
+
+- Preview only.
+- No publishing.
+- No scheduling.
+- No execution.
+- No external API calls.
+- No external AI calls.
+- No Mind writes.
+
+Next safe task:
+
+- Phase P8: read-only readiness score and blocker model.
+
+## Phase P8 — Readiness Score and Blockers
+
+Implemented:
+
+- Readiness score endpoint added for event-backed pipeline review.
+- Blockers remain review-only and do not enable publishing or scheduling.
+- Brain Console now shows a Readiness / Quality Score card.
+
+Safety status:
+
+- Review only.
+- Publishing disabled.
+- Scheduling disabled.
+- Execution disabled.
+- No external API calls.
+- No external AI calls.
+- No Mind writes.
+
+Validation:
+
+- P7/P8 validation must pass before any later phase.
+
+Next safe task:
+
+- Phase P9: read-only platform policy/security review registry and decommission readiness matrix.

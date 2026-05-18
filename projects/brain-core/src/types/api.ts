@@ -619,6 +619,129 @@ export interface BrainCorePostAnalyticsFixturesResponse {
   analytics: BrainCorePostAnalyticsFixture[];
 }
 
+export type BrainCorePostPipelineStepId =
+  | 'event'
+  | 'dry-run'
+  | 'review'
+  | 'schedule-preview'
+  | 'analytics-feedback'
+  | 'readiness';
+
+export type BrainCorePostPipelineStepStatus =
+  | 'available'
+  | 'preview'
+  | 'blocked'
+  | 'disabled'
+  | 'missing';
+
+export interface BrainCorePostPipelineStepSummary {
+  id: BrainCorePostPipelineStepId;
+  label: string;
+  status: BrainCorePostPipelineStepStatus;
+  itemCount: number;
+  blockedCount: number;
+  approvalRequiredCount: number;
+  summary: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    previewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostPipelineSummary {
+  id: string;
+  eventId: string;
+  title: string;
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  steps: BrainCorePostPipelineStepSummary[];
+  totals: {
+    draftCount: number;
+    reviewItemCount: number;
+    schedulePreviewItemCount: number;
+    analyticsFixtureCount: number;
+    blockerCount: number;
+    approvalRequiredCount: number;
+  };
+  nextSafeStep: string;
+  blockers: string[];
+  safety: {
+    endToEndPreviewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    callsExternalApi: false;
+    callsExternalAI: false;
+    usesCookies: false;
+    usesPlaywright: false;
+  };
+}
+
+export interface BrainCorePostPipelineSummaryResponse {
+  pipeline: BrainCorePostPipelineSummary;
+}
+
+export type BrainCorePostReadinessSeverity = 'info' | 'warning' | 'error';
+
+export interface BrainCorePostReadinessBlocker {
+  id: string;
+  severity: BrainCorePostReadinessSeverity;
+  source:
+    | 'event'
+    | 'dry-run'
+    | 'review'
+    | 'schedule-preview'
+    | 'analytics'
+    | 'publishing'
+    | 'security'
+    | 'contracts';
+  title: string;
+  summary: string;
+  nextSafeStep: string;
+  blocksPublishing: true;
+  canAutoFix: false;
+}
+
+export interface BrainCorePostReadinessScore {
+  id: string;
+  eventId: string;
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'blocked';
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  blockers: BrainCorePostReadinessBlocker[];
+  checks: Array<{
+    id: string;
+    label: string;
+    passed: boolean;
+    summary: string;
+  }>;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    callsExternalApi: false;
+    callsExternalAI: false;
+    canAutoFix: false;
+  };
+}
+
+export interface BrainCorePostReadinessScoreResponse {
+  readiness: BrainCorePostReadinessScore;
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;

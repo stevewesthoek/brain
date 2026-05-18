@@ -18,7 +18,9 @@ import {
   readPostOrchestratorRecovery,
   readPostOrchestratorStatus,
   readPostAnalyticsFixtures,
+  readPostPipelineSummary,
   readPostSchedulePreviewQueue,
+  readPostReadinessScore,
   requestPostDraftReviewApproval,
   requestPostSchedulePreviewApproval,
 } from '../adapters/post-orchestrator.js';
@@ -135,6 +137,22 @@ export async function routeRequest(
       return;
     case '/post-orchestrator/analytics':
       sendJson(response, 200, readPostAnalyticsFixtures());
+      return;
+    case '/post-orchestrator/pipeline':
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_event_id',
+          message: 'Pipeline summary requires /post-orchestrator/pipeline/:eventId.',
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    case '/post-orchestrator/readiness':
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_event_id',
+          message: 'Readiness requires /post-orchestrator/readiness/:eventId.',
+        },
+      } satisfies BrainCoreErrorResponse);
       return;
     case '/post-orchestrator/review-queue':
       sendJson(response, 400, {
@@ -445,12 +463,22 @@ export async function routeRequest(
           sendJson(response, 200, readPostSchedulePreviewQueue(decodeURIComponent(schedulePreviewMatch[1] ?? '')));
           return;
         }
+        const pipelineMatch = /^\/post-orchestrator\/pipeline\/([^/]+)$/.exec(url.pathname);
+        if (pipelineMatch) {
+          sendJson(response, 200, readPostPipelineSummary(decodeURIComponent(pipelineMatch[1] ?? '')));
+          return;
+        }
+        const readinessMatch = /^\/post-orchestrator\/readiness\/([^/]+)$/.exec(url.pathname);
+        if (readinessMatch) {
+          sendJson(response, 200, readPostReadinessScore(decodeURIComponent(readinessMatch[1] ?? '')));
+          return;
+        }
       }
 
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
       return;
