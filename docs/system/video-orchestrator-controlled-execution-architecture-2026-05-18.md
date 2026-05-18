@@ -96,6 +96,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5R audit compliance evidence packet design.
 - 6A implementation readiness checkpoint.
 - 6B feature flag rollout plan.
+- 6C approval store implementation plan.
 
 ## Non-negotiable safety
 
@@ -432,3 +433,26 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until approval store plan is approved).
 - Next safe phase: Phase 6C approval store implementation plan, still read-only.
+
+## Phase 6C approval store implementation plan
+
+- Added as a read-only approval store implementation plan design endpoint.
+- Defines 15 proposed schema fields (approvalId, approvalType, candidateStoryId, sourceEpisodeId, operatorIdPlaceholder, operatorRolePlaceholder, approvalScopeHash, preflightEvidenceHash, policyVersion, status, createdAt, expiresAt, revokedAt, invalidatedAt, auditTrailRef).
+- Defines 10 lifecycle states (draft_design_only, requested_not_persisted, first_approval_pending, first_approval_blocked, second_approval_pending, second_approval_blocked, expired, revoked, invalidated, execution_still_disabled).
+- Defines 7 storage requirements (local-only policy, safe path policy, append-only audit link, expiry enforcement, revocation policy, corruption recovery, backup/restore).
+- Identifies 7 blocking requirements (no approved persistence policy, safe path, expiry enforcement, revocation, audit link, recovery policies, no explicit approval).
+- No approval store is implemented or enabled.
+- No persistence is enabled.
+- No approval creation is enabled.
+- No expiry enforcement is enabled.
+- No revocation is enabled.
+- No audit linking is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until first-approval creation plan is approved).
+- Next safe phase: Phase 6D first-approval creation implementation plan, still read-only.

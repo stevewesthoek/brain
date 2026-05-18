@@ -3380,3 +3380,45 @@ Roadmap progression:
 Next safe task:
 
 - Phase 6C: Approval store implementation plan design, still read-only.
+
+## Continuation update — Phase 6C approval store implementation plan design (2026-05-18)
+
+Implemented:
+
+**Phase 6C (Approval Store Implementation Plan Design):**
+- Added `GET /video-orchestrator/controlled-execution-approval-store-implementation-plan` in Brain Core.
+- Defines 15 proposed schema fields for approval record persistence (including expiresAt, revokedAt, invalidatedAt, auditTrailRef).
+- Defines 10 lifecycle states from draft_design_only through execution_still_disabled.
+- Defines 7 storage requirements (local-only, safe path, append-only audit link, expiry enforcement, revocation, recovery, backup/restore).
+- Identifies 7 blocking requirements (no approved persistence, safe path, expiry, revocation, audit link, recovery policies, no explicit approval).
+- Safety: readOnly, planDesignOnly, no store enabled, no persistence, no expiry enforcement, no revocation, no audit linking.
+
+Validation:
+
+- Brain Core CI: passed, 292 tests passing (up from 290).
+
+Safety status:
+
+- No POST route for approval store plan.
+- No approval store implementation.
+- No persistence enabled.
+- No approval creation enabled.
+- No expiry enforcement enabled.
+- No revocation enabled.
+- No audit linking enabled.
+- No action registry or allowlist entry.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or STB decommissioning.
+- All safety flags disabled except readOnly/planDesignOnly.
+
+Roadmap progression:
+- Phases 5A–5R: Design freeze complete (18 design phases)
+- Phase 6A: Implementation readiness checkpoint
+- Phase 6B: Feature flag rollout plan design
+- Phase 6C: Approval store implementation plan design
+- Phase 6D–6M: Additional implementation plans (first-approval creation, second-approval creation, validators, locks, audit, sandbox, rollback, runner, console UX)
+- Phase 7A onwards: Actual implementation (only after all plans approved)
+
+Next safe task:
+
+- Phase 6D: First-approval creation implementation plan design, still read-only.
