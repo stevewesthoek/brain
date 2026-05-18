@@ -2414,6 +2414,73 @@ export interface BrainCoreStbVideoDualRunEvidenceReport {
   };
 }
 
+export interface BrainCoreVideoProductionGateItem {
+  id: string;
+  label: string;
+  category: 'planning-chain' | 'dual-run-evidence' | 'rendering-export' | 'publishing-platform' | 'safety-approval';
+  status: 'ready' | 'blocked' | 'in-progress';
+  severity: 'critical' | 'high' | 'medium' | 'info';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    rendersVideo: boolean;
+    exportsArtifact: boolean;
+    publishesContent: boolean;
+    writesFiles: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoProductionGateSection {
+  id: string;
+  label: string;
+  category: 'planning-chain' | 'dual-run-evidence' | 'rendering-export' | 'publishing-platform' | 'safety-approval';
+  items: BrainCoreVideoProductionGateItem[];
+  summary: {
+    total: number;
+    ready: number;
+    blocked: number;
+    inProgress: number;
+  };
+  blockerReason?: string;
+}
+
+export interface BrainCoreVideoProductionGateChecklist {
+  id: 'video-production-gate';
+  generatedAt: string;
+  status: 'ready' | 'in-progress' | 'blocked' | 'not-ready';
+  readinessPercent: number;
+  sections: BrainCoreVideoProductionGateSection[];
+  summary: {
+    totalItems: number;
+    readyItems: number;
+    blockedItems: number;
+    inProgressItems: number;
+  };
+  blockers: string[];
+  criticalBlockers: string[];
+  nextSafeStep: string;
+  requiredApprovals: string[];
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    rendersVideo: boolean;
+    exportsArtifact: boolean;
+    publishesContent: boolean;
+    decommissionsStb: boolean;
+    writesFiles: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoProductionGateResponse {
+  gate: BrainCoreVideoProductionGateChecklist;
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3310,6 +3377,12 @@ export async function readBrainCoreStbVideoDualRunEvidence(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreStbVideoDualRunEvidenceResponse>> {
   return fetchJson<import('./client.js').BrainCoreStbVideoDualRunEvidenceResponse>(normalizeBaseUrl(baseUrl), '/stb-video/dual-run-evidence');
+}
+
+export async function readBrainCoreVideoProductionGate(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoProductionGateResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoProductionGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/production-gate');
 }
 
 export async function readBrainCoreAgents(

@@ -1329,3 +1329,193 @@ test('GET /stb-video/dual-run-evidence shows parityReady false (no real executio
     assert.equal(stage.comparison?.parityReady, false);
   }
 });
+
+test('GET /video-orchestrator/production-gate returns production gate checklist', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      id: string;
+      status: string;
+      readinessPercent: number;
+      sections: Array<{
+        id: string;
+        label: string;
+        category: string;
+        items: Array<{
+          id: string;
+          status: string;
+          severity: string;
+        }>;
+      }>;
+      summary: {
+        totalItems: number;
+        readyItems: number;
+        blockedItems: number;
+      };
+      blockers: string[];
+      criticalBlockers: string[];
+    };
+  };
+
+  assert.equal(body.gate?.id, 'video-production-gate');
+  assert(body.gate?.sections && body.gate.sections.length > 0);
+  assert.equal(body.gate.sections.length, 5);
+  assert.ok(body.gate.summary);
+});
+
+test('GET /video-orchestrator/production-gate status is blocked or not-ready (not production ready)', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      status: string;
+    };
+  };
+
+  assert(body.gate?.status === 'blocked' || body.gate?.status === 'not-ready' || body.gate?.status === 'in-progress');
+  assert.notEqual(body.gate?.status, 'ready');
+});
+
+test('GET /video-orchestrator/production-gate readinessPercent is below 100', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      readinessPercent: number;
+    };
+  };
+
+  assert.ok(body.gate?.readinessPercent !== undefined);
+  assert(body.gate?.readinessPercent < 100);
+});
+
+test('GET /video-orchestrator/production-gate has expected sections', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      sections: Array<{ category: string }>;
+    };
+  };
+
+  const categories = body.gate?.sections?.map(s => s.category) ?? [];
+  assert.ok(categories.includes('planning-chain'));
+  assert.ok(categories.includes('dual-run-evidence'));
+  assert.ok(categories.includes('rendering-export'));
+  assert.ok(categories.includes('publishing-platform'));
+  assert.ok(categories.includes('safety-approval'));
+});
+
+test('GET /video-orchestrator/production-gate has blocking items (not fully ready)', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      summary: {
+        blockedItems: number;
+      };
+      blockers: string[];
+    };
+  };
+
+  assert.ok(body.gate?.summary?.blockedItems && body.gate.summary.blockedItems > 0);
+  assert(body.gate?.blockers && body.gate.blockers.length > 0);
+});
+
+test('GET /video-orchestrator/production-gate has safety flags all disabled', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      safety: {
+        readOnly: boolean;
+        executesStb: boolean;
+        executesVideo: boolean;
+        rendersVideo: boolean;
+        publishesContent: boolean;
+      };
+    };
+  };
+
+  assert.equal(body.gate?.safety?.readOnly, true);
+  assert.equal(body.gate?.safety?.executesStb, false);
+  assert.equal(body.gate?.safety?.executesVideo, false);
+  assert.equal(body.gate?.safety?.rendersVideo, false);
+  assert.equal(body.gate?.safety?.publishesContent, false);
+});
+
+test('GET /video-orchestrator/production-gate documents STB decommission is blocked', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      blockers: string[];
+      criticalBlockers: string[];
+      sections: Array<{
+        items: Array<{ id: string; label: string }>;
+      }>;
+    };
+  };
+
+  const allItems = body.gate?.sections?.flatMap(s => s.items) ?? [];
+  const stbDecommissionItem = allItems.find(i => i.id?.includes('stb-decommission'));
+  assert.ok(stbDecommissionItem, 'STB decommission blocking item should exist');
+
+  assert.ok(
+    body.gate?.blockers?.some(b => b.toLowerCase().includes('stb')) ||
+    body.gate?.criticalBlockers?.some(b => b.toLowerCase().includes('stb')),
+    'Should document STB decommission as blocker'
+  );
+});
+
+test('GET /video-orchestrator/production-gate has no executable operations implied', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    gate?: {
+      sections: Array<{
+        items: Array<{ safety: Record<string, boolean> }>;
+      }>;
+    };
+  };
+
+  const allItems = body.gate?.sections?.flatMap(s => s.items) ?? [];
+  for (const item of allItems) {
+    assert.equal(item.safety?.rendersVideo, false, 'Item should not imply video rendering');
+    assert.equal(item.safety?.exportsArtifact, false, 'Item should not imply artifact export');
+    assert.equal(item.safety?.publishesContent, false, 'Item should not imply publishing');
+  }
+});

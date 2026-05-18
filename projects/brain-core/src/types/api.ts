@@ -1519,6 +1519,73 @@ export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
 
+export interface BrainCoreVideoProductionGateItem {
+  id: string;
+  label: string;
+  category: 'planning-chain' | 'dual-run-evidence' | 'rendering-export' | 'publishing-platform' | 'safety-approval';
+  status: 'ready' | 'blocked' | 'in-progress';
+  severity: 'critical' | 'high' | 'medium' | 'info';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    exportsArtifact: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoProductionGateSection {
+  id: string;
+  label: string;
+  category: 'planning-chain' | 'dual-run-evidence' | 'rendering-export' | 'publishing-platform' | 'safety-approval';
+  items: BrainCoreVideoProductionGateItem[];
+  summary: {
+    total: number;
+    ready: number;
+    blocked: number;
+    inProgress: number;
+  };
+  blockerReason?: string;
+}
+
+export interface BrainCoreVideoProductionGateChecklist {
+  id: 'video-production-gate';
+  generatedAt: string;
+  status: 'ready' | 'in-progress' | 'blocked' | 'not-ready';
+  readinessPercent: number;
+  sections: BrainCoreVideoProductionGateSection[];
+  summary: {
+    totalItems: number;
+    readyItems: number;
+    blockedItems: number;
+    inProgressItems: number;
+  };
+  blockers: string[];
+  criticalBlockers: string[];
+  nextSafeStep: string;
+  requiredApprovals: string[];
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    rendersVideo: false;
+    exportsArtifact: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoProductionGateResponse {
+  gate: BrainCoreVideoProductionGateChecklist;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3055,6 +3122,7 @@ export interface BrainCoreRoutes {
   '/stb-video-migration/status': BrainCoreStbVideoMigrationStatus;
   '/stb-video/parity-matrix': BrainCoreStbVideoParityMatrix;
   '/stb-video/dual-run-status': BrainCoreStbVideoDualRunStatus;
+  '/video-orchestrator/production-gate': BrainCoreVideoProductionGateResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
   };
