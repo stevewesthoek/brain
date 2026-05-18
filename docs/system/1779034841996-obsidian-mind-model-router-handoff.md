@@ -3337,3 +3337,46 @@ Next safe task:
 - Phase 6B: Feature flag rollout plan design (read-only, still no execution).
 - Continue with implementation plan designs (6C–6M) following same pattern.
 - Only after all implementation plans approved: begin actual implementation (Phase 7A onwards).
+
+## Continuation update — Phase 6B feature flag rollout plan design (2026-05-18)
+
+Implemented:
+
+**Phase 6B (Feature Flag Rollout Plan Design):**
+- Added `GET /video-orchestrator/controlled-execution-feature-flag-rollout-plan` in Brain Core.
+- Defines 10 proposed feature flags for gating controlled execution subsystems.
+- Defines 10 rollout phases from design freeze through dry-run implementations.
+- Specifies gating rules (all flags default false, no single flag enables execution, runner requires all plus explicit approval).
+- Identifies 6 blocking requirements (no approved frameworks/policies for flags/persistence/validator/sandbox/rollback/execution).
+- Safety: readOnly, planDesignOnly, no framework enabled, no flag evaluation, no rollout execution.
+
+Validation:
+
+- Brain Core CI: passed, 290 tests passing (up from 288).
+
+Safety status:
+
+- No POST route for feature flag rollout plan.
+- No feature flag framework enabled or implemented.
+- No flag evaluation enabled.
+- No rollout execution enabled.
+- No persistence enabled.
+- No approval creation or execution.
+- No validator execution.
+- No lock persistence or audit persistence.
+- No sandbox provisioning.
+- No action registry or allowlist entry.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or STB decommissioning.
+- All safety flags disabled except readOnly/planDesignOnly.
+
+Roadmap progression:
+- Phases 5A–5R: Design freeze complete (18 design phases)
+- Phase 6A: Implementation readiness checkpoint (design phases verified)
+- Phase 6B: Feature flag rollout plan design (gates defined)
+- Phase 6C–6M: Implementation plans (approval store, validator, locks, audit, sandbox, rollback, runner, console UX, security review)
+- Phase 7A onwards: Actual implementation (only after all plans approved)
+
+Next safe task:
+
+- Phase 6C: Approval store implementation plan design, still read-only.

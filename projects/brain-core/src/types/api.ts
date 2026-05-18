@@ -5400,3 +5400,66 @@ export interface BrainCoreVideoControlledExecutionImplementationReadinessCheckpo
 export interface BrainCoreVideoControlledExecutionImplementationReadinessCheckpointResponse {
   checkpoint: BrainCoreVideoControlledExecutionImplementationReadinessCheckpoint;
 }
+
+export interface BrainCoreVideoControlledExecutionFeatureFlagRolloutPlan {
+  id: 'video-orchestrator-controlled-execution-feature-flag-rollout-plan';
+  generatedAt: string;
+  version: 'phase-6b';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  featureFlagFrameworkEnabled: false;
+  flagEvaluationEnabled: false;
+  rolloutExecutionEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    rolloutPhaseCount: number;
+    featureFlagCount: number;
+    blockerCount: number;
+    requiredApprovalCount: number;
+  };
+  proposedFlags: string[];
+  rolloutPhases: string[];
+  gatingRules: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    featureFlagFrameworkEnabled: false;
+    flagEvaluationEnabled: false;
+    rolloutExecutionEnabled: false;
+    implementationExecutionEnabled: false;
+    featureFlagsEnabled: false;
+    persistenceEnabled: false;
+    approvalCreationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionFeatureFlagRolloutPlanResponse {
+  plan: BrainCoreVideoControlledExecutionFeatureFlagRolloutPlan;
+}

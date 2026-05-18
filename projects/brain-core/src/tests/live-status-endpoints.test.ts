@@ -4113,3 +4113,65 @@ test('POST /video-orchestrator/controlled-execution-implementation-readiness-che
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-feature-flag-rollout-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-feature-flag-rollout-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      version: string;
+      status: string;
+      planExists: boolean;
+      featureFlagFrameworkEnabled: boolean;
+      flagEvaluationEnabled: boolean;
+      rolloutExecutionEnabled: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      proposedFlags: string[];
+      rolloutPhases: string[];
+      gatingRules: string[];
+      blockingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-controlled-execution-feature-flag-rollout-plan');
+  assert.equal(body.plan.version, 'phase-6b');
+  assert.ok(['not-ready', 'ready'].includes(body.plan.status));
+  assert.equal(body.plan.planExists, false);
+  assert.equal(body.plan.featureFlagFrameworkEnabled, false);
+  assert.equal(body.plan.flagEvaluationEnabled, false);
+  assert.equal(body.plan.rolloutExecutionEnabled, false);
+  assert.equal(body.plan.implementationExecutionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.equal(body.plan.executable, false);
+  assert.ok(body.plan.proposedFlags.length === 10);
+  assert.ok(body.plan.proposedFlags.every(f => f.endsWith('.enabled')));
+  assert.ok(body.plan.rolloutPhases.length > 0);
+  assert.ok(body.plan.gatingRules.length > 0);
+  assert.ok(body.plan.blockingRequirements.length > 0);
+  assert.ok(body.plan.evidenceReferences.includes('/video-orchestrator/controlled-execution-implementation-readiness-checkpoint'));
+
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.planDesignOnly, true);
+  assert.equal(body.plan.safety.featureFlagFrameworkEnabled, false);
+  assert.equal(body.plan.safety.flagEvaluationEnabled, false);
+  assert.equal(body.plan.safety.featureFlagsEnabled, false);
+  assert.equal(body.plan.safety.persistenceEnabled, false);
+  assert.equal(body.plan.safety.approvalCreationEnabled, false);
+  assert.equal(body.plan.safety.validatorExecutionEnabled, false);
+  assert.equal(body.plan.safety.sandboxProvisioningEnabled, false);
+  assert.equal(body.plan.safety.executionEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-feature-flag-rollout-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-feature-flag-rollout-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

@@ -95,6 +95,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5Q immutable audit trail schema design.
 - 5R audit compliance evidence packet design.
 - 6A implementation readiness checkpoint.
+- 6B feature flag rollout plan.
 
 ## Non-negotiable safety
 
@@ -407,3 +408,27 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until implementation plans are approved).
 - Next safe phase: Phase 6B feature flag rollout plan design, still read-only.
+
+## Phase 6B feature flag rollout plan
+
+- Added as a read-only feature flag rollout plan design endpoint.
+- Defines 10 proposed feature flags (controlledExecution.enabled, approvalCreation.enabled, firstApproval.enabled, secondApproval.enabled, validatorExecution.enabled, candidateLockPersistence.enabled, auditPersistence.enabled, sandboxProvisioning.enabled, runner.enabled, consoleControls.enabled).
+- Defines 10 rollout phases (design freeze, flag schema review, console visibility, dry-run phases for each subsystem, execution still blocked).
+- Defines gating rules (all flags default false, no single flag enables execution, runner requires all plus explicit approval, publishing/decommission blocked separately).
+- Identifies 6 blocking requirements (no approved frameworks/policies for flags/persistence/validator/sandbox/rollback/execution).
+- No feature flag framework is enabled or implemented.
+- No flag evaluation is enabled.
+- No rollout execution is enabled.
+- No persistence is enabled.
+- No approval creation is enabled.
+- No validator execution is enabled.
+- No sandbox provisioning is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until approval store plan is approved).
+- Next safe phase: Phase 6C approval store implementation plan, still read-only.
