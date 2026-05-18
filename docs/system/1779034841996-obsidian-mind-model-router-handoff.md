@@ -2768,3 +2768,22 @@ Safety status:
 - No cutover, production-ready marking, traffic switch, STB decommission, STB execution, Video execution, publishing, approval creation, or Mind writes enabled.
 
 Next safe task: Brain Console visibility for the policy/gate chain, or explicit user decision on controlled execution policy.
+
+
+## 2026-05-18 — Brain Console: Video policy/gate chain visibility
+
+Completed a minimal Brain Console visibility pass for the Video Orchestrator policy/gate chain.
+
+Added:
+- Pipelines tab card: `Policy / Gate Chain`.
+- Shows production gate, render/export policy, controlled dual-run request status, blocker count, and the available policy/gate endpoints.
+- Keeps the dashboard scaffold lean while making the recent backend gate chain discoverable.
+
+Validation evidence:
+- Brain Console typecheck passed.
+- Brain Console build passed.
+- Brain Console package passed.
+
+Safety status:
+- UI visibility only.
+- No execution controls, no POST routes, no approval creation, no file writes, no publishing, no cutover, and no STB decommission added.

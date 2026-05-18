@@ -588,6 +588,7 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
   renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
   renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Production Gate', renderProductionGateCard(state, snapshot));
+  renderCard(grid, 'Policy / Gate Chain', renderVideoPolicyGateChainCard(state, snapshot));
   renderCard(grid, 'Video Render / Export Policy', renderRenderExportPolicyCard(state, snapshot));
   renderCard(grid, 'Controlled Dual-Run Request Design', renderControlledDualRunRequestDesignCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Intake', renderVideoIntakeCard(state, snapshot));
@@ -602,6 +603,37 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
   renderCard(grid, 'STB ↔ Video Parity Matrix', renderParityMatrixCard(state, snapshot));
   renderCard(grid, 'STB ↔ Video Dual-Run Status', renderDualRunStatusCard(state, snapshot));
   renderCard(grid, 'STB ↔ Video Evidence Collection', renderDualRunEvidenceCard(state, snapshot));
+}
+
+function renderVideoPolicyGateChainCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const gateStatus = state.videoProductionGate?.gate?.status ?? 'blocked';
+  const renderStatus = state.videoRenderExportPolicy?.policy?.status ?? 'blocked';
+  const controlledRequestStatus = state.controlledDualRunRequestDesign?.design?.status ?? 'blocked';
+  const blockedCount = state.videoProductionGate?.gate?.summary?.blockedItems ?? 0;
+
+  renderCompactStatGrid(container, [
+    { label: 'Production gate', value: gateStatus },
+    { label: 'Render/export', value: renderStatus },
+    { label: 'Dual-run request', value: controlledRequestStatus },
+    { label: 'Known blockers', value: String(blockedCount) },
+  ]);
+
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  [
+    'Artifact sandbox design: endpoint available, not executable',
+    'Controlled dry-run design: endpoint available, no POST route',
+    'Rollback/cleanup checklist: endpoint available, no deletes',
+    'Comparison schema + fixture preview: endpoint available, no real artifact reads',
+    'Production cutover gate: endpoint available, cutover blocked',
+  ].forEach((label) => {
+    list.createEl('div', { cls: 'brain-console__list-sub', text: label });
+  });
+
+  container.appendChild(renderSafetyLabel('Read-only visibility · Execution disabled · Cutover blocked · STB protected'));
+  return container;
 }
 
 function renderProjectsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
