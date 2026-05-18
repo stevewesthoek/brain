@@ -60,14 +60,47 @@ The endpoint reports each ProBot dashboard tab, its Brain Console target section
 - Brain Core CI: passed, 322 tests passing.
 - Brain Console typecheck: passed.
 
-## Current limitation
+## Second implementation slice
 
-Brain Console now has a typed parity response contract, but the request reader and visible dashboard card/tab have not yet been inserted into `projects/brain-console-obsidian/src/view.ts` in this slice. The next implementation slice should add a compact ProBot parity card in the Brain Console Overview or System/Recovery area using the existing request helper pattern, then expand missing ProBot parity surfaces one by one.
+Implemented visible Brain Console ProBot parity card:
+
+- Added `readBrainCoreProBotDashboardParity()` reader in `projects/brain-console-obsidian/src/view.ts`.
+- Added `renderProBotDashboardParityCard()` to display parity status in the Overview tab.
+- Card displays: total tabs (8), visible count, working count, partial count, legacy-only count, blocker count.
+- Card lists all ProBot tabs with their Brain Console target section, migration status (available/partial/legacy-only), and implementation decision (keep/redesign/admin-only).
+- Card shows per-tab: status, decision, visibility in Brain Console, whether working.
+- Safety label: "Read-only · No secrets · No mutation controls · No direct shell execution"
+
+Implemented files:
+
+- `projects/brain-console-obsidian/src/view.ts` (visible card + reader)
+- `docs/system/probot-to-brain-console-dashboard-parity-handoff.md` (this file)
+
+## Validation
+
+- Brain Core CI: 322 tests passing.
+- Brain Console typecheck: passed.
+- Brain Console build: passed, main.js bundled (792.4kb).
+
+## Safety status
+
+All safety boundaries maintained:
+- Read-only only (no POST routes).
+- No secrets, OAuth tokens, or credentials exposed.
+- No Stripe financial data exposed.
+- No mutation controls.
+- No shell execution.
+- No file writes.
+- No Mind writes.
+- No platform API writes.
+- No STB mutation.
+- No Video execution.
+- No ProBot decommission.
 
 ## Next safe tasks
 
-1. Add visible Brain Console ProBot parity card using `readBrainCoreProBotDashboardParity()`.
-2. Add read-only ProBot workflow queue summary if safe source data exists.
-3. Add read-only Video Orchestrator account health parity without tokens/OAuth/secrets.
-4. Add read-only system update availability summary without execution controls.
+1. Add read-only ProBot workflow queue summary if safe source data exists (low-risk).
+2. Add read-only Video Orchestrator account health parity without tokens/OAuth/secrets.
+3. Add read-only system update availability summary without execution controls.
+4. Add read-only Stripe account parity (metadata only, no API keys or financial data).
 5. Keep ProBot as legacy/thin client until every keep/redesign tab has Brain Console parity and explicit decommission approval exists.
