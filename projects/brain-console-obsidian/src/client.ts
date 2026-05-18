@@ -2981,6 +2981,69 @@ export interface BrainCoreVideoControlledExecutionRiskRegisterResponse {
   };
 }
 
+export interface BrainCoreVideoControlledExecutionApprovalPayloadSchemaResponse {
+  schema: {
+    id: string;
+    generatedAt: string;
+    status: string;
+    canCreateApproval: boolean;
+    canRegisterAction: boolean;
+    canExecute: boolean;
+    sections: Array<{
+      status: string;
+      fields: Array<{
+        status: string;
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    }>;
+    summary: {
+      totalSections: number;
+      totalFields: number;
+      requiredFieldCount: number;
+      blockedFieldCount: number;
+      missingFieldCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse {
+  schema: {
+    id: string;
+    generatedAt: string;
+    status: string;
+    canRunValidator: boolean;
+    canCreateApproval: boolean;
+    canRegisterAction: boolean;
+    canExecute: boolean;
+    rules: Array<{
+      status: string;
+      severity: string;
+      blockers: string[];
+      safety: Record<string, boolean>;
+    }>;
+    failureCodes: Array<{
+      code: string;
+      severity: string;
+      safety: Record<string, boolean>;
+    }>;
+    summary: {
+      totalRules: number;
+      definedRules: number;
+      blockedRules: number;
+      missingRules: number;
+      failureCodeCount: number;
+      blockingFailureCodeCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -3955,6 +4018,18 @@ export async function readBrainCoreVideoControlledExecutionRiskRegister(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionRiskRegisterResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionRiskRegisterResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-risk-register');
+}
+
+export async function readBrainCoreVideoControlledExecutionApprovalPayloadSchema(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionApprovalPayloadSchemaResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionApprovalPayloadSchemaResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-approval-payload-schema');
+}
+
+export async function readBrainCoreVideoControlledExecutionPreflightValidatorSchema(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-preflight-validator-schema');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

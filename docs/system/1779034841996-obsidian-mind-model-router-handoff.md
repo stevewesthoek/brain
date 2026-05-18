@@ -3001,3 +3001,22 @@ Safety status:
 - No execution.
 
 Next safe task: Phase 5C preflight validator schema/design.
+
+
+## 2026-05-18 — Phase 5C: Preflight validator schema
+
+Added `GET /video-orchestrator/controlled-execution-preflight-validator-schema` as a read-only schema endpoint.
+
+Safety status:
+- Schema-only.
+- Validator cannot run.
+- No approval created.
+- No action registration.
+- No execution.
+
+Next safe task: Phase 5D execution-plan stub, still disabled.
+
+
+## Brain Console — Approval payload schema visibility
+
+Added a compact Pipelines card for the controlled execution approval payload schema. It is read-only and does not request approvals or enable execution.

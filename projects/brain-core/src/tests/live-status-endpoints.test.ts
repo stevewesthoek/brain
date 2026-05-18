@@ -2891,3 +2891,83 @@ test('POST /video-orchestrator/controlled-execution-approval-payload-schema is n
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-preflight-validator-schema returns blocked validator schema', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-preflight-validator-schema' });
+  const body = JSON.parse(response.body) as {
+    schema: {
+      id: string;
+      status: string;
+      canRunValidator: boolean;
+      canCreateApproval: boolean;
+      canRegisterAction: boolean;
+      canExecute: boolean;
+      rules: Array<{ status: string; safety: Record<string, boolean> }>;
+      failureCodes: Array<{ code: string; safety: Record<string, boolean> }>;
+      summary: { totalRules: number; definedRules: number; blockedRules: number; missingRules: number; failureCodeCount: number; blockingFailureCodeCount: number };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.schema.id, 'video-orchestrator-controlled-execution-preflight-validator-schema');
+  assert.ok(['schema-only', 'blocked', 'ready-for-review'].includes(body.schema.status));
+  assert.equal(body.schema.canRunValidator, false);
+  assert.equal(body.schema.canCreateApproval, false);
+  assert.equal(body.schema.canRegisterAction, false);
+  assert.equal(body.schema.canExecute, false);
+  assert.ok(body.schema.rules.length > 0);
+  assert.ok(body.schema.failureCodes.length > 0);
+  assert.ok(body.schema.summary.totalRules > 0);
+  assert.ok(body.schema.summary.failureCodeCount > 0);
+  assert.ok(body.schema.summary.blockingFailureCodeCount > 0);
+  assert.ok(body.schema.rules.some(rule => rule.status === 'blocked'));
+  assert.ok(body.schema.blockers.length > 0);
+  assert.ok(body.schema.nextSafeStep.length > 0);
+  assert.equal(body.schema.safety.readOnly, true);
+  assert.equal(body.schema.safety.runsValidator, false);
+  assert.equal(body.schema.safety.createsApproval, false);
+  assert.equal(body.schema.safety.registersAction, false);
+  assert.equal(body.schema.safety.executesStb, false);
+  assert.equal(body.schema.safety.executesVideo, false);
+  assert.equal(body.schema.safety.writesFiles, false);
+  assert.equal(body.schema.safety.publishesContent, false);
+  assert.equal(body.schema.safety.decommissionsStb, false);
+  assert.equal(body.schema.safety.writesToMind, false);
+
+  body.schema.rules.forEach(rule => {
+    assert.equal(rule.safety.readOnly, true);
+    assert.equal(rule.safety.runsValidator, false);
+    assert.equal(rule.safety.createsApproval, false);
+    assert.equal(rule.safety.registersAction, false);
+    assert.equal(rule.safety.executesStb, false);
+    assert.equal(rule.safety.executesVideo, false);
+    assert.equal(rule.safety.writesFiles, false);
+    assert.equal(rule.safety.publishesContent, false);
+    assert.equal(rule.safety.decommissionsStb, false);
+    assert.equal(rule.safety.writesToMind, false);
+  });
+
+  body.schema.failureCodes.forEach(code => {
+    assert.equal(code.safety.readOnly, true);
+    assert.equal(code.safety.runsValidator, false);
+    assert.equal(code.safety.createsApproval, false);
+    assert.equal(code.safety.registersAction, false);
+    assert.equal(code.safety.executesStb, false);
+    assert.equal(code.safety.executesVideo, false);
+    assert.equal(code.safety.writesFiles, false);
+    assert.equal(code.safety.publishesContent, false);
+    assert.equal(code.safety.decommissionsStb, false);
+    assert.equal(code.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/controlled-execution-preflight-validator-schema is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-preflight-validator-schema' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

@@ -243,6 +243,14 @@ Added a read-only approval payload schema endpoint for controlled execution desi
 
 Next safe phase: Phase 5C preflight validator schema/design.
 
+## 2026-05-18 — Phase 5C: Preflight validator schema
+
+Status: complete, schema-only.
+
+Added a read-only preflight validator schema endpoint for controlled execution design. The schema describes required validations, data sources, failure codes, and safety checks without running a validator or enabling execution.
+
+Next safe phase: Phase 5D execution-plan stub, still disabled.
+
 - Proofly and Xgrow are legacy/internal migration source names.
 - Brain Console should not present them as primary products/providers.
 - User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.

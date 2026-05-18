@@ -2090,3 +2090,16 @@ Hard boundary remains unchanged:
 
 Next safe phase:
 - Phase 5C preflight validator schema/design
+
+## 2026-05-18 — Phase 5C preflight validator schema
+
+Added the read-only preflight validator schema endpoint as design-only documentation for the future validator rules and failure codes.
+
+Hard boundary remains unchanged:
+- no validator execution
+- no approval creation
+- no action registration
+- no execution
+
+Next safe phase:
+- Phase 5D execution-plan stub, still disabled

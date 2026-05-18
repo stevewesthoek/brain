@@ -100,3 +100,12 @@ This document defines the future controlled execution model as a design-only bou
 - No action registration is enabled.
 - No execution is enabled.
 - Next safe phase: Phase 5C preflight validator schema/design.
+
+## Phase 5C preflight validator schema
+
+- Added as a read-only schema endpoint.
+- Validator cannot run.
+- No approval is created.
+- No action registration is enabled.
+- No execution is enabled.
+- Next safe phase: Phase 5D execution-plan stub, still disabled.
