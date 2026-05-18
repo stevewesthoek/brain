@@ -1684,3 +1684,20 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - Approval request records can be created safely
 - No execution, publishing, or scheduling is introduced
 - Review-only state remains explicit in UI and API
+
+### Phase P5: Schedule Preview Queue (2026-06-02+)
+
+**Objective:** Add approval-gated schedule preview objects derived from reviewable draft items, still without real scheduling or publishing.
+
+**Tasks:**
+- Schedule preview endpoint for event-backed review items
+- Schedule preview approval-request endpoint
+- Deterministic schedule windows/timezones/rationales only
+- Brain Console schedule preview card and request button
+- Safety verification for preview-only semantics
+
+**Exit criteria:**
+- Schedule preview queue renders from review queue items
+- Approval request records can be created safely
+- No scheduler jobs, publishing, or execution are introduced
+- Preview-only state remains explicit in UI and API

@@ -47,6 +47,14 @@ export interface DashboardSnapshot {
   postReviewQueuePublishingEnabled: boolean;
   postReviewQueueSchedulingEnabled: boolean;
   postReviewQueueExecutionEnabled: boolean;
+  postSchedulePreviewItemCount: number;
+  postSchedulePreviewApprovalRequestedCount: number;
+  postSchedulePreviewBlockedCount: number;
+  postSchedulePreviewStatus?: string;
+  postSchedulePreviewNextSafeStep: string;
+  postSchedulePreviewPublishingEnabled: boolean;
+  postSchedulePreviewSchedulingEnabled: boolean;
+  postSchedulePreviewExecutionEnabled: boolean;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -146,6 +154,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postReviewQueuePublishingEnabled = Boolean(state.postOrchestratorReviewQueue?.queue?.safety.publishingEnabled);
   const postReviewQueueSchedulingEnabled = Boolean(state.postOrchestratorReviewQueue?.queue?.safety.schedulingEnabled);
   const postReviewQueueExecutionEnabled = Boolean(state.postOrchestratorReviewQueue?.queue?.safety.executionEnabled);
+  const postSchedulePreviewItemCount = state.postOrchestratorSchedulePreview?.queue?.itemCount ?? 0;
+  const postSchedulePreviewApprovalRequestedCount = state.postOrchestratorSchedulePreview?.queue?.approvalRequestedCount ?? 0;
+  const postSchedulePreviewBlockedCount = state.postOrchestratorSchedulePreview?.queue?.blockedCount ?? 0;
+  const postSchedulePreviewStatus = state.postOrchestratorSchedulePreview?.queue?.status;
+  const postSchedulePreviewNextSafeStep = state.postOrchestratorSchedulePreview?.queue?.items.find((item) => item.canRequestApproval)?.nextSafeStep ?? 'Select a schedule preview item to request review.';
+  const postSchedulePreviewPublishingEnabled = Boolean(state.postOrchestratorSchedulePreview?.queue?.safety.publishingEnabled);
+  const postSchedulePreviewSchedulingEnabled = Boolean(state.postOrchestratorSchedulePreview?.queue?.safety.schedulingEnabled);
+  const postSchedulePreviewExecutionEnabled = Boolean(state.postOrchestratorSchedulePreview?.queue?.safety.executionEnabled);
   const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
@@ -309,6 +325,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postReviewQueuePublishingEnabled,
     postReviewQueueSchedulingEnabled,
     postReviewQueueExecutionEnabled,
+    postSchedulePreviewItemCount,
+    postSchedulePreviewApprovalRequestedCount,
+    postSchedulePreviewBlockedCount,
+    postSchedulePreviewStatus,
+    postSchedulePreviewNextSafeStep,
+    postSchedulePreviewPublishingEnabled,
+    postSchedulePreviewSchedulingEnabled,
+    postSchedulePreviewExecutionEnabled,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

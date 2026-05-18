@@ -8,6 +8,10 @@ import type {
   BrainCorePostDraftReviewItem,
   BrainCorePostDraftReviewQueue,
   BrainCorePostDraftReviewQueueResponse,
+  BrainCorePostSchedulePreviewApprovalRequest,
+  BrainCorePostSchedulePreviewItem,
+  BrainCorePostSchedulePreviewQueue,
+  BrainCorePostSchedulePreviewQueueResponse,
   BrainCorePostEventFixture,
   BrainCorePostEventFixturesResponse,
   BrainCorePostEventType,
@@ -18,6 +22,7 @@ import type {
   BrainCorePostOrchestratorIntegrationsResponse,
   BrainCorePostOrchestratorRecoveryResponse,
   BrainCorePostOrchestratorStatusResponse,
+  BrainCorePostPlatform,
 } from '../types/api.js';
 
 const STATUS: BrainCorePostOrchestratorStatusResponse = {
@@ -1038,6 +1043,116 @@ export function requestPostDraftReviewApproval(reviewItemId: string): BrainCoreP
   };
 }
 
+export function readPostSchedulePreviewQueue(eventId: string): BrainCorePostSchedulePreviewQueueResponse {
+  const reviewQueue = readPostDraftReviewQueue(eventId).queue;
+  if (reviewQueue.status === 'blocked') {
+    return {
+      queue: {
+        id: `schedule-preview-queue-${eventId}`,
+        eventId,
+        status: 'blocked',
+        generatedAt: reviewQueue.generatedAt,
+        itemCount: 0,
+        approvalRequestedCount: 0,
+        blockedCount: 0,
+        items: [],
+        safety: {
+          previewOnly: true,
+          schedulingEnabled: false,
+          publishingEnabled: false,
+          executionEnabled: false,
+          writesScheduler: false,
+          writesExternalPlatform: false,
+          writesToMind: false,
+        },
+      },
+    };
+  }
+
+  const items = reviewQueue.items.map((item) => buildSchedulePreviewItem(item));
+  return {
+    queue: {
+      id: `schedule-preview-queue-${eventId}`,
+      eventId,
+      status: items.some((item) => item.status === 'blocked') ? 'blocked' : 'preview',
+      generatedAt: reviewQueue.generatedAt,
+      itemCount: items.length,
+      approvalRequestedCount: items.filter((item) => item.status === 'approval-requested').length,
+      blockedCount: items.filter((item) => item.status === 'blocked').length,
+      items,
+      safety: {
+        previewOnly: true,
+        schedulingEnabled: false,
+        publishingEnabled: false,
+        executionEnabled: false,
+        writesScheduler: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+  };
+}
+
+export function requestPostSchedulePreviewApproval(schedulePreviewItemId: string): BrainCorePostSchedulePreviewApprovalRequest {
+  const scheduleItem = findSchedulePreviewItemById(schedulePreviewItemId);
+  if (!scheduleItem) {
+    return {
+      id: `request-${schedulePreviewItemId}`,
+      schedulePreviewItemId,
+      status: 'invalid',
+      executionDidRun: false,
+      summary: 'Schedule preview item not found.',
+      nextSafeStep: 'Use a generated schedule preview item.',
+      safety: {
+        previewOnly: true,
+        writesScheduler: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        usesCookies: false,
+        usesPlaywright: false,
+        callsExternalAI: false,
+      },
+    };
+  }
+
+  if (!scheduleItem.canRequestApproval || scheduleItem.status === 'blocked') {
+    return {
+      id: `request-${schedulePreviewItemId}`,
+      schedulePreviewItemId,
+      status: 'blocked',
+      executionDidRun: false,
+      summary: scheduleItem.blockers[0] ?? 'Schedule preview item cannot request approval.',
+      nextSafeStep: scheduleItem.nextSafeStep,
+      safety: scheduleItem.safety,
+    };
+  }
+
+  const requestKind = `post-schedule-preview-${schedulePreviewItemId}`;
+  const request = requestAction(requestKind);
+  if (!request.accepted || !request.approval) {
+    return {
+      id: `request-${schedulePreviewItemId}`,
+      schedulePreviewItemId,
+      status: 'blocked',
+      executionDidRun: false,
+      summary: request.message || 'Schedule preview approval request was blocked.',
+      nextSafeStep: 'Keep schedule preview approval request read-only.',
+      safety: scheduleItem.safety,
+    };
+  }
+
+  return {
+    id: `request-${schedulePreviewItemId}`,
+    schedulePreviewItemId,
+    approvalId: request.approval.id,
+    status: 'requested',
+    executionDidRun: false,
+    summary: request.message,
+    nextSafeStep: 'Schedule preview approval requested. No scheduler job was created.',
+    safety: scheduleItem.safety,
+  };
+}
+
 function createDraftPlan(
   event: BrainCorePostEventFixture,
   flowId: string,
@@ -1168,6 +1283,94 @@ function findReviewItemById(reviewItemId: string): BrainCorePostDraftReviewItem 
   for (const event of EVENT_FIXTURES.events) {
     const queue = readPostDraftReviewQueue(event.id).queue;
     const item = queue.items.find((candidate) => candidate.id === reviewItemId);
+    if (item) return item;
+  }
+  return undefined;
+}
+
+function buildSchedulePreviewItem(reviewItem: BrainCorePostDraftReviewItem): BrainCorePostSchedulePreviewItem {
+  const platform = reviewItem.platform;
+  const isInternal = platform === 'internal';
+  const canRequestApproval = !isInternal && reviewItem.status !== 'blocked';
+  const scheduledWindow = determineScheduleWindow(platform);
+  const timezone = 'Europe/Amsterdam';
+  const suggestedLocalTime = suggestedTimeForWindow(scheduledWindow);
+  const rationale = determineScheduleRationale(platform, scheduledWindow);
+  return {
+    id: `schedule-${reviewItem.id}`,
+    reviewItemId: reviewItem.id,
+    draftPlanId: reviewItem.draftPlanId,
+    eventId: reviewItem.eventId,
+    flowId: reviewItem.flowId,
+    platform,
+    title: reviewItem.title,
+    scheduledWindow,
+    suggestedLocalTime,
+    timezone,
+    rationale,
+    status: canRequestApproval ? 'preview-ready' : 'blocked',
+    approvalRequired: true,
+    canRequestApproval,
+    canCreateSchedulerJob: false,
+    canPublish: false,
+    publishingEnabled: false,
+    schedulingEnabled: false,
+    executionEnabled: false,
+    blockers: canRequestApproval ? [] : ['Schedule preview is not requestable for this flow.'],
+    nextSafeStep: canRequestApproval
+      ? 'Request schedule review before any future scheduler work.'
+      : 'Resolve preview blockers before requesting schedule review.',
+    safety: {
+      previewOnly: true,
+      writesScheduler: false,
+      writesExternalPlatform: false,
+      writesToMind: false,
+      usesCookies: false,
+      usesPlaywright: false,
+      callsExternalAI: false,
+    },
+  };
+}
+
+function determineScheduleWindow(platform: BrainCorePostPlatform): BrainCorePostSchedulePreviewItem['scheduledWindow'] {
+  if (platform === 'x') return 'morning';
+  if (platform === 'linkedin') return 'morning';
+  if (platform === 'github') return 'midday';
+  if (platform === 'facebook') return 'evening';
+  if (platform === 'youtube') return 'afternoon';
+  if (platform === 'blog') return 'morning';
+  return 'manual-review';
+}
+
+function suggestedTimeForWindow(window: BrainCorePostSchedulePreviewItem['scheduledWindow']): string {
+  switch (window) {
+    case 'morning':
+      return '09:00';
+    case 'midday':
+      return '12:00';
+    case 'afternoon':
+      return '15:00';
+    case 'evening':
+      return '18:00';
+    case 'manual-review':
+      return 'manual';
+  }
+}
+
+function determineScheduleRationale(platform: BrainCorePostPlatform, window: BrainCorePostSchedulePreviewItem['scheduledWindow']): string {
+  if (platform === 'x') return 'Short-form flow preview; candidate time chosen for weekday visibility.';
+  if (platform === 'linkedin') return 'Professional audience flow preview; morning review recommended.';
+  if (platform === 'github') return 'Developer-facing release flow preview; midday review recommended.';
+  if (platform === 'facebook') return 'Broader social preview; evening candidate selected for distribution review.';
+  if (platform === 'youtube') return 'Video preview; afternoon candidate selected for later-day review.';
+  if (platform === 'blog') return 'Blog preview; morning review recommended before any future publication planning.';
+  return 'Asset preview should be reviewed manually before any platform post is considered.';
+}
+
+function findSchedulePreviewItemById(schedulePreviewItemId: string): BrainCorePostSchedulePreviewItem | undefined {
+  for (const event of EVENT_FIXTURES.events) {
+    const queue = readPostSchedulePreviewQueue(event.id).queue;
+    const item = queue.items.find((candidate) => candidate.id === schedulePreviewItemId);
     if (item) return item;
   }
   return undefined;

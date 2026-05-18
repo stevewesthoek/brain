@@ -2099,3 +2099,32 @@ Safety status:
 Next safe task:
 
 - Phase P5: approval-gated schedule preview objects, still with no real scheduling or publishing.
+
+## Phase P5 — Schedule Preview Queue
+
+Implemented:
+
+- Schedule preview endpoint added for event-backed review items.
+- Schedule preview approval endpoint added for individual preview items.
+- Preview items are derived from review queue items.
+- Approval requests reuse the existing Brain Core approval record path.
+- Brain Console now shows the schedule preview queue and request-review button for requestable items.
+
+Safety status:
+
+- Preview only.
+- No real scheduler jobs.
+- Publishing disabled.
+- Scheduling disabled.
+- Execution disabled.
+- No platform writes.
+- No Mind writes.
+- No external AI calls.
+
+Validation:
+
+- P5 must validate before any P6 continuation.
+
+Next safe task:
+
+- Phase P6: read-only analytics feedback fixtures for post flows.

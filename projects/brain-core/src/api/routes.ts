@@ -17,7 +17,9 @@ import {
   readPostOrchestratorIntegrations,
   readPostOrchestratorRecovery,
   readPostOrchestratorStatus,
+  readPostSchedulePreviewQueue,
   requestPostDraftReviewApproval,
+  requestPostSchedulePreviewApproval,
 } from '../adapters/post-orchestrator.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import {
@@ -135,6 +137,14 @@ export async function routeRequest(
         error: {
           code: 'missing_event_id',
           message: 'Review queue requires /post-orchestrator/review-queue/:eventId.',
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    case '/post-orchestrator/schedule-preview':
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_event_id',
+          message: 'Schedule preview requires /post-orchestrator/schedule-preview/:eventId.',
         },
       } satisfies BrainCoreErrorResponse);
       return;
@@ -426,6 +436,11 @@ export async function routeRequest(
           sendJson(response, 200, readPostDraftReviewQueue(decodeURIComponent(reviewQueueMatch[1] ?? '')));
           return;
         }
+        const schedulePreviewMatch = /^\/post-orchestrator\/schedule-preview\/([^/]+)$/.exec(url.pathname);
+        if (schedulePreviewMatch) {
+          sendJson(response, 200, readPostSchedulePreviewQueue(decodeURIComponent(schedulePreviewMatch[1] ?? '')));
+          return;
+        }
       }
 
       sendJson(response, 404, {
@@ -448,6 +463,13 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   const reviewApprovalMatch = /^\/post-orchestrator\/review-queue\/([^/]+)\/request-approval$/.exec(url.pathname);
   if (reviewApprovalMatch) {
     const result = requestPostDraftReviewApproval(decodeURIComponent(reviewApprovalMatch[1] ?? ''));
+    sendJson(response, result.status === 'requested' ? 202 : 400, result);
+    return;
+  }
+
+  const scheduleApprovalMatch = /^\/post-orchestrator\/schedule-preview\/([^/]+)\/request-approval$/.exec(url.pathname);
+  if (scheduleApprovalMatch) {
+    const result = requestPostSchedulePreviewApproval(decodeURIComponent(scheduleApprovalMatch[1] ?? ''));
     sendJson(response, result.status === 'requested' ? 202 : 400, result);
     return;
   }

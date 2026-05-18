@@ -32,6 +32,7 @@ import {
   readBrainCorePostOrchestratorRecovery,
   readBrainCorePostOrchestratorStatus,
   readBrainCorePostDraftReviewQueue,
+  readBrainCorePostSchedulePreviewQueue,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
@@ -43,6 +44,7 @@ import {
   readBrainCoreRecoveryItems,
   requestBrainCoreActionApproval,
   requestBrainCorePostDraftReviewApproval,
+  requestBrainCorePostSchedulePreviewApproval,
   type BrainCoreApprovalSummary,
   type BrainCoreApprovalDetail,
   type BrainCoreApprovalStoreSummary,
@@ -66,6 +68,7 @@ import {
   type BrainCorePostDryRunPlanResponse,
   type BrainCorePostDraftFixture,
   type BrainCorePostDraftReviewQueueResponse,
+  type BrainCorePostSchedulePreviewQueueResponse,
   type BrainCorePostEventFixturesResponse,
   type BrainCorePostOrchestratorIntegration,
   type BrainCorePostOrchestratorRecoveryItem,
@@ -123,6 +126,7 @@ export interface BrainConsoleViewState {
   postOrchestratorEvents?: BrainCorePostEventFixturesResponse;
   postOrchestratorDryRun?: BrainCorePostDryRunPlanResponse;
   postOrchestratorReviewQueue?: BrainCorePostDraftReviewQueueResponse;
+  postOrchestratorSchedulePreview?: BrainCorePostSchedulePreviewQueueResponse;
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
@@ -148,7 +152,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -175,6 +179,7 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostOrchestratorEvents(baseUrl),
     readBrainCorePostOrchestratorDryRun(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostDraftReviewQueue(baseUrl, 'github-release-event-fixture'),
+    readBrainCorePostSchedulePreviewQueue(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
@@ -203,7 +208,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -255,6 +260,7 @@ export async function loadBrainConsoleViewState(
     postOrchestratorEvents: postOrchestratorEvents.value,
     postOrchestratorDryRun: postOrchestratorDryRun.value,
     postOrchestratorReviewQueue: postOrchestratorReviewQueue.value,
+    postOrchestratorSchedulePreview: postOrchestratorSchedulePreview.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -465,6 +471,7 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
   renderCard(grid, 'Dry-Run Plan', renderPostDryRunPlanCard(state));
   renderCard(grid, 'Draft Plan Rows', renderPostDryRunDraftRowsCard(state));
   renderCard(grid, 'Draft Review Queue', renderPostDraftReviewQueueCard(state));
+  renderCard(grid, 'Schedule Preview Queue', renderPostSchedulePreviewQueueCard(state));
   renderCard(grid, 'Draft Fixtures / Preview Examples', renderDraftFixturesCard(state));
   renderCard(grid, 'Safety State', renderSafetyStateCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
@@ -1640,6 +1647,56 @@ function renderPostDraftReviewQueueCard(state: BrainConsoleViewState): HTMLEleme
       btn.addEventListener('click', async () => {
         btn.disabled = true;
         const result = await requestBrainCorePostDraftReviewApproval(state.brainCoreUrl ?? '', item.id);
+        const message = li.createDiv({ cls: 'brain-console__list-note' });
+        if (result.value?.status === 'requested') {
+          message.textContent = `approval requested · execution did not run · approvalId: ${result.value.approvalId ?? 'n/a'}`;
+        } else {
+          message.textContent = `blocked: ${result.value?.summary ?? result.error ?? 'unknown'}`;
+        }
+      });
+    }
+  });
+
+  return el;
+}
+
+function renderPostSchedulePreviewQueueCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const queue = state.postOrchestratorSchedulePreview?.queue;
+  if (!queue) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No schedule preview queue available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Event', value: queue.eventId },
+    { label: 'Status', value: queue.status },
+    { label: 'Items', value: String(queue.itemCount) },
+    { label: 'Approval requested', value: String(queue.approvalRequestedCount) },
+    { label: 'Blocked', value: String(queue.blockedCount) },
+  ];
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const safety = el.createDiv({ cls: 'brain-console__list-note', text: 'Preview only · no real scheduler job · no publishing · no execution.' });
+  safety.addClass('brain-console__post-safe-note');
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  queue.items.slice(0, 5).forEach((item) => {
+    const li = list.createEl('li');
+    li.createEl('div', {
+      text: `${item.title} · ${item.platform} · ${item.scheduledWindow} · ${item.suggestedLocalTime} ${item.timezone} · status:${item.status}`,
+    });
+    li.createEl('div', { cls: 'brain-console__list-sub', text: item.rationale });
+    li.createEl('div', { cls: 'brain-console__list-note', text: `approval required: ${item.approvalRequired ? 'yes' : 'no'} · next: ${item.nextSafeStep}` });
+    if (item.canRequestApproval) {
+      const btn = li.createEl('button', { text: 'Request schedule review', cls: 'brain-console__btn-mini' });
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const result = await requestBrainCorePostSchedulePreviewApproval(state.brainCoreUrl ?? '', item.id);
         const message = li.createDiv({ cls: 'brain-console__list-note' });
         if (result.value?.status === 'requested') {
           message.textContent = `approval requested · execution did not run · approvalId: ${result.value.approvalId ?? 'n/a'}`;

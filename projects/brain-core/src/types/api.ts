@@ -511,6 +511,78 @@ export interface BrainCorePostDraftReviewApprovalRequest {
   safety: BrainCorePostDraftReviewItem['safety'];
 }
 
+export type BrainCorePostSchedulePreviewStatus = 'preview-ready' | 'approval-requested' | 'blocked' | 'disabled';
+export type BrainCorePostScheduleWindow = 'morning' | 'midday' | 'afternoon' | 'evening' | 'manual-review';
+
+export interface BrainCorePostSchedulePreviewItem {
+  id: string;
+  reviewItemId: string;
+  draftPlanId: string;
+  eventId: string;
+  flowId: string;
+  platform: BrainCorePostPlatform;
+  title: string;
+  scheduledWindow: BrainCorePostScheduleWindow;
+  suggestedLocalTime: string;
+  timezone: string;
+  rationale: string;
+  status: BrainCorePostSchedulePreviewStatus;
+  approvalRequired: true;
+  approvalId?: string;
+  canRequestApproval: boolean;
+  canCreateSchedulerJob: false;
+  canPublish: false;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    previewOnly: true;
+    writesScheduler: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+    callsExternalAI: false;
+  };
+}
+
+export interface BrainCorePostSchedulePreviewQueue {
+  id: string;
+  eventId: string;
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  itemCount: number;
+  approvalRequestedCount: number;
+  blockedCount: number;
+  items: BrainCorePostSchedulePreviewItem[];
+  safety: {
+    previewOnly: true;
+    schedulingEnabled: false;
+    publishingEnabled: false;
+    executionEnabled: false;
+    writesScheduler: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostSchedulePreviewQueueResponse {
+  queue: BrainCorePostSchedulePreviewQueue;
+}
+
+export interface BrainCorePostSchedulePreviewApprovalRequest {
+  id: string;
+  schedulePreviewItemId: string;
+  approvalId?: string;
+  status: 'requested' | 'blocked' | 'invalid';
+  executionDidRun: false;
+  summary: string;
+  nextSafeStep: string;
+  safety: BrainCorePostSchedulePreviewItem['safety'];
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;

@@ -495,6 +495,78 @@ export interface BrainCorePostDraftReviewApprovalRequest {
   safety: BrainCorePostDraftReviewItem['safety'];
 }
 
+export type BrainCorePostSchedulePreviewStatus = 'preview-ready' | 'approval-requested' | 'blocked' | 'disabled';
+export type BrainCorePostScheduleWindow = 'morning' | 'midday' | 'afternoon' | 'evening' | 'manual-review';
+
+export interface BrainCorePostSchedulePreviewItem {
+  id: string;
+  reviewItemId: string;
+  draftPlanId: string;
+  eventId: string;
+  flowId: string;
+  platform: BrainCorePostPlatform;
+  title: string;
+  scheduledWindow: BrainCorePostScheduleWindow;
+  suggestedLocalTime: string;
+  timezone: string;
+  rationale: string;
+  status: BrainCorePostSchedulePreviewStatus;
+  approvalRequired: true;
+  approvalId?: string;
+  canRequestApproval: boolean;
+  canCreateSchedulerJob: false;
+  canPublish: false;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    previewOnly: true;
+    writesScheduler: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+    callsExternalAI: false;
+  };
+}
+
+export interface BrainCorePostSchedulePreviewQueue {
+  id: string;
+  eventId: string;
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  itemCount: number;
+  approvalRequestedCount: number;
+  blockedCount: number;
+  items: BrainCorePostSchedulePreviewItem[];
+  safety: {
+    previewOnly: true;
+    schedulingEnabled: false;
+    publishingEnabled: false;
+    executionEnabled: false;
+    writesScheduler: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostSchedulePreviewQueueResponse {
+  queue: BrainCorePostSchedulePreviewQueue;
+}
+
+export interface BrainCorePostSchedulePreviewApprovalRequest {
+  id: string;
+  schedulePreviewItemId: string;
+  approvalId?: string;
+  status: 'requested' | 'blocked' | 'invalid';
+  executionDidRun: false;
+  summary: string;
+  nextSafeStep: string;
+  safety: BrainCorePostSchedulePreviewItem['safety'];
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
@@ -699,6 +771,10 @@ export interface BrainCoreRecoveryItemSummary {
     writesToMind: false;
   };
 }
+
+export interface BrainCorePostSchedulePreviewItemSummary extends BrainCorePostSchedulePreviewItem {}
+export interface BrainCorePostSchedulePreviewQueueSummary extends BrainCorePostSchedulePreviewQueue {}
+export interface BrainCorePostSchedulePreviewApprovalRequestSummary extends BrainCorePostSchedulePreviewApprovalRequest {}
 
 export interface BrainCoreExecutionPlanStep {
   id: string;
@@ -1127,6 +1203,27 @@ export async function requestBrainCorePostDraftReviewApproval(
   return fetchJson<BrainCorePostDraftReviewApprovalRequest>(
     normalizeBaseUrl(baseUrl),
     `/post-orchestrator/review-queue/${encodeURIComponent(reviewItemId)}/request-approval`,
+    { method: 'POST' },
+  );
+}
+
+export async function readBrainCorePostSchedulePreviewQueue(
+  baseUrl: string,
+  eventId: string,
+): Promise<HttpResult<BrainCorePostSchedulePreviewQueueResponse>> {
+  return fetchJson<BrainCorePostSchedulePreviewQueueResponse>(
+    normalizeBaseUrl(baseUrl),
+    `/post-orchestrator/schedule-preview/${encodeURIComponent(eventId)}`,
+  );
+}
+
+export async function requestBrainCorePostSchedulePreviewApproval(
+  baseUrl: string,
+  schedulePreviewItemId: string,
+): Promise<HttpResult<BrainCorePostSchedulePreviewApprovalRequest>> {
+  return fetchJson<BrainCorePostSchedulePreviewApprovalRequest>(
+    normalizeBaseUrl(baseUrl),
+    `/post-orchestrator/schedule-preview/${encodeURIComponent(schedulePreviewItemId)}/request-approval`,
     { method: 'POST' },
   );
 }

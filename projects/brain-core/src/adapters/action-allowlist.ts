@@ -7,6 +7,7 @@ const ALLOWED_PREFIXES = [
   'local-app-stop-',
   'local-app-restart-',
   'post-draft-review-',
+  'post-schedule-preview-',
 ] as const;
 
 const ALLOWED_EXACT_KINDS = new Set(['manual-request']);

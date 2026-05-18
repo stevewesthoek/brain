@@ -302,6 +302,7 @@
 }
 
 .brain-console__post-disabled,
+.brain-console__post-safe-note,
 .brain-console__list-warning {
   border-radius: 6px;
   padding: 10px 12px;

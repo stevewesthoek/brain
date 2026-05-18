@@ -361,3 +361,103 @@ test('POST /post-orchestrator/review-queue request approval does not publish or 
   assert.equal(body.safety?.usesPlaywright, false);
   assert.equal(body.safety?.usesCookies, false);
 });
+
+test('GET /post-orchestrator/schedule-preview/github-release-event-fixture returns preview queue', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/schedule-preview/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as {
+    queue: {
+      eventId: string;
+      status: string;
+      itemCount: number;
+      approvalRequestedCount: number;
+      blockedCount: number;
+      items: Array<{
+        reviewItemId: string;
+        draftPlanId: string;
+        approvalRequired: boolean;
+        canCreateSchedulerJob: boolean;
+        canPublish: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        status: string;
+        safety: { previewOnly: boolean; writesScheduler: boolean; writesExternalPlatform: boolean; writesToMind: boolean; usesCookies: boolean; usesPlaywright: boolean; callsExternalAI: boolean };
+      }>;
+      safety: { previewOnly: boolean; publishingEnabled: boolean; schedulingEnabled: boolean; executionEnabled: boolean; writesScheduler: boolean; writesExternalPlatform: boolean; writesToMind: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.queue.eventId, 'github-release-event-fixture');
+  assert.ok(body.queue.itemCount > 0);
+  assert.equal(body.queue.items.every((item) => item.approvalRequired === true), true);
+  assert.equal(body.queue.items.every((item) => item.canCreateSchedulerJob === false), true);
+  assert.equal(body.queue.items.every((item) => item.canPublish === false), true);
+  assert.equal(body.queue.items.every((item) => item.publishingEnabled === false), true);
+  assert.equal(body.queue.items.every((item) => item.schedulingEnabled === false), true);
+  assert.equal(body.queue.items.every((item) => item.executionEnabled === false), true);
+  assert.equal(body.queue.items.every((item) => item.safety.previewOnly === true), true);
+  assert.equal(body.queue.items.every((item) => item.safety.writesScheduler === false), true);
+  assert.equal(body.queue.items.every((item) => item.safety.writesExternalPlatform === false), true);
+  assert.equal(body.queue.items.every((item) => item.safety.writesToMind === false), true);
+  assert.equal(body.queue.items.every((item) => item.safety.usesCookies === false), true);
+  assert.equal(body.queue.items.every((item) => item.safety.usesPlaywright === false), true);
+  assert.equal(body.queue.items.every((item) => item.safety.callsExternalAI === false), true);
+  assert.equal(body.queue.safety.previewOnly, true);
+  assert.equal(body.queue.safety.publishingEnabled, false);
+  assert.equal(body.queue.safety.schedulingEnabled, false);
+  assert.equal(body.queue.safety.executionEnabled, false);
+  assert.equal(body.queue.safety.writesScheduler, false);
+});
+
+test('GET /post-orchestrator/schedule-preview items correspond to review queue items', async () => {
+  const reviewQueue = await exercise({ method: 'GET', url: '/post-orchestrator/review-queue/github-release-event-fixture' });
+  const reviewBody = JSON.parse(reviewQueue.body) as { queue: { items: Array<{ id: string }> } };
+  const scheduleQueue = await exercise({ method: 'GET', url: '/post-orchestrator/schedule-preview/github-release-event-fixture' });
+  const scheduleBody = JSON.parse(scheduleQueue.body) as { queue: { items: Array<{ reviewItemId: string }> } };
+
+  assert.equal(scheduleQueue.statusCode, 200);
+  assert.deepEqual(
+    scheduleBody.queue.items.map((item) => item.reviewItemId),
+    reviewBody.queue.items.map((item) => item.id),
+  );
+});
+
+test('GET /post-orchestrator/schedule-preview/unknown-event returns blocked queue', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/schedule-preview/unknown-event' });
+  const body = JSON.parse(response.body) as { queue: { status: string; items: unknown[] } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.queue.status, 'blocked');
+  assert.equal(body.queue.items.length, 0);
+});
+
+test('POST /post-orchestrator/schedule-preview/:schedulePreviewItemId/request-approval returns executionDidRun false', async () => {
+  const response = await exercise({ method: 'POST', url: '/post-orchestrator/schedule-preview/schedule-review-dry-run-github-release-event-fixture-x-post-flow/request-approval' });
+  const body = JSON.parse(response.body) as { status: string; executionDidRun: boolean; approvalId?: string };
+
+  assert.ok([200, 202, 400].includes(response.statusCode));
+  assert.equal(body.executionDidRun, false);
+  assert.ok(['requested', 'blocked', 'invalid'].includes(body.status));
+});
+
+test('POST /post-orchestrator/schedule-preview request approval does not create scheduler job', async () => {
+  const response = await exercise({ method: 'POST', url: '/post-orchestrator/schedule-preview/schedule-review-dry-run-github-release-event-fixture-x-post-flow/request-approval' });
+  const body = JSON.parse(response.body) as { status: string; safety?: { writesScheduler: boolean; writesExternalPlatform: boolean; writesToMind: boolean; usesPlaywright: boolean; usesCookies: boolean } };
+
+  assert.equal(response.statusCode === 202 || response.statusCode === 400, true);
+  assert.equal(body.safety?.writesScheduler, false);
+  assert.equal(body.safety?.writesExternalPlatform, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.equal(body.safety?.usesPlaywright, false);
+  assert.equal(body.safety?.usesCookies, false);
+});
+
+test('POST /post-orchestrator/schedule-preview request approval does not expose legacy provider labels', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/schedule-preview/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as { queue: { items: Array<{ title: string; rationale: string }> } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(JSON.stringify(body).includes('Proofly'), false);
+  assert.equal(JSON.stringify(body).includes('Xgrow'), false);
+});
