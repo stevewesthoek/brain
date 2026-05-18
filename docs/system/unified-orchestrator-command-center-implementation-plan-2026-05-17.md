@@ -223,6 +223,17 @@ Add read-only unified orchestrator registry surfaces to existing Brain Core runn
 ### Goal
 Update existing Brain Console Obsidian plugin to consume Phase 2 Brain Core registry endpoints and display orchestrators, pipelines, projects/domains, platforms, and STB/video side-by-side.
 
+### Production acceleration — Render Readiness / Export Policy
+
+Phase 3o adds a read-only render/export policy surface:
+
+- Brain Core endpoint: `GET /video-orchestrator/render-export-policy`.
+- Brain Console Pipelines card: Video Render / Export Policy.
+- Scope: policy checklist only for rendering, export package, artifact sandbox, output-path placeholders, approval/rollback, cleanup, and safety.
+- Explicitly disabled: rendering, export, file writing, downloads, approval creation, ffmpeg/export runner registration, platform publishing, and Mind writes.
+- No POST route or executable action was added; the production gate remains blocked/not-ready.
+- Next safe implementation choices: approval policy design, artifact sandbox design, controlled dry-run execution design.
+
 ### Current State
 - ✅ Brain Console plugin exists at `projects/brain-console-obsidian/`
 - ✅ Already loads in Obsidian

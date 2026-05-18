@@ -178,6 +178,34 @@ Research + Script modules follow same pattern as intake:
 - Currently blocked by design orchestrator requirement
 - Alternative: implement metadata-enrichment or placeholder for publishing stages
 
+## Production acceleration — Render Readiness / Export Policy (Phase 3o)
+
+Implemented:
+
+- Added `GET /video-orchestrator/render-export-policy` in Brain Core.
+- Added deterministic policy-only render/export checklist covering rendering engine, export package, artifact sandbox, approval/rollback, and safety.
+- Added Brain Console visibility card in Pipelines.
+
+Safety status:
+
+- Rendering disabled; export disabled; file writing disabled.
+- No ffmpeg/export runner registered.
+- No executable action, approval creation, POST route, output path approval, download, or generated artifact exists.
+- Production gate remains blocked/not-ready.
+
+Current blockers:
+
+- Approval policy missing.
+- Artifact sandbox and output path policy missing.
+- Cleanup and rollback policy missing.
+- Real rendering/export execution remains blocked.
+
+Next safe modules:
+
+- Approval policy design.
+- Artifact sandbox design.
+- Controlled dry-run execution design.
+
 ## Continuation update — Approved dry-run report visibility (Phase 4D)
 
 Implemented:

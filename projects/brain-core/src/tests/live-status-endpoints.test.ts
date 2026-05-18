@@ -1667,3 +1667,147 @@ test('No POST route exists for controlled dual-run request', async () => {
   assert.notEqual(response.statusCode, 200, 'POST should not succeed for design-only module');
   assert(response.statusCode === 405 || response.statusCode === 404, 'Should reject POST method');
 });
+
+test('GET /video-orchestrator/render-export-policy returns policy', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/render-export-policy',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    policy?: {
+      id: string;
+      status: string;
+      sections: Array<{ id: string; title: string }>;
+      summary: { totalItems: number };
+    };
+  };
+
+  assert.equal(body.policy?.id, 'video-orchestrator-render-export-policy');
+  assert.ok(body.policy?.summary.totalItems && body.policy.summary.totalItems > 0);
+  assert.ok(Array.isArray(body.policy?.sections));
+});
+
+test('No POST route exists for render/export policy', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/video-orchestrator/render-export-policy',
+  });
+
+  assert.notEqual(response.statusCode, 200, 'POST should not succeed for policy-only module');
+  assert(response.statusCode === 404 || response.statusCode === 405, 'Should reject POST method');
+});
+
+test('GET /video-orchestrator/render-export-policy cannot render/export or register executable action', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/render-export-policy',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    policy?: {
+      status: string;
+      canRender: boolean;
+      canExport: boolean;
+      executableActionRegistered: boolean;
+      summary: { blockedCount: number };
+    };
+  };
+
+  assert.equal(body.policy?.canRender, false);
+  assert.equal(body.policy?.canExport, false);
+  assert.equal(body.policy?.executableActionRegistered, false);
+  assert.ok(body.policy?.status === 'policy-only' || body.policy?.status === 'blocked');
+  assert.notEqual(body.policy?.status, 'executable');
+  assert.ok(body.policy?.summary.blockedCount && body.policy.summary.blockedCount > 0);
+});
+
+test('GET /video-orchestrator/render-export-policy has expected sections', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/render-export-policy',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    policy?: {
+      sections: Array<{ id: string; title: string; status: string }>;
+    };
+  };
+
+  const sectionIds = body.policy?.sections.map(section => section.id) ?? [];
+  assert.ok(sectionIds.includes('rendering-engine'));
+  assert.ok(sectionIds.includes('export-package'));
+  assert.ok(sectionIds.includes('artifact-sandbox'));
+  assert.ok(sectionIds.includes('approval-rollback'));
+  assert.ok(sectionIds.includes('safety'));
+});
+
+test('GET /video-orchestrator/render-export-policy every item has disabled safety flags', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/render-export-policy',
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    policy?: {
+      sections: Array<{
+        items: Array<{ safety: Record<string, boolean> }>;
+      }>;
+    };
+  };
+
+  const allItems = body.policy?.sections.flatMap(section => section.items) ?? [];
+  assert.ok(allItems.length > 0, 'Policy should include checklist items');
+
+  for (const item of allItems) {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.rendersVideo, false);
+    assert.equal(item.safety.callsFfmpeg, false);
+    assert.equal(item.safety.writesFiles, false);
+    assert.equal(item.safety.createsDownload, false);
+    assert.equal(item.safety.createsApproval, false);
+    assert.equal(item.safety.publishesContent, false);
+    assert.equal(item.safety.writesToMind, false);
+  }
+});
+
+test('Render/export policy has no executable action in action registry or execution plans', async () => {
+  const actionsResponse = await exercise({ method: 'GET', url: '/actions' });
+  const actionsBody = JSON.parse(actionsResponse.body) as {
+    actions: Array<{ id: string; kind: string; label: string }>;
+  };
+  const plansResponse = await exercise({ method: 'GET', url: '/execution/plans' });
+  const plansBody = JSON.parse(plansResponse.body) as {
+    plans: Array<{ kind: string; label?: string }>;
+  };
+
+  const executableTerms = /render-export|render-video|export-video|run-render|execute-render/i;
+  assert.equal(actionsBody.actions.some(action => executableTerms.test(`${action.id} ${action.kind} ${action.label}`)), false);
+  assert.equal(plansBody.plans.some(plan => executableTerms.test(`${plan.kind} ${plan.label ?? ''}`)), false);
+});
+
+test('Render/export policy keeps production gate blocked/not-ready', async () => {
+  const policyResponse = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/render-export-policy',
+  });
+  const gateResponse = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/production-gate',
+  });
+
+  assert.equal(policyResponse.statusCode, 200);
+  assert.equal(gateResponse.statusCode, 200);
+
+  const gateBody = JSON.parse(gateResponse.body) as {
+    gate?: { status: string; readinessPercent: number; summary: { blockedItems: number } };
+  };
+
+  assert.ok(gateBody.gate?.status === 'blocked' || gateBody.gate?.status === 'not-ready');
+  assert.ok(gateBody.gate.summary.blockedItems > 0);
+  assert.ok(gateBody.gate.readinessPercent < 100);
+});

@@ -58,6 +58,16 @@ Obsidian remains the only primary human dashboard. Brain Core exposes machine an
 | Approval/review | approval-gate stage | ✅ mapped | Approval state transitions confirmed |
 | Archive/logging | archive-logging stage | planned | Audit trail completeness check pending |
 
+### Production acceleration — Render Readiness / Export Policy
+
+Status: Phase 3o implemented as policy-only.
+
+- Brain Core exposes `GET /video-orchestrator/render-export-policy`.
+- The module documents render policy, export policy, artifact requirements, sandbox/output-path placeholders, approval gates, cleanup/rollback blockers, and safety flags.
+- Rendering, export, file writing, download creation, approval creation, ffmpeg/export runner registration, and output path approval remain disabled.
+- No executable action or POST route was added; production readiness remains blocked.
+- Next safe modules: approval policy design, artifact sandbox design, controlled dry-run execution design.
+
 **Dual-run validation:**
 - Build video module alongside STB
 - Run both on identical test input

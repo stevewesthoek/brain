@@ -1661,6 +1661,82 @@ export interface BrainCoreControlledDualRunRequestDesignResponse {
   design: BrainCoreControlledDualRunRequestDesign;
 }
 
+export interface BrainCoreVideoRenderExportPolicyItem {
+  id: string;
+  label: string;
+  category:
+    | 'rendering'
+    | 'export'
+    | 'artifact'
+    | 'sandbox'
+    | 'output-path'
+    | 'approval'
+    | 'cleanup'
+    | 'rollback'
+    | 'safety';
+  status: 'satisfied' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    writesFiles: false;
+    createsDownload: false;
+    createsApproval: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoRenderExportPolicySection {
+  id: string;
+  title: string;
+  status: 'passed' | 'blocked' | 'missing' | 'partial';
+  items: BrainCoreVideoRenderExportPolicyItem[];
+  summary: {
+    total: number;
+    satisfied: number;
+    blocked: number;
+    missing: number;
+  };
+}
+
+export interface BrainCoreVideoRenderExportPolicy {
+  id: 'video-orchestrator-render-export-policy';
+  generatedAt: string;
+  status: 'policy-only' | 'blocked' | 'ready-for-review';
+  canRender: false;
+  canExport: false;
+  executableActionRegistered: false;
+  sections: BrainCoreVideoRenderExportPolicySection[];
+  summary: {
+    totalItems: number;
+    satisfiedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    rendersVideo: false;
+    callsFfmpeg: false;
+    writesFiles: false;
+    createsDownload: false;
+    createsApproval: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoRenderExportPolicyResponse {
+  policy: BrainCoreVideoRenderExportPolicy;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3198,6 +3274,7 @@ export interface BrainCoreRoutes {
   '/stb-video/parity-matrix': BrainCoreStbVideoParityMatrix;
   '/stb-video/dual-run-status': BrainCoreStbVideoDualRunStatus;
   '/video-orchestrator/production-gate': BrainCoreVideoProductionGateResponse;
+  '/video-orchestrator/render-export-policy': BrainCoreVideoRenderExportPolicyResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
