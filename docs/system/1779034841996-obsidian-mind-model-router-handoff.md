@@ -3103,3 +3103,63 @@ Blocked in this pass:
 Next safe task:
 
 - First-approval audit/expiry model design, still read-only and no execution.
+
+## Continuation update — Phase 5K first-approval audit/expiry model design (2026-05-18)
+
+Implemented:
+
+- Added `GET /video-orchestrator/controlled-execution-first-approval-audit-expiry-model` in Brain Core.
+- Added a read-only audit/expiry model adapter with audit fields, expiry rules, invalidation rules, missing requirements, and evidence references.
+- Added Brain Core API types and live endpoint tests, including POST rejection coverage.
+- Updated controlled execution architecture documentation with Phase 5K.
+
+Validation:
+
+- Brain Core CI: passed, 272 tests passing.
+
+Safety status:
+
+- No audit persistence enabled.
+- No expiry enforcement enabled.
+- No POST route added for Video Orchestrator controlled execution.
+- No approval, first approval, or second approval creation added.
+- No approval execution added.
+- No action registry or allowlist entry added.
+- No validator or execution-plan execution added.
+- No STB or Video execution added.
+- No file writing, rendering, export, publishing, Mind writes, or STB decommissioning added.
+
+Next safe task:
+
+- Candidate/story lock design, still read-only and no execution.
+
+## Continuation update — Phase 5L candidate/story lock design (2026-05-18)
+
+Implemented:
+
+- Added `GET /video-orchestrator/controlled-execution-candidate-story-lock` in Brain Core.
+- Added a read-only lock design adapter with lock fields (candidateStoryId, sourceEpisodeId, contentHash, planningHash, preflightEvidenceHash, lockedByOperatorId, lockedAt, expiresAt, invalidatedAt, invalidationReason).
+- Defined lock rules (enforces immutability during approval window, cannot authorize execution/publishing/STB/Mind writes).
+- Defined invalidation triggers (story changed, planning changed, preflight changed, operator/role policy changed, lock expired).
+- Added Brain Core API types and live endpoint tests (GET 200 with design data, POST 404).
+- Updated controlled execution architecture documentation with Phase 5L.
+
+Validation:
+
+- Brain Core CI: passed, 274 tests passing.
+
+Safety status:
+
+- No lock is created or persisted.
+- No lock enforcement is enabled.
+- No POST route added for Video Orchestrator controlled execution lock.
+- No approval, first approval, or second approval creation added.
+- No approval execution added.
+- No action registry or allowlist entry added.
+- No validator or execution-plan execution added.
+- No STB or Video execution added.
+- No file writing, rendering, export, publishing, Mind writes, or STB decommissioning added.
+
+Next safe task:
+
+- Preflight evidence hash design, still read-only and no execution.
