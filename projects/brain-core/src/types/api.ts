@@ -304,6 +304,101 @@ export interface BrainCorePostDraftFixture {
   };
 }
 
+export type BrainCorePostEventType =
+  | 'github-commit'
+  | 'pr-merged'
+  | 'release-published'
+  | 'repo-launch'
+  | 'product-milestone'
+  | 'mrr-milestone'
+  | 'github-achievement'
+  | 'video-rendered'
+  | 'blog-published'
+  | 'research-summary'
+  | 'manual-request';
+
+export type BrainCorePostEventSource =
+  | 'github'
+  | 'video-orchestrator'
+  | 'manual'
+  | 'analytics'
+  | 'internal'
+  | 'blog'
+  | 'product';
+
+export interface BrainCorePostEventFixture {
+  id: string;
+  source: BrainCorePostEventSource;
+  eventType: BrainCorePostEventType;
+  occurredAt: string;
+  projectId: string;
+  title: string;
+  payloadSummary: string;
+  priority: 'low' | 'normal' | 'high';
+  suggestedPlatforms: BrainCorePostPlatform[];
+  suggestedFlowIds: string[];
+  safety: {
+    fixtureOnly: true;
+    readsExternalPlatform: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    containsSecrets: false;
+  };
+}
+
+export type BrainCorePostPlanStatus = 'planned-preview' | 'blocked' | 'unsupported' | 'requires-approval';
+
+export interface BrainCorePostDraftPlan {
+  id: string;
+  eventId: string;
+  flowId: string;
+  platform: BrainCorePostPlatform;
+  title: string;
+  format: BrainCorePostDraftFixture['format'];
+  copyPreview: string;
+  assetFlowRequired: boolean;
+  optimizationFlowRequired: boolean;
+  approvalRequired: true;
+  status: BrainCorePostPlanStatus;
+  blockers: string[];
+  nextSafeStep: string;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  safety: {
+    dryRunOnly: true;
+    generatedFromFixture: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+  };
+}
+
+export interface BrainCorePostDryRunPlan {
+  id: string;
+  event: BrainCorePostEventFixture;
+  generatedAt: string;
+  status: 'preview' | 'blocked';
+  drafts: BrainCorePostDraftPlan[];
+  unsupportedFlowIds: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    dryRunOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+  };
+}
+
 export interface BrainCorePostOrchestratorStatusResponse {
   id: 'post-orchestrator';
   name: 'Post Orchestrator';
@@ -338,6 +433,14 @@ export interface BrainCorePostFlowFixturesResponse {
 
 export interface BrainCorePostDraftFixturesResponse {
   drafts: BrainCorePostDraftFixture[];
+}
+
+export interface BrainCorePostEventFixturesResponse {
+  events: BrainCorePostEventFixture[];
+}
+
+export interface BrainCorePostDryRunPlanResponse {
+  plan: BrainCorePostDryRunPlan;
 }
 
 export interface BrainCoreAgentSummary {

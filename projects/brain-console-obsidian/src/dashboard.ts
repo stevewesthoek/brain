@@ -31,6 +31,14 @@ export interface DashboardSnapshot {
   postOrchestratorIntegrationCount: number;
   postFlowCount: number;
   postDraftFixtureCount: number;
+  postEventFixtureCount: number;
+  postDryRunDraftCount: number;
+  postDryRunStatus?: string;
+  postDryRunBlockedCount: number;
+  postDryRunNextSafeStep: string;
+  postDryRunPublishingEnabled: boolean;
+  postDryRunSchedulingEnabled: boolean;
+  postDryRunExecutionEnabled: boolean;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -114,6 +122,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postOrchestratorIntegrationCount = state.postOrchestratorStatus ? 3 : 0;
   const postFlowCount = state.postOrchestratorStatus ? 8 : 0;
   const postDraftFixtureCount = state.postOrchestratorDrafts?.drafts?.length ?? 0;
+  const postEventFixtureCount = state.postOrchestratorEvents?.events?.length ?? 0;
+  const postDryRunDraftCount = state.postOrchestratorDryRun?.plan?.drafts?.length ?? 0;
+  const postDryRunStatus = state.postOrchestratorDryRun?.plan?.status;
+  const postDryRunBlockedCount = (state.postOrchestratorDryRun?.plan?.blockers ?? []).length;
+  const postDryRunNextSafeStep = state.postOrchestratorDryRun?.plan?.nextSafeStep ?? 'Select an event fixture to preview.';
+  const postDryRunPublishingEnabled = Boolean(state.postOrchestratorDryRun?.plan?.safety.publishingEnabled);
+  const postDryRunSchedulingEnabled = Boolean(state.postOrchestratorDryRun?.plan?.safety.schedulingEnabled);
+  const postDryRunExecutionEnabled = Boolean(state.postOrchestratorDryRun?.plan?.safety.executionEnabled);
   const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
@@ -261,6 +277,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postOrchestratorIntegrationCount,
     postFlowCount,
     postDraftFixtureCount,
+    postEventFixtureCount,
+    postDryRunDraftCount,
+    postDryRunStatus,
+    postDryRunBlockedCount,
+    postDryRunNextSafeStep,
+    postDryRunPublishingEnabled,
+    postDryRunSchedulingEnabled,
+    postDryRunExecutionEnabled,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

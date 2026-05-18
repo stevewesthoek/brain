@@ -185,3 +185,85 @@ test('GET /post-orchestrator/drafts returns typed fixture drafts', async () => {
   assert.equal(body.drafts.every((draft) => draft.safety.writesExternalPlatform === false), true);
   assert.equal(body.drafts.every((draft) => draft.safety.writesToMind === false), true);
 });
+
+test('GET /post-orchestrator/events returns typed event fixtures', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/events' });
+  const body = JSON.parse(response.body) as {
+    events: Array<{
+      id: string;
+      safety: { fixtureOnly: boolean; writesExternalPlatform: boolean; writesToMind: boolean };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.events.some((event) => event.id === 'github-release-event-fixture'));
+  assert.ok(body.events.some((event) => event.id === 'product-milestone-event-fixture'));
+  assert.ok(body.events.some((event) => event.id === 'video-rendered-event-fixture'));
+  assert.ok(body.events.some((event) => event.id === 'blog-published-event-fixture'));
+  assert.ok(body.events.some((event) => event.id === 'manual-social-proof-event-fixture'));
+  assert.equal(body.events.every((event) => event.safety.fixtureOnly === true), true);
+  assert.equal(body.events.every((event) => event.safety.writesExternalPlatform === false), true);
+  assert.equal(body.events.every((event) => event.safety.writesToMind === false), true);
+});
+
+test('GET /post-orchestrator/dry-run/github-release-event-fixture returns preview plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/dry-run/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      status: string;
+      drafts: Array<{
+        flowId: string;
+        approvalRequired: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        safety: { writesExternalPlatform: boolean; writesToMind: boolean; usesPlaywright: boolean; usesCookies: boolean };
+      }>;
+      unsupportedFlowIds: string[];
+      blockers: string[];
+      safety: { dryRunOnly: boolean; publishingEnabled: boolean; schedulingEnabled: boolean; executionEnabled: boolean; writesExternalPlatform: boolean; writesToMind: boolean; usesPlaywright: boolean; usesCookies: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.status, 'preview');
+  assert.ok(body.plan.drafts.some((draft) => draft.flowId === 'x-post-flow'));
+  assert.ok(body.plan.drafts.some((draft) => draft.flowId === 'github-post-flow'));
+  assert.ok(body.plan.drafts.some((draft) => draft.flowId === 'linkedin-post-flow'));
+  assert.equal(body.plan.drafts.every((draft) => draft.approvalRequired === true), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.publishingEnabled === false), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.schedulingEnabled === false), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.executionEnabled === false), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.safety.writesExternalPlatform === false), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.safety.writesToMind === false), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.safety.usesPlaywright === false), true);
+  assert.equal(body.plan.drafts.every((draft) => draft.safety.usesCookies === false), true);
+  assert.equal(body.plan.safety.dryRunOnly, true);
+  assert.equal(body.plan.safety.publishingEnabled, false);
+  assert.equal(body.plan.safety.schedulingEnabled, false);
+  assert.equal(body.plan.safety.executionEnabled, false);
+});
+
+test('GET /post-orchestrator/dry-run/unknown-event returns blocked plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/dry-run/unknown-event' });
+  const body = JSON.parse(response.body) as {
+    plan: { status: string; drafts: unknown[]; blockers: string[]; unsupportedFlowIds: string[] };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.status, 'blocked');
+  assert.equal(body.plan.drafts.length, 0);
+  assert.ok(body.plan.blockers.includes('Unknown event fixture'));
+  assert.equal(body.plan.unsupportedFlowIds.length, 0);
+});
+
+test('GET /post-orchestrator/dry-run does not imply legacy provider names or Playwright usage', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/dry-run/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as { plan: { drafts: Array<{ title: string; copyPreview: string }>; safety: { usesPlaywright: boolean; usesCookies: boolean } } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(JSON.stringify(body).includes('Proofly'), false);
+  assert.equal(JSON.stringify(body).includes('Xgrow'), false);
+  assert.equal(body.plan.safety.usesPlaywright, false);
+  assert.equal(body.plan.safety.usesCookies, false);
+});

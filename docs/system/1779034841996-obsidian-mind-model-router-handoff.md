@@ -2052,3 +2052,26 @@ Next safe implementation slice remains:
 - No publishing execution.
 - No Playwright posting exposure.
 - No Mind mutation.
+
+## Phase P3 — Post Orchestrator dry-run planner
+
+Implemented:
+
+- Event fixtures added for GitHub, product, video, blog, and manual social proof triggers.
+- Dry-run planner added to map fixture events into preview-only draft plans.
+- New read-only endpoints added for event fixtures and dry-run planning.
+- Brain Console now surfaces event fixtures and the default dry-run plan.
+
+Safety status:
+
+- Dry-run only.
+- Publishing disabled.
+- Scheduling disabled.
+- Execution disabled.
+- No platform writes.
+- No Mind writes.
+- No Playwright/cookie usage.
+
+Next safe task:
+
+- Phase P4: approval-request-only Post Draft Review Queue, still without publishing or scheduling execution.

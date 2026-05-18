@@ -24,6 +24,8 @@ import {
   readBrainCoreProjects,
   readBrainCorePlatforms,
   readBrainCorePostOrchestratorContracts,
+  readBrainCorePostOrchestratorDryRun,
+  readBrainCorePostOrchestratorEvents,
   readBrainCorePostOrchestratorDrafts,
   readBrainCorePostOrchestratorFlows,
   readBrainCorePostOrchestratorIntegrations,
@@ -59,7 +61,9 @@ import {
   type BrainCoreProjectSummary,
   type BrainCorePlatformSummary,
   type BrainCorePostOrchestratorContract,
+  type BrainCorePostDryRunPlanResponse,
   type BrainCorePostDraftFixture,
+  type BrainCorePostEventFixturesResponse,
   type BrainCorePostOrchestratorIntegration,
   type BrainCorePostOrchestratorRecoveryItem,
   type BrainCorePostFlowFixture,
@@ -113,6 +117,8 @@ export interface BrainConsoleViewState {
   postOrchestratorStatus?: BrainCorePostOrchestratorStatusResponse;
   postOrchestratorFlows?: BrainCorePostFlowFixturesResponse;
   postOrchestratorDrafts?: BrainCorePostDraftFixturesResponse;
+  postOrchestratorEvents?: BrainCorePostEventFixturesResponse;
+  postOrchestratorDryRun?: BrainCorePostDryRunPlanResponse;
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
@@ -138,7 +144,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -162,6 +168,8 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostOrchestratorStatus(baseUrl),
     readBrainCorePostOrchestratorFlows(baseUrl),
     readBrainCorePostOrchestratorDrafts(baseUrl),
+    readBrainCorePostOrchestratorEvents(baseUrl),
+    readBrainCorePostOrchestratorDryRun(baseUrl, 'github-release-event-fixture'),
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
@@ -190,7 +198,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -239,6 +247,8 @@ export async function loadBrainConsoleViewState(
     postOrchestratorStatus: postOrchestratorStatus.value,
     postOrchestratorFlows: postOrchestratorFlows.value,
     postOrchestratorDrafts: postOrchestratorDrafts.value,
+    postOrchestratorEvents: postOrchestratorEvents.value,
+    postOrchestratorDryRun: postOrchestratorDryRun.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -445,6 +455,9 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
 
   renderCard(grid, 'Post Orchestrator Status', renderPostOrchestratorStatusCard(state));
   renderCard(grid, 'Platform / Post Flows', renderPlatformPostFlowsCard(state));
+  renderCard(grid, 'Event Fixtures', renderPostEventFixturesCard(state));
+  renderCard(grid, 'Dry-Run Plan', renderPostDryRunPlanCard(state));
+  renderCard(grid, 'Draft Plan Rows', renderPostDryRunDraftRowsCard(state));
   renderCard(grid, 'Draft Fixtures / Preview Examples', renderDraftFixturesCard(state));
   renderCard(grid, 'Safety State', renderSafetyStateCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
@@ -1519,18 +1532,84 @@ function renderDraftFixturesCard(state: BrainConsoleViewState): HTMLElement {
   return el;
 }
 
+function renderPostEventFixturesCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const events = state.postOrchestratorEvents?.events ?? [];
+  if (events.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No event fixtures available.' });
+    return el;
+  }
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  events.slice(0, 5).forEach((event) => {
+    list.createEl('li', {
+      text: `${event.title} · ${event.source} · ${event.eventType} · platforms:${event.suggestedPlatforms.join(', ')} · fixture-only:${event.safety.fixtureOnly ? 'yes' : 'no'} · external-writes:${event.safety.writesExternalPlatform ? 'yes' : 'no'}`,
+    });
+  });
+
+  return el;
+}
+
+function renderPostDryRunPlanCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const dryRun = state.postOrchestratorDryRun?.plan;
+  if (!dryRun) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No dry-run plan available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Event', value: dryRun.event.title },
+    { label: 'Status', value: dryRun.status },
+    { label: 'Draft count', value: String(dryRun.drafts.length) },
+    { label: 'Unsupported flows', value: String(dryRun.unsupportedFlowIds.length) },
+    { label: 'Blockers', value: dryRun.blockers.length > 0 ? dryRun.blockers.join(' · ') : 'none' },
+    { label: 'Next safe step', value: dryRun.nextSafeStep },
+  ];
+
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  const note = el.createEl('div', { cls: 'brain-console__list-note', text: 'Preview only · publishing, scheduling, and execution remain disabled.' });
+  note.addClass('brain-console__post-safe-note');
+  return el;
+}
+
+function renderPostDryRunDraftRowsCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const drafts = state.postOrchestratorDryRun?.plan?.drafts ?? [];
+  if (drafts.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No dry-run draft rows available.' });
+    return el;
+  }
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  drafts.slice(0, 5).forEach((draft) => {
+    list.createEl('li', {
+      text: `${draft.platform} · ${draft.flowId} · ${draft.title} · ${draft.format} · ${draft.copyPreview.slice(0, 80)}${draft.copyPreview.length > 80 ? '…' : ''} · approval:${draft.approvalRequired ? 'yes' : 'no'} · pub:off · sched:off · exec:off`,
+    });
+  });
+
+  return el;
+}
+
 function renderSafetyStateCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
   const flows = state.postOrchestratorFlows?.flows ?? [];
   const drafts = state.postOrchestratorDrafts?.drafts ?? [];
+  const dryRun = state.postOrchestratorDryRun?.plan;
 
   const rows = [
-    { label: 'Publishing disabled', value: flows.every((flow) => flow.publishingEnabled === false) ? 'yes' : 'no' },
-    { label: 'Scheduling disabled', value: flows.every((flow) => flow.schedulingEnabled === false) ? 'yes' : 'no' },
-    { label: 'Execution disabled', value: flows.every((flow) => flow.executionEnabled === false) ? 'yes' : 'no' },
+    { label: 'Dry-run only', value: dryRun?.safety.dryRunOnly ? 'yes' : 'no' },
+    { label: 'Publishing disabled', value: flows.every((flow) => flow.publishingEnabled === false) && dryRun?.safety.publishingEnabled === false ? 'yes' : 'no' },
+    { label: 'Scheduling disabled', value: flows.every((flow) => flow.schedulingEnabled === false) && dryRun?.safety.schedulingEnabled === false ? 'yes' : 'no' },
+    { label: 'Execution disabled', value: flows.every((flow) => flow.executionEnabled === false) && dryRun?.safety.executionEnabled === false ? 'yes' : 'no' },
     { label: 'No platform writes', value: drafts.every((draft) => draft.safety.writesExternalPlatform === false) ? 'yes' : 'no' },
-    { label: 'No Mind writes', value: drafts.every((draft) => draft.safety.writesToMind === false) ? 'yes' : 'no' },
-    { label: 'No Playwright posting', value: drafts.every((draft) => draft.safety.usesPlaywright === false) ? 'yes' : 'no' },
+    { label: 'No Mind writes', value: drafts.every((draft) => draft.safety.writesToMind === false) && dryRun?.safety.writesToMind === false ? 'yes' : 'no' },
+    { label: 'No Playwright/cookies', value: drafts.every((draft) => draft.safety.usesPlaywright === false) && dryRun?.safety.usesPlaywright === false && dryRun?.safety.usesCookies === false ? 'yes' : 'no' },
   ];
 
   rows.forEach(({ label, value }) => {

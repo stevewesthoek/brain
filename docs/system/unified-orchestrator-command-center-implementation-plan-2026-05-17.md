@@ -1604,6 +1604,23 @@ docs/system/1779034841996-obsidian-mind-model-router-handoff.md (continuation up
 
 ---
 
+### Phase P3: Post Orchestrator Dry-Run Planner (2026-05-26+)
+
+**Objective:** Convert fixture PostEvent inputs into preview-only PostDraftPlan outputs.
+
+**Tasks:**
+- Event fixture registry
+- Dry-run planner adapter
+- Dry-run endpoint exposure
+- Brain Console dry-run preview cards
+- Safety verification for read-only output
+
+**Exit criteria:**
+- Event fixtures are visible
+- Dry-run plans generate from fixtures
+- Draft previews remain read-only
+- No publishing, scheduling, or platform posting
+
 ### Phase P4: Approval-Gated Scheduling (2026-06-09+)
 
 **Objective:** User approves post in Brain Console. Create schedule item (no publication yet).

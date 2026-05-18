@@ -1,6 +1,14 @@
 import type {
+  BrainCorePostDryRunPlan,
+  BrainCorePostDryRunPlanResponse,
+  BrainCorePostDraftFixture,
   BrainCorePostDraftFixturesResponse,
+  BrainCorePostEventFixture,
+  BrainCorePostEventFixturesResponse,
+  BrainCorePostEventType,
   BrainCorePostFlowFixturesResponse,
+  BrainCorePostFlowFixture,
+  BrainCorePostPlanStatus,
   BrainCorePostOrchestratorContractsResponse,
   BrainCorePostOrchestratorIntegrationsResponse,
   BrainCorePostOrchestratorRecoveryResponse,
@@ -698,6 +706,106 @@ const DRAFT_FIXTURES: BrainCorePostDraftFixturesResponse = {
   ],
 };
 
+const EVENT_FIXTURES: BrainCorePostEventFixturesResponse = {
+  events: [
+    {
+      id: 'github-release-event-fixture',
+      source: 'github',
+      eventType: 'release-published',
+      occurredAt: '2026-05-18T09:00:00.000Z',
+      projectId: 'brain',
+      title: 'GitHub release event fixture',
+      payloadSummary: 'Fixture release event from GitHub for preview-only planning.',
+      priority: 'high',
+      suggestedPlatforms: ['x', 'github', 'linkedin'],
+      suggestedFlowIds: ['x-post-flow', 'github-post-flow', 'linkedin-post-flow'],
+      safety: {
+        fixtureOnly: true,
+        readsExternalPlatform: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        containsSecrets: false,
+      },
+    },
+    {
+      id: 'product-milestone-event-fixture',
+      source: 'product',
+      eventType: 'product-milestone',
+      occurredAt: '2026-05-18T09:05:00.000Z',
+      projectId: 'brain',
+      title: 'Product milestone event fixture',
+      payloadSummary: 'Fixture milestone event for cross-platform announcement planning.',
+      priority: 'normal',
+      suggestedPlatforms: ['x', 'linkedin', 'facebook', 'internal'],
+      suggestedFlowIds: ['x-post-flow', 'linkedin-post-flow', 'facebook-post-flow', 'social-proof-asset-flow', 'growth-optimization-flow'],
+      safety: {
+        fixtureOnly: true,
+        readsExternalPlatform: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        containsSecrets: false,
+      },
+    },
+    {
+      id: 'video-rendered-event-fixture',
+      source: 'video-orchestrator',
+      eventType: 'video-rendered',
+      occurredAt: '2026-05-18T09:10:00.000Z',
+      projectId: 'brain',
+      title: 'Video rendered event fixture',
+      payloadSummary: 'Fixture video render event for caption and distribution planning.',
+      priority: 'normal',
+      suggestedPlatforms: ['youtube', 'facebook', 'x'],
+      suggestedFlowIds: ['youtube-post-flow', 'facebook-post-flow', 'x-post-flow', 'growth-optimization-flow'],
+      safety: {
+        fixtureOnly: true,
+        readsExternalPlatform: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        containsSecrets: false,
+      },
+    },
+    {
+      id: 'blog-published-event-fixture',
+      source: 'blog',
+      eventType: 'blog-published',
+      occurredAt: '2026-05-18T09:15:00.000Z',
+      projectId: 'brain',
+      title: 'Blog published event fixture',
+      payloadSummary: 'Fixture blog publication event for preview-only planning.',
+      priority: 'normal',
+      suggestedPlatforms: ['blog', 'linkedin', 'x'],
+      suggestedFlowIds: ['blog-post-flow', 'linkedin-post-flow', 'x-post-flow', 'growth-optimization-flow'],
+      safety: {
+        fixtureOnly: true,
+        readsExternalPlatform: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        containsSecrets: false,
+      },
+    },
+    {
+      id: 'manual-social-proof-event-fixture',
+      source: 'manual',
+      eventType: 'mrr-milestone',
+      occurredAt: '2026-05-18T09:20:00.000Z',
+      projectId: 'brain',
+      title: 'Manual social proof event fixture',
+      payloadSummary: 'Fixture internal milestone note for social proof preview planning.',
+      priority: 'low',
+      suggestedPlatforms: ['internal', 'x', 'linkedin'],
+      suggestedFlowIds: ['social-proof-asset-flow', 'x-post-flow', 'linkedin-post-flow'],
+      safety: {
+        fixtureOnly: true,
+        readsExternalPlatform: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        containsSecrets: false,
+      },
+    },
+  ],
+};
+
 export function readPostOrchestratorStatus(): BrainCorePostOrchestratorStatusResponse {
   return STATUS;
 }
@@ -720,4 +828,183 @@ export function readPostOrchestratorFlowFixtures(): BrainCorePostFlowFixturesRes
 
 export function readPostOrchestratorDraftFixtures(): BrainCorePostDraftFixturesResponse {
   return DRAFT_FIXTURES;
+}
+
+export function readPostOrchestratorEventFixtures(): BrainCorePostEventFixturesResponse {
+  return EVENT_FIXTURES;
+}
+
+export function readPostOrchestratorDryRunPlan(eventId: string): BrainCorePostDryRunPlanResponse {
+  const event = EVENT_FIXTURES.events.find((item) => item.id === eventId);
+  const now = new Date().toISOString();
+
+  if (!event) {
+    return {
+      plan: {
+        id: `dry-run-${eventId}`,
+        event: {
+          id: eventId,
+          source: 'internal',
+          eventType: 'manual-request',
+          occurredAt: now,
+          projectId: 'brain',
+          title: 'Unknown event fixture',
+          payloadSummary: 'No matching event fixture was found.',
+          priority: 'low',
+          suggestedPlatforms: [],
+          suggestedFlowIds: [],
+          safety: {
+            fixtureOnly: true,
+            readsExternalPlatform: false,
+            writesExternalPlatform: false,
+            writesToMind: false,
+            containsSecrets: false,
+          },
+        },
+        generatedAt: now,
+        status: 'blocked',
+        drafts: [],
+        unsupportedFlowIds: [],
+        blockers: ['Unknown event fixture'],
+        nextSafeStep: 'Use one of the read-only event fixtures.',
+        safety: {
+          dryRunOnly: true,
+          publishingEnabled: false,
+          schedulingEnabled: false,
+          executionEnabled: false,
+          writesExternalPlatform: false,
+          writesToMind: false,
+          usesCookies: false,
+          usesPlaywright: false,
+        },
+      },
+    };
+  }
+
+  const drafts: BrainCorePostDryRunPlan['drafts'] = [];
+  const unsupportedFlowIds: string[] = [];
+  const blockers = new Set<string>();
+
+  event.suggestedFlowIds.forEach((flowId) => {
+    const flow = FLOW_FIXTURES.flows.find((item) => item.id === flowId);
+    if (!flow) {
+      unsupportedFlowIds.push(flowId);
+      blockers.add(`Missing flow fixture: ${flowId}`);
+      return;
+    }
+
+    drafts.push(createDraftPlan(event, flow.id, flow.platform, flow.name, flow.status));
+  });
+
+  const status: BrainCorePostDryRunPlan['status'] =
+    blockers.size > 0 ? 'blocked' : 'preview';
+
+  return {
+    plan: {
+      id: `dry-run-${event.id}`,
+      event,
+      generatedAt: now,
+      status,
+      drafts,
+      unsupportedFlowIds,
+      blockers: [...blockers],
+      nextSafeStep: blockers.size > 0
+        ? 'Add the missing flow fixtures before expanding dry-run coverage.'
+        : 'Review the preview-only drafts and keep execution disabled.',
+      safety: {
+        dryRunOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        usesCookies: false,
+        usesPlaywright: false,
+      },
+    },
+  };
+}
+
+function createDraftPlan(
+  event: BrainCorePostEventFixture,
+  flowId: string,
+  platform: BrainCorePostDraftFixture['platform'],
+  flowName: string,
+  flowStatus: BrainCorePostFlowFixture['status'],
+): BrainCorePostDryRunPlan['drafts'][number] {
+  const title = `${event.title} · ${flowName}`;
+  const copyPreview = buildCopyPreview(event.eventType, platform, flowName);
+  const format = selectDraftFormat(platform, event.eventType);
+  const assetFlowRequired = flowId === 'social-proof-asset-flow' || platform === 'linkedin' || platform === 'x';
+  const optimizationFlowRequired = flowId !== 'social-proof-asset-flow';
+  const status: BrainCorePostPlanStatus =
+    flowStatus === 'disabled'
+      ? 'unsupported'
+      : flowStatus === 'blocked'
+        ? 'blocked'
+        : 'planned-preview';
+
+  return {
+    id: `dry-run-${event.id}-${flowId}`,
+    eventId: event.id,
+    flowId,
+    platform,
+    title,
+    format,
+    copyPreview,
+    assetFlowRequired,
+    optimizationFlowRequired,
+    approvalRequired: true,
+    status,
+    blockers: [],
+    nextSafeStep: 'Review this preview-only draft and keep publishing disabled.',
+    publishingEnabled: false,
+    schedulingEnabled: false,
+    executionEnabled: false,
+    safety: {
+      dryRunOnly: true,
+      generatedFromFixture: true,
+      publishingEnabled: false,
+      schedulingEnabled: false,
+      executionEnabled: false,
+      writesExternalPlatform: false,
+      writesToMind: false,
+      usesCookies: false,
+      usesPlaywright: false,
+    },
+  };
+}
+
+function selectDraftFormat(platform: BrainCorePostDraftFixture['platform'], eventType: BrainCorePostEventType): BrainCorePostDraftFixture['format'] {
+  if (platform === 'github') return 'release-note';
+  if (platform === 'youtube') return 'short-video-caption';
+  if (platform === 'blog') return 'blog-summary';
+  if (platform === 'facebook') return eventType === 'video-rendered' ? 'short-video-caption' : 'single-post';
+  if (platform === 'internal') return eventType === 'mrr-milestone' ? 'single-post' : 'single-post';
+  if (eventType === 'release-published') return 'thread';
+  if (eventType === 'product-milestone') return 'carousel';
+  return 'single-post';
+}
+
+function buildCopyPreview(eventType: BrainCorePostEventType, platform: BrainCorePostDraftFixture['platform'], flowName: string): string {
+  switch (flowName) {
+    case 'Social Proof Asset Flow':
+      return `Preview-only asset request for ${eventType}. No publishing or external write will occur.`;
+    case 'Growth Optimization Flow':
+      return `Preview-only optimization request for ${platform}. Hook, timing, and tone remain advisory only.`;
+    case 'X Post Flow':
+      return `Short thread-style preview for ${eventType} on X.`;
+    case 'GitHub Post Flow':
+      return `Release note preview for ${eventType} on GitHub.`;
+    case 'LinkedIn Post Flow':
+      return `Professional milestone preview for ${eventType} on LinkedIn.`;
+    case 'Facebook Post Flow':
+      return `Broad distribution preview for ${eventType} on Facebook.`;
+    case 'YouTube Post Flow':
+      return `Caption and description preview for ${eventType} on YouTube.`;
+    case 'Blog Post Flow':
+      return `Blog summary preview for ${eventType}.`;
+    default:
+      return `Preview-only draft for ${eventType} on ${platform}.`;
+  }
 }
