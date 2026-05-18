@@ -3007,6 +3007,54 @@ export interface BrainCoreVideoControlledExecutionApprovalRequestDesignResponse 
   design: BrainCoreVideoControlledExecutionApprovalRequestDesign;
 }
 
+export interface BrainCoreVideoControlledExecutionDisabledGate {
+  id: 'video-orchestrator-controlled-execution-disabled-gate';
+  generatedAt: string;
+  version: 'phase-5f';
+  status: 'blocked' | 'disabled';
+  executionEnabled: false;
+  secondApprovalRequired: true;
+  secondApprovalPolicyExists: false;
+  executable: false;
+  summary: {
+    gateCount: number;
+    disabledReasonCount: number;
+    requiredBeforeExecutionCount: number;
+    blockerCount: number;
+  };
+  gateChain: string[];
+  disabledReasons: string[];
+  requiredBeforeExecution: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    approvalRequestOnly: false;
+    createsApproval: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    requiresSecondApproval: true;
+    secondApprovalPolicyExists: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionDisabledGateResponse {
+  gate: BrainCoreVideoControlledExecutionDisabledGate;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -4563,6 +4611,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/controlled-execution-risk-register': BrainCoreVideoControlledExecutionRiskRegisterResponse;
   '/video-orchestrator/controlled-execution-approval-payload-schema': BrainCoreVideoControlledExecutionApprovalPayloadSchemaResponse;
   '/video-orchestrator/controlled-execution-approval-request-design': BrainCoreVideoControlledExecutionApprovalRequestDesignResponse;
+  '/video-orchestrator/controlled-execution-disabled-gate': BrainCoreVideoControlledExecutionDisabledGateResponse;
   '/video-orchestrator/controlled-execution-preflight-validator-schema': BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {

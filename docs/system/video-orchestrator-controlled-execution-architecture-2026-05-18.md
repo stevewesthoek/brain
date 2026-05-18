@@ -131,3 +131,17 @@ This document defines the future controlled execution model as a design-only bou
 - No STB or Video execution.
 - No file writes.
 - Next safe phase: Phase 5F execution remains disabled until explicit second approval.
+
+## Phase 5F execution-disabled gate
+
+- Added as a read-only disabled gate endpoint.
+- Execution remains disabled.
+- Explicit second approval is required.
+- No second approval policy exists yet.
+- No approval creation.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: second-approval policy design, still read-only and no execution.

@@ -3114,6 +3114,32 @@ export interface BrainCoreVideoControlledExecutionApprovalRequestDesignResponse 
   };
 }
 
+export interface BrainCoreVideoControlledExecutionDisabledGateResponse {
+  gate: {
+    id: string;
+    generatedAt: string;
+    version: string;
+    status: string;
+    executionEnabled: boolean;
+    secondApprovalRequired: boolean;
+    secondApprovalPolicyExists: boolean;
+    executable: boolean;
+    summary: {
+      gateCount: number;
+      disabledReasonCount: number;
+      requiredBeforeExecutionCount: number;
+      blockerCount: number;
+    };
+    gateChain: string[];
+    disabledReasons: string[];
+    requiredBeforeExecution: string[];
+    evidenceReferences: string[];
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export interface BrainCoreStbVideoDualRunEvidenceResponse {
   evidence: BrainCoreStbVideoDualRunEvidenceReport;
 }
@@ -4112,6 +4138,12 @@ export async function readBrainCoreVideoControlledExecutionApprovalRequestDesign
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionApprovalRequestDesignResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionApprovalRequestDesignResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-approval-request-design');
+}
+
+export async function readBrainCoreVideoControlledExecutionDisabledGate(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoControlledExecutionDisabledGateResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoControlledExecutionDisabledGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/controlled-execution-disabled-gate');
 }
 
 export async function readBrainCoreControlledDualRunRequestDesign(

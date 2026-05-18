@@ -3050,6 +3050,21 @@ Safety status:
 
 Next safe task: Phase 5F execution remains disabled until explicit second approval.
 
+## 2026-05-18 — Phase 5F: Execution-disabled gate
+
+Implemented `GET /video-orchestrator/controlled-execution-disabled-gate` as a read-only disabled gate surface.
+
+Safety status:
+- Execution disabled.
+- Explicit second approval required.
+- No second approval policy exists yet.
+- No approval creation.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+
+Next safe task: second-approval policy design, still read-only and no execution.
+
 
 ## Brain Console — Approval payload schema visibility
 

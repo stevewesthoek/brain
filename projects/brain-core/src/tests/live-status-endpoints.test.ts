@@ -2965,6 +2965,80 @@ test('POST /video-orchestrator/controlled-execution-approval-request-design is n
   assert.equal(body.error.code, 'not_found');
 });
 
+test('GET /video-orchestrator/controlled-execution-disabled-gate returns blocked disabled gate', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-disabled-gate' });
+  const body = JSON.parse(response.body) as {
+    gate: {
+      id: string;
+      version: string;
+      status: string;
+      executionEnabled: boolean;
+      secondApprovalRequired: boolean;
+      secondApprovalPolicyExists: boolean;
+      executable: boolean;
+      summary: { gateCount: number; disabledReasonCount: number; requiredBeforeExecutionCount: number; blockerCount: number };
+      gateChain: string[];
+      disabledReasons: string[];
+      requiredBeforeExecution: string[];
+      evidenceReferences: string[];
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.gate.id, 'video-orchestrator-controlled-execution-disabled-gate');
+  assert.equal(body.gate.version, 'phase-5f');
+  assert.ok(['blocked', 'disabled'].includes(body.gate.status));
+  assert.equal(body.gate.executionEnabled, false);
+  assert.equal(body.gate.secondApprovalRequired, true);
+  assert.equal(body.gate.secondApprovalPolicyExists, false);
+  assert.equal(body.gate.executable, false);
+  assert.ok(body.gate.summary.gateCount > 0);
+  assert.ok(body.gate.summary.disabledReasonCount > 0);
+  assert.ok(body.gate.summary.requiredBeforeExecutionCount > 0);
+  assert.ok(body.gate.summary.blockerCount > 0);
+  assert.ok(body.gate.gateChain.includes('approval payload schema'));
+  assert.ok(body.gate.gateChain.includes('preflight validator schema'));
+  assert.ok(body.gate.gateChain.includes('execution plan stub'));
+  assert.ok(body.gate.gateChain.includes('approval request design'));
+  assert.ok(body.gate.gateChain.includes('explicit second approval gate'));
+  assert.ok(body.gate.gateChain.includes('execution runner disabled'));
+  assert.ok(body.gate.disabledReasons.length > 0);
+  assert.ok(body.gate.requiredBeforeExecution.length > 0);
+  assert.ok(body.gate.evidenceReferences.length > 0);
+  assert.ok(body.gate.blockers.length > 0);
+  assert.ok(body.gate.nextSafeStep.length > 0);
+  assert.equal(body.gate.safety.readOnly, true);
+  assert.equal(body.gate.safety.approvalRequestOnly, false);
+  assert.equal(body.gate.safety.createsApproval, false);
+  assert.equal(body.gate.safety.registersAction, false);
+  assert.equal(body.gate.safety.registersAllowlist, false);
+  assert.equal(body.gate.safety.runsValidator, false);
+  assert.equal(body.gate.safety.createsExecutionPlan, false);
+  assert.equal(body.gate.safety.executionPlanExecutable, false);
+  assert.equal(body.gate.safety.executionEnabled, false);
+  assert.equal(body.gate.safety.requiresSecondApproval, true);
+  assert.equal(body.gate.safety.secondApprovalPolicyExists, false);
+  assert.equal(body.gate.safety.executesStb, false);
+  assert.equal(body.gate.safety.executesVideo, false);
+  assert.equal(body.gate.safety.writesFiles, false);
+  assert.equal(body.gate.safety.rendersVideo, false);
+  assert.equal(body.gate.safety.exportsArtifacts, false);
+  assert.equal(body.gate.safety.publishesContent, false);
+  assert.equal(body.gate.safety.decommissionsStb, false);
+  assert.equal(body.gate.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-disabled-gate is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-disabled-gate' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
 test('GET /video-orchestrator/controlled-execution-preflight-validator-schema returns blocked validator schema', async () => {
   const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-preflight-validator-schema' });
   const body = JSON.parse(response.body) as {

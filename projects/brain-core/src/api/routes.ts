@@ -82,6 +82,7 @@ import { readVideoControlledExecutionPolicyBoundary } from '../adapters/video-or
 import { readVideoControlledExecutionReadinessIndex } from '../adapters/video-orchestrator-controlled-execution-readiness-index.js';
 import { readVideoControlledExecutionApprovalPayloadSchema } from '../adapters/video-orchestrator-controlled-execution-approval-payload-schema.js';
 import { readVideoControlledExecutionApprovalRequestDesign } from '../adapters/video-orchestrator-controlled-execution-approval-request-design.js';
+import { readVideoControlledExecutionDisabledGate } from '../adapters/video-orchestrator-controlled-execution-disabled-gate.js';
 import { readVideoControlledExecutionPreflightValidatorSchema } from '../adapters/video-orchestrator-controlled-execution-preflight-validator-schema.js';
 import { readVideoControlledExecutionPlanStub } from '../adapters/video-orchestrator-controlled-execution-plan-stub.js';
 import { readVideoRoadmapCheckpoint } from '../adapters/video-orchestrator-roadmap-checkpoint.js';
@@ -869,6 +870,11 @@ export async function routeRequest(
 
         if (url.pathname === '/video-orchestrator/controlled-execution-approval-request-design') {
           sendJson(response, 200, readVideoControlledExecutionApprovalRequestDesign());
+          return;
+        }
+
+        if (url.pathname === '/video-orchestrator/controlled-execution-disabled-gate') {
+          sendJson(response, 200, readVideoControlledExecutionDisabledGate());
           return;
         }
 

@@ -272,6 +272,21 @@ Safety status:
 
 Next safe phase: Phase 5F execution remains disabled until explicit second approval.
 
+## 2026-05-18 — Phase 5F: Execution-disabled gate
+
+Added a read-only disabled gate endpoint for controlled execution.
+
+Safety status:
+- Execution disabled.
+- Explicit second approval required.
+- No second approval policy exists yet.
+- No approval creation.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+
+Next safe phase: second-approval policy design, still read-only and no execution.
+
 - Proofly and Xgrow are legacy/internal migration source names.
 - Brain Console should not present them as primary products/providers.
 - User-facing Post Orchestrator language should use flows such as Social Proof Asset Flow, Growth Optimization Flow, X Post Flow, GitHub Post Flow, LinkedIn Post Flow, and Platform Publishing Flow.

@@ -2131,3 +2131,19 @@ Hard boundary remains unchanged:
 
 Next safe phase:
 - Phase 5F execution remains disabled until explicit second approval
+
+## 2026-05-18 — Phase 5F execution-disabled gate
+
+Added the read-only disabled gate endpoint for controlled execution.
+
+Hard boundary remains unchanged:
+- execution disabled
+- explicit second approval required
+- no second approval policy exists yet
+- no approval creation
+- no action registration
+- no validator execution
+- no execution-plan execution
+
+Next safe phase:
+- second-approval policy design, still read-only and no execution
