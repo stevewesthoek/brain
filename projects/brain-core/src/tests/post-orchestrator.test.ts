@@ -134,3 +134,54 @@ test('GET /post-orchestrator/status does not expose legacy provider names as pri
   assert.equal(body.modules.some((module) => module.internalName === 'Proofly Asset Provider'), true);
   assert.equal(body.modules.some((module) => module.internalName === 'Xgrow Optimization Provider'), true);
 });
+
+test('GET /post-orchestrator/flows returns typed read-only flow fixtures', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/flows' });
+  const body = JSON.parse(response.body) as {
+    flows: Array<{
+      id: string;
+      name: string;
+      platform: string;
+      publishingEnabled: boolean;
+      schedulingEnabled: boolean;
+      executionEnabled: boolean;
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.flows.some((flow) => flow.id === 'x-post-flow'));
+  assert.ok(body.flows.some((flow) => flow.id === 'github-post-flow'));
+  assert.ok(body.flows.some((flow) => flow.id === 'linkedin-post-flow'));
+  assert.ok(body.flows.some((flow) => flow.id === 'social-proof-asset-flow'));
+  assert.ok(body.flows.some((flow) => flow.id === 'growth-optimization-flow'));
+  assert.equal(body.flows.every((flow) => flow.publishingEnabled === false), true);
+  assert.equal(body.flows.every((flow) => flow.schedulingEnabled === false), true);
+  assert.equal(body.flows.every((flow) => flow.executionEnabled === false), true);
+});
+
+test('GET /post-orchestrator/drafts returns typed fixture drafts', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/drafts' });
+  const body = JSON.parse(response.body) as {
+    drafts: Array<{
+      id: string;
+      approvalRequired: boolean;
+      publishingEnabled: boolean;
+      schedulingEnabled: boolean;
+      executionEnabled: boolean;
+      safety: { writesExternalPlatform: boolean; writesToMind: boolean };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.drafts.some((draft) => draft.id === 'x-release-thread-fixture'));
+  assert.ok(body.drafts.some((draft) => draft.id === 'github-release-note-fixture'));
+  assert.ok(body.drafts.some((draft) => draft.id === 'linkedin-milestone-fixture'));
+  assert.ok(body.drafts.some((draft) => draft.id === 'youtube-video-caption-fixture'));
+  assert.ok(body.drafts.some((draft) => draft.id === 'social-proof-card-fixture'));
+  assert.equal(body.drafts.every((draft) => draft.approvalRequired === true), true);
+  assert.equal(body.drafts.every((draft) => draft.publishingEnabled === false), true);
+  assert.equal(body.drafts.every((draft) => draft.schedulingEnabled === false), true);
+  assert.equal(body.drafts.every((draft) => draft.executionEnabled === false), true);
+  assert.equal(body.drafts.every((draft) => draft.safety.writesExternalPlatform === false), true);
+  assert.equal(body.drafts.every((draft) => draft.safety.writesToMind === false), true);
+});

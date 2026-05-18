@@ -255,6 +255,26 @@ Next safe task:
 
 - Phase P2: validate the post contracts with typed fixtures/stubs while keeping Proofly/Xgrow code untouched and publishing disabled.
 
+## Phase P2 — Post flow fixtures/stubs
+
+Implemented:
+
+- Added typed read-only post flow fixtures for X, GitHub, LinkedIn, Facebook, YouTube, Blog, Social Proof Asset Flow, and Growth Optimization Flow.
+- Added typed read-only draft fixtures for release threads, GitHub release notes, LinkedIn milestones, YouTube captions, and social proof cards.
+- Added Brain Core endpoints for `/post-orchestrator/flows` and `/post-orchestrator/drafts`.
+- Surfaced fixture and draft preview visibility in Brain Console Posts/Post Orchestrator.
+
+Safety status:
+
+- Publishing remains disabled.
+- Scheduling remains disabled.
+- Execution remains disabled.
+- No platform writes, no Mind writes, and no Playwright posting were added.
+
+Next safe task:
+
+- Phase P3: typed dry-run planner that transforms a PostEvent fixture into PostDraft fixtures, still no publishing/scheduling execution.
+
 Verified Brain Core exposes scheduler/model-router state and the first controlled report-only execution path:
 
 ```text

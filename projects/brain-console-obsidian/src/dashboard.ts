@@ -29,8 +29,15 @@ export interface DashboardSnapshot {
   postOrchestratorBlockedCount: number;
   postOrchestratorContractCount: number;
   postOrchestratorIntegrationCount: number;
+  postFlowCount: number;
+  postDraftFixtureCount: number;
+  postPlatformCount: number;
+  postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
   growthOptimizationFlowStatus?: string;
+  xPostFlowStatus?: string;
+  githubPostFlowStatus?: string;
+  linkedinPostFlowStatus?: string;
   postPublishingEnabled: boolean;
   postSchedulingEnabled: boolean;
   postNextSafeStep: string;
@@ -105,12 +112,19 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postOrchestratorBlockedCount = (state.postOrchestratorStatus?.modules ?? []).filter((module) => module.status === 'blocked').length;
   const postOrchestratorContractCount = state.postOrchestratorStatus ? 8 : 0;
   const postOrchestratorIntegrationCount = state.postOrchestratorStatus ? 3 : 0;
+  const postFlowCount = state.postOrchestratorStatus ? 8 : 0;
+  const postDraftFixtureCount = state.postOrchestratorDrafts?.drafts?.length ?? 0;
+  const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
+  const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
   const postSchedulingEnabled = Boolean(state.postOrchestratorStatus?.schedulingEnabled);
   const postNextSafeStep = state.postOrchestratorStatus?.nextSafeStep ?? 'Review the read-only Post Orchestrator scaffold.';
   const postRecoveryCount = state.recoveryItems?.filter((item) => item.id.startsWith('post-') || item.id.includes('proofly') || item.id.includes('xgrow')).length ?? 0;
   const socialProofFlowStatus = 'contract-defined';
   const growthOptimizationFlowStatus = 'contract-defined';
+  const xPostFlowStatus = 'stubbed';
+  const githubPostFlowStatus = 'planned';
+  const linkedinPostFlowStatus = 'stubbed';
 
   // STB pipeline summary
   const stbPipeline = (state.pipelines ?? []).find(p => p.id === 'stb-daily-pipeline');
@@ -245,8 +259,15 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postOrchestratorBlockedCount,
     postOrchestratorContractCount,
     postOrchestratorIntegrationCount,
+    postFlowCount,
+    postDraftFixtureCount,
+    postPlatformCount,
+    postPublishingDisabledCount,
     socialProofFlowStatus,
     growthOptimizationFlowStatus,
+    xPostFlowStatus,
+    githubPostFlowStatus,
+    linkedinPostFlowStatus,
     postPublishingEnabled,
     postSchedulingEnabled,
     postNextSafeStep,

@@ -1430,6 +1430,35 @@ After Brain Console section navigation (Phase 5 complete), the next safe impleme
 - Internal docs may retain Proofly/Xgrow references for migration traceability.
 - Decommission tracking still references Proofly/Xgrow until migration is complete.
 
+### Phase P2: Post flow fixtures/stubs (NEXT)
+
+**Objective:** Add typed read-only post flow fixtures and draft examples. No publishing, no scheduling, no platform posting, no Playwright execution.
+
+**Brain Core additions:**
+
+- GET /post-orchestrator/flows
+- GET /post-orchestrator/drafts
+- Typed fixture data for X, GitHub, LinkedIn, Facebook, YouTube, Blog, Social Proof Asset Flow, and Growth Optimization Flow
+
+**Brain Console additions:**
+
+- Platform/Post Flows card
+- Draft Fixtures / Preview Examples card
+- Safety State card
+
+**Safety boundaries:**
+
+- Read-only fixtures only
+- No Proofly/Xgrow code changes
+- No platform execution
+- No Mind writes
+
+**Exit criteria:**
+
+- Browser console shows neutral flow labels
+- Draft fixtures are visible as preview-only examples
+- Safety state remains fully disabled
+
 **Brain Core additions:**
 
 1. **New adapter:** `projects/brain-core/src/adapters/post-orchestrator.ts`

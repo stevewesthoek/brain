@@ -24,6 +24,8 @@ import {
   readBrainCoreProjects,
   readBrainCorePlatforms,
   readBrainCorePostOrchestratorContracts,
+  readBrainCorePostOrchestratorDrafts,
+  readBrainCorePostOrchestratorFlows,
   readBrainCorePostOrchestratorIntegrations,
   readBrainCorePostOrchestratorRecovery,
   readBrainCorePostOrchestratorStatus,
@@ -57,8 +59,12 @@ import {
   type BrainCoreProjectSummary,
   type BrainCorePlatformSummary,
   type BrainCorePostOrchestratorContract,
+  type BrainCorePostDraftFixture,
   type BrainCorePostOrchestratorIntegration,
   type BrainCorePostOrchestratorRecoveryItem,
+  type BrainCorePostFlowFixture,
+  type BrainCorePostFlowFixturesResponse,
+  type BrainCorePostDraftFixturesResponse,
   type BrainCorePostOrchestratorStatusResponse,
   type BrainCoreStbPipelineStatus,
   type BrainCoreVideoOrchestratorStatus,
@@ -105,6 +111,8 @@ export interface BrainConsoleViewState {
   projects?: BrainCoreProjectSummary[];
   platforms?: BrainCorePlatformSummary[];
   postOrchestratorStatus?: BrainCorePostOrchestratorStatusResponse;
+  postOrchestratorFlows?: BrainCorePostFlowFixturesResponse;
+  postOrchestratorDrafts?: BrainCorePostDraftFixturesResponse;
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
@@ -130,7 +138,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -152,6 +160,8 @@ export async function loadBrainConsoleViewState(
     readBrainCoreProjects(baseUrl),
     readBrainCorePlatforms(baseUrl),
     readBrainCorePostOrchestratorStatus(baseUrl),
+    readBrainCorePostOrchestratorFlows(baseUrl),
+    readBrainCorePostOrchestratorDrafts(baseUrl),
     readBrainCorePostOrchestratorContracts(baseUrl),
     readBrainCorePostOrchestratorIntegrations(baseUrl),
     readBrainCorePostOrchestratorRecovery(baseUrl),
@@ -180,7 +190,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -227,6 +237,8 @@ export async function loadBrainConsoleViewState(
     projects: projects.value?.projects,
     platforms: platforms.value?.platforms,
     postOrchestratorStatus: postOrchestratorStatus.value,
+    postOrchestratorFlows: postOrchestratorFlows.value,
+    postOrchestratorDrafts: postOrchestratorDrafts.value,
     postOrchestratorContracts: postOrchestratorContracts.value,
     postOrchestratorIntegrations: postOrchestratorIntegrations.value,
     postOrchestratorRecovery: postOrchestratorRecovery.value,
@@ -433,8 +445,8 @@ function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsole
 
   renderCard(grid, 'Post Orchestrator Status', renderPostOrchestratorStatusCard(state));
   renderCard(grid, 'Platform / Post Flows', renderPlatformPostFlowsCard(state));
-  renderCard(grid, 'Social Proof Asset Flow', renderSocialProofAssetFlowCard(state));
-  renderCard(grid, 'Growth Optimization Flow', renderGrowthOptimizationFlowCard(state));
+  renderCard(grid, 'Draft Fixtures / Preview Examples', renderDraftFixturesCard(state));
+  renderCard(grid, 'Safety State', renderSafetyStateCard(state));
   renderCard(grid, 'Contracts', renderPostContractsCard(state));
   renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
   renderCard(grid, 'Publishing Disabled', renderPublishingDisabledCard());
@@ -1468,13 +1480,15 @@ function renderPostOrchestratorStatusCard(state: BrainConsoleViewState): HTMLEle
 function renderPlatformPostFlowsCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
   const status = state.postOrchestratorStatus;
-  const modules = status?.modules ?? [];
-  const flowIds = ['x-post-flow', 'github-post-flow', 'linkedin-post-flow', 'facebook-post-flow', 'youtube-post-flow', 'blog-post-flow', 'product-milestone-post-flow', 'release-announcement-post-flow'];
-  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  const flows = state.postOrchestratorFlows?.flows ?? [];
+  if (flows.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No post flow fixtures available.' });
+    return el;
+  }
 
-  flowIds.forEach((id) => {
-    const module = modules.find((item) => item.id === id);
-    list.createEl('li', { text: `${module?.name ?? id}: ${module?.status ?? 'planned'}` });
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  flows.forEach((flow) => {
+    list.createEl('li', { text: `${flow.name}: ${flow.status} · ${flow.platform} · pub:${flow.publishingEnabled ? 'on' : 'off'} · sched:${flow.schedulingEnabled ? 'on' : 'off'} · exec:${flow.executionEnabled ? 'on' : 'off'}` });
   });
 
   if (status?.socialProofFlowLabel) {
@@ -1487,59 +1501,36 @@ function renderPlatformPostFlowsCard(state: BrainConsoleViewState): HTMLElement 
   return el;
 }
 
-function renderSocialProofAssetFlowCard(state: BrainConsoleViewState): HTMLElement {
+function renderDraftFixturesCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
-  const status = state.postOrchestratorStatus;
-  const integrations = state.postOrchestratorIntegrations?.integrations ?? [];
-  const proofly = integrations.find((integration) => integration.id === 'proofly-social-proof-assets');
-
-  if (!proofly) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: 'No social proof asset flow available.' });
+  const drafts = state.postOrchestratorDrafts?.drafts ?? [];
+  if (drafts.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No draft fixtures available.' });
     return el;
   }
 
-  const rows = [
-    { label: 'Role', value: proofly.role },
-    { label: 'Status', value: proofly.status },
-    { label: 'Contracts', value: proofly.contractIds.join(', ') },
-    { label: 'Execution', value: proofly.executionEnabled ? 'enabled' : 'disabled' },
-  ];
-
-  rows.forEach(({ label, value }) => {
-    const row = el.createDiv({ cls: 'brain-console__row' });
-    row.createEl('dt', { text: label });
-    row.createEl('dd', { text: value });
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  drafts.slice(0, 5).forEach((draft) => {
+    list.createEl('li', {
+      text: `${draft.title} · ${draft.platform} · ${draft.sourceEventType} · ${draft.format} · approval:${draft.approvalRequired ? 'yes' : 'no'} · pub:${draft.publishingEnabled ? 'on' : 'off'}`,
+    });
   });
-
-  if (proofly.blockers.length > 0) {
-    const list = el.createEl('ul', { cls: 'brain-console__list' });
-    proofly.blockers.forEach((blocker) => list.createEl('li', { text: blocker }));
-  }
-
-  if (proofly.legacySource) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: `Internal migration source: ${proofly.legacySource}` });
-  }
 
   return el;
 }
 
-function renderGrowthOptimizationFlowCard(state: BrainConsoleViewState): HTMLElement {
+function renderSafetyStateCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
-  const integrations = state.postOrchestratorIntegrations?.integrations ?? [];
-  const xgrow = integrations.find((integration) => integration.id === 'xgrow-growth-optimization');
-
-  if (!xgrow) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: 'No growth optimization flow available.' });
-    return el;
-  }
+  const flows = state.postOrchestratorFlows?.flows ?? [];
+  const drafts = state.postOrchestratorDrafts?.drafts ?? [];
 
   const rows = [
-    { label: 'Role', value: xgrow.role },
-    { label: 'Status', value: xgrow.status },
-    { label: 'Contracts', value: xgrow.contractIds.join(', ') },
-    { label: 'Publishing', value: xgrow.publishingEnabled ? 'enabled' : 'disabled' },
-    { label: 'Execution', value: xgrow.executionEnabled ? 'enabled' : 'disabled' },
-    { label: 'Next safe step', value: xgrow.nextSafeStep },
+    { label: 'Publishing disabled', value: flows.every((flow) => flow.publishingEnabled === false) ? 'yes' : 'no' },
+    { label: 'Scheduling disabled', value: flows.every((flow) => flow.schedulingEnabled === false) ? 'yes' : 'no' },
+    { label: 'Execution disabled', value: flows.every((flow) => flow.executionEnabled === false) ? 'yes' : 'no' },
+    { label: 'No platform writes', value: drafts.every((draft) => draft.safety.writesExternalPlatform === false) ? 'yes' : 'no' },
+    { label: 'No Mind writes', value: drafts.every((draft) => draft.safety.writesToMind === false) ? 'yes' : 'no' },
+    { label: 'No Playwright posting', value: drafts.every((draft) => draft.safety.usesPlaywright === false) ? 'yes' : 'no' },
   ];
 
   rows.forEach(({ label, value }) => {
@@ -1547,19 +1538,6 @@ function renderGrowthOptimizationFlowCard(state: BrainConsoleViewState): HTMLEle
     row.createEl('dt', { text: label });
     row.createEl('dd', { text: value });
   });
-
-  if (xgrow.safety.usesPlaywright || xgrow.safety.usesCookies) {
-    el.createEl('div', { cls: 'brain-console__list-warning', text: 'Playwright/cookie risk is metadata only and execution remains disabled.' });
-  }
-
-  if (xgrow.blockers.length > 0) {
-    const list = el.createEl('ul', { cls: 'brain-console__list' });
-    xgrow.blockers.forEach((blocker) => list.createEl('li', { text: blocker }));
-  }
-
-  if (xgrow.legacySource) {
-    el.createEl('div', { cls: 'brain-console__list-note', text: `Internal migration source: ${xgrow.legacySource}` });
-  }
 
   return el;
 }

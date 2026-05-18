@@ -275,6 +275,51 @@ export interface BrainCorePostOrchestratorRecoveryItem {
   executionEnabled: false;
 }
 
+export type BrainCorePostPlatform = 'x' | 'github' | 'linkedin' | 'facebook' | 'youtube' | 'blog' | 'internal';
+export type BrainCorePostFlowStatus = 'stubbed' | 'planned' | 'blocked' | 'ready-read-only' | 'disabled';
+export type BrainCorePostDraftStatus = 'fixture' | 'preview' | 'requires-approval' | 'blocked' | 'disabled';
+
+export interface BrainCorePostFlowFixture {
+  id: string;
+  name: string;
+  platform: BrainCorePostPlatform;
+  status: BrainCorePostFlowStatus;
+  summary: string;
+  eventTypes: string[];
+  outputFormats: string[];
+  usesSocialProofAssetFlow: boolean;
+  usesGrowthOptimizationFlow: boolean;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCorePostDraftFixture {
+  id: string;
+  flowId: string;
+  platform: BrainCorePostPlatform;
+  sourceEventType: string;
+  title: string;
+  copyPreview: string;
+  format: 'single-post' | 'thread' | 'carousel' | 'release-note' | 'short-video-caption' | 'blog-summary';
+  status: BrainCorePostDraftStatus;
+  approvalRequired: true;
+  assetFlowRequired: boolean;
+  optimizationFlowRequired: boolean;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  safety: {
+    generatedFromFixture: true;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+  };
+}
+
 export interface BrainCorePostOrchestratorStatusResponse {
   id: 'post-orchestrator';
   name: 'Post Orchestrator';
@@ -301,6 +346,14 @@ export interface BrainCorePostOrchestratorIntegrationsResponse {
 
 export interface BrainCorePostOrchestratorRecoveryResponse {
   items: BrainCorePostOrchestratorRecoveryItem[];
+}
+
+export interface BrainCorePostFlowFixturesResponse {
+  flows: BrainCorePostFlowFixture[];
+}
+
+export interface BrainCorePostDraftFixturesResponse {
+  drafts: BrainCorePostDraftFixture[];
 }
 
 export interface BrainCoreStbPipelineStatus {
@@ -868,6 +921,18 @@ export async function readBrainCorePostOrchestratorStatus(
   baseUrl: string,
 ): Promise<HttpResult<BrainCorePostOrchestratorStatusResponse>> {
   return fetchJson<BrainCorePostOrchestratorStatusResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/status');
+}
+
+export async function readBrainCorePostOrchestratorFlows(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostFlowFixturesResponse>> {
+  return fetchJson<BrainCorePostFlowFixturesResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/flows');
+}
+
+export async function readBrainCorePostOrchestratorDrafts(
+  baseUrl: string,
+): Promise<HttpResult<BrainCorePostDraftFixturesResponse>> {
+  return fetchJson<BrainCorePostDraftFixturesResponse>(normalizeBaseUrl(baseUrl), '/post-orchestrator/drafts');
 }
 
 export async function readBrainCorePostOrchestratorContracts(
