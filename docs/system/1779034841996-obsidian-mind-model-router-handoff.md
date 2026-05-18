@@ -3069,3 +3069,37 @@ Next safe task: second-approval policy design, still read-only and no execution.
 ## Brain Console — Approval payload schema visibility
 
 Added a compact Pipelines card for the controlled execution approval payload schema. It is read-only and does not request approvals or enable execution.
+
+
+## Continuation update — Phase 5J first-approval authority policy design (2026-05-18)
+
+Implemented:
+
+- Added `GET /video-orchestrator/controlled-execution-first-approval-authority-policy` in Brain Core.
+- Added a read-only first-approval authority policy adapter with eligible-role reasoning, single-story scope, second-approval requirement, and explicit no-execution/no-write safety flags.
+- Added Brain Core API types and live endpoint tests, including POST rejection coverage.
+- Updated controlled execution architecture documentation with Phase 5J.
+
+Validation:
+
+- Brain Core CI: passed, 270 tests passing.
+
+Safety status:
+
+- No POST route added for Video Orchestrator controlled execution.
+- No authentication or session implementation added.
+- No role enforcement added.
+- No approval, first approval, or second approval creation added.
+- No approval execution added.
+- No action registry or allowlist entry added.
+- No validator or execution-plan execution added.
+- No STB or Video execution added.
+- No file writing, rendering, export, publishing, Mind writes, or STB decommissioning added.
+
+Blocked in this pass:
+
+- Brain Console card wiring was not changed because the current BuildFlow write policy blocked writes to `projects/brain-console-obsidian/src/client.ts`.
+
+Next safe task:
+
+- First-approval audit/expiry model design, still read-only and no execution.

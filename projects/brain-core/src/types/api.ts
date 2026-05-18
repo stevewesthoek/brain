@@ -4817,3 +4817,78 @@ export interface BrainCoreRoutes {
   };
   '/actions/:id/request-approval': BrainCoreActionRequest;
 }
+
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalEligibleRole {
+  role: 'viewer' | 'developer' | 'maintainer' | 'admin';
+  canIssueFirstApproval: false;
+  reason: string;
+}
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalAuthorityPolicy {
+  id: 'video-orchestrator-controlled-execution-first-approval-authority-policy';
+  generatedAt: string;
+  version: 'phase-5j';
+  status: 'blocked' | 'disabled';
+  policyExists: false;
+  policyAccepted: false;
+  firstApprovalAuthorityEnabled: false;
+  firstApprovalCreationEnabled: false;
+  secondApprovalRequired: true;
+  secondApprovalAllowed: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    authorityRequirementCount: number;
+    eligibleRoleCount: number;
+    rolesAllowedToIssueFirstApproval: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  authorityRequirements: string[];
+  eligibleRoles: BrainCoreVideoControlledExecutionFirstApprovalEligibleRole[];
+  approvalScope: {
+    scopeType: 'single-story-only';
+    permitsExecution: false;
+    permitsPublishing: false;
+    permitsStbMutation: false;
+    permitsMindWrites: false;
+    requiresSecondApprovalBeforeExecution: true;
+  };
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    policyDesignOnly: true;
+    policyExists: false;
+    policyAccepted: false;
+    authorityVerificationEnabled: false;
+    authenticatesOperator: false;
+    createsSession: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionFirstApprovalAuthorityPolicyResponse {
+  policy: BrainCoreVideoControlledExecutionFirstApprovalAuthorityPolicy;
+}
+

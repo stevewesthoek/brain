@@ -85,6 +85,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5G second-approval policy design.
 - 5H operator identity verification protocol design.
 - 5I role policy definition design.
+- 5J first-approval authority policy design.
 
 ## Non-negotiable safety
 
@@ -197,3 +198,24 @@ This document defines the future controlled execution model as a design-only bou
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Next safe phase: role policy implementation (still read-only), or first-approval authority policy definition.
+
+
+## Phase 5J first-approval authority policy design
+
+- Added as a read-only authority policy design endpoint.
+- Defines future first-approval authority requirements and eligible-role reasoning.
+- First approval authority is not enabled.
+- First approval creation is not enabled.
+- First approval never permits execution, publishing, STB mutation, Mind writes, or decommissioning.
+- Explicit second approval remains required before any future execution can be considered.
+- No policy is created or accepted.
+- No operator is authenticated or role-verified.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: first-approval audit/expiry model design, still read-only and no execution.

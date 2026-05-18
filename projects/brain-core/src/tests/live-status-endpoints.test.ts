@@ -3447,3 +3447,96 @@ test('POST /video-orchestrator/controlled-execution-role-policy is not available
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/controlled-execution-first-approval-authority-policy returns blocked policy design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-first-approval-authority-policy' });
+  const body = JSON.parse(response.body) as {
+    policy: {
+      id: string;
+      version: string;
+      status: string;
+      policyExists: boolean;
+      policyAccepted: boolean;
+      firstApprovalAuthorityEnabled: boolean;
+      firstApprovalCreationEnabled: boolean;
+      secondApprovalRequired: boolean;
+      secondApprovalAllowed: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      eligibleRoles: Array<{
+        role: string;
+        canIssueFirstApproval: boolean;
+      }>;
+      approvalScope: {
+        scopeType: string;
+        permitsExecution: boolean;
+        permitsPublishing: boolean;
+        permitsStbMutation: boolean;
+        permitsMindWrites: boolean;
+        requiresSecondApprovalBeforeExecution: boolean;
+      };
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.policy.id, 'video-orchestrator-controlled-execution-first-approval-authority-policy');
+  assert.equal(body.policy.version, 'phase-5j');
+  assert.ok(['blocked', 'disabled'].includes(body.policy.status));
+  assert.equal(body.policy.policyExists, false);
+  assert.equal(body.policy.policyAccepted, false);
+  assert.equal(body.policy.firstApprovalAuthorityEnabled, false);
+  assert.equal(body.policy.firstApprovalCreationEnabled, false);
+  assert.equal(body.policy.secondApprovalRequired, true);
+  assert.equal(body.policy.secondApprovalAllowed, false);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.policy.executable, false);
+  assert.equal(body.policy.approvalScope.scopeType, 'single-story-only');
+  assert.equal(body.policy.approvalScope.permitsExecution, false);
+  assert.equal(body.policy.approvalScope.permitsPublishing, false);
+  assert.equal(body.policy.approvalScope.permitsStbMutation, false);
+  assert.equal(body.policy.approvalScope.permitsMindWrites, false);
+  assert.equal(body.policy.approvalScope.requiresSecondApprovalBeforeExecution, true);
+  assert.ok(body.policy.evidenceReferences.includes('/video-orchestrator/controlled-execution-role-policy'));
+  assert.ok(body.policy.evidenceReferences.includes('/video-orchestrator/controlled-execution-second-approval-policy'));
+
+  body.policy.eligibleRoles.forEach(role => {
+    assert.equal(role.canIssueFirstApproval, false, `${role.role} must not issue first approvals yet`);
+  });
+
+  assert.equal(body.policy.safety.readOnly, true);
+  assert.equal(body.policy.safety.policyDesignOnly, true);
+  assert.equal(body.policy.safety.policyExists, false);
+  assert.equal(body.policy.safety.policyAccepted, false);
+  assert.equal(body.policy.safety.authorityVerificationEnabled, false);
+  assert.equal(body.policy.safety.authenticatesOperator, false);
+  assert.equal(body.policy.safety.createsSession, false);
+  assert.equal(body.policy.safety.createsApproval, false);
+  assert.equal(body.policy.safety.createsFirstApproval, false);
+  assert.equal(body.policy.safety.createsSecondApproval, false);
+  assert.equal(body.policy.safety.approvalExecutionEnabled, false);
+  assert.equal(body.policy.safety.registersAction, false);
+  assert.equal(body.policy.safety.registersAllowlist, false);
+  assert.equal(body.policy.safety.runsValidator, false);
+  assert.equal(body.policy.safety.createsExecutionPlan, false);
+  assert.equal(body.policy.safety.executionPlanExecutable, false);
+  assert.equal(body.policy.safety.executionEnabled, false);
+  assert.equal(body.policy.safety.executesStb, false);
+  assert.equal(body.policy.safety.executesVideo, false);
+  assert.equal(body.policy.safety.writesFiles, false);
+  assert.equal(body.policy.safety.rendersVideo, false);
+  assert.equal(body.policy.safety.exportsArtifacts, false);
+  assert.equal(body.policy.safety.publishesContent, false);
+  assert.equal(body.policy.safety.decommissionsStb, false);
+  assert.equal(body.policy.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-first-approval-authority-policy is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-first-approval-authority-policy' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
