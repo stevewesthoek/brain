@@ -430,6 +430,71 @@ export interface BrainCorePostDryRunPlanResponse {
   plan: BrainCorePostDryRunPlan;
 }
 
+export interface BrainCorePostDraftReviewItem {
+  id: string;
+  draftPlanId: string;
+  eventId: string;
+  flowId: string;
+  platform: BrainCorePostPlatform;
+  title: string;
+  format: BrainCorePostDraftFixture['format'];
+  copyPreview: string;
+  status: 'review-ready' | 'approval-requested' | 'blocked' | 'disabled';
+  risk: 'low' | 'medium' | 'high';
+  approvalRequired: true;
+  approvalId?: string;
+  canRequestApproval: boolean;
+  canApproveForPublishing: false;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    reviewOnly: true;
+    dryRunOnly: true;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+    callsExternalAI: false;
+  };
+}
+
+export interface BrainCorePostDraftReviewQueue {
+  id: string;
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  eventId: string;
+  itemCount: number;
+  approvalRequestedCount: number;
+  blockedCount: number;
+  items: BrainCorePostDraftReviewItem[];
+  safety: {
+    reviewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostDraftReviewQueueResponse {
+  queue: BrainCorePostDraftReviewQueue;
+}
+
+export interface BrainCorePostDraftReviewApprovalRequest {
+  id: string;
+  reviewItemId: string;
+  approvalId?: string;
+  status: 'requested' | 'blocked' | 'invalid';
+  executionDidRun: false;
+  summary: string;
+  nextSafeStep: string;
+  safety: BrainCorePostDraftReviewItem['safety'];
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
@@ -747,6 +812,7 @@ export interface BrainConsoleSnapshot {
   postOrchestratorDrafts?: BrainCorePostDraftFixturesResponse;
   postOrchestratorEvents?: BrainCorePostEventFixturesResponse;
   postOrchestratorDryRun?: BrainCorePostDryRunPlanResponse;
+  postOrchestratorReviewQueue?: BrainCorePostDraftReviewQueueResponse;
   postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
   postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
   postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
@@ -1047,6 +1113,24 @@ export async function readBrainCorePostOrchestratorDryRun(
   return fetchJson<BrainCorePostDryRunPlanResponse>(normalizeBaseUrl(baseUrl), `/post-orchestrator/dry-run/${encodeURIComponent(eventId)}`);
 }
 
+export async function readBrainCorePostDraftReviewQueue(
+  baseUrl: string,
+  eventId: string,
+): Promise<HttpResult<BrainCorePostDraftReviewQueueResponse>> {
+  return fetchJson<BrainCorePostDraftReviewQueueResponse>(normalizeBaseUrl(baseUrl), `/post-orchestrator/review-queue/${encodeURIComponent(eventId)}`);
+}
+
+export async function requestBrainCorePostDraftReviewApproval(
+  baseUrl: string,
+  reviewItemId: string,
+): Promise<HttpResult<BrainCorePostDraftReviewApprovalRequest>> {
+  return fetchJson<BrainCorePostDraftReviewApprovalRequest>(
+    normalizeBaseUrl(baseUrl),
+    `/post-orchestrator/review-queue/${encodeURIComponent(reviewItemId)}/request-approval`,
+    { method: 'POST' },
+  );
+}
+
 export async function readBrainCoreStbStatus(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreStbPipelineStatus>> {
@@ -1195,7 +1279,11 @@ export function setRequestUrl(fn: any): void {
   requestUrlFn = fn;
 }
 
-async function fetchJson<T>(baseUrl: string, pathname: string): Promise<HttpResult<T>> {
+async function fetchJson<T>(
+  baseUrl: string,
+  pathname: string,
+  options: { method?: 'GET' | 'POST'; body?: string } = {},
+): Promise<HttpResult<T>> {
   const url = `${baseUrl}${pathname}`;
   const startTime = performance.now();
 
@@ -1210,8 +1298,9 @@ async function fetchJson<T>(baseUrl: string, pathname: string): Promise<HttpResu
     const response = await Promise.race([
       requestUrlFn({
         url,
-        method: 'GET',
+        method: options.method ?? 'GET',
         headers: { accept: 'application/json' },
+        ...(options.body ? { body: options.body } : {}),
         throw: false,
       }),
       new Promise<never>((_, reject) =>

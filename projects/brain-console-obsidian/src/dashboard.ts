@@ -39,6 +39,14 @@ export interface DashboardSnapshot {
   postDryRunPublishingEnabled: boolean;
   postDryRunSchedulingEnabled: boolean;
   postDryRunExecutionEnabled: boolean;
+  postReviewQueueItemCount: number;
+  postReviewQueueApprovalRequestedCount: number;
+  postReviewQueueBlockedCount: number;
+  postReviewQueueStatus?: string;
+  postReviewQueueNextSafeStep: string;
+  postReviewQueuePublishingEnabled: boolean;
+  postReviewQueueSchedulingEnabled: boolean;
+  postReviewQueueExecutionEnabled: boolean;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -130,6 +138,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postDryRunPublishingEnabled = Boolean(state.postOrchestratorDryRun?.plan?.safety.publishingEnabled);
   const postDryRunSchedulingEnabled = Boolean(state.postOrchestratorDryRun?.plan?.safety.schedulingEnabled);
   const postDryRunExecutionEnabled = Boolean(state.postOrchestratorDryRun?.plan?.safety.executionEnabled);
+  const postReviewQueueItemCount = state.postOrchestratorReviewQueue?.queue?.itemCount ?? 0;
+  const postReviewQueueApprovalRequestedCount = state.postOrchestratorReviewQueue?.queue?.approvalRequestedCount ?? 0;
+  const postReviewQueueBlockedCount = state.postOrchestratorReviewQueue?.queue?.blockedCount ?? 0;
+  const postReviewQueueStatus = state.postOrchestratorReviewQueue?.queue?.status;
+  const postReviewQueueNextSafeStep = state.postOrchestratorReviewQueue?.queue?.items.find((item) => item.canRequestApproval)?.nextSafeStep ?? 'Select a review item to request approval.';
+  const postReviewQueuePublishingEnabled = Boolean(state.postOrchestratorReviewQueue?.queue?.safety.publishingEnabled);
+  const postReviewQueueSchedulingEnabled = Boolean(state.postOrchestratorReviewQueue?.queue?.safety.schedulingEnabled);
+  const postReviewQueueExecutionEnabled = Boolean(state.postOrchestratorReviewQueue?.queue?.safety.executionEnabled);
   const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
@@ -285,6 +301,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postDryRunPublishingEnabled,
     postDryRunSchedulingEnabled,
     postDryRunExecutionEnabled,
+    postReviewQueueItemCount,
+    postReviewQueueApprovalRequestedCount,
+    postReviewQueueBlockedCount,
+    postReviewQueueStatus,
+    postReviewQueueNextSafeStep,
+    postReviewQueuePublishingEnabled,
+    postReviewQueueSchedulingEnabled,
+    postReviewQueueExecutionEnabled,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

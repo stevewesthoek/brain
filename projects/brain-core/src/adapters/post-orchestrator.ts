@@ -1,8 +1,13 @@
+import { requestAction } from './actions.js';
 import type {
   BrainCorePostDryRunPlan,
   BrainCorePostDryRunPlanResponse,
   BrainCorePostDraftFixture,
   BrainCorePostDraftFixturesResponse,
+  BrainCorePostDraftReviewApprovalRequest,
+  BrainCorePostDraftReviewItem,
+  BrainCorePostDraftReviewQueue,
+  BrainCorePostDraftReviewQueueResponse,
   BrainCorePostEventFixture,
   BrainCorePostEventFixturesResponse,
   BrainCorePostEventType,
@@ -925,6 +930,114 @@ export function readPostOrchestratorDryRunPlan(eventId: string): BrainCorePostDr
   };
 }
 
+export function readPostDraftReviewQueue(eventId: string): BrainCorePostDraftReviewQueueResponse {
+  const dryRun = readPostOrchestratorDryRunPlan(eventId).plan;
+  if (dryRun.status === 'blocked' || dryRun.event.id !== eventId) {
+    return {
+      queue: {
+        id: `review-queue-${eventId}`,
+        status: 'blocked',
+        generatedAt: dryRun.generatedAt,
+        eventId,
+        itemCount: 0,
+        approvalRequestedCount: 0,
+        blockedCount: 0,
+        items: [],
+        safety: {
+          reviewOnly: true,
+          publishingEnabled: false,
+          schedulingEnabled: false,
+          executionEnabled: false,
+          writesExternalPlatform: false,
+          writesToMind: false,
+        },
+      },
+    };
+  }
+
+  const items = dryRun.drafts.map((draftPlan) => buildReviewItem(draftPlan));
+  return {
+    queue: {
+      id: `review-queue-${eventId}`,
+      status: items.some((item) => item.status === 'blocked') ? 'blocked' : 'preview',
+      generatedAt: dryRun.generatedAt,
+      eventId,
+      itemCount: items.length,
+      approvalRequestedCount: items.filter((item) => item.status === 'approval-requested').length,
+      blockedCount: items.filter((item) => item.status === 'blocked').length,
+      items,
+      safety: {
+        reviewOnly: true,
+        publishingEnabled: false,
+        schedulingEnabled: false,
+        executionEnabled: false,
+        writesExternalPlatform: false,
+        writesToMind: false,
+      },
+    },
+  };
+}
+
+export function requestPostDraftReviewApproval(reviewItemId: string): BrainCorePostDraftReviewApprovalRequest {
+  const reviewItem = findReviewItemById(reviewItemId);
+  if (!reviewItem) {
+    return {
+      id: `request-${reviewItemId}`,
+      reviewItemId,
+      status: 'invalid',
+      executionDidRun: false,
+      summary: 'Review item not found.',
+      nextSafeStep: 'Use a generated review queue item.',
+      safety: {
+        reviewOnly: true,
+        dryRunOnly: true,
+        writesExternalPlatform: false,
+        writesToMind: false,
+        usesCookies: false,
+        usesPlaywright: false,
+        callsExternalAI: false,
+      },
+    };
+  }
+
+  if (!reviewItem.canRequestApproval || reviewItem.status === 'blocked') {
+    return {
+      id: `request-${reviewItemId}`,
+      reviewItemId,
+      status: 'blocked',
+      executionDidRun: false,
+      summary: reviewItem.blockers[0] ?? 'Review item cannot request approval.',
+      nextSafeStep: reviewItem.nextSafeStep,
+      safety: reviewItem.safety,
+    };
+  }
+
+  const requestKind = `post-draft-review-${reviewItemId}`;
+  const request = requestAction(requestKind);
+  if (!request.accepted || !request.approval) {
+    return {
+      id: `request-${reviewItemId}`,
+      reviewItemId,
+      status: 'blocked',
+      executionDidRun: false,
+      summary: request.message || 'Approval request was blocked.',
+      nextSafeStep: 'Keep review approval request read-only.',
+      safety: reviewItem.safety,
+    };
+  }
+
+  return {
+    id: `request-${reviewItemId}`,
+    reviewItemId,
+    approvalId: request.approval.id,
+    status: 'requested',
+    executionDidRun: false,
+    summary: request.message,
+    nextSafeStep: 'Approval requested. Review queue remains read-only.',
+    safety: reviewItem.safety,
+  };
+}
+
 function createDraftPlan(
   event: BrainCorePostEventFixture,
   flowId: string,
@@ -1007,4 +1120,55 @@ function buildCopyPreview(eventType: BrainCorePostEventType, platform: BrainCore
     default:
       return `Preview-only draft for ${eventType} on ${platform}.`;
   }
+}
+
+function buildReviewItem(draftPlan: BrainCorePostDryRunPlan['drafts'][number]): BrainCorePostDraftReviewItem {
+  const risk = determineReviewRisk(draftPlan.flowId);
+  const blocked = risk === 'high' || draftPlan.status === 'blocked' || draftPlan.status === 'unsupported';
+  return {
+    id: `review-${draftPlan.id}`,
+    draftPlanId: draftPlan.id,
+    eventId: draftPlan.eventId,
+    flowId: draftPlan.flowId,
+    platform: draftPlan.platform,
+    title: draftPlan.title,
+    format: draftPlan.format,
+    copyPreview: draftPlan.copyPreview,
+    status: blocked ? 'blocked' : 'review-ready',
+    risk,
+    approvalRequired: true,
+    canRequestApproval: !blocked,
+    canApproveForPublishing: false,
+    publishingEnabled: false,
+    schedulingEnabled: false,
+    executionEnabled: false,
+    blockers: blocked ? ['Review item is not requestable'] : [],
+    nextSafeStep: blocked
+      ? 'Resolve review blockers before requesting approval.'
+      : 'Request review approval for this preview-only draft.',
+    safety: {
+      reviewOnly: true,
+      dryRunOnly: true,
+      writesExternalPlatform: false,
+      writesToMind: false,
+      usesCookies: false,
+      usesPlaywright: false,
+      callsExternalAI: false,
+    },
+  };
+}
+
+function determineReviewRisk(flowId: string): BrainCorePostDraftReviewItem['risk'] {
+  if (flowId === 'social-proof-asset-flow' || flowId === 'growth-optimization-flow') return 'low';
+  if (flowId === 'x-post-flow' || flowId === 'linkedin-post-flow' || flowId === 'github-post-flow' || flowId === 'facebook-post-flow' || flowId === 'youtube-post-flow') return 'medium';
+  return 'high';
+}
+
+function findReviewItemById(reviewItemId: string): BrainCorePostDraftReviewItem | undefined {
+  for (const event of EVENT_FIXTURES.events) {
+    const queue = readPostDraftReviewQueue(event.id).queue;
+    const item = queue.items.find((candidate) => candidate.id === reviewItemId);
+    if (item) return item;
+  }
+  return undefined;
 }

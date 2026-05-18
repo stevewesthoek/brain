@@ -443,6 +443,74 @@ export interface BrainCorePostDryRunPlanResponse {
   plan: BrainCorePostDryRunPlan;
 }
 
+export type BrainCorePostDraftReviewStatus = 'review-ready' | 'approval-requested' | 'blocked' | 'disabled';
+export type BrainCorePostDraftReviewRisk = 'low' | 'medium' | 'high';
+
+export interface BrainCorePostDraftReviewItem {
+  id: string;
+  draftPlanId: string;
+  eventId: string;
+  flowId: string;
+  platform: BrainCorePostPlatform;
+  title: string;
+  format: BrainCorePostDraftFixture['format'];
+  copyPreview: string;
+  status: BrainCorePostDraftReviewStatus;
+  risk: BrainCorePostDraftReviewRisk;
+  approvalRequired: true;
+  approvalId?: string;
+  canRequestApproval: boolean;
+  canApproveForPublishing: false;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    reviewOnly: true;
+    dryRunOnly: true;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    usesCookies: false;
+    usesPlaywright: false;
+    callsExternalAI: false;
+  };
+}
+
+export interface BrainCorePostDraftReviewQueue {
+  id: string;
+  status: 'preview' | 'blocked';
+  generatedAt: string;
+  eventId: string;
+  itemCount: number;
+  approvalRequestedCount: number;
+  blockedCount: number;
+  items: BrainCorePostDraftReviewItem[];
+  safety: {
+    reviewOnly: true;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCorePostDraftReviewQueueResponse {
+  queue: BrainCorePostDraftReviewQueue;
+}
+
+export interface BrainCorePostDraftReviewApprovalRequest {
+  id: string;
+  reviewItemId: string;
+  approvalId?: string;
+  status: 'requested' | 'blocked' | 'invalid';
+  executionDidRun: false;
+  summary: string;
+  nextSafeStep: string;
+  safety: BrainCorePostDraftReviewItem['safety'];
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;

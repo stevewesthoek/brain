@@ -1667,3 +1667,20 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 **Related documents:**
 - `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` (full architecture)
 - `docs/system/obsidian-mind-model-router-roadmap.md` (post orchestrator roadmap)
+
+### Phase P4: Post Draft Review Queue (2026-06-02+)
+
+**Objective:** Allow approval-request-only review of dry-run draft plans without publishing or scheduling.
+
+**Tasks:**
+- Review queue endpoint for dry-run draft plans
+- Approval request endpoint for individual review items
+- Reuse existing Brain Core approval request infrastructure
+- Brain Console review queue card and request button
+- Safety verification for review-only semantics
+
+**Exit criteria:**
+- Review queue renders from dry-run plans
+- Approval request records can be created safely
+- No execution, publishing, or scheduling is introduced
+- Review-only state remains explicit in UI and API

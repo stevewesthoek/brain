@@ -9,6 +9,7 @@ import { getProject, listProjects } from '../adapters/projects.js';
 import { getPlatform, listPlatforms } from '../adapters/platforms.js';
 import {
   readPostOrchestratorDraftFixtures,
+  readPostDraftReviewQueue,
   readPostOrchestratorContracts,
   readPostOrchestratorDryRunPlan,
   readPostOrchestratorEventFixtures,
@@ -16,6 +17,7 @@ import {
   readPostOrchestratorIntegrations,
   readPostOrchestratorRecovery,
   readPostOrchestratorStatus,
+  requestPostDraftReviewApproval,
 } from '../adapters/post-orchestrator.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import {
@@ -127,6 +129,14 @@ export async function routeRequest(
       return;
     case '/post-orchestrator/recovery':
       sendJson(response, 200, readPostOrchestratorRecovery());
+      return;
+    case '/post-orchestrator/review-queue':
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_event_id',
+          message: 'Review queue requires /post-orchestrator/review-queue/:eventId.',
+        },
+      } satisfies BrainCoreErrorResponse);
       return;
     case '/stb/status':
       sendJson(response, 200, getStbPipelineStatus());
@@ -411,6 +421,11 @@ export async function routeRequest(
           sendJson(response, 200, readPostOrchestratorDryRunPlan(decodeURIComponent(dryRunMatch[1] ?? '')));
           return;
         }
+        const reviewQueueMatch = /^\/post-orchestrator\/review-queue\/([^/]+)$/.exec(url.pathname);
+        if (reviewQueueMatch) {
+          sendJson(response, 200, readPostDraftReviewQueue(decodeURIComponent(reviewQueueMatch[1] ?? '')));
+          return;
+        }
       }
 
       sendJson(response, 404, {
@@ -427,6 +442,13 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   if (url.pathname === '/actions/request') {
     const kind = url.searchParams.get('kind') || 'manual-request';
     sendJson(response, 202, requestAction(kind));
+    return;
+  }
+
+  const reviewApprovalMatch = /^\/post-orchestrator\/review-queue\/([^/]+)\/request-approval$/.exec(url.pathname);
+  if (reviewApprovalMatch) {
+    const result = requestPostDraftReviewApproval(decodeURIComponent(reviewApprovalMatch[1] ?? ''));
+    sendJson(response, result.status === 'requested' ? 202 : 400, result);
     return;
   }
 

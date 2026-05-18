@@ -2075,3 +2075,27 @@ Safety status:
 Next safe task:
 
 - Phase P4: approval-request-only Post Draft Review Queue, still without publishing or scheduling execution.
+
+## Phase P4 — Post Draft Review Queue
+
+Implemented:
+
+- Review queue endpoint added for event-backed dry-run draft plans.
+- Approval request endpoint added for individual review items.
+- Approval requests reuse the existing Brain Core approval record path.
+- Brain Console now shows the review queue and request-approval button for requestable items.
+
+Safety status:
+
+- Review only.
+- Dry-run only.
+- Publishing disabled.
+- Scheduling disabled.
+- Execution disabled.
+- No platform writes.
+- No Mind writes.
+- No external AI calls.
+
+Next safe task:
+
+- Phase P5: approval-gated schedule preview objects, still with no real scheduling or publishing.

@@ -267,3 +267,97 @@ test('GET /post-orchestrator/dry-run does not imply legacy provider names or Pla
   assert.equal(body.plan.safety.usesPlaywright, false);
   assert.equal(body.plan.safety.usesCookies, false);
 });
+
+test('GET /post-orchestrator/review-queue/github-release-event-fixture returns queue', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/review-queue/github-release-event-fixture' });
+  const body = JSON.parse(response.body) as {
+    queue: {
+      eventId: string;
+      status: string;
+      itemCount: number;
+      approvalRequestedCount: number;
+      blockedCount: number;
+      items: Array<{
+        id: string;
+        draftPlanId: string;
+        reviewOnly?: boolean;
+        dryRunOnly?: boolean;
+        approvalRequired: boolean;
+        canRequestApproval: boolean;
+        canApproveForPublishing: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+        risk: string;
+        status: string;
+      }>;
+      safety: { reviewOnly: boolean; publishingEnabled: boolean; schedulingEnabled: boolean; executionEnabled: boolean; writesExternalPlatform: boolean; writesToMind: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.queue.eventId, 'github-release-event-fixture');
+  assert.ok(body.queue.itemCount > 0);
+  assert.equal(body.queue.items.every((item) => item.approvalRequired === true), true);
+  assert.equal(body.queue.items.every((item) => item.publishingEnabled === false), true);
+  assert.equal(body.queue.items.every((item) => item.schedulingEnabled === false), true);
+  assert.equal(body.queue.items.every((item) => item.executionEnabled === false), true);
+  assert.equal(body.queue.items.every((item) => item.canApproveForPublishing === false), true);
+  assert.equal(body.queue.safety.reviewOnly, true);
+  assert.equal(body.queue.safety.publishingEnabled, false);
+  assert.equal(body.queue.safety.schedulingEnabled, false);
+  assert.equal(body.queue.safety.executionEnabled, false);
+});
+
+test('GET /post-orchestrator/review-queue items correspond to dry-run plans', async () => {
+  const dryRun = await exercise({ method: 'GET', url: '/post-orchestrator/dry-run/github-release-event-fixture' });
+  const dryRunBody = JSON.parse(dryRun.body) as { plan: { drafts: Array<{ id: string }> } };
+  const queue = await exercise({ method: 'GET', url: '/post-orchestrator/review-queue/github-release-event-fixture' });
+  const queueBody = JSON.parse(queue.body) as { queue: { items: Array<{ draftPlanId: string }> } };
+
+  assert.equal(queue.statusCode, 200);
+  assert.deepEqual(
+    queueBody.queue.items.map((item) => item.draftPlanId),
+    dryRunBody.plan.drafts.map((draft) => draft.id),
+  );
+});
+
+test('GET /post-orchestrator/review-queue/unknown-event returns blocked queue', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/review-queue/unknown-event' });
+  const body = JSON.parse(response.body) as { queue: { status: string; items: unknown[] } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.queue.status, 'blocked');
+  assert.equal(body.queue.items.length, 0);
+});
+
+test('POST /post-orchestrator/review-queue/:reviewItemId/request-approval returns executionDidRun false', async () => {
+  const response = await exercise({ method: 'POST', url: '/post-orchestrator/review-queue/review-dry-run-github-release-event-fixture-x-post-flow/request-approval' });
+  const body = JSON.parse(response.body) as { status: string; executionDidRun: boolean; approvalId?: string };
+
+  assert.ok([200, 202, 400].includes(response.statusCode));
+  assert.equal(body.executionDidRun, false);
+  assert.ok(['requested', 'blocked', 'invalid'].includes(body.status));
+});
+
+test('POST /post-orchestrator/review-queue/:reviewItemId/request-approval creates approvalId or blocks safely', async () => {
+  const response = await exercise({ method: 'POST', url: '/post-orchestrator/review-queue/review-dry-run-github-release-event-fixture-x-post-flow/request-approval' });
+  const body = JSON.parse(response.body) as { status: string; approvalId?: string; summary: string };
+
+  assert.ok(response.statusCode === 202 || response.statusCode === 400);
+  assert.ok(body.status === 'requested' || body.status === 'blocked');
+  if (body.status === 'requested') {
+    assert.ok(body.approvalId);
+  }
+});
+
+test('POST /post-orchestrator/review-queue request approval does not publish or schedule', async () => {
+  const response = await exercise({ method: 'POST', url: '/post-orchestrator/review-queue/review-dry-run-github-release-event-fixture-x-post-flow/request-approval' });
+  const body = JSON.parse(response.body) as { safety?: { writesExternalPlatform: boolean; writesToMind: boolean; usesPlaywright: boolean; usesCookies: boolean } };
+
+  assert.equal(response.statusCode === 202 || response.statusCode === 400, true);
+  assert.equal(body.safety?.writesExternalPlatform, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.equal(body.safety?.usesPlaywright, false);
+  assert.equal(body.safety?.usesCookies, false);
+});
