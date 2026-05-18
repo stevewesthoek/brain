@@ -169,6 +169,26 @@ Critical usability issues identified:
 - Tabs scroll if needed
 - ProBot parity card remains visible and responsive
 
+## Fourth Implementation Slice: Obsidian Native UX Stabilization (2026-05-18)
+
+Completed comprehensive stabilization after user feedback identified critical usability issues:
+
+- **Slice A:** Visible build marker for installation verification
+- **Slice B:** Native Obsidian CSS theme replacing cockpit dark UI
+- **Slice C:** One-click tab switching using cached state (instant, no network reload)
+- **Slice D:** Refresh/offline recovery with heartbeat detection
+- **Slice E:** Endpoint failure tolerance (Promise.allSettled prevents crashes)
+- **Slice F:** ProBot migration card made prominent (full-width, accent border)
+- **Slice G:** Comprehensive documentation and recovery runbook
+
+**Root cause of poor UX:** All 90+ endpoints loaded on every tab click (Promise.all), causing 2-3 second delays. Fixed with state caching.
+
+**Validation:** TypeScript ✓ Build ✓ Package ✓ Brain Core CI skipped (no changes)
+
+**Safety:** All boundaries maintained. Read-only only. Heartbeat is read-only GET (20s interval).
+
+See: `docs/system/brain-console-obsidian-native-ux-stabilization.md` for full implementation details, recovery runbook, and API reference.
+
 ### Remaining Polish (Future)
 
 1. Skeleton state while refreshing
@@ -176,6 +196,7 @@ Critical usability issues identified:
 3. Persist last-used tab in settings
 4. Keyboard navigation
 5. Theme switching
+6. True lazy-loading (per-tab endpoint loads)
 
 ## Next Safe Tasks (Resume After Stabilization)
 

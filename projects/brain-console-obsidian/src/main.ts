@@ -4,6 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
+export const BRAIN_CONSOLE_BUILD_ID = 'native-ux-2026-05-18-01';
 
 export default class BrainConsolePlugin extends Plugin {
   settings: BrainConsoleSettings = DEFAULT_BRAIN_CONSOLE_SETTINGS;
@@ -82,6 +83,7 @@ class BrainConsoleView extends ItemView {
   private activeSection: BrainConsoleSectionId = 'overview';
   private cachedState: BrainConsoleViewState | null = null;
   private isRefreshing = false;
+  private heartbeatInterval: number | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: BrainConsolePlugin) {
     super(leaf);
@@ -101,11 +103,16 @@ class BrainConsoleView extends ItemView {
     this.contentEl.addClass('brain-console');
 
     const state = this.contentEl.createDiv({ cls: 'brain-console__state' });
-    state.createEl('h2', { text: 'Brain Console' });
+    const header = state.createDiv({ cls: 'brain-console__header' });
+    header.createEl('h2', { text: 'Brain Console' });
+    header.createEl('span', { cls: 'brain-console__build-marker', text: `build ${BRAIN_CONSOLE_BUILD_ID}` });
+
     state.createDiv({ cls: 'brain-console__status-line', text: 'Manual refresh only · read-only · no POST calls' });
+    state.createDiv({ cls: 'brain-console__install-check', text: 'If build marker above is not visible, the installed plugin bundle may be stale.' });
 
     const actions = state.createDiv({ cls: 'brain-console__actions' });
     const refreshButton = actions.createEl('button', { text: 'Manual refresh', cls: 'brain-console__refresh-btn' });
+    refreshButton.setAttribute('type', 'button');
     const refreshTimestamp = actions.createEl('span', { cls: 'brain-console__refresh-time', text: 'Never' });
 
     refreshButton.addEventListener('click', async () => {
@@ -143,7 +150,23 @@ class BrainConsoleView extends ItemView {
       }
     });
 
+    this.startHeartbeat();
     await this.fullRefresh();
+  }
+
+  private startHeartbeat(): void {
+    if (this.heartbeatInterval !== null) return;
+    this.heartbeatInterval = this.registerInterval(
+      window.setInterval(async () => {
+        if (this.isRefreshing) return;
+        const settings = await this.plugin.getSettings();
+        const state = await loadBrainConsoleViewState(settings);
+        if (state.status?.ok && this.cachedState?.status && !this.cachedState.status.ok) {
+          this.cachedState = state;
+          this.rerenderWithCachedState();
+        }
+      }, 20000),
+    );
   }
 
   /** Full refresh: reload all Brain Core data and re-render */
@@ -165,6 +188,13 @@ class BrainConsoleView extends ItemView {
 
   async refresh(): Promise<void> {
     await this.fullRefresh();
+  }
+
+  async onClose(): Promise<void> {
+    if (this.heartbeatInterval !== null) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 }
 
