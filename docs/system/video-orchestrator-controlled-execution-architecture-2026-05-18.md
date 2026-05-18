@@ -87,6 +87,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5I role policy definition design.
 - 5J first-approval authority policy design.
 - 5K first-approval audit/expiry model design.
+- 5L candidate/story lock design.
 
 ## Non-negotiable safety
 
@@ -236,3 +237,22 @@ This document defines the future controlled execution model as a design-only bou
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Next safe phase: candidate/story lock design, still read-only and no execution.
+
+## Phase 5L candidate/story lock design
+
+- Added as a read-only lock design endpoint.
+- Defines future candidate/story lock fields (candidateStoryId, sourceEpisodeId, contentHash, planningHash, preflightEvidenceHash, lockedByOperatorId, lockedAt, expiresAt, invalidatedAt, invalidationReason).
+- Defines lock rules (lock enforces immutability during approval window, cannot authorize execution/publishing/STB/Mind writes).
+- Defines invalidation triggers (story changed, planning changed, preflight changed, operator/role policy changed, lock expired).
+- No lock is created.
+- No lock persistence is enabled.
+- No lock enforcement is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No validator execution.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Next safe phase: finalize phase roadmap or begin implementation phases.

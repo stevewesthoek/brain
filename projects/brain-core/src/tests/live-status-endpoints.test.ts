@@ -3540,3 +3540,143 @@ test('POST /video-orchestrator/controlled-execution-first-approval-authority-pol
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/controlled-execution-first-approval-audit-expiry-model returns blocked model design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-first-approval-audit-expiry-model' });
+  const body = JSON.parse(response.body) as {
+    model: {
+      id: string;
+      version: string;
+      status: string;
+      modelExists: boolean;
+      auditPersistenceEnabled: boolean;
+      expiryEnforcementEnabled: boolean;
+      firstApprovalCreationEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      auditFields: string[];
+      expiryRules: string[];
+      invalidationRules: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.model.id, 'video-orchestrator-controlled-execution-first-approval-audit-expiry-model');
+  assert.equal(body.model.version, 'phase-5k');
+  assert.ok(['blocked', 'disabled'].includes(body.model.status));
+  assert.equal(body.model.modelExists, false);
+  assert.equal(body.model.auditPersistenceEnabled, false);
+  assert.equal(body.model.expiryEnforcementEnabled, false);
+  assert.equal(body.model.firstApprovalCreationEnabled, false);
+  assert.equal(body.model.executionEnabled, false);
+  assert.equal(body.model.executable, false);
+  assert.ok(body.model.auditFields.length > 0);
+  assert.ok(body.model.expiryRules.length > 0);
+  assert.ok(body.model.invalidationRules.length > 0);
+  assert.ok(body.model.evidenceReferences.includes('/video-orchestrator/controlled-execution-first-approval-authority-policy'));
+
+  assert.equal(body.model.safety.readOnly, true);
+  assert.equal(body.model.safety.modelDesignOnly, true);
+  assert.equal(body.model.safety.auditPersistenceEnabled, false);
+  assert.equal(body.model.safety.expiryEnforcementEnabled, false);
+  assert.equal(body.model.safety.createsApproval, false);
+  assert.equal(body.model.safety.createsFirstApproval, false);
+  assert.equal(body.model.safety.createsSecondApproval, false);
+  assert.equal(body.model.safety.approvalExecutionEnabled, false);
+  assert.equal(body.model.safety.registersAction, false);
+  assert.equal(body.model.safety.registersAllowlist, false);
+  assert.equal(body.model.safety.runsValidator, false);
+  assert.equal(body.model.safety.createsExecutionPlan, false);
+  assert.equal(body.model.safety.executionPlanExecutable, false);
+  assert.equal(body.model.safety.executionEnabled, false);
+  assert.equal(body.model.safety.executesStb, false);
+  assert.equal(body.model.safety.executesVideo, false);
+  assert.equal(body.model.safety.writesFiles, false);
+  assert.equal(body.model.safety.rendersVideo, false);
+  assert.equal(body.model.safety.exportsArtifacts, false);
+  assert.equal(body.model.safety.publishesContent, false);
+  assert.equal(body.model.safety.decommissionsStb, false);
+  assert.equal(body.model.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-first-approval-audit-expiry-model is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-first-approval-audit-expiry-model' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-candidate-story-lock returns blocked lock design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-candidate-story-lock' });
+  const body = JSON.parse(response.body) as {
+    lock: {
+      id: string;
+      version: string;
+      status: string;
+      lockExists: boolean;
+      lockPersistenceEnabled: boolean;
+      lockEnforcementEnabled: boolean;
+      lockCreationEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      lockFields: string[];
+      lockRules: string[];
+      invalidationTriggers: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.lock.id, 'video-orchestrator-controlled-execution-candidate-story-lock');
+  assert.equal(body.lock.version, 'phase-5l');
+  assert.ok(['blocked', 'disabled'].includes(body.lock.status));
+  assert.equal(body.lock.lockExists, false);
+  assert.equal(body.lock.lockPersistenceEnabled, false);
+  assert.equal(body.lock.lockEnforcementEnabled, false);
+  assert.equal(body.lock.lockCreationEnabled, false);
+  assert.equal(body.lock.executionEnabled, false);
+  assert.equal(body.lock.executable, false);
+  assert.ok(body.lock.lockFields.length > 0);
+  assert.ok(body.lock.lockRules.length > 0);
+  assert.ok(body.lock.invalidationTriggers.length > 0);
+  assert.ok(body.lock.evidenceReferences.includes('/video-orchestrator/controlled-execution-first-approval-audit-expiry-model'));
+
+  assert.equal(body.lock.safety.readOnly, true);
+  assert.equal(body.lock.safety.lockDesignOnly, true);
+  assert.equal(body.lock.safety.lockPersistenceEnabled, false);
+  assert.equal(body.lock.safety.lockEnforcementEnabled, false);
+  assert.equal(body.lock.safety.createsLock, false);
+  assert.equal(body.lock.safety.persistsLock, false);
+  assert.equal(body.lock.safety.enforcesLock, false);
+  assert.equal(body.lock.safety.createsApproval, false);
+  assert.equal(body.lock.safety.createsFirstApproval, false);
+  assert.equal(body.lock.safety.createsSecondApproval, false);
+  assert.equal(body.lock.safety.approvalExecutionEnabled, false);
+  assert.equal(body.lock.safety.registersAction, false);
+  assert.equal(body.lock.safety.registersAllowlist, false);
+  assert.equal(body.lock.safety.runsValidator, false);
+  assert.equal(body.lock.safety.createsExecutionPlan, false);
+  assert.equal(body.lock.safety.executionPlanExecutable, false);
+  assert.equal(body.lock.safety.executionEnabled, false);
+  assert.equal(body.lock.safety.executesStb, false);
+  assert.equal(body.lock.safety.executesVideo, false);
+  assert.equal(body.lock.safety.writesFiles, false);
+  assert.equal(body.lock.safety.rendersVideo, false);
+  assert.equal(body.lock.safety.exportsArtifacts, false);
+  assert.equal(body.lock.safety.publishesContent, false);
+  assert.equal(body.lock.safety.decommissionsStb, false);
+  assert.equal(body.lock.safety.writesToMind, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-candidate-story-lock is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-candidate-story-lock' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

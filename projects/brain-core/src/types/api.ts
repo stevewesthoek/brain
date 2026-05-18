@@ -4948,3 +4948,61 @@ export interface BrainCoreVideoControlledExecutionFirstApprovalAuditExpiryModel 
 export interface BrainCoreVideoControlledExecutionFirstApprovalAuditExpiryModelResponse {
   model: BrainCoreVideoControlledExecutionFirstApprovalAuditExpiryModel;
 }
+
+export interface BrainCoreVideoControlledExecutionCandidateStoryLock {
+  id: 'video-orchestrator-controlled-execution-candidate-story-lock';
+  generatedAt: string;
+  version: 'phase-5l';
+  status: 'blocked' | 'disabled';
+  lockExists: false;
+  lockPersistenceEnabled: false;
+  lockEnforcementEnabled: false;
+  lockCreationEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    lockFieldCount: number;
+    lockRuleCount: number;
+    invalidationTriggerCount: number;
+    missingRequirementCount: number;
+    blockerCount: number;
+  };
+  lockFields: string[];
+  lockRules: string[];
+  invalidationTriggers: string[];
+  missingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    lockDesignOnly: true;
+    lockPersistenceEnabled: false;
+    lockEnforcementEnabled: false;
+    createsLock: false;
+    persistsLock: false;
+    enforcesLock: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    runsValidator: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionCandidateStoryLockResponse {
+  lock: BrainCoreVideoControlledExecutionCandidateStoryLock;
+}
