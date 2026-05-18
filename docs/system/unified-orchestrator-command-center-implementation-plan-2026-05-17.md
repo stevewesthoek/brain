@@ -1848,3 +1848,78 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - Roadmap checkpoint renders from Brain Core
 - Future publishing/scheduling design remains blocked behind explicit user approval
 - No execution, publishing, scheduling, or decommission actions are introduced
+
+---
+
+## Low-Priority Feature — BrainOS Projects & Roadmaps (R1-R4)
+
+**Priority:** LOW. Does not block Video Orchestrator, STB continuity, or Post Orchestrator production work.
+
+**Objective:** Standardize how every repo tracks and exposes roadmap, implementation plan, phases, tasks, validation evidence, and commits. Enable BrainOS dashboard and BuildFlow to query read-only project state.
+
+### Phase R1: Standard Definition and Dashboard Scaffold (2026-05-18)
+
+**Objective:** Define repo-agnostic standard, create standard doc, add lightweight Projects tab scaffold.
+
+**Tasks:**
+- Define `brainos-project-roadmap-standard-2026-05-18.md` with JSON schema
+- Update roadmap and implementation plan docs with feature description
+- Add minimal Projects tab cards (read-only, no execution controls)
+- Ensure zero production risk (read-only, no writes, no auto-commits)
+
+**Exit criteria:**
+- Standard doc committed
+- Projects tab renders without errors
+- Brain Console build passes
+- TypeScript typecheck passes
+- No breaking changes to existing tabs
+
+### Phase R2: Repository Indexer and Brain Core API (2026-06+)
+
+**Objective:** Build optional repo indexer and Brain Core read-only endpoints for project state queries.
+
+**Tasks:**
+- Design Brain Core `/projects` endpoint (GET, read-only, supports configured repo list)
+- Create repo scanner adapter (optional repo autodiscovery, respects .brain/project-state.json)
+- Add project status endpoint to routes.ts
+- Write tests for indexer and endpoints
+
+**Exit criteria:**
+- Brain Core endpoints return 200 with proper structure
+- Zero repo mutations or writes
+- All tests pass
+
+### Phase R3: BuildFlow Status Sync Integration (2026-07+)
+
+**Objective:** Allow BuildFlow to query and optionally update project task status during controlled operations.
+
+**Tasks:**
+- Design BuildFlow contracts for state queries
+- Wire BuildFlow agent mode to query Brain Core project endpoints
+- Add structured logging of BuildFlow operations to project-state.json
+
+**Exit criteria:**
+- BuildFlow can query project state safely
+- All writes are explicit and logged
+- No auto-commits or hidden changes
+
+### Phase R4: Optional Dashboard Task Controls (2026-08+)
+
+**Objective:** Add optional dashboard controls for task/phase updates, approval-gated.
+
+**Status:** Not started, conditional on R1-R3 completion and user approval.
+
+**Tasks:**
+- Design approval gate framework for task updates
+- Add optional dashboard buttons (start task, request validation, mark complete)
+- Implement approval workflow in Brain Core
+- Write comprehensive tests
+
+**Exit criteria:**
+- No controls activate without explicit user approval
+- All changes are logged and reversible
+- Tests prove no silent mutations or auto-commits
+
+---
+
+**Note:** This feature is foundational but low priority. Do not execute R2-R4 until Video Orchestrator production readiness, STB continuity, and Post Orchestrator publishing are stabilized. R1 scaffold is minimal and non-blocking.

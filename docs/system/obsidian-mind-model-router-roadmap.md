@@ -178,6 +178,28 @@ All orchestrators expose read-only status through Brain Core. Execution requests
 - ✅ User explicitly approves production switch before cutover
 - ✅ Migration progress visible in Brain Console dashboard
 
+## BrainOS Projects & Roadmaps / Mission Control (Low Priority)
+
+**Purpose:** Standardize how every repo stores and exposes roadmap, implementation plan, phases, tasks, and validation evidence.
+
+**Architecture:**
+- **Source of truth:** Repository-local files (`.brain/project-state.json`, `docs/system/*roadmap*.md`, `operations/decision-log.md`)
+- **BrainOS role:** Read-only indexing and visualization
+- **BuildFlow role:** Queries state, does not own truth
+- **Safety:** Read-only dashboard at first, no auto-commits, no cross-repo mutations
+
+**Standard defined in:** `docs/system/brainos-project-roadmap-standard-2026-05-18.md`
+
+**Phases:**
+- **R1:** Standard defined, dashboard Projects tab scaffold (2026-05-18)
+- **R2:** Repo indexer, Brain Core read-only API (2026-06)
+- **R3:** BuildFlow status sync integration (2026-07)
+- **R4:** Optional dashboard task controls with approval gates (2026-08+)
+
+**Priority:** LOW. Does not block Video Orchestrator, STB, or Post Orchestrator production work.
+
+---
+
 ## Post Orchestrator / Proofly / Xgrow Consolidation Roadmap
 
 ## Naming Boundary - Legacy Apps vs Post Orchestrator Flows

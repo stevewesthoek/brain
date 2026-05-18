@@ -932,3 +932,57 @@
 .brain-console__qa-checklist {
   padding: 12px;
 }
+
+/* BrainOS Roadmaps card */
+.brain-console__roadmaps-heading {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cockpit-border);
+}
+
+.brain-console__roadmaps-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--cockpit-accent);
+}
+
+.brain-console__roadmaps-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--cockpit-text-tertiary);
+}
+
+.brain-console__roadmaps-content {
+  display: grid;
+  gap: 14px;
+}
+
+.brain-console__roadmaps-section {
+  display: grid;
+  gap: 8px;
+}
+
+.brain-console__roadmaps-section-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cockpit-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.brain-console__roadmaps-list {
+  margin: 0;
+  padding-left: 16px;
+  list-style: disc;
+  font-size: 0.85rem;
+  color: var(--cockpit-text-secondary);
+}
+
+.brain-console__roadmaps-list li {
+  margin: 4px 0;
+  line-height: 1.4;
+}

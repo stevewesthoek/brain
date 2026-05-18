@@ -517,6 +517,7 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
 function renderProjectsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
+  renderCard(grid, 'Projects & Roadmaps', renderBrainnOSRoadmapsCard());
   renderCard(grid, 'Projects', renderProjectsCard(state, snapshot));
   renderCard(grid, 'Platforms', renderPlatformsCard(state, snapshot));
 }
@@ -1249,6 +1250,48 @@ function renderPipelinesCard(state: BrainConsoleViewState, snapshot: DashboardSn
   if (snapshot.migrationBlockedCount > 0) {
     list.createEl('li', { text: `Migrations Blocked: ${snapshot.migrationBlockedCount}`, cls: 'brain-console__list-warning' });
   }
+
+  return card;
+}
+
+function renderBrainnOSRoadmapsCard(): HTMLElement {
+  const card = document.createElement('div');
+
+  const heading = card.createEl('div', { cls: 'brain-console__roadmaps-heading' });
+  heading.createEl('h4', { text: 'BrainOS Projects & Roadmaps', cls: 'brain-console__roadmaps-title' });
+  heading.createEl('p', { text: 'Unified repo-agnostic project tracking', cls: 'brain-console__roadmaps-subtitle' });
+
+  const content = card.createEl('div', { cls: 'brain-console__roadmaps-content' });
+
+  const standardSection = content.createEl('div', { cls: 'brain-console__roadmaps-section' });
+  standardSection.createEl('h5', { text: 'Repo Roadmap Standard', cls: 'brain-console__roadmaps-section-title' });
+  const standardList = standardSection.createEl('ul', { cls: 'brain-console__roadmaps-list' });
+  standardList.createEl('li', { text: 'JSON schema for project-state.json' });
+  standardList.createEl('li', { text: 'Markdown templates for roadmap.md, implementation-plan.md, tasks.md' });
+  standardList.createEl('li', { text: 'Safety: read-only indexing, no auto-commits, no cross-repo writes' });
+
+  const statusSection = content.createEl('div', { cls: 'brain-console__roadmaps-section' });
+  statusSection.createEl('h5', { text: 'Current Status', cls: 'brain-console__roadmaps-section-title' });
+  const statusList = statusSection.createEl('ul', { cls: 'brain-console__roadmaps-list' });
+  statusList.createEl('li', { text: 'Phase R1 (2026-05): Standard definition — in progress' });
+  statusList.createEl('li', { text: 'Phase R2 (2026-06): Repo indexer & Brain Core API — planned' });
+  statusList.createEl('li', { text: 'Phase R3 (2026-07): BuildFlow status sync — planned' });
+  statusList.createEl('li', { text: 'Phase R4 (2026-08+): Optional dashboard controls — planned' });
+
+  const prioritySection = content.createEl('div', { cls: 'brain-console__roadmaps-section' });
+  prioritySection.createEl('h5', { text: 'Priority', cls: 'brain-console__roadmaps-section-title' });
+  const priorityList = prioritySection.createEl('ul', { cls: 'brain-console__roadmaps-list' });
+  priorityList.createEl('li', { text: 'LOW: Does not block production pipeline work' });
+  priorityList.createEl('li', { text: 'Additive and optional for each repo' });
+  priorityList.createEl('li', { text: 'See docs/system/brainos-project-roadmap-standard-2026-05-18.md' });
+
+  const futureSection = content.createEl('div', { cls: 'brain-console__roadmaps-section' });
+  futureSection.createEl('h5', { text: 'Future Capabilities', cls: 'brain-console__roadmaps-section-title' });
+  const futureList = futureSection.createEl('ul', { cls: 'brain-console__roadmaps-list' });
+  futureList.createEl('li', { text: 'Query project state across repos (R2+)' });
+  futureList.createEl('li', { text: 'Visualize roadmap timelines and blockers (R3+)' });
+  futureList.createEl('li', { text: 'Approval-gated task updates (R4+)' });
+  futureList.createEl('li', { text: 'BuildFlow integration for controlled operations' });
 
   return card;
 }
