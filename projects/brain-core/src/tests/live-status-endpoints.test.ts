@@ -2075,3 +2075,64 @@ test('POST /video-orchestrator/rollback-cleanup-checklist is not available', asy
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/comparison-schema-design returns read-only schema', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/comparison-schema-design' });
+  const body = JSON.parse(response.body) as {
+    schema: {
+      id: string;
+      status: string;
+      canCompareOutputs: boolean;
+      canReadGeneratedArtifacts: boolean;
+      canWriteEvidence: boolean;
+      executableActionRegistered: boolean;
+      fields: Array<{ status: string; comparisonMode: string; safety: Record<string, boolean> }>;
+      summary: { totalFields: number; definedCount: number; blockedCount: number; blockingSeverityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.schema.id, 'video-orchestrator-comparison-schema-design');
+  assert.ok(['schema-only', 'blocked', 'ready-for-review'].includes(body.schema.status));
+  assert.equal(body.schema.canCompareOutputs, false);
+  assert.equal(body.schema.canReadGeneratedArtifacts, false);
+  assert.equal(body.schema.canWriteEvidence, false);
+  assert.equal(body.schema.executableActionRegistered, false);
+  assert.ok(body.schema.summary.totalFields > 0);
+  assert.ok(body.schema.summary.definedCount > 0);
+  assert.ok(body.schema.summary.blockedCount > 0);
+  assert.ok(body.schema.summary.blockingSeverityCount > 0);
+  assert.equal(body.schema.safety.readOnly, true);
+  assert.equal(body.schema.safety.readsGeneratedArtifacts, false);
+  assert.equal(body.schema.safety.executesComparison, false);
+  assert.equal(body.schema.safety.executesStb, false);
+  assert.equal(body.schema.safety.executesVideo, false);
+  assert.equal(body.schema.safety.writesFiles, false);
+  assert.equal(body.schema.safety.createsApproval, false);
+  assert.equal(body.schema.safety.executableActionRegistered, false);
+  assert.equal(body.schema.safety.publishesContent, false);
+  assert.equal(body.schema.safety.decommissionsStb, false);
+  assert.equal(body.schema.safety.writesToMind, false);
+
+  body.schema.fields.forEach(field => {
+    assert.equal(field.safety.readOnly, true);
+    assert.equal(field.safety.readsGeneratedArtifacts, false);
+    assert.equal(field.safety.executesComparison, false);
+    assert.equal(field.safety.executesStb, false);
+    assert.equal(field.safety.executesVideo, false);
+    assert.equal(field.safety.writesFiles, false);
+    assert.equal(field.safety.createsApproval, false);
+    assert.equal(field.safety.publishesContent, false);
+    assert.equal(field.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/comparison-schema-design is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/comparison-schema-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

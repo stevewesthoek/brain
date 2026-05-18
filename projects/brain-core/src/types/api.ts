@@ -2023,6 +2023,65 @@ export interface BrainCoreVideoRollbackCleanupChecklistResponse {
   checklist: BrainCoreVideoRollbackCleanupChecklist;
 }
 
+export interface BrainCoreVideoComparisonSchemaField {
+  id: string;
+  label: string;
+  category: 'metadata' | 'script' | 'timing' | 'visuals' | 'audio' | 'publishing' | 'safety';
+  status: 'defined' | 'blocked' | 'missing' | 'not-applicable';
+  comparisonMode: 'exact' | 'semantic' | 'range' | 'manual-review' | 'not-available';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    readsGeneratedArtifacts: false;
+    executesComparison: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    createsApproval: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoComparisonSchemaDesign {
+  id: 'video-orchestrator-comparison-schema-design';
+  generatedAt: string;
+  status: 'schema-only' | 'blocked' | 'ready-for-review';
+  canCompareOutputs: false;
+  canReadGeneratedArtifacts: false;
+  canWriteEvidence: false;
+  executableActionRegistered: false;
+  fields: BrainCoreVideoComparisonSchemaField[];
+  summary: {
+    totalFields: number;
+    definedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    readsGeneratedArtifacts: false;
+    executesComparison: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    createsApproval: false;
+    executableActionRegistered: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoComparisonSchemaDesignResponse {
+  schema: BrainCoreVideoComparisonSchemaDesign;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3565,6 +3624,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/artifact-sandbox-design': BrainCoreVideoArtifactSandboxDesignResponse;
   '/video-orchestrator/controlled-dry-run-design': BrainCoreVideoControlledDryRunDesignResponse;
   '/video-orchestrator/rollback-cleanup-checklist': BrainCoreVideoRollbackCleanupChecklistResponse;
+  '/video-orchestrator/comparison-schema-design': BrainCoreVideoComparisonSchemaDesignResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

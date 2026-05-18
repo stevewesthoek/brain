@@ -2710,3 +2710,22 @@ Safety status:
 - No rollback execution, cleanup execution, file deletes, file writes, approval creation, publishing, STB decommission, or Mind writes enabled.
 
 Next safe task: comparison schema design, still read-only/design-only.
+
+
+## 2026-05-18 — Production acceleration: Comparison schema design
+
+Completed a read-only comparison schema design slice.
+
+Added:
+- `GET /video-orchestrator/comparison-schema-design`
+- Schema fields for metadata parity, script structure, timing ranges, visual coverage, audio coverage, publishing readiness, and safety invariants.
+
+Validation evidence:
+- Brain Core tests passed: 230/230.
+
+Safety status:
+- No POST route added.
+- No executable action registered.
+- No generated artifact reads, comparison execution, STB execution, Video execution, evidence writes, approval creation, publishing, STB decommission, or Mind writes enabled.
+
+Next safe task: fixture-level comparison preview or production cutover gate design, still read-only/design-only.

@@ -1046,3 +1046,16 @@ Safety boundary: no POST route, no executable action registration, no rollback e
 Validation: Brain Core tests pass with 228/228 tests.
 
 Next safe phase: comparison schema design before any controlled dry-run implementation.
+
+
+## 2026-05-18 — Phase 3t: Comparison Schema Design
+
+Status: complete, read-only/schema-only.
+
+Added `GET /video-orchestrator/comparison-schema-design` to define future STB ↔ Video comparison fields before real output comparison exists. The schema covers metadata, script structure, timing ranges, visual coverage, audio coverage, publishing readiness, and safety invariants.
+
+Safety boundary: no POST route, no executable action registration, no generated artifact reads, no comparison execution, no STB execution, no Video execution, no evidence writes, no approval creation, no publishing, no STB decommission, and no Mind writes.
+
+Validation: Brain Core tests pass with 230/230 tests.
+
+Next safe phase: fixture-level comparison preview or production cutover gate design; still no real execution.
