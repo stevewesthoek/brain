@@ -1148,6 +1148,122 @@ export interface BrainCoreVideoMetadataPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoPublishingPrepChecklistItem {
+  id: string;
+  label: string;
+  status: 'planned' | 'blocked' | 'missing';
+  category: 'metadata' | 'asset' | 'assembly' | 'policy' | 'platform' | 'manual-review';
+  placeholder: string;
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoPublishingPrepPlatform {
+  id: string;
+  platform: 'youtube' | 'facebook' | 'pinterest' | 'blog' | 'generic';
+  status: 'planned' | 'blocked';
+  checklist: BrainCoreVideoPublishingPrepChecklistItem[];
+  requiredArtifactRefs: string[];
+  requiredMetadataRefs: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoPublishingPrepPlan {
+  id: string;
+  intakePlanId: string;
+  metadataPlanId?: string;
+  assemblyPlanId?: string;
+  assetPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  platforms: BrainCoreVideoPublishingPrepPlatform[];
+  summary: {
+    totalPlatforms: number;
+    plannedCount: number;
+    blockedCount: number;
+    checklistItemCount: number;
+    missingItemCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoPublishingPrepPlanListResponse {
+  id: 'video-orchestrator-publishing-prep';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoPublishingPrepPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalPlatforms: number;
+    totalChecklistItems: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoPublishingPrepPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoPublishingPrepPlan;
+  upstream: {
+    metadataPlanId?: string;
+    assemblyPlanId?: string;
+    assetPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;

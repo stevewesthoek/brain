@@ -1104,3 +1104,74 @@ test('GET /video-orchestrator/metadata-plan/:id with unknown id returns 404', as
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('metadata plan'));
 });
+
+test('GET /video-orchestrator/publishing-prep returns plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/publishing-prep' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    id: string;
+    summary?: { total: number };
+    safety?: Record<string, unknown>;
+    plans?: Array<{ safety?: Record<string, unknown> }>;
+  };
+  assert.equal(body.id, 'video-orchestrator-publishing-prep');
+  assert.ok(body.summary?.total !== undefined);
+  assert.equal(body.safety?.readOnly, true);
+  assert.equal(body.safety?.callsPlatformApi, false);
+  assert.equal(body.safety?.schedulesPost, false);
+  assert.equal(body.safety?.publishesContent, false);
+  assert.equal(body.safety?.writesFiles, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.plans));
+});
+
+test('GET /video-orchestrator/publishing-prep/:id returns a single publishing prep plan', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/publishing-prep' });
+  const listBody = JSON.parse(listResponse.body) as {
+    plans?: Array<{ id: string; intakePlanId: string }>;
+  };
+  const firstPlan = listBody.plans?.[0];
+  assert.ok(firstPlan?.intakePlanId);
+
+  const response = await exercise({
+    method: 'GET',
+    url: `/video-orchestrator/publishing-prep/${encodeURIComponent(firstPlan.intakePlanId)}`,
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    plan?: {
+      platforms?: Array<{ safety?: Record<string, unknown>; checklist?: Array<{ placeholder?: string }> }>;
+      safety?: Record<string, unknown>;
+    };
+  };
+  assert.ok(body.plan?.platforms);
+  assert.ok(Array.isArray(body.plan.platforms));
+
+  for (const platform of body.plan.platforms ?? []) {
+    assert.equal(platform.safety?.readOnly, true);
+    assert.equal(platform.safety?.callsPlatformApi, false);
+    assert.equal(platform.safety?.schedulesPost, false);
+    assert.ok(Array.isArray(platform.checklist));
+    for (const item of platform.checklist ?? []) {
+      assert.ok(item.placeholder?.includes('placeholder'));
+    }
+  }
+
+  assert.equal(body.plan?.safety?.readOnly, true);
+  assert.equal(body.plan?.safety?.callsPlatformApi, false);
+  assert.equal(body.plan?.safety?.schedulesPost, false);
+});
+
+test('GET /video-orchestrator/publishing-prep/:id with unknown id returns 404', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/publishing-prep/unknown-publishing-prep-id',
+  });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('publishing prep plan'));
+});
