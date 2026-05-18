@@ -2202,3 +2202,43 @@ Validation:
 Next safe task:
 
 - Phase P9: read-only platform policy/security review registry and decommission readiness matrix.
+
+## Phase P9 — Platform Policy / Security Review Registry
+
+Implemented:
+
+- Platform policy registry endpoint added for post platforms and internal flows.
+- X is explicitly marked browser-automation-prohibited / security-review-required.
+- Brain Console now shows a Platform Policy / Security Review card.
+
+Safety status:
+
+- Policy metadata only.
+- No cookies.
+- No Playwright.
+- No external writes.
+- No publishing.
+- No scheduling.
+
+Next safe task:
+
+- Phase P10: read-only decommission readiness matrix for legacy standalone Proofly/Xgrow orchestration.
+
+## Phase P10 — Decommission Readiness Matrix
+
+Implemented:
+
+- Decommission readiness endpoint added for legacy asset, growth, scheduler, publishing, and analytics targets.
+- Brain Console now shows a Decommission Readiness Matrix card.
+
+Safety status:
+
+- Decommission not started.
+- No file deletes.
+- No legacy repo modifications.
+- Explicit user approval required.
+- No publishing or scheduling.
+
+Next safe task:
+
+- Phase P11: operator runbook guidance and blocker recovery guidance for Post Orchestrator.

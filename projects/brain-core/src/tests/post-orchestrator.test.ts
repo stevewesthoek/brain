@@ -573,3 +573,72 @@ test('GET /post-orchestrator/readiness/unknown-event returns blocked readiness',
   assert.equal(body.readiness.status, 'blocked');
   assert.ok(body.readiness.blockers.some((blocker) => blocker.id === 'unknown-event'));
 });
+
+test('GET /post-orchestrator/platform-policies returns policies', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/platform-policies' });
+  const body = JSON.parse(response.body) as {
+    policies: Array<{
+      platform: string;
+      publishingMode: string;
+      riskLevel: string;
+      safety: {
+        readsCookies: boolean;
+        readsSecrets: boolean;
+        usesPlaywright: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        executionEnabled: boolean;
+      };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(body.policies.map((policy) => policy.platform).sort(), ['blog', 'facebook', 'github', 'internal', 'linkedin', 'x', 'youtube']);
+  assert.equal(body.policies.every((policy) => policy.safety.readsCookies === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.readsSecrets === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.usesPlaywright === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.writesExternalPlatform === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.writesToMind === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.publishingEnabled === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.schedulingEnabled === false), true);
+  assert.equal(body.policies.every((policy) => policy.safety.executionEnabled === false), true);
+  const x = body.policies.find((policy) => policy.platform === 'x');
+  assert.equal(Boolean(x && ['browser-automation-prohibited', 'pending-security-review'].includes(x.publishingMode)), true);
+  assert.equal(Boolean(x && ['blocked', 'high'].includes(x.riskLevel)), true);
+});
+
+test('GET /post-orchestrator/decommission-readiness returns items', async () => {
+  const response = await exercise({ method: 'GET', url: '/post-orchestrator/decommission-readiness' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{
+      target: string;
+      safety: {
+        decommissionStarted: boolean;
+        deletesFiles: boolean;
+        modifiesLegacyRepo: boolean;
+        publishingEnabled: boolean;
+        schedulingEnabled: boolean;
+        writesExternalPlatform: boolean;
+        writesToMind: boolean;
+        requiresExplicitUserApproval: boolean;
+      };
+    }>;
+    overall: { status: string; decommissionStarted: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.items.some((item) => item.target === 'legacy-asset-system'));
+  assert.ok(body.items.some((item) => item.target === 'legacy-growth-system'));
+  assert.equal(body.items.every((item) => item.safety.decommissionStarted === false), true);
+  assert.equal(body.items.every((item) => item.safety.deletesFiles === false), true);
+  assert.equal(body.items.every((item) => item.safety.modifiesLegacyRepo === false), true);
+  assert.equal(body.items.every((item) => item.safety.publishingEnabled === false), true);
+  assert.equal(body.items.every((item) => item.safety.schedulingEnabled === false), true);
+  assert.equal(body.items.every((item) => item.safety.writesExternalPlatform === false), true);
+  assert.equal(body.items.every((item) => item.safety.writesToMind === false), true);
+  assert.equal(body.items.every((item) => item.safety.requiresExplicitUserApproval === true), true);
+  assert.equal(['blocked', 'not-ready'].includes(body.overall.status), true);
+  assert.equal(body.overall.decommissionStarted, false);
+});

@@ -68,6 +68,14 @@ export interface DashboardSnapshot {
   postReadinessBlockerCount: number;
   postReadinessStatus?: string;
   postReadinessNextSafeStep: string;
+  postPlatformPolicyCount: number;
+  postPlatformPolicyBlockedCount: number;
+  postPlatformPolicyHighRiskCount: number;
+  postDecommissionItemCount: number;
+  postDecommissionBlockedCount: number;
+  postDecommissionReadyCount: number;
+  postDecommissionOverallStatus?: string;
+  postDecommissionStarted: boolean;
   postPlatformCount: number;
   postPublishingDisabledCount: number;
   socialProofFlowStatus?: string;
@@ -190,6 +198,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const postReadinessBlockerCount = state.postOrchestratorReadiness?.readiness?.blockers?.length ?? 0;
   const postReadinessStatus = state.postOrchestratorReadiness?.readiness?.status;
   const postReadinessNextSafeStep = state.postOrchestratorReadiness?.readiness?.nextSafeStep ?? 'Review the readiness score.';
+  const postPlatformPolicyCount = state.postOrchestratorPlatformPolicies?.policies?.length ?? 0;
+  const postPlatformPolicyBlockedCount = state.postOrchestratorPlatformPolicies?.policies?.filter((policy) => policy.status === 'blocked' || policy.riskLevel === 'blocked')?.length ?? 0;
+  const postPlatformPolicyHighRiskCount = state.postOrchestratorPlatformPolicies?.policies?.filter((policy) => policy.riskLevel === 'high')?.length ?? 0;
+  const postDecommissionItemCount = state.postOrchestratorDecommissionReadiness?.items?.length ?? 0;
+  const postDecommissionBlockedCount = state.postOrchestratorDecommissionReadiness?.items?.filter((item) => item.status === 'blocked')?.length ?? 0;
+  const postDecommissionReadyCount = state.postOrchestratorDecommissionReadiness?.items?.filter((item) => item.status === 'ready-for-review' || item.status === 'approved')?.length ?? 0;
+  const postDecommissionOverallStatus = state.postOrchestratorDecommissionReadiness?.overall?.status;
+  const postDecommissionStarted = state.postOrchestratorDecommissionReadiness?.overall?.decommissionStarted ?? false;
   const postPlatformCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.platform !== 'internal').length;
   const postPublishingDisabledCount = (state.postOrchestratorFlows?.flows ?? []).filter((flow) => flow.publishingEnabled === false).length;
   const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
@@ -374,6 +390,14 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     postReadinessBlockerCount,
     postReadinessStatus,
     postReadinessNextSafeStep,
+    postPlatformPolicyCount,
+    postPlatformPolicyBlockedCount,
+    postPlatformPolicyHighRiskCount,
+    postDecommissionItemCount,
+    postDecommissionBlockedCount,
+    postDecommissionReadyCount,
+    postDecommissionOverallStatus,
+    postDecommissionStarted,
     postPlatformCount,
     postPublishingDisabledCount,
     socialProofFlowStatus,

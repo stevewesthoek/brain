@@ -914,6 +914,13 @@ docs/system/1779040171684-karpathy-llm-wiki-alignment-review-2026-05-17.md
 - The user experiences the system as a black box that stays organized automatically.
 - ProBot is acknowledged as legacy, Brain Console is primary cockpit
 
+## Post Orchestrator Roadmap Addendum
+
+- Phase P9 adds a read-only platform policy/security review registry for post platforms.
+- Phase P10 adds a read-only decommission readiness matrix for legacy standalone Proofly/Xgrow orchestration targets.
+- Both phases keep publishing, scheduling, and execution disabled.
+- Both phases remain fixture/policy metadata only and do not introduce decommission actions.
+
 ## Current Status
 
 - Report-only execution, preview policy surfaces, and preview artifact inspection are complete in Brain.

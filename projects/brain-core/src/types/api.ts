@@ -742,6 +742,119 @@ export interface BrainCorePostReadinessScoreResponse {
   readiness: BrainCorePostReadinessScore;
 }
 
+export type BrainCorePostPlatformPolicyStatus =
+  | 'not-reviewed'
+  | 'review-required'
+  | 'blocked'
+  | 'approved-for-preview'
+  | 'approved-for-manual-export'
+  | 'approved-for-api-publishing';
+
+export type BrainCorePostPlatformPublishingMode =
+  | 'disabled'
+  | 'manual-export-only'
+  | 'api-required'
+  | 'browser-automation-prohibited'
+  | 'pending-security-review';
+
+export type BrainCorePostPlatformRiskLevel = 'low' | 'medium' | 'high' | 'blocked';
+
+export interface BrainCorePostPlatformPolicy {
+  id: string;
+  platform: BrainCorePostPlatform;
+  label: string;
+  status: BrainCorePostPlatformPolicyStatus;
+  publishingMode: BrainCorePostPlatformPublishingMode;
+  riskLevel: BrainCorePostPlatformRiskLevel;
+  summary: string;
+  allowedInCurrentPhase: {
+    fixturePreview: true;
+    draftReview: true;
+    schedulePreview: true;
+    manualExport: boolean;
+    apiPublishing: false;
+    browserAutomation: false;
+  };
+  securityReview: {
+    required: boolean;
+    completed: false;
+    reason: string;
+    blockers: string[];
+  };
+  complianceNotes: string[];
+  nextSafeStep: string;
+  safety: {
+    readsCookies: false;
+    readsSecrets: false;
+    usesPlaywright: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    executionEnabled: false;
+  };
+}
+
+export interface BrainCorePostPlatformPoliciesResponse {
+  policies: BrainCorePostPlatformPolicy[];
+}
+
+export type BrainCorePostDecommissionTarget =
+  | 'legacy-asset-system'
+  | 'legacy-growth-system'
+  | 'legacy-schedulers'
+  | 'legacy-publishing'
+  | 'legacy-analytics';
+
+export type BrainCorePostDecommissionStatus =
+  | 'not-started'
+  | 'blocked'
+  | 'in-progress'
+  | 'ready-for-review'
+  | 'approved'
+  | 'decommissioned';
+
+export interface BrainCorePostDecommissionGate {
+  id: string;
+  label: string;
+  passed: boolean;
+  required: true;
+  summary: string;
+  nextSafeStep: string;
+}
+
+export interface BrainCorePostDecommissionReadinessItem {
+  id: string;
+  target: BrainCorePostDecommissionTarget;
+  label: string;
+  status: BrainCorePostDecommissionStatus;
+  summary: string;
+  gates: BrainCorePostDecommissionGate[];
+  blockerCount: number;
+  nextSafeStep: string;
+  safety: {
+    decommissionStarted: false;
+    deletesFiles: false;
+    modifiesLegacyRepo: false;
+    publishingEnabled: false;
+    schedulingEnabled: false;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    requiresExplicitUserApproval: true;
+  };
+}
+
+export interface BrainCorePostDecommissionReadinessResponse {
+  items: BrainCorePostDecommissionReadinessItem[];
+  overall: {
+    status: 'blocked' | 'not-ready' | 'ready-for-review';
+    readyCount: number;
+    blockedCount: number;
+    decommissionStarted: false;
+    nextSafeStep: string;
+  };
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;

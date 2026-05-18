@@ -1747,3 +1747,34 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 - Readiness score renders from Brain Core
 - No publishing or scheduling is introduced
 - Readiness remains review-only and blocked while execution is disabled
+
+### Phase P9: Platform Policy / Security Review Registry (2026-06-02+)
+
+**Objective:** Add a read-only policy registry that tracks platform security posture without enabling publishing or browser automation.
+
+**Tasks:**
+- Platform policy registry endpoint for post platforms
+- Security review metadata for X, GitHub, LinkedIn, Facebook, YouTube, Blog, and Internal
+- Brain Console platform policy / security review card
+- Safety verification for policy-only semantics
+
+**Exit criteria:**
+- Policy registry renders from Brain Core
+- No cookies, Playwright, or external writes are introduced
+- Publishing and scheduling remain disabled
+
+### Phase P10: Decommission Readiness Matrix (2026-06-02+)
+
+**Objective:** Add a read-only decommission readiness matrix for legacy standalone Proofly/Xgrow orchestration targets.
+
+**Tasks:**
+- Decommission readiness endpoint for legacy asset, growth, scheduler, publishing, and analytics targets
+- Readiness gates and next safe steps for each target
+- Brain Console decommission readiness matrix card
+- Safety verification for decommission-only semantics
+
+**Exit criteria:**
+- Decommission readiness renders from Brain Core
+- No decommission action is introduced
+- No files are deleted and no legacy repos are modified
+- Publishing and scheduling remain disabled
