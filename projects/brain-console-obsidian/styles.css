@@ -584,6 +584,34 @@
   border-color: var(--cockpit-border);
 }
 
+/* Production readiness styles */
+.brain-console__production-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.brain-console__blocker-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--cockpit-text-secondary);
+}
+
+.brain-console__blocker-list li {
+  padding: 3px 0;
+  padding-left: 16px;
+}
+
+.brain-console__blocker-list li:before {
+  content: '⚠ ';
+  color: #ef4444;
+  margin-left: -12px;
+  margin-right: 4px;
+}
+
 .brain-console__section-tabs {
   display: flex;
   flex-wrap: wrap;

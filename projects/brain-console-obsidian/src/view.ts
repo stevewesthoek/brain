@@ -471,11 +471,20 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
   // Next safe step
   renderCard(grid, 'Next Safe Step', renderNextSafeStepCard(state, snapshot));
 
+  // Production Status
+  renderCard(grid, 'Production Status', renderProductionStatusCard(state));
+
   // Metric counts
   renderCard(grid, 'Metrics', renderOverviewMetricsCard(snapshot));
 
   // Status overview
   renderCard(grid, 'Status', renderOverviewStatusCard(state));
+
+  // Production Blockers
+  renderCard(grid, 'Production Blockers', renderProductionBlockersCard(state));
+
+  // Video Orchestrator readiness
+  renderCard(grid, 'Video Readiness', renderVideoReadinessCard(state));
 }
 
 function renderAppsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
@@ -985,6 +994,98 @@ function renderOverviewStatusCard(state: BrainConsoleViewState): HTMLElement {
       : `Wiki: ${mrReport.wikiHealth.errorCount}e ${mrReport.wikiHealth.warningCount}w`;
     container.createEl('p', { cls: 'brain-console__detail', text: wikiText });
   }
+
+  return container;
+}
+
+function renderProductionStatusCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  // Calculate readiness percentages
+  const videoReadiness = state.videoOrchestratorStatus?.moduleProgress?.percent ?? 0;
+  const stbContinuity = state.stbStatus?.status === 'ok' ? 100 : state.stbStatus?.status === 'unknown' ? 50 : 0;
+  const postReadiness = state.postOrchestratorStatus?.status === 'partial' || state.postOrchestratorStatus?.status === 'ok' ? 60 : 40;
+
+  const avgReadiness = Math.round((videoReadiness + stbContinuity + postReadiness) / 3);
+
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: `${avgReadiness}%` });
+  if (avgReadiness >= 75) metric.style.color = '#22c55e';
+  else if (avgReadiness >= 50) metric.style.color = '#eab308';
+  else metric.style.color = '#ef4444';
+
+  const details = container.createEl('div', { cls: 'brain-console__production-details' });
+  details.createEl('p', { cls: 'brain-console__detail', text: `Video: ${videoReadiness}%` });
+  details.createEl('p', { cls: 'brain-console__detail', text: `STB: ${stbContinuity}%` });
+  details.createEl('p', { cls: 'brain-console__detail', text: `Posts: ${postReadiness}%` });
+
+  return container;
+}
+
+function renderProductionBlockersCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const blockers: string[] = [];
+
+  // Check video orchestrator blockers
+  if (state.videoOrchestratorStatus?.modules) {
+    const blocked = state.videoOrchestratorStatus.modules.filter(m => m.status === 'blocked');
+    if (blocked.length > 0) {
+      blockers.push(`Video: ${blocked.length} module${blocked.length > 1 ? 's' : ''} blocked`);
+    }
+  }
+
+  // Check STB status
+  if (state.stbStatus?.status === 'unknown' || state.stbStatus?.status === 'failed') {
+    blockers.push('STB: pipeline offline or unknown');
+  }
+
+  // Check post orchestrator blockers
+  if (state.postOrchestratorStatus?.status === 'blocked') {
+    blockers.push('Posts: readiness blocked');
+  }
+
+  if (state.postOrchestratorStatus?.publishingEnabled === false && state.postOrchestratorStatus?.schedulingEnabled === false) {
+    blockers.push('Posts: publishing & scheduling disabled');
+  }
+
+  if (blockers.length === 0) {
+    container.createEl('div', { cls: 'brain-console__list-note', text: 'No blockers detected' });
+    return container;
+  }
+
+  const list = container.createEl('ul', { cls: 'brain-console__blocker-list' });
+  blockers.slice(0, 5).forEach(blocker => {
+    list.createEl('li', { text: blocker });
+  });
+
+  return container;
+}
+
+function renderVideoReadinessCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const videoOrch = state.videoOrchestratorStatus;
+  if (!videoOrch) {
+    container.createEl('div', { cls: 'brain-console__list-note', text: 'Video orchestrator status unavailable' });
+    return container;
+  }
+
+  const percent = videoOrch.moduleProgress?.percent ?? 0;
+  const metric = container.createEl('div', { cls: 'brain-console__metric', text: `${percent}%` });
+  if (percent >= 75) metric.style.color = '#22c55e';
+  else if (percent >= 50) metric.style.color = '#eab308';
+  else metric.style.color = '#ef4444';
+
+  const row = container.createEl('div', { cls: 'brain-console__row' });
+  row.createEl('dt', { text: 'Implemented' });
+  row.createEl('dd', { text: `${videoOrch.moduleProgress?.implemented ?? 0}/${videoOrch.moduleProgress?.total ?? 0}` });
+
+  const row2 = container.createEl('div', { cls: 'brain-console__row' });
+  row2.createEl('dt', { text: 'Blocked' });
+  row2.createEl('dd', { text: `${videoOrch.moduleProgress?.blocked ?? 0}` });
 
   return container;
 }
