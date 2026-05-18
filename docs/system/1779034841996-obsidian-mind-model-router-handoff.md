@@ -218,6 +218,35 @@ failed captures are recoverable
 
 Status: complete for report-only dry-run/status surfaces; no write/apply loop is approved.
 
+## Continuation update — Phase P1 Post Orchestrator read-only scaffold
+
+Implemented:
+
+- Added read-only Brain Core Post Orchestrator status, contracts, integrations, and recovery endpoints.
+- Added the Brain Core post-orchestrator adapter with static P1 status for Brain, Proofly, and Xgrow.
+- Added the Brain Console `Posts` section with Post Orchestrator, Proofly, Xgrow, contracts, recovery, and publishing-disabled cards.
+- Kept Proofly visible as a social-proof asset provider and Xgrow visible as a growth optimization provider.
+- Preserved the publishing-disabled and scheduling-disabled state everywhere.
+
+Validation:
+
+- Brain Core CI: passed.
+- Brain Console typecheck: passed.
+- Brain Console build: passed.
+- Brain Console package: passed.
+- Local Mind plugin reinstall: completed.
+
+Safety status:
+
+- No Proofly or Xgrow code was modified.
+- No publishing execution, scheduling execution, or Playwright posting execution was added.
+- No Mind write/apply path was enabled.
+- No runtime artifacts were committed.
+
+Next safe task:
+
+- Phase P2: validate the post contracts with typed fixtures/stubs while keeping Proofly/Xgrow code untouched and publishing disabled.
+
 Verified Brain Core exposes scheduler/model-router state and the first controlled report-only execution path:
 
 ```text

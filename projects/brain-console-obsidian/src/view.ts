@@ -23,6 +23,10 @@ import {
   readBrainCorePipelines,
   readBrainCoreProjects,
   readBrainCorePlatforms,
+  readBrainCorePostOrchestratorContracts,
+  readBrainCorePostOrchestratorIntegrations,
+  readBrainCorePostOrchestratorRecovery,
+  readBrainCorePostOrchestratorStatus,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
   readBrainCoreStbVideoMigrationStatus,
@@ -52,6 +56,10 @@ import {
   type BrainCorePipelineSummary,
   type BrainCoreProjectSummary,
   type BrainCorePlatformSummary,
+  type BrainCorePostOrchestratorContract,
+  type BrainCorePostOrchestratorIntegration,
+  type BrainCorePostOrchestratorRecoveryItem,
+  type BrainCorePostOrchestratorStatusResponse,
   type BrainCoreStbPipelineStatus,
   type BrainCoreVideoOrchestratorStatus,
   type BrainCoreStbVideoMigrationStatus,
@@ -70,7 +78,7 @@ import {
   type DashboardSnapshot,
 } from './dashboard.js';
 
-export type BrainConsoleSectionId = 'overview' | 'apps' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'agents' | 'recovery';
+export type BrainConsoleSectionId = 'overview' | 'apps' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery';
 
 export interface BrainConsoleViewState {
   status?: BrainCoreStatus;
@@ -96,6 +104,10 @@ export interface BrainConsoleViewState {
   pipelines?: BrainCorePipelineSummary[];
   projects?: BrainCoreProjectSummary[];
   platforms?: BrainCorePlatformSummary[];
+  postOrchestratorStatus?: BrainCorePostOrchestratorStatusResponse;
+  postOrchestratorContracts?: { contracts?: BrainCorePostOrchestratorContract[] };
+  postOrchestratorIntegrations?: { integrations?: BrainCorePostOrchestratorIntegration[] };
+  postOrchestratorRecovery?: { items?: BrainCorePostOrchestratorRecoveryItem[] };
   stbStatus?: BrainCoreStbPipelineStatus;
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
@@ -118,7 +130,7 @@ export async function loadBrainConsoleViewState(
 ): Promise<BrainConsoleViewState> {
   const normalized = normalizeBrainCoreUrl(settings.brainCoreUrl);
   const baseUrl = normalized.value;
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = await Promise.all([
     readBrainCoreStatus(baseUrl),
     readBrainCoreCapabilities(baseUrl),
     readBrainCoreRuntimeReports(baseUrl),
@@ -139,6 +151,10 @@ export async function loadBrainConsoleViewState(
     readBrainCorePipelines(baseUrl),
     readBrainCoreProjects(baseUrl),
     readBrainCorePlatforms(baseUrl),
+    readBrainCorePostOrchestratorStatus(baseUrl),
+    readBrainCorePostOrchestratorContracts(baseUrl),
+    readBrainCorePostOrchestratorIntegrations(baseUrl),
+    readBrainCorePostOrchestratorRecovery(baseUrl),
     readBrainCoreStbStatus(baseUrl),
     readBrainCoreVideoOrchestratorStatus(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
@@ -164,7 +180,7 @@ export async function loadBrainConsoleViewState(
     maintenancePreviewDetail = maintenanceDetailResult.value?.preview;
   }
 
-  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
+  const offline = [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postOrchestratorStatus, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, actions, agentRuns, agentEvents, recoveryItems].every(
     (result) => result.value === undefined,
   );
 
@@ -210,6 +226,10 @@ export async function loadBrainConsoleViewState(
     pipelines: pipelines.value?.pipelines,
     projects: projects.value?.projects,
     platforms: platforms.value?.platforms,
+    postOrchestratorStatus: postOrchestratorStatus.value,
+    postOrchestratorContracts: postOrchestratorContracts.value,
+    postOrchestratorIntegrations: postOrchestratorIntegrations.value,
+    postOrchestratorRecovery: postOrchestratorRecovery.value,
     stbStatus: stbStatus.value,
     videoOrchestratorStatus: videoOrchestratorStatus.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
@@ -240,6 +260,7 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'pipelines', label: 'Pipelines', icon: '→' },
   { id: 'projects', label: 'Projects', icon: '◉' },
   { id: 'reports', label: 'Reports', icon: '📋' },
+  { id: 'posts', label: 'Posts', icon: '✦' },
   { id: 'agents', label: 'Agents', icon: '◈' },
   { id: 'recovery', label: 'Recovery', icon: '⚠' },
 ];
@@ -326,6 +347,9 @@ function renderActiveSectionContent(
     case 'reports':
       renderReportsSection(content, state, snapshot);
       break;
+    case 'posts':
+      renderPostOrchestratorSection(content, state, snapshot);
+      break;
     case 'agents':
       renderAgentsSection(content, state, snapshot);
       break;
@@ -402,6 +426,17 @@ function renderReportsSection(content: HTMLElement, state: BrainConsoleViewState
   if (state.approvalDetail) {
     renderCard(grid, 'Approval Details', renderApprovalDetailCard(state.approvalDetail));
   }
+}
+
+function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Post Orchestrator Status', renderPostOrchestratorStatusCard(state));
+  renderCard(grid, 'Proofly Provider', renderProoflyProviderCard(state));
+  renderCard(grid, 'Xgrow Provider', renderXgrowProviderCard(state));
+  renderCard(grid, 'Contracts', renderPostContractsCard(state));
+  renderCard(grid, 'Recovery / Blockers', renderPostRecoveryCard(state));
+  renderCard(grid, 'Publishing Disabled State', renderPublishingDisabledCard());
 }
 
 function renderAgentsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
@@ -1400,5 +1435,149 @@ function renderRecoveryPanelCard(state: BrainConsoleViewState): HTMLElement {
     safetyDiv.textContent = safetyChips.join(' · ');
   }
 
+  return el;
+}
+
+function renderPostOrchestratorStatusCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const status = state.postOrchestratorStatus;
+  if (!status) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No post orchestrator status available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Status', value: status.status },
+    { label: 'Phase', value: status.phase },
+    { label: 'Publishing', value: status.publishingEnabled ? 'enabled' : 'disabled' },
+    { label: 'Scheduling', value: status.schedulingEnabled ? 'enabled' : 'disabled' },
+    { label: 'Execution', value: status.executionEnabled ? 'enabled' : 'disabled' },
+    { label: 'Next safe step', value: status.nextSafeStep },
+  ];
+
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  return el;
+}
+
+function renderProoflyProviderCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const status = state.postOrchestratorStatus;
+  const integrations = state.postOrchestratorIntegrations?.integrations ?? [];
+  const proofly = integrations.find((integration) => integration.id === 'proofly-social-proof-assets');
+
+  if (!proofly) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No Proofly integration available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Role', value: proofly.role },
+    { label: 'Status', value: proofly.status },
+    { label: 'Contracts', value: proofly.contractIds.join(', ') },
+    { label: 'Execution', value: proofly.executionEnabled ? 'enabled' : 'disabled' },
+  ];
+
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  if (proofly.blockers.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    proofly.blockers.forEach((blocker) => list.createEl('li', { text: blocker }));
+  }
+
+  if (status?.prooflyRole) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: `Brain view: ${status.prooflyRole}` });
+  }
+
+  return el;
+}
+
+function renderXgrowProviderCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const integrations = state.postOrchestratorIntegrations?.integrations ?? [];
+  const xgrow = integrations.find((integration) => integration.id === 'xgrow-growth-optimization');
+
+  if (!xgrow) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No Xgrow integration available.' });
+    return el;
+  }
+
+  const rows = [
+    { label: 'Role', value: xgrow.role },
+    { label: 'Status', value: xgrow.status },
+    { label: 'Contracts', value: xgrow.contractIds.join(', ') },
+    { label: 'Publishing', value: xgrow.publishingEnabled ? 'enabled' : 'disabled' },
+    { label: 'Execution', value: xgrow.executionEnabled ? 'enabled' : 'disabled' },
+    { label: 'Next safe step', value: xgrow.nextSafeStep },
+  ];
+
+  rows.forEach(({ label, value }) => {
+    const row = el.createDiv({ cls: 'brain-console__row' });
+    row.createEl('dt', { text: label });
+    row.createEl('dd', { text: value });
+  });
+
+  if (xgrow.safety.usesPlaywright || xgrow.safety.usesCookies) {
+    el.createEl('div', { cls: 'brain-console__list-warning', text: 'Playwright/cookie risk is metadata only and execution remains disabled.' });
+  }
+
+  if (xgrow.blockers.length > 0) {
+    const list = el.createEl('ul', { cls: 'brain-console__list' });
+    xgrow.blockers.forEach((blocker) => list.createEl('li', { text: blocker }));
+  }
+
+  return el;
+}
+
+function renderPostContractsCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const contracts = state.postOrchestratorContracts?.contracts ?? [];
+
+  if (contracts.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No post contracts available.' });
+    return el;
+  }
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  contracts.forEach((contract) => {
+    list.createEl('li', {
+      text: `${contract.id}: ${contract.status} · brain=${contract.implementedInBrain ? 'yes' : 'no'} · provider=${contract.implementedInProvider ? 'yes' : 'no'}`,
+    });
+  });
+
+  return el;
+}
+
+function renderPostRecoveryCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const recovery = state.postOrchestratorRecovery?.items ?? [];
+
+  if (recovery.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No post recovery items available.' });
+    return el;
+  }
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  recovery.forEach((item) => {
+    list.createEl('li', { text: `${item.id}: ${item.blocker}` });
+  });
+
+  return el;
+}
+
+function renderPublishingDisabledCard(): HTMLElement {
+  const el = document.createElement('div');
+  el.createEl('div', {
+    cls: 'brain-console__post-disabled',
+    text: 'Publishing is disabled. No post is scheduled or published from Brain in Phase P1.',
+  });
   return el;
 }

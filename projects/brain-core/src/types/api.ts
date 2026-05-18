@@ -182,6 +182,105 @@ export interface BrainCoreStbVideoMigrationStatus {
   blockers: string[];
 }
 
+export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
+
+export type BrainCorePostProviderStatus =
+  | 'not-integrated'
+  | 'planned'
+  | 'contract-defined'
+  | 'stubbed'
+  | 'ready'
+  | 'blocked';
+
+export type BrainCorePostContractStatus = 'draft' | 'defined' | 'validated' | 'implemented' | 'blocked';
+
+export interface BrainCorePostOrchestratorModule {
+  id: string;
+  name: string;
+  status: BrainCorePostOrchestratorStatus;
+  summary: string;
+  owner: 'brain' | 'proofly' | 'xgrow' | 'external';
+  executionEnabled: false;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCorePostOrchestratorContract {
+  id: string;
+  name: string;
+  status: BrainCorePostContractStatus;
+  version: string;
+  owner: 'brain' | 'proofly' | 'xgrow';
+  summary: string;
+  fields: string[];
+  implementedInBrain: boolean;
+  implementedInProvider: boolean;
+  executionEnabled: false;
+}
+
+export interface BrainCorePostOrchestratorIntegration {
+  id: string;
+  provider: 'proofly' | 'xgrow' | 'brain' | 'platform';
+  name: string;
+  status: BrainCorePostProviderStatus;
+  role: string;
+  summary: string;
+  contractIds: string[];
+  executionEnabled: false;
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  safety: {
+    readsSecrets: false;
+    usesCookies: boolean;
+    usesPlaywright: boolean;
+    writesExternalPlatform: false;
+    writesToMind: false;
+    requiresApproval: boolean;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCorePostOrchestratorRecoveryItem {
+  id: string;
+  severity: 'info' | 'warning' | 'error';
+  source: 'brain' | 'proofly' | 'xgrow' | 'platform' | 'contract';
+  title: string;
+  summary: string;
+  blocker: string;
+  nextSafeStep: string;
+  canAutoFix: false;
+  executionEnabled: false;
+}
+
+export interface BrainCorePostOrchestratorStatusResponse {
+  id: 'post-orchestrator';
+  name: 'Post Orchestrator';
+  status: BrainCorePostOrchestratorStatus;
+  summary: string;
+  phase: 'P1-read-only-status-scaffold';
+  publishingEnabled: false;
+  schedulingEnabled: false;
+  executionEnabled: false;
+  prooflyRole: string;
+  xgrowRole: string;
+  modules: BrainCorePostOrchestratorModule[];
+  nextSafeStep: string;
+  updatedAt: string;
+}
+
+export interface BrainCorePostOrchestratorContractsResponse {
+  contracts: BrainCorePostOrchestratorContract[];
+}
+
+export interface BrainCorePostOrchestratorIntegrationsResponse {
+  integrations: BrainCorePostOrchestratorIntegration[];
+}
+
+export interface BrainCorePostOrchestratorRecoveryResponse {
+  items: BrainCorePostOrchestratorRecoveryItem[];
+}
+
 export interface BrainCoreAgentSummary {
   id: string;
   name: string;

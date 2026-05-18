@@ -24,6 +24,17 @@ export interface DashboardSnapshot {
   platformCount: number;
   legacySystemCount: number;
   migrationBlockedCount: number;
+  postOrchestratorStatus?: string;
+  postOrchestratorModuleCount: number;
+  postOrchestratorBlockedCount: number;
+  postOrchestratorContractCount: number;
+  postOrchestratorIntegrationCount: number;
+  prooflyIntegrationStatus?: string;
+  xgrowIntegrationStatus?: string;
+  postPublishingEnabled: boolean;
+  postSchedulingEnabled: boolean;
+  postNextSafeStep: string;
+  postRecoveryCount: number;
   stbPipelineSummary?: { status?: string; health: string; daysStale: number };
   videoOrchestratorSummary?: { status?: string; health: string };
   stbToVideoMigrationSummary?: { parityStatus?: string; blocked: boolean };
@@ -88,6 +99,18 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const legacyOrchestratorCount = (state.orchestrators ?? []).filter(o => o.lifecycle === 'legacy').length;
   const legacySystemCount = legacyOrchestratorCount;
   const migrationBlockedCount = (state.pipelines ?? []).filter(p => p.migration?.decommissionBlocked === true).length;
+
+  const postOrchestratorStatus = state.postOrchestratorStatus?.status;
+  const postOrchestratorModuleCount = state.postOrchestratorStatus?.modules?.length ?? 0;
+  const postOrchestratorBlockedCount = (state.postOrchestratorStatus?.modules ?? []).filter((module) => module.status === 'blocked').length;
+  const postOrchestratorContractCount = state.postOrchestratorStatus ? 8 : 0;
+  const postOrchestratorIntegrationCount = state.postOrchestratorStatus ? 3 : 0;
+  const postPublishingEnabled = Boolean(state.postOrchestratorStatus?.publishingEnabled);
+  const postSchedulingEnabled = Boolean(state.postOrchestratorStatus?.schedulingEnabled);
+  const postNextSafeStep = state.postOrchestratorStatus?.nextSafeStep ?? 'Review the read-only Post Orchestrator scaffold.';
+  const postRecoveryCount = state.recoveryItems?.filter((item) => item.id.startsWith('post-') || item.id.includes('proofly') || item.id.includes('xgrow')).length ?? 0;
+  const prooflyIntegrationStatus = 'contract-defined';
+  const xgrowIntegrationStatus = 'contract-defined';
 
   // STB pipeline summary
   const stbPipeline = (state.pipelines ?? []).find(p => p.id === 'stb-daily-pipeline');
@@ -217,6 +240,17 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     platformCount,
     legacySystemCount,
     migrationBlockedCount,
+    postOrchestratorStatus,
+    postOrchestratorModuleCount,
+    postOrchestratorBlockedCount,
+    postOrchestratorContractCount,
+    postOrchestratorIntegrationCount,
+    prooflyIntegrationStatus,
+    xgrowIntegrationStatus,
+    postPublishingEnabled,
+    postSchedulingEnabled,
+    postNextSafeStep,
+    postRecoveryCount,
     stbPipelineSummary,
     videoOrchestratorSummary,
     stbToVideoMigrationSummary,

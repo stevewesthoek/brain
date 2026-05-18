@@ -7,6 +7,12 @@ import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
 import { getPlatform, listPlatforms } from '../adapters/platforms.js';
+import {
+  readPostOrchestratorContracts,
+  readPostOrchestratorIntegrations,
+  readPostOrchestratorRecovery,
+  readPostOrchestratorStatus,
+} from '../adapters/post-orchestrator.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import {
   listMindPreviewSummaries,
@@ -96,6 +102,18 @@ export async function routeRequest(
       return;
     case '/platforms':
       sendJson(response, 200, { platforms: listPlatforms() });
+      return;
+    case '/post-orchestrator/status':
+      sendJson(response, 200, readPostOrchestratorStatus());
+      return;
+    case '/post-orchestrator/contracts':
+      sendJson(response, 200, readPostOrchestratorContracts());
+      return;
+    case '/post-orchestrator/integrations':
+      sendJson(response, 200, readPostOrchestratorIntegrations());
+      return;
+    case '/post-orchestrator/recovery':
+      sendJson(response, 200, readPostOrchestratorRecovery());
       return;
     case '/stb/status':
       sendJson(response, 200, getStbPipelineStatus());
@@ -377,7 +395,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/integrations, /post-orchestrator/recovery, /stb/status, /video-orchestrator/status, /stb-video-migration/status, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /local-apps, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/model-router, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness.',
         },
       } satisfies BrainCoreErrorResponse);
   }
