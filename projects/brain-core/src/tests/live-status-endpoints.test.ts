@@ -1033,3 +1033,74 @@ test('GET /video-orchestrator/assembly-plan/:id with unknown id returns 404', as
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('assembly plan'));
 });
+
+test('GET /video-orchestrator/metadata-plan returns plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/metadata-plan' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    id: string;
+    summary?: { total: number };
+    safety?: Record<string, unknown>;
+    plans?: Array<{ safety?: Record<string, unknown> }>;
+  };
+  assert.equal(body.id, 'video-orchestrator-metadata-plan');
+  assert.ok(body.summary?.total !== undefined);
+  assert.equal(body.safety?.readOnly, true);
+  assert.equal(body.safety?.generatesSeoCopy, false);
+  assert.equal(body.safety?.callsExternalAI, false);
+  assert.equal(body.safety?.callsPlatformApi, false);
+  assert.equal(body.safety?.schedulesPost, false);
+  assert.equal(body.safety?.publishesContent, false);
+  assert.equal(body.safety?.writesFiles, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.plans));
+});
+
+test('GET /video-orchestrator/metadata-plan/:id returns a single metadata plan', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/metadata-plan' });
+  const listBody = JSON.parse(listResponse.body) as {
+    plans?: Array<{ id: string; intakePlanId: string }>;
+  };
+  const firstPlan = listBody.plans?.[0];
+  assert.ok(firstPlan?.intakePlanId);
+
+  const response = await exercise({
+    method: 'GET',
+    url: `/video-orchestrator/metadata-plan/${encodeURIComponent(firstPlan.intakePlanId)}`,
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    plan?: {
+      platforms?: Array<{ safety?: Record<string, unknown>; titlePlaceholder?: string }>;
+      safety?: Record<string, unknown>;
+    };
+  };
+  assert.ok(body.plan?.platforms);
+  assert.ok(Array.isArray(body.plan.platforms));
+
+  for (const platform of body.plan.platforms ?? []) {
+    assert.equal(platform.safety?.readOnly, true);
+    assert.equal(platform.safety?.generatesSeoCopy, false);
+    assert.equal(platform.safety?.callsExternalAI, false);
+    assert.equal(platform.safety?.callsPlatformApi, false);
+    assert.ok(platform.titlePlaceholder?.includes('placeholder'));
+  }
+
+  assert.equal(body.plan?.safety?.readOnly, true);
+  assert.equal(body.plan?.safety?.generatesSeoCopy, false);
+  assert.equal(body.plan?.safety?.callsExternalAI, false);
+});
+
+test('GET /video-orchestrator/metadata-plan/:id with unknown id returns 404', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/metadata-plan/unknown-metadata-plan-id',
+  });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('metadata plan'));
+});

@@ -1923,6 +1923,116 @@ export interface BrainCoreVideoAssemblyPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoMetadataPlatformItem {
+  id: string;
+  platform: 'youtube' | 'facebook' | 'pinterest' | 'blog' | 'generic';
+  status: 'planned' | 'blocked';
+  titlePlaceholder: string;
+  descriptionPlaceholder: string;
+  tagPlaceholders: string[];
+  categoryPlaceholder?: string;
+  locale: string;
+  requiredAssets: string[];
+  complianceChecklist: string[];
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    generatesSeoCopy: boolean;
+    callsExternalAI: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesFiles: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoMetadataPlan {
+  id: string;
+  intakePlanId: string;
+  researchId?: string;
+  scriptPlanId?: string;
+  assetPlanId?: string;
+  assemblyPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  platforms: BrainCoreVideoMetadataPlatformItem[];
+  summary: {
+    totalPlatforms: number;
+    plannedCount: number;
+    blockedCount: number;
+    requiredAssetCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesSeoCopy: boolean;
+    callsExternalAI: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesFiles: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoMetadataPlanListResponse {
+  id: 'video-orchestrator-metadata-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoMetadataPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalPlatformItems: number;
+  };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesSeoCopy: boolean;
+    callsExternalAI: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesFiles: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoMetadataPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoMetadataPlan;
+  upstream: {
+    researchId?: string;
+    scriptPlanId?: string;
+    assetPlanId?: string;
+    assemblyPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesSeoCopy: boolean;
+    callsExternalAI: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesFiles: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2844,6 +2954,19 @@ export async function readBrainCoreVideoOrchestratorAssemblyPlan(
   voiceoverPlanId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoAssemblyPlanDetailResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoAssemblyPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/assembly-plan/${encodeURIComponent(voiceoverPlanId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorMetadataPlans(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoMetadataPlanListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoMetadataPlanListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/metadata-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorMetadataPlan(
+  baseUrl: string,
+  intakePlanId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoMetadataPlanDetailResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoMetadataPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/metadata-plan/${encodeURIComponent(intakePlanId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(

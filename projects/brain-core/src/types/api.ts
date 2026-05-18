@@ -1038,6 +1038,116 @@ export interface BrainCoreVideoAssemblyPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoMetadataPlatformItem {
+  id: string;
+  platform: 'youtube' | 'facebook' | 'pinterest' | 'blog' | 'generic';
+  status: 'planned' | 'blocked';
+  titlePlaceholder: string;
+  descriptionPlaceholder: string;
+  tagPlaceholders: string[];
+  categoryPlaceholder?: string;
+  locale: string;
+  requiredAssets: string[];
+  complianceChecklist: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    generatesSeoCopy: false;
+    callsExternalAI: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoMetadataPlan {
+  id: string;
+  intakePlanId: string;
+  researchId?: string;
+  scriptPlanId?: string;
+  assetPlanId?: string;
+  assemblyPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  platforms: BrainCoreVideoMetadataPlatformItem[];
+  summary: {
+    totalPlatforms: number;
+    plannedCount: number;
+    blockedCount: number;
+    requiredAssetCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesSeoCopy: false;
+    callsExternalAI: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoMetadataPlanListResponse {
+  id: 'video-orchestrator-metadata-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoMetadataPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalPlatformItems: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesSeoCopy: false;
+    callsExternalAI: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoMetadataPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoMetadataPlan;
+  upstream: {
+    researchId?: string;
+    scriptPlanId?: string;
+    assetPlanId?: string;
+    assemblyPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesSeoCopy: false;
+    callsExternalAI: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesFiles: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;
