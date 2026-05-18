@@ -2149,6 +2149,112 @@ export interface BrainCoreVideoPublishingPrepPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoManualExportPackageItem {
+  id: string;
+  label: string;
+  kind: 'metadata-bundle' | 'asset-reference' | 'assembly-reference' | 'publishing-checklist' | 'manual-review' | 'platform-note' | 'validation-note';
+  status: 'planned' | 'blocked' | 'missing';
+  placeholder: string;
+  sourceRef?: string;
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    writesFiles: boolean;
+    createsDownload: boolean;
+    writesClipboard: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoManualExportPackage {
+  id: string;
+  intakePlanId: string;
+  publishingPrepPlanId?: string;
+  metadataPlanId?: string;
+  assemblyPlanId?: string;
+  assetPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  items: BrainCoreVideoManualExportPackageItem[];
+  summary: {
+    totalItems: number;
+    plannedCount: number;
+    blockedCount: number;
+    missingCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    createsDownload: boolean;
+    writesClipboard: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoManualExportPackageListResponse {
+  id: 'video-orchestrator-manual-export-package';
+  generatedAt: string;
+  version: string;
+  packages: BrainCoreVideoManualExportPackage[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalItems: number;
+  };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    createsDownload: boolean;
+    writesClipboard: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoManualExportPackageDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  package: BrainCoreVideoManualExportPackage;
+  upstream: {
+    publishingPrepPlanId?: string;
+    metadataPlanId?: string;
+    assemblyPlanId?: string;
+    assetPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    writesFiles: boolean;
+    createsDownload: boolean;
+    writesClipboard: boolean;
+    callsPlatformApi: boolean;
+    schedulesPost: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -3096,6 +3202,19 @@ export async function readBrainCoreVideoOrchestratorPublishingPrepPlan(
   intakePlanId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoPublishingPrepPlanDetailResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoPublishingPrepPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/publishing-prep/${encodeURIComponent(intakePlanId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorManualExportPackages(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoManualExportPackageListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoManualExportPackageListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/manual-export-package');
+}
+
+export async function readBrainCoreVideoOrchestratorManualExportPackage(
+  baseUrl: string,
+  intakePlanId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoManualExportPackageDetailResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoManualExportPackageDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/manual-export-package/${encodeURIComponent(intakePlanId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(

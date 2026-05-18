@@ -1175,3 +1175,77 @@ test('GET /video-orchestrator/publishing-prep/:id with unknown id returns 404', 
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('publishing prep plan'));
 });
+
+test('GET /video-orchestrator/manual-export-package returns packages with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/manual-export-package' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    id: string;
+    summary?: { total: number };
+    safety?: Record<string, unknown>;
+    packages?: Array<{ safety?: Record<string, unknown> }>;
+  };
+  assert.equal(body.id, 'video-orchestrator-manual-export-package');
+  assert.ok(body.summary?.total !== undefined);
+  assert.equal(body.safety?.readOnly, true);
+  assert.equal(body.safety?.writesFiles, false);
+  assert.equal(body.safety?.createsDownload, false);
+  assert.equal(body.safety?.writesClipboard, false);
+  assert.equal(body.safety?.callsPlatformApi, false);
+  assert.equal(body.safety?.schedulesPost, false);
+  assert.equal(body.safety?.publishesContent, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.packages));
+});
+
+test('GET /video-orchestrator/manual-export-package/:id returns a single manual export package', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/manual-export-package' });
+  const listBody = JSON.parse(listResponse.body) as {
+    packages?: Array<{ intakePlanId: string }>;
+  };
+  const firstPackage = listBody.packages?.[0];
+  assert.ok(firstPackage?.intakePlanId);
+
+  const response = await exercise({
+    method: 'GET',
+    url: `/video-orchestrator/manual-export-package/${encodeURIComponent(firstPackage.intakePlanId)}`,
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    package?: {
+      items?: Array<{ safety?: Record<string, unknown>; placeholder?: string }>;
+      safety?: Record<string, unknown>;
+    };
+  };
+  assert.ok(body.package?.items);
+  assert.ok(Array.isArray(body.package.items));
+
+  for (const item of body.package.items ?? []) {
+    assert.equal(item.safety?.readOnly, true);
+    assert.equal(item.safety?.writesFiles, false);
+    assert.equal(item.safety?.createsDownload, false);
+    assert.equal(item.safety?.writesClipboard, false);
+    assert.equal(item.safety?.callsPlatformApi, false);
+    assert.equal(item.safety?.schedulesPost, false);
+    assert.ok(item.placeholder?.includes('placeholder'));
+  }
+
+  assert.equal(body.package?.safety?.readOnly, true);
+  assert.equal(body.package?.safety?.writesFiles, false);
+  assert.equal(body.package?.safety?.createsDownload, false);
+  assert.equal(body.package?.safety?.writesClipboard, false);
+});
+
+test('GET /video-orchestrator/manual-export-package/:id with unknown id returns 404', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/manual-export-package/unknown-export-package-id',
+  });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('manual export package'));
+});

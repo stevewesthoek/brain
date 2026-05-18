@@ -1264,6 +1264,112 @@ export interface BrainCoreVideoPublishingPrepPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoManualExportPackageItem {
+  id: string;
+  label: string;
+  kind: 'metadata-bundle' | 'asset-reference' | 'assembly-reference' | 'publishing-checklist' | 'manual-review' | 'platform-note' | 'validation-note';
+  status: 'planned' | 'blocked' | 'missing';
+  placeholder: string;
+  sourceRef?: string;
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    writesFiles: false;
+    createsDownload: false;
+    writesClipboard: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoManualExportPackage {
+  id: string;
+  intakePlanId: string;
+  publishingPrepPlanId?: string;
+  metadataPlanId?: string;
+  assemblyPlanId?: string;
+  assetPlanId?: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  items: BrainCoreVideoManualExportPackageItem[];
+  summary: {
+    totalItems: number;
+    plannedCount: number;
+    blockedCount: number;
+    missingCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    createsDownload: false;
+    writesClipboard: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoManualExportPackageListResponse {
+  id: 'video-orchestrator-manual-export-package';
+  generatedAt: string;
+  version: string;
+  packages: BrainCoreVideoManualExportPackage[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalItems: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    createsDownload: false;
+    writesClipboard: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoManualExportPackageDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  package: BrainCoreVideoManualExportPackage;
+  upstream: {
+    publishingPrepPlanId?: string;
+    metadataPlanId?: string;
+    assemblyPlanId?: string;
+    assetPlanId?: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    createsDownload: false;
+    writesClipboard: false;
+    callsPlatformApi: false;
+    schedulesPost: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;
