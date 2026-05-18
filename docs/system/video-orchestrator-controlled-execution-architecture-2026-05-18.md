@@ -508,3 +508,24 @@ This document defines the future controlled execution model as a design-only bou
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
 - Status: not-ready (blocked until validator implementation plan is approved).
 - Next safe phase: Phase 6F validator implementation plan, still read-only and no execution.
+
+## Phase 6F validator implementation plan
+
+- Added as a read-only validator implementation plan design endpoint.
+- Defines 7 required inputs (candidateStoryId, sourceEpisodeId, preflightValidatorSchemaRef, storyFixturesRef, planningFixturesRef, lockStatusRef, complianceRulesRef).
+- Defines 8 validation rules (verify preflight validator schema approved, verify story fixtures exist, verify planning fixtures exist, verify candidate lock exists, verify compliance rules loaded, verify dry-run produces no real output, verify validation report is read-only, verify no persistence of validation results).
+- Defines output record shape (validationReportId, candidateStoryId, validationRuleCount, passedRuleCount, blockedRuleCount, errors[], warnings[], readOnly, reportGeneratedAt).
+- Defines 8 implementation gates (validator schema definition, dry-run framework, fixtures loading, compliance rules engine, report generation, approval store implementation, first approval creation, second approval creation).
+- Identifies 8 blocking requirements (no approved validator schema, no approved dry-run framework, no approved fixtures loading, no approved compliance rules, no approved report generation, no approved read-only report storage, no persistence policy, no explicit approval).
+- No validator execution is enabled.
+- No dry-run is enabled.
+- No persistence is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until execution-plan implementation plan is approved).
+- Next safe phase: Phase 6G execution-plan implementation plan, still read-only and no execution.

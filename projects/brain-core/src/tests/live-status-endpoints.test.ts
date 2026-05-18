@@ -4420,3 +4420,71 @@ test('POST /video-orchestrator/controlled-execution-second-approval-creation-imp
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-validator-implementation-plan returns plan design', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-validator-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      version: string;
+      status: string;
+      planExists: boolean;
+      validatorExecutionEnabled: boolean;
+      dryRunEnabled: boolean;
+      persistenceEnabled: boolean;
+      approvalCreationEnabled: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      summary: Record<string, number>;
+      requiredInputs: string[];
+      validationRules: string[];
+      outputRecordShape: string[];
+      implementationGates: string[];
+      blockingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-controlled-execution-validator-implementation-plan');
+  assert.equal(body.plan.version, 'phase-6f');
+  assert.ok(['not-ready', 'ready'].includes(body.plan.status));
+  assert.equal(body.plan.planExists, false);
+  assert.equal(body.plan.validatorExecutionEnabled, false);
+  assert.equal(body.plan.dryRunEnabled, false);
+  assert.equal(body.plan.persistenceEnabled, false);
+  assert.equal(body.plan.approvalCreationEnabled, false);
+  assert.equal(body.plan.implementationExecutionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.equal(body.plan.executable, false);
+  assert.ok(body.plan.requiredInputs.includes('candidateStoryId'));
+  assert.ok(body.plan.requiredInputs.includes('preflightValidatorSchemaRef'));
+  assert.ok(body.plan.validationRules.includes('verify dry-run produces no real output'));
+  assert.ok(body.plan.validationRules.includes('verify no persistence of validation results'));
+  assert.ok(body.plan.outputRecordShape.includes('validationReportId'));
+  assert.ok(body.plan.outputRecordShape.includes('passedRuleCount'));
+  assert.ok(body.plan.outputRecordShape.includes('blockedRuleCount'));
+  assert.ok(body.plan.implementationGates.length > 0);
+  assert.ok(body.plan.blockingRequirements.length > 0);
+  assert.ok(body.plan.evidenceReferences.includes('/video-orchestrator/controlled-execution-preflight-validator-schema'));
+
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.planDesignOnly, true);
+  assert.equal(body.plan.safety.validatorExecutionEnabled, false);
+  assert.equal(body.plan.safety.dryRunEnabled, false);
+  assert.equal(body.plan.safety.persistenceEnabled, false);
+  assert.equal(body.plan.safety.approvalCreationEnabled, false);
+  assert.equal(body.plan.safety.createsApproval, false);
+  assert.equal(body.plan.safety.executionEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-validator-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-validator-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
