@@ -649,10 +649,57 @@ This document defines the future controlled execution model as a design-only bou
 
 - Added as a read-only implementation completion readiness checkpoint endpoint.
 - Identifies 13 completed planning phases (6A through 6M).
-- Identifies 4 remaining planning phases (6O operator UX, 6P security review, 6Q approval packet, 6R start gate).
-- Identifies readiness blockers (UX plan missing, security review missing, approval packet missing, start gate missing, no explicit user approval).
+- Identifies 3 remaining planning phases (6O operator UX, 6P security review, 6Q approval packet).
+- Identifies readiness blockers (UX plan missing, security review missing, approval packet missing, no explicit user approval).
 - Planning phase complete: false.
 - No implementation execution is enabled.
 - No execution enabled.
-- Status: not-ready (blocked until remaining 4 planning phases approved).
-- Next safe phase: Phases 6O–6R for final planning gates before Phase 7 implementation start.
+- Status: not-ready (blocked until remaining 3 planning phases approved).
+- Next safe phase: Phases 6O–6Q for final planning gates before Phase 7 implementation start.
+
+## Phase 6O operator UX console controls implementation plan
+
+- Added as a read-only operator UX and console controls implementation plan endpoint.
+- Describes 13 console surfaces (readiness card, feature flag card, approval cards, validator card, etc.).
+- Requires 6 operator confirmation requirements (explicit typed confirmations before critical actions).
+- Defines 7 console control rules (read-only design, no mutation buttons, no API POST calls, design placeholders only).
+- Identifies blocking requirements (no console UX approval, no operator copy approval, no confirmation audit policy).
+- Chains evidence from Phase 6N readiness checkpoint.
+- Console controls enabled: false.
+- Mutation controls enabled: false.
+- All approval/execution buttons disabled: false.
+- Status: not-ready (blocked until console design approved and framework approved).
+- All execution flags disabled (30+ safety flags).
+- Next safe phase: Phase 6P security review and threat modeling plan, still read-only and no execution.
+
+## Phase 6P security review threat modeling implementation plan
+
+- Added as a read-only security review and threat modeling implementation plan endpoint.
+- Describes 5 security review requirements (approval flows, identity management, cryptographic mechanisms, sandbox isolation).
+- Describes 5 threat models (approval chain compromise, identity spoofing, audit tampering, sandbox escape, malicious action registration).
+- Identifies security requirements (security gate enforced, threat models approved, vulnerability assessment completed, zero critical findings).
+- Identifies blocking requirements (no security review approval, no threat modeling approval, no vulnerability assessment, findings not resolved).
+- Chains evidence from Phase 6O operator UX plan.
+- Security review enabled: false.
+- Threat modeling enabled: false.
+- Security audit enabled: false.
+- Status: not-ready (blocked until security review and threat modeling completed and approved).
+- All execution flags disabled (30+ safety flags).
+- Next safe phase: Phase 6Q implementation approval packet and start gate, still read-only and no execution.
+
+## Phase 6Q implementation approval packet start gate
+
+- Added as a read-only implementation approval packet and start gate endpoint.
+- Final phase before Phase 7 implementation eligibility.
+- Describes 10 approval packet sections (planning completion index, security review, UX design, readiness checkpoint, feature flags, approval stores, validator, rollback, artifacts, STB protection).
+- Requires all 35 planning phases (5A–6Q) documented and approved.
+- Requires Phase 6O (console controls) approval and Phase 6P (security review) approval.
+- Defines 7 gate criteria (planning phases complete, evidence collected, security approvals obtained, UX approved, readiness signed off, all 30+ safety flags false, Phase 7 still blocked).
+- Chains evidence from Phase 6P security review plan.
+- Approval packet complete: false.
+- All planning phases approved: false.
+- Ready for Phase 7 execution: false.
+- Status: not-ready (blocked until approval packet signed and all phases approved).
+- All execution flags disabled (30+ safety flags).
+- Next safe phase: Phase 7 implementation execution (only when explicit user approval given).
+- **CRITICAL: Phase 7 remains blocked until explicit enablement approval is issued by authorized approver.**

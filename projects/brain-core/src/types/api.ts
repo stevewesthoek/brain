@@ -6281,3 +6281,226 @@ export interface BrainCoreVideoControlledExecutionImplementationCompletionReadin
 export interface BrainCoreVideoControlledExecutionImplementationCompletionReadinessCheckpointResponse {
   checkpoint: BrainCoreVideoControlledExecutionImplementationCompletionReadinessCheckpoint;
 }
+
+export interface BrainCoreVideoControlledExecutionOperatorUXConsoleControlsImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-operator-ux-console-controls-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6o';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  consoleControlsEnabled: false;
+  mutationControlsEnabled: false;
+  approvalButtonsEnabled: false;
+  executionButtonsEnabled: false;
+  operatorConfirmationEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    consoleSurfaceCount: number;
+    operatorConfirmationCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  consoleSurfaces: string[];
+  operatorConfirmationRequirements: string[];
+  consoleControlRules: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    consoleControlsEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    executionButtonsEnabled: false;
+    operatorConfirmationEnabled: false;
+    implementationExecutionEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    featureFlagsEnabled: false;
+    flagEvaluationEnabled: false;
+    persistenceEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    sandboxExecutionEnabled: false;
+    artifactGenerationEnabled: false;
+    artifactExportEnabled: false;
+    renderingEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    credentialAccessEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionOperatorUXConsoleControlsImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionOperatorUXConsoleControlsImplementationPlan;
+}
+
+export interface BrainCoreVideoControlledExecutionSecurityReviewThreatModelingImplementationPlan {
+  id: 'video-orchestrator-controlled-execution-security-review-threat-modeling-implementation-plan';
+  generatedAt: string;
+  version: 'phase-6p';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  securityReviewEnabled: false;
+  threatModelingEnabled: false;
+  securityAuditEnabled: false;
+  vulnerabilityAssessmentEnabled: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    securityReviewCount: number;
+    threatModelCount: number;
+    securityRequirementCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  securityReviewRequirements: string[];
+  threatModelRequirements: string[];
+  securityRequirements: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    securityReviewEnabled: false;
+    threatModelingEnabled: false;
+    securityAuditEnabled: false;
+    vulnerabilityAssessmentEnabled: false;
+    implementationExecutionEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    featureFlagsEnabled: false;
+    flagEvaluationEnabled: false;
+    persistenceEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    sandboxExecutionEnabled: false;
+    artifactGenerationEnabled: false;
+    artifactExportEnabled: false;
+    renderingEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    credentialAccessEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionSecurityReviewThreatModelingImplementationPlanResponse {
+  plan: BrainCoreVideoControlledExecutionSecurityReviewThreatModelingImplementationPlan;
+}
+
+export interface BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGate {
+  id: 'video-orchestrator-controlled-execution-implementation-approval-packet-start-gate';
+  generatedAt: string;
+  version: 'phase-6q';
+  status: 'not-ready' | 'ready';
+  planExists: false;
+  approvalPacketComplete: false;
+  allPlanningPhasesApproved: false;
+  readyForPhase7Execution: false;
+  approvalPacketSignatureRequired: false;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    approvalPacketSectionCount: number;
+    approvalRequirementCount: number;
+    gateCriteriaCount: number;
+    blockerCount: number;
+    implementationGateCount: number;
+  };
+  approvalPacketSections: string[];
+  approvalRequirements: string[];
+  gateCriteria: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    planDesignOnly: true;
+    approvalPacketComplete: false;
+    allPlanningPhasesApproved: false;
+    readyForPhase7Execution: false;
+    approvalPacketSignatureRequired: false;
+    implementationExecutionEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    featureFlagsEnabled: false;
+    flagEvaluationEnabled: false;
+    persistenceEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    sandboxExecutionEnabled: false;
+    artifactGenerationEnabled: false;
+    artifactExportEnabled: false;
+    renderingEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    credentialAccessEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    deletesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGateResponse {
+  gate: BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGate;
+}

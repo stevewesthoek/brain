@@ -4810,3 +4810,158 @@ test('POST /video-orchestrator/controlled-execution-implementation-completion-re
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-operator-ux-console-controls-implementation-plan returns phase-6o design-only response', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-operator-ux-console-controls-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      version: string;
+      status: string;
+      consoleControlsEnabled: boolean;
+      mutationControlsEnabled: boolean;
+      approvalButtonsEnabled: boolean;
+      executionButtonsEnabled: boolean;
+      operatorConfirmationEnabled: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      consoleSurfaces: string[];
+      operatorConfirmationRequirements: string[];
+      consoleControlRules: string[];
+      blockingRequirements: string[];
+      blockers: string[];
+      safety: { readOnly: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6o');
+  assert.equal(body.plan.status, 'not-ready');
+  assert.equal(body.plan.consoleControlsEnabled, false);
+  assert.equal(body.plan.mutationControlsEnabled, false);
+  assert.equal(body.plan.approvalButtonsEnabled, false);
+  assert.equal(body.plan.executionButtonsEnabled, false);
+  assert.equal(body.plan.operatorConfirmationEnabled, false);
+  assert.equal(body.plan.implementationExecutionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.equal(body.plan.executable, false);
+  assert.ok(Array.isArray(body.plan.consoleSurfaces));
+  assert.ok(body.plan.consoleSurfaces.length > 0);
+  assert.ok(Array.isArray(body.plan.operatorConfirmationRequirements));
+  assert.ok(body.plan.operatorConfirmationRequirements.length > 0);
+  assert.ok(Array.isArray(body.plan.consoleControlRules));
+  assert.ok(Array.isArray(body.plan.blockingRequirements));
+  assert.ok(Array.isArray(body.plan.blockers));
+  assert.ok(body.plan.blockers.length > 0);
+  assert.equal(body.plan.safety.readOnly, true);
+});
+
+test('POST /video-orchestrator/controlled-execution-operator-ux-console-controls-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-operator-ux-console-controls-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-security-review-threat-modeling-implementation-plan returns phase-6p design-only response', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-security-review-threat-modeling-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      version: string;
+      status: string;
+      securityReviewEnabled: boolean;
+      threatModelingEnabled: boolean;
+      securityAuditEnabled: boolean;
+      vulnerabilityAssessmentEnabled: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      securityReviewRequirements: string[];
+      threatModelRequirements: string[];
+      securityRequirements: string[];
+      blockingRequirements: string[];
+      blockers: string[];
+      safety: { readOnly: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.version, 'phase-6p');
+  assert.equal(body.plan.status, 'not-ready');
+  assert.equal(body.plan.securityReviewEnabled, false);
+  assert.equal(body.plan.threatModelingEnabled, false);
+  assert.equal(body.plan.securityAuditEnabled, false);
+  assert.equal(body.plan.vulnerabilityAssessmentEnabled, false);
+  assert.equal(body.plan.implementationExecutionEnabled, false);
+  assert.equal(body.plan.executionEnabled, false);
+  assert.equal(body.plan.executable, false);
+  assert.ok(Array.isArray(body.plan.securityReviewRequirements));
+  assert.ok(body.plan.securityReviewRequirements.length > 0);
+  assert.ok(Array.isArray(body.plan.threatModelRequirements));
+  assert.ok(body.plan.threatModelRequirements.length > 0);
+  assert.ok(Array.isArray(body.plan.securityRequirements));
+  assert.ok(Array.isArray(body.plan.blockingRequirements));
+  assert.ok(Array.isArray(body.plan.blockers));
+  assert.ok(body.plan.blockers.length > 0);
+  assert.equal(body.plan.safety.readOnly, true);
+});
+
+test('POST /video-orchestrator/controlled-execution-security-review-threat-modeling-implementation-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-security-review-threat-modeling-implementation-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
+
+test('GET /video-orchestrator/controlled-execution-implementation-approval-packet-start-gate returns phase-6q design-only response', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-implementation-approval-packet-start-gate' });
+  const body = JSON.parse(response.body) as {
+    gate: {
+      version: string;
+      status: string;
+      approvalPacketComplete: boolean;
+      allPlanningPhasesApproved: boolean;
+      readyForPhase7Execution: boolean;
+      approvalPacketSignatureRequired: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      approvalPacketSections: string[];
+      approvalRequirements: string[];
+      gateCriteria: string[];
+      blockingRequirements: string[];
+      blockers: string[];
+      safety: { readOnly: boolean };
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.gate.version, 'phase-6q');
+  assert.equal(body.gate.status, 'not-ready');
+  assert.equal(body.gate.approvalPacketComplete, false);
+  assert.equal(body.gate.allPlanningPhasesApproved, false);
+  assert.equal(body.gate.readyForPhase7Execution, false);
+  assert.equal(body.gate.approvalPacketSignatureRequired, false);
+  assert.equal(body.gate.implementationExecutionEnabled, false);
+  assert.equal(body.gate.executionEnabled, false);
+  assert.equal(body.gate.executable, false);
+  assert.ok(Array.isArray(body.gate.approvalPacketSections));
+  assert.ok(body.gate.approvalPacketSections.length > 0);
+  assert.ok(Array.isArray(body.gate.approvalRequirements));
+  assert.ok(body.gate.approvalRequirements.length > 0);
+  assert.ok(Array.isArray(body.gate.gateCriteria));
+  assert.ok(Array.isArray(body.gate.blockingRequirements));
+  assert.ok(Array.isArray(body.gate.blockers));
+  assert.ok(body.gate.blockers.length > 0);
+  assert.equal(body.gate.safety.readOnly, true);
+});
+
+test('POST /video-orchestrator/controlled-execution-implementation-approval-packet-start-gate is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-implementation-approval-packet-start-gate' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
