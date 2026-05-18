@@ -689,6 +689,114 @@ export interface BrainCoreVideoDesignPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoVoiceoverSegment {
+  id: string;
+  scriptSectionId?: string;
+  sequence: number;
+  label: string;
+  kind: 'intro' | 'body' | 'passage' | 'application' | 'outro' | 'transition';
+  status: 'planned' | 'blocked';
+  placeholder: string;
+  estimatedDurationSeconds: number;
+  voiceRequirements: {
+    tone: 'calm' | 'educational' | 'story' | 'neutral';
+    pacing: 'slow' | 'medium' | 'measured';
+    emphasis: string[];
+  };
+  pronunciationNotes: string[];
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    generatesAudio: false;
+    callsTts: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoVoiceoverPlanSummary {
+  totalSegments: number;
+  plannedCount: number;
+  blockedCount: number;
+  estimatedDurationSeconds: number;
+  estimatedDurationMinutes: number;
+}
+
+export interface BrainCoreVideoVoiceoverPlan {
+  id: string;
+  scriptPlanId: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  segments: BrainCoreVideoVoiceoverSegment[];
+  summary: BrainCoreVideoVoiceoverPlanSummary;
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesAudio: false;
+    callsTts: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoVoiceoverPlanListResponse {
+  id: 'video-orchestrator-voiceover-plan';
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoVoiceoverPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalSegments: number;
+    estimatedDurationMinutes: number;
+  };
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesAudio: false;
+    callsTts: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoVoiceoverPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoVoiceoverPlan;
+  upstream: {
+    scriptPlanId: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    executesStb: false;
+    executesVideo: false;
+    generatesAudio: false;
+    callsTts: false;
+    callsExternalAI: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
 export interface BrainCoreStbVideoParityMatrixEntry {
   id: string;
   stbStage: string;

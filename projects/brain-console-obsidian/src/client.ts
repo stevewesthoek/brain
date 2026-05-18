@@ -1576,6 +1576,112 @@ export interface BrainCoreVideoDesignPlanDetailResponse {
   };
 }
 
+export interface BrainCoreVideoVoiceoverSegment {
+  id: string;
+  scriptSectionId?: string;
+  sequence: number;
+  label: string;
+  kind: 'intro' | 'body' | 'passage' | 'application' | 'outro' | 'transition';
+  status: 'planned' | 'blocked';
+  placeholder: string;
+  estimatedDurationSeconds: number;
+  voiceRequirements: {
+    tone: 'calm' | 'educational' | 'story' | 'neutral';
+    pacing: 'slow' | 'medium' | 'measured';
+    emphasis: string[];
+  };
+  pronunciationNotes: string[];
+  blockers: string[];
+  safety: {
+    readOnly: boolean;
+    generatesAudio: boolean;
+    callsTts: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoVoiceoverPlan {
+  id: string;
+  scriptPlanId: string;
+  intakePlanId: string;
+  projectId: string;
+  title: string;
+  generatedAt: string;
+  status: 'preview-ready' | 'blocked';
+  segments: BrainCoreVideoVoiceoverSegment[];
+  summary: {
+    totalSegments: number;
+    plannedCount: number;
+    blockedCount: number;
+    estimatedDurationSeconds: number;
+    estimatedDurationMinutes: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesAudio: boolean;
+    callsTts: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoVoiceoverPlanListResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plans: BrainCoreVideoVoiceoverPlan[];
+  summary: {
+    total: number;
+    previewReadyCount: number;
+    blockedCount: number;
+    totalSegments: number;
+    estimatedDurationMinutes: number;
+  };
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesAudio: boolean;
+    callsTts: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
+export interface BrainCoreVideoVoiceoverPlanDetailResponse {
+  id: string;
+  generatedAt: string;
+  version: string;
+  plan: BrainCoreVideoVoiceoverPlan;
+  upstream: {
+    scriptPlanId: string;
+    intakePlanId: string;
+  };
+  nextSafeStep: string;
+  safety: {
+    readOnly: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+    generatesAudio: boolean;
+    callsTts: boolean;
+    callsExternalAI: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+  };
+}
+
 export interface BrainCoreStbVideoMigrationStatus {
   id: 'stb-to-video-migration-status';
   sourcePipelineId: string;
@@ -2458,6 +2564,19 @@ export async function readBrainCoreVideoOrchestratorDesignPlan(
   assetPlanId: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoDesignPlanDetailResponse>> {
   return fetchJson<import('./client.js').BrainCoreVideoDesignPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/design-plan/${encodeURIComponent(assetPlanId)}`);
+}
+
+export async function readBrainCoreVideoOrchestratorVoiceoverPlans(
+  baseUrl: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoVoiceoverPlanListResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoVoiceoverPlanListResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/voiceover-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorVoiceoverPlan(
+  baseUrl: string,
+  scriptPlanId: string,
+): Promise<HttpResult<import('./client.js').BrainCoreVideoVoiceoverPlanDetailResponse>> {
+  return fetchJson<import('./client.js').BrainCoreVideoVoiceoverPlanDetailResponse>(normalizeBaseUrl(baseUrl), `/video-orchestrator/voiceover-plan/${encodeURIComponent(scriptPlanId)}`);
 }
 
 export async function readBrainCoreStbVideoMigrationStatus(

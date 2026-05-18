@@ -821,3 +821,73 @@ test('GET /video-orchestrator/design-plan/:id with unknown id returns 404', asyn
   assert.equal(body.error?.code, 'not_found');
   assert.ok(body.error?.message.includes('design plan'));
 });
+
+test('GET /video-orchestrator/voiceover-plan returns plans with safety flags', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/voiceover-plan' });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    id: string;
+    summary?: { total: number };
+    safety?: Record<string, unknown>;
+    plans?: Array<{ safety?: Record<string, unknown> }>;
+  };
+  assert.equal(body.id, 'video-orchestrator-voiceover-plan');
+  assert.ok(body.summary?.total !== undefined);
+  assert.equal(body.safety?.readOnly, true);
+  assert.equal(body.safety?.generatesAudio, false);
+  assert.equal(body.safety?.callsTts, false);
+  assert.equal(body.safety?.callsExternalAI, false);
+  assert.equal(body.safety?.writesFiles, false);
+  assert.equal(body.safety?.publishesContent, false);
+  assert.equal(body.safety?.writesToMind, false);
+  assert.ok(Array.isArray(body.plans));
+});
+
+test('GET /video-orchestrator/voiceover-plan/:id returns a single voiceover plan', async () => {
+  const listResponse = await exercise({ method: 'GET', url: '/video-orchestrator/voiceover-plan' });
+  const listBody = JSON.parse(listResponse.body) as {
+    plans?: Array<{ id: string; scriptPlanId: string }>;
+  };
+  const firstPlan = listBody.plans?.[0];
+  assert.ok(firstPlan?.scriptPlanId);
+
+  const response = await exercise({
+    method: 'GET',
+    url: `/video-orchestrator/voiceover-plan/${encodeURIComponent(firstPlan.scriptPlanId)}`,
+  });
+  assert.equal(response.statusCode, 200);
+
+  const body = JSON.parse(response.body) as {
+    plan?: {
+      segments?: Array<{ safety?: Record<string, unknown>; placeholder?: string }>;
+      safety?: Record<string, unknown>;
+    };
+  };
+  assert.ok(body.plan?.segments);
+  assert.ok(Array.isArray(body.plan.segments));
+
+  for (const segment of body.plan.segments ?? []) {
+    assert.equal(segment.safety?.readOnly, true);
+    assert.equal(segment.safety?.generatesAudio, false);
+    assert.equal(segment.safety?.callsTts, false);
+    assert.equal(segment.safety?.callsExternalAI, false);
+    assert.ok(segment.placeholder?.includes('placeholder'));
+  }
+
+  assert.equal(body.plan?.safety?.readOnly, true);
+  assert.equal(body.plan?.safety?.generatesAudio, false);
+  assert.equal(body.plan?.safety?.callsTts, false);
+});
+
+test('GET /video-orchestrator/voiceover-plan/:id with unknown id returns 404', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/voiceover-plan/unknown-plan-id',
+  });
+  assert.equal(response.statusCode, 404);
+
+  const body = JSON.parse(response.body) as { error?: { code: string; message: string } };
+  assert.equal(body.error?.code, 'not_found');
+  assert.ok(body.error?.message.includes('voiceover plan'));
+});
