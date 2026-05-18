@@ -5342,3 +5342,61 @@ export interface BrainCoreVideoControlledExecutionAuditComplianceEvidencePacket 
 export interface BrainCoreVideoControlledExecutionAuditComplianceEvidencePacketResponse {
   packet: BrainCoreVideoControlledExecutionAuditComplianceEvidencePacket;
 }
+
+export interface BrainCoreVideoControlledExecutionImplementationReadinessCheckpoint {
+  id: 'video-orchestrator-controlled-execution-implementation-readiness-checkpoint';
+  generatedAt: string;
+  version: 'phase-6a';
+  status: 'not-ready' | 'ready';
+  designPhaseComplete: true;
+  implementationPlanningEnabled: true;
+  implementationExecutionEnabled: false;
+  executionEnabled: false;
+  executable: false;
+  summary: {
+    completedDesignPhaseCount: number;
+    blockingRequirementCount: number;
+    requiredImplementationPlanCount: number;
+    safetyBoundaryCount: number;
+  };
+  completedDesignPhases: string[];
+  requiredImplementationPlans: string[];
+  blockingRequirements: string[];
+  evidenceReferences: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    checkpointOnly: true;
+    designPhaseComplete: true;
+    implementationPlanningEnabled: true;
+    implementationExecutionEnabled: false;
+    featureFlagsEnabled: false;
+    persistenceEnabled: false;
+    approvalCreationEnabled: false;
+    createsApproval: false;
+    createsFirstApproval: false;
+    createsSecondApproval: false;
+    approvalExecutionEnabled: false;
+    validatorExecutionEnabled: false;
+    lockPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    sandboxProvisioningEnabled: false;
+    registersAction: false;
+    registersAllowlist: false;
+    createsExecutionPlan: false;
+    executionPlanExecutable: false;
+    executionEnabled: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    rendersVideo: false;
+    exportsArtifacts: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoControlledExecutionImplementationReadinessCheckpointResponse {
+  checkpoint: BrainCoreVideoControlledExecutionImplementationReadinessCheckpoint;
+}

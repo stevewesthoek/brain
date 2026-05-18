@@ -4044,3 +4044,72 @@ test('POST /video-orchestrator/controlled-execution-audit-compliance-evidence-pa
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/controlled-execution-implementation-readiness-checkpoint returns design phase complete', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/controlled-execution-implementation-readiness-checkpoint' });
+  const body = JSON.parse(response.body) as {
+    checkpoint: {
+      id: string;
+      version: string;
+      status: string;
+      designPhaseComplete: boolean;
+      implementationPlanningEnabled: boolean;
+      implementationExecutionEnabled: boolean;
+      executionEnabled: boolean;
+      executable: boolean;
+      summary: {
+        completedDesignPhaseCount: number;
+        blockingRequirementCount: number;
+        requiredImplementationPlanCount: number;
+        safetyBoundaryCount: number;
+      };
+      completedDesignPhases: string[];
+      requiredImplementationPlans: string[];
+      blockingRequirements: string[];
+      evidenceReferences: string[];
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checkpoint.id, 'video-orchestrator-controlled-execution-implementation-readiness-checkpoint');
+  assert.equal(body.checkpoint.version, 'phase-6a');
+  assert.ok(['not-ready', 'ready'].includes(body.checkpoint.status));
+  assert.equal(body.checkpoint.designPhaseComplete, true);
+  assert.equal(body.checkpoint.implementationPlanningEnabled, true);
+  assert.equal(body.checkpoint.implementationExecutionEnabled, false);
+  assert.equal(body.checkpoint.executionEnabled, false);
+  assert.equal(body.checkpoint.executable, false);
+  assert.equal(body.checkpoint.summary.completedDesignPhaseCount, 18);
+  assert.ok(body.checkpoint.summary.blockingRequirementCount > 0);
+  assert.ok(body.checkpoint.summary.requiredImplementationPlanCount > 0);
+  assert.ok(body.checkpoint.completedDesignPhases.length === 18);
+  assert.ok(body.checkpoint.requiredImplementationPlans.length > 0);
+  assert.ok(body.checkpoint.blockingRequirements.length > 0);
+  assert.ok(body.checkpoint.evidenceReferences.includes('/video-orchestrator/controlled-execution-approval-payload-schema'));
+
+  assert.equal(body.checkpoint.safety.readOnly, true);
+  assert.equal(body.checkpoint.safety.checkpointOnly, true);
+  assert.equal(body.checkpoint.safety.designPhaseComplete, true);
+  assert.equal(body.checkpoint.safety.implementationPlanningEnabled, true);
+  assert.equal(body.checkpoint.safety.implementationExecutionEnabled, false);
+  assert.equal(body.checkpoint.safety.featureFlagsEnabled, false);
+  assert.equal(body.checkpoint.safety.persistenceEnabled, false);
+  assert.equal(body.checkpoint.safety.approvalCreationEnabled, false);
+  assert.equal(body.checkpoint.safety.validatorExecutionEnabled, false);
+  assert.equal(body.checkpoint.safety.lockPersistenceEnabled, false);
+  assert.equal(body.checkpoint.safety.auditPersistenceEnabled, false);
+  assert.equal(body.checkpoint.safety.sandboxProvisioningEnabled, false);
+  assert.equal(body.checkpoint.safety.createsApproval, false);
+  assert.equal(body.checkpoint.safety.createsExecutionPlan, false);
+  assert.equal(body.checkpoint.safety.executionEnabled, false);
+  assert.equal(body.checkpoint.safety.writesFiles, false);
+});
+
+test('POST /video-orchestrator/controlled-execution-implementation-readiness-checkpoint is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/controlled-execution-implementation-readiness-checkpoint' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

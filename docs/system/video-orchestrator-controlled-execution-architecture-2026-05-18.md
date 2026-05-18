@@ -94,6 +94,7 @@ This document defines the future controlled execution model as a design-only bou
 - 5P approval review/audit design.
 - 5Q immutable audit trail schema design.
 - 5R audit compliance evidence packet design.
+- 6A implementation readiness checkpoint.
 
 ## Non-negotiable safety
 
@@ -382,4 +383,27 @@ This document defines the future controlled execution model as a design-only bou
 - No execution-plan execution.
 - No STB or Video execution.
 - No file writes, rendering, export, publishing, Mind writes, or decommissioning.
-- Next safe phase: finalize phase roadmap or begin implementation phases.
+- Next safe phase: implementation readiness checkpoint, still read-only and no execution.
+
+## Phase 6A implementation readiness checkpoint
+
+- Added as a read-only implementation readiness checkpoint endpoint.
+- Reports that all 18 design phases (5A–5R) are complete and verified.
+- Identifies 12 required implementation plans (feature flags, approval store, approval creation, validators, locks, audit, sandbox, rollback, execution runner, operator UX, security review).
+- Identifies 8 blocking requirements (no user approval, no approved frameworks/policies/implementations).
+- Specifies that implementation planning is enabled but implementation execution remains disabled.
+- No implementation is executed.
+- No feature flags are enabled.
+- No persistence is enabled.
+- No approval creation is enabled.
+- No validator execution is enabled.
+- No sandbox provisioning is enabled.
+- No approval is created.
+- No first approval is created.
+- No second approval is created.
+- No action registration.
+- No execution-plan execution.
+- No STB or Video execution.
+- No file writes, rendering, export, publishing, Mind writes, or decommissioning.
+- Status: not-ready (blocked until implementation plans are approved).
+- Next safe phase: Phase 6B feature flag rollout plan design, still read-only.
