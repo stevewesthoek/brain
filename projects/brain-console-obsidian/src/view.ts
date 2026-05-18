@@ -1018,7 +1018,8 @@ function renderProductionStatusCard(state: BrainConsoleViewState): HTMLElement {
   // Calculate readiness percentages
   const videoReadiness = state.videoOrchestratorStatus?.moduleProgress?.percent ?? 0;
   const stbContinuity = state.stbStatus?.status === 'ok' ? 100 : state.stbStatus?.status === 'unknown' ? 50 : 0;
-  const postReadiness = state.postOrchestratorStatus?.status === 'partial' || state.postOrchestratorStatus?.status === 'ok' ? 60 : 40;
+  const postStatus = state.postOrchestratorStatus?.status;
+  const postReadiness = postStatus === 'partial' || postStatus === 'ready' ? 60 : 40;
 
   const avgReadiness = Math.round((videoReadiness + stbContinuity + postReadiness) / 3);
 
@@ -1098,7 +1099,8 @@ function renderVideoReadinessCard(state: BrainConsoleViewState): HTMLElement {
 
   const row2 = container.createEl('div', { cls: 'brain-console__row' });
   row2.createEl('dt', { text: 'Blocked' });
-  row2.createEl('dd', { text: `${videoOrch.moduleProgress?.blocked ?? 0}` });
+  const blockedModules = videoOrch.modules?.filter((module) => module.status === 'blocked').length ?? 0;
+  row2.createEl('dd', { text: `${blockedModules}` });
 
   return container;
 }
