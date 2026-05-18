@@ -1811,3 +1811,70 @@ test('Render/export policy keeps production gate blocked/not-ready', async () =>
   assert.ok(gateBody.gate.summary.blockedItems > 0);
   assert.ok(gateBody.gate.readinessPercent < 100);
 });
+
+
+test('GET /video-orchestrator/approval-policy-design returns design-only policy', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/approval-policy-design' });
+  const body = JSON.parse(response.body) as {
+    policy: {
+      id: string;
+      status: string;
+      canCreateApproval: boolean;
+      canRegisterAction: boolean;
+      canExecute: boolean;
+      requirements: Array<{ status: string; severity: string; safety: Record<string, boolean> }>;
+      lifecycle: Array<{ status: string; safety: Record<string, boolean> }>;
+      summary: { totalRequirements: number; blockedCount: number; missingCount: number; blockingSeverityCount: number };
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.policy.id, 'video-orchestrator-approval-policy-design');
+  assert.ok(['policy-only', 'blocked', 'ready-for-review'].includes(body.policy.status));
+  assert.equal(body.policy.canCreateApproval, false);
+  assert.equal(body.policy.canRegisterAction, false);
+  assert.equal(body.policy.canExecute, false);
+  assert.ok(body.policy.summary.totalRequirements > 0);
+  assert.ok(body.policy.summary.blockedCount > 0 || body.policy.summary.missingCount > 0);
+  assert.ok(body.policy.summary.blockingSeverityCount > 0);
+  assert.equal(body.policy.safety.readOnly, true);
+  assert.equal(body.policy.safety.createsApproval, false);
+  assert.equal(body.policy.safety.executableActionRegistered, false);
+  assert.equal(body.policy.safety.executesStb, false);
+  assert.equal(body.policy.safety.executesVideo, false);
+  assert.equal(body.policy.safety.writesFiles, false);
+  assert.equal(body.policy.safety.publishesContent, false);
+  assert.equal(body.policy.safety.decommissionsStb, false);
+  assert.equal(body.policy.safety.writesToMind, false);
+
+  body.policy.requirements.forEach(requirement => {
+    assert.equal(requirement.safety.readOnly, true);
+    assert.equal(requirement.safety.createsApproval, false);
+    assert.equal(requirement.safety.registersAction, false);
+    assert.equal(requirement.safety.executesStb, false);
+    assert.equal(requirement.safety.executesVideo, false);
+    assert.equal(requirement.safety.writesFiles, false);
+    assert.equal(requirement.safety.publishesContent, false);
+    assert.equal(requirement.safety.writesToMind, false);
+  });
+
+  body.policy.lifecycle.forEach(step => {
+    assert.equal(step.safety.readOnly, true);
+    assert.equal(step.safety.createsApproval, false);
+    assert.equal(step.safety.registersAction, false);
+    assert.equal(step.safety.executesStb, false);
+    assert.equal(step.safety.executesVideo, false);
+    assert.equal(step.safety.writesFiles, false);
+    assert.equal(step.safety.publishesContent, false);
+    assert.equal(step.safety.writesToMind, false);
+  });
+});
+
+test('POST /video-orchestrator/approval-policy-design is not available', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/approval-policy-design' });
+  const body = JSON.parse(response.body) as { error: { code: string; message: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

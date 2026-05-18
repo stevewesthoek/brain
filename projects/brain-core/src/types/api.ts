@@ -1737,6 +1737,81 @@ export interface BrainCoreVideoRenderExportPolicyResponse {
   policy: BrainCoreVideoRenderExportPolicy;
 }
 
+export interface BrainCoreVideoApprovalPolicyRequirement {
+  id: string;
+  label: string;
+  category: 'operator-approval' | 'durable-audit' | 'rollback' | 'scope' | 'evidence' | 'execution-gate' | 'safety';
+  status: 'satisfied' | 'blocked' | 'missing' | 'not-applicable';
+  severity: 'info' | 'warning' | 'blocking';
+  evidence: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoApprovalPolicyLifecycleStep {
+  id: string;
+  sequence: number;
+  label: string;
+  status: 'planned' | 'blocked';
+  requiredBeforeExecution: boolean;
+  blockers: string[];
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    registersAction: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoApprovalPolicyDesign {
+  id: 'video-orchestrator-approval-policy-design';
+  generatedAt: string;
+  status: 'policy-only' | 'blocked' | 'ready-for-review';
+  canCreateApproval: false;
+  canRegisterAction: false;
+  canExecute: false;
+  requirements: BrainCoreVideoApprovalPolicyRequirement[];
+  lifecycle: BrainCoreVideoApprovalPolicyLifecycleStep[];
+  summary: {
+    totalRequirements: number;
+    satisfiedCount: number;
+    blockedCount: number;
+    missingCount: number;
+    blockingSeverityCount: number;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    createsApproval: false;
+    executableActionRegistered: false;
+    executesStb: false;
+    executesVideo: false;
+    writesFiles: false;
+    publishesContent: false;
+    decommissionsStb: false;
+    writesToMind: false;
+  };
+}
+
+export interface BrainCoreVideoApprovalPolicyDesignResponse {
+  policy: BrainCoreVideoApprovalPolicyDesign;
+}
+
 export type BrainCorePostOrchestratorStatus = 'planned' | 'partial' | 'ready' | 'blocked' | 'disabled';
 
 export type BrainCorePostProviderStatus =
@@ -3275,6 +3350,7 @@ export interface BrainCoreRoutes {
   '/stb-video/dual-run-status': BrainCoreStbVideoDualRunStatus;
   '/video-orchestrator/production-gate': BrainCoreVideoProductionGateResponse;
   '/video-orchestrator/render-export-policy': BrainCoreVideoRenderExportPolicyResponse;
+  '/video-orchestrator/approval-policy-design': BrainCoreVideoApprovalPolicyDesignResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];

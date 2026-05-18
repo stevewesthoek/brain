@@ -2634,3 +2634,20 @@ Next safe task:
 - Then either:
   1. One focused visual redesign pass (if structural changes needed)
   2. Explicit roadmap decision before real scheduling/publishing design work
+
+
+## 2026-05-18 — Production acceleration: Video approval policy design
+
+Completed a read-only Video Orchestrator approval policy design slice after render/export policy. Added `GET /video-orchestrator/approval-policy-design` with deterministic policy requirements and lifecycle preview.
+
+Validation evidence:
+- Brain Core tests passed: 222/222.
+- No POST route, executable action, action-registry entry, or allowlist entry was added.
+
+Safety status:
+- Approval creation remains disabled.
+- Executable action registration remains disabled.
+- STB execution/decommission remains disabled.
+- Video execution, rendering, exporting, file writes, publishing, and Mind writes remain disabled.
+
+Next safe task: artifact sandbox design or controlled dry-run execution design, still read-only until explicit policy approval.
