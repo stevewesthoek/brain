@@ -1933,3 +1933,65 @@ Safety status:
 - Publishing remains disabled
 - All new code is read-only
 
+
+
+
+## Continuation update — Proofly/Xgrow verified inspection correction
+
+Direct repo inspection was performed after the initial Post Orchestrator planning commit because the prior Claude Code summary incorrectly stated Proofly and Xgrow were not available locally.
+
+Verified sources:
+
+- Proofly source id: `prochattools-proofly`
+- Xgrow source id: `prochattools-xgrow`
+
+Proofly safe files inspected:
+
+```text
+README.md
+DESIGN.md
+docs/architecture.md
+docs/roadmap.md
+docs/overview.md
+docs/manual-mrr-override.md
+docs/workspace-switcher.md
+package.json
+prisma/system.prisma
+```
+
+Xgrow safe files inspected:
+
+```text
+README.md
+ROADMAP.md
+RESEARCH_FINDINGS.md
+PLAYWRIGHT_POSTING_STRATEGY.md
+PLAYWRIGHT_POSTING_STRATEGY_V2.md
+PROBOT_INTEGRATION_GUIDE.md
+SMOKE_TEST_GUIDE.md
+package.json
+scripts/scheduler.ts
+```
+
+Safety boundaries preserved:
+
+- No Proofly code changed.
+- No Xgrow code changed.
+- No physical repo merge started.
+- No decommission started.
+- No publishing execution added.
+- Xgrow `data/auth.json`, `data/twitter-cookies.json`, `data/*.db`, real `.env`, cookie, session, and secret files were not opened.
+
+Planning correction applied:
+
+- `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` now distinguishes verified Proofly/Xgrow responsibilities from assumption-based planning.
+- Proofly is confirmed as a social-proof/product surface with card generation, MRR/manual override, templates/brand kits, workspaces, API/webhook/audit tables, and runtime provisioning.
+- Xgrow is confirmed as a Playwright-first X growth assistant with Engage UI, dashboard APIs, scheduler, automation logs, and known browser-posting policy/security risks.
+
+Next safe implementation slice remains:
+
+- Phase P1 — Brain Core read-only Post Orchestrator status scaffold and Brain Console Post Orchestrator section.
+- No Proofly/Xgrow code changes.
+- No publishing execution.
+- No Playwright posting exposure.
+- No Mind mutation.

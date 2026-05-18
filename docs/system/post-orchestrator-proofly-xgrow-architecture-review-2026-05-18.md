@@ -70,38 +70,52 @@ The Brain repo will become the canonical orchestration engine for all post (cont
 - Post timing/optimization logic
 - Virality/engagement analysis
 
-### Proofly Current Role (Assumed from Strategic Direction)
+### Proofly Current Role (Verified Safe Repo Inspection)
 
-**Product surface:**
-- Social proof dashboard
-- Visual asset generation (screenshots, milestone cards, MRR visuals, GitHub achievement visuals)
-- Branded templates and theming
-- Asset preview and export
-- Product UI for marketer/sales use
+Safe files inspected: `README.md`, `DESIGN.md`, `docs/architecture.md`, `docs/roadmap.md`, `docs/overview.md`, `docs/manual-mrr-override.md`, `docs/workspace-switcher.md`, `package.json`, and `prisma/system.prisma`. No real `.env` or secret files were opened.
 
-**Current orchestration-like logic (to eventually move):**
-- Scheduler/queue management (if present)
-- Publishing pipeline (if present)
-- Approval workflow (if present)
-- Asset request routing (if present)
-- Event handling (if present)
+**Verified product/runtime surface:**
+- Standalone Next.js application with dedicated Postgres provisioning and runtime migration gates.
+- Product surface layer with marketing routes, authenticated app routes, legal pages, waiting list, blog, dashboard, and workflow UI.
+- Design system layer with tokenized fonts, colors, layout primitives, and a terminal/data-first social-proof aesthetic.
+- Proof card generation context centered on founder metrics, MRR values, growth percentages, branded templates, and X-native proof-card output.
+- Manual MRR override flow via `POST /api/v1/cards`, with manual snapshots and audit metadata.
+- Workspace switcher and workspace-scoped product surfaces.
+- Prisma schema includes subscriptions, projects, Stripe webhook events, rate limits, card generation, card engagement, API keys, webhooks, audit logs, usage quotas, workspaces, templates, and brand kits.
 
-### Xgrow Current Role (Assumed from Strategic Direction)
+**Verified orchestration-like logic to avoid duplicating:**
+- Runtime provisioning and deploy gates.
+- Webhook delivery/retry tables.
+- Rate limit buckets.
+- Audit logging and usage tracking.
+- API key/request tracking.
+- Project/workspace scoping.
+- Optional provider plumbing for Clerk, Stripe, Resend, WordPress, and n8n.
 
-**Growth intelligence:**
-- Post optimization strategy (copy, timing, audience, hashtags)
-- Virality scoring and hook analysis
-- Engagement prediction
-- Thread optimization
-- Growth analytics interpretation
-- Engagement intelligence pipeline
+**Post Orchestrator implication:** Proofly should become the visual asset/social-proof provider. Brain should call Proofly through `ProoflyAssetRequest/Result` contracts instead of duplicating templates, brand kits, card rendering, workspace scoping, or Proofly-specific product UI.
 
-**Current orchestration-like logic (to eventually move):**
-- Scheduler/automation (if present)
-- Playwright posting logic (if present)
-- Approval routing (if present)
-- Event handling (if present)
-- Publishing coordination (if present)
+### Xgrow Current Role (Verified Safe Repo Inspection)
+
+Safe files inspected: `README.md`, `ROADMAP.md`, `RESEARCH_FINDINGS.md`, `PLAYWRIGHT_POSTING_STRATEGY.md`, `PLAYWRIGHT_POSTING_STRATEGY_V2.md`, `PROBOT_INTEGRATION_GUIDE.md`, `SMOKE_TEST_GUIDE.md`, `package.json`, and `scripts/scheduler.ts`. Real cookie/session/database files under `data/` were not opened.
+
+**Verified product/runtime surface:**
+- Internal X growth assistant for finding reply opportunities, generating contextual replies, reviewing them, and posting replies through a browser workflow.
+- Next.js app on port `7080`, with Engage UI, dashboard APIs, scraper/discovery support, queue/original-post legacy paths, and automation logs.
+- Current roadmap states xGrow is Playwright-first for Engage reply posting, while the X API client remains legacy/supporting.
+- Dashboard integration guide documents stats, logs, posts, action commands, scan/scheduler triggers, pause/resume, clear pending, and ProBot xgrow tab integration.
+- Scheduler script runs a cron tick against `/api/scheduler/tick` using an environment secret.
+- Research docs include a strong policy/security warning: X explicitly disallows non-API website scripting, and browser-based posting is fragile/risky.
+
+**Verified orchestration-like logic to centralize in Brain over time:**
+- Posting scheduler.
+- Reply queue processing.
+- Posting action controls (`pause`, `resume`, `clear-pending`, `skip-post`, `reset-failed`).
+- Scan/scheduler triggers.
+- Automation logs and failure tracking.
+- Playwright browser posting runtime.
+- Rate limits and posting-mode state.
+
+**Post Orchestrator implication:** Xgrow should become the growth intelligence/optimization provider. Brain should not blindly inherit Xgrow's Playwright posting runtime. Any future publishing path needs a separate security review, approval policy, and platform-compliance decision before execution is exposed.
 
 ### What Must Move to Brain Over Time
 
