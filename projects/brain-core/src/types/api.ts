@@ -6552,3 +6552,67 @@ export interface BrainCoreProBotDashboardParityResponse {
   };
   nextSafeStep: string;
 }
+
+
+export type BrainCoreVideoThumbnailPlanStatus = 'planned' | 'blocked' | 'ready-read-only';
+
+export interface BrainCoreVideoThumbnailDesignVariant {
+  id: string;
+  label: string;
+  status: BrainCoreVideoThumbnailPlanStatus;
+  hypothesis: string;
+  textOverlay: string;
+  generatedAsset: false;
+}
+
+export interface BrainCoreVideoThumbnailDesignComposition {
+  layout: string;
+  foreground: string;
+  background: string;
+  textOverlay: string;
+  safeArea: string;
+}
+
+export interface BrainCoreVideoThumbnailDesignSafety {
+  readOnly: true;
+  designOnly: true;
+  callsExternalAI: false;
+  generatesImages: false;
+  rendersVideo: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesStb: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoThumbnailDesignPlan {
+  id: string;
+  storyId: string;
+  sourcePlanId: string;
+  title: string;
+  status: 'blocked';
+  designIntent: string;
+  composition: BrainCoreVideoThumbnailDesignComposition;
+  variants: BrainCoreVideoThumbnailDesignVariant[];
+  safety: BrainCoreVideoThumbnailDesignSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoThumbnailDesignPlanResponse {
+  id: 'video-orchestrator-thumbnail-design-plan';
+  status: 'blocked';
+  phase: 'thumbnail-design-plan-read-only';
+  generatedAt: string;
+  summary: {
+    planCount: number;
+    variantCount: number;
+    blockedCount: number;
+    generatedAssetCount: 0;
+  };
+  plans: BrainCoreVideoThumbnailDesignPlan[];
+  safety: BrainCoreVideoThumbnailDesignSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

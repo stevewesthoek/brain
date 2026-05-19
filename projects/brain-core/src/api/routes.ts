@@ -63,6 +63,7 @@ import { readVideoVisualsPlans, readVideoVisualsPlan } from '../adapters/video-o
 import { readVideoAssemblyPlans, readVideoAssemblyPlan } from '../adapters/video-orchestrator-assembly-plan.js';
 import { readVideoMetadataPlans, readVideoMetadataPlan } from '../adapters/video-orchestrator-metadata-plan.js';
 import { readVideoPublishingPrepPlans, readVideoPublishingPrepPlan } from '../adapters/video-orchestrator-publishing-prep.js';
+import { readVideoThumbnailDesignPlans, readVideoThumbnailDesignPlan } from '../adapters/video-orchestrator-thumbnail-design-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -286,6 +287,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/intake':
       sendJson(response, 200, getVideoOrchestratorIntake());
+      return;
+    case '/video-orchestrator/thumbnail-design':
+      sendJson(response, 200, readVideoThumbnailDesignPlans());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -602,6 +606,22 @@ export async function routeRequest(
         const manualExportMatch = /^\/post-orchestrator\/manual-export\/([^/]+)$/.exec(url.pathname);
         if (manualExportMatch) {
           sendJson(response, 200, readPostManualExportPackage(decodeURIComponent(manualExportMatch[1] ?? '')));
+          return;
+        }
+
+        const thumbnailDesignMatch = /^\/video-orchestrator\/thumbnail-design\/([^/]+)$/.exec(url.pathname);
+        if (thumbnailDesignMatch) {
+          const plan = readVideoThumbnailDesignPlan(decodeURIComponent(thumbnailDesignMatch[1] ?? ''));
+          if (plan) {
+            sendJson(response, 200, plan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator thumbnail design plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
           return;
         }
 

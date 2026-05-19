@@ -5048,3 +5048,109 @@ test('POST /probot/dashboard-parity is not registered', async () => {
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/thumbnail-design returns read-only thumbnail design plans', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/thumbnail-design' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    phase: string;
+    summary: { planCount: number; variantCount: number; blockedCount: number; generatedAssetCount: number };
+    plans: Array<{
+      id: string;
+      storyId: string;
+      status: string;
+      variants: Array<{ generatedAsset: boolean }>;
+      safety: {
+        readOnly: boolean;
+        designOnly: boolean;
+        callsExternalAI: boolean;
+        generatesImages: boolean;
+        rendersVideo: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesStb: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    safety: {
+      readOnly: boolean;
+      designOnly: boolean;
+      callsExternalAI: boolean;
+      generatesImages: boolean;
+      rendersVideo: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'video-orchestrator-thumbnail-design-plan');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.phase, 'thumbnail-design-plan-read-only');
+  assert.equal(body.summary.planCount, 3);
+  assert.equal(body.summary.variantCount, 6);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.generatedAssetCount, 0);
+
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.designOnly, true);
+  assert.equal(body.safety.callsExternalAI, false);
+  assert.equal(body.safety.generatesImages, false);
+  assert.equal(body.safety.rendersVideo, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesStb, false);
+  assert.equal(body.safety.executesVideo, false);
+
+  body.plans.forEach((plan) => {
+    assert.equal(plan.status, 'blocked');
+    assert.equal(plan.safety.readOnly, true);
+    assert.equal(plan.safety.designOnly, true);
+    assert.equal(plan.safety.callsExternalAI, false);
+    assert.equal(plan.safety.generatesImages, false);
+    assert.equal(plan.safety.rendersVideo, false);
+    assert.equal(plan.safety.writesFiles, false);
+    assert.equal(plan.safety.publishesContent, false);
+    assert.equal(plan.safety.writesToMind, false);
+    assert.equal(plan.safety.executesStb, false);
+    assert.equal(plan.safety.executesVideo, false);
+    plan.variants.forEach((variant) => assert.equal(variant.generatedAsset, false));
+  });
+});
+
+test('GET /video-orchestrator/thumbnail-design/:id returns a read-only thumbnail design plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/thumbnail-design/story-052' });
+  const body = JSON.parse(response.body) as {
+    storyId: string;
+    sourcePlanId: string;
+    status: string;
+    variants: Array<{ id: string; generatedAsset: boolean }>;
+    safety: { generatesImages: boolean; writesFiles: boolean; publishesContent: boolean; executesVideo: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.storyId, 'story-052');
+  assert.equal(body.sourcePlanId, 'video-design-story-052');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.variants.length, 2);
+  assert.equal(body.variants[0]?.generatedAsset, false);
+  assert.equal(body.safety.generatesImages, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('POST /video-orchestrator/thumbnail-design is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/thumbnail-design' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
