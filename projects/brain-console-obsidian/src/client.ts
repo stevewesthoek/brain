@@ -5437,6 +5437,50 @@ export interface BrainCoreVideoProviderImplementationPhaseStartGateResponse {
   };
 }
 
+export interface BrainCoreVideoProviderImplementationReadinessDashboardSummaryResponse {
+  dashboard: {
+    status: string;
+    providerClassCount: number;
+    planningCompleteCount: number;
+    implementationApprovedCount: number;
+    implementationEligibleCount: number;
+    blockedGateCount: number;
+    providerConfiguredCount: number;
+    providerCallCount: number;
+    credentialAccessCount: number;
+    mutationControlCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      planningComplete: boolean;
+      implementationApproved: boolean;
+      implementationEligible: boolean;
+      planningSurfaceCount: number;
+      completedPlanningSurfaceCount: number;
+      blockedGateCount: number;
+      remainingApprovalCount: number;
+      dashboardHighlights: string[];
+      operatorWarnings: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    }>;
+    summary: {
+      providerClassCount: number;
+      planningCompleteCount: number;
+      implementationApprovedCount: number;
+      implementationEligibleCount: number;
+      blockedGateCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+      mutationControlCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5525,4 +5569,10 @@ export async function readBrainCoreVideoOrchestratorProviderImplementationPhaseS
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderImplementationPhaseStartGateResponse>> {
   return fetchJson<BrainCoreVideoProviderImplementationPhaseStartGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-implementation-phase-start-gate');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderImplementationReadinessDashboardSummary(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderImplementationReadinessDashboardSummaryResponse>> {
+  return fetchJson<BrainCoreVideoProviderImplementationReadinessDashboardSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-implementation-readiness-dashboard-summary');
 }

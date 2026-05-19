@@ -7784,3 +7784,102 @@ export interface BrainCoreVideoProviderImplementationPhaseStartGate {
 export interface BrainCoreVideoProviderImplementationPhaseStartGateResponse {
   gate: BrainCoreVideoProviderImplementationPhaseStartGate;
 }
+
+export type BrainCoreVideoProviderImplementationReadinessDashboardSummaryProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderImplementationReadinessDashboardSummaryEntry {
+  providerClass: BrainCoreVideoProviderImplementationReadinessDashboardSummaryProviderClass;
+  status: 'blocked';
+  planningComplete: true;
+  implementationApproved: false;
+  implementationEligible: false;
+  planningSurfaceCount: number;
+  completedPlanningSurfaceCount: number;
+  blockedGateCount: number;
+  remainingApprovalCount: number;
+  dashboardHighlights: string[];
+  operatorWarnings: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    dashboardSummaryOnly: true;
+    planningComplete: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderImplementationReadinessDashboardSummary {
+  id: 'video-orchestrator-provider-implementation-readiness-dashboard-summary';
+  generatedAt: string;
+  status: 'blocked';
+  providerClassCount: 3;
+  planningCompleteCount: 3;
+  implementationApprovedCount: 0;
+  implementationEligibleCount: 0;
+  blockedGateCount: 3;
+  providerConfiguredCount: 0;
+  providerCallCount: 0;
+  credentialAccessCount: 0;
+  mutationControlCount: 0;
+  entries: BrainCoreVideoProviderImplementationReadinessDashboardSummaryEntry[];
+  summary: {
+    providerClassCount: 3;
+    planningCompleteCount: 3;
+    implementationApprovedCount: 0;
+    implementationEligibleCount: 0;
+    blockedGateCount: 3;
+    providerConfiguredCount: 0;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+    mutationControlCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    dashboardSummaryOnly: true;
+    planningComplete: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderImplementationReadinessDashboardSummaryResponse {
+  dashboard: BrainCoreVideoProviderImplementationReadinessDashboardSummary;
+}

@@ -79,6 +79,7 @@ import { readVideoPromptReviewUxImplementationPlan, readVideoPromptReviewUxImple
 import { readVideoProviderAuditPersistenceBoundaryPlan, readVideoProviderAuditPersistenceBoundaryPlanEntry } from '../adapters/video-orchestrator-provider-audit-persistence-boundary-plan.js';
 import { readVideoProviderWrapperSecurityReviewPlan, readVideoProviderWrapperSecurityReviewPlanEntry } from '../adapters/video-orchestrator-provider-wrapper-security-review-plan.js';
 import { readVideoProviderImplementationPhaseStartGate, readVideoProviderImplementationPhaseStartGateEntry } from '../adapters/video-orchestrator-provider-implementation-phase-start-gate.js';
+import { readVideoProviderImplementationReadinessDashboardSummary, readVideoProviderImplementationReadinessDashboardSummaryEntry } from '../adapters/video-orchestrator-provider-implementation-readiness-dashboard-summary.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -350,6 +351,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-implementation-phase-start-gate':
       sendJson(response, 200, readVideoProviderImplementationPhaseStartGate());
+      return;
+    case '/video-orchestrator/provider-implementation-readiness-dashboard-summary':
+      sendJson(response, 200, readVideoProviderImplementationReadinessDashboardSummary());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1413,6 +1417,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator provider implementation phase start gate not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const readinessDashboardMatch = /^\/video-orchestrator\/provider-implementation-readiness-dashboard-summary\/([^/]+)$/.exec(url.pathname);
+        const readinessDashboardProviderClass = readinessDashboardMatch?.[1] ?? '';
+        if (readinessDashboardProviderClass.length > 0) {
+          const summary = readVideoProviderImplementationReadinessDashboardSummaryEntry(decodeURIComponent(readinessDashboardProviderClass));
+          if (summary) {
+            sendJson(response, 200, summary);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider implementation readiness dashboard summary not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

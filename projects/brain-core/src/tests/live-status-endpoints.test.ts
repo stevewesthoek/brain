@@ -6795,3 +6795,129 @@ test('POST /video-orchestrator/provider-implementation-phase-start-gate is not r
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-implementation-phase-start-gate' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-implementation-readiness-dashboard-summary returns blocked dashboard summary with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-implementation-readiness-dashboard-summary' });
+  const body = JSON.parse(response.body) as {
+    dashboard: {
+      status: string;
+      providerClassCount: number;
+      planningCompleteCount: number;
+      implementationApprovedCount: number;
+      implementationEligibleCount: number;
+      blockedGateCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+      mutationControlCount: number;
+      entries: Array<{
+        providerClass: string;
+        status: string;
+        planningComplete: boolean;
+        implementationApproved: boolean;
+        implementationEligible: boolean;
+        planningSurfaceCount: number;
+        completedPlanningSurfaceCount: number;
+        blockedGateCount: number;
+        remainingApprovalCount: number;
+        dashboardHighlights: string[];
+        operatorWarnings: string[];
+        nextSafeStep: string;
+        safety: Record<string, boolean>;
+      }>;
+      summary: {
+        providerClassCount: number;
+        planningCompleteCount: number;
+        implementationApprovedCount: number;
+        implementationEligibleCount: number;
+        blockedGateCount: number;
+        providerConfiguredCount: number;
+        providerCallCount: number;
+        credentialAccessCount: number;
+        mutationControlCount: number;
+      };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.dashboard.status, 'blocked');
+  assert.equal(body.dashboard.providerClassCount, 3);
+  assert.equal(body.dashboard.planningCompleteCount, 3);
+  assert.equal(body.dashboard.implementationApprovedCount, 0);
+  assert.equal(body.dashboard.implementationEligibleCount, 0);
+  assert.equal(body.dashboard.blockedGateCount, 3);
+  assert.equal(body.dashboard.providerConfiguredCount, 0);
+  assert.equal(body.dashboard.providerCallCount, 0);
+  assert.equal(body.dashboard.credentialAccessCount, 0);
+  assert.equal(body.dashboard.mutationControlCount, 0);
+  assert.equal(body.dashboard.entries.length, 3);
+  assert.ok(body.dashboard.entries.every((entry) => entry.status === 'blocked'));
+  assert.ok(body.dashboard.entries.every((entry) => entry.planningComplete === true));
+  assert.ok(body.dashboard.entries.every((entry) => entry.implementationApproved === false));
+  assert.ok(body.dashboard.entries.every((entry) => entry.implementationEligible === false));
+  assert.ok(body.dashboard.entries.every((entry) => entry.dashboardHighlights.includes('provider planning surfaces complete')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.dashboardHighlights.includes('credential access remains disabled')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.dashboardHighlights.includes('provider calls remain disabled')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.dashboardHighlights.includes('Brain Console controls remain read-only')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.dashboardHighlights.includes('implementation requires explicit approval')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.dashboardHighlights.includes('first possible implementation slice is wrapper scaffolding only')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not enable providers from this dashboard')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not add credentials yet')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not call providers yet')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not enable prompt generation yet')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not enable artifact writes yet')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not enable audit persistence yet')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.operatorWarnings.includes('do not add mutation controls yet')));
+  assert.ok(body.dashboard.entries.every((entry) => entry.safety.readOnly === true));
+  assert.ok(body.dashboard.entries.every((entry) => entry.safety.dashboardSummaryOnly === true));
+  assert.ok(body.dashboard.entries.every((entry) => entry.safety.planningComplete === true));
+  assert.ok(body.dashboard.entries.every((entry) => entry.safety.implementationApproved === false));
+  assert.ok(body.dashboard.entries.every((entry) => entry.safety.implementationEligible === false));
+  assert.equal(body.dashboard.safety.readOnly, true);
+  assert.equal(body.dashboard.safety.dashboardSummaryOnly, true);
+  assert.equal(body.dashboard.safety.planningComplete, true);
+  assert.equal(body.dashboard.safety.implementationApproved, false);
+  assert.equal(body.dashboard.safety.implementationEligible, false);
+  assert.equal(body.dashboard.safety.providerConfigured, false);
+  assert.equal(body.dashboard.safety.providerCallsEnabled, false);
+  assert.equal(body.dashboard.safety.credentialAccessEnabled, false);
+  assert.equal(body.dashboard.safety.networkAccessEnabled, false);
+  assert.equal(body.dashboard.safety.promptGenerationEnabled, false);
+  assert.equal(body.dashboard.safety.imageGenerationEnabled, false);
+  assert.equal(body.dashboard.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.dashboard.safety.auditPersistenceEnabled, false);
+  assert.equal(body.dashboard.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.dashboard.safety.mutationControlsEnabled, false);
+  assert.equal(body.dashboard.safety.approvalButtonsEnabled, false);
+  assert.equal(body.dashboard.safety.filesystemAccessEnabled, false);
+  assert.equal(body.dashboard.safety.writesFiles, false);
+  assert.equal(body.dashboard.safety.publishesContent, false);
+  assert.equal(body.dashboard.safety.writesToMind, false);
+  assert.equal(body.dashboard.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-implementation-readiness-dashboard-summary/:providerClass returns image-generation dashboard summary', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-implementation-readiness-dashboard-summary/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    planningComplete: boolean;
+    implementationApproved: boolean;
+    implementationEligible: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.planningComplete, true);
+  assert.equal(body.implementationApproved, false);
+  assert.equal(body.implementationEligible, false);
+});
+
+test('POST /video-orchestrator/provider-implementation-readiness-dashboard-summary is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-implementation-readiness-dashboard-summary' });
+  assert.equal(response.statusCode, 404);
+});
