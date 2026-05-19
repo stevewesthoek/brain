@@ -427,8 +427,8 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.equal(body.safety.readOnlyDashboard, true);
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandExecution, false);
-  assert.equal(body.actionPolicy.status, 'planned');
-  assert.equal(body.safety.startStopControlsEnabled, false);
+  assert.equal(body.actionPolicy.status, 'enabled');
+  assert.equal(body.safety.startStopControlsEnabled, true);
   assert.ok(body.apps.length > 0);
   assert.ok(body.apps.some((app) => app.id === 'model-router'));
   assert.ok(body.apps.every((app) => !app.actionEnabled || app.startSupported));
@@ -540,7 +540,7 @@ test('POST /local-apps/model-router/start returns structured controlled result',
   assert.equal(body.action, 'start');
   assert.equal(body.status, 'not_executable');
   assert.equal(body.ok, false);
-  assert.equal(body.errorCode, 'local_app_action_not_executable');
+  assert.equal(body.errorCode, 'unsafe_command');
   assert.equal(typeof body.message, 'string');
   assert.equal(body.nextPollMs > 0, true);
   assert.ok(body.steps.length > 0);
@@ -583,8 +583,8 @@ test('POST /local-apps/model-router/delete is not registered', async () => {
   assert.equal(response.statusCode, 404);
 });
 
-test('local app executor errors are converted to structured failed results', () => {
-  const result = executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
+test('local app executor errors are converted to structured failed results', async () => {
+  const result = await executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
   assert.equal(result.status, 'failed');
   assert.equal(result.ok, false);
   assert.equal(result.errorCode, 'local_app_action_failed');

@@ -3,6 +3,7 @@ import path from 'node:path';
 import type {
   BrainCoreLocalAppAction,
   BrainCoreLocalAppActionPlan,
+  BrainCoreLocalAppActionPolicy,
   BrainCoreLocalAppActionResult,
   BrainCoreLocalAppActionSafety,
   BrainCoreLocalAppActionResultStep,
@@ -13,6 +14,7 @@ import type {
   BrainCoreLocalAppServiceDefinition,
   BrainCoreLocalAppOnboardingChecklist,
 } from '../types/api.js';
+import { LocalAppActionExecutor } from './local-app-action-executor.js';
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
 const MODEL_ROUTER_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/model-router/latest.json');
@@ -68,10 +70,24 @@ const DEFAULT_ACTION_POLICY = {
   blockedActions: ['start', 'stop', 'restart', 'custom-command'] as Array<'start' | 'stop' | 'restart' | 'custom-command'>,
 };
 
+function createActionPolicy(safeActions: Array<'start' | 'stop' | 'restart'>): BrainCoreLocalAppActionPolicy {
+  return {
+    status: (safeActions.length > 0 ? 'enabled' : 'disabled') as any,
+    executionPath: (safeActions.length > 0 ? 'brain-core-allowlisted-action' : 'none') as any,
+    requiresConfirmation: true,
+    requiresAllowlist: true,
+    pluginExecutesShell: false,
+    arbitraryCommandAllowed: false,
+    safeActions,
+    blockedActions: ['custom-command'] as Array<'start' | 'stop' | 'restart' | 'custom-command'>,
+  };
+}
+
 const RECENT_ACTION_LIMIT = 20;
 const localAppInFlightActions = new Map<string, BrainCoreLocalAppActionResult>();
 const localAppRecentResults: BrainCoreLocalAppActionResult[] = [];
 const localAppLastErrorByApp = new Map<string, BrainCoreLocalAppActionResult>();
+const executor = new LocalAppActionExecutor();
 
 type ExecuteLocalAppActionRequestOptions = {
   forceExecutorError?: boolean;
@@ -111,124 +127,27 @@ export function createLocalAppActionPlan(appId: string, action: BrainCoreLocalAp
   };
 }
 
-export function executeLocalAppAction(appId: string, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionResult | undefined {
-  const result = executeLocalAppActionRequest(appId, action);
+export async function executeLocalAppAction(appId: string, action: BrainCoreLocalAppAction): Promise<BrainCoreLocalAppActionResult | undefined> {
+  const result = await executeLocalAppActionRequest(appId, action);
   return result.status === 'not_found' ? undefined : result;
 }
 
-export function executeLocalAppActionRequest(appId: string, action: BrainCoreLocalAppAction, options: ExecuteLocalAppActionRequestOptions = {}): BrainCoreLocalAppActionResult {
-  const startedAtMs = Date.now();
-  const startedAt = new Date(startedAtMs).toISOString();
-  const id = `local-app-${action}-${normalizeId(appId || 'unknown')}-${startedAtMs}`;
-  const lockKey = `${appId}:${action}`;
-
+export async function executeLocalAppActionRequest(
+  appId: string,
+  action: BrainCoreLocalAppAction,
+  options: ExecuteLocalAppActionRequestOptions = {},
+): Promise<BrainCoreLocalAppActionResult> {
   try {
-    const app = listLocalAppDefinitions().find((entry) => entry.id === appId);
-    if (!app) {
-      const result = createActionResult({
-        id,
-        appId,
-        action,
-        status: 'not_found',
-        ok: false,
-        message: 'Local app is not registered in the canonical inventory.',
-        errorCode: 'local_app_not_found',
-        startedAtMs,
-        steps: [
-          {
-            id: 'validate-app',
-            label: 'Validate canonical app id',
-            type: 'validation',
-            status: 'failed',
-            message: 'No matching canonical app id was found.',
-          },
-        ],
-        safety: localActionSafety(false, false),
-        nextState: 'unknown',
-      });
-      recordActionResult(result);
-      return result;
+    if (options.forceExecutorError) {
+      throw new Error('Forced local app executor failure for regression coverage.');
     }
 
-    const existing = localAppInFlightActions.get(lockKey);
-    if (existing) {
-      const result = createActionResult({
-        id,
-        appId: app.id,
-        action,
-        status: 'blocked',
-        ok: false,
-        message: 'A local app action is already in flight for this app/action.',
-        errorCode: 'local_app_action_in_flight',
-        startedAtMs,
-        steps: createExecutionSteps(app, action, 'blocked', 'Action blocked because an existing request is in flight.'),
-        safety: localActionSafety(true, app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action)),
-        nextState: 'unknown',
-        nextPollMs: 1500,
-      });
-      recordActionResult(result);
-      return result;
-    }
-
-    localAppInFlightActions.set(lockKey, createActionResult({
-      id,
-      appId: app.id,
-      action,
-      status: 'running',
-      ok: false,
-      message: 'Local app action request is being evaluated.',
-      startedAtMs,
-      steps: createExecutionSteps(app, action, 'skipped', 'Pending evaluation.'),
-      safety: localActionSafety(true, app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action)),
-      nextState: 'unknown',
-      nextPollMs: 500,
-    }));
-
-    try {
-      if (options.forceExecutorError) {
-        throw new Error('Forced local app executor failure for regression coverage.');
-      }
-
-      const executable = app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action);
-      if (!executable) {
-        const result = createActionResult({
-          id,
-          appId: app.id,
-          action,
-          status: 'not_executable',
-          ok: false,
-          message: 'No safe executable strategy is registered for this app/action.',
-          errorCode: 'local_app_action_not_executable',
-          error: 'Action is blocked until the app has an approved Brain Core execution strategy.',
-          startedAtMs,
-          steps: createExecutionSteps(app, action, 'not_executable', `No safe executable ${action} strategy is registered.`),
-          safety: localActionSafety(true, false),
-          nextState: 'unknown',
-        });
-        recordActionResult(result);
-        return result;
-      }
-
-      const result = createActionResult({
-        id,
-        appId: app.id,
-        action,
-        status: 'not_executable',
-        ok: false,
-        message: 'Execution strategy registry is present, but no executable runner is enabled.',
-        errorCode: 'local_app_runner_disabled',
-        error: 'Runner disabled for safety.',
-        startedAtMs,
-        steps: createExecutionSteps(app, action, 'not_executable', 'Executable runner is disabled for this action.'),
-        safety: localActionSafety(true, true),
-        nextState: 'unknown',
-      });
-      recordActionResult(result);
-      return result;
-    } finally {
-      localAppInFlightActions.delete(lockKey);
-    }
+    const result = await executor.executeAction(appId, action as 'start' | 'stop' | 'restart');
+    recordActionResult(result);
+    return result;
   } catch (error) {
+    const startedAtMs = Date.now();
+    const id = `local-app-${action}-${normalizeId(appId || 'unknown')}-${startedAtMs}`;
     const result = createActionResult({
       id,
       appId,
@@ -251,7 +170,6 @@ export function executeLocalAppActionRequest(appId: string, action: BrainCoreLoc
       safety: localActionSafety(false, false),
       nextState: 'unknown',
     });
-    localAppInFlightActions.delete(lockKey);
     recordActionResult(result);
     return result;
   }
@@ -502,25 +420,33 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
   const runtime = readRegistryRuntime(raw.runtime);
   const database = buildDatabase(raw);
   const services = buildServices(name, port, database);
+  const startCommand = readStringOrNull(raw.start || raw.startCommand);
+  const stopCommand = readStringOrNull(raw.stop || raw.stopCommand);
+  const restartCommand = readStringOrNull(raw.restart || raw.restartCommand);
+  const safeActions = buildSafeActions(Boolean(startCommand), Boolean(stopCommand), Boolean(restartCommand));
+  const repoPath = readStringOrNull(raw.repoPath);
+  const commandWorkdir = repoPath ? repoPath.replace(/^~/, process.env.HOME || '/root') : undefined;
+
   return {
     id,
     name,
     label: readString(raw.description, name),
     description: readString(raw.description, name),
-    category: deriveCategory(name, readStringOrNull(raw.repoPath)),
-    managed: Boolean(raw.start || raw.stop || raw.restart),
+    category: deriveCategory(name, repoPath),
+    managed: Boolean(startCommand || stopCommand || restartCommand),
     services,
     docsRef: 'operations/infrastructure/local-apps.md',
     onboardingStatus: 'registered',
-    actionPolicy: {
-      ...DEFAULT_ACTION_POLICY,
-      safeActions: buildSafeActions(Boolean(raw.start), Boolean(raw.stop), Boolean(raw.restart)),
-    },
-    ...(readStringOrNull(raw.repoPath) ? { repoPathSummary: summarizePath(readStringOrNull(raw.repoPath)!) } : {}),
+    actionPolicy: createActionPolicy(safeActions),
+    ...(repoPath ? { repoPathSummary: summarizePath(repoPath) } : {}),
     ...(port !== null ? { appPort: port as number } : {}),
     ...(url ? { appUrl: url } : {}),
     ...(readStringOrNull(raw.check ?? raw.healthCheck) ? { healthUrl: readStringOrNull(raw.check ?? raw.healthCheck)! } : {}),
     ...(database ? { database } : {}),
+    ...(startCommand ? { startCommand } : {}),
+    ...(stopCommand ? { stopCommand } : {}),
+    ...(restartCommand ? { restartCommand } : {}),
+    ...(commandWorkdir ? { commandWorkdir } : {}),
   };
 }
 

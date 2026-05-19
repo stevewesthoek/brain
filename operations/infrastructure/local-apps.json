@@ -110,7 +110,7 @@
     "databaseName": "viadieden",
     "databaseUser": "postgres",
     "startupTimeoutMs": 120000,
-    "notes": "ProBot runs this from the canonical registry and injects PORT=3057. The start command brings up the reserved OrbStack Postgres stack at operations/database/standalone/viadieden before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3057/admin/index.html. Production TinaCloud must use the public production URL, not localhost."
+    "notes": "ProBot runs this from the canonical registry and injects PORT=3057. The start command brings up the reserved OrbStack Postgres stack at operations/database/standalone/viadieden before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3057/admin/index.html. This repo's local Tina server must stay on its reserved port 4011 with datalayer port 9002, separate from Oliveto Organizing. Production TinaCloud must use the public production URL, not localhost."
   },
   {
     "name": "Oliveto Organizing",
@@ -134,7 +134,7 @@
     "databaseName": "olivetoorganizing",
     "databaseUser": "postgres",
     "startupTimeoutMs": 120000,
-    "notes": "ProBot runs this from the canonical registry and injects PORT=3059. The start command brings up the reserved OrbStack Postgres stack on port 5453 at operations/database/standalone/olivetoorganizing before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3059/admin/index.html. Production TinaCloud must use the public production URL, not localhost."
+    "notes": "ProBot runs this from the canonical registry and injects PORT=3059. The start command brings up the reserved OrbStack Postgres stack on port 5453 at operations/database/standalone/olivetoorganizing before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3059/admin/index.html. This repo's local Tina server must stay on its reserved port 4012 with datalayer port 9003, separate from Via di Eden. Production TinaCloud must use the public production URL, not localhost."
   },
   {
     "name": "JPV Bootcamp",

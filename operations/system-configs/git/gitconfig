@@ -5,10 +5,10 @@
 	pushall = !git push origin main && git push demo main
 	pushallt = !git push origin --tags && git push demo --tags
 [credential "https://github.com"]
-	helper =
+	helper = 
 	helper = !/opt/homebrew/bin/gh auth git-credential
 [credential "https://gist.github.com"]
-	helper =
+	helper = 
 	helper = !/opt/homebrew/bin/gh auth git-credential
 [includeIf "gitdir:/Users/Office/Repos/stevewesthoek/"]
 	path = /Users/Office/.gitconfig-github-stevewesthoek

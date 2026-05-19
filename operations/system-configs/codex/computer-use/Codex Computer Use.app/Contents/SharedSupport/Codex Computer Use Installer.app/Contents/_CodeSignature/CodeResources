@@ -6,19 +6,19 @@
 	<dict>
 		<key>Resources/Assets.car</key>
 		<data>
-		LbYdPS0qtp1yxyOMWjk+wrStq6g=
+		oggWb5CequAJVAAVey5FoGN7HX8=
 		</data>
 		<key>Resources/CUAAppIcon.icns</key>
 		<data>
-		iZig8YQwCxEiNoUKIp5fKOn5Jr0=
+		lcvP7+DR1XbgR795Q3PiISIjKx4=
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/Info.plist</key>
 		<data>
-		2/9P/bTFSdi7VDplMacoLquk5QE=
+		cIK/bgXT5fWJaJYwUbRO9ssTf+w=
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/MacOS/CodexComputerUseAuthorizationPlugin</key>
 		<data>
-		UjHWhZyErOAoQ+wQW04wesQ9v5g=
+		bE6ZJ8+OTAulfctZU2wSpkCWSoc=
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/_CodeSignature/CodeResources</key>
 		<data>
@@ -26,7 +26,7 @@
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPluginInstallerTool</key>
 		<data>
-		Ejruk6W4t5vWZDtViOibK0fposU=
+		+QdNcLaX9xW01GSLAXcilLOfrJ8=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -35,28 +35,28 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			UXmYpzatya6Dr5Wb/ipwPMnjyPpyxS83fYovdpOavXg=
+			6HBwvWIttM9kpR5OWoA2S4M+37apfzIDh/sGStvRQWY=
 			</data>
 		</dict>
 		<key>Resources/CUAAppIcon.icns</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			LBlVDFYDbAvdjk+nkaIV4SuR2EJh+fDfnP8hh9AFg3w=
+			JLwWL1Z1DQX7TAWi3kECfdYkDU/Uq6vc8m4rja3y9/w=
 			</data>
 		</dict>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			YfNUWdgStG0TEHyLghjqWnJMlcg/5sPpUktl77oYths=
+			CVP62fgCDAg+QsswFlV4aC2nLOIVYmdmWT0/fiR3NBE=
 			</data>
 		</dict>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/MacOS/CodexComputerUseAuthorizationPlugin</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			UvIFFiufW37n0rtNO5ggQiPm+2B6oofRJdf5VrwSvaE=
+			c9kgiFxMtPIVePpzlvYfBf0KfS6YgKk4Y+3U/JC+MOU=
 			</data>
 		</dict>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/_CodeSignature/CodeResources</key>
@@ -70,7 +70,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			yDHIWGaSZ1QYFAsMlM1QEy5SYfc8P3IG/VIOHHhGwV4=
+			bkV4ZcWp3EWx3l0y1HnT51bhO7gJYpCaE9qmTNOqc14=
 			</data>
 		</dict>
 	</dict>

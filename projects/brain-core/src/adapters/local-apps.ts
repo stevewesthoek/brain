@@ -505,10 +505,10 @@ export function readLocalAppsActionsStatus() {
   return readLocalAppActionStatus();
 }
 
-export function runLocalAppsAction(appId: string, action: string, options: { forceExecutorError?: boolean } = {}) {
+export async function runLocalAppsAction(appId: string, action: string, options: { forceExecutorError?: boolean } = {}) {
   const normalizedAction = action === 'start' || action === 'stop' || action === 'restart' ? action : undefined;
   if (!normalizedAction) return { kind: 'invalid-action' as const };
-  const result = executeLocalAppActionRequest(appId, normalizedAction, options);
+  const result = await executeLocalAppActionRequest(appId, normalizedAction, options);
   if (result.status === 'not_found') return { kind: 'missing-app' as const, result };
   return { kind: 'result' as const, result };
 }

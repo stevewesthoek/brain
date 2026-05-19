@@ -123,11 +123,11 @@ trust_level = "trusted"
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-14T21:53:19Z"
+last_updated = "2026-05-18T22:03:35Z"
 source_type = "local"
 source = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-14T09:54:27Z"
+last_updated = "2026-05-18T22:54:14Z"
 source_type = "local"
 source = "/Users/Office/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"

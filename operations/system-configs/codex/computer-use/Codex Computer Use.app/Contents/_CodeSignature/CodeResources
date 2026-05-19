@@ -6,15 +6,15 @@
 	<dict>
 		<key>Resources/Assets.car</key>
 		<data>
-		Z3oCDU1k0bySQIyAUC3HYE216SA=
+		DzWuS4D6Q8Ih+NH3dGgYckZQrss=
 		</data>
 		<key>Resources/CUAAppIcon.icns</key>
 		<data>
-		iZig8YQwCxEiNoUKIp5fKOn5Jr0=
+		lcvP7+DR1XbgR795Q3PiISIjKx4=
 		</data>
 		<key>Resources/Package_Appshot.bundle/Contents/Info.plist</key>
 		<data>
-		l6cqH5i9xdn1PHNt9gNE249q6h8=
+		oLw66FPmFJp2Ml+kwzLsbPIhM0k=
 		</data>
 		<key>Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
 		<data>
@@ -22,11 +22,11 @@
 		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Info.plist</key>
 		<data>
-		tiiJq2R+Sv1MWD6MXn3dlovEnfI=
+		fY3HHMEp/cpkDuu8L4RSJKei4mo=
 		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
 		<data>
-		xdJ5lF3yD1iwU9htxvLh4XU1ugg=
+		jA+wfWz0PqqAduUXx7CS92zYAug=
 		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/LensSequence/Lens_frame_00.png</key>
 		<data>
@@ -210,7 +210,7 @@
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Info.plist</key>
 		<data>
-		Juz4+voli3ptgxSzWzqW9jfoVTQ=
+		DIxNo6vFR/bJZ+wxCclrIaEXxkA=
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
 		<data>
@@ -238,15 +238,15 @@
 		</data>
 		<key>Resources/Package_SlimCore.bundle/Contents/Info.plist</key>
 		<data>
-		0nslhcKUGwdFjDybbaP7s71zUM8=
+		RKmZPiLOmBDX7MHBneD9hq3vt3c=
 		</data>
 		<key>Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
 		<data>
-		gs6fzjY/jq1pSiS1Yk/gc3OXmEI=
+		5lBSE8fUrkeLGt8mlgIC/4BOazA=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<data>
-		OCmwnF3JQ5y8nlFmuVRWYRgcfWs=
+		aQ8SG4ai7ixRnuFGrM5Kw0rGurA=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
 		<data>
@@ -259,21 +259,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			dJ4ndFL8rUqYjtELt+Am4D3h+9Arr5inBsLkPiUY2nU=
+			MAV7Fqc/uJP1djdsumymlPs0KkErMt2xyU7eEHW+kYE=
 			</data>
 		</dict>
 		<key>Resources/CUAAppIcon.icns</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			LBlVDFYDbAvdjk+nkaIV4SuR2EJh+fDfnP8hh9AFg3w=
+			JLwWL1Z1DQX7TAWi3kECfdYkDU/Uq6vc8m4rja3y9/w=
 			</data>
 		</dict>
 		<key>Resources/Package_Appshot.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			GKcYO2OiFP9mECutqeS1+oAdd44BEJ6M78I1YRJlhe0=
+			o29a3INk3Nr50iHCmahHPBCbFU4eUZTKSgMAHoyyp34=
 			</data>
 		</dict>
 		<key>Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
@@ -287,14 +287,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Zqt4BBXRfsiPxQkyF7UbNb+AexTQ0M7LtXCIuLY+OI0=
+			3wJVcyYPZ+WuTrHICres/Dzkr7kXTOx/BePPnX5iF6M=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			Tz4ONSk+EhXVGBh2RFW5m6hwPQFGOvMUYgZ3ES6Uf5Q=
+			ID7bmuNRZLU1dt//QWHrFQQr/ageGzbEyt6PiFhjqAo=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/LensSequence/Lens_frame_00.png</key>
@@ -616,7 +616,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			fEZggyToRFWbadge4oXXc2H8DU4FCfSkt6KRQrMGanA=
+			HOYPWMIROI2h86CEQQeY1Myn84FbToL2uYZjvhJMeZ8=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -665,21 +665,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			FDahHGyCTJuTRxh1n/fAvXy882DeMqoV98aiDGEdtYY=
+			EeXtZ20ekTc33oJ6ssTA/ph/g2vl8iqiHvfQ3Jwkdwo=
 			</data>
 		</dict>
 		<key>Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			SdiAGiMZnteQ0ppgsvJDj0Nc2cxEgftEtR/h/Q1/CiE=
+			8g2quzfbnhqS8a+NEIxVaDYDssE2M7O8nR2IUktBzLs=
 			</data>
 		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			dKV5inuXbLG0ZN/g/VO9by0ut598eQKNJ+VJTfyXQ3Q=
+			WOv6RLLDHAtkXAh3FcjkyysyN11UE4+Aob0W5otbHgw=
 			</data>
 		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
@@ -693,14 +693,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			8aFYlApJh74LD5zJlbHPXWZd80X8TjCqIG+LAuXzmos=
+			2NMcvyYI3GWpzz7j6HT9PewTQeLiOSdszj7gB0bFqxU=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/MacOS/CUALockScreenGuardian</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			Ojn8hqdekby5wFCgSjK+faN2IahINlHNQXxkX4PF0TU=
+			+k0Oj5hrSsJmI6p2sMoyJg682yJsKKsT2ZOQ+av8R44=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/PkgInfo</key>
@@ -714,14 +714,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			7YUAimK2Ty2OeXW+aNX7XQt9CheXqwDPhohhbx4e1Lk=
+			4iwXjqLdsDs6p7CJdteBOPUmjKG24YIzbFT9Umth/4Y=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/CUAAppIcon.icns</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			LBlVDFYDbAvdjk+nkaIV4SuR2EJh+fDfnP8hh9AFg3w=
+			JLwWL1Z1DQX7TAWi3kECfdYkDU/Uq6vc8m4rja3y9/w=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/CUALockScreenGuardian_Parent.coderequirement</key>
@@ -735,7 +735,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			GKcYO2OiFP9mECutqeS1+oAdd44BEJ6M78I1YRJlhe0=
+			o29a3INk3Nr50iHCmahHPBCbFU4eUZTKSgMAHoyyp34=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
@@ -749,14 +749,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Zqt4BBXRfsiPxQkyF7UbNb+AexTQ0M7LtXCIuLY+OI0=
+			3wJVcyYPZ+WuTrHICres/Dzkr7kXTOx/BePPnX5iF6M=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			Tz4ONSk+EhXVGBh2RFW5m6hwPQFGOvMUYgZ3ES6Uf5Q=
+			ID7bmuNRZLU1dt//QWHrFQQr/ageGzbEyt6PiFhjqAo=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/Package_ComputerUse.bundle/Contents/Resources/LensSequence/Lens_frame_00.png</key>
@@ -1078,7 +1078,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			fEZggyToRFWbadge4oXXc2H8DU4FCfSkt6KRQrMGanA=
+			HOYPWMIROI2h86CEQQeY1Myn84FbToL2uYZjvhJMeZ8=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -1127,21 +1127,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			FDahHGyCTJuTRxh1n/fAvXy882DeMqoV98aiDGEdtYY=
+			EeXtZ20ekTc33oJ6ssTA/ph/g2vl8iqiHvfQ3Jwkdwo=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			SdiAGiMZnteQ0ppgsvJDj0Nc2cxEgftEtR/h/Q1/CiE=
+			8g2quzfbnhqS8a+NEIxVaDYDssE2M7O8nR2IUktBzLs=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			dKV5inuXbLG0ZN/g/VO9by0ut598eQKNJ+VJTfyXQ3Q=
+			WOv6RLLDHAtkXAh3FcjkyysyN11UE4+Aob0W5otbHgw=
 			</data>
 		</dict>
 		<key>SharedSupport/CUALockScreenGuardian.app/Contents/Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
@@ -1155,21 +1155,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Kqh2QL77RGDgEWypqH9DS8LmL7BG3+5nRZi43UaB7sM=
+			/0iFZAYoA+t1JGXCKeQf2x+sED0iWfRQYQ6cb8MEki0=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			goirZ21r16T87F914EJPGYyQo6oYkXwfGbf5szXNyKk=
+			F61E3OGQ025pi4i+sMgbT4/yvBrd4xmNM8fSLeibKz0=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/MacOS/Codex Computer Use Installer</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			nNWoB6+xdrMzNtrSkdmuTegmy3OfHLqRDeCfzsKVSks=
+			wjGsF590BbOZRxQPLtTKNJRXj7Lvsh9A6L5bkYcio0g=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/PkgInfo</key>
@@ -1183,28 +1183,28 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			UXmYpzatya6Dr5Wb/ipwPMnjyPpyxS83fYovdpOavXg=
+			6HBwvWIttM9kpR5OWoA2S4M+37apfzIDh/sGStvRQWY=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/Resources/CUAAppIcon.icns</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			LBlVDFYDbAvdjk+nkaIV4SuR2EJh+fDfnP8hh9AFg3w=
+			JLwWL1Z1DQX7TAWi3kECfdYkDU/Uq6vc8m4rja3y9/w=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			YfNUWdgStG0TEHyLghjqWnJMlcg/5sPpUktl77oYths=
+			CVP62fgCDAg+QsswFlV4aC2nLOIVYmdmWT0/fiR3NBE=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/MacOS/CodexComputerUseAuthorizationPlugin</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			UvIFFiufW37n0rtNO5ggQiPm+2B6oofRJdf5VrwSvaE=
+			c9kgiFxMtPIVePpzlvYfBf0KfS6YgKk4Y+3U/JC+MOU=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/_CodeSignature/CodeResources</key>
@@ -1218,28 +1218,28 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			yDHIWGaSZ1QYFAsMlM1QEy5SYfc8P3IG/VIOHHhGwV4=
+			bkV4ZcWp3EWx3l0y1HnT51bhO7gJYpCaE9qmTNOqc14=
 			</data>
 		</dict>
 		<key>SharedSupport/Codex Computer Use Installer.app/Contents/_CodeSignature/CodeResources</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			rd6tGWyrqzccpkmaZfE1Bg2N1WAl7ZCDYHaaCzLjrQY=
+			oMWcXGA5t5hj6IZxp8Zlhdkvj7DqfgUIjiO7jjjs/jM=
 			</data>
 		</dict>
 		<key>SharedSupport/SkyComputerUseClient.app/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			HpLuSEQpNc7YBSx4qAwOQFE8dnce7N50K4ek1JIRCvg=
+			CYdfTu3UU7aJWTQyS9FZHXCmjLyn3YZhfweAgz0Miys=
 			</data>
 		</dict>
 		<key>SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			Mx3izpqbnepE1Uh1hWLvZe8Gm8i1Q13jm649NgHwHzM=
+			BjHvwdi3FZXswUlCQHMHIGC07iBRw7sbBBn4mMxUALc=
 			</data>
 		</dict>
 		<key>SharedSupport/SkyComputerUseClient.app/Contents/PkgInfo</key>
@@ -1253,7 +1253,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			fEZggyToRFWbadge4oXXc2H8DU4FCfSkt6KRQrMGanA=
+			HOYPWMIROI2h86CEQQeY1Myn84FbToL2uYZjvhJMeZ8=
 			</data>
 		</dict>
 		<key>SharedSupport/SkyComputerUseClient.app/Contents/Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -1309,7 +1309,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			dKV5inuXbLG0ZN/g/VO9by0ut598eQKNJ+VJTfyXQ3Q=
+			WOv6RLLDHAtkXAh3FcjkyysyN11UE4+Aob0W5otbHgw=
 			</data>
 		</dict>
 		<key>SharedSupport/SkyComputerUseClient.app/Contents/Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
@@ -1323,7 +1323,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			sRglRtx6L03TiKlPf3ub2ToB8y1tMRuO+YHi4slMlZA=
+			pG6m04XPBWxOFSHoOS1BNprPuX+/Lu5EHLIjAUkwLkw=
 			</data>
 		</dict>
 	</dict>

@@ -181,6 +181,23 @@ The dashboard start button is non-blocking: it flips the card into a `STARTING` 
 The restart button is only shown for running apps so the control surface stays consistent and avoids ambiguous states.
 Oliveto Organizing local Tina admin is available at `http://localhost:3059/admin/index.html`.
 
+### TinaCMS local port reservations
+
+These two TinaCloud-backed repos share the same machine but must never share the same local Tina ports:
+
+| Repo | App port | Tina server port | Tina datalayer port |
+|---|---:|---:|---:|
+| Via di Eden | 3057 | 4011 | 9002 |
+| Oliveto Organizing | 3059 | 4012 | 9003 |
+
+Rules:
+
+- `3057` and `3059` remain the app ports for Via di Eden and Oliveto Organizing.
+- `4011` and `4012` are reserved for the local Tina dev servers for those repos.
+- `9002` and `9003` are reserved for the corresponding Tina datalayer servers.
+- Never point one repo at the other repo’s Tina server or datalayer port.
+- If a Tina port is occupied, only reuse the repo’s own reserved alternate port.
+
 ## BuildFlow Orchestrator
 
 BuildFlow (port 3054) uses a production-grade orchestrator to manage three services:

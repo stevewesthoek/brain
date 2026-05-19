@@ -203,6 +203,10 @@ export interface BrainCoreLocalAppDefinition {
   docsRef: string;
   onboardingStatus: BrainCoreLocalAppOnboardingStatus;
   actionPolicy: BrainCoreLocalAppActionPolicy;
+  startCommand?: string;
+  stopCommand?: string;
+  restartCommand?: string;
+  commandWorkdir?: string;
 }
 
 export interface BrainCoreLocalAppActionStep {

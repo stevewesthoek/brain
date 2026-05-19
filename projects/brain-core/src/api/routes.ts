@@ -45,6 +45,7 @@ import {
   readLocalAppsOrchestratorStatus,
   runLocalAppsAction,
 } from '../adapters/local-apps.js';
+import { executeLocalAppActionRequest } from '../adapters/local-app-orchestrator.js';
 import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
 import { readProBotSessionsParity } from '../adapters/probot-sessions-parity.js';
 import { readProBotLocalAppsParity } from '../adapters/probot-local-apps-parity.js';
@@ -1697,8 +1698,9 @@ function routePostRequest(url: URL, response: ServerResponse): void {
   if (localAppActionMatch) {
     const appId = decodeURIComponent(localAppActionMatch[1] ?? '');
     const action = decodeURIComponent(localAppActionMatch[2] ?? '');
-    const actionResult = runLocalAppsAction(appId, action);
-    if (actionResult.kind === 'invalid-action') {
+
+    const normalizedAction = action === 'start' || action === 'stop' || action === 'restart' ? action : undefined;
+    if (!normalizedAction) {
       sendJson(response, 400, {
         error: {
           code: 'invalid_action',
@@ -1707,11 +1709,19 @@ function routePostRequest(url: URL, response: ServerResponse): void {
       } satisfies BrainCoreErrorResponse);
       return;
     }
-    if (actionResult.kind === 'missing-app') {
-      sendJson(response, 404, actionResult.result);
-      return;
-    }
-    sendJson(response, 200, actionResult.result);
+
+    // Execute action asynchronously without blocking response
+    executeLocalAppActionRequest(appId, normalizedAction).then((result) => {
+      const httpStatus = result.status === 'not_found' ? 404 : 200;
+      sendJson(response, httpStatus, result);
+    }).catch((err) => {
+      sendJson(response, 500, {
+        error: {
+          code: 'executor_error',
+          message: 'Action execution failed.',
+        },
+      } satisfies BrainCoreErrorResponse);
+    });
     return;
   }
 
