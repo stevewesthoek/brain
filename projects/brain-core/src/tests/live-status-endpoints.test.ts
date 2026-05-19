@@ -7104,3 +7104,140 @@ test('POST /video-orchestrator/provider-implementation-approval-packet is not re
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-implementation-approval-packet' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-approval-packet-console-review-summary returns blocked review summaries with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-approval-packet-console-review-summary' });
+  const body = JSON.parse(response.body) as {
+    summary: {
+      status: string;
+      reviewCount: number;
+      decisionRequiredCount: number;
+      approvalRecordCreatedCount: number;
+      implementationApprovedCount: number;
+      implementationEligibleCount: number;
+      mutationControlCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+      entries: Array<{
+        providerClass: string;
+        status: string;
+        consoleReviewOnly: boolean;
+        approvalPacketRef: string;
+        currentDecision: string;
+        acceptableNextDecision: string;
+        unacceptableDecisions: string[];
+        reviewHighlights: string[];
+        reviewWarnings: string[];
+        requiredOperatorAcknowledgements: string[];
+        blockedControls: string[];
+        nextSafeStep: string;
+        safety: Record<string, boolean>;
+      }>;
+      summary: {
+        reviewCount: number;
+        decisionRequiredCount: number;
+        approvalRecordCreatedCount: number;
+        implementationApprovedCount: number;
+        implementationEligibleCount: number;
+        mutationControlCount: number;
+        providerCallCount: number;
+        credentialAccessCount: number;
+      };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.summary.status, 'blocked');
+  assert.equal(body.summary.reviewCount, 3);
+  assert.equal(body.summary.decisionRequiredCount, 3);
+  assert.equal(body.summary.approvalRecordCreatedCount, 0);
+  assert.equal(body.summary.implementationApprovedCount, 0);
+  assert.equal(body.summary.implementationEligibleCount, 0);
+  assert.equal(body.summary.mutationControlCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.summary.credentialAccessCount, 0);
+  assert.equal(body.summary.entries.length, 3);
+  assert.ok(body.summary.entries.every((entry) => entry.status === 'blocked'));
+  assert.ok(body.summary.entries.every((entry) => entry.consoleReviewOnly === true));
+  assert.ok(body.summary.entries.every((entry) => entry.approvalPacketRef === 'video-orchestrator-provider-implementation-approval-packet'));
+  assert.ok(body.summary.entries.every((entry) => entry.currentDecision === 'not-approved'));
+  assert.ok(body.summary.entries.every((entry) => entry.acceptableNextDecision === 'approve-wrapper-scaffolding-only'));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('approval packet exists')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('provider planning surfaces complete')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('first possible implementation is wrapper scaffolding only')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('provider calls remain blocked')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('credential access remains blocked')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('network access remains blocked')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewHighlights.includes('Brain Console remains read-only')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewWarnings.includes('this review summary is not approval')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewWarnings.includes('no approval record is created')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewWarnings.includes('no provider implementation starts')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewWarnings.includes('no provider call is allowed')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewWarnings.includes('no credential access is allowed')));
+  assert.ok(body.summary.entries.every((entry) => entry.reviewWarnings.includes('no Brain Console mutation control is rendered')));
+  assert.ok(body.summary.entries.every((entry) => entry.requiredOperatorAcknowledgements.includes('I understand provider calls remain blocked')));
+  assert.ok(body.summary.entries.every((entry) => entry.requiredOperatorAcknowledgements.includes('I understand credentials remain inaccessible')));
+  assert.ok(body.summary.entries.every((entry) => entry.requiredOperatorAcknowledgements.includes('I understand wrapper scaffolding must not call providers')));
+  assert.ok(body.summary.entries.every((entry) => entry.requiredOperatorAcknowledgements.includes('I understand Brain Console controls remain read-only')));
+  assert.ok(body.summary.entries.every((entry) => entry.requiredOperatorAcknowledgements.includes('I understand separate explicit approval is required for any implementation transition')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('approve implementation button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('call provider button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('add credential button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('generate image button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('render layout button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('write artifact button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('persist audit button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('publish button')));
+  assert.ok(body.summary.entries.every((entry) => entry.blockedControls.includes('decommission STB button')));
+  assert.ok(body.summary.entries.every((entry) => entry.safety.readOnly === true));
+  assert.ok(body.summary.entries.every((entry) => entry.safety.consoleReviewOnly === true));
+  assert.ok(body.summary.entries.every((entry) => entry.safety.approvalRecordCreated === false));
+  assert.ok(body.summary.entries.every((entry) => entry.safety.implementationApproved === false));
+  assert.ok(body.summary.entries.every((entry) => entry.safety.implementationEligible === false));
+  assert.equal(body.summary.safety.readOnly, true);
+  assert.equal(body.summary.safety.consoleReviewOnly, true);
+  assert.equal(body.summary.safety.approvalRecordCreated, false);
+  assert.equal(body.summary.safety.implementationApproved, false);
+  assert.equal(body.summary.safety.implementationEligible, false);
+  assert.equal(body.summary.safety.mutationControlsEnabled, false);
+  assert.equal(body.summary.safety.approvalButtonsEnabled, false);
+  assert.equal(body.summary.safety.providerConfigured, false);
+  assert.equal(body.summary.safety.providerCallsEnabled, false);
+  assert.equal(body.summary.safety.credentialAccessEnabled, false);
+  assert.equal(body.summary.safety.networkAccessEnabled, false);
+  assert.equal(body.summary.safety.promptGenerationEnabled, false);
+  assert.equal(body.summary.safety.imageGenerationEnabled, false);
+  assert.equal(body.summary.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.summary.safety.auditPersistenceEnabled, false);
+  assert.equal(body.summary.safety.filesystemAccessEnabled, false);
+  assert.equal(body.summary.safety.writesFiles, false);
+  assert.equal(body.summary.safety.publishesContent, false);
+  assert.equal(body.summary.safety.writesToMind, false);
+  assert.equal(body.summary.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-approval-packet-console-review-summary/:providerClass returns image-generation console review summary', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-approval-packet-console-review-summary/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    consoleReviewOnly: boolean;
+    currentDecision: string;
+    acceptableNextDecision: string;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.consoleReviewOnly, true);
+  assert.equal(body.currentDecision, 'not-approved');
+  assert.equal(body.acceptableNextDecision, 'approve-wrapper-scaffolding-only');
+});
+
+test('POST /video-orchestrator/provider-approval-packet-console-review-summary is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-approval-packet-console-review-summary' });
+  assert.equal(response.statusCode, 404);
+});

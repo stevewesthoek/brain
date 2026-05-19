@@ -81,6 +81,7 @@ import { readVideoProviderWrapperSecurityReviewPlan, readVideoProviderWrapperSec
 import { readVideoProviderImplementationPhaseStartGate, readVideoProviderImplementationPhaseStartGateEntry } from '../adapters/video-orchestrator-provider-implementation-phase-start-gate.js';
 import { readVideoProviderImplementationReadinessDashboardSummary, readVideoProviderImplementationReadinessDashboardSummaryEntry } from '../adapters/video-orchestrator-provider-implementation-readiness-dashboard-summary.js';
 import { readVideoProviderImplementationApprovalPacket, readVideoProviderImplementationApprovalPacketEntry } from '../adapters/video-orchestrator-provider-implementation-approval-packet.js';
+import { readVideoProviderApprovalPacketConsoleReviewSummary, readVideoProviderApprovalPacketConsoleReviewSummaryEntry } from '../adapters/video-orchestrator-provider-approval-packet-console-review-summary.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -358,6 +359,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-implementation-approval-packet':
       sendJson(response, 200, readVideoProviderImplementationApprovalPacket());
+      return;
+    case '/video-orchestrator/provider-approval-packet-console-review-summary':
+      sendJson(response, 200, readVideoProviderApprovalPacketConsoleReviewSummary());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1455,6 +1459,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator provider implementation approval packet not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const reviewSummaryMatch = /^\/video-orchestrator\/provider-approval-packet-console-review-summary\/([^/]+)$/.exec(url.pathname);
+        const reviewSummaryProviderClass = reviewSummaryMatch?.[1] ?? '';
+        if (reviewSummaryProviderClass.length > 0) {
+          const summary = readVideoProviderApprovalPacketConsoleReviewSummaryEntry(decodeURIComponent(reviewSummaryProviderClass));
+          if (summary) {
+            sendJson(response, 200, summary);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider approval packet console review summary not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

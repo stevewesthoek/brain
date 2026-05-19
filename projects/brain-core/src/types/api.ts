@@ -7986,3 +7986,98 @@ export interface BrainCoreVideoProviderImplementationApprovalPacket {
 export interface BrainCoreVideoProviderImplementationApprovalPacketResponse {
   packet: BrainCoreVideoProviderImplementationApprovalPacket;
 }
+
+export type BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryEntry {
+  providerClass: BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryProviderClass;
+  status: 'blocked';
+  consoleReviewOnly: true;
+  approvalPacketRef: 'video-orchestrator-provider-implementation-approval-packet';
+  currentDecision: 'not-approved';
+  acceptableNextDecision: 'approve-wrapper-scaffolding-only';
+  unacceptableDecisions: string[];
+  reviewHighlights: string[];
+  reviewWarnings: string[];
+  requiredOperatorAcknowledgements: string[];
+  blockedControls: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    consoleReviewOnly: true;
+    approvalRecordCreated: false;
+    implementationApproved: false;
+    implementationEligible: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummary {
+  id: 'video-orchestrator-provider-approval-packet-console-review-summary';
+  generatedAt: string;
+  status: 'blocked';
+  reviewCount: 3;
+  decisionRequiredCount: 3;
+  approvalRecordCreatedCount: 0;
+  implementationApprovedCount: 0;
+  implementationEligibleCount: 0;
+  mutationControlCount: 0;
+  providerCallCount: 0;
+  credentialAccessCount: 0;
+  entries: BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryEntry[];
+  summary: {
+    reviewCount: 3;
+    decisionRequiredCount: 3;
+    approvalRecordCreatedCount: 0;
+    implementationApprovedCount: 0;
+    implementationEligibleCount: 0;
+    mutationControlCount: 0;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    consoleReviewOnly: true;
+    approvalRecordCreated: false;
+    implementationApproved: false;
+    implementationEligible: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse {
+  summary: BrainCoreVideoProviderApprovalPacketConsoleReviewSummary;
+}

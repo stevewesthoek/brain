@@ -5529,6 +5529,48 @@ export interface BrainCoreVideoProviderImplementationApprovalPacketResponse {
   };
 }
 
+export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse {
+  summary: {
+    status: string;
+    reviewCount: number;
+    decisionRequiredCount: number;
+    approvalRecordCreatedCount: number;
+    implementationApprovedCount: number;
+    implementationEligibleCount: number;
+    mutationControlCount: number;
+    providerCallCount: number;
+    credentialAccessCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      consoleReviewOnly: boolean;
+      approvalPacketRef: string;
+      currentDecision: string;
+      acceptableNextDecision: string;
+      unacceptableDecisions: string[];
+      reviewHighlights: string[];
+      reviewWarnings: string[];
+      requiredOperatorAcknowledgements: string[];
+      blockedControls: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    }>;
+    summary: {
+      reviewCount: number;
+      decisionRequiredCount: number;
+      approvalRecordCreatedCount: number;
+      implementationApprovedCount: number;
+      implementationEligibleCount: number;
+      mutationControlCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5629,4 +5671,10 @@ export async function readBrainCoreVideoOrchestratorProviderImplementationApprov
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderImplementationApprovalPacketResponse>> {
   return fetchJson<BrainCoreVideoProviderImplementationApprovalPacketResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-implementation-approval-packet');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderApprovalPacketConsoleReviewSummary(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse>> {
+  return fetchJson<BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-approval-packet-console-review-summary');
 }
