@@ -6982,3 +6982,63 @@ export interface BrainCoreVideoProviderOutputRedactionPolicyPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+export type BrainCoreVideoDesignProviderComplianceChecklistProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoDesignProviderComplianceChecklistSafety {
+  readOnly: true;
+  complianceChecklistDesignOnly: true;
+  complianceEvaluationEnabled: false;
+  complianceRecordPersistenceEnabled: false;
+  providerConfigured: false;
+  providerCallsEnabled: false;
+  rawProviderOutputAccessEnabled: false;
+  credentialAccessEnabled: false;
+  auditPersistenceEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoDesignProviderComplianceChecklistPlan {
+  id: string;
+  providerClass: BrainCoreVideoDesignProviderComplianceChecklistProviderClass;
+  checklistCategory: string;
+  status: 'blocked';
+  purpose: string;
+  requiredChecks: string[];
+  blockedChecks: string[];
+  evidenceReferencesRequiredBeforeFutureProviderEnablement: string[];
+  disallowedComplianceEvidenceSources: string[];
+  operatorReviewGates: string[];
+  auditRequirements: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: BrainCoreVideoDesignProviderComplianceChecklistSafety;
+}
+
+export interface BrainCoreVideoDesignProviderComplianceChecklistPlanResponse {
+  id: 'video-orchestrator-design-provider-compliance-checklist-plan';
+  status: 'blocked';
+  phase: 'design-provider-compliance-checklist-plan-read-only';
+  generatedAt: string;
+  summary: {
+    checklistCount: number;
+    blockedCount: number;
+    requiredCheckCount: number;
+    passedCheckCount: 0;
+    persistedComplianceRecordCount: 0;
+    providerCallCount: 0;
+    auditPersistedCount: 0;
+  };
+  checklists: BrainCoreVideoDesignProviderComplianceChecklistPlan[];
+  safety: BrainCoreVideoDesignProviderComplianceChecklistSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

@@ -4893,6 +4893,55 @@ export interface BrainCoreVideoProviderOutputRedactionPolicyPlanResponse {
   nextSafeStep: string;
 }
 
+export interface BrainCoreVideoDesignProviderComplianceChecklistPlanResponse {
+  id: 'video-orchestrator-design-provider-compliance-checklist-plan';
+  status: 'blocked';
+  phase: 'design-provider-compliance-checklist-plan-read-only';
+  generatedAt: string;
+  summary: {
+    checklistCount: number;
+    blockedCount: number;
+    requiredCheckCount: number;
+    passedCheckCount: number;
+    persistedComplianceRecordCount: number;
+    providerCallCount: number;
+    auditPersistedCount: number;
+  };
+  checklists: Array<{
+    id: string;
+    providerClass: string;
+    checklistCategory: string;
+    status: 'blocked';
+    requiredChecks: string[];
+    blockedChecks: string[];
+    evidenceReferencesRequiredBeforeFutureProviderEnablement: string[];
+    disallowedComplianceEvidenceSources: string[];
+    operatorReviewGates: string[];
+    auditRequirements: string[];
+    blockers: string[];
+    nextSafeStep: string;
+  }>;
+  safety: {
+    readOnly: true;
+    complianceChecklistDesignOnly: true;
+    complianceEvaluationEnabled: false;
+    complianceRecordPersistenceEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    credentialAccessEnabled: false;
+    auditPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -4933,4 +4982,10 @@ export async function readBrainCoreVideoOrchestratorProviderOutputRedactionPolic
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderOutputRedactionPolicyPlanResponse>> {
   return fetchJson<BrainCoreVideoProviderOutputRedactionPolicyPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-output-redaction-policy-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorDesignProviderComplianceChecklistPlans(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoDesignProviderComplianceChecklistPlanResponse>> {
+  return fetchJson<BrainCoreVideoDesignProviderComplianceChecklistPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-compliance-checklist-plan');
 }

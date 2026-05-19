@@ -5800,3 +5800,108 @@ test('POST /video-orchestrator/provider-output-redaction-policy-plan is not regi
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-output-redaction-policy-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/design-provider-compliance-checklist-plan returns three blocked checklists with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-compliance-checklist-plan' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    summary: {
+      checklistCount: number;
+      blockedCount: number;
+      requiredCheckCount: number;
+      passedCheckCount: number;
+      persistedComplianceRecordCount: number;
+      providerCallCount: number;
+      auditPersistedCount: number;
+    };
+    checklists: Array<{ id: string; providerClass: string; checklistCategory: string; status: string; requiredChecks: string[]; disallowedComplianceEvidenceSources: string[]; safety: Record<string, boolean> }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.summary.checklistCount, 3);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.ok(body.summary.requiredCheckCount > 0);
+  assert.equal(body.summary.passedCheckCount, 0);
+  assert.equal(body.summary.persistedComplianceRecordCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.summary.auditPersistedCount, 0);
+  assert.equal(body.checklists.length, 3);
+  assert.deepEqual(body.checklists.map((checklist) => checklist.id), [
+    'image-generation-compliance-checklist',
+    'layout-rendering-compliance-checklist',
+    'brand-compliance-compliance-checklist',
+  ]);
+  body.checklists.forEach((checklist) => {
+    assert.equal(checklist.status, 'blocked');
+    assert.ok(checklist.requiredChecks.includes('credential isolation plan reviewed'));
+    assert.ok(checklist.requiredChecks.includes('prompt review policy reviewed'));
+    assert.ok(checklist.requiredChecks.includes('artifact sandbox handoff plan reviewed'));
+    assert.ok(checklist.requiredChecks.includes('output redaction policy reviewed'));
+    assert.ok(checklist.requiredChecks.includes('provider boundary plan reviewed'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('raw provider responses'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('raw credentials'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('API keys'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('OAuth tokens'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('private keys'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('.env dumps'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('unredacted logs'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('Mind vault paths'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('STB artifact paths'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('platform upload payloads'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('generated media files'));
+    assert.ok(checklist.disallowedComplianceEvidenceSources.includes('arbitrary shell output'));
+    assert.equal(checklist.safety.readOnly, true);
+    assert.equal(checklist.safety.complianceChecklistDesignOnly, true);
+    assert.equal(checklist.safety.complianceEvaluationEnabled, false);
+    assert.equal(checklist.safety.complianceRecordPersistenceEnabled, false);
+    assert.equal(checklist.safety.providerConfigured, false);
+    assert.equal(checklist.safety.providerCallsEnabled, false);
+    assert.equal(checklist.safety.rawProviderOutputAccessEnabled, false);
+    assert.equal(checklist.safety.credentialAccessEnabled, false);
+    assert.equal(checklist.safety.auditPersistenceEnabled, false);
+    assert.equal(checklist.safety.filesystemAccessEnabled, false);
+    assert.equal(checklist.safety.networkAccessEnabled, false);
+    assert.equal(checklist.safety.writesFiles, false);
+    assert.equal(checklist.safety.publishesContent, false);
+    assert.equal(checklist.safety.writesToMind, false);
+    assert.equal(checklist.safety.executesVideo, false);
+  });
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.complianceChecklistDesignOnly, true);
+  assert.equal(body.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.safety.complianceRecordPersistenceEnabled, false);
+  assert.equal(body.safety.providerConfigured, false);
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.auditPersistenceEnabled, false);
+  assert.equal(body.safety.filesystemAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/design-provider-compliance-checklist-plan/:id returns the image-generation checklist', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-compliance-checklist-plan/image-generation-compliance-checklist' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    providerClass: string;
+    checklistCategory: string;
+    status: string;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'image-generation-compliance-checklist');
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.checklistCategory, 'image-generation-compliance');
+  assert.equal(body.status, 'blocked');
+});
+
+test('POST /video-orchestrator/design-provider-compliance-checklist-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-compliance-checklist-plan' });
+  assert.equal(response.statusCode, 404);
+});

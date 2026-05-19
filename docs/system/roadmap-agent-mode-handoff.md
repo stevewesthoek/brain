@@ -418,3 +418,50 @@ Validation:
 Next safe task suggestion:
 
 - Design provider compliance checklist plan.
+
+
+## Continuation update — Video Orchestrator design provider compliance checklist plan
+
+Implemented after the provider output redaction policy plan.
+
+Endpoints:
+
+- `GET /video-orchestrator/design-provider-compliance-checklist-plan`
+- `GET /video-orchestrator/design-provider-compliance-checklist-plan/:id`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-design-provider-compliance-checklist-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Design-only only.
+- No compliance evaluation.
+- No compliance records persisted.
+- No provider calls.
+- No raw provider output access.
+- No audit persistence.
+- No credential access.
+- No env reads.
+- No filesystem access.
+- No network/provider access.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+- No POST route.
+
+Validation:
+
+- Pending after implementation; run Brain Core CI and Brain Console typecheck/build/package.
+
+Next safe task suggestion:
+
+- Design provider enablement readiness index or Provider integration final planning checkpoint.
