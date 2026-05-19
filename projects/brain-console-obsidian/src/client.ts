@@ -5902,6 +5902,118 @@ export interface BrainCoreVideoProviderAuditEventTypesResponse {
   };
 }
 
+export interface BrainCoreVideoProviderDisabledOrchestrationFacadeResponse {
+  facade: {
+    id: string;
+    status: 'facade-disabled';
+    phase: 'provider-disabled-orchestration-facade';
+    approvedScope: 'wrapper-scaffolding-only';
+    composedScaffoldRefs: string[];
+    methodSurface: Record<string, { blocked: true; reason: string }>;
+    blockedActionResults: Array<{
+      action: string;
+      providerCallBlocked: true;
+      credentialAccessBlocked: true;
+      networkAccessBlocked: true;
+      executionBlocked: true;
+    }>;
+    summary: {
+      facadeCount: number;
+      composedScaffoldCount: number;
+      blockedMethodCount: number;
+      providerCallCount: 0;
+      credentialAccessCount: 0;
+      networkAccessCount: 0;
+      executionCount: 0;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderCapabilityPolicyEvaluatorResponse {
+  evaluator: {
+    id: string;
+    status: 'facade-disabled';
+    phase: 'provider-capability-policy-evaluator';
+    capabilities: Array<{
+      capability: string;
+      allowed: false;
+      reason: string;
+      requiresExplicitApproval: true;
+    }>;
+    summary: {
+      evaluatorCount: 1;
+      capabilityCount: number;
+      allowedCapabilityCount: 0;
+      deniedCapabilityCount: number;
+      providerCallAllowedCount: 0;
+      credentialAccessAllowedCount: 0;
+      networkAccessAllowedCount: 0;
+    };
+    safety: Record<string, boolean>;
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderBlockedActionLedgerTypesResponse {
+  ledger: {
+    id: string;
+    status: 'facade-disabled';
+    phase: 'provider-blocked-action-ledger-types';
+    blockedActionTypes: string[];
+    ledgerEntryShape: {
+      blockedActionIdPlaceholder: string;
+      actionType: string;
+      providerClass: string;
+      sourcePlanId: string;
+      blockedReason: string;
+      requiredApproval: string;
+      policyVersion: string;
+      redactedSummaryOnly: true;
+      createdAtPlaceholder: string;
+      auditRefPlaceholder: string;
+      noRawProviderOutput: true;
+      noCredentials: true;
+    };
+    summary: {
+      blockedActionTypeCount: number;
+      ledgerPersistenceCount: 0;
+      appendEnabledCount: 0;
+      mutationEnabledCount: 0;
+      rawOutputAccessCount: 0;
+      credentialAccessCount: 0;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderDisabledOrchestrationIntegrationSummaryResponse {
+  summary: {
+    id: string;
+    status: 'facade-disabled';
+    phase: 'provider-disabled-orchestration-integration-summary';
+    integratedRefs: string[];
+    blockedCapabilities: string[];
+    nextSafeImplementationSlices: string[];
+    summary: {
+      integratedRefCount: number;
+      providerCallCount: 0;
+      credentialAccessCount: 0;
+      networkAccessCount: 0;
+      ledgerPersistCount: 0;
+      postRouteCount: 0;
+      mutationControlCount: 0;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
 export interface BrainCoreVideoProviderWrapperValidationHarnessResponse {
   harness: {
     id: string;
@@ -6201,4 +6313,28 @@ export async function readBrainCoreVideoOrchestratorProviderAuditEventTypes(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderAuditEventTypesResponse>> {
   return fetchJson<BrainCoreVideoProviderAuditEventTypesResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-audit-event-types');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderDisabledOrchestrationFacade(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderDisabledOrchestrationFacadeResponse>> {
+  return fetchJson<BrainCoreVideoProviderDisabledOrchestrationFacadeResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-disabled-orchestration-facade');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderCapabilityPolicyEvaluator(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderCapabilityPolicyEvaluatorResponse>> {
+  return fetchJson<BrainCoreVideoProviderCapabilityPolicyEvaluatorResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-capability-policy-evaluator');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderBlockedActionLedgerTypes(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderBlockedActionLedgerTypesResponse>> {
+  return fetchJson<BrainCoreVideoProviderBlockedActionLedgerTypesResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-blocked-action-ledger-types');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderDisabledOrchestrationIntegrationSummary(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderDisabledOrchestrationIntegrationSummaryResponse>> {
+  return fetchJson<BrainCoreVideoProviderDisabledOrchestrationIntegrationSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-disabled-orchestration-integration-summary');
 }

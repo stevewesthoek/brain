@@ -8270,6 +8270,84 @@ test('POST /video-orchestrator/provider-audit-event-types is not registered and 
   assert.equal(response.statusCode, 404);
 });
 
+test('GET /video-orchestrator/provider-disabled-orchestration-facade returns facade-disabled status', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-disabled-orchestration-facade' });
+  const body = JSON.parse(response.body) as { facade: { id: string; status: string; safety: Record<string, boolean> } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.facade.id, 'video-orchestrator-provider-disabled-orchestration-facade');
+  assert.equal(body.facade.status, 'facade-disabled');
+  assert.equal(body.facade.safety.readOnlyStatusEndpoint, true);
+  assert.equal(body.facade.safety.providerCallsEnabled, false);
+  assert.equal(body.facade.safety.credentialAccessEnabled, false);
+  assert.equal(body.facade.safety.networkAccessEnabled, false);
+});
+
+test('POST /video-orchestrator/provider-disabled-orchestration-facade is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-disabled-orchestration-facade' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-capability-policy-evaluator returns all capabilities denied', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-capability-policy-evaluator' });
+  const body = JSON.parse(response.body) as {
+    evaluator: { id: string; status: string; capabilities: Array<{ allowed: boolean }> };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.evaluator.id, 'video-orchestrator-provider-capability-policy-evaluator');
+  assert.equal(body.evaluator.status, 'facade-disabled');
+  assert.ok(body.evaluator.capabilities.length > 0);
+  body.evaluator.capabilities.forEach((cap) => {
+    assert.equal(cap.allowed, false);
+  });
+});
+
+test('POST /video-orchestrator/provider-capability-policy-evaluator is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-capability-policy-evaluator' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-blocked-action-ledger-types returns ledger type definitions', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-blocked-action-ledger-types' });
+  const body = JSON.parse(response.body) as {
+    ledger: { id: string; status: string; blockedActionTypes: string[] };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.ledger.id, 'video-orchestrator-provider-blocked-action-ledger-types');
+  assert.equal(body.ledger.status, 'facade-disabled');
+  assert.ok(body.ledger.blockedActionTypes.length > 0);
+});
+
+test('POST /video-orchestrator/provider-blocked-action-ledger-types is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-blocked-action-ledger-types' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-disabled-orchestration-integration-summary returns integration summary', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/provider-disabled-orchestration-integration-summary',
+  });
+  const body = JSON.parse(response.body) as {
+    summary: { id: string; status: string; integratedRefs: string[] };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.summary.id, 'video-orchestrator-provider-disabled-orchestration-integration-summary');
+  assert.equal(body.summary.status, 'facade-disabled');
+  assert.ok(body.summary.integratedRefs.length > 0);
+});
+
+test('POST /video-orchestrator/provider-disabled-orchestration-integration-summary is not registered and returns 404', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/video-orchestrator/provider-disabled-orchestration-integration-summary',
+  });
+  assert.equal(response.statusCode, 404);
+});
+
 test('direct inert scaffolding readers return disabled scaffolds', () => {
   assert.equal(readVideoProviderRequestWrapperInertShell().shell.status, 'scaffolded-disabled');
   assert.equal(readVideoCredentialReferenceValidator().validator.status, 'scaffolded-disabled');
@@ -8283,6 +8361,10 @@ test('new inert scaffolding source files do not include unsafe execution primiti
     'video-orchestrator-credential-reference-validator.ts',
     'video-orchestrator-provider-response-redaction-skeleton.ts',
     'video-orchestrator-provider-audit-event-types.ts',
+    'video-orchestrator-provider-disabled-orchestration-facade.ts',
+    'video-orchestrator-provider-capability-policy-evaluator.ts',
+    'video-orchestrator-provider-blocked-action-ledger-types.ts',
+    'video-orchestrator-provider-disabled-orchestration-integration-summary.ts',
   ];
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 

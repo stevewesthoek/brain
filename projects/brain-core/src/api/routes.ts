@@ -93,6 +93,10 @@ import { readVideoProviderRequestWrapperInertShellStatus } from '../adapters/vid
 import { readVideoCredentialReferenceValidatorStatus } from '../adapters/video-orchestrator-credential-reference-validator.js';
 import { readVideoProviderResponseRedactionSkeletonStatus } from '../adapters/video-orchestrator-provider-response-redaction-skeleton.js';
 import { readVideoProviderAuditEventTypes } from '../adapters/video-orchestrator-provider-audit-event-types.js';
+import { readVideoProviderDisabledOrchestrationFacadeStatus } from '../adapters/video-orchestrator-provider-disabled-orchestration-facade.js';
+import { readVideoProviderCapabilityPolicyEvaluatorStatus } from '../adapters/video-orchestrator-provider-capability-policy-evaluator.js';
+import { readVideoProviderBlockedActionLedgerTypes } from '../adapters/video-orchestrator-provider-blocked-action-ledger-types.js';
+import { readVideoProviderDisabledOrchestrationIntegrationSummary } from '../adapters/video-orchestrator-provider-disabled-orchestration-integration-summary.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -406,6 +410,18 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-audit-event-types':
       sendJson(response, 200, readVideoProviderAuditEventTypes());
+      return;
+    case '/video-orchestrator/provider-disabled-orchestration-facade':
+      sendJson(response, 200, readVideoProviderDisabledOrchestrationFacadeStatus());
+      return;
+    case '/video-orchestrator/provider-capability-policy-evaluator':
+      sendJson(response, 200, readVideoProviderCapabilityPolicyEvaluatorStatus());
+      return;
+    case '/video-orchestrator/provider-blocked-action-ledger-types':
+      sendJson(response, 200, readVideoProviderBlockedActionLedgerTypes());
+      return;
+    case '/video-orchestrator/provider-disabled-orchestration-integration-summary':
+      sendJson(response, 200, readVideoProviderDisabledOrchestrationIntegrationSummary());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
