@@ -693,3 +693,47 @@ Validation evidence:
 Next safe task suggestion:
 
 - Provider audit persistence boundary plan or Provider implementation phase start gate.
+
+## Continuation update — Video Orchestrator provider audit persistence boundary plan
+
+Endpoints:
+
+- `GET /video-orchestrator/provider-audit-persistence-boundary-plan`
+- `GET /video-orchestrator/provider-audit-persistence-boundary-plan/:providerClass`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-provider-audit-persistence-boundary-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Implementation boundary only.
+- No audit writes.
+- No audit logs.
+- No append operations.
+- No provider calls.
+- No raw provider output.
+- No credential access.
+- No prompt persistence.
+- No artifact persistence.
+- No file writes from UI.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+
+Validation evidence:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: pending in this handoff.
+- The boundary remains blocked and audit persistence is not implemented.
+
+Next safe task suggestion:
+
+- Provider implementation phase start gate or Provider wrapper security review plan.

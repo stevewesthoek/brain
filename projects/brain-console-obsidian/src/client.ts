@@ -5220,6 +5220,79 @@ export interface BrainCoreVideoPromptReviewUxImplementationPlanResponse {
   };
 }
 
+export interface BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse {
+  plan: {
+    status: string;
+    boundaryCount: number;
+    blockedCount: number;
+    implementationBoundaryOnlyCount: number;
+    auditPersistenceImplementedCount: number;
+    auditRecordCreatedCount: number;
+    auditAppendEnabledCount: number;
+    providerCallCount: number;
+    rawOutputAccessCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      implementationBoundaryOnly: boolean;
+      auditPurpose: string;
+      proposedAuditEventTypes: string[];
+      proposedAuditRecordShape: string[];
+      allowedFutureAuditFields: string[];
+      disallowedAuditFields: string[];
+      retentionRules: string[];
+      appendOnlyRules: string[];
+      redactionRequirements: string[];
+      requiredPreImplementationApprovals: string[];
+      implementationBlockers: string[];
+      firstSafeImplementationSlice: string;
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        implementationBoundaryOnly: boolean;
+        auditPersistenceImplemented: boolean;
+        auditRecordCreationEnabled: boolean;
+        auditAppendEnabled: boolean;
+        auditMutationEnabled: boolean;
+        providerConfigured: boolean;
+        providerCallsEnabled: boolean;
+        rawProviderOutputAccessEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        promptPersistenceEnabled: boolean;
+        artifactPersistenceEnabled: boolean;
+        filesystemAccessEnabled: boolean;
+        networkAccessEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      implementationBoundaryOnly: boolean;
+      auditPersistenceImplemented: boolean;
+      auditRecordCreationEnabled: boolean;
+      auditAppendEnabled: boolean;
+      auditMutationEnabled: boolean;
+      providerConfigured: boolean;
+      providerCallsEnabled: boolean;
+      rawProviderOutputAccessEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      promptPersistenceEnabled: boolean;
+      artifactPersistenceEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5290,4 +5363,10 @@ export async function readBrainCoreVideoOrchestratorPromptReviewUxImplementation
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoPromptReviewUxImplementationPlanResponse>> {
   return fetchJson<BrainCoreVideoPromptReviewUxImplementationPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/prompt-review-ux-implementation-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderAuditPersistenceBoundaryPlan(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse>> {
+  return fetchJson<BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-audit-persistence-boundary-plan');
 }

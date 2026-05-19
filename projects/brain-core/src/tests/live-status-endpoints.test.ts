@@ -6439,3 +6439,117 @@ test('POST /video-orchestrator/prompt-review-ux-implementation-plan is not regis
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/prompt-review-ux-implementation-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-audit-persistence-boundary-plan returns blocked audit boundaries with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-audit-persistence-boundary-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      status: string;
+      boundaryCount: number;
+      blockedCount: number;
+      implementationBoundaryOnlyCount: number;
+      auditPersistenceImplementedCount: number;
+      auditRecordCreatedCount: number;
+      auditAppendEnabledCount: number;
+      providerCallCount: number;
+      rawOutputAccessCount: number;
+      entries: Array<{
+        providerClass: string;
+        implementationBoundaryOnly: boolean;
+        proposedAuditEventTypes: string[];
+        proposedAuditRecordShape: string[];
+        disallowedAuditFields: string[];
+        retentionRules: string[];
+        appendOnlyRules: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-provider-audit-persistence-boundary-plan');
+  assert.equal(body.plan.status, 'blocked');
+  assert.equal(body.plan.boundaryCount, 3);
+  assert.equal(body.plan.blockedCount, 3);
+  assert.equal(body.plan.implementationBoundaryOnlyCount, 3);
+  assert.equal(body.plan.auditPersistenceImplementedCount, 0);
+  assert.equal(body.plan.auditRecordCreatedCount, 0);
+  assert.equal(body.plan.auditAppendEnabledCount, 0);
+  assert.equal(body.plan.providerCallCount, 0);
+  assert.equal(body.plan.rawOutputAccessCount, 0);
+  assert.equal(body.plan.entries.length, 3);
+  assert.ok(body.plan.entries.every((entry) => entry.implementationBoundaryOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('provider_request_planned')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('prompt_review_completed')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('credential_reference_checked')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('provider_request_blocked')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('provider_response_redacted')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('artifact_handoff_reviewed')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditEventTypes.includes('compliance_check_reviewed')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('auditEventIdPlaceholder')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('providerClass')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('eventType')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('sourcePlanId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('operatorReviewRefPlaceholder')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('policyVersion')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedAuditRecordShape.includes('redactedSummaryOnly')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('raw provider response')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('raw prompt text')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('raw credentials')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('API keys')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('OAuth tokens')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('private keys')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('.env dumps')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('Mind vault paths')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('STB artifact paths')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('generated media files')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('unredacted logs')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedAuditFields.includes('arbitrary shell output')));
+  assert.ok(body.plan.entries.every((entry) => entry.retentionRules.includes('no persistence in this phase')));
+  assert.ok(body.plan.entries.every((entry) => entry.retentionRules.includes('future records must be append-only')));
+  assert.ok(body.plan.entries.every((entry) => entry.retentionRules.includes('future records must be redacted before persistence')));
+  assert.ok(body.plan.entries.every((entry) => entry.retentionRules.includes('future records must not include raw provider output')));
+  assert.ok(body.plan.entries.every((entry) => entry.appendOnlyRules.includes('no record mutation after append')));
+  assert.ok(body.plan.entries.every((entry) => entry.appendOnlyRules.includes('correction by follow-up event only')));
+  assert.ok(body.plan.entries.every((entry) => entry.appendOnlyRules.includes('no delete through provider audit API')));
+  assert.ok(body.plan.entries.every((entry) => entry.appendOnlyRules.includes('no overwrite through provider audit API')));
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.implementationBoundaryOnly, true);
+  assert.equal(body.plan.safety.auditPersistenceImplemented, false);
+  assert.equal(body.plan.safety.auditRecordCreationEnabled, false);
+  assert.equal(body.plan.safety.auditAppendEnabled, false);
+  assert.equal(body.plan.safety.auditMutationEnabled, false);
+  assert.equal(body.plan.safety.providerConfigured, false);
+  assert.equal(body.plan.safety.providerCallsEnabled, false);
+  assert.equal(body.plan.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.plan.safety.credentialAccessEnabled, false);
+  assert.equal(body.plan.safety.promptPersistenceEnabled, false);
+  assert.equal(body.plan.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.plan.safety.filesystemAccessEnabled, false);
+  assert.equal(body.plan.safety.networkAccessEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+  assert.equal(body.plan.safety.publishesContent, false);
+  assert.equal(body.plan.safety.writesToMind, false);
+  assert.equal(body.plan.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-audit-persistence-boundary-plan/:providerClass returns image-generation audit boundary', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-audit-persistence-boundary-plan/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    implementationBoundaryOnly: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.implementationBoundaryOnly, true);
+});
+
+test('POST /video-orchestrator/provider-audit-persistence-boundary-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-audit-persistence-boundary-plan' });
+  assert.equal(response.statusCode, 404);
+});

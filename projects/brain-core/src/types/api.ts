@@ -7503,3 +7503,97 @@ export interface BrainCoreVideoPromptReviewUxImplementationPlan {
 export interface BrainCoreVideoPromptReviewUxImplementationPlanResponse {
   plan: BrainCoreVideoPromptReviewUxImplementationPlan;
 }
+
+export type BrainCoreVideoProviderAuditPersistenceBoundaryProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderAuditPersistenceBoundaryPlanEntry {
+  providerClass: BrainCoreVideoProviderAuditPersistenceBoundaryProviderClass;
+  status: 'blocked';
+  implementationBoundaryOnly: true;
+  auditPurpose: string;
+  proposedAuditEventTypes: string[];
+  proposedAuditRecordShape: string[];
+  allowedFutureAuditFields: string[];
+  disallowedAuditFields: string[];
+  retentionRules: string[];
+  appendOnlyRules: string[];
+  redactionRequirements: string[];
+  requiredPreImplementationApprovals: string[];
+  implementationBlockers: string[];
+  firstSafeImplementationSlice: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    implementationBoundaryOnly: true;
+    auditPersistenceImplemented: false;
+    auditRecordCreationEnabled: false;
+    auditAppendEnabled: false;
+    auditMutationEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    credentialAccessEnabled: false;
+    promptPersistenceEnabled: false;
+    artifactPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderAuditPersistenceBoundaryPlan {
+  id: 'video-orchestrator-provider-audit-persistence-boundary-plan';
+  generatedAt: string;
+  status: 'blocked';
+  boundaryCount: 3;
+  blockedCount: 3;
+  implementationBoundaryOnlyCount: 3;
+  auditPersistenceImplementedCount: 0;
+  auditRecordCreatedCount: 0;
+  auditAppendEnabledCount: 0;
+  providerCallCount: 0;
+  rawOutputAccessCount: 0;
+  entries: BrainCoreVideoProviderAuditPersistenceBoundaryPlanEntry[];
+  summary: {
+    boundaryCount: 3;
+    blockedCount: 3;
+    implementationBoundaryOnlyCount: 3;
+    auditPersistenceImplementedCount: 0;
+    auditRecordCreatedCount: 0;
+    auditAppendEnabledCount: 0;
+    providerCallCount: 0;
+    rawOutputAccessCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    implementationBoundaryOnly: true;
+    auditPersistenceImplemented: false;
+    auditRecordCreationEnabled: false;
+    auditAppendEnabled: false;
+    auditMutationEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    credentialAccessEnabled: false;
+    promptPersistenceEnabled: false;
+    artifactPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse {
+  plan: BrainCoreVideoProviderAuditPersistenceBoundaryPlan;
+}
