@@ -7241,3 +7241,107 @@ test('POST /video-orchestrator/provider-approval-packet-console-review-summary i
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-approval-packet-console-review-summary' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-planning-surface-index returns blocked planning index with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-planning-surface-index' });
+  const body = JSON.parse(response.body) as {
+    index: {
+      status: string;
+      surfaceCount: number;
+      blockedCount: number;
+      visibleInBrainConsoleCount: number;
+      implementationEnabledCount: number;
+      providerCallEnabledCount: number;
+      credentialAccessEnabledCount: number;
+      mutationControlEnabledCount: number;
+      pendingApprovalPhrase: string;
+      entries: Array<{
+        id: string;
+        endpoint: string;
+        phaseRole: string;
+        status: string;
+        visibleInBrainConsole: boolean;
+        implementationEnables: boolean;
+        providerCallsEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        mutationControlsEnabled: boolean;
+        summary: string;
+        nextSafeStep: string;
+        safety: Record<string, boolean>;
+      }>;
+      summary: {
+        surfaceCount: number;
+        blockedCount: number;
+        visibleInBrainConsoleCount: number;
+        implementationEnabledCount: number;
+        providerCallEnabledCount: number;
+        credentialAccessEnabledCount: number;
+        mutationControlEnabledCount: number;
+        pendingApprovalPhrase: string;
+      };
+      blockers: string[];
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.index.status, 'blocked');
+  assert.equal(body.index.surfaceCount, 17);
+  assert.equal(body.index.blockedCount, 17);
+  assert.equal(body.index.visibleInBrainConsoleCount, 17);
+  assert.equal(body.index.implementationEnabledCount, 0);
+  assert.equal(body.index.providerCallEnabledCount, 0);
+  assert.equal(body.index.credentialAccessEnabledCount, 0);
+  assert.equal(body.index.mutationControlEnabledCount, 0);
+  assert.equal(body.index.pendingApprovalPhrase, 'approve-wrapper-scaffolding-only');
+  assert.equal(body.index.entries.length, 17);
+  assert.ok(body.index.entries.every((entry) => entry.status === 'blocked'));
+  assert.ok(body.index.entries.every((entry) => entry.implementationEnables === false));
+  assert.ok(body.index.entries.every((entry) => entry.providerCallsEnabled === false));
+  assert.ok(body.index.entries.every((entry) => entry.credentialAccessEnabled === false));
+  assert.ok(body.index.entries.every((entry) => entry.mutationControlsEnabled === false));
+  assert.ok(body.index.entries.every((entry) => entry.visibleInBrainConsole === true));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'design-provider-boundary-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'design-provider-credential-isolation-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'design-provider-prompt-review-policy-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'artifact-sandbox-provider-handoff-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-output-redaction-policy-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'design-provider-compliance-checklist-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'design-provider-enablement-readiness-index'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-integration-final-planning-checkpoint'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-request-wrapper-implementation-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'credential-store-implementation-boundary-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'prompt-review-ux-implementation-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-audit-persistence-boundary-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-wrapper-security-review-plan'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-implementation-phase-start-gate'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-implementation-readiness-dashboard-summary'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-implementation-approval-packet'));
+  assert.ok(body.index.entries.some((entry) => entry.id === 'provider-approval-packet-console-review-summary'));
+  assert.equal(body.index.safety.readOnly, true);
+  assert.equal(body.index.safety.indexOnly, true);
+  assert.equal(body.index.safety.implementationApproved, false);
+  assert.equal(body.index.safety.implementationEligible, false);
+  assert.equal(body.index.safety.providerConfigured, false);
+  assert.equal(body.index.safety.providerCallsEnabled, false);
+  assert.equal(body.index.safety.credentialAccessEnabled, false);
+  assert.equal(body.index.safety.networkAccessEnabled, false);
+  assert.equal(body.index.safety.promptGenerationEnabled, false);
+  assert.equal(body.index.safety.imageGenerationEnabled, false);
+  assert.equal(body.index.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.index.safety.auditPersistenceEnabled, false);
+  assert.equal(body.index.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.index.safety.mutationControlsEnabled, false);
+  assert.equal(body.index.safety.approvalButtonsEnabled, false);
+  assert.equal(body.index.safety.filesystemAccessEnabled, false);
+  assert.equal(body.index.safety.writesFiles, false);
+  assert.equal(body.index.safety.publishesContent, false);
+  assert.equal(body.index.safety.writesToMind, false);
+  assert.equal(body.index.safety.executesVideo, false);
+});
+
+test('POST /video-orchestrator/provider-planning-surface-index is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-planning-surface-index' });
+  assert.equal(response.statusCode, 404);
+});

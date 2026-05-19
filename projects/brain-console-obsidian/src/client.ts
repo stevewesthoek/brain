@@ -5571,6 +5571,47 @@ export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryRespons
   };
 }
 
+export interface BrainCoreVideoProviderPlanningSurfaceIndexResponse {
+  index: {
+    status: string;
+    surfaceCount: number;
+    blockedCount: number;
+    visibleInBrainConsoleCount: number;
+    implementationEnabledCount: number;
+    providerCallEnabledCount: number;
+    credentialAccessEnabledCount: number;
+    mutationControlEnabledCount: number;
+    pendingApprovalPhrase: string;
+    entries: Array<{
+      id: string;
+      endpoint: string;
+      phaseRole: string;
+      status: string;
+      visibleInBrainConsole: boolean;
+      implementationEnables: boolean;
+      providerCallsEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      mutationControlsEnabled: boolean;
+      summary: string;
+      nextSafeStep: string;
+      safety: Record<string, boolean>;
+    }>;
+    summary: {
+      surfaceCount: number;
+      blockedCount: number;
+      visibleInBrainConsoleCount: number;
+      implementationEnabledCount: number;
+      providerCallEnabledCount: number;
+      credentialAccessEnabledCount: number;
+      mutationControlEnabledCount: number;
+      pendingApprovalPhrase: string;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+    safety: Record<string, boolean>;
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5677,4 +5718,10 @@ export async function readBrainCoreVideoOrchestratorProviderApprovalPacketConsol
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse>> {
   return fetchJson<BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-approval-packet-console-review-summary');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderPlanningSurfaceIndex(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderPlanningSurfaceIndexResponse>> {
+  return fetchJson<BrainCoreVideoProviderPlanningSurfaceIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-planning-surface-index');
 }

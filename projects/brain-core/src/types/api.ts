@@ -8081,3 +8081,111 @@ export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummary {
 export interface BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse {
   summary: BrainCoreVideoProviderApprovalPacketConsoleReviewSummary;
 }
+
+export type BrainCoreVideoProviderPlanningSurfaceIndexId =
+  | 'design-provider-boundary-plan'
+  | 'design-provider-credential-isolation-plan'
+  | 'design-provider-prompt-review-policy-plan'
+  | 'artifact-sandbox-provider-handoff-plan'
+  | 'provider-output-redaction-policy-plan'
+  | 'design-provider-compliance-checklist-plan'
+  | 'design-provider-enablement-readiness-index'
+  | 'provider-integration-final-planning-checkpoint'
+  | 'provider-request-wrapper-implementation-plan'
+  | 'credential-store-implementation-boundary-plan'
+  | 'prompt-review-ux-implementation-plan'
+  | 'provider-audit-persistence-boundary-plan'
+  | 'provider-wrapper-security-review-plan'
+  | 'provider-implementation-phase-start-gate'
+  | 'provider-implementation-readiness-dashboard-summary'
+  | 'provider-implementation-approval-packet'
+  | 'provider-approval-packet-console-review-summary';
+
+export interface BrainCoreVideoProviderPlanningSurfaceIndexEntry {
+  id: BrainCoreVideoProviderPlanningSurfaceIndexId;
+  endpoint: string;
+  phaseRole: string;
+  status: 'blocked';
+  visibleInBrainConsole: boolean;
+  implementationEnables: false;
+  providerCallsEnabled: false;
+  credentialAccessEnabled: false;
+  mutationControlsEnabled: false;
+  summary: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    indexOnly: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderPlanningSurfaceIndex {
+  id: 'video-orchestrator-provider-planning-surface-index';
+  generatedAt: string;
+  status: 'blocked';
+  surfaceCount: 17;
+  blockedCount: 17;
+  visibleInBrainConsoleCount: number;
+  implementationEnabledCount: 0;
+  providerCallEnabledCount: 0;
+  credentialAccessEnabledCount: 0;
+  mutationControlEnabledCount: 0;
+  pendingApprovalPhrase: 'approve-wrapper-scaffolding-only';
+  entries: BrainCoreVideoProviderPlanningSurfaceIndexEntry[];
+  summary: {
+    surfaceCount: 17;
+    blockedCount: 17;
+    visibleInBrainConsoleCount: number;
+    implementationEnabledCount: 0;
+    providerCallEnabledCount: 0;
+    credentialAccessEnabledCount: 0;
+    mutationControlEnabledCount: 0;
+    pendingApprovalPhrase: 'approve-wrapper-scaffolding-only';
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    indexOnly: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderPlanningSurfaceIndexResponse {
+  index: BrainCoreVideoProviderPlanningSurfaceIndex;
+}
