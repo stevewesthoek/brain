@@ -932,6 +932,27 @@ function renderSafeCard(
   }
 }
 
+// Safe data accessors for defensive rendering
+function safeText(value: any, fallback = 'Unavailable'): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function safeNumber(value: any, fallback = 0): number {
+  return typeof value === 'number' ? value : fallback;
+}
+
+function safeArray<T>(value: T[] | undefined | null): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function safeBool(value: any, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function safeCount(items: any[] | undefined | null): number {
+  return Array.isArray(items) ? items.length : 0;
+}
+
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
@@ -2677,19 +2698,24 @@ function renderVideoOrchestratorCard(state: BrainConsoleViewState, snapshot: Das
     return card;
   }
 
+  const progress = state.videoOrchestratorStatus.moduleProgress ?? {};
+  const platforms = safeArray(state.videoOrchestratorStatus.supportedPlatforms);
+
   const list = card.createEl('ul');
-  list.createEl('li', { text: `Progress: ${state.videoOrchestratorStatus.moduleProgress.percent}%` });
-  list.createEl('li', { text: `Implemented: ${state.videoOrchestratorStatus.moduleProgress.implemented}/${state.videoOrchestratorStatus.moduleProgress.total}` });
+  list.createEl('li', { text: `Progress: ${safeNumber(progress.percent, 0)}%` });
+  list.createEl('li', { text: `Implemented: ${safeNumber(progress.implemented, 0)}/${safeNumber(progress.total, 0)}` });
 
-  if (state.videoOrchestratorStatus.moduleProgress.partial > 0) {
-    list.createEl('li', { text: `Partial: ${state.videoOrchestratorStatus.moduleProgress.partial}` });
+  const partialCount = safeNumber(progress.partial, 0);
+  if (partialCount > 0) {
+    list.createEl('li', { text: `Partial: ${partialCount}` });
   }
 
-  if (state.videoOrchestratorStatus.moduleProgress.planned > 0) {
-    list.createEl('li', { text: `Planned: ${state.videoOrchestratorStatus.moduleProgress.planned}` });
+  const plannedCount = safeNumber(progress.planned, 0);
+  if (plannedCount > 0) {
+    list.createEl('li', { text: `Planned: ${plannedCount}` });
   }
 
-  list.createEl('li', { text: `Platforms: ${state.videoOrchestratorStatus.supportedPlatforms.length}` });
+  list.createEl('li', { text: `Platforms: ${safeCount(platforms)}` });
 
   return card;
 }
@@ -2702,12 +2728,16 @@ function renderMigrationStatusCard(state: BrainConsoleViewState, snapshot: Dashb
     return card;
   }
 
-  const list = card.createEl('ul');
-  list.createEl('li', { text: `Parity: ${state.stbVideoMigrationStatus.parityPercent}%` });
-  list.createEl('li', { text: `Mapped modules: ${(state.stbVideoMigrationStatus.modules ?? []).filter(m => m.status === 'mapped').length}/${state.stbVideoMigrationStatus.modules.length}` });
+  const modules = safeArray(state.stbVideoMigrationStatus.modules);
+  const mappedCount = modules.filter(m => m?.status === 'mapped').length;
+  const totalCount = safeCount(modules);
 
-  const blockedItem = list.createEl('li', { text: `Decomm Blocked: ${state.stbVideoMigrationStatus.decommissionBlocked ? 'yes' : 'no'}` });
-  if (state.stbVideoMigrationStatus.decommissionBlocked) {
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Parity: ${safeNumber(state.stbVideoMigrationStatus.parityPercent, 0)}%` });
+  list.createEl('li', { text: `Mapped modules: ${mappedCount}/${totalCount}` });
+
+  const blockedItem = list.createEl('li', { text: `Decomm Blocked: ${safeBool(state.stbVideoMigrationStatus.decommissionBlocked) ? 'yes' : 'no'}` });
+  if (safeBool(state.stbVideoMigrationStatus.decommissionBlocked)) {
     blockedItem.addClass('brain-console__list-warning');
   }
 
@@ -2722,15 +2752,18 @@ function renderVideoIntakeCard(state: BrainConsoleViewState, snapshot: Dashboard
     return card;
   }
 
+  const summary = state.videoOrchestratorIntake.summary ?? {};
+
   const list = card.createEl('ul');
   list.createEl('li', { text: `Status: Production module` });
-  list.createEl('li', { text: `Sources: ${state.videoOrchestratorIntake.summary.sourceCount}` });
-  list.createEl('li', { text: `Plans: ${state.videoOrchestratorIntake.summary.planCount}` });
-  list.createEl('li', { text: `Available: ${state.videoOrchestratorIntake.summary.availableCount}` });
+  list.createEl('li', { text: `Sources: ${safeNumber(summary.sourceCount, 0)}` });
+  list.createEl('li', { text: `Plans: ${safeNumber(summary.planCount, 0)}` });
+  list.createEl('li', { text: `Available: ${safeNumber(summary.availableCount, 0)}` });
 
-  if (state.videoOrchestratorIntake.summary.blockedCount > 0) {
+  const blockedCount = safeNumber(summary.blockedCount, 0);
+  if (blockedCount > 0) {
     const blockedItem = list.createEl('li', {
-      text: `Blocked: ${state.videoOrchestratorIntake.summary.blockedCount}`,
+      text: `Blocked: ${blockedCount}`,
     });
     blockedItem.addClass('brain-console__list-warning');
   }
@@ -3012,28 +3045,33 @@ function renderDualRunStatusCard(state: BrainConsoleViewState, snapshot: Dashboa
     return card;
   }
 
-  const list = card.createEl('ul');
-  list.createEl('li', { text: `Status: ${state.stbVideoDualRunStatus.status}` });
-  list.createEl('li', { text: `Readiness: ${state.stbVideoDualRunStatus.summary.readinessPercent}%` });
-  list.createEl('li', { text: `Passed: ${state.stbVideoDualRunStatus.summary.passedCount}/${state.stbVideoDualRunStatus.summary.totalValidations}` });
+  const summary = state.stbVideoDualRunStatus.summary ?? {};
+  const blockers = safeArray(state.stbVideoDualRunStatus.blockers);
 
-  if (state.stbVideoDualRunStatus.summary.inProgressCount > 0) {
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Status: ${safeText(state.stbVideoDualRunStatus.status)}` });
+  list.createEl('li', { text: `Readiness: ${safeNumber(summary.readinessPercent, 0)}%` });
+  list.createEl('li', { text: `Passed: ${safeNumber(summary.passedCount, 0)}/${safeNumber(summary.totalValidations, 0)}` });
+
+  const inProgressCount = safeNumber(summary.inProgressCount, 0);
+  if (inProgressCount > 0) {
     const inProgressItem = list.createEl('li', {
-      text: `In Progress: ${state.stbVideoDualRunStatus.summary.inProgressCount}`,
+      text: `In Progress: ${inProgressCount}`,
     });
     inProgressItem.addClass('brain-console__list-warning');
   }
 
-  if (state.stbVideoDualRunStatus.summary.blockedCount > 0) {
+  const blockedCount = safeNumber(summary.blockedCount, 0);
+  if (blockedCount > 0) {
     const blockedItem = list.createEl('li', {
-      text: `Blocked: ${state.stbVideoDualRunStatus.summary.blockedCount}`,
+      text: `Blocked: ${blockedCount}`,
     });
     blockedItem.addClass('brain-console__list-error');
   }
 
-  if (state.stbVideoDualRunStatus.blockers.length > 0) {
+  if (blockers.length > 0) {
     const blockerItem = list.createEl('li', {
-      text: `Blockers: ${state.stbVideoDualRunStatus.blockers.length}`,
+      text: `Blockers: ${blockers.length}`,
     });
     blockerItem.addClass('brain-console__list-error');
   }
@@ -3050,21 +3088,26 @@ function renderProductionGateCard(state: BrainConsoleViewState, snapshot: Dashbo
   }
 
   const gate = state.videoProductionGate.gate;
-  const list = card.createEl('ul');
-  list.createEl('li', { text: `Status: ${gate.status}` });
-  list.createEl('li', { text: `Readiness: ${gate.readinessPercent}%` });
-  list.createEl('li', { text: `Total items: ${gate.summary.totalItems}` });
-  list.createEl('li', { text: `Ready: ${gate.summary.readyItems}` });
+  const summary = gate.summary ?? {};
+  const criticalBlockers = safeArray(gate.criticalBlockers);
+  const sections = safeArray(gate.sections);
 
-  if (gate.summary.blockedItems > 0) {
+  const list = card.createEl('ul');
+  list.createEl('li', { text: `Status: ${safeText(gate.status)}` });
+  list.createEl('li', { text: `Readiness: ${safeNumber(gate.readinessPercent, 0)}%` });
+  list.createEl('li', { text: `Total items: ${safeNumber(summary.totalItems, 0)}` });
+  list.createEl('li', { text: `Ready: ${safeNumber(summary.readyItems, 0)}` });
+
+  const blockedCount = safeNumber(summary.blockedItems, 0);
+  if (blockedCount > 0) {
     const blockedItem = list.createEl('li', {
-      text: `Blocked: ${gate.summary.blockedItems}`,
+      text: `Blocked: ${blockedCount}`,
     });
     blockedItem.addClass('brain-console__list-error');
   }
 
-  if (gate.criticalBlockers.length > 0) {
-    const criticalPreview = gate.criticalBlockers[0] ?? 'Unknown blocker';
+  if (criticalBlockers.length > 0) {
+    const criticalPreview = safeText(criticalBlockers[0], 'Unknown blocker');
     const blockerItem = list.createEl('li', {
       text: `Critical: ${criticalPreview}…`,
     });
@@ -3072,7 +3115,7 @@ function renderProductionGateCard(state: BrainConsoleViewState, snapshot: Dashbo
   }
 
   list.createEl('li', {
-    text: `Sections: ${gate.sections.length}`,
+    text: `Sections: ${safeCount(sections)}`,
   });
 
   const safetyList = list.createEl('li', {
