@@ -64,6 +64,7 @@ import { readVideoAssemblyPlans, readVideoAssemblyPlan } from '../adapters/video
 import { readVideoMetadataPlans, readVideoMetadataPlan } from '../adapters/video-orchestrator-metadata-plan.js';
 import { readVideoPublishingPrepPlans, readVideoPublishingPrepPlan } from '../adapters/video-orchestrator-publishing-prep.js';
 import { readVideoThumbnailDesignPlans, readVideoThumbnailDesignPlan } from '../adapters/video-orchestrator-thumbnail-design-plan.js';
+import { readVideoArchiveLoggingPlans, readVideoArchiveLoggingPlan } from '../adapters/video-orchestrator-archive-logging-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -290,6 +291,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/thumbnail-design':
       sendJson(response, 200, readVideoThumbnailDesignPlans());
+      return;
+    case '/video-orchestrator/archive-logging-plan':
+      sendJson(response, 200, readVideoArchiveLoggingPlans());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -606,6 +610,22 @@ export async function routeRequest(
         const manualExportMatch = /^\/post-orchestrator\/manual-export\/([^/]+)$/.exec(url.pathname);
         if (manualExportMatch) {
           sendJson(response, 200, readPostManualExportPackage(decodeURIComponent(manualExportMatch[1] ?? '')));
+          return;
+        }
+
+        const archiveLoggingMatch = /^\/video-orchestrator\/archive-logging-plan\/([^/]+)$/.exec(url.pathname);
+        if (archiveLoggingMatch) {
+          const plan = readVideoArchiveLoggingPlan(decodeURIComponent(archiveLoggingMatch[1] ?? ''));
+          if (plan) {
+            sendJson(response, 200, plan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator archive/logging plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
           return;
         }
 

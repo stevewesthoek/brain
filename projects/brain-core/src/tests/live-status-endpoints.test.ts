@@ -5154,3 +5154,123 @@ test('POST /video-orchestrator/thumbnail-design is not registered', async () => 
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/archive-logging-plan returns read-only archive logging plans', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/archive-logging-plan' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    phase: string;
+    summary: { planCount: number; recordShapeCount: number; loggingCheckCount: number; blockedCount: number; persistedRecordCount: number };
+    plans: Array<{
+      id: string;
+      storyId: string;
+      status: string;
+      recordShape: { recordType: string; retentionPolicy: string };
+      loggingChecks: Array<{ id: string; required: boolean }>;
+      safety: {
+        readOnly: boolean;
+        designOnly: boolean;
+        archiveWritesEnabled: boolean;
+        auditPersistenceEnabled: boolean;
+        runtimeLogIngestEnabled: boolean;
+        deletesFiles: boolean;
+        movesFiles: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        decommissionsStb: boolean;
+        executesStb: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    safety: {
+      readOnly: boolean;
+      designOnly: boolean;
+      archiveWritesEnabled: boolean;
+      auditPersistenceEnabled: boolean;
+      runtimeLogIngestEnabled: boolean;
+      deletesFiles: boolean;
+      movesFiles: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      decommissionsStb: boolean;
+      executesStb: boolean;
+      executesVideo: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'video-orchestrator-archive-logging-plan');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.phase, 'archive-logging-plan-read-only');
+  assert.equal(body.summary.planCount, 3);
+  assert.equal(body.summary.recordShapeCount, 3);
+  assert.equal(body.summary.loggingCheckCount, 9);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.persistedRecordCount, 0);
+
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.designOnly, true);
+  assert.equal(body.safety.archiveWritesEnabled, false);
+  assert.equal(body.safety.auditPersistenceEnabled, false);
+  assert.equal(body.safety.runtimeLogIngestEnabled, false);
+  assert.equal(body.safety.deletesFiles, false);
+  assert.equal(body.safety.movesFiles, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.decommissionsStb, false);
+  assert.equal(body.safety.executesStb, false);
+  assert.equal(body.safety.executesVideo, false);
+
+  body.plans.forEach((plan) => {
+    assert.equal(plan.status, 'blocked');
+    assert.ok(plan.recordShape.recordType.length > 0);
+    assert.match(plan.recordShape.retentionPolicy, /no persistence/i);
+    assert.equal(plan.loggingChecks.length, 3);
+    assert.equal(plan.safety.readOnly, true);
+    assert.equal(plan.safety.designOnly, true);
+    assert.equal(plan.safety.archiveWritesEnabled, false);
+    assert.equal(plan.safety.auditPersistenceEnabled, false);
+    assert.equal(plan.safety.runtimeLogIngestEnabled, false);
+    assert.equal(plan.safety.deletesFiles, false);
+    assert.equal(plan.safety.movesFiles, false);
+    assert.equal(plan.safety.writesFiles, false);
+    assert.equal(plan.safety.publishesContent, false);
+    assert.equal(plan.safety.writesToMind, false);
+    assert.equal(plan.safety.decommissionsStb, false);
+    assert.equal(plan.safety.executesStb, false);
+    assert.equal(plan.safety.executesVideo, false);
+  });
+});
+
+test('GET /video-orchestrator/archive-logging-plan/:id returns a read-only archive logging plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/archive-logging-plan/story-054' });
+  const body = JSON.parse(response.body) as {
+    storyId: string;
+    status: string;
+    archiveIntent: string;
+    safety: { archiveWritesEnabled: boolean; auditPersistenceEnabled: boolean; writesToMind: boolean; decommissionsStb: boolean; executesVideo: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.storyId, 'story-054');
+  assert.equal(body.status, 'blocked');
+  assert.match(body.archiveIntent, /cutover-readiness/i);
+  assert.equal(body.safety.archiveWritesEnabled, false);
+  assert.equal(body.safety.auditPersistenceEnabled, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.decommissionsStb, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('POST /video-orchestrator/archive-logging-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/archive-logging-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});

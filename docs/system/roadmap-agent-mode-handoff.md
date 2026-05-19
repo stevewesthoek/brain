@@ -82,3 +82,52 @@ Validation expectation:
 - Brain Core CI after implementation.
 - Stage only relevant Brain Core/docs files.
 - Commit and push before moving to the next phase.
+
+
+## Continuation update — Video Orchestrator archive/audit logging plan
+
+Implemented after thumbnail design plan.
+
+Endpoint:
+
+- `GET /video-orchestrator/archive-logging-plan`
+- `GET /video-orchestrator/archive-logging-plan/:id`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-archive-logging-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+What it does:
+
+- Adds three read-only archive/logging plan records for stories 052-054.
+- Defines future archive record shapes for preview lifecycle, review evidence, and cutover readiness.
+- Defines required logging checks without reading runtime logs or creating archive records.
+- Keeps persisted record count at zero.
+
+Safety status:
+
+- Read-only only.
+- Design-only only.
+- No archive writes.
+- No audit persistence.
+- No runtime log ingestion.
+- No file writes, deletes, or moves.
+- No publishing.
+- No Mind writes.
+- No STB decommission.
+- No STB execution.
+- No Video execution.
+- No POST route.
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- Brain Core test count: 328 passing.
+
+Next safe task after validation:
+
+- Add Brain Console visibility for the latest Video Orchestrator planning endpoints, or continue with a read-only Video Orchestrator design-orchestrator provider boundary plan if dashboard work remains paused.

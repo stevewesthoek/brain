@@ -6616,3 +6616,70 @@ export interface BrainCoreVideoThumbnailDesignPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+
+export type BrainCoreVideoArchiveLoggingPlanStatus = 'planned' | 'blocked';
+
+export interface BrainCoreVideoArchiveLoggingRecordShape {
+  recordType: string;
+  identityFields: string[];
+  evidenceFields: string[];
+  auditFields: string[];
+  retentionPolicy: string;
+}
+
+export interface BrainCoreVideoArchiveLoggingCheck {
+  id: string;
+  label: string;
+  status: BrainCoreVideoArchiveLoggingPlanStatus;
+  required: boolean;
+  description: string;
+}
+
+export interface BrainCoreVideoArchiveLoggingSafety {
+  readOnly: true;
+  designOnly: true;
+  archiveWritesEnabled: false;
+  auditPersistenceEnabled: false;
+  runtimeLogIngestEnabled: false;
+  deletesFiles: false;
+  movesFiles: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  decommissionsStb: false;
+  executesStb: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoArchiveLoggingPlan {
+  id: string;
+  storyId: string;
+  sourcePlanIds: string[];
+  title: string;
+  status: 'blocked';
+  archiveIntent: string;
+  recordShape: BrainCoreVideoArchiveLoggingRecordShape;
+  loggingChecks: BrainCoreVideoArchiveLoggingCheck[];
+  safety: BrainCoreVideoArchiveLoggingSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoArchiveLoggingPlanResponse {
+  id: 'video-orchestrator-archive-logging-plan';
+  status: 'blocked';
+  phase: 'archive-logging-plan-read-only';
+  generatedAt: string;
+  summary: {
+    planCount: number;
+    recordShapeCount: number;
+    loggingCheckCount: number;
+    blockedCount: number;
+    persistedRecordCount: 0;
+  };
+  plans: BrainCoreVideoArchiveLoggingPlan[];
+  safety: BrainCoreVideoArchiveLoggingSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}
