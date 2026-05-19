@@ -824,7 +824,7 @@ function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, on
   const controls = header.createDiv({ cls: 'brain-console__header-controls' });
 
   const meta = header.createDiv({ cls: 'brain-console__header-meta' });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-main-dashboard-2026-05-19-01` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-polished-main-dashboard-2026-05-19-01` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
@@ -963,56 +963,16 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
   renderCard(grid, 'Plugin Install Verification', renderInstallVerificationCard(state));
 
-  // Connection diagnostics (always show, even if Brain Core unreachable)
-  renderCard(grid, 'Brain Core Connection Diagnostics', renderBrainCoreConnectionDiagnosticsCard(state));
-
-  // What needs attention
+  renderCard(grid, 'Connection Summary', renderConnectionSummaryCard(state));
+  renderCard(grid, 'ProBot Migration', renderProBotMigrationSummaryCard(state));
   renderCard(grid, 'What Needs Attention', renderWhatNeedsAttentionCard(state, snapshot));
-
-  // Next safe step
   renderCard(grid, 'Next Safe Step', renderNextSafeStepCard(state, snapshot));
-
-  // Production Status
   renderCard(grid, 'Production Status', renderProductionStatusCard(state));
-
-  // ProBot Migration dashboard section (full width)
-  const probotSection = grid.createDiv({ cls: 'brain-console__section-header' });
-  probotSection.createEl('h2', { text: 'ProBot Migration' });
-  probotSection.createEl('p', { cls: 'brain-console__section-subtitle', text: 'Read-only replacement dashboard for ProBot features.' });
-
-  // ProBot dashboard migration parity (full width command center)
-  const probotCard = grid.createDiv({ cls: 'brain-console__card brain-console__card--prominent' });
-  const probotHeader = probotCard.createDiv({ cls: 'brain-console__card-header' });
-  probotHeader.createEl('h3', { text: 'ProBot → Brain Console Parity: Command Center' });
-  probotCard.appendChild(renderProBotDashboardParityCard(state));
-
-  // ProBot functional parity details (6 cards)
-  renderCard(grid, 'Sessions & Continuations', renderProBotSessionsParityCard(state));
-  renderCard(grid, 'Local Apps', renderProBotLocalAppsParityCard(state));
-  renderCard(grid, 'Scheduler', renderProBotSchedulerParityCard(state));
-  renderCard(grid, 'Studio (Video/Viral Flow)', renderProBotStudioParityCard(state));
-  renderCard(grid, 'External Integrations (Admin-only)', renderProBotExternalAdminParityCard(state));
-  renderCard(grid, 'Decommission Readiness', renderProBotDecommissionReadinessCard(state));
-
-  // ProBot gap-closure and phase-out details (3 cards for final readiness tracking)
-  renderCard(grid, 'External Admin Safe Metadata', renderSafeCard('External Admin Safe Metadata', () => renderProBotExternalAdminSafeMetadataCard(state)));
-  renderCard(grid, 'ProBot Feature Parity Matrix', renderSafeCard('ProBot Feature Parity Matrix', () => renderProBotFeatureParityMatrixCard(state)));
-  renderCard(grid, 'ProBot Phase-Out Checklist', renderSafeCard('ProBot Phase-Out Checklist', () => renderProBotPhaseOutChecklistCard(state)));
-
-  // Recent sessions/continuations
-  renderCard(grid, 'Recent Sessions', renderRecentSessionsCard(state));
-
-  // Metric counts
-  renderCard(grid, 'Metrics', renderOverviewMetricsCard(snapshot));
-
-  // Status overview
-  renderCard(grid, 'Status', renderOverviewStatusCard(state));
-
-  // Production Blockers
-  renderCard(grid, 'Production Blockers', renderProductionBlockersCard(state));
-
-  // Video Orchestrator readiness
-  renderCard(grid, 'Video Readiness', renderVideoReadinessCard(state));
+  renderGroupedSummary(grid, 'Operational Summaries', [
+    { title: 'Recent Sessions', render: renderRecentSessionsCard(state) },
+    { title: 'Local Apps', render: renderLocalAppsCard(state) },
+    { title: 'Scheduler', render: renderSchedulerCard(state) },
+  ]);
 }
 
 function renderAppsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
@@ -1036,72 +996,14 @@ function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleVie
 
 function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
-
-  renderCard(grid, 'Pipelines', renderPipelinesCard(state, snapshot));
-  renderCard(grid, 'Design Provider Credential Isolation', renderVideoDesignProviderCredentialIsolationPlanCard(state, snapshot));
-  renderCard(grid, 'Design Provider Prompt Review', renderVideoDesignProviderPromptReviewPolicyPlanCard(state, snapshot));
-  renderCard(grid, 'Artifact Sandbox Provider Handoff', renderVideoArtifactSandboxProviderHandoffPlanCard(state, snapshot));
-  renderCard(grid, 'Provider Output Redaction Policy', renderVideoProviderOutputRedactionPolicyPlanCard(state, snapshot));
-  renderCard(grid, 'Design Provider Compliance Checklist', renderVideoDesignProviderComplianceChecklistPlanCard(state, snapshot));
-  renderCard(grid, 'Design Provider Enablement Readiness', renderVideoDesignProviderEnablementReadinessIndexCard(state, snapshot));
-  renderCard(grid, 'Provider Integration Final Checkpoint', renderVideoProviderIntegrationFinalPlanningCheckpointCard(state, snapshot));
-  renderCard(grid, 'Credential Store Boundary Plan', renderVideoCredentialStoreImplementationBoundaryPlanCard(state, snapshot));
-  renderCard(grid, 'Prompt Review UX Plan', renderVideoPromptReviewUxImplementationPlanCard(state, snapshot));
-  renderCard(grid, 'Provider Audit Persistence Boundary', renderVideoProviderAuditPersistenceBoundaryPlanCard(state, snapshot));
-  renderCard(grid, 'Provider Wrapper Security Review', renderVideoProviderWrapperSecurityReviewPlanCard(state, snapshot));
-  renderCard(grid, 'Provider Implementation Start Gate', renderVideoProviderImplementationPhaseStartGateCard(state, snapshot));
-  renderCard(grid, 'Provider Implementation Readiness', renderVideoProviderImplementationReadinessDashboardSummaryCard(state, snapshot));
-  renderCard(grid, 'Provider Implementation Approval Packet', renderVideoProviderImplementationApprovalPacketCard(state, snapshot));
-  renderCard(grid, 'Provider Approval Packet Review', renderVideoProviderApprovalPacketConsoleReviewSummaryCard(state, snapshot));
-  renderCard(grid, 'Provider Planning Surface Index', renderVideoProviderPlanningSurfaceIndexCard(state, snapshot));
-  renderCard(grid, 'Credential Reference Scaffold', renderVideoCredentialReferenceScaffoldCard(state, snapshot));
-  renderCard(grid, 'Provider Request Wrapper Scaffold', renderVideoProviderRequestWrapperScaffoldCard(state, snapshot));
-  renderCard(grid, 'Provider Wrapper Validation Harness', renderVideoProviderWrapperValidationHarnessCard(state, snapshot));
-  renderCard(grid, 'Provider Request Envelope Scaffold', renderVideoProviderRequestEnvelopeScaffoldCard(state, snapshot));
-  renderCard(grid, 'Provider Response Envelope Scaffold', renderVideoProviderResponseEnvelopeScaffoldCard(state, snapshot));
-  renderCard(grid, 'Provider Scaffolding Integration', renderVideoProviderScaffoldingIntegrationSummaryCard(state, snapshot));
-  renderCard(grid, 'Provider Wrapper Inert Shell', renderVideoProviderRequestWrapperInertShellCard(state, snapshot));
-  renderCard(grid, 'Credential Reference Validator', renderVideoCredentialReferenceValidatorCard(state, snapshot));
-  renderCard(grid, 'Provider Response Redaction Skeleton', renderVideoProviderResponseRedactionSkeletonCard(state, snapshot));
-  renderCard(grid, 'Provider Audit Event Types', renderVideoProviderAuditEventTypesCard(state, snapshot));
-  renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
-  renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Production Gate', renderProductionGateCard(state, snapshot));
-  renderCard(grid, 'Policy / Gate Chain', renderVideoPolicyGateChainCard(state, snapshot));
-  renderCard(grid, 'Operator Decision Queue', renderOperatorDecisionQueueCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Boundary', renderControlledExecutionBoundaryCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Readiness', renderControlledExecutionReadinessCard(state, snapshot));
-  renderCard(grid, 'Video Roadmap Checkpoint', renderVideoRoadmapCheckpointCard(state, snapshot));
-  renderCard(grid, 'Operator Review Packet', renderOperatorReviewPacketCard(state, snapshot));
-  renderCard(grid, 'Approval Payload Schema', renderControlledExecutionApprovalPayloadSchemaCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Plan Stub', renderControlledExecutionPlanStubCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Approval Request Design', renderControlledExecutionApprovalRequestDesignCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Disabled Gate', renderControlledExecutionDisabledGateCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Second-Approval Policy', renderControlledExecutionSecondApprovalPolicyCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Operator Identity Protocol', renderControlledExecutionOperatorIdentityProtocolCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Role Policy', renderControlledExecutionRolePolicyCard(state, snapshot));
-  renderCard(grid, 'Preview Completion Index', renderPreviewCompletionIndexCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Preflight', renderControlledExecutionPreflightChecklistCard(state, snapshot));
-  renderCard(grid, 'Controlled Execution Risk Register', renderControlledExecutionRiskRegisterCard(state, snapshot));
-  renderCard(grid, 'Preflight Validator Schema', renderControlledExecutionPreflightValidatorSchemaCard(state, snapshot));
-  renderCard(grid, 'Video Release Candidate Readiness', renderVideoReleaseCandidateReadinessCard(state, snapshot));
-  renderCard(grid, 'Video Render / Export Policy', renderRenderExportPolicyCard(state, snapshot));
-  renderCard(grid, 'Controlled Dual-Run Request Design', renderControlledDualRunRequestDesignCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Intake', renderVideoIntakeCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Asset Plan', renderVideoAssetPlanCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Design Plan', renderVideoDesignPlanCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Voiceover Plan', renderVideoVoiceoverPlanCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Visuals Plan', renderVideoVisualsPlanCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Assembly Plan', renderVideoAssemblyPlanCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Metadata Plan', renderVideoMetadataPlanCard(state, snapshot));
-  renderCard(grid, 'Video Orchestrator Publishing Prep', renderVideoPublishingPrepCard(state, snapshot));
-  renderCard(grid, 'Video Manual Export Package', renderVideoManualExportPackageCard(state, snapshot));
-  renderCard(grid, 'Video Thumbnail Design Plan', renderVideoThumbnailDesignPlanCard(state, snapshot));
-  renderCard(grid, 'Video Archive / Audit Logging', renderVideoArchiveLoggingPlanCard(state, snapshot));
-  renderCard(grid, 'Design Provider Boundary', renderVideoDesignProviderBoundaryPlanCard(state, snapshot));
-  renderCard(grid, 'STB ↔ Video Parity Matrix', renderParityMatrixCard(state, snapshot));
-  renderCard(grid, 'STB ↔ Video Dual-Run Status', renderDualRunStatusCard(state, snapshot));
-  renderCard(grid, 'STB ↔ Video Evidence Collection', renderDualRunEvidenceCard(state, snapshot));
+  renderGroupedSummary(grid, 'Pipeline Overview', [
+    { title: 'Pipeline Overview', render: renderPipelineOverviewCard(state) },
+    { title: 'Video Orchestrator', render: renderVideoOrchestratorPipelineCard(state) },
+    { title: 'Provider Planning', render: renderProviderPlanningPipelineCard(state) },
+    { title: 'Controlled Execution', render: renderControlledExecutionPipelineCard(state) },
+    { title: 'STB / Video Migration', render: renderStbVideoMigrationPipelineCard(state) },
+    { title: 'Safety Summary', render: renderSafetySummaryCard() },
+  ]);
 }
 
 function renderVideoPolicyGateChainCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
@@ -1253,7 +1155,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'brain-console-main-dashboard-2026-05-19-01'
+    text: 'brain-console-polished-main-dashboard-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1271,7 +1173,7 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
   container.className = 'brain-console__card-content';
 
   const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
-  const expectedMarker = 'brain-console-main-dashboard-2026-05-19-01';
+  const expectedMarker = 'brain-console-polished-main-dashboard-2026-05-19-01';
   const markerOk = runtimeMarker === expectedMarker;
 
   renderCompactStatGrid(container, [
@@ -1287,6 +1189,108 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
       : 'If this marker is stale, reload plugin or restart Obsidian.',
   });
 
+  return container;
+}
+
+function renderConnectionSummaryCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const connected = state.status?.ok === true;
+  renderCompactStatGrid(container, [
+    { label: 'Brain Core', value: connected ? 'Connected' : 'Offline' },
+    { label: 'Version', value: statValue(state.status?.version, 'Unknown') },
+    { label: 'Reports', value: String(state.runtimeReports?.length ?? 0) },
+    { label: 'Scheduler', value: statValue(state.schedulerStatus?.status, 'Not reported') },
+  ]);
+  return container;
+}
+
+function renderProBotMigrationSummaryCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Sessions', value: statValue(state.probotSessionsParity?.status, 'Unavailable') },
+    { label: 'Local Apps', value: statValue(state.probotLocalAppsParity?.status, 'Unavailable') },
+    { label: 'Scheduler', value: statValue(state.probotSchedulerParity?.status, 'Unavailable') },
+    { label: 'Studio', value: statValue(state.probotStudioParity?.status, 'Unavailable') },
+  ]);
+  container.createEl('p', { cls: 'brain-console__detail', text: statValue(state.probotDashboardParity?.status, 'Read-only migration summary') });
+  return container;
+}
+
+function renderPipelineOverviewCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const available = countAvailable(state.pipelines, state.videoOrchestratorStatus, state.stbStatus, state.videoProductionGate);
+  const unavailable = 4 - available;
+  renderCompactStatGrid(container, [
+    { label: 'Brain Core', value: state.status?.ok === true ? 'Connected' : 'Offline' },
+    { label: 'Available', value: String(available) },
+    { label: 'Unavailable', value: String(Math.max(unavailable, 0)) },
+    { label: 'Status', value: statValue(state.pipelines?.[0]?.status, 'Not reported') },
+  ]);
+  return container;
+}
+
+function renderVideoOrchestratorPipelineCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const summary = state.videoOrchestratorStatus?.moduleProgress;
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: statValue(state.videoOrchestratorStatus?.status, 'Unavailable') },
+    { label: 'Readiness', value: summary?.percent !== undefined ? `${summary.percent}%` : 'Not reported' },
+    { label: 'Blockers', value: String(state.videoOrchestratorStatus?.modules?.filter((module) => module?.status === 'blocked').length ?? 0) },
+    { label: 'Next safe step', value: statValue((state.videoProductionGate?.gate?.summary as any)?.nextSafeStep, 'Not reported') },
+  ]);
+  return container;
+}
+
+function renderProviderPlanningPipelineCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Planning surface', value: statValue(state.videoProviderPlanningSurfaceIndex?.index?.status, 'Unavailable') },
+    { label: 'Wrapper status', value: statValue(state.videoProviderWrapperSecurityReviewPlan?.plan?.status, 'Unavailable') },
+    { label: 'Approval packet', value: statValue(state.videoProviderImplementationApprovalPacket?.packet?.status, 'Unavailable') },
+    { label: 'Readiness', value: statValue(state.videoProviderImplementationReadinessDashboardSummary?.dashboard?.status, 'Not reported') },
+  ]);
+  return container;
+}
+
+function renderControlledExecutionPipelineCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Policy boundary', value: statValue(state.videoControlledExecutionPolicyBoundary?.boundary?.status, 'Unavailable') },
+    { label: 'Disabled gate', value: statValue(state.videoControlledExecutionDisabledGate?.gate?.status, 'Unavailable') },
+    { label: 'Readiness index', value: statValue(state.videoControlledExecutionReadinessIndex?.index?.status, 'Unavailable') },
+    { label: 'Second approval', value: statValue(state.videoControlledExecutionSecondApprovalPolicy?.policy?.status, 'Unavailable') },
+  ]);
+  return container;
+}
+
+function renderStbVideoMigrationPipelineCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Migration', value: statValue(state.stbVideoMigrationStatus?.status, 'Unavailable') },
+    { label: 'Parity', value: state.stbVideoParityMatrix?.summary ? `${state.stbVideoParityMatrix.summary.parityPercent}%` : 'Unavailable' },
+    { label: 'Dual-run', value: statValue(state.stbVideoDualRunStatus?.status, 'Unavailable') },
+    { label: 'Production gate', value: statValue(state.videoProductionGate?.gate?.status, 'Unavailable') },
+  ]);
+  return container;
+}
+
+function renderSafetySummaryCard(): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Execution', value: 'Disabled' },
+    { label: 'Writes', value: 'Blocked' },
+    { label: 'Publishing', value: 'Disabled' },
+    { label: 'Decommission', value: 'Not active' },
+  ]);
+  container.createEl('p', { cls: 'brain-console__detail', text: 'Read-only dashboard only. No mutation controls or POST routes.' });
   return container;
 }
 
@@ -1351,6 +1355,25 @@ function renderCompactStatGrid(container: HTMLElement, rows: Array<{ label: stri
     stat.createEl('span', { cls: 'brain-console__stat-label', text: label });
     stat.createEl('span', { cls: 'brain-console__stat-value', text: value });
   });
+}
+
+function renderGroupedSummary(parent: HTMLElement, title: string, cards: Array<{ title: string; render: HTMLElement }>): void {
+  const card = parent.createDiv({ cls: 'brain-console__card brain-console__card--grouped' });
+  const header = card.createDiv({ cls: 'brain-console__card-header' });
+  header.createEl('h3', { text: title });
+  const grid = card.createDiv({ cls: 'brain-console__grouped-grid' });
+  for (const entry of cards) {
+    renderCard(grid, entry.title, entry.render);
+  }
+}
+
+function statValue(value: unknown, fallback = 'Unavailable'): string {
+  if (value === undefined || value === null || value === '') return fallback;
+  return String(value);
+}
+
+function countAvailable(...values: unknown[]): number {
+  return values.filter((value) => value !== undefined && value !== null).length;
 }
 
 function renderStatusChip(label: string, tone: 'success' | 'warning' | 'error' | 'default'): HTMLElement {

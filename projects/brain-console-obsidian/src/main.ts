@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-main-dashboard-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-polished-main-dashboard-2026-05-19-01';
 
 declare global {
   interface Window {
@@ -58,7 +58,7 @@ export default class BrainConsolePlugin extends Plugin {
       let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
 
       if (!leaf) {
-        leaf = this.app.workspace.getLeaf(true);
+        leaf = this.app.workspace.getLeaf(false);
         await leaf.setViewState({ type: VIEW_TYPE, active: true });
       }
 
@@ -81,7 +81,7 @@ export default class BrainConsolePlugin extends Plugin {
         await leaf.detach();
       }
 
-      const leaf = this.app.workspace.getLeaf(true);
+      const leaf = this.app.workspace.getLeaf(false);
       await leaf.setViewState({ type: VIEW_TYPE, active: true });
       await this.app.workspace.revealLeaf(leaf);
 

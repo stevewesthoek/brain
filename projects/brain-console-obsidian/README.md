@@ -2,7 +2,7 @@
 
 Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
 
-**Build:** `brain-console-main-dashboard-2026-05-19-01`
+**Build:** `brain-console-polished-main-dashboard-2026-05-19-01`
 
 **Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
 
@@ -72,7 +72,7 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build brain-console-main-dashboard-2026-05-19-01`
+1. Look for build marker in header: `build brain-console-polished-main-dashboard-2026-05-19-01`
 2. The dashboard header also shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state
 3. If marker is missing or different, your plugin bundle is stale
 4. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
