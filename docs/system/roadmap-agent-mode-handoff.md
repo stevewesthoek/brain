@@ -229,3 +229,48 @@ Validation:
 - `npm run --prefix projects/brain-console-obsidian package` passed.
 - `npm run --prefix projects/brain-core ci` passed.
 - Brain Core test count: 331 passing.
+
+
+## Continuation update — Video Orchestrator design provider credential isolation plan
+
+Implemented after the design provider boundary and console visibility phases.
+
+Endpoints:
+
+- `GET /video-orchestrator/design-provider-credential-isolation-plan`
+- `GET /video-orchestrator/design-provider-credential-isolation-plan/:id`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-design-provider-credential-isolation-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Design-only only.
+- No provider calls.
+- No credential access.
+- No secret material storage.
+- No raw credential display.
+- No env reads.
+- No filesystem credential access.
+- No network/provider access.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+- No POST route.
+
+Validation:
+
+- Pending in this phase; run Brain Core CI and Brain Console typecheck/build/package after implementation.
+
+Next safe task suggestion:
+
+- Design provider prompt review policy plan, or artifact sandbox provider handoff plan.

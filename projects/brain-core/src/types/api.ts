@@ -6741,3 +6741,60 @@ export interface BrainCoreVideoDesignProviderBoundaryPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+export type BrainCoreVideoDesignProviderCredentialIsolationClass =
+  | 'image-generation-provider'
+  | 'layout-rendering-provider'
+  | 'brand-compliance-provider';
+
+export interface BrainCoreVideoDesignProviderCredentialIsolationSafety {
+  readOnly: true;
+  credentialIsolationDesignOnly: true;
+  providerConfigured: false;
+  providerCallsEnabled: false;
+  credentialAccessEnabled: false;
+  secretMaterialStored: false;
+  rawCredentialDisplayEnabled: false;
+  envReadEnabled: false;
+  filesystemCredentialAccessEnabled: false;
+  networkAccessEnabled: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoDesignProviderCredentialIsolationPlan {
+  id: string;
+  providerClass: BrainCoreVideoDesignProviderCredentialIsolationClass;
+  status: 'blocked';
+  purpose: string;
+  credentialReferenceModel: string;
+  allowedFutureCredentialReferenceFields: string[];
+  disallowedFields: string[];
+  redactionRequirements: string[];
+  operatorApprovalGates: string[];
+  auditRequirements: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: BrainCoreVideoDesignProviderCredentialIsolationSafety;
+}
+
+export interface BrainCoreVideoDesignProviderCredentialIsolationPlanResponse {
+  id: 'video-orchestrator-design-provider-credential-isolation-plan';
+  status: 'blocked';
+  phase: 'design-provider-credential-isolation-plan-read-only';
+  generatedAt: string;
+  summary: {
+    planCount: number;
+    blockedCount: number;
+    credentialConfiguredCount: 0;
+    credentialAccessCount: 0;
+    secretMaterialStoredCount: 0;
+    providerCallCount: 0;
+  };
+  plans: BrainCoreVideoDesignProviderCredentialIsolationPlan[];
+  safety: BrainCoreVideoDesignProviderCredentialIsolationSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

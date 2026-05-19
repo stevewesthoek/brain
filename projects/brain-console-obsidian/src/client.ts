@@ -4695,6 +4695,53 @@ export interface BrainCoreVideoDesignProviderBoundaryPlanResponse {
   nextSafeStep: string;
 }
 
+export interface BrainCoreVideoDesignProviderCredentialIsolationPlanResponse {
+  id: 'video-orchestrator-design-provider-credential-isolation-plan';
+  status: 'blocked';
+  phase: 'design-provider-credential-isolation-plan-read-only';
+  generatedAt: string;
+  summary: {
+    planCount: number;
+    blockedCount: number;
+    credentialConfiguredCount: number;
+    credentialAccessCount: number;
+    secretMaterialStoredCount: number;
+    providerCallCount: number;
+  };
+  plans: Array<{
+    id: string;
+    providerClass: string;
+    status: 'blocked';
+    purpose: string;
+    credentialReferenceModel: string;
+    allowedFutureCredentialReferenceFields: string[];
+    disallowedFields: string[];
+    redactionRequirements: string[];
+    operatorApprovalGates: string[];
+    auditRequirements: string[];
+    blockers: string[];
+    nextSafeStep: string;
+  }>;
+  safety: {
+    readOnly: true;
+    credentialIsolationDesignOnly: true;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    secretMaterialStored: false;
+    rawCredentialDisplayEnabled: false;
+    envReadEnabled: false;
+    filesystemCredentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -4711,4 +4758,10 @@ export async function readBrainCoreVideoOrchestratorDesignProviderBoundaryPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoDesignProviderBoundaryPlanResponse>> {
   return fetchJson<BrainCoreVideoDesignProviderBoundaryPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-boundary-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorDesignProviderCredentialIsolationPlans(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoDesignProviderCredentialIsolationPlanResponse>> {
+  return fetchJson<BrainCoreVideoDesignProviderCredentialIsolationPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-credential-isolation-plan');
 }

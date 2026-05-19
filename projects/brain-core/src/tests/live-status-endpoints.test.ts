@@ -5402,3 +5402,85 @@ test('POST /video-orchestrator/design-provider-boundary-plan is not registered',
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+test('GET /video-orchestrator/design-provider-credential-isolation-plan returns three blocked plans with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-credential-isolation-plan' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    summary: {
+      planCount: number;
+      blockedCount: number;
+      credentialConfiguredCount: number;
+      credentialAccessCount: number;
+      secretMaterialStoredCount: number;
+      providerCallCount: number;
+    };
+    plans: Array<{ id: string; providerClass: string; status: string; safety: Record<string, boolean> }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.summary.planCount, 3);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.credentialConfiguredCount, 0);
+  assert.equal(body.summary.credentialAccessCount, 0);
+  assert.equal(body.summary.secretMaterialStoredCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.plans.length, 3);
+  assert.deepEqual(body.plans.map((plan) => plan.id), [
+    'image-generation-provider-credentials',
+    'layout-rendering-provider-credentials',
+    'brand-compliance-provider-credentials',
+  ]);
+  body.plans.forEach((plan) => {
+    assert.equal(plan.status, 'blocked');
+    assert.equal(plan.safety.readOnly, true);
+    assert.equal(plan.safety.credentialIsolationDesignOnly, true);
+    assert.equal(plan.safety.providerConfigured, false);
+    assert.equal(plan.safety.providerCallsEnabled, false);
+    assert.equal(plan.safety.credentialAccessEnabled, false);
+    assert.equal(plan.safety.secretMaterialStored, false);
+    assert.equal(plan.safety.rawCredentialDisplayEnabled, false);
+    assert.equal(plan.safety.envReadEnabled, false);
+    assert.equal(plan.safety.filesystemCredentialAccessEnabled, false);
+    assert.equal(plan.safety.networkAccessEnabled, false);
+    assert.equal(plan.safety.writesFiles, false);
+    assert.equal(plan.safety.publishesContent, false);
+    assert.equal(plan.safety.writesToMind, false);
+    assert.equal(plan.safety.executesVideo, false);
+  });
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.credentialIsolationDesignOnly, true);
+  assert.equal(body.safety.providerConfigured, false);
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.secretMaterialStored, false);
+  assert.equal(body.safety.rawCredentialDisplayEnabled, false);
+  assert.equal(body.safety.envReadEnabled, false);
+  assert.equal(body.safety.filesystemCredentialAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/design-provider-credential-isolation-plan/:id returns the correct plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-credential-isolation-plan/layout-rendering-provider-credentials' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    providerClass: string;
+    status: string;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'layout-rendering-provider-credentials');
+  assert.equal(body.providerClass, 'layout-rendering-provider');
+  assert.equal(body.status, 'blocked');
+});
+
+test('POST /video-orchestrator/design-provider-credential-isolation-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-credential-isolation-plan' });
+  assert.equal(response.statusCode, 404);
+});
