@@ -4787,6 +4787,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/controlled-execution-disabled-gate': BrainCoreVideoControlledExecutionDisabledGateResponse;
   '/video-orchestrator/controlled-execution-preflight-validator-schema': BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse;
   '/video-orchestrator/design-provider-enablement-readiness-index': BrainCoreVideoDesignProviderEnablementReadinessIndexResponse;
+  '/video-orchestrator/provider-integration-final-planning-checkpoint': BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
@@ -7126,4 +7127,95 @@ export interface BrainCoreVideoDesignProviderEnablementReadinessIndex {
 
 export interface BrainCoreVideoDesignProviderEnablementReadinessIndexResponse {
   index: BrainCoreVideoDesignProviderEnablementReadinessIndex;
+}
+
+export type BrainCoreVideoProviderIntegrationFinalPlanningCheckpointProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderIntegrationFinalPlanningCheckpointEntry {
+  providerClass: BrainCoreVideoProviderIntegrationFinalPlanningCheckpointProviderClass;
+  status: 'blocked';
+  planningComplete: true;
+  implementationApproved: false;
+  implementationEligible: false;
+  completedPlanningSurfaceRefs: string[];
+  requiredExplicitApprovals: string[];
+  implementationStartBlockers: string[];
+  firstImplementationPhaseRecommendation: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    checkpointOnly: true;
+    planningComplete: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderIntegrationFinalPlanningCheckpoint {
+  id: 'video-orchestrator-provider-integration-final-planning-checkpoint';
+  generatedAt: string;
+  status: 'blocked';
+  providerClassCount: 3;
+  planningCompleteCount: 3;
+  implementationApprovedCount: 0;
+  implementationEligibleCount: 0;
+  blockedCount: 3;
+  providerConfiguredCount: 0;
+  providerCallCount: 0;
+  executionEnabledCount: 0;
+  entries: BrainCoreVideoProviderIntegrationFinalPlanningCheckpointEntry[];
+  summary: {
+    providerClassCount: 3;
+    planningCompleteCount: 3;
+    implementationApprovedCount: 0;
+    implementationEligibleCount: 0;
+    blockedCount: 3;
+    providerConfiguredCount: 0;
+    providerCallCount: 0;
+    executionEnabledCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    checkpointOnly: true;
+    planningComplete: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse {
+  checkpoint: BrainCoreVideoProviderIntegrationFinalPlanningCheckpoint;
 }

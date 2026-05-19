@@ -72,6 +72,7 @@ import { readVideoArtifactSandboxProviderHandoffPlans, readVideoArtifactSandboxP
 import { readVideoProviderOutputRedactionPolicyPlans, readVideoProviderOutputRedactionPolicyPlan } from '../adapters/video-orchestrator-provider-output-redaction-policy-plan.js';
 import { readVideoDesignProviderComplianceChecklistPlans, readVideoDesignProviderComplianceChecklistPlan } from '../adapters/video-orchestrator-design-provider-compliance-checklist-plan.js';
 import { readVideoDesignProviderEnablementReadinessIndex, readVideoDesignProviderEnablementReadinessIndexEntry } from '../adapters/video-orchestrator-design-provider-enablement-readiness-index.js';
+import { readVideoProviderIntegrationFinalPlanningCheckpoint, readVideoProviderIntegrationFinalPlanningCheckpointEntry } from '../adapters/video-orchestrator-provider-integration-final-planning-checkpoint.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -322,6 +323,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/design-provider-enablement-readiness-index':
       sendJson(response, 200, readVideoDesignProviderEnablementReadinessIndex());
+      return;
+    case '/video-orchestrator/provider-integration-final-planning-checkpoint':
+      sendJson(response, 200, readVideoProviderIntegrationFinalPlanningCheckpoint());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1266,6 +1270,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator design provider enablement readiness entry not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const finalPlanningMatch = /^\/video-orchestrator\/provider-integration-final-planning-checkpoint\/([^/]+)$/.exec(url.pathname);
+        const finalPlanningProviderClass = finalPlanningMatch?.[1] ?? '';
+        if (finalPlanningProviderClass.length > 0) {
+          const checkpoint = readVideoProviderIntegrationFinalPlanningCheckpointEntry(decodeURIComponent(finalPlanningProviderClass));
+          if (checkpoint) {
+            sendJson(response, 200, checkpoint);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider integration final planning checkpoint not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

@@ -6004,3 +6004,115 @@ test('POST /video-orchestrator/design-provider-enablement-readiness-index is not
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-enablement-readiness-index' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-integration-final-planning-checkpoint returns blocked checkpoint entries with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-integration-final-planning-checkpoint' });
+  const body = JSON.parse(response.body) as {
+    checkpoint: {
+      id: string;
+      status: string;
+      providerClassCount: number;
+      planningCompleteCount: number;
+      implementationApprovedCount: number;
+      implementationEligibleCount: number;
+      blockedCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      executionEnabledCount: number;
+      entries: Array<{
+        providerClass: string;
+        status: string;
+        planningComplete: boolean;
+        implementationApproved: boolean;
+        implementationEligible: boolean;
+        completedPlanningSurfaceRefs: string[];
+        requiredExplicitApprovals: string[];
+        implementationStartBlockers: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checkpoint.id, 'video-orchestrator-provider-integration-final-planning-checkpoint');
+  assert.equal(body.checkpoint.status, 'blocked');
+  assert.equal(body.checkpoint.providerClassCount, 3);
+  assert.equal(body.checkpoint.planningCompleteCount, 3);
+  assert.equal(body.checkpoint.implementationApprovedCount, 0);
+  assert.equal(body.checkpoint.implementationEligibleCount, 0);
+  assert.equal(body.checkpoint.blockedCount, 3);
+  assert.equal(body.checkpoint.providerConfiguredCount, 0);
+  assert.equal(body.checkpoint.providerCallCount, 0);
+  assert.equal(body.checkpoint.executionEnabledCount, 0);
+  assert.equal(body.checkpoint.entries.length, 3);
+  assert.ok(body.checkpoint.entries.every((entry) => entry.planningComplete === true));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationApproved === false));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationEligible === false));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('design-provider-boundary-plan')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('design-provider-credential-isolation-plan')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('design-provider-prompt-review-policy-plan')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('artifact-sandbox-provider-handoff-plan')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('provider-output-redaction-policy-plan')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('design-provider-compliance-checklist-plan')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.completedPlanningSurfaceRefs.includes('design-provider-enablement-readiness-index')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve provider implementation start')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve provider request wrapper design')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve credential store implementation boundary')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve prompt review UX implementation')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve artifact sandbox write boundary')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve output redaction implementation')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve immutable audit persistence boundary')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve rollback and cleanup procedure')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.requiredExplicitApprovals.includes('approve security review completion')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no explicit user approval to begin provider implementation')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no approved provider request wrapper implementation')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no approved credential store boundary')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no approved artifact sandbox write boundary')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no approved output redaction execution path')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no approved audit persistence path')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no approved operator review UX')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no completed final security review')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationStartBlockers.includes('no rollback/cleanup acceptance')));
+  assert.ok(body.checkpoint.entries.every((entry) => entry.implementationEligible === false));
+  assert.equal(body.checkpoint.safety.readOnly, true);
+  assert.equal(body.checkpoint.safety.checkpointOnly, true);
+  assert.equal(body.checkpoint.safety.planningComplete, true);
+  assert.equal(body.checkpoint.safety.implementationApproved, false);
+  assert.equal(body.checkpoint.safety.implementationEligible, false);
+  assert.equal(body.checkpoint.safety.providerConfigured, false);
+  assert.equal(body.checkpoint.safety.providerCallsEnabled, false);
+  assert.equal(body.checkpoint.safety.credentialAccessEnabled, false);
+  assert.equal(body.checkpoint.safety.promptGenerationEnabled, false);
+  assert.equal(body.checkpoint.safety.imageGenerationEnabled, false);
+  assert.equal(body.checkpoint.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.checkpoint.safety.auditPersistenceEnabled, false);
+  assert.equal(body.checkpoint.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.checkpoint.safety.filesystemAccessEnabled, false);
+  assert.equal(body.checkpoint.safety.networkAccessEnabled, false);
+  assert.equal(body.checkpoint.safety.writesFiles, false);
+  assert.equal(body.checkpoint.safety.publishesContent, false);
+  assert.equal(body.checkpoint.safety.writesToMind, false);
+  assert.equal(body.checkpoint.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-integration-final-planning-checkpoint/:providerClass returns image-generation checkpoint', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-integration-final-planning-checkpoint/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    planningComplete: boolean;
+    implementationEligible: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.planningComplete, true);
+  assert.equal(body.implementationEligible, false);
+});
+
+test('POST /video-orchestrator/provider-integration-final-planning-checkpoint is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-integration-final-planning-checkpoint' });
+  assert.equal(response.statusCode, 404);
+});

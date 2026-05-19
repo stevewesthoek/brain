@@ -5006,6 +5006,76 @@ export interface BrainCoreVideoDesignProviderEnablementReadinessIndexResponse {
   };
 }
 
+export interface BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse {
+  checkpoint: {
+    status: string;
+    providerClassCount: number;
+    planningCompleteCount: number;
+    implementationApprovedCount: number;
+    implementationEligibleCount: number;
+    blockedCount: number;
+    providerConfiguredCount: number;
+    providerCallCount: number;
+    executionEnabledCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      planningComplete: boolean;
+      implementationApproved: boolean;
+      implementationEligible: boolean;
+      completedPlanningSurfaceRefs: string[];
+      requiredExplicitApprovals: string[];
+      implementationStartBlockers: string[];
+      firstImplementationPhaseRecommendation: string;
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        checkpointOnly: boolean;
+        planningComplete: boolean;
+        implementationApproved: boolean;
+        implementationEligible: boolean;
+        providerConfigured: boolean;
+        providerCallsEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        promptGenerationEnabled: boolean;
+        imageGenerationEnabled: boolean;
+        artifactPersistenceEnabled: boolean;
+        auditPersistenceEnabled: boolean;
+        complianceEvaluationEnabled: boolean;
+        filesystemAccessEnabled: boolean;
+        networkAccessEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      checkpointOnly: boolean;
+      planningComplete: boolean;
+      implementationApproved: boolean;
+      implementationEligible: boolean;
+      providerConfigured: boolean;
+      providerCallsEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      promptGenerationEnabled: boolean;
+      imageGenerationEnabled: boolean;
+      artifactPersistenceEnabled: boolean;
+      auditPersistenceEnabled: boolean;
+      complianceEvaluationEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5058,4 +5128,10 @@ export async function readBrainCoreVideoOrchestratorDesignProviderEnablementRead
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoDesignProviderEnablementReadinessIndexResponse>> {
   return fetchJson<BrainCoreVideoDesignProviderEnablementReadinessIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-enablement-readiness-index');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderIntegrationFinalPlanningCheckpoint(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse>> {
+  return fetchJson<BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-integration-final-planning-checkpoint');
 }
