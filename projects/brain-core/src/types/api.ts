@@ -6921,3 +6921,64 @@ export interface BrainCoreVideoArtifactSandboxProviderHandoffPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+export type BrainCoreVideoProviderOutputRedactionProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderOutputRedactionSafety {
+  readOnly: true;
+  redactionPolicyDesignOnly: true;
+  providerConfigured: false;
+  providerCallsEnabled: false;
+  rawProviderOutputAccessEnabled: false;
+  redactedManifestCreationEnabled: false;
+  artifactPersistenceEnabled: false;
+  auditPersistenceEnabled: false;
+  credentialAccessEnabled: false;
+  rawCredentialDisplayEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoProviderOutputRedactionPolicyPlan {
+  id: string;
+  providerClass: BrainCoreVideoProviderOutputRedactionProviderClass;
+  outputCategory: string;
+  status: 'blocked';
+  purpose: string;
+  allowedFutureOutputSummaryFields: string[];
+  disallowedRawOutputFields: string[];
+  redactionRules: string[];
+  proposedRedactedManifestFields: string[];
+  auditReferenceRequirements: string[];
+  operatorReviewGates: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: BrainCoreVideoProviderOutputRedactionSafety;
+}
+
+export interface BrainCoreVideoProviderOutputRedactionPolicyPlanResponse {
+  id: 'video-orchestrator-provider-output-redaction-policy-plan';
+  status: 'blocked';
+  phase: 'provider-output-redaction-policy-plan-read-only';
+  generatedAt: string;
+  summary: {
+    policyCount: number;
+    blockedCount: number;
+    redactedManifestCreatedCount: 0;
+    rawOutputAccessCount: 0;
+    providerCallCount: 0;
+    artifactPersistedCount: 0;
+    auditPersistedCount: 0;
+  };
+  policies: BrainCoreVideoProviderOutputRedactionPolicyPlan[];
+  safety: BrainCoreVideoProviderOutputRedactionSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

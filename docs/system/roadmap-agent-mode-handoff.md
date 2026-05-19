@@ -371,3 +371,50 @@ Validation:
 Next safe task suggestion:
 
 - Design provider compliance checklist plan or Provider output redaction policy plan.
+
+
+## Continuation update — Video Orchestrator provider output redaction policy plan
+
+Implemented after the artifact sandbox provider handoff plan.
+
+Endpoints:
+
+- `GET /video-orchestrator/provider-output-redaction-policy-plan`
+- `GET /video-orchestrator/provider-output-redaction-policy-plan/:id`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-provider-output-redaction-policy-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Design-only only.
+- No raw provider output access.
+- No redacted manifest creation.
+- No artifact persistence.
+- No audit persistence.
+- No provider calls.
+- No credential access.
+- No env reads.
+- No filesystem access.
+- No network/provider access.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+- No POST route.
+
+Validation:
+
+- Pending after implementation; run Brain Core CI and Brain Console typecheck/build/package.
+
+Next safe task suggestion:
+
+- Design provider compliance checklist plan.

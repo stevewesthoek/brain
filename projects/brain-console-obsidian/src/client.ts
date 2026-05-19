@@ -4843,6 +4843,56 @@ export interface BrainCoreVideoArtifactSandboxProviderHandoffPlanResponse {
   nextSafeStep: string;
 }
 
+export interface BrainCoreVideoProviderOutputRedactionPolicyPlanResponse {
+  id: 'video-orchestrator-provider-output-redaction-policy-plan';
+  status: 'blocked';
+  phase: 'provider-output-redaction-policy-plan-read-only';
+  generatedAt: string;
+  summary: {
+    policyCount: number;
+    blockedCount: number;
+    redactedManifestCreatedCount: number;
+    rawOutputAccessCount: number;
+    providerCallCount: number;
+    artifactPersistedCount: number;
+    auditPersistedCount: number;
+  };
+  policies: Array<{
+    id: string;
+    providerClass: string;
+    outputCategory: string;
+    status: 'blocked';
+    allowedFutureOutputSummaryFields: string[];
+    disallowedRawOutputFields: string[];
+    redactionRules: string[];
+    proposedRedactedManifestFields: string[];
+    auditReferenceRequirements: string[];
+    operatorReviewGates: string[];
+    blockers: string[];
+    nextSafeStep: string;
+  }>;
+  safety: {
+    readOnly: true;
+    redactionPolicyDesignOnly: true;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    redactedManifestCreationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    credentialAccessEnabled: false;
+    rawCredentialDisplayEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -4877,4 +4927,10 @@ export async function readBrainCoreVideoOrchestratorArtifactSandboxProviderHando
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoArtifactSandboxProviderHandoffPlanResponse>> {
   return fetchJson<BrainCoreVideoArtifactSandboxProviderHandoffPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/artifact-sandbox-provider-handoff-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderOutputRedactionPolicyPlans(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderOutputRedactionPolicyPlanResponse>> {
+  return fetchJson<BrainCoreVideoProviderOutputRedactionPolicyPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-output-redaction-policy-plan');
 }

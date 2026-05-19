@@ -5683,3 +5683,120 @@ test('POST /video-orchestrator/artifact-sandbox-provider-handoff-plan is not reg
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/artifact-sandbox-provider-handoff-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-output-redaction-policy-plan returns three blocked policies with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-output-redaction-policy-plan' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    summary: {
+      policyCount: number;
+      blockedCount: number;
+      redactedManifestCreatedCount: number;
+      rawOutputAccessCount: number;
+      providerCallCount: number;
+      artifactPersistedCount: number;
+      auditPersistedCount: number;
+    };
+    policies: Array<{ id: string; providerClass: string; outputCategory: string; status: string; disallowedRawOutputFields: string[]; redactionRules: string[]; proposedRedactedManifestFields: string[]; safety: Record<string, boolean> }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.summary.policyCount, 3);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.redactedManifestCreatedCount, 0);
+  assert.equal(body.summary.rawOutputAccessCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.summary.artifactPersistedCount, 0);
+  assert.equal(body.summary.auditPersistedCount, 0);
+  assert.equal(body.policies.length, 3);
+  assert.deepEqual(body.policies.map((policy) => policy.id), [
+    'image-generation-output-redaction',
+    'layout-rendering-output-redaction',
+    'brand-compliance-output-redaction',
+  ]);
+  body.policies.forEach((policy) => {
+    assert.equal(policy.status, 'blocked');
+    assert.ok(policy.disallowedRawOutputFields.includes('raw provider response'));
+    assert.ok(policy.disallowedRawOutputFields.includes('raw generated files'));
+    assert.ok(policy.disallowedRawOutputFields.includes('raw prompt text'));
+    assert.ok(policy.disallowedRawOutputFields.includes('raw credentials'));
+    assert.ok(policy.disallowedRawOutputFields.includes('API keys'));
+    assert.ok(policy.disallowedRawOutputFields.includes('OAuth tokens'));
+    assert.ok(policy.disallowedRawOutputFields.includes('filesystem paths outside approved sandbox'));
+    assert.ok(policy.disallowedRawOutputFields.includes('Mind vault paths'));
+    assert.ok(policy.disallowedRawOutputFields.includes('STB artifact paths'));
+    assert.ok(policy.disallowedRawOutputFields.includes('platform upload payloads'));
+    assert.ok(policy.disallowedRawOutputFields.includes('unredacted logs'));
+    assert.ok(policy.disallowedRawOutputFields.includes('arbitrary shell text'));
+    assert.ok(policy.redactionRules.includes('replace credential-like values with [REDACTED]'));
+    assert.ok(policy.redactionRules.includes('omit raw provider payloads'));
+    assert.ok(policy.redactionRules.includes('omit absolute local paths'));
+    assert.ok(policy.redactionRules.includes('keep only stable internal references'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('redactedArtifactId'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('providerClass'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('sourcePlanId'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('redactionPolicyId'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('artifactSandboxHandoffPlanId'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('promptReviewPolicyId'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('credentialIsolationPlanId'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('redactedSummary'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('omittedFieldCount'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('policyVersion'));
+    assert.ok(policy.proposedRedactedManifestFields.includes('auditRefPlaceholder'));
+    assert.equal(policy.safety.readOnly, true);
+    assert.equal(policy.safety.redactionPolicyDesignOnly, true);
+    assert.equal(policy.safety.providerConfigured, false);
+    assert.equal(policy.safety.providerCallsEnabled, false);
+    assert.equal(policy.safety.rawProviderOutputAccessEnabled, false);
+    assert.equal(policy.safety.redactedManifestCreationEnabled, false);
+    assert.equal(policy.safety.artifactPersistenceEnabled, false);
+    assert.equal(policy.safety.auditPersistenceEnabled, false);
+    assert.equal(policy.safety.credentialAccessEnabled, false);
+    assert.equal(policy.safety.rawCredentialDisplayEnabled, false);
+    assert.equal(policy.safety.filesystemAccessEnabled, false);
+    assert.equal(policy.safety.networkAccessEnabled, false);
+    assert.equal(policy.safety.writesFiles, false);
+    assert.equal(policy.safety.publishesContent, false);
+    assert.equal(policy.safety.writesToMind, false);
+    assert.equal(policy.safety.executesVideo, false);
+  });
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.redactionPolicyDesignOnly, true);
+  assert.equal(body.safety.providerConfigured, false);
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.safety.redactedManifestCreationEnabled, false);
+  assert.equal(body.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.safety.auditPersistenceEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.rawCredentialDisplayEnabled, false);
+  assert.equal(body.safety.filesystemAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-output-redaction-policy-plan/:id returns the image-generation redaction policy', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-output-redaction-policy-plan/image-generation-output-redaction' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    providerClass: string;
+    outputCategory: string;
+    status: string;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'image-generation-output-redaction');
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.outputCategory, 'image-generation-output');
+  assert.equal(body.status, 'blocked');
+});
+
+test('POST /video-orchestrator/provider-output-redaction-policy-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-output-redaction-policy-plan' });
+  assert.equal(response.statusCode, 404);
+});

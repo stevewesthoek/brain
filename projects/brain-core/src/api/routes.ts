@@ -69,6 +69,7 @@ import { readVideoDesignProviderBoundaryPlans, readVideoDesignProviderBoundaryPl
 import { readVideoDesignProviderCredentialIsolationPlans, readVideoDesignProviderCredentialIsolationPlan } from '../adapters/video-orchestrator-design-provider-credential-isolation-plan.js';
 import { readVideoDesignProviderPromptReviewPolicyPlans, readVideoDesignProviderPromptReviewPolicyPlan } from '../adapters/video-orchestrator-design-provider-prompt-review-policy-plan.js';
 import { readVideoArtifactSandboxProviderHandoffPlans, readVideoArtifactSandboxProviderHandoffPlan } from '../adapters/video-orchestrator-artifact-sandbox-provider-handoff-plan.js';
+import { readVideoProviderOutputRedactionPolicyPlans, readVideoProviderOutputRedactionPolicyPlan } from '../adapters/video-orchestrator-provider-output-redaction-policy-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -310,6 +311,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/artifact-sandbox-provider-handoff-plan':
       sendJson(response, 200, readVideoArtifactSandboxProviderHandoffPlans());
+      return;
+    case '/video-orchestrator/provider-output-redaction-policy-plan':
+      sendJson(response, 200, readVideoProviderOutputRedactionPolicyPlans());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -672,6 +676,22 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator artifact sandbox provider handoff plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const redactionMatch = /^\/video-orchestrator\/provider-output-redaction-policy-plan\/([^/]+)$/.exec(url.pathname);
+        if (redactionMatch) {
+          const policy = readVideoProviderOutputRedactionPolicyPlan(decodeURIComponent(redactionMatch[1] ?? ''));
+          if (policy) {
+            sendJson(response, 200, policy);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider output redaction policy not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;
