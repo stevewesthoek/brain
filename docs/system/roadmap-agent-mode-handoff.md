@@ -465,3 +465,48 @@ Validation:
 Next safe task suggestion:
 
 - Design provider enablement readiness index or Provider integration final planning checkpoint.
+
+## Continuation update — Video Orchestrator design provider enablement readiness index
+
+Endpoints:
+
+- `GET /video-orchestrator/design-provider-enablement-readiness-index`
+- `GET /video-orchestrator/design-provider-enablement-readiness-index/:providerClass`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-design-provider-enablement-readiness-index.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Readiness index design-only.
+- Provider enablement blocked.
+- No provider calls.
+- No provider configuration.
+- No credential access.
+- No prompt generation.
+- No image generation.
+- No artifact persistence.
+- No audit persistence.
+- No compliance persistence.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+
+Validation:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: pending in this handoff.
+- The implementation is constrained to blocked readiness entries at 0 percent.
+
+Next safe task suggestion:
+
+- Provider integration final planning checkpoint or Video design provider implementation start gate.

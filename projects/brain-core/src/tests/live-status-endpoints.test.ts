@@ -5905,3 +5905,102 @@ test('POST /video-orchestrator/design-provider-compliance-checklist-plan is not 
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-compliance-checklist-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/design-provider-enablement-readiness-index returns blocked readiness entries with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-enablement-readiness-index' });
+  const body = JSON.parse(response.body) as {
+    index: {
+      id: string;
+      status: string;
+      readinessPercent: number;
+      providerClassCount: number;
+      blockedCount: number;
+      readyCount: number;
+      averageReadinessPercent: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      executionEnabledCount: number;
+      entries: Array<{
+        providerClass: string;
+        status: string;
+        readinessPercent: number;
+        requiredPlanningSurfaces: string[];
+        missingImplementationGates: string[];
+        blockingReasons: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+      blockers: string[];
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.index.id, 'video-orchestrator-design-provider-enablement-readiness-index');
+  assert.equal(body.index.status, 'blocked');
+  assert.equal(body.index.readinessPercent, 0);
+  assert.equal(body.index.providerClassCount, 3);
+  assert.equal(body.index.blockedCount, 3);
+  assert.equal(body.index.readyCount, 0);
+  assert.equal(body.index.averageReadinessPercent, 0);
+  assert.equal(body.index.providerConfiguredCount, 0);
+  assert.equal(body.index.providerCallCount, 0);
+  assert.equal(body.index.executionEnabledCount, 0);
+  assert.equal(body.index.entries.length, 3);
+  assert.ok(body.index.entries.every((entry) => entry.readinessPercent === 0));
+  assert.ok(body.index.entries.every((entry) => entry.status === 'blocked'));
+  assert.ok(body.index.entries.every((entry) => entry.requiredPlanningSurfaces.includes('design-provider-boundary-plan')));
+  assert.ok(body.index.entries.every((entry) => entry.requiredPlanningSurfaces.includes('design-provider-credential-isolation-plan')));
+  assert.ok(body.index.entries.every((entry) => entry.requiredPlanningSurfaces.includes('design-provider-prompt-review-policy-plan')));
+  assert.ok(body.index.entries.every((entry) => entry.requiredPlanningSurfaces.includes('artifact-sandbox-provider-handoff-plan')));
+  assert.ok(body.index.entries.every((entry) => entry.requiredPlanningSurfaces.includes('provider-output-redaction-policy-plan')));
+  assert.ok(body.index.entries.every((entry) => entry.requiredPlanningSurfaces.includes('design-provider-compliance-checklist-plan')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('explicit user approval for provider implementation')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved provider credential store design')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved provider request wrapper implementation')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved artifact sandbox implementation')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved output redaction implementation')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved audit persistence implementation')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved operator review UX')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('approved rollback/cleanup policy')));
+  assert.ok(body.index.entries.every((entry) => entry.missingImplementationGates.includes('final security review')));
+  assert.equal(body.index.safety.readOnly, true);
+  assert.equal(body.index.safety.readinessIndexOnly, true);
+  assert.equal(body.index.safety.providerImplementationApproved, false);
+  assert.equal(body.index.safety.providerConfigured, false);
+  assert.equal(body.index.safety.providerCallsEnabled, false);
+  assert.equal(body.index.safety.credentialAccessEnabled, false);
+  assert.equal(body.index.safety.promptGenerationEnabled, false);
+  assert.equal(body.index.safety.imageGenerationEnabled, false);
+  assert.equal(body.index.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.index.safety.auditPersistenceEnabled, false);
+  assert.equal(body.index.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.index.safety.filesystemAccessEnabled, false);
+  assert.equal(body.index.safety.networkAccessEnabled, false);
+  assert.equal(body.index.safety.writesFiles, false);
+  assert.equal(body.index.safety.publishesContent, false);
+  assert.equal(body.index.safety.writesToMind, false);
+  assert.equal(body.index.safety.executesVideo, false);
+  assert.ok(body.index.blockers.length > 0);
+});
+
+test('GET /video-orchestrator/design-provider-enablement-readiness-index/:providerClass returns image-generation readiness', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-enablement-readiness-index/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    readinessPercent: number;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.readinessPercent, 0);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.readinessIndexOnly, true);
+});
+
+test('POST /video-orchestrator/design-provider-enablement-readiness-index is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-enablement-readiness-index' });
+  assert.equal(response.statusCode, 404);
+});

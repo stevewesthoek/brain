@@ -71,6 +71,7 @@ import { readVideoDesignProviderPromptReviewPolicyPlans, readVideoDesignProvider
 import { readVideoArtifactSandboxProviderHandoffPlans, readVideoArtifactSandboxProviderHandoffPlan } from '../adapters/video-orchestrator-artifact-sandbox-provider-handoff-plan.js';
 import { readVideoProviderOutputRedactionPolicyPlans, readVideoProviderOutputRedactionPolicyPlan } from '../adapters/video-orchestrator-provider-output-redaction-policy-plan.js';
 import { readVideoDesignProviderComplianceChecklistPlans, readVideoDesignProviderComplianceChecklistPlan } from '../adapters/video-orchestrator-design-provider-compliance-checklist-plan.js';
+import { readVideoDesignProviderEnablementReadinessIndex, readVideoDesignProviderEnablementReadinessIndexEntry } from '../adapters/video-orchestrator-design-provider-enablement-readiness-index.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -318,6 +319,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/design-provider-compliance-checklist-plan':
       sendJson(response, 200, readVideoDesignProviderComplianceChecklistPlans());
+      return;
+    case '/video-orchestrator/design-provider-enablement-readiness-index':
+      sendJson(response, 200, readVideoDesignProviderEnablementReadinessIndex());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1250,6 +1254,22 @@ export async function routeRequest(
           sendJson(response, 200, readVideoControlledExecutionImplementationApprovalPacketStartGate());
           return;
         }
+        const enablementReadinessMatch = /^\/video-orchestrator\/design-provider-enablement-readiness-index\/([^/]+)$/.exec(url.pathname);
+        const providerClass = enablementReadinessMatch?.[1] ?? '';
+        if (providerClass.length > 0) {
+          const entry = readVideoDesignProviderEnablementReadinessIndexEntry(decodeURIComponent(providerClass));
+          if (entry) {
+            sendJson(response, 200, entry);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator design provider enablement readiness entry not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
       }
 
       sendJson(response, 404, {
@@ -1259,7 +1279,7 @@ export async function routeRequest(
         },
       } satisfies BrainCoreErrorResponse);
       return;
-  }
+    }
 }
 
 function routePostRequest(url: URL, response: ServerResponse): void {

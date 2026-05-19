@@ -4942,6 +4942,70 @@ export interface BrainCoreVideoDesignProviderComplianceChecklistPlanResponse {
   nextSafeStep: string;
 }
 
+export interface BrainCoreVideoDesignProviderEnablementReadinessIndexResponse {
+  index: {
+    status: string;
+    readinessPercent: number;
+    providerClassCount: number;
+    blockedCount: number;
+    readyCount: number;
+    averageReadinessPercent: number;
+    providerConfiguredCount: number;
+    providerCallCount: number;
+    executionEnabledCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      readinessPercent: number;
+      requiredPlanningSurfaces: string[];
+      completedPlanningSurfaceRefs: string[];
+      missingImplementationGates: string[];
+      blockingReasons: string[];
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        readinessIndexOnly: boolean;
+        providerImplementationApproved: boolean;
+        providerConfigured: boolean;
+        providerCallsEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        promptGenerationEnabled: boolean;
+        imageGenerationEnabled: boolean;
+        artifactPersistenceEnabled: boolean;
+        auditPersistenceEnabled: boolean;
+        complianceEvaluationEnabled: boolean;
+        filesystemAccessEnabled: boolean;
+        networkAccessEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      readinessIndexOnly: boolean;
+      providerImplementationApproved: boolean;
+      providerConfigured: boolean;
+      providerCallsEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      promptGenerationEnabled: boolean;
+      imageGenerationEnabled: boolean;
+      artifactPersistenceEnabled: boolean;
+      auditPersistenceEnabled: boolean;
+      complianceEvaluationEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -4988,4 +5052,10 @@ export async function readBrainCoreVideoOrchestratorDesignProviderComplianceChec
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoDesignProviderComplianceChecklistPlanResponse>> {
   return fetchJson<BrainCoreVideoDesignProviderComplianceChecklistPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-compliance-checklist-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorDesignProviderEnablementReadinessIndex(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoDesignProviderEnablementReadinessIndexResponse>> {
+  return fetchJson<BrainCoreVideoDesignProviderEnablementReadinessIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-enablement-readiness-index');
 }

@@ -4786,6 +4786,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/controlled-execution-approval-request-design': BrainCoreVideoControlledExecutionApprovalRequestDesignResponse;
   '/video-orchestrator/controlled-execution-disabled-gate': BrainCoreVideoControlledExecutionDisabledGateResponse;
   '/video-orchestrator/controlled-execution-preflight-validator-schema': BrainCoreVideoControlledExecutionPreflightValidatorSchemaResponse;
+  '/video-orchestrator/design-provider-enablement-readiness-index': BrainCoreVideoDesignProviderEnablementReadinessIndexResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
@@ -7041,4 +7042,88 @@ export interface BrainCoreVideoDesignProviderComplianceChecklistPlanResponse {
   safety: BrainCoreVideoDesignProviderComplianceChecklistSafety;
   blockers: string[];
   nextSafeStep: string;
+}
+
+export type BrainCoreVideoDesignProviderEnablementReadinessProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoDesignProviderEnablementReadinessIndexEntry {
+  providerClass: BrainCoreVideoDesignProviderEnablementReadinessProviderClass;
+  status: 'blocked';
+  readinessPercent: 0;
+  requiredPlanningSurfaces: string[];
+  completedPlanningSurfaceRefs: string[];
+  missingImplementationGates: string[];
+  blockingReasons: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    readinessIndexOnly: true;
+    providerImplementationApproved: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoDesignProviderEnablementReadinessIndex {
+  id: 'video-orchestrator-design-provider-enablement-readiness-index';
+  generatedAt: string;
+  status: 'blocked';
+  readinessPercent: 0;
+  providerClassCount: 3;
+  blockedCount: 3;
+  readyCount: 0;
+  averageReadinessPercent: 0;
+  providerConfiguredCount: 0;
+  providerCallCount: 0;
+  executionEnabledCount: 0;
+  entries: BrainCoreVideoDesignProviderEnablementReadinessIndexEntry[];
+  summary: {
+    providerClassCount: 3;
+    blockedCount: 3;
+    readyCount: 0;
+    averageReadinessPercent: 0;
+    providerConfiguredCount: 0;
+    providerCallCount: 0;
+    executionEnabledCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    readinessIndexOnly: true;
+    providerImplementationApproved: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    filesystemAccessEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoDesignProviderEnablementReadinessIndexResponse {
+  index: BrainCoreVideoDesignProviderEnablementReadinessIndex;
 }
