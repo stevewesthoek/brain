@@ -737,3 +737,45 @@ Validation evidence:
 Next safe task suggestion:
 
 - Provider implementation phase start gate or Provider wrapper security review plan.
+
+## Continuation update — Video Orchestrator provider wrapper security review plan
+
+Endpoints:
+
+- `GET /video-orchestrator/provider-wrapper-security-review-plan`
+- `GET /video-orchestrator/provider-wrapper-security-review-plan/:providerClass`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-provider-wrapper-security-review-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Security review plan only.
+- No security scans executed by the endpoint.
+- No provider calls.
+- No credential access.
+- No raw provider output.
+- No mutation controls.
+- No approval buttons.
+- No file writes from UI.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+
+Validation evidence:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: pending in this handoff.
+- The plan remains blocked and security review completed is false.
+
+Next safe task suggestion:
+
+- Provider implementation phase start gate or Security review completion checkpoint.

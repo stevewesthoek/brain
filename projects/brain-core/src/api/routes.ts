@@ -77,6 +77,7 @@ import { readVideoProviderRequestWrapperImplementationPlan, readVideoProviderReq
 import { readVideoCredentialStoreImplementationBoundaryPlan, readVideoCredentialStoreImplementationBoundaryPlanEntry } from '../adapters/video-orchestrator-credential-store-implementation-boundary-plan.js';
 import { readVideoPromptReviewUxImplementationPlan, readVideoPromptReviewUxImplementationPlanEntry } from '../adapters/video-orchestrator-prompt-review-ux-implementation-plan.js';
 import { readVideoProviderAuditPersistenceBoundaryPlan, readVideoProviderAuditPersistenceBoundaryPlanEntry } from '../adapters/video-orchestrator-provider-audit-persistence-boundary-plan.js';
+import { readVideoProviderWrapperSecurityReviewPlan, readVideoProviderWrapperSecurityReviewPlanEntry } from '../adapters/video-orchestrator-provider-wrapper-security-review-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -342,6 +343,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-audit-persistence-boundary-plan':
       sendJson(response, 200, readVideoProviderAuditPersistenceBoundaryPlan());
+      return;
+    case '/video-orchestrator/provider-wrapper-security-review-plan':
+      sendJson(response, 200, readVideoProviderWrapperSecurityReviewPlan());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1371,6 +1375,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator provider audit persistence boundary plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const securityReviewMatch = /^\/video-orchestrator\/provider-wrapper-security-review-plan\/([^/]+)$/.exec(url.pathname);
+        const securityReviewProviderClass = securityReviewMatch?.[1] ?? '';
+        if (securityReviewProviderClass.length > 0) {
+          const review = readVideoProviderWrapperSecurityReviewPlanEntry(decodeURIComponent(securityReviewProviderClass));
+          if (review) {
+            sendJson(response, 200, review);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider wrapper security review plan not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

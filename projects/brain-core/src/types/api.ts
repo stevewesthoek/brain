@@ -7597,3 +7597,89 @@ export interface BrainCoreVideoProviderAuditPersistenceBoundaryPlan {
 export interface BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse {
   plan: BrainCoreVideoProviderAuditPersistenceBoundaryPlan;
 }
+
+export type BrainCoreVideoProviderWrapperSecurityReviewPlanProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderWrapperSecurityReviewPlanEntry {
+  providerClass: BrainCoreVideoProviderWrapperSecurityReviewPlanProviderClass;
+  status: 'blocked';
+  implementationBoundaryOnly: true;
+  securityReviewPlanOnly: true;
+  reviewPurpose: string;
+  threatCategories: string[];
+  requiredEvidence: string[];
+  prohibitedImplementationPatterns: string[];
+  requiredManualReviewChecks: string[];
+  requiredAutomatedReviewChecks: string[];
+  approvalGates: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    securityReviewPlanOnly: true;
+    securityReviewCompleted: false;
+    providerImplementationApproved: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    securityScanExecutionEnabled: false;
+    automatedReviewExecutionEnabled: false;
+    networkAccessEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderWrapperSecurityReviewPlan {
+  id: 'video-orchestrator-provider-wrapper-security-review-plan';
+  generatedAt: string;
+  status: 'blocked';
+  reviewPlanCount: 3;
+  blockedCount: 3;
+  securityReviewCompletedCount: 0;
+  providerImplementationApprovedCount: 0;
+  providerCallCount: 0;
+  mutationControlCount: 0;
+  postRouteCount: 0;
+  entries: BrainCoreVideoProviderWrapperSecurityReviewPlanEntry[];
+  summary: {
+    reviewPlanCount: 3;
+    blockedCount: 3;
+    securityReviewCompletedCount: 0;
+    providerImplementationApprovedCount: 0;
+    providerCallCount: 0;
+    mutationControlCount: 0;
+    postRouteCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    securityReviewPlanOnly: true;
+    securityReviewCompleted: false;
+    providerImplementationApproved: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    securityScanExecutionEnabled: false;
+    automatedReviewExecutionEnabled: false;
+    networkAccessEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderWrapperSecurityReviewPlanResponse {
+  plan: BrainCoreVideoProviderWrapperSecurityReviewPlan;
+}

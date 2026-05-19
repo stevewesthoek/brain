@@ -6553,3 +6553,114 @@ test('POST /video-orchestrator/provider-audit-persistence-boundary-plan is not r
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-audit-persistence-boundary-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-wrapper-security-review-plan returns blocked review plans with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-wrapper-security-review-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      status: string;
+      reviewPlanCount: number;
+      blockedCount: number;
+      securityReviewCompletedCount: number;
+      providerImplementationApprovedCount: number;
+      providerCallCount: number;
+      mutationControlCount: number;
+      postRouteCount: number;
+      entries: Array<{
+        providerClass: string;
+        implementationBoundaryOnly: boolean;
+        threatCategories: string[];
+        requiredEvidence: string[];
+        prohibitedImplementationPatterns: string[];
+        requiredManualReviewChecks: string[];
+        requiredAutomatedReviewChecks: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-provider-wrapper-security-review-plan');
+  assert.equal(body.plan.status, 'blocked');
+  assert.equal(body.plan.reviewPlanCount, 3);
+  assert.equal(body.plan.blockedCount, 3);
+  assert.equal(body.plan.securityReviewCompletedCount, 0);
+  assert.equal(body.plan.providerImplementationApprovedCount, 0);
+  assert.equal(body.plan.providerCallCount, 0);
+  assert.equal(body.plan.mutationControlCount, 0);
+  assert.equal(body.plan.postRouteCount, 0);
+  assert.equal(body.plan.entries.length, 3);
+  assert.ok(body.plan.entries.every((entry) => entry.implementationBoundaryOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('credential exfiltration')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('prompt injection')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('path traversal')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('arbitrary command execution')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('unsafe network egress')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('raw provider output leakage')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('artifact sandbox escape')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('audit tampering')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('approval bypass')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('publishing bypass')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('STB mutation')));
+  assert.ok(body.plan.entries.every((entry) => entry.threatCategories.includes('Mind vault mutation')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('dynamic shell execution')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('arbitrary command input')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('raw token logging')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('direct .env reads')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('filesystem credential discovery')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('unbounded network egress')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('provider calls without approval')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('artifact writes outside sandbox')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('Mind vault writes')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('STB artifact mutation')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedImplementationPatterns.includes('publishing from provider response')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredManualReviewChecks.includes('confirm no raw secrets in code or tests')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredManualReviewChecks.includes('confirm no provider call path is enabled')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredManualReviewChecks.includes('confirm no POST route was added')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredManualReviewChecks.includes('confirm no mutation control was added to Brain Console')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('TypeScript typecheck')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('Brain Core CI')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('Brain Console typecheck')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('Brain Console build')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('forbidden secret material scan')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('forbidden runtime execution scan')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('forbidden upload/network pattern scan')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredAutomatedReviewChecks.includes('route surface review')));
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.securityReviewPlanOnly, true);
+  assert.equal(body.plan.safety.securityReviewCompleted, false);
+  assert.equal(body.plan.safety.providerImplementationApproved, false);
+  assert.equal(body.plan.safety.providerConfigured, false);
+  assert.equal(body.plan.safety.providerCallsEnabled, false);
+  assert.equal(body.plan.safety.credentialAccessEnabled, false);
+  assert.equal(body.plan.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.plan.safety.securityScanExecutionEnabled, false);
+  assert.equal(body.plan.safety.automatedReviewExecutionEnabled, false);
+  assert.equal(body.plan.safety.networkAccessEnabled, false);
+  assert.equal(body.plan.safety.filesystemAccessEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+  assert.equal(body.plan.safety.publishesContent, false);
+  assert.equal(body.plan.safety.writesToMind, false);
+  assert.equal(body.plan.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-wrapper-security-review-plan/:providerClass returns image-generation security review plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-wrapper-security-review-plan/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    securityReviewPlanOnly: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.securityReviewPlanOnly, true);
+});
+
+test('POST /video-orchestrator/provider-wrapper-security-review-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-wrapper-security-review-plan' });
+  assert.equal(response.statusCode, 404);
+});
