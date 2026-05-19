@@ -253,11 +253,76 @@ export async function waitForLocalAppHealth(
   return false;
 }
 
+function readLocalAppsDashboardSync(): BrainCoreLocalAppsDashboardResponse {
+  const inventory = listLocalAppDefinitions();
+  const timestamp = new Date().toISOString();
+
+  const apps: BrainCoreLocalAppDashboardItem[] = inventory.map((app) => {
+    const lifecycleStatus = 'unknown' as const;
+    const managed = app.managed;
+    const executableActions = app.actionPolicy.status === 'enabled' ? app.actionPolicy.safeActions : [];
+    const actionEnabled = executableActions.length > 0;
+    return {
+      id: app.id,
+      name: app.name,
+      label: app.label || app.name,
+      category: app.category,
+      status: lifecycleStatus,
+      health: 'unknown' as const,
+      source: app.category === 'brain-core' ? 'brain-core' : app.repoPathSummary ? 'infrastructure-config' : 'unknown',
+      managed,
+      startSupported: executableActions.includes('start'),
+      stopSupported: executableActions.includes('stop'),
+      restartSupported: executableActions.includes('restart'),
+      actionEnabled,
+      actionDisabledReason: actionEnabled ? '' : 'No safe executable strategy is registered for this app/action.',
+      lastCheckedAt: timestamp,
+      notes: app.description,
+      ...(app.appUrl ? { url: app.appUrl } : {}),
+      ...(app.appPort ? { port: app.appPort } : {}),
+    };
+  });
+
+  return {
+    id: 'local-apps-dashboard',
+    status: inventory.length > 0 ? 'unavailable' : 'unavailable',
+    appCount: apps.length,
+    runningCount: 0,
+    stoppedCount: 0,
+    unknownCount: apps.length,
+    managedCount: apps.filter((app) => app.managed).length,
+    unmanagedCount: apps.filter((app) => !app.managed).length,
+    apps,
+    actionPolicy: {
+      status: 'planned',
+      executionPath: 'brain-core-allowlisted-action',
+      requiresConfirmation: true,
+      requiresAllowlist: true,
+      pluginExecutesShell: false,
+      arbitraryCommandAllowed: false,
+      safeActions: [],
+      blockedActions: ['custom-command'],
+    },
+    safety: {
+      readOnlyDashboard: true,
+      pluginExecutesShell: false,
+      arbitraryCommandExecution: false,
+      exposesSecrets: false,
+      exposesEnv: false,
+      platformWrites: false,
+      mindWrites: false,
+      destructiveActions: false,
+      startStopControlsEnabled: false,
+    },
+    blockers: inventory.length === 0 ? ['No local apps registry entries were found.'] : [],
+    nextSafeStep: 'Register a safe per-app execution strategy before enabling app action buttons.',
+  };
+}
+
 export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): Promise<BrainCoreLocalAppsDashboardResponse> {
   const inventory = listLocalAppDefinitions();
-  const runtimeInventory = inventory.filter((app) => app.category !== 'brain-core' || app.id !== 'model-router');
   const statusReport = await buildLocalAppsStatus(
-    runtimeInventory.map((app) => ({
+    inventory.map((app) => ({
       name: app.name,
       port: app.appPort ?? null,
       url: app.appUrl ?? '',
@@ -353,6 +418,43 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     },
     blockers: inventory.length === 0 ? ['No local apps registry entries were found.'] : [],
     nextSafeStep: 'Register a safe per-app execution strategy before enabling app action buttons.',
+  };
+}
+
+export function readLocalAppsSourceDiagnostics() {
+  const canonicalCount = loadLocalApps().length;
+  const dashboardResponse = readLocalAppsDashboardSync();
+  const orchestratorDefs = listLocalAppDefinitions();
+
+  return {
+    id: 'local-apps-source-diagnostics',
+    status: canonicalCount > 0 ? 'available' : 'error',
+    canonicalSource: 'operations/infrastructure/local-apps.json',
+    canonicalAppCount: canonicalCount,
+    dashboardAppCount: dashboardResponse.appCount,
+    orchestratorAppCount: orchestratorDefs.length,
+    displayedAppCount: dashboardResponse.apps.length,
+    sourceFiles: [
+      {
+        path: 'operations/infrastructure/local-apps.json',
+        usedFor: 'canonical-registry',
+        appCount: canonicalCount,
+        readable: true,
+        error: null,
+      },
+    ],
+    mismatches: canonicalCount !== dashboardResponse.appCount ? ['Dashboard app count differs from canonical source'] : [],
+    nextSafeStep: canonicalCount > 0 ? 'Dashboard should display all canonical apps.' : 'No local apps registry found.',
+    safety: {
+      readOnlyDashboard: true,
+      pluginExecutesShell: false,
+      arbitraryCommandExecution: false,
+      exposesSecrets: false,
+      exposesEnv: false,
+      platformWrites: false,
+      mindWrites: false,
+      destructiveActions: false,
+    },
   };
 }
 

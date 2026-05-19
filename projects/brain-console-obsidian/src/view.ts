@@ -843,7 +843,7 @@ function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, on
   const controls = header.createDiv({ cls: 'brain-console__header-controls' });
 
   const meta = header.createDiv({ cls: 'brain-console__header-meta' });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-local-apps-action-stability-2026-05-19-01` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-local-apps-functional-2026-05-19-01` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
@@ -1173,7 +1173,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'brain-console-local-apps-action-stability-2026-05-19-01'
+    text: 'brain-console-local-apps-functional-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1191,7 +1191,7 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
   container.className = 'brain-console__card-content';
 
   const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
-  const expectedMarker = 'brain-console-local-apps-action-stability-2026-05-19-01';
+  const expectedMarker = 'brain-console-local-apps-functional-2026-05-19-01';
   const markerOk = runtimeMarker === expectedMarker;
 
   renderCompactStatGrid(container, [

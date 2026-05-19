@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const expectedMarker = 'brain-console-local-apps-action-stability-2026-05-19-01';
+const expectedMarker = 'brain-console-local-apps-functional-2026-05-19-01';
 const searchRoot = '/Users/Office';
 const managedFiles = ['main.js', 'styles.css', 'manifest.json'];
 const skippedDirectoryNames = new Set(['node_modules', '.git', 'Library', 'Applications']);

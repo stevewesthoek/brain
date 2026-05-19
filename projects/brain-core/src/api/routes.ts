@@ -40,6 +40,7 @@ import {
   readLocalAppsActionsStatus,
   readLocalAppsActionReadiness,
   readLocalAppsDashboard,
+  readLocalAppsSourceDiagnostics,
   readLocalAppsOnboardingChecklist,
   readLocalAppsOrchestratorStatus,
   runLocalAppsAction,
@@ -525,6 +526,9 @@ export async function routeRequest(
       return;
     case '/local-apps/action-readiness':
       sendJson(response, 200, readLocalAppsActionReadiness());
+      return;
+    case '/local-apps/source-diagnostics':
+      sendJson(response, 200, readLocalAppsSourceDiagnostics());
       return;
     case '/local-apps/actions/status':
       sendJson(response, 200, readLocalAppsActionsStatus());

@@ -5,7 +5,7 @@ const main = await readFile(new URL('src/main.ts', root), 'utf8');
 const view = await readFile(new URL('src/view.ts', root), 'utf8');
 const styles = await readFile(new URL('styles.css', root), 'utf8');
 
-assert(main.includes('brain-console-local-apps-action-stability-2026-05-19-01'), 'main.ts missing current build marker');
+assert(main.includes('brain-console-local-apps-functional-2026-05-19-01'), 'main.ts missing current build marker');
 assert(!main.includes('getRightLeaf'), 'main.ts still references getRightLeaf');
 assert(view.includes('renderActiveSectionContent('), 'view.ts missing renderActiveSectionContent');
 assert(view.includes('Dashboard Self Check'), 'view.ts missing Dashboard Self Check card');
