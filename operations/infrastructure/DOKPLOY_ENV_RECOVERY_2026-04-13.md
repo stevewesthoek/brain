@@ -1,3 +1,5 @@
+> **⚠️ HISTORICAL — 2026-04-13 incident resolved.** Database was successfully restored from Azure backup. Env vars are safely back in Dokploy's PostgreSQL. Canonical Dokploy docs are now in `infra.md`. This file is retained as emergency reference only.
+
 # DOKPLOY Environment Variables Recovery — 2026-04-13
 
 **CRITICAL:** This file contains ALL environment variables extracted from running Dokploy applications on 2026-04-13 at 07:32 UTC, after the PostgreSQL database was corrupted in the disk-full incident.

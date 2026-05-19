@@ -1,3 +1,5 @@
+> **⚠️ HISTORICAL — 2026-04-13 incident resolved.** Canonical Dokploy architecture and recovery docs are now in `infra.md`. This file is retained as a historical reference only.
+
 # DOKPLOY Azure Backup Recovery Plan — 2026-04-13
 
 **Status:** Azure restore job in progress (e49677fa-9843-414e-a5e7-f07388e978d6)

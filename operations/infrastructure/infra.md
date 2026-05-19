@@ -7,8 +7,8 @@ Purpose:
 - Capture what is verified live versus what is only historical or still incomplete.
 
 Verification status:
-- Last verified live on 2026-04-03 from the `Office` Mac mini.
-- Sources used: `az`, `aws sts`, SSH, Dokploy API, local SSH config, local skill/runbook docs.
+- Last verified live on 2026-05-19 from the `Office` Mac mini.
+- Sources used: `az`, `aws sts`, SSH, Dokploy API, Cloudflare API, Docker Swarm inspection, local SSH config, local skill/runbook docs.
 
 Related local control-plane inventory:
 - `operations/infrastructure/scheduler-inventory.md` — canonical scheduler and LaunchAgent inventory for the `Office` Mac
@@ -43,6 +43,8 @@ To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab u
 - `6300-6399` is reserved for Redis ports.
 - `7000-7099` is reserved for internal dashboards and control-plane tools.
 - `8000-8099` is reserved for APIs and supporting services.
+- `4011-4012` are reserved for local TinaCMS dev server ports for Via di Eden and Oliveto Organizing.
+- `9002-9003` are reserved for the corresponding TinaCMS datalayer ports.
 - Never reuse a port once it has been assigned to an app or database, even after retirement.
 - Do not repurpose `5432` for project-local databases unless `local-apps.json` explicitly documents that choice.
 - The reserved PostgreSQL range (`5400-5499`) is off-limits for ad hoc reuse except for registry-managed local databases.
@@ -144,12 +146,63 @@ Retired infrastructure:
 
 ### Dokploy
 
-Dokploy host:
-- Azure VM `vm-dokploy`
-- UI: `https://dokploy.prochat.tools`
-- API auth stored locally in `~/.config/dokploy/.env`
+#### Architecture
 
-Projects and workloads verified through the Dokploy API on 2026-04-03:
+Dokploy runs as a **Docker Swarm** stack on Azure VM `vm-dokploy`. Core services:
+
+| Service | Image | Role | Network |
+|---------|-------|------|---------|
+| `dokploy` | `dokploy/dokploy:v0.29.2` | App server (UI + API) | `dokploy-network`, port 3000 published to host |
+| `dokploy-postgres` | `postgres:16` | Primary database (user: `dokploy`, db: `dokploy`) | `dokploy-network` |
+| `dokploy-redis` | `redis:7` | Cache / job queue | `dokploy-network` |
+| `dokploy-traefik` | `traefik:v2.x` | Reverse proxy for deployed apps | `dokploy-network`, ports 80/443 published to host |
+
+All application containers also attach to `dokploy-network`.
+
+#### Traffic Flow
+
+```
+Internet → Cloudflare (TLS termination) → Cloudflare Tunnel (dc7bb87e) → Azure VM
+
+  dokploy.prochat.tools  →  localhost:3000  (Dokploy direct — bypasses Traefik)
+  all other apps         →  localhost:80    (Traefik → Docker containers)
+```
+
+- **Dokploy UI/API**: Cloudflare Tunnel routes `dokploy.prochat.tools` directly to `localhost:3000`. Traefik is NOT in this path.
+- **Deployed apps**: Cloudflare Tunnel routes all other hostnames to `localhost:80` (Traefik entrypoint `web`). Traefik uses Docker/Swarm labels to route to the correct container.
+- **SSL/TLS**: Cloudflare handles TLS termination for ALL tunnel-routed traffic. The connection from Cloudflare Tunnel to localhost is unencrypted HTTP. Traefik's LetsEncrypt/ACME config exists but is unused for tunnel traffic.
+- **Cloudflared**: Runs as a systemd service on the VM using a remotely-managed token-based tunnel.
+
+#### API
+
+- **Base URL**: `https://dokploy.prochat.tools`
+- **Auth**: `x-api-key` header with plaintext API key
+- **Protocol**: tRPC — all mutations are POST to `/api/trpc/<procedure>`
+- **Local credentials**: `~/.config/dokploy/.env` (contains `DOKPLOY_API_KEY`, `DOKPLOY_URL`, `DOKPLOY_API_HEADER`)
+- **Deploy endpoint**: `POST /api/trpc/application.deploy` with body `{"json":{"applicationId":"<id>"}}`
+- **GitHub App webhook**: `POST /api/deploy/github` (auto-deploy on push; handled by the `prochattools` GitHub App)
+
+Application IDs:
+- Via di Eden: `34heLjzG-klSB3ja7ZSG5`
+- Oliveto Organizing: `xBuP3eoiwNO5l2qY_N_1h`
+- JPV Bootcamp: `aPR9SvYn_JvGdMTk3CzeI`
+
+#### Recovery
+
+- **Backup**: Azure disk snapshots (nightly via Azure Backup vault in `rg-apps-dokploy`)
+- **Critical after restore**: Port 3000 MUST be published to host for Cloudflare Tunnel to reach Dokploy: `docker service update dokploy --publish-add 3000:3000`
+- **Service restart**: `docker service update dokploy --force` (restarts without config change)
+- **Postgres recovery**: Wait for postgres to be fully ready before restarting Dokploy service (race condition on cold boot)
+
+#### Operational Notes
+
+- The `dokploy-cli` packaged CLI returns 401 for most commands — use direct tRPC API calls instead.
+- The Dokploy database `key` column stores a HASH of the API key; the `start` column stores the first 6 chars of the plaintext. Do not confuse the hash with the actual key.
+- GitHub App webhook endpoint is `/api/deploy/github` (NOT `/api/webhook/github`).
+
+---
+
+Projects and workloads verified through the Dokploy API on 2026-05-19:
 
 `Databases`
 - Compose: `olivetoorganizing`
@@ -297,7 +350,7 @@ These are the standard AI-agnostic interfaces both Claude and Codex should use:
 | Azure | `~/.local/bin/azure-apps-provisioner`, `~/.local/bin/azure-data-provisioner`, and matching destroyer wrappers | Service-principal-backed, subscription-explicit Azure automation surface |
 | AWS | `~/.local/bin/aws-provisioner` and `~/.local/bin/aws-destroyer` | Assumed-role AWS automation surface layered on top of the base `claude-code` IAM user |
 | Hetzner | `~/.local/bin/hetzner-cli` | Hetzner Cloud infrastructure surface backed by local `hcloud` auth |
-| Dokploy | `~/.local/bin/dokploy-cli` and Dokploy API | Primary deployment surface for hosted apps |
+| Dokploy | Direct tRPC API (`POST /api/trpc/*` with `x-api-key`); creds in `~/.config/dokploy/.env` | Primary deployment surface; `dokploy-cli` is broken (401s) — use direct API |
 | n8n | `~/.local/bin/n8n-api` | Primary headless workflow automation interface |
 | CloudPanel | `~/.local/bin/cloudpanel-cli` | Production-scoped; confirm before mutations |
 | Tailscale | `~/.local/bin/tailscale-cli` | Network observability: node status, reachability checks, pre-flight pings before SSH |
@@ -453,6 +506,12 @@ Known sites still present on Hetzner server filesystem (not yet deleted):
 - Supabase database password rotation (currently expired; not blocking Family Finance which is local-only)
 - Optional: Clean up stale Cloudflare DNS record for `finance.prochat.tools` (no longer routes anywhere)
 
+Completed (2026-05-19):
+- ✅ Dokploy architecture fully documented (Docker Swarm, traffic flow, Cloudflare Tunnel routing, API, recovery)
+- ✅ GitHub App auto-deploy confirmed working for Via di Eden and Oliveto Organizing
+- ✅ Dokploy recovered from failed upgrade attempt (v0.29.2 restored via Azure disk snapshot)
+- ✅ Port 3000 publishing requirement documented as recovery-critical
+
 Completed (2026-05-03):
 - ✅ Dokploy API access restored (new key provisioned; direct API calls via `$DOKPLOY_URL/project.all` verified working)
 - ✅ Dokploy CLI caveat documented (packaged `dokploy-cli verify/list` returns 401; use direct API instead)
@@ -462,4 +521,4 @@ Completed (2026-05-03):
 - ✅ ProBot dashboard confirmed as sole execution interface for Family Finance lifecycle
 
 Last updated:
-- 2026-05-03 WEST (Family Finance finalization + CLI access repair)
+- 2026-05-19 WEST (Dokploy architecture documentation + auto-deploy verification)

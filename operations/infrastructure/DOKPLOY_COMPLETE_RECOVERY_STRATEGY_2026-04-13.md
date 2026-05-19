@@ -1,3 +1,5 @@
+> **⚠️ HISTORICAL — 2026-04-13 incident resolved.** Canonical Dokploy architecture and recovery docs are now in `infra.md`. This file is retained as a historical reference only. Note: Supabase IP was corrected to `100.71.31.88` (Tailscale).
+
 # Dokploy Complete Recovery Strategy — 2026-04-13
 
 **Objective:** Restore full Dokploy database from Azure 2026-04-12 backup PLUS Ory deployment from 2026-04-11, with ZERO impact to:

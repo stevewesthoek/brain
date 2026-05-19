@@ -79,12 +79,46 @@ Note: Self-hosted Umami v3 has no API key feature. Programmatic access uses `POS
 
 ## Dokploy
 
-Self-hosted on Azure VM `vm-dokploy`. UI: `https://dokploy.prochat.tools`
+Self-hosted on Azure VM `vm-dokploy`. UI: `https://dokploy.prochat.tools` · API: `https://dokploy.prochat.tools/api`
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `DOKPLOY_API_KEY` | `~/.config/dokploy/.env` | API key for Dokploy management API | No automatic expiry; rotate if compromised | [Dokploy → Settings → API](https://dokploy.prochat.tools/dashboard/settings) |
+| `DOKPLOY_API_KEY` | `~/.config/dokploy/.env` | API key for Dokploy management API (v0.29.2+) — manage applications, deployments, environments | No automatic expiry; rotate if compromised | [Dokploy → Settings → API](https://dokploy.prochat.tools/dashboard/settings) |
+| `DOKPLOY_API_HEADER` | `~/.config/dokploy/.env` | Header name for API authentication (config, default: `x-api-key`) | Static | — |
 | `DOKPLOY_URL` | `~/.config/dokploy/.env` | Base URL of the Dokploy instance (config, not secret) | Static | — |
+
+**Deployment details:**
+- Version: `v0.29.2`
+- Container: `dokploy/dokploy:v0.29.2` (Docker Swarm service, port 3000 published)
+- Database: PostgreSQL 16 (Swarm service `dokploy-postgres`, port 5432)
+- Redis: Redis 7 (Swarm service `dokploy-redis`, port 6379)
+- Routing: Cloudflare Tunnel → localhost:3000 (Dokploy direct, NOT through Traefik)
+- Orchestrator: Docker Swarm (services + application orchestration)
+- Applications deployed: Via di Eden, Oliveto Organizing, ProChat, JPV Bootcamp, and 20+ others
+
+**API usage (tRPC endpoints):**
+```bash
+source ~/.config/dokploy/.env
+
+# Trigger deployment (Via di Eden)
+curl -s -X POST "${DOKPLOY_URL}/api/trpc/application.deploy" \
+  -H "${DOKPLOY_API_HEADER}: ${DOKPLOY_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"json":{"applicationId":"34heLjzG-klSB3ja7ZSG5"}}'
+
+# Trigger deployment (Oliveto Organizing)
+curl -s -X POST "${DOKPLOY_URL}/api/trpc/application.deploy" \
+  -H "${DOKPLOY_API_HEADER}: ${DOKPLOY_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"json":{"applicationId":"xBuP3eoiwNO5l2qY_N_1h"}}'
+```
+
+**Application IDs:**
+- Via di Eden: `34heLjzG-klSB3ja7ZSG5`
+- Oliveto Organizing: `xBuP3eoiwNO5l2qY_N_1h`
+- JPV Bootcamp: `aPR9SvYn_JvGdMTk3CzeI`
+
+**Last updated:** 2026-05-19 (API key regenerated, Dokploy converted to Swarm service with published port)
 
 ## Google Workspace (GWS)
 
