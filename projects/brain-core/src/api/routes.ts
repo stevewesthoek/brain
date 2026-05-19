@@ -73,6 +73,7 @@ import { readVideoProviderOutputRedactionPolicyPlans, readVideoProviderOutputRed
 import { readVideoDesignProviderComplianceChecklistPlans, readVideoDesignProviderComplianceChecklistPlan } from '../adapters/video-orchestrator-design-provider-compliance-checklist-plan.js';
 import { readVideoDesignProviderEnablementReadinessIndex, readVideoDesignProviderEnablementReadinessIndexEntry } from '../adapters/video-orchestrator-design-provider-enablement-readiness-index.js';
 import { readVideoProviderIntegrationFinalPlanningCheckpoint, readVideoProviderIntegrationFinalPlanningCheckpointEntry } from '../adapters/video-orchestrator-provider-integration-final-planning-checkpoint.js';
+import { readVideoProviderRequestWrapperImplementationPlan, readVideoProviderRequestWrapperImplementationPlanEntry } from '../adapters/video-orchestrator-provider-request-wrapper-implementation-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -326,6 +327,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-integration-final-planning-checkpoint':
       sendJson(response, 200, readVideoProviderIntegrationFinalPlanningCheckpoint());
+      return;
+    case '/video-orchestrator/provider-request-wrapper-implementation-plan':
+      sendJson(response, 200, readVideoProviderRequestWrapperImplementationPlan());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1287,6 +1291,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator provider integration final planning checkpoint not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const wrapperPlanMatch = /^\/video-orchestrator\/provider-request-wrapper-implementation-plan\/([^/]+)$/.exec(url.pathname);
+        const wrapperProviderClass = wrapperPlanMatch?.[1] ?? '';
+        if (wrapperProviderClass.length > 0) {
+          const plan = readVideoProviderRequestWrapperImplementationPlanEntry(decodeURIComponent(wrapperProviderClass));
+          if (plan) {
+            sendJson(response, 200, plan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider request wrapper implementation plan not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

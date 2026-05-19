@@ -6116,3 +6116,115 @@ test('POST /video-orchestrator/provider-integration-final-planning-checkpoint is
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-integration-final-planning-checkpoint' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-request-wrapper-implementation-plan returns blocked implementation plans with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-request-wrapper-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      status: string;
+      planCount: number;
+      blockedCount: number;
+      implementationPlanOnlyCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      networkAccessCount: number;
+      credentialAccessCount: number;
+      rawOutputAccessCount: number;
+      entries: Array<{
+        providerClass: string;
+        implementationPlanOnly: boolean;
+        proposedFutureRequestShape: string[];
+        requestValidationSteps: string[];
+        failureModes: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-provider-request-wrapper-implementation-plan');
+  assert.equal(body.plan.status, 'blocked');
+  assert.equal(body.plan.planCount, 3);
+  assert.equal(body.plan.blockedCount, 3);
+  assert.equal(body.plan.implementationPlanOnlyCount, 3);
+  assert.equal(body.plan.providerConfiguredCount, 0);
+  assert.equal(body.plan.providerCallCount, 0);
+  assert.equal(body.plan.networkAccessCount, 0);
+  assert.equal(body.plan.credentialAccessCount, 0);
+  assert.equal(body.plan.rawOutputAccessCount, 0);
+  assert.equal(body.plan.entries.length, 3);
+  assert.ok(body.plan.entries.every((entry) => entry.implementationPlanOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('providerClass')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('sourcePlanId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('promptReviewPolicyId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('credentialIsolationPlanId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('artifactSandboxHandoffPlanId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('outputRedactionPolicyId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('complianceChecklistId')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('operatorApprovalRef')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('auditRefPlaceholder')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedFutureRequestShape.includes('requestIdPlaceholder')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify explicit implementation approval')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify credential isolation boundary')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify prompt review approval')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify artifact sandbox boundary')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify output redaction policy')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify compliance checklist')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify audit reference availability')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify no raw credential fields')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify no arbitrary shell text')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('verify no publishing command')));
+  assert.ok(body.plan.entries.every((entry) => entry.requestValidationSteps.includes('block provider call in this phase')));
+  assert.ok(body.plan.entries.every((entry) => entry.failureModes.includes('missing approval')));
+  assert.ok(body.plan.entries.every((entry) => entry.failureModes.includes('timeout')));
+  assert.ok(body.plan.entries.every((entry) => entry.failureModes.includes('provider unavailable')));
+  assert.ok(body.plan.entries.every((entry) => entry.failureModes.includes('unsafe output category')));
+  assert.ok(body.plan.entries.every((entry) => entry.failureModes.includes('audit reference unavailable')));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.readOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.implementationPlanOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.providerRequestWrapperImplemented === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.providerConfigured === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.providerCallsEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.credentialAccessEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.networkAccessEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.rawProviderOutputAccessEnabled === false));
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.implementationPlanOnly, true);
+  assert.equal(body.plan.safety.providerRequestWrapperImplemented, false);
+  assert.equal(body.plan.safety.providerConfigured, false);
+  assert.equal(body.plan.safety.providerCallsEnabled, false);
+  assert.equal(body.plan.safety.credentialAccessEnabled, false);
+  assert.equal(body.plan.safety.networkAccessEnabled, false);
+  assert.equal(body.plan.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.plan.safety.promptGenerationEnabled, false);
+  assert.equal(body.plan.safety.imageGenerationEnabled, false);
+  assert.equal(body.plan.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.plan.safety.auditPersistenceEnabled, false);
+  assert.equal(body.plan.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.plan.safety.filesystemAccessEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+  assert.equal(body.plan.safety.publishesContent, false);
+  assert.equal(body.plan.safety.writesToMind, false);
+  assert.equal(body.plan.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-request-wrapper-implementation-plan/:providerClass returns image-generation wrapper plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-request-wrapper-implementation-plan/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    implementationPlanOnly: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.implementationPlanOnly, true);
+});
+
+test('POST /video-orchestrator/provider-request-wrapper-implementation-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-request-wrapper-implementation-plan' });
+  assert.equal(response.statusCode, 404);
+});
