@@ -2,9 +2,9 @@
 
 Standalone read-only Brain Core console for Obsidian. Displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
 
-**Build:** `probot-functional-parity-2026-05-19-01`
+**Build:** `probot-functional-polish-2026-05-19-01`
 
-**Status:** Active, extended 2026-05-19 with ProBot functional parity dashboard cards (sessions, local apps, scheduler, studio, external integrations, decommission readiness).
+**Status:** Active, polished 2026-05-19 with visually prominent ProBot Migration dashboard (7 cards: command center, sessions, local apps, scheduler, studio, external integrations, decommission readiness).
 
 ### Validation Status
 
@@ -71,7 +71,7 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build probot-functional-parity-2026-05-19-01`
+1. Look for build marker in header: `build probot-functional-polish-2026-05-19-01`
 2. If marker is missing or different, your plugin bundle is stale
 3. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
 
@@ -80,19 +80,20 @@ npm run --prefix projects/brain-console-obsidian package
 2. Configure in Brain Console settings if different
 3. Press "Manual refresh" to verify connection
 
-## Native UX Features (2026-05-19 with ProBot Functional Parity)
+## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
 
 ### Responsive Layout
 - Works on narrow sidebars (<280px wide)
 - Single column on mobile/narrow panes
 - Text wraps, no right-side clipping
 - Native Obsidian theme (light/dark aware)
+- ProBot Migration section with dedicated header and subtitle
 
 ### Performance
 - **Tab switching:** <50ms (uses cached state, no network call)
 - **Initial load:** All 96+ endpoints load simultaneously (20-30 seconds typical)
 - **Failed endpoints:** Don't crash dashboard; shown in diagnostics
-- **ProBot parity cards:** 7 new cards in Overview, instant rendering from cached state
+- **ProBot parity cards:** 7 cards in dedicated Migration section with visual prominence, badge/stat styling, and clear safety labels
 
 ### Offline Recovery
 - Manual refresh: Always retries all endpoints
@@ -107,19 +108,36 @@ npm run --prefix projects/brain-console-obsidian package
 - No mutations, no execution controls
 - No secrets, OAuth tokens, or credentials exposed
 
-## ProBot Dashboard Parity (2026-05-19 Functional Parity Phase)
+## ProBot Dashboard Parity (2026-05-19 Functional Parity Polish Phase)
 
-Overview tab now includes **ProBot Migration command center** with 7 dedicated cards:
+Overview tab now includes **ProBot Migration** section with 7 dedicated cards and clear section header:
 
-1. **Command Center:** Overall parity status, tabs tracked, visible/working counts, legacy-only features
-2. **Sessions & Continuations:** Available - fully migrated to Brain Console Overview
-3. **Local Apps:** Available - fully migrated to Brain Console Apps section
-4. **Scheduler:** Available - fully migrated to Brain Console Apps section  
-5. **Studio (Video/Viral Flow):** Partial - Video Orchestrator ready, Viral Flow marked for redesign
-6. **External Integrations (Admin-only):** Legacy-only - Dokploy, New Relic, Analytics, Google Ads, Stripe, Domains, Tunnels (all intentionally admin-only, no safe data exposure)
-7. **Decommission Readiness:** Not ready - 6/9 criteria satisfied, 3 criteria require explicit user approval
+### Available (Fully Migrated)
+1. **Sessions & Continuations** — Visible and working in Brain Console Overview
+2. **Local Apps** — Visible and working in Brain Console Apps section
+3. **Scheduler** — Visible and working in Brain Console Apps section  
 
-All cards are read-only with comprehensive safety labels. No execution controls, no mutations, no shell access.
+### Partial (Ready/Pending)
+4. **Studio (Video/Viral Flow)** — Video Orchestrator ready, Viral Flow marked for redesign to use Brain Post Orchestrator
+
+### Legacy/Admin-only (Intentional, No Safe Data)
+5. **External Integrations** — Dokploy, New Relic, Analytics, Google Ads, Stripe, Domains, Tunnels (all intentionally admin-only, no safe metadata endpoints available)
+   - ⚠ Clear warning: "All integrations are intentionally admin-only (no safe data available)"
+   - No credentials, secrets, OAuth tokens, or Stripe financial data exposed
+
+### Decommission Status
+6. **ProBot Decommission Readiness** — ✗ NOT READY (6/9 criteria satisfied, 3 require explicit user approval)
+
+### Command Center
+7. **ProBot → Brain Console Parity: Command Center** — Overall migration status, feature inventory, safety compliance
+
+**Design Notes:**
+- Visually prominent section with dedicated header and subtitle
+- Each card has status badges, stat grids, and feature lists
+- Safety labels on every card (read-only, no execution controls, no mutations)
+- Narrow-pane friendly with min-width: 0 and word-wrapping
+- No right-side clipping
+- Obsidian CSS variables for theme compatibility
 
 ## Settings
 

@@ -856,6 +856,11 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
   // Production Status
   renderCard(grid, 'Production Status', renderProductionStatusCard(state));
 
+  // ProBot Migration dashboard section (full width)
+  const probotSection = grid.createDiv({ cls: 'brain-console__section-header' });
+  probotSection.createEl('h2', { text: 'ProBot Migration' });
+  probotSection.createEl('p', { cls: 'brain-console__section-subtitle', text: 'Read-only replacement dashboard for ProBot features.' });
+
   // ProBot dashboard migration parity (full width command center)
   const probotCard = grid.createDiv({ cls: 'brain-console__card brain-console__card--prominent' });
   const probotHeader = probotCard.createDiv({ cls: 'brain-console__card-header' });
@@ -5061,6 +5066,10 @@ function renderProBotExternalAdminParityCard(state: BrainConsoleViewState): HTML
     return renderEmptyState('External admin parity unavailable', 'Brain Core /probot/external-admin-parity endpoint did not respond.');
   }
 
+  // Add prominent header explaining legacy/admin-only nature
+  const header = container.createDiv({ cls: 'brain-console__warning' });
+  header.createEl('strong', { text: '⚠ All integrations are intentionally admin-only (no safe data available)' });
+
   renderCompactStatGrid(container, [
     { label: 'Status', value: parity.status },
     { label: 'Legacy only', value: parity.legacyOnly ? 'yes' : 'no' },
@@ -5094,12 +5103,15 @@ function renderProBotDecommissionReadinessCard(state: BrainConsoleViewState): HT
     return renderEmptyState('Decommission readiness unavailable', 'Brain Core /probot/decommission-readiness endpoint did not respond.');
   }
 
+  // Add prominent "Not ready" header
+  const header = container.createDiv({ cls: 'brain-console__warning' });
+  header.createEl('strong', { text: readiness.ready ? '✓ Ready for decommission' : '✗ NOT READY FOR DECOMMISSION' });
+
   const totalCriteria = readiness.satisfiedCriteriaCount + readiness.unsatisfiedCriteriaCount;
   renderCompactStatGrid(container, [
     { label: 'Status', value: readiness.status },
-    { label: 'Ready for decommission', value: readiness.ready ? 'yes' : 'not yet' },
-    { label: 'Satisfied criteria', value: `${readiness.satisfiedCriteriaCount} / ${totalCriteria}` },
-    { label: 'Unsatisfied criteria', value: String(readiness.unsatisfiedCriteriaCount) },
+    { label: 'Criteria satisfied', value: `${readiness.satisfiedCriteriaCount} / ${totalCriteria}` },
+    { label: 'Requires approval', value: String(readiness.unsatisfiedCriteriaCount) },
   ]);
 
   const list = container.createDiv({ cls: 'brain-console__list' });
