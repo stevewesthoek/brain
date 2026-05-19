@@ -823,6 +823,12 @@ function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, on
 
   const controls = header.createDiv({ cls: 'brain-console__header-controls' });
 
+  const meta = header.createDiv({ cls: 'brain-console__header-meta' });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-main-dashboard-2026-05-19-01` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
+
   const buildMarker = controls.createEl('span', { cls: 'brain-console__build-marker' });
   buildMarker.textContent = `Build: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}`;
 
@@ -955,6 +961,7 @@ function safeCount(items: any[] | undefined | null): number {
 
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+  renderCard(grid, 'Plugin Install Verification', renderInstallVerificationCard(state));
 
   // Connection diagnostics (always show, even if Brain Core unreachable)
   renderCard(grid, 'Brain Core Connection Diagnostics', renderBrainCoreConnectionDiagnosticsCard(state));
@@ -1246,7 +1253,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'scaffold 2026-05-18'
+    text: 'brain-console-main-dashboard-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1257,6 +1264,30 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const timestamp = right.createEl('span', { text: formatRelativeTime(snapshot.refreshedAt) });
   timestamp.addClass('brain-console__timestamp');
+}
+
+function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
+  const expectedMarker = 'brain-console-main-dashboard-2026-05-19-01';
+  const markerOk = runtimeMarker === expectedMarker;
+
+  renderCompactStatGrid(container, [
+    { label: 'Runtime build', value: runtimeMarker },
+    { label: 'Expected build', value: expectedMarker },
+    { label: 'Match', value: markerOk ? 'yes' : 'no' },
+  ]);
+
+  container.createEl('p', {
+    cls: 'brain-console__detail',
+    text: markerOk
+      ? 'The installed bundle matches the expected dashboard build.'
+      : 'If this marker is stale, reload plugin or restart Obsidian.',
+  });
+
+  return container;
 }
 
 function renderStatusPills(shell: HTMLElement, state: BrainConsoleViewState): void {

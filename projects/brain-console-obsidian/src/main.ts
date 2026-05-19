@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-pipelines-stability-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-main-dashboard-2026-05-19-01';
 
 declare global {
   interface Window {
@@ -21,14 +21,22 @@ export default class BrainConsolePlugin extends Plugin {
     this.settings = sanitizeSettings(await this.loadData());
 
     this.addRibbonIcon('brain-circuit', 'Open Brain Console', () => {
-      void this.openConsole();
+      void this.reopenConsoleFresh();
     });
 
     this.addCommand({
-      id: 'open-brain-console',
-      name: 'Open Brain Console',
+      id: 'open-brain-console-main',
+      name: 'Open Brain Console dashboard',
       callback: () => {
         void this.openConsole();
+      },
+    });
+
+    this.addCommand({
+      id: 'reopen-brain-console-dashboard',
+      name: 'Reopen Brain Console dashboard',
+      callback: () => {
+        void this.reopenConsoleFresh();
       },
     });
 
@@ -50,7 +58,7 @@ export default class BrainConsolePlugin extends Plugin {
       let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
 
       if (!leaf) {
-        leaf = this.app.workspace.getRightLeaf(false) ?? this.app.workspace.getLeaf(true);
+        leaf = this.app.workspace.getLeaf(true);
         await leaf.setViewState({ type: VIEW_TYPE, active: true });
       }
 
@@ -63,6 +71,27 @@ export default class BrainConsolePlugin extends Plugin {
     } catch (error) {
       console.error('Brain Console failed to open', error);
       new Notice(`Brain Console failed to open: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private async reopenConsoleFresh(): Promise<void> {
+    try {
+      const leaves = [...this.app.workspace.getLeavesOfType(VIEW_TYPE)];
+      for (const leaf of leaves) {
+        await leaf.detach();
+      }
+
+      const leaf = this.app.workspace.getLeaf(true);
+      await leaf.setViewState({ type: VIEW_TYPE, active: true });
+      await this.app.workspace.revealLeaf(leaf);
+
+      const view = leaf.view instanceof BrainConsoleView ? leaf.view : this.app.workspace.getLeavesOfType(VIEW_TYPE)[0]?.view;
+      if (view instanceof BrainConsoleView) {
+        await view.refresh();
+      }
+    } catch (error) {
+      console.error('Brain Console failed to reopen fresh', error);
+      new Notice(`Brain Console failed to reopen fresh: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

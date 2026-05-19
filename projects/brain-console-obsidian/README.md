@@ -1,8 +1,8 @@
 # Brain Console Obsidian Plugin
 
-Standalone read-only Brain Core console for Obsidian. Displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
+Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
 
-**Build:** `probot-decommission-gap-closure-2026-05-19-01`
+**Build:** `brain-console-main-dashboard-2026-05-19-01`
 
 **Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
 
@@ -13,6 +13,7 @@ Standalone read-only Brain Core console for Obsidian. Displays ProBot dashboard 
 - ✓ `npm run package` emits release bundle
 - ✓ TypeScript compilation zero errors
 - ✓ Brain Core CI: 446 tests passing (12 ProBot parity + 6 gap-closure tests)
+- ✓ `npm run release:install` builds, packages, installs to every discovered vault copy, and verifies markers
 
 ## Intended structure
 
@@ -71,10 +72,11 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build probot-decommission-gap-closure-2026-05-19-01`
-2. If marker is missing or different, your plugin bundle is stale
-3. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
-4. Verify "ProBot Phase-Out Checklist" card shows "NOT READY" (intentional, requires user approval)
+1. Look for build marker in header: `build brain-console-main-dashboard-2026-05-19-01`
+2. The dashboard header also shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state
+3. If marker is missing or different, your plugin bundle is stale
+4. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
+5. Verify "ProBot Phase-Out Checklist" card shows "NOT READY" (intentional, requires user approval)
 
 **Brain Core Configuration:**
 1. Default URL: `http://localhost:4877`
@@ -84,8 +86,9 @@ npm run --prefix projects/brain-console-obsidian package
 ## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
 
 ### Responsive Layout
-- Works on narrow sidebars (<280px wide)
-- Single column on mobile/narrow panes
+- Opens in the main workspace as a normal tab by default
+- Ribbon icon reopens a fresh dashboard view
+- Responsive full-width layout with wider cards
 - Text wraps, no right-side clipping
 - Native Obsidian theme (light/dark aware)
 - ProBot Migration section with dedicated header and subtitle
@@ -154,6 +157,11 @@ Overview tab now includes **ProBot Migration** section with 7 dedicated cards an
 - Rebuild and repackage (run commands above)
 - Reinstall into Obsidian
 - Restart Obsidian
+
+**Reliable release/install flow:**
+```bash
+npm run --prefix projects/brain-console-obsidian release:install
+```
 
 **Tab switching is slow:**
 - Check Brain Core health: `curl http://localhost:4877/status`

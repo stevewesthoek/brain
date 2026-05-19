@@ -1,12 +1,14 @@
 import { copyFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const expectedMarker = 'brain-console-section-guard-2026-05-19-01';
+const expectedMarker = 'brain-console-main-dashboard-2026-05-19-01';
 const searchRoot = '/Users/Office';
-const releaseDir = new URL('../release/', import.meta.url);
 const managedFiles = ['main.js', 'styles.css', 'manifest.json'];
 const skippedDirectoryNames = new Set(['node_modules', '.git', 'Library', 'Applications']);
 const staleMarkers = [
+  'brain-console-section-guard-2026-05-19-01',
+  'brain-console-state-loader-fix-2026-05-19-01',
+  'brain-console-open-fix-2026-05-19-01',
   'native-card-ui-2026-05-19-01',
   'brain-console-connection-diagnostics-2026-05-19-01',
   'brain-console-emergency-restore-2026-05-19-01',
@@ -37,7 +39,13 @@ for (const pluginDir of [...discoveredPluginDirs].sort()) {
 
 const stale = installed.filter((entry) => !entry.markerOk || entry.staleMarkers.length > 0 || entry.manifestId !== 'brain-console');
 
-console.log(JSON.stringify({ expectedMarker, installed }, null, 2));
+console.table(installed.map((entry) => ({
+  pluginDir: entry.pluginDir,
+  markerOk: entry.markerOk ? 'yes' : 'no',
+  staleMarkers: entry.staleMarkers.join(', ') || 'none',
+  mainModifiedAt: entry.mainModifiedAt,
+  stylesModifiedAt: entry.stylesModifiedAt,
+})));
 
 if (stale.length > 0) {
   throw new Error(`Brain Console install verification failed for ${stale.length} plugin folder(s).`);
@@ -88,9 +96,7 @@ async function verifyPluginDir(pluginDir) {
     markerOk: main.includes(expectedMarker),
     staleMarkers: staleMarkers.filter((marker) => main.includes(marker)),
     manifestId: manifest.id ?? 'missing',
-    mainSize: mainStat.size,
     mainModifiedAt: mainStat.mtime.toISOString(),
-    stylesSize: stylesStat.size,
     stylesModifiedAt: stylesStat.mtime.toISOString(),
   };
 }

@@ -20,7 +20,7 @@
 
 .brain-console {
   width: 100%;
-  max-width: 100%;
+  max-width: none;
   min-width: 0;
   box-sizing: border-box;
   overflow-x: hidden;
@@ -73,6 +73,27 @@
   border-bottom: 1px solid var(--bc-border);
   padding-bottom: 12px;
   min-width: 0;
+}
+
+.brain-console__header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.brain-console__header-meta-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--bc-border);
+  border-radius: 999px;
+  background: var(--bc-bg-secondary);
+  color: var(--bc-text-muted);
+  font-size: 11px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .brain-console__title {
@@ -228,11 +249,21 @@
 /* Grid layouts */
 .brain-console__dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+}
+
+.brain-console__card--grouped {
+  grid-column: 1 / -1;
+}
+
+.brain-console__grouped-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
 }
 
 /* Card base styling */

@@ -3,6 +3,18 @@
 Date: 2026-05-18
 Build ID: `native-ux-2026-05-18-01`
 
+## Update: Main Workspace Dashboard
+
+Current build marker: `brain-console-main-dashboard-2026-05-19-01`
+
+The Brain Console now opens as a main-workspace dashboard tab instead of defaulting to the right sidebar.
+
+User-visible verification:
+- Header shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state.
+- Ribbon icon reopens a fresh dashboard view so stale panes are dropped during development.
+- `Plugin Install Verification` compares the runtime build marker with the expected marker and flags stale bundles.
+- Pipelines render with grouped cards and safe empty states instead of crashing on unsafe `.status` access.
+
 ## Problem Statement
 
 User reported critical usability issues in the Obsidian Brain Console plugin:
@@ -37,7 +49,7 @@ User reported critical usability issues in the Obsidian Brain Console plugin:
 
 Added build marker constant:
 ```typescript
-export const BRAIN_CONSOLE_BUILD_ID = 'native-ux-2026-05-18-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-main-dashboard-2026-05-19-01';
 ```
 
 Updated `onOpen()` to display it visibly in header with install verification warning:
@@ -468,3 +480,42 @@ No secrets, OAuth tokens, credentials, or Stripe financial data exposed.
 
 Pushed to: `origin/main`
 Build marker: `native-ux-2026-05-18-01`
+
+
+## Emergency open/reveal fix — 2026-05-19
+
+Build marker: `brain-console-open-fix-2026-05-19-01`
+
+User symptom:
+
+- Clicking the Brain Console ribbon icon appeared to do nothing even after Obsidian, plugin, and Brain Core restarts.
+
+Root cause identified:
+
+- The plugin used `workspace.getRightLeaf(false)` and `setViewState(...)`, but did not explicitly reveal the leaf afterward.
+- Refresh was attempted through `getActiveViewOfType(BrainConsoleView)`, which can miss a newly-created right-sidebar view if it is not the active view yet.
+- The ribbon callback used `void this.openConsole()`, so activation errors were not surfaced to the user.
+
+Fix:
+
+- Reuse an existing Brain Console leaf when present.
+- Create a right-leaf or fallback tab leaf when absent.
+- Call `workspace.revealLeaf(leaf)` after setting view state.
+- Refresh the actual leaf view instead of relying on active-view lookup.
+- Surface activation failures through `console.error(...)` and an Obsidian `Notice`.
+- Add a visible fallback shell if the first refresh fails, including build marker, Brain Core URL, and retry button.
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian build` passed.
+- `npm run --prefix projects/brain-console-obsidian package` passed.
+- `npm run --prefix projects/brain-core ci` passed, 446 tests.
+- Active vault install verified at `/Users/Office/mind/.obsidian/plugins/brain-console/` with build marker `brain-console-open-fix-2026-05-19-01`.
+
+User verification:
+
+- Fully restart Obsidian.
+- Re-enable the Brain Console plugin if needed.
+- Click the Brain Console ribbon icon.
+- The right sidebar should reveal/open the Brain Console view, or a visible fallback shell should appear with the build marker and retry button.
