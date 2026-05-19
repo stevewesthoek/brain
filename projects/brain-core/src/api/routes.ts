@@ -85,6 +85,10 @@ import { readVideoProviderApprovalPacketConsoleReviewSummary, readVideoProviderA
 import { readVideoProviderPlanningSurfaceIndex } from '../adapters/video-orchestrator-provider-planning-surface-index.js';
 import { readVideoProviderRequestWrapperScaffold } from '../adapters/video-orchestrator-provider-request-wrapper-scaffold.js';
 import { readVideoProviderWrapperValidationHarness } from '../adapters/video-orchestrator-provider-wrapper-validation-harness.js';
+import { readVideoCredentialReferenceScaffold } from '../adapters/video-orchestrator-credential-reference-scaffold.js';
+import { readVideoProviderRequestEnvelopeScaffold } from '../adapters/video-orchestrator-provider-request-envelope-scaffold.js';
+import { readVideoProviderResponseEnvelopeScaffold } from '../adapters/video-orchestrator-provider-response-envelope-scaffold.js';
+import { readVideoProviderScaffoldingIntegrationSummary } from '../adapters/video-orchestrator-provider-scaffolding-integration-summary.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -374,6 +378,18 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-wrapper-validation-harness':
       sendJson(response, 200, readVideoProviderWrapperValidationHarness());
+      return;
+    case '/video-orchestrator/credential-reference-scaffold':
+      sendJson(response, 200, readVideoCredentialReferenceScaffold());
+      return;
+    case '/video-orchestrator/provider-request-envelope-scaffold':
+      sendJson(response, 200, readVideoProviderRequestEnvelopeScaffold());
+      return;
+    case '/video-orchestrator/provider-response-envelope-scaffold':
+      sendJson(response, 200, readVideoProviderResponseEnvelopeScaffold());
+      return;
+    case '/video-orchestrator/provider-scaffolding-integration-summary':
+      sendJson(response, 200, readVideoProviderScaffoldingIntegrationSummary());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());

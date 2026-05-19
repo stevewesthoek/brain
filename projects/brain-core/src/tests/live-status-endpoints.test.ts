@@ -5,6 +5,10 @@ import { join } from 'node:path';
 import { routeRequest } from '../api/routes.js';
 import { readVideoProviderRequestWrapperScaffold, validateVideoProviderRequestWrapperScaffoldRequest } from '../adapters/video-orchestrator-provider-request-wrapper-scaffold.js';
 import { readVideoProviderWrapperValidationHarness, runVideoProviderWrapperValidationHarness } from '../adapters/video-orchestrator-provider-wrapper-validation-harness.js';
+import { readVideoCredentialReferenceScaffold } from '../adapters/video-orchestrator-credential-reference-scaffold.js';
+import { readVideoProviderRequestEnvelopeScaffold } from '../adapters/video-orchestrator-provider-request-envelope-scaffold.js';
+import { readVideoProviderResponseEnvelopeScaffold } from '../adapters/video-orchestrator-provider-response-envelope-scaffold.js';
+import { readVideoProviderScaffoldingIntegrationSummary } from '../adapters/video-orchestrator-provider-scaffolding-integration-summary.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 class MockResponse implements ServerResponse {
@@ -7579,5 +7583,322 @@ test('provider wrapper validation harness source file does not include unsafe ex
 
   forbiddenPatterns.forEach((pattern) => {
     assert.equal(source.includes(pattern), false, `expected source not to include ${pattern}`);
+  });
+});
+
+test('GET /video-orchestrator/credential-reference-scaffold returns scaffolded-disabled status with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/credential-reference-scaffold' });
+  const body = JSON.parse(response.body) as {
+    scaffold: {
+      id: string;
+      status: string;
+      phase: string;
+      implementationApprovedScope: string;
+      providerClasses: string[];
+      referenceShape: Record<string, string>;
+      validationRules: string[];
+      disabledCapabilities: Array<{ capability: string; enabled: boolean }>;
+      summary: {
+        providerClassCount: number;
+        referenceShapeCount: number;
+        credentialAccessCount: number;
+        credentialPersistedCount: number;
+        envReadCount: number;
+        keychainAccessCount: number;
+      };
+      safety: Record<string, boolean>;
+      blockers: string[];
+      nextSafeStep: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.scaffold.status, 'scaffolded-disabled');
+  assert.equal(body.scaffold.phase, 'credential-reference-scaffolding-only');
+  assert.equal(body.scaffold.implementationApprovedScope, 'wrapper-scaffolding-only');
+  assert.equal(body.scaffold.summary.providerClassCount, 3);
+  assert.equal(body.scaffold.summary.referenceShapeCount, 1);
+  assert.equal(body.scaffold.summary.credentialAccessCount, 0);
+  assert.equal(body.scaffold.summary.credentialPersistedCount, 0);
+  assert.equal(body.scaffold.summary.envReadCount, 0);
+  assert.equal(body.scaffold.summary.keychainAccessCount, 0);
+  assert.ok(body.scaffold.providerClasses.includes('image-generation'));
+  assert.ok(body.scaffold.providerClasses.includes('layout-rendering'));
+  assert.ok(body.scaffold.providerClasses.includes('brand-compliance'));
+  assert.ok(body.scaffold.validationRules.includes('providerClass must be supported'));
+  assert.ok(body.scaffold.validationRules.includes('credentialRefId must be opaque'));
+  assert.ok(body.scaffold.validationRules.includes('no raw credential values allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no API keys allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no OAuth tokens allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no private keys allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no .env values allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no filesystem credential paths allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no Mind vault paths allowed'));
+  assert.ok(body.scaffold.validationRules.includes('no STB artifact paths allowed'));
+  assert.ok(body.scaffold.validationRules.includes('credential access is blocked in this scaffold phase'));
+  assert.equal(body.scaffold.safety.readOnlyStatusEndpoint, true);
+  assert.equal(body.scaffold.safety.credentialReferenceScaffoldingOnly, true);
+  assert.equal(body.scaffold.safety.credentialAccessEnabled, false);
+  assert.equal(body.scaffold.safety.credentialPersistenceEnabled, false);
+  assert.equal(body.scaffold.safety.rawCredentialDisplayEnabled, false);
+  assert.equal(body.scaffold.safety.envReadEnabled, false);
+  assert.equal(body.scaffold.safety.keychainAccessEnabled, false);
+  assert.equal(body.scaffold.safety.filesystemCredentialAccessEnabled, false);
+  assert.equal(body.scaffold.safety.providerConfigured, false);
+  assert.equal(body.scaffold.safety.providerCallsEnabled, false);
+  assert.equal(body.scaffold.safety.networkAccessEnabled, false);
+  assert.equal(body.scaffold.safety.writesFiles, false);
+  assert.equal(body.scaffold.safety.publishesContent, false);
+  assert.equal(body.scaffold.safety.writesToMind, false);
+  assert.equal(body.scaffold.safety.executesVideo, false);
+  assert.equal(body.scaffold.safety.postRoutesAdded, false);
+  assert.equal(body.scaffold.safety.brainConsoleMutationControlsEnabled, false);
+});
+
+test('POST /video-orchestrator/credential-reference-scaffold is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/credential-reference-scaffold' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-request-envelope-scaffold returns scaffolded-disabled status with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-request-envelope-scaffold' });
+  const body = JSON.parse(response.body) as {
+    envelope: {
+      id: string;
+      status: string;
+      phase: string;
+      envelopeShape: Record<string, string>;
+      requiredReferences: string[];
+      validationRules: string[];
+      disabledCapabilities: Array<{ capability: string; enabled: boolean }>;
+      summary: {
+        envelopeShapeCount: number;
+        supportedProviderClassCount: number;
+        sendableEnvelopeCount: number;
+        providerCallCount: number;
+        networkAccessCount: number;
+        credentialAccessCount: number;
+      };
+      safety: Record<string, boolean>;
+      blockers: string[];
+      nextSafeStep: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.envelope.status, 'scaffolded-disabled');
+  assert.equal(body.envelope.phase, 'provider-request-envelope-scaffolding-only');
+  assert.equal(body.envelope.summary.envelopeShapeCount, 1);
+  assert.equal(body.envelope.summary.supportedProviderClassCount, 3);
+  assert.equal(body.envelope.summary.sendableEnvelopeCount, 0);
+  assert.equal(body.envelope.summary.providerCallCount, 0);
+  assert.equal(body.envelope.summary.networkAccessCount, 0);
+  assert.equal(body.envelope.summary.credentialAccessCount, 0);
+  assert.ok(body.envelope.requiredReferences.includes('provider-request-wrapper-scaffold'));
+  assert.ok(body.envelope.requiredReferences.includes('provider-wrapper-validation-harness'));
+  assert.ok(body.envelope.requiredReferences.includes('credential-reference-scaffold'));
+  assert.ok(body.envelope.requiredReferences.includes('design-provider-prompt-review-policy-plan'));
+  assert.ok(body.envelope.requiredReferences.includes('prompt-review-ux-implementation-plan'));
+  assert.ok(body.envelope.requiredReferences.includes('artifact-sandbox-provider-handoff-plan'));
+  assert.ok(body.envelope.requiredReferences.includes('provider-output-redaction-policy-plan'));
+  assert.ok(body.envelope.requiredReferences.includes('design-provider-compliance-checklist-plan'));
+  assert.ok(body.envelope.requiredReferences.includes('provider-audit-persistence-boundary-plan'));
+  assert.equal(body.envelope.safety.readOnlyStatusEndpoint, true);
+  assert.equal(body.envelope.safety.requestEnvelopeScaffoldingOnly, true);
+  assert.equal(body.envelope.safety.sendableEnvelopeImplemented, false);
+  assert.equal(body.envelope.safety.providerConfigured, false);
+  assert.equal(body.envelope.safety.providerCallsEnabled, false);
+  assert.equal(body.envelope.safety.credentialAccessEnabled, false);
+  assert.equal(body.envelope.safety.networkAccessEnabled, false);
+  assert.equal(body.envelope.safety.promptGenerationEnabled, false);
+  assert.equal(body.envelope.safety.imageGenerationEnabled, false);
+  assert.equal(body.envelope.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.envelope.safety.auditPersistenceEnabled, false);
+  assert.equal(body.envelope.safety.filesystemAccessEnabled, false);
+  assert.equal(body.envelope.safety.writesFiles, false);
+  assert.equal(body.envelope.safety.publishesContent, false);
+  assert.equal(body.envelope.safety.writesToMind, false);
+  assert.equal(body.envelope.safety.executesVideo, false);
+  assert.equal(body.envelope.safety.postRoutesAdded, false);
+  assert.equal(body.envelope.safety.brainConsoleMutationControlsEnabled, false);
+});
+
+test('POST /video-orchestrator/provider-request-envelope-scaffold is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-request-envelope-scaffold' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-response-envelope-scaffold returns scaffolded-disabled status with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-response-envelope-scaffold' });
+  const body = JSON.parse(response.body) as {
+    envelope: {
+      id: string;
+      status: string;
+      phase: string;
+      responseEnvelopeShape: Record<string, string | boolean>;
+      allowedFields: string[];
+      prohibitedFields: string[];
+      validationRules: string[];
+      disabledCapabilities: Array<{ capability: string; enabled: boolean }>;
+      summary: {
+        responseEnvelopeShapeCount: number;
+        rawOutputAccessCount: number;
+        redactedManifestCreatedCount: number;
+        artifactPersistedCount: number;
+        auditPersistedCount: number;
+        providerCallCount: number;
+      };
+      safety: Record<string, boolean>;
+      blockers: string[];
+      nextSafeStep: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.envelope.status, 'scaffolded-disabled');
+  assert.equal(body.envelope.phase, 'provider-response-envelope-scaffolding-only');
+  assert.equal(body.envelope.summary.responseEnvelopeShapeCount, 1);
+  assert.equal(body.envelope.summary.rawOutputAccessCount, 0);
+  assert.equal(body.envelope.summary.redactedManifestCreatedCount, 0);
+  assert.equal(body.envelope.summary.artifactPersistedCount, 0);
+  assert.equal(body.envelope.summary.auditPersistedCount, 0);
+  assert.equal(body.envelope.summary.providerCallCount, 0);
+  assert.ok(body.envelope.prohibitedFields.includes('raw provider response'));
+  assert.ok(body.envelope.prohibitedFields.includes('raw generated files'));
+  assert.ok(body.envelope.prohibitedFields.includes('raw prompt text'));
+  assert.ok(body.envelope.prohibitedFields.includes('raw credentials'));
+  assert.ok(body.envelope.prohibitedFields.includes('API keys'));
+  assert.ok(body.envelope.prohibitedFields.includes('OAuth tokens'));
+  assert.ok(body.envelope.prohibitedFields.includes('private keys'));
+  assert.ok(body.envelope.prohibitedFields.includes('.env values'));
+  assert.ok(body.envelope.prohibitedFields.includes('filesystem paths'));
+  assert.ok(body.envelope.prohibitedFields.includes('Mind vault paths'));
+  assert.ok(body.envelope.prohibitedFields.includes('STB artifact paths'));
+  assert.ok(body.envelope.prohibitedFields.includes('platform upload payloads'));
+  assert.ok(body.envelope.prohibitedFields.includes('unredacted logs'));
+  assert.equal(body.envelope.safety.readOnlyStatusEndpoint, true);
+  assert.equal(body.envelope.safety.responseEnvelopeScaffoldingOnly, true);
+  assert.equal(body.envelope.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.envelope.safety.redactedManifestCreationEnabled, false);
+  assert.equal(body.envelope.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.envelope.safety.auditPersistenceEnabled, false);
+  assert.equal(body.envelope.safety.providerConfigured, false);
+  assert.equal(body.envelope.safety.providerCallsEnabled, false);
+  assert.equal(body.envelope.safety.credentialAccessEnabled, false);
+  assert.equal(body.envelope.safety.networkAccessEnabled, false);
+  assert.equal(body.envelope.safety.filesystemAccessEnabled, false);
+  assert.equal(body.envelope.safety.writesFiles, false);
+  assert.equal(body.envelope.safety.publishesContent, false);
+  assert.equal(body.envelope.safety.writesToMind, false);
+  assert.equal(body.envelope.safety.executesVideo, false);
+  assert.equal(body.envelope.safety.postRoutesAdded, false);
+  assert.equal(body.envelope.safety.brainConsoleMutationControlsEnabled, false);
+});
+
+test('POST /video-orchestrator/provider-response-envelope-scaffold is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-response-envelope-scaffold' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-scaffolding-integration-summary returns scaffolded-disabled status with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-scaffolding-integration-summary' });
+  const body = JSON.parse(response.body) as {
+    summary: {
+      id: string;
+      status: string;
+      phase: string;
+      scaffoldCount: number;
+      implementedScaffoldRefs: string[];
+      blockedCapabilities: string[];
+      nextSafeImplementationSlices: string[];
+      summary: {
+        scaffoldCount: number;
+        providerCallCount: number;
+        credentialAccessCount: number;
+        networkAccessCount: number;
+        postRouteCount: number;
+        mutationControlCount: number;
+      };
+      safety: Record<string, boolean>;
+      blockers: string[];
+      nextSafeStep: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.summary.status, 'scaffolded-disabled');
+  assert.equal(body.summary.phase, 'provider-scaffolding-integration-summary');
+  assert.equal(body.summary.scaffoldCount, 5);
+  assert.equal(body.summary.summary.scaffoldCount, 5);
+  assert.equal(body.summary.summary.providerCallCount, 0);
+  assert.equal(body.summary.summary.credentialAccessCount, 0);
+  assert.equal(body.summary.summary.networkAccessCount, 0);
+  assert.equal(body.summary.summary.postRouteCount, 0);
+  assert.equal(body.summary.summary.mutationControlCount, 0);
+  assert.ok(body.summary.implementedScaffoldRefs.includes('provider-request-wrapper-scaffold'));
+  assert.ok(body.summary.implementedScaffoldRefs.includes('provider-wrapper-validation-harness'));
+  assert.ok(body.summary.implementedScaffoldRefs.includes('credential-reference-scaffold'));
+  assert.ok(body.summary.implementedScaffoldRefs.includes('provider-request-envelope-scaffold'));
+  assert.ok(body.summary.implementedScaffoldRefs.includes('provider-response-envelope-scaffold'));
+  assert.ok(body.summary.blockedCapabilities.includes('provider calls'));
+  assert.ok(body.summary.blockedCapabilities.includes('credentials'));
+  assert.ok(body.summary.blockedCapabilities.includes('env reads'));
+  assert.ok(body.summary.blockedCapabilities.includes('network access'));
+  assert.ok(body.summary.blockedCapabilities.includes('prompt generation'));
+  assert.ok(body.summary.blockedCapabilities.includes('image generation'));
+  assert.ok(body.summary.blockedCapabilities.includes('raw output access'));
+  assert.ok(body.summary.blockedCapabilities.includes('artifact writes'));
+  assert.ok(body.summary.blockedCapabilities.includes('audit persistence'));
+  assert.ok(body.summary.blockedCapabilities.includes('POST routes'));
+  assert.ok(body.summary.blockedCapabilities.includes('Brain Console mutation controls'));
+  assert.ok(body.summary.blockedCapabilities.includes('publishing'));
+  assert.ok(body.summary.blockedCapabilities.includes('decommissioning'));
+  assert.equal(body.summary.safety.readOnlyStatusEndpoint, true);
+  assert.equal(body.summary.safety.integrationSummaryOnly, true);
+  assert.equal(body.summary.safety.providerConfigured, false);
+  assert.equal(body.summary.safety.providerCallsEnabled, false);
+  assert.equal(body.summary.safety.credentialAccessEnabled, false);
+  assert.equal(body.summary.safety.envReadEnabled, false);
+  assert.equal(body.summary.safety.networkAccessEnabled, false);
+  assert.equal(body.summary.safety.promptGenerationEnabled, false);
+  assert.equal(body.summary.safety.imageGenerationEnabled, false);
+  assert.equal(body.summary.safety.rawProviderOutputAccessEnabled, false);
+  assert.equal(body.summary.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.summary.safety.auditPersistenceEnabled, false);
+  assert.equal(body.summary.safety.filesystemAccessEnabled, false);
+  assert.equal(body.summary.safety.writesFiles, false);
+  assert.equal(body.summary.safety.publishesContent, false);
+  assert.equal(body.summary.safety.writesToMind, false);
+  assert.equal(body.summary.safety.executesVideo, false);
+  assert.equal(body.summary.safety.postRoutesAdded, false);
+  assert.equal(body.summary.safety.brainConsoleMutationControlsEnabled, false);
+});
+
+test('POST /video-orchestrator/provider-scaffolding-integration-summary is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-scaffolding-integration-summary' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('direct scaffold readers return disabled scaffolds', () => {
+  assert.equal(readVideoCredentialReferenceScaffold().scaffold.status, 'scaffolded-disabled');
+  assert.equal(readVideoProviderRequestEnvelopeScaffold().envelope.status, 'scaffolded-disabled');
+  assert.equal(readVideoProviderResponseEnvelopeScaffold().envelope.status, 'scaffolded-disabled');
+  assert.equal(readVideoProviderScaffoldingIntegrationSummary().summary.status, 'scaffolded-disabled');
+});
+
+test('new provider scaffolding modules do not include unsafe execution primitives', () => {
+  const files = [
+    'video-orchestrator-credential-reference-scaffold.ts',
+    'video-orchestrator-provider-request-envelope-scaffold.ts',
+    'video-orchestrator-provider-response-envelope-scaffold.ts',
+    'video-orchestrator-provider-scaffolding-integration-summary.ts',
+  ];
+  const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
+
+  files.forEach((file) => {
+    const source = readFileSync(join(process.cwd(), 'src', 'adapters', file), 'utf8');
+    forbiddenPatterns.forEach((pattern) => {
+      assert.equal(source.includes(pattern), false, `expected ${file} not to include ${pattern}`);
+    });
   });
 });

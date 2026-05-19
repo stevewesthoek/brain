@@ -5612,6 +5612,100 @@ export interface BrainCoreVideoProviderPlanningSurfaceIndexResponse {
   };
 }
 
+export interface BrainCoreVideoCredentialReferenceScaffoldResponse {
+  scaffold: {
+    id: string;
+    status: string;
+    phase: string;
+    implementationApprovedScope: string;
+    providerClasses: Array<'image-generation' | 'layout-rendering' | 'brand-compliance'>;
+    referenceShape: Record<string, string>;
+    validationRules: string[];
+    disabledCapabilities: Array<{ capability: string; enabled: false }>;
+    summary: {
+      providerClassCount: number;
+      referenceShapeCount: number;
+      credentialAccessCount: number;
+      credentialPersistedCount: number;
+      envReadCount: number;
+      keychainAccessCount: number;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderRequestEnvelopeScaffoldResponse {
+  envelope: {
+    id: string;
+    status: string;
+    phase: string;
+    envelopeShape: Record<string, string>;
+    requiredReferences: string[];
+    validationRules: string[];
+    disabledCapabilities: Array<{ capability: string; enabled: false }>;
+    summary: {
+      envelopeShapeCount: number;
+      supportedProviderClassCount: number;
+      sendableEnvelopeCount: number;
+      providerCallCount: number;
+      networkAccessCount: number;
+      credentialAccessCount: number;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderResponseEnvelopeScaffoldResponse {
+  envelope: {
+    id: string;
+    status: string;
+    phase: string;
+    responseEnvelopeShape: Record<string, string | boolean>;
+    allowedFields: string[];
+    prohibitedFields: string[];
+    validationRules: string[];
+    disabledCapabilities: Array<{ capability: string; enabled: false }>;
+    summary: {
+      responseEnvelopeShapeCount: number;
+      rawOutputAccessCount: number;
+      redactedManifestCreatedCount: number;
+      artifactPersistedCount: number;
+      auditPersistedCount: number;
+      providerCallCount: number;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderScaffoldingIntegrationSummaryResponse {
+  summary: {
+    id: string;
+    status: string;
+    phase: string;
+    scaffoldCount: number;
+    implementedScaffoldRefs: string[];
+    blockedCapabilities: string[];
+    nextSafeImplementationSlices: string[];
+    summary: {
+      scaffoldCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+      networkAccessCount: number;
+      postRouteCount: number;
+      mutationControlCount: number;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
 export interface BrainCoreVideoProviderWrapperValidationHarnessResponse {
   harness: {
     id: string;
@@ -5863,4 +5957,28 @@ export async function readBrainCoreVideoOrchestratorProviderWrapperValidationHar
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderWrapperValidationHarnessResponse>> {
   return fetchJson<BrainCoreVideoProviderWrapperValidationHarnessResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-wrapper-validation-harness');
+}
+
+export async function readBrainCoreVideoOrchestratorCredentialReferenceScaffold(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoCredentialReferenceScaffoldResponse>> {
+  return fetchJson<BrainCoreVideoCredentialReferenceScaffoldResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/credential-reference-scaffold');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderRequestEnvelopeScaffold(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderRequestEnvelopeScaffoldResponse>> {
+  return fetchJson<BrainCoreVideoProviderRequestEnvelopeScaffoldResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-request-envelope-scaffold');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderResponseEnvelopeScaffold(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderResponseEnvelopeScaffoldResponse>> {
+  return fetchJson<BrainCoreVideoProviderResponseEnvelopeScaffoldResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-response-envelope-scaffold');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderScaffoldingIntegrationSummary(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderScaffoldingIntegrationSummaryResponse>> {
+  return fetchJson<BrainCoreVideoProviderScaffoldingIntegrationSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-scaffolding-integration-summary');
 }

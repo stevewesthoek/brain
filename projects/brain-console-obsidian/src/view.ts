@@ -75,8 +75,12 @@ import {
   readBrainCoreVideoOrchestratorProviderImplementationApprovalPacket,
   readBrainCoreVideoOrchestratorProviderApprovalPacketConsoleReviewSummary,
   readBrainCoreVideoOrchestratorProviderPlanningSurfaceIndex,
+  readBrainCoreVideoOrchestratorCredentialReferenceScaffold,
   readBrainCoreVideoOrchestratorProviderRequestWrapperScaffold,
   readBrainCoreVideoOrchestratorProviderWrapperValidationHarness,
+  readBrainCoreVideoOrchestratorProviderRequestEnvelopeScaffold,
+  readBrainCoreVideoOrchestratorProviderResponseEnvelopeScaffold,
+  readBrainCoreVideoOrchestratorProviderScaffoldingIntegrationSummary,
   readBrainCoreStbVideoMigrationStatus,
   readBrainCoreStbVideoParityMatrix,
   readBrainCoreStbVideoDualRunStatus,
@@ -195,8 +199,12 @@ import {
   type BrainCoreVideoProviderImplementationApprovalPacketResponse,
   type BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse,
   type BrainCoreVideoProviderPlanningSurfaceIndexResponse,
+  type BrainCoreVideoCredentialReferenceScaffoldResponse,
   type BrainCoreVideoProviderRequestWrapperScaffoldResponse,
   type BrainCoreVideoProviderWrapperValidationHarnessResponse,
+  type BrainCoreVideoProviderRequestEnvelopeScaffoldResponse,
+  type BrainCoreVideoProviderResponseEnvelopeScaffoldResponse,
+  type BrainCoreVideoProviderScaffoldingIntegrationSummaryResponse,
   type BrainCoreStbVideoMigrationStatus,
   type BrainCoreStbVideoParityMatrix,
   type BrainCoreStbVideoDualRunStatus,
@@ -314,8 +322,12 @@ export interface BrainConsoleViewState {
   videoProviderImplementationApprovalPacket?: BrainCoreVideoProviderImplementationApprovalPacketResponse;
   videoProviderApprovalPacketConsoleReviewSummary?: BrainCoreVideoProviderApprovalPacketConsoleReviewSummaryResponse;
   videoProviderPlanningSurfaceIndex?: BrainCoreVideoProviderPlanningSurfaceIndexResponse;
+  videoCredentialReferenceScaffold?: BrainCoreVideoCredentialReferenceScaffoldResponse;
   videoProviderRequestWrapperScaffold?: BrainCoreVideoProviderRequestWrapperScaffoldResponse;
   videoProviderWrapperValidationHarness?: BrainCoreVideoProviderWrapperValidationHarnessResponse;
+  videoProviderRequestEnvelopeScaffold?: BrainCoreVideoProviderRequestEnvelopeScaffoldResponse;
+  videoProviderResponseEnvelopeScaffold?: BrainCoreVideoProviderResponseEnvelopeScaffoldResponse;
+  videoProviderScaffoldingIntegrationSummary?: BrainCoreVideoProviderScaffoldingIntegrationSummaryResponse;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   stbVideoParityMatrix?: BrainCoreStbVideoParityMatrix;
   stbVideoDualRunStatus?: BrainCoreStbVideoDualRunStatus;
@@ -432,8 +444,12 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVideoOrchestratorProviderAuditPersistenceBoundaryPlan(baseUrl),
     readBrainCoreVideoOrchestratorProviderWrapperSecurityReviewPlan(baseUrl),
     readBrainCoreVideoOrchestratorProviderImplementationPhaseStartGate(baseUrl),
+    readBrainCoreVideoOrchestratorCredentialReferenceScaffold(baseUrl),
     readBrainCoreVideoOrchestratorProviderRequestWrapperScaffold(baseUrl),
     readBrainCoreVideoOrchestratorProviderWrapperValidationHarness(baseUrl),
+    readBrainCoreVideoOrchestratorProviderRequestEnvelopeScaffold(baseUrl),
+    readBrainCoreVideoOrchestratorProviderResponseEnvelopeScaffold(baseUrl),
+    readBrainCoreVideoOrchestratorProviderScaffoldingIntegrationSummary(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
     readBrainCoreStbVideoParityMatrix(baseUrl),
     readBrainCoreStbVideoDualRunStatus(baseUrl),
@@ -468,7 +484,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreRecoveryItems(baseUrl),
   ]);
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = results.map(r => r.status === 'fulfilled' ? r.value : { value: undefined, error: r.reason }) as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = results.map(r => r.status === 'fulfilled' ? r.value : { value: undefined, error: r.reason }) as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -583,8 +599,12 @@ export async function loadBrainConsoleViewState(
     videoProviderImplementationApprovalPacket: videoProviderImplementationApprovalPacket.value,
     videoProviderApprovalPacketConsoleReviewSummary: videoProviderApprovalPacketConsoleReviewSummary.value,
     videoProviderPlanningSurfaceIndex: videoProviderPlanningSurfaceIndex.value,
+    videoCredentialReferenceScaffold: videoCredentialReferenceScaffold.value,
     videoProviderRequestWrapperScaffold: videoProviderRequestWrapperScaffold.value,
     videoProviderWrapperValidationHarness: videoProviderWrapperValidationHarness.value,
+    videoProviderRequestEnvelopeScaffold: videoProviderRequestEnvelopeScaffold.value,
+    videoProviderResponseEnvelopeScaffold: videoProviderResponseEnvelopeScaffold.value,
+    videoProviderScaffoldingIntegrationSummary: videoProviderScaffoldingIntegrationSummary.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     stbVideoParityMatrix: stbVideoParityMatrix.value,
     stbVideoDualRunStatus: stbVideoDualRunStatus.value,
@@ -824,8 +844,12 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
   renderCard(grid, 'Provider Implementation Approval Packet', renderVideoProviderImplementationApprovalPacketCard(state, snapshot));
   renderCard(grid, 'Provider Approval Packet Review', renderVideoProviderApprovalPacketConsoleReviewSummaryCard(state, snapshot));
   renderCard(grid, 'Provider Planning Surface Index', renderVideoProviderPlanningSurfaceIndexCard(state, snapshot));
+  renderCard(grid, 'Credential Reference Scaffold', renderVideoCredentialReferenceScaffoldCard(state, snapshot));
   renderCard(grid, 'Provider Request Wrapper Scaffold', renderVideoProviderRequestWrapperScaffoldCard(state, snapshot));
   renderCard(grid, 'Provider Wrapper Validation Harness', renderVideoProviderWrapperValidationHarnessCard(state, snapshot));
+  renderCard(grid, 'Provider Request Envelope Scaffold', renderVideoProviderRequestEnvelopeScaffoldCard(state, snapshot));
+  renderCard(grid, 'Provider Response Envelope Scaffold', renderVideoProviderResponseEnvelopeScaffoldCard(state, snapshot));
+  renderCard(grid, 'Provider Scaffolding Integration', renderVideoProviderScaffoldingIntegrationSummaryCard(state, snapshot));
   renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
   renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Production Gate', renderProductionGateCard(state, snapshot));
@@ -2150,6 +2174,89 @@ function renderVideoProviderWrapperValidationHarnessCard(state: BrainConsoleView
   });
 
   container.appendChild(renderSafetyLabel('Harness only · No provider calls · No credentials · No network'));
+  return container;
+}
+
+function renderVideoCredentialReferenceScaffoldCard(state: BrainConsoleViewState, _snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const data = state.videoCredentialReferenceScaffold;
+  if (!data) return renderEmptyState('Credential reference scaffold unavailable', 'Brain Core /video-orchestrator/credential-reference-scaffold did not return a response.');
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: data.scaffold.status },
+    { label: 'Provider classes', value: String(data.scaffold.summary.providerClassCount) },
+    { label: 'Credential access', value: String(data.scaffold.summary.credentialAccessCount) },
+    { label: 'Credentials persisted', value: String(data.scaffold.summary.credentialPersistedCount) },
+    { label: 'Env reads', value: String(data.scaffold.summary.envReadCount) },
+  ]);
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  data.scaffold.providerClasses.slice(0, 3).forEach((providerClass) => {
+    list.createEl('div', { cls: 'brain-console__list-note', text: `${providerClass}: scaffolded-disabled` });
+  });
+  container.appendChild(renderSafetyLabel('Scaffold only · No credential access · No env reads · No secrets'));
+  return container;
+}
+
+function renderVideoProviderRequestEnvelopeScaffoldCard(state: BrainConsoleViewState, _snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const data = state.videoProviderRequestEnvelopeScaffold;
+  if (!data) return renderEmptyState('Provider request envelope scaffold unavailable', 'Brain Core /video-orchestrator/provider-request-envelope-scaffold did not return a response.');
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: data.envelope.status },
+    { label: 'Envelope shapes', value: String(data.envelope.summary.envelopeShapeCount) },
+    { label: 'Sendable envelopes', value: String(data.envelope.summary.sendableEnvelopeCount) },
+    { label: 'Provider calls', value: String(data.envelope.summary.providerCallCount) },
+    { label: 'Network access', value: String(data.envelope.summary.networkAccessCount) },
+    { label: 'Credential access', value: String(data.envelope.summary.credentialAccessCount) },
+  ]);
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  data.envelope.requiredReferences.slice(0, 3).forEach((ref) => {
+    list.createEl('div', { cls: 'brain-console__list-note', text: ref });
+  });
+  container.appendChild(renderSafetyLabel('Scaffold only · Not sendable · No network · No provider calls'));
+  return container;
+}
+
+function renderVideoProviderResponseEnvelopeScaffoldCard(state: BrainConsoleViewState, _snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const data = state.videoProviderResponseEnvelopeScaffold;
+  if (!data) return renderEmptyState('Provider response envelope scaffold unavailable', 'Brain Core /video-orchestrator/provider-response-envelope-scaffold did not return a response.');
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: data.envelope.status },
+    { label: 'Response shapes', value: String(data.envelope.summary.responseEnvelopeShapeCount) },
+    { label: 'Raw output access', value: String(data.envelope.summary.rawOutputAccessCount) },
+    { label: 'Manifests created', value: String(data.envelope.summary.redactedManifestCreatedCount) },
+    { label: 'Artifacts persisted', value: String(data.envelope.summary.artifactPersistedCount) },
+    { label: 'Audit persisted', value: String(data.envelope.summary.auditPersistedCount) },
+  ]);
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  data.envelope.prohibitedFields.slice(0, 3).forEach((field) => {
+    list.createEl('div', { cls: 'brain-console__list-note', text: field });
+  });
+  container.appendChild(renderSafetyLabel('Scaffold only · No raw output · No artifacts · No audit writes'));
+  return container;
+}
+
+function renderVideoProviderScaffoldingIntegrationSummaryCard(state: BrainConsoleViewState, _snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const data = state.videoProviderScaffoldingIntegrationSummary;
+  if (!data) return renderEmptyState('Provider scaffolding integration summary unavailable', 'Brain Core /video-orchestrator/provider-scaffolding-integration-summary did not return a response.');
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: data.summary.status },
+    { label: 'Scaffolds', value: String(data.summary.scaffoldCount) },
+    { label: 'Provider calls', value: String(data.summary.summary.providerCallCount) },
+    { label: 'Credentials', value: String(data.summary.summary.credentialAccessCount) },
+    { label: 'Network', value: String(data.summary.summary.networkAccessCount) },
+    { label: 'Mutation controls', value: String(data.summary.summary.mutationControlCount) },
+  ]);
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  data.summary.implementedScaffoldRefs.slice(0, 3).forEach((ref) => {
+    list.createEl('div', { cls: 'brain-console__list-note', text: ref });
+  });
+  container.appendChild(renderSafetyLabel('Read-only · Scaffolds only · No provider calls · No controls'));
   return container;
 }
 

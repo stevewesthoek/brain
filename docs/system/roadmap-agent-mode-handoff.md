@@ -827,6 +827,71 @@ Next safe task suggestion:
 
 ---
 
+Continuation update — Provider scaffolding batch
+
+User approval scope:
+
+- `Provider Request Wrapper Scaffolding Only`
+
+Exact interpretation of approval:
+
+- Approval permits inert scaffold code only.
+- Approval does not permit provider calls, credentials, env reads, network access, prompt/image generation, artifact writes, audit persistence, POST routes, or Brain Console mutation controls.
+
+Phases:
+
+- Phase A: Credential Reference Type Scaffolding Only
+- Phase B: Provider Request Envelope Scaffolding Only
+- Phase C: Provider Response Envelope Scaffolding Only
+- Phase D: Provider Scaffolding Integration Summary
+
+Endpoints:
+
+- `GET /video-orchestrator/credential-reference-scaffold`
+- `GET /video-orchestrator/provider-request-envelope-scaffold`
+- `GET /video-orchestrator/provider-response-envelope-scaffold`
+- `GET /video-orchestrator/provider-scaffolding-integration-summary`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-credential-reference-scaffold.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-provider-request-envelope-scaffold.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-provider-response-envelope-scaffold.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-provider-scaffolding-integration-summary.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only status endpoints only.
+- Scaffold-only and inert.
+- No provider calls.
+- No credential access.
+- No env reads.
+- No network access.
+- No prompt generation.
+- No image generation.
+- No artifact writes.
+- No audit persistence.
+- No POST routes.
+- No Brain Console mutation controls.
+
+Validation evidence:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: pending in this handoff.
+- Safety scan: pending in this handoff.
+
+Next safe task suggestion:
+
+- Provider request wrapper inert class shell, still no provider calls.
+
+---
+
 Continuation update — Provider wrapper validation harness only
 
 User approval scope:
