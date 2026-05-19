@@ -6338,3 +6338,141 @@ export async function readBrainCoreVideoOrchestratorProviderDisabledOrchestratio
 ): Promise<HttpResult<BrainCoreVideoProviderDisabledOrchestrationIntegrationSummaryResponse>> {
   return fetchJson<BrainCoreVideoProviderDisabledOrchestrationIntegrationSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-disabled-orchestration-integration-summary');
 }
+
+export interface BrainCoreVideoProviderBlockedActionRecorderSkeletonResponse {
+  skeleton: {
+    id: string;
+    status: 'scaffolded-disabled';
+    phase: string;
+    approvedScope: string;
+    fixtureCount: number;
+    recordedFixtureCount: number;
+    persistedRecordCount: 0;
+    appendCount: 0;
+    externalMutationCount: 0;
+    fixtureResults: Array<{
+      actionType: string;
+      providerClass: string;
+      sourcePlanId: string;
+      persisted: false;
+      appended: false;
+      externalMutation: false;
+      providerCallBlocked: true;
+      credentialAccessBlocked: true;
+      networkAccessBlocked: true;
+      executionBlocked: true;
+      redactedSummaryOnly: true;
+    }>;
+    summary: {
+      fixtureCount: number;
+      recordedCount: number;
+      persistedCount: 0;
+      appendCount: 0;
+      mutationCount: 0;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderFixtureOrchestrationTestsSummaryResponse {
+  summary: {
+    id: string;
+    status: 'scaffolded-disabled';
+    phase: string;
+    fixtureTestSuites: string[];
+    totalFixtureCount: number;
+    totalTestCount: number;
+    passedTestCount: 0;
+    failedTestCount: 0;
+    skippedTestCount: number;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+    networkAccessCount: 0;
+    persistenceCount: 0;
+    suites: Array<{
+      name: string;
+      fixtureCount: number;
+      testCount: number;
+      blockedTestCount: number;
+    }>;
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderSafetyRegressionIndexResponse {
+  index: {
+    id: string;
+    status: 'scaffolded-disabled';
+    phase: string;
+    indexedModules: string[];
+    forbiddenPatterns: string[];
+    forbiddenCapabilities: string[];
+    expectedDisabledFlags: string[];
+    summary: {
+      indexedModuleCount: number;
+      forbiddenPatternCount: number;
+      forbiddenCapabilityCount: number;
+      expectedDisabledFlagCount: number;
+      expectedProviderCallCount: 0;
+      expectedCredentialAccessCount: 0;
+      expectedNetworkAccessCount: 0;
+      expectedWriteCount: 0;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export interface BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse {
+  checkpoint: {
+    id: string;
+    status: 'scaffolded-disabled';
+    phase: string;
+    completedScaffoldRefs: string[];
+    remainingBlockedCapabilities: string[];
+    nextSafeImplementationSlices: string[];
+    implementationNotApprovedFor: string[];
+    summary: {
+      completedScaffoldCount: number;
+      remainingBlockedCapabilityCount: number;
+      nextSafeSliceCount: number;
+      providerCallCount: 0;
+      credentialAccessCount: 0;
+      networkAccessCount: 0;
+      persistenceCount: 0;
+      mutationControlCount: 0;
+    };
+    safety: Record<string, boolean>;
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
+export async function readBrainCoreVideoOrchestratorProviderBlockedActionRecorderSkeleton(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderBlockedActionRecorderSkeletonResponse>> {
+  return fetchJson<BrainCoreVideoProviderBlockedActionRecorderSkeletonResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-blocked-action-recorder-skeleton');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderFixtureOrchestrationTestsSummary(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderFixtureOrchestrationTestsSummaryResponse>> {
+  return fetchJson<BrainCoreVideoProviderFixtureOrchestrationTestsSummaryResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-fixture-orchestration-tests-summary');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderSafetyRegressionIndex(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderSafetyRegressionIndexResponse>> {
+  return fetchJson<BrainCoreVideoProviderSafetyRegressionIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-safety-regression-index');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderScaffoldingCompletionCheckpoint(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse>> {
+  return fetchJson<BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-scaffolding-completion-checkpoint');
+}

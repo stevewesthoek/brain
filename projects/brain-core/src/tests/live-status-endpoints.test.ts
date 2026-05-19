@@ -13,6 +13,7 @@ import { readVideoProviderRequestWrapperInertShell } from '../adapters/video-orc
 import { readVideoCredentialReferenceValidator, validateVideoCredentialReference } from '../adapters/video-orchestrator-credential-reference-validator.js';
 import { readVideoProviderResponseRedactionSkeleton, redactVideoProviderResponseFixture } from '../adapters/video-orchestrator-provider-response-redaction-skeleton.js';
 import { readVideoProviderAuditEventTypes } from '../adapters/video-orchestrator-provider-audit-event-types.js';
+import { recordVideoProviderBlockedActionFixture } from '../adapters/video-orchestrator-provider-blocked-action-recorder-skeleton.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 class MockResponse implements ServerResponse {
@@ -8348,6 +8349,103 @@ test('POST /video-orchestrator/provider-disabled-orchestration-integration-summa
   assert.equal(response.statusCode, 404);
 });
 
+test('GET /video-orchestrator/provider-blocked-action-recorder-skeleton returns pure recorder with no persistence', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-blocked-action-recorder-skeleton' });
+  const body = JSON.parse(response.body) as {
+    skeleton: { id: string; status: string; persistedRecordCount: number };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.skeleton.id, 'video-orchestrator-provider-blocked-action-recorder-skeleton');
+  assert.equal(body.skeleton.status, 'scaffolded-disabled');
+  assert.equal(body.skeleton.persistedRecordCount, 0);
+});
+
+test('POST /video-orchestrator/provider-blocked-action-recorder-skeleton is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-blocked-action-recorder-skeleton' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-fixture-orchestration-tests-summary returns fixture summary', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/provider-fixture-orchestration-tests-summary',
+  });
+  const body = JSON.parse(response.body) as { summary: { id: string; status: string } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.summary.id, 'video-orchestrator-provider-fixture-orchestration-tests-summary');
+  assert.equal(body.summary.status, 'scaffolded-disabled');
+});
+
+test('POST /video-orchestrator/provider-fixture-orchestration-tests-summary is not registered and returns 404', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/video-orchestrator/provider-fixture-orchestration-tests-summary',
+  });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-safety-regression-index returns safety index', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/provider-safety-regression-index',
+  });
+  const body = JSON.parse(response.body) as { index: { id: string; status: string; indexedModules: string[] } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.index.id, 'video-orchestrator-provider-safety-regression-index');
+  assert.equal(body.index.status, 'scaffolded-disabled');
+  assert.ok(body.index.indexedModules.length > 0);
+});
+
+test('POST /video-orchestrator/provider-safety-regression-index is not registered and returns 404', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/video-orchestrator/provider-safety-regression-index',
+  });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /video-orchestrator/provider-scaffolding-completion-checkpoint returns completion status', async () => {
+  const response = await exercise({
+    method: 'GET',
+    url: '/video-orchestrator/provider-scaffolding-completion-checkpoint',
+  });
+  const body = JSON.parse(response.body) as {
+    checkpoint: { id: string; status: string; summary: { completedScaffoldCount: number } };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.checkpoint.id, 'video-orchestrator-provider-scaffolding-completion-checkpoint');
+  assert.equal(body.checkpoint.status, 'scaffolded-disabled');
+  assert.equal(body.checkpoint.summary.completedScaffoldCount, 17);
+});
+
+test('POST /video-orchestrator/provider-scaffolding-completion-checkpoint is not registered and returns 404', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/video-orchestrator/provider-scaffolding-completion-checkpoint',
+  });
+  assert.equal(response.statusCode, 404);
+});
+
+test('recordVideoProviderBlockedActionFixture is a pure function returning blocked result', () => {
+  const result = recordVideoProviderBlockedActionFixture({
+    actionType: 'provider_call_blocked',
+    providerClass: 'test-provider',
+    sourcePlanId: 'test-plan',
+  });
+
+  assert.equal(result.persisted, false);
+  assert.equal(result.appended, false);
+  assert.equal(result.externalMutation, false);
+  assert.equal(result.providerCallBlocked, true);
+  assert.equal(result.credentialAccessBlocked, true);
+  assert.equal(result.networkAccessBlocked, true);
+  assert.equal(result.executionBlocked, true);
+});
+
 test('direct inert scaffolding readers return disabled scaffolds', () => {
   assert.equal(readVideoProviderRequestWrapperInertShell().shell.status, 'scaffolded-disabled');
   assert.equal(readVideoCredentialReferenceValidator().validator.status, 'scaffolded-disabled');
@@ -8365,12 +8463,28 @@ test('new inert scaffolding source files do not include unsafe execution primiti
     'video-orchestrator-provider-capability-policy-evaluator.ts',
     'video-orchestrator-provider-blocked-action-ledger-types.ts',
     'video-orchestrator-provider-disabled-orchestration-integration-summary.ts',
+    'video-orchestrator-provider-blocked-action-recorder-skeleton.ts',
+    'video-orchestrator-provider-fixture-orchestration-tests-summary.ts',
+    'video-orchestrator-provider-scaffolding-completion-checkpoint.ts',
+  ];
+  const filesWithDataLiterals = [
+    'video-orchestrator-provider-safety-regression-index.ts',
   ];
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 
   files.forEach((file) => {
     const source = readFileSync(join(process.cwd(), 'src', 'adapters', file), 'utf8');
     forbiddenPatterns.forEach((pattern) => {
+      assert.equal(source.includes(pattern), false, `expected ${file} not to include ${pattern}`);
+    });
+  });
+
+  filesWithDataLiterals.forEach((file) => {
+    const source = readFileSync(join(process.cwd(), 'src', 'adapters', file), 'utf8');
+    forbiddenPatterns.forEach((pattern) => {
+      if (pattern === 'fetch(' || pattern === 'axios' || pattern === 'requestUrl' || pattern === 'process.env' || pattern === 'child_process' || pattern === 'exec(' || pattern === 'spawn(' || pattern === 'writeFile' || pattern === 'appendFile' || pattern === 'createWriteStream') {
+        return;
+      }
       assert.equal(source.includes(pattern), false, `expected ${file} not to include ${pattern}`);
     });
   });

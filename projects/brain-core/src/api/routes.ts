@@ -97,6 +97,10 @@ import { readVideoProviderDisabledOrchestrationFacadeStatus } from '../adapters/
 import { readVideoProviderCapabilityPolicyEvaluatorStatus } from '../adapters/video-orchestrator-provider-capability-policy-evaluator.js';
 import { readVideoProviderBlockedActionLedgerTypes } from '../adapters/video-orchestrator-provider-blocked-action-ledger-types.js';
 import { readVideoProviderDisabledOrchestrationIntegrationSummary } from '../adapters/video-orchestrator-provider-disabled-orchestration-integration-summary.js';
+import { readVideoProviderBlockedActionRecorderSkeletonStatus } from '../adapters/video-orchestrator-provider-blocked-action-recorder-skeleton.js';
+import { readVideoProviderFixtureOrchestrationTestsSummary } from '../adapters/video-orchestrator-provider-fixture-orchestration-tests-summary.js';
+import { readVideoProviderSafetyRegressionIndex } from '../adapters/video-orchestrator-provider-safety-regression-index.js';
+import { readVideoProviderScaffoldingCompletionCheckpoint } from '../adapters/video-orchestrator-provider-scaffolding-completion-checkpoint.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -422,6 +426,18 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-disabled-orchestration-integration-summary':
       sendJson(response, 200, readVideoProviderDisabledOrchestrationIntegrationSummary());
+      return;
+    case '/video-orchestrator/provider-blocked-action-recorder-skeleton':
+      sendJson(response, 200, readVideoProviderBlockedActionRecorderSkeletonStatus());
+      return;
+    case '/video-orchestrator/provider-fixture-orchestration-tests-summary':
+      sendJson(response, 200, readVideoProviderFixtureOrchestrationTestsSummary());
+      return;
+    case '/video-orchestrator/provider-safety-regression-index':
+      sendJson(response, 200, readVideoProviderSafetyRegressionIndex());
+      return;
+    case '/video-orchestrator/provider-scaffolding-completion-checkpoint':
+      sendJson(response, 200, readVideoProviderScaffoldingCompletionCheckpoint());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());

@@ -9035,3 +9035,120 @@ export interface BrainCoreVideoProviderDisabledOrchestrationIntegrationSummary {
 export interface BrainCoreVideoProviderDisabledOrchestrationIntegrationSummaryResponse {
   summary: BrainCoreVideoProviderDisabledOrchestrationIntegrationSummary;
 }
+
+export interface BrainCoreVideoProviderBlockedActionRecorderSkeleton {
+  id: 'video-orchestrator-provider-blocked-action-recorder-skeleton';
+  status: 'scaffolded-disabled';
+  phase: 'blocked-action-recorder-skeleton-without-persistence';
+  approvedScope: 'wrapper-scaffolding-only';
+  fixtureCount: number;
+  recordedFixtureCount: number;
+  persistedRecordCount: 0;
+  appendCount: 0;
+  externalMutationCount: 0;
+  fixtureResults: Array<{
+    actionType: string;
+    providerClass: string;
+    sourcePlanId: string;
+    persisted: false;
+    appended: false;
+    externalMutation: false;
+    providerCallBlocked: true;
+    credentialAccessBlocked: true;
+    networkAccessBlocked: true;
+    executionBlocked: true;
+    redactedSummaryOnly: true;
+  }>;
+  summary: {
+    fixtureCount: number;
+    recordedCount: number;
+    persistedCount: 0;
+    appendCount: 0;
+    mutationCount: 0;
+  };
+  safety: Record<string, boolean>;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderBlockedActionRecorderSkeletonResponse {
+  skeleton: BrainCoreVideoProviderBlockedActionRecorderSkeleton;
+}
+
+export interface BrainCoreVideoProviderFixtureOrchestrationTestsSummary {
+  id: 'video-orchestrator-provider-fixture-orchestration-tests-summary';
+  status: 'scaffolded-disabled';
+  phase: 'provider-fixture-orchestration-tests-summary';
+  fixtureSuites: string[];
+  summary: {
+    fixtureSuiteCount: number;
+    fixtureCount: number;
+    passedFixtureCount: 0;
+    blockedFixtureCount: number;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+    networkAccessCount: 0;
+    persistenceCount: 0;
+  };
+  safety: Record<string, boolean>;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderFixtureOrchestrationTestsSummaryResponse {
+  summary: BrainCoreVideoProviderFixtureOrchestrationTestsSummary;
+}
+
+export interface BrainCoreVideoProviderSafetyRegressionIndex {
+  id: 'video-orchestrator-provider-safety-regression-index';
+  status: 'scaffolded-disabled';
+  phase: 'provider-safety-regression-index';
+  indexedModules: string[];
+  forbiddenPatterns: string[];
+  forbiddenCapabilities: string[];
+  expectedDisabledFlags: string[];
+  summary: {
+    indexedModuleCount: number;
+    forbiddenPatternCount: 10;
+    forbiddenCapabilityCount: 14;
+    expectedDisabledFlagCount: number;
+    expectedProviderCallCount: 0;
+    expectedCredentialAccessCount: 0;
+    expectedNetworkAccessCount: 0;
+    expectedWriteCount: 0;
+  };
+  safety: Record<string, boolean>;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderSafetyRegressionIndexResponse {
+  index: BrainCoreVideoProviderSafetyRegressionIndex;
+}
+
+export interface BrainCoreVideoProviderScaffoldingCompletionCheckpoint {
+  id: 'video-orchestrator-provider-scaffolding-completion-checkpoint';
+  status: 'scaffolded-disabled';
+  phase: 'provider-scaffolding-completion-checkpoint';
+  completedScaffoldRefs: string[];
+  remainingBlockedCapabilities: string[];
+  nextSafeImplementationSlices: string[];
+  implementationNotApprovedFor: string[];
+  summary: {
+    completedScaffoldCount: 17;
+    remainingBlockedCapabilityCount: 14;
+    nextSafeSliceCount: number;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+    networkAccessCount: 0;
+    persistenceCount: 0;
+    mutationControlCount: 0;
+  };
+  safety: Record<string, boolean>;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse {
+  checkpoint: BrainCoreVideoProviderScaffoldingCompletionCheckpoint;
+}
