@@ -65,6 +65,7 @@ import { readVideoMetadataPlans, readVideoMetadataPlan } from '../adapters/video
 import { readVideoPublishingPrepPlans, readVideoPublishingPrepPlan } from '../adapters/video-orchestrator-publishing-prep.js';
 import { readVideoThumbnailDesignPlans, readVideoThumbnailDesignPlan } from '../adapters/video-orchestrator-thumbnail-design-plan.js';
 import { readVideoArchiveLoggingPlans, readVideoArchiveLoggingPlan } from '../adapters/video-orchestrator-archive-logging-plan.js';
+import { readVideoDesignProviderBoundaryPlans, readVideoDesignProviderBoundaryPlan } from '../adapters/video-orchestrator-design-provider-boundary-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -294,6 +295,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/archive-logging-plan':
       sendJson(response, 200, readVideoArchiveLoggingPlans());
+      return;
+    case '/video-orchestrator/design-provider-boundary-plan':
+      sendJson(response, 200, readVideoDesignProviderBoundaryPlans());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -610,6 +614,22 @@ export async function routeRequest(
         const manualExportMatch = /^\/post-orchestrator\/manual-export\/([^/]+)$/.exec(url.pathname);
         if (manualExportMatch) {
           sendJson(response, 200, readPostManualExportPackage(decodeURIComponent(manualExportMatch[1] ?? '')));
+          return;
+        }
+
+        const designProviderBoundaryMatch = /^\/video-orchestrator\/design-provider-boundary-plan\/([^/]+)$/.exec(url.pathname);
+        if (designProviderBoundaryMatch) {
+          const plan = readVideoDesignProviderBoundaryPlan(decodeURIComponent(designProviderBoundaryMatch[1] ?? ''));
+          if (plan) {
+            sendJson(response, 200, plan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator design provider boundary plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
           return;
         }
 

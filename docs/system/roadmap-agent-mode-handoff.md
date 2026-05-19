@@ -131,3 +131,101 @@ Validation:
 Next safe task after validation:
 
 - Add Brain Console visibility for the latest Video Orchestrator planning endpoints, or continue with a read-only Video Orchestrator design-orchestrator provider boundary plan if dashboard work remains paused.
+
+
+## Continuation update — Video Orchestrator design provider boundary plan
+
+Implemented after archive/audit logging plan.
+
+Endpoint:
+
+- `GET /video-orchestrator/design-provider-boundary-plan`
+- `GET /video-orchestrator/design-provider-boundary-plan/:id`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-design-provider-boundary-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+What it does:
+
+- Adds three read-only provider boundary plans: image generation, layout rendering, and brand compliance.
+- Defines allowed future inputs, disallowed inputs, output policy, required gates, blockers, and next safe steps.
+- Keeps all provider configuration and calls disabled.
+
+Safety status:
+
+- Read-only only.
+- Boundary-design only.
+- No provider configuration.
+- No provider calls.
+- No prompt generation.
+- No image generation.
+- No artifact persistence.
+- No credential access.
+- No filesystem access.
+- No network access.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+- No POST route.
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- Brain Core test count: 331 passing.
+
+Next safe task:
+
+- Add Brain Console visibility for thumbnail design, archive/audit logging, and design provider boundary plan endpoints while keeping dashboard read-only and no mutation controls.
+
+
+## Continuation update — Brain Console visibility for latest Video Orchestrator planning endpoints
+
+Implemented after design provider boundary plan.
+
+Brain Console visibility added for:
+
+- `GET /video-orchestrator/thumbnail-design`
+- `GET /video-orchestrator/archive-logging-plan`
+- `GET /video-orchestrator/design-provider-boundary-plan`
+
+Files changed:
+
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+What it does:
+
+- Adds typed Brain Console readers for thumbnail design, archive/audit logging, and design provider boundary plans.
+- Loads these read-only endpoints during Brain Console refresh.
+- Adds three compact Pipelines cards showing counts, blocked status, and safety labels.
+
+Safety status:
+
+- Read-only UI only.
+- No mutation controls.
+- No POST routes.
+- No provider calls.
+- No image generation.
+- No archive writes.
+- No audit persistence.
+- No credential access.
+- No network/provider access beyond Brain Core GET requests.
+- No file writes from the UI.
+- No Mind writes.
+- No publishing.
+- No Video execution.
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian build` passed.
+- `npm run --prefix projects/brain-console-obsidian package` passed.
+- `npm run --prefix projects/brain-core ci` passed.
+- Brain Core test count: 331 passing.

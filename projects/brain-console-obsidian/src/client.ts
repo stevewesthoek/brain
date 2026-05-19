@@ -4577,3 +4577,138 @@ export interface BrainCoreProBotDashboardParityResponse {
   };
   nextSafeStep: string;
 }
+
+
+export interface BrainCoreVideoThumbnailDesignPlanResponse {
+  id: 'video-orchestrator-thumbnail-design-plan';
+  status: 'blocked';
+  phase: 'thumbnail-design-plan-read-only';
+  generatedAt: string;
+  summary: {
+    planCount: number;
+    variantCount: number;
+    blockedCount: number;
+    generatedAssetCount: number;
+  };
+  plans: Array<{
+    id: string;
+    storyId: string;
+    title: string;
+    status: 'blocked';
+    variants: Array<{ id: string; label: string; status: string; generatedAsset: false }>;
+    blockers: string[];
+    nextSafeStep: string;
+  }>;
+  safety: {
+    readOnly: boolean;
+    designOnly: boolean;
+    callsExternalAI: boolean;
+    generatesImages: boolean;
+    rendersVideo: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoArchiveLoggingPlanResponse {
+  id: 'video-orchestrator-archive-logging-plan';
+  status: 'blocked';
+  phase: 'archive-logging-plan-read-only';
+  generatedAt: string;
+  summary: {
+    planCount: number;
+    recordShapeCount: number;
+    loggingCheckCount: number;
+    blockedCount: number;
+    persistedRecordCount: number;
+  };
+  plans: Array<{
+    id: string;
+    storyId: string;
+    title: string;
+    status: 'blocked';
+    loggingChecks: Array<{ id: string; label: string; status: string; required: boolean }>;
+    blockers: string[];
+    nextSafeStep: string;
+  }>;
+  safety: {
+    readOnly: boolean;
+    designOnly: boolean;
+    archiveWritesEnabled: boolean;
+    auditPersistenceEnabled: boolean;
+    runtimeLogIngestEnabled: boolean;
+    deletesFiles: boolean;
+    movesFiles: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+    decommissionsStb: boolean;
+    executesStb: boolean;
+    executesVideo: boolean;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoDesignProviderBoundaryPlanResponse {
+  id: 'video-orchestrator-design-provider-boundary-plan';
+  status: 'blocked';
+  phase: 'design-provider-boundary-plan-read-only';
+  generatedAt: string;
+  summary: {
+    boundaryCount: number;
+    blockedCount: number;
+    providerConfiguredCount: number;
+    providerCallCount: number;
+    artifactPersistenceCount: number;
+  };
+  boundaries: Array<{
+    id: string;
+    providerClass: string;
+    status: 'blocked';
+    requiredGates: string[];
+    blockers: string[];
+    nextSafeStep: string;
+  }>;
+  safety: {
+    readOnly: boolean;
+    boundaryDesignOnly: boolean;
+    providerConfigured: boolean;
+    providerCallsEnabled: boolean;
+    promptGenerationEnabled: boolean;
+    imageGenerationEnabled: boolean;
+    artifactPersistenceEnabled: boolean;
+    credentialAccessEnabled: boolean;
+    filesystemAccessEnabled: boolean;
+    networkAccessEnabled: boolean;
+    writesFiles: boolean;
+    publishesContent: boolean;
+    writesToMind: boolean;
+    executesVideo: boolean;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
+  return fetchJson<BrainCoreVideoThumbnailDesignPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/thumbnail-design');
+}
+
+export async function readBrainCoreVideoOrchestratorArchiveLoggingPlans(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoArchiveLoggingPlanResponse>> {
+  return fetchJson<BrainCoreVideoArchiveLoggingPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/archive-logging-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorDesignProviderBoundaryPlans(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoDesignProviderBoundaryPlanResponse>> {
+  return fetchJson<BrainCoreVideoDesignProviderBoundaryPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/design-provider-boundary-plan');
+}

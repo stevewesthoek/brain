@@ -6683,3 +6683,61 @@ export interface BrainCoreVideoArchiveLoggingPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+
+export type BrainCoreVideoDesignProviderClass = 'image-generation' | 'layout-rendering' | 'brand-compliance';
+
+export interface BrainCoreVideoDesignProviderOutputPolicy {
+  allowedFutureOutputs: string[];
+  disallowedOutputs: string[];
+  retention: string;
+}
+
+export interface BrainCoreVideoDesignProviderBoundarySafety {
+  readOnly: true;
+  boundaryDesignOnly: true;
+  providerConfigured: false;
+  providerCallsEnabled: false;
+  promptGenerationEnabled: false;
+  imageGenerationEnabled: false;
+  artifactPersistenceEnabled: false;
+  credentialAccessEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoDesignProviderBoundaryPlan {
+  id: string;
+  providerClass: BrainCoreVideoDesignProviderClass;
+  status: 'blocked';
+  purpose: string;
+  allowedFutureInputs: string[];
+  disallowedInputs: string[];
+  outputPolicy: BrainCoreVideoDesignProviderOutputPolicy;
+  requiredGates: string[];
+  safety: BrainCoreVideoDesignProviderBoundarySafety;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoDesignProviderBoundaryPlanResponse {
+  id: 'video-orchestrator-design-provider-boundary-plan';
+  status: 'blocked';
+  phase: 'design-provider-boundary-plan-read-only';
+  generatedAt: string;
+  summary: {
+    boundaryCount: number;
+    blockedCount: number;
+    providerConfiguredCount: 0;
+    providerCallCount: 0;
+    artifactPersistenceCount: 0;
+  };
+  boundaries: BrainCoreVideoDesignProviderBoundaryPlan[];
+  safety: BrainCoreVideoDesignProviderBoundarySafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

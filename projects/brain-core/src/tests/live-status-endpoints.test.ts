@@ -5274,3 +5274,131 @@ test('POST /video-orchestrator/archive-logging-plan is not registered', async ()
   assert.equal(response.statusCode, 404);
   assert.equal(body.error.code, 'not_found');
 });
+
+
+test('GET /video-orchestrator/design-provider-boundary-plan returns read-only provider boundaries', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-boundary-plan' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    phase: string;
+    summary: {
+      boundaryCount: number;
+      blockedCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      artifactPersistenceCount: number;
+    };
+    boundaries: Array<{
+      id: string;
+      providerClass: string;
+      status: string;
+      safety: {
+        readOnly: boolean;
+        boundaryDesignOnly: boolean;
+        providerConfigured: boolean;
+        providerCallsEnabled: boolean;
+        promptGenerationEnabled: boolean;
+        imageGenerationEnabled: boolean;
+        artifactPersistenceEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        filesystemAccessEnabled: boolean;
+        networkAccessEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    safety: {
+      readOnly: boolean;
+      boundaryDesignOnly: boolean;
+      providerConfigured: boolean;
+      providerCallsEnabled: boolean;
+      promptGenerationEnabled: boolean;
+      imageGenerationEnabled: boolean;
+      artifactPersistenceEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'video-orchestrator-design-provider-boundary-plan');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.phase, 'design-provider-boundary-plan-read-only');
+  assert.equal(body.summary.boundaryCount, 3);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.providerConfiguredCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.summary.artifactPersistenceCount, 0);
+
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.boundaryDesignOnly, true);
+  assert.equal(body.safety.providerConfigured, false);
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.promptGenerationEnabled, false);
+  assert.equal(body.safety.imageGenerationEnabled, false);
+  assert.equal(body.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.filesystemAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesVideo, false);
+
+  const providerClasses = body.boundaries.map((boundary) => boundary.providerClass);
+  assert.deepEqual(providerClasses, ['image-generation', 'layout-rendering', 'brand-compliance']);
+
+  body.boundaries.forEach((boundary) => {
+    assert.equal(boundary.status, 'blocked');
+    assert.equal(boundary.safety.readOnly, true);
+    assert.equal(boundary.safety.boundaryDesignOnly, true);
+    assert.equal(boundary.safety.providerConfigured, false);
+    assert.equal(boundary.safety.providerCallsEnabled, false);
+    assert.equal(boundary.safety.promptGenerationEnabled, false);
+    assert.equal(boundary.safety.imageGenerationEnabled, false);
+    assert.equal(boundary.safety.artifactPersistenceEnabled, false);
+    assert.equal(boundary.safety.credentialAccessEnabled, false);
+    assert.equal(boundary.safety.filesystemAccessEnabled, false);
+    assert.equal(boundary.safety.networkAccessEnabled, false);
+    assert.equal(boundary.safety.writesFiles, false);
+    assert.equal(boundary.safety.publishesContent, false);
+    assert.equal(boundary.safety.writesToMind, false);
+    assert.equal(boundary.safety.executesVideo, false);
+  });
+});
+
+test('GET /video-orchestrator/design-provider-boundary-plan/:id returns a read-only provider boundary', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-boundary-plan/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    outputPolicy: { disallowedOutputs: string[] };
+    safety: { providerCallsEnabled: boolean; imageGenerationEnabled: boolean; credentialAccessEnabled: boolean; networkAccessEnabled: boolean; writesFiles: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.ok(body.outputPolicy.disallowedOutputs.includes('generated image bytes'));
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.imageGenerationEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+});
+
+test('POST /video-orchestrator/design-provider-boundary-plan is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-boundary-plan' });
+  const body = JSON.parse(response.body) as { error: { code: string } };
+
+  assert.equal(response.statusCode, 404);
+  assert.equal(body.error.code, 'not_found');
+});
