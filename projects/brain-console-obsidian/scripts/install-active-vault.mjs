@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const expectedMarker = 'brain-console-dashboard-stable-2026-05-19-01';
+const expectedMarker = 'brain-console-design-system-2026-05-19-01';
 const searchRoot = '/Users/Office';
 const managedFiles = ['main.js', 'styles.css', 'manifest.json'];
 const skippedDirectoryNames = new Set(['node_modules', '.git', 'Library', 'Applications']);
@@ -11,6 +11,7 @@ const staleMarkers = [
   'brain-console-open-fix-2026-05-19-01',
   'brain-console-main-dashboard-2026-05-19-01',
   'brain-console-polished-main-dashboard-2026-05-19-01',
+  'brain-console-dashboard-stable-2026-05-19-01',
   'native-card-ui-2026-05-19-01',
   'brain-console-connection-diagnostics-2026-05-19-01',
   'brain-console-emergency-restore-2026-05-19-01',

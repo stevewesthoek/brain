@@ -824,7 +824,7 @@ function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, on
   const controls = header.createDiv({ cls: 'brain-console__header-controls' });
 
   const meta = header.createDiv({ cls: 'brain-console__header-meta' });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-dashboard-stable-2026-05-19-01` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-design-system-2026-05-19-01` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
@@ -1058,20 +1058,16 @@ function renderProjectsSection(content: HTMLElement, state: BrainConsoleViewStat
 
 function renderReportsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
-
-  renderCard(grid, 'Runtime Reports', renderRuntimeReportsCard(state));
-  renderCard(grid, 'Wiki Health', renderWikiHealthCard(state));
-
-  if (state.modelRouterReportDetail) {
-    renderCard(grid, 'Model Router Report', renderModelRouterReportDetailCard(state.modelRouterReportDetail));
-  }
-
+  renderCard(grid, 'Reports & System Health', renderReportsSectionIntro(state), { wide: true, subtitle: 'Runtime diagnostics, model-router state, local app health, and wiki availability.' });
+  renderCard(grid, 'Runtime Reports', renderRuntimeReportsCard(state), { status: runtimeReportsStatus(state), tone: runtimeReportsTone(state), subtitle: 'What the Brain Core payload exposed in this refresh.' });
+  renderCard(grid, 'Model Router', renderModelRouterCard(state), { status: modelRouterDisplayStatus(state), tone: modelRouterTone(state), subtitle: 'Model router report detail and health summary.' });
+  renderCard(grid, 'Wiki Health', renderWikiHealthCard(state), { status: wikiHealthStatus(state), tone: wikiHealthTone(state), subtitle: 'Wiki availability and warning counts.' });
+  renderCard(grid, 'Diagnostics', renderReportsDiagnosticsCard(state), { wide: true, subtitle: 'Connection and payload verification.' });
   if (state.maintenancePreviewDetail) {
-    renderCard(grid, 'Maintenance Preview', renderMaintenancePreviewDetailCard(state.maintenancePreviewDetail));
+    renderCard(grid, 'Maintenance Preview', renderMaintenancePreviewDetailCard(state.maintenancePreviewDetail), { subtitle: 'Read-only maintenance data.' });
   }
-
   if (state.approvalDetail) {
-    renderCard(grid, 'Approval Details', renderApprovalDetailCard(state.approvalDetail));
+    renderCard(grid, 'Approval Details', renderApprovalDetailCard(state.approvalDetail), { subtitle: 'Latest approval record in payload.' });
   }
 }
 
@@ -1156,7 +1152,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'brain-console-dashboard-stable-2026-05-19-01'
+    text: 'brain-console-design-system-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1174,7 +1170,7 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
   container.className = 'brain-console__card-content';
 
   const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
-  const expectedMarker = 'brain-console-dashboard-stable-2026-05-19-01';
+  const expectedMarker = 'brain-console-design-system-2026-05-19-01';
   const markerOk = runtimeMarker === expectedMarker;
 
   renderCompactStatGrid(container, [
@@ -1207,6 +1203,21 @@ function renderDashboardSelfCheck(state: BrainConsoleViewState): HTMLElement {
     { label: 'Connection status', value: state.status?.ok ? 'Connected' : 'Offline' },
     { label: 'Last refresh', value: state.refreshedAt ? new Date(state.refreshedAt).toLocaleString() : 'Not yet refreshed' },
     { label: 'Safety', value: 'Read-only' },
+  ]);
+  return container;
+}
+
+function renderReportsSectionIntro(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  container.createEl('p', {
+    cls: 'brain-console__detail',
+    text: 'Runtime diagnostics, model-router state, local app health, and wiki availability.',
+  });
+  renderCompactStatGrid(container, [
+    { label: 'Build', value: safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown') },
+    { label: 'View mode', value: 'Main workspace dashboard' },
+    { label: 'Connection', value: state.status?.ok ? 'Connected' : 'Offline' },
   ]);
   return container;
 }
@@ -1313,6 +1324,19 @@ function renderSafetySummaryCard(): HTMLElement {
   return container;
 }
 
+function renderReportsDiagnosticsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Brain Core URL', value: statValue(state.brainCoreUrl, 'Unknown') },
+    { label: 'Selected URL', value: statValue((window as any).BRAIN_CONSOLE_SELECTED_URL, statValue(state.brainCoreUrl, 'Unknown')) },
+    { label: 'Online', value: state.status?.ok ? 'yes' : 'no' },
+    { label: 'Build marker', value: safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown') },
+  ]);
+  container.appendChild(renderSafetyLabel('Read-only · no writes · no mutations · no publishing'));
+  return container;
+}
+
 function renderStatusPills(shell: HTMLElement, state: BrainConsoleViewState): void {
   const pills = shell.createDiv({ cls: 'brain-console__pills' });
 
@@ -1360,11 +1384,26 @@ function renderHeroPanel(shell: HTMLElement, snapshot: DashboardSnapshot, state:
   right.createEl('div', { text: `${snapshot.maintenanceCount} queued` });
 }
 
-function renderCard(parent: HTMLElement, title: string, content: HTMLElement): void {
+type CardTone = 'ok' | 'warn' | 'danger' | 'info' | 'muted';
+
+function renderCard(parent: HTMLElement, title: string, content: HTMLElement, options?: { wide?: boolean; subtitle?: string; status?: string; tone?: CardTone }): void {
   const card = parent.createDiv({ cls: 'brain-console__card' });
+  if (options?.wide) card.addClass('brain-console__card--wide');
+
   const header = card.createDiv({ cls: 'brain-console__card-header' });
-  header.createEl('h3', { text: title });
-  card.appendChild(content);
+  const titleWrap = header.createDiv({ cls: 'brain-console__card-title-wrap' });
+  titleWrap.createEl('h3', { cls: 'brain-console__card-title', text: title });
+  if (options?.subtitle) {
+    titleWrap.createEl('p', { cls: 'brain-console__card-subtitle', text: options.subtitle });
+  }
+
+  if (options?.status) {
+    const badge = header.createEl('span', { cls: 'brain-console__badge', text: options.status });
+    if (options.tone) badge.addClass(`brain-console__badge--${options.tone}`);
+  }
+
+  const body = card.createDiv({ cls: 'brain-console__card-body' });
+  body.appendChild(content);
 }
 
 function renderCompactStatGrid(container: HTMLElement, rows: Array<{ label: string; value: string }>): void {
@@ -1393,6 +1432,64 @@ function statValue(value: unknown, fallback = 'Unavailable'): string {
 
 function countAvailable(...values: unknown[]): number {
   return values.filter((value) => value !== undefined && value !== null).length;
+}
+
+function renderStatusBadge(label: string, tone: CardTone = 'muted'): HTMLElement {
+  const badge = document.createElement('span');
+  badge.className = `brain-console__badge brain-console__badge--${tone}`;
+  badge.textContent = label;
+  return badge;
+}
+
+function reportLabel(id: string): string {
+  switch (id) {
+    case 'model-router':
+      return 'Model Router';
+    case 'model-router-dry-run':
+      return 'Model-router dry-run';
+    case 'approval-audit':
+      return 'Approval audit';
+    case 'local-apps':
+      return 'Local apps';
+    default:
+      return id;
+  }
+}
+
+function runtimeReportsStatus(state: BrainConsoleViewState): string {
+  const total = state.runtimeReports?.length ?? 0;
+  const available = state.runtimeReports?.filter((report) => report.status === 'available').length ?? 0;
+  if (total === 0) return 'Not reported';
+  if (available === total) return 'available';
+  if (available > 0) return 'partial';
+  return 'not reported';
+}
+
+function runtimeReportsTone(state: BrainConsoleViewState): CardTone {
+  const status = runtimeReportsStatus(state);
+  if (status === 'available') return 'ok';
+  if (status === 'partial') return 'warn';
+  return 'muted';
+}
+
+function modelRouterDisplayStatus(state: BrainConsoleViewState): string {
+  return state.modelRouterReportDetail ? (state.modelRouterReportDetail.exists ? 'available' : 'not reported') : 'Not reported in dashboard data';
+}
+
+function modelRouterTone(state: BrainConsoleViewState): CardTone {
+  return state.modelRouterReportDetail?.exists ? 'ok' : 'muted';
+}
+
+function wikiHealthStatus(state: BrainConsoleViewState): string {
+  const report = state.runtimeReports?.find((r) => r.id === 'model-router');
+  if (!report?.wikiHealth) return 'Not reported';
+  return report.wikiHealth.ok ? 'healthy' : 'needs attention';
+}
+
+function wikiHealthTone(state: BrainConsoleViewState): CardTone {
+  const report = state.runtimeReports?.find((r) => r.id === 'model-router');
+  if (!report?.wikiHealth) return 'muted';
+  return report.wikiHealth.ok ? 'ok' : 'warn';
 }
 
 function renderStatusChip(label: string, tone: 'success' | 'warning' | 'error' | 'default'): HTMLElement {
@@ -1424,21 +1521,21 @@ function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
 
   const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
   if (!mrReport?.wikiHealth) {
-    container.textContent = 'unavailable';
+    container.appendChild(renderEmptyState('Wiki health is not reported in the current dashboard payload.', 'Check Brain Core route wiring.'));
     return container;
   }
 
   const health = mrReport.wikiHealth;
-  const metric = container.createEl('div', { cls: 'brain-console__metric', text: health.ok ? '✓ ok' : '⚠ issues' });
-  if (health.ok) {
-    metric.style.color = '#22c55e';
-  } else {
-    metric.style.color = '#ef4444';
-    container.createEl('p', {
-      cls: 'brain-console__detail',
-      text: `${health.warningCount} warn · ${health.errorCount} err`,
-    });
-  }
+  const badgeTone: CardTone = health.ok ? 'ok' : 'warn';
+  container.appendChild(renderStatusBadge(health.ok ? 'Healthy' : 'Needs attention', badgeTone));
+  renderCompactStatGrid(container, [
+    { label: 'Warnings', value: String(health.warningCount ?? 0) },
+    { label: 'Errors', value: String(health.errorCount ?? 0) },
+  ]);
+  container.createEl('p', {
+    cls: 'brain-console__detail',
+    text: health.ok ? 'Wiki is available.' : 'Wiki has warnings or errors in the current payload.',
+  });
 
   return container;
 }
@@ -1448,47 +1545,52 @@ function renderRuntimeReportsCard(state: BrainConsoleViewState): HTMLElement {
   container.className = 'brain-console__card-content';
 
   if (!state.runtimeReports || state.runtimeReports.length === 0) {
-    container.textContent = 'no reports';
+    container.appendChild(renderEmptyState('Not reported in dashboard data.', 'Brain Core did not include runtime reports in this refresh.'));
     return container;
   }
 
-  // Show model-router report with focus
-  const mrReport = state.runtimeReports.find((r) => r.id === 'model-router');
-  const list = container.createEl('ul', { cls: 'brain-console__list' });
+  const available = state.runtimeReports.filter((r) => r.status === 'available').length;
+  const missing = state.runtimeReports.length - available;
+  const modelRouter = state.runtimeReports.find((r) => r.id === 'model-router');
+  renderCompactStatGrid(container, [
+    { label: 'Reports available', value: String(available) },
+    { label: 'Missing reports', value: String(Math.max(missing, 0)) },
+    { label: 'Last refresh', value: state.refreshedAt ? new Date(state.refreshedAt).toLocaleTimeString() : 'Unknown' },
+  ]);
 
-  // Model-router report: show status, wiki health summary, file path
-  if (mrReport) {
-    const item = list.createEl('li', { text: `Model Router: ${mrReport.status}` });
-    item.addClass('brain-console__list-item-highlight');
+  container.appendChild(renderStatusBadge(available > 0 ? 'Partial' : 'Not reported', available > 0 ? 'info' : 'muted'));
 
-    if (mrReport.latestRunStatus === 'ok') {
-      item.style.color = '#22c55e';
-    } else if (mrReport.latestRunStatus === 'failed') {
-      item.style.color = '#ef4444';
-    }
-
-    // Add wiki health if available
-    if (mrReport.wikiHealth) {
-      const wikiText = mrReport.wikiHealth.ok
-        ? `Wiki: ✓ ok`
-        : `Wiki: ${mrReport.wikiHealth.errorCount}e ${mrReport.wikiHealth.warningCount}w`;
-      list.createEl('li', { cls: 'brain-console__list-sub', text: wikiText });
-    }
-
-    // Add message if available
-    if (mrReport.message && mrReport.message !== 'Runtime report is available.') {
-      list.createEl('li', { cls: 'brain-console__list-sub', text: mrReport.message });
-    }
+  const list = container.createEl('div', { cls: 'brain-console__list' });
+  for (const id of ['model-router', 'model-router-dry-run', 'approval-audit', 'local-apps']) {
+    const report = state.runtimeReports.find((entry) => entry.id === id);
+    const row = list.createDiv({ cls: 'brain-console__list-row' });
+    row.createEl('span', { cls: 'brain-console__list-label', text: reportLabel(id) });
+    row.createEl('span', { cls: 'brain-console__list-value', text: report ? statValue(report.status, 'Unavailable') : 'Not reported in dashboard data' });
   }
 
-  // List other reports
-  const otherReports = state.runtimeReports.filter((r) => r.id !== 'model-router' && r.status === 'available');
-  if (otherReports.length > 0) {
-    for (const report of otherReports) {
-      list.createEl('li', { cls: 'brain-console__list-note', text: `${report.id}: ${report.status}` });
-    }
+  if (modelRouter?.message) {
+    container.createEl('p', { cls: 'brain-console__detail', text: modelRouter.message });
   }
 
+  return container;
+}
+
+function renderModelRouterCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const report = state.modelRouterReportDetail;
+  if (!report) {
+    container.appendChild(renderEmptyState('Model Router is not present in the current dashboard payload.', 'Check Brain Core route wiring.'));
+    return container;
+  }
+
+  container.appendChild(renderStatusBadge(report.exists ? 'Available' : 'Not reported', report.exists ? 'ok' : 'muted'));
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: statValue(report.status, 'Not reported') },
+    { label: 'Latest run', value: statValue(report.latestRunStatus, 'Not reported') },
+    { label: 'Wiki health', value: report.wikiHealth ? (report.wikiHealth.ok ? 'Healthy' : 'Warnings') : 'Not reported' },
+  ]);
+  container.createEl('p', { cls: 'brain-console__detail', text: 'Model Router status is read-only and derived from dashboard payload data.' });
   return container;
 }
 
