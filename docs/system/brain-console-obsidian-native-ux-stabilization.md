@@ -5,7 +5,7 @@ Build ID: `native-ux-2026-05-18-01`
 
 ## Update: Main Workspace Dashboard
 
-Current build marker: `brain-console-design-system-2026-05-19-01`
+Current build marker: `brain-console-local-apps-migration-2026-05-19-01`
 
 The Brain Console now opens as a main-workspace dashboard tab instead of defaulting to the right sidebar.
 
@@ -14,6 +14,8 @@ User-visible verification:
 - Ribbon icon reopens a fresh dashboard view so stale panes are dropped during development.
 - `Plugin Install Verification` compares the runtime build marker with the expected marker and flags stale bundles.
 - Pipelines render with grouped cards and safe empty states instead of crashing on unsafe `.status` access.
+- Local Apps now uses a dedicated dashboard payload plus a separate action-readiness payload.
+- Start/stop/restart controls remain disabled until a safe allowlisted Brain Core path exists.
 
 ## Problem Statement
 

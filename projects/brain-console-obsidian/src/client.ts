@@ -128,6 +128,91 @@ export interface BrainCoreLocalAppSummary {
   actionsSupported: boolean;
 }
 
+export type BrainCoreLocalAppDashboardStatus = 'available' | 'partial' | 'unavailable';
+export type BrainCoreLocalAppHealth = 'healthy' | 'warning' | 'error' | 'unknown';
+export type BrainCoreLocalAppSource = 'probot' | 'brain-core' | 'infrastructure-config' | 'unknown';
+export type BrainCoreLocalAppActionPolicyStatus = 'disabled' | 'planned' | 'enabled';
+export type BrainCoreLocalAppActionExecutionPath = 'none' | 'brain-core-allowlisted-action';
+export type BrainCoreLocalAppReadinessStatus = 'not-ready' | 'ready';
+
+export interface BrainCoreLocalAppDashboardItem {
+  id: string;
+  name: string;
+  label: string;
+  category: string;
+  status: 'running' | 'stopped' | 'unknown' | 'unavailable';
+  health: BrainCoreLocalAppHealth;
+  url?: string;
+  port?: number;
+  source: BrainCoreLocalAppSource;
+  managed: boolean;
+  startSupported: boolean;
+  stopSupported: boolean;
+  restartSupported: boolean;
+  actionEnabled: boolean;
+  actionDisabledReason: string;
+  lastCheckedAt: string;
+  notes: string;
+}
+
+export interface BrainCoreLocalAppActionPolicy {
+  status: BrainCoreLocalAppActionPolicyStatus;
+  executionPath: BrainCoreLocalAppActionExecutionPath;
+  requiresConfirmation: true;
+  requiresAllowlist: true;
+  pluginExecutesShell: false;
+  arbitraryCommandAllowed: false;
+  safeActions: Array<'start' | 'stop' | 'restart'>;
+  blockedActions: Array<'start' | 'stop' | 'restart' | 'custom-command'>;
+}
+
+export interface BrainCoreLocalAppSafety {
+  readOnlyDashboard: true;
+  pluginExecutesShell: false;
+  arbitraryCommandExecution: false;
+  exposesSecrets: false;
+  exposesEnv: false;
+  platformWrites: false;
+  mindWrites: false;
+  destructiveActions: false;
+  startStopControlsEnabled: boolean;
+}
+
+export interface BrainCoreLocalAppsDashboardResponse {
+  id: 'local-apps-dashboard';
+  status: BrainCoreLocalAppDashboardStatus;
+  appCount: number;
+  runningCount: number;
+  stoppedCount: number;
+  unknownCount: number;
+  managedCount: number;
+  unmanagedCount: number;
+  apps: BrainCoreLocalAppDashboardItem[];
+  actionPolicy: BrainCoreLocalAppActionPolicy;
+  safety: BrainCoreLocalAppSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreLocalAppActionReadinessCriterion {
+  id: string;
+  label: string;
+  satisfied: boolean;
+  detail: string;
+}
+
+export interface BrainCoreLocalAppActionReadinessResponse {
+  id: 'local-apps-action-readiness';
+  status: BrainCoreLocalAppReadinessStatus;
+  ready: boolean;
+  criteria: BrainCoreLocalAppActionReadinessCriterion[];
+  satisfiedCount: number;
+  unsatisfiedCount: number;
+  blockers: string[];
+  safety: BrainCoreLocalAppSafety;
+  nextSafeStep: string;
+}
+
 export interface BrainCoreVideoStatus {
   status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
   enabled: boolean;
@@ -3503,6 +3588,8 @@ export interface BrainConsoleSnapshot {
   videoStatus?: BrainCoreVideoStatus;
   videoQueue?: BrainCoreVideoQueueItem[];
   localApps?: BrainCoreLocalAppSummary[];
+  localAppsDashboard?: BrainCoreLocalAppsDashboardResponse;
+  localAppsActionReadiness?: BrainCoreLocalAppActionReadinessResponse;
   schedulerStatus?: BrainCoreSchedulerStatus;
   schedulerJobs?: BrainCoreSchedulerJobSummary[];
   sessions?: BrainCoreSessionSummary[];
@@ -3628,10 +3715,17 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     readBrainCoreLocalApps(normalizedBaseUrl),
   ]);
 
+  const [localAppsDashboard, localAppsActionReadiness] = await Promise.all([
+    readBrainCoreLocalAppsDashboard(normalizedBaseUrl),
+    readBrainCoreLocalAppsActionReadiness(normalizedBaseUrl),
+  ]);
+
   const videoPairs: Array<[string, any]> = [
     ['/video/status', videoStatus],
     ['/video/queue', videoQueue],
     ['/local-apps', localApps],
+    ['/local-apps/dashboard', localAppsDashboard],
+    ['/local-apps/action-readiness', localAppsActionReadiness],
   ];
 
   videoPairs.forEach(([pathname, result]) => {
@@ -3653,6 +3747,8 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     videoStatus: videoStatus.value,
     videoQueue: videoQueue.value?.queue,
     localApps: localApps.value?.apps,
+    localAppsDashboard: localAppsDashboard.value,
+    localAppsActionReadiness: localAppsActionReadiness.value,
     schedulerStatus: schedulerStatus.value,
     schedulerJobs: schedulerJobs.value?.jobs,
     sessions: sessions.value?.sessions,
@@ -3752,6 +3848,14 @@ export async function readBrainCoreVideoQueue(baseUrl: string): Promise<HttpResu
 
 export async function readBrainCoreLocalApps(baseUrl: string): Promise<HttpResult<{ apps?: BrainCoreLocalAppSummary[] }>> {
   return fetchJson<{ apps?: BrainCoreLocalAppSummary[] }>(normalizeBaseUrl(baseUrl), '/local-apps');
+}
+
+export async function readBrainCoreLocalAppsDashboard(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppsDashboardResponse>> {
+  return fetchJson<BrainCoreLocalAppsDashboardResponse>(normalizeBaseUrl(baseUrl), '/local-apps/dashboard');
+}
+
+export async function readBrainCoreLocalAppsActionReadiness(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppActionReadinessResponse>> {
+  return fetchJson<BrainCoreLocalAppActionReadinessResponse>(normalizeBaseUrl(baseUrl), '/local-apps/action-readiness');
 }
 
 export async function readBrainCoreOrchestrators(

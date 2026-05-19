@@ -200,6 +200,54 @@
   min-width: 0;
 }
 
+.brain-console__local-apps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.brain-console__local-app-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--bc-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--bc-card), color-mix(in srgb, var(--bc-card) 72%, var(--background-primary) 28%));
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+}
+
+.brain-console__local-app-header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.brain-console__badge-row,
+.brain-console__local-app-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.brain-console__local-app-readiness {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--bc-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bc-card) 88%, var(--interactive-accent) 12%), var(--bc-card));
+}
+
 .brain-console__card,
 .brain-console__card--grouped {
   min-width: 0;
@@ -300,6 +348,27 @@
   font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.brain-console__badge--ok,
+.brain-console__badge--available {
+  color: var(--bc-green);
+  border-color: color-mix(in srgb, var(--bc-green) 42%, var(--bc-border));
+  background: color-mix(in srgb, var(--bc-green) 12%, transparent);
+}
+
+.brain-console__badge--warn,
+.brain-console__badge--warning,
+.brain-console__badge--info {
+  color: var(--bc-blue);
+  border-color: color-mix(in srgb, var(--bc-blue) 42%, var(--bc-border));
+  background: color-mix(in srgb, var(--bc-blue) 12%, transparent);
+}
+
+.brain-console__badge--danger {
+  color: var(--bc-red);
+  border-color: color-mix(in srgb, var(--bc-red) 42%, var(--bc-border));
+  background: color-mix(in srgb, var(--bc-red) 12%, transparent);
 }
 
 .brain-console__badge {

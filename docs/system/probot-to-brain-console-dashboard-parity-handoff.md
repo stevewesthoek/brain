@@ -205,3 +205,9 @@ See: `docs/system/brain-console-obsidian-native-ux-stabilization.md` for full im
 3. Add read-only system update availability summary without execution controls.
 4. Add read-only Stripe account parity (metadata only, no API keys or financial data).
 5. Keep ProBot as legacy/thin client until every keep/redesign tab has Brain Console parity and explicit decommission approval exists.
+
+## Local Apps Migration Note (2026-05-19)
+
+- Local Apps is now the first controlled migration slice.
+- Brain Console should prefer the dedicated dashboard/readiness payloads over raw command-centric display.
+- Controls stay disabled until a Brain Core allowlisted action path and confirmation UX are approved.

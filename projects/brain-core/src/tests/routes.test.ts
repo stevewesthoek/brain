@@ -403,6 +403,57 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
   }
 });
 
+test('GET /local-apps/dashboard returns safe inventory dashboard payload', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    appCount: number;
+    runningCount: number;
+    stoppedCount: number;
+    unknownCount: number;
+    managedCount: number;
+    unmanagedCount: number;
+    apps: Array<{ id: string; name: string; actionEnabled: boolean; actionDisabledReason: string; managed: boolean }>;
+    actionPolicy: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; status: string };
+    safety: { readOnlyDashboard: boolean; pluginExecutesShell: boolean; arbitraryCommandExecution: boolean; startStopControlsEnabled: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-dashboard');
+  assert.equal(body.appCount, body.apps.length);
+  assert.equal(body.actionPolicy.pluginExecutesShell, false);
+  assert.equal(body.actionPolicy.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.readOnlyDashboard, true);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandExecution, false);
+  assert.equal(body.safety.startStopControlsEnabled, false);
+  assert.ok(body.apps.length > 0);
+});
+
+test('GET /local-apps/action-readiness returns not-ready by default', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-readiness' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    ready: boolean;
+    status: string;
+    criteria: Array<{ id: string; satisfied: boolean }>;
+    safety: { pluginExecutesShell: boolean; arbitraryCommandExecution: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-action-readiness');
+  assert.equal(body.ready, false);
+  assert.equal(body.status, 'not-ready');
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandExecution, false);
+  assert.ok(body.criteria.length > 0);
+});
+
+test('POST /local-apps/dashboard is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/dashboard' });
+  assert.equal(response.statusCode, 404);
+});
+
 test('GET /video/status falls back to failed read-only state when runtime report is invalid', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-video-invalid');
   const reportPath = path.join(testDir, 'latest.json');

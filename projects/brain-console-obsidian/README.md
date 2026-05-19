@@ -2,7 +2,7 @@
 
 Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
 
-**Build:** `brain-console-design-system-2026-05-19-01`
+**Build:** `brain-console-local-apps-migration-2026-05-19-01`
 
 **Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
 
@@ -12,7 +12,7 @@ Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace 
 - ✓ `npm run build` passes
 - ✓ `npm run package` emits release bundle
 - ✓ TypeScript compilation zero errors
-- ✓ Brain Core CI: 446 tests passing (12 ProBot parity + 6 gap-closure tests)
+- ✓ Brain Core CI: passes with local-apps dashboard/readiness coverage
 - ✓ `npm run release:install` builds, packages, installs to every discovered vault copy, and verifies markers
 
 ## Intended structure
@@ -72,16 +72,24 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build brain-console-design-system-2026-05-19-01`
+1. Look for build marker in header: `build brain-console-local-apps-migration-2026-05-19-01`
 2. The dashboard header also shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state
 3. If marker is missing or different, your plugin bundle is stale
 4. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
-5. Verify "ProBot Phase-Out Checklist" card shows "NOT READY" (intentional, requires user approval)
+5. Verify the Local Apps section shows a full inventory with disabled controls and explicit reasons
 
 **Brain Core Configuration:**
 1. Default URL: `http://localhost:4877`
 2. Configure in Brain Console settings if different
 3. Press "Manual refresh" to verify connection
+
+## Local Apps Migration
+
+- Read-only dashboard payload: `GET /local-apps/dashboard`
+- Controlled-action readiness payload: `GET /local-apps/action-readiness`
+- Start/stop/restart controls remain disabled until a safe allowlisted Brain Core action path is approved.
+- Release/install command: `npm run --prefix projects/brain-console-obsidian release:install`
+- MarbleRiver was not present in the canonical `operations/infrastructure/local-apps.json` source during this pass.
 
 ## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
 
@@ -92,6 +100,7 @@ npm run --prefix projects/brain-console-obsidian package
 - Text wraps, no right-side clipping
 - Native Obsidian theme (light/dark aware)
 - ProBot Migration section with dedicated header and subtitle
+- Local Apps section now reads dedicated dashboard/readiness payloads and keeps controls disabled until a safe allowlisted Brain Core path exists
 
 ### Performance
 - **Tab switching:** <50ms (uses cached state, no network call)
