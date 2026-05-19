@@ -6859,3 +6859,65 @@ export interface BrainCoreVideoDesignProviderPromptReviewPolicyPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+export type BrainCoreVideoArtifactSandboxProviderHandoffProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoArtifactSandboxProviderHandoffSafety {
+  readOnly: true;
+  handoffDesignOnly: true;
+  providerConfigured: false;
+  providerCallsEnabled: false;
+  artifactManifestCreationEnabled: false;
+  artifactPersistenceEnabled: false;
+  sandboxWriteEnabled: false;
+  sandboxReadEnabled: false;
+  credentialAccessEnabled: false;
+  rawArtifactAccessEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoArtifactSandboxProviderHandoffPlan {
+  id: string;
+  providerClass: BrainCoreVideoArtifactSandboxProviderHandoffProviderClass;
+  handoffCategory: string;
+  status: 'blocked';
+  purpose: string;
+  allowedFutureHandoffInputs: string[];
+  disallowedHandoffInputs: string[];
+  proposedManifestFields: string[];
+  proposedSandboxBoundaryChecks: string[];
+  redactionRequirements: string[];
+  requiredApprovalGates: string[];
+  auditRequirements: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: BrainCoreVideoArtifactSandboxProviderHandoffSafety;
+}
+
+export interface BrainCoreVideoArtifactSandboxProviderHandoffPlanResponse {
+  id: 'video-orchestrator-artifact-sandbox-provider-handoff-plan';
+  status: 'blocked';
+  phase: 'artifact-sandbox-provider-handoff-plan-read-only';
+  generatedAt: string;
+  summary: {
+    handoffPlanCount: number;
+    blockedCount: number;
+    providerConfiguredCount: 0;
+    providerCallCount: 0;
+    artifactPersistedCount: 0;
+    sandboxWriteCount: 0;
+    manifestCreatedCount: 0;
+  };
+  handoffPlans: BrainCoreVideoArtifactSandboxProviderHandoffPlan[];
+  safety: BrainCoreVideoArtifactSandboxProviderHandoffSafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

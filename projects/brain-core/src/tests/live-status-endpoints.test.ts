@@ -5577,3 +5577,109 @@ test('POST /video-orchestrator/design-provider-prompt-review-policy-plan is not 
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-prompt-review-policy-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/artifact-sandbox-provider-handoff-plan returns three blocked handoff plans with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/artifact-sandbox-provider-handoff-plan' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    summary: {
+      handoffPlanCount: number;
+      blockedCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      artifactPersistedCount: number;
+      sandboxWriteCount: number;
+      manifestCreatedCount: number;
+    };
+    handoffPlans: Array<{ id: string; providerClass: string; handoffCategory: string; status: string; disallowedHandoffInputs: string[]; proposedManifestFields: string[]; safety: Record<string, boolean> }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.summary.handoffPlanCount, 3);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.providerConfiguredCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.summary.artifactPersistedCount, 0);
+  assert.equal(body.summary.sandboxWriteCount, 0);
+  assert.equal(body.summary.manifestCreatedCount, 0);
+  assert.equal(body.handoffPlans.length, 3);
+  assert.deepEqual(body.handoffPlans.map((plan) => plan.id), [
+    'image-generation-artifact-handoff',
+    'layout-rendering-artifact-handoff',
+    'brand-compliance-artifact-handoff',
+  ]);
+  body.handoffPlans.forEach((plan) => {
+    assert.equal(plan.status, 'blocked');
+    assert.ok(plan.disallowedHandoffInputs.includes('raw generated files'));
+    assert.ok(plan.disallowedHandoffInputs.includes('raw credentials'));
+    assert.ok(plan.disallowedHandoffInputs.includes('API keys'));
+    assert.ok(plan.disallowedHandoffInputs.includes('OAuth tokens'));
+    assert.ok(plan.disallowedHandoffInputs.includes('filesystem paths outside approved sandbox'));
+    assert.ok(plan.disallowedHandoffInputs.includes('Mind vault paths'));
+    assert.ok(plan.disallowedHandoffInputs.includes('STB artifact paths'));
+    assert.ok(plan.disallowedHandoffInputs.includes('publishing commands'));
+    assert.ok(plan.disallowedHandoffInputs.includes('arbitrary shell text'));
+    assert.ok(plan.proposedManifestFields.includes('artifactId'));
+    assert.ok(plan.proposedManifestFields.includes('providerClass'));
+    assert.ok(plan.proposedManifestFields.includes('sourcePlanId'));
+    assert.ok(plan.proposedManifestFields.includes('promptReviewPolicyId'));
+    assert.ok(plan.proposedManifestFields.includes('credentialIsolationPlanId'));
+    assert.ok(plan.proposedManifestFields.includes('sandboxPolicyRef'));
+    assert.ok(plan.proposedManifestFields.includes('auditRefPlaceholder'));
+    assert.equal(plan.safety.readOnly, true);
+    assert.equal(plan.safety.handoffDesignOnly, true);
+    assert.equal(plan.safety.providerConfigured, false);
+    assert.equal(plan.safety.providerCallsEnabled, false);
+    assert.equal(plan.safety.artifactManifestCreationEnabled, false);
+    assert.equal(plan.safety.artifactPersistenceEnabled, false);
+    assert.equal(plan.safety.sandboxWriteEnabled, false);
+    assert.equal(plan.safety.sandboxReadEnabled, false);
+    assert.equal(plan.safety.credentialAccessEnabled, false);
+    assert.equal(plan.safety.rawArtifactAccessEnabled, false);
+    assert.equal(plan.safety.filesystemAccessEnabled, false);
+    assert.equal(plan.safety.networkAccessEnabled, false);
+    assert.equal(plan.safety.writesFiles, false);
+    assert.equal(plan.safety.publishesContent, false);
+    assert.equal(plan.safety.writesToMind, false);
+    assert.equal(plan.safety.executesVideo, false);
+  });
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.handoffDesignOnly, true);
+  assert.equal(body.safety.providerConfigured, false);
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.artifactManifestCreationEnabled, false);
+  assert.equal(body.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.safety.sandboxWriteEnabled, false);
+  assert.equal(body.safety.sandboxReadEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.rawArtifactAccessEnabled, false);
+  assert.equal(body.safety.filesystemAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/artifact-sandbox-provider-handoff-plan/:id returns the image-generation handoff plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/artifact-sandbox-provider-handoff-plan/image-generation-artifact-handoff' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    providerClass: string;
+    handoffCategory: string;
+    status: string;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'image-generation-artifact-handoff');
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.handoffCategory, 'thumbnail-and-scene-artifacts');
+  assert.equal(body.status, 'blocked');
+});
+
+test('POST /video-orchestrator/artifact-sandbox-provider-handoff-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/artifact-sandbox-provider-handoff-plan' });
+  assert.equal(response.statusCode, 404);
+});

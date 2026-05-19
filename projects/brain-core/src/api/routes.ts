@@ -68,6 +68,7 @@ import { readVideoArchiveLoggingPlans, readVideoArchiveLoggingPlan } from '../ad
 import { readVideoDesignProviderBoundaryPlans, readVideoDesignProviderBoundaryPlan } from '../adapters/video-orchestrator-design-provider-boundary-plan.js';
 import { readVideoDesignProviderCredentialIsolationPlans, readVideoDesignProviderCredentialIsolationPlan } from '../adapters/video-orchestrator-design-provider-credential-isolation-plan.js';
 import { readVideoDesignProviderPromptReviewPolicyPlans, readVideoDesignProviderPromptReviewPolicyPlan } from '../adapters/video-orchestrator-design-provider-prompt-review-policy-plan.js';
+import { readVideoArtifactSandboxProviderHandoffPlans, readVideoArtifactSandboxProviderHandoffPlan } from '../adapters/video-orchestrator-artifact-sandbox-provider-handoff-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -306,6 +307,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/design-provider-prompt-review-policy-plan':
       sendJson(response, 200, readVideoDesignProviderPromptReviewPolicyPlans());
+      return;
+    case '/video-orchestrator/artifact-sandbox-provider-handoff-plan':
+      sendJson(response, 200, readVideoArtifactSandboxProviderHandoffPlans());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -652,6 +656,22 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator design provider prompt review policy not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const handoffMatch = /^\/video-orchestrator\/artifact-sandbox-provider-handoff-plan\/([^/]+)$/.exec(url.pathname);
+        if (handoffMatch) {
+          const plan = readVideoArtifactSandboxProviderHandoffPlan(decodeURIComponent(handoffMatch[1] ?? ''));
+          if (plan) {
+            sendJson(response, 200, plan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator artifact sandbox provider handoff plan not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;
