@@ -274,3 +274,51 @@ Validation:
 Next safe task suggestion:
 
 - Design provider prompt review policy plan, or artifact sandbox provider handoff plan.
+
+
+## Continuation update — Video Orchestrator design provider prompt review policy plan
+
+Implemented after the design provider credential isolation plan.
+
+Endpoints:
+
+- `GET /video-orchestrator/design-provider-prompt-review-policy-plan`
+- `GET /video-orchestrator/design-provider-prompt-review-policy-plan/:id`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-design-provider-prompt-review-policy-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Design-only only.
+- No prompt generation.
+- No prompt approval.
+- No approved prompt persistence.
+- No provider configuration.
+- No provider calls.
+- No credential access.
+- No raw credential display.
+- No env reads.
+- No filesystem access.
+- No network/provider access.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+- No POST route.
+
+Validation:
+
+- Pending after implementation; run Brain Core CI and Brain Console typecheck/build/package.
+
+Next safe task suggestion:
+
+- Artifact sandbox provider handoff plan or Design provider compliance checklist plan.

@@ -60,6 +60,7 @@ import {
   readBrainCoreVideoOrchestratorArchiveLoggingPlans,
   readBrainCoreVideoOrchestratorDesignProviderBoundaryPlans,
   readBrainCoreVideoOrchestratorDesignProviderCredentialIsolationPlans,
+  readBrainCoreVideoOrchestratorDesignProviderPromptReviewPolicyPlans,
   readBrainCoreStbVideoMigrationStatus,
   readBrainCoreStbVideoParityMatrix,
   readBrainCoreStbVideoDualRunStatus,
@@ -163,6 +164,7 @@ import {
   type BrainCoreVideoArchiveLoggingPlanResponse,
   type BrainCoreVideoDesignProviderBoundaryPlanResponse,
   type BrainCoreVideoDesignProviderCredentialIsolationPlanResponse,
+  type BrainCoreVideoDesignProviderPromptReviewPolicyPlanResponse,
   type BrainCoreStbVideoMigrationStatus,
   type BrainCoreStbVideoParityMatrix,
   type BrainCoreStbVideoDualRunStatus,
@@ -265,6 +267,7 @@ export interface BrainConsoleViewState {
   videoArchiveLoggingPlans?: BrainCoreVideoArchiveLoggingPlanResponse;
   videoDesignProviderBoundaryPlans?: BrainCoreVideoDesignProviderBoundaryPlanResponse;
   videoDesignProviderCredentialIsolationPlans?: BrainCoreVideoDesignProviderCredentialIsolationPlanResponse;
+  videoDesignProviderPromptReviewPolicyPlans?: BrainCoreVideoDesignProviderPromptReviewPolicyPlanResponse;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   stbVideoParityMatrix?: BrainCoreStbVideoParityMatrix;
   stbVideoDualRunStatus?: BrainCoreStbVideoDualRunStatus;
@@ -370,6 +373,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVideoOrchestratorArchiveLoggingPlans(baseUrl),
     readBrainCoreVideoOrchestratorDesignProviderBoundaryPlans(baseUrl),
     readBrainCoreVideoOrchestratorDesignProviderCredentialIsolationPlans(baseUrl),
+    readBrainCoreVideoOrchestratorDesignProviderPromptReviewPolicyPlans(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
     readBrainCoreStbVideoParityMatrix(baseUrl),
     readBrainCoreStbVideoDualRunStatus(baseUrl),
@@ -404,7 +408,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreRecoveryItems(baseUrl),
   ]);
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = results.map(r => r.status === 'fulfilled' ? r.value : { value: undefined, error: r.reason }) as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = results.map(r => r.status === 'fulfilled' ? r.value : { value: undefined, error: r.reason }) as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -504,6 +508,7 @@ export async function loadBrainConsoleViewState(
     videoArchiveLoggingPlans: videoArchiveLoggingPlans.value,
     videoDesignProviderBoundaryPlans: videoDesignProviderBoundaryPlans.value,
     videoDesignProviderCredentialIsolationPlans: videoDesignProviderCredentialIsolationPlans.value,
+    videoDesignProviderPromptReviewPolicyPlans: videoDesignProviderPromptReviewPolicyPlans.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     stbVideoParityMatrix: stbVideoParityMatrix.value,
     stbVideoDualRunStatus: stbVideoDualRunStatus.value,
@@ -728,6 +733,7 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
 
   renderCard(grid, 'Pipelines', renderPipelinesCard(state, snapshot));
   renderCard(grid, 'Design Provider Credential Isolation', renderVideoDesignProviderCredentialIsolationPlanCard(state, snapshot));
+  renderCard(grid, 'Design Provider Prompt Review', renderVideoDesignProviderPromptReviewPolicyPlanCard(state, snapshot));
   renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
   renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Production Gate', renderProductionGateCard(state, snapshot));
@@ -1575,6 +1581,33 @@ function renderVideoDesignProviderCredentialIsolationPlanCard(state: BrainConsol
   });
 
   container.appendChild(renderSafetyLabel('Read-only · No credential access · No raw secrets · No provider calls'));
+  return container;
+}
+
+function renderVideoDesignProviderPromptReviewPolicyPlanCard(state: BrainConsoleViewState, _snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const data = state.videoDesignProviderPromptReviewPolicyPlans;
+
+  if (!data) {
+    return renderEmptyState('Design provider prompt review policy plan unavailable', 'Brain Core /video-orchestrator/design-provider-prompt-review-policy-plan did not return a response.');
+  }
+
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: data.status },
+    { label: 'Policies', value: String(data.summary.policyCount) },
+    { label: 'Approved prompts', value: String(data.summary.approvedPromptCount) },
+    { label: 'Provider calls', value: String(data.summary.providerCallCount) },
+    { label: 'Persisted prompts', value: String(data.summary.persistedPromptCount) },
+  ]);
+
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  data.policies.slice(0, 3).forEach((policy) => {
+    list.createEl('div', { cls: 'brain-console__list-note', text: `${policy.providerClass}: ${policy.promptCategory}` });
+    list.createEl('div', { cls: 'brain-console__list-sub', text: `${policy.requiredHumanReviewChecks.length} review checks · ${policy.blockers.length} blockers` });
+  });
+
+  container.appendChild(renderSafetyLabel('Read-only · No prompt generation · No provider calls · No writes'));
   return container;
 }
 

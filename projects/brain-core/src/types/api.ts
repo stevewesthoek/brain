@@ -6798,3 +6798,64 @@ export interface BrainCoreVideoDesignProviderCredentialIsolationPlanResponse {
   blockers: string[];
   nextSafeStep: string;
 }
+
+export type BrainCoreVideoDesignProviderPromptReviewProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoDesignProviderPromptReviewPolicySafety {
+  readOnly: true;
+  promptReviewDesignOnly: true;
+  promptGenerationEnabled: false;
+  promptApprovalEnabled: false;
+  approvedPromptPersistenceEnabled: false;
+  providerConfigured: false;
+  providerCallsEnabled: false;
+  credentialAccessEnabled: false;
+  rawCredentialDisplayEnabled: false;
+  envReadEnabled: false;
+  filesystemAccessEnabled: false;
+  networkAccessEnabled: false;
+  writesFiles: false;
+  publishesContent: false;
+  writesToMind: false;
+  executesVideo: false;
+}
+
+export interface BrainCoreVideoDesignProviderPromptReviewPolicyPlan {
+  id: string;
+  providerClass: BrainCoreVideoDesignProviderPromptReviewProviderClass;
+  promptCategory: string;
+  status: 'blocked';
+  purpose: string;
+  allowedFuturePromptInputs: string[];
+  disallowedPromptInputs: string[];
+  requiredHumanReviewChecks: string[];
+  redactionRequirements: string[];
+  theologicalContentSafetyRequirements: string[];
+  operatorApprovalGates: string[];
+  auditRequirements: string[];
+  blockers: string[];
+  nextSafeStep: string;
+  safety: BrainCoreVideoDesignProviderPromptReviewPolicySafety;
+}
+
+export interface BrainCoreVideoDesignProviderPromptReviewPolicyPlanResponse {
+  id: 'video-orchestrator-design-provider-prompt-review-policy-plan';
+  status: 'blocked';
+  phase: 'design-provider-prompt-review-policy-plan-read-only';
+  generatedAt: string;
+  summary: {
+    policyCount: number;
+    blockedCount: number;
+    promptGenerationCount: 0;
+    providerCallCount: 0;
+    approvedPromptCount: 0;
+    persistedPromptCount: 0;
+  };
+  policies: BrainCoreVideoDesignProviderPromptReviewPolicyPlan[];
+  safety: BrainCoreVideoDesignProviderPromptReviewPolicySafety;
+  blockers: string[];
+  nextSafeStep: string;
+}

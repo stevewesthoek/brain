@@ -5484,3 +5484,96 @@ test('POST /video-orchestrator/design-provider-credential-isolation-plan is not 
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-credential-isolation-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/design-provider-prompt-review-policy-plan returns three blocked policies with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-prompt-review-policy-plan' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    summary: {
+      policyCount: number;
+      blockedCount: number;
+      promptGenerationCount: number;
+      providerCallCount: number;
+      approvedPromptCount: number;
+      persistedPromptCount: number;
+    };
+    policies: Array<{ id: string; providerClass: string; status: string; disallowedPromptInputs: string[]; safety: Record<string, boolean> }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.summary.policyCount, 3);
+  assert.equal(body.summary.blockedCount, 3);
+  assert.equal(body.summary.promptGenerationCount, 0);
+  assert.equal(body.summary.providerCallCount, 0);
+  assert.equal(body.summary.approvedPromptCount, 0);
+  assert.equal(body.summary.persistedPromptCount, 0);
+  assert.equal(body.policies.length, 3);
+  assert.deepEqual(body.policies.map((policy) => policy.id), [
+    'image-generation-prompt-review',
+    'layout-rendering-prompt-review',
+    'brand-compliance-prompt-review',
+  ]);
+  body.policies.forEach((policy) => {
+    assert.equal(policy.status, 'blocked');
+    assert.ok(policy.disallowedPromptInputs.includes('raw credentials'));
+    assert.ok(policy.disallowedPromptInputs.includes('API keys'));
+    assert.ok(policy.disallowedPromptInputs.includes('OAuth tokens'));
+    assert.ok(policy.disallowedPromptInputs.includes('arbitrary shell text'));
+    assert.ok(policy.disallowedPromptInputs.includes('publishing commands'));
+    assert.equal(policy.safety.readOnly, true);
+    assert.equal(policy.safety.promptReviewDesignOnly, true);
+    assert.equal(policy.safety.promptGenerationEnabled, false);
+    assert.equal(policy.safety.promptApprovalEnabled, false);
+    assert.equal(policy.safety.approvedPromptPersistenceEnabled, false);
+    assert.equal(policy.safety.providerConfigured, false);
+    assert.equal(policy.safety.providerCallsEnabled, false);
+    assert.equal(policy.safety.credentialAccessEnabled, false);
+    assert.equal(policy.safety.rawCredentialDisplayEnabled, false);
+    assert.equal(policy.safety.envReadEnabled, false);
+    assert.equal(policy.safety.filesystemAccessEnabled, false);
+    assert.equal(policy.safety.networkAccessEnabled, false);
+    assert.equal(policy.safety.writesFiles, false);
+    assert.equal(policy.safety.publishesContent, false);
+    assert.equal(policy.safety.writesToMind, false);
+    assert.equal(policy.safety.executesVideo, false);
+  });
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.promptReviewDesignOnly, true);
+  assert.equal(body.safety.promptGenerationEnabled, false);
+  assert.equal(body.safety.promptApprovalEnabled, false);
+  assert.equal(body.safety.approvedPromptPersistenceEnabled, false);
+  assert.equal(body.safety.providerConfigured, false);
+  assert.equal(body.safety.providerCallsEnabled, false);
+  assert.equal(body.safety.credentialAccessEnabled, false);
+  assert.equal(body.safety.rawCredentialDisplayEnabled, false);
+  assert.equal(body.safety.envReadEnabled, false);
+  assert.equal(body.safety.filesystemAccessEnabled, false);
+  assert.equal(body.safety.networkAccessEnabled, false);
+  assert.equal(body.safety.writesFiles, false);
+  assert.equal(body.safety.publishesContent, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/design-provider-prompt-review-policy-plan/:id returns the image-generation policy', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/design-provider-prompt-review-policy-plan/image-generation-prompt-review' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    providerClass: string;
+    promptCategory: string;
+    status: string;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'image-generation-prompt-review');
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.promptCategory, 'thumbnail-and-scene-generation');
+  assert.equal(body.status, 'blocked');
+});
+
+test('POST /video-orchestrator/design-provider-prompt-review-policy-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/design-provider-prompt-review-policy-plan' });
+  assert.equal(response.statusCode, 404);
+});

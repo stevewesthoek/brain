@@ -67,6 +67,7 @@ import { readVideoThumbnailDesignPlans, readVideoThumbnailDesignPlan } from '../
 import { readVideoArchiveLoggingPlans, readVideoArchiveLoggingPlan } from '../adapters/video-orchestrator-archive-logging-plan.js';
 import { readVideoDesignProviderBoundaryPlans, readVideoDesignProviderBoundaryPlan } from '../adapters/video-orchestrator-design-provider-boundary-plan.js';
 import { readVideoDesignProviderCredentialIsolationPlans, readVideoDesignProviderCredentialIsolationPlan } from '../adapters/video-orchestrator-design-provider-credential-isolation-plan.js';
+import { readVideoDesignProviderPromptReviewPolicyPlans, readVideoDesignProviderPromptReviewPolicyPlan } from '../adapters/video-orchestrator-design-provider-prompt-review-policy-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -302,6 +303,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/design-provider-credential-isolation-plan':
       sendJson(response, 200, readVideoDesignProviderCredentialIsolationPlans());
+      return;
+    case '/video-orchestrator/design-provider-prompt-review-policy-plan':
+      sendJson(response, 200, readVideoDesignProviderPromptReviewPolicyPlans());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -632,6 +636,22 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator design provider credential isolation plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const promptReviewMatch = /^\/video-orchestrator\/design-provider-prompt-review-policy-plan\/([^/]+)$/.exec(url.pathname);
+        if (promptReviewMatch) {
+          const policy = readVideoDesignProviderPromptReviewPolicyPlan(decodeURIComponent(promptReviewMatch[1] ?? ''));
+          if (policy) {
+            sendJson(response, 200, policy);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator design provider prompt review policy not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;
