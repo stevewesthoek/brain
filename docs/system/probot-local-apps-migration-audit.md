@@ -36,6 +36,7 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 - ProBot dashboard and Brain Core both expose lifecycle action routes.
 - Brain Core POST routes now return structured local-app action results through the canonical app-id orchestration adapter.
 - No arbitrary shell execution path should be introduced in Brain Console.
+- The stability pass added a crash-safe action boundary so route failures return structured JSON instead of escaping the API handler.
 
 ## Safety Risks
 
@@ -43,6 +44,8 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 - Unbounded command execution from Obsidian would violate the dashboard boundary.
 - Sensitive values must never be surfaced in the UI.
 - Start/stop controls must call Brain Core only, require confirmation, and return structured results for unsupported apps instead of pretending to execute.
+- The previous dashboard action payload incorrectly made controls look enabled even when no per-app execution strategy existed.
+- Button enablement must be per app/action, not global.
 
 ## Parts Worth Reusing
 
@@ -74,6 +77,7 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 
 - Per-app executable strategies still need to be registered for apps that can safely be started or stopped.
 - Persistent audit logging is planned beyond the current structured action result.
+- `GET /local-apps/actions/status` now exposes recent/in-flight action state for dashboard refreshes.
 
 ## Recommended Migration Architecture
 
@@ -82,6 +86,7 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 3. Add a separate readiness payload for future controlled actions.
 4. Route Start/Stop/Restart buttons through Brain Core only, using canonical app ids and fixed actions.
 5. Return `not_executable` for apps without a registered safe execution strategy instead of exposing raw commands.
+6. Enable buttons only when the app/action has an approved execution strategy; otherwise keep them disabled with a reason.
 
 ## Model Router Check
 

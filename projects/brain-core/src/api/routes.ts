@@ -37,6 +37,7 @@ import {
   listLocalApps,
   readLocalAppsActionPlan,
   readLocalAppsActionPlans,
+  readLocalAppsActionsStatus,
   readLocalAppsActionReadiness,
   readLocalAppsDashboard,
   readLocalAppsOnboardingChecklist,
@@ -207,7 +208,24 @@ export async function routeRequest(
   const url = new URL(request.url || '/', 'http://127.0.0.1');
 
   if (method === 'POST') {
-    routePostRequest(url, response);
+    try {
+      routePostRequest(url, response);
+    } catch (error) {
+      sendJson(response, 500, {
+        id: 'local-app-action-crash-safe-fallback',
+        status: 'failed',
+        ok: false,
+        message: 'Brain Core caught an action route error and stayed online.',
+        errorCode: 'route_post_crash_safe_fallback',
+        error: redactRouteError(error),
+        safety: {
+          pluginExecutesShell: false,
+          arbitraryCommandAllowed: false,
+          commandOverrideAccepted: false,
+          exposesSecrets: false,
+        },
+      });
+    }
     return;
   }
 
@@ -507,6 +525,9 @@ export async function routeRequest(
       return;
     case '/local-apps/action-readiness':
       sendJson(response, 200, readLocalAppsActionReadiness());
+      return;
+    case '/local-apps/actions/status':
+      sendJson(response, 200, readLocalAppsActionsStatus());
       return;
     case '/local-apps/orchestrator':
       sendJson(response, 200, readLocalAppsOrchestratorStatus());
@@ -1683,12 +1704,7 @@ function routePostRequest(url: URL, response: ServerResponse): void {
       return;
     }
     if (actionResult.kind === 'missing-app') {
-      sendJson(response, 404, {
-        error: {
-          code: 'not_found',
-          message: `Local app not found: ${appId}`,
-        },
-      } satisfies BrainCoreErrorResponse);
+      sendJson(response, 404, actionResult.result);
       return;
     }
     sendJson(response, 200, actionResult.result);
@@ -1747,4 +1763,12 @@ function sendJson(response: ServerResponse, statusCode: number, body: unknown): 
     'cache-control': 'no-store',
   });
   response.end(`${payload}\n`);
+}
+
+function redactRouteError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  return raw
+    .replace(/([A-Z0-9_]*(?:TOKEN|SECRET|KEY|PASSWORD|COOKIE|CREDENTIAL)[A-Z0-9_]*=)[^\s]+/gi, '$1[redacted]')
+    .replace(/\/Users\/[^/\s]+\/[^\s]*/g, '[local-path]')
+    .slice(0, 240);
 }

@@ -2,7 +2,7 @@
 
 Standalone Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, scheduler status, and controlled Local Apps operations using native Obsidian UI with responsive layout.
 
-**Build:** `brain-console-local-apps-actions-2026-05-19-01`
+**Build:** `brain-console-local-apps-action-stability-2026-05-19-01`
 
 **Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
 
@@ -72,7 +72,7 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build brain-console-local-apps-actions-2026-05-19-01`
+1. Look for build marker in header: `build brain-console-local-apps-action-stability-2026-05-19-01`
 2. The dashboard header also shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state
 3. If marker is missing or different, your plugin bundle is stale
 4. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
@@ -90,9 +90,12 @@ npm run --prefix projects/brain-console-obsidian package
 - Standard orchestration payload: `GET /local-apps/orchestrator`
 - Onboarding checklist payload: `GET /local-apps/onboarding-checklist`
 - Action plan payloads: `GET /local-apps/action-plans` and `GET /local-apps/:id/action-plan/:action`
+- Action status payload: `GET /local-apps/actions/status`
 - Controlled action endpoints: `POST /local-apps/:id/start`, `POST /local-apps/:id/stop`, `POST /local-apps/:id/restart`
 - Brain Console never executes shell. Buttons call Brain Core only, with canonical app ids and fixed action names.
 - Unsupported apps return structured `not_executable` results until a safe per-app execution strategy is registered.
+- Buttons are enabled per app/action only when Brain Core reports that specific action is executable.
+- Brain Core action routes catch failures and return structured JSON with `commandOverrideAccepted: false`.
 - Release/install command: `npm run --prefix projects/brain-console-obsidian release:install`
 - Model Router is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
 

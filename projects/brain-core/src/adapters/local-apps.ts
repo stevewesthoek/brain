@@ -10,7 +10,8 @@ import type {
 } from '../types/api.js';
 import {
   createLocalAppActionPlan,
-  executeLocalAppAction,
+  executeLocalAppActionRequest,
+  readLocalAppActionStatus,
   listLocalAppActionPlans,
   listLocalAppDefinitions,
   readLocalAppOnboardingChecklist,
@@ -284,7 +285,8 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     const status = statusByName.get(app.name);
     const lifecycleStatus = normalizeDashboardStatus(status?.status ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
     const managed = app.managed;
-    const actionEnabled = true;
+    const executableActions = app.actionPolicy.status === 'enabled' ? app.actionPolicy.safeActions : [];
+    const actionEnabled = executableActions.length > 0;
     return {
       id: app.id,
       name: app.name,
@@ -294,11 +296,11 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
       health: deriveHealth(lifecycleStatus),
       source: app.category === 'brain-core' ? 'brain-core' : app.repoPathSummary ? 'infrastructure-config' : 'unknown',
       managed,
-      startSupported: true,
-      stopSupported: true,
-      restartSupported: true,
+      startSupported: executableActions.includes('start'),
+      stopSupported: executableActions.includes('stop'),
+      restartSupported: executableActions.includes('restart'),
       actionEnabled,
-      actionDisabledReason: '',
+      actionDisabledReason: actionEnabled ? '' : 'No safe executable strategy is registered for this app/action.',
       lastCheckedAt: timestamp,
       notes: app.description,
       ...(app.appUrl ? { url: app.appUrl } : {}),
@@ -329,7 +331,7 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     unmanagedCount,
     apps,
     actionPolicy: {
-      status: 'enabled',
+      status: supportedSafeActions.length > 0 ? 'enabled' : 'planned',
       executionPath: 'brain-core-allowlisted-action',
       requiresConfirmation: true,
       requiresAllowlist: true,
@@ -347,10 +349,10 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
       platformWrites: false,
       mindWrites: false,
       destructiveActions: false,
-      startStopControlsEnabled: true,
+      startStopControlsEnabled: supportedSafeActions.length > 0,
     },
     blockers: inventory.length === 0 ? ['No local apps registry entries were found.'] : [],
-    nextSafeStep: 'Use Brain Core controlled local-app endpoints; unsupported apps return structured not_executable results.',
+    nextSafeStep: 'Register a safe per-app execution strategy before enabling app action buttons.',
   };
 }
 
@@ -359,8 +361,8 @@ export function readLocalAppsActionReadiness(): BrainCoreLocalAppActionReadiness
 
   return {
     id: 'local-apps-action-readiness',
-    status: 'ready',
-    ready: true,
+    status: criteria.every((criterion) => criterion.satisfied) ? 'ready' : 'not-ready',
+    ready: criteria.every((criterion) => criterion.satisfied),
     criteria,
     satisfiedCount: criteria.filter((criterion) => criterion.satisfied).length,
     unsatisfiedCount: criteria.filter((criterion) => !criterion.satisfied).length,
@@ -374,9 +376,9 @@ export function readLocalAppsActionReadiness(): BrainCoreLocalAppActionReadiness
       platformWrites: false,
       mindWrites: false,
       destructiveActions: false,
-      startStopControlsEnabled: true,
+      startStopControlsEnabled: criteria.every((criterion) => criterion.satisfied),
     },
-    nextSafeStep: 'Use canonical Brain Core local-app action endpoints and register executable strategies per app.',
+    nextSafeStep: 'Register executable strategies per app; direct POST requests still return structured not_executable results.',
   };
 }
 
@@ -397,11 +399,15 @@ export function readLocalAppsActionPlan(appId: string, action: string) {
   return createLocalAppActionPlan(appId, normalizedAction);
 }
 
-export function runLocalAppsAction(appId: string, action: string) {
+export function readLocalAppsActionsStatus() {
+  return readLocalAppActionStatus();
+}
+
+export function runLocalAppsAction(appId: string, action: string, options: { forceExecutorError?: boolean } = {}) {
   const normalizedAction = action === 'start' || action === 'stop' || action === 'restart' ? action : undefined;
   if (!normalizedAction) return { kind: 'invalid-action' as const };
-  const result = executeLocalAppAction(appId, normalizedAction);
-  if (!result) return { kind: 'missing-app' as const };
+  const result = executeLocalAppActionRequest(appId, normalizedAction, options);
+  if (result.status === 'not_found') return { kind: 'missing-app' as const, result };
   return { kind: 'result' as const, result };
 }
 
@@ -422,8 +428,8 @@ function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalApp
     {
       id: 'allowlist-defined',
       label: 'Allowlisted actions defined',
-      satisfied: true,
-      detail: 'Brain Core accepts only canonical app ids and start/stop/restart actions.',
+      satisfied: inventory.some((app) => app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.length > 0),
+      detail: 'At least one app must have an approved Brain Core execution strategy before buttons are enabled.',
     },
     {
       id: 'brain-core-action-endpoint',
@@ -440,13 +446,13 @@ function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalApp
     {
       id: 'audit-logging',
       label: 'Audit logging available',
-      satisfied: true,
-      detail: 'Structured action results are returned now; persistent audit logging is planned.',
+      satisfied: false,
+      detail: 'Structured in-memory action results are available; persistent audit logging is still planned.',
     },
     {
       id: 'plugin-shell-exec',
       label: 'Plugin executes shell',
-      satisfied: false,
+      satisfied: true,
       detail: 'Obsidian plugin does not execute shell commands.',
     },
     {

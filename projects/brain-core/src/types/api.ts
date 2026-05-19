@@ -236,8 +236,11 @@ export interface BrainCoreLocalAppActionResultStep {
 export interface BrainCoreLocalAppActionSafety {
   pluginExecutesShell: false;
   arbitraryCommandAllowed: false;
+  commandOverrideAccepted: false;
   canonicalAppIdRequired: true;
-  allowlistedDefinitionRequired: true;
+  allowlistedDefinitionRequired: boolean;
+  allowlistedApp: boolean;
+  allowlistedAction: boolean;
   exposesSecrets: false;
 }
 
@@ -245,13 +248,33 @@ export interface BrainCoreLocalAppActionResult {
   id: string;
   appId: string;
   action: BrainCoreLocalAppAction;
-  status: 'success' | 'failed' | 'not_executable' | 'blocked';
+  status: 'accepted' | 'running' | 'success' | 'failed' | 'not_executable' | 'blocked' | 'not_found';
+  ok: boolean;
+  message: string;
+  errorCode?: string;
+  error?: string;
   startedAt: string;
+  endedAt: string;
   finishedAt: string;
+  durationMs: number;
+  nextPollMs: number;
   steps: BrainCoreLocalAppActionResultStep[];
   safety: BrainCoreLocalAppActionSafety;
   nextState: 'running' | 'stopped' | 'unknown';
-  error?: string;
+}
+
+export interface BrainCoreLocalAppActionStatusResponse {
+  id: 'local-apps-actions-status';
+  inFlight: BrainCoreLocalAppActionResult[];
+  recentResults: BrainCoreLocalAppActionResult[];
+  lastErrorByApp: Record<string, BrainCoreLocalAppActionResult>;
+  locks: Array<{ appId: string; action: BrainCoreLocalAppAction; startedAt: string }>;
+  safety: {
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    commandOverrideAccepted: false;
+    exposesSecrets: false;
+  };
 }
 
 export interface BrainCoreLocalAppOrchestratorStatus {

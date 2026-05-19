@@ -4,7 +4,9 @@ import type {
   BrainCoreLocalAppAction,
   BrainCoreLocalAppActionPlan,
   BrainCoreLocalAppActionResult,
+  BrainCoreLocalAppActionSafety,
   BrainCoreLocalAppActionResultStep,
+  BrainCoreLocalAppActionStatusResponse,
   BrainCoreLocalAppDatabaseDefinition,
   BrainCoreLocalAppDefinition,
   BrainCoreLocalAppOrchestratorStatus,
@@ -66,6 +68,15 @@ const DEFAULT_ACTION_POLICY = {
   blockedActions: ['start', 'stop', 'restart', 'custom-command'] as Array<'start' | 'stop' | 'restart' | 'custom-command'>,
 };
 
+const RECENT_ACTION_LIMIT = 20;
+const localAppInFlightActions = new Map<string, BrainCoreLocalAppActionResult>();
+const localAppRecentResults: BrainCoreLocalAppActionResult[] = [];
+const localAppLastErrorByApp = new Map<string, BrainCoreLocalAppActionResult>();
+
+type ExecuteLocalAppActionRequestOptions = {
+  forceExecutorError?: boolean;
+};
+
 export function listLocalAppDefinitions(): BrainCoreLocalAppDefinition[] {
   const registry = readRegistryApps();
   const modelRouter = readModelRouterDefinition();
@@ -101,40 +112,168 @@ export function createLocalAppActionPlan(appId: string, action: BrainCoreLocalAp
 }
 
 export function executeLocalAppAction(appId: string, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionResult | undefined {
-  const startedAt = new Date().toISOString();
-  const app = listLocalAppDefinitions().find((entry) => entry.id === appId);
-  if (!app) return undefined;
+  const result = executeLocalAppActionRequest(appId, action);
+  return result.status === 'not_found' ? undefined : result;
+}
 
-  const steps = createExecutionSteps(app, action);
-  const executable = app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action);
-  const finishedAt = new Date().toISOString();
+export function executeLocalAppActionRequest(appId: string, action: BrainCoreLocalAppAction, options: ExecuteLocalAppActionRequestOptions = {}): BrainCoreLocalAppActionResult {
+  const startedAtMs = Date.now();
+  const startedAt = new Date(startedAtMs).toISOString();
+  const id = `local-app-${action}-${normalizeId(appId || 'unknown')}-${startedAtMs}`;
+  const lockKey = `${appId}:${action}`;
 
-  if (!executable) {
-    return {
-      id: `local-app-${action}-${app.id}-${Date.now()}`,
+  try {
+    const app = listLocalAppDefinitions().find((entry) => entry.id === appId);
+    if (!app) {
+      const result = createActionResult({
+        id,
+        appId,
+        action,
+        status: 'not_found',
+        ok: false,
+        message: 'Local app is not registered in the canonical inventory.',
+        errorCode: 'local_app_not_found',
+        startedAtMs,
+        steps: [
+          {
+            id: 'validate-app',
+            label: 'Validate canonical app id',
+            type: 'validation',
+            status: 'failed',
+            message: 'No matching canonical app id was found.',
+          },
+        ],
+        safety: localActionSafety(false, false),
+        nextState: 'unknown',
+      });
+      recordActionResult(result);
+      return result;
+    }
+
+    const existing = localAppInFlightActions.get(lockKey);
+    if (existing) {
+      const result = createActionResult({
+        id,
+        appId: app.id,
+        action,
+        status: 'blocked',
+        ok: false,
+        message: 'A local app action is already in flight for this app/action.',
+        errorCode: 'local_app_action_in_flight',
+        startedAtMs,
+        steps: createExecutionSteps(app, action, 'blocked', 'Action blocked because an existing request is in flight.'),
+        safety: localActionSafety(true, app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action)),
+        nextState: 'unknown',
+        nextPollMs: 1500,
+      });
+      recordActionResult(result);
+      return result;
+    }
+
+    localAppInFlightActions.set(lockKey, createActionResult({
+      id,
       appId: app.id,
       action,
-      status: 'not_executable',
-      startedAt,
-      finishedAt,
-      steps,
-      safety: localActionSafety(),
+      status: 'running',
+      ok: false,
+      message: 'Local app action request is being evaluated.',
+      startedAtMs,
+      steps: createExecutionSteps(app, action, 'skipped', 'Pending evaluation.'),
+      safety: localActionSafety(true, app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action)),
       nextState: 'unknown',
-      error: 'No safe executable strategy is registered for this app yet.',
-    };
-  }
+      nextPollMs: 500,
+    }));
 
+    try {
+      if (options.forceExecutorError) {
+        throw new Error('Forced local app executor failure for regression coverage.');
+      }
+
+      const executable = app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action);
+      if (!executable) {
+        const result = createActionResult({
+          id,
+          appId: app.id,
+          action,
+          status: 'not_executable',
+          ok: false,
+          message: 'No safe executable strategy is registered for this app/action.',
+          errorCode: 'local_app_action_not_executable',
+          error: 'Action is blocked until the app has an approved Brain Core execution strategy.',
+          startedAtMs,
+          steps: createExecutionSteps(app, action, 'not_executable', `No safe executable ${action} strategy is registered.`),
+          safety: localActionSafety(true, false),
+          nextState: 'unknown',
+        });
+        recordActionResult(result);
+        return result;
+      }
+
+      const result = createActionResult({
+        id,
+        appId: app.id,
+        action,
+        status: 'not_executable',
+        ok: false,
+        message: 'Execution strategy registry is present, but no executable runner is enabled.',
+        errorCode: 'local_app_runner_disabled',
+        error: 'Runner disabled for safety.',
+        startedAtMs,
+        steps: createExecutionSteps(app, action, 'not_executable', 'Executable runner is disabled for this action.'),
+        safety: localActionSafety(true, true),
+        nextState: 'unknown',
+      });
+      recordActionResult(result);
+      return result;
+    } finally {
+      localAppInFlightActions.delete(lockKey);
+    }
+  } catch (error) {
+    const result = createActionResult({
+      id,
+      appId,
+      action,
+      status: 'failed',
+      ok: false,
+      message: 'Local app action failed safely. Brain Core remains available.',
+      errorCode: 'local_app_action_failed',
+      error: redactError(error),
+      startedAtMs,
+      steps: [
+        {
+          id: 'crash-safe-boundary',
+          label: 'Crash-safe action boundary',
+          type: 'validation',
+          status: 'failed',
+          message: 'An action error was caught and converted to a structured result.',
+        },
+      ],
+      safety: localActionSafety(false, false),
+      nextState: 'unknown',
+    });
+    localAppInFlightActions.delete(lockKey);
+    recordActionResult(result);
+    return result;
+  }
+}
+
+export function readLocalAppActionStatus(): BrainCoreLocalAppActionStatusResponse {
   return {
-    id: `local-app-${action}-${app.id}-${Date.now()}`,
-    appId: app.id,
-    action,
-    status: 'not_executable',
-    startedAt,
-    finishedAt,
-    steps,
-    safety: localActionSafety(),
-    nextState: 'unknown',
-    error: 'Execution strategy registry is present, but no executable runner is enabled.',
+    id: 'local-apps-actions-status',
+    inFlight: Array.from(localAppInFlightActions.values()),
+    recentResults: [...localAppRecentResults],
+    lastErrorByApp: Object.fromEntries(localAppLastErrorByApp),
+    locks: Array.from(localAppInFlightActions.values()).map((entry) => ({
+      appId: entry.appId,
+      action: entry.action,
+      startedAt: entry.startedAt,
+    })),
+    safety: {
+      pluginExecutesShell: false,
+      arbitraryCommandAllowed: false,
+      commandOverrideAccepted: false,
+      exposesSecrets: false,
+    },
   };
 }
 
@@ -175,13 +314,18 @@ function createActionPlanSteps(app: BrainCoreLocalAppDefinition, action: BrainCo
   }));
 }
 
-function createExecutionSteps(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionResultStep[] {
+function createExecutionSteps(
+  app: BrainCoreLocalAppDefinition,
+  action: BrainCoreLocalAppAction,
+  status: BrainCoreLocalAppActionResultStep['status'] = 'not_executable',
+  message?: string,
+): BrainCoreLocalAppActionResultStep[] {
   return createOrderedActionTargets(app, action).map((target) => ({
     id: target.id,
     label: target.label,
     type: target.type,
-    status: 'not_executable',
-    message: `${target.label} has no safe executable ${action} strategy registered yet.`,
+    status,
+    message: message ?? `${target.label} has no safe executable ${action} strategy registered yet.`,
   }));
 }
 
@@ -210,14 +354,70 @@ function createOrderedActionTargets(app: BrainCoreLocalAppDefinition, action: Br
   return targets;
 }
 
-function localActionSafety() {
+function localActionSafety(allowlistedApp: boolean, allowlistedAction: boolean): BrainCoreLocalAppActionSafety {
   return {
     pluginExecutesShell: false,
     arbitraryCommandAllowed: false,
+    commandOverrideAccepted: false,
     canonicalAppIdRequired: true,
-    allowlistedDefinitionRequired: true,
+    allowlistedDefinitionRequired: allowlistedApp,
+    allowlistedApp,
+    allowlistedAction,
     exposesSecrets: false,
-  } as const;
+  };
+}
+
+function createActionResult(input: {
+  id: string;
+  appId: string;
+  action: BrainCoreLocalAppAction;
+  status: BrainCoreLocalAppActionResult['status'];
+  ok: boolean;
+  message: string;
+  errorCode?: string;
+  error?: string;
+  startedAtMs: number;
+  steps: BrainCoreLocalAppActionResultStep[];
+  safety: BrainCoreLocalAppActionSafety;
+  nextState: BrainCoreLocalAppActionResult['nextState'];
+  nextPollMs?: number;
+}): BrainCoreLocalAppActionResult {
+  const endedAtMs = Date.now();
+  const endedAt = new Date(endedAtMs).toISOString();
+  return {
+    id: input.id,
+    appId: input.appId,
+    action: input.action,
+    status: input.status,
+    ok: input.ok,
+    message: input.message,
+    ...(input.errorCode ? { errorCode: input.errorCode } : {}),
+    ...(input.error ? { error: input.error } : {}),
+    startedAt: new Date(input.startedAtMs).toISOString(),
+    endedAt,
+    finishedAt: endedAt,
+    durationMs: Math.max(0, endedAtMs - input.startedAtMs),
+    nextPollMs: input.nextPollMs ?? 1500,
+    steps: input.steps,
+    safety: input.safety,
+    nextState: input.nextState,
+  };
+}
+
+function recordActionResult(result: BrainCoreLocalAppActionResult): void {
+  localAppRecentResults.unshift(result);
+  localAppRecentResults.splice(RECENT_ACTION_LIMIT);
+  if (!result.ok || result.errorCode) {
+    localAppLastErrorByApp.set(result.appId, result);
+  }
+}
+
+function redactError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error);
+  return raw
+    .replace(/([A-Z0-9_]*(?:TOKEN|SECRET|KEY|PASSWORD|COOKIE|CREDENTIAL)[A-Z0-9_]*=)[^\s]+/gi, '$1[redacted]')
+    .replace(/\/Users\/[^/\s]+\/[^\s]*/g, '[local-path]')
+    .slice(0, 240);
 }
 
 export function readLocalAppOnboardingChecklist(): BrainCoreLocalAppOnboardingChecklist {

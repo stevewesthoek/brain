@@ -3,6 +3,7 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { routeRequest } from '../api/routes.js';
+import { executeLocalAppActionRequest } from '../adapters/local-app-orchestrator.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 class MockResponse implements ServerResponse {
@@ -413,7 +414,7 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
     unknownCount: number;
     managedCount: number;
     unmanagedCount: number;
-    apps: Array<{ id: string; name: string; actionEnabled: boolean; actionDisabledReason: string; managed: boolean }>;
+    apps: Array<{ id: string; name: string; actionEnabled: boolean; actionDisabledReason: string; managed: boolean; startSupported: boolean }>;
     actionPolicy: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; status: string };
     safety: { readOnlyDashboard: boolean; pluginExecutesShell: boolean; arbitraryCommandExecution: boolean; startStopControlsEnabled: boolean };
   };
@@ -426,10 +427,12 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.equal(body.safety.readOnlyDashboard, true);
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandExecution, false);
-  assert.equal(body.actionPolicy.status, 'enabled');
-  assert.equal(body.safety.startStopControlsEnabled, true);
+  assert.equal(body.actionPolicy.status, 'planned');
+  assert.equal(body.safety.startStopControlsEnabled, false);
   assert.ok(body.apps.length > 0);
   assert.ok(body.apps.some((app) => app.id === 'model-router'));
+  assert.ok(body.apps.every((app) => !app.actionEnabled || app.startSupported));
+  assert.ok(body.apps.find((app) => app.id === 'model-router')?.actionDisabledReason.includes('No safe executable strategy'));
 });
 
 test('GET /local-apps/orchestrator returns standardized inventory model', async () => {
@@ -499,7 +502,7 @@ test('GET /local-apps/model-router/action-plan/start returns a safe disabled pla
   assert.equal(body.canExecuteNow, false);
 });
 
-test('GET /local-apps/action-readiness returns ready for controlled endpoints', async () => {
+test('GET /local-apps/action-readiness returns not-ready until per-app strategies exist', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/action-readiness' });
   const body = JSON.parse(response.body) as {
     id: string;
@@ -511,8 +514,8 @@ test('GET /local-apps/action-readiness returns ready for controlled endpoints', 
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.id, 'local-apps-action-readiness');
-  assert.equal(body.ready, true);
-  assert.equal(body.status, 'ready');
+  assert.equal(body.ready, false);
+  assert.equal(body.status, 'not-ready');
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandExecution, false);
   assert.ok(body.criteria.length > 0);
@@ -524,17 +527,26 @@ test('POST /local-apps/model-router/start returns structured controlled result',
     appId: string;
     action: string;
     status: string;
+    ok: boolean;
+    message: string;
+    errorCode?: string;
+    nextPollMs: number;
     steps: Array<{ id: string; status: string }>;
-    safety: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; canonicalAppIdRequired: boolean };
+    safety: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; commandOverrideAccepted: boolean; canonicalAppIdRequired: boolean };
   };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.appId, 'model-router');
   assert.equal(body.action, 'start');
-  assert.ok(['success', 'failed', 'not_executable', 'blocked'].includes(body.status));
+  assert.equal(body.status, 'not_executable');
+  assert.equal(body.ok, false);
+  assert.equal(body.errorCode, 'local_app_action_not_executable');
+  assert.equal(typeof body.message, 'string');
+  assert.equal(body.nextPollMs > 0, true);
   assert.ok(body.steps.length > 0);
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.commandOverrideAccepted, false);
   assert.equal(body.safety.canonicalAppIdRequired, true);
 });
 
@@ -543,7 +555,7 @@ test('POST /local-apps/model-router/start rejects command override parameters', 
   const body = JSON.parse(response.body) as {
     appId: string;
     action: string;
-    safety: { arbitraryCommandAllowed: boolean; canonicalAppIdRequired: boolean };
+    safety: { arbitraryCommandAllowed: boolean; commandOverrideAccepted: boolean; canonicalAppIdRequired: boolean };
     steps: Array<{ label: string; message: string }>;
   };
 
@@ -551,13 +563,56 @@ test('POST /local-apps/model-router/start rejects command override parameters', 
   assert.equal(body.appId, 'model-router');
   assert.equal(body.action, 'start');
   assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.commandOverrideAccepted, false);
   assert.equal(body.safety.canonicalAppIdRequired, true);
   assert.equal(JSON.stringify(body.steps).includes('rm -rf'), false);
 });
 
 test('POST /local-apps/unknown/start rejects unknown app id', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/unknown/start' });
+  const body = JSON.parse(response.body) as { status: string; ok: boolean; errorCode?: string; safety: { commandOverrideAccepted: boolean } };
   assert.equal(response.statusCode, 404);
+  assert.equal(body.status, 'not_found');
+  assert.equal(body.ok, false);
+  assert.equal(body.errorCode, 'local_app_not_found');
+  assert.equal(body.safety.commandOverrideAccepted, false);
+});
+
+test('POST /local-apps/model-router/delete is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/delete' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('local app executor errors are converted to structured failed results', () => {
+  const result = executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
+  assert.equal(result.status, 'failed');
+  assert.equal(result.ok, false);
+  assert.equal(result.errorCode, 'local_app_action_failed');
+  assert.equal(result.safety.pluginExecutesShell, false);
+  assert.equal(result.safety.arbitraryCommandAllowed, false);
+  assert.equal(result.safety.commandOverrideAccepted, false);
+});
+
+test('GET /local-apps/actions/status works after local app action failure', async () => {
+  executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
+  const response = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    inFlight: unknown[];
+    recentResults: Array<{ appId: string; status: string; error?: string }>;
+    lastErrorByApp: Record<string, { status: string }>;
+    safety: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; commandOverrideAccepted: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-actions-status');
+  assert.equal(Array.isArray(body.inFlight), true);
+  assert.equal(body.recentResults.some((result) => result.appId === 'model-router' && result.status === 'failed'), true);
+  assert.equal(body.lastErrorByApp['model-router']?.status, 'failed');
+  assert.equal(JSON.stringify(body).includes('TOKEN='), false);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.commandOverrideAccepted, false);
 });
 
 test('POST /local-apps/dashboard is not registered', async () => {

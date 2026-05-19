@@ -136,6 +136,7 @@ import {
   type BrainCoreLocalAppSummary,
   type BrainCoreLocalAppsDashboardResponse,
   type BrainCoreLocalAppActionReadinessResponse,
+  type BrainCoreLocalAppActionStatusResponse,
   type BrainCoreLocalAppOrchestratorStatus,
   type BrainCoreLocalAppOnboardingChecklist,
   type BrainCoreExecutionPlan,
@@ -288,6 +289,8 @@ import {
 
 export type BrainConsoleSectionId = 'overview' | 'apps' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery';
 
+const localAppPendingActions = new Map<string, string>();
+
 export interface BrainConsoleViewState {
   status?: BrainCoreStatus;
   capabilities?: BrainCoreCapabilitySummary;
@@ -297,6 +300,7 @@ export interface BrainConsoleViewState {
   localApps?: BrainCoreLocalAppSummary[];
   localAppsDashboard?: BrainCoreLocalAppsDashboardResponse;
   localAppsActionReadiness?: BrainCoreLocalAppActionReadinessResponse;
+  localAppsActionStatus?: BrainCoreLocalAppActionStatusResponse;
   localAppsOrchestrator?: BrainCoreLocalAppOrchestratorStatus;
   localAppsOnboardingChecklist?: BrainCoreLocalAppOnboardingChecklist;
   schedulerStatus?: BrainCoreSchedulerStatus;
@@ -839,7 +843,7 @@ function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, on
   const controls = header.createDiv({ cls: 'brain-console__header-controls' });
 
   const meta = header.createDiv({ cls: 'brain-console__header-meta' });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-local-apps-actions-2026-05-19-01` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-local-apps-action-stability-2026-05-19-01` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
@@ -1169,7 +1173,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'brain-console-local-apps-actions-2026-05-19-01'
+    text: 'brain-console-local-apps-action-stability-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1187,7 +1191,7 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
   container.className = 'brain-console__card-content';
 
   const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
-  const expectedMarker = 'brain-console-local-apps-actions-2026-05-19-01';
+  const expectedMarker = 'brain-console-local-apps-action-stability-2026-05-19-01';
   const markerOk = runtimeMarker === expectedMarker;
 
   renderCompactStatGrid(container, [
@@ -1920,6 +1924,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
   container.className = 'brain-console__apps-page';
   const dashboard = state.localAppsDashboard;
   const readiness = state.localAppsActionReadiness;
+  const actionStatus = state.localAppsActionStatus;
   const orchestrator = state.localAppsOrchestrator;
   const onboarding = state.localAppsOnboardingChecklist;
   const apps = dashboard?.apps ?? (state.localApps ?? []).map((app) => ({
@@ -1968,6 +1973,8 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
   const list = container.createDiv({ cls: 'brain-console__apps-operations-grid' });
   apps.forEach((app) => {
     const definition = definitionsById.get(app.id);
+    const pendingAction = localAppPendingActions.get(app.id);
+    const lastResult = actionStatus?.lastErrorByApp?.[app.id] ?? actionStatus?.recentResults?.find((result) => result.appId === app.id);
     const item = list.createDiv({ cls: 'brain-console__local-app-card brain-console__local-app-card--micro' });
     item.title = app.url || app.notes || app.name;
 
@@ -1984,6 +1991,16 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     meta.createEl('span', { text: `svc ${definition?.services.length ?? 0}` });
     meta.createEl('span', { text: `db ${definition?.database ? 'yes' : 'no'}` });
 
+    const statusLine = item.createEl('div', {
+      cls: 'brain-console__local-app-status-line',
+      text: pendingAction
+        ? `${pendingAction}...`
+        : lastResult
+          ? `${lastResult.status.replace('_', ' ')}`
+          : (app.actionDisabledReason || 'idle'),
+    });
+    statusLine.title = lastResult?.message ?? app.actionDisabledReason ?? 'Local app action state';
+
     const actions = item.createDiv({ cls: 'brain-console__local-app-actions' });
     const actionEntries = [
       { label: 'Start', action: 'start' as const, supported: app.startSupported },
@@ -1992,7 +2009,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     ];
 
     for (const entry of actionEntries) {
-      const enabled = controlsEnabled && entry.supported;
+      const enabled = !pendingAction && controlsEnabled && entry.supported;
       const btn = actions.createEl('button', { text: entry.label, cls: 'brain-console__local-app-action' });
       btn.disabled = !enabled;
       btn.title = enabled
@@ -2000,7 +2017,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
         : app.actionDisabledReason || readiness?.nextSafeStep || 'Action unsupported for this app.';
       if (enabled && settings) {
         btn.addEventListener('click', () => {
-          void requestLocalAppActionFromCard(settings.brainCoreUrl, app.id, app.label || app.name, entry.action, btn, onRefresh);
+          void requestLocalAppActionFromCard(settings.brainCoreUrl, app.id, app.label || app.name, entry.action, btn, statusLine, onRefresh);
         });
       }
     }
@@ -2055,24 +2072,35 @@ async function requestLocalAppActionFromCard(
   appLabel: string,
   action: 'start' | 'stop' | 'restart',
   button: HTMLButtonElement,
+  statusLine: HTMLElement,
   onRefresh?: () => void,
 ): Promise<void> {
   const verb = action.charAt(0).toUpperCase() + action.slice(1);
   if (!window.confirm(`${verb} ${appLabel}? This uses Brain Core controlled local-app orchestration.`)) return;
 
+  localAppPendingActions.set(appId, `${action}ing`);
   button.disabled = true;
+  statusLine.textContent = `${action}ing...`;
   new Notice(`${verb}ing ${appLabel}...`);
   const result = await requestBrainCoreLocalAppAction(brainCoreUrl, appId, action);
   if (result.error || !result.value) {
-    new Notice(`${verb} ${appLabel} failed: ${result.error ?? 'No response'}`);
+    const message = result.value?.message ?? result.detail ?? result.error ?? 'No response';
+    statusLine.textContent = 'failed';
+    statusLine.title = message;
+    new Notice(`${verb} ${appLabel} failed safely; dashboard remains available.`);
+    localAppPendingActions.delete(appId);
     button.disabled = false;
+    window.setTimeout(() => onRefresh?.(), 1500);
     return;
   }
 
   const status = result.value.status.replace('_', ' ');
-  const message = result.value.error ? `${status}: ${result.value.error}` : status;
+  const message = result.value.message || (result.value.error ? `${status}: ${result.value.error}` : status);
+  statusLine.textContent = status;
+  statusLine.title = message;
   new Notice(`${appLabel}: ${message}`);
-  onRefresh?.();
+  localAppPendingActions.delete(appId);
+  window.setTimeout(() => onRefresh?.(), result.value.nextPollMs ?? 1500);
 }
 
 function renderOfflineState(

@@ -5,7 +5,7 @@ Build ID: `native-ux-2026-05-18-01`
 
 ## Update: Main Workspace Dashboard
 
-Current build marker: `brain-console-local-apps-actions-2026-05-19-01`
+Current build marker: `brain-console-local-apps-action-stability-2026-05-19-01`
 
 The Brain Console now opens as a main-workspace dashboard tab instead of defaulting to the right sidebar.
 

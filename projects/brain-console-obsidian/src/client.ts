@@ -269,9 +269,16 @@ export interface BrainCoreLocalAppActionResult {
   id: string;
   appId: string;
   action: BrainCoreLocalAppAction;
-  status: 'success' | 'failed' | 'not_executable' | 'blocked';
+  status: 'accepted' | 'running' | 'success' | 'failed' | 'not_executable' | 'blocked' | 'not_found';
+  ok: boolean;
+  message: string;
+  errorCode?: string;
+  error?: string;
   startedAt: string;
+  endedAt: string;
   finishedAt: string;
+  durationMs: number;
+  nextPollMs: number;
   steps: Array<{
     id: string;
     label: string;
@@ -282,12 +289,28 @@ export interface BrainCoreLocalAppActionResult {
   safety: {
     pluginExecutesShell: false;
     arbitraryCommandAllowed: false;
+    commandOverrideAccepted: false;
     canonicalAppIdRequired: true;
-    allowlistedDefinitionRequired: true;
+    allowlistedDefinitionRequired: boolean;
+    allowlistedApp: boolean;
+    allowlistedAction: boolean;
     exposesSecrets: false;
   };
   nextState: 'running' | 'stopped' | 'unknown';
-  error?: string;
+}
+
+export interface BrainCoreLocalAppActionStatusResponse {
+  id: 'local-apps-actions-status';
+  inFlight: BrainCoreLocalAppActionResult[];
+  recentResults: BrainCoreLocalAppActionResult[];
+  lastErrorByApp: Record<string, BrainCoreLocalAppActionResult>;
+  locks: Array<{ appId: string; action: BrainCoreLocalAppAction; startedAt: string }>;
+  safety: {
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    commandOverrideAccepted: false;
+    exposesSecrets: false;
+  };
 }
 
 export interface BrainCoreLocalAppOrchestratorStatus {
@@ -3729,6 +3752,7 @@ export interface BrainConsoleSnapshot {
   localApps?: BrainCoreLocalAppSummary[];
   localAppsDashboard?: BrainCoreLocalAppsDashboardResponse;
   localAppsActionReadiness?: BrainCoreLocalAppActionReadinessResponse;
+  localAppsActionStatus?: BrainCoreLocalAppActionStatusResponse;
   localAppsOrchestrator?: BrainCoreLocalAppOrchestratorStatus;
   localAppsOnboardingChecklist?: BrainCoreLocalAppOnboardingChecklist;
   schedulerStatus?: BrainCoreSchedulerStatus;
@@ -3787,12 +3811,13 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
   let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const endpointErrors: EndpointError[] = [];
 
-  const [status, capabilities, runtimeReports, localAppsDashboard, localAppsActionReadiness, localAppsOrchestrator, localAppsOnboardingChecklist, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
+  const [status, capabilities, runtimeReports, localAppsDashboard, localAppsActionReadiness, localAppsActionStatus, localAppsOrchestrator, localAppsOnboardingChecklist, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
     readBrainCoreLocalAppsDashboard(normalizedBaseUrl),
     readBrainCoreLocalAppsActionReadiness(normalizedBaseUrl),
+    readBrainCoreLocalAppsActionStatus(normalizedBaseUrl),
     readBrainCoreLocalAppsOrchestrator(normalizedBaseUrl),
     readBrainCoreLocalAppsOnboardingChecklist(normalizedBaseUrl),
     fetchJson<BrainCoreSchedulerStatus>(normalizedBaseUrl, '/scheduler/status'),
@@ -3823,6 +3848,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     ['/runtime/reports', runtimeReports],
     ['/local-apps/dashboard', localAppsDashboard],
     ['/local-apps/action-readiness', localAppsActionReadiness],
+    ['/local-apps/actions/status', localAppsActionStatus],
     ['/local-apps/orchestrator', localAppsOrchestrator],
     ['/local-apps/onboarding-checklist', localAppsOnboardingChecklist],
     ['/scheduler/status', schedulerStatus],
@@ -3893,6 +3919,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     localApps: localApps.value?.apps,
     localAppsDashboard: localAppsDashboard.value,
     localAppsActionReadiness: localAppsActionReadiness.value,
+    localAppsActionStatus: localAppsActionStatus.value,
     localAppsOrchestrator: localAppsOrchestrator.value,
     localAppsOnboardingChecklist: localAppsOnboardingChecklist.value,
     schedulerStatus: schedulerStatus.value,
@@ -4004,6 +4031,10 @@ export async function readBrainCoreLocalAppsActionReadiness(baseUrl: string): Pr
   return fetchJson<BrainCoreLocalAppActionReadinessResponse>(normalizeBaseUrl(baseUrl), '/local-apps/action-readiness');
 }
 
+export async function readBrainCoreLocalAppsActionStatus(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppActionStatusResponse>> {
+  return fetchJson<BrainCoreLocalAppActionStatusResponse>(normalizeBaseUrl(baseUrl), '/local-apps/actions/status');
+}
+
 export async function readBrainCoreLocalAppsOrchestrator(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppOrchestratorStatus>> {
   return fetchJson<BrainCoreLocalAppOrchestratorStatus>(normalizeBaseUrl(baseUrl), '/local-apps/orchestrator');
 }
@@ -4049,11 +4080,13 @@ export async function requestBrainCoreLocalAppAction(baseUrl: string, appId: str
     ]);
 
     const responseTimeMs = Math.round(performance.now() - startTime);
+    const parsed = safeParseJson<BrainCoreLocalAppActionResult>(response.text ?? '{}');
     if (response.status < 200 || response.status >= 300) {
       return {
-        error: `HTTP ${response.status}`,
+        error: parsed?.message ?? `HTTP ${response.status}`,
         status: response.status,
-        detail: response.text ? response.text.slice(0, 240) : undefined,
+        detail: parsed?.error ?? (response.text ? response.text.slice(0, 240) : undefined),
+        value: parsed,
         url,
         responseTimeMs,
       };
@@ -4061,7 +4094,7 @@ export async function requestBrainCoreLocalAppAction(baseUrl: string, appId: str
 
     return {
       status: response.status,
-      value: JSON.parse(response.text ?? '{}') as BrainCoreLocalAppActionResult,
+      value: parsed ?? JSON.parse(response.text ?? '{}') as BrainCoreLocalAppActionResult,
       url,
       responseTimeMs,
     };
@@ -4790,6 +4823,14 @@ async function fetchJson<T>(
       url,
       responseTimeMs,
     };
+  }
+}
+
+function safeParseJson<T>(text: string): T | undefined {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return undefined;
   }
 }
 

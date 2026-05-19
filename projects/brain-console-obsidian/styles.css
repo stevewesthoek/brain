@@ -319,6 +319,16 @@
   line-height: 1.25;
 }
 
+.brain-console__local-app-status-line {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .brain-console__local-app-header {
   display: flex;
   gap: 10px;
