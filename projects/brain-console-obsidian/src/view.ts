@@ -863,35 +863,54 @@ function renderActiveSectionContent(
 ): void {
   const content = shell.createDiv({ cls: 'brain-console__section-content' });
 
-  switch (activeSection) {
-    case 'overview':
-      renderOverviewSection(content, state, snapshot);
-      break;
-    case 'apps':
-      renderAppsSection(content, state, snapshot);
-      break;
-    case 'orchestrators':
-      renderOrchestratorsSection(content, state, snapshot);
-      break;
-    case 'pipelines':
-      renderPipelinesSection(content, state, snapshot);
-      break;
-    case 'projects':
-      renderProjectsSection(content, state, snapshot);
-      break;
-    case 'reports':
-      renderReportsSection(content, state, snapshot);
-      break;
-    case 'posts':
-      renderPostOrchestratorSection(content, state, snapshot);
-      break;
-    case 'agents':
-      renderAgentsSection(content, state, snapshot);
-      break;
-    case 'recovery':
-      renderRecoverySection(content, state, snapshot);
-      break;
+  try {
+    switch (activeSection) {
+      case 'overview':
+        renderOverviewSection(content, state, snapshot);
+        break;
+      case 'apps':
+        renderAppsSection(content, state, snapshot);
+        break;
+      case 'orchestrators':
+        renderOrchestratorsSection(content, state, snapshot);
+        break;
+      case 'pipelines':
+        renderPipelinesSection(content, state, snapshot);
+        break;
+      case 'projects':
+        renderProjectsSection(content, state, snapshot);
+        break;
+      case 'reports':
+        renderReportsSection(content, state, snapshot);
+        break;
+      case 'posts':
+        renderPostOrchestratorSection(content, state, snapshot);
+        break;
+      case 'agents':
+        renderAgentsSection(content, state, snapshot);
+        break;
+      case 'recovery':
+        renderRecoverySection(content, state, snapshot);
+        break;
+    }
+  } catch (error) {
+    console.error(`Brain Console section ${activeSection} failed to render`, error);
+    content.empty();
+    const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+    renderCard(grid, `${activeSection} unavailable`, renderSectionFallbackCard(activeSection, error));
   }
+}
+
+function renderSectionFallbackCard(sectionId: BrainConsoleSectionId, error: unknown): HTMLElement {
+  const container = document.createElement('div');
+  container.addClass('brain-console__card-content');
+  container.createEl('p', { text: `The ${sectionId} section could not render, so Brain Console kept the dashboard alive instead of crashing.` });
+  container.createEl('p', { cls: 'brain-console__detail', text: `Build: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}` });
+  container.createEl('p', { cls: 'brain-console__detail', text: 'Use Refresh after Brain Core is online. This section is read-only and no actions were executed.' });
+  if (error instanceof Error) {
+    container.createEl('p', { cls: 'brain-console__error-detail', text: error.message });
+  }
+  return container;
 }
 
 /** Helper: safely render card content, catching and displaying any exceptions */
