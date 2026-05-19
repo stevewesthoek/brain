@@ -200,6 +200,53 @@
   min-width: 0;
 }
 
+.brain-console__apps-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.brain-console__apps-header {
+  width: 100%;
+  min-width: 0;
+}
+
+.brain-console__apps-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.brain-console__apps-summary-stat {
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--bc-border);
+  border-radius: 8px;
+  background: var(--bc-card);
+}
+
+.brain-console__apps-operations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.brain-console__apps-detail-row,
+.brain-console__apps-lower {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
 .brain-console__local-apps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -230,6 +277,48 @@
   gap: 8px;
 }
 
+.brain-console__local-app-card--micro {
+  min-height: 130px;
+  padding: 9px;
+  gap: 7px;
+  border-radius: 10px;
+}
+
+.brain-console__app-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.brain-console__app-card-title {
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--text-normal);
+  white-space: normal;
+}
+
+.brain-console__app-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.brain-console__app-card-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
 .brain-console__local-app-header {
   display: flex;
   gap: 10px;
@@ -244,6 +333,28 @@
   flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
+}
+
+.brain-console__local-app-card--micro .brain-console__local-app-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.brain-console__local-app-action {
+  min-width: 0;
+  padding: 4px 5px;
+  border: 1px solid var(--bc-border);
+  border-radius: 6px;
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.brain-console__local-app-action:disabled {
+  opacity: 0.45;
 }
 
 .brain-console__local-app-readiness {

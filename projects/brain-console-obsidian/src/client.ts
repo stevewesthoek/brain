@@ -265,6 +265,31 @@ export interface BrainCoreLocalAppActionPlan {
   canExecuteNow: boolean;
 }
 
+export interface BrainCoreLocalAppActionResult {
+  id: string;
+  appId: string;
+  action: BrainCoreLocalAppAction;
+  status: 'success' | 'failed' | 'not_executable' | 'blocked';
+  startedAt: string;
+  finishedAt: string;
+  steps: Array<{
+    id: string;
+    label: string;
+    type: 'database' | 'service' | 'validation' | 'health-check' | 'report';
+    status: 'success' | 'failed' | 'not_executable' | 'blocked' | 'skipped';
+    message: string;
+  }>;
+  safety: {
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    canonicalAppIdRequired: true;
+    allowlistedDefinitionRequired: true;
+    exposesSecrets: false;
+  };
+  nextState: 'running' | 'stopped' | 'unknown';
+  error?: string;
+}
+
 export interface BrainCoreLocalAppOrchestratorStatus {
   id: 'local-apps-orchestrator';
   status: 'available' | 'partial' | 'unavailable';
@@ -3993,6 +4018,61 @@ export async function readBrainCoreLocalAppsActionPlans(baseUrl: string): Promis
 
 export async function readBrainCoreLocalAppActionPlan(baseUrl: string, appId: string, action: BrainCoreLocalAppAction): Promise<HttpResult<BrainCoreLocalAppActionPlan>> {
   return fetchJson<BrainCoreLocalAppActionPlan>(normalizeBaseUrl(baseUrl), `/local-apps/${encodeURIComponent(appId)}/action-plan/${encodeURIComponent(action)}`);
+}
+
+export async function requestBrainCoreLocalAppAction(baseUrl: string, appId: string, action: BrainCoreLocalAppAction): Promise<HttpResult<BrainCoreLocalAppActionResult>> {
+  const url = `${normalizeBaseUrl(baseUrl)}/local-apps/${encodeURIComponent(appId)}/${encodeURIComponent(action)}`;
+  const startTime = performance.now();
+
+  if (!requestUrlFn) {
+    return {
+      error: 'Obsidian requestUrl not initialized',
+      url,
+    };
+  }
+
+  try {
+    const response = await Promise.race([
+      requestUrlFn({
+        url,
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ requestedBy: 'brain-console', confirmation: true }),
+        throw: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+      ),
+    ]);
+
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    if (response.status < 200 || response.status >= 300) {
+      return {
+        error: `HTTP ${response.status}`,
+        status: response.status,
+        detail: response.text ? response.text.slice(0, 240) : undefined,
+        url,
+        responseTimeMs,
+      };
+    }
+
+    return {
+      status: response.status,
+      value: JSON.parse(response.text ?? '{}') as BrainCoreLocalAppActionResult,
+      url,
+      responseTimeMs,
+    };
+  } catch (err) {
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    return {
+      error: err instanceof Error ? err.message : String(err),
+      url,
+      responseTimeMs,
+    };
+  }
 }
 
 export async function readBrainCoreOrchestrators(

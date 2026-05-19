@@ -426,7 +426,8 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.equal(body.safety.readOnlyDashboard, true);
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandExecution, false);
-  assert.equal(body.safety.startStopControlsEnabled, false);
+  assert.equal(body.actionPolicy.status, 'enabled');
+  assert.equal(body.safety.startStopControlsEnabled, true);
   assert.ok(body.apps.length > 0);
   assert.ok(body.apps.some((app) => app.id === 'model-router'));
 });
@@ -498,7 +499,7 @@ test('GET /local-apps/model-router/action-plan/start returns a safe disabled pla
   assert.equal(body.canExecuteNow, false);
 });
 
-test('GET /local-apps/action-readiness returns not-ready by default', async () => {
+test('GET /local-apps/action-readiness returns ready for controlled endpoints', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/action-readiness' });
   const body = JSON.parse(response.body) as {
     id: string;
@@ -510,11 +511,53 @@ test('GET /local-apps/action-readiness returns not-ready by default', async () =
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.id, 'local-apps-action-readiness');
-  assert.equal(body.ready, false);
-  assert.equal(body.status, 'not-ready');
+  assert.equal(body.ready, true);
+  assert.equal(body.status, 'ready');
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandExecution, false);
   assert.ok(body.criteria.length > 0);
+});
+
+test('POST /local-apps/model-router/start returns structured controlled result', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start' });
+  const body = JSON.parse(response.body) as {
+    appId: string;
+    action: string;
+    status: string;
+    steps: Array<{ id: string; status: string }>;
+    safety: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; canonicalAppIdRequired: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.appId, 'model-router');
+  assert.equal(body.action, 'start');
+  assert.ok(['success', 'failed', 'not_executable', 'blocked'].includes(body.status));
+  assert.ok(body.steps.length > 0);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.canonicalAppIdRequired, true);
+});
+
+test('POST /local-apps/model-router/start rejects command override parameters', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start?command=rm%20-rf%20%2Ftmp%2Funsafe' });
+  const body = JSON.parse(response.body) as {
+    appId: string;
+    action: string;
+    safety: { arbitraryCommandAllowed: boolean; canonicalAppIdRequired: boolean };
+    steps: Array<{ label: string; message: string }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.appId, 'model-router');
+  assert.equal(body.action, 'start');
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.canonicalAppIdRequired, true);
+  assert.equal(JSON.stringify(body.steps).includes('rm -rf'), false);
+});
+
+test('POST /local-apps/unknown/start rejects unknown app id', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/unknown/start' });
+  assert.equal(response.statusCode, 404);
 });
 
 test('POST /local-apps/dashboard is not registered', async () => {
@@ -1192,9 +1235,6 @@ test('roadmap POST targets create approval requests without executing', async ()
     ['/scheduler/jobs/mind-compile-loop/request-run', 'scheduler-run-mind-compile-loop'],
     ['/skills/profile?profile=research', 'skill-profile-research'],
     ['/sessions/abc123/resume', 'session-resume-abc123'],
-    ['/local-apps/probot/start', 'local-app-start-probot'],
-    ['/local-apps/probot/stop', 'local-app-stop-probot'],
-    ['/local-apps/probot/restart', 'local-app-restart-probot'],
   ] as const;
 
   for (const [url, kind] of routes) {

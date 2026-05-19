@@ -225,6 +225,35 @@ export interface BrainCoreLocalAppActionPlan {
   canExecuteNow: boolean;
 }
 
+export interface BrainCoreLocalAppActionResultStep {
+  id: string;
+  label: string;
+  type: 'database' | 'service' | 'validation' | 'health-check' | 'report';
+  status: 'success' | 'failed' | 'not_executable' | 'blocked' | 'skipped';
+  message: string;
+}
+
+export interface BrainCoreLocalAppActionSafety {
+  pluginExecutesShell: false;
+  arbitraryCommandAllowed: false;
+  canonicalAppIdRequired: true;
+  allowlistedDefinitionRequired: true;
+  exposesSecrets: false;
+}
+
+export interface BrainCoreLocalAppActionResult {
+  id: string;
+  appId: string;
+  action: BrainCoreLocalAppAction;
+  status: 'success' | 'failed' | 'not_executable' | 'blocked';
+  startedAt: string;
+  finishedAt: string;
+  steps: BrainCoreLocalAppActionResultStep[];
+  safety: BrainCoreLocalAppActionSafety;
+  nextState: 'running' | 'stopped' | 'unknown';
+  error?: string;
+}
+
 export interface BrainCoreLocalAppOrchestratorStatus {
   id: 'local-apps-orchestrator';
   status: BrainCoreLocalAppOrchestratorStatusValue;
@@ -5025,9 +5054,9 @@ export interface BrainCoreRoutes {
   '/scheduler/jobs/:id/request-run': BrainCoreActionRequestResult;
   '/skills/profile': BrainCoreActionRequestResult;
   '/sessions/:id/resume': BrainCoreActionRequestResult;
-  '/local-apps/:id/start': BrainCoreActionRequestResult;
-  '/local-apps/:id/stop': BrainCoreActionRequestResult;
-  '/local-apps/:id/restart': BrainCoreActionRequestResult;
+  '/local-apps/:id/start': BrainCoreLocalAppActionResult;
+  '/local-apps/:id/stop': BrainCoreLocalAppActionResult;
+  '/local-apps/:id/restart': BrainCoreLocalAppActionResult;
   '/approvals/:id/approve': BrainCoreApprovalDecisionResult;
   '/approvals/:id/reject': BrainCoreApprovalDecisionResult;
   '/actions': {

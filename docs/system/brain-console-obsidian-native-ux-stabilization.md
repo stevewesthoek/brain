@@ -5,7 +5,7 @@ Build ID: `native-ux-2026-05-18-01`
 
 ## Update: Main Workspace Dashboard
 
-Current build marker: `brain-console-local-apps-orchestrator-2026-05-19-01`
+Current build marker: `brain-console-local-apps-actions-2026-05-19-01`
 
 The Brain Console now opens as a main-workspace dashboard tab instead of defaulting to the right sidebar.
 
@@ -15,7 +15,9 @@ User-visible verification:
 - `Plugin Install Verification` compares the runtime build marker with the expected marker and flags stale bundles.
 - Pipelines render with grouped cards and safe empty states instead of crashing on unsafe `.status` access.
 - Local Apps now uses an orchestrator payload, onboarding checklist, dashboard payload, and separate action-readiness payload.
-- Start/stop/restart controls remain disabled until a safe allowlisted Brain Core path exists.
+- Apps tab now uses a full-width compact app grid instead of the previous three-column card layout.
+- Start/stop/restart controls call Brain Core controlled local-app action endpoints only; unsupported apps return structured `not_executable` results.
+- The Obsidian plugin never executes shell and never accepts raw command input.
 
 ## Problem Statement
 
@@ -373,8 +375,8 @@ Users should verify:
 
 ## Safety Boundaries Maintained
 
-✓ Read-only only (no POST routes added)
-✓ No mutation controls added
+✓ Read-mostly dashboard; Local Apps POST actions are constrained to Brain Core canonical app-id routes
+✓ No arbitrary mutation controls added
 ✓ No shell execution added
 ✓ No secrets, OAuth tokens, credentials exposed
 ✓ No Stripe financial data exposed

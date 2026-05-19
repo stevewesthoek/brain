@@ -41,6 +41,7 @@ import {
   readLocalAppsDashboard,
   readLocalAppsOnboardingChecklist,
   readLocalAppsOrchestratorStatus,
+  runLocalAppsAction,
 } from '../adapters/local-apps.js';
 import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
 import { readProBotSessionsParity } from '../adapters/probot-sessions-parity.js';
@@ -1664,6 +1665,33 @@ function routePostRequest(url: URL, response: ServerResponse): void {
       const actionRequest = await requestActionApprovalById(actionRequestMatch[1] ?? '');
       sendJson(response, actionRequest.status === 'requested' ? 202 : 400, actionRequest);
     })();
+    return;
+  }
+
+  const localAppActionMatch = /^\/local-apps\/([^/]+)\/(start|stop|restart)$/.exec(url.pathname);
+  if (localAppActionMatch) {
+    const appId = decodeURIComponent(localAppActionMatch[1] ?? '');
+    const action = decodeURIComponent(localAppActionMatch[2] ?? '');
+    const actionResult = runLocalAppsAction(appId, action);
+    if (actionResult.kind === 'invalid-action') {
+      sendJson(response, 400, {
+        error: {
+          code: 'invalid_action',
+          message: 'Local app action must be start, stop, or restart.',
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+    if (actionResult.kind === 'missing-app') {
+      sendJson(response, 404, {
+        error: {
+          code: 'not_found',
+          message: `Local app not found: ${appId}`,
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+    sendJson(response, 200, actionResult.result);
     return;
   }
 

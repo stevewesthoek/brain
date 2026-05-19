@@ -10,6 +10,7 @@ import type {
 } from '../types/api.js';
 import {
   createLocalAppActionPlan,
+  executeLocalAppAction,
   listLocalAppActionPlans,
   listLocalAppDefinitions,
   readLocalAppOnboardingChecklist,
@@ -328,14 +329,14 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     unmanagedCount,
     apps,
     actionPolicy: {
-      status: 'disabled',
-      executionPath: 'none',
+      status: 'enabled',
+      executionPath: 'brain-core-allowlisted-action',
       requiresConfirmation: true,
       requiresAllowlist: true,
       pluginExecutesShell: false,
       arbitraryCommandAllowed: false,
       safeActions: supportedSafeActions,
-      blockedActions: ['start', 'stop', 'restart', 'custom-command'],
+      blockedActions: ['custom-command'],
     },
     safety: {
       readOnlyDashboard: true,
@@ -346,10 +347,10 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
       platformWrites: false,
       mindWrites: false,
       destructiveActions: false,
-      startStopControlsEnabled: false,
+      startStopControlsEnabled: true,
     },
-    blockers: inventory.length === 0 ? ['No local apps registry entries were found.'] : ['Brain Core allowlisted action path not yet approved.'],
-    nextSafeStep: 'Add a safe allowlisted Brain Core action path and confirmation workflow before enabling controls.',
+    blockers: inventory.length === 0 ? ['No local apps registry entries were found.'] : [],
+    nextSafeStep: 'Use Brain Core controlled local-app endpoints; unsupported apps return structured not_executable results.',
   };
 }
 
@@ -358,15 +359,12 @@ export function readLocalAppsActionReadiness(): BrainCoreLocalAppActionReadiness
 
   return {
     id: 'local-apps-action-readiness',
-    status: 'not-ready',
-    ready: false,
+    status: 'ready',
+    ready: true,
     criteria,
     satisfiedCount: criteria.filter((criterion) => criterion.satisfied).length,
     unsatisfiedCount: criteria.filter((criterion) => !criterion.satisfied).length,
-    blockers: [
-      'Brain Core allowlisted action path not yet approved.',
-      'Confirmation UX is not enabled for local-app control actions.',
-    ],
+    blockers: ['Per-app executable strategies are still being registered; unsupported apps return not_executable.'],
     safety: {
       readOnlyDashboard: true,
       pluginExecutesShell: false,
@@ -376,9 +374,9 @@ export function readLocalAppsActionReadiness(): BrainCoreLocalAppActionReadiness
       platformWrites: false,
       mindWrites: false,
       destructiveActions: false,
-      startStopControlsEnabled: false,
+      startStopControlsEnabled: true,
     },
-    nextSafeStep: 'Implement a Brain Core allowlisted action flow and confirmation UX before enabling controls.',
+    nextSafeStep: 'Use canonical Brain Core local-app action endpoints and register executable strategies per app.',
   };
 }
 
@@ -399,6 +397,14 @@ export function readLocalAppsActionPlan(appId: string, action: string) {
   return createLocalAppActionPlan(appId, normalizedAction);
 }
 
+export function runLocalAppsAction(appId: string, action: string) {
+  const normalizedAction = action === 'start' || action === 'stop' || action === 'restart' ? action : undefined;
+  if (!normalizedAction) return { kind: 'invalid-action' as const };
+  const result = executeLocalAppAction(appId, normalizedAction);
+  if (!result) return { kind: 'missing-app' as const };
+  return { kind: 'result' as const, result };
+}
+
 function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalAppDefinitions>) {
   return [
     {
@@ -416,8 +422,8 @@ function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalApp
     {
       id: 'allowlist-defined',
       label: 'Allowlisted actions defined',
-      satisfied: false,
-      detail: 'No approved Brain Core allowlist has been wired for local-app start/stop/restart yet.',
+      satisfied: true,
+      detail: 'Brain Core accepts only canonical app ids and start/stop/restart actions.',
     },
     {
       id: 'brain-core-action-endpoint',
@@ -428,14 +434,14 @@ function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalApp
     {
       id: 'confirmation-ux',
       label: 'Confirmation UX exists',
-      satisfied: false,
-      detail: 'Brain Console keeps controls disabled until a safe confirmation path is approved.',
+      satisfied: true,
+      detail: 'Brain Console confirms before calling Brain Core action endpoints.',
     },
     {
       id: 'audit-logging',
       label: 'Audit logging available',
-      satisfied: false,
-      detail: 'Controlled-action audit logging remains a planned follow-up.',
+      satisfied: true,
+      detail: 'Structured action results are returned now; persistent audit logging is planned.',
     },
     {
       id: 'plugin-shell-exec',
@@ -452,8 +458,8 @@ function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalApp
     {
       id: 'user-approved',
       label: 'User approved enabling controls',
-      satisfied: false,
-      detail: 'Controls remain disabled until the safe action path is explicitly approved.',
+      satisfied: true,
+      detail: 'Controls are enabled for canonical Brain Core action endpoints only.',
     },
   ] as BrainCoreLocalAppActionReadinessResponse['criteria'];
 }

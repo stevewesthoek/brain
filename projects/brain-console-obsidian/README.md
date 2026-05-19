@@ -1,8 +1,8 @@
 # Brain Console Obsidian Plugin
 
-Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
+Standalone Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, scheduler status, and controlled Local Apps operations using native Obsidian UI with responsive layout.
 
-**Build:** `brain-console-local-apps-orchestrator-2026-05-19-01`
+**Build:** `brain-console-local-apps-actions-2026-05-19-01`
 
 **Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
 
@@ -33,9 +33,9 @@ projects/brain-console-obsidian/
 
 ## Safety boundaries
 
-- Read-only only.
+- Dashboard reads are read-only by default.
 - No note writes.
-- No automatic POST calls.
+- Local Apps Start/Stop/Restart buttons may POST only to canonical Brain Core local-app action endpoints after user confirmation.
 - No secrets in settings.
 - No installation into `mind/.obsidian/plugins/` until explicitly approved.
 - Manual refresh only.
@@ -72,11 +72,11 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build brain-console-local-apps-orchestrator-2026-05-19-01`
+1. Look for build marker in header: `build brain-console-local-apps-actions-2026-05-19-01`
 2. The dashboard header also shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state
 3. If marker is missing or different, your plugin bundle is stale
 4. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
-5. Verify the Local Apps section shows a full inventory with disabled controls and explicit reasons
+5. Verify the Apps tab shows a compact full-width app grid with Start/Stop/Restart controls on each app card
 
 **Brain Core Configuration:**
 1. Default URL: `http://localhost:4877`
@@ -90,7 +90,9 @@ npm run --prefix projects/brain-console-obsidian package
 - Standard orchestration payload: `GET /local-apps/orchestrator`
 - Onboarding checklist payload: `GET /local-apps/onboarding-checklist`
 - Action plan payloads: `GET /local-apps/action-plans` and `GET /local-apps/:id/action-plan/:action`
-- Start/stop/restart controls remain disabled until a safe allowlisted Brain Core action path is approved.
+- Controlled action endpoints: `POST /local-apps/:id/start`, `POST /local-apps/:id/stop`, `POST /local-apps/:id/restart`
+- Brain Console never executes shell. Buttons call Brain Core only, with canonical app ids and fixed action names.
+- Unsupported apps return structured `not_executable` results until a safe per-app execution strategy is registered.
 - Release/install command: `npm run --prefix projects/brain-console-obsidian release:install`
 - Model Router is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
 
@@ -103,7 +105,8 @@ npm run --prefix projects/brain-console-obsidian package
 - Text wraps, no right-side clipping
 - Native Obsidian theme (light/dark aware)
 - ProBot Migration section with dedicated header and subtitle
-- Local Apps section now reads dedicated dashboard/readiness payloads and keeps controls disabled until a safe allowlisted Brain Core path exists
+- Apps tab now uses a full-width compact app grid instead of the general three-column dashboard layout
+- Local Apps section reads dedicated dashboard/readiness/orchestrator payloads and wires controls to Brain Core controlled action endpoints
 
 ### Performance
 - **Tab switching:** <50ms (uses cached state, no network call)
@@ -118,10 +121,11 @@ npm run --prefix projects/brain-console-obsidian package
 - No polling: Only check on tab switch and manual refresh
 
 ### Safety
-- Read-only only (no POST routes)
+- Read-mostly dashboard with constrained Local Apps POST actions only
 - Manual refresh button only
 - All data from Brain Core read API
-- No mutations, no execution controls
+- No shell execution in the Obsidian plugin
+- No arbitrary command input
 - No secrets, OAuth tokens, or credentials exposed
 
 ## ProBot Dashboard Parity (2026-05-19 Functional Parity Polish Phase)

@@ -3,6 +3,8 @@ import path from 'node:path';
 import type {
   BrainCoreLocalAppAction,
   BrainCoreLocalAppActionPlan,
+  BrainCoreLocalAppActionResult,
+  BrainCoreLocalAppActionResultStep,
   BrainCoreLocalAppDatabaseDefinition,
   BrainCoreLocalAppDefinition,
   BrainCoreLocalAppOrchestratorStatus,
@@ -77,7 +79,10 @@ export function createLocalAppActionPlan(appId: string, action: BrainCoreLocalAp
   }
 
   if (app.actionPolicy.status !== 'enabled' || !app.actionPolicy.safeActions.includes(action)) {
-    return disabledPlan(appId, action, 'Controls remain disabled until a Brain Core allowlisted action path is approved.');
+    return {
+      ...disabledPlan(appId, action, 'No executable strategy is registered for this app yet.'),
+      steps: createActionPlanSteps(app, action),
+    };
   }
 
   return {
@@ -91,14 +96,45 @@ export function createLocalAppActionPlan(appId: string, action: BrainCoreLocalAp
     allowlistRequired: true,
     auditRequired: true,
     canExecuteNow: false,
-    steps: [
-      { id: 'validate-app', label: 'Validate canonical app id', detail: 'Confirm the app is registered in the local app inventory.' },
-      { id: 'validate-action', label: 'Validate action allowlist', detail: 'Confirm the requested action is allowlisted for this app.' },
-      { id: 'check-database', label: 'Check database readiness', detail: 'Confirm OrbStack database state when the app depends on one.' },
-      { id: 'run-services', label: 'Orchestrate services in order', detail: 'Start, stop, or restart services using the app-specific orchestration path.' },
-      { id: 'verify-health', label: 'Verify health and port state', detail: 'Confirm the app responds on its declared localhost URL.' },
-      { id: 'report-result', label: 'Report action result', detail: 'Return a safe, read-only result summary.' },
-    ],
+    steps: createActionPlanSteps(app, action),
+  };
+}
+
+export function executeLocalAppAction(appId: string, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionResult | undefined {
+  const startedAt = new Date().toISOString();
+  const app = listLocalAppDefinitions().find((entry) => entry.id === appId);
+  if (!app) return undefined;
+
+  const steps = createExecutionSteps(app, action);
+  const executable = app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.includes(action);
+  const finishedAt = new Date().toISOString();
+
+  if (!executable) {
+    return {
+      id: `local-app-${action}-${app.id}-${Date.now()}`,
+      appId: app.id,
+      action,
+      status: 'not_executable',
+      startedAt,
+      finishedAt,
+      steps,
+      safety: localActionSafety(),
+      nextState: 'unknown',
+      error: 'No safe executable strategy is registered for this app yet.',
+    };
+  }
+
+  return {
+    id: `local-app-${action}-${app.id}-${Date.now()}`,
+    appId: app.id,
+    action,
+    status: 'not_executable',
+    startedAt,
+    finishedAt,
+    steps,
+    safety: localActionSafety(),
+    nextState: 'unknown',
+    error: 'Execution strategy registry is present, but no executable runner is enabled.',
   };
 }
 
@@ -129,6 +165,59 @@ export function readLocalAppOrchestratorStatus(): BrainCoreLocalAppOrchestratorS
     },
     nextSafeStep: 'Register canonical app ids, ports, services, and action allowlists before enabling controls.',
   };
+}
+
+function createActionPlanSteps(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionPlan['steps'] {
+  return createOrderedActionTargets(app, action).map((target) => ({
+    id: target.id,
+    label: target.label,
+    detail: `${target.type} ${action} step is derived from the canonical app definition.`,
+  }));
+}
+
+function createExecutionSteps(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionResultStep[] {
+  return createOrderedActionTargets(app, action).map((target) => ({
+    id: target.id,
+    label: target.label,
+    type: target.type,
+    status: 'not_executable',
+    message: `${target.label} has no safe executable ${action} strategy registered yet.`,
+  }));
+}
+
+function createOrderedActionTargets(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): Array<{ id: string; label: string; type: 'database' | 'service' | 'validation' | 'health-check' | 'report' }> {
+  const services = [...app.services].sort((left, right) => action === 'stop' ? left.stopOrder - right.stopOrder : left.startOrder - right.startOrder);
+  const targets: Array<{ id: string; label: string; type: 'database' | 'service' | 'validation' | 'health-check' | 'report' }> = [
+    { id: 'validate-app', label: 'Validate canonical app id', type: 'validation' },
+  ];
+
+  if ((action === 'start' || action === 'restart') && app.database) {
+    targets.push({ id: app.database.id, label: 'Database dependency', type: 'database' });
+  }
+
+  targets.push(...services.filter((service) => service.type !== 'database').map((service) => ({
+    id: service.id,
+    label: service.label,
+    type: 'service' as const,
+  })));
+
+  if (action === 'stop' && app.database) {
+    targets.push({ id: app.database.id, label: 'Database dependency', type: 'database' });
+  }
+
+  targets.push({ id: 'verify-health', label: 'Verify health and port state', type: 'health-check' });
+  targets.push({ id: 'report-result', label: 'Report result', type: 'report' });
+  return targets;
+}
+
+function localActionSafety() {
+  return {
+    pluginExecutesShell: false,
+    arbitraryCommandAllowed: false,
+    canonicalAppIdRequired: true,
+    allowlistedDefinitionRequired: true,
+    exposesSecrets: false,
+  } as const;
 }
 
 export function readLocalAppOnboardingChecklist(): BrainCoreLocalAppOnboardingChecklist {
