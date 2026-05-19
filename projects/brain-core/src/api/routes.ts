@@ -84,6 +84,7 @@ import { readVideoProviderImplementationApprovalPacket, readVideoProviderImpleme
 import { readVideoProviderApprovalPacketConsoleReviewSummary, readVideoProviderApprovalPacketConsoleReviewSummaryEntry } from '../adapters/video-orchestrator-provider-approval-packet-console-review-summary.js';
 import { readVideoProviderPlanningSurfaceIndex } from '../adapters/video-orchestrator-provider-planning-surface-index.js';
 import { readVideoProviderRequestWrapperScaffold } from '../adapters/video-orchestrator-provider-request-wrapper-scaffold.js';
+import { readVideoProviderWrapperValidationHarness } from '../adapters/video-orchestrator-provider-wrapper-validation-harness.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -370,6 +371,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-request-wrapper-scaffold':
       sendJson(response, 200, readVideoProviderRequestWrapperScaffold());
+      return;
+    case '/video-orchestrator/provider-wrapper-validation-harness':
+      sendJson(response, 200, readVideoProviderWrapperValidationHarness());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());

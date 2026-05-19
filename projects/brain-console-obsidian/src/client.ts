@@ -5612,6 +5612,56 @@ export interface BrainCoreVideoProviderPlanningSurfaceIndexResponse {
   };
 }
 
+export interface BrainCoreVideoProviderWrapperValidationHarnessResponse {
+  harness: {
+    id: string;
+    status: string;
+    phase: string;
+    implementationApprovedScope: string;
+    fixtureCount: number;
+    passedFixtureCount: number;
+    blockedFixtureCount: number;
+    providerCallCount: number;
+    credentialAccessCount: number;
+    networkAccessCount: number;
+    fileWriteCount: number;
+    fixtureResults: Array<{
+      fixtureId: string;
+      providerClass: 'image-generation' | 'layout-rendering' | 'brand-compliance' | 'unsupported-provider';
+      expectedOutcome: string;
+      valid: boolean;
+      missingFields: string[];
+      unsafeFields: string[];
+      providerCallBlocked: true;
+      executionBlocked: true;
+      notes: string;
+    }>;
+    safety: {
+      readOnlyStatusEndpoint: true;
+      validationHarnessOnly: true;
+      providerWrapperCallable: false;
+      providerConfigured: false;
+      providerCallsEnabled: false;
+      credentialAccessEnabled: false;
+      envReadEnabled: false;
+      networkAccessEnabled: false;
+      promptGenerationEnabled: false;
+      imageGenerationEnabled: false;
+      artifactPersistenceEnabled: false;
+      auditPersistenceEnabled: false;
+      filesystemAccessEnabled: false;
+      writesFiles: false;
+      publishesContent: false;
+      writesToMind: false;
+      executesVideo: false;
+      postRoutesAdded: false;
+      brainConsoleMutationControlsEnabled: false;
+    };
+    blockers: string[];
+    nextSafeStep: string;
+  };
+}
+
 export interface BrainCoreVideoProviderRequestWrapperScaffoldResponse {
   scaffold: {
     id: string;
@@ -5807,4 +5857,10 @@ export async function readBrainCoreVideoOrchestratorProviderRequestWrapperScaffo
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderRequestWrapperScaffoldResponse>> {
   return fetchJson<BrainCoreVideoProviderRequestWrapperScaffoldResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-request-wrapper-scaffold');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderWrapperValidationHarness(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderWrapperValidationHarnessResponse>> {
+  return fetchJson<BrainCoreVideoProviderWrapperValidationHarnessResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-wrapper-validation-harness');
 }

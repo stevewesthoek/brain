@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { routeRequest } from '../api/routes.js';
 import { readVideoProviderRequestWrapperScaffold, validateVideoProviderRequestWrapperScaffoldRequest } from '../adapters/video-orchestrator-provider-request-wrapper-scaffold.js';
+import { readVideoProviderWrapperValidationHarness, runVideoProviderWrapperValidationHarness } from '../adapters/video-orchestrator-provider-wrapper-validation-harness.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 class MockResponse implements ServerResponse {
@@ -7481,6 +7482,99 @@ test('validateVideoProviderRequestWrapperScaffoldRequest returns a disabled vali
 
 test('provider request wrapper scaffold source file does not include unsafe execution primitives', () => {
   const source = readFileSync(join(process.cwd(), 'src', 'adapters', 'video-orchestrator-provider-request-wrapper-scaffold.ts'), 'utf8');
+  const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
+
+  forbiddenPatterns.forEach((pattern) => {
+    assert.equal(source.includes(pattern), false, `expected source not to include ${pattern}`);
+  });
+});
+
+test('GET /video-orchestrator/provider-wrapper-validation-harness returns harness-ready-disabled status with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-wrapper-validation-harness' });
+  const body = JSON.parse(response.body) as {
+    harness: {
+      id: string;
+      status: string;
+      phase: string;
+      implementationApprovedScope: string;
+      fixtureCount: number;
+      passedFixtureCount: number;
+      blockedFixtureCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+      networkAccessCount: number;
+      fileWriteCount: number;
+      fixtureResults: Array<{
+        fixtureId: string;
+        providerClass: string;
+        expectedOutcome: string;
+        valid: boolean;
+        missingFields: string[];
+        unsafeFields: string[];
+        providerCallBlocked: boolean;
+        executionBlocked: boolean;
+        notes: string;
+      }>;
+      safety: Record<string, boolean>;
+      blockers: string[];
+      nextSafeStep: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.harness.id, 'video-orchestrator-provider-wrapper-validation-harness');
+  assert.equal(body.harness.status, 'harness-ready-disabled');
+  assert.equal(body.harness.phase, 'provider-wrapper-validation-harness-only');
+  assert.equal(body.harness.implementationApprovedScope, 'wrapper-scaffolding-only');
+  assert.ok(body.harness.fixtureCount >= 6);
+  assert.equal(body.harness.providerCallCount, 0);
+  assert.equal(body.harness.credentialAccessCount, 0);
+  assert.equal(body.harness.networkAccessCount, 0);
+  assert.equal(body.harness.fileWriteCount, 0);
+  assert.ok(body.harness.fixtureResults.every((fixture) => fixture.providerCallBlocked === true));
+  assert.ok(body.harness.fixtureResults.every((fixture) => fixture.executionBlocked === true));
+  assert.ok(body.harness.fixtureResults.every((fixture) => !('rawProviderOutput' in fixture)));
+  assert.equal(body.harness.safety.readOnlyStatusEndpoint, true);
+  assert.equal(body.harness.safety.validationHarnessOnly, true);
+  assert.equal(body.harness.safety.providerWrapperCallable, false);
+  assert.equal(body.harness.safety.providerConfigured, false);
+  assert.equal(body.harness.safety.providerCallsEnabled, false);
+  assert.equal(body.harness.safety.credentialAccessEnabled, false);
+  assert.equal(body.harness.safety.envReadEnabled, false);
+  assert.equal(body.harness.safety.networkAccessEnabled, false);
+  assert.equal(body.harness.safety.promptGenerationEnabled, false);
+  assert.equal(body.harness.safety.imageGenerationEnabled, false);
+  assert.equal(body.harness.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.harness.safety.auditPersistenceEnabled, false);
+  assert.equal(body.harness.safety.filesystemAccessEnabled, false);
+  assert.equal(body.harness.safety.writesFiles, false);
+  assert.equal(body.harness.safety.publishesContent, false);
+  assert.equal(body.harness.safety.writesToMind, false);
+  assert.equal(body.harness.safety.executesVideo, false);
+  assert.equal(body.harness.safety.postRoutesAdded, false);
+  assert.equal(body.harness.safety.brainConsoleMutationControlsEnabled, false);
+});
+
+test('POST /video-orchestrator/provider-wrapper-validation-harness is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-wrapper-validation-harness' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('runVideoProviderWrapperValidationHarness returns blocked fixture coverage with safe outcomes', () => {
+  const harness = runVideoProviderWrapperValidationHarness();
+
+  assert.ok(harness.fixtureResults.length >= 6);
+  assert.ok(harness.fixtureResults.every((fixture) => fixture.providerCallBlocked === true));
+  assert.ok(harness.fixtureResults.every((fixture) => fixture.executionBlocked === true));
+  assert.ok(harness.fixtureResults.some((fixture) => fixture.valid === true));
+  assert.ok(harness.fixtureResults.some((fixture) => fixture.fixtureId === 'missing-required-fields' && fixture.valid === false));
+  assert.ok(harness.fixtureResults.some((fixture) => fixture.fixtureId === 'unsupported-provider-class' && fixture.valid === false));
+  assert.ok(harness.fixtureResults.some((fixture) => fixture.fixtureId === 'unsafe-field' && fixture.valid === false));
+  assert.ok(harness.fixtureResults.every((fixture) => !('rawProviderOutput' in fixture)));
+});
+
+test('provider wrapper validation harness source file does not include unsafe execution primitives', () => {
+  const source = readFileSync(join(process.cwd(), 'src', 'adapters', 'video-orchestrator-provider-wrapper-validation-harness.ts'), 'utf8');
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 
   forbiddenPatterns.forEach((pattern) => {

@@ -8293,3 +8293,58 @@ export interface BrainCoreVideoProviderRequestWrapperScaffold {
 export interface BrainCoreVideoProviderRequestWrapperScaffoldResponse {
   scaffold: BrainCoreVideoProviderRequestWrapperScaffold;
 }
+
+export interface BrainCoreVideoProviderWrapperValidationHarnessFixtureResult {
+  fixtureId: string;
+  providerClass: 'image-generation' | 'layout-rendering' | 'brand-compliance' | 'unsupported-provider';
+  expectedOutcome: string;
+  valid: boolean;
+  missingFields: string[];
+  unsafeFields: string[];
+  providerCallBlocked: true;
+  executionBlocked: true;
+  notes: string;
+}
+
+export interface BrainCoreVideoProviderWrapperValidationHarness {
+  fixtureCount: number;
+  passedFixtureCount: number;
+  blockedFixtureCount: number;
+  providerCallCount: 0;
+  credentialAccessCount: 0;
+  networkAccessCount: 0;
+  fileWriteCount: 0;
+  fixtureResults: BrainCoreVideoProviderWrapperValidationHarnessFixtureResult[];
+  safety: {
+    readOnlyStatusEndpoint: true;
+    validationHarnessOnly: true;
+    providerWrapperCallable: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    envReadEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+    postRoutesAdded: false;
+    brainConsoleMutationControlsEnabled: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderWrapperValidationHarnessResponse {
+  harness: {
+    id: 'video-orchestrator-provider-wrapper-validation-harness';
+    status: 'harness-ready-disabled';
+    phase: 'provider-wrapper-validation-harness-only';
+    implementationApprovedScope: 'wrapper-scaffolding-only';
+  } & BrainCoreVideoProviderWrapperValidationHarness;
+}

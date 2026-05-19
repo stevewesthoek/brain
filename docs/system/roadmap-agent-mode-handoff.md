@@ -827,6 +827,59 @@ Next safe task suggestion:
 
 ---
 
+Continuation update — Provider wrapper validation harness only
+
+User approval scope:
+
+- `Provider Request Wrapper Scaffolding Only`
+
+Exact interpretation of approval:
+
+- Approval permits inert scaffold code only.
+- Approval does not permit provider calls, credentials, env reads, network access, prompt/image generation, artifact writes, audit persistence, POST routes, or Brain Console mutation controls.
+
+Endpoint:
+
+- `GET /video-orchestrator/provider-wrapper-validation-harness`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-provider-wrapper-validation-harness.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only status endpoint only.
+- Validation harness only.
+- No provider wrapper callable.
+- No provider calls.
+- No credential access.
+- No env reads.
+- No network access.
+- No prompt generation.
+- No image generation.
+- No artifact writes.
+- No audit persistence.
+- No POST routes.
+- No Brain Console mutation controls.
+
+Validation evidence:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: passed in this handoff.
+- Safety scan: pending in this handoff.
+
+Next safe task suggestion:
+
+- Credential reference type scaffolding only, still no credential access.
+
+---
+
 Continuation update — Provider request wrapper scaffolding only
 
 User approval phrase:
