@@ -56,6 +56,8 @@ export function readProBotSchedulerParity(): BrainCoreProBotSchedulerParityRespo
       exposesCredentials: false,
       exposesOAuth: false,
       exposesStripeFinancialData: false,
+      exposesGoogleAdsSpendData: false,
+      exposesAccountIds: false,
       exposesRawLogs: false,
       mutationControlsEnabled: false,
       shellExecutionEnabled: false,

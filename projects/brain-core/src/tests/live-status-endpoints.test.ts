@@ -8618,3 +8618,93 @@ test('new inert scaffolding source files do not include unsafe execution primiti
     });
   });
 });
+
+test('GET /probot/external-admin-safe-metadata returns safe metadata classification', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/external-admin-safe-metadata' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    integrationCount: number;
+    safeMetadataAvailableCount: number;
+    integrations: Array<{ id: string; label: string; safeMetadataAvailable: boolean }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-external-admin-safe-metadata');
+  assert.equal(body.status, 'partial');
+  assert.equal(body.integrationCount, 7);
+  assert.equal(body.safeMetadataAvailableCount, 0);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesStripeFinancialData, false);
+  assert.equal(body.safety.exposesGoogleAdsSpendData, false);
+  assert.equal(body.safety.exposesCredentials, false);
+  assert.equal(body.safety.decommissionEnabled, false);
+});
+
+test('POST /probot/external-admin-safe-metadata is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/external-admin-safe-metadata' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/feature-parity-matrix returns 11-tab parity matrix', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/feature-parity-matrix' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    tabCount: number;
+    coveredCount: number;
+    partialCount: number;
+    legacyOnlyCount: number;
+    decommissionReady: boolean;
+    rows: Array<{ probotTab: string; parityStatus: string }>;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-feature-parity-matrix');
+  assert.equal(body.status, 'partial');
+  assert.equal(body.tabCount, 11);
+  assert.equal(body.coveredCount, 3);
+  assert.equal(body.partialCount, 1);
+  assert.equal(body.legacyOnlyCount, 7);
+  assert.equal(body.decommissionReady, false);
+  assert.equal(body.rows.length, 11);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.decommissionEnabled, false);
+});
+
+test('POST /probot/feature-parity-matrix is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/feature-parity-matrix' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/phase-out-checklist returns phase-out checklist status', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/phase-out-checklist' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    ready: boolean;
+    itemCount: number;
+    satisfiedCount: number;
+    unsatisfiedCount: number;
+    requiresApprovalCount: number;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-phase-out-checklist');
+  assert.equal(body.status, 'not-ready');
+  assert.equal(body.ready, false);
+  assert.equal(body.itemCount, 12);
+  assert.equal(body.satisfiedCount, 8);
+  assert.equal(body.unsatisfiedCount, 4);
+  assert.equal(body.requiresApprovalCount, 4);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.decommissionEnabled, false);
+});
+
+test('POST /probot/phase-out-checklist is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/phase-out-checklist' });
+  assert.equal(response.statusCode, 404);
+});

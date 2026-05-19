@@ -41,6 +41,9 @@ import { readProBotSchedulerParity } from '../adapters/probot-scheduler-parity.j
 import { readProBotStudioParity } from '../adapters/probot-studio-parity.js';
 import { readProBotExternalAdminParity } from '../adapters/probot-external-admin-parity.js';
 import { readProBotDecommissionReadiness } from '../adapters/probot-decommission-readiness.js';
+import { readProBotExternalAdminSafeMetadata } from '../adapters/probot-external-admin-safe-metadata.js';
+import { readProBotFeatureParityMatrix } from '../adapters/probot-feature-parity-matrix.js';
+import { readProBotPhaseOutChecklist } from '../adapters/probot-phase-out-checklist.js';
 import {
   listMindPreviewSummaries,
   readLatestMindPreviewDetail,
@@ -510,6 +513,15 @@ export async function routeRequest(
       return;
     case '/probot/decommission-readiness':
       sendJson(response, 200, readProBotDecommissionReadiness());
+      return;
+    case '/probot/external-admin-safe-metadata':
+      sendJson(response, 200, readProBotExternalAdminSafeMetadata());
+      return;
+    case '/probot/feature-parity-matrix':
+      sendJson(response, 200, readProBotFeatureParityMatrix());
+      return;
+    case '/probot/phase-out-checklist':
+      sendJson(response, 200, readProBotPhaseOutChecklist());
       return;
     case '/video/status':
       sendJson(response, 200, getVideoStatus());
