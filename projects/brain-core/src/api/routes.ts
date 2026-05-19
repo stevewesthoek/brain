@@ -78,6 +78,7 @@ import { readVideoCredentialStoreImplementationBoundaryPlan, readVideoCredential
 import { readVideoPromptReviewUxImplementationPlan, readVideoPromptReviewUxImplementationPlanEntry } from '../adapters/video-orchestrator-prompt-review-ux-implementation-plan.js';
 import { readVideoProviderAuditPersistenceBoundaryPlan, readVideoProviderAuditPersistenceBoundaryPlanEntry } from '../adapters/video-orchestrator-provider-audit-persistence-boundary-plan.js';
 import { readVideoProviderWrapperSecurityReviewPlan, readVideoProviderWrapperSecurityReviewPlanEntry } from '../adapters/video-orchestrator-provider-wrapper-security-review-plan.js';
+import { readVideoProviderImplementationPhaseStartGate, readVideoProviderImplementationPhaseStartGateEntry } from '../adapters/video-orchestrator-provider-implementation-phase-start-gate.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -346,6 +347,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-wrapper-security-review-plan':
       sendJson(response, 200, readVideoProviderWrapperSecurityReviewPlan());
+      return;
+    case '/video-orchestrator/provider-implementation-phase-start-gate':
+      sendJson(response, 200, readVideoProviderImplementationPhaseStartGate());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1392,6 +1396,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator provider wrapper security review plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const startGateMatch = /^\/video-orchestrator\/provider-implementation-phase-start-gate\/([^/]+)$/.exec(url.pathname);
+        const startGateProviderClass = startGateMatch?.[1] ?? '';
+        if (startGateProviderClass.length > 0) {
+          const gate = readVideoProviderImplementationPhaseStartGateEntry(decodeURIComponent(startGateProviderClass));
+          if (gate) {
+            sendJson(response, 200, gate);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator provider implementation phase start gate not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

@@ -70,6 +70,7 @@ import {
   readBrainCoreVideoOrchestratorPromptReviewUxImplementationPlan,
   readBrainCoreVideoOrchestratorProviderAuditPersistenceBoundaryPlan,
   readBrainCoreVideoOrchestratorProviderWrapperSecurityReviewPlan,
+  readBrainCoreVideoOrchestratorProviderImplementationPhaseStartGate,
   readBrainCoreStbVideoMigrationStatus,
   readBrainCoreStbVideoParityMatrix,
   readBrainCoreStbVideoDualRunStatus,
@@ -183,6 +184,7 @@ import {
   type BrainCoreVideoPromptReviewUxImplementationPlanResponse,
   type BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse,
   type BrainCoreVideoProviderWrapperSecurityReviewPlanResponse,
+  type BrainCoreVideoProviderImplementationPhaseStartGateResponse,
   type BrainCoreStbVideoMigrationStatus,
   type BrainCoreStbVideoParityMatrix,
   type BrainCoreStbVideoDualRunStatus,
@@ -295,6 +297,7 @@ export interface BrainConsoleViewState {
   videoPromptReviewUxImplementationPlan?: BrainCoreVideoPromptReviewUxImplementationPlanResponse;
   videoProviderAuditPersistenceBoundaryPlan?: BrainCoreVideoProviderAuditPersistenceBoundaryPlanResponse;
   videoProviderWrapperSecurityReviewPlan?: BrainCoreVideoProviderWrapperSecurityReviewPlanResponse;
+  videoProviderImplementationPhaseStartGate?: BrainCoreVideoProviderImplementationPhaseStartGateResponse;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   stbVideoParityMatrix?: BrainCoreStbVideoParityMatrix;
   stbVideoDualRunStatus?: BrainCoreStbVideoDualRunStatus;
@@ -410,6 +413,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVideoOrchestratorPromptReviewUxImplementationPlan(baseUrl),
     readBrainCoreVideoOrchestratorProviderAuditPersistenceBoundaryPlan(baseUrl),
     readBrainCoreVideoOrchestratorProviderWrapperSecurityReviewPlan(baseUrl),
+    readBrainCoreVideoOrchestratorProviderImplementationPhaseStartGate(baseUrl),
     readBrainCoreStbVideoMigrationStatus(baseUrl),
     readBrainCoreStbVideoParityMatrix(baseUrl),
     readBrainCoreStbVideoDualRunStatus(baseUrl),
@@ -444,7 +448,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreRecoveryItems(baseUrl),
   ]);
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = results.map(r => r.status === 'fulfilled' ? r.value : { value: undefined, error: r.reason }) as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems] = results.map(r => r.status === 'fulfilled' ? r.value : { value: undefined, error: r.reason }) as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -554,6 +558,7 @@ export async function loadBrainConsoleViewState(
     videoPromptReviewUxImplementationPlan: videoPromptReviewUxImplementationPlan.value,
     videoProviderAuditPersistenceBoundaryPlan: videoProviderAuditPersistenceBoundaryPlan.value,
     videoProviderWrapperSecurityReviewPlan: videoProviderWrapperSecurityReviewPlan.value,
+    videoProviderImplementationPhaseStartGate: videoProviderImplementationPhaseStartGate.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     stbVideoParityMatrix: stbVideoParityMatrix.value,
     stbVideoDualRunStatus: stbVideoDualRunStatus.value,
@@ -788,6 +793,7 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
   renderCard(grid, 'Prompt Review UX Plan', renderVideoPromptReviewUxImplementationPlanCard(state, snapshot));
   renderCard(grid, 'Provider Audit Persistence Boundary', renderVideoProviderAuditPersistenceBoundaryPlanCard(state, snapshot));
   renderCard(grid, 'Provider Wrapper Security Review', renderVideoProviderWrapperSecurityReviewPlanCard(state, snapshot));
+  renderCard(grid, 'Provider Implementation Start Gate', renderVideoProviderImplementationPhaseStartGateCard(state, snapshot));
   renderCard(grid, 'STB Live Status', renderStbLiveStatusCard(state, snapshot));
   renderCard(grid, 'STB → Video Migration', renderMigrationStatusCard(state, snapshot));
   renderCard(grid, 'Video Orchestrator Production Gate', renderProductionGateCard(state, snapshot));
@@ -1909,6 +1915,35 @@ function renderVideoProviderWrapperSecurityReviewPlanCard(state: BrainConsoleVie
   });
 
   container.appendChild(renderSafetyLabel('Read-only · Review not complete · No provider calls · No mutation controls'));
+  return container;
+}
+
+function renderVideoProviderImplementationPhaseStartGateCard(state: BrainConsoleViewState, _snapshot: DashboardSnapshot): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  const data = state.videoProviderImplementationPhaseStartGate;
+
+  if (!data) {
+    return renderEmptyState('Provider implementation start gate unavailable', 'Brain Core /video-orchestrator/provider-implementation-phase-start-gate did not return a response.');
+  }
+
+  renderCompactStatGrid(container, [
+    { label: 'Status', value: data.gate.status },
+    { label: 'Gates', value: String(data.gate.gateCount) },
+    { label: 'Planning complete', value: String(data.gate.planningSequenceCompleteCount) },
+    { label: 'Implementation approved', value: String(data.gate.implementationApprovedCount) },
+    { label: 'Implementation eligible', value: String(data.gate.implementationEligibleCount) },
+    { label: 'Provider calls', value: String(data.gate.providerCallCount) },
+    { label: 'Credential access', value: String(data.gate.credentialAccessCount) },
+  ]);
+
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  data.gate.entries.slice(0, 3).forEach((entry) => {
+    list.createEl('div', { cls: 'brain-console__list-note', text: `${entry.providerClass}: ${entry.status}` });
+    list.createEl('div', { cls: 'brain-console__list-sub', text: `${entry.startGateOnly ? 'start gate only' : 'active'} · implementation blocked` });
+  });
+
+  container.appendChild(renderSafetyLabel('Read-only · Implementation blocked · No provider calls · No credentials'));
   return container;
 }
 

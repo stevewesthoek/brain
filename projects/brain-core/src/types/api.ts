@@ -7683,3 +7683,104 @@ export interface BrainCoreVideoProviderWrapperSecurityReviewPlan {
 export interface BrainCoreVideoProviderWrapperSecurityReviewPlanResponse {
   plan: BrainCoreVideoProviderWrapperSecurityReviewPlan;
 }
+
+export type BrainCoreVideoProviderImplementationPhaseStartGateProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoProviderImplementationPhaseStartGateEntry {
+  providerClass: BrainCoreVideoProviderImplementationPhaseStartGateProviderClass;
+  status: 'blocked';
+  startGateOnly: true;
+  planningSequenceComplete: true;
+  implementationApproved: false;
+  implementationEligible: false;
+  completedPlanningRefs: string[];
+  remainingApprovalRequirements: string[];
+  implementationStartBlockers: string[];
+  explicitApprovalChecklist: string[];
+  firstImplementationPhaseAllowedOnlyAfterApproval: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    startGateOnly: true;
+    planningSequenceComplete: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderImplementationPhaseStartGate {
+  id: 'video-orchestrator-provider-implementation-phase-start-gate';
+  generatedAt: string;
+  status: 'blocked';
+  gateCount: 3;
+  planningSequenceCompleteCount: 3;
+  implementationApprovedCount: 0;
+  implementationEligibleCount: 0;
+  blockedCount: 3;
+  providerConfiguredCount: 0;
+  providerCallCount: 0;
+  credentialAccessCount: 0;
+  networkAccessCount: 0;
+  executionEnabledCount: 0;
+  entries: BrainCoreVideoProviderImplementationPhaseStartGateEntry[];
+  summary: {
+    gateCount: 3;
+    planningSequenceCompleteCount: 3;
+    implementationApprovedCount: 0;
+    implementationEligibleCount: 0;
+    blockedCount: 3;
+    providerConfiguredCount: 0;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+    networkAccessCount: 0;
+    executionEnabledCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    startGateOnly: true;
+    planningSequenceComplete: true;
+    implementationApproved: false;
+    implementationEligible: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    complianceEvaluationEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoProviderImplementationPhaseStartGateResponse {
+  gate: BrainCoreVideoProviderImplementationPhaseStartGate;
+}

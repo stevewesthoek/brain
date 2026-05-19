@@ -6664,3 +6664,134 @@ test('POST /video-orchestrator/provider-wrapper-security-review-plan is not regi
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-wrapper-security-review-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/provider-implementation-phase-start-gate returns blocked start gates with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-implementation-phase-start-gate' });
+  const body = JSON.parse(response.body) as {
+    gate: {
+      id: string;
+      status: string;
+      gateCount: number;
+      planningSequenceCompleteCount: number;
+      implementationApprovedCount: number;
+      implementationEligibleCount: number;
+      blockedCount: number;
+      providerConfiguredCount: number;
+      providerCallCount: number;
+      credentialAccessCount: number;
+      networkAccessCount: number;
+      executionEnabledCount: number;
+      entries: Array<{
+        providerClass: string;
+        startGateOnly: boolean;
+        planningSequenceComplete: boolean;
+        implementationApproved: boolean;
+        implementationEligible: boolean;
+        completedPlanningRefs: string[];
+        remainingApprovalRequirements: string[];
+        implementationStartBlockers: string[];
+        explicitApprovalChecklist: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.gate.id, 'video-orchestrator-provider-implementation-phase-start-gate');
+  assert.equal(body.gate.status, 'blocked');
+  assert.equal(body.gate.gateCount, 3);
+  assert.equal(body.gate.planningSequenceCompleteCount, 3);
+  assert.equal(body.gate.implementationApprovedCount, 0);
+  assert.equal(body.gate.implementationEligibleCount, 0);
+  assert.equal(body.gate.blockedCount, 3);
+  assert.equal(body.gate.providerConfiguredCount, 0);
+  assert.equal(body.gate.providerCallCount, 0);
+  assert.equal(body.gate.credentialAccessCount, 0);
+  assert.equal(body.gate.networkAccessCount, 0);
+  assert.equal(body.gate.executionEnabledCount, 0);
+  assert.equal(body.gate.entries.length, 3);
+  assert.ok(body.gate.entries.every((entry) => entry.startGateOnly === true));
+  assert.ok(body.gate.entries.every((entry) => entry.planningSequenceComplete === true));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationApproved === false));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationEligible === false));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('design-provider-boundary-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('design-provider-credential-isolation-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('design-provider-prompt-review-policy-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('artifact-sandbox-provider-handoff-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('provider-output-redaction-policy-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('design-provider-compliance-checklist-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('design-provider-enablement-readiness-index')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('provider-integration-final-planning-checkpoint')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('provider-request-wrapper-implementation-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('credential-store-implementation-boundary-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('prompt-review-ux-implementation-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('provider-audit-persistence-boundary-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.completedPlanningRefs.includes('provider-wrapper-security-review-plan')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('explicit user approval to begin provider implementation')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('security review accepted')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('credential boundary accepted')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('prompt review UX accepted')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('audit persistence boundary accepted')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('artifact sandbox handoff accepted')));
+  assert.ok(body.gate.entries.every((entry) => entry.remainingApprovalRequirements.includes('output redaction policy accepted')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('implementation not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('provider calls not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('credential access not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('network access not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('prompt generation not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('artifact persistence not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.implementationStartBlockers.includes('audit persistence not approved')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve beginning provider implementation planning-to-code transition')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve implementing provider request wrapper without provider calls')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve keeping credentials inaccessible until a separate credential phase')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve keeping provider calls disabled')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve keeping artifact writes disabled')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve keeping audit persistence disabled')));
+  assert.ok(body.gate.entries.every((entry) => entry.explicitApprovalChecklist.includes('I approve keeping Brain Console mutation controls disabled')));
+  assert.ok(body.gate.entries.every((entry) => entry.safety.readOnly === true));
+  assert.ok(body.gate.entries.every((entry) => entry.safety.startGateOnly === true));
+  assert.ok(body.gate.entries.every((entry) => entry.safety.planningSequenceComplete === true));
+  assert.ok(body.gate.entries.every((entry) => entry.safety.implementationApproved === false));
+  assert.ok(body.gate.entries.every((entry) => entry.safety.implementationEligible === false));
+  assert.equal(body.gate.safety.readOnly, true);
+  assert.equal(body.gate.safety.startGateOnly, true);
+  assert.equal(body.gate.safety.planningSequenceComplete, true);
+  assert.equal(body.gate.safety.implementationApproved, false);
+  assert.equal(body.gate.safety.implementationEligible, false);
+  assert.equal(body.gate.safety.providerConfigured, false);
+  assert.equal(body.gate.safety.providerCallsEnabled, false);
+  assert.equal(body.gate.safety.credentialAccessEnabled, false);
+  assert.equal(body.gate.safety.networkAccessEnabled, false);
+  assert.equal(body.gate.safety.promptGenerationEnabled, false);
+  assert.equal(body.gate.safety.imageGenerationEnabled, false);
+  assert.equal(body.gate.safety.artifactPersistenceEnabled, false);
+  assert.equal(body.gate.safety.auditPersistenceEnabled, false);
+  assert.equal(body.gate.safety.complianceEvaluationEnabled, false);
+  assert.equal(body.gate.safety.mutationControlsEnabled, false);
+  assert.equal(body.gate.safety.approvalButtonsEnabled, false);
+  assert.equal(body.gate.safety.filesystemAccessEnabled, false);
+  assert.equal(body.gate.safety.writesFiles, false);
+  assert.equal(body.gate.safety.publishesContent, false);
+  assert.equal(body.gate.safety.writesToMind, false);
+  assert.equal(body.gate.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/provider-implementation-phase-start-gate/:providerClass returns image-generation start gate', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/provider-implementation-phase-start-gate/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    startGateOnly: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.startGateOnly, true);
+});
+
+test('POST /video-orchestrator/provider-implementation-phase-start-gate is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-implementation-phase-start-gate' });
+  assert.equal(response.statusCode, 404);
+});

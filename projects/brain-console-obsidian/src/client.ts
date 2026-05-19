@@ -5359,6 +5359,84 @@ export interface BrainCoreVideoProviderWrapperSecurityReviewPlanResponse {
   };
 }
 
+export interface BrainCoreVideoProviderImplementationPhaseStartGateResponse {
+  gate: {
+    status: string;
+    gateCount: number;
+    planningSequenceCompleteCount: number;
+    implementationApprovedCount: number;
+    implementationEligibleCount: number;
+    blockedCount: number;
+    providerConfiguredCount: number;
+    providerCallCount: number;
+    credentialAccessCount: number;
+    networkAccessCount: number;
+    executionEnabledCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      startGateOnly: boolean;
+      planningSequenceComplete: boolean;
+      implementationApproved: boolean;
+      implementationEligible: boolean;
+      completedPlanningRefs: string[];
+      remainingApprovalRequirements: string[];
+      implementationStartBlockers: string[];
+      explicitApprovalChecklist: string[];
+      firstImplementationPhaseAllowedOnlyAfterApproval: string;
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        startGateOnly: boolean;
+        planningSequenceComplete: boolean;
+        implementationApproved: boolean;
+        implementationEligible: boolean;
+        providerConfigured: boolean;
+        providerCallsEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        networkAccessEnabled: boolean;
+        promptGenerationEnabled: boolean;
+        imageGenerationEnabled: boolean;
+        artifactPersistenceEnabled: boolean;
+        auditPersistenceEnabled: boolean;
+        complianceEvaluationEnabled: boolean;
+        mutationControlsEnabled: boolean;
+        approvalButtonsEnabled: boolean;
+        filesystemAccessEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      startGateOnly: boolean;
+      planningSequenceComplete: boolean;
+      implementationApproved: boolean;
+      implementationEligible: boolean;
+      providerConfigured: boolean;
+      providerCallsEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      networkAccessEnabled: boolean;
+      promptGenerationEnabled: boolean;
+      imageGenerationEnabled: boolean;
+      artifactPersistenceEnabled: boolean;
+      auditPersistenceEnabled: boolean;
+      complianceEvaluationEnabled: boolean;
+      mutationControlsEnabled: boolean;
+      approvalButtonsEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5441,4 +5519,10 @@ export async function readBrainCoreVideoOrchestratorProviderWrapperSecurityRevie
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderWrapperSecurityReviewPlanResponse>> {
   return fetchJson<BrainCoreVideoProviderWrapperSecurityReviewPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-wrapper-security-review-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderImplementationPhaseStartGate(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderImplementationPhaseStartGateResponse>> {
+  return fetchJson<BrainCoreVideoProviderImplementationPhaseStartGateResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-implementation-phase-start-gate');
 }
