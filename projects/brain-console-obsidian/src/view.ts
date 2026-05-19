@@ -1,6 +1,8 @@
 import { ItemView } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import {
+  diagnoseBrainCoreConnection,
+  type BrainCoreConnectionDiagnostic,
   readBrainCoreApprovals,
   readBrainCoreApprovalDetail,
   readBrainCoreApprovalStore,
@@ -417,6 +419,7 @@ export interface BrainConsoleViewState {
   statusError?: string;
   endpointErrors?: import('./client.js').EndpointError[];
   activeSection?: BrainConsoleSectionId;
+  connectionDiagnostics?: BrainCoreConnectionDiagnostic;
 }
 
 export async function loadBrainConsoleViewState(
@@ -590,6 +593,9 @@ export async function loadBrainConsoleViewState(
     }
   });
 
+  // Gather connection diagnostics
+  const connectionDiagnostics = await diagnoseBrainCoreConnection(baseUrl);
+
   return {
     status: status.value,
     capabilities: capabilities.value,
@@ -727,6 +733,7 @@ export async function loadBrainConsoleViewState(
     brainCoreUrl: baseUrl,
     statusError: status.error,
     endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
+    connectionDiagnostics,
   };
 }
 
@@ -895,6 +902,9 @@ function renderSafeCard(
 
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  // Connection diagnostics (always show, even if Brain Core unreachable)
+  renderCard(grid, 'Brain Core Connection Diagnostics', renderBrainCoreConnectionDiagnosticsCard(state));
 
   // What needs attention
   renderCard(grid, 'What Needs Attention', renderWhatNeedsAttentionCard(state, snapshot));
@@ -5330,5 +5340,53 @@ function renderProBotPhaseOutChecklistCard(state: BrainConsoleViewState): HTMLEl
   }
 
   container.appendChild(renderSafetyLabel('Read-only · ProBot still operational · Decommission blocked'));
+  return container;
+}
+
+function renderBrainCoreConnectionDiagnosticsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const diag = state.connectionDiagnostics;
+  if (!diag) {
+    return renderEmptyState('Diagnostics unavailable', 'Connection diagnostics not collected.');
+  }
+
+  const modeDiv = container.createDiv();
+  modeDiv.createEl('strong', { text: 'Connection Status' });
+  const modeText = diag.allFailed ? '⚠ Offline / Unreachable' : '● Connected';
+  modeDiv.createEl('p', { text: modeText });
+
+  renderCompactStatGrid(container, [
+    { label: 'Configured URL', value: diag.configuredUrl ?? 'not set' },
+    { label: 'Selected URL', value: diag.selectedUrl ?? 'none' },
+    { label: 'Attempts', value: String(diag.attempts?.length ?? 0) },
+    { label: 'Status', value: diag.allFailed ? 'All failed' : 'Connected' },
+  ]);
+
+  if (diag.attempts && diag.attempts.length > 0) {
+    const list = container.createDiv({ cls: 'brain-console__list' });
+    diag.attempts.forEach((attempt) => {
+      const item = list.createDiv({ cls: 'brain-console__list-item-highlight' });
+      const status = attempt.ok ? '✓' : '✗';
+      item.createEl('strong', { text: `${status} ${attempt.url}` });
+      let detail = '';
+      if (attempt.status) detail += `HTTP ${attempt.status}`;
+      if (attempt.responseTimeMs) detail += ` · ${attempt.responseTimeMs}ms`;
+      if (attempt.error && !attempt.ok) detail += ` · ${attempt.error}`;
+      if (detail) {
+        item.createEl('div', { cls: 'brain-console__list-sub', text: detail });
+      }
+    });
+  }
+
+  if (diag.recommendation) {
+    container.createEl('p', {
+      cls: 'brain-console__diagnostic-recommendation',
+      text: `ℹ ${diag.recommendation}`,
+    });
+  }
+
+  container.appendChild(renderSafetyLabel('Read-only · Connection diagnostics only'));
   return container;
 }

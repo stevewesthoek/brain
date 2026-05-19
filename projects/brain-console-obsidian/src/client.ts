@@ -4507,6 +4507,119 @@ async function fetchJsonWithFallback<T>(
   }
 }
 
+export interface BrainCoreConnectionDiagnostic {
+  configuredUrl: string;
+  selectedUrl: string;
+  attempts: Array<{
+    url: string;
+    ok: boolean;
+    status?: number;
+    error?: string;
+    responseTimeMs?: number;
+  }>;
+  allFailed: boolean;
+  recommendation: string;
+}
+
+/** Diagnose Brain Core connection attempts (safe read-only operation) */
+export async function diagnoseBrainCoreConnection(
+  configuredUrl: string,
+): Promise<BrainCoreConnectionDiagnostic> {
+  const attempts: BrainCoreConnectionDiagnostic['attempts'] = [];
+  let selectedUrl = configuredUrl;
+  let selectedOk = false;
+
+  // List of URLs to try
+  const urlsToTry = new Set<string>();
+  if (configuredUrl) urlsToTry.add(configuredUrl);
+  urlsToTry.add('http://127.0.0.1:4877');
+  urlsToTry.add('http://localhost:4877');
+
+  // Try each URL
+  for (const url of urlsToTry) {
+    const result = await testBrainCoreUrl(url);
+    attempts.push(result);
+    if (result.ok && !selectedOk) {
+      selectedUrl = url;
+      selectedOk = true;
+    }
+  }
+
+  const allFailed = !selectedOk;
+  let recommendation = '';
+
+  if (allFailed) {
+    recommendation = 'Brain Core is unreachable. Check if Brain Core is running on port 4877.';
+  } else if (selectedUrl !== configuredUrl) {
+    recommendation = `Using fallback URL: ${selectedUrl}`;
+  } else {
+    recommendation = `Connected to ${selectedUrl}`;
+  }
+
+  return {
+    configuredUrl,
+    selectedUrl,
+    attempts,
+    allFailed,
+    recommendation,
+  };
+}
+
+/** Safely test a single Brain Core URL (read-only GET /status) */
+async function testBrainCoreUrl(url: string): Promise<BrainCoreConnectionDiagnostic['attempts'][0]> {
+  if (!requestUrlFn) {
+    return {
+      url,
+      ok: false,
+      error: 'Obsidian requestUrl not initialized',
+    };
+  }
+
+  const testUrl = `${url}/status`;
+  const startTime = performance.now();
+
+  try {
+    const response = await Promise.race([
+      requestUrlFn({
+        url: testUrl,
+        method: 'GET',
+        headers: { accept: 'application/json' },
+        throw: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 3000)
+      ),
+    ]);
+
+    const responseTimeMs = Math.round(performance.now() - startTime);
+
+    if (response.status === 200) {
+      return {
+        url,
+        ok: true,
+        status: response.status,
+        responseTimeMs,
+      };
+    } else {
+      return {
+        url,
+        ok: false,
+        status: response.status,
+        error: `HTTP ${response.status}`,
+        responseTimeMs,
+      };
+    }
+  } catch (error) {
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    return {
+      url,
+      ok: false,
+      error: error instanceof Error ? error.message : 'unknown error',
+      responseTimeMs,
+    };
+  }
+}
+
 function isLocalTestUrl(url: string): boolean {
   return (
     url.includes('localhost:4877') ||
