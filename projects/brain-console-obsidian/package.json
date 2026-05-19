@@ -8,7 +8,8 @@
     "build": "node ./esbuild.config.mjs",
     "package": "node ./scripts/package.mjs",
     "install:active-vault": "node ./scripts/install-active-vault.mjs",
-    "diagnose:obsidian-install": "node ./scripts/diagnose-obsidian-install.mjs"
+    "diagnose:obsidian-install": "node ./scripts/diagnose-obsidian-install.mjs",
+    "find:installed": "node ./scripts/find-installed-brain-console.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",
