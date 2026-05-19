@@ -5149,6 +5149,77 @@ export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse
   };
 }
 
+export interface BrainCoreVideoPromptReviewUxImplementationPlanResponse {
+  plan: {
+    status: string;
+    planCount: number;
+    blockedCount: number;
+    implementationPlanOnlyCount: number;
+    editableUiEnabledCount: number;
+    promptApprovalEnabledCount: number;
+    providerCallButtonCount: number;
+    promptPersistedCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      implementationPlanOnly: boolean;
+      uxPurpose: string;
+      proposedReviewStates: string[];
+      proposedReadOnlyFields: string[];
+      proposedFutureEditableFields: string[];
+      prohibitedControls: string[];
+      requiredGuardrails: string[];
+      operatorConfirmationCopy: string;
+      auditRequirements: string[];
+      failureModes: string[];
+      requiredPreImplementationApprovals: string[];
+      implementationBlockers: string[];
+      firstSafeImplementationSlice: string;
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        implementationPlanOnly: boolean;
+        promptReviewUxImplemented: boolean;
+        editableUiEnabled: boolean;
+        mutationControlsEnabled: boolean;
+        approvalButtonsEnabled: boolean;
+        promptApprovalEnabled: boolean;
+        promptPersistenceEnabled: boolean;
+        providerCallButtonsEnabled: boolean;
+        providerCallsEnabled: boolean;
+        credentialAccessEnabled: boolean;
+        rawCredentialDisplayEnabled: boolean;
+        rawPromptCopyEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      implementationPlanOnly: boolean;
+      promptReviewUxImplemented: boolean;
+      editableUiEnabled: boolean;
+      mutationControlsEnabled: boolean;
+      approvalButtonsEnabled: boolean;
+      promptApprovalEnabled: boolean;
+      promptPersistenceEnabled: boolean;
+      providerCallButtonsEnabled: boolean;
+      providerCallsEnabled: boolean;
+      credentialAccessEnabled: boolean;
+      rawCredentialDisplayEnabled: boolean;
+      rawPromptCopyEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5213,4 +5284,10 @@ export async function readBrainCoreVideoOrchestratorCredentialStoreImplementatio
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse>> {
   return fetchJson<BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/credential-store-implementation-boundary-plan');
+}
+
+export async function readBrainCoreVideoOrchestratorPromptReviewUxImplementationPlan(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoPromptReviewUxImplementationPlanResponse>> {
+  return fetchJson<BrainCoreVideoPromptReviewUxImplementationPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/prompt-review-ux-implementation-plan');
 }

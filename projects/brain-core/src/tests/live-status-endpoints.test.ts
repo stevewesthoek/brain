@@ -6332,3 +6332,110 @@ test('POST /video-orchestrator/credential-store-implementation-boundary-plan is 
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/credential-store-implementation-boundary-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/prompt-review-ux-implementation-plan returns blocked plans with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/prompt-review-ux-implementation-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      status: string;
+      planCount: number;
+      blockedCount: number;
+      implementationPlanOnlyCount: number;
+      editableUiEnabledCount: number;
+      promptApprovalEnabledCount: number;
+      providerCallButtonCount: number;
+      promptPersistedCount: number;
+      entries: Array<{
+        providerClass: string;
+        implementationPlanOnly: boolean;
+        proposedReviewStates: string[];
+        prohibitedControls: string[];
+        requiredGuardrails: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-prompt-review-ux-implementation-plan');
+  assert.equal(body.plan.status, 'blocked');
+  assert.equal(body.plan.planCount, 3);
+  assert.equal(body.plan.blockedCount, 3);
+  assert.equal(body.plan.implementationPlanOnlyCount, 3);
+  assert.equal(body.plan.editableUiEnabledCount, 0);
+  assert.equal(body.plan.promptApprovalEnabledCount, 0);
+  assert.equal(body.plan.providerCallButtonCount, 0);
+  assert.equal(body.plan.promptPersistedCount, 0);
+  assert.equal(body.plan.entries.length, 3);
+  assert.ok(body.plan.entries.every((entry) => entry.implementationPlanOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReviewStates.includes('not_loaded')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReviewStates.includes('draft_preview')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReviewStates.includes('awaiting_operator_review')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReviewStates.includes('changes_requested')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReviewStates.includes('blocked_by_policy')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReviewStates.includes('approved_for_future_provider_request')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('approve prompt button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('call provider button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('generate image button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('publish button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('write to Mind button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('decommission STB button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('raw credential reveal button')));
+  assert.ok(body.plan.entries.every((entry) => entry.prohibitedControls.includes('raw prompt copy button')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredGuardrails.includes('no mutation controls in this phase')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredGuardrails.includes('no provider calls from UI')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredGuardrails.includes('no raw credentials in UI')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredGuardrails.includes('no raw prompt persistence')));
+  assert.ok(body.plan.entries.every((entry) => entry.requiredGuardrails.includes('explicit confirmation required before any future approval')));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.readOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.implementationPlanOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.promptReviewUxImplemented === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.editableUiEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.mutationControlsEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.approvalButtonsEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.promptApprovalEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.promptPersistenceEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.providerCallButtonsEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.providerCallsEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.credentialAccessEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.rawCredentialDisplayEnabled === false));
+  assert.ok(body.plan.entries.every((entry) => entry.safety.rawPromptCopyEnabled === false));
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.implementationPlanOnly, true);
+  assert.equal(body.plan.safety.promptReviewUxImplemented, false);
+  assert.equal(body.plan.safety.editableUiEnabled, false);
+  assert.equal(body.plan.safety.mutationControlsEnabled, false);
+  assert.equal(body.plan.safety.approvalButtonsEnabled, false);
+  assert.equal(body.plan.safety.promptApprovalEnabled, false);
+  assert.equal(body.plan.safety.promptPersistenceEnabled, false);
+  assert.equal(body.plan.safety.providerCallButtonsEnabled, false);
+  assert.equal(body.plan.safety.providerCallsEnabled, false);
+  assert.equal(body.plan.safety.credentialAccessEnabled, false);
+  assert.equal(body.plan.safety.rawCredentialDisplayEnabled, false);
+  assert.equal(body.plan.safety.rawPromptCopyEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+  assert.equal(body.plan.safety.publishesContent, false);
+  assert.equal(body.plan.safety.writesToMind, false);
+  assert.equal(body.plan.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/prompt-review-ux-implementation-plan/:providerClass returns image-generation UX plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/prompt-review-ux-implementation-plan/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    implementationPlanOnly: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.implementationPlanOnly, true);
+});
+
+test('POST /video-orchestrator/prompt-review-ux-implementation-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/prompt-review-ux-implementation-plan' });
+  assert.equal(response.statusCode, 404);
+});

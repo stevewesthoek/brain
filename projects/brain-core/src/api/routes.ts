@@ -75,6 +75,7 @@ import { readVideoDesignProviderEnablementReadinessIndex, readVideoDesignProvide
 import { readVideoProviderIntegrationFinalPlanningCheckpoint, readVideoProviderIntegrationFinalPlanningCheckpointEntry } from '../adapters/video-orchestrator-provider-integration-final-planning-checkpoint.js';
 import { readVideoProviderRequestWrapperImplementationPlan, readVideoProviderRequestWrapperImplementationPlanEntry } from '../adapters/video-orchestrator-provider-request-wrapper-implementation-plan.js';
 import { readVideoCredentialStoreImplementationBoundaryPlan, readVideoCredentialStoreImplementationBoundaryPlanEntry } from '../adapters/video-orchestrator-credential-store-implementation-boundary-plan.js';
+import { readVideoPromptReviewUxImplementationPlan, readVideoPromptReviewUxImplementationPlanEntry } from '../adapters/video-orchestrator-prompt-review-ux-implementation-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -334,6 +335,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/credential-store-implementation-boundary-plan':
       sendJson(response, 200, readVideoCredentialStoreImplementationBoundaryPlan());
+      return;
+    case '/video-orchestrator/prompt-review-ux-implementation-plan':
+      sendJson(response, 200, readVideoPromptReviewUxImplementationPlan());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1329,6 +1333,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator credential store implementation boundary plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const promptReviewUxMatch = /^\/video-orchestrator\/prompt-review-ux-implementation-plan\/([^/]+)$/.exec(url.pathname);
+        const promptReviewUxProviderClass = promptReviewUxMatch?.[1] ?? '';
+        if (promptReviewUxProviderClass.length > 0) {
+          const plan = readVideoPromptReviewUxImplementationPlanEntry(decodeURIComponent(promptReviewUxProviderClass));
+          if (plan) {
+            sendJson(response, 200, plan);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator prompt review UX implementation plan not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

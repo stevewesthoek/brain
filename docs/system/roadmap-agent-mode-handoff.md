@@ -647,3 +647,49 @@ Validation:
 Next safe task suggestion:
 
 - Prompt review UX implementation plan or Provider audit persistence boundary plan.
+
+## Continuation update — Video Orchestrator prompt review UX implementation plan
+
+Endpoints:
+
+- `GET /video-orchestrator/prompt-review-ux-implementation-plan`
+- `GET /video-orchestrator/prompt-review-ux-implementation-plan/:providerClass`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-prompt-review-ux-implementation-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Implementation-plan only.
+- No editable UI.
+- No approval buttons.
+- No provider call buttons.
+- No prompt persistence.
+- No provider calls.
+- No credential access.
+- No raw prompt copy.
+- No mutation controls.
+- No file writes from UI.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+
+Validation evidence:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian build` passed.
+- `npm run --prefix projects/brain-console-obsidian package` passed.
+- Brain Core test count: 361 passing.
+
+Next safe task suggestion:
+
+- Provider audit persistence boundary plan or Provider implementation phase start gate.

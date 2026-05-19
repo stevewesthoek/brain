@@ -4790,6 +4790,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/provider-integration-final-planning-checkpoint': BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse;
   '/video-orchestrator/provider-request-wrapper-implementation-plan': BrainCoreVideoProviderRequestWrapperImplementationPlanResponse;
   '/video-orchestrator/credential-store-implementation-boundary-plan': BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse;
+  '/video-orchestrator/prompt-review-ux-implementation-plan': BrainCoreVideoPromptReviewUxImplementationPlanResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
@@ -7410,4 +7411,95 @@ export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlan {
 
 export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse {
   plan: BrainCoreVideoCredentialStoreImplementationBoundaryPlan;
+}
+
+export type BrainCoreVideoPromptReviewUxImplementationPlanProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoPromptReviewUxImplementationPlanEntry {
+  providerClass: BrainCoreVideoPromptReviewUxImplementationPlanProviderClass;
+  status: 'blocked';
+  implementationPlanOnly: true;
+  uxPurpose: string;
+  proposedReviewStates: string[];
+  proposedReadOnlyFields: string[];
+  proposedFutureEditableFields: string[];
+  prohibitedControls: string[];
+  requiredGuardrails: string[];
+  operatorConfirmationCopy: string;
+  auditRequirements: string[];
+  failureModes: string[];
+  requiredPreImplementationApprovals: string[];
+  implementationBlockers: string[];
+  firstSafeImplementationSlice: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    implementationPlanOnly: true;
+    promptReviewUxImplemented: false;
+    editableUiEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    promptApprovalEnabled: false;
+    promptPersistenceEnabled: false;
+    providerCallButtonsEnabled: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    rawCredentialDisplayEnabled: false;
+    rawPromptCopyEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoPromptReviewUxImplementationPlan {
+  id: 'video-orchestrator-prompt-review-ux-implementation-plan';
+  generatedAt: string;
+  status: 'blocked';
+  planCount: 3;
+  blockedCount: 3;
+  implementationPlanOnlyCount: 3;
+  editableUiEnabledCount: 0;
+  promptApprovalEnabledCount: 0;
+  providerCallButtonCount: 0;
+  promptPersistedCount: 0;
+  entries: BrainCoreVideoPromptReviewUxImplementationPlanEntry[];
+  summary: {
+    planCount: 3;
+    blockedCount: 3;
+    implementationPlanOnlyCount: 3;
+    editableUiEnabledCount: 0;
+    promptApprovalEnabledCount: 0;
+    providerCallButtonCount: 0;
+    promptPersistedCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    implementationPlanOnly: true;
+    promptReviewUxImplemented: false;
+    editableUiEnabled: false;
+    mutationControlsEnabled: false;
+    approvalButtonsEnabled: false;
+    promptApprovalEnabled: false;
+    promptPersistenceEnabled: false;
+    providerCallButtonsEnabled: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    rawCredentialDisplayEnabled: false;
+    rawPromptCopyEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoPromptReviewUxImplementationPlanResponse {
+  plan: BrainCoreVideoPromptReviewUxImplementationPlan;
 }
