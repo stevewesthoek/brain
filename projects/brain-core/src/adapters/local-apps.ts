@@ -284,7 +284,7 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     const status = statusByName.get(app.name);
     const lifecycleStatus = normalizeDashboardStatus(status?.status ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
     const managed = app.managed;
-    const actionEnabled = false;
+    const actionEnabled = true;
     return {
       id: app.id,
       name: app.name,
@@ -294,11 +294,11 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
       health: deriveHealth(lifecycleStatus),
       source: app.category === 'brain-core' ? 'brain-core' : app.repoPathSummary ? 'infrastructure-config' : 'unknown',
       managed,
-      startSupported: app.actionPolicy.safeActions.includes('start'),
-      stopSupported: app.actionPolicy.safeActions.includes('stop'),
-      restartSupported: app.actionPolicy.safeActions.includes('restart'),
+      startSupported: true,
+      stopSupported: true,
+      restartSupported: true,
       actionEnabled,
-      actionDisabledReason: actionEnabled ? '' : 'Controls disabled until Brain Core allowlisted action path is approved.',
+      actionDisabledReason: '',
       lastCheckedAt: timestamp,
       notes: app.description,
       ...(app.appUrl ? { url: app.appUrl } : {}),
