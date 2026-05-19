@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const root = '/Users/Office';
 const markers = [
+  'brain-console-state-loader-fix-2026-05-19-01',
   'brain-console-open-fix-2026-05-19-01',
   'brain-console-connection-diagnostics-2026-05-19-01',
   'brain-console-emergency-restore-2026-05-19-01',

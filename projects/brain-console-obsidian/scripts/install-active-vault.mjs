@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const expectedMarker = 'brain-console-open-fix-2026-05-19-01';
+const expectedMarker = 'brain-console-state-loader-fix-2026-05-19-01';
 const searchRoot = '/Users/Office';
 const releaseDir = new URL('../release/', import.meta.url);
 const managedFiles = ['main.js', 'styles.css', 'manifest.json'];
