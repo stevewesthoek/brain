@@ -35,6 +35,12 @@ import {
 } from '../adapters/post-orchestrator.js';
 import { listLocalApps } from '../adapters/local-apps.js';
 import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
+import { readProBotSessionsParity } from '../adapters/probot-sessions-parity.js';
+import { readProBotLocalAppsParity } from '../adapters/probot-local-apps-parity.js';
+import { readProBotSchedulerParity } from '../adapters/probot-scheduler-parity.js';
+import { readProBotStudioParity } from '../adapters/probot-studio-parity.js';
+import { readProBotExternalAdminParity } from '../adapters/probot-external-admin-parity.js';
+import { readProBotDecommissionReadiness } from '../adapters/probot-decommission-readiness.js';
 import {
   listMindPreviewSummaries,
   readLatestMindPreviewDetail,
@@ -486,6 +492,24 @@ export async function routeRequest(
       return;
     case '/probot/dashboard-parity':
       sendJson(response, 200, readProBotDashboardParity());
+      return;
+    case '/probot/sessions-parity':
+      sendJson(response, 200, readProBotSessionsParity());
+      return;
+    case '/probot/local-apps-parity':
+      sendJson(response, 200, readProBotLocalAppsParity());
+      return;
+    case '/probot/scheduler-parity':
+      sendJson(response, 200, readProBotSchedulerParity());
+      return;
+    case '/probot/studio-parity':
+      sendJson(response, 200, readProBotStudioParity());
+      return;
+    case '/probot/external-admin-parity':
+      sendJson(response, 200, readProBotExternalAdminParity());
+      return;
+    case '/probot/decommission-readiness':
+      sendJson(response, 200, readProBotDecommissionReadiness());
       return;
     case '/video/status':
       sendJson(response, 200, getVideoStatus());

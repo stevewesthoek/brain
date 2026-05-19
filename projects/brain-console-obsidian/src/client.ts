@@ -4579,6 +4579,105 @@ export interface BrainCoreProBotDashboardParityResponse {
 }
 
 
+export type BrainCoreProBotMigrationDecision = 'keep' | 'redesign' | 'legacy-admin-only' | 'blocked';
+export type BrainCoreProBotMigrationStatus = 'available' | 'partial' | 'missing' | 'legacy-only' | 'blocked';
+
+export interface BrainCoreProBotParityFeature {
+  id: string;
+  label: string;
+  probotTab: string;
+  brainConsoleSection: string | 'none';
+  migrationDecision: BrainCoreProBotMigrationDecision;
+  migrationStatus: BrainCoreProBotMigrationStatus;
+  safeDataAvailable: boolean;
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  relatedBrainCoreEndpoints: string[];
+  blockedReason: string | null;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreProBotParitySafety {
+  readOnly: true;
+  exposesSecrets: false;
+  exposesCredentials: false;
+  exposesOAuth: false;
+  exposesStripeFinancialData: false;
+  exposesRawLogs: false;
+  mutationControlsEnabled: false;
+  shellExecutionEnabled: false;
+  platformWritesEnabled: false;
+  mindWritesEnabled: false;
+  publishingEnabled: false;
+  decommissionEnabled: false;
+}
+
+export interface BrainCoreProBotDetailParityResponse {
+  id: string;
+  source: 'probot';
+  target: 'brain-console';
+  status: BrainCoreProBotMigrationStatus;
+  migrationStatus: BrainCoreProBotMigrationStatus;
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  legacyOnly: boolean;
+  featureCount: number;
+  features: BrainCoreProBotParityFeature[];
+  summary: {
+    availableCount: number;
+    partialCount: number;
+    missingCount: number;
+    legacyOnlyCount: number;
+    blockedCount: number;
+    visibleCount: number;
+    workingCount: number;
+  };
+  blockers: string[];
+  safety: BrainCoreProBotParitySafety;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreProBotSessionsParityResponse extends BrainCoreProBotDetailParityResponse {
+  id: 'probot-sessions-parity';
+}
+
+export interface BrainCoreProBotLocalAppsParityResponse extends BrainCoreProBotDetailParityResponse {
+  id: 'probot-local-apps-parity';
+}
+
+export interface BrainCoreProBotSchedulerParityResponse extends BrainCoreProBotDetailParityResponse {
+  id: 'probot-scheduler-parity';
+}
+
+export interface BrainCoreProBotStudioParityResponse extends BrainCoreProBotDetailParityResponse {
+  id: 'probot-studio-parity';
+}
+
+export interface BrainCoreProBotExternalAdminParityResponse extends BrainCoreProBotDetailParityResponse {
+  id: 'probot-external-admin-parity';
+}
+
+export interface BrainCoreProBotDecommissionReadinessCriteria {
+  id: string;
+  label: string;
+  satisfied: boolean;
+  description: string;
+  requiresUserApproval: boolean;
+}
+
+export interface BrainCoreProBotDecommissionReadinessResponse {
+  id: 'probot-decommission-readiness';
+  status: 'not-ready' | 'ready-pending-approval';
+  ready: false;
+  criteria: BrainCoreProBotDecommissionReadinessCriteria[];
+  satisfiedCriteriaCount: number;
+  unsatisfiedCriteriaCount: number;
+  blockers: string[];
+  safety: BrainCoreProBotParitySafety;
+  nextSafeStep: string;
+}
+
+
 export interface BrainCoreVideoThumbnailDesignPlanResponse {
   id: 'video-orchestrator-thumbnail-design-plan';
   status: 'blocked';
@@ -6475,4 +6574,40 @@ export async function readBrainCoreVideoOrchestratorProviderScaffoldingCompletio
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse>> {
   return fetchJson<BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-scaffolding-completion-checkpoint');
+}
+
+export async function readBrainCoreProBotSessionsParity(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreProBotSessionsParityResponse>> {
+  return fetchJson<BrainCoreProBotSessionsParityResponse>(normalizeBaseUrl(baseUrl), '/probot/sessions-parity');
+}
+
+export async function readBrainCoreProBotLocalAppsParity(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreProBotLocalAppsParityResponse>> {
+  return fetchJson<BrainCoreProBotLocalAppsParityResponse>(normalizeBaseUrl(baseUrl), '/probot/local-apps-parity');
+}
+
+export async function readBrainCoreProBotSchedulerParity(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreProBotSchedulerParityResponse>> {
+  return fetchJson<BrainCoreProBotSchedulerParityResponse>(normalizeBaseUrl(baseUrl), '/probot/scheduler-parity');
+}
+
+export async function readBrainCoreProBotStudioParity(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreProBotStudioParityResponse>> {
+  return fetchJson<BrainCoreProBotStudioParityResponse>(normalizeBaseUrl(baseUrl), '/probot/studio-parity');
+}
+
+export async function readBrainCoreProBotExternalAdminParity(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreProBotExternalAdminParityResponse>> {
+  return fetchJson<BrainCoreProBotExternalAdminParityResponse>(normalizeBaseUrl(baseUrl), '/probot/external-admin-parity');
+}
+
+export async function readBrainCoreProBotDecommissionReadiness(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreProBotDecommissionReadinessResponse>> {
+  return fetchJson<BrainCoreProBotDecommissionReadinessResponse>(normalizeBaseUrl(baseUrl), '/probot/decommission-readiness');
 }

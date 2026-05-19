@@ -2,9 +2,9 @@
 
 Standalone read-only Brain Core console for Obsidian. Displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
 
-**Build:** `native-ux-2026-05-18-01`
+**Build:** `probot-functional-parity-2026-05-19-01`
 
-**Status:** Active, stabilized 2026-05-18 with native Obsidian UX.
+**Status:** Active, extended 2026-05-19 with ProBot functional parity dashboard cards (sessions, local apps, scheduler, studio, external integrations, decommission readiness).
 
 ### Validation Status
 
@@ -12,7 +12,7 @@ Standalone read-only Brain Core console for Obsidian. Displays ProBot dashboard 
 - ✓ `npm run build` passes
 - ✓ `npm run package` emits release bundle
 - ✓ TypeScript compilation zero errors
-- ✓ Brain Core CI: 322 tests passing
+- ✓ Brain Core CI: 440 tests passing (including 12 new ProBot parity tests)
 
 ## Intended structure
 
@@ -71,16 +71,16 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build native-ux-2026-05-18-01`
+1. Look for build marker in header: `build probot-functional-parity-2026-05-19-01`
 2. If marker is missing or different, your plugin bundle is stale
-3. See: `docs/system/brain-console-obsidian-native-ux-stabilization.md` → Install Verification for recovery steps
+3. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
 
 **Brain Core Configuration:**
 1. Default URL: `http://localhost:4877`
 2. Configure in Brain Console settings if different
 3. Press "Manual refresh" to verify connection
 
-## Native UX Features (2026-05-18)
+## Native UX Features (2026-05-19 with ProBot Functional Parity)
 
 ### Responsive Layout
 - Works on narrow sidebars (<280px wide)
@@ -90,8 +90,9 @@ npm run --prefix projects/brain-console-obsidian package
 
 ### Performance
 - **Tab switching:** <50ms (uses cached state, no network call)
-- **Initial load:** All 90+ endpoints load simultaneously (20-30 seconds typical)
+- **Initial load:** All 96+ endpoints load simultaneously (20-30 seconds typical)
 - **Failed endpoints:** Don't crash dashboard; shown in diagnostics
+- **ProBot parity cards:** 7 new cards in Overview, instant rendering from cached state
 
 ### Offline Recovery
 - Manual refresh: Always retries all endpoints
@@ -106,15 +107,19 @@ npm run --prefix projects/brain-console-obsidian package
 - No mutations, no execution controls
 - No secrets, OAuth tokens, or credentials exposed
 
-## ProBot Dashboard Parity
+## ProBot Dashboard Parity (2026-05-19 Functional Parity Phase)
 
-See ProBot migration card in Overview tab for status:
-- **Available (3):** Overview, Local Apps, Session History
-- **Partial (3):** Production Pipeline, Video Orchestrator Studio, Viral Flow
-- **Planned (1):** System Updates
-- **Legacy/Admin-only (1):** Stripe (intentionally not visible)
+Overview tab now includes **ProBot Migration command center** with 7 dedicated cards:
 
-Full details: `docs/system/probot-to-brain-console-dashboard-parity-handoff.md`
+1. **Command Center:** Overall parity status, tabs tracked, visible/working counts, legacy-only features
+2. **Sessions & Continuations:** Available - fully migrated to Brain Console Overview
+3. **Local Apps:** Available - fully migrated to Brain Console Apps section
+4. **Scheduler:** Available - fully migrated to Brain Console Apps section  
+5. **Studio (Video/Viral Flow):** Partial - Video Orchestrator ready, Viral Flow marked for redesign
+6. **External Integrations (Admin-only):** Legacy-only - Dokploy, New Relic, Analytics, Google Ads, Stripe, Domains, Tunnels (all intentionally admin-only, no safe data exposure)
+7. **Decommission Readiness:** Not ready - 6/9 criteria satisfied, 3 criteria require explicit user approval
+
+All cards are read-only with comprehensive safety labels. No execution controls, no mutations, no shell access.
 
 ## Settings
 

@@ -5062,6 +5062,135 @@ test('POST /probot/dashboard-parity is not registered', async () => {
   assert.equal(body.error.code, 'not_found');
 });
 
+test('GET /probot/sessions-parity returns sessions migration parity', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/sessions-parity' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    source: string;
+    target: string;
+    status: string;
+    migrationStatus: string;
+    visibleInBrainConsole: boolean;
+    workingInBrainConsole: boolean;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-sessions-parity');
+  assert.equal(body.source, 'probot');
+  assert.equal(body.target, 'brain-console');
+  assert.equal(body.status, 'available');
+  assert.equal(body.migrationStatus, 'available');
+  assert.equal(body.visibleInBrainConsole, true);
+  assert.equal(body.workingInBrainConsole, true);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.mutationControlsEnabled, false);
+});
+
+test('POST /probot/sessions-parity is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/sessions-parity' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/local-apps-parity returns local apps migration parity', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/local-apps-parity' });
+  const body = JSON.parse(response.body) as { id: string; status: string; safety: Record<string, boolean> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-local-apps-parity');
+  assert.equal(body.status, 'available');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesSecrets, false);
+});
+
+test('POST /probot/local-apps-parity is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/local-apps-parity' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/scheduler-parity returns scheduler migration parity', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/scheduler-parity' });
+  const body = JSON.parse(response.body) as { id: string; status: string; safety: Record<string, boolean> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-scheduler-parity');
+  assert.equal(body.status, 'available');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesSecrets, false);
+});
+
+test('POST /probot/scheduler-parity is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/scheduler-parity' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/studio-parity returns studio migration parity', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/studio-parity' });
+  const body = JSON.parse(response.body) as { id: string; status: string; safety: Record<string, boolean> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-studio-parity');
+  assert.equal(body.status, 'partial');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesSecrets, false);
+});
+
+test('POST /probot/studio-parity is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/studio-parity' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/external-admin-parity returns external admin parity', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/external-admin-parity' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    legacyOnly: boolean;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-external-admin-parity');
+  assert.equal(body.status, 'legacy-only');
+  assert.equal(body.legacyOnly, true);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.exposesCredentials, false);
+  assert.equal(body.safety.exposesOAuth, false);
+  assert.equal(body.safety.exposesStripeFinancialData, false);
+});
+
+test('POST /probot/external-admin-parity is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/external-admin-parity' });
+  assert.equal(response.statusCode, 404);
+});
+
+test('GET /probot/decommission-readiness returns decommission readiness status', async () => {
+  const response = await exercise({ method: 'GET', url: '/probot/decommission-readiness' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    ready: boolean;
+    satisfiedCriteriaCount: number;
+    unsatisfiedCriteriaCount: number;
+    safety: Record<string, boolean>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'probot-decommission-readiness');
+  assert.equal(body.status, 'not-ready');
+  assert.equal(body.ready, false);
+  assert.ok(body.satisfiedCriteriaCount >= 6);
+  assert.equal(body.unsatisfiedCriteriaCount, 3);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.decommissionEnabled, false);
+});
+
+test('POST /probot/decommission-readiness is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/probot/decommission-readiness' });
+  assert.equal(response.statusCode, 404);
+});
 
 test('GET /video-orchestrator/thumbnail-design returns read-only thumbnail design plans', async () => {
   const response = await exercise({ method: 'GET', url: '/video-orchestrator/thumbnail-design' });
