@@ -757,26 +757,41 @@ export function renderBrainConsoleView(
   container.empty();
   container.addClass('brain-console');
 
-  const snapshot = deriveDashboardSnapshot(state, settings.brainCoreUrl);
-  const activeSection = state.activeSection ?? 'overview';
+  try {
+    const snapshot = deriveDashboardSnapshot(state, settings.brainCoreUrl);
+    const activeSection = state.activeSection ?? 'overview';
 
-  const shell = container.createDiv({ cls: 'brain-console__shell' });
+    const shell = container.createDiv({ cls: 'brain-console__shell' });
 
-  // Native card UI header
-  renderNativeHeader(shell, state, onRefresh);
+    // Native card UI header
+    renderNativeHeader(shell, state, onRefresh);
 
-  // Main content area
-  if (snapshot.connectionStatus === 'offline') {
-    renderOfflineState(shell, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
-  } else {
-    // Section tabs
-    renderSectionTabs(shell, activeSection);
+    // Main content area
+    if (snapshot.connectionStatus === 'offline') {
+      renderOfflineState(shell, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
+    } else {
+      // Section tabs
+      renderSectionTabs(shell, activeSection);
 
-    // Active section content
-    renderActiveSectionContent(shell, activeSection, state, snapshot, settings);
+      // Active section content
+      renderActiveSectionContent(shell, activeSection, state, snapshot, settings);
 
-    // Diagnostics panel
-    renderDiagnosticsPanel(shell, state);
+      // Diagnostics panel
+      renderDiagnosticsPanel(shell, state);
+    }
+  } catch (error) {
+    // Emergency fallback: render minimal safe dashboard
+    container.empty();
+    const fallback = container.createDiv({ cls: 'brain-console__emergency-fallback' });
+    fallback.createEl('h2', { text: 'Brain Console Error' });
+    fallback.createEl('p', { text: `Build: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}` });
+    fallback.createEl('p', { text: `Error: Dashboard render failed. Please restart Obsidian or click Manual refresh after Brain Core starts.` });
+    if (state.brainCoreUrl || settings.brainCoreUrl) {
+      fallback.createEl('p', { text: `Brain Core URL: ${state.brainCoreUrl || settings.brainCoreUrl}` });
+    }
+    if (error instanceof Error) {
+      fallback.createEl('p', { cls: 'brain-console__error-detail', text: `Details: ${error.message}` });
+    }
   }
 }
 
@@ -859,6 +874,25 @@ function renderActiveSectionContent(
   }
 }
 
+/** Helper: safely render card content, catching and displaying any exceptions */
+function renderSafeCard(
+  title: string,
+  renderFn: () => HTMLElement,
+): HTMLElement {
+  try {
+    return renderFn();
+  } catch (error) {
+    const container = document.createElement('div');
+    container.className = 'brain-console__card-content brain-console__card-error';
+    const errorDiv = container.createDiv();
+    errorDiv.createEl('p', { text: `${title} failed to render` });
+    if (error instanceof Error) {
+      errorDiv.createEl('p', { cls: 'brain-console__error-detail', text: error.message });
+    }
+    return container;
+  }
+}
+
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
@@ -891,9 +925,9 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
   renderCard(grid, 'Decommission Readiness', renderProBotDecommissionReadinessCard(state));
 
   // ProBot gap-closure and phase-out details (3 cards for final readiness tracking)
-  renderCard(grid, 'External Admin Safe Metadata', renderProBotExternalAdminSafeMetadataCard(state));
-  renderCard(grid, 'ProBot Feature Parity Matrix', renderProBotFeatureParityMatrixCard(state));
-  renderCard(grid, 'ProBot Phase-Out Checklist', renderProBotPhaseOutChecklistCard(state));
+  renderCard(grid, 'External Admin Safe Metadata', renderSafeCard('External Admin Safe Metadata', () => renderProBotExternalAdminSafeMetadataCard(state)));
+  renderCard(grid, 'ProBot Feature Parity Matrix', renderSafeCard('ProBot Feature Parity Matrix', () => renderProBotFeatureParityMatrixCard(state)));
+  renderCard(grid, 'ProBot Phase-Out Checklist', renderSafeCard('ProBot Phase-Out Checklist', () => renderProBotPhaseOutChecklistCard(state)));
 
   // Recent sessions/continuations
   renderCard(grid, 'Recent Sessions', renderRecentSessionsCard(state));
@@ -5176,22 +5210,30 @@ function renderProBotExternalAdminSafeMetadataCard(state: BrainConsoleViewState)
     return renderEmptyState('External admin safe metadata unavailable', 'Brain Core /probot/external-admin-safe-metadata endpoint did not respond.');
   }
 
+  const integrations = metadata.integrations ?? [];
+  const integrationCount = metadata.integrationCount ?? 0;
+  const safeMetadataAvailableCount = metadata.safeMetadataAvailableCount ?? 0;
+  const metadataOnlyCount = metadata.metadataOnlyCount ?? 0;
+  const legacyOnlyCount = metadata.legacyOnlyCount ?? 0;
+
   renderCompactStatGrid(container, [
-    { label: 'Status', value: metadata.status },
-    { label: 'Total integrations', value: String(metadata.integrationCount) },
-    { label: 'Safe metadata available', value: String(metadata.safeMetadataAvailableCount) },
-    { label: 'Metadata-only', value: String(metadata.metadataOnlyCount) },
-    { label: 'Legacy-only', value: String(metadata.legacyOnlyCount) },
+    { label: 'Status', value: metadata.status ?? 'unknown' },
+    { label: 'Total integrations', value: String(integrationCount) },
+    { label: 'Safe metadata available', value: String(safeMetadataAvailableCount) },
+    { label: 'Metadata-only', value: String(metadataOnlyCount) },
+    { label: 'Legacy-only', value: String(legacyOnlyCount) },
   ]);
 
-  if (metadata.integrations && metadata.integrations.length > 0) {
+  if (integrations.length > 0) {
     const list = container.createDiv({ cls: 'brain-console__list' });
-    metadata.integrations.forEach((integration) => {
+    integrations.forEach((integration) => {
       const row = list.createDiv({ cls: 'brain-console__list-item-highlight' });
-      row.createEl('strong', { text: `${integration.label}` });
+      row.createEl('strong', { text: `${integration.label ?? 'Unknown'}` });
+      const decision = integration.migrationDecision ?? 'unknown';
+      const reason = (integration.blockedReason ?? 'no details').substring(0, 60);
       row.createEl('div', {
         cls: 'brain-console__list-sub',
-        text: `${integration.migrationDecision} · ${integration.blockedReason.substring(0, 60)}...`,
+        text: `${decision} · ${reason}...`,
       });
     });
   }
@@ -5209,22 +5251,31 @@ function renderProBotFeatureParityMatrixCard(state: BrainConsoleViewState): HTML
     return renderEmptyState('Feature parity matrix unavailable', 'Brain Core /probot/feature-parity-matrix endpoint did not respond.');
   }
 
+  const rows = matrix.rows ?? [];
+  const tabCount = matrix.tabCount ?? 0;
+  const coveredCount = matrix.coveredCount ?? 0;
+  const partialCount = matrix.partialCount ?? 0;
+  const legacyOnlyCount = matrix.legacyOnlyCount ?? 0;
+  const decommissionReady = matrix.decommissionReady ?? false;
+
   renderCompactStatGrid(container, [
-    { label: 'Total tabs', value: String(matrix.tabCount) },
-    { label: 'Covered', value: String(matrix.coveredCount) },
-    { label: 'Partial', value: String(matrix.partialCount) },
-    { label: 'Legacy-only', value: String(matrix.legacyOnlyCount) },
-    { label: 'Decommission ready', value: matrix.decommissionReady ? 'yes' : 'not yet' },
+    { label: 'Total tabs', value: String(tabCount) },
+    { label: 'Covered', value: String(coveredCount) },
+    { label: 'Partial', value: String(partialCount) },
+    { label: 'Legacy-only', value: String(legacyOnlyCount) },
+    { label: 'Decommission ready', value: decommissionReady ? 'yes' : 'not yet' },
   ]);
 
-  if (matrix.rows && matrix.rows.length > 0) {
+  if (rows.length > 0) {
     const list = container.createDiv({ cls: 'brain-console__list' });
-    matrix.rows.forEach((row) => {
+    rows.forEach((row) => {
       const item = list.createDiv({ cls: 'brain-console__list-item-highlight' });
-      item.createEl('strong', { text: `${row.probotTab}` });
+      item.createEl('strong', { text: `${row.probotTab ?? 'Unknown'}` });
+      const status = row.parityStatus ?? 'unknown';
+      const dataStatus = row.safeDataStatus ?? 'unknown';
       item.createEl('div', {
         cls: 'brain-console__list-sub',
-        text: `${row.parityStatus} · ${row.safeDataStatus}`,
+        text: `${status} · ${dataStatus}`,
       });
     });
   }
@@ -5242,30 +5293,36 @@ function renderProBotPhaseOutChecklistCard(state: BrainConsoleViewState): HTMLEl
     return renderEmptyState('Phase-out checklist unavailable', 'Brain Core /probot/phase-out-checklist endpoint did not respond.');
   }
 
+  const items = checklist.items ?? [];
+  const itemCount = checklist.itemCount ?? items.length ?? 0;
+  const satisfiedCount = checklist.satisfiedCount ?? 0;
+  const requiresApprovalCount = checklist.requiresApprovalCount ?? 0;
+  const ready = checklist.ready ?? false;
+
   // Add prominent "NOT READY" header
   const header = container.createDiv({ cls: 'brain-console__warning' });
-  header.createEl('strong', { text: checklist.ready ? '✓ Ready for phase-out' : '✗ NOT READY FOR PHASE-OUT' });
+  header.createEl('strong', { text: ready ? '✓ Ready for phase-out' : '✗ NOT READY FOR PHASE-OUT' });
 
   renderCompactStatGrid(container, [
-    { label: 'Status', value: checklist.status },
-    { label: 'Items', value: String(checklist.itemCount) },
-    { label: 'Satisfied', value: `${checklist.satisfiedCount} / ${checklist.itemCount}` },
-    { label: 'Requires approval', value: String(checklist.requiresApprovalCount) },
+    { label: 'Status', value: checklist.status ?? 'unknown' },
+    { label: 'Items', value: String(itemCount) },
+    { label: 'Satisfied', value: `${satisfiedCount} / ${itemCount}` },
+    { label: 'Requires approval', value: String(requiresApprovalCount) },
   ]);
 
   const list = container.createDiv({ cls: 'brain-console__list' });
-  if (checklist.items && checklist.items.length > 0) {
-    const satisfied = checklist.items.filter(i => i.satisfied);
-    const unsatisfied = checklist.items.filter(i => !i.satisfied);
+  if (items.length > 0) {
+    const satisfied = items.filter(i => i?.satisfied ?? false);
+    const unsatisfied = items.filter(i => !(i?.satisfied ?? false));
 
     if (unsatisfied.length > 0) {
       const unsatisfiedDiv = list.createDiv({ cls: 'brain-console__list-item-highlight' });
       unsatisfiedDiv.createEl('strong', { text: '✗ Unsatisfied (blocking)' });
       unsatisfied.forEach((item) => {
-        if (item.requiresUserApproval) {
+        if (item?.requiresUserApproval ?? false) {
           unsatisfiedDiv.createEl('div', {
             cls: 'brain-console__list-sub',
-            text: `${item.label} [USER APPROVAL REQUIRED]`,
+            text: `${item?.label ?? 'Unknown'} [USER APPROVAL REQUIRED]`,
           });
         }
       });
