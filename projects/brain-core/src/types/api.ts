@@ -4789,6 +4789,7 @@ export interface BrainCoreRoutes {
   '/video-orchestrator/design-provider-enablement-readiness-index': BrainCoreVideoDesignProviderEnablementReadinessIndexResponse;
   '/video-orchestrator/provider-integration-final-planning-checkpoint': BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse;
   '/video-orchestrator/provider-request-wrapper-implementation-plan': BrainCoreVideoProviderRequestWrapperImplementationPlanResponse;
+  '/video-orchestrator/credential-store-implementation-boundary-plan': BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse;
   '/stb-video/controlled-dual-run-request': BrainCoreControlledDualRunRequestDesignResponse;
   '/agents': {
     agents: BrainCoreAgentSummary[];
@@ -7314,4 +7315,99 @@ export interface BrainCoreVideoProviderRequestWrapperImplementationPlan {
 
 export interface BrainCoreVideoProviderRequestWrapperImplementationPlanResponse {
   plan: BrainCoreVideoProviderRequestWrapperImplementationPlan;
+}
+
+export type BrainCoreVideoCredentialStoreImplementationBoundaryProviderClass =
+  | 'image-generation'
+  | 'layout-rendering'
+  | 'brand-compliance';
+
+export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlanEntry {
+  providerClass: BrainCoreVideoCredentialStoreImplementationBoundaryProviderClass;
+  status: 'blocked';
+  implementationBoundaryOnly: true;
+  credentialStorePurpose: string;
+  proposedReferenceModel: string[];
+  allowedFutureReferenceFields: string[];
+  disallowedStoredFields: string[];
+  storageBoundaryRules: string[];
+  accessBoundaryRules: string[];
+  rotationAndRevocationPlan: string;
+  auditRequirements: string[];
+  failureModes: string[];
+  requiredPreImplementationApprovals: string[];
+  implementationBlockers: string[];
+  firstSafeImplementationSlice: string;
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    implementationBoundaryOnly: true;
+    credentialStoreImplemented: false;
+    credentialAccessEnabled: false;
+    credentialPersistenceEnabled: false;
+    rawCredentialDisplayEnabled: false;
+    envReadEnabled: false;
+    keychainAccessEnabled: false;
+    filesystemCredentialAccessEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    networkAccessEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlan {
+  id: 'video-orchestrator-credential-store-implementation-boundary-plan';
+  generatedAt: string;
+  status: 'blocked';
+  boundaryCount: 3;
+  blockedCount: 3;
+  implementationBoundaryOnlyCount: 3;
+  credentialStoreImplementedCount: 0;
+  credentialAccessCount: 0;
+  credentialPersistedCount: 0;
+  envReadCount: 0;
+  keychainAccessCount: 0;
+  providerCallCount: 0;
+  entries: BrainCoreVideoCredentialStoreImplementationBoundaryPlanEntry[];
+  summary: {
+    boundaryCount: 3;
+    blockedCount: 3;
+    implementationBoundaryOnlyCount: 3;
+    credentialStoreImplementedCount: 0;
+    credentialAccessCount: 0;
+    credentialPersistedCount: 0;
+    envReadCount: 0;
+    keychainAccessCount: 0;
+    providerCallCount: 0;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+  safety: {
+    readOnly: true;
+    implementationBoundaryOnly: true;
+    credentialStoreImplemented: false;
+    credentialAccessEnabled: false;
+    credentialPersistenceEnabled: false;
+    rawCredentialDisplayEnabled: false;
+    envReadEnabled: false;
+    keychainAccessEnabled: false;
+    filesystemCredentialAccessEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    networkAccessEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+  };
+}
+
+export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse {
+  plan: BrainCoreVideoCredentialStoreImplementationBoundaryPlan;
 }

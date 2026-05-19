@@ -6228,3 +6228,107 @@ test('POST /video-orchestrator/provider-request-wrapper-implementation-plan is n
   const response = await exercise({ method: 'POST', url: '/video-orchestrator/provider-request-wrapper-implementation-plan' });
   assert.equal(response.statusCode, 404);
 });
+
+test('GET /video-orchestrator/credential-store-implementation-boundary-plan returns blocked boundaries with safe counts', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/credential-store-implementation-boundary-plan' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      id: string;
+      status: string;
+      boundaryCount: number;
+      blockedCount: number;
+      implementationBoundaryOnlyCount: number;
+      credentialStoreImplementedCount: number;
+      credentialAccessCount: number;
+      credentialPersistedCount: number;
+      envReadCount: number;
+      keychainAccessCount: number;
+      providerCallCount: number;
+      entries: Array<{
+        providerClass: string;
+        implementationBoundaryOnly: boolean;
+        proposedReferenceModel: string[];
+        disallowedStoredFields: string[];
+        storageBoundaryRules: string[];
+        accessBoundaryRules: string[];
+        safety: Record<string, boolean>;
+      }>;
+      safety: Record<string, boolean>;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.id, 'video-orchestrator-credential-store-implementation-boundary-plan');
+  assert.equal(body.plan.status, 'blocked');
+  assert.equal(body.plan.boundaryCount, 3);
+  assert.equal(body.plan.blockedCount, 3);
+  assert.equal(body.plan.implementationBoundaryOnlyCount, 3);
+  assert.equal(body.plan.credentialStoreImplementedCount, 0);
+  assert.equal(body.plan.credentialAccessCount, 0);
+  assert.equal(body.plan.credentialPersistedCount, 0);
+  assert.equal(body.plan.envReadCount, 0);
+  assert.equal(body.plan.keychainAccessCount, 0);
+  assert.equal(body.plan.providerCallCount, 0);
+  assert.equal(body.plan.entries.length, 3);
+  assert.ok(body.plan.entries.every((entry) => entry.implementationBoundaryOnly === true));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('providerClass')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('credentialRefIdPlaceholder')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('credentialScope')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('credentialPolicyVersion')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('rotationPolicyRef')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('revocationPolicyRef')));
+  assert.ok(body.plan.entries.every((entry) => entry.proposedReferenceModel.includes('auditRefPlaceholder')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('raw API key')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('raw OAuth token')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('OAuth refresh token')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('private key')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('cookie')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('password')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('.env dump')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('filesystem credential path')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('plaintext provider secret')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('platform account secret')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('Mind vault path')));
+  assert.ok(body.plan.entries.every((entry) => entry.disallowedStoredFields.includes('STB artifact path')));
+  assert.ok(body.plan.entries.every((entry) => entry.storageBoundaryRules.includes('store references only, never raw secrets')));
+  assert.ok(body.plan.entries.every((entry) => entry.storageBoundaryRules.includes('no .env reads')));
+  assert.ok(body.plan.entries.every((entry) => entry.storageBoundaryRules.includes('no filesystem credential discovery')));
+  assert.ok(body.plan.entries.every((entry) => entry.storageBoundaryRules.includes('no raw credential display in Brain Console')));
+  assert.ok(body.plan.entries.every((entry) => entry.accessBoundaryRules.includes('no access during this phase')));
+  assert.equal(body.plan.safety.readOnly, true);
+  assert.equal(body.plan.safety.implementationBoundaryOnly, true);
+  assert.equal(body.plan.safety.credentialStoreImplemented, false);
+  assert.equal(body.plan.safety.credentialAccessEnabled, false);
+  assert.equal(body.plan.safety.credentialPersistenceEnabled, false);
+  assert.equal(body.plan.safety.rawCredentialDisplayEnabled, false);
+  assert.equal(body.plan.safety.envReadEnabled, false);
+  assert.equal(body.plan.safety.keychainAccessEnabled, false);
+  assert.equal(body.plan.safety.filesystemCredentialAccessEnabled, false);
+  assert.equal(body.plan.safety.providerConfigured, false);
+  assert.equal(body.plan.safety.providerCallsEnabled, false);
+  assert.equal(body.plan.safety.networkAccessEnabled, false);
+  assert.equal(body.plan.safety.filesystemAccessEnabled, false);
+  assert.equal(body.plan.safety.writesFiles, false);
+  assert.equal(body.plan.safety.publishesContent, false);
+  assert.equal(body.plan.safety.writesToMind, false);
+  assert.equal(body.plan.safety.executesVideo, false);
+});
+
+test('GET /video-orchestrator/credential-store-implementation-boundary-plan/:providerClass returns image-generation boundary', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/credential-store-implementation-boundary-plan/image-generation' });
+  const body = JSON.parse(response.body) as {
+    providerClass: string;
+    status: string;
+    implementationBoundaryOnly: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.providerClass, 'image-generation');
+  assert.equal(body.status, 'blocked');
+  assert.equal(body.implementationBoundaryOnly, true);
+});
+
+test('POST /video-orchestrator/credential-store-implementation-boundary-plan is not registered and returns 404', async () => {
+  const response = await exercise({ method: 'POST', url: '/video-orchestrator/credential-store-implementation-boundary-plan' });
+  assert.equal(response.statusCode, 404);
+});

@@ -74,6 +74,7 @@ import { readVideoDesignProviderComplianceChecklistPlans, readVideoDesignProvide
 import { readVideoDesignProviderEnablementReadinessIndex, readVideoDesignProviderEnablementReadinessIndexEntry } from '../adapters/video-orchestrator-design-provider-enablement-readiness-index.js';
 import { readVideoProviderIntegrationFinalPlanningCheckpoint, readVideoProviderIntegrationFinalPlanningCheckpointEntry } from '../adapters/video-orchestrator-provider-integration-final-planning-checkpoint.js';
 import { readVideoProviderRequestWrapperImplementationPlan, readVideoProviderRequestWrapperImplementationPlanEntry } from '../adapters/video-orchestrator-provider-request-wrapper-implementation-plan.js';
+import { readVideoCredentialStoreImplementationBoundaryPlan, readVideoCredentialStoreImplementationBoundaryPlanEntry } from '../adapters/video-orchestrator-credential-store-implementation-boundary-plan.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -330,6 +331,9 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-request-wrapper-implementation-plan':
       sendJson(response, 200, readVideoProviderRequestWrapperImplementationPlan());
+      return;
+    case '/video-orchestrator/credential-store-implementation-boundary-plan':
+      sendJson(response, 200, readVideoCredentialStoreImplementationBoundaryPlan());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());
@@ -1308,6 +1312,23 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator provider request wrapper implementation plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const credentialBoundaryMatch = /^\/video-orchestrator\/credential-store-implementation-boundary-plan\/([^/]+)$/.exec(url.pathname);
+        const credentialBoundaryProviderClass = credentialBoundaryMatch?.[1] ?? '';
+        if (credentialBoundaryProviderClass.length > 0) {
+          const boundary = readVideoCredentialStoreImplementationBoundaryPlanEntry(decodeURIComponent(credentialBoundaryProviderClass));
+          if (boundary) {
+            sendJson(response, 200, boundary);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator credential store implementation boundary plan not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

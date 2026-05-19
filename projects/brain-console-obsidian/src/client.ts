@@ -5076,6 +5076,79 @@ export interface BrainCoreVideoProviderIntegrationFinalPlanningCheckpointRespons
   };
 }
 
+export interface BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse {
+  plan: {
+    status: string;
+    boundaryCount: number;
+    blockedCount: number;
+    implementationBoundaryOnlyCount: number;
+    credentialStoreImplementedCount: number;
+    credentialAccessCount: number;
+    credentialPersistedCount: number;
+    envReadCount: number;
+    keychainAccessCount: number;
+    providerCallCount: number;
+    entries: Array<{
+      providerClass: string;
+      status: string;
+      implementationBoundaryOnly: boolean;
+      credentialStorePurpose: string;
+      proposedReferenceModel: string[];
+      allowedFutureReferenceFields: string[];
+      disallowedStoredFields: string[];
+      storageBoundaryRules: string[];
+      accessBoundaryRules: string[];
+      rotationAndRevocationPlan: string;
+      auditRequirements: string[];
+      failureModes: string[];
+      requiredPreImplementationApprovals: string[];
+      implementationBlockers: string[];
+      firstSafeImplementationSlice: string;
+      nextSafeStep: string;
+      safety: {
+        readOnly: boolean;
+        implementationBoundaryOnly: boolean;
+        credentialStoreImplemented: boolean;
+        credentialAccessEnabled: boolean;
+        credentialPersistenceEnabled: boolean;
+        rawCredentialDisplayEnabled: boolean;
+        envReadEnabled: boolean;
+        keychainAccessEnabled: boolean;
+        filesystemCredentialAccessEnabled: boolean;
+        providerConfigured: boolean;
+        providerCallsEnabled: boolean;
+        networkAccessEnabled: boolean;
+        filesystemAccessEnabled: boolean;
+        writesFiles: boolean;
+        publishesContent: boolean;
+        writesToMind: boolean;
+        executesVideo: boolean;
+      };
+    }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnly: boolean;
+      implementationBoundaryOnly: boolean;
+      credentialStoreImplemented: boolean;
+      credentialAccessEnabled: boolean;
+      credentialPersistenceEnabled: boolean;
+      rawCredentialDisplayEnabled: boolean;
+      envReadEnabled: boolean;
+      keychainAccessEnabled: boolean;
+      filesystemCredentialAccessEnabled: boolean;
+      providerConfigured: boolean;
+      providerCallsEnabled: boolean;
+      networkAccessEnabled: boolean;
+      filesystemAccessEnabled: boolean;
+      writesFiles: boolean;
+      publishesContent: boolean;
+      writesToMind: boolean;
+      executesVideo: boolean;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5134,4 +5207,10 @@ export async function readBrainCoreVideoOrchestratorProviderIntegrationFinalPlan
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse>> {
   return fetchJson<BrainCoreVideoProviderIntegrationFinalPlanningCheckpointResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-integration-final-planning-checkpoint');
+}
+
+export async function readBrainCoreVideoOrchestratorCredentialStoreImplementationBoundaryPlan(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse>> {
+  return fetchJson<BrainCoreVideoCredentialStoreImplementationBoundaryPlanResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/credential-store-implementation-boundary-plan');
 }

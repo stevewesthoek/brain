@@ -602,3 +602,48 @@ Validation:
 Next safe task suggestion:
 
 - Credential store implementation boundary plan or Prompt review UX implementation plan.
+
+## Continuation update — Video Orchestrator credential store implementation boundary plan
+
+Endpoints:
+
+- `GET /video-orchestrator/credential-store-implementation-boundary-plan`
+- `GET /video-orchestrator/credential-store-implementation-boundary-plan/:providerClass`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-credential-store-implementation-boundary-plan.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only only.
+- Implementation boundary only.
+- Credential store not implemented.
+- No credential access.
+- No credential persistence.
+- No env reads.
+- No keychain access.
+- No filesystem credential access.
+- No provider calls.
+- No provider configuration.
+- No network access.
+- No file writes.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+
+Validation:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: pending in this handoff.
+- The boundary remains blocked and implementation-eligible false.
+
+Next safe task suggestion:
+
+- Prompt review UX implementation plan or Provider audit persistence boundary plan.
