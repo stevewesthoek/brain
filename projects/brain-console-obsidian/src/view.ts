@@ -832,6 +832,9 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
   probotHeader.createEl('h3', { text: 'ProBot → Brain Console Parity' });
   probotCard.appendChild(renderProBotDashboardParityCard(state));
 
+  // Recent sessions/continuations
+  renderCard(grid, 'Recent Sessions', renderRecentSessionsCard(state));
+
   // Metric counts
   renderCard(grid, 'Metrics', renderOverviewMetricsCard(snapshot));
 
@@ -4679,6 +4682,33 @@ function renderPublishingDisabledCard(): HTMLElement {
     text: 'Publishing is disabled. No post is scheduled or published from Brain in Phase P1.',
   });
   return el;
+}
+
+
+function renderRecentSessionsCard(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+
+  const sessions = state.sessions ?? [];
+  if (sessions.length === 0) {
+    container.createEl('p', { cls: 'brain-console__detail', text: 'No recent sessions available.' });
+    return container;
+  }
+
+  const list = container.createDiv({ cls: 'brain-console__list' });
+  sessions.slice(0, 5).forEach((session) => {
+    const row = list.createDiv({ cls: 'brain-console__list-item-highlight' });
+    const toolBadge = row.createEl('span', { cls: 'brain-console__badge', text: session.tool });
+    toolBadge.style.fontSize = '0.75rem';
+    toolBadge.style.marginRight = '0.5rem';
+    row.createEl('strong', { text: session.title || session.id });
+    row.createEl('div', {
+      cls: 'brain-console__list-sub',
+      text: `${session.age ?? '?'} · ${session.repo ? session.repo.split('/').pop() : 'unknown'}`,
+    });
+  });
+
+  return container;
 }
 
 
