@@ -89,6 +89,10 @@ import { readVideoCredentialReferenceScaffold } from '../adapters/video-orchestr
 import { readVideoProviderRequestEnvelopeScaffold } from '../adapters/video-orchestrator-provider-request-envelope-scaffold.js';
 import { readVideoProviderResponseEnvelopeScaffold } from '../adapters/video-orchestrator-provider-response-envelope-scaffold.js';
 import { readVideoProviderScaffoldingIntegrationSummary } from '../adapters/video-orchestrator-provider-scaffolding-integration-summary.js';
+import { readVideoProviderRequestWrapperInertShellStatus } from '../adapters/video-orchestrator-provider-request-wrapper-inert-shell.js';
+import { readVideoCredentialReferenceValidatorStatus } from '../adapters/video-orchestrator-credential-reference-validator.js';
+import { readVideoProviderResponseRedactionSkeletonStatus } from '../adapters/video-orchestrator-provider-response-redaction-skeleton.js';
+import { readVideoProviderAuditEventTypes } from '../adapters/video-orchestrator-provider-audit-event-types.js';
 import { readVideoManualExportPackages, readVideoManualExportPackage } from '../adapters/video-orchestrator-manual-export-package.js';
 import { getStbVideoMigrationStatus } from '../adapters/stb-video-migration.js';
 import { getStbVideoParityMatrix, getStbVideoDualRunStatus } from '../adapters/stb-video-parity.js';
@@ -390,6 +394,18 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/provider-scaffolding-integration-summary':
       sendJson(response, 200, readVideoProviderScaffoldingIntegrationSummary());
+      return;
+    case '/video-orchestrator/provider-request-wrapper-inert-shell':
+      sendJson(response, 200, readVideoProviderRequestWrapperInertShellStatus());
+      return;
+    case '/video-orchestrator/credential-reference-validator':
+      sendJson(response, 200, readVideoCredentialReferenceValidatorStatus());
+      return;
+    case '/video-orchestrator/provider-response-redaction-skeleton':
+      sendJson(response, 200, readVideoProviderResponseRedactionSkeletonStatus());
+      return;
+    case '/video-orchestrator/provider-audit-event-types':
+      sendJson(response, 200, readVideoProviderAuditEventTypes());
       return;
     case '/stb-video-migration/status':
       sendJson(response, 200, getStbVideoMigrationStatus());

@@ -827,6 +827,75 @@ Next safe task suggestion:
 
 ---
 
+Continuation update — Provider inert implementation shell batch
+
+User approval scope:
+
+- Provider Request Wrapper Scaffolding Only.
+
+Exact interpretation of approval:
+
+- This approval allows inert TypeScript scaffolding only.
+- It does not allow provider calls, credentials, env reads, network access, prompt/image/media generation, artifact writes, audit persistence, POST routes, Brain Console mutation controls, publishing, STB execution, Video execution, or decommissioning.
+
+Phases:
+
+- Provider Request Wrapper Inert Class Shell
+- Credential Reference Pure Validator
+- Provider Response Redaction Pure Function Skeleton
+- Provider Audit Event Type Definitions
+
+Endpoints:
+
+- `GET /video-orchestrator/provider-request-wrapper-inert-shell`
+- `GET /video-orchestrator/credential-reference-validator`
+- `GET /video-orchestrator/provider-response-redaction-skeleton`
+- `GET /video-orchestrator/provider-audit-event-types`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-provider-request-wrapper-inert-shell.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-credential-reference-validator.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-provider-response-redaction-skeleton.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-provider-audit-event-types.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only status endpoints only.
+- Inert shell, pure validator, pure redaction skeleton, and event type definitions only.
+- No provider calls.
+- No credential access.
+- No env reads.
+- No network access.
+- No prompt generation.
+- No artifact writes.
+- No audit persistence.
+- No POST routes.
+- No mutation controls.
+- No approval buttons.
+- No file writes from UI.
+- No publishing.
+- No Mind writes.
+- No Video execution.
+
+Validation evidence:
+
+- Brain Core CI: pending in this handoff.
+- Brain Console typecheck/build/package: pending in this handoff.
+- Safety scans on the new backend scaffold files: pending in this handoff.
+
+Next safe task suggestion:
+
+- provider wrapper disabled orchestration facade, still no provider calls.
+
+---
+
 Continuation update — Provider scaffolding batch
 
 User approval scope:

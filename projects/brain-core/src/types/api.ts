@@ -8574,3 +8574,232 @@ export interface BrainCoreVideoProviderScaffoldingIntegrationSummary {
 export interface BrainCoreVideoProviderScaffoldingIntegrationSummaryResponse {
   summary: BrainCoreVideoProviderScaffoldingIntegrationSummary;
 }
+
+export interface BrainCoreVideoProviderRequestWrapperInertShell {
+  id: 'video-orchestrator-provider-request-wrapper-inert-shell';
+  status: 'scaffolded-disabled';
+  phase: 'provider-request-wrapper-inert-class-shell';
+  implementationApprovedScope: 'wrapper-scaffolding-only';
+  className: 'VideoProviderRequestWrapperInertShell';
+  supportedProviderClasses: Array<'image-generation' | 'layout-rendering' | 'brand-compliance'>;
+  methodSurface: Array<'describeCapabilities' | 'validateRequestShape' | 'sendRequest'>;
+  blockedMethodResults: Array<{ method: 'describeCapabilities' | 'validateRequestShape' | 'sendRequest'; providerCallBlocked: true; executionBlocked: true }>;
+  summary: {
+    shellClassCount: 1;
+    supportedProviderClassCount: 3;
+    callableProviderMethodCount: 0;
+    blockedMethodCount: number;
+    providerCallCount: 0;
+    credentialAccessCount: 0;
+    networkAccessCount: 0;
+  };
+  safety: {
+    readOnlyStatusEndpoint: true;
+    inertShellOnly: true;
+    providerCallMethodsImplemented: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    envReadEnabled: false;
+    networkAccessEnabled: false;
+    promptGenerationEnabled: false;
+    imageGenerationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+    postRoutesAdded: false;
+    brainConsoleMutationControlsEnabled: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderRequestWrapperInertShellResponse {
+  shell: BrainCoreVideoProviderRequestWrapperInertShell;
+}
+
+export interface BrainCoreVideoCredentialReferenceValidatorInput {
+  [key: string]: unknown;
+  credentialRefId: string;
+  providerClass: 'image-generation' | 'layout-rendering' | 'brand-compliance';
+  scope: string;
+  policyVersion: string;
+  createdAtPlaceholder: string;
+  expiresAtPlaceholder: string;
+  rotatedAtPlaceholder: string;
+  revokedAtPlaceholder: string;
+  auditRefPlaceholder: string;
+}
+
+export interface BrainCoreVideoCredentialReferenceValidatorFixture {
+  fixtureId: string;
+  input: Partial<BrainCoreVideoCredentialReferenceValidatorInput> & Record<string, unknown>;
+  expectedOutcome: string;
+  notes: string;
+}
+
+export interface BrainCoreVideoCredentialReferenceValidatorFixtureResult {
+  valid: boolean;
+  missingFields: string[];
+  unsafeFields: string[];
+  providerCallBlocked: true;
+  executionBlocked: true;
+  credentialAccessBlocked: true;
+  envReadBlocked: true;
+  keychainAccessBlocked: true;
+}
+
+export interface BrainCoreVideoCredentialReferenceValidator {
+  id: 'video-orchestrator-credential-reference-validator';
+  status: 'scaffolded-disabled';
+  phase: 'credential-reference-validator';
+  implementationApprovedScope: 'wrapper-scaffolding-only';
+  validatorCount: 1;
+  fixtureCount: number;
+  validFixtureCount: number;
+  blockedFixtureCount: number;
+  credentialAccessCount: 0;
+  envReadCount: 0;
+  keychainAccessCount: 0;
+    fixtureResults: Array<BrainCoreVideoCredentialReferenceValidatorFixtureResult & {
+      fixtureId: string;
+      providerClass?: string;
+      expectedOutcome: string;
+      notes: string;
+  }>;
+  safety: {
+    readOnlyStatusEndpoint: true;
+    pureValidatorOnly: true;
+    credentialAccessEnabled: false;
+    credentialPersistenceEnabled: false;
+    rawCredentialDisplayEnabled: false;
+    envReadEnabled: false;
+    keychainAccessEnabled: false;
+    filesystemCredentialAccessEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    networkAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+    postRoutesAdded: false;
+    brainConsoleMutationControlsEnabled: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoCredentialReferenceValidatorResponse {
+  validator: BrainCoreVideoCredentialReferenceValidator;
+}
+
+export interface BrainCoreVideoProviderResponseRedactionSkeletonFixtureResult {
+  fixtureId: string;
+  expectedOutcome: string;
+  rawOutputAccessBlocked: true;
+  redacted: Record<string, unknown>;
+  notes: string;
+}
+
+export interface BrainCoreVideoProviderResponseRedactionSkeleton {
+  id: 'video-orchestrator-provider-response-redaction-skeleton';
+  status: 'scaffolded-disabled';
+  phase: 'provider-response-redaction-skeleton';
+  implementationApprovedScope: 'wrapper-scaffolding-only';
+  redactionFunctionCount: 1;
+  fixtureCount: number;
+  redactedFixtureCount: number;
+  rawOutputAccessCount: 0;
+  redactedManifestCreatedCount: 0;
+  artifactPersistedCount: 0;
+  auditPersistedCount: 0;
+  fixtureResults: BrainCoreVideoProviderResponseRedactionSkeletonFixtureResult[];
+  safety: {
+    readOnlyStatusEndpoint: true;
+    pureRedactionSkeletonOnly: true;
+    rawProviderOutputAccessEnabled: false;
+    redactedManifestCreationEnabled: false;
+    artifactPersistenceEnabled: false;
+    auditPersistenceEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+    postRoutesAdded: false;
+    brainConsoleMutationControlsEnabled: false;
+  };
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderResponseRedactionSkeletonResponse {
+  skeleton: BrainCoreVideoProviderResponseRedactionSkeleton;
+}
+
+export interface BrainCoreVideoProviderAuditEventTypes {
+  id: 'video-orchestrator-provider-audit-event-types';
+  status: 'scaffolded-disabled';
+  phase: 'provider-audit-event-type-definitions';
+  eventTypes: Array<
+    | 'provider_request_scaffold_validated'
+    | 'credential_reference_validated'
+    | 'request_envelope_validated'
+    | 'response_envelope_redacted'
+    | 'provider_call_blocked'
+    | 'credential_access_blocked'
+    | 'audit_persistence_blocked'
+  >;
+  eventShape: {
+    eventType: string;
+    providerClass: string;
+    sourcePlanId: string;
+    requestIdPlaceholder: string;
+    redactedSummaryOnly: true;
+    policyVersion: string;
+    auditRefPlaceholder: string;
+    createdAtPlaceholder: string;
+    noRawProviderOutput: true;
+  };
+  prohibitedFields: string[];
+  summary: {
+    eventTypeCount: 7;
+    auditPersistenceCount: 0;
+    auditAppendCount: 0;
+    rawOutputAccessCount: 0;
+    credentialAccessCount: 0;
+  };
+  safety: {
+    readOnlyStatusEndpoint: true;
+    eventTypeDefinitionsOnly: true;
+    auditPersistenceEnabled: false;
+    auditAppendEnabled: false;
+    auditMutationEnabled: false;
+    providerConfigured: false;
+    providerCallsEnabled: false;
+    rawProviderOutputAccessEnabled: false;
+    credentialAccessEnabled: false;
+    networkAccessEnabled: false;
+    filesystemAccessEnabled: false;
+    writesFiles: false;
+    publishesContent: false;
+    writesToMind: false;
+    executesVideo: false;
+    postRoutesAdded: false;
+    brainConsoleMutationControlsEnabled: false;
+  };
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVideoProviderAuditEventTypesResponse {
+  audit: BrainCoreVideoProviderAuditEventTypes;
+}
