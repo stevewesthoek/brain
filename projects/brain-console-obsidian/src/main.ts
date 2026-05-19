@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-connection-diagnostics-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-open-fix-2026-05-19-01';
 
 declare global {
   interface Window {
@@ -46,12 +46,23 @@ export default class BrainConsolePlugin extends Plugin {
   }
 
   private async openConsole(): Promise<void> {
-    const leaf = this.app.workspace.getRightLeaf(false);
-    if (!leaf) return;
-    await leaf.setViewState({ type: VIEW_TYPE, active: true });
-    const view = this.app.workspace.getActiveViewOfType(BrainConsoleView);
-    if (view) {
-      await view.refresh();
+    try {
+      let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
+
+      if (!leaf) {
+        leaf = this.app.workspace.getRightLeaf(false) ?? this.app.workspace.getLeaf(true);
+        await leaf.setViewState({ type: VIEW_TYPE, active: true });
+      }
+
+      await this.app.workspace.revealLeaf(leaf);
+
+      const view = leaf.view instanceof BrainConsoleView ? leaf.view : this.app.workspace.getLeavesOfType(VIEW_TYPE)[0]?.view;
+      if (view instanceof BrainConsoleView) {
+        await view.refresh();
+      }
+    } catch (error) {
+      console.error('Brain Console failed to open', error);
+      new Notice(`Brain Console failed to open: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }
@@ -158,7 +169,11 @@ class BrainConsoleView extends ItemView {
     });
 
     this.startHeartbeat();
-    await this.fullRefresh();
+    try {
+      await this.fullRefresh();
+    } catch (error) {
+      this.renderOpenFallback(error);
+    }
   }
 
   private startHeartbeat(): void {
@@ -194,7 +209,29 @@ class BrainConsoleView extends ItemView {
   }
 
   async refresh(): Promise<void> {
-    await this.fullRefresh();
+    try {
+      await this.fullRefresh();
+    } catch (error) {
+      this.renderOpenFallback(error);
+    }
+  }
+
+  private renderOpenFallback(error: unknown): void {
+    this.contentEl.empty();
+    this.contentEl.addClass('brain-console');
+    const state = this.contentEl.createDiv({ cls: 'brain-console__state brain-console__state--fallback' });
+    const header = state.createDiv({ cls: 'brain-console__header' });
+    header.createEl('h2', { text: 'Brain Console' });
+    header.createEl('span', { cls: 'brain-console__build-marker', text: `build ${BRAIN_CONSOLE_BUILD_ID}` });
+    state.createDiv({ cls: 'brain-console__status-line', text: 'The Brain Console view opened, but the first data refresh failed.' });
+    state.createDiv({ cls: 'brain-console__install-check', text: error instanceof Error ? error.message : String(error) });
+    state.createDiv({ cls: 'brain-console__status-line', text: `Brain Core URL: ${this.plugin.settings.brainCoreUrl}` });
+    const actions = state.createDiv({ cls: 'brain-console__actions' });
+    const retry = actions.createEl('button', { text: 'Retry refresh', cls: 'brain-console__refresh-btn' });
+    retry.setAttribute('type', 'button');
+    retry.addEventListener('click', () => {
+      void this.refresh();
+    });
   }
 
   async onClose(): Promise<void> {
