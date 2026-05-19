@@ -5,7 +5,7 @@ Build ID: `native-ux-2026-05-18-01`
 
 ## Update: Main Workspace Dashboard
 
-Current build marker: `brain-console-polished-main-dashboard-2026-05-19-01`
+Current build marker: `brain-console-dashboard-stable-2026-05-19-01`
 
 The Brain Console now opens as a main-workspace dashboard tab instead of defaulting to the right sidebar.
 
@@ -49,7 +49,7 @@ User reported critical usability issues in the Obsidian Brain Console plugin:
 
 Added build marker constant:
 ```typescript
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-polished-main-dashboard-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-dashboard-stable-2026-05-19-01';
 ```
 
 Updated `onOpen()` to display it visibly in header with install verification warning:

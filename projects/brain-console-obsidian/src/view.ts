@@ -824,7 +824,7 @@ function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, on
   const controls = header.createDiv({ cls: 'brain-console__header-controls' });
 
   const meta = header.createDiv({ cls: 'brain-console__header-meta' });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-polished-main-dashboard-2026-05-19-01` });
+  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Build: brain-console-dashboard-stable-2026-05-19-01` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
   meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
@@ -961,6 +961,7 @@ function safeCount(items: any[] | undefined | null): number {
 
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+  renderCard(grid, 'Dashboard Self Check', renderDashboardSelfCheck(state));
   renderCard(grid, 'Plugin Install Verification', renderInstallVerificationCard(state));
 
   renderCard(grid, 'Connection Summary', renderConnectionSummaryCard(state));
@@ -1155,7 +1156,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'brain-console-polished-main-dashboard-2026-05-19-01'
+    text: 'brain-console-dashboard-stable-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1173,7 +1174,7 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
   container.className = 'brain-console__card-content';
 
   const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
-  const expectedMarker = 'brain-console-polished-main-dashboard-2026-05-19-01';
+  const expectedMarker = 'brain-console-dashboard-stable-2026-05-19-01';
   const markerOk = runtimeMarker === expectedMarker;
 
   renderCompactStatGrid(container, [
@@ -1189,6 +1190,24 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
       : 'If this marker is stale, reload plugin or restart Obsidian.',
   });
 
+  return container;
+}
+
+function renderDashboardSelfCheck(state: BrainConsoleViewState): HTMLElement {
+  const container = document.createElement('div');
+  container.className = 'brain-console__card-content';
+  renderCompactStatGrid(container, [
+    { label: 'Build marker', value: safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown') },
+    { label: 'View mode', value: 'Main workspace dashboard' },
+    { label: 'Render guards', value: 'active' },
+    { label: 'Pipelines mode', value: 'grouped stable cards' },
+    { label: 'Plugin install state', value: 'runtime marker loaded' },
+    { label: 'Brain Core URL', value: safeText(state.brainCoreUrl, 'unknown') },
+    { label: 'Selected URL', value: safeText((window as any).BRAIN_CONSOLE_SELECTED_URL, safeText(state.brainCoreUrl, 'unknown')) },
+    { label: 'Connection status', value: state.status?.ok ? 'Connected' : 'Offline' },
+    { label: 'Last refresh', value: state.refreshedAt ? new Date(state.refreshedAt).toLocaleString() : 'Not yet refreshed' },
+    { label: 'Safety', value: 'Read-only' },
+  ]);
   return container;
 }
 

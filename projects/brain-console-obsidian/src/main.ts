@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-polished-main-dashboard-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-dashboard-stable-2026-05-19-01';
 
 declare global {
   interface Window {
@@ -58,6 +58,7 @@ export default class BrainConsolePlugin extends Plugin {
       let leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE)[0];
 
       if (!leaf) {
+        // Avoid the right sidebar here: the dashboard should live in the main editor workspace.
         leaf = this.app.workspace.getLeaf(false);
         await leaf.setViewState({ type: VIEW_TYPE, active: true });
       }
@@ -81,6 +82,8 @@ export default class BrainConsolePlugin extends Plugin {
         await leaf.detach();
       }
 
+      // Reopen in the main workspace, never the right sidebar. If Obsidian returns a split leaf,
+      // this is still the least invasive main-workspace path available in this API surface.
       const leaf = this.app.workspace.getLeaf(false);
       await leaf.setViewState({ type: VIEW_TYPE, active: true });
       await this.app.workspace.revealLeaf(leaf);
