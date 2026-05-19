@@ -827,6 +827,61 @@ Next safe task suggestion:
 
 ---
 
+Continuation update — Provider request wrapper scaffolding only
+
+User approval phrase:
+
+- `approve-wrapper-scaffolding-only`
+
+Exact interpretation:
+
+- Approval permits inert TypeScript scaffolding for a provider request wrapper only.
+- Approval does not permit provider calls, credentials, env reads, network access, prompt/image generation, artifact writes, audit persistence, POST routes, or Brain Console mutation controls.
+
+Endpoints:
+
+- `GET /video-orchestrator/provider-request-wrapper-scaffold`
+
+Files changed:
+
+- `projects/brain-core/src/adapters/video-orchestrator-provider-request-wrapper-scaffold.ts`
+- `projects/brain-core/src/types/api.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/live-status-endpoints.test.ts`
+- `projects/brain-console-obsidian/src/client.ts`
+- `projects/brain-console-obsidian/src/view.ts`
+- `docs/system/roadmap-agent-mode-handoff.md`
+
+Safety status:
+
+- Read-only status endpoint only.
+- Wrapper scaffolding only.
+- No callable wrapper.
+- No provider calls.
+- No credential access.
+- No env reads.
+- No network access.
+- No prompt generation.
+- No image generation.
+- No artifact writes.
+- No audit persistence.
+- No POST routes.
+- No Brain Console mutation controls.
+
+Validation evidence:
+
+- Brain Core CI: passed.
+- Brain Console typecheck: passed.
+- Brain Console build: passed.
+- Brain Console package: passed.
+- Safety scan: pending in this handoff.
+
+Next safe task suggestion:
+
+- Provider wrapper validation harness only, still no provider calls.
+
+---
+
 Continuation update — Video Orchestrator provider approval packet console review summary
 
 Endpoints:

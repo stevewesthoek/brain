@@ -5612,6 +5612,83 @@ export interface BrainCoreVideoProviderPlanningSurfaceIndexResponse {
   };
 }
 
+export interface BrainCoreVideoProviderRequestWrapperScaffoldResponse {
+  scaffold: {
+    id: string;
+    status: string;
+    phase: string;
+    implementationApprovedScope: string;
+    providerClassCount: number;
+    wrapperScaffoldedCount: number;
+    callableWrapperCount: number;
+    providerConfiguredCount: number;
+    providerCallCount: number;
+    credentialAccessCount: number;
+    networkAccessCount: number;
+    artifactWriteCount: number;
+    auditPersistedCount: number;
+    providerClasses: Array<{
+      providerClass: 'image-generation' | 'layout-rendering' | 'brand-compliance';
+      wrapperScaffolded: true;
+      callableWrapper: false;
+      providerCallsEnabled: false;
+      credentialAccessEnabled: false;
+      networkAccessEnabled: false;
+      artifactWriteEnabled: false;
+      auditPersistenceEnabled: false;
+    }>;
+    requestShape: {
+      providerClass: string;
+      sourcePlanId: string;
+      promptReviewPolicyId: string;
+      credentialIsolationPlanId: string;
+      artifactSandboxHandoffPlanId: string;
+      outputRedactionPolicyId: string;
+      complianceChecklistId: string;
+      operatorApprovalRef: string;
+      auditRefPlaceholder: string;
+      requestIdPlaceholder: string;
+    };
+    responseShape: {
+      requestId: string;
+      status: string;
+      providerClass: string;
+      redactedSummaryOnly: true;
+      providerCallBlocked: true;
+      executionBlocked: true;
+      redactionPolicyId: string;
+      auditRefPlaceholder: string;
+      errorCategoryPlaceholder: string;
+      noRawProviderOutput: true;
+    };
+    validationRules: string[];
+    disabledCapabilities: Array<{ capability: string; enabled: false }>;
+    blockers: string[];
+    nextSafeStep: string;
+    safety: {
+      readOnlyStatusEndpoint: true;
+      wrapperScaffoldingOnly: true;
+      callableWrapperImplemented: false;
+      providerConfigured: false;
+      providerCallsEnabled: false;
+      credentialAccessEnabled: false;
+      envReadEnabled: false;
+      networkAccessEnabled: false;
+      promptGenerationEnabled: false;
+      imageGenerationEnabled: false;
+      artifactPersistenceEnabled: false;
+      auditPersistenceEnabled: false;
+      filesystemAccessEnabled: false;
+      writesFiles: false;
+      publishesContent: false;
+      writesToMind: false;
+      executesVideo: false;
+      postRoutesAdded: false;
+      brainConsoleMutationControlsEnabled: false;
+    };
+  };
+}
+
 export async function readBrainCoreVideoOrchestratorThumbnailDesignPlans(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoThumbnailDesignPlanResponse>> {
@@ -5724,4 +5801,10 @@ export async function readBrainCoreVideoOrchestratorProviderPlanningSurfaceIndex
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoProviderPlanningSurfaceIndexResponse>> {
   return fetchJson<BrainCoreVideoProviderPlanningSurfaceIndexResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-planning-surface-index');
+}
+
+export async function readBrainCoreVideoOrchestratorProviderRequestWrapperScaffold(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoProviderRequestWrapperScaffoldResponse>> {
+  return fetchJson<BrainCoreVideoProviderRequestWrapperScaffoldResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-request-wrapper-scaffold');
 }
