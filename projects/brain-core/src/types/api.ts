@@ -145,6 +145,129 @@ export interface BrainCoreLocalAppActionReadinessResponse {
   nextSafeStep: string;
 }
 
+export type BrainCoreLocalAppAction = 'start' | 'stop' | 'restart';
+export type BrainCoreLocalAppServiceType = 'web' | 'agent' | 'relay' | 'worker' | 'scheduler' | 'api' | 'database' | 'other';
+export type BrainCoreLocalAppOnboardingStatus = 'registered' | 'missing' | 'planned';
+export type BrainCoreLocalAppOrchestratorStatusValue = 'available' | 'partial' | 'unavailable';
+export type BrainCoreLocalAppActionPlanStatus = 'disabled' | 'ready';
+
+export interface BrainCoreLocalAppActionPolicy {
+  status: 'disabled' | 'planned' | 'enabled';
+  executionPath: 'none' | 'brain-core-allowlisted-action';
+  requiresConfirmation: true;
+  requiresAllowlist: true;
+  pluginExecutesShell: false;
+  arbitraryCommandAllowed: false;
+  safeActions: BrainCoreLocalAppAction[];
+  blockedActions: Array<BrainCoreLocalAppAction | 'custom-command'>;
+}
+
+export interface BrainCoreLocalAppServiceActionPolicy extends BrainCoreLocalAppActionPolicy {}
+
+export interface BrainCoreLocalAppServiceDefinition {
+  id: string;
+  label: string;
+  type: BrainCoreLocalAppServiceType;
+  port?: number;
+  healthUrl?: string;
+  required: boolean;
+  startOrder: number;
+  stopOrder: number;
+  status: 'running' | 'stopped' | 'unknown' | 'unavailable';
+  actionPolicy: BrainCoreLocalAppServiceActionPolicy;
+}
+
+export interface BrainCoreLocalAppDatabaseDefinition {
+  id: string;
+  type: 'postgres' | 'mysql' | 'redis' | 'sqlite' | 'other';
+  orbStackManaged: boolean;
+  hostPort?: number;
+  containerPort?: number;
+  status: 'running' | 'stopped' | 'unknown' | 'unavailable';
+  actionPolicy: BrainCoreLocalAppServiceActionPolicy;
+}
+
+export interface BrainCoreLocalAppDefinition {
+  id: string;
+  name: string;
+  label: string;
+  description: string;
+  category: 'brain-core' | 'local-app' | 'dashboard' | 'operations' | 'video' | 'research' | 'other';
+  repoPathSummary?: string;
+  appPort?: number;
+  appUrl?: string;
+  healthUrl?: string;
+  managed: boolean;
+  services: BrainCoreLocalAppServiceDefinition[];
+  database?: BrainCoreLocalAppDatabaseDefinition;
+  docsRef: string;
+  onboardingStatus: BrainCoreLocalAppOnboardingStatus;
+  actionPolicy: BrainCoreLocalAppActionPolicy;
+}
+
+export interface BrainCoreLocalAppActionStep {
+  id: string;
+  label: string;
+  detail: string;
+}
+
+export interface BrainCoreLocalAppActionPlan {
+  appId: string;
+  action: BrainCoreLocalAppAction;
+  status: BrainCoreLocalAppActionPlanStatus;
+  reason: string;
+  steps: BrainCoreLocalAppActionStep[];
+  requiresConfirmation: true;
+  pluginExecutesShell: false;
+  arbitraryCommandAllowed: false;
+  allowlistRequired: true;
+  auditRequired: true;
+  canExecuteNow: boolean;
+}
+
+export interface BrainCoreLocalAppOrchestratorStatus {
+  id: 'local-apps-orchestrator';
+  status: BrainCoreLocalAppOrchestratorStatusValue;
+  appCount: number;
+  serviceCount: number;
+  databaseCount: number;
+  managedCount: number;
+  definitions: BrainCoreLocalAppDefinition[];
+  actionPolicy: BrainCoreLocalAppActionPolicy;
+  safety: BrainCoreLocalAppSafety;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreLocalAppOnboardingChecklist {
+  id: 'local-apps-onboarding-checklist';
+  status: 'available' | 'partial' | 'unavailable';
+  requiredFields: string[];
+  onboardingSteps: string[];
+  standards: string[];
+  portPolicy: {
+    appPort: string;
+    servicePorts: string;
+    databasePorts: string;
+  };
+  databasePolicy: {
+    orbStackManaged: boolean;
+    optional: boolean;
+    requiredWhenNeeded: boolean;
+  };
+  servicePolicy: {
+    oneOrMoreServicesAllowed: boolean;
+    orderedLifecycle: boolean;
+    healthChecked: boolean;
+  };
+  docsPolicy: {
+    docsRefRequired: boolean;
+    onboardingNotesRequired: boolean;
+    actionPlanRequired: boolean;
+  };
+  safety: BrainCoreLocalAppSafety;
+  nextSafeStep: string;
+}
+
 export interface BrainCoreVideoStatus {
   status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
   enabled: boolean;
@@ -4800,6 +4923,12 @@ export interface BrainCoreRoutes {
   };
   '/local-apps/dashboard': BrainCoreLocalAppsDashboardResponse;
   '/local-apps/action-readiness': BrainCoreLocalAppActionReadinessResponse;
+  '/local-apps/orchestrator': BrainCoreLocalAppOrchestratorStatus;
+  '/local-apps/onboarding-checklist': BrainCoreLocalAppOnboardingChecklist;
+  '/local-apps/action-plans': {
+    plans: BrainCoreLocalAppActionPlan[];
+  };
+  '/local-apps/:id/action-plan/:action': BrainCoreLocalAppActionPlan;
   '/video/status': BrainCoreVideoStatus;
   '/video/queue': {
     queue: BrainCoreVideoQueueItem[];

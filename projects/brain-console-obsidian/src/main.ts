@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-local-apps-migration-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-local-apps-orchestrator-2026-05-19-01';
 
 declare global {
   interface Window {

@@ -118,6 +118,18 @@ Critical usability issues identified:
 4. No loading indicators or disabled states
 5. Hard-coded `max-width: 1400px` shell
 6. Fixed `120px` columns, missing `min-width: 0` on grid cells
+
+## Fourth implementation slice: Local Apps Orchestrator Foundation
+
+Brain Console now treats local apps as a compact operations inventory backed by a standardized orchestrator model:
+
+- Canonical app definitions
+- Optional OrbStack database metadata
+- Ordered service definitions
+- Declarative action plans
+- Read-only onboarding checklist
+
+Model Router is surfaced from Brain Core runtime-report sources when present, but Brain Console still does not execute shell commands or enable unsafe lifecycle controls.
 7. 1.4rem logo, dense layout
 
 ### Changes Implemented

@@ -61,8 +61,14 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 ## Brain Core Equivalents Already Available
 
 - `GET /local-apps`
+- `GET /local-apps/dashboard`
+- `GET /local-apps/action-readiness`
+- `GET /local-apps/orchestrator`
+- `GET /local-apps/onboarding-checklist`
+- `GET /local-apps/action-plans`
+- `GET /local-apps/:id/action-plan/:action`
 - `POST /local-apps/:id/start|stop|restart`
-- Runtime report parsing for local apps
+- Runtime report parsing for local apps and model-router runtime status
 
 ## Brain Console Gaps
 
@@ -79,9 +85,9 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 4. Keep start/stop/restart controls disabled until the allowlisted safe action path exists.
 5. Surface disabled reasons and next safe step instead of exposing raw commands.
 
-## MarbleRiver Check
+## Model Router Check
 
-- No `MarbleRiver` entry was found in `operations/infrastructure/local-apps.json` or the current ProBot/Brain Core local-app codepaths inspected in this pass.
-- Do not invent a MarbleRiver row in Brain Console.
-- If MarbleRiver appears in a later safe source of truth, it should be surfaced by the dashboard inventory transformation without changing the safety model.
-
+- `Model Router` exists in Brain Core runtime-report and scheduler context, but it is not registered as a canonical local-app row in `operations/infrastructure/local-apps.json`.
+- Brain Console surfaces it through the orchestrator/dashboard transformation when runtime-report data is present.
+- Do not invent a lifecycle row with unsafe control semantics.
+- If Model Router later gets a canonical local-app registration, it should inherit the same safe inventory transformation.

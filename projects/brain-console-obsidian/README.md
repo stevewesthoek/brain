@@ -2,7 +2,7 @@
 
 Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, and scheduler status using native Obsidian UI with responsive layout.
 
-**Build:** `brain-console-local-apps-migration-2026-05-19-01`
+**Build:** `brain-console-local-apps-orchestrator-2026-05-19-01`
 
 **Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
 
@@ -12,7 +12,7 @@ Standalone read-only Brain Core console for Obsidian. Opens as a main-workspace 
 - ✓ `npm run build` passes
 - ✓ `npm run package` emits release bundle
 - ✓ TypeScript compilation zero errors
-- ✓ Brain Core CI: passes with local-apps dashboard/readiness coverage
+- ✓ Brain Core CI: passes with local-apps orchestrator/dashboard coverage
 - ✓ `npm run release:install` builds, packages, installs to every discovered vault copy, and verifies markers
 
 ## Intended structure
@@ -72,7 +72,7 @@ npm run --prefix projects/brain-console-obsidian package
 ### Verify Installation
 
 **In Brain Console:**
-1. Look for build marker in header: `build brain-console-local-apps-migration-2026-05-19-01`
+1. Look for build marker in header: `build brain-console-local-apps-orchestrator-2026-05-19-01`
 2. The dashboard header also shows `Build`, `View mode`, `Brain Core URL`, `Selected URL`, and connection state
 3. If marker is missing or different, your plugin bundle is stale
 4. See: `operations/runbooks/brain-console-manual-install-test.md` → Verify Installation for recovery steps
@@ -83,13 +83,16 @@ npm run --prefix projects/brain-console-obsidian package
 2. Configure in Brain Console settings if different
 3. Press "Manual refresh" to verify connection
 
-## Local Apps Migration
+## Local Apps Orchestrator
 
 - Read-only dashboard payload: `GET /local-apps/dashboard`
 - Controlled-action readiness payload: `GET /local-apps/action-readiness`
+- Standard orchestration payload: `GET /local-apps/orchestrator`
+- Onboarding checklist payload: `GET /local-apps/onboarding-checklist`
+- Action plan payloads: `GET /local-apps/action-plans` and `GET /local-apps/:id/action-plan/:action`
 - Start/stop/restart controls remain disabled until a safe allowlisted Brain Core action path is approved.
 - Release/install command: `npm run --prefix projects/brain-console-obsidian release:install`
-- MarbleRiver was not present in the canonical `operations/infrastructure/local-apps.json` source during this pass.
+- Model Router is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
 
 ## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
 

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const root = '/Users/Office';
 const markers = [
+  'brain-console-local-apps-orchestrator-2026-05-19-01',
   'brain-console-local-apps-migration-2026-05-19-01',
   'brain-console-dashboard-stable-2026-05-19-01',
   'brain-console-polished-main-dashboard-2026-05-19-01',
@@ -72,6 +73,7 @@ async function inspectPluginDir(dir) {
     data,
     markers: markers.filter((marker) => main.includes(marker)),
     staleMarkers: markers.filter((marker) => ![
+      'brain-console-local-apps-orchestrator-2026-05-19-01',
       'brain-console-local-apps-migration-2026-05-19-01',
       'brain-console-dashboard-stable-2026-05-19-01',
       'brain-console-polished-main-dashboard-2026-05-19-01',

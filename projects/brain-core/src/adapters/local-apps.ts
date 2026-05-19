@@ -8,6 +8,13 @@ import type {
   BrainCoreLocalAppSummary,
   BrainCoreLocalAppsDashboardResponse,
 } from '../types/api.js';
+import {
+  createLocalAppActionPlan,
+  listLocalAppActionPlans,
+  listLocalAppDefinitions,
+  readLocalAppOnboardingChecklist,
+  readLocalAppOrchestratorStatus,
+} from './local-app-orchestrator.js';
 
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build'];
 const LOCAL_APPS_CONFIG_PATH = path.join(
@@ -245,34 +252,56 @@ export async function waitForLocalAppHealth(
 }
 
 export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): Promise<BrainCoreLocalAppsDashboardResponse> {
-  const inventory = loadLocalApps();
-  const statusReport = await buildLocalAppsStatus(inventory, fetchImpl);
+  const inventory = listLocalAppDefinitions();
+  const runtimeInventory = inventory.filter((app) => app.category !== 'brain-core' || app.id !== 'model-router');
+  const statusReport = await buildLocalAppsStatus(
+    runtimeInventory.map((app) => ({
+      name: app.name,
+      port: app.appPort ?? null,
+      url: app.appUrl ?? '',
+      check: app.healthUrl ?? '',
+      start: null,
+      stop: null,
+      restart: null,
+      description: app.description,
+      repoPath: app.repoPathSummary ?? null,
+      startupTimeoutMs: null,
+      runtime: null,
+      databaseEngine: null,
+      databaseServiceName: null,
+      databasePort: null,
+      databaseName: null,
+      databaseUser: null,
+      notes: app.description,
+    })),
+    fetchImpl,
+  );
   const timestamp = new Date().toISOString();
   const statusByName = new Map(statusReport.apps.map((app) => [app.name, app]));
 
   const apps: BrainCoreLocalAppDashboardItem[] = inventory.map((app) => {
     const status = statusByName.get(app.name);
-    const lifecycleStatus = normalizeDashboardStatus(status?.status ?? (app.check ? 'unknown' : 'unavailable'));
-    const managed = Boolean(app.start || app.stop || app.restart);
+    const lifecycleStatus = normalizeDashboardStatus(status?.status ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
+    const managed = app.managed;
     const actionEnabled = false;
     return {
-      id: normalizeId(app.name),
+      id: app.id,
       name: app.name,
-      label: app.description || app.name,
-      category: deriveCategory(app.name, app.repoPath),
+      label: app.label || app.name,
+      category: app.category,
       status: lifecycleStatus,
       health: deriveHealth(lifecycleStatus),
-      source: 'infrastructure-config',
+      source: app.category === 'brain-core' ? 'brain-core' : app.repoPathSummary ? 'infrastructure-config' : 'unknown',
       managed,
-      startSupported: Boolean(app.start),
-      stopSupported: Boolean(app.stop),
-      restartSupported: Boolean(app.restart),
+      startSupported: app.actionPolicy.safeActions.includes('start'),
+      stopSupported: app.actionPolicy.safeActions.includes('stop'),
+      restartSupported: app.actionPolicy.safeActions.includes('restart'),
       actionEnabled,
       actionDisabledReason: actionEnabled ? '' : 'Controls disabled until Brain Core allowlisted action path is approved.',
       lastCheckedAt: timestamp,
-      notes: app.notes || app.runtime?.notes || '',
-      ...(app.url ? { url: app.url } : {}),
-      ...(app.port ? { port: app.port } : {}),
+      notes: app.description,
+      ...(app.appUrl ? { url: app.appUrl } : {}),
+      ...(app.appPort ? { port: app.appPort } : {}),
     };
   });
 
@@ -286,63 +315,7 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     app.stopSupported ? 'stop' : null,
     app.restartSupported ? 'restart' : null,
   ].filter((value): value is 'start' | 'stop' | 'restart' => value !== null))));
-
-  const criteria = [
-    {
-      id: 'inventory-stable',
-      label: 'App inventory stable',
-      satisfied: loadLocalApps().length > 0,
-      detail: 'Local app registry entries are available from infrastructure-config.',
-    },
-    {
-      id: 'canonical-ids',
-      label: 'Canonical app IDs',
-      satisfied: loadLocalApps().every((app) => /^[a-z0-9][a-z0-9-]*$/i.test(normalizeId(app.name))),
-      detail: 'IDs are derived from safe app names and normalized to lowercase kebab case.',
-    },
-    {
-      id: 'allowlist-defined',
-      label: 'Allowlisted actions defined',
-      satisfied: false,
-      detail: 'No approved Brain Core allowlist has been wired for local-app start/stop/restart yet.',
-    },
-    {
-      id: 'brain-core-action-endpoint',
-      label: 'Brain Core action endpoint exists',
-      satisfied: true,
-      detail: 'POST /local-apps/:id/start|stop|restart is registered, but still gated behind approval.',
-    },
-    {
-      id: 'confirmation-ux',
-      label: 'Confirmation UX exists',
-      satisfied: false,
-      detail: 'Brain Console keeps controls disabled until a safe confirmation path is approved.',
-    },
-    {
-      id: 'audit-logging',
-      label: 'Audit logging available',
-      satisfied: false,
-      detail: 'Controlled-action audit logging remains a planned follow-up.',
-    },
-    {
-      id: 'plugin-shell-exec',
-      label: 'Plugin executes shell',
-      satisfied: false,
-      detail: 'Obsidian plugin does not execute shell commands.',
-    },
-    {
-      id: 'arbitrary-commands-blocked',
-      label: 'Arbitrary commands blocked',
-      satisfied: true,
-      detail: 'UI does not accept raw shell commands.',
-    },
-    {
-      id: 'user-approved',
-      label: 'User approved enabling controls',
-      satisfied: false,
-      detail: 'Controls remain disabled until the safe action path is explicitly approved.',
-    },
-  ];
+  const criteria = createActionReadinessCriteria(inventory);
 
   return {
     id: 'local-apps-dashboard',
@@ -381,18 +354,64 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
 }
 
 export function readLocalAppsActionReadiness(): BrainCoreLocalAppActionReadinessResponse {
-  const criteria = [
+  const criteria = createActionReadinessCriteria(listLocalAppDefinitions());
+
+  return {
+    id: 'local-apps-action-readiness',
+    status: 'not-ready',
+    ready: false,
+    criteria,
+    satisfiedCount: criteria.filter((criterion) => criterion.satisfied).length,
+    unsatisfiedCount: criteria.filter((criterion) => !criterion.satisfied).length,
+    blockers: [
+      'Brain Core allowlisted action path not yet approved.',
+      'Confirmation UX is not enabled for local-app control actions.',
+    ],
+    safety: {
+      readOnlyDashboard: true,
+      pluginExecutesShell: false,
+      arbitraryCommandExecution: false,
+      exposesSecrets: false,
+      exposesEnv: false,
+      platformWrites: false,
+      mindWrites: false,
+      destructiveActions: false,
+      startStopControlsEnabled: false,
+    },
+    nextSafeStep: 'Implement a Brain Core allowlisted action flow and confirmation UX before enabling controls.',
+  };
+}
+
+export function readLocalAppsOrchestratorStatus() {
+  return readLocalAppOrchestratorStatus();
+}
+
+export function readLocalAppsOnboardingChecklist() {
+  return readLocalAppOnboardingChecklist();
+}
+
+export function readLocalAppsActionPlans() {
+  return { plans: listLocalAppActionPlans() };
+}
+
+export function readLocalAppsActionPlan(appId: string, action: string) {
+  const normalizedAction = action === 'start' || action === 'stop' || action === 'restart' ? action : 'start';
+  return createLocalAppActionPlan(appId, normalizedAction);
+}
+
+function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalAppDefinitions>) {
+  return [
     {
       id: 'inventory-stable',
       label: 'App inventory stable',
-      satisfied: loadLocalApps().length > 0,
-      detail: 'Local app registry entries are available from infrastructure-config.',
+      satisfied: inventory.length > 0,
+      detail: 'Canonical local app definitions are available from the orchestrator registry.',
     },
     {
       id: 'canonical-ids',
       label: 'Canonical app IDs',
-      satisfied: loadLocalApps().every((app) => /^[a-z0-9][a-z0-9-]*$/i.test(normalizeId(app.name))),
-      detail: 'IDs are derived from safe app names and normalized to lowercase kebab case.',
+      satisfied: inventory.every((app) => /^[a-z0-9][a-z0-9-]*$/i.test(app.id)),
+      detail: 'IDs are derived from safe names and normalized to lowercase kebab case.',
     },
     {
       id: 'allowlist-defined',
@@ -436,32 +455,7 @@ export function readLocalAppsActionReadiness(): BrainCoreLocalAppActionReadiness
       satisfied: false,
       detail: 'Controls remain disabled until the safe action path is explicitly approved.',
     },
-  ];
-
-  return {
-    id: 'local-apps-action-readiness',
-    status: 'not-ready',
-    ready: false,
-    criteria,
-    satisfiedCount: criteria.filter((criterion) => criterion.satisfied).length,
-    unsatisfiedCount: criteria.filter((criterion) => !criterion.satisfied).length,
-    blockers: [
-      'Brain Core allowlisted action path not yet approved.',
-      'Confirmation UX is not enabled for local-app control actions.',
-    ],
-    safety: {
-      readOnlyDashboard: true,
-      pluginExecutesShell: false,
-      arbitraryCommandExecution: false,
-      exposesSecrets: false,
-      exposesEnv: false,
-      platformWrites: false,
-      mindWrites: false,
-      destructiveActions: false,
-      startStopControlsEnabled: false,
-    },
-    nextSafeStep: 'Implement a Brain Core allowlisted action flow and confirmation UX before enabling controls.',
-  };
+  ] as BrainCoreLocalAppActionReadinessResponse['criteria'];
 }
 
 function readLocalAppsRuntimeReport(): LocalAppsRuntimeReport | undefined {

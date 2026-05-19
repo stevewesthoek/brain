@@ -428,6 +428,74 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.equal(body.safety.arbitraryCommandExecution, false);
   assert.equal(body.safety.startStopControlsEnabled, false);
   assert.ok(body.apps.length > 0);
+  assert.ok(body.apps.some((app) => app.id === 'model-router'));
+});
+
+test('GET /local-apps/orchestrator returns standardized inventory model', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/orchestrator' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    appCount: number;
+    serviceCount: number;
+    databaseCount: number;
+    definitions: Array<{ id: string; name: string; services: Array<{ id: string }> }>;
+    safety: { pluginExecutesShell: boolean; arbitraryCommandExecution: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-orchestrator');
+  assert.equal(body.appCount, body.definitions.length);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandExecution, false);
+  assert.ok(body.serviceCount >= 0);
+});
+
+test('GET /local-apps/onboarding-checklist returns standard onboarding policy', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/onboarding-checklist' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    requiredFields: string[];
+    onboardingSteps: string[];
+    safety: { pluginExecutesShell: boolean; arbitraryCommandExecution: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-onboarding-checklist');
+  assert.ok(body.requiredFields.includes('appPort'));
+  assert.ok(body.onboardingSteps.length > 0);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandExecution, false);
+});
+
+test('GET /local-apps/action-plans returns disabled plans by default', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-plans' });
+  const body = JSON.parse(response.body) as {
+    plans: Array<{ appId: string; action: string; status: string; pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.plans.length > 0);
+  assert.ok(body.plans.every((plan) => plan.pluginExecutesShell === false));
+  assert.ok(body.plans.every((plan) => plan.arbitraryCommandAllowed === false));
+});
+
+test('GET /local-apps/model-router/action-plan/start returns a safe disabled plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/model-router/action-plan/start' });
+  const body = JSON.parse(response.body) as {
+    appId: string;
+    action: string;
+    status: string;
+    pluginExecutesShell: boolean;
+    arbitraryCommandAllowed: boolean;
+    canExecuteNow: boolean;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.appId, 'model-router');
+  assert.equal(body.action, 'start');
+  assert.equal(body.pluginExecutesShell, false);
+  assert.equal(body.arbitraryCommandAllowed, false);
+  assert.equal(body.canExecuteNow, false);
 });
 
 test('GET /local-apps/action-readiness returns not-ready by default', async () => {

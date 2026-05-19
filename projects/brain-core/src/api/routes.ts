@@ -33,7 +33,15 @@ import {
   requestPostDraftReviewApproval,
   requestPostSchedulePreviewApproval,
 } from '../adapters/post-orchestrator.js';
-import { listLocalApps, readLocalAppsActionReadiness, readLocalAppsDashboard } from '../adapters/local-apps.js';
+import {
+  listLocalApps,
+  readLocalAppsActionPlan,
+  readLocalAppsActionPlans,
+  readLocalAppsActionReadiness,
+  readLocalAppsDashboard,
+  readLocalAppsOnboardingChecklist,
+  readLocalAppsOrchestratorStatus,
+} from '../adapters/local-apps.js';
 import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
 import { readProBotSessionsParity } from '../adapters/probot-sessions-parity.js';
 import { readProBotLocalAppsParity } from '../adapters/probot-local-apps-parity.js';
@@ -498,6 +506,15 @@ export async function routeRequest(
       return;
     case '/local-apps/action-readiness':
       sendJson(response, 200, readLocalAppsActionReadiness());
+      return;
+    case '/local-apps/orchestrator':
+      sendJson(response, 200, readLocalAppsOrchestratorStatus());
+      return;
+    case '/local-apps/onboarding-checklist':
+      sendJson(response, 200, readLocalAppsOnboardingChecklist());
+      return;
+    case '/local-apps/action-plans':
+      sendJson(response, 200, readLocalAppsActionPlans());
       return;
     case '/probot/dashboard-parity':
       sendJson(response, 200, readProBotDashboardParity());
@@ -1597,6 +1614,16 @@ export async function routeRequest(
             },
           } satisfies BrainCoreErrorResponse);
           return;
+        }
+
+        const localAppPlanMatch = /^\/local-apps\/([^/]+)\/action-plan\/([^/]+)$/.exec(url.pathname);
+        if (localAppPlanMatch) {
+          const appId = decodeURIComponent(localAppPlanMatch[1] ?? '');
+          const action = decodeURIComponent(localAppPlanMatch[2] ?? '');
+          if (appId.length > 0 && action.length > 0) {
+            sendJson(response, 200, readLocalAppsActionPlan(appId, action));
+            return;
+          }
         }
       }
 
