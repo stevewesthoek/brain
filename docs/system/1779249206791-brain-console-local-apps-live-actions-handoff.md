@@ -226,3 +226,98 @@ Unrelated dirty files left unstaged:
 - `operations/system-configs/codex/skills/.system/plugin-creator/references/plugin-json-spec.md`
 - `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
 - `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`
+
+
+## Continuation update — Safe repo-local lifecycle adapters
+
+Date: 2026-05-20
+
+What changed:
+
+- Replaced shell-heavy local-app registry entries with fixed repo-local lifecycle scripts.
+- Added new repo-local `scripts/dev/start-local.sh` wrappers for:
+  - `projects/probot`
+  - `projects/probot` stop/restart helpers
+  - `prochattools/clients/via-di-eden`
+  - `prochattools/clients/oliveto-organizing`
+  - `prochattools/saas/xgrow`
+  - `family-finance`
+  - `tradebot`
+  - `jc-citadel/jpv-bootcamp`
+- Added restart wrappers for the apps that already have fixed local start/stop scripts.
+- Brain Core still executes only the allowlisted fixed-script strategy; no arbitrary command strings were added.
+- Brain Console did not need a UI change for the new coverage because it already reflects dashboard action support flags.
+
+Exact newly executable actions:
+
+- `via-di-eden:start`
+- `via-di-eden:restart`
+- `oliveto-organizing:start`
+- `oliveto-organizing:restart`
+- `jpv-bootcamp:start`
+- `xgrow:start`
+- `xgrow:restart`
+- `family-finance:start`
+- `tradebot:start`
+
+Counts:
+
+- Before: `22` executable, `26` disabled
+- After: `29` executable, `19` disabled
+
+Still-disabled actions and reasons:
+
+- `probot:start` - canonical command remains not yet allowlisted in the current Brain Core strategy.
+- `probot:stop` - no canonical stop command is defined.
+- `probot:restart` - no canonical restart command is defined.
+- `prochat:stop` - no Brain Core-managed npm process is recorded for this app.
+- `prochat:restart` - no canonical restart command is defined.
+- `jpv-bootcamp:stop` - no canonical stop command is defined.
+- `jpv-bootcamp:restart` - no canonical restart command is defined.
+- `google-ads-api:stop` - no canonical stop command is defined.
+- `google-ads-api:restart` - no canonical restart command is defined.
+- `family-finance:stop` - no canonical stop command is defined.
+- `family-finance:restart` - no canonical restart command is defined.
+- `fala:start` - repo lifecycle script is registered but missing or outside allowlisted roots.
+- `fala:stop` - no canonical stop command is defined.
+- `fala:restart` - no canonical restart command is defined.
+- `tradebot:stop` - no canonical stop command is defined.
+- `tradebot:restart` - no canonical restart command is defined.
+- `model-router:start` - no canonical start command is defined.
+- `model-router:stop` - no canonical stop command is defined.
+- `model-router:restart` - no canonical restart command is defined.
+
+Live verifier results:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed with:
+  - `appCount: 16`
+  - `executableActions.length: 29`
+  - `disabledActionCount: 19`
+  - `backlogDisabledActionCount: 19`
+  - `newlyExecutableActions` matching the fixed-script set above
+- Safe live POSTs still proved:
+  - `video-orchestrator:restart` success
+  - `says-the-bible:restart` success
+
+Safety notes:
+
+- The new scripts are fixed, repo-local lifecycle adapters only.
+- No `.env` values, tokens, cookies, passwords, or raw env values were exposed.
+- No new arbitrary shell execution path was added.
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed.
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed.
+- `npm run --prefix projects/brain-console-obsidian find:installed` passed.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+- Both contain only `brain-console-local-apps-live-actions-2026-05-19-01`.
+- Both report `staleMarkers: []`.

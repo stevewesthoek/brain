@@ -623,6 +623,39 @@ test('GET /local-apps/action-enablement-backlog includes exact disabled reasons'
   }
 });
 
+test('repo-local lifecycle adapters become executable for safe fixed scripts', async () => {
+  const expectations: Array<{ appId: string; action: 'start' | 'restart'; commandLabel: string }> = [
+    { appId: 'via-di-eden', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'via-di-eden', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
+    { appId: 'oliveto-organizing', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'oliveto-organizing', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
+    { appId: 'jpv-bootcamp', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'xgrow', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'xgrow', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
+    { appId: 'family-finance', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'tradebot', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+  ];
+
+  const dashboardResponse = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
+  const dashboard = JSON.parse(dashboardResponse.body) as {
+    apps: Array<{ id: string; startSupported: boolean; stopSupported: boolean; restartSupported: boolean; actionDisabledReasons?: Record<string, string> }>;
+  };
+  const backlogResponse = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const backlog = JSON.parse(backlogResponse.body) as {
+    items: Array<{ appId: string; action: string }>;
+  };
+  const disabledKeys = new Set(backlog.items.map((item) => `${item.appId}:${item.action}`));
+
+  for (const expectation of expectations) {
+    const app = listLocalAppDefinitions().find((entry) => entry.id === expectation.appId);
+    assert.ok(app, `expected inventory entry for ${expectation.appId}`);
+    const readiness = evaluateLocalAppActionDefinition(app!, expectation.action);
+    assert.equal(readiness.executable, true, `${expectation.appId}:${expectation.action} should be executable`);
+    assert.equal(readiness.commandLabel, expectation.commandLabel);
+    assert.equal(disabledKeys.has(`${expectation.appId}:${expectation.action}`), false, `${expectation.appId}:${expectation.action} should not be in the disabled backlog`);
+  }
+});
+
 test('composite restart is supported when safe start and stop commands exist', async () => {
   const inventory = listLocalAppDefinitions();
   const app = inventory.find((entry) => entry.id === 'says-the-bible' || entry.id === 'firecrawl' || entry.id === 'comfyui');

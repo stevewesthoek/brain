@@ -11,6 +11,18 @@ const preferredLiveActions = [
   ['comfyui', 'stop'],
   ['firecrawl', 'stop'],
 ];
+const fixedLifecycleCandidates = [
+  ['probot', 'start'],
+  ['via-di-eden', 'start'],
+  ['via-di-eden', 'restart'],
+  ['oliveto-organizing', 'start'],
+  ['oliveto-organizing', 'restart'],
+  ['jpv-bootcamp', 'start'],
+  ['xgrow', 'start'],
+  ['xgrow', 'restart'],
+  ['family-finance', 'start'],
+  ['tradebot', 'start'],
+];
 
 let server;
 let baseUrl = process.env.BRAIN_CORE_URL;
@@ -144,6 +156,9 @@ try {
     if (!app.restartSupported) actions.push({ appId: app.id, action: 'restart', reason: app.actionDisabledReasons?.restart ?? app.actionDisabledReason ?? 'No reason reported.' });
     return actions;
   });
+  const newlyExecutableActions = fixedLifecycleCandidates
+    .map(([appId, action]) => `${appId}:${action}`)
+    .filter((action) => executableActions.includes(action));
   assert(backlog.disabledActionCount === disabledActions.length, 'backlog disabled count must match dashboard disabled actions');
   const backlogDisabledKeys = new Set(backlog.items.map((item) => `${item.appId}:${item.action}`));
   for (const action of executableActions) {
@@ -171,6 +186,7 @@ try {
     },
     probes: results,
     executableActions,
+    newlyExecutableActions,
     disabledActionCount: disabledActions.length,
     backlogDisabledActionCount: backlog.disabledActionCount,
     backlogCategories: backlog.categories,
