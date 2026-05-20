@@ -1941,6 +1941,30 @@ test('ProBot start uses canonical port 7070', async () => {
   assert.ok(content.includes('PROBOT_DASHBOARD_PORT="$CANONICAL_PORT"'), 'start script must export port to PROBOT_DASHBOARD_PORT');
   assert.ok(!content.includes('source .env'), 'start script must not source .env');
   assert.ok(!content.includes('cat .env'), 'start script must not cat .env');
+  assert.ok(!content.includes('echo $TOKEN'), 'start script must not print env vars');
+  assert.ok(!content.includes('echo $SECRET'), 'start script must not print env vars');
+});
+
+test('ProBot start script writes a metadata file', async () => {
+  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'start-local.sh');
+  const content = fs.readFileSync(scriptPath, 'utf8');
+  assert.ok(content.includes('META_FILE='), 'start script must define META_FILE');
+  assert.ok(content.includes('probot-process.json'), 'start script must write probot-process.json');
+  assert.ok(content.includes("'appId': 'probot'"), 'metadata must include appId');
+  assert.ok(content.includes('processStartSignature'), 'metadata must include processStartSignature');
+  assert.ok(content.includes('canonicalPort'), 'metadata must include canonicalPort');
+  assert.ok(!content.includes('.env'), 'start script must not reference .env');
+});
+
+test('ProBot stop script checks metadata before killing', async () => {
+  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'stop-local.sh');
+  const content = fs.readFileSync(scriptPath, 'utf8');
+  assert.ok(content.includes('META_FILE='), 'stop script must reference metadata file');
+  assert.ok(content.includes('probot-process.json'), 'stop script must check probot-process.json');
+  assert.ok(content.includes("appId"), 'stop script must validate appId from metadata');
+  assert.ok(content.includes('processStartSignature'), 'stop script must check processStartSignature');
+  assert.ok(content.includes('STORED_LSTART'), 'stop script must compare stored start signature');
+  assert.ok(content.includes('CURRENT_LSTART'), 'stop script must compare current start signature');
 });
 
 test('ProBot stop script does not kill arbitrary PIDs', async () => {
@@ -1951,6 +1975,7 @@ test('ProBot stop script does not kill arbitrary PIDs', async () => {
   assert.ok(!content.includes('lsof'), 'stop script must not use lsof');
   assert.ok(content.includes('ps -p "$PID"'), 'stop script must validate PID ownership');
   assert.ok(content.includes('ProBot') || content.includes('probot'), 'stop script must check process matches ProBot');
+  assert.ok(!content.includes('echo "$PROC_CMD"'), 'stop script must not echo raw process command lines');
 });
 
 test('ProBot stop treats stale/wrong PID as harmless and removes PID file', async () => {
@@ -1958,7 +1983,8 @@ test('ProBot stop treats stale/wrong PID as harmless and removes PID file', asyn
   const content = fs.readFileSync(scriptPath, 'utf8');
   assert.ok(content.includes('stale PID'), 'stop script must handle stale PID gracefully');
   assert.ok(content.includes('did not match ProBot process'), 'stop script must handle wrong PID gracefully');
-  assert.ok(content.includes('rm -f "$PID_FILE"'), 'stop script must clean up PID file in all cases');
+  assert.ok(content.includes('PID reuse detected'), 'stop script must detect PID reuse via start signature');
+  assert.ok(content.includes('rm -f "$PID_FILE" "$META_FILE"'), 'stop script must clean up both PID and metadata files');
 });
 
 test('backlog disabled count equals dashboard disabled action count', async () => {

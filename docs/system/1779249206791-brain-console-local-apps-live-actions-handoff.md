@@ -502,3 +502,78 @@ Date: 2026-05-20
 - `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
 - `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`
 - `projects/probot/runtime/`
+
+---
+
+## Continuation 9: ProBot runtime process metadata hardening
+
+Date: 2026-05-20
+
+### Changes
+
+**Generated runtime ignore/cleanup:**
+
+- Added `runtime/` to `projects/probot/.gitignore`.
+- Removed generated `projects/probot/runtime/` from working tree.
+- `git status --short` no longer shows `projects/probot/runtime/` after live verifier runs.
+
+**ProBot process metadata file:**
+
+- Start script now writes `runtime/local/probot-process.json` containing:
+  - `appId`: always `"probot"`
+  - `pid`: spawned child PID
+  - `startedAt`: UTC ISO timestamp
+  - `processStartSignature`: output of `ps -p PID -o lstart=` (unique per-process-start, survives PID reuse)
+  - `canonicalPort`: 7070
+  - `commandLabel`: `"npm run dev"`
+  - `scriptVersion`: incremented version number
+- Metadata does NOT contain env vars, secrets, `.env` contents, tokens, or full command lines.
+
+**ProBot PID reuse hardening (stop script):**
+
+- Stop validates 6 conditions before killing:
+  1. PID file exists
+  2. Metadata file exists
+  3. Metadata `appId` is `"probot"`
+  4. Metadata `pid` matches PID file
+  5. Process is alive
+  6. Current `lstart` signature matches stored `processStartSignature`
+- Additionally checks process command matches ProBot dev/start markers (without echoing raw command).
+- If ANY validation fails: removes stale PID/metadata, returns harmless success with reason, does NOT kill.
+- Does not use `pkill`, `killall`, `lsof`, or kill-by-port.
+- Does not echo raw process command lines.
+
+**Start script existing-process validation:**
+
+- Before starting fresh, validates existing PID using the same `processStartSignature` check.
+- If PID is alive AND metadata matches AND start signature matches: reports already running.
+- If any check fails: cleans stale files and starts fresh.
+
+**ProBot live verifier default/opt-in behavior:**
+
+- Default: ProBot POST lifecycle is NOT tested. Summary says `probot lifecycle actions enabled but not POST-tested by default`.
+- Opt-in: Set `BRAIN_CORE_LIVE_TEST_PROBOT_LIFECYCLE=1` to enable ProBot restart POST.
+- Live verifier does NOT leave generated `projects/probot/runtime/` untracked (gitignored).
+
+### Validation results
+
+- Brain Core CI: 482/482 pass
+- Live verifier: status=passed, appCount=16, executableActions=32, disabledActionCount=16, backlogDisabledActionCount=16
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass (marker present, staleMarkers=[])
+- Brain Console find:installed: both locations verified with correct marker
+
+### Installed plugin verification
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+- `/Users/Office/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+
+### Unrelated dirty files left unstaged
+
+- `operations/system-configs/claude/model-tracking.json`
+- `operations/system-configs/codex/skills/.system/plugin-creator/SKILL.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/agents/openai.yaml`
+- `operations/system-configs/codex/skills/.system/plugin-creator/references/plugin-json-spec.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`
