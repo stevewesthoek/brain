@@ -91,7 +91,7 @@ export async function readLocalAppsOperatorSummary(
   });
 
   const attentionItems = items.filter((item) => item.status === 'attention' || item.status === 'blocked');
-  const topAttentionItems = attentionItems.slice(0, 5).map((item) => ({
+  const topAttentionItems = [...attentionItems].sort(compareAttentionItems).slice(0, 5).map((item) => ({
     appId: item.appId,
     appName: item.appName,
     status: item.status,
@@ -139,20 +139,39 @@ function deriveNextAction(
   disabledActions: BrainCoreLocalAppOperatorSummaryDisabledAction[],
   recentFailedAction?: BrainCoreLocalAppOperatorSummaryLastAction,
 ): BrainCoreLocalAppOperatorSummaryNextAction {
+  if (recentFailedAction) {
+    const failureReason = `Recent ${recentFailedAction.action} action failed: ${sanitizeOperatorSummaryText(recentFailedAction.message)}`;
+    if (supportedActions.includes('restart')) {
+      return {
+        label: `Restart ${app.name}`,
+        kind: 'restart',
+        reason: failureReason,
+        executable: true,
+      };
+    }
+
+    if (reachabilityStatus === 'unreachable') {
+      return {
+        label: 'Inspect health',
+        kind: 'inspect-health',
+        reason: `${failureReason}. Health is also unreachable, and restart is not currently supported.`,
+        executable: false,
+      };
+    }
+
+    return {
+      label: 'Manual review',
+      kind: 'manual-review',
+      reason: `${failureReason}. Restart is not currently supported.`,
+      executable: false,
+    };
+  }
+
   if (reachabilityStatus === 'unreachable' && supportedActions.includes('start')) {
     return {
       label: `Start ${app.name}`,
       kind: 'start',
       reason: 'App is unreachable and start is supported.',
-      executable: true,
-    };
-  }
-
-  if (recentFailedAction && supportedActions.includes('restart')) {
-    return {
-      label: `Restart ${app.name}`,
-      kind: 'restart',
-      reason: `Recent ${recentFailedAction.action} action failed: ${recentFailedAction.message}`,
       executable: true,
     };
   }
@@ -217,8 +236,39 @@ function resolveLastAction(
     status: candidate.status,
     ok: candidate.ok,
     endedAt: candidate.endedAt,
-    message: candidate.message,
+    message: sanitizeOperatorSummaryText(candidate.message),
   };
+}
+
+function compareAttentionItems(
+  left: BrainCoreLocalAppOperatorSummaryItem,
+  right: BrainCoreLocalAppOperatorSummaryItem,
+): number {
+  const severity = attentionSeverity(left) - attentionSeverity(right);
+  if (severity !== 0) return severity;
+
+  const byName = left.appName.localeCompare(right.appName);
+  if (byName !== 0) return byName;
+
+  return left.appId.localeCompare(right.appId);
+}
+
+function attentionSeverity(item: BrainCoreLocalAppOperatorSummaryItem): number {
+  if (item.lastAction && !item.lastAction.ok) return 0;
+  if (item.status === 'blocked') return 1;
+  if (item.reachabilityStatus === 'unreachable' && item.nextRecommendedAction.executable) return 2;
+  if (item.reachabilityStatus === 'stale') return 3;
+  if (item.reachabilityStatus === 'not-configured' || item.nextRecommendedAction.kind === 'configure-health-url') return 4;
+  if (item.nextRecommendedAction.kind === 'add-lifecycle-script') return 5;
+  return 6;
+}
+
+function sanitizeOperatorSummaryText(value: string): string {
+  return value
+    .replace(/([A-Z0-9_]*(?:TOKEN|SECRET|KEY|PASSWORD|COOKIE|CREDENTIAL)[A-Z0-9_]*=)[^\s]+/gi, '$1[redacted]')
+    .replace(/\/Users\/[^/\s]+\/[^\s]*/g, '[local-path]')
+    .replace(/\b(?:[A-Za-z]:)?(?:\/[A-Za-z0-9._-]+){3,}\b/g, '[local-path]')
+    .slice(0, 240);
 }
 
 function categorizeReason(reason: string): string {
@@ -232,3 +282,9 @@ function categorizeReason(reason: string): string {
   if (reason.includes('allowlist')) return 'not-yet-allowlisted';
   return 'other';
 }
+
+export const __localAppsOperatorSummaryTestHooks = {
+  deriveNextAction,
+  compareAttentionItems,
+  sanitizeOperatorSummaryText,
+};
