@@ -367,6 +367,45 @@ export interface BrainCoreLocalAppActionEnablementBacklogResponse {
   nextSafeStep: string;
 }
 
+export type BrainCoreLocalAppReachabilityStatus =
+  | 'reachable'
+  | 'unreachable'
+  | 'unknown'
+  | 'not-configured'
+  | 'stale';
+
+export interface BrainCoreLocalAppReachabilityEntry {
+  appId: string;
+  appName: string;
+  reachabilityStatus: BrainCoreLocalAppReachabilityStatus;
+  healthUrl: string | null;
+  checkedAt: string;
+  responseTimeMs: number | null;
+  httpStatus: number | null;
+  note: string;
+}
+
+export interface BrainCoreLocalAppsOperationalReadinessResponse {
+  id: 'local-apps-operational-readiness';
+  generatedAt: string;
+  appCount: number;
+  reachableCount: number;
+  unreachableCount: number;
+  unknownCount: number;
+  notConfiguredCount: number;
+  staleCount: number;
+  apps: BrainCoreLocalAppReachabilityEntry[];
+  totalCheckDurationMs: number;
+  safety: {
+    readOnly: true;
+    pluginExecutesShell: false;
+    executesShell: false;
+    exposesSecrets: false;
+    exposesEnv: false;
+    writesFiles: false;
+  };
+}
+
 export interface BrainCoreLocalAppOrchestratorStatus {
   id: 'local-apps-orchestrator';
   status: BrainCoreLocalAppOrchestratorStatusValue;

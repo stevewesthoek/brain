@@ -2143,12 +2143,164 @@ test('backlog disabled count equals dashboard disabled action count', async () =
   assert.equal(backlog.items.length, dashboardDisabledCount, 'backlog items length must equal dashboard disabled action count');
 });
 
+test('GET /local-apps/operational-readiness returns 200 with well-formed payload', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    generatedAt: string;
+    appCount: number;
+    reachableCount: number;
+    unreachableCount: number;
+    unknownCount: number;
+    notConfiguredCount: number;
+    staleCount: number;
+    apps: Array<{ appId: string; appName: string; reachabilityStatus: string; healthUrl: string | null; checkedAt: string; responseTimeMs: number | null; httpStatus: number | null; note: string }>;
+    totalCheckDurationMs: number;
+    safety: { readOnly: boolean; pluginExecutesShell: boolean; executesShell: boolean; exposesSecrets: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-operational-readiness');
+  assert.ok(typeof body.generatedAt === 'string' && body.generatedAt.length > 0, 'generatedAt must be set');
+  assert.ok(body.appCount >= 16, 'appCount must reflect canonical inventory');
+  assert.equal(body.appCount, body.apps.length, 'appCount must match apps array length');
+  assert.equal(body.reachableCount + body.unreachableCount + body.unknownCount + body.notConfiguredCount + body.staleCount, body.appCount, 'status counts must sum to appCount');
+  assert.ok(typeof body.totalCheckDurationMs === 'number' && body.totalCheckDurationMs >= 0, 'totalCheckDurationMs must be non-negative');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.executesShell, false);
+  assert.equal(body.safety.exposesSecrets, false);
+});
+
+test('GET /local-apps/operational-readiness apps have correct shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
+  const body = JSON.parse(response.body) as {
+    apps: Array<{ appId: string; appName: string; reachabilityStatus: string; healthUrl: string | null; checkedAt: string; note: string }>;
+  };
+  const validStatuses = new Set(['reachable', 'unreachable', 'unknown', 'not-configured', 'stale']);
+
+  for (const app of body.apps) {
+    assert.ok(typeof app.appId === 'string' && app.appId.length > 0, `app ${app.appId} must have appId`);
+    assert.ok(typeof app.appName === 'string' && app.appName.length > 0, `app ${app.appId} must have appName`);
+    assert.ok(validStatuses.has(app.reachabilityStatus), `app ${app.appId} reachabilityStatus ${app.reachabilityStatus} must be valid`);
+    assert.ok(app.healthUrl === null || typeof app.healthUrl === 'string', `app ${app.appId} healthUrl must be string or null`);
+    assert.ok(typeof app.checkedAt === 'string' && app.checkedAt.length > 0, `app ${app.appId} checkedAt must be set`);
+    assert.ok(typeof app.note === 'string' && app.note.length > 0, `app ${app.appId} note must be non-empty`);
+  }
+});
+
+test('GET /local-apps/operational-readiness not-configured apps have null healthUrl', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
+  const body = JSON.parse(response.body) as {
+    apps: Array<{ appId: string; reachabilityStatus: string; healthUrl: string | null }>;
+  };
+
+  const notConfigured = body.apps.filter((app) => app.reachabilityStatus === 'not-configured');
+  for (const app of notConfigured) {
+    assert.equal(app.healthUrl, null, `not-configured app ${app.appId} must have null healthUrl`);
+  }
+});
+
+test('GET /local-apps/operational-readiness apps with healthUrl have non-null response fields', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
+  const body = JSON.parse(response.body) as {
+    apps: Array<{ appId: string; reachabilityStatus: string; healthUrl: string | null; responseTimeMs: number | null }>;
+  };
+
+  const probed = body.apps.filter((app) => app.healthUrl !== null && app.reachabilityStatus !== 'stale');
+  for (const app of probed) {
+    assert.ok(typeof app.responseTimeMs === 'number', `probed app ${app.appId} must have responseTimeMs`);
+  }
+});
+
+test('GET /local-apps/operational-readiness does not execute shell or expose secrets', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
+  const body = response.body;
+
+  assert.ok(!body.includes('TOKEN='), 'must not expose TOKEN=');
+  assert.ok(!body.includes('SECRET='), 'must not expose SECRET=');
+  assert.ok(!body.includes('PASSWORD='), 'must not expose PASSWORD=');
+  assert.ok(!body.includes('.env'), 'must not reference .env');
+});
+
+test('readLocalAppsOperationalReadiness adapter: mock fetch — reachable apps', async () => {
+  const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
+
+  const mockFetch = async (url: string): Promise<Response> => {
+    return { ok: true, status: 200 } as Response;
+  };
+
+  const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
+
+  assert.equal(result.id, 'local-apps-operational-readiness');
+  assert.ok(result.appCount >= 16, 'appCount must reflect inventory');
+  assert.ok(result.reachableCount > 0, 'mock-reachable fetch must yield reachable entries');
+  assert.equal(result.safety.readOnly, true);
+  assert.equal(result.safety.pluginExecutesShell, false);
+  assert.equal(result.safety.executesShell, false);
+  assert.equal(result.safety.exposesSecrets, false);
+  assert.equal(result.safety.exposesEnv, false);
+  assert.equal(result.safety.writesFiles, false);
+  for (const app of result.apps) {
+    if (app.healthUrl !== null) {
+      assert.equal(app.reachabilityStatus, 'reachable', `${app.appId} should be reachable via mock`);
+      assert.equal(app.httpStatus, 200, `${app.appId} httpStatus must be 200`);
+      assert.ok(typeof app.responseTimeMs === 'number', `${app.appId} responseTimeMs must be set`);
+    }
+  }
+});
+
+test('readLocalAppsOperationalReadiness adapter: mock fetch — unreachable apps', async () => {
+  const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    throw new Error('ECONNREFUSED');
+  };
+
+  const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
+
+  const probedApps = result.apps.filter((app) => app.healthUrl !== null);
+  for (const app of probedApps) {
+    assert.equal(app.reachabilityStatus, 'unreachable', `${app.appId} should be unreachable when fetch throws`);
+    assert.equal(app.httpStatus, null, `${app.appId} httpStatus must be null on error`);
+  }
+});
+
+test('readLocalAppsOperationalReadiness adapter: mock fetch — non-ok response is unreachable', async () => {
+  const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: false, status: 503 } as Response;
+  };
+
+  const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
+
+  const probedApps = result.apps.filter((app) => app.healthUrl !== null);
+  for (const app of probedApps) {
+    assert.equal(app.reachabilityStatus, 'unreachable', `${app.appId} 503 response should be unreachable`);
+    assert.equal(app.httpStatus, 503);
+  }
+});
+
+test('readLocalAppsOperationalReadiness adapter: status counts sum to appCount', async () => {
+  const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: true, status: 200 } as Response;
+  };
+
+  const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
+  const sum = result.reachableCount + result.unreachableCount + result.unknownCount + result.notConfiguredCount + result.staleCount;
+  assert.equal(sum, result.appCount, 'status counts must sum to appCount');
+});
+
 test('responses do not include secrets or raw env values', async () => {
   const endpoints = [
     '/local-apps/dashboard',
     '/local-apps/actions/status',
     '/local-apps/action-enablement-backlog',
     '/local-apps/source-diagnostics',
+    '/local-apps/operational-readiness',
   ];
   for (const endpoint of endpoints) {
     const response = await exercise({ method: 'GET', url: endpoint });

@@ -447,6 +447,45 @@ export interface BrainCoreLocalAppActionEnablementBacklogResponse {
   nextSafeStep: string;
 }
 
+export type BrainCoreLocalAppReachabilityStatus =
+  | 'reachable'
+  | 'unreachable'
+  | 'unknown'
+  | 'not-configured'
+  | 'stale';
+
+export interface BrainCoreLocalAppReachabilityEntry {
+  appId: string;
+  appName: string;
+  reachabilityStatus: BrainCoreLocalAppReachabilityStatus;
+  healthUrl: string | null;
+  checkedAt: string;
+  responseTimeMs: number | null;
+  httpStatus: number | null;
+  note: string;
+}
+
+export interface BrainCoreLocalAppsOperationalReadinessResponse {
+  id: 'local-apps-operational-readiness';
+  generatedAt: string;
+  appCount: number;
+  reachableCount: number;
+  unreachableCount: number;
+  unknownCount: number;
+  notConfiguredCount: number;
+  staleCount: number;
+  apps: BrainCoreLocalAppReachabilityEntry[];
+  totalCheckDurationMs: number;
+  safety: {
+    readOnly: true;
+    pluginExecutesShell: false;
+    executesShell: false;
+    exposesSecrets: false;
+    exposesEnv: false;
+    writesFiles: false;
+  };
+}
+
 export interface BrainCoreVideoStatus {
   status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
   enabled: boolean;
@@ -4118,6 +4157,10 @@ export async function readBrainCoreLocalAppsOnboardingChecklist(baseUrl: string)
 
 export async function readBrainCoreLocalAppsActionEnablementBacklog(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppActionEnablementBacklogResponse>> {
   return fetchJson<BrainCoreLocalAppActionEnablementBacklogResponse>(normalizeBaseUrl(baseUrl), '/local-apps/action-enablement-backlog');
+}
+
+export async function readBrainCoreLocalAppsOperationalReadiness(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppsOperationalReadinessResponse>> {
+  return fetchJson<BrainCoreLocalAppsOperationalReadinessResponse>(normalizeBaseUrl(baseUrl), '/local-apps/operational-readiness');
 }
 
 export async function readBrainCoreLocalAppsActionPlans(baseUrl: string): Promise<HttpResult<{ plans?: BrainCoreLocalAppActionPlan[] }>> {

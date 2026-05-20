@@ -47,6 +47,7 @@ import {
   runLocalAppsAction,
 } from '../adapters/local-apps.js';
 import { executeLocalAppActionRequest } from '../adapters/local-app-orchestrator.js';
+import { readLocalAppsOperationalReadiness } from '../adapters/local-app-operational-readiness.js';
 import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
 import { readProBotSessionsParity } from '../adapters/probot-sessions-parity.js';
 import { readProBotLocalAppsParity } from '../adapters/probot-local-apps-parity.js';
@@ -525,6 +526,9 @@ export async function routeRequest(
       return;
     case '/local-apps/dashboard':
       sendJson(response, 200, await readLocalAppsDashboard());
+      return;
+    case '/local-apps/operational-readiness':
+      sendJson(response, 200, await readLocalAppsOperationalReadiness());
       return;
     case '/local-apps/action-readiness':
       sendJson(response, 200, readLocalAppsActionReadiness());

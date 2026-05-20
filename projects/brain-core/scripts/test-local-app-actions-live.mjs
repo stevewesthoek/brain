@@ -66,6 +66,21 @@ try {
   assert(diagnostics.canonicalAppCount >= 15, 'source diagnostics canonical count unexpectedly low');
   assert(diagnostics.displayedAppCount >= diagnostics.canonicalAppCount, 'displayed count below canonical count');
 
+  const operationalReadiness = await expectGet('/local-apps/operational-readiness');
+  assert(operationalReadiness.id === 'local-apps-operational-readiness', 'operational readiness id mismatch');
+  assert(typeof operationalReadiness.appCount === 'number' && operationalReadiness.appCount >= 16, 'operational readiness must report canonical inventory');
+  assert(Array.isArray(operationalReadiness.apps), 'operational readiness apps must be array');
+  assert(operationalReadiness.appCount === operationalReadiness.apps.length, 'operational readiness appCount must match apps length');
+  assert(
+    operationalReadiness.reachableCount + operationalReadiness.unreachableCount + operationalReadiness.unknownCount + operationalReadiness.notConfiguredCount + operationalReadiness.staleCount === operationalReadiness.appCount,
+    'operational readiness status counts must sum to appCount',
+  );
+  assert(operationalReadiness.safety?.readOnly === true, 'operational readiness must be read-only');
+  assert(operationalReadiness.safety?.pluginExecutesShell === false, 'operational readiness must not execute shell');
+  assert(operationalReadiness.safety?.executesShell === false, 'operational readiness executesShell must be false');
+  assert(operationalReadiness.safety?.exposesSecrets === false, 'operational readiness must not expose secrets');
+  assert(typeof operationalReadiness.totalCheckDurationMs === 'number', 'operational readiness must report check duration');
+
   const actionStatusBefore = await expectGet('/local-apps/actions/status');
   const backlog = await expectGet('/local-apps/action-enablement-backlog');
   assert(actionStatusBefore.safety?.commandOverrideAccepted === false, 'action status must reject command overrides');
@@ -245,6 +260,17 @@ try {
       recentResultCount: actionStatusAfter.recentResults?.length ?? 0,
       lockCount: actionStatusAfter.locks?.length ?? 0,
       managedProcessCount: actionStatusAfter.managedProcesses?.length ?? 0,
+    },
+    operationalReadiness: {
+      appCount: operationalReadiness.appCount,
+      reachableCount: operationalReadiness.reachableCount,
+      unreachableCount: operationalReadiness.unreachableCount,
+      notConfiguredCount: operationalReadiness.notConfiguredCount,
+      staleCount: operationalReadiness.staleCount,
+      totalCheckDurationMs: operationalReadiness.totalCheckDurationMs,
+      reachableApps: operationalReadiness.apps
+        .filter((app) => app.reachabilityStatus === 'reachable')
+        .map((app) => ({ appId: app.appId, responseTimeMs: app.responseTimeMs })),
     },
   };
 
