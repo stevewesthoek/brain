@@ -636,7 +636,11 @@ test('repo-local lifecycle adapters become executable for safe fixed scripts', a
     { appId: 'xgrow', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
     { appId: 'xgrow', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
     { appId: 'family-finance', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'family-finance', action: 'stop', commandLabel: 'bash scripts/dev/stop-local.sh' },
+    { appId: 'family-finance', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
     { appId: 'tradebot', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'tradebot', action: 'stop', commandLabel: 'bash scripts/dev/stop-local.sh' },
+    { appId: 'tradebot', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
   ];
 
   const dashboardResponse = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
@@ -1901,6 +1905,66 @@ test('approved model-router dry-run generates report with metadata', async () =>
     delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
     fs.rmSync(testDir, { recursive: true, force: true });
   }
+});
+
+test('google-ads-api supervisor stop and restart are executable', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'google-ads-api');
+  assert.ok(app, 'google-ads-api should be in inventory');
+
+  const stopReadiness = evaluateLocalAppActionDefinition(app!, 'stop');
+  assert.equal(stopReadiness.executable, true, 'google-ads-api:stop should be executable');
+  assert.equal(stopReadiness.commandLabel, 'supervisorctl stop google-ads-http-server');
+
+  const restartReadiness = evaluateLocalAppActionDefinition(app!, 'restart');
+  assert.equal(restartReadiness.executable, true, 'google-ads-api:restart should be executable');
+  assert.equal(restartReadiness.commandLabel, 'supervisorctl stop google-ads-http-server && supervisorctl start google-ads-http-server');
+});
+
+test('supervisor command action must match requested action', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'google-ads-api');
+  assert.ok(app, 'google-ads-api should be in inventory');
+  const stopApp = { ...app!, stopCommand: 'supervisorctl start google-ads-http-server' };
+  const readiness = evaluateLocalAppActionDefinition(stopApp, 'stop');
+  assert.equal(readiness.executable, false, 'supervisor action mismatch should be not_executable');
+  assert.ok(readiness.reason?.includes('does not match'), 'reason should mention action mismatch');
+});
+
+test('google-ads-api actions are absent from action-enablement-backlog', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ appId: string; action: string }>;
+  };
+  const disabled = body.items.filter((item) => item.appId === 'google-ads-api' && (item.action === 'stop' || item.action === 'restart'));
+  assert.equal(disabled.length, 0, 'google-ads-api stop and restart should not appear in backlog');
+});
+
+test('family-finance stop and restart are executable', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'family-finance');
+  assert.ok(app, 'family-finance should be in inventory');
+  assert.equal(evaluateLocalAppActionDefinition(app!, 'stop').executable, true, 'family-finance:stop should be executable');
+  assert.equal(evaluateLocalAppActionDefinition(app!, 'restart').executable, true, 'family-finance:restart should be executable');
+});
+
+test('tradebot stop and restart are executable', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'tradebot');
+  assert.ok(app, 'tradebot should be in inventory');
+  assert.equal(evaluateLocalAppActionDefinition(app!, 'stop').executable, true, 'tradebot:stop should be executable');
+  assert.equal(evaluateLocalAppActionDefinition(app!, 'restart').executable, true, 'tradebot:restart should be executable');
+});
+
+test('jpv-bootcamp stop and restart remain disabled without stop script', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'jpv-bootcamp');
+  assert.ok(app, 'jpv-bootcamp should be in inventory');
+  const stopReadiness = evaluateLocalAppActionDefinition(app!, 'stop');
+  assert.equal(stopReadiness.executable, false, 'jpv-bootcamp:stop should remain disabled');
+});
+
+test('fala start remains disabled without repo-local script in brain', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'fala');
+  assert.ok(app, 'fala should be in inventory');
+  const startReadiness = evaluateLocalAppActionDefinition(app!, 'start');
+  assert.equal(startReadiness.executable, false, 'fala:start should remain disabled');
+  assert.ok(startReadiness.reason?.includes('missing or outside allowlisted roots'), 'fala reason should reference missing script');
 });
 
 test('ProBot actions are executable in dashboard', async () => {

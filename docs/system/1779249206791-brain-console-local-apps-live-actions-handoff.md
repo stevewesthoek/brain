@@ -577,3 +577,79 @@ Date: 2026-05-20
 - `operations/system-configs/codex/skills/.system/plugin-creator/references/plugin-json-spec.md`
 - `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
 - `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`
+
+---
+
+## Continuation 10: Enable remaining safe local app lifecycle actions
+
+Date: 2026-05-20
+Model: Claude Sonnet 4.6
+
+### Newly enabled actions (6 actions enabled, from 32 → 38 executable)
+
+| Action | Method | Notes |
+|--------|--------|-------|
+| `google-ads-api:stop` | `supervisorctl stop google-ads-http-server` | Executor already allowlisted supervisor pattern; action-match validation enforced |
+| `google-ads-api:restart` | composite (stop && start) | Executor composes via existing stop+start when both are executable |
+| `family-finance:stop` | `bash scripts/dev/stop-local.sh` | Script already existed in external repo |
+| `family-finance:restart` | composite (stop && start) | Created `restart-local.sh` in family-finance repo |
+| `tradebot:stop` | `bash scripts/dev/stop-local.sh` | Script already existed in tradebot repo |
+| `tradebot:restart` | composite (stop && start) | `restart-local.sh` already existed in tradebot repo |
+
+### Registry fields changed
+
+- `google-ads-api`: added `stop`/`stopCommand`/`restart`/`restartCommand` with canonical `supervisorctl` commands
+- `family-finance`: added `stop`/`stopCommand`/`restart`/`restartCommand` with repo-local script paths
+- `tradebot`: added `stop`/`stopCommand`/`restart`/`restartCommand` with repo-local script paths
+
+### Scripts added
+
+- `family-finance/scripts/dev/restart-local.sh` — delegates to stop-local.sh then start-local.sh; no new logic
+
+### Actions still disabled and reasons
+
+| Action | Reason |
+|--------|--------|
+| `prochat:stop` | Managed-process lifecycle only; no static stop script |
+| `prochat:restart` | No canonical restart command defined |
+| `jpv-bootcamp:stop` | No stop script exists in jpv-bootcamp repo |
+| `jpv-bootcamp:restart` | No stop script exists, so composite restart unavailable |
+| `fala:start` | Script missing or outside allowlisted roots; Fala app not present in brain repo |
+| `fala:stop` | No canonical stop command |
+| `fala:restart` | No canonical restart command |
+| `model-router:start` | No canonical shell lifecycle contract for Model Router |
+| `model-router:stop` | No canonical shell lifecycle contract for Model Router |
+| `model-router:restart` | No canonical shell lifecycle contract for Model Router |
+
+### Executable count
+
+- Before: 32 executable, 16 disabled
+- After: 38 executable, 10 disabled
+
+### Safety notes
+
+- Supervisor command action-match enforcement was pre-existing in executor; no new allowlist broadening.
+- Family Finance restart script is fixed/no-arg delegate; no env access.
+- No external repos modified except adding the restart script to family-finance.
+- Model Router, Fala, JPV Bootcamp stop remain intentionally disabled.
+- Brain Console unchanged; UI picks up new support flags from dashboard response automatically.
+
+### Validation results
+
+- Brain Core CI: 489/489 pass
+- Live verifier: status=passed, appCount=16, executableActions=38, disabledActionCount=10, backlogDisabledActionCount=10
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass (marker present, staleMarkers=[])
+- Brain Console find:installed: both locations verified with correct marker
+
+### Installed plugin verification
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+- `/Users/Office/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+
+### Unrelated dirty files left unstaged
+
+- `operations/system-configs/claude/.last-cleanup`
+- `operations/system-configs/claude/plans/noble-roaming-dawn.md` (deleted)
+- `operations/system-configs/codex/skills/.system/plugin-creator/` (multiple modified)
