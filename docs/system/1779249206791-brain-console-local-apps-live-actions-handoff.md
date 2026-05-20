@@ -737,3 +737,68 @@ Confirmed in `local-app-action-executor.ts`:
 - `operations/system-configs/claude/.last-cleanup`
 - `operations/system-configs/claude/plans/noble-roaming-dawn.md` (deleted)
 - `operations/system-configs/codex/skills/.system/plugin-creator/` (multiple modified + 1 untracked)
+
+---
+
+## Continuation 12 — Local App Operational Readiness (2026-05-20)
+
+### Commit: d2ed28e7
+
+### What was added
+
+**Brain Core: `GET /local-apps/operational-readiness`**
+- New adapter: `projects/brain-core/src/adapters/local-app-operational-readiness.ts`
+- Parallel HTTP health probes for all canonical apps in the inventory
+- Per-app 1.5s timeout, total 8s cap; skipped apps get `stale` status
+- Per-app result: `reachabilityStatus` (reachable/unreachable/not-configured/stale), `healthUrl`, `checkedAt`, `responseTimeMs`, `httpStatus`, `note`
+- Safety object: `readOnly: true`, `pluginExecutesShell: false`, `executesShell: false`, `exposesSecrets: false`, `exposesEnv: false`, `writesFiles: false`
+- Error messages sanitized through `safeErrorMessage()` (no paths, no credential fragments)
+
+**Brain Core types: `projects/brain-core/src/types/api.ts`**
+- Added `BrainCoreLocalAppReachabilityStatus`, `BrainCoreLocalAppReachabilityEntry`, `BrainCoreLocalAppsOperationalReadinessResponse`
+
+**Brain Core routes: `projects/brain-core/src/api/routes.ts`**
+- Wired `GET /local-apps/operational-readiness` → `readLocalAppsOperationalReadiness()`
+
+**Brain Core tests: 9 new tests (504 total)**
+- `GET /local-apps/operational-readiness returns 200 with well-formed payload`
+- `GET /local-apps/operational-readiness apps have correct shape`
+- `GET /local-apps/operational-readiness not-configured apps have null healthUrl`
+- `GET /local-apps/operational-readiness apps with healthUrl have non-null response fields`
+- `GET /local-apps/operational-readiness does not execute shell or expose secrets`
+- `readLocalAppsOperationalReadiness adapter: mock fetch — reachable apps`
+- `readLocalAppsOperationalReadiness adapter: mock fetch — unreachable apps`
+- `readLocalAppsOperationalReadiness adapter: mock fetch — non-ok response is unreachable`
+- `readLocalAppsOperationalReadiness adapter: status counts sum to appCount`
+- Added `/local-apps/operational-readiness` to the existing "responses do not include secrets" test
+
+**Live verifier: `projects/brain-core/scripts/test-local-app-actions-live.mjs`**
+- Added operational readiness probe between diagnostics and action status checks
+- Asserts id, appCount >= 16, apps array, count sum, safety fields, totalCheckDurationMs
+- Added `operationalReadiness` section to summary JSON output (reachableCount, unreachableCount, notConfiguredCount, staleCount, totalCheckDurationMs, reachableApps with responseTimeMs)
+
+**Brain Console: `projects/brain-console-obsidian/src/client.ts`**
+- Added `BrainCoreLocalAppReachabilityStatus`, `BrainCoreLocalAppReachabilityEntry`, `BrainCoreLocalAppsOperationalReadinessResponse` types
+- Added `readBrainCoreLocalAppsOperationalReadiness()` function
+
+**Brain Console: `projects/brain-console-obsidian/src/view.ts`**
+- Added `localAppsOperationalReadiness` to `BrainConsoleViewState`
+- Wired `readBrainCoreLocalAppsOperationalReadiness(baseUrl)` into `Promise.allSettled`
+- Added Operational Readiness card inside `renderLocalAppsCard`: reachable/unreachable/not-configured counts, check duration, generated-at timestamp
+- Padding updated: 160 → 161
+
+### Validation results
+
+- Brain Core CI: 504/504 pass
+- Brain Core build: clean
+- Brain Console build: 184.9kb (clean)
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass (marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[])
+
+### Safety notes
+
+- No shell execution in the new adapter; only outbound HTTP GET to each app's healthUrl
+- No secrets, no env exposure, no file writes
+- Brain Console still never executes shell — calls Brain Core HTTP only
+- `safeErrorMessage()` strips credential fragments and local paths from error notes
