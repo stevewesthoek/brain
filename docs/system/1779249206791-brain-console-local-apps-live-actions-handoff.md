@@ -75,3 +75,31 @@ Safety notes:
 - No `.env` files were read or modified.
 - No secrets/tokens/credentials are exposed.
 - `operations/system-configs/**` remains untouched and unstaged.
+
+
+## Continuation update — Brain Console audit visibility
+
+Date: 2026-05-20
+
+Implemented read-only Brain Console visibility for local app action audit persistence.
+
+What changed:
+
+- Brain Console client now mirrors the `audit` object returned by `/local-apps/actions/status`.
+- Brain Console now loads `/local-apps/actions/status` with the Apps dashboard state.
+- Apps section now includes a `Local App Action Audit` card showing audit status, summarized audit path, persisted result count, recent result count, in-flight action count, last persisted time, and last audit warning if present.
+- The audit card is read-only and explicitly states that Brain Console reads status from Brain Core and does not execute shell commands or write audit files.
+- Removed a stale hard-coded build marker from `view.ts` and switched it to the current `BRAIN_CONSOLE_BUILD_ID` fallback.
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed and installed both discovered plugin copies.
+- Installed plugin scan shows only `brain-console-local-apps-live-actions-2026-05-19-01` and `staleMarkers: []` in both plugin folders.
+
+Safety notes:
+
+- No new mutation controls were added.
+- Brain Console still does not execute shell commands.
+- No secrets, env files, Mind writes, or operations config writes are exposed by the audit card.
