@@ -3,7 +3,8 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { routeRequest } from '../api/routes.js';
-import { executeLocalAppActionRequest } from '../adapters/local-app-orchestrator.js';
+import { executeLocalAppActionRequest, listLocalAppDefinitions, readLocalAppActionStatus } from '../adapters/local-app-orchestrator.js';
+import { evaluateLocalAppActionDefinition } from '../adapters/local-app-action-executor.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 class MockResponse implements ServerResponse {
@@ -620,6 +621,21 @@ test('GET /local-apps/action-enablement-backlog includes exact disabled reasons'
   }
 });
 
+test('composite restart is supported when safe start and stop commands exist', async () => {
+  const inventory = listLocalAppDefinitions();
+  const app = inventory.find((entry) => entry.id === 'says-the-bible' || entry.id === 'firecrawl' || entry.id === 'comfyui');
+  assert.ok(app, 'expected a safe composite restart candidate');
+  assert.equal(evaluateLocalAppActionDefinition(app!, 'restart').executable, true);
+});
+
+test('managed npm stop remains disabled before Brain Core records a process', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'prochat');
+  assert.ok(app, 'expected prochat inventory entry');
+  const readiness = evaluateLocalAppActionDefinition(app!, 'stop');
+  assert.equal(readiness.executable, false);
+  assert.equal(readiness.reason, 'No Brain Core-managed npm process is recorded for this app. Start it from Brain Console first.');
+});
+
 test('GET /local-apps/action-enablement-backlog does not expose secrets or raw env', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
   const body = response.body;
@@ -761,6 +777,11 @@ test('GET /local-apps/actions/status works after local app action failure', asyn
     process.env.BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH = previousAuditPath;
   }
   fs.rmSync(testDir, { recursive: true, force: true });
+});
+
+test('GET /local-apps/actions/status exposes managed process records when present', async () => {
+  const status = readLocalAppActionStatus();
+  assert.equal(Array.isArray(status.managedProcesses), true);
 });
 
 test('POST /local-apps/dashboard is not registered', async () => {

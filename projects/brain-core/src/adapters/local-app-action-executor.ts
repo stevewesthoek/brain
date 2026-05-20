@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type {
   BrainCoreLocalAppAction,
+  BrainCoreLocalAppManagedProcessRecord,
   BrainCoreLocalAppActionResult,
   BrainCoreLocalAppActionResultStep,
 } from '../types/api.js';
@@ -16,6 +17,8 @@ type ExecutionStrategy =
   | 'docker-compose'
   | 'absolute-helper'
   | 'supervisorctl'
+  | 'managed-process-stop'
+  | 'managed-restart'
   | 'unsupported';
 
 type SafeCommandSpec = {
@@ -29,10 +32,17 @@ type SafeCommandSpec = {
   detached: boolean;
   timeoutMs: number;
   expectedLongRunning: boolean;
+  managedProcessRecord?: BrainCoreLocalAppManagedProcessRecord;
+};
+
+type ManagedProcessState = {
+  records: BrainCoreLocalAppManagedProcessRecord[];
 };
 
 const OUTPUT_LIMIT = 1800;
 const inflightByApp = new Map<string, Promise<BrainCoreLocalAppActionResult>>();
+const MANAGED_PROCESSES_PATH = path.resolve(process.cwd(), 'runtime/local/local-apps/managed-processes.json');
+const processHandle = (globalThis as any).process as { kill: (pid: number, signal?: NodeJS.Signals | number) => void };
 
 export function evaluateLocalAppActionDefinition(
   app: BrainCoreLocalAppDefinition,
@@ -45,6 +55,14 @@ export function evaluateLocalAppActionDefinition(
     strategy: spec.strategy,
     commandLabel: spec.commandLabel,
   };
+}
+
+export function readManagedLocalAppProcesses(): BrainCoreLocalAppManagedProcessRecord[] {
+  return readManagedProcessState().records.filter((record) => isPidAlive(record.pid));
+}
+
+export function readManagedLocalAppProcess(appId: string): BrainCoreLocalAppManagedProcessRecord | null {
+  return readManagedProcessForApp(appId);
 }
 
 export class LocalAppActionExecutor {
@@ -70,24 +88,6 @@ export class LocalAppActionExecutor {
       });
     }
 
-    const spec = buildCommandSpec(app, action);
-    if (!spec.executable) {
-      return createResult({
-        id,
-        appId: app.id,
-        action,
-        status: 'not_executable',
-        ok: false,
-        message: spec.reason,
-        errorCode: 'local_app_action_not_executable',
-        startedAtMs,
-        steps: validationSteps('not_executable', spec.reason),
-        allowlistedApp: true,
-        allowlistedAction: false,
-        nextState: 'unknown',
-      });
-    }
-
     const existing = inflightByApp.get(app.id);
     if (existing) {
       return createResult({
@@ -106,7 +106,7 @@ export class LocalAppActionExecutor {
       });
     }
 
-    const execution = executeSpec(id, app.id, action, spec, startedAtMs);
+    const execution = runActionCore(app, action, id, startedAtMs);
     inflightByApp.set(app.id, execution);
     try {
       return await execution;
@@ -132,9 +132,85 @@ export class LocalAppActionExecutor {
   }
 }
 
+async function runActionCore(
+  app: BrainCoreLocalAppDefinition,
+  action: BrainCoreLocalAppAction,
+  id: string,
+  startedAtMs: number,
+): Promise<BrainCoreLocalAppActionResult> {
+  const spec = buildCommandSpec(app, action);
+  if (!spec.executable) {
+    const managedStop = action === 'stop' ? readManagedProcessForApp(app.id) : null;
+    if (managedStop) {
+      return executeManagedProcessStop(id, app.id, action, managedStop, startedAtMs);
+    }
+    return createResult({
+      id,
+      appId: app.id,
+      action,
+      status: 'not_executable',
+      ok: false,
+      message: spec.reason,
+      errorCode: 'local_app_action_not_executable',
+      startedAtMs,
+      steps: validationSteps('not_executable', spec.reason),
+      allowlistedApp: true,
+      allowlistedAction: false,
+      nextState: 'unknown',
+    });
+  }
+
+  if (action === 'restart' && spec.strategy === 'managed-restart') {
+    return executeCompositeRestart(app, id, startedAtMs);
+  }
+
+  return executeSpec(id, app.id, action, spec, startedAtMs);
+}
+
 function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): SafeCommandSpec {
+  if (action === 'restart') {
+    const stopSpec = buildCommandSpec(app, 'stop');
+    const startSpec = buildCommandSpec(app, 'start');
+    if (stopSpec.executable && startSpec.executable) {
+      return {
+        executable: true,
+        reason: 'Canonical stop/start commands are allowlisted for Brain Core composite restart.',
+        strategy: 'managed-restart',
+        commandLabel: `${stopSpec.commandLabel} && ${startSpec.commandLabel}`,
+        file: '',
+        args: [],
+        cwd: startSpec.cwd || stopSpec.cwd,
+        detached: false,
+        timeoutMs: 0,
+        expectedLongRunning: false,
+      };
+    }
+  }
   const rawCommand = action === 'start' ? app.startCommand : action === 'stop' ? app.stopCommand : app.restartCommand;
-  if (!rawCommand) return disabled(`No canonical ${action} command is defined for this app.`);
+  if (!rawCommand) {
+    if (action === 'stop') {
+      const managed = readManagedProcessForApp(app.id);
+      if (managed) {
+        return {
+          executable: true,
+          reason: 'Brain Core-managed npm process is recorded for this app.',
+          strategy: 'managed-process-stop',
+          commandLabel: 'managed-process-stop',
+          file: '',
+          args: [],
+          cwd: process.cwd(),
+          detached: false,
+          timeoutMs: 0,
+          expectedLongRunning: false,
+          managedProcessRecord: managed,
+        };
+      }
+      if (looksLikeManagedNpmStartCommand(app.startCommand)) {
+        return disabled('No Brain Core-managed npm process is recorded for this app. Start it from Brain Console first.');
+      }
+    }
+    return disabled(`No canonical ${action} command is defined for this app.`);
+  }
 
   const cwd = resolveSafeCwd(app.commandWorkdir);
   if (!cwd) return disabled('Canonical command working directory is missing, unsafe, or not on disk.');
@@ -299,6 +375,16 @@ function executeSpec(
       });
 
       if (spec.detached) child.unref();
+      if (spec.strategy === 'repo-npm-dev' || spec.strategy === 'repo-npm-start') {
+        recordManagedProcessStart({
+          appId,
+          pid: child.pid ?? -1,
+          startedAtMs,
+          strategy: spec.strategy,
+          commandLabel: spec.commandLabel,
+          cwd: spec.cwd,
+        });
+      }
 
       const finish = (result: BrainCoreLocalAppActionResult): void => {
         if (settled) return;
@@ -400,6 +486,199 @@ function executeSpec(
       }));
     }
   });
+}
+
+async function executeCompositeRestart(app: BrainCoreLocalAppDefinition, id: string, startedAtMs: number): Promise<BrainCoreLocalAppActionResult> {
+  return (async () => {
+    const stopResult = await runActionCore(app, 'stop', `${id}-stop`, startedAtMs);
+    if (!stopResult.ok) {
+      return createResult({
+        id,
+        appId: app.id,
+        action: 'restart',
+        status: 'failed',
+        ok: false,
+        message: `restart stopped safely because stop failed: ${stopResult.message}`,
+        ...(stopResult.errorCode ? { errorCode: stopResult.errorCode } : { errorCode: 'local_app_restart_stop_failed' }),
+        ...(stopResult.error ? { error: stopResult.error } : {}),
+        startedAtMs,
+        steps: [
+          ...stopResult.steps,
+          { id: 'skip-start', label: 'Skip start after stop failure', type: 'validation', status: 'skipped', message: 'Start did not run because stop was not successful.' },
+        ],
+        allowlistedApp: true,
+        allowlistedAction: true,
+        nextState: stopResult.nextState,
+      });
+    }
+
+    const startResult = await runActionCore(app, 'start', `${id}-start`, startedAtMs);
+    return createResult({
+      id,
+      appId: app.id,
+      action: 'restart',
+      status: startResult.ok ? 'success' : 'failed',
+      ok: startResult.ok,
+      message: startResult.ok
+        ? `restart completed through safe stop/start sequence.`
+        : `restart stop/start sequence failed during start: ${startResult.message}`,
+      ...(startResult.errorCode ? { errorCode: startResult.errorCode } : {}),
+      ...(startResult.error ? { error: startResult.error } : {}),
+      startedAtMs,
+      steps: [
+        ...stopResult.steps.map((step) => ({ ...step })),
+        ...startResult.steps.map((step) => ({ ...step })),
+      ],
+      allowlistedApp: true,
+      allowlistedAction: true,
+      nextState: startResult.nextState,
+    });
+  })();
+}
+
+function looksLikeManagedNpmStartCommand(command: string | undefined): boolean {
+  if (!command) return false;
+  const normalized = command.trim();
+  return /npm\s+(start|run\s+dev)(?:\s|$)/i.test(normalized);
+}
+
+function readManagedProcessState(): ManagedProcessState {
+  try {
+    const raw = fs.readFileSync(MANAGED_PROCESSES_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as ManagedProcessState;
+    return { records: Array.isArray(parsed.records) ? parsed.records : [] };
+  } catch {
+    return { records: [] };
+  }
+}
+
+function writeManagedProcessState(state: ManagedProcessState): void {
+  fs.mkdirSync(path.dirname(MANAGED_PROCESSES_PATH), { recursive: true });
+  fs.writeFileSync(MANAGED_PROCESSES_PATH, `${JSON.stringify(state, null, 2)}\n`);
+}
+
+function recordManagedProcessStart(input: {
+  appId: string;
+  pid: number;
+  startedAtMs: number;
+  strategy: BrainCoreLocalAppManagedProcessRecord['strategy'];
+  commandLabel: string;
+  cwd: string;
+}): void {
+  if (!Number.isInteger(input.pid) || input.pid <= 0) return;
+  const state = readManagedProcessState();
+  const record: BrainCoreLocalAppManagedProcessRecord = {
+    appId: input.appId,
+    action: 'start',
+    pid: input.pid,
+    startedAt: new Date(input.startedAtMs).toISOString(),
+    cwdSummary: summarizeCwd(input.cwd),
+    strategy: input.strategy,
+    commandLabel: redact(input.commandLabel),
+  };
+  const records = state.records.filter((entry) => !(entry.appId === input.appId && entry.strategy === input.strategy));
+  records.push(record);
+  writeManagedProcessState({ records });
+}
+
+function readManagedProcessForApp(appId: string): BrainCoreLocalAppManagedProcessRecord | null {
+  const state = readManagedProcessState();
+  for (const record of state.records) {
+    if (record.appId !== appId) continue;
+    if (record.strategy !== 'repo-npm-dev' && record.strategy !== 'repo-npm-start') continue;
+    if (!isPidAlive(record.pid)) continue;
+    return record;
+  }
+  return null;
+}
+
+async function executeManagedProcessStop(
+  id: string,
+  appId: string,
+  action: BrainCoreLocalAppAction,
+  managed: BrainCoreLocalAppManagedProcessRecord,
+  startedAtMs: number,
+): Promise<BrainCoreLocalAppActionResult> {
+  if (!isPidAlive(managed.pid)) {
+    clearManagedProcessRecord(appId, managed.pid);
+    return createResult({
+      id,
+      appId,
+      action,
+      status: 'success',
+      ok: true,
+      message: 'Managed npm process was already gone; stale record cleared safely.',
+      startedAtMs,
+      steps: [
+        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'success', message: 'The recorded PID was already absent.' },
+        { id: 'clear-stale-record', label: 'Clear stale managed process record', type: 'report', status: 'success', message: 'Stale managed process state was cleared.' },
+      ],
+      allowlistedApp: true,
+      allowlistedAction: true,
+      nextState: 'stopped',
+    });
+  }
+
+  try {
+    processHandle.kill(managed.pid, 'SIGTERM');
+    clearManagedProcessRecord(appId, managed.pid);
+    return createResult({
+      id,
+      appId,
+      action,
+      status: 'success',
+      ok: true,
+      message: 'Managed npm process stopped successfully.',
+      startedAtMs,
+      steps: [
+        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'success', message: 'Recorded PID belongs to this app and is alive.' },
+        { id: 'stop-managed-process', label: 'Stop Brain Core-managed process', type: 'service', status: 'success', message: `Sent SIGTERM to PID ${managed.pid}.` },
+      ],
+      allowlistedApp: true,
+      allowlistedAction: true,
+      nextState: 'stopped',
+    });
+  } catch (error) {
+    return createResult({
+      id,
+      appId,
+      action,
+      status: 'failed',
+      ok: false,
+      message: 'Managed npm process stop failed safely.',
+      errorCode: 'local_app_managed_stop_failed',
+      error: redact(String(error instanceof Error ? error.message : error)),
+      startedAtMs,
+      steps: [
+        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'failed', message: 'The managed PID could not be stopped safely.' },
+      ],
+      allowlistedApp: true,
+      allowlistedAction: true,
+      nextState: 'unknown',
+    });
+  }
+}
+
+function clearManagedProcessRecord(appId: string, pid: number): void {
+  const state = readManagedProcessState();
+  const records = state.records.filter((entry) => !(entry.appId === appId && entry.pid === pid));
+  writeManagedProcessState({ records });
+}
+
+function isPidAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    processHandle.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function summarizeCwd(cwd: string): string {
+  const relative = path.relative(process.cwd(), cwd);
+  if (!relative.startsWith('..') && !path.isAbsolute(relative)) return relative.replace(/\\/g, '/');
+  return `[external-safe-runtime-path]/${path.basename(cwd)}`;
 }
 
 function createResult(input: {

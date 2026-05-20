@@ -124,13 +124,14 @@ export function listLocalApps(): BrainCoreLocalAppSummary[] {
   );
 
   return inventory.map((app) => {
+    const actionEvaluations = evaluateAppActions(app);
     const runtime = runtimeById.get(app.id) ?? runtimeByName.get(app.name);
     return {
       id: app.id,
       name: app.name,
       status: runtime ? normalizeStatus(runtime.status) : 'unknown',
       source: 'runtime-report',
-      actionsSupported: app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.length > 0,
+      actionsSupported: actionEvaluations.some((entry) => entry.executable),
     };
   });
 }
@@ -358,7 +359,8 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     const status = statusByName.get(app.name);
     const lifecycleStatus = normalizeDashboardStatus(status?.status ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
     const managed = app.managed;
-    const executableActions = app.actionPolicy.status === 'enabled' ? app.actionPolicy.safeActions : [];
+    const actionEvaluations = evaluateAppActions(app);
+    const executableActions = actionEvaluations.filter((entry) => entry.executable).map((entry) => entry.action);
     const actionEnabled = executableActions.length > 0;
     const actionDisabledReasons = buildActionDisabledReasons(app);
     const disabledReason = formatActionDisabledReasons(actionDisabledReasons);
@@ -580,6 +582,7 @@ export function readLocalAppsActionEnablementBacklog(): BrainCoreLocalAppActionE
     'unsafe-command-shape': 'Unsafe command syntax',
     'missing-working-directory': 'Missing working directory',
     'missing-helper': 'Helper script missing',
+    'dynamic-stop-after-brain-core-start': 'Dynamic stop after Brain Core start',
     'manual-only': 'Manual execution required',
     'not-yet-allowlisted': 'Not yet allowlisted',
     'other': 'Other blocker',
@@ -632,6 +635,7 @@ function categorizeDisabledReason(reason: string): string {
   if (reason.includes('secret-looking') || reason.includes('shell metacharacters')) return 'unsafe-command-shape';
   if (reason.includes('working directory')) return 'missing-working-directory';
   if (reason.includes('does not exist on disk')) return 'missing-helper';
+  if (reason.includes('Start it from Brain Console first')) return 'dynamic-stop-after-brain-core-start';
   if (reason.includes('Manual')) return 'manual-only';
   if (reason.includes('allowlist')) return 'not-yet-allowlisted';
   return 'other';
@@ -661,6 +665,8 @@ function getRecommendedChange(category: string, reason: string, app: any): strin
       return `Ensure repoPath is set correctly for ${app.name} and the directory exists on disk.`;
     case 'missing-helper':
       return `Create the missing helper script or update the command path for ${app.name}.`;
+    case 'dynamic-stop-after-brain-core-start':
+      return `Start ${app.name} from Brain Console first so Brain Core can record a managed npm process before Stop becomes available.`;
     case 'manual-only':
       return `${app.name} is configured for manual execution only. Review if automation is possible.`;
     case 'not-yet-allowlisted':
@@ -682,6 +688,8 @@ function getNextSafeStep(category: string): string {
       return 'Verify repoPath settings and ensure working directories exist.';
     case 'missing-helper':
       return 'Create missing helper scripts or update command paths.';
+    case 'dynamic-stop-after-brain-core-start':
+      return 'Start the app from Brain Console so Brain Core can manage a stop record.';
     case 'manual-only':
       return 'Consider registering automated strategies if manual-only is no longer necessary.';
     case 'not-yet-allowlisted':
@@ -710,6 +718,13 @@ function buildActionDisabledReasons(
       })
       .filter((entry): entry is readonly ['start' | 'stop' | 'restart', string] => entry !== null),
   );
+}
+
+function evaluateAppActions(app: ReturnType<typeof listLocalAppDefinitions>[number]) {
+  return (['start', 'stop', 'restart'] as const).map((action) => ({
+    action,
+    ...evaluateLocalAppActionDefinition(app, action),
+  }));
 }
 
 function formatActionDisabledReasons(reasons: Partial<Record<'start' | 'stop' | 'restart', string>>): string {

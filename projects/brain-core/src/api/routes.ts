@@ -212,7 +212,7 @@ export async function routeRequest(
 
   if (method === 'POST') {
     try {
-      routePostRequest(url, response);
+      await routePostRequest(url, response);
     } catch (error) {
       sendJson(response, 500, {
         id: 'local-app-action-crash-safe-fallback',
@@ -1668,7 +1668,7 @@ export async function routeRequest(
     }
 }
 
-function routePostRequest(url: URL, response: ServerResponse): void {
+async function routePostRequest(url: URL, response: ServerResponse): Promise<void> {
   if (url.pathname === '/actions/request') {
     const kind = url.searchParams.get('kind') || 'manual-request';
     sendJson(response, 202, requestAction(kind));
@@ -1714,18 +1714,9 @@ function routePostRequest(url: URL, response: ServerResponse): void {
       return;
     }
 
-    // Execute action asynchronously without blocking response
-    executeLocalAppActionRequest(appId, normalizedAction).then((result) => {
-      const httpStatus = result.status === 'not_found' ? 404 : 200;
-      sendJson(response, httpStatus, result);
-    }).catch((err) => {
-      sendJson(response, 500, {
-        error: {
-          code: 'executor_error',
-          message: 'Action execution failed.',
-        },
-      } satisfies BrainCoreErrorResponse);
-    });
+    const result = await executeLocalAppActionRequest(appId, normalizedAction);
+    const httpStatus = result.status === 'not_found' ? 404 : 200;
+    sendJson(response, httpStatus, result);
     return;
   }
 

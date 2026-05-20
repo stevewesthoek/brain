@@ -80,6 +80,50 @@ try {
     assert((actionStatusAfter.audit?.persistedResultCount ?? 0) >= (actionStatusBefore.audit?.persistedResultCount ?? 0), 'persisted result count should not decrease');
   }
 
+  const compositeRestartCandidate = dashboard.apps.find((app) => app.restartSupported && app.startSupported && app.stopSupported);
+  let compositeRestartResult = null;
+  if (compositeRestartCandidate) {
+    compositeRestartResult = await post(`/local-apps/${encodeURIComponent(compositeRestartCandidate.id)}/restart`);
+    assert(compositeRestartResult.statusCode === 200, `composite restart for ${compositeRestartCandidate.id} did not return 200`);
+    assert(compositeRestartResult.body.action === 'restart', 'composite restart action mismatch');
+  }
+
+  const managedNpmCandidate = dashboard.apps.find(
+    (app) => app.id === 'prochat' && app.startSupported && !app.stopSupported,
+  );
+  let managedLifecycle = { status: 'skipped', reason: 'No managed npm lifecycle candidate was reported.' };
+  if (managedNpmCandidate) {
+    const startResult = await post(`/local-apps/${encodeURIComponent(managedNpmCandidate.id)}/start`);
+    if (startResult.statusCode === 200 && startResult.body.ok === true) {
+      const statusWithManaged = await expectGet('/local-apps/actions/status');
+      const managedRecord = statusWithManaged.managedProcesses?.find((entry) => entry.appId === managedNpmCandidate.id);
+      if (managedRecord) {
+        const stopResult = await post(`/local-apps/${encodeURIComponent(managedNpmCandidate.id)}/stop`);
+        if (stopResult.statusCode === 200 && stopResult.body.ok === true) {
+          managedLifecycle = {
+            status: stopResult.body.status,
+            reason: stopResult.body.message,
+          };
+        } else {
+          managedLifecycle = {
+            status: 'skipped',
+            reason: `Managed stop for ${managedNpmCandidate.id} was not successful.`,
+          };
+        }
+      } else {
+        managedLifecycle = {
+          status: 'skipped',
+          reason: `Managed process record was not visible after starting ${managedNpmCandidate.id}.`,
+        };
+      }
+    } else {
+      managedLifecycle = {
+        status: 'skipped',
+        reason: `Brain Core-managed start for ${managedNpmCandidate.id} was not accepted.`,
+      };
+    }
+  }
+
   const executableActions = dashboard.apps.flatMap((app) => {
     const actions = [];
     if (app.startSupported) actions.push(`${app.id}:start`);
@@ -139,9 +183,20 @@ try {
           reason: 'No safe executable app/action was reported by /local-apps/dashboard.',
           missing: dashboard.apps.map((app) => ({ id: app.id, reason: app.actionDisabledReason })).filter((entry) => entry.reason),
         },
+    compositeRestart: compositeRestartResult
+      ? {
+          appId: compositeRestartResult.body.appId,
+          action: compositeRestartResult.body.action,
+          status: compositeRestartResult.body.status,
+          ok: compositeRestartResult.body.ok,
+          message: compositeRestartResult.body.message,
+        }
+      : { status: 'skipped', reason: 'No composite restart candidate was available.' },
+    managedLifecycle,
     actionStatusAfter: {
       recentResultCount: actionStatusAfter.recentResults?.length ?? 0,
       lockCount: actionStatusAfter.locks?.length ?? 0,
+      managedProcessCount: actionStatusAfter.managedProcesses?.length ?? 0,
     },
   };
 

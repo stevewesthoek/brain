@@ -15,6 +15,7 @@ import type {
   BrainCoreLocalAppOnboardingChecklist,
 } from '../types/api.js';
 import { LocalAppActionExecutor, evaluateLocalAppActionDefinition } from './local-app-action-executor.js';
+import { readManagedLocalAppProcesses } from './local-app-action-executor.js';
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
 const MODEL_ROUTER_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/model-router/latest.json');
@@ -200,6 +201,7 @@ export function readLocalAppActionStatus(): BrainCoreLocalAppActionStatusRespons
       action: entry.action,
       startedAt: entry.startedAt,
     })),
+    managedProcesses: readManagedLocalAppProcesses(),
     audit: readLocalAppActionAuditStatus(),
     safety: {
       pluginExecutesShell: false,

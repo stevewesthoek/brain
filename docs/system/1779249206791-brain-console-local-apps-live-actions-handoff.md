@@ -46,6 +46,77 @@ Not all actions are executable. Disabled buttons now carry exact reasons from Br
 - `operations/system-configs/**` was not modified by this work and remains unstaged if dirty.
 - Brain Console still does not execute shell commands.
 
+## Continuation update — Safe lifecycle expansion
+
+Date: 2026-05-20
+
+Implemented safe lifecycle expansion for Brain Core-managed local apps without broadening to arbitrary commands.
+
+What changed:
+
+- Composite restart is now executable when an app has safe start and stop paths, even if no canonical restart command exists.
+- Brain Core now records safe runtime metadata for detached npm lifecycle starts using a repo-local managed-process registry under `projects/brain-core/runtime/local/local-apps/managed-processes.json`.
+- Stop can now act on a Brain Core-owned managed npm process only when the PID record is present and alive.
+- `/local-apps/actions/status` now exposes current managed process records for read-only visibility.
+- Dashboard/backlog evaluation now uses the same dynamic action evaluator so restart and stop availability reflect live managed-process state.
+- Backlog categories now include `dynamic-stop-after-brain-core-start` for apps that only become stoppable after Brain Core launches them.
+- POST local-app routes now await action completion before sending the JSON response, eliminating empty-body race conditions in tests.
+
+Lifecycle coverage added:
+
+- `says-the-bible:restart`
+- `firecrawl:restart`
+- `comfyui:restart`
+- Dynamic stop path for Brain Core-managed npm apps such as `prochat:start` / `prochat:stop` when a managed PID record exists
+
+Executable action count:
+
+- Before: 19 executable actions, 29 disabled actions.
+- After: 22 executable actions, 26 disabled actions.
+
+Newly executable actions:
+
+- `says-the-bible:restart`
+- `firecrawl:restart`
+- `comfyui:restart`
+
+Still-disabled action categories:
+
+- `missing-command`
+- `not-yet-allowlisted`
+- `dynamic-stop-after-brain-core-start`
+- `missing-repo-local-script`
+
+Live test results:
+
+- `/status` stayed OK after POST probes.
+- `/local-apps/action-enablement-backlog` matched dashboard disabled action counts.
+- `video-orchestrator:restart` still returned `success`, `ok: true`.
+- Composite restart for `says-the-bible` returned `success`, `ok: true`.
+- Managed npm lifecycle test was attempted for `prochat`; the verifier skipped reporting success unless a Brain Core-managed PID record and successful stop were both observed.
+
+Audit/process registry safety notes:
+
+- Managed process records contain only app id, action, pid, startedAt, cwd summary, strategy, and command label.
+- No env vars, secrets, tokens, or raw command strings are written to the managed-process registry.
+- Stop only targets recorded Brain Core-owned PIDs and clears stale records when the PID is already gone.
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed.
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed.
+- `npm run --prefix projects/brain-console-obsidian find:installed` passed.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+- Both contain only `brain-console-local-apps-live-actions-2026-05-19-01`.
+- Both report `staleMarkers: []`.
+
 
 ## Continuation update — Local app action audit persistence
 
