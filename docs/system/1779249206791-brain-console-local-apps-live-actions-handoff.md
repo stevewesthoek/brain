@@ -989,3 +989,49 @@ No duplicate health checks: operational readiness is called once per operator su
 
 - `operations/system-configs/claude/model-tracking.json`
 - `operations/system-configs/codex/skills/.system/plugin-creator/` (multiple files)
+
+
+## Continuation update — Operator summary recommendation hardening
+
+Date: 2026-05-20
+
+Implemented operator summary hardening after reviewing commit `6352221a` directly in the repo.
+
+What changed:
+
+- Recent failed lifecycle actions now outrank generic unreachable/start recommendations.
+- When a failed action exists and restart is supported, the summary recommends restart.
+- When a failed action exists and restart is not supported, the summary falls back to non-mutating inspect-health or manual-review guidance.
+- `topAttentionItems` now uses deterministic severity ranking before selecting the top five items.
+- Exposed last-action and recommendation text is sanitized for secret-like assignments and local absolute paths.
+
+Severity order for top attention items:
+
+1. Recent failed action.
+2. Blocked app/action state.
+3. Unreachable app with an executable next action.
+4. Stale readiness.
+5. Missing/not-configured health URL.
+6. Lifecycle gaps.
+7. Stable app name/app id tie-breaker.
+
+Exact files changed:
+
+- `projects/brain-core/src/adapters/local-app-operator-summary.ts`
+- `projects/brain-core/src/tests/local-app-operator-summary-hardening.test.ts`
+- `docs/system/1779249206791-brain-console-local-apps-live-actions-handoff.md`
+
+Validation:
+
+- Targeted Brain Core operator summary marker: passed, 526/526 tests.
+- Brain Core CI: passed, 526/526 tests.
+- Brain Console typecheck: passed.
+- Brain Console `check:dashboard-source`: passed.
+- Live verifier `test:local-app-actions-live`: attempted twice, but BuildFlow returned Cloudflare 504 gateway timeouts before command output was available, so no verified result was captured for this continuation.
+
+Safety notes:
+
+- No `.env` files were read or modified.
+- No shell execution path was added to Brain Console.
+- No mutation buttons were added.
+- Unrelated dirty `operations/system-configs/**` files were left unstaged and untouched by this continuation.
