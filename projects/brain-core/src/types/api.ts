@@ -268,12 +268,29 @@ export interface BrainCoreLocalAppActionResult {
   nextState: 'running' | 'stopped' | 'unknown';
 }
 
+export interface BrainCoreLocalAppActionAuditStatus {
+  status: 'enabled' | 'disabled' | 'error';
+  path: string;
+  persistedResultCount: number;
+  lastPersistedAt?: string;
+  lastError?: string;
+  safety: {
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    commandOverrideAccepted: false;
+    exposesSecrets: false;
+    writesToMind: false;
+    writesOperationsConfig: false;
+  };
+}
+
 export interface BrainCoreLocalAppActionStatusResponse {
   id: 'local-apps-actions-status';
   inFlight: BrainCoreLocalAppActionResult[];
   recentResults: BrainCoreLocalAppActionResult[];
   lastErrorByApp: Record<string, BrainCoreLocalAppActionResult>;
   locks: Array<{ appId: string; action: BrainCoreLocalAppAction; startedAt: string }>;
+  audit: BrainCoreLocalAppActionAuditStatus;
   safety: {
     pluginExecutesShell: false;
     arbitraryCommandAllowed: false;

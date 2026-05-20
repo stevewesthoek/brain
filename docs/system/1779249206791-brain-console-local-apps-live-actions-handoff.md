@@ -45,3 +45,33 @@ Not all actions are executable. Disabled buttons now carry exact reasons from Br
 - No secrets/tokens/credentials are displayed.
 - `operations/system-configs/**` was not modified by this work and remains unstaged if dirty.
 - Brain Console still does not execute shell commands.
+
+
+## Continuation update — Local app action audit persistence
+
+Date: 2026-05-20
+
+Implemented the next phase after live local app actions: persistent audit metadata for Brain Core local app action results.
+
+What changed:
+
+- `executeLocalAppActionRequest` now records every structured local app action result to a safe JSONL audit file.
+- Default audit path is repo-local runtime: `runtime/local/local-apps/actions-audit.jsonl`.
+- Optional override `BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH` is accepted only when the path does not include unsafe segments such as `.env`, `.git`, `node_modules`, `operations`, or `mind`.
+- `/local-apps/actions/status` now includes an `audit` object with status, summarized path, persisted result count, last persisted timestamp, last error if any, and safety flags.
+- Audit entries contain only structured result metadata: app id, action, status, error code, message, timestamps, duration, next state, step ids/statuses/types, and safety flags.
+- Audit entries do not include raw command output, raw shell command overrides, env values, secrets, Mind writes, or operations config writes.
+
+Validation:
+
+- `npm run --prefix projects/brain-core typecheck` passed.
+- `npm run --prefix projects/brain-core test` passed: 459/459 tests.
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed; live `video-orchestrator:restart` still returned success.
+
+Safety notes:
+
+- Brain Console remains shell-free.
+- No `.env` files were read or modified.
+- No secrets/tokens/credentials are exposed.
+- `operations/system-configs/**` remains untouched and unstaged.

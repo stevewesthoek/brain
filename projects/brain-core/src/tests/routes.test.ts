@@ -596,13 +596,28 @@ test('local app executor errors are converted to structured failed results', asy
 });
 
 test('GET /local-apps/actions/status works after local app action failure', async () => {
-  executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
+  const testDir = path.join(process.cwd(), '.buildflow-test-local-app-action-audit');
+  const auditPath = path.join(testDir, 'actions-audit.jsonl');
+  const previousAuditPath = process.env.BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH = auditPath;
+
+  await executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
   const response = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
   const body = JSON.parse(response.body) as {
     id: string;
     inFlight: unknown[];
     recentResults: Array<{ appId: string; status: string; error?: string }>;
     lastErrorByApp: Record<string, { status: string }>;
+    audit: {
+      status: string;
+      path: string;
+      persistedResultCount: number;
+      lastPersistedAt?: string;
+      safety: { exposesSecrets: boolean; writesToMind: boolean; writesOperationsConfig: boolean };
+    };
     safety: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; commandOverrideAccepted: boolean };
   };
 
@@ -611,10 +626,27 @@ test('GET /local-apps/actions/status works after local app action failure', asyn
   assert.equal(Array.isArray(body.inFlight), true);
   assert.equal(body.recentResults.some((result) => result.appId === 'model-router' && result.status === 'failed'), true);
   assert.equal(body.lastErrorByApp['model-router']?.status, 'failed');
+  assert.equal(body.audit.status, 'enabled');
+  assert.equal(body.audit.path, '.buildflow-test-local-app-action-audit/actions-audit.jsonl');
+  assert.equal(body.audit.persistedResultCount > 0, true);
+  assert.equal(typeof body.audit.lastPersistedAt, 'string');
+  assert.equal(body.audit.safety.exposesSecrets, false);
+  assert.equal(body.audit.safety.writesToMind, false);
+  assert.equal(body.audit.safety.writesOperationsConfig, false);
+  const auditRows = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  assert.equal(auditRows.some((row) => row.appId === 'model-router' && row.status === 'failed'), true);
+  assert.equal(JSON.stringify(auditRows).includes('TOKEN='), false);
   assert.equal(JSON.stringify(body).includes('TOKEN='), false);
   assert.equal(body.safety.pluginExecutesShell, false);
   assert.equal(body.safety.arbitraryCommandAllowed, false);
   assert.equal(body.safety.commandOverrideAccepted, false);
+
+  if (previousAuditPath === undefined) {
+    delete process.env.BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH;
+  } else {
+    process.env.BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH = previousAuditPath;
+  }
+  fs.rmSync(testDir, { recursive: true, force: true });
 });
 
 test('POST /local-apps/dashboard is not registered', async () => {

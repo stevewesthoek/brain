@@ -18,6 +18,9 @@ import { LocalAppActionExecutor, evaluateLocalAppActionDefinition } from './loca
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
 const MODEL_ROUTER_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/model-router/latest.json');
+const LOCAL_APP_ACTION_AUDIT_PATH_ENV = 'BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH';
+const DEFAULT_LOCAL_APP_ACTION_AUDIT_PATH = path.resolve(process.cwd(), 'runtime/local/local-apps/actions-audit.jsonl');
+const DISALLOWED_AUDIT_PATH_SEGMENTS = new Set(['.env', '.git', 'node_modules', 'operations', 'mind']);
 
 type RegistryApp = {
   name?: unknown;
@@ -84,6 +87,17 @@ function createActionPolicy(safeActions: Array<'start' | 'stop' | 'restart'>): B
 }
 
 const RECENT_ACTION_LIMIT = 20;
+const localAppActionAuditState: {
+  status: 'enabled' | 'disabled' | 'error';
+  path: string;
+  persistedResultCount: number;
+  lastPersistedAt?: string;
+  lastError?: string;
+} = {
+  status: 'enabled',
+  path: summarizeAuditPath(DEFAULT_LOCAL_APP_ACTION_AUDIT_PATH),
+  persistedResultCount: 0,
+};
 const localAppInFlightActions = new Map<string, BrainCoreLocalAppActionResult>();
 const localAppRecentResults: BrainCoreLocalAppActionResult[] = [];
 const localAppLastErrorByApp = new Map<string, BrainCoreLocalAppActionResult>();
@@ -186,6 +200,7 @@ export function readLocalAppActionStatus(): BrainCoreLocalAppActionStatusRespons
       action: entry.action,
       startedAt: entry.startedAt,
     })),
+    audit: readLocalAppActionAuditStatus(),
     safety: {
       pluginExecutesShell: false,
       arbitraryCommandAllowed: false,
@@ -328,6 +343,78 @@ function recordActionResult(result: BrainCoreLocalAppActionResult): void {
   if (!result.ok || result.errorCode) {
     localAppLastErrorByApp.set(result.appId, result);
   }
+  persistLocalAppActionAudit(result);
+}
+
+function readLocalAppActionAuditStatus(): BrainCoreLocalAppActionStatusResponse['audit'] {
+  return {
+    ...localAppActionAuditState,
+    safety: {
+      pluginExecutesShell: false,
+      arbitraryCommandAllowed: false,
+      commandOverrideAccepted: false,
+      exposesSecrets: false,
+      writesToMind: false,
+      writesOperationsConfig: false,
+    },
+  };
+}
+
+function persistLocalAppActionAudit(result: BrainCoreLocalAppActionResult): void {
+  const auditPath = resolveLocalAppActionAuditPath();
+  if (!auditPath) {
+    localAppActionAuditState.status = 'disabled';
+    localAppActionAuditState.path = '[invalid-audit-path]';
+    localAppActionAuditState.lastError = 'Audit path is unsafe or disabled.';
+    return;
+  }
+
+  try {
+    fs.mkdirSync(path.dirname(auditPath), { recursive: true });
+    fs.appendFileSync(auditPath, `${JSON.stringify(createLocalAppActionAuditEntry(result))}\n`);
+    localAppActionAuditState.status = 'enabled';
+    localAppActionAuditState.path = summarizeAuditPath(auditPath);
+    localAppActionAuditState.persistedResultCount += 1;
+    localAppActionAuditState.lastPersistedAt = new Date().toISOString();
+    delete localAppActionAuditState.lastError;
+  } catch (error) {
+    localAppActionAuditState.status = 'error';
+    localAppActionAuditState.path = summarizeAuditPath(auditPath);
+    localAppActionAuditState.lastError = redactError(error);
+  }
+}
+
+function createLocalAppActionAuditEntry(result: BrainCoreLocalAppActionResult) {
+  return {
+    id: result.id,
+    appId: result.appId,
+    action: result.action,
+    status: result.status,
+    ok: result.ok,
+    errorCode: result.errorCode ?? null,
+    message: result.message,
+    startedAt: result.startedAt,
+    endedAt: result.endedAt,
+    durationMs: result.durationMs,
+    nextState: result.nextState,
+    stepCount: result.steps.length,
+    stepStatuses: result.steps.map((step) => ({ id: step.id, status: step.status, type: step.type })),
+    safety: result.safety,
+  };
+}
+
+function resolveLocalAppActionAuditPath(): string | null {
+  const rawPath = process.env[LOCAL_APP_ACTION_AUDIT_PATH_ENV] || DEFAULT_LOCAL_APP_ACTION_AUDIT_PATH;
+  const normalized = rawPath.replace(/\\/g, '/');
+  const segments = normalized.split('/').map((segment) => segment.toLowerCase()).filter(Boolean);
+  if (segments.some((segment) => DISALLOWED_AUDIT_PATH_SEGMENTS.has(segment))) return null;
+  return path.resolve(rawPath);
+}
+
+function summarizeAuditPath(auditPath: string): string {
+  const relative = path.relative(process.cwd(), auditPath);
+  if (!relative.startsWith('..') && !path.isAbsolute(relative)) return relative.replace(/\\/g, '/');
+  return `[external-safe-runtime-path]/${path.basename(auditPath)}`;
 }
 
 function redactError(error: unknown): string {
