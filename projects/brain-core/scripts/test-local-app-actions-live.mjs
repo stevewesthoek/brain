@@ -23,7 +23,13 @@ const fixedLifecycleCandidates = [
   ['xgrow', 'start'],
   ['xgrow', 'restart'],
   ['family-finance', 'start'],
+  ['family-finance', 'stop'],
+  ['family-finance', 'restart'],
   ['tradebot', 'start'],
+  ['tradebot', 'stop'],
+  ['tradebot', 'restart'],
+  ['google-ads-api', 'stop'],
+  ['google-ads-api', 'restart'],
 ];
 
 let server;

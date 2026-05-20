@@ -653,3 +653,87 @@ Model: Claude Sonnet 4.6
 - `operations/system-configs/claude/.last-cleanup`
 - `operations/system-configs/claude/plans/noble-roaming-dawn.md` (deleted)
 - `operations/system-configs/codex/skills/.system/plugin-creator/` (multiple modified)
+
+---
+
+## Continuation 11: Harden local app lifecycle verification
+
+Date: 2026-05-20
+Model: Claude Sonnet 4.6
+
+### Live verifier newlyExecutableActions proof list fixed
+
+Updated `fixedLifecycleCandidates` in `test-local-app-actions-live.mjs` to include all six newly enabled actions from d1353496:
+
+- `family-finance:stop`
+- `family-finance:restart`
+- `tradebot:stop`
+- `tradebot:restart`
+- `google-ads-api:stop`
+- `google-ads-api:restart`
+
+The live verifier now correctly reports these as `newlyExecutableActions` when they appear in the dashboard executable list.
+
+### External repo script verification: family-finance
+
+Scripts were directly inspected at `/Users/Office/Repos/stevewesthoek/family-finance/scripts/dev/`:
+
+- `stop-local.sh`: Uses `/tmp/family-finance.pid`, kills by PID, removes PID file. No `pkill`, `killall`, `lsof`. Does not reference `.env`.
+- `restart-local.sh` (created in d1353496): Delegates to `stop-local.sh` then `start-local.sh`. No logic. Does not reference `.env`.
+
+**Safety caveat:** stop script trusts the PID without process ownership validation (uses `/tmp/family-finance.pid` global path). This is consistent with existing external repo pattern but weaker than the hardened ProBot pattern. No changes made to external repo; this is documented as a known limitation.
+
+### External repo script verification: tradebot
+
+Scripts were directly inspected at `/Users/Office/Repos/stevewesthoek/tradebot/scripts/dev/`:
+
+- `stop-local.sh`: Uses `/tmp/tradebot.pid`, kills by PID, removes PID file. No `pkill`, `killall`, `lsof`. Does not reference `.env`.
+- `restart-local.sh`: Delegates to `stop-local.sh` then `start-local.sh`. Does not reference `.env`.
+
+**Safety caveat:** Same as family-finance — no process ownership/start-signature validation. Consistent with external repo pattern.
+
+### Google Ads API supervisor safety
+
+Confirmed in `local-app-action-executor.ts`:
+
+- Supervisor command pattern: `/^supervisorctl\s+(start|stop|restart)\s+[a-z0-9-]+$/i`
+- Action-match enforcement: `if (parts[1] !== action) return disabled(...)`
+- `google-ads-api:stop` registered as `supervisorctl stop google-ads-http-server` — executor validates action matches `stop`.
+- `google-ads-api:restart` uses composite (stop && start) — both supervisor commands are validated independently.
+- Arbitrary supervisor service names cannot be injected through request body or query parameters (executor reads only canonical registry values).
+
+### Tests added
+
+- `all six latest lifecycle actions are absent from action-enablement-backlog`
+- `exact ten still-disabled actions are in backlog` (asserts disabledCount=10, exact keys)
+- `family-finance stop script is safe: no pkill/killall/lsof/port-killing`
+- `family-finance restart script delegates to stop then start`
+- `tradebot stop script is safe: no pkill/killall/lsof/port-killing`
+- `tradebot restart script delegates to stop then start`
+
+### Validation results
+
+- Brain Core CI: 495/495 pass
+- Live verifier: status=passed, executableActions=38, disabledActionCount=10, backlogDisabledActionCount=10
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass (marker present, staleMarkers=[])
+- Brain Console find:installed: both locations verified with correct marker
+
+### Installed plugin verification
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+- `/Users/Office/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+
+### Safety notes
+
+- No new allowlist broadening.
+- No external repo mutations beyond the already-committed restart-local.sh.
+- Brain Console unchanged.
+- Google Ads supervisor command action-match enforcement pre-existing and confirmed sufficient.
+
+### Unrelated dirty files left unstaged
+
+- `operations/system-configs/claude/.last-cleanup`
+- `operations/system-configs/claude/plans/noble-roaming-dawn.md` (deleted)
+- `operations/system-configs/codex/skills/.system/plugin-creator/` (multiple modified + 1 untracked)

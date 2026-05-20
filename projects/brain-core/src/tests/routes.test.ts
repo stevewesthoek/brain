@@ -2051,6 +2051,80 @@ test('ProBot stop treats stale/wrong PID as harmless and removes PID file', asyn
   assert.ok(content.includes('rm -f "$PID_FILE" "$META_FILE"'), 'stop script must clean up both PID and metadata files');
 });
 
+test('all six latest lifecycle actions are absent from action-enablement-backlog', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ appId: string; action: string }>;
+  };
+  const latestEnabled = [
+    { appId: 'google-ads-api', action: 'stop' },
+    { appId: 'google-ads-api', action: 'restart' },
+    { appId: 'family-finance', action: 'stop' },
+    { appId: 'family-finance', action: 'restart' },
+    { appId: 'tradebot', action: 'stop' },
+    { appId: 'tradebot', action: 'restart' },
+  ];
+  for (const { appId, action } of latestEnabled) {
+    const found = body.items.find((item) => item.appId === appId && item.action === action);
+    assert.equal(found, undefined, `${appId}:${action} should not appear in backlog`);
+  }
+});
+
+test('exact ten still-disabled actions are in backlog', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    disabledActionCount: number;
+    items: Array<{ appId: string; action: string; reason: string }>;
+  };
+  assert.equal(body.disabledActionCount, 10, 'exactly 10 actions should be disabled');
+  const disabledKeys = new Set(body.items.map((item) => `${item.appId}:${item.action}`));
+  const expectedDisabled = [
+    'prochat:stop', 'prochat:restart',
+    'jpv-bootcamp:stop', 'jpv-bootcamp:restart',
+    'fala:start', 'fala:stop', 'fala:restart',
+    'model-router:start', 'model-router:stop', 'model-router:restart',
+  ];
+  for (const key of expectedDisabled) {
+    assert.ok(disabledKeys.has(key), `${key} should be in disabled backlog`);
+  }
+});
+
+test('family-finance stop script is safe: no pkill/killall/lsof/port-killing', async () => {
+  const stopPath = path.resolve('/Users/Office/Repos/stevewesthoek/family-finance/scripts/dev/stop-local.sh');
+  const content = fs.readFileSync(stopPath, 'utf8');
+  assert.ok(!content.includes('pkill'), 'family-finance stop must not use pkill');
+  assert.ok(!content.includes('killall'), 'family-finance stop must not use killall');
+  assert.ok(!content.includes('lsof'), 'family-finance stop must not use lsof');
+  assert.ok(!content.includes('.env'), 'family-finance stop must not reference .env');
+  assert.ok(content.includes('PID_FILE'), 'family-finance stop must use a PID file');
+});
+
+test('family-finance restart script delegates to stop then start', async () => {
+  const restartPath = path.resolve('/Users/Office/Repos/stevewesthoek/family-finance/scripts/dev/restart-local.sh');
+  const content = fs.readFileSync(restartPath, 'utf8');
+  assert.ok(content.includes('stop-local.sh'), 'family-finance restart must call stop-local.sh');
+  assert.ok(content.includes('start-local.sh'), 'family-finance restart must call start-local.sh');
+  assert.ok(!content.includes('.env'), 'family-finance restart must not reference .env');
+});
+
+test('tradebot stop script is safe: no pkill/killall/lsof/port-killing', async () => {
+  const stopPath = path.resolve('/Users/Office/Repos/stevewesthoek/tradebot/scripts/dev/stop-local.sh');
+  const content = fs.readFileSync(stopPath, 'utf8');
+  assert.ok(!content.includes('pkill'), 'tradebot stop must not use pkill');
+  assert.ok(!content.includes('killall'), 'tradebot stop must not use killall');
+  assert.ok(!content.includes('lsof'), 'tradebot stop must not use lsof');
+  assert.ok(!content.includes('.env'), 'tradebot stop must not reference .env');
+  assert.ok(content.includes('PID_FILE'), 'tradebot stop must use a PID file');
+});
+
+test('tradebot restart script delegates to stop then start', async () => {
+  const restartPath = path.resolve('/Users/Office/Repos/stevewesthoek/tradebot/scripts/dev/restart-local.sh');
+  const content = fs.readFileSync(restartPath, 'utf8');
+  assert.ok(content.includes('stop-local.sh'), 'tradebot restart must call stop-local.sh');
+  assert.ok(content.includes('start-local.sh'), 'tradebot restart must call start-local.sh');
+  assert.ok(!content.includes('.env'), 'tradebot restart must not reference .env');
+});
+
 test('backlog disabled count equals dashboard disabled action count', async () => {
   const dashboardResponse = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
   const dashboard = JSON.parse(dashboardResponse.body) as {
