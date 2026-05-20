@@ -523,6 +523,81 @@ test('GET /local-apps/action-readiness returns not-ready until per-app strategie
   assert.ok(body.criteria.length > 0);
 });
 
+test('GET /local-apps/action-enablement-backlog returns 200 with backlog structure', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    generatedAt: string;
+    totalActionCount: number;
+    enabledActionCount: number;
+    disabledActionCount: number;
+    appsWithDisabledActions: number;
+    categories: Array<{ id: string; label: string; count: number; nextSafeStep: string }>;
+    items: Array<{ appId: string; appName: string; action: string; enabled: boolean; reason: string; category: string }>;
+    safety: {
+      readOnly: boolean;
+      pluginExecutesShell: boolean;
+      arbitraryCommandAllowed: boolean;
+      modifiesRegistry: boolean;
+      writesOperationsConfig: boolean;
+      exposesSecrets: boolean;
+      exposesEnv: boolean;
+      enablesActions: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-action-enablement-backlog');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.modifiesRegistry, false);
+  assert.equal(body.safety.writesOperationsConfig, false);
+  assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.exposesEnv, false);
+  assert.equal(body.safety.enablesActions, false);
+  assert.ok(body.totalActionCount >= 0);
+  assert.ok(body.enabledActionCount >= 0);
+  assert.ok(body.disabledActionCount >= 0);
+  assert.ok(Array.isArray(body.categories));
+  assert.ok(Array.isArray(body.items));
+});
+
+test('GET /local-apps/action-enablement-backlog includes disabled items with reasons', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    disabledActionCount: number;
+    items: Array<{ appId: string; category: string; reason: string; recommendedChange: string; risk: string }>;
+  };
+
+  if (body.disabledActionCount > 0) {
+    assert.ok(body.items.length > 0);
+    const item = body.items[0]!;
+    assert.ok(item.appId);
+    assert.ok(item.category);
+    assert.ok(item.reason);
+    assert.ok(item.recommendedChange);
+    assert.ok(['low', 'medium', 'high'].includes(item.risk));
+  }
+});
+
+test('GET /local-apps/action-enablement-backlog does not expose secrets or raw env', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = response.body;
+
+  assert.equal(typeof body, 'string');
+  assert.ok(!body.includes('TOKEN='), 'Response should not contain TOKEN=');
+  assert.ok(!body.includes('SECRET='), 'Response should not contain SECRET=');
+  assert.ok(!body.includes('PASSWORD='), 'Response should not contain PASSWORD=');
+  assert.ok(!body.includes('COOKIE='), 'Response should not contain COOKIE=');
+  assert.ok(!body.includes('.env'), 'Response should not expose .env');
+});
+
+test('POST /local-apps/action-enablement-backlog is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/action-enablement-backlog' });
+  assert.equal(response.statusCode, 404);
+});
+
 test('POST /local-apps/model-router/start returns structured controlled result', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start' });
   const body = JSON.parse(response.body) as {

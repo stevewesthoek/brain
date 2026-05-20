@@ -39,6 +39,7 @@ import {
   readLocalAppsActionPlans,
   readLocalAppsActionsStatus,
   readLocalAppsActionReadiness,
+  readLocalAppsActionEnablementBacklog,
   readLocalAppsDashboard,
   readLocalAppsSourceDiagnostics,
   readLocalAppsOnboardingChecklist,
@@ -527,6 +528,9 @@ export async function routeRequest(
       return;
     case '/local-apps/action-readiness':
       sendJson(response, 200, readLocalAppsActionReadiness());
+      return;
+    case '/local-apps/action-enablement-backlog':
+      sendJson(response, 200, readLocalAppsActionEnablementBacklog());
       return;
     case '/local-apps/source-diagnostics':
       sendJson(response, 200, readLocalAppsSourceDiagnostics());

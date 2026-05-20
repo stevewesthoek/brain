@@ -299,6 +299,60 @@ export interface BrainCoreLocalAppActionStatusResponse {
   };
 }
 
+export type BrainCoreLocalAppActionEnablementCategory =
+  | 'missing-command'
+  | 'missing-repo-local-script'
+  | 'unsafe-command-shape'
+  | 'missing-working-directory'
+  | 'missing-helper'
+  | 'manual-only'
+  | 'not-yet-allowlisted'
+  | 'other';
+
+export interface BrainCoreLocalAppActionEnablementBacklogItem {
+  appId: string;
+  appName: string;
+  action: BrainCoreLocalAppAction;
+  enabled: false;
+  reason: string;
+  category: BrainCoreLocalAppActionEnablementCategory;
+  commandSummary?: string | undefined;
+  repoPathSummary?: string | undefined;
+  recommendedChange: string;
+  risk: 'low' | 'medium' | 'high';
+  canBeAutoFixed: false;
+  requiresHumanReview: true;
+}
+
+export interface BrainCoreLocalAppActionEnablementBacklogCategory {
+  id: BrainCoreLocalAppActionEnablementCategory;
+  label: string;
+  count: number;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreLocalAppActionEnablementBacklogResponse {
+  id: 'local-apps-action-enablement-backlog';
+  generatedAt: string;
+  totalActionCount: number;
+  enabledActionCount: number;
+  disabledActionCount: number;
+  appsWithDisabledActions: number;
+  categories: BrainCoreLocalAppActionEnablementBacklogCategory[];
+  items: BrainCoreLocalAppActionEnablementBacklogItem[];
+  safety: {
+    readOnly: true;
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    modifiesRegistry: false;
+    writesOperationsConfig: false;
+    exposesSecrets: false;
+    exposesEnv: false;
+    enablesActions: false;
+  };
+  nextSafeStep: string;
+}
+
 export interface BrainCoreLocalAppOrchestratorStatus {
   id: 'local-apps-orchestrator';
   status: BrainCoreLocalAppOrchestratorStatusValue;
@@ -4997,6 +5051,7 @@ export interface BrainCoreRoutes {
   };
   '/local-apps/dashboard': BrainCoreLocalAppsDashboardResponse;
   '/local-apps/action-readiness': BrainCoreLocalAppActionReadinessResponse;
+  '/local-apps/action-enablement-backlog': BrainCoreLocalAppActionEnablementBacklogResponse;
   '/local-apps/orchestrator': BrainCoreLocalAppOrchestratorStatus;
   '/local-apps/onboarding-checklist': BrainCoreLocalAppOnboardingChecklist;
   '/local-apps/action-plans': {

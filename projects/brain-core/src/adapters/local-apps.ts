@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type {
+  BrainCoreLocalAppActionEnablementBacklogResponse,
+  BrainCoreLocalAppActionEnablementCategory,
   BrainCoreLocalAppActionReadinessResponse,
   BrainCoreLocalAppDashboardItem,
   BrainCoreLocalAppHealth,
@@ -529,6 +531,164 @@ export function readLocalAppsActionPlan(appId: string, action: string) {
 
 export function readLocalAppsActionsStatus() {
   return readLocalAppActionStatus();
+}
+
+export function readLocalAppsActionEnablementBacklog(): BrainCoreLocalAppActionEnablementBacklogResponse {
+  const allApps = listLocalAppDefinitions();
+  const actions = ['start', 'stop', 'restart'] as const;
+
+  const backlogItems = [];
+  let totalActionCount = 0;
+  let enabledActionCount = 0;
+
+  for (const app of allApps) {
+    for (const action of actions) {
+      totalActionCount++;
+      const evaluation = evaluateLocalAppActionDefinition(app, action);
+
+      if (evaluation.executable) {
+        enabledActionCount++;
+      } else {
+        const category = categorizeDisabledReason(evaluation.reason);
+        backlogItems.push({
+          appId: app.id,
+          appName: app.name,
+          action,
+          enabled: false as const,
+          reason: evaluation.reason,
+          category: category as BrainCoreLocalAppActionEnablementCategory,
+          commandSummary: evaluation.commandLabel,
+          repoPathSummary: app.repoPathSummary,
+          recommendedChange: getRecommendedChange(category, evaluation.reason, app),
+          risk: getRiskLevel(category) as 'low' | 'medium' | 'high',
+          canBeAutoFixed: false as const,
+          requiresHumanReview: true as const,
+        });
+      }
+    }
+  }
+
+  // Group by category
+  const categoryCounts = new Map<string, number>();
+  for (const item of backlogItems) {
+    categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1);
+  }
+
+  const categoryLabels: Record<string, string> = {
+    'missing-command': 'Missing command definition',
+    'missing-repo-local-script': 'Needs repo-local script',
+    'unsafe-command-shape': 'Unsafe command syntax',
+    'missing-working-directory': 'Missing working directory',
+    'missing-helper': 'Helper script missing',
+    'manual-only': 'Manual execution required',
+    'not-yet-allowlisted': 'Not yet allowlisted',
+    'other': 'Other blocker',
+  };
+
+  const categories = Array.from(categoryCounts.entries())
+    .map(([id, count]) => ({
+      id: id as BrainCoreLocalAppActionEnablementCategory,
+      label: categoryLabels[id] ?? id,
+      count,
+      nextSafeStep: getNextSafeStep(id),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const uniqueAppsWithDisabled = new Set(backlogItems.map((item) => item.appId)).size;
+
+  return {
+    id: 'local-apps-action-enablement-backlog',
+    generatedAt: new Date().toISOString(),
+    totalActionCount,
+    enabledActionCount,
+    disabledActionCount: backlogItems.length,
+    appsWithDisabledActions: uniqueAppsWithDisabled,
+    categories,
+    items: backlogItems.sort((a, b) => {
+      // Sort by: risk desc, category, app name, action
+      const riskOrder = { high: 0, medium: 1, low: 2 };
+      if (riskOrder[a.risk] !== riskOrder[b.risk]) return riskOrder[a.risk] - riskOrder[b.risk];
+      if (a.category !== b.category) return a.category.localeCompare(b.category);
+      if (a.appName !== b.appName) return a.appName.localeCompare(b.appName);
+      return a.action.localeCompare(b.action);
+    }),
+    safety: {
+      readOnly: true,
+      pluginExecutesShell: false,
+      arbitraryCommandAllowed: false,
+      modifiesRegistry: false,
+      writesOperationsConfig: false,
+      exposesSecrets: false,
+      exposesEnv: false,
+      enablesActions: false,
+    },
+    nextSafeStep: 'Review backlog items by category to understand what needs to be done before each action can be safely enabled.',
+  };
+}
+
+function categorizeDisabledReason(reason: string): string {
+  if (reason.includes('No canonical')) return 'missing-command';
+  if (reason.includes('inline environment variables')) return 'missing-repo-local-script';
+  if (reason.includes('secret-looking') || reason.includes('shell metacharacters')) return 'unsafe-command-shape';
+  if (reason.includes('working directory')) return 'missing-working-directory';
+  if (reason.includes('does not exist on disk')) return 'missing-helper';
+  if (reason.includes('Manual')) return 'manual-only';
+  if (reason.includes('allowlist')) return 'not-yet-allowlisted';
+  return 'other';
+}
+
+function getRiskLevel(category: string): 'low' | 'medium' | 'high' {
+  switch (category) {
+    case 'unsafe-command-shape':
+      return 'high';
+    case 'missing-helper':
+    case 'missing-working-directory':
+      return 'medium';
+    default:
+      return 'low';
+  }
+}
+
+function getRecommendedChange(category: string, reason: string, app: any): string {
+  switch (category) {
+    case 'missing-command':
+      return `Add startCommand, stopCommand, or restartCommand to ${app.name} in operations/infrastructure/local-apps.json.`;
+    case 'missing-repo-local-script':
+      return `Register a repo-local start script for ${app.name} before inline environment variables can be used.`;
+    case 'unsafe-command-shape':
+      return `Rewrite ${app.name} command to avoid shell metacharacters or use a bash script instead.`;
+    case 'missing-working-directory':
+      return `Ensure repoPath is set correctly for ${app.name} and the directory exists on disk.`;
+    case 'missing-helper':
+      return `Create the missing helper script or update the command path for ${app.name}.`;
+    case 'manual-only':
+      return `${app.name} is configured for manual execution only. Review if automation is possible.`;
+    case 'not-yet-allowlisted':
+      return `Command for ${app.name} uses a strategy not yet allowlisted for Brain Core execution. Review safety before enabling.`;
+    default:
+      return `Review ${app.name} configuration and re-evaluate the action.`;
+  }
+}
+
+function getNextSafeStep(category: string): string {
+  switch (category) {
+    case 'missing-command':
+      return 'Add command definitions in local-apps.json for apps that should be automated.';
+    case 'missing-repo-local-script':
+      return 'Create repo-local scripts (e.g., scripts/dev/start-local.sh) and update commands to reference them.';
+    case 'unsafe-command-shape':
+      return 'Wrap unsafe commands in bash scripts or rewrite to avoid shell metacharacters.';
+    case 'missing-working-directory':
+      return 'Verify repoPath settings and ensure working directories exist.';
+    case 'missing-helper':
+      return 'Create missing helper scripts or update command paths.';
+    case 'manual-only':
+      return 'Consider registering automated strategies if manual-only is no longer necessary.';
+    case 'not-yet-allowlisted':
+      return 'Review command strategy against allowlist and determine if it can be safely added.';
+    default:
+      return 'Review configuration and safety requirements.';
+  }
 }
 
 export async function runLocalAppsAction(appId: string, action: string, options: { forceExecutorError?: boolean } = {}) {

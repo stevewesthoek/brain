@@ -393,6 +393,60 @@ export interface BrainCoreLocalAppActionReadinessResponse {
   nextSafeStep: string;
 }
 
+export type BrainCoreLocalAppActionEnablementCategory =
+  | 'missing-command'
+  | 'missing-repo-local-script'
+  | 'unsafe-command-shape'
+  | 'missing-working-directory'
+  | 'missing-helper'
+  | 'manual-only'
+  | 'not-yet-allowlisted'
+  | 'other';
+
+export interface BrainCoreLocalAppActionEnablementBacklogItem {
+  appId: string;
+  appName: string;
+  action: 'start' | 'stop' | 'restart';
+  enabled: false;
+  reason: string;
+  category: BrainCoreLocalAppActionEnablementCategory;
+  commandSummary?: string;
+  repoPathSummary?: string;
+  recommendedChange: string;
+  risk: 'low' | 'medium' | 'high';
+  canBeAutoFixed: false;
+  requiresHumanReview: true;
+}
+
+export interface BrainCoreLocalAppActionEnablementBacklogCategory {
+  id: BrainCoreLocalAppActionEnablementCategory;
+  label: string;
+  count: number;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreLocalAppActionEnablementBacklogResponse {
+  id: 'local-apps-action-enablement-backlog';
+  generatedAt: string;
+  totalActionCount: number;
+  enabledActionCount: number;
+  disabledActionCount: number;
+  appsWithDisabledActions: number;
+  categories: BrainCoreLocalAppActionEnablementBacklogCategory[];
+  items: BrainCoreLocalAppActionEnablementBacklogItem[];
+  safety: {
+    readOnly: true;
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    modifiesRegistry: false;
+    writesOperationsConfig: false;
+    exposesSecrets: false;
+    exposesEnv: false;
+    enablesActions: false;
+  };
+  nextSafeStep: string;
+}
+
 export interface BrainCoreVideoStatus {
   status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
   enabled: boolean;
@@ -3771,6 +3825,7 @@ export interface BrainConsoleSnapshot {
   localAppsDashboard?: BrainCoreLocalAppsDashboardResponse;
   localAppsActionReadiness?: BrainCoreLocalAppActionReadinessResponse;
   localAppsActionStatus?: BrainCoreLocalAppActionStatusResponse;
+  localAppsActionEnablementBacklog?: BrainCoreLocalAppActionEnablementBacklogResponse;
   localAppsOrchestrator?: BrainCoreLocalAppOrchestratorStatus;
   localAppsOnboardingChecklist?: BrainCoreLocalAppOnboardingChecklist;
   schedulerStatus?: BrainCoreSchedulerStatus;
@@ -4059,6 +4114,10 @@ export async function readBrainCoreLocalAppsOrchestrator(baseUrl: string): Promi
 
 export async function readBrainCoreLocalAppsOnboardingChecklist(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppOnboardingChecklist>> {
   return fetchJson<BrainCoreLocalAppOnboardingChecklist>(normalizeBaseUrl(baseUrl), '/local-apps/onboarding-checklist');
+}
+
+export async function readBrainCoreLocalAppsActionEnablementBacklog(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppActionEnablementBacklogResponse>> {
+  return fetchJson<BrainCoreLocalAppActionEnablementBacklogResponse>(normalizeBaseUrl(baseUrl), '/local-apps/action-enablement-backlog');
 }
 
 export async function readBrainCoreLocalAppsActionPlans(baseUrl: string): Promise<HttpResult<{ plans?: BrainCoreLocalAppActionPlan[] }>> {
