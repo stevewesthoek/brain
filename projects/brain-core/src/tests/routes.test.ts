@@ -2154,62 +2154,108 @@ test('GET /local-apps/operational-readiness returns 200 with well-formed payload
     unknownCount: number;
     notConfiguredCount: number;
     staleCount: number;
-    apps: Array<{ appId: string; appName: string; reachabilityStatus: string; healthUrl: string | null; checkedAt: string; responseTimeMs: number | null; httpStatus: number | null; note: string }>;
+    items: Array<{ appId: string; appName: string; status: string; message: string }>;
     totalCheckDurationMs: number;
-    safety: { readOnly: boolean; pluginExecutesShell: boolean; executesShell: boolean; exposesSecrets: boolean };
+    safety: { readOnly: boolean; pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; exposesSecrets: boolean; writesToMind: boolean; performsLifecycleAction: boolean };
   };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.id, 'local-apps-operational-readiness');
   assert.ok(typeof body.generatedAt === 'string' && body.generatedAt.length > 0, 'generatedAt must be set');
   assert.ok(body.appCount >= 16, 'appCount must reflect canonical inventory');
-  assert.equal(body.appCount, body.apps.length, 'appCount must match apps array length');
+  assert.equal(body.appCount, body.items.length, 'appCount must match items array length');
   assert.equal(body.reachableCount + body.unreachableCount + body.unknownCount + body.notConfiguredCount + body.staleCount, body.appCount, 'status counts must sum to appCount');
   assert.ok(typeof body.totalCheckDurationMs === 'number' && body.totalCheckDurationMs >= 0, 'totalCheckDurationMs must be non-negative');
   assert.equal(body.safety.readOnly, true);
   assert.equal(body.safety.pluginExecutesShell, false);
-  assert.equal(body.safety.executesShell, false);
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
   assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.performsLifecycleAction, false);
+  assert.ok(!('executesShell' in body.safety), 'safety must not expose executesShell');
+  assert.ok(!('exposesEnv' in body.safety), 'safety must not expose exposesEnv');
+  assert.ok(!('writesFiles' in body.safety), 'safety must not expose writesFiles');
 });
 
-test('GET /local-apps/operational-readiness apps have correct shape', async () => {
+test('GET /local-apps/operational-readiness items have correct shape', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
   const body = JSON.parse(response.body) as {
-    apps: Array<{ appId: string; appName: string; reachabilityStatus: string; healthUrl: string | null; checkedAt: string; note: string }>;
+    items: Array<{
+      appId: string;
+      appName: string;
+      status: string;
+      message: string;
+      actionEnabled: boolean;
+      startSupported: boolean;
+      stopSupported: boolean;
+      restartSupported: boolean;
+      freshness: { source: string; maxAgeMs: number; fresh: boolean };
+      safety: { readOnly: boolean; pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; exposesSecrets: boolean; writesToMind: boolean; performsLifecycleAction: boolean };
+    }>;
   };
   const validStatuses = new Set(['reachable', 'unreachable', 'unknown', 'not-configured', 'stale']);
 
-  for (const app of body.apps) {
-    assert.ok(typeof app.appId === 'string' && app.appId.length > 0, `app ${app.appId} must have appId`);
-    assert.ok(typeof app.appName === 'string' && app.appName.length > 0, `app ${app.appId} must have appName`);
-    assert.ok(validStatuses.has(app.reachabilityStatus), `app ${app.appId} reachabilityStatus ${app.reachabilityStatus} must be valid`);
-    assert.ok(app.healthUrl === null || typeof app.healthUrl === 'string', `app ${app.appId} healthUrl must be string or null`);
-    assert.ok(typeof app.checkedAt === 'string' && app.checkedAt.length > 0, `app ${app.appId} checkedAt must be set`);
-    assert.ok(typeof app.note === 'string' && app.note.length > 0, `app ${app.appId} note must be non-empty`);
+  for (const item of body.items) {
+    assert.ok(typeof item.appId === 'string' && item.appId.length > 0, `item ${item.appId} must have appId`);
+    assert.ok(typeof item.appName === 'string' && item.appName.length > 0, `item ${item.appId} must have appName`);
+    assert.ok(validStatuses.has(item.status), `item ${item.appId} status ${item.status} must be valid`);
+    assert.ok(typeof item.message === 'string' && item.message.length > 0, `item ${item.appId} message must be non-empty`);
+    assert.ok(typeof item.actionEnabled === 'boolean', `item ${item.appId} actionEnabled must be boolean`);
+    assert.ok(typeof item.startSupported === 'boolean', `item ${item.appId} startSupported must be boolean`);
+    assert.ok(typeof item.stopSupported === 'boolean', `item ${item.appId} stopSupported must be boolean`);
+    assert.ok(typeof item.restartSupported === 'boolean', `item ${item.appId} restartSupported must be boolean`);
+    assert.ok(item.freshness && typeof item.freshness.source === 'string', `item ${item.appId} must have freshness.source`);
+    assert.ok(typeof item.freshness.maxAgeMs === 'number', `item ${item.appId} freshness.maxAgeMs must be number`);
+    assert.ok(typeof item.freshness.fresh === 'boolean', `item ${item.appId} freshness.fresh must be boolean`);
+    assert.equal(item.safety.readOnly, true, `item ${item.appId} safety.readOnly must be true`);
+    assert.equal(item.safety.pluginExecutesShell, false, `item ${item.appId} safety.pluginExecutesShell must be false`);
+    assert.equal(item.safety.arbitraryCommandAllowed, false, `item ${item.appId} safety.arbitraryCommandAllowed must be false`);
+    assert.equal(item.safety.exposesSecrets, false, `item ${item.appId} safety.exposesSecrets must be false`);
+    assert.equal(item.safety.writesToMind, false, `item ${item.appId} safety.writesToMind must be false`);
+    assert.equal(item.safety.performsLifecycleAction, false, `item ${item.appId} safety.performsLifecycleAction must be false`);
   }
 });
 
-test('GET /local-apps/operational-readiness not-configured apps have null healthUrl', async () => {
+test('GET /local-apps/operational-readiness not-configured items have no healthUrl', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
   const body = JSON.parse(response.body) as {
-    apps: Array<{ appId: string; reachabilityStatus: string; healthUrl: string | null }>;
+    items: Array<{ appId: string; status: string; healthUrl?: string; freshness: { source: string; fresh: boolean } }>;
   };
 
-  const notConfigured = body.apps.filter((app) => app.reachabilityStatus === 'not-configured');
-  for (const app of notConfigured) {
-    assert.equal(app.healthUrl, null, `not-configured app ${app.appId} must have null healthUrl`);
+  const notConfigured = body.items.filter((item) => item.status === 'not-configured');
+  assert.ok(notConfigured.length > 0, 'must have at least one not-configured item');
+  for (const item of notConfigured) {
+    assert.ok(item.healthUrl === undefined, `not-configured item ${item.appId} must not have healthUrl`);
+    assert.equal(item.freshness.source, 'not-checked', `not-configured item ${item.appId} freshness.source must be not-checked`);
+    assert.equal(item.freshness.fresh, false, `not-configured item ${item.appId} freshness.fresh must be false`);
   }
 });
 
-test('GET /local-apps/operational-readiness apps with healthUrl have non-null response fields', async () => {
+test('GET /local-apps/operational-readiness probed items have durationMs and freshness', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
   const body = JSON.parse(response.body) as {
-    apps: Array<{ appId: string; reachabilityStatus: string; healthUrl: string | null; responseTimeMs: number | null }>;
+    items: Array<{ appId: string; status: string; healthUrl?: string; durationMs?: number; checkedAt?: string; freshness: { source: string } }>;
   };
 
-  const probed = body.apps.filter((app) => app.healthUrl !== null && app.reachabilityStatus !== 'stale');
-  for (const app of probed) {
-    assert.ok(typeof app.responseTimeMs === 'number', `probed app ${app.appId} must have responseTimeMs`);
+  const probed = body.items.filter((item) => item.healthUrl !== undefined && item.status !== 'stale');
+  for (const item of probed) {
+    assert.ok(typeof item.durationMs === 'number', `probed item ${item.appId} must have durationMs`);
+    assert.ok(typeof item.checkedAt === 'string', `probed item ${item.appId} must have checkedAt`);
+    assert.equal(item.freshness.source, 'live-check', `probed item ${item.appId} freshness.source must be live-check`);
+  }
+});
+
+test('GET /local-apps/operational-readiness action flags reflect app definition', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operational-readiness' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ appId: string; actionEnabled: boolean; startSupported: boolean; stopSupported: boolean; restartSupported: boolean }>;
+  };
+
+  for (const item of body.items) {
+    if (!item.actionEnabled) {
+      assert.ok(!item.startSupported || !item.stopSupported || !item.restartSupported || (!item.startSupported && !item.stopSupported && !item.restartSupported),
+        `item ${item.appId}: disabled action policy should yield no supported actions`);
+    }
   }
 });
 
@@ -2223,10 +2269,15 @@ test('GET /local-apps/operational-readiness does not execute shell or expose sec
   assert.ok(!body.includes('.env'), 'must not reference .env');
 });
 
+test('POST /local-apps/operational-readiness is rejected', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/operational-readiness' });
+  assert.ok(response.statusCode === 404 || response.statusCode === 405, 'POST must be rejected');
+});
+
 test('readLocalAppsOperationalReadiness adapter: mock fetch — reachable apps', async () => {
   const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
 
-  const mockFetch = async (url: string): Promise<Response> => {
+  const mockFetch = async (_url: string): Promise<Response> => {
     return { ok: true, status: 200 } as Response;
   };
 
@@ -2237,15 +2288,17 @@ test('readLocalAppsOperationalReadiness adapter: mock fetch — reachable apps',
   assert.ok(result.reachableCount > 0, 'mock-reachable fetch must yield reachable entries');
   assert.equal(result.safety.readOnly, true);
   assert.equal(result.safety.pluginExecutesShell, false);
-  assert.equal(result.safety.executesShell, false);
+  assert.equal(result.safety.arbitraryCommandAllowed, false);
   assert.equal(result.safety.exposesSecrets, false);
-  assert.equal(result.safety.exposesEnv, false);
-  assert.equal(result.safety.writesFiles, false);
-  for (const app of result.apps) {
-    if (app.healthUrl !== null) {
-      assert.equal(app.reachabilityStatus, 'reachable', `${app.appId} should be reachable via mock`);
-      assert.equal(app.httpStatus, 200, `${app.appId} httpStatus must be 200`);
-      assert.ok(typeof app.responseTimeMs === 'number', `${app.appId} responseTimeMs must be set`);
+  assert.equal(result.safety.writesToMind, false);
+  assert.equal(result.safety.performsLifecycleAction, false);
+  for (const item of result.items) {
+    if (item.healthUrl !== undefined) {
+      assert.equal(item.status, 'reachable', `${item.appId} should be reachable via mock`);
+      assert.equal(item.httpStatus, 200, `${item.appId} httpStatus must be 200`);
+      assert.ok(typeof item.durationMs === 'number', `${item.appId} durationMs must be set`);
+      assert.equal(item.freshness.source, 'live-check', `${item.appId} freshness.source must be live-check`);
+      assert.equal(item.freshness.fresh, true, `${item.appId} freshness.fresh must be true when reachable`);
     }
   }
 });
@@ -2259,10 +2312,12 @@ test('readLocalAppsOperationalReadiness adapter: mock fetch — unreachable apps
 
   const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
 
-  const probedApps = result.apps.filter((app) => app.healthUrl !== null);
-  for (const app of probedApps) {
-    assert.equal(app.reachabilityStatus, 'unreachable', `${app.appId} should be unreachable when fetch throws`);
-    assert.equal(app.httpStatus, null, `${app.appId} httpStatus must be null on error`);
+  const probedItems = result.items.filter((item) => item.healthUrl !== undefined);
+  for (const item of probedItems) {
+    assert.equal(item.status, 'unreachable', `${item.appId} should be unreachable when fetch throws`);
+    assert.ok(item.httpStatus === undefined || item.httpStatus === null, `${item.appId} httpStatus must be absent on error`);
+    assert.equal(item.freshness.source, 'live-check');
+    assert.equal(item.freshness.fresh, false);
   }
 });
 
@@ -2275,10 +2330,11 @@ test('readLocalAppsOperationalReadiness adapter: mock fetch — non-ok response 
 
   const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
 
-  const probedApps = result.apps.filter((app) => app.healthUrl !== null);
-  for (const app of probedApps) {
-    assert.equal(app.reachabilityStatus, 'unreachable', `${app.appId} 503 response should be unreachable`);
-    assert.equal(app.httpStatus, 503);
+  const probedItems = result.items.filter((item) => item.healthUrl !== undefined);
+  for (const item of probedItems) {
+    assert.equal(item.status, 'unreachable', `${item.appId} 503 response should be unreachable`);
+    assert.equal(item.httpStatus, 503);
+    assert.equal(item.freshness.fresh, false);
   }
 });
 
@@ -2292,6 +2348,40 @@ test('readLocalAppsOperationalReadiness adapter: status counts sum to appCount',
   const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
   const sum = result.reachableCount + result.unreachableCount + result.unknownCount + result.notConfiguredCount + result.staleCount;
   assert.equal(sum, result.appCount, 'status counts must sum to appCount');
+});
+
+test('readLocalAppsOperationalReadiness adapter: not-configured items have freshness not-checked', async () => {
+  const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: true, status: 200 } as Response;
+  };
+
+  const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
+  const notConfigured = result.items.filter((item) => item.status === 'not-configured');
+  for (const item of notConfigured) {
+    assert.equal(item.freshness.source, 'not-checked', `${item.appId} not-configured freshness.source must be not-checked`);
+    assert.equal(item.freshness.fresh, false, `${item.appId} not-configured freshness.fresh must be false`);
+    assert.ok(item.healthUrl === undefined, `${item.appId} not-configured must not have healthUrl`);
+  }
+});
+
+test('readLocalAppsOperationalReadiness adapter: per-item safety flags are complete', async () => {
+  const { readLocalAppsOperationalReadiness } = await import('../adapters/local-app-operational-readiness.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: true, status: 200 } as Response;
+  };
+
+  const result = await readLocalAppsOperationalReadiness(mockFetch as typeof fetch);
+  for (const item of result.items) {
+    assert.equal(item.safety.readOnly, true);
+    assert.equal(item.safety.pluginExecutesShell, false);
+    assert.equal(item.safety.arbitraryCommandAllowed, false);
+    assert.equal(item.safety.exposesSecrets, false);
+    assert.equal(item.safety.writesToMind, false);
+    assert.equal(item.safety.performsLifecycleAction, false);
+  }
 });
 
 test('responses do not include secrets or raw env values', async () => {

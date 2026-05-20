@@ -454,15 +454,48 @@ export type BrainCoreLocalAppReachabilityStatus =
   | 'not-configured'
   | 'stale';
 
-export interface BrainCoreLocalAppReachabilityEntry {
+export interface BrainCoreLocalAppOperationalReadinessFreshness {
+  source: 'live-check' | 'not-checked';
+  maxAgeMs: number;
+  ageMs?: number;
+  fresh: boolean;
+}
+
+export interface BrainCoreLocalAppOperationalReadinessSafety {
+  readOnly: true;
+  pluginExecutesShell: false;
+  arbitraryCommandAllowed: false;
+  exposesSecrets: false;
+  writesToMind: false;
+  performsLifecycleAction: false;
+}
+
+export interface BrainCoreLocalAppOperationalReadinessLastAction {
+  action: BrainCoreLocalAppAction;
+  status: string;
+  ok: boolean;
+  endedAt?: string;
+  message: string;
+}
+
+export interface BrainCoreLocalAppOperationalReadinessItem {
   appId: string;
   appName: string;
-  reachabilityStatus: BrainCoreLocalAppReachabilityStatus;
-  healthUrl: string | null;
-  checkedAt: string;
-  responseTimeMs: number | null;
-  httpStatus: number | null;
-  note: string;
+  appUrl?: string;
+  healthUrl?: string;
+  port?: number;
+  status: BrainCoreLocalAppReachabilityStatus;
+  httpStatus?: number;
+  checkedAt?: string;
+  durationMs?: number;
+  message: string;
+  actionEnabled: boolean;
+  startSupported: boolean;
+  stopSupported: boolean;
+  restartSupported: boolean;
+  lastAction?: BrainCoreLocalAppOperationalReadinessLastAction;
+  freshness: BrainCoreLocalAppOperationalReadinessFreshness;
+  safety: BrainCoreLocalAppOperationalReadinessSafety;
 }
 
 export interface BrainCoreLocalAppsOperationalReadinessResponse {
@@ -474,16 +507,9 @@ export interface BrainCoreLocalAppsOperationalReadinessResponse {
   unknownCount: number;
   notConfiguredCount: number;
   staleCount: number;
-  apps: BrainCoreLocalAppReachabilityEntry[];
+  items: BrainCoreLocalAppOperationalReadinessItem[];
   totalCheckDurationMs: number;
-  safety: {
-    readOnly: true;
-    pluginExecutesShell: false;
-    executesShell: false;
-    exposesSecrets: false;
-    exposesEnv: false;
-    writesFiles: false;
-  };
+  safety: BrainCoreLocalAppOperationalReadinessSafety;
 }
 
 export interface BrainCoreVideoStatus {

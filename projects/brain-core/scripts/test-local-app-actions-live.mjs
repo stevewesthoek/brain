@@ -69,17 +69,28 @@ try {
   const operationalReadiness = await expectGet('/local-apps/operational-readiness');
   assert(operationalReadiness.id === 'local-apps-operational-readiness', 'operational readiness id mismatch');
   assert(typeof operationalReadiness.appCount === 'number' && operationalReadiness.appCount >= 16, 'operational readiness must report canonical inventory');
-  assert(Array.isArray(operationalReadiness.apps), 'operational readiness apps must be array');
-  assert(operationalReadiness.appCount === operationalReadiness.apps.length, 'operational readiness appCount must match apps length');
+  assert(Array.isArray(operationalReadiness.items), 'operational readiness items must be array');
+  assert(operationalReadiness.appCount === operationalReadiness.items.length, 'operational readiness appCount must match items length');
   assert(
     operationalReadiness.reachableCount + operationalReadiness.unreachableCount + operationalReadiness.unknownCount + operationalReadiness.notConfiguredCount + operationalReadiness.staleCount === operationalReadiness.appCount,
     'operational readiness status counts must sum to appCount',
   );
   assert(operationalReadiness.safety?.readOnly === true, 'operational readiness must be read-only');
   assert(operationalReadiness.safety?.pluginExecutesShell === false, 'operational readiness must not execute shell');
-  assert(operationalReadiness.safety?.executesShell === false, 'operational readiness executesShell must be false');
+  assert(operationalReadiness.safety?.arbitraryCommandAllowed === false, 'operational readiness must not allow arbitrary commands');
   assert(operationalReadiness.safety?.exposesSecrets === false, 'operational readiness must not expose secrets');
+  assert(operationalReadiness.safety?.writesToMind === false, 'operational readiness must not write to mind');
+  assert(operationalReadiness.safety?.performsLifecycleAction === false, 'operational readiness must not perform lifecycle actions');
   assert(typeof operationalReadiness.totalCheckDurationMs === 'number', 'operational readiness must report check duration');
+  for (const item of operationalReadiness.items) {
+    assert(typeof item.appId === 'string' && item.appId.length > 0, `item must have appId`);
+    assert(typeof item.status === 'string', `item ${item.appId} must have status`);
+    assert(typeof item.message === 'string', `item ${item.appId} must have message`);
+    assert(item.freshness && typeof item.freshness.source === 'string', `item ${item.appId} must have freshness`);
+    assert(item.safety?.readOnly === true, `item ${item.appId} safety.readOnly must be true`);
+    assert(item.safety?.arbitraryCommandAllowed === false, `item ${item.appId} safety.arbitraryCommandAllowed must be false`);
+    assert(item.safety?.performsLifecycleAction === false, `item ${item.appId} safety.performsLifecycleAction must be false`);
+  }
 
   const actionStatusBefore = await expectGet('/local-apps/actions/status');
   const backlog = await expectGet('/local-apps/action-enablement-backlog');
@@ -268,9 +279,9 @@ try {
       notConfiguredCount: operationalReadiness.notConfiguredCount,
       staleCount: operationalReadiness.staleCount,
       totalCheckDurationMs: operationalReadiness.totalCheckDurationMs,
-      reachableApps: operationalReadiness.apps
-        .filter((app) => app.reachabilityStatus === 'reachable')
-        .map((app) => ({ appId: app.appId, responseTimeMs: app.responseTimeMs })),
+      reachableApps: operationalReadiness.items
+        .filter((item) => item.status === 'reachable')
+        .map((item) => ({ appId: item.appId, durationMs: item.durationMs })),
     },
   };
 

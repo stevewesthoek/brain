@@ -2147,6 +2147,28 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
       { label: 'Not configured', value: String(operationalReadiness.notConfiguredCount) },
       { label: 'Check ms', value: String(operationalReadiness.totalCheckDurationMs) },
     ]);
+    const reachableItems = operationalReadiness.items.filter((item) => item.status === 'reachable');
+    const unreachableItems = operationalReadiness.items.filter((item) => item.status === 'unreachable');
+    if (reachableItems.length > 0) {
+      const reachableList = orCard.createDiv({ cls: 'brain-console__or-item-list' });
+      reachableList.createEl('div', { cls: 'brain-console__or-item-list-label', text: 'Reachable' });
+      for (const item of reachableItems) {
+        const line = reachableList.createDiv({ cls: 'brain-console__or-item-line brain-console__or-item-line--reachable' });
+        line.createEl('span', { cls: 'brain-console__or-item-name', text: item.appName });
+        if (item.durationMs !== undefined) {
+          line.createEl('span', { cls: 'brain-console__or-item-duration', text: `${item.durationMs}ms` });
+        }
+      }
+    }
+    if (unreachableItems.length > 0) {
+      const unreachableList = orCard.createDiv({ cls: 'brain-console__or-item-list' });
+      unreachableList.createEl('div', { cls: 'brain-console__or-item-list-label', text: 'Unreachable' });
+      for (const item of unreachableItems) {
+        const line = unreachableList.createDiv({ cls: 'brain-console__or-item-line brain-console__or-item-line--unreachable' });
+        line.createEl('span', { cls: 'brain-console__or-item-name', text: item.appName });
+        line.createEl('span', { cls: 'brain-console__or-item-message', text: item.message });
+      }
+    }
     const checkedAt = operationalReadiness.generatedAt;
     orCard.createEl('div', { cls: 'brain-console__safety-note', text: `Checked at ${formatIsoTime(checkedAt)} · read-only health probes only.` });
   }

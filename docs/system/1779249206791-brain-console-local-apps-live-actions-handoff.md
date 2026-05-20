@@ -802,3 +802,85 @@ Confirmed in `local-app-action-executor.ts`:
 - No secrets, no env exposure, no file writes
 - Brain Console still never executes shell — calls Brain Core HTTP only
 - `safeErrorMessage()` strips credential fragments and local paths from error notes
+
+---
+
+## Continuation 13 — Operational Readiness Hardening (2026-05-20)
+
+### What changed
+
+Hardening pass on the `GET /local-apps/operational-readiness` endpoint introduced in Continuation 12. Reshaped the response to a richer per-item contract, fixed field names, added action-support flags, freshness semantics, and corrected safety flags.
+
+### Response contract changes
+
+**`items` array (was `apps`)**
+Each item now carries:
+- `status` (was `reachabilityStatus`) — `reachable | unreachable | unknown | not-configured | stale`
+- `durationMs` (was `responseTimeMs`) — milliseconds for the probe round-trip
+- `message` (was `note`) — human-readable probe result
+- `appUrl?`, `port?` — from app definition
+- `healthUrl?` — now optional (absent for not-configured)
+- `httpStatus?` — optional (absent on errors/not-configured)
+- `checkedAt?` — optional (absent for not-configured)
+- `actionEnabled`, `startSupported`, `stopSupported`, `restartSupported` — derived from `app.actionPolicy.safeActions`
+- `lastAction?` — most recent action result from `readLocalAppActionStatus()` (`action`, `status`, `ok`, `endedAt`, `message`)
+- `freshness` — `{ source: 'live-check' | 'not-checked', maxAgeMs: 1500, ageMs?: number, fresh: boolean }`
+  - live-checked reachable: `fresh: true, ageMs: 0`
+  - live-checked unreachable/error: `fresh: false, ageMs: durationMs`
+  - not-configured: `source: 'not-checked', fresh: false` (no ageMs)
+- `safety` — per-item safety object (same shape as top-level)
+
+**Safety flags corrected**
+Old: `readOnly, pluginExecutesShell, executesShell, exposesSecrets, exposesEnv, writesFiles`
+New: `readOnly, pluginExecutesShell, arbitraryCommandAllowed, exposesSecrets, writesToMind, performsLifecycleAction`
+Spurious fields `executesShell`, `exposesEnv`, `writesFiles` removed.
+
+**Total cap semantics**
+The `TOTAL_CAP_MS = 8_000` constant was removed. Each probe independently runs with `PER_APP_TIMEOUT_MS = 1_500`. `Promise.all` runs probes in parallel — total wall-clock time is approximately the slowest probe, not a hard 8s enforced cap. `totalCheckDurationMs` accurately reflects actual elapsed time.
+
+### Files changed
+
+**`projects/brain-core/src/types/api.ts`**
+- Replaced `BrainCoreLocalAppReachabilityEntry` and `BrainCoreLocalAppsOperationalReadinessResponse` with new types
+- Added `BrainCoreLocalAppOperationalReadinessFreshness`, `BrainCoreLocalAppOperationalReadinessSafety`, `BrainCoreLocalAppOperationalReadinessLastAction`, `BrainCoreLocalAppOperationalReadinessItem`
+
+**`projects/brain-core/src/adapters/local-app-operational-readiness.ts`**
+- Rewrote to use enriched per-item shape
+- `probeApp()` now accepts full `BrainCoreLocalAppDefinition` (for action flags, appUrl, port)
+- Calls `readLocalAppActionStatus()` once per request; passes `recentResults` and `lastErrorByApp` to each probe
+- Implements freshness semantics correctly per status
+- `ITEM_SAFETY` constant shared between top-level and per-item safety objects
+- Removed `TOTAL_CAP_MS`; each probe uses `PER_APP_TIMEOUT_MS = 1_500` independently
+- `httpStatus` is absent (not null) on error/not-configured — optional field
+
+**`projects/brain-core/src/tests/routes.test.ts`**
+- Replaced 9 operational readiness tests with 13 tests (508 total, all pass)
+- New tests cover: per-item shape, action flags, freshness semantics (live-check vs not-checked), per-item safety completeness, POST rejected, adapter not-configured freshness, adapter per-item safety
+
+**`projects/brain-core/scripts/test-local-app-actions-live.mjs`**
+- Updated to use `items` (was `apps`), `item.status` (was `reachabilityStatus`), `item.durationMs` (was `responseTimeMs`)
+- Added per-item assertions: freshness, safety flags
+- Updated safety assertions: `arbitraryCommandAllowed`, `writesToMind`, `performsLifecycleAction` (removed `executesShell`)
+- Summary now reports `reachableApps` with `durationMs`
+
+**`projects/brain-console-obsidian/src/client.ts`**
+- Replaced old operational readiness types with new `BrainCoreLocalAppOperationalReadinessFreshness`, `BrainCoreLocalAppOperationalReadinessSafety`, `BrainCoreLocalAppOperationalReadinessLastAction`, `BrainCoreLocalAppOperationalReadinessItem`, updated `BrainCoreLocalAppsOperationalReadinessResponse`
+
+**`projects/brain-console-obsidian/src/view.ts`**
+- Operational Readiness card now iterates `operationalReadiness.items` (was `.apps`)
+- Added per-item lines: reachable items (appName + durationMs), unreachable items (appName + message)
+
+### Validation results
+
+- Brain Core CI: 508/508 pass
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass
+- Plugin marker: `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+
+### Safety notes
+
+- No shell execution; only outbound HTTP GET per healthUrl
+- No lifecycle actions triggered by operational-readiness endpoint
+- `lastAction` read from in-memory state only — no disk I/O
+- Per-item safety object on every item makes safety guarantees explicit at every response level
