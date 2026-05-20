@@ -83,6 +83,7 @@ export interface BrainCoreLocalAppDashboardItem {
   restartSupported: boolean;
   actionEnabled: boolean;
   actionDisabledReason: string;
+  actionDisabledReasons?: Partial<Record<BrainCoreLocalAppAction, string>>;
   lastCheckedAt: string;
   notes: string;
 }

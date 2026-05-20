@@ -389,11 +389,12 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
     const body = JSON.parse(response.body) as { apps: Array<{ id: string; name: string; status: string; actionsSupported: boolean; source: string }> };
 
     assert.equal(response.statusCode, 200);
-    assert.equal(body.apps.length, 1);
-    assert.equal(body.apps[0]?.id, 'probot');
-    assert.equal(body.apps[0]?.status, 'running');
-    assert.equal(body.apps[0]?.actionsSupported, false);
-    assert.equal(body.apps[0]?.source, 'runtime-report');
+    assert.equal(body.apps.length >= 16, true);
+    const probot = body.apps.find((app) => app.id === 'probot');
+    assert.equal(probot?.status, 'running');
+    assert.equal(probot?.source, 'runtime-report');
+    assert.equal(body.apps.some((app) => app.id === 'model-router'), true);
+    assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
       delete process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
@@ -414,7 +415,7 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
     unknownCount: number;
     managedCount: number;
     unmanagedCount: number;
-    apps: Array<{ id: string; name: string; actionEnabled: boolean; actionDisabledReason: string; managed: boolean; startSupported: boolean }>;
+    apps: Array<{ id: string; name: string; actionEnabled: boolean; actionDisabledReason: string; managed: boolean; startSupported: boolean; stopSupported: boolean; restartSupported: boolean }>;
     actionPolicy: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; status: string };
     safety: { readOnlyDashboard: boolean; pluginExecutesShell: boolean; arbitraryCommandExecution: boolean; startStopControlsEnabled: boolean };
   };
@@ -431,8 +432,9 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.equal(body.safety.startStopControlsEnabled, true);
   assert.ok(body.apps.length > 0);
   assert.ok(body.apps.some((app) => app.id === 'model-router'));
-  assert.ok(body.apps.every((app) => !app.actionEnabled || app.startSupported));
-  assert.ok(body.apps.find((app) => app.id === 'model-router')?.actionDisabledReason.includes('No safe executable strategy'));
+  assert.ok(body.apps.some((app) => app.startSupported || app.stopSupported || app.restartSupported));
+  assert.ok(body.apps.every((app) => !app.actionEnabled || app.startSupported || app.stopSupported || app.restartSupported));
+  assert.ok(body.apps.find((app) => app.id === 'model-router')?.actionDisabledReason.includes('No canonical start command is defined'));
 });
 
 test('GET /local-apps/orchestrator returns standardized inventory model', async () => {
@@ -540,7 +542,7 @@ test('POST /local-apps/model-router/start returns structured controlled result',
   assert.equal(body.action, 'start');
   assert.equal(body.status, 'not_executable');
   assert.equal(body.ok, false);
-  assert.equal(body.errorCode, 'unsafe_command');
+  assert.equal(body.errorCode, 'local_app_action_not_executable');
   assert.equal(typeof body.message, 'string');
   assert.equal(body.nextPollMs > 0, true);
   assert.ok(body.steps.length > 0);
@@ -652,7 +654,7 @@ test('GET /video/status falls back to failed read-only state when runtime report
   }
 });
 
-test('GET /local-apps falls back to invalid runtime-report placeholder when report is invalid', async () => {
+test('GET /local-apps ignores invalid runtime reports and keeps canonical inventory primary', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-local-apps-invalid');
   const reportPath = path.join(testDir, 'latest.json');
   const previousPath = process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
@@ -667,10 +669,11 @@ test('GET /local-apps falls back to invalid runtime-report placeholder when repo
     const body = JSON.parse(response.body) as { apps: Array<{ id: string; status: string; actionsSupported: boolean; source: string }> };
 
     assert.equal(response.statusCode, 200);
-    assert.equal(body.apps[0]?.id, 'local-apps-report');
-    assert.equal(body.apps[0]?.status, 'unknown');
-    assert.equal(body.apps[0]?.actionsSupported, false);
-    assert.equal(body.apps[0]?.source, 'runtime-report');
+    assert.equal(body.apps.length >= 16, true);
+    assert.equal(body.apps.some((app) => app.id === 'local-apps-report'), false);
+    assert.equal(body.apps.some((app) => app.id === 'probot'), true);
+    assert.equal(body.apps.some((app) => app.id === 'model-router'), true);
+    assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
       delete process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;

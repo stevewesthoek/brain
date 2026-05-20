@@ -9,7 +9,7 @@ const result = await esbuild.build({
   format: "cjs",
   platform: "browser",
   target: "ES2022",
-  sourcemap: prod ? false : "inline",
+  sourcemap: false,
   treeShaking: true,
   outfile: "dist/main.js",
   logLevel: "info",

@@ -17,6 +17,7 @@ import {
   readLocalAppOnboardingChecklist,
   readLocalAppOrchestratorStatus,
 } from './local-app-orchestrator.js';
+import { evaluateLocalAppActionDefinition } from './local-app-action-executor.js';
 
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build'];
 const LOCAL_APPS_CONFIG_PATH = path.join(
@@ -105,29 +106,31 @@ const PLACEHOLDER_APPS: BrainCoreLocalAppSummary[] = [
 ];
 
 export function listLocalApps(): BrainCoreLocalAppSummary[] {
-  const report = readLocalAppsRuntimeReport();
-  if (!report || report.status === 'missing') {
-    return PLACEHOLDER_APPS;
-  }
-  if (report.status === 'invalid') {
-    return [
-      {
-        id: 'local-apps-report',
-        name: 'Local apps report invalid',
-        status: 'unknown',
-        source: 'runtime-report',
-        actionsSupported: false,
-      },
-    ];
-  }
+  const inventory = listLocalAppDefinitions();
+  if (inventory.length === 0) return PLACEHOLDER_APPS;
 
-  return (report.apps ?? []).map((app, index) => ({
-    id: safeText(app.id, `local-app-${index + 1}`),
-    name: safeText(app.name, 'Unnamed local app'),
-    status: normalizeStatus(app.status),
-    source: 'runtime-report',
-    actionsSupported: false,
-  }));
+  const report = readLocalAppsRuntimeReport();
+  const runtimeById = new Map(
+    report?.status === 'ok' || report?.status === 'available'
+      ? (report.apps ?? []).map((app, index) => [safeText(app.id, `local-app-${index + 1}`), app] as const)
+      : [],
+  );
+  const runtimeByName = new Map(
+    report?.status === 'ok' || report?.status === 'available'
+      ? (report.apps ?? []).map((app) => [safeText(app.name, ''), app] as const).filter(([name]) => name.length > 0)
+      : [],
+  );
+
+  return inventory.map((app) => {
+    const runtime = runtimeById.get(app.id) ?? runtimeByName.get(app.name);
+    return {
+      id: app.id,
+      name: app.name,
+      status: runtime ? normalizeStatus(runtime.status) : 'unknown',
+      source: 'runtime-report',
+      actionsSupported: app.actionPolicy.status === 'enabled' && app.actionPolicy.safeActions.length > 0,
+    };
+  });
 }
 
 export function loadLocalApps(): NormalizedLocalApp[] {
@@ -262,6 +265,8 @@ function readLocalAppsDashboardSync(): BrainCoreLocalAppsDashboardResponse {
     const managed = app.managed;
     const executableActions = app.actionPolicy.status === 'enabled' ? app.actionPolicy.safeActions : [];
     const actionEnabled = executableActions.length > 0;
+    const actionDisabledReasons = buildActionDisabledReasons(app);
+    const disabledReason = formatActionDisabledReasons(actionDisabledReasons);
     return {
       id: app.id,
       name: app.name,
@@ -275,7 +280,8 @@ function readLocalAppsDashboardSync(): BrainCoreLocalAppsDashboardResponse {
       stopSupported: executableActions.includes('stop'),
       restartSupported: executableActions.includes('restart'),
       actionEnabled,
-      actionDisabledReason: actionEnabled ? '' : 'No safe executable strategy is registered for this app/action.',
+      actionDisabledReason: disabledReason,
+      actionDisabledReasons,
       lastCheckedAt: timestamp,
       notes: app.description,
       ...(app.appUrl ? { url: app.appUrl } : {}),
@@ -352,6 +358,8 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     const managed = app.managed;
     const executableActions = app.actionPolicy.status === 'enabled' ? app.actionPolicy.safeActions : [];
     const actionEnabled = executableActions.length > 0;
+    const actionDisabledReasons = buildActionDisabledReasons(app);
+    const disabledReason = formatActionDisabledReasons(actionDisabledReasons);
     return {
       id: app.id,
       name: app.name,
@@ -365,7 +373,8 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
       stopSupported: executableActions.includes('stop'),
       restartSupported: executableActions.includes('restart'),
       actionEnabled,
-      actionDisabledReason: actionEnabled ? '' : 'No safe executable strategy is registered for this app/action.',
+      actionDisabledReason: disabledReason,
+      actionDisabledReasons,
       lastCheckedAt: timestamp,
       notes: app.description,
       ...(app.appUrl ? { url: app.appUrl } : {}),
@@ -425,12 +434,22 @@ export function readLocalAppsSourceDiagnostics() {
   const canonicalCount = loadLocalApps().length;
   const dashboardResponse = readLocalAppsDashboardSync();
   const orchestratorDefs = listLocalAppDefinitions();
+  const brainCoreAugmentedCount = Math.max(0, orchestratorDefs.length - canonicalCount);
+  const expectedDisplayedCount = orchestratorDefs.length;
+  const displayedCountMatchesDefinitions =
+    dashboardResponse.appCount === expectedDisplayedCount && dashboardResponse.apps.length === expectedDisplayedCount;
+  const mismatches = [
+    canonicalCount === 0 ? 'No canonical local apps registry entries were found.' : null,
+    displayedCountMatchesDefinitions ? null : 'Dashboard app count differs from canonical registry plus Brain Core definitions.',
+  ].filter((entry): entry is string => typeof entry === 'string');
 
   return {
     id: 'local-apps-source-diagnostics',
-    status: canonicalCount > 0 ? 'available' : 'error',
+    status: canonicalCount > 0 && displayedCountMatchesDefinitions ? 'available' : 'error',
     canonicalSource: 'operations/infrastructure/local-apps.json',
     canonicalAppCount: canonicalCount,
+    brainCoreAugmentedCount,
+    expectedDisplayedCount,
     dashboardAppCount: dashboardResponse.appCount,
     orchestratorAppCount: orchestratorDefs.length,
     displayedAppCount: dashboardResponse.apps.length,
@@ -442,9 +461,16 @@ export function readLocalAppsSourceDiagnostics() {
         readable: true,
         error: null,
       },
+      {
+        path: 'projects/brain-core/runtime/local/model-router/latest.json',
+        usedFor: 'brain-core-augmented-definition',
+        appCount: brainCoreAugmentedCount,
+        readable: true,
+        error: null,
+      },
     ],
-    mismatches: canonicalCount !== dashboardResponse.appCount ? ['Dashboard app count differs from canonical source'] : [],
-    nextSafeStep: canonicalCount > 0 ? 'Dashboard should display all canonical apps.' : 'No local apps registry found.',
+    mismatches,
+    nextSafeStep: displayedCountMatchesDefinitions ? 'Dashboard displays the canonical registry plus Brain Core augmented definitions.' : 'Repair local apps source wiring before trusting dashboard counts.',
     safety: {
       readOnlyDashboard: true,
       pluginExecutesShell: false,
@@ -511,6 +537,26 @@ export async function runLocalAppsAction(appId: string, action: string, options:
   const result = await executeLocalAppActionRequest(appId, normalizedAction, options);
   if (result.status === 'not_found') return { kind: 'missing-app' as const, result };
   return { kind: 'result' as const, result };
+}
+
+function buildActionDisabledReasons(
+  app: ReturnType<typeof listLocalAppDefinitions>[number],
+): Partial<Record<'start' | 'stop' | 'restart', string>> {
+  return Object.fromEntries(
+    (['start', 'stop', 'restart'] as const)
+      .map((action) => {
+        const readiness = evaluateLocalAppActionDefinition(app, action);
+        return readiness.executable ? null : [action, readiness.reason] as const;
+      })
+      .filter((entry): entry is readonly ['start' | 'stop' | 'restart', string] => entry !== null),
+  );
+}
+
+function formatActionDisabledReasons(reasons: Partial<Record<'start' | 'stop' | 'restart', string>>): string {
+  return (['start', 'stop', 'restart'] as const)
+    .map((action) => reasons[action] ? `${action}: ${reasons[action]}` : null)
+    .filter((entry): entry is string => typeof entry === 'string')
+    .join(' | ');
 }
 
 function createActionReadinessCriteria(inventory: ReturnType<typeof listLocalAppDefinitions>) {

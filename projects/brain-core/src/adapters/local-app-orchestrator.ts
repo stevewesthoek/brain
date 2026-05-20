@@ -14,7 +14,7 @@ import type {
   BrainCoreLocalAppServiceDefinition,
   BrainCoreLocalAppOnboardingChecklist,
 } from '../types/api.js';
-import { LocalAppActionExecutor } from './local-app-action-executor.js';
+import { LocalAppActionExecutor, evaluateLocalAppActionDefinition } from './local-app-action-executor.js';
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
 const MODEL_ROUTER_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/model-router/latest.json');
@@ -122,7 +122,7 @@ export function createLocalAppActionPlan(appId: string, action: BrainCoreLocalAp
     arbitraryCommandAllowed: false,
     allowlistRequired: true,
     auditRequired: true,
-    canExecuteNow: false,
+    canExecuteNow: true,
     steps: createActionPlanSteps(app, action),
   };
 }
@@ -423,11 +423,9 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
   const startCommand = readStringOrNull(raw.start || raw.startCommand);
   const stopCommand = readStringOrNull(raw.stop || raw.stopCommand);
   const restartCommand = readStringOrNull(raw.restart || raw.restartCommand);
-  const safeActions = buildSafeActions(Boolean(startCommand), Boolean(stopCommand), Boolean(restartCommand));
   const repoPath = readStringOrNull(raw.repoPath);
   const commandWorkdir = repoPath ? repoPath.replace(/^~/, process.env.HOME || '/root') : undefined;
-
-  return {
+  const definitionBase = {
     id,
     name,
     label: readString(raw.description, name),
@@ -436,7 +434,24 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     managed: Boolean(startCommand || stopCommand || restartCommand),
     services,
     docsRef: 'operations/infrastructure/local-apps.md',
-    onboardingStatus: 'registered',
+    onboardingStatus: 'registered' as const,
+    actionPolicy: createActionPolicy([]),
+    ...(repoPath ? { repoPathSummary: summarizePath(repoPath) } : {}),
+    ...(port !== null ? { appPort: port as number } : {}),
+    ...(url ? { appUrl: url } : {}),
+    ...(readStringOrNull(raw.check ?? raw.healthCheck) ? { healthUrl: readStringOrNull(raw.check ?? raw.healthCheck)! } : {}),
+    ...(database ? { database } : {}),
+    ...(startCommand ? { startCommand } : {}),
+    ...(stopCommand ? { stopCommand } : {}),
+    ...(restartCommand ? { restartCommand } : {}),
+    ...(commandWorkdir ? { commandWorkdir } : {}),
+  } satisfies BrainCoreLocalAppDefinition;
+  const safeActions = (['start', 'stop', 'restart'] as const).filter((action) =>
+    evaluateLocalAppActionDefinition(definitionBase, action).executable,
+  );
+
+  return {
+    ...definitionBase,
     actionPolicy: createActionPolicy(safeActions),
     ...(repoPath ? { repoPathSummary: summarizePath(repoPath) } : {}),
     ...(port !== null ? { appPort: port as number } : {}),

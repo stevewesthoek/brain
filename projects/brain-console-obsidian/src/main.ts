@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-local-apps-functional-2026-05-19-01';
+export const BRAIN_CONSOLE_BUILD_ID = 'brain-console-local-apps-live-actions-2026-05-19-01';
 
 declare global {
   interface Window {
@@ -157,7 +157,7 @@ class BrainConsoleView extends ItemView {
     header.createEl('h2', { text: 'Brain Console' });
     header.createEl('span', { cls: 'brain-console__build-marker', text: `build ${BRAIN_CONSOLE_BUILD_ID}` });
 
-    state.createDiv({ cls: 'brain-console__status-line', text: 'Manual refresh only · read-only · no POST calls' });
+    state.createDiv({ cls: 'brain-console__status-line', text: 'Manual refresh + Brain Core allowlisted local app actions · plugin never executes shell' });
     state.createDiv({ cls: 'brain-console__install-check', text: 'If build marker above is not visible, the installed plugin bundle may be stale.' });
 
     const actions = state.createDiv({ cls: 'brain-console__actions' });

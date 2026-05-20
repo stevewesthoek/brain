@@ -153,14 +153,20 @@ export interface DashboardSnapshot {
 
 export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreUrl: string): DashboardSnapshot {
   const brainCoreOnline = state.status?.ok === true;
-  const offline = state.offline === true;
+  const offline = state.offline === true || !brainCoreOnline;
+  const localAppsDashboardOk =
+    state.localAppsDashboard?.id === 'local-apps-dashboard' &&
+    Array.isArray(state.localAppsDashboard.apps) &&
+    state.localAppsDashboard.appCount === state.localAppsDashboard.apps.length &&
+    state.localAppsDashboard.appCount > 0;
 
-  // Connection status
+  // Online requires both /status and /local-apps/dashboard. If /status is OK but Local Apps is
+  // missing or inconsistent, the Console is degraded instead of pretending the dashboard is healthy.
   const connectionStatus: ConnectionStatus = offline
     ? 'offline'
-    : !brainCoreOnline && state.warning
-    ? 'degraded'
-    : 'online';
+    : localAppsDashboardOk
+    ? 'online'
+    : 'degraded';
 
   // Wiki health
   const modelRouterReport = state.runtimeReports?.find((r) => r.id === 'model-router');
