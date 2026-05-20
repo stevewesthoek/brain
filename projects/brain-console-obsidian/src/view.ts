@@ -1994,6 +1994,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     restartSupported: false,
     actionEnabled: false,
     actionDisabledReason: 'Controls disabled until a safe allowlisted action path exists.',
+    actionDisabledReasons: undefined,
     lastCheckedAt: new Date().toISOString(),
     notes: '',
   }));
@@ -2025,7 +2026,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
   apps.forEach((app) => {
     const definition = definitionsById.get(app.id);
     const pendingAction = localAppPendingActions.get(app.id);
-    const lastResult = actionStatus?.lastErrorByApp?.[app.id] ?? actionStatus?.recentResults?.find((result) => result.appId === app.id);
+    const lastResult = getMostRecentActionResult(actionStatus?.recentResults ?? [], app.id) ?? actionStatus?.lastErrorByApp?.[app.id];
     const item = list.createDiv({ cls: 'brain-console__local-app-card brain-console__local-app-card--micro' });
     item.title = app.url || app.notes || app.name;
 
@@ -2042,15 +2043,24 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     meta.createEl('span', { text: `svc ${definition?.services.length ?? 0}` });
     meta.createEl('span', { text: `db ${definition?.database ? 'yes' : 'no'}` });
 
-    const statusLine = item.createEl('div', {
-      cls: 'brain-console__local-app-status-line',
-      text: pendingAction
-        ? `${pendingAction}...`
-        : lastResult
-          ? `${lastResult.status.replace('_', ' ')}`
-          : (app.actionDisabledReason || 'idle'),
-    });
-    statusLine.title = lastResult?.message ?? app.actionDisabledReason ?? 'Local app action state';
+    const statusLine = item.createEl('div', { cls: 'brain-console__local-app-status-line' });
+    if (pendingAction) {
+      statusLine.textContent = `${pendingAction}...`;
+      statusLine.title = `Pending ${pendingAction} action for ${app.name}.`;
+    } else if (lastResult) {
+      statusLine.textContent = `${lastResult.action} ${lastResult.status.replace('_', ' ')} · ${lastResult.ok ? 'ok' : 'failed'}`;
+      statusLine.title = `${lastResult.action} at ${formatIsoTime(lastResult.finishedAt)} · ${lastResult.message}`;
+    } else if (!app.actionEnabled) {
+      statusLine.textContent = 'disabled';
+      statusLine.title = app.actionDisabledReason || 'Action unsupported for this app.';
+    } else {
+      statusLine.textContent = 'idle';
+      statusLine.title = 'Action is enabled and ready.';
+    }
+
+    if (lastResult) {
+      renderActionResultDetails(item, lastResult);
+    }
 
     const actions = item.createDiv({ cls: 'brain-console__local-app-actions' });
     const actionEntries = [
@@ -2062,14 +2072,23 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     for (const entry of actionEntries) {
       const enabled = !pendingAction && controlsEnabled && entry.supported;
       const btn = actions.createEl('button', { text: entry.label, cls: 'brain-console__local-app-action' });
+      btn.addClass(enabled ? 'is-enabled' : 'is-disabled');
+      if (pendingAction) btn.addClass('is-pending');
       btn.disabled = !enabled;
+      const disabledReason = app.actionDisabledReasons?.[entry.action] || app.actionDisabledReason || readiness?.nextSafeStep || 'Action unsupported for this app.';
       btn.title = enabled
         ? `${entry.label} ${app.name} through Brain Core controlled orchestration`
-        : app.actionDisabledReason || readiness?.nextSafeStep || 'Action unsupported for this app.';
+        : disabledReason;
+      btn.setAttribute('aria-label', enabled ? `${entry.label} ${app.name}` : `${entry.label} disabled: ${disabledReason}`);
       if (enabled && settings) {
         btn.addEventListener('click', () => {
           void requestLocalAppActionFromCard(settings.brainCoreUrl, app.id, app.label || app.name, entry.action, btn, statusLine, onRefresh);
         });
+      }
+      if (!enabled) {
+        const reason = item.createDiv({ cls: 'brain-console__local-app-action-reason' });
+        reason.textContent = `${entry.label}: ${disabledReason}`;
+        reason.title = disabledReason;
       }
     }
   });
@@ -2124,13 +2143,14 @@ async function requestLocalAppActionFromCard(
   action: 'start' | 'stop' | 'restart',
   button: HTMLButtonElement,
   statusLine: HTMLElement,
-  onRefresh?: () => void,
+  onRefresh?: () => void | Promise<void>,
 ): Promise<void> {
   const verb = action.charAt(0).toUpperCase() + action.slice(1);
   if (!window.confirm(`${verb} ${appLabel}? This uses Brain Core controlled local-app orchestration.`)) return;
 
   localAppPendingActions.set(appId, `${action}ing`);
   button.disabled = true;
+  button.classList.add('is-pending');
   statusLine.textContent = `${action}ing...`;
   new Notice(`${verb}ing ${appLabel}...`);
   const result = await requestBrainCoreLocalAppAction(brainCoreUrl, appId, action);
@@ -2141,17 +2161,46 @@ async function requestLocalAppActionFromCard(
     new Notice(`${verb} ${appLabel} failed safely; dashboard remains available.`);
     localAppPendingActions.delete(appId);
     button.disabled = false;
-    window.setTimeout(() => onRefresh?.(), 1500);
+    button.classList.remove('is-pending');
+    button.classList.add('is-disabled');
+    await onRefresh?.();
     return;
   }
 
   const status = result.value.status.replace('_', ' ');
   const message = result.value.message || (result.value.error ? `${status}: ${result.value.error}` : status);
-  statusLine.textContent = status;
-  statusLine.title = message;
+  statusLine.textContent = `${action} ${status} · ${result.value.ok ? 'ok' : 'failed'}`;
+  statusLine.title = `${formatIsoTime(result.value.finishedAt)} · ${message}`;
   new Notice(`${appLabel}: ${message}`);
   localAppPendingActions.delete(appId);
-  window.setTimeout(() => onRefresh?.(), result.value.nextPollMs ?? 1500);
+  button.classList.remove('is-pending');
+  await onRefresh?.();
+  window.setTimeout(() => {
+    void onRefresh?.();
+  }, result.value.nextPollMs ?? 1500);
+}
+
+function getMostRecentActionResult(
+  results: BrainCoreLocalAppActionStatusResponse['recentResults'],
+  appId: string,
+): BrainCoreLocalAppActionStatusResponse['recentResults'][number] | undefined {
+  return [...results]
+    .filter((result) => result.appId === appId)
+    .sort((left, right) => (right.finishedAt || right.endedAt).localeCompare(left.finishedAt || left.endedAt))[0];
+}
+
+function renderActionResultDetails(parent: HTMLElement, result: BrainCoreLocalAppActionStatusResponse['recentResults'][number]): void {
+  const details = parent.createDiv({ cls: 'brain-console__local-app-result' });
+  details.createEl('div', { cls: 'brain-console__local-app-result-line', text: `Action: ${result.action}` });
+  details.createEl('div', { cls: 'brain-console__local-app-result-line', text: `Status: ${result.status}` });
+  details.createEl('div', { cls: 'brain-console__local-app-result-line', text: `ok: ${result.ok ? 'true' : 'false'}` });
+  details.createEl('div', { cls: 'brain-console__local-app-result-line', text: `Message: ${result.message}` });
+  details.createEl('div', { cls: 'brain-console__local-app-result-line', text: `Timestamp: ${formatIsoTime(result.finishedAt)}` });
+}
+
+function formatIsoTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
 function renderOfflineState(

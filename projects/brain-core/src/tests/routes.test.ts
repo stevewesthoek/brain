@@ -581,6 +581,45 @@ test('GET /local-apps/action-enablement-backlog includes disabled items with rea
   }
 });
 
+test('GET /local-apps/action-enablement-backlog does not replace dashboard action support', async () => {
+  const dashboardResponse = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
+  const backlogResponse = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const dashboard = JSON.parse(dashboardResponse.body) as {
+    apps: Array<{ id: string; startSupported: boolean; stopSupported: boolean; restartSupported: boolean }>;
+  };
+  const backlog = JSON.parse(backlogResponse.body) as {
+    disabledActionCount: number;
+    items: Array<{ appId: string; action: string; reason: string }>;
+  };
+
+  const executableActions = new Set(
+    dashboard.apps.flatMap((app) => [
+      app.startSupported ? `${app.id}:start` : null,
+      app.stopSupported ? `${app.id}:stop` : null,
+      app.restartSupported ? `${app.id}:restart` : null,
+    ].filter((value): value is string => value !== null)),
+  );
+  const disabledActions = new Set(backlog.items.map((item) => `${item.appId}:${item.action}`));
+
+  assert.equal(backlog.disabledActionCount, backlog.items.length);
+  for (const action of executableActions) {
+    assert.equal(disabledActions.has(action), false, `${action} should not appear in the disabled backlog`);
+  }
+});
+
+test('GET /local-apps/action-enablement-backlog includes exact disabled reasons', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    disabledActionCount: number;
+    items: Array<{ appId: string; action: string; reason: string }>;
+  };
+
+  for (const item of body.items.slice(0, 5)) {
+    assert.equal(typeof item.reason, 'string');
+    assert.ok(item.reason.length > 0);
+  }
+});
+
 test('GET /local-apps/action-enablement-backlog does not expose secrets or raw env', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
   const body = response.body;
@@ -759,6 +798,22 @@ test('GET /video/status falls back to failed read-only state when runtime report
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }
+});
+
+test('GET /local-apps/actions/status includes the recent result after POST', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start' });
+  const postBody = JSON.parse(response.body) as { id: string; ok: boolean; status: string };
+  const statusResponse = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
+  const statusBody = JSON.parse(statusResponse.body) as {
+    recentResults: Array<{ id: string; appId: string; status: string; ok: boolean }>;
+    audit: { persistedResultCount: number };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(statusResponse.statusCode, 200);
+  assert.equal(statusBody.recentResults.some((entry) => entry.id === postBody.id), true);
+  assert.equal(statusBody.recentResults.some((entry) => entry.status === postBody.status && entry.ok === postBody.ok), true);
+  assert.equal(statusBody.audit.persistedResultCount >= 0, true);
 });
 
 test('GET /local-apps ignores invalid runtime reports and keeps canonical inventory primary', async () => {

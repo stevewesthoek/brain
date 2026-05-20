@@ -94,3 +94,12 @@ console.log(JSON.stringify({ root, found }, null, 2));
 if (found.length === 0) {
   process.exitCode = 1;
 }
+
+for (const entry of found) {
+  if (entry.markers.length !== 1 || entry.markers[0] !== 'brain-console-local-apps-live-actions-2026-05-19-01') {
+    throw new Error(`Installed plugin at ${entry.dir} does not contain only the expected Brain Console build marker.`);
+  }
+  if (entry.staleMarkers.length > 0) {
+    throw new Error(`Installed plugin at ${entry.dir} still contains stale Brain Console markers: ${entry.staleMarkers.join(', ')}`);
+  }
+}

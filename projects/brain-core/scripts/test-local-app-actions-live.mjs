@@ -41,7 +41,10 @@ try {
   assert(diagnostics.displayedAppCount >= diagnostics.canonicalAppCount, 'displayed count below canonical count');
 
   const actionStatusBefore = await expectGet('/local-apps/actions/status');
+  const backlog = await expectGet('/local-apps/action-enablement-backlog');
   assert(actionStatusBefore.safety?.commandOverrideAccepted === false, 'action status must reject command overrides');
+  assert(backlog.disabledActionCount >= 0, 'backlog disabled action count should be reported');
+  assert(backlog.disabledActionCount === backlog.items.length, 'backlog disabledActionCount should match item count');
 
   const unknownApp = await post('/local-apps/unknown-local-app/start');
   assert(unknownApp.statusCode === 404, 'unknown app POST should return 404');
@@ -69,6 +72,13 @@ try {
   const stillAlive = await expectGet('/status');
   assert(stillAlive.ok === true, 'Brain Core did not respond after POST probes');
   const actionStatusAfter = await expectGet('/local-apps/actions/status');
+  if (liveActionResult) {
+    const visibleResult = actionStatusAfter.recentResults?.find((result) => result.id === liveActionResult.body.id);
+    assert(Boolean(visibleResult), 'recent action result was not visible in action status');
+    assert(visibleResult.ok === liveActionResult.body.ok, 'visible result ok mismatch');
+    assert(visibleResult.status === liveActionResult.body.status, 'visible result status mismatch');
+    assert((actionStatusAfter.audit?.persistedResultCount ?? 0) >= (actionStatusBefore.audit?.persistedResultCount ?? 0), 'persisted result count should not decrease');
+  }
 
   const executableActions = dashboard.apps.flatMap((app) => {
     const actions = [];
@@ -84,6 +94,14 @@ try {
     if (!app.restartSupported) actions.push({ appId: app.id, action: 'restart', reason: app.actionDisabledReasons?.restart ?? app.actionDisabledReason ?? 'No reason reported.' });
     return actions;
   });
+  assert(backlog.disabledActionCount === disabledActions.length, 'backlog disabled count must match dashboard disabled actions');
+  const backlogDisabledKeys = new Set(backlog.items.map((item) => `${item.appId}:${item.action}`));
+  for (const action of executableActions) {
+    assert(!backlogDisabledKeys.has(action), `executable action unexpectedly listed as disabled: ${action}`);
+  }
+  for (const disabled of disabledActions) {
+    assert(backlogDisabledKeys.has(`${disabled.appId}:${disabled.action}`), `disabled dashboard action missing from backlog: ${disabled.appId}:${disabled.action}`);
+  }
 
   const summary = {
     baseUrl,
@@ -104,6 +122,8 @@ try {
     probes: results,
     executableActions,
     disabledActionCount: disabledActions.length,
+    backlogDisabledActionCount: backlog.disabledActionCount,
+    backlogCategories: backlog.categories,
     disabledActions,
     liveAction: liveActionResult
       ? {
