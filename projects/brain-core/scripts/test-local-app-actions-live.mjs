@@ -13,6 +13,7 @@ const preferredLiveActions = [
 ];
 const fixedLifecycleCandidates = [
   ['probot', 'start'],
+  ['probot', 'restart'],
   ['via-di-eden', 'start'],
   ['via-di-eden', 'restart'],
   ['oliveto-organizing', 'start'],

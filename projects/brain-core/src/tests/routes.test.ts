@@ -624,7 +624,10 @@ test('GET /local-apps/action-enablement-backlog includes exact disabled reasons'
 });
 
 test('repo-local lifecycle adapters become executable for safe fixed scripts', async () => {
-  const expectations: Array<{ appId: string; action: 'start' | 'restart'; commandLabel: string }> = [
+  const expectations: Array<{ appId: string; action: 'start' | 'stop' | 'restart'; commandLabel: string }> = [
+    { appId: 'probot', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
+    { appId: 'probot', action: 'stop', commandLabel: 'bash scripts/dev/stop-local.sh' },
+    { appId: 'probot', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
     { appId: 'via-di-eden', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
     { appId: 'via-di-eden', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
     { appId: 'oliveto-organizing', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },

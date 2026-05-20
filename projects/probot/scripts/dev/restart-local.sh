@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-"$(dirname "$0")/stop-local.sh"
-"$(dirname "$0")/start-local.sh"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+"$SCRIPT_DIR/stop-local.sh"
+"$SCRIPT_DIR/start-local.sh"

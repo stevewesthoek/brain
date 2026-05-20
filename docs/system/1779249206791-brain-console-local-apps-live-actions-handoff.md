@@ -117,6 +117,94 @@ Installed plugin verification:
 - Both contain only `brain-console-local-apps-live-actions-2026-05-19-01`.
 - Both report `staleMarkers: []`.
 
+## Continuation update — ProBot registry wiring resolved
+
+ProBot lifecycle scripts were wired into the canonical local-app registry after the previous commit left the scripts unused. The registry now points ProBot at fixed repo-local lifecycle adapters:
+
+- `start`: `bash scripts/dev/start-local.sh`
+- `stop`: `bash scripts/dev/stop-local.sh`
+- `restart`: `bash scripts/dev/restart-local.sh`
+
+The scripts were hardened to use repo-local runtime state under `projects/probot/runtime/local/` and only target the PID recorded by the ProBot start script. No `.env` values, tokens, cookies, passwords, or arbitrary command arguments are read or exposed.
+
+Exact newly executable actions from this phase:
+
+- `probot:start`
+- `probot:stop`
+- `probot:restart`
+
+Exact executable counts:
+
+- Before this ProBot wiring: `29`
+- After this ProBot wiring: `32`
+
+Exact disabled counts:
+
+- Before this ProBot wiring: `19`
+- After this ProBot wiring: `16`
+
+Current still-disabled actions and reasons:
+
+- `prochat:stop` - no Brain Core-managed npm process is recorded for this app.
+- `prochat:restart` - no canonical restart command is defined for this app.
+- `jpv-bootcamp:stop` - no canonical stop command is defined for this app.
+- `jpv-bootcamp:restart` - no canonical restart command is defined for this app.
+- `google-ads-api:stop` - no canonical stop command is defined for this app.
+- `google-ads-api:restart` - no canonical restart command is defined for this app.
+- `family-finance:stop` - no canonical stop command is defined for this app.
+- `family-finance:restart` - no canonical restart command is defined for this app.
+- `fala:start` - repo lifecycle script is registered but missing or outside allowlisted roots.
+- `fala:stop` - no canonical stop command is defined for this app.
+- `fala:restart` - no canonical restart command is defined for this app.
+- `tradebot:stop` - no canonical stop command is defined for this app.
+- `tradebot:restart` - no canonical restart command is defined for this app.
+- `model-router:start` - no canonical start command is defined for this app.
+- `model-router:stop` - no canonical stop command is defined for this app.
+- `model-router:restart` - no canonical restart command is defined for this app.
+
+Validation results after the ProBot fix:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed with:
+  - `appCount: 16`
+  - `executableActions.length: 32`
+  - `disabledActionCount: 16`
+  - `backlogDisabledActionCount: 16`
+  - `newlyExecutableActions` included the ProBot lifecycle actions above
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed.
+- `npm run --prefix projects/brain-console-obsidian find:installed` passed.
+
+Live verifier proof:
+
+- `POST /local-apps/probot/restart` returned `200`.
+- `POST /local-apps/video-orchestrator/restart` returned `200`.
+- `POST /local-apps/prochat/start` returned `200`.
+- `/local-apps/actions/status` returned recent result and managed-process status after POST probes.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+- Both contain only `brain-console-local-apps-live-actions-2026-05-19-01`.
+- Both report `staleMarkers: []`.
+
+Safety notes:
+
+- ProBot uses fixed repo-local lifecycle scripts only.
+- The stop script only targets the PID recorded by the start script.
+- No shell metacharacters, env dumps, or arbitrary command overrides were introduced.
+
+Unrelated dirty files left unstaged:
+
+- `operations/system-configs/claude/model-tracking.json`
+- `operations/system-configs/codex/skills/.system/plugin-creator/SKILL.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/agents/openai.yaml`
+- `operations/system-configs/codex/skills/.system/plugin-creator/references/plugin-json-spec.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`
+
 
 ## Continuation update — Local app action audit persistence
 
