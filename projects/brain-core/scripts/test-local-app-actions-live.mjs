@@ -1,4 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const EXCLUDED_LIVE_ACTION_APPS = new Set(['buildflow']);
 const preferredLiveActions = [
@@ -11,6 +14,9 @@ const preferredLiveActions = [
 
 let server;
 let baseUrl = process.env.BRAIN_CORE_URL;
+const managedProcessSandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-core-live-managed-process-'));
+const previousManagedProcessPath = process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = path.join(managedProcessSandbox, 'managed-processes.json');
 
 if (!baseUrl) {
   const { createBrainCoreServer } = await import('../dist/api/server.js');
@@ -202,6 +208,12 @@ try {
 
   console.log(JSON.stringify(summary, null, 2));
 } finally {
+  if (previousManagedProcessPath === undefined) {
+    delete process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  } else {
+    process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = previousManagedProcessPath;
+  }
+  fs.rmSync(managedProcessSandbox, { recursive: true, force: true });
   if (server) {
     await new Promise((resolve) => server.close(resolve));
     await delay(25);

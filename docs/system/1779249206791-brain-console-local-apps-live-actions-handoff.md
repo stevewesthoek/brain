@@ -174,3 +174,55 @@ Safety notes:
 - No new mutation controls were added.
 - Brain Console still does not execute shell commands.
 - No secrets, env files, Mind writes, or operations config writes are exposed by the audit card.
+
+
+## Continuation update — Managed-process state isolation fix
+
+Date: 2026-05-20
+
+Root cause of the failing CI:
+
+- `managed npm stop remains disabled before Brain Core records a process` was failing because managed-process state was being read from a shared persistent runtime file.
+- A previous live run or test could leave a valid-looking `managed-processes.json` behind, so later tests observed `prochat:stop` as enabled before the test had recorded any Brain Core-owned process.
+
+What changed:
+
+- The managed-process registry now supports `BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH`.
+- Tests use a unique temporary registry path and clean it before and after each managed-process assertion.
+- Live verification uses a temporary managed-process registry path too, so it cannot contaminate repo-local runtime state.
+- Stale or invalid records are ignored and cleaned on read.
+- Unsafe override paths containing `.env`, `.git`, `node_modules`, `operations`, or `mind` are rejected safely and return empty managed-process state.
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed.
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed.
+- `npm run --prefix projects/brain-console-obsidian find:installed` passed.
+
+Live proof:
+
+- `/status` returned `200`.
+- `/local-apps/dashboard` returned `200` with `appCount: 16`.
+- `/local-apps/action-enablement-backlog` returned `200` with `disabledActionCount: 26`.
+- `/local-apps/actions/status` returned `200` and exposed `managedProcessCount: 0` after cleanup.
+- `video-orchestrator:restart` still returned `success`, `ok: true`.
+- `says-the-bible:restart` still returned `success`, `ok: true`.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+- Both contain only `brain-console-local-apps-live-actions-2026-05-19-01`.
+- Both report `staleMarkers: []`.
+
+Unrelated dirty files left unstaged:
+
+- `operations/system-configs/claude/model-tracking.json`
+- `operations/system-configs/codex/skills/.system/plugin-creator/SKILL.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/agents/openai.yaml`
+- `operations/system-configs/codex/skills/.system/plugin-creator/references/plugin-json-spec.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`

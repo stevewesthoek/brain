@@ -41,7 +41,6 @@ type ManagedProcessState = {
 
 const OUTPUT_LIMIT = 1800;
 const inflightByApp = new Map<string, Promise<BrainCoreLocalAppActionResult>>();
-const MANAGED_PROCESSES_PATH = path.resolve(process.cwd(), 'runtime/local/local-apps/managed-processes.json');
 const processHandle = (globalThis as any).process as { kill: (pid: number, signal?: NodeJS.Signals | number) => void };
 
 export function evaluateLocalAppActionDefinition(
@@ -543,18 +542,27 @@ function looksLikeManagedNpmStartCommand(command: string | undefined): boolean {
 }
 
 function readManagedProcessState(): ManagedProcessState {
+  const registryPath = resolveManagedProcessRegistryPath();
+  if (!registryPath) return { records: [] };
   try {
-    const raw = fs.readFileSync(MANAGED_PROCESSES_PATH, 'utf8');
+    const raw = fs.readFileSync(registryPath, 'utf8');
     const parsed = JSON.parse(raw) as ManagedProcessState;
-    return { records: Array.isArray(parsed.records) ? parsed.records : [] };
+    const records = Array.isArray(parsed.records) ? parsed.records : [];
+    const cleaned = sanitizeManagedProcessRecords(records);
+    if (cleaned.length !== records.length) {
+      writeManagedProcessState({ records: cleaned });
+    }
+    return { records: cleaned };
   } catch {
     return { records: [] };
   }
 }
 
 function writeManagedProcessState(state: ManagedProcessState): void {
-  fs.mkdirSync(path.dirname(MANAGED_PROCESSES_PATH), { recursive: true });
-  fs.writeFileSync(MANAGED_PROCESSES_PATH, `${JSON.stringify(state, null, 2)}\n`);
+  const registryPath = resolveManagedProcessRegistryPath();
+  if (!registryPath) return;
+  fs.mkdirSync(path.dirname(registryPath), { recursive: true });
+  fs.writeFileSync(registryPath, `${JSON.stringify({ records: sanitizeManagedProcessRecords(state.records) }, null, 2)}\n`);
 }
 
 function recordManagedProcessStart(input: {
@@ -590,6 +598,38 @@ function readManagedProcessForApp(appId: string): BrainCoreLocalAppManagedProces
     return record;
   }
   return null;
+}
+
+function resolveManagedProcessRegistryPath(): string | null {
+  const rawPath = process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH || path.resolve(process.cwd(), 'runtime/local/local-apps/managed-processes.json');
+  const normalized = rawPath.replace(/\\/g, '/');
+  const segments = normalized.split('/').map((segment) => segment.toLowerCase()).filter(Boolean);
+  if (segments.some((segment) => ['.env', '.git', 'node_modules', 'operations', 'mind'].includes(segment))) {
+    return null;
+  }
+  return path.resolve(rawPath);
+}
+
+function sanitizeManagedProcessRecords(records: BrainCoreLocalAppManagedProcessRecord[]): BrainCoreLocalAppManagedProcessRecord[] {
+  return records.filter((record): record is BrainCoreLocalAppManagedProcessRecord => {
+    if (!record || typeof record !== 'object') return false;
+    if (typeof record.appId !== 'string' || record.appId.trim().length === 0) return false;
+    if (!Number.isInteger(record.pid) || record.pid <= 0) return false;
+    if (record.strategy !== 'repo-npm-dev' && record.strategy !== 'repo-npm-start') return false;
+    if (record.action !== 'start') return false;
+    if (typeof record.startedAt !== 'string' || record.startedAt.trim().length === 0) return false;
+    if (typeof record.cwdSummary !== 'string' || record.cwdSummary.trim().length === 0) return false;
+    if (typeof record.commandLabel !== 'string' || record.commandLabel.trim().length === 0) return false;
+    return isPidAlive(record.pid);
+  }).map((record) => ({
+    appId: record.appId,
+    action: 'start',
+    pid: record.pid,
+    startedAt: record.startedAt,
+    cwdSummary: record.cwdSummary,
+    strategy: record.strategy,
+    commandLabel: record.commandLabel,
+  }));
 }
 
 async function executeManagedProcessStop(

@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { routeRequest } from '../api/routes.js';
@@ -629,11 +631,49 @@ test('composite restart is supported when safe start and stop commands exist', a
 });
 
 test('managed npm stop remains disabled before Brain Core records a process', async () => {
+  const sandbox = createManagedProcessSandbox();
+  const previous = process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = sandbox.registryPath;
   const app = listLocalAppDefinitions().find((entry) => entry.id === 'prochat');
   assert.ok(app, 'expected prochat inventory entry');
+  fs.rmSync(sandbox.root, { recursive: true, force: true });
   const readiness = evaluateLocalAppActionDefinition(app!, 'stop');
   assert.equal(readiness.executable, false);
   assert.equal(readiness.reason, 'No Brain Core-managed npm process is recorded for this app. Start it from Brain Console first.');
+  if (previous === undefined) delete process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  else process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = previous;
+  fs.rmSync(sandbox.root, { recursive: true, force: true });
+});
+
+test('stale managed process records are ignored and cleaned', async () => {
+  const sandbox = createManagedProcessSandbox();
+  const previous = process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = sandbox.registryPath;
+  fs.mkdirSync(path.dirname(sandbox.registryPath), { recursive: true });
+  fs.writeFileSync(
+    sandbox.registryPath,
+    JSON.stringify({ records: [{ appId: 'prochat', action: 'start', pid: 1, startedAt: new Date().toISOString(), cwdSummary: 'tmp', strategy: 'repo-npm-dev', commandLabel: 'npm run dev' }] }, null, 2),
+  );
+  const readiness = evaluateLocalAppActionDefinition(listLocalAppDefinitions().find((entry) => entry.id === 'prochat')!, 'stop');
+  assert.equal(readiness.executable, false);
+  assert.equal(readiness.reason, 'No Brain Core-managed npm process is recorded for this app. Start it from Brain Console first.');
+  const cleaned = fs.readFileSync(sandbox.registryPath, 'utf8');
+  assert.equal(cleaned.includes('"pid": 1'), false);
+  if (previous === undefined) delete process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  else process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = previous;
+  fs.rmSync(sandbox.root, { recursive: true, force: true });
+});
+
+test('unsafe managed-process registry paths are ignored safely', async () => {
+  const previous = process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = path.join(process.cwd(), 'operations', 'local-apps', 'managed-processes.json');
+  const status = readLocalAppActionStatus();
+  assert.equal(Array.isArray(status.managedProcesses), true);
+  assert.equal(status.managedProcesses.length >= 0, true);
+  const readiness = evaluateLocalAppActionDefinition(listLocalAppDefinitions().find((entry) => entry.id === 'prochat')!, 'stop');
+  assert.equal(readiness.executable, false);
+  if (previous === undefined) delete process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  else process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = previous;
 });
 
 test('GET /local-apps/action-enablement-backlog does not expose secrets or raw env', async () => {
@@ -780,9 +820,25 @@ test('GET /local-apps/actions/status works after local app action failure', asyn
 });
 
 test('GET /local-apps/actions/status exposes managed process records when present', async () => {
+  const sandbox = createManagedProcessSandbox();
+  const previous = process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = sandbox.registryPath;
+  fs.mkdirSync(path.dirname(sandbox.registryPath), { recursive: true });
+  fs.writeFileSync(sandbox.registryPath, JSON.stringify({ records: [] }, null, 2));
   const status = readLocalAppActionStatus();
   assert.equal(Array.isArray(status.managedProcesses), true);
+  if (previous === undefined) delete process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH;
+  else process.env.BRAIN_CORE_LOCAL_APP_MANAGED_PROCESS_PATH = previous;
+  fs.rmSync(sandbox.root, { recursive: true, force: true });
 });
+
+function createManagedProcessSandbox() {
+  const root = mkdtempSync(path.join(tmpdir(), 'brain-core-managed-process-'));
+  return {
+    root,
+    registryPath: path.join(root, 'managed-processes.json'),
+  };
+}
 
 test('POST /local-apps/dashboard is not registered', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/dashboard' });
