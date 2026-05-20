@@ -5,6 +5,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 RUNTIME_DIR="$REPO_ROOT/runtime/local"
 LOG_FILE="$RUNTIME_DIR/probot.log"
 PID_FILE="$RUNTIME_DIR/probot.pid"
+CANONICAL_PORT=7070
 
 cd "$REPO_ROOT"
 mkdir -p "$RUNTIME_DIR"
@@ -12,12 +13,12 @@ mkdir -p "$RUNTIME_DIR"
 if [[ -f "$PID_FILE" ]]; then
   PID="$(cat "$PID_FILE" || true)"
   if [[ -n "$PID" ]] && kill -0 "$PID" >/dev/null 2>&1; then
-    echo "ProBot already running as ${PID}"
+    echo "ProBot already running as ${PID} on port ${CANONICAL_PORT}"
     exit 0
   fi
   rm -f "$PID_FILE"
 fi
 
-echo "Starting ProBot from ${REPO_ROOT}"
-npm run dev > "$LOG_FILE" 2>&1 &
+echo "Starting ProBot from ${REPO_ROOT} on port ${CANONICAL_PORT}"
+PROBOT_DASHBOARD_PORT="$CANONICAL_PORT" npm run dev > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"

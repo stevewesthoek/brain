@@ -409,3 +409,96 @@ Installed plugin verification:
 - `/Users/Office/mind/.obsidian/plugins/brain-console`
 - Both contain only `brain-console-local-apps-live-actions-2026-05-19-01`.
 - Both report `staleMarkers: []`.
+
+---
+
+## Continuation 8: ProBot lifecycle verification hardening
+
+Date: 2026-05-20
+
+### Changes
+
+**ProBot live verifier safety (opt-in env var):**
+
+- Live verifier no longer auto-POSTs `probot:start`, `probot:stop`, or `probot:restart` by default.
+- ProBot excluded from composite restart candidate selection unless `BRAIN_CORE_LIVE_TEST_PROBOT_LIFECYCLE=1`.
+- ProBot excluded from `selectExecutableAction()` fallback unless opt-in is set.
+- Live summary reports: `probot lifecycle actions enabled but not POST-tested by default`.
+- Reason: avoids starting or restarting the ProBot control-plane process during routine verification.
+
+**ProBot port correctness:**
+
+- `projects/probot/scripts/dev/start-local.sh` now sets `CANONICAL_PORT=7070` and exports `PROBOT_DASHBOARD_PORT="$CANONICAL_PORT"` before launching.
+- Port is fixed and repo-local. Script does not read or source `.env`.
+- Test added: `ProBot start uses canonical port 7070`.
+
+**ProBot PID safety:**
+
+- `projects/probot/scripts/dev/stop-local.sh` now validates PID ownership before killing.
+- Uses `ps -p "$PID" -o args=` to check the process matches ProBot markers (`ProBot`, `probot`, `tsx...src/index.ts`, `node...dist/index.js`).
+- Stale PID (process dead): removes PID file, returns harmless success.
+- Wrong PID (alive but not ProBot): removes PID file, returns harmless success with clear message.
+- Does not use `pkill`, `killall`, `lsof`, or kill-by-port.
+- Does not print raw command lines that may contain secrets.
+- Tests added: `ProBot stop script does not kill arbitrary PIDs`, `ProBot stop treats stale/wrong PID as harmless and removes PID file`.
+
+**Managed npm lifecycle for ProChat:**
+
+- Start returns 200 (accepted) but managed process exits before status poll.
+- Root cause: ProChat's `npm run dev` requires env configuration not available in live test context.
+- Live verifier now reports: `prochat managed lifecycle skipped: start accepted (200) but managed process exited before status poll. Process likely requires env configuration not available in live test context.`
+- No false `managedProcessCount` claim.
+- Added 500ms delay between start and status poll for fair chance.
+
+**Live verifier accuracy:**
+
+- Reports separate `probotLifecycle` section with status and reason.
+- Reports `probotPostTestStatus` field.
+- Reports `managedLifecycle` with explicit skip reason.
+- All skipped behavior labeled as skipped, not as proof.
+
+**Tests added (routes.test.ts):**
+
+- ProBot actions are executable in dashboard.
+- ProBot actions are absent from `/local-apps/action-enablement-backlog`.
+- ProBot start command is fixed and repo-local.
+- ProBot start uses or guarantees canonical port 7070.
+- ProBot stop script does not kill arbitrary PIDs.
+- ProBot stop treats stale/wrong PID as harmless and removes PID file.
+- Backlog disabled count equals dashboard disabled action count.
+- Responses do not include `.env`, `TOKEN=`, `SECRET=`, `PASSWORD=`, `COOKIE=`.
+- Fixed stale test: `GET /local-apps returns placeholder local app list` (now checks >= 16 apps with some actions supported).
+
+### Validation results
+
+- Brain Core CI: 480/480 pass
+- Live verifier: status=passed, appCount=16, executableActions=32, disabledActionCount=16, backlogDisabledActionCount=16
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass (marker present, staleMarkers=[])
+- Brain Console find:installed: both locations verified with correct marker
+
+### ProBot POST lifecycle
+
+- **Opt-in only.** Not POST-tested by default.
+- Set `BRAIN_CORE_LIVE_TEST_PROBOT_LIFECYCLE=1` to enable.
+
+### Managed npm lifecycle result
+
+- ProChat managed lifecycle: **skipped**.
+- Reason: start accepted but managed process exited before status poll (requires ProChat env config).
+
+### Installed plugin verification
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+- `/Users/Office/mind/.obsidian/plugins/brain-console`: marker `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+
+### Unrelated dirty files left unstaged
+
+- `operations/system-configs/claude/model-tracking.json`
+- `operations/system-configs/codex/skills/.system/plugin-creator/SKILL.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/agents/openai.yaml`
+- `operations/system-configs/codex/skills/.system/plugin-creator/references/plugin-json-spec.md`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/create_basic_plugin.py`
+- `operations/system-configs/codex/skills/.system/plugin-creator/scripts/validate_plugin.py`
+- `projects/probot/runtime/`

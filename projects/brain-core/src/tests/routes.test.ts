@@ -302,8 +302,8 @@ test('GET /local-apps returns placeholder local app list', async () => {
   const body = JSON.parse(response.body) as { apps: Array<{ id: string; actionsSupported: boolean }> };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.apps.length > 0, true);
-  assert.equal(body.apps[0]?.actionsSupported, false);
+  assert.equal(body.apps.length >= 16, true);
+  assert.equal(body.apps.some((app) => app.actionsSupported === true), true);
 });
 
 test('GET /video/status returns read-only placeholder video state', async () => {
@@ -1900,6 +1900,100 @@ test('approved model-router dry-run generates report with metadata', async () =>
     delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
     delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
     fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('ProBot actions are executable in dashboard', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
+  const body = JSON.parse(response.body) as {
+    apps: Array<{ id: string; startSupported: boolean; stopSupported: boolean; restartSupported: boolean }>;
+  };
+  const probot = body.apps.find((app) => app.id === 'probot');
+  assert.ok(probot, 'probot should be in dashboard');
+  assert.equal(probot.startSupported, true, 'probot start should be executable');
+  assert.equal(probot.stopSupported, true, 'probot stop should be executable');
+  assert.equal(probot.restartSupported, true, 'probot restart should be executable');
+});
+
+test('ProBot actions are absent from action-enablement-backlog', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ appId: string; action: string }>;
+  };
+  const probotDisabled = body.items.filter((item) => item.appId === 'probot');
+  assert.equal(probotDisabled.length, 0, 'probot should have no disabled actions in backlog');
+});
+
+test('ProBot start command is fixed and repo-local', async () => {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === 'probot');
+  assert.ok(app, 'probot should be in inventory');
+  const readiness = evaluateLocalAppActionDefinition(app!, 'start');
+  assert.equal(readiness.executable, true);
+  assert.equal(readiness.commandLabel, 'bash scripts/dev/start-local.sh');
+  assert.ok(!readiness.commandLabel.includes('.env'), 'start command must not reference .env');
+  assert.ok(!readiness.commandLabel.includes('TOKEN'), 'start command must not reference TOKEN');
+});
+
+test('ProBot start uses canonical port 7070', async () => {
+  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'start-local.sh');
+  const content = fs.readFileSync(scriptPath, 'utf8');
+  assert.ok(content.includes('CANONICAL_PORT=7070'), 'start script must set CANONICAL_PORT=7070');
+  assert.ok(content.includes('PROBOT_DASHBOARD_PORT="$CANONICAL_PORT"'), 'start script must export port to PROBOT_DASHBOARD_PORT');
+  assert.ok(!content.includes('source .env'), 'start script must not source .env');
+  assert.ok(!content.includes('cat .env'), 'start script must not cat .env');
+});
+
+test('ProBot stop script does not kill arbitrary PIDs', async () => {
+  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'stop-local.sh');
+  const content = fs.readFileSync(scriptPath, 'utf8');
+  assert.ok(!content.includes('pkill'), 'stop script must not use pkill');
+  assert.ok(!content.includes('killall'), 'stop script must not use killall');
+  assert.ok(!content.includes('lsof'), 'stop script must not use lsof');
+  assert.ok(content.includes('ps -p "$PID"'), 'stop script must validate PID ownership');
+  assert.ok(content.includes('ProBot') || content.includes('probot'), 'stop script must check process matches ProBot');
+});
+
+test('ProBot stop treats stale/wrong PID as harmless and removes PID file', async () => {
+  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'stop-local.sh');
+  const content = fs.readFileSync(scriptPath, 'utf8');
+  assert.ok(content.includes('stale PID'), 'stop script must handle stale PID gracefully');
+  assert.ok(content.includes('did not match ProBot process'), 'stop script must handle wrong PID gracefully');
+  assert.ok(content.includes('rm -f "$PID_FILE"'), 'stop script must clean up PID file in all cases');
+});
+
+test('backlog disabled count equals dashboard disabled action count', async () => {
+  const dashboardResponse = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
+  const dashboard = JSON.parse(dashboardResponse.body) as {
+    apps: Array<{ id: string; startSupported: boolean; stopSupported: boolean; restartSupported: boolean }>;
+  };
+  const backlogResponse = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
+  const backlog = JSON.parse(backlogResponse.body) as { disabledActionCount: number; items: Array<{ appId: string; action: string }> };
+
+  const dashboardDisabledCount = dashboard.apps.reduce((count, app) => {
+    if (!app.startSupported) count++;
+    if (!app.stopSupported) count++;
+    if (!app.restartSupported) count++;
+    return count;
+  }, 0);
+  assert.equal(backlog.disabledActionCount, dashboardDisabledCount, 'backlog disabled count must equal dashboard disabled action count');
+  assert.equal(backlog.items.length, dashboardDisabledCount, 'backlog items length must equal dashboard disabled action count');
+});
+
+test('responses do not include secrets or raw env values', async () => {
+  const endpoints = [
+    '/local-apps/dashboard',
+    '/local-apps/actions/status',
+    '/local-apps/action-enablement-backlog',
+    '/local-apps/source-diagnostics',
+  ];
+  for (const endpoint of endpoints) {
+    const response = await exercise({ method: 'GET', url: endpoint });
+    const body = response.body;
+    assert.ok(!body.includes('.env'), `${endpoint} must not expose .env`);
+    assert.ok(!body.includes('TOKEN='), `${endpoint} must not expose TOKEN=`);
+    assert.ok(!body.includes('SECRET='), `${endpoint} must not expose SECRET=`);
+    assert.ok(!body.includes('PASSWORD='), `${endpoint} must not expose PASSWORD=`);
+    assert.ok(!body.includes('COOKIE='), `${endpoint} must not expose COOKIE=`);
   }
 });
 
