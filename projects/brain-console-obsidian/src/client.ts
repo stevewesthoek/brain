@@ -512,6 +512,79 @@ export interface BrainCoreLocalAppsOperationalReadinessResponse {
   safety: BrainCoreLocalAppOperationalReadinessSafety;
 }
 
+export type BrainCoreLocalAppOperatorSummaryItemStatus = 'ok' | 'attention' | 'blocked' | 'unknown';
+
+export interface BrainCoreLocalAppOperatorSummaryDisabledAction {
+  action: BrainCoreLocalAppAction;
+  reason: string;
+  category?: string;
+}
+
+export interface BrainCoreLocalAppOperatorSummaryNextAction {
+  label: string;
+  kind: 'none' | 'start' | 'stop' | 'restart' | 'inspect-health' | 'configure-health-url' | 'add-lifecycle-script' | 'manual-review';
+  reason: string;
+  executable: boolean;
+}
+
+export interface BrainCoreLocalAppOperatorSummaryFreshness {
+  checkedAt?: string;
+  fresh: boolean;
+  source: 'operational-readiness' | 'dashboard' | 'backlog' | 'action-status';
+}
+
+export interface BrainCoreLocalAppOperatorSummaryLastAction {
+  action: BrainCoreLocalAppAction;
+  status: string;
+  ok: boolean;
+  endedAt?: string;
+  message: string;
+}
+
+export interface BrainCoreLocalAppOperatorSummaryItem {
+  appId: string;
+  appName: string;
+  status: BrainCoreLocalAppOperatorSummaryItemStatus;
+  reachabilityStatus: BrainCoreLocalAppReachabilityStatus;
+  actionEnabled: boolean;
+  supportedActions: BrainCoreLocalAppAction[];
+  disabledActions: BrainCoreLocalAppOperatorSummaryDisabledAction[];
+  lastAction?: BrainCoreLocalAppOperatorSummaryLastAction;
+  nextRecommendedAction: BrainCoreLocalAppOperatorSummaryNextAction;
+  freshness: BrainCoreLocalAppOperatorSummaryFreshness;
+}
+
+export interface BrainCoreLocalAppOperatorTopAttentionItem {
+  appId: string;
+  appName: string;
+  status: string;
+  reason: string;
+  nextRecommendedAction: string;
+}
+
+export interface BrainCoreLocalAppsOperatorSummaryResponse {
+  id: 'local-apps-operator-summary';
+  generatedAt: string;
+  appCount: number;
+  executableActionCount: number;
+  disabledActionCount: number;
+  reachableCount: number;
+  unreachableCount: number;
+  notConfiguredCount: number;
+  staleCount: number;
+  attentionCount: number;
+  items: BrainCoreLocalAppOperatorSummaryItem[];
+  topAttentionItems: BrainCoreLocalAppOperatorTopAttentionItem[];
+  safety: {
+    readOnly: true;
+    pluginExecutesShell: false;
+    arbitraryCommandAllowed: false;
+    exposesSecrets: false;
+    writesToMind: false;
+    performsLifecycleAction: false;
+  };
+}
+
 export interface BrainCoreVideoStatus {
   status: 'placeholder' | 'not-configured' | 'ok' | 'failed' | 'unknown';
   enabled: boolean;
@@ -4187,6 +4260,10 @@ export async function readBrainCoreLocalAppsActionEnablementBacklog(baseUrl: str
 
 export async function readBrainCoreLocalAppsOperationalReadiness(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppsOperationalReadinessResponse>> {
   return fetchJson<BrainCoreLocalAppsOperationalReadinessResponse>(normalizeBaseUrl(baseUrl), '/local-apps/operational-readiness');
+}
+
+export async function readBrainCoreLocalAppsOperatorSummary(baseUrl: string): Promise<HttpResult<BrainCoreLocalAppsOperatorSummaryResponse>> {
+  return fetchJson<BrainCoreLocalAppsOperatorSummaryResponse>(normalizeBaseUrl(baseUrl), '/local-apps/operator-summary');
 }
 
 export async function readBrainCoreLocalAppsActionPlans(baseUrl: string): Promise<HttpResult<{ plans?: BrainCoreLocalAppActionPlan[] }>> {

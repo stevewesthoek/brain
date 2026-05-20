@@ -884,3 +884,108 @@ The `TOTAL_CAP_MS = 8_000` constant was removed. Each probe independently runs w
 - No lifecycle actions triggered by operational-readiness endpoint
 - `lastAction` read from in-memory state only — no disk I/O
 - Per-item safety object on every item makes safety guarantees explicit at every response level
+
+---
+
+## Continuation 14 — Local Apps Operator Summary (2026-05-20)
+
+### Main goal
+
+Unified operator clarity surface: one read-only endpoint and one compact Brain Console card combining lifecycle support, operational readiness, last action result, and disabled-action blockers.
+
+### New endpoint
+
+`GET /local-apps/operator-summary`
+
+Response shape:
+- `id: 'local-apps-operator-summary'`
+- `appCount`, `executableActionCount`, `disabledActionCount`
+- `reachableCount`, `unreachableCount`, `notConfiguredCount`, `staleCount`, `attentionCount`
+- `items[]` — per-app operator view
+- `topAttentionItems[]` — top 5 attention/blocked items for the card
+- `safety` — complete safety flags
+
+### Data sources
+
+- `readLocalAppsOperationalReadiness()` — reachability status and freshness per app
+- `evaluateLocalAppActionDefinition()` — supported vs disabled actions per app
+- `readLocalAppActionStatus()` — last action result per app
+- `listLocalAppDefinitions()` — canonical inventory
+
+No duplicate health checks: operational readiness is called once per operator summary request.
+
+### Per-item semantics
+
+**status:**
+- `ok` — reachable or not-configured, no recent failures, no critical gap
+- `attention` — unreachable, stale, recent failed action, or managed app missing health URL
+- `blocked` — no executable actions and disabled blockers remain for a managed app
+- `unknown` — insufficient data
+
+**nextRecommendedAction.kind:**
+- `start` — unreachable and start is supported
+- `restart` — reachable with recent failed action and restart supported
+- `configure-health-url` — no healthUrl configured
+- `add-lifecycle-script` — missing-command or missing-repo-local-script disabled action
+- `inspect-health` — unreachable but no automated action available
+- `manual-review` — disabled actions requiring review
+- `none` — operating normally
+
+### Files changed
+
+**`projects/brain-core/src/types/api.ts`**
+- Added `BrainCoreLocalAppOperatorSummaryItemStatus`, `BrainCoreLocalAppOperatorSummaryDisabledAction`, `BrainCoreLocalAppOperatorSummaryNextAction`, `BrainCoreLocalAppOperatorSummaryFreshness`, `BrainCoreLocalAppOperatorSummaryLastAction`, `BrainCoreLocalAppOperatorSummaryItem`, `BrainCoreLocalAppOperatorTopAttentionItem`, `BrainCoreLocalAppOperatorSummarySafety`, `BrainCoreLocalAppsOperatorSummaryResponse`
+
+**`projects/brain-core/src/adapters/local-app-operator-summary.ts`** (NEW)
+- `readLocalAppsOperatorSummary(fetchImpl)` — async, injectable fetch for test isolation
+- Calls `readLocalAppsOperationalReadiness()` once; merges with backlog evaluation
+- `deriveItemStatus()` and `deriveNextAction()` encapsulate operator reasoning
+- `categorizeReason()` mirrors backlog logic (no duplication of category data)
+
+**`projects/brain-core/src/api/routes.ts`**
+- Import `readLocalAppsOperatorSummary`
+- Added `case '/local-apps/operator-summary'`
+
+**`projects/brain-core/src/tests/routes.test.ts`**
+- Added 14 tests (522 total, all pass)
+- Covers: shape, appCount, count math, disabledActionCount vs backlog, action flags, next action kinds, safety completeness, POST rejected, mock fetch count assertions, unreachable → attention, not-configured → appropriate recommendation
+
+**`projects/brain-core/scripts/test-local-app-actions-live.mjs`**
+- Added operator summary probe with full shape/count/safety assertions
+- Cross-asserts `disabledActionCount` and `executableActionCount` against backlog
+- Summary now includes `operatorSummary` section (counts, topAttentionItems, recommendedActionCounts by kind)
+
+**`projects/brain-console-obsidian/src/client.ts`**
+- Added all operator summary types and `readBrainCoreLocalAppsOperatorSummary()` function
+
+**`projects/brain-console-obsidian/src/view.ts`**
+- Import added
+- `localAppsOperatorSummary` added to state, allSettled array, destructuring
+- Padding: 161 → 162
+- "Operator Summary" card added: attention badge, stat grid (apps/executable/disabled/reachable/unreachable/not-configured), topAttentionItems list with recommended action labels
+
+### Console card behavior
+
+- If operator summary endpoint fails while /status and dashboard work: Console shows degraded, not offline (Promise.allSettled pattern)
+- No mutation buttons; read-only clarity surface only
+- Attention badge: `warn` tone when attentionCount > 0, `ok` otherwise
+
+### Validation results
+
+- Brain Core CI: 522/522 pass
+- Brain Console typecheck: pass
+- Brain Console check:dashboard-source: pass
+- Brain Console release:install: pass
+- Plugin marker: `brain-console-local-apps-live-actions-2026-05-19-01`, staleMarkers=[]
+
+### Safety notes
+
+- No shell execution
+- No lifecycle actions triggered
+- No secrets exposed
+- Complete safety flags on both top-level and response (no per-item safety on operator summary — top-level is sufficient for a summary endpoint)
+
+### Unrelated dirty files left unstaged
+
+- `operations/system-configs/claude/model-tracking.json`
+- `operations/system-configs/codex/skills/.system/plugin-creator/` (multiple files)

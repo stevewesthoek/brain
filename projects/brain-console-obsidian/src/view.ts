@@ -13,6 +13,7 @@ import {
   readBrainCoreLocalAppsActionEnablementBacklog,
   readBrainCoreLocalAppsActionsStatus,
   readBrainCoreLocalAppsOperationalReadiness,
+  readBrainCoreLocalAppsOperatorSummary,
   requestBrainCoreLocalAppAction,
   readBrainCoreExecutionPlans,
   readBrainCoreExecutionReadiness,
@@ -144,6 +145,7 @@ import {
   type BrainCoreLocalAppOrchestratorStatus,
   type BrainCoreLocalAppOnboardingChecklist,
   type BrainCoreLocalAppsOperationalReadinessResponse,
+  type BrainCoreLocalAppsOperatorSummaryResponse,
   type BrainCoreExecutionPlan,
   type BrainCoreExecutionReadiness,
   type BrainCoreRepoSummary,
@@ -308,6 +310,7 @@ export interface BrainConsoleViewState {
   localAppsActionEnablementBacklog?: BrainCoreLocalAppActionEnablementBacklogResponse;
   localAppsActionStatus?: BrainCoreLocalAppActionStatusResponse;
   localAppsOperationalReadiness?: BrainCoreLocalAppsOperationalReadinessResponse;
+  localAppsOperatorSummary?: BrainCoreLocalAppsOperatorSummaryResponse;
   localAppsOrchestrator?: BrainCoreLocalAppOrchestratorStatus;
   localAppsOnboardingChecklist?: BrainCoreLocalAppOnboardingChecklist;
   schedulerStatus?: BrainCoreSchedulerStatus;
@@ -580,14 +583,15 @@ export async function loadBrainConsoleViewState(
     readBrainCoreAgentEvents(baseUrl),
     readBrainCoreRecoveryItems(baseUrl),
     readBrainCoreLocalAppsOperationalReadiness(baseUrl),
+    readBrainCoreLocalAppsOperatorSummary(baseUrl),
   ]);
 
   const settledValues = withSafeEndpointPadding(
     results.map((result) => result.status === 'fulfilled' ? result.value : { value: undefined, error: result.reason }),
-    161,
+    162,
   );
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems, localAppsOperationalReadiness] = settledValues as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary] = settledValues as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -640,6 +644,7 @@ export async function loadBrainConsoleViewState(
     localAppsActionEnablementBacklog: localAppsActionEnablementBacklog.value,
     localAppsActionStatus: localAppsActionStatus.value,
     localAppsOperationalReadiness: localAppsOperationalReadiness.value,
+    localAppsOperatorSummary: localAppsOperatorSummary.value,
     schedulerStatus: schedulerStatus.value,
     schedulerJobs: schedulerJobs.value?.jobs,
     sessions: sessions.value?.sessions,
@@ -2171,6 +2176,37 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     }
     const checkedAt = operationalReadiness.generatedAt;
     orCard.createEl('div', { cls: 'brain-console__safety-note', text: `Checked at ${formatIsoTime(checkedAt)} · read-only health probes only.` });
+  }
+
+  const operatorSummary = state.localAppsOperatorSummary;
+  if (operatorSummary) {
+    const osCard = lower.createDiv({ cls: 'brain-console__local-app-readiness' });
+    osCard.createEl('div', { cls: 'brain-console__section-heading', text: 'Operator Summary' });
+    const attentionLabel = operatorSummary.attentionCount > 0 ? 'warn' : 'ok';
+    osCard.appendChild(renderStatusBadge(
+      operatorSummary.attentionCount > 0
+        ? `${operatorSummary.attentionCount} apps need attention`
+        : 'All apps nominal',
+      attentionLabel,
+    ));
+    renderCompactStatGrid(osCard, [
+      { label: 'Apps', value: String(operatorSummary.appCount) },
+      { label: 'Executable actions', value: String(operatorSummary.executableActionCount) },
+      { label: 'Disabled actions', value: String(operatorSummary.disabledActionCount) },
+      { label: 'Reachable', value: String(operatorSummary.reachableCount) },
+      { label: 'Unreachable', value: String(operatorSummary.unreachableCount) },
+      { label: 'Not configured', value: String(operatorSummary.notConfiguredCount) },
+    ]);
+    if (operatorSummary.topAttentionItems.length > 0) {
+      const attentionList = osCard.createDiv({ cls: 'brain-console__or-item-list' });
+      attentionList.createEl('div', { cls: 'brain-console__or-item-list-label', text: 'Needs attention' });
+      for (const item of operatorSummary.topAttentionItems) {
+        const line = attentionList.createDiv({ cls: 'brain-console__or-item-line brain-console__or-item-line--unreachable' });
+        line.createEl('span', { cls: 'brain-console__or-item-name', text: item.appName });
+        line.createEl('span', { cls: 'brain-console__or-item-message', text: item.nextRecommendedAction });
+      }
+    }
+    osCard.createEl('div', { cls: 'brain-console__safety-note', text: 'Read-only operator summary · no lifecycle actions triggered.' });
   }
 
   return container;

@@ -2384,6 +2384,236 @@ test('readLocalAppsOperationalReadiness adapter: per-item safety flags are compl
   }
 });
 
+test('GET /local-apps/operator-summary returns 200 with well-formed payload', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    generatedAt: string;
+    appCount: number;
+    executableActionCount: number;
+    disabledActionCount: number;
+    reachableCount: number;
+    unreachableCount: number;
+    notConfiguredCount: number;
+    staleCount: number;
+    attentionCount: number;
+    items: unknown[];
+    topAttentionItems: unknown[];
+    safety: { readOnly: boolean; pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; exposesSecrets: boolean; writesToMind: boolean; performsLifecycleAction: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'local-apps-operator-summary');
+  assert.ok(typeof body.generatedAt === 'string' && body.generatedAt.length > 0);
+  assert.ok(body.appCount >= 16, 'appCount must reflect canonical inventory');
+  assert.equal(body.appCount, body.items.length, 'appCount must match items.length');
+  assert.ok(typeof body.executableActionCount === 'number' && body.executableActionCount >= 0);
+  assert.ok(typeof body.disabledActionCount === 'number' && body.disabledActionCount >= 0);
+  assert.ok(typeof body.attentionCount === 'number');
+  assert.ok(Array.isArray(body.topAttentionItems));
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.performsLifecycleAction, false);
+});
+
+test('GET /local-apps/operator-summary items have correct shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{
+      appId: string;
+      appName: string;
+      status: string;
+      reachabilityStatus: string;
+      actionEnabled: boolean;
+      supportedActions: string[];
+      disabledActions: Array<{ action: string; reason: string }>;
+      nextRecommendedAction: { label: string; kind: string; reason: string; executable: boolean };
+      freshness: { fresh: boolean; source: string };
+    }>;
+  };
+  const validStatuses = new Set(['ok', 'attention', 'blocked', 'unknown']);
+  const validReachability = new Set(['reachable', 'unreachable', 'unknown', 'not-configured', 'stale']);
+  const validNextKinds = new Set(['none', 'start', 'stop', 'restart', 'inspect-health', 'configure-health-url', 'add-lifecycle-script', 'manual-review']);
+
+  for (const item of body.items) {
+    assert.ok(typeof item.appId === 'string' && item.appId.length > 0);
+    assert.ok(typeof item.appName === 'string' && item.appName.length > 0);
+    assert.ok(validStatuses.has(item.status), `status ${item.status} must be valid`);
+    assert.ok(validReachability.has(item.reachabilityStatus), `reachabilityStatus ${item.reachabilityStatus} must be valid`);
+    assert.ok(typeof item.actionEnabled === 'boolean');
+    assert.ok(Array.isArray(item.supportedActions));
+    assert.ok(Array.isArray(item.disabledActions));
+    for (const da of item.disabledActions) {
+      assert.ok(typeof da.action === 'string');
+      assert.ok(typeof da.reason === 'string');
+    }
+    assert.ok(validNextKinds.has(item.nextRecommendedAction.kind), `nextRecommendedAction.kind ${item.nextRecommendedAction.kind} must be valid`);
+    assert.ok(typeof item.nextRecommendedAction.label === 'string');
+    assert.ok(typeof item.nextRecommendedAction.reason === 'string');
+    assert.ok(typeof item.nextRecommendedAction.executable === 'boolean');
+    assert.ok(typeof item.freshness.fresh === 'boolean');
+    assert.ok(typeof item.freshness.source === 'string');
+  }
+});
+
+test('GET /local-apps/operator-summary appCount matches items.length', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as { appCount: number; items: unknown[] };
+  assert.equal(body.appCount, body.items.length);
+});
+
+test('GET /local-apps/operator-summary executableActionCount + disabledActionCount equals appCount * 3', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as { appCount: number; executableActionCount: number; disabledActionCount: number };
+  assert.equal(
+    body.executableActionCount + body.disabledActionCount,
+    body.appCount * 3,
+    'executableActionCount + disabledActionCount must equal appCount * 3 (start+stop+restart per app)',
+  );
+});
+
+test('GET /local-apps/operator-summary disabledActionCount matches backlog disabledActionCount', async () => {
+  const [summaryResponse, backlogResponse] = await Promise.all([
+    exercise({ method: 'GET', url: '/local-apps/operator-summary' }),
+    exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' }),
+  ]);
+  const summary = JSON.parse(summaryResponse.body) as { disabledActionCount: number };
+  const backlog = JSON.parse(backlogResponse.body) as { disabledActionCount: number };
+  assert.equal(summary.disabledActionCount, backlog.disabledActionCount, 'operator summary disabledActionCount must match backlog disabledActionCount');
+});
+
+test('GET /local-apps/operator-summary items include supportedActions and disabledActions', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ appId: string; supportedActions: string[]; disabledActions: Array<{ action: string }> }>;
+  };
+
+  for (const item of body.items) {
+    const totalActions = item.supportedActions.length + item.disabledActions.length;
+    assert.equal(totalActions, 3, `item ${item.appId} supportedActions + disabledActions must equal 3`);
+  }
+});
+
+test('GET /local-apps/operator-summary items include nextRecommendedAction', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ nextRecommendedAction: { kind: string; executable: boolean } }>;
+  };
+
+  assert.ok(body.items.every((item) => typeof item.nextRecommendedAction.kind === 'string'));
+});
+
+test('GET /local-apps/operator-summary configure-health-url recommendation for apps without health URL', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ appId: string; reachabilityStatus: string; nextRecommendedAction: { kind: string } }>;
+  };
+
+  const noHealthItems = body.items.filter((item) => item.reachabilityStatus === 'not-configured');
+  assert.ok(noHealthItems.length > 0, 'must have at least one not-configured item');
+  const configureHealthItems = noHealthItems.filter((item) =>
+    item.nextRecommendedAction.kind === 'configure-health-url' ||
+    item.nextRecommendedAction.kind === 'add-lifecycle-script' ||
+    item.nextRecommendedAction.kind === 'manual-review' ||
+    item.nextRecommendedAction.kind === 'none',
+  );
+  assert.ok(configureHealthItems.length > 0, 'not-configured items should have an appropriate next action');
+});
+
+test('GET /local-apps/operator-summary add-lifecycle-script or manual-review for lifecycle gaps', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    items: Array<{ disabledActions: Array<{ category?: string }>; nextRecommendedAction: { kind: string } }>;
+  };
+
+  const lifecycleGapItems = body.items.filter((item) =>
+    item.disabledActions.some((da) => da.category === 'missing-command' || da.category === 'missing-repo-local-script'),
+  );
+  assert.ok(lifecycleGapItems.length > 0, 'must have at least one item with lifecycle gap');
+  const actionableItems = lifecycleGapItems.filter((item) =>
+    item.nextRecommendedAction.kind === 'add-lifecycle-script' ||
+    item.nextRecommendedAction.kind === 'manual-review' ||
+    item.nextRecommendedAction.kind === 'configure-health-url' ||
+    item.nextRecommendedAction.kind === 'none',
+  );
+  assert.ok(actionableItems.length > 0, 'lifecycle gap items should have an appropriate next action');
+});
+
+test('GET /local-apps/operator-summary safety flags complete', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/operator-summary' });
+  const body = JSON.parse(response.body) as {
+    safety: Record<string, unknown>;
+  };
+
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.pluginExecutesShell, false);
+  assert.equal(body.safety.arbitraryCommandAllowed, false);
+  assert.equal(body.safety.exposesSecrets, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.performsLifecycleAction, false);
+  assert.ok(!('executesShell' in body.safety), 'must not expose executesShell');
+  assert.ok(!('exposesEnv' in body.safety), 'must not expose exposesEnv');
+  assert.ok(!('writesFiles' in body.safety), 'must not expose writesFiles');
+});
+
+test('POST /local-apps/operator-summary is rejected', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/operator-summary' });
+  assert.ok(response.statusCode === 404 || response.statusCode === 405, 'POST must be rejected');
+});
+
+test('readLocalAppsOperatorSummary adapter: mock fetch — counts sum correctly', async () => {
+  const { readLocalAppsOperatorSummary } = await import('../adapters/local-app-operator-summary.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: true, status: 200 } as Response;
+  };
+
+  const result = await readLocalAppsOperatorSummary(mockFetch as typeof fetch);
+
+  assert.equal(result.id, 'local-apps-operator-summary');
+  assert.ok(result.appCount >= 16);
+  assert.equal(result.appCount, result.items.length);
+  assert.equal(result.executableActionCount + result.disabledActionCount, result.appCount * 3);
+  assert.equal(result.safety.readOnly, true);
+  assert.equal(result.safety.arbitraryCommandAllowed, false);
+  assert.equal(result.safety.performsLifecycleAction, false);
+});
+
+test('readLocalAppsOperatorSummary adapter: mock fetch — reachable items have ok or attention status', async () => {
+  const { readLocalAppsOperatorSummary } = await import('../adapters/local-app-operator-summary.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: true, status: 200 } as Response;
+  };
+
+  const result = await readLocalAppsOperatorSummary(mockFetch as typeof fetch);
+  const reachableItems = result.items.filter((item) => item.reachabilityStatus === 'reachable');
+  for (const item of reachableItems) {
+    assert.ok(item.status === 'ok' || item.status === 'attention' || item.status === 'blocked',
+      `reachable item ${item.appId} should not be unknown`);
+  }
+});
+
+test('readLocalAppsOperatorSummary adapter: mock fetch — unreachable items have attention status', async () => {
+  const { readLocalAppsOperatorSummary } = await import('../adapters/local-app-operator-summary.js');
+
+  const mockFetch = async (): Promise<Response> => {
+    return { ok: false, status: 503 } as Response;
+  };
+
+  const result = await readLocalAppsOperatorSummary(mockFetch as typeof fetch);
+  const probedItems = result.items.filter((item) =>
+    item.reachabilityStatus === 'unreachable',
+  );
+  for (const item of probedItems) {
+    assert.ok(item.status === 'attention' || item.status === 'blocked',
+      `unreachable item ${item.appId} should have attention or blocked status`);
+  }
+});
+
 test('responses do not include secrets or raw env values', async () => {
   const endpoints = [
     '/local-apps/dashboard',
@@ -2391,6 +2621,7 @@ test('responses do not include secrets or raw env values', async () => {
     '/local-apps/action-enablement-backlog',
     '/local-apps/source-diagnostics',
     '/local-apps/operational-readiness',
+    '/local-apps/operator-summary',
   ];
   for (const endpoint of endpoints) {
     const response = await exercise({ method: 'GET', url: endpoint });

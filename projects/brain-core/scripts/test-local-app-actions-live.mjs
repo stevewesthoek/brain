@@ -92,11 +92,27 @@ try {
     assert(item.safety?.performsLifecycleAction === false, `item ${item.appId} safety.performsLifecycleAction must be false`);
   }
 
+  const operatorSummary = await expectGet('/local-apps/operator-summary');
+  assert(operatorSummary.id === 'local-apps-operator-summary', 'operator summary id mismatch');
+  assert(typeof operatorSummary.appCount === 'number' && operatorSummary.appCount >= 16, 'operator summary must report canonical inventory');
+  assert(operatorSummary.appCount === operatorSummary.items.length, 'operator summary appCount must match items length');
+  assert(operatorSummary.executableActionCount + operatorSummary.disabledActionCount === operatorSummary.appCount * 3,
+    'executableActionCount + disabledActionCount must equal appCount * 3');
+  assert(operatorSummary.safety?.readOnly === true, 'operator summary must be read-only');
+  assert(operatorSummary.safety?.pluginExecutesShell === false, 'operator summary must not execute shell');
+  assert(operatorSummary.safety?.arbitraryCommandAllowed === false, 'operator summary must not allow arbitrary commands');
+  assert(operatorSummary.safety?.exposesSecrets === false, 'operator summary must not expose secrets');
+  assert(operatorSummary.safety?.writesToMind === false, 'operator summary must not write to mind');
+  assert(operatorSummary.safety?.performsLifecycleAction === false, 'operator summary must not perform lifecycle actions');
+  assert(Array.isArray(operatorSummary.topAttentionItems), 'operator summary topAttentionItems must be array');
+
   const actionStatusBefore = await expectGet('/local-apps/actions/status');
   const backlog = await expectGet('/local-apps/action-enablement-backlog');
   assert(actionStatusBefore.safety?.commandOverrideAccepted === false, 'action status must reject command overrides');
   assert(backlog.disabledActionCount >= 0, 'backlog disabled action count should be reported');
   assert(backlog.disabledActionCount === backlog.items.length, 'backlog disabledActionCount should match item count');
+  assert(operatorSummary.disabledActionCount === backlog.disabledActionCount, 'operator summary disabledActionCount must match backlog disabledActionCount');
+  assert(operatorSummary.executableActionCount === backlog.enabledActionCount, 'operator summary executableActionCount must match backlog enabledActionCount');
 
   const unknownApp = await post('/local-apps/unknown-local-app/start');
   assert(unknownApp.statusCode === 404, 'unknown app POST should return 404');
@@ -282,6 +298,21 @@ try {
       reachableApps: operationalReadiness.items
         .filter((item) => item.status === 'reachable')
         .map((item) => ({ appId: item.appId, durationMs: item.durationMs })),
+    },
+    operatorSummary: {
+      appCount: operatorSummary.appCount,
+      executableActionCount: operatorSummary.executableActionCount,
+      disabledActionCount: operatorSummary.disabledActionCount,
+      reachableCount: operatorSummary.reachableCount,
+      unreachableCount: operatorSummary.unreachableCount,
+      notConfiguredCount: operatorSummary.notConfiguredCount,
+      attentionCount: operatorSummary.attentionCount,
+      topAttentionItems: operatorSummary.topAttentionItems,
+      recommendedActionCounts: operatorSummary.items.reduce((acc, item) => {
+        const kind = item.nextRecommendedAction?.kind ?? 'none';
+        acc[kind] = (acc[kind] ?? 0) + 1;
+        return acc;
+      }, {}),
     },
   };
 
