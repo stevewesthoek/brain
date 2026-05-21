@@ -1,7 +1,7 @@
 # Video Orchestrator Roadmap — Phase 0 → Phase 5+
 
 **Date Updated:** 2026-05-21  
-**Status:** Phase 0→3 complete. Phase 4 (multi-account routing) ready for implementation.  
+**Status:** Phase 0→4 complete. Phase 5 (LoRA + learning loop) ready for implementation.  
 **Roadmap Duration:** 6 months (May 2026 — October 2026)  
 **Constraint:** Zero external platform costs, local Mac mini M4 Pro only (90% available at night).
 
@@ -48,8 +48,8 @@ Extracted from DeerFlow, Arcads, MoneyPrinter, Wan2GP, and Claude Code Video Too
 | **Phase 1** | Done (May 2026) | ✅ Complete | Local image/video generation pipeline | SDXL, Wave, FLUX, Roop installed |
 | **Phase 2** | Done (May 2026) | ✅ Complete | Composition + format normalization | #2, #3, #5, #7 (UGC, format, screen recording, composition) |
 | **Phase 3** | Done (May 2026) | ✅ Complete | Job queue + lifecycle tracking | #4, #6 (queue, lifecycle) |
-| **Phase 4** | Jun 15 — Jul 15 | 🔄 Ready | Multi-account + account agnosticity | Account routing, account limits, #1 (parallelization) |
-| **Phase 5** | Aug 15 — Sep 15 | 📋 Future | LoRA customization + learning loop | #8, #9 (brand customization, analytics) |
+| **Phase 4** | Done (May 2026) | ✅ Complete | Multi-account + account agnosticity | Account routing, account limits, #1 (parallelization) |
+| **Phase 5** | Jun 15 — Jul 15 | 🔄 Ready | LoRA customization + learning loop | #8, #9 (brand customization, analytics) |
 | **Phase 5+** | Sep 15+ | 📋 Research | Full automation, edge cases, refinement | Continuous improvement |
 
 ---

@@ -1149,6 +1149,8 @@ You excel at:
 - **Normalize CLI (C1z):** `~/.local/video-orchestrator/scripts/normalize.py` — direct or queued parallel format conversion
 - **Screen record CLI (C1e):** `~/.local/video-orchestrator/scripts/screen_record.py` — Playwright → FFmpeg browser recording
 - **Job status CLI:** `~/.local/video-orchestrator/scripts/job_status.py` — queue inspection, enqueue, resume
+- **Account manager (Phase 4):** `~/.local/video-orchestrator/scripts/account_manager.py` — add/list/pause/activate accounts, Keychain credentials
+- **Account routing (Phase 4):** `~/.local/video-orchestrator/scripts/account_routing.py` — affinity scoring, F0 distribution, F1 limit check, stagger scheduling
 - **Python venv:** `~/.local/video-orchestrator/.venv` — activate before running scripts outside launchd
 - **Worker launchd:** `~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist`
 - **DB schema migration:** `brain/operations/database/standalone/video-orchestrator/init/002_phase3_lifecycle.sql`
