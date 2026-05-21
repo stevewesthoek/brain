@@ -15,6 +15,7 @@ export interface DashboardSnapshot {
   maintenanceCount: number;
   approvalsCount: number;
   schedulerHealthy: boolean;
+  localAppManagedProcessCount: number;
   nextAction: string;
   refreshedAt?: Date;
   brainCoreUrl: string;
@@ -183,6 +184,9 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
 
   // Scheduler
   const schedulerHealthy = state.schedulerStatus?.latestRunStatus !== 'failed';
+
+  // Local app managed process visibility is read-only and comes from Brain Core.
+  const localAppManagedProcessCount = state.localAppsActionStatus?.managedProcesses?.length ?? 0;
 
   // Registry counts
   const orchestratorCount = (state.orchestrators ?? []).length;
@@ -416,6 +420,7 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     maintenanceCount,
     approvalsCount,
     schedulerHealthy,
+    localAppManagedProcessCount,
     nextAction,
     refreshedAt: new Date(),
     brainCoreUrl,

@@ -316,12 +316,23 @@ export interface BrainCoreLocalAppActionAuditStatus {
   };
 }
 
+export interface BrainCoreLocalAppManagedProcessRecord {
+  appId: string;
+  action: 'start';
+  pid: number;
+  startedAt: string;
+  cwdSummary: string;
+  strategy: 'repo-npm-dev' | 'repo-npm-start';
+  commandLabel: string;
+}
+
 export interface BrainCoreLocalAppActionStatusResponse {
   id: 'local-apps-actions-status';
   inFlight: BrainCoreLocalAppActionResult[];
   recentResults: BrainCoreLocalAppActionResult[];
   lastErrorByApp: Record<string, BrainCoreLocalAppActionResult>;
   locks: Array<{ appId: string; action: BrainCoreLocalAppAction; startedAt: string }>;
+  managedProcesses: BrainCoreLocalAppManagedProcessRecord[];
   audit: BrainCoreLocalAppActionAuditStatus;
   safety: {
     pluginExecutesShell: false;
@@ -399,6 +410,7 @@ export type BrainCoreLocalAppActionEnablementCategory =
   | 'unsafe-command-shape'
   | 'missing-working-directory'
   | 'missing-helper'
+  | 'dynamic-stop-after-brain-core-start'
   | 'manual-only'
   | 'not-yet-allowlisted'
   | 'other';

@@ -1035,3 +1035,31 @@ Safety notes:
 - No shell execution path was added to Brain Console.
 - No mutation buttons were added.
 - Unrelated dirty `operations/system-configs/**` files were left unstaged and untouched by this continuation.
+
+
+---
+
+## Continuation update — Brain Console managed-process contract alignment
+
+Date: 2026-05-21
+
+Continued from the local apps live actions handoff after reactivating the `brain` and `mind` sources.
+
+What changed:
+
+- Brain Console client types now include the Brain Core `managedProcesses` array returned by `/local-apps/actions/status`.
+- Brain Console now has an explicit `BrainCoreLocalAppManagedProcessRecord` type for read-only managed process metadata.
+- Brain Console local app action backlog category typing now includes `dynamic-stop-after-brain-core-start`, matching Brain Core's dynamic stop category for managed npm processes.
+- Dashboard snapshot derivation now carries `localAppManagedProcessCount` from the read-only Brain Core action status payload.
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+
+Safety notes:
+
+- No mutation controls were added.
+- Brain Console still does not execute shell commands.
+- No `.env` files, secrets, tokens, Mind writes, or operations config writes were touched.
+- Existing unrelated dirty files in `operations/system-configs/**` and local Mind/Obsidian state were left untouched.
