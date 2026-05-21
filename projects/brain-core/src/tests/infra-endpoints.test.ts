@@ -323,6 +323,49 @@ test('POST /infra/studio is rejected', async () => {
   assert.ok(response.statusCode === 404 || response.statusCode === 405);
 });
 
+test('GET /infra/studio videoOrchestrator field has correct shape when present', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/studio' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    videoOrchestrator?: {
+      databaseStatus: string;
+      totalVideos: number;
+      totalAccounts: number;
+      pendingJobs: number;
+      runningJobs: number;
+      failedJobs7d: number;
+      completedPackages: number;
+      completionRate: number;
+    } | null;
+  };
+
+  assert.equal(response.statusCode, 200);
+
+  if (body.videoOrchestrator !== null && body.videoOrchestrator !== undefined) {
+    const vo = body.videoOrchestrator;
+    assert.ok(typeof vo.databaseStatus === 'string', 'databaseStatus must be string');
+    assert.ok(typeof vo.totalVideos === 'number', 'totalVideos must be number');
+    assert.ok(typeof vo.totalAccounts === 'number', 'totalAccounts must be number');
+    assert.ok(typeof vo.pendingJobs === 'number', 'pendingJobs must be number');
+    assert.ok(typeof vo.runningJobs === 'number', 'runningJobs must be number');
+    assert.ok(typeof vo.failedJobs7d === 'number', 'failedJobs7d must be number');
+    assert.ok(typeof vo.completedPackages === 'number', 'completedPackages must be number');
+    assert.ok(typeof vo.completionRate === 'number', 'completionRate must be number');
+    assert.ok(vo.completionRate >= 0 && vo.completionRate <= 100, 'completionRate must be 0-100');
+    assert.ok(!['postgres', 'password', 'secret'].includes(vo.databaseStatus.toLowerCase()),
+      'databaseStatus must not leak credentials');
+  }
+});
+
+test('GET /infra/studio videoOrchestrator does not expose DB credentials', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/studio' });
+  const body = response.body;
+
+  assert.ok(!body.includes('"postgres"'), 'must not expose postgres user string in response body');
+  assert.ok(!body.includes('5450'), 'must not expose DB port in response body');
+  assert.ok(!body.includes('video_orchestrator'), 'must not expose DB name in response body');
+});
+
 // ── Cross-cutting: infra endpoints respect non-local rejection ────────────────
 
 test('infra endpoints reject non-local requests', async () => {
