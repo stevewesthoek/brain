@@ -359,3 +359,34 @@ skills   = execution workflows
 
 - `docs/system/obsidian-brain-core-roadmap.md`
 - `docs/system/obsidian-brain-core-implementation-plan.md`
+
+---
+
+## 2026-05-21 — ProBot dashboard decommissioned; all tabs ported to Brain Console v2.2
+
+**Decision:** ProBot dashboard is decommissioned as a product surface. All 11 ProBot dashboard tabs are now available in Brain Console (Obsidian plugin) via Brain Core API. Brain Console is the primary operating cockpit.
+
+**Rationale:** As planned in `docs/system/obsidian-brain-core-roadmap.md`, Obsidian is the only primary human dashboard. The ProBot dashboard was the last blocker. With all 11 tabs ported and tests covering all new infra routes, there is no remaining reason to maintain the ProBot dashboard.
+
+**Tabs migrated (11/11):**
+- Sessions → Brain Console Sessions tab
+- Scheduler → Brain Console Sessions tab
+- Local Apps → Brain Console Apps tab (pre-existing)
+- Dokploy → Brain Console Infra tab (`/infra/dokploy`)
+- Tunnels → Brain Console Infra tab (`/infra/tunnels`)
+- Domains → Brain Console Infra tab (`/infra/domains`)
+- New Relic → Brain Console Monitoring tab (`/infra/monitoring`)
+- Analytics/Umami → Brain Console Analytics tab (`/infra/analytics`)
+- Google Ads → Brain Console Analytics tab (`/infra/google-ads`)
+- Stripe → Brain Console Stripe tab (`/infra/stripe`)
+- Studio (Viral Flow + Video Orchestrator) → Brain Console Studio tab (`/infra/studio`)
+
+**Implementation:** Brain Console v2.2 deployed to mind vault. 8 new Brain Core infra adapters. 25 new infra route contract tests (551 total pass, 7 pre-existing failures unrelated to this change). `GET /health` endpoint added. Brain Core runbook updated with rollback path and infra health checks.
+
+**Guardrails:**
+- Do not add new features to ProBot dashboard.
+- All data flows through Brain Core — Brain Console never calls external services directly.
+- Infra adapters return `not-configured` gracefully when credentials are absent.
+- Brain Core rollback does not use ProBot as fallback.
+
+**Rollback:** Brain Core runbook at `operations/runbooks/brain-core.md`.

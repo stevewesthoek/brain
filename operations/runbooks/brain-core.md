@@ -49,6 +49,10 @@ Expected coverage:
 ## Health checks
 
 ```bash
+# Service health (fast, no auth, no deps)
+curl http://127.0.0.1:4877/health
+
+# Core status
 curl http://127.0.0.1:4877/status
 curl http://127.0.0.1:4877/sessions
 curl http://127.0.0.1:4877/repos
@@ -63,6 +67,16 @@ curl http://127.0.0.1:4877/approvals/audit
 curl http://127.0.0.1:4877/approvals/store
 curl http://127.0.0.1:4877/execution/plans
 curl http://127.0.0.1:4877/execution/readiness
+
+# Infrastructure adapters (all return graceful not-configured when credentials absent)
+curl http://127.0.0.1:4877/infra/dokploy
+curl http://127.0.0.1:4877/infra/tunnels
+curl http://127.0.0.1:4877/infra/domains
+curl http://127.0.0.1:4877/infra/monitoring
+curl http://127.0.0.1:4877/infra/analytics
+curl http://127.0.0.1:4877/infra/google-ads
+curl http://127.0.0.1:4877/infra/stripe
+curl http://127.0.0.1:4877/infra/studio
 ```
 
 ## Obsidian integration health
@@ -123,6 +137,20 @@ If the integration is unhealthy, Obsidian should remain readable and show a Brai
 
 ## Rollback
 
-If Brain Core breaks, use Obsidian notes directly and keep ProBot as a fallback diagnostic surface. Do not re-expand the ProBot dashboard; fix Brain Core or the Obsidian integration instead.
+If Brain Core is unavailable:
+
+1. Obsidian remains the operating cockpit — all static notes and kanban continue to work without Brain Core.
+2. Brain Console plugin will show a "Brain Core offline" state. This is safe and expected; no data is lost.
+3. To restore Brain Core, run:
+   ```bash
+   cd projects/brain-core
+   npm run build
+   nohup node dist/index.js > /tmp/brain-core.log 2>&1 &
+   curl http://127.0.0.1:4877/health
+   ```
+4. Verify `/health` returns `{ "ok": true }` before relying on any other endpoint.
+5. Do not reopen ProBot dashboard as a replacement. It is decommissioned.
+
+Infrastructure adapter failures (infra/dokploy, infra/stripe, etc.) are isolated — each returns `not-configured` or `error` independently. A single adapter failure does not take down Brain Core.
 
 Manual Brain Console install/test instructions live in `operations/runbooks/brain-console-manual-install-test.md`.
