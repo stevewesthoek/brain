@@ -1,0 +1,17 @@
+# Task: Create "The SaaS Starting Point" Landing Page Design Spec
+
+- [ ] Explore existing codebase styles and configuration <!-- id: 0 -->
+    - [ ] Read `tailwind.config.ts` or `tailwind.config.js` <!-- id: 1 -->
+    - [ ] Read `src/app/globals.css` <!-- id: 2 -->
+    - [ ] Check [src/app/layout.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/layout.tsx) and [src/app/(marketing)/layout.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/%28marketing%29/layout.tsx) <!-- id: 3 -->
+- [ ] Create Design Specification Artifact (`design_spec.md`) <!-- id: 4 -->
+    - [ ] Layout breakdown <!-- id: 5 -->
+    - [ ] Typography system <!-- id: 6 -->
+    - [ ] Spacing scale <!-- id: 7 -->
+    - [ ] Color usage guide <!-- id: 8 -->
+    - [ ] Shadow system <!-- id: 9 -->
+    - [ ] Component structure <!-- id: 10 -->
+    - [ ] Tailwind-ready class examples <!-- id: 11 -->
+    - [ ] Example HTML section structure <!-- id: 12 -->
+    - [ ] Accessibility validation notes <!-- id: 13 -->
+- [ ] Review Design Spec with User <!-- id: 14 -->

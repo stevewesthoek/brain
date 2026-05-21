@@ -1,0 +1,30 @@
+# Restoration of NotebookLM MCP Connectivity
+
+Restore access to the NotebookLM MCP server by re-registering it with the Antigravity user profile using the built-in CLI tool.
+
+## Proposed Changes
+
+### Antigravity Environment
+Register the NotebookLM MCP server using the [antigravity](file:///Applications/Antigravity.app/Contents/Resources/app/bin/antigravity) CLI with the `--add-mcp` flag.
+
+- **Command**: `/Applications/Antigravity.app/Contents/Resources/app/bin/antigravity --add-mcp '<json_config>'`
+- **JSON Config**:
+  ```json
+  {
+    "name": "notebooklm-mcp",
+    "command": "/Users/Office/.local/bin/notebooklm-mcp",
+    "args": [
+      "--config",
+      "/Users/Office/.notebooklm-mcp/notebooklm-config.json"
+    ]
+  }
+  ```
+
+## Verification Plan
+
+### Automated Tests
+1. **List Resources**: Call `list_resources(ServerName="notebooklm-mcp")` to verify that the agent can now see the server artifacts.
+2. **Verify Process**: Run `ps aux | grep notebooklm` to ensure the server process is spawned by Antigravity if it wasn't already.
+
+### Manual Verification
+- None required as the automated tools should confirm connectivity.

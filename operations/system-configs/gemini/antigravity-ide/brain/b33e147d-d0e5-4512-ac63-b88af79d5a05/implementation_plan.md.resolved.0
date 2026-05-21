@@ -1,0 +1,36 @@
+# Implementation Plan - "The SaaS Starting Point" Redesign
+
+## Goal Description
+Redesign the landing page at [src/app/start-here/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/start-here/page.tsx) to be a high-converting, premium, minimalist page for the "The SaaS Starting Point" PDF. The design will be light-based, structured, and free of hype, adhering to the "ProChat" brand's premium aesthetic but with specific "critical design rules" (light background, indigo accent, deep navy headings).
+
+## User Review Required
+> [!IMPORTANT]
+> This redesign completely replaces the existing content of [src/app/start-here/page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/start-here/page.tsx).
+> The new design uses hardcoded hex values for specific brand alignment as requested (Indigo `#4338CA`, etc.) or closest Tailwind utilities where appropriate.
+
+## Proposed Changes
+
+### Marketing
+#### [MODIFY] [page.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/start-here/page.tsx)
+-   **Structure**: Implement the Split Layout (Hero), Feature Grid ("This is for you"), Value Comparison ("What you'll get"), and FAQ sections.
+-   **Styling**:
+    -   Apply `#F8FAFC` background.
+    -   Use `Golos Text` typography.
+    -   Implement "Elevated Form Card" with specific shadow and radius.
+    -   Ensure AA/AAA contrast compliance.
+-   **Components**:
+    -   Re-use `StartSignupForm`, `Badge`, `Card`, `Accordion` components.
+    -   Custom styling for the "Entity" feel (light surfaces, no dark backgrounds).
+
+## Verification Plan
+
+### Automated Tests
+-   None (Visual Design Task).
+
+### Manual Verification
+-   **Visual Check**:
+    -   Verify the page loads at `http://localhost:3000/start-here`.
+    -   Check responsiveness on Mobile (vertical stack) vs Desktop (split view).
+    -   Verify the "Form Card" is elevated and white.
+    -   Confirm text contrast is high (Navy/Slate on White/Off-white).
+    -   Verify the "Indigo" accent is used only for CTAs and focus states.

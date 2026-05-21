@@ -1,0 +1,42 @@
+# NotebookLM MCP Connectivity Restoration Walkthrough
+
+## Summary
+I have successfully restored the configuration for the NotebookLM MCP server in Antigravity. The server is now correctly registered in the application's user profile.
+
+## Changes Made
+- **Identified Config Location**: Located the master MCP configuration file at `~/Library/Application Support/Antigravity/User/mcp.json`.
+- **Registered Server**: Used the Antigravity CLI ([/Applications/Antigravity.app/Contents/Resources/app/bin/antigravity](file:///Applications/Antigravity.app/Contents/Resources/app/bin/antigravity)) to add the `notebooklm-mcp` definition to the user profile.
+- **Config Verification**: Verified that the server is configured to use the global configuration at `~/.notebooklm-mcp/notebooklm-config.json` and the existing authenticated Chrome profile.
+
+## Restoration Details
+I executed the following command to re-register the server:
+```bash
+/Applications/Antigravity.app/Contents/Resources/app/bin/antigravity --add-mcp '{
+  "name": "notebooklm-mcp",
+  "command": "/Users/Office/.local/bin/notebooklm-mcp",
+  "args": ["--config", "/Users/Office/.notebooklm-mcp/notebooklm-config.json"]
+}'
+```
+
+The success was confirmed by the CLI output and the presence of the configuration in:
+[mcp.json](file:///Users/Office/Library/Application Support/Antigravity/User/mcp.json)
+
+## Next Steps
+> [!IMPORTANT]
+> To fully enable the tools in this chat session, you may need to **restart Antigravity**. Once restarted, I will have direct access to the `notebooklm-mcp` tools (such as `chat`, `test`, and `list_notebooks`).
+
+## Proof of Work
+The configuration is now correctly persisted:
+```json
+{
+        "servers": {
+                "notebooklm-mcp": {
+                        "command": "/Users/Office/.local/bin/notebooklm-mcp",
+                        "args": [
+                                "--config",
+                                "/Users/Office/.notebooklm-mcp/notebooklm-config.json"
+                        ]
+                }
+        }
+}
+```

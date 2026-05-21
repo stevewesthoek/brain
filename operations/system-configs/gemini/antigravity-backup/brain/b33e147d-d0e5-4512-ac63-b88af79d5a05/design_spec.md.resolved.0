@@ -1,0 +1,126 @@
+# Design Specification: "The SaaS Starting Point" Landing Page
+
+## 1. Layout Breakdown
+
+### Hero Section (100vh)
+*   **Background**: `#F8FAFC` (Slate-50) with subtle grid (opacity 3-5%) and soft radial gradient (`radial-gradient(circle at 50% 0%, #E0E7FF 0%, transparent 40%)` - customized indigo-100).
+*   **Desktop Split**:
+    *   **Left (Content)**: Vertical stack. H1 -> Subtext -> Benefits -> Trust -> Badges. Max-width `65ch` (approx).
+    *   **Right (Form)**: Center-aligned vertical or slightly offset. Elevated high-z-index card.
+*   **Mobile**: Vertical stack. H1 -> Form Card -> Benefits. Padding `x-6`, `y-16`.
+
+### "This is for you" Section
+*   **Structure**: 3-column grid (desktop), 1-column stack (mobile).
+*   **Cards**: Minimalist, white, border `slate-200`, subtle shadow.
+
+### "What you'll get" Section
+*   **Structure**: 2-column grid. Left: "Inside PDF", Right: "Cost/Value".
+*   **Visuals**: Clear hierarchy, checkmarks for "Inside", minimal icons/text for "Cost".
+
+### FAQ Section
+*   **Structure**: Single column, max-width `600-700px` centered.
+*   **Component**: Accordion. White background, thin borders.
+
+## 2. Typography System
+*   **Font Family**: `Golos Text` (Existing project font) or `Inter` if specified (sticking to `Golos Text` as per [layout.tsx](file:///Users/Office/Repos/Organisation/ProChat/Web/prochat/src/app/layout.tsx)).
+*   **Scale**:
+    *   **H1**: `clamp(2.5rem, 5vw, 4rem)`, Weight 700-800, Color `#0F172A` (Slate-900), LH 1.1.
+    *   **H2**: `text-3xl` md:`text-4xl`, Weight 700, Color `#0F172A`.
+    *   **H3**: `text-lg` to `text-xl`, Weight 600, Color `#0F172A`.
+    *   **Body/Subtext**:
+        *   Hero Subtext: `18-20px` (`text-lg`), LH 1.6, `#475569` (Slate-600).
+        *   Standard Body: `16px` (`text-base`), `#475569`.
+    *   **Labels/Micro**: `text-sm` or `text-xs`, uppercase flexible tracking (`tracking-wide` or `0.08em`).
+
+## 3. Spacing Scale
+*   **Section Padding**: `py-24` (96px) to `py-32` (128px) for desktop; `py-16` (64px) for mobile.
+*   **Component Padding**:
+    *   Cards: `p-8` (32px).
+    *   Inputs/Buttons: `h-14` (56px), `px-6`.
+*   **Gap/Margins**:
+    *   Hero Elements: `space-y-6` or `space-y-8`.
+    *   Grid Gaps: `gap-8` (32px) or `gap-12`.
+
+## 4. Color Usage Guide
+*   **Backgrounds**:
+    *   Page: `#F8FAFC` (Slate-50).
+    *   Cards/Surfaces: `#FFFFFF` (White).
+    *   Accents (Subtle): `#F1F5F9` (Slate-100) for hover/secondary.
+*   **Text**:
+    *   Primary (Headings): `#0F172A` (Slate-900).
+    *   Secondary (Body): `#475569` (Slate-600).
+    *   Tertiary (Label/Muted): `#64748B` (Slate-500).
+*   **Brand/Action**:
+    *   Primary CTA: `#4338CA` (Indigo-700). Gradient subtle for button `bg-gradient-to-br from-indigo-600 to-indigo-700`.
+    *   Focus Rings: `ring-indigo-500` (Indigo-500).
+
+## 5. Shadow System
+*   **Level 1 (Cards/UI)**: `shadow-sm` or custom `0 4px 16px rgba(0,0,0,0.04)`.
+*   **Level 2 (Hero Form)**: `shadow-xl` or custom `0 20px 60px rgba(15,23,42,0.08)`.
+*   **Interactive**: Hover lift + slight shadow expansion.
+
+## 6. Component Structure
+*   `StartPageLayout`: Main wrapper.
+*   `HeroSection`: Contains `HeroCopy` and `SignupFormCard`.
+*   `FeatureGrid`: "This is for you".
+*   `ValueComparison`: "What you'll get".
+*   `FAQSection`: Accordion list.
+*   `shared/Section`: Wrapper for standard padding/constraints.
+
+## 7. Tailwind-Ready Class Examples
+
+**Hero H1**:
+```tsx
+<h1 className="text-slate-900 font-extrabold tracking-tight leading-[1.1] text-[2.5rem] md:text-[4rem]">
+  Structure first. <br className="hidden md:block" /> SaaS second.
+</h1>
+```
+
+**Elevated Form Card**:
+```tsx
+<div className="bg-white rounded-2xl p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] border border-slate-100">
+  {/* content */}
+</div>
+```
+
+**Primary CTA**:
+```tsx
+<button className="h-14 w-full rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-lg transition-all shadow-[0_4px_14px_0_rgba(67,56,202,0.39)] hover:-translate-y-0.5">
+  Get the Free PDF
+</button>
+```
+
+## 8. Example HTML Section Structure
+
+```html
+<section class="relative bg-slate-50 py-24">
+  <!-- Subtle Grid Background -->
+  <div class="absolute inset-0 bg-[linear-gradient(...)] opacity-[0.03]"></div>
+  
+  <div class="container mx-auto px-6 max-w-7xl">
+    <div class="grid lg:grid-cols-2 gap-16 items-center">
+      <!-- Left Content -->
+      <div class="space-y-8">
+        <h1 class="...">...</h1>
+        <p class="...">...</p>
+        <ul class="space-y-4">...</ul>
+      </div>
+      
+      <!-- Right Form -->
+      <div class="relative z-10">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl border border-slate-100">
+          <form class="space-y-4">
+             <!-- Inputs & Button -->
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+## 9. Accessibility Validation Notes
+*   **Contrast**: Slate-600 on Slate-50/White passes AA. Indigo-700 on White passes AAA.
+*   **Focus States**: Ensure `focus-visible:ring-2 ring-indigo-500 ring-offset-2` is present on all interactive elements.
+*   **Semantic HTML**: Use `<main>`, `<section>`, `<h1>` (only one), `<h2>` for sections, `<label>` for inputs.
+*   **Motion**: Respect `prefers-reduced-motion` for animations.

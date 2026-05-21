@@ -51,6 +51,14 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 - Default-export the top-level component.
 - Embed all data inline. **No `fetch()`, no network calls.**
 
+**Never render empty states.** A canvas exists to show real content. If a section, chart, table, or component has no data to display, **omit it** — do not render it with placeholder text ("Add header here", "TODO", "Example"), a "No data" message, an empty array, zeroed rows, or an empty chart frame. If the entire canvas would be empty because you don't have the underlying data, do not produce a canvas — tell the user what's missing and ask for it instead.
+
+**Label every plot.** Charts and tables must be self-describing — a reader looking at the canvas alone should know exactly what they're seeing. For every plot include:
+- A title naming the **specific metric** (not "Metrics" — "API error rate by service").
+- **Axis labels with units** on both axes (e.g. "Date", "Latency (ms)").
+- A **legend** when more than one series is shown, with the exact series names from the source data.
+- The **source and time range** in a small caption (e.g. "Source: Datadog · last 7 days"). If a value is a transformation (mean, p95, normalized, smoothed), say so in the label.
+
 **Component discovery:** prefer built-in `cursor/canvas` components over hand-rolled markup. The full public surface (components, hooks, prop types, tokens) is declared in `~/.cursor/skills-cursor/canvas/sdk/index.d.ts` and its sibling `.d.ts` files — read them when you need exact exports, prop shapes, or hook signatures rather than guessing. Referencing an export that does not exist is the most common runtime error.
 
 Apply the Canvas generation policy below as you write, and complete its pre-delivery self-check (section 6) before returning the canvas.

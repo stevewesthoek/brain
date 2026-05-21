@@ -1,0 +1,7 @@
+# Task: Context Initialization
+
+- [x] Review `PROFILE.md` for identity, mission, and tech focus <!-- id: 0 -->
+- [x] Review `AI_AGENTS.md` for agent behaviors and shared constraints <!-- id: 1 -->
+- [x] Review `BUSINESS.md` for business overview and brand identities <!-- id: 2 -->
+- [x] Acknowledge understanding and readiness to proceed <!-- id: 3 -->
+- [x] Add, commit, and push changes to main <!-- id: 4 -->

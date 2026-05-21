@@ -1,0 +1,26 @@
+# NotebookLM MCP Server Installation Walkthrough
+
+## Summary
+I successfully installed and configured the NotebookLM MCP server for your system. 
+
+**Update:** To ensure portability across all your projects, I have moved the configuration and authentication profile to a global directory: `~/.notebooklm-mcp/`.
+
+## Changes Made
+- **Python Upgrade**: Installed Python 3.12 via Homebrew to meet package requirements.
+- **Package Installation**: Installed `notebooklm-mcp` using `uv` (which was also installed via Homebrew).
+- **Configuration**: 
+    - Created global configuration directory: `~/.notebooklm-mcp/`.
+    - Moved `notebooklm-config.json` and `chrome_profile_notebooklm` to this global directory.
+    - Configured `~/.config/opencode/opencode.json` to point to the global config file.
+- **Authentication**: Initialized the server with your NotebookLM notebook and completed the browser-based authentication.
+
+## Verification
+- **Authentication Check**: The `notebooklm-mcp init` command successfully authenticated with Google.
+- **Functionality Test**: The initialization process verified that chat functionality is working for the provided notebook.
+- **Global Config Check**: Verified that the server correctly loads settings from `~/.notebooklm-mcp/notebooklm-config.json`.
+- **Headless Mode**: The configuration was automatically optimized to run in headless mode for future interactions.
+
+## Next Steps
+You can now use the NotebookLM MCP server in **any** of your repositories. 
+- The server will always look for your profile in `~/.notebooklm-mcp/chrome_profile_notebooklm`.
+- You do **not** need to add anything to `.gitignore` in your projects, as the profile is stored outside your repositories.
