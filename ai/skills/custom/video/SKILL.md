@@ -466,6 +466,70 @@ ffmpeg -i narration.wav ... [waveform filter] ... -i background.jpg output.mp4
 
 Or simpler: just overlay audio on still (same as narrated slideshow).
 
+#### C1f. UGC / E-commerce product video
+
+Product name + description (+ optional product image) → vertical 9:16 MP4 for TikTok/Reels/Shorts.
+
+```
+Input:  product_name, product_description, [product_image.jpg]
+Output: ugc_video.mp4 (1080×1920, 60–90s, TikTok/Instagram/Shorts ready)
+Total:  3–5 min runtime + human review
+```
+
+**Step 1 — Hero image (FLUX, night-batch preferred)**
+```bash
+python /flux-local generate \
+  --prompt "professional e-commerce product photo, {product_name}, studio lighting, clean white background" \
+  --output hero_image.png --size 1920x1080
+```
+Can substitute SDXL for speed:
+```bash
+python /stable-diffusion-local generate \
+  --prompt "product photo {product_name}, white background" --output hero_image.png
+```
+
+**Step 2 — Talking head narration (Wave)**
+```bash
+# Generate narration audio from product description first (OpenAI TTS or MSTTS)
+# Then:
+python /wave-local generate \
+  --image presenter_portrait.png \
+  --audio narration.wav \
+  --output talking_head.mp4
+```
+
+**Step 3 — Compose final vertical (FFmpeg)**
+```bash
+ffmpeg -i talking_head.mp4 -i hero_image.png \
+  -filter_complex "[1]scale=1080:1920,format=yuv420p[bg];[0]scale=600:600[head];[bg][head]overlay=240:600" \
+  -c:v libx264 -c:a aac -vf scale=1080:1920 -shortest ugc_video.mp4
+```
+
+**Step 4 — Add captions (recommended)**
+```bash
+ffmpeg -i ugc_video.mp4 -vf subtitles=captions.srt ugc_video_captioned.mp4
+```
+
+**Step 5 — Package and post via E workflow**
+Platforms: TikTok, Instagram Reels, YouTube Shorts. Stagger posts 30min+ apart.
+Format key: `vertical_1080x1920_9x16` from `format-specs.json`.
+
+#### C1z. Format normalization (design — Phase 3 implementation)
+
+Generate a **master render** (1920×1080 16:9) once, then derive all platform variants in parallel.
+
+```
+Master → landscape_1920x1080_16x9  (YouTube, LinkedIn)
+       → vertical_1080x1920_9x16   (TikTok, Reels, Shorts) — crop center-safe
+       → square_1080x1080_1x1      (Instagram feed)
+       → portrait_1080x1350_4x5    (Instagram portrait)
+       → lightweight_1280x720_16x9 (Facebook, X)
+```
+
+Load conversion filters from `~/.config/video-orchestrator/format-specs.json`. Apply `ffmpeg_notes` per format key. Always verify center-safe crop before publishing vertical from landscape source (faces and text must stay in center 9:16 zone).
+
+**Phase 3 implementation note:** Parallel FFmpeg conversion workers + job queue will automate this. Until Phase 3 ships, run conversions sequentially via `/ffmpeg`.
+
 ### C2. Add intro/outro (optional)
 
 Route to `/design` or `/ffmpeg` for:
@@ -487,9 +551,24 @@ Verify output:
 
 Finalize encoding by generating **upload-ready packages**, not by assuming direct publishing is available.
 
-Use the project specs files when available:
-- `platform-specs.json` — platform metadata, adapter status, posting modes, limits, verification dates
-- `format-specs.json` — resolution, aspect ratio, codec, bitrate, safe-zone template
+Load encoding parameters from the deployed spec files:
+```
+~/.config/video-orchestrator/platform-specs.json  — posting modes, hashtag limits, description max, thumbnail rules per platform
+~/.config/video-orchestrator/format-specs.json    — resolution, fps, codec_video, codec_audio, bitrate_video, bitrate_audio, container per format key
+```
+
+Format key → FFmpeg command mapping (from `format-specs.json`):
+| Format key | Resolution | AR | Use for |
+|---|---|---|---|
+| `landscape_1920x1080_16x9` | 1920×1080 | 16:9 | YouTube longform, LinkedIn |
+| `vertical_1080x1920_9x16` | 1080×1920 | 9:16 | TikTok, Reels, Shorts |
+| `square_1080x1080_1x1` | 1080×1080 | 1:1 | Instagram feed |
+| `portrait_1080x1350_4x5` | 1080×1350 | 4:5 | Instagram portrait |
+| `lightweight_1280x720_16x9` | 1280×720 | 16:9 | Facebook, X, lightweight |
+
+Apply using FFmpeg `-vf scale=W:H` with `codec_video`, `codec_audio`, `bitrate_video`, and `bitrate_audio` from the spec. Never hardcode platform dimensions — always read from `format-specs.json`.
+
+Optional caption spec:
 - `caption-specs.json` — SRT/VTT/JSON and burn-in rules
 
 Rendering modes:
@@ -553,6 +632,30 @@ Before publishing, determine:
 - package format for each target
 - adapter mode for each target: `api`, `n8n`, `browser_assisted`, `manual`, or `disabled`
 - adapter status: `supported`, `partially_supported`, `manual_only`, `blocked_pending_credentials`, `blocked_pending_app_review`, or `disabled`
+
+Read platform and format rules from the deployed spec files when available:
+```
+~/.config/video-orchestrator/platform-specs.json  — hashtag limits, description max, thumbnail rules, schedule windows, rate limits per platform
+~/.config/video-orchestrator/format-specs.json    — resolution, aspect ratio, codec, bitrate, container per format key
+```
+
+**Account selection flow (E0.1 – E0.4):**
+
+**E0.1** — Ask which platform(s) to post to. Cross-reference `platform-specs.json` for available adapter modes.
+
+**E0.2** — For each platform, ask which account. Validate account exists in the account registry (`~/.config/video-orchestrator/account-registry.json` when present).
+
+**E0.3** — Select package format for each target using `format-specs.json` format keys (e.g., `vertical_1080x1920_9x16` for TikTok/Reels, `landscape_1920x1080_16x9` for YouTube longform).
+
+**E0.4** — Store selections in the manifest for audit trail:
+```json
+{
+  "targets": [
+    { "platform": "youtube", "account": "says-the-bible", "format_key": "landscape_1920x1080_16x9", "adapter_mode": "manual" },
+    { "platform": "tiktok",  "account": "stb-tiktok-1",   "format_key": "vertical_1080x1920_9x16",  "adapter_mode": "manual" }
+  ]
+}
+```
 
 If adapter status is not publishable, generate a manual upload package instead of pretending automation is available.
 
@@ -895,6 +998,8 @@ Only say “posted” or “published” when the adapter result or user confirm
 | "make a TikTok reel / Shorts / vertical clip" | C: COMPOSE (B) | `/ffmpeg` (vertical 9:16) |
 | "create a talking-head video / avatar" | C: COMPOSE (C) | HeyGen (stub) |
 | "make podcast video / audio + waveform" | C: COMPOSE (D) | `/ffmpeg` + waveform filter |
+| "make a product video / UGC video / e-commerce video" | C: COMPOSE (F) | FLUX hero + Wave talking head + FFmpeg (C1f) |
+| "convert to all platforms / normalize formats" | C: COMPOSE (Z) | FFmpeg per format-specs.json (C1z) |
 | "make a thumbnail / design the cover" | D: DESIGN | `/design` orchestrator |
 | "create an intro / outro graphic" | D: DESIGN | `/design` or `/ffmpeg` |
 | "post this to YouTube" | E: PACKAGE/POST | Generate package; publish only through authorized YouTube adapter or manual handoff |
@@ -998,7 +1103,9 @@ You excel at:
 - **FFmpeg skill:** `brain/ai/skills/custom/ffmpeg/ffmpeg/SKILL.md` (audio/video processing)
 - **Design orchestrator:** `brain/ai/skills/custom/design/SKILL.md` (all design work)
 - **n8n skill:** `brain/ai/skills/custom/n8n/SKILL.md` (platform automation)
-- **Platform specs:** Verify current requirements at YouTube, TikTok, Instagram, LinkedIn, Facebook, X, Bluesky before each posting cycle
+- **Platform specs (deployed):** `~/.config/video-orchestrator/platform-specs.json` — 7 platforms, posting modes, hashtag/description rules, schedule windows (source: `brain/operations/specs/video-orchestrator/platform-specs.json`)
+- **Format specs (deployed):** `~/.config/video-orchestrator/format-specs.json` — 5 format keys with resolution, codec, bitrate, container (source: `brain/operations/specs/video-orchestrator/format-specs.json`)
+- **Platform specs (verify):** Validate current platform requirements at YouTube, TikTok, Instagram, LinkedIn, Facebook, X, Bluesky before each posting cycle — platform rules change
 
 ---
 
