@@ -10100,6 +10100,64 @@ export interface BrainCoreInfraVOQueueDepth {
   pending: number;
   running: number;
   failed: number;
+  dead?: number;
+}
+
+export interface BrainCoreInfraVONormalizeJob {
+  jobId: string;
+  status: string;
+  inputPath: string;
+  outputDir: string;
+  formats: string[];
+  createdAt: string;
+  completedAt: string | null;
+  errorMessage: string | null;
+  outputFiles: string[];
+}
+
+export interface BrainCoreInfraVONormalizeHistoryResponse {
+  ok: boolean;
+  jobs: BrainCoreInfraVONormalizeJob[];
+  totalCount: number;
+  error?: string;
+}
+
+export interface BrainCoreInfraVOManualPostingJob {
+  jobId: string;
+  platform: string;
+  accountHandle: string;
+  title: string;
+  videoPath: string;
+  instructionsPath: string;
+  status: string;
+  createdAt: string;
+  hasInstructions: boolean;
+}
+
+export interface BrainCoreInfraVOManualQueueResponse {
+  ok: boolean;
+  jobs: BrainCoreInfraVOManualPostingJob[];
+  totalCount: number;
+  error?: string;
+}
+
+export interface BrainCoreInfraVOWorkerConfig {
+  n8nWebhookUrl: string;
+  n8nWebhookConfigured: boolean;
+  cfAccessConfigured: boolean;
+  cfAccessClientIdPresent: boolean;
+  cfAccessClientSecretPresent: boolean;
+  n8nReachable: boolean | null;
+  n8nReachableError: string | null;
+  youtubeOauthConfigured: boolean;
+  youtubeOauthAccounts: string[];
+}
+
+export interface BrainCoreInfraVOWorkerConfigResponse {
+  ok: boolean;
+  config: BrainCoreInfraVOWorkerConfig | null;
+  manualActionsRequired: string[];
+  error?: string;
 }
 
 export interface BrainCoreInfraVORecentPost {

@@ -7660,6 +7660,7 @@ export interface BrainCoreInfraVOQueueDepth {
   pending: number;
   running: number;
   failed: number;
+  dead?: number;
 }
 
 export interface BrainCoreInfraVORecentPost {
@@ -7882,4 +7883,79 @@ export async function setBrainCoreCredential(baseUrl: string, projectId: string,
   } catch (err) {
     return { ok: false, projectId, key, error: err instanceof Error ? err.message : 'fetch_failed' };
   }
+}
+
+// ── VO Normalize History ─────────────────────────────────────────────────────
+
+export interface BrainCoreVONormalizeJob {
+  jobId: string;
+  status: string;
+  inputPath: string;
+  outputDir: string;
+  formats: string[];
+  createdAt: string;
+  completedAt: string | null;
+  errorMessage: string | null;
+  outputFiles: string[];
+}
+
+export interface BrainCoreVONormalizeHistoryResponse {
+  ok: boolean;
+  jobs: BrainCoreVONormalizeJob[];
+  totalCount: number;
+  error?: string;
+}
+
+export async function readBrainCoreVONormalizeHistory(baseUrl: string): Promise<HttpResult<BrainCoreVONormalizeHistoryResponse>> {
+  return fetchJson<BrainCoreVONormalizeHistoryResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/normalize-history?limit=10');
+}
+
+// ── VO Manual Queue ──────────────────────────────────────────────────────────
+
+export interface BrainCoreVOManualPostingJob {
+  jobId: string;
+  platform: string;
+  accountHandle: string;
+  title: string;
+  videoPath: string;
+  instructionsPath: string;
+  status: string;
+  createdAt: string;
+  hasInstructions: boolean;
+}
+
+export interface BrainCoreVOManualQueueResponse {
+  ok: boolean;
+  jobs: BrainCoreVOManualPostingJob[];
+  totalCount: number;
+  error?: string;
+}
+
+export async function readBrainCoreVOManualQueue(baseUrl: string): Promise<HttpResult<BrainCoreVOManualQueueResponse>> {
+  return fetchJson<BrainCoreVOManualQueueResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/manual-queue?limit=10');
+}
+
+// ── VO Worker Config ─────────────────────────────────────────────────────────
+
+export interface BrainCoreVOWorkerConfig {
+  n8nWebhookUrl: string;
+  n8nWebhookConfigured: boolean;
+  cfAccessConfigured: boolean;
+  cfAccessClientIdPresent: boolean;
+  cfAccessClientSecretPresent: boolean;
+  n8nReachable: boolean | null;
+  n8nReachableError: string | null;
+  youtubeOauthConfigured: boolean;
+  youtubeOauthAccounts: string[];
+}
+
+export interface BrainCoreVOWorkerConfigResponse {
+  ok: boolean;
+  config: BrainCoreVOWorkerConfig | null;
+  manualActionsRequired: string[];
+  error?: string;
+}
+
+export async function readBrainCoreVOWorkerConfig(baseUrl: string): Promise<HttpResult<BrainCoreVOWorkerConfigResponse>> {
+  return fetchJson<BrainCoreVOWorkerConfigResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/worker-config');
 }

@@ -526,10 +526,10 @@ export function getStbVideoParityMatrix(): BrainCoreStbVideoParityMatrix {
     nextSteps: [
       'Stage 1 complete (2026-05-21): all STB module file locations documented in parity matrix v1.1',
       'Dead job queue cleared (2026-05-21): 34 dead post jobs deleted (all used stale account IDs)',
-      'Stage 2 first test (in progress, 2026-05-21): vo normalize job 23c87e1b running on genesis-noah-30m.mp4 → /tmp/vo_norm_genesis_noah/',
-      'Stage 2 next: queue vo post --video /tmp/vo_norm_genesis_noah/landscape_1920x1080_16x9.mp4 --platform youtube --account 303e91f9 once normalize completes',
-      'Stage 2: validate end-to-end normalize → post flow with real STB content before building new execution stages',
-      'Stage 2 memory constraint: system at critical memory pressure (0.1GB free during normalize); monitor before queuing post',
+      'Stage 2 normalize test COMPLETE (2026-05-21): job 23c87e1b succeeded — 5 platform crops from genesis-noah-30m.mp4 in ~35 min',
+      'Stage 2 post test in manual mode (2026-05-21): job fbe09ce7 queued to YouTube @says-the-bible; n8n returned 403 (CF Access not configured)',
+      'Stage 2 post test blocked: CF Access service token for worker not set; YouTube OAuth for @says-the-bible not authorized',
+      'Stage 2 next (after infrastructure): reload worker plist with CF token, authorize YouTube OAuth, re-run post job',
       'Stage 2 pending: implement voiceover-generation stage (entry-6, maps to 01-tts-azure.mjs)',
       'Stage 2 pending: implement video-assembly stage (entry-7, maps to 02-mix-audio.mjs + 03-render-video.mjs)',
       'Stage 2 pending: implement metadata-enrichment stage (entry-8, maps to metadata.mjs + storyMetadata.mjs)',
@@ -685,13 +685,15 @@ export function getStbVideoDualRunStatus(): BrainCoreStbVideoDualRunStatus {
       blockedCount,
       readinessPercent,
     },
-    nextSafeTask: 'Stage 2 first test in progress: normalize job 23c87e1b running on genesis-noah-30m.mp4. Next: queue post to YouTube account 303e91f9 once normalize succeeds and memory pressure eases.',
+    nextSafeTask: 'Stage 2 post test pending infrastructure: CF Access token for video-orchestrator-worker + YouTube OAuth for @says-the-bible. After setup: vo queue post --video /tmp/vo_norm_genesis_noah/landscape_1920x1080_16x9.mp4 --platform youtube --account 303e91f9',
     blockers: [
+      'CF Access service token for video-orchestrator-worker not created (Cloudflare Zero Trust → Access → Service Tokens)',
+      'YouTube OAuth not authorized for @says-the-bible (needs auth-url + auth-exchange flow)',
+      'n8n webhook unreachable until CF Access token is set in worker plist and worker is reloaded',
       'Design orchestrator not built (blocks entry-5 thumbnail design)',
       'Video asset generator not implemented (blocks entry-4 asset generation)',
       'Video assembly stage not implemented (blocks entries 7-9)',
       'Platform publishing stages not yet built (blocks validation of publish stages)',
-      'System memory at critical pressure during transcode — monitor before queuing post jobs',
     ],
     evidence: [
       {

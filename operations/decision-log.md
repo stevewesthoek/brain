@@ -422,3 +422,72 @@ skills   = execution workflows
 **Also needed:** YouTube OAuth token for `@says-the-bible` — even with n8n reachable, the adapter will fail if no OAuth token is stored in keychain or configured in n8n. The n8n workflow must have the YouTube OAuth credential wired.
 
 **Guardrails preserved:** Brain Console and Brain Core remain read-only. No secrets in repo. Worker plist has placeholders, not real values.
+
+---
+
+## 2026-05-22 — Brain Console v2.12 / Overnight autonomous build session
+
+**Context:** Autonomous overnight build — all phases completed without needing tokens, keys, or manual intervention.
+
+### What was built
+
+**Brain Core — 3 new adapters:**
+- `infra-video-orchestrator-normalize-history.ts` — queries `jobs WHERE job_type='normalize'`, resolves output `.mp4` files from disk
+- `infra-video-orchestrator-manual-queue.ts` — queries succeeded `post` jobs where `adapter_mode='manual'` or `status='draft'`, joins `accounts` table
+- `infra-video-orchestrator-worker-config.ts` — reads worker plist XML, queries macOS keychain for YouTube OAuth accounts, does `curl` HEAD check on n8n webhook, builds `manualActionsRequired[]`
+
+**Brain Core — 3 new routes** (in `api/routes.ts`):
+- `GET /infra/video-orchestrator/normalize-history?limit=N`
+- `GET /infra/video-orchestrator/manual-queue?limit=N`
+- `GET /infra/video-orchestrator/worker-config`
+
+**Brain Core — types** (`types/api.ts`): Added `dead?: number` to `BrainCoreInfraVOQueueDepth`; added 6 new interfaces for the 3 new adapters.
+
+**Brain Core — production gate updated** (`video-orchestrator-production-gate.ts`): Replaced blocked `dualrun-no-execution` and `dualrun-comparison-blocked` items with real evidence: `dualrun-first-normalize` (ready — job 23c87e1b confirmed), `dualrun-first-post-manual` (in-progress — job fbe09ce7 manual mode), `dualrun-comparison-pending` (blocked — infra only, not code).
+
+**Brain Core — parity matrix updated** (`stb-video-parity.ts`): `nextSafeTask` and `nextSteps` updated to reflect completed normalize and blocked post test. `blockers` reordered to lead with CF Access + YouTube OAuth.
+
+**Brain Console — v2.12:**
+- 3 new state fields in `BrainConsoleViewState`: `voNormalizeHistory`, `voManualQueue`, `voWorkerConfig`
+- 3 new imports in view.ts
+- Promise.allSettled array: 150 → 153 (verified 153/153 aligned)
+- 3 new Studio tab cards: VO Worker Config (status badges + manual actions list), VO Normalize History (job table), VO Manual Posting Queue (job table with inline instructions viewer)
+- Dead job warning card in VO Queue block
+- `renderParityMatrixCard` — replaced minimal list with full entry table (all 13 stages) + summary stats + next steps
+- `renderDualRunStatusCard` — added expanded blockers list + `nextSafeTask` display
+- `client.ts` — `dead?: number` added to `BrainCoreInfraVOQueueDepth` interface; 3 new interfaces + fetcher functions
+
+**All tests: 577/577 pass. TypeScript: clean.**
+
+### Manual steps required (ordered by priority)
+
+**1. Cloudflare Access service token for video-orchestrator-worker** (blocks n8n dispatch):
+- Cloudflare Zero Trust → Access → Service Auth → Service Tokens → Create Token
+- Name: `video-orchestrator-worker`
+- Set `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` in `~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist`
+- Reload: `launchctl unload ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist && launchctl load ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist`
+
+**2. YouTube OAuth for @says-the-bible** (blocks YouTube auto-post):
+- First verify Google Cloud OAuth client credentials exist in keychain: `service=video-orchestrator account=yt-oauth-client-@says-the-bible`
+- Run: `~/.local/video-orchestrator/.venv/bin/python3 ~/.local/video-orchestrator/scripts/youtube_uploader.py auth-url --account @says-the-bible`
+- Visit the URL, grant access
+- Run: `~/.local/video-orchestrator/.venv/bin/python3 ~/.local/video-orchestrator/scripts/youtube_uploader.py auth-exchange --account @says-the-bible --code <CODE>`
+
+**3. Verify n8n YouTube workflow** (after CF Access is set):
+- Open n8n at `https://n8n.prochat.tools` 
+- Confirm the workflow that receives VO webhook has a YouTube OAuth credential wired
+- If not: add credential (type: YouTube OAuth2) pointing to `@says-the-bible` tokens
+
+**4. Re-run post test** (after 1+2+3):
+```bash
+vo queue post --video /tmp/vo_norm_genesis_noah/landscape_1920x1080_16x9.mp4 --platform youtube --account 303e91f9 --title "Genesis — Noah (30min)"
+```
+Then monitor: `vo jobs --limit 5`
+
+**5. NVIDIA orchestrator account in Cloudflare** (deferred by user — do when ready):
+- Already acknowledged — will be done separately
+
+### Guardrails
+- Brain Core + Brain Console remain read-only viewers. No mutation routes added.
+- Worker plist has placeholder values — no real tokens committed.
+- No secrets in repo.
