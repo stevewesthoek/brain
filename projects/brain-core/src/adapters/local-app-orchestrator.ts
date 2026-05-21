@@ -521,6 +521,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
   const stopCommand = readStringOrNull(raw.stop || raw.stopCommand);
   const restartCommand = readStringOrNull(raw.restart || raw.restartCommand);
   const repoPath = readStringOrNull(raw.repoPath);
+  const lifecycleNotes = readStringOrNull(raw.notes);
   const commandWorkdir = repoPath ? repoPath.replace(/^~/, process.env.HOME || '/root') : undefined;
   const commandPathPrepend = runtime && Array.isArray(runtime.pathPrepend) && runtime.pathPrepend.length > 0
     ? (runtime.pathPrepend as string[]).filter((p): p is string => typeof p === 'string' && p.length > 0)
@@ -546,6 +547,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     ...(restartCommand ? { restartCommand } : {}),
     ...(commandWorkdir ? { commandWorkdir } : {}),
     ...(commandPathPrepend ? { commandPathPrepend } : {}),
+    ...(lifecycleNotes ? { lifecycleNotes } : {}),
   } satisfies BrainCoreLocalAppDefinition;
   const safeActions = (['start', 'stop', 'restart'] as const).filter((action) =>
     evaluateLocalAppActionDefinition(definitionBase, action).executable,
@@ -564,6 +566,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     ...(restartCommand ? { restartCommand } : {}),
     ...(commandWorkdir ? { commandWorkdir } : {}),
     ...(commandPathPrepend ? { commandPathPrepend } : {}),
+    ...(lifecycleNotes ? { lifecycleNotes } : {}),
   };
 }
 

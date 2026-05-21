@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { getInfraVideoOrchestratorStatus } from './infra-video-orchestrator-status.js';
 
 // ── Viral Flow types ──────────────────────────────────────────────────────────
 
@@ -218,36 +219,21 @@ function buildViralFlowSummary(): InfraViralFlowSummary | null {
 // ── Video Orchestrator reader ─────────────────────────────────────────────────
 
 async function buildVideoOrchestratorSummary(): Promise<InfraVideoOrchestratorSummary | null> {
-  // Brain Core reads its own video orchestrator status adapter
-  // We read the STB / video orchestrator runtime report if available
-  const runtimePath = path.join(process.cwd(), 'runtime', 'local', 'video-orchestrator', 'latest.json');
-  if (!fs.existsSync(runtimePath)) return null;
+  const status = await getInfraVideoOrchestratorStatus();
+  if (!status.ok) return null;
 
-  try {
-    const raw = JSON.parse(fs.readFileSync(runtimePath, 'utf8')) as Record<string, unknown>;
-    const total = (raw.total_videos as number) ?? 0;
-    const completed = (raw.completed_packages as number) ?? 0;
-    const rawAccounts = Array.isArray(raw.account_summary) ? (raw.account_summary as Array<Record<string, unknown>>) : [];
-    const accountSummary = rawAccounts.map((a) => ({
-      platform: String(a.platform ?? ''),
-      count: Number(a.count ?? 0),
-      postedToday: Number(a.posted_today ?? 0),
-    }));
-    return {
-      databaseStatus: (raw.database_status as string) ?? 'unknown',
-      totalVideos: total,
-      totalAccounts: (raw.total_accounts as number) ?? 0,
-      pendingJobs: (raw.pending_jobs as number) ?? 0,
-      runningJobs: (raw.running_jobs as number) ?? 0,
-      failedJobs7d: (raw.failed_jobs_7d as number) ?? 0,
-      completedPackages: completed,
-      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-      ...(accountSummary.length > 0 ? { accountSummary } : {}),
-      ...(raw.error ? { error: raw.error as string } : {}),
-    };
-  } catch {
-    return null;
-  }
+  const total = Object.values(status.jobsByType ?? {}).reduce((s, n) => s + n, 0);
+
+  return {
+    databaseStatus: 'connected',
+    totalVideos: total,
+    totalAccounts: status.activeAccounts ?? 0,
+    pendingJobs: status.queueDepth?.pending ?? 0,
+    runningJobs: status.queueDepth?.running ?? 0,
+    failedJobs7d: status.queueDepth?.failed ?? 0,
+    completedPackages: status.recentPosts?.length ?? 0,
+    completionRate: 0,
+  };
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -262,7 +248,7 @@ export async function getInfraStudioStatus(): Promise<InfraStudioStatus> {
         status: 'not-configured',
         viralFlow: null,
         videoOrchestrator: null,
-        error: 'Studio data not found. Viral Flow config expected at ~/.config/viralflow/. Video Orchestrator runtime at runtime/local/video-orchestrator/latest.json.',
+        error: 'Studio data not found. Viral Flow config expected at ~/.config/viralflow/. Video Orchestrator DB unreachable.',
       };
     }
 

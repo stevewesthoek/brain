@@ -366,6 +366,16 @@ test('GET /infra/studio videoOrchestrator does not expose DB credentials', async
   assert.ok(!body.includes('video_orchestrator'), 'must not expose DB name in response body');
 });
 
+// ── /infra/video-orchestrator/status ─────────────────────────────────────────
+
+test('GET /infra/video-orchestrator/status returns 200 with ok field', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/status' });
+  const body = JSON.parse(response.body) as { ok: boolean; error?: string };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(typeof body.ok === 'boolean', 'ok field must be boolean');
+});
+
 // ── Cross-cutting: infra endpoints respect non-local rejection ────────────────
 
 test('infra endpoints reject non-local requests', async () => {

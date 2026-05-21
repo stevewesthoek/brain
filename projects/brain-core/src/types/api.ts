@@ -210,6 +210,7 @@ export interface BrainCoreLocalAppDefinition {
   restartCommand?: string;
   commandWorkdir?: string;
   commandPathPrepend?: string[];
+  lifecycleNotes?: string;
 }
 
 export interface BrainCoreLocalAppActionStep {
@@ -10055,5 +10056,38 @@ export interface BrainCoreInfraStudioResponse {
   status: 'ok' | 'not-configured' | 'partial' | 'error';
   viralFlow: BrainCoreInfraViralFlowSummary | null;
   videoOrchestrator: BrainCoreInfraVideoOrchestratorSummary | null;
+  error?: string;
+}
+
+export interface BrainCoreInfraVOQueueDepth {
+  pending: number;
+  running: number;
+  failed: number;
+}
+
+export interface BrainCoreInfraVORecentPost {
+  jobId: string;
+  platform: string;
+  accountHandle: string;
+  title: string;
+  postedAt: string;
+  pipelineState: string;
+}
+
+export interface BrainCoreInfraVOAnalyticsSnapshot {
+  totalViews7d: number;
+  avgEngagement7d: number;
+  topPlatform: string;
+}
+
+export interface BrainCoreInfraVOStatusResponse {
+  ok: boolean;
+  queueDepth?: BrainCoreInfraVOQueueDepth;
+  jobsByType?: Record<string, number>;
+  activeAccounts?: number;
+  accountsByPlatform?: Record<string, number>;
+  recentPosts?: BrainCoreInfraVORecentPost[];
+  analyticsSnapshot?: BrainCoreInfraVOAnalyticsSnapshot;
+  lastJobAt?: string | null;
   error?: string;
 }

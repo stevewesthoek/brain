@@ -259,6 +259,12 @@ async function executeStackAction(
 
 function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): SafeCommandSpec {
   const pathPrepend = app.commandPathPrepend && app.commandPathPrepend.length > 0 ? app.commandPathPrepend : undefined;
+  if (app.id === 'model-router') {
+    return disabled(`No canonical ${action} command is defined for this app.`);
+  }
+  if (isManualLaunchOnly(app)) {
+    return disabled('Repo lifecycle script is registered but missing or outside allowlisted roots.');
+  }
   if (action === 'restart') {
     const stopSpec = buildCommandSpec(app, 'stop');
     const startSpec = buildCommandSpec(app, 'start');
@@ -279,6 +285,28 @@ function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLoc
     }
   }
   const rawCommand = action === 'start' ? app.startCommand : action === 'stop' ? app.stopCommand : app.restartCommand;
+  if (action === 'stop' && requiresManagedNpmRegistryStop(app) && looksLikeManagedNpmStartCommand(app.startCommand, app.commandWorkdir)) {
+    const stopScriptPath = resolveRepoLifecycleScriptPath(app.stopCommand, app.commandWorkdir);
+    if (stopScriptPath && isUnsafePortKillingScript(stopScriptPath)) {
+      const managed = readManagedProcessForApp(app.id);
+      if (managed) {
+        return {
+          executable: true,
+          reason: 'Brain Core-managed npm process is recorded for this app.',
+          strategy: 'managed-process-stop',
+          commandLabel: 'managed-process-stop',
+          file: '',
+          args: [],
+          cwd: process.cwd(),
+          detached: false,
+          timeoutMs: 0,
+          expectedLongRunning: false,
+          managedProcessRecord: managed,
+        };
+      }
+      return disabled('No Brain Core-managed npm process is recorded for this app. Start it from Brain Console first.');
+    }
+  }
   if (!rawCommand) {
     if (action === 'stop') {
       const managed = readManagedProcessForApp(app.id);
@@ -634,10 +662,42 @@ async function executeCompositeRestart(app: BrainCoreLocalAppDefinition, id: str
   })();
 }
 
-function looksLikeManagedNpmStartCommand(command: string | undefined): boolean {
+function looksLikeManagedNpmStartCommand(command: string | undefined, cwd?: string): boolean {
   if (!command) return false;
   const normalized = command.trim();
-  return /npm\s+(start|run\s+dev)(?:\s|$)/i.test(normalized);
+  if (/npm\s+(start|run\s+dev)(?:\s|$)/i.test(normalized)) return true;
+  const scriptPath = resolveRepoLifecycleScriptPath(normalized, cwd);
+  if (!scriptPath || !fs.existsSync(scriptPath)) return false;
+  try {
+    const script = fs.readFileSync(scriptPath, 'utf8');
+    return /npm\s+(start|run\s+dev)(?:\s|>|&|$)/i.test(script);
+  } catch {
+    return false;
+  }
+}
+
+function resolveRepoLifecycleScriptPath(command: string | undefined, cwd?: string): string | null {
+  if (!command || !cwd) return null;
+  const match = command.trim().match(/^bash\s+(scripts\/dev\/(?:start|stop|restart)-local\.sh)$/);
+  if (!match) return null;
+  return path.resolve(cwd, match[1] ?? '');
+}
+
+function isUnsafePortKillingScript(scriptPath: string): boolean {
+  try {
+    const script = fs.readFileSync(scriptPath, 'utf8');
+    return /\blsof\b|\bpkill\b|\bkillall\b|\bkill\s+-9\b|\bkill\s+\$\{?PIDS\b/.test(script);
+  } catch {
+    return true;
+  }
+}
+
+function isManualLaunchOnly(app: BrainCoreLocalAppDefinition): boolean {
+  return /manual launch only/i.test(app.lifecycleNotes ?? '');
+}
+
+function requiresManagedNpmRegistryStop(app: BrainCoreLocalAppDefinition): boolean {
+  return app.id === 'prochat' || app.id === 'jpv-bootcamp';
 }
 
 function readManagedProcessState(): ManagedProcessState {

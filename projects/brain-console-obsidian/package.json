@@ -11,7 +11,8 @@
     "diagnose:obsidian-install": "node ./scripts/diagnose-obsidian-install.mjs",
     "find:installed": "node ./scripts/find-installed-brain-console.mjs",
     "release:install": "node ./scripts/release-and-install-all.mjs",
-    "check:dashboard-source": "node ./scripts/check-dashboard-source.mjs"
+    "check:dashboard-source": "node ./scripts/check-dashboard-source.mjs",
+    "verify-alignment": "node ./scripts/verify-alignment.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.0",
