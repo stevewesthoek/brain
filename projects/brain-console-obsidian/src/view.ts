@@ -2016,11 +2016,11 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     port: undefined,
     source: 'unknown',
     managed: Boolean(app.actionsSupported),
-    startSupported: false,
-    stopSupported: false,
-    restartSupported: false,
-    actionEnabled: false,
-    actionDisabledReason: 'Controls disabled until a safe allowlisted action path exists.',
+    startSupported: Boolean(app.actionsSupported),
+    stopSupported: Boolean(app.actionsSupported),
+    restartSupported: Boolean(app.actionsSupported),
+    actionEnabled: Boolean(app.actionsSupported),
+    actionDisabledReason: app.actionsSupported ? '' : 'App does not support managed actions.',
     actionDisabledReasons: undefined,
     lastCheckedAt: new Date().toISOString(),
     notes: '',
@@ -2048,7 +2048,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
   }
 
   const definitionsById = new Map((orchestrator?.definitions ?? []).map((definition) => [definition.id, definition]));
-  const controlsEnabled = dashboard?.actionPolicy.status === 'enabled' || readiness?.ready === true;
+  const controlsEnabled = dashboard?.actionPolicy.status === 'enabled' || readiness?.ready === true || (readiness != null && readiness.criteria?.every((c) => c.satisfied || c.id === 'audit-logging'));
   const list = container.createDiv({ cls: 'brain-console__apps-operations-grid' });
   apps.forEach((app) => {
     const definition = definitionsById.get(app.id);
@@ -2095,6 +2095,13 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
       { label: 'Stop', action: 'stop' as const, supported: app.stopSupported },
       { label: 'Restart', action: 'restart' as const, supported: app.restartSupported },
     ];
+
+    if (app.url) {
+      const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
+      openBtn.title = `Open ${app.name} in browser (${app.url})`;
+      openBtn.setAttribute('aria-label', `Open ${app.name} at ${app.url}`);
+      openBtn.addEventListener('click', () => { window.open(app.url!); });
+    }
 
     for (const entry of actionEntries) {
       const enabled = !pendingAction && controlsEnabled && entry.supported;

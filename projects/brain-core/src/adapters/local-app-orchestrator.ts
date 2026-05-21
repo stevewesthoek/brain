@@ -43,6 +43,7 @@ type RegistryApp = {
   repoPath?: unknown;
   databaseEngine?: unknown;
   databaseServiceName?: unknown;
+  dockerContainerName?: unknown;
   databasePort?: unknown;
   databaseName?: unknown;
   databaseUser?: unknown;
@@ -595,12 +596,14 @@ function readModelRouterReport(): ModelRouterReport | null {
 
 function buildDatabase(raw: RegistryApp): BrainCoreLocalAppDatabaseDefinition | undefined {
   if (!raw.databaseEngine && !raw.databasePort && !raw.databaseServiceName && !raw.databaseName) return undefined;
+  const containerName = readStringOrNull(raw.dockerContainerName) ?? readStringOrNull(raw.databaseServiceName);
   return {
     id: normalizeId(`${readString(raw.name, 'database')}-database`),
     type: normalizeDatabaseType(readStringOrNull(raw.databaseEngine)),
     orbStackManaged: true,
     status: 'unknown',
     actionPolicy: { ...DEFAULT_ACTION_POLICY },
+    ...(containerName ? { containerName } : {}),
     ...(readNumberOrNull(raw.databasePort) !== null ? { hostPort: readNumberOrNull(raw.databasePort)! } : {}),
     ...(readNumberOrNull(raw.databasePort) !== null ? { containerPort: readNumberOrNull(raw.databasePort)! } : {}),
   };

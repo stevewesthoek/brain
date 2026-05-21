@@ -4025,7 +4025,7 @@ export interface EndpointError {
   url?: string;
 }
 
-const REQUEST_TIMEOUT_MS = 1_500;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 // Track which URL worked (for localhost/127 fallback diagnostics)
 let lastWorkingUrl: string | null = null;

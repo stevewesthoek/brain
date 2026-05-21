@@ -182,6 +182,7 @@ export interface BrainCoreLocalAppDatabaseDefinition {
   id: string;
   type: 'postgres' | 'mysql' | 'redis' | 'sqlite' | 'other';
   orbStackManaged: boolean;
+  containerName?: string;
   hostPort?: number;
   containerPort?: number;
   status: 'running' | 'stopped' | 'unknown' | 'unavailable';

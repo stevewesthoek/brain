@@ -9,6 +9,12 @@ import type {
 } from '../types/api.js';
 import type { BrainCoreLocalAppDefinition } from '../types/api.js';
 import { listLocalAppDefinitions } from './local-app-orchestrator.js';
+import {
+  startDatabasePhase,
+  stopDatabasePhase,
+  verifyAppStarted,
+  verifyAppStopped,
+} from './local-app-stack-orchestrator.js';
 
 type ExecutionStrategy =
   | 'repo-dev-script'
@@ -163,6 +169,90 @@ async function runActionCore(
     return executeCompositeRestart(app, id, startedAtMs);
   }
 
+  return executeStackAction(app, action, id, spec, startedAtMs);
+}
+
+async function executeStackAction(
+  app: BrainCoreLocalAppDefinition,
+  action: BrainCoreLocalAppAction,
+  id: string,
+  spec: SafeCommandSpec,
+  startedAtMs: number,
+): Promise<BrainCoreLocalAppActionResult> {
+  const preSteps: BrainCoreLocalAppActionResultStep[] = [];
+
+  // ── START: bring DB up first, then app ──────────────────────────────────
+  if (action === 'start') {
+    const dbPhase = await startDatabasePhase(app);
+    preSteps.push(...dbPhase.steps);
+    if (!dbPhase.ok) {
+      return createResult({
+        id, appId: app.id, action,
+        status: 'failed', ok: false,
+        message: `Database did not start: ${dbPhase.reason}`,
+        errorCode: 'local_app_db_start_failed',
+        startedAtMs,
+        steps: [...preSteps, ...validationSteps('failed', 'App start was blocked because database failed to come up.')],
+        allowlistedApp: true, allowlistedAction: true, nextState: 'unknown',
+      });
+    }
+
+    const appResult = await executeSpec(id, app.id, action, spec, startedAtMs);
+    const verifyPhase = await verifyAppStarted(app);
+    return createResult({
+      id, appId: app.id, action,
+      status: appResult.ok && verifyPhase.ok ? appResult.status : 'failed',
+      ok: appResult.ok && verifyPhase.ok,
+      message: appResult.ok && verifyPhase.ok
+        ? appResult.message
+        : `App start failed verification: ${verifyPhase.ok ? appResult.message : (verifyPhase as any).reason}`,
+      ...(appResult.errorCode ? { errorCode: appResult.errorCode } : {}),
+      ...(appResult.error ? { error: appResult.error } : {}),
+      startedAtMs,
+      steps: [...preSteps, ...appResult.steps, ...verifyPhase.steps],
+      allowlistedApp: true, allowlistedAction: true,
+      nextState: appResult.ok && verifyPhase.ok ? 'running' : 'unknown',
+      nextPollMs: appResult.nextPollMs,
+    });
+  }
+
+  // ── STOP: stop app, verify port closed, then stop DB ────────────────────
+  if (action === 'stop') {
+    const appResult = await executeSpec(id, app.id, action, spec, startedAtMs);
+    const verifyPhase = await verifyAppStopped(app);
+    const postSteps = [...appResult.steps, ...verifyPhase.steps];
+
+    if (!verifyPhase.ok) {
+      return createResult({
+        id, appId: app.id, action,
+        status: 'failed', ok: false,
+        message: `App stop failed: ${(verifyPhase as any).reason}`,
+        errorCode: 'local_app_stop_verify_failed',
+        startedAtMs,
+        steps: postSteps,
+        allowlistedApp: true, allowlistedAction: true, nextState: 'unknown',
+      });
+    }
+
+    const dbPhase = await stopDatabasePhase(app);
+    postSteps.push(...dbPhase.steps);
+
+    return createResult({
+      id, appId: app.id, action,
+      status: dbPhase.ok ? (appResult.ok ? appResult.status : 'failed') : 'failed',
+      ok: appResult.ok && dbPhase.ok,
+      message: dbPhase.ok
+        ? appResult.message
+        : `App stopped but database did not stop: ${(dbPhase as any).reason}`,
+      ...(appResult.errorCode && !dbPhase.ok ? { errorCode: 'local_app_db_stop_failed' } : appResult.errorCode ? { errorCode: appResult.errorCode } : {}),
+      startedAtMs,
+      steps: postSteps,
+      allowlistedApp: true, allowlistedAction: true,
+      nextState: appResult.ok && dbPhase.ok ? 'stopped' : 'unknown',
+    });
+  }
+
+  // ── Fallback (should not be reached for managed-restart, but safe) ───────
   return executeSpec(id, app.id, action, spec, startedAtMs);
 }
 
@@ -641,64 +731,76 @@ async function executeManagedProcessStop(
   managed: BrainCoreLocalAppManagedProcessRecord,
   startedAtMs: number,
 ): Promise<BrainCoreLocalAppActionResult> {
+  const app = listLocalAppDefinitions().find((entry) => entry.id === appId);
+  const stopSteps: BrainCoreLocalAppActionResultStep[] = [];
+
   if (!isPidAlive(managed.pid)) {
     clearManagedProcessRecord(appId, managed.pid);
+    stopSteps.push(
+      { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'success', message: 'The recorded PID was already absent.' },
+      { id: 'clear-stale-record', label: 'Clear stale managed process record', type: 'report', status: 'success', message: 'Stale managed process state was cleared.' },
+    );
+  } else {
+    try {
+      processHandle.kill(managed.pid, 'SIGTERM');
+      clearManagedProcessRecord(appId, managed.pid);
+      stopSteps.push(
+        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'success', message: 'Recorded PID belongs to this app and is alive.' },
+        { id: 'stop-managed-process', label: 'Stop Brain Core-managed process', type: 'service', status: 'success', message: `Sent SIGTERM to PID ${managed.pid}.` },
+      );
+    } catch (error) {
+      return createResult({
+        id, appId, action,
+        status: 'failed', ok: false,
+        message: 'Managed npm process stop failed safely.',
+        errorCode: 'local_app_managed_stop_failed',
+        error: redact(String(error instanceof Error ? error.message : error)),
+        startedAtMs,
+        steps: [{ id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'failed', message: 'The managed PID could not be stopped safely.' }],
+        allowlistedApp: true, allowlistedAction: true, nextState: 'unknown',
+      });
+    }
+  }
+
+  // Verify app port is actually closed
+  if (app) {
+    const verifyPhase = await verifyAppStopped(app);
+    stopSteps.push(...verifyPhase.steps);
+    if (!verifyPhase.ok) {
+      return createResult({
+        id, appId, action,
+        status: 'failed', ok: false,
+        message: `App process stopped but port did not close: ${(verifyPhase as any).reason}`,
+        errorCode: 'local_app_stop_verify_failed',
+        startedAtMs, steps: stopSteps,
+        allowlistedApp: true, allowlistedAction: true, nextState: 'unknown',
+      });
+    }
+
+    // Stop database
+    const dbPhase = await stopDatabasePhase(app);
+    stopSteps.push(...dbPhase.steps);
     return createResult({
-      id,
-      appId,
-      action,
-      status: 'success',
-      ok: true,
-      message: 'Managed npm process was already gone; stale record cleared safely.',
-      startedAtMs,
-      steps: [
-        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'success', message: 'The recorded PID was already absent.' },
-        { id: 'clear-stale-record', label: 'Clear stale managed process record', type: 'report', status: 'success', message: 'Stale managed process state was cleared.' },
-      ],
-      allowlistedApp: true,
-      allowlistedAction: true,
-      nextState: 'stopped',
+      id, appId, action,
+      status: dbPhase.ok ? 'success' : 'failed',
+      ok: dbPhase.ok,
+      message: dbPhase.ok
+        ? 'Managed npm process and database stopped successfully.'
+        : `App stopped but database did not stop: ${(dbPhase as any).reason}`,
+      ...(dbPhase.ok ? {} : { errorCode: 'local_app_db_stop_failed' }),
+      startedAtMs, steps: stopSteps,
+      allowlistedApp: true, allowlistedAction: true,
+      nextState: dbPhase.ok ? 'stopped' : 'unknown',
     });
   }
 
-  try {
-    processHandle.kill(managed.pid, 'SIGTERM');
-    clearManagedProcessRecord(appId, managed.pid);
-    return createResult({
-      id,
-      appId,
-      action,
-      status: 'success',
-      ok: true,
-      message: 'Managed npm process stopped successfully.',
-      startedAtMs,
-      steps: [
-        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'success', message: 'Recorded PID belongs to this app and is alive.' },
-        { id: 'stop-managed-process', label: 'Stop Brain Core-managed process', type: 'service', status: 'success', message: `Sent SIGTERM to PID ${managed.pid}.` },
-      ],
-      allowlistedApp: true,
-      allowlistedAction: true,
-      nextState: 'stopped',
-    });
-  } catch (error) {
-    return createResult({
-      id,
-      appId,
-      action,
-      status: 'failed',
-      ok: false,
-      message: 'Managed npm process stop failed safely.',
-      errorCode: 'local_app_managed_stop_failed',
-      error: redact(String(error instanceof Error ? error.message : error)),
-      startedAtMs,
-      steps: [
-        { id: 'validate-managed-process', label: 'Validate Brain Core-managed process', type: 'validation', status: 'failed', message: 'The managed PID could not be stopped safely.' },
-      ],
-      allowlistedApp: true,
-      allowlistedAction: true,
-      nextState: 'unknown',
-    });
-  }
+  return createResult({
+    id, appId, action,
+    status: 'success', ok: true,
+    message: 'Managed npm process stopped successfully.',
+    startedAtMs, steps: stopSteps,
+    allowlistedApp: true, allowlistedAction: true, nextState: 'stopped',
+  });
 }
 
 function clearManagedProcessRecord(appId: string, pid: number): void {

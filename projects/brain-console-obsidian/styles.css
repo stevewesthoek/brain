@@ -378,6 +378,12 @@
   cursor: progress;
 }
 
+.brain-console__local-app-action--open {
+  border-color: color-mix(in srgb, var(--text-accent) 50%, var(--bc-border));
+  background: color-mix(in srgb, var(--text-accent) 15%, var(--interactive-normal));
+  cursor: pointer;
+}
+
 .brain-console__local-app-action:disabled {
   opacity: 0.45;
 }
