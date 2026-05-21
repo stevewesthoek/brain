@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# vo — Video Orchestrator unified CLI
+# Delegates to ~/.local/video-orchestrator/scripts/vo.py via the venv Python.
+exec /Users/Office/.local/video-orchestrator/.venv/bin/python3 \
+     /Users/Office/.local/video-orchestrator/scripts/vo.py "$@"
