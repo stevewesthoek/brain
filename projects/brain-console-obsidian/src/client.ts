@@ -7959,3 +7959,28 @@ export interface BrainCoreVOWorkerConfigResponse {
 export async function readBrainCoreVOWorkerConfig(baseUrl: string): Promise<HttpResult<BrainCoreVOWorkerConfigResponse>> {
   return fetchJson<BrainCoreVOWorkerConfigResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/worker-config');
 }
+
+// ── VO Account Stats ─────────────────────────────────────────────────────────
+
+export interface BrainCoreVOAccountStat {
+  accountId: string;
+  accountHandle: string;
+  platform: string;
+  totalJobs30d: number;
+  succeededJobs30d: number;
+  failedJobs30d: number;
+  successRate30d: number | null;
+  lastJobAt: string | null;
+  lastSucceededAt: string | null;
+  lastAdapterMode: string | null;
+}
+
+export interface BrainCoreVOAccountStatsResponse {
+  ok: boolean;
+  stats: BrainCoreVOAccountStat[];
+  error?: string;
+}
+
+export async function readBrainCoreVOAccountStats(baseUrl: string): Promise<HttpResult<BrainCoreVOAccountStatsResponse>> {
+  return fetchJson<BrainCoreVOAccountStatsResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/accounts-stats');
+}

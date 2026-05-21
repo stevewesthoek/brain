@@ -10186,3 +10186,22 @@ export interface BrainCoreInfraVOStatusResponse {
   lastJobAt?: string | null;
   error?: string;
 }
+
+export interface BrainCoreInfraVOAccountStat {
+  accountId: string;
+  accountHandle: string;
+  platform: string;
+  totalJobs30d: number;
+  succeededJobs30d: number;
+  failedJobs30d: number;
+  successRate30d: number | null;
+  lastJobAt: string | null;
+  lastSucceededAt: string | null;
+  lastAdapterMode: string | null;
+}
+
+export interface BrainCoreInfraVOAccountStatsResponse {
+  ok: boolean;
+  stats: BrainCoreInfraVOAccountStat[];
+  error?: string;
+}

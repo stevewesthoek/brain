@@ -38,32 +38,20 @@ function readPlistEnv(): Record<string, string> {
 }
 
 function getYoutubeOauthAccounts(): string[] {
-  // Query keychain for all yt-oauth accounts
+  // Query keychain for yt-oauth account names only (no -g flag to avoid exposing passwords)
   try {
-    const result = execFileSync('security', ['find-generic-password', '-s', 'video-orchestrator', '-g'], {
+    const out = execFileSync('security', ['find-generic-password', '-s', 'video-orchestrator'], {
       encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000,
     });
     const accounts: string[] = [];
-    for (const line of result.split('\n')) {
-      const m = /acct.*"(yt-oauth-[^"]+)"/.exec(line);
+    for (const line of out.split('\n')) {
+      const m = /"acct"<blob>="(yt-oauth-[^"]+)"/.exec(line)
+        ?? /acct.*"(yt-oauth-[^"]+)"/.exec(line);
       if (m?.[1]) accounts.push(m[1].replace('yt-oauth-', ''));
     }
     return accounts;
   } catch {
-    // security dump-keychain is a different approach — try list
-    try {
-      const out = execFileSync('security', ['find-generic-password', '-s', 'video-orchestrator'], {
-        encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000,
-      });
-      const accounts: string[] = [];
-      for (const line of out.split('\n')) {
-        const m = /"acct"<blob>="(yt-oauth-[^"]+)"/.exec(line);
-        if (m?.[1]) accounts.push(m[1].replace('yt-oauth-', ''));
-      }
-      return accounts;
-    } catch {
-      return [];
-    }
+    return [];
   }
 }
 

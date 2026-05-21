@@ -209,6 +209,7 @@ import { getInfraVOPostingInstructions } from '../adapters/infra-video-orchestra
 import { getInfraVONormalizeHistory } from '../adapters/infra-video-orchestrator-normalize-history.js';
 import { getInfraVOManualQueue } from '../adapters/infra-video-orchestrator-manual-queue.js';
 import { getInfraVOWorkerConfig } from '../adapters/infra-video-orchestrator-worker-config.js';
+import { getInfraVOAccountStats } from '../adapters/infra-video-orchestrator-accounts-stats.js';
 import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
 
@@ -1764,6 +1765,10 @@ export async function routeRequest(
         }
         if (url.pathname === '/infra/video-orchestrator/worker-config') {
           sendJson(response, 200, getInfraVOWorkerConfig());
+          return;
+        }
+        if (url.pathname === '/infra/video-orchestrator/accounts-stats') {
+          sendJson(response, 200, await getInfraVOAccountStats());
           return;
         }
         if (url.pathname === '/infra/pipelines/status') {
