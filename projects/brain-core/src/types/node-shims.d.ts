@@ -119,12 +119,28 @@ declare module 'node:http' {
 }
 
 declare module 'node:os' {
+  export interface CpuInfo {
+    model: string;
+    speed: number;
+    times: { user: number; nice: number; sys: number; idle: number; irq: number };
+  }
+
   export function hostname(): string;
   export function homedir(): string;
+  export function totalmem(): number;
+  export function freemem(): number;
+  export function loadavg(): [number, number, number];
+  export function cpus(): CpuInfo[];
+  export function uptime(): number;
 
   const os: {
     hostname: typeof hostname;
     homedir: typeof homedir;
+    totalmem: typeof totalmem;
+    freemem: typeof freemem;
+    loadavg: typeof loadavg;
+    cpus: typeof cpus;
+    uptime: typeof uptime;
   };
 
   export default os;

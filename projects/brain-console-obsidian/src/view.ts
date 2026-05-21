@@ -294,6 +294,17 @@ import {
   readBrainCoreInfraGoogleAds,
   readBrainCoreInfraStripe,
   readBrainCoreInfraStudio,
+  readBrainCoreInfraVOStatus,
+  readBrainCoreInfraPipelinesStatus,
+  readBrainCoreVOAccounts,
+  readBrainCoreVOAuthStatus,
+  readBrainCoreVOJobs,
+  readBrainCoreVOPostingInstructions,
+  readBrainCoreSystemMetrics,
+  type BrainCoreVOAccountsResponse,
+  type BrainCoreVOAuthStatusResponse,
+  type BrainCoreVOJobsResponse,
+  type BrainCoreInfraPipelinesStatus,
   type BrainCoreInfraDokployResponse,
   type BrainCoreInfraTunnelsResponse,
   type BrainCoreInfraDomainsResponse,
@@ -302,6 +313,8 @@ import {
   type BrainCoreInfraGoogleAdsResponse,
   type BrainCoreInfraStripeResponse,
   type BrainCoreInfraStudioResponse,
+  type BrainCoreInfraVOStatusResponse,
+  type BrainCoreSystemMetrics,
 } from './client.js';
 import {
   deriveDashboardSnapshot,
@@ -470,6 +483,12 @@ export interface BrainConsoleViewState {
   infraGoogleAds?: BrainCoreInfraGoogleAdsResponse;
   infraStripe?: BrainCoreInfraStripeResponse;
   infraStudio?: BrainCoreInfraStudioResponse;
+  voLiveStatus?: BrainCoreInfraVOStatusResponse;
+  pipelinesLiveStatus?: BrainCoreInfraPipelinesStatus;
+  voAccounts?: BrainCoreVOAccountsResponse;
+  voAuthStatus?: BrainCoreVOAuthStatusResponse;
+  voJobs?: BrainCoreVOJobsResponse;
+  systemMetrics?: BrainCoreSystemMetrics;
 }
 
 export async function loadBrainConsoleViewState(
@@ -622,14 +641,20 @@ export async function loadBrainConsoleViewState(
     readBrainCoreInfraGoogleAds(baseUrl),
     readBrainCoreInfraStripe(baseUrl),
     readBrainCoreInfraStudio(baseUrl),
+    readBrainCoreInfraVOStatus(baseUrl),
+    readBrainCoreInfraPipelinesStatus(baseUrl),
+    readBrainCoreVOAccounts(baseUrl),    // 146
+    readBrainCoreVOAuthStatus(baseUrl),  // 147
+    readBrainCoreVOJobs(baseUrl),        // 148
+    readBrainCoreSystemMetrics(baseUrl), // 149
   ]);
 
   const settledValues = withSafeEndpointPadding(
     results.map((result) => result.status === 'fulfilled' ? result.value : { value: undefined, error: result.reason }),
-    143,
+    149,
   );
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio] = settledValues as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult] = settledValues as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -816,6 +841,12 @@ export async function loadBrainConsoleViewState(
     infraGoogleAds: infraGoogleAds.value,
     infraStripe: infraStripe.value,
     infraStudio: infraStudio.value,
+    voLiveStatus: voLiveStatus.value,
+    pipelinesLiveStatus: pipelinesLiveStatus.value as BrainCoreInfraPipelinesStatus | undefined,
+    voAccounts: voAccountsResult.value as BrainCoreVOAccountsResponse | undefined,
+    voAuthStatus: voAuthStatusResult.value as BrainCoreVOAuthStatusResponse | undefined,
+    voJobs: voJobsResult.value as BrainCoreVOJobsResponse | undefined,
+    systemMetrics: systemMetricsResult.value as BrainCoreSystemMetrics | undefined,
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),
@@ -858,6 +889,140 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'recovery', label: 'Recovery', icon: '⚠' },
 ];
 
+function metricsSeverityColor(pct: number): string {
+  if (pct < 50) return '#22c55e';
+  if (pct < 75) return '#eab308';
+  return '#ef4444';
+}
+
+function metricsCodexColor(remainingPct: number): string {
+  if (remainingPct > 50) return '#22c55e';
+  if (remainingPct > 25) return '#eab308';
+  return '#ef4444';
+}
+
+function formatMetricsUptime(seconds: number): string {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function formatMetricsCountdown(resetsAt: string | null): string {
+  if (!resetsAt) return '–';
+  const ms = new Date(resetsAt).getTime() - Date.now();
+  if (!Number.isFinite(ms) || ms <= 0) return 'now';
+  const totalMinutes = Math.floor(ms / 60000);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function formatMetricsResetExact(resetsAt: string | null): string {
+  if (!resetsAt) return 'No data';
+  try {
+    const d = new Date(resetsAt);
+    return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return resetsAt;
+  }
+}
+
+function renderSystemMetricsBanner(state: BrainConsoleViewState): string {
+  const m = state.systemMetrics;
+  if (!m) {
+    return `<div class="bc-metrics-banner bc-metrics-offline"><span>System metrics unavailable</span></div>`;
+  }
+
+  const cpuPct = Math.min(100, Math.round((m.loadAvg1 / Math.max(m.cpuCount, 1)) * 100));
+  const cpuColor = metricsSeverityColor(cpuPct);
+
+  const memBarPct = m.memFreePercent === null ? 0 : Math.round(100 - m.memFreePercent);
+  const memColor = m.memFreePercent === null ? 'var(--text-muted)' : metricsSeverityColor(memBarPct);
+
+  const gpuPct = typeof m.gpuUtilizationPercent === 'number' ? Math.max(0, Math.min(100, Math.round(m.gpuUtilizationPercent))) : null;
+  const gpuColor = gpuPct === null ? 'var(--text-muted)' : metricsSeverityColor(gpuPct);
+
+  const c5 = m.codex.fiveHour;
+  const c7 = m.codex.sevenDay;
+
+  const cpuCard = `<div class="bc-mc">
+    <div class="bc-mc-label">CPU LOAD</div>
+    <div class="bc-mc-value">${m.loadAvg1.toFixed(2)} core</div>
+    <div class="bc-mc-sub">${m.cpuCount} cores · ${cpuPct}% load</div>
+    <div class="bc-bar"><div class="bc-bar-fill" style="width:${cpuPct}%;background:${cpuColor}"></div></div>
+  </div>`;
+
+  const memCard = m.memFreePercent === null
+    ? `<div class="bc-mc">
+        <div class="bc-mc-label">MEMORY PRESSURE</div>
+        <div class="bc-mc-value" style="color:var(--text-muted)">–</div>
+        <div class="bc-mc-sub">memory_pressure unavailable</div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">MEMORY PRESSURE</div>
+        <div class="bc-mc-value">${m.memUsedGb} GB</div>
+        <div class="bc-mc-sub">${m.memTotalGb} GB · ${m.memFreePercent}% free</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${memBarPct}%;background:${memColor}"></div></div>
+      </div>`;
+
+  const gpuCard = gpuPct === null
+    ? `<div class="bc-mc">
+        <div class="bc-mc-label">GPU LOAD</div>
+        <div class="bc-mc-value" style="color:var(--text-muted)">–</div>
+        <div class="bc-mc-sub">gpu stats unavailable</div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">GPU LOAD</div>
+        <div class="bc-mc-value">${m.gpuCoreCount} core</div>
+        <div class="bc-mc-sub">${gpuPct}% load · ${m.gpuCoreCount} GPU cores</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${gpuPct}%;background:${gpuColor}"></div></div>
+      </div>`;
+
+  const uptimeCard = `<div class="bc-mc">
+    <div class="bc-mc-label">UPTIME</div>
+    <div class="bc-mc-value">${formatMetricsUptime(m.uptimeSeconds)}</div>
+    <div class="bc-mc-sub">Brain Core</div>
+  </div>`;
+
+  const codex5Card = c5.resetsAt
+    ? `<div class="bc-mc">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="bc-mc-label">CODEX · 5H</div>
+          <div class="bc-mc-badge">RESETS IN ${formatMetricsCountdown(c5.resetsAt)}</div>
+        </div>
+        <div class="bc-mc-value" style="color:${metricsCodexColor(c5.remainingPercent)}">${c5.remainingPercent}%</div>
+        <div class="bc-mc-sub">${formatMetricsResetExact(c5.resetsAt)}</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${c5.remainingPercent}%;background:${metricsCodexColor(c5.remainingPercent)}"></div></div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">CODEX · 5H</div>
+        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
+        <div class="bc-mc-sub">No data yet</div>
+      </div>`;
+
+  const codex7Card = c7.resetsAt
+    ? `<div class="bc-mc">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="bc-mc-label">CODEX · 7D</div>
+          <div class="bc-mc-badge">RESETS IN ${formatMetricsCountdown(c7.resetsAt)}</div>
+        </div>
+        <div class="bc-mc-value" style="color:${metricsCodexColor(c7.remainingPercent)}">${c7.remainingPercent}%</div>
+        <div class="bc-mc-sub">${formatMetricsResetExact(c7.resetsAt)}</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${c7.remainingPercent}%;background:${metricsCodexColor(c7.remainingPercent)}"></div></div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">CODEX · 7D</div>
+        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
+        <div class="bc-mc-sub">No data yet</div>
+      </div>`;
+
+  return `<div class="bc-metrics-banner">${cpuCard}${memCard}${gpuCard}${uptimeCard}${codex5Card}${codex7Card}</div>`;
+}
+
 export function renderBrainConsoleView(
   container: HTMLElement,
   state: BrainConsoleViewState,
@@ -875,6 +1040,10 @@ export function renderBrainConsoleView(
 
     // Native card UI header
     renderNativeHeader(shell, state, onRefresh);
+
+    // System metrics banner
+    const metricsBanner = shell.createDiv({ cls: 'bc-metrics-wrapper' });
+    metricsBanner.innerHTML = renderSystemMetricsBanner(state);
 
     // Main content area
     if (snapshot.connectionStatus === 'offline') {
@@ -1395,6 +1564,83 @@ function renderMonitoringSection(content: HTMLElement, state: BrainConsoleViewSt
   renderCard(grid, `Synthetic Monitors (${synthetics.length})`, syntheticsCard);
 }
 
+function renderVOLiveStatusCards(grid: HTMLElement, state: BrainConsoleViewState): void {
+  const vol = state.voLiveStatus;
+
+  if (!vol) {
+    // Endpoint not yet reachable — show nothing, don't clutter the UI
+    return;
+  }
+
+  if (!vol.ok) {
+    const errCard = document.createElement('div');
+    errCard.addClass('brain-console__card-content');
+    errCard.createEl('p', { cls: 'brain-console__error-detail', text: vol.error ?? 'VO DB unreachable.' });
+    errCard.createEl('p', { cls: 'brain-console__detail', text: 'Brain Core cannot connect to the Video Orchestrator PostgreSQL database.' });
+    renderCard(grid, 'VO Live DB', errCard);
+    return;
+  }
+
+  // Queue depth card
+  if (vol.queueDepth) {
+    const qCard = document.createElement('div');
+    qCard.addClass('brain-console__card-content');
+    const qd = vol.queueDepth;
+    renderCompactStatGrid(qCard, [
+      { label: 'Pending', value: String(qd.pending) },
+      { label: 'Running', value: String(qd.running) },
+      { label: 'Failed', value: String(qd.failed) },
+      { label: 'Active accounts', value: String(vol.activeAccounts ?? 0) },
+    ]);
+    if (vol.lastJobAt) {
+      qCard.createEl('p', { cls: 'brain-console__detail', text: `Last job: ${formatRelativeTime(vol.lastJobAt)}` });
+    }
+    renderCard(grid, 'VO Queue', qCard);
+  }
+
+  // Accounts by platform card
+  if (vol.accountsByPlatform && Object.keys(vol.accountsByPlatform).length > 0) {
+    const apCard = document.createElement('div');
+    apCard.addClass('brain-console__card-content');
+    const apList = apCard.createDiv({ cls: 'brain-console__list' });
+    for (const [platform, count] of Object.entries(vol.accountsByPlatform)) {
+      const row = apList.createDiv({ cls: 'brain-console__list-row' });
+      row.createEl('span', { cls: 'brain-console__list-label', text: platform });
+      row.createEl('span', { cls: 'brain-console__list-value', text: `${count} account${count !== 1 ? 's' : ''}` });
+    }
+    renderCard(grid, 'VO Accounts by Platform', apCard);
+  }
+
+  // Recent posts card
+  if (vol.recentPosts && vol.recentPosts.length > 0) {
+    const rpCard = document.createElement('div');
+    rpCard.addClass('brain-console__card-content');
+    const rpList = rpCard.createDiv({ cls: 'brain-console__list' });
+    for (const post of vol.recentPosts.slice(0, 3)) {
+      const row = rpList.createDiv({ cls: 'brain-console__list-row' });
+      row.createEl('span', { cls: 'brain-console__list-label', text: `${post.accountHandle} (${post.platform})` });
+      row.createEl('span', { cls: 'brain-console__detail', text: post.title.slice(0, 40) });
+      if (post.postedAt) {
+        row.createEl('span', { cls: 'brain-console__list-value', text: formatRelativeTime(post.postedAt) });
+      }
+    }
+    renderCard(grid, 'VO Recent Posts', rpCard);
+  }
+
+  // Analytics snapshot card
+  if (vol.analyticsSnapshot) {
+    const asCard = document.createElement('div');
+    asCard.addClass('brain-console__card-content');
+    const snap = vol.analyticsSnapshot;
+    renderCompactStatGrid(asCard, [
+      { label: 'Total views (7d)', value: snap.totalViews7d.toLocaleString() },
+      { label: 'Avg engagement (7d)', value: `${(snap.avgEngagement7d * 100).toFixed(1)}%` },
+      { label: 'Top platform', value: snap.topPlatform || '—' },
+    ]);
+    renderCard(grid, 'VO Analytics (7d)', asCard);
+  }
+}
+
 function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
@@ -1406,6 +1652,7 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
     card.createEl('p', { text: studio?.error ?? 'Studio data not configured.' });
     card.createEl('p', { cls: 'brain-console__detail', text: 'Viral Flow config expected at ~/.config/viralflow/. Video Orchestrator runtime at runtime/local/video-orchestrator/latest.json.' });
     renderCard(grid, 'Studio', card);
+    renderVOLiveStatusCards(grid, state);
     return;
   }
 
@@ -1414,6 +1661,7 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
     card.addClass('brain-console__card-content');
     card.createEl('p', { cls: 'brain-console__error-detail', text: studio.error ?? 'Studio error.' });
     renderCard(grid, 'Studio', card);
+    renderVOLiveStatusCards(grid, state);
     return;
   }
 
@@ -1491,7 +1739,7 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
     }
   }
 
-  // ── Video Orchestrator ──────────────────────────────────────────────────────
+  // ── Video Orchestrator (static runtime summary) ─────────────────────────────
   const vo = studio.videoOrchestrator;
   if (vo) {
     const voCard = document.createElement('div');
@@ -1530,6 +1778,61 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
       }
       renderCard(grid, `Accounts by Platform (${vo.accountSummary.length})`, acctCard);
     }
+  }
+
+  // ── Video Orchestrator Live DB Status ───────────────────────────────────────
+  renderVOLiveStatusCards(grid, state);
+
+  // ── VO Recent Jobs ──────────────────────────────────────────────────────────
+  const jobs = state.voJobs;
+  if (jobs?.ok && jobs.jobs.length > 0) {
+    const jobsContent = document.createElement('div');
+    jobsContent.addClass('brain-console__card-content');
+    const table = jobsContent.createEl('table', { cls: 'brain-console__compact-table' });
+    const thead = table.createEl('thead');
+    const hrow = thead.createEl('tr');
+    hrow.createEl('th', { text: 'Type' });
+    hrow.createEl('th', { text: 'Platform' });
+    hrow.createEl('th', { text: 'Account' });
+    hrow.createEl('th', { text: 'Status' });
+    hrow.createEl('th', { text: 'Created' });
+    hrow.createEl('th', { text: '' });
+    const tbody = table.createEl('tbody');
+    const instructionsPanel = jobsContent.createDiv({ cls: 'brain-console__detail' });
+    for (const job of jobs.jobs.slice(0, 10)) {
+      const row = tbody.createEl('tr');
+      row.createEl('td', { text: job.jobType });
+      row.createEl('td', { text: job.platform ?? '—' });
+      const handleText = job.accountHandle ? job.accountHandle.slice(0, 20) : '—';
+      row.createEl('td', { text: handleText });
+      const statusCell = row.createEl('td');
+      const statusBadge = statusCell.createEl('span', { cls: 'brain-console__badge', text: job.jobStatus });
+      if (job.jobStatus === 'succeeded') statusBadge.addClass('brain-console__badge--ok');
+      else if (job.jobStatus === 'failed' || job.jobStatus === 'dead') statusBadge.addClass('brain-console__badge--danger');
+      else if (job.jobStatus === 'running') statusBadge.addClass('brain-console__badge--warn');
+      else statusBadge.addClass('brain-console__badge--muted');
+      row.createEl('td', { text: formatRelativeTime(job.createdAt) });
+      const actionCell = row.createEl('td');
+      const isManualPosted = job.pipelineState === 'posted' && (job.adapterMode === null || job.adapterMode === 'manual');
+      if (isManualPosted) {
+        const link = actionCell.createEl('button', { cls: 'brain-console__link-button', text: 'View instructions' });
+        link.addEventListener('click', async () => {
+          instructionsPanel.empty();
+          instructionsPanel.setText('Loading posting instructions...');
+          const result = await readBrainCoreVOPostingInstructions(state.brainCoreUrl, job.jobId);
+          instructionsPanel.empty();
+          if (!result.value?.exists) {
+            instructionsPanel.setText(result.value?.error ?? 'Posting instructions are not available for this job.');
+            return;
+          }
+          instructionsPanel.createEl('div', { text: `${result.value.account ?? 'Unknown account'} · ${result.value.platform ?? 'unknown platform'}` });
+          instructionsPanel.createEl('pre', { text: result.value.content });
+        });
+      } else {
+        actionCell.createEl('span', { text: '—' });
+      }
+    }
+    renderCard(grid, `VO Recent Jobs (${Math.min(jobs.jobs.length, 10)} of ${jobs.totalCount})`, jobsContent);
   }
 }
 
@@ -1605,6 +1908,16 @@ function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleVie
 
 function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  // Live pipeline status cards (Stage 0 dual visibility)
+  const ps = state.pipelinesLiveStatus;
+  if (ps) {
+    renderGroupedSummary(grid, 'Live Pipeline Status', [
+      { title: 'STB — Says the Bible', render: renderStbLiveCard(ps.stb) },
+      { title: 'Video Orchestrator Live', render: renderVOLivePipelineCard(ps.videoOrchestrator) },
+    ]);
+  }
+
   renderGroupedSummary(grid, 'Pipeline Overview', [
     { title: 'Pipeline Overview', render: renderPipelineOverviewCard(state) },
     { title: 'Video Orchestrator', render: renderVideoOrchestratorPipelineCard(state) },
@@ -1613,6 +1926,83 @@ function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewSta
     { title: 'STB / Video Migration', render: renderStbVideoMigrationPipelineCard(state) },
     { title: 'Safety Summary', render: renderSafetySummaryCard() },
   ]);
+
+  // VO Accounts card
+  const accounts = state.voAccounts;
+  if (accounts?.ok && accounts.accounts.length > 0) {
+    const accContent = document.createElement('div');
+    accContent.addClass('brain-console__card-content');
+    const accList = accContent.createDiv({ cls: 'brain-console__list' });
+    for (const acc of accounts.accounts) {
+      const row = accList.createDiv({ cls: 'brain-console__list-row' });
+      const statusDot = acc.accountStatus === 'active' ? '🟢' : '🔴';
+      const authBadge = acc.authMethod === 'oauth2' ? '🔑' : acc.authMethod === 'api_key' ? '🗝️' : '✏️';
+      row.createEl('span', { cls: 'brain-console__list-label', text: `${statusDot} ${acc.accountHandle} (${acc.platform})` });
+      row.createEl('span', { cls: 'brain-console__list-value', text: authBadge });
+    }
+    renderCard(grid, `VO Accounts (${accounts.accounts.length})`, accContent);
+  }
+
+  const authStatus = state.voAuthStatus;
+  if (authStatus?.ok && authStatus.accounts.length > 0) {
+    const authContent = document.createElement('div');
+    authContent.addClass('brain-console__card-content');
+    const authList = authContent.createDiv({ cls: 'brain-console__list' });
+    for (const account of authStatus.accounts) {
+      const row = authList.createDiv({ cls: 'brain-console__list-row' });
+      const badge = account.authMethod === 'oauth2' ? '🔑' : '✏️';
+      const readiness = account.authMethod === 'oauth2'
+        ? account.oauthReady
+          ? `ready${account.tokenExpiry ? ` · ${formatRelativeTime(account.tokenExpiry)}` : ''}`
+          : 'token missing'
+        : account.authMethod;
+      row.createEl('span', { cls: 'brain-console__list-label', text: `${badge} ${account.handle} (${account.platform})` });
+      row.createEl('span', { cls: 'brain-console__list-value', text: readiness });
+    }
+    if (authStatus.accounts.some((account) => account.authMethod === 'manual')) {
+      authContent.createEl('p', {
+        cls: 'brain-console__detail',
+        text: 'Run vo accounts auth-url --account <handle> to connect OAuth2.',
+      });
+    }
+    renderCard(grid, 'VO Auth Status', authContent);
+  }
+}
+
+function renderStbLiveCard(stb: BrainCoreInfraPipelinesStatus['stb'] | undefined): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'brain-console__card-content';
+  if (!stb) {
+    el.createEl('div', { cls: 'brain-console__list-sub', text: 'Status unavailable' });
+    return el;
+  }
+  const statusText = stb.status === 'running' ? '🟢 running' : stb.status === 'stopped' ? '🔴 stopped' : '⚪ unknown';
+  renderCompactStatGrid(el, [
+    { label: 'Status', value: statusText },
+    { label: 'Health', value: stb.health },
+    { label: 'Port', value: String(stb.port) },
+  ]);
+  el.createEl('div', { cls: 'brain-console__list-sub', text: '⚠ Stage 0 — read-only visibility. STB is unchanged.' });
+  el.createEl('div', { cls: 'brain-console__list-sub', text: `Checked: ${stb.lastChecked?.slice(0, 19) ?? '—'}` });
+  return el;
+}
+
+function renderVOLivePipelineCard(vo: BrainCoreInfraPipelinesStatus['videoOrchestrator'] | undefined): HTMLElement {
+  const el = document.createElement('div');
+  el.className = 'brain-console__card-content';
+  if (!vo) {
+    el.createEl('div', { cls: 'brain-console__list-sub', text: 'Status unavailable' });
+    return el;
+  }
+  renderCompactStatGrid(el, [
+    { label: 'Status', value: vo.status },
+    { label: 'Pending', value: String(vo.queueDepth?.pending ?? 0) },
+    { label: 'Running', value: String(vo.queueDepth?.running ?? 0) },
+    { label: 'Failed', value: String(vo.queueDepth?.failed ?? 0) },
+    { label: 'Active accounts', value: String(vo.activeAccounts ?? 0) },
+    { label: 'Last job', value: vo.lastJobAt?.slice(0, 19) ?? '—' },
+  ]);
+  return el;
 }
 
 function renderVideoPolicyGateChainCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {

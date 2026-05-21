@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'v2.3';
+export const BRAIN_CONSOLE_BUILD_ID = 'v2.7';
 
 declare global {
   interface Window {
@@ -213,13 +213,8 @@ class BrainConsoleView extends ItemView {
     this.heartbeatInterval = this.registerInterval(
       window.setInterval(async () => {
         if (this.isRefreshing) return;
-        const settings = await this.plugin.getSettings();
-        const state = await loadBrainConsoleViewState(settings);
-        if (state.status?.ok && this.cachedState?.status && !this.cachedState.status.ok) {
-          this.cachedState = state;
-          this.rerenderWithCachedState();
-        }
-      }, 20000),
+        await this.fullRefresh();
+      }, 3000),
     );
   }
 

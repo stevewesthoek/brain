@@ -345,8 +345,8 @@
 }
 
 .brain-console__local-app-card--micro .brain-console__local-app-actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 4px;
 }
 
@@ -653,6 +653,42 @@
   background: color-mix(in srgb, var(--background-secondary) 88%, transparent);
 }
 
+@keyframes bc-badge-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes bc-dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+  100% { content: ''; }
+}
+
+.brain-console__badge--starting {
+  animation: bc-badge-blink 1.2s ease-in-out infinite;
+}
+
+.brain-console__badge--starting::after {
+  content: '';
+  display: inline-block;
+  animation: bc-dots 1.2s steps(1, end) infinite;
+}
+
+.brain-console__badge--stopping {
+  color: var(--bc-yellow);
+  border-color: color-mix(in srgb, var(--bc-yellow) 42%, var(--bc-border));
+  background: color-mix(in srgb, var(--bc-yellow) 12%, transparent);
+  animation: bc-badge-blink 1.2s ease-in-out infinite;
+}
+
+.brain-console__badge--stopping::after {
+  content: '';
+  display: inline-block;
+  animation: bc-dots 1.2s steps(1, end) infinite;
+}
+
 .brain-console__detail {
   color: var(--text-muted);
   font-size: 11px;
@@ -871,4 +907,93 @@
   .brain-console__native-header {
     padding: 14px;
   }
+}
+.brain-console__link-button {
+  border: 0;
+  background: transparent;
+  color: var(--text-accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.brain-console__detail pre {
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+/* ── System metrics banner ── */
+.bc-metrics-wrapper {
+  margin-bottom: 4px;
+}
+.bc-metrics-banner {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+}
+.bc-metrics-offline {
+  grid-template-columns: 1fr;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 8px 0;
+}
+.bc-mc {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 9px 12px;
+  min-width: 0;
+}
+.bc-mc-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.bc-mc-value {
+  font-size: 17px;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  letter-spacing: -.5px;
+  line-height: 1.2;
+}
+.bc-mc-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bc-mc-badge {
+  font-size: 8px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.07);
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.bc-bar {
+  height: 3px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.bc-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+@media (max-width: 900px) {
+  .bc-metrics-banner { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .bc-metrics-banner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

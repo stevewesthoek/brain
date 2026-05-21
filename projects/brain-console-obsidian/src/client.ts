@@ -7655,3 +7655,180 @@ export interface BrainCoreInfraStudioResponse {
 export async function readBrainCoreInfraStudio(baseUrl: string): Promise<HttpResult<BrainCoreInfraStudioResponse>> {
   return fetchJson<BrainCoreInfraStudioResponse>(normalizeBaseUrl(baseUrl), '/infra/studio');
 }
+
+export interface BrainCoreInfraVOQueueDepth {
+  pending: number;
+  running: number;
+  failed: number;
+}
+
+export interface BrainCoreInfraVORecentPost {
+  jobId: string;
+  platform: string;
+  accountHandle: string;
+  title: string;
+  postedAt: string;
+  pipelineState: string;
+}
+
+export interface BrainCoreInfraVOAnalyticsSnapshot {
+  totalViews7d: number;
+  avgEngagement7d: number;
+  topPlatform: string;
+}
+
+export interface BrainCoreInfraVOStatusResponse {
+  ok: boolean;
+  queueDepth?: BrainCoreInfraVOQueueDepth;
+  jobsByType?: Record<string, number>;
+  activeAccounts?: number;
+  accountsByPlatform?: Record<string, number>;
+  recentPosts?: BrainCoreInfraVORecentPost[];
+  analyticsSnapshot?: BrainCoreInfraVOAnalyticsSnapshot;
+  lastJobAt?: string | null;
+  error?: string;
+}
+
+export async function readBrainCoreInfraVOStatus(baseUrl: string): Promise<HttpResult<BrainCoreInfraVOStatusResponse>> {
+  return fetchJson<BrainCoreInfraVOStatusResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/status');
+}
+
+export interface BrainCoreInfraStbStatus {
+  name: string;
+  status: 'running' | 'stopped' | 'unknown';
+  health: 'ok' | 'unreachable' | 'unknown';
+  port: number;
+  url: string;
+  lastChecked: string;
+}
+
+export interface BrainCoreInfraVOPipelineSummary {
+  status: 'active' | 'error' | 'unknown';
+  queueDepth: { pending: number; running: number; failed: number };
+  activeAccounts: number;
+  lastJobAt: string | null;
+  lastChecked: string;
+}
+
+export interface BrainCoreInfraPipelinesStatus {
+  ok: boolean;
+  stb: BrainCoreInfraStbStatus;
+  videoOrchestrator: BrainCoreInfraVOPipelineSummary;
+}
+
+export async function readBrainCoreInfraPipelinesStatus(baseUrl: string): Promise<HttpResult<BrainCoreInfraPipelinesStatus>> {
+  return fetchJson<BrainCoreInfraPipelinesStatus>(normalizeBaseUrl(baseUrl), '/infra/pipelines/status');
+}
+
+// ── VO Accounts ───────────────────────────────────────────────────────────────
+
+export interface BrainCoreVOAccount {
+  accountId: string;
+  accountHandle: string;
+  platform: string;
+  accountStatus: string;
+  authMethod: string;
+}
+
+export interface BrainCoreVOAccountsResponse {
+  ok: boolean;
+  accounts: BrainCoreVOAccount[];
+  totalCount: number;
+  byPlatform: Record<string, number>;
+  error?: string;
+}
+
+export async function readBrainCoreVOAccounts(baseUrl: string): Promise<HttpResult<BrainCoreVOAccountsResponse>> {
+  return fetchJson<BrainCoreVOAccountsResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/accounts');
+}
+
+export interface BrainCoreVOAuthStatusAccount {
+  handle: string;
+  platform: string;
+  authMethod: string;
+  oauthReady: boolean;
+  tokenExpiry: string | null;
+}
+
+export interface BrainCoreVOAuthStatusResponse {
+  ok: boolean;
+  accounts: BrainCoreVOAuthStatusAccount[];
+  error?: string;
+}
+
+export async function readBrainCoreVOAuthStatus(baseUrl: string): Promise<HttpResult<BrainCoreVOAuthStatusResponse>> {
+  return fetchJson<BrainCoreVOAuthStatusResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/auth-status');
+}
+
+// ── VO Jobs ───────────────────────────────────────────────────────────────────
+
+export interface BrainCoreVOJob {
+  jobId: string;
+  jobType: string;
+  jobStatus: string;
+  pipelineState: string;
+  adapterMode: string | null;
+  platform: string | null;
+  accountHandle: string | null;
+  title: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface BrainCoreVOJobsResponse {
+  ok: boolean;
+  jobs: BrainCoreVOJob[];
+  totalCount: number;
+  error?: string;
+}
+
+export async function readBrainCoreVOJobs(baseUrl: string): Promise<HttpResult<BrainCoreVOJobsResponse>> {
+  return fetchJson<BrainCoreVOJobsResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/jobs?limit=20');
+}
+
+export interface BrainCoreVOPostingInstructionsResponse {
+  ok: boolean;
+  jobId: string;
+  platform: string | null;
+  account: string | null;
+  content: string;
+  exists: boolean;
+  error?: string;
+}
+
+export async function readBrainCoreVOPostingInstructions(
+  baseUrl: string,
+  jobId: string,
+): Promise<HttpResult<BrainCoreVOPostingInstructionsResponse>> {
+  return fetchJson<BrainCoreVOPostingInstructionsResponse>(
+    normalizeBaseUrl(baseUrl),
+    `/infra/video-orchestrator/posting-instructions/${encodeURIComponent(jobId)}`,
+  );
+}
+
+export interface BrainCoreSystemMetricsCodexWindow {
+  remainingPercent: number;
+  usedPercent: number;
+  resetsAt: string | null;
+}
+
+export interface BrainCoreSystemMetrics {
+  loadAvg1: number;
+  cpuCount: number;
+  memFreePercent: number | null;
+  memUsedGb: number;
+  memTotalGb: number;
+  gpuUtilizationPercent: number | null;
+  gpuCoreCount: number | null;
+  uptimeSeconds: number;
+  codex: {
+    fiveHour: BrainCoreSystemMetricsCodexWindow;
+    sevenDay: BrainCoreSystemMetricsCodexWindow;
+    asOf: string | null;
+  };
+}
+
+export function readBrainCoreSystemMetrics(baseUrl: string): Promise<HttpResult<BrainCoreSystemMetrics>> {
+  return fetchJson<BrainCoreSystemMetrics>(normalizeBaseUrl(baseUrl), '/system/metrics');
+}
