@@ -7,6 +7,8 @@ const styles = await readFile(new URL('styles.css', root), 'utf8');
 
 assert(main.includes('brain-console-local-apps-live-actions-2026-05-19-01'), 'main.ts missing current build marker');
 assert(!main.includes('brain-console-local-apps-functional-2026-05-19-01'), 'main.ts still contains stale local apps functional marker');
+assert(view.includes('brain-console-local-apps-live-actions-2026-05-19-01'), 'view.ts missing current build marker');
+assert(!view.includes('brain-console-local-apps-functional-2026-05-19-01'), 'view.ts still contains stale local apps functional marker');
 assert(!main.includes('getRightLeaf'), 'main.ts still references getRightLeaf');
 assert(view.includes('renderActiveSectionContent('), 'view.ts missing renderActiveSectionContent');
 assert(view.includes('Dashboard Self Check'), 'view.ts missing Dashboard Self Check card');

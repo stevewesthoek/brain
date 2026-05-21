@@ -389,6 +389,8 @@ function executeSpec(
         if (settled) return;
         settled = true;
         clearTimeout(timeout);
+        child.stdout?.destroy();
+        child.stderr?.destroy();
         resolve(result);
       };
 

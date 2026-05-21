@@ -1126,3 +1126,121 @@ Safety notes:
 - No mutation controls were added.
 - No `.env` files, secrets, tokens, operations config writes, or Mind note writes were touched.
 - Existing unrelated operations-system dirty files were left unstaged.
+
+
+---
+
+## Continuation update — Managed-process Apps visibility
+
+Date: 2026-05-21
+
+Carried on from the plugin deployment verification phase by making active Brain Core-managed local app processes visible in the Apps section itself.
+
+What changed:
+
+- Local App Action Audit now shows a `Managed processes` count from `/local-apps/actions/status`.
+- When Brain Core reports active managed processes, the card lists up to five process rows with app id, PID, safe command label, and relative start time.
+- Added focused dashboard derivation coverage for managed-process count and next-action priority.
+- Kept managed-process visibility read-only; no mutation buttons or shell execution paths were added.
+
+Files changed:
+
+- `projects/brain-console-obsidian/src/view.ts`
+- `projects/brain-console-obsidian/styles.css`
+- `projects/brain-console-obsidian/tests/dashboard-managed-process.test.ts`
+- `docs/system/1779249206791-brain-console-local-apps-live-actions-handoff.md`
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm --prefix projects/brain-console-obsidian exec -- vitest run tests/dashboard-managed-process.test.ts` passed: 1 file, 2 tests.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed and installed both discovered plugin copies.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+  - `mainSize: 194502`
+  - marker: `brain-console-local-apps-live-actions-2026-05-19-01`
+  - `staleMarkers: []`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+  - `mainSize: 194502`
+  - marker: `brain-console-local-apps-live-actions-2026-05-19-01`
+  - `staleMarkers: []`
+
+Safety notes:
+
+- Brain Console still does not execute shell commands.
+- No lifecycle action is triggered by rendering managed-process rows.
+- No `.env` files, secrets, tokens, operations config writes, or Mind note writes were touched.
+- Existing unrelated operations-system dirty files were left unstaged.
+
+
+---
+
+## Continuation update — Install marker and live verifier cleanup
+
+Date: 2026-05-21
+
+Verified the older BuildFlow handoff against the current repo state. The live-actions work was already implemented and extended beyond commit `54028040`; the current roadmap position is the Brain Console local-apps hardening tail, not the original "make buttons live" starting point.
+
+What changed in this continuation:
+
+- Fixed the Brain Console install verification card so its expected marker is `brain-console-local-apps-live-actions-2026-05-19-01`, not the stale `brain-console-local-apps-functional-2026-05-19-01`.
+- Hardened `check:dashboard-source` to fail if `view.ts` contains the stale functional marker.
+- Hardened `projects/brain-core/scripts/test-local-app-actions-live.mjs` cleanup so temporary live-test requests use closed connections and the temporary server closes active connections.
+- Hardened the Brain Core local app action executor so finished detached actions destroy stdout/stderr pipes; this prevents long-running accepted app starts from keeping verifier Node processes open after JSON success output.
+
+Files changed:
+
+- `projects/brain-console-obsidian/src/view.ts`
+- `projects/brain-console-obsidian/styles.css`
+- `projects/brain-console-obsidian/scripts/check-dashboard-source.mjs`
+- `projects/brain-console-obsidian/tests/dashboard-managed-process.test.ts`
+- `projects/brain-core/scripts/test-local-app-actions-live.mjs`
+- `projects/brain-core/src/adapters/local-app-action-executor.ts`
+- `docs/system/1779249206791-brain-console-local-apps-live-actions-handoff.md`
+
+Validation:
+
+- `npm run --prefix projects/brain-core ci` passed: 526/526 tests.
+- `npm run --prefix projects/brain-core test:local-app-actions-live` passed and exited cleanly with code 0.
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed through `release:install`.
+- `npm --prefix projects/brain-console-obsidian exec -- vitest run tests/dashboard-managed-process.test.ts` passed: 1 file, 2 tests.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+- `npm run --prefix projects/brain-console-obsidian release:install` passed.
+- `npm run --prefix projects/brain-console-obsidian find:installed` passed.
+
+Live verifier evidence:
+
+- Dashboard app count: 16.
+- Source diagnostics: canonical app count 15, displayed app count 16, mismatches empty.
+- Unknown app POST returned 404.
+- Unsupported action POST returned 404.
+- `model-router:start` returned structured `not_executable`.
+- Real live action: `video-orchestrator:restart` returned `success`, `ok: true`.
+- Composite restart: `says-the-bible:restart` returned `success`, `ok: true`.
+- Brain Core `/status` remained 200/OK after POST probes.
+- Executable actions: 38.
+- Disabled actions: 10.
+- Disabled backlog count: 10, matching dashboard disabled action count.
+- ProChat managed lifecycle remains environment-dependent in live test: start accepted, but process exited before status poll.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+  - `mainSize: 194517`
+  - marker: `brain-console-local-apps-live-actions-2026-05-19-01`
+  - `staleMarkers: []`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+  - `mainSize: 194517`
+  - marker: `brain-console-local-apps-live-actions-2026-05-19-01`
+  - `staleMarkers: []`
+
+Safety notes:
+
+- Brain Console still does not execute shell commands.
+- Brain Core executes only canonical allowlisted local-app lifecycle commands.
+- No command overrides are accepted.
+- No `.env` files, secrets, tokens, operations config writes, or Mind note writes were touched.
+- Existing unrelated operations-system dirty files and Mind Obsidian state were left unstaged.

@@ -407,6 +407,54 @@
   min-width: 0;
 }
 
+.brain-console__managed-process-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--bc-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--background-secondary) 80%, var(--bc-card));
+}
+
+.brain-console__managed-process-list-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.brain-console__managed-process-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) minmax(0, 1.6fr) minmax(54px, auto);
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.brain-console__managed-process-name,
+.brain-console__managed-process-meta,
+.brain-console__managed-process-more {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brain-console__managed-process-name {
+  color: var(--text-normal);
+  font-weight: 650;
+}
+
+.brain-console__managed-process-more {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
 .brain-console__local-app-readiness {
   display: flex;
   flex-direction: column;

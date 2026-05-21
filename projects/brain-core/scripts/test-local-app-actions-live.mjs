@@ -325,6 +325,7 @@ try {
   }
   fs.rmSync(managedProcessSandbox, { recursive: true, force: true });
   if (server) {
+    server.closeAllConnections?.();
     await new Promise((resolve) => server.close(resolve));
     await delay(25);
   }
@@ -370,7 +371,7 @@ async function post(path) {
 async function request(method, path) {
   const url = `${baseUrl}${path}`;
   const startedAt = Date.now();
-  const response = await fetch(url, { method });
+  const response = await fetch(url, { method, headers: { connection: 'close' } });
   const text = await response.text();
   let body;
   try {

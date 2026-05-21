@@ -1030,6 +1030,7 @@ function renderLocalAppActionAuditCard(state: BrainConsoleViewState): HTMLElemen
   const audit = state.localAppsActionStatus?.audit;
   const recentCount = state.localAppsActionStatus?.recentResults?.length ?? 0;
   const inFlightCount = state.localAppsActionStatus?.inFlight?.length ?? 0;
+  const managedProcesses = state.localAppsActionStatus?.managedProcesses ?? [];
 
   if (!audit) {
     container.createEl('p', { text: 'Local app action audit status is not available yet.' });
@@ -1046,6 +1047,7 @@ function renderLocalAppActionAuditCard(state: BrainConsoleViewState): HTMLElemen
     ['Persisted results', String(audit.persistedResultCount ?? 0)],
     ['Recent results', String(recentCount)],
     ['In-flight actions', String(inFlightCount)],
+    ['Managed processes', String(managedProcesses.length)],
     ['Last persisted', audit.lastPersistedAt ? formatRelativeTime(audit.lastPersistedAt) : 'never'],
   ];
 
@@ -1057,6 +1059,21 @@ function renderLocalAppActionAuditCard(state: BrainConsoleViewState): HTMLElemen
 
   if (audit.lastError) {
     container.createEl('p', { cls: 'brain-console__error-detail', text: `Audit warning: ${audit.lastError}` });
+  }
+
+  if (managedProcesses.length > 0) {
+    const list = container.createDiv({ cls: 'brain-console__managed-process-list' });
+    list.createEl('div', { cls: 'brain-console__managed-process-list-label', text: 'Active Brain Core-managed processes' });
+    for (const process of managedProcesses.slice(0, 5)) {
+      const row = list.createDiv({ cls: 'brain-console__managed-process-row' });
+      row.createEl('span', { cls: 'brain-console__managed-process-name', text: process.appId });
+      row.createEl('span', { cls: 'brain-console__managed-process-meta', text: `pid ${process.pid} · ${process.commandLabel}` });
+      row.createEl('span', { cls: 'brain-console__managed-process-meta', text: formatRelativeTime(process.startedAt) });
+      row.title = `${process.appId} started by Brain Core from ${process.cwdSummary}`;
+    }
+    if (managedProcesses.length > 5) {
+      list.createEl('div', { cls: 'brain-console__managed-process-more', text: `${managedProcesses.length - 5} more managed process(es)` });
+    }
   }
 
   container.createEl('p', {
@@ -1234,7 +1251,7 @@ function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRef
 
   const buildMarker = right.createEl('span', {
     cls: 'brain-console__build-marker',
-    text: 'brain-console-local-apps-functional-2026-05-19-01'
+    text: 'brain-console-local-apps-live-actions-2026-05-19-01'
   });
 
   const refreshBtn = right.createEl('button', { text: '↻ refresh' });
@@ -1252,7 +1269,7 @@ function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElemen
   container.className = 'brain-console__card-content';
 
   const runtimeMarker = safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown');
-  const expectedMarker = 'brain-console-local-apps-functional-2026-05-19-01';
+  const expectedMarker = 'brain-console-local-apps-live-actions-2026-05-19-01';
   const markerOk = runtimeMarker === expectedMarker;
 
   renderCompactStatGrid(container, [
