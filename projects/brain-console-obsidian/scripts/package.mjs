@@ -3,8 +3,9 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'v2.7';
+const currentMarker = 'v2.8';
 const staleMarkers = [
+  'v2.7',
   'v2.6',
   'v2.5',
   'v2.4',

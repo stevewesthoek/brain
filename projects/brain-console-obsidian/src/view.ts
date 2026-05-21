@@ -1038,33 +1038,27 @@ export function renderBrainConsoleView(
 
     const shell = container.createDiv({ cls: 'brain-console__shell' });
 
-    // Native card UI header
-    renderNativeHeader(shell, state, onRefresh);
+    // Premium command bar (compact header + tabs in one row)
+    renderCommandBar(shell, state, activeSection, onRefresh);
 
     // System metrics banner
     const metricsBanner = shell.createDiv({ cls: 'bc-metrics-wrapper' });
     metricsBanner.innerHTML = renderSystemMetricsBanner(state);
 
     // Main content area
+    const scrollArea = shell.createDiv({ cls: 'brain-console__scroll-area' });
     if (snapshot.connectionStatus === 'offline') {
-      renderOfflineState(shell, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
+      renderOfflineState(scrollArea, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
     } else {
-      // Section tabs
-      renderSectionTabs(shell, activeSection);
-
-      // Active section content
-      renderActiveSectionContent(shell, activeSection, state, snapshot, settings, onRefresh);
-
-      // Diagnostics panel
-      renderDiagnosticsPanel(shell, state);
+      renderActiveSectionContent(scrollArea, activeSection, state, snapshot, settings, onRefresh);
+      renderDiagnosticsPanel(scrollArea, state);
     }
   } catch (error) {
-    // Emergency fallback: render minimal safe dashboard
     container.empty();
     const fallback = container.createDiv({ cls: 'brain-console__emergency-fallback' });
     fallback.createEl('h2', { text: 'Brain Console Error' });
     fallback.createEl('p', { text: `Build: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}` });
-    fallback.createEl('p', { text: `Error: Dashboard render failed. Please restart Obsidian or click Manual refresh after Brain Core starts.` });
+    fallback.createEl('p', { text: `Dashboard render failed. Click Manual refresh after Brain Core starts.` });
     if (state.brainCoreUrl || settings.brainCoreUrl) {
       fallback.createEl('p', { text: `Brain Core URL: ${state.brainCoreUrl || settings.brainCoreUrl}` });
     }
@@ -1074,49 +1068,33 @@ export function renderBrainConsoleView(
   }
 }
 
-function renderNativeHeader(shell: HTMLElement, state: BrainConsoleViewState, onRefresh?: () => void): void {
-  const header = shell.createDiv({ cls: 'brain-console__native-header' });
+function renderCommandBar(shell: HTMLElement, state: BrainConsoleViewState, activeSection: BrainConsoleSectionId, onRefresh?: () => void): void {
+  const bar = shell.createDiv({ cls: 'bc-cmd-bar' });
 
-  const title = header.createEl('h1', { text: 'Brain Console' });
-  title.addClass('brain-console__title');
-
-  const controls = header.createDiv({ cls: 'brain-console__header-controls' });
-
-  const meta = header.createDiv({ cls: 'brain-console__header-meta' });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Version: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}` });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `View mode: Main workspace dashboard` });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Brain Core URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
-  meta.createEl('span', { cls: 'brain-console__header-meta-item', text: `Selected URL: ${(window as any).BRAIN_CONSOLE_SELECTED_URL || state.brainCoreUrl || 'unknown'}` });
-
-  const buildMarker = controls.createEl('span', { cls: 'brain-console__build-marker' });
-  buildMarker.textContent = `v: ${(window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown'}`;
-
-  const refreshBtn = controls.createEl('button', { text: '↻ Refresh' });
-  refreshBtn.addClass('brain-console__refresh-btn');
-  refreshBtn.setAttribute('type', 'button');
-  if (onRefresh) {
-    refreshBtn.addEventListener('click', () => onRefresh());
-  }
-
+  // Left: wordmark + status dot
+  const left = bar.createDiv({ cls: 'bc-cmd-left' });
+  left.createEl('span', { cls: 'bc-cmd-wordmark', text: 'Brain Console' });
   const online = state.status?.ok === true;
-  const status = controls.createEl('span', { cls: 'brain-console__header-status' });
-  status.textContent = online ? '● Online' : '○ Offline';
-  status.addClass(online ? 'online' : 'offline');
-}
+  const dot = left.createEl('span', { cls: `bc-cmd-dot ${online ? 'bc-cmd-dot--online' : 'bc-cmd-dot--offline'}` });
+  dot.title = online ? 'Brain Core online' : 'Brain Core offline';
 
-function renderSectionTabs(shell: HTMLElement, activeSection: BrainConsoleSectionId): void {
-  const tabBar = shell.createDiv({ cls: 'brain-console__section-tabs' });
-
+  // Center: compact nav tabs
+  const nav = bar.createDiv({ cls: 'bc-cmd-nav' });
   for (const tab of SECTION_TABS) {
-    const btn = tabBar.createEl('button', { cls: 'brain-console__section-tab' });
-    if (tab.id === activeSection) {
-      btn.addClass('active');
-    }
+    const btn = nav.createEl('button', { cls: 'bc-cmd-tab' });
+    if (tab.id === activeSection) btn.addClass('active');
     btn.setAttribute('data-section-id', tab.id);
-    btn.setAttribute('title', tab.label);
-    btn.createEl('span', { cls: 'brain-console__tab-icon', text: tab.icon });
-    btn.createEl('span', { cls: 'brain-console__tab-label', text: tab.label });
+    btn.createEl('span', { cls: 'bc-cmd-tab-icon', text: tab.icon });
+    btn.createEl('span', { cls: 'bc-cmd-tab-label', text: tab.label });
   }
+
+  // Right: action buttons + build marker
+  const right = bar.createDiv({ cls: 'bc-cmd-right' });
+  right.createEl('span', { cls: 'bc-cmd-build', text: (window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown' });
+  const refreshBtn = right.createEl('button', { cls: 'bc-cmd-action', text: '↻' });
+  refreshBtn.setAttribute('type', 'button');
+  refreshBtn.title = 'Manual refresh';
+  if (onRefresh) refreshBtn.addEventListener('click', () => onRefresh());
 }
 
 function renderActiveSectionContent(
@@ -1238,17 +1216,24 @@ function safeCount(items: any[] | undefined | null): number {
 }
 
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
-  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
-  renderCard(grid, 'Dashboard Self Check', renderDashboardSelfCheck(state));
-  renderCard(grid, 'Plugin Install Verification', renderInstallVerificationCard(state));
+  // KPI hero row
+  const kpiRow = content.createDiv({ cls: 'bc-kpi-row' });
+  const online = snapshot.brainCoreOnline;
+  createStatCard(kpiRow, 'Brain Core', online ? 'Online' : 'Offline', state.status?.version ?? undefined, online ? 'ok' : 'danger');
+  createStatCard(kpiRow, 'Approvals', String(snapshot.approvalsCount), snapshot.approvalsCount > 0 ? 'need attention' : 'none pending', snapshot.approvalsCount > 0 ? 'warn' : 'ok');
+  createStatCard(kpiRow, 'Scheduler', snapshot.schedulerHealthy ? 'Healthy' : 'Check needed', undefined, snapshot.schedulerHealthy ? 'ok' : 'warn');
+  createStatCard(kpiRow, 'Pipelines', String(snapshot.pipelineCount), `${snapshot.pipelineCount} tracked`, 'muted');
+  createStatCard(kpiRow, 'Attention', snapshot.attentionLevel, `score ${snapshot.attentionScore}`, snapshot.attentionLevel === 'clear' ? 'ok' : snapshot.attentionLevel === 'watch' ? 'warn' : 'danger');
+  createStatCard(kpiRow, 'Orchestrators', String(snapshot.orchestratorCount), `${snapshot.orchestratorCount} registered`, 'muted');
 
-  renderCard(grid, 'Connection Summary', renderConnectionSummaryCard(state));
-  renderCard(grid, 'ProBot Migration', renderProBotMigrationSummaryCard(state));
+  // Main card grid
+  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+  renderCard(grid, 'Connection', renderConnectionSummaryCard(state));
   renderCard(grid, 'What Needs Attention', renderWhatNeedsAttentionCard(state, snapshot));
   renderCard(grid, 'Next Safe Step', renderNextSafeStepCard(state, snapshot));
   renderCard(grid, 'Production Status', renderProductionStatusCard(state));
   renderGroupedSummary(grid, 'Operational Summaries', [
-    { title: 'Recent Sessions', render: renderRecentSessionsCard(state) },
+    { title: 'Sessions', render: renderRecentSessionsCard(state) },
     { title: 'Local Apps', render: renderLocalAppsCard(state) },
     { title: 'Scheduler', render: renderSchedulerCard(state) },
   ]);
@@ -1819,7 +1804,7 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
         link.addEventListener('click', async () => {
           instructionsPanel.empty();
           instructionsPanel.setText('Loading posting instructions...');
-          const result = await readBrainCoreVOPostingInstructions(state.brainCoreUrl, job.jobId);
+          const result = await readBrainCoreVOPostingInstructions(state.brainCoreUrl ?? '', job.jobId);
           instructionsPanel.empty();
           if (!result.value?.exists) {
             instructionsPanel.setText(result.value?.error ?? 'Posting instructions are not available for this job.');
@@ -2132,36 +2117,6 @@ function renderRecoverySection(content: HTMLElement, state: BrainConsoleViewStat
   renderCard(grid, 'Recovery / Blockers', renderRecoveryPanelCard(state));
 }
 
-function renderCommandBar(shell: HTMLElement, snapshot: DashboardSnapshot, onRefresh?: () => void): void {
-  const bar = shell.createDiv({ cls: 'brain-console__command-bar' });
-
-  // Left side: logo/label
-  const left = bar.createDiv({ cls: 'brain-console__bar-left' });
-  left.createEl('div', { cls: 'brain-console__logo', text: '◈ BRAIN OS' });
-
-  // Center: connection status badge
-  const center = bar.createDiv({ cls: 'brain-console__bar-center' });
-  const badge = center.createEl('span', { cls: 'brain-console__status-badge' });
-  badge.style.color = getConnectionStatusColor(snapshot.connectionStatus);
-  badge.textContent = `● ${snapshot.connectionStatus.toUpperCase()}`;
-
-  // Right side: build marker + refresh button + timestamp
-  const right = bar.createDiv({ cls: 'brain-console__bar-right' });
-
-  const buildMarker = right.createEl('span', {
-    cls: 'brain-console__build-marker',
-    text: (window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown',
-  });
-
-  const refreshBtn = right.createEl('button', { text: '↻ refresh' });
-  refreshBtn.addClass('brain-console__btn-mini');
-  if (onRefresh) {
-    refreshBtn.addEventListener('click', () => onRefresh());
-  }
-
-  const timestamp = right.createEl('span', { text: formatRelativeTime(snapshot.refreshedAt) });
-  timestamp.addClass('brain-console__timestamp');
-}
 
 function renderInstallVerificationCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
@@ -2461,6 +2416,69 @@ function renderStatusBadge(label: string, tone: CardTone = 'muted'): HTMLElement
   badge.className = `brain-console__badge brain-console__badge--${tone}`;
   badge.textContent = label;
   return badge;
+}
+
+// ── Premium UI helpers ─────────────────────────────────────────────────────
+
+function createStatCard(parent: HTMLElement, label: string, value: string, sub?: string, tone?: 'ok' | 'warn' | 'danger' | 'muted'): HTMLElement {
+  const card = parent.createDiv({ cls: 'bc-stat-card' });
+  if (tone) card.addClass(`bc-stat-card--${tone}`);
+  card.createEl('div', { cls: 'bc-stat-label', text: label });
+  card.createEl('div', { cls: 'bc-stat-value', text: value });
+  if (sub) card.createEl('div', { cls: 'bc-stat-sub', text: sub });
+  return card;
+}
+
+function createPremiumCard(parent: HTMLElement, title: string, options?: { badge?: string; badgeTone?: 'ok' | 'warn' | 'danger' | 'muted'; wide?: boolean }): { body: HTMLElement } {
+  const card = parent.createDiv({ cls: 'bc-premium-card' });
+  if (options?.wide) card.addClass('bc-premium-card--wide');
+  const header = card.createDiv({ cls: 'bc-premium-card-header' });
+  header.createEl('h3', { cls: 'bc-premium-card-title', text: title });
+  if (options?.badge) {
+    const badge = header.createEl('span', { cls: `bc-chip bc-chip--${options.badgeTone ?? 'muted'}`, text: options.badge });
+    void badge;
+  }
+  const body = card.createDiv({ cls: 'bc-premium-card-body' });
+  return { body };
+}
+
+function createStatusChip(parent: HTMLElement, label: string, tone: 'ok' | 'warn' | 'danger' | 'muted' | 'info'): HTMLElement {
+  const chip = parent.createEl('span', { cls: `bc-chip bc-chip--${tone}`, text: label });
+  return chip;
+}
+
+function createTooltip(parent: HTMLElement, label: string, tip: string): HTMLElement {
+  const wrap = parent.createDiv({ cls: 'bc-tooltip-wrap' });
+  wrap.createEl('span', { cls: 'bc-tooltip-trigger', text: label });
+  wrap.createEl('span', { cls: 'bc-tooltip-bubble', text: tip });
+  return wrap;
+}
+
+function createPopoverButton(parent: HTMLElement, label: string, content: HTMLElement): HTMLElement {
+  const wrap = parent.createDiv({ cls: 'bc-popover-wrap' });
+  const btn = wrap.createEl('button', { cls: 'bc-popover-btn', text: label });
+  btn.setAttribute('type', 'button');
+  const panel = wrap.createDiv({ cls: 'bc-popover-panel' });
+  panel.appendChild(content);
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    panel.classList.toggle('open');
+  });
+  document.addEventListener('click', () => panel.classList.remove('open'), { once: false });
+  return wrap;
+}
+
+function createProgressBar(parent: HTMLElement, pct: number, tone?: 'ok' | 'warn' | 'danger'): HTMLElement {
+  const bar = parent.createDiv({ cls: 'bc-bar' });
+  const fill = bar.createDiv({ cls: 'bc-bar-fill' });
+  fill.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+  if (tone) fill.style.backgroundColor = tone === 'ok' ? 'var(--bc-green)' : tone === 'warn' ? 'var(--bc-yellow)' : 'var(--bc-red)';
+  return bar;
+}
+
+function createScrollPanel(parent: HTMLElement, cls = ''): HTMLElement {
+  const panel = parent.createDiv({ cls: `bc-scroll-panel ${cls}`.trim() });
+  return panel;
 }
 
 function reportLabel(id: string): string {
