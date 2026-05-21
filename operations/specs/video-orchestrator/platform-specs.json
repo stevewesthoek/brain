@@ -58,7 +58,8 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "OAuth2 required. Verify channel is not restricted (no community strikes). Test with unlisted video first.",
-      "manual_upload_instructions": "Log into YouTube Studio → Create → Upload video → Fill title/description/tags → Set visibility to Private/Unlisted → Add captions → Upload thumbnail → Save"
+      "manual_upload_instructions": "Log into YouTube Studio \u2192 Create \u2192 Upload video \u2192 Fill title/description/tags \u2192 Set visibility to Private/Unlisted \u2192 Add captions \u2192 Upload thumbnail \u2192 Save",
+      "n8n_webhook_path": "video-orchestrator-post/youtube"
     },
     {
       "platform": "youtube",
@@ -118,7 +119,8 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "OAuth2 required. Video must be 60 seconds or shorter. Aspect ratio must be 9:16. Verify channel is not restricted.",
-      "manual_upload_instructions": "Log into YouTube Studio → Create → Upload Shorts video → Verify duration ≤60s and aspect ratio 9:16 → Fill title/description → Add captions → Upload thumbnail → Save"
+      "manual_upload_instructions": "Log into YouTube Studio \u2192 Create \u2192 Upload Shorts video \u2192 Verify duration \u226460s and aspect ratio 9:16 \u2192 Fill title/description \u2192 Add captions \u2192 Upload thumbnail \u2192 Save",
+      "n8n_webhook_path": "video-orchestrator-post/youtube"
     },
     {
       "platform": "tiktok",
@@ -177,7 +179,7 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "TikTok API severely restricted. App review required. Manual upload via TikTok app or web is only reliable path. Verify account is not banned.",
-      "manual_upload_instructions": "Open TikTok app → Click + → Upload video → Add description/hashtags → Select cover frame → Post"
+      "manual_upload_instructions": "Open TikTok app \u2192 Click + \u2192 Upload video \u2192 Add description/hashtags \u2192 Select cover frame \u2192 Post"
     },
     {
       "platform": "instagram",
@@ -236,7 +238,7 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "Instagram API requires Meta Business Suite access. App review mandatory. Manual upload via Instagram app is most reliable. Verify business account status.",
-      "manual_upload_instructions": "Open Instagram app → Click + → Reels → Upload video → Add caption/hashtags → Select cover → Share"
+      "manual_upload_instructions": "Open Instagram app \u2192 Click + \u2192 Reels \u2192 Upload video \u2192 Add caption/hashtags \u2192 Select cover \u2192 Share"
     },
     {
       "platform": "instagram",
@@ -295,7 +297,7 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "Instagram API requires Meta Business Suite access. App review mandatory. Manual upload via Instagram app is most reliable. Verify business account status.",
-      "manual_upload_instructions": "Open Instagram app → Click + → Post → Upload image/video → Add caption/hashtags → Share"
+      "manual_upload_instructions": "Open Instagram app \u2192 Click + \u2192 Post \u2192 Upload image/video \u2192 Add caption/hashtags \u2192 Share"
     },
     {
       "platform": "linkedin",
@@ -353,7 +355,8 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "LinkedIn supports video uploads but API is corporate-focused. Manual upload via LinkedIn website recommended. Verify account is company page or personal professional account.",
-      "manual_upload_instructions": "Log into LinkedIn → Click Start a post → Upload video → Add description/hashtags → Post"
+      "manual_upload_instructions": "Log into LinkedIn \u2192 Click Start a post \u2192 Upload video \u2192 Add description/hashtags \u2192 Post",
+      "n8n_webhook_path": "video-orchestrator-post/linkedin"
     },
     {
       "platform": "facebook",
@@ -412,7 +415,7 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "Facebook API requires app review. Manual upload via Facebook website or mobile app is most reliable. Verify page is not restricted.",
-      "manual_upload_instructions": "Log into Facebook → Click Photo/Video → Upload video → Add caption/tags → Review visibility → Post"
+      "manual_upload_instructions": "Log into Facebook \u2192 Click Photo/Video \u2192 Upload video \u2192 Add caption/tags \u2192 Review visibility \u2192 Post"
     },
     {
       "platform": "bluesky",
@@ -470,7 +473,8 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "Bluesky ATProto API is open. App password (not main password) required. Verify account is not suspended. Video support is emerging, images are primary.",
-      "manual_upload_instructions": "Log into Bluesky → Click Compose → Upload image/video → Add text → Publish"
+      "manual_upload_instructions": "Log into Bluesky \u2192 Click Compose \u2192 Upload image/video \u2192 Add text \u2192 Publish",
+      "n8n_webhook_path": "video-orchestrator-post/bluesky"
     },
     {
       "platform": "x",
@@ -529,7 +533,7 @@
         "supported_languages": "all"
       },
       "account_targeting_notes": "X (Twitter) API requires paid tier ($100+/month). Manual post via web/app is most reliable. Verify account is verified or has payment method on file.",
-      "manual_upload_instructions": "Log into X.com → Click Compose → Upload video → Add text → Post"
+      "manual_upload_instructions": "Log into X.com \u2192 Click Compose \u2192 Upload video \u2192 Add text \u2192 Post"
     }
   ]
 }
