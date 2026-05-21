@@ -3,8 +3,9 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'v2.9';
+const currentMarker = 'v2.10';
 const staleMarkers = [
+  'v2.9',
   'v2.8',
   'v2.7',
   'v2.6',
@@ -55,9 +56,13 @@ try {
   if (!main.includes(currentMarker)) {
     throw new Error(`dist/main.js does not contain current marker ${currentMarker}.`);
   }
+  // Protect the current marker before replacing stale ones (guards against prefix collisions like v2.1 vs v2.10)
+  const SENTINEL = '__BRAIN_CONSOLE_CURRENT_MARKER__';
+  main = main.replaceAll(currentMarker, SENTINEL);
   for (const marker of staleMarkers) {
     main = main.replaceAll(marker, '[stale-brain-console-marker-removed]');
   }
+  main = main.replaceAll(SENTINEL, currentMarker);
   await writeFile(releaseMainPath, main);
 } catch (err) {
   console.error(`Error: dist/main.js could not be packaged. ${err instanceof Error ? err.message : String(err)}`);

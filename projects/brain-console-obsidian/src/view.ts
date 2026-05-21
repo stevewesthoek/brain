@@ -1077,81 +1077,34 @@ export function renderBrainConsoleView(
   }
 }
 
-const PRIMARY_TAB_IDS: BrainConsoleSectionId[] = ['overview', 'apps', 'pipelines', 'orchestrators', 'posts', 'agents'];
-const MORE_TAB_IDS: BrainConsoleSectionId[] = ['sessions', 'infra', 'analytics', 'stripe', 'monitoring', 'studio', 'projects', 'reports', 'recovery', 'accounts'];
-
 function renderCommandBar(shell: HTMLElement, state: BrainConsoleViewState, activeSection: BrainConsoleSectionId, onRefresh?: () => void): void {
-  const bar = shell.createDiv({ cls: 'bc-cmd-bar' });
+  // Top identity row: wordmark + dot on left, version + refresh on right
+  const topRow = shell.createDiv({ cls: 'bc-cmd-top' });
 
-  const left = bar.createDiv({ cls: 'bc-cmd-left' });
+  const left = topRow.createDiv({ cls: 'bc-cmd-left' });
   left.createEl('span', { cls: 'bc-cmd-wordmark', text: 'Brain Console' });
   const online = state.status?.ok === true;
   const dot = left.createEl('span', { cls: `bc-cmd-dot ${online ? 'bc-cmd-dot--online' : 'bc-cmd-dot--offline'}` });
   dot.setAttribute('aria-label', online ? 'Brain Core online' : 'Brain Core offline');
 
-  const nav = bar.createDiv({ cls: 'bc-cmd-nav' });
-
-  // Primary tabs — always visible
-  for (const id of PRIMARY_TAB_IDS) {
-    const tab = SECTION_TABS.find(t => t.id === id);
-    if (!tab) continue;
-    const btn = nav.createEl('button', { cls: 'bc-cmd-tab' });
-    if (id === activeSection) btn.addClass('active');
-    btn.setAttribute('data-section-id', id);
-    btn.setAttribute('aria-label', tab.label);
-    btn.setAttribute('type', 'button');
-    btn.createEl('span', { cls: 'bc-cmd-tab-icon', text: tab.icon });
-    btn.createEl('span', { cls: 'bc-cmd-tab-label', text: tab.label });
-  }
-
-  // More popover — secondary tabs
-  const moreTabs = MORE_TAB_IDS.map(id => SECTION_TABS.find(t => t.id === id)).filter(Boolean) as SectionTabConfig[];
-  const isActiveInMore = MORE_TAB_IDS.includes(activeSection);
-
-  const moreWrap = nav.createDiv({ cls: 'bc-cmd-more-wrap' });
-  const moreBtn = moreWrap.createEl('button', { cls: `bc-cmd-tab bc-cmd-more-btn${isActiveInMore ? ' active' : ''}` });
-  moreBtn.setAttribute('type', 'button');
-  moreBtn.setAttribute('aria-label', 'More sections');
-  moreBtn.setAttribute('aria-haspopup', 'true');
-  moreBtn.setAttribute('aria-expanded', 'false');
-  moreBtn.createEl('span', { cls: 'bc-cmd-tab-label', text: isActiveInMore ? (SECTION_TABS.find(t => t.id === activeSection)?.label ?? 'More') : 'More' });
-  moreBtn.createEl('span', { cls: 'bc-cmd-more-arrow', text: '▾' });
-
-  const morePanel = moreWrap.createDiv({ cls: 'bc-cmd-more-panel' });
-  morePanel.setAttribute('role', 'menu');
-  for (const tab of moreTabs) {
-    const item = morePanel.createEl('button', { cls: `bc-cmd-more-item${tab.id === activeSection ? ' active' : ''}` });
-    item.setAttribute('data-section-id', tab.id);
-    item.setAttribute('type', 'button');
-    item.setAttribute('role', 'menuitem');
-    item.createEl('span', { cls: 'bc-cmd-tab-icon', text: tab.icon });
-    item.createEl('span', { text: tab.label });
-  }
-
-  moreBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const open = morePanel.classList.toggle('bc-cmd-more-panel--open');
-    moreBtn.setAttribute('aria-expanded', String(open));
-  });
-
-  // Close More panel when clicking outside
-  const closeMore = () => {
-    morePanel.classList.remove('bc-cmd-more-panel--open');
-    moreBtn.setAttribute('aria-expanded', 'false');
-  };
-  document.addEventListener('click', closeMore, { once: false });
-  // Clean up listener when panel closes naturally via section switch
-  morePanel.addEventListener('click', () => {
-    setTimeout(closeMore, 50);
-  });
-
-  const right = bar.createDiv({ cls: 'bc-cmd-right' });
+  const right = topRow.createDiv({ cls: 'bc-cmd-right' });
   right.createEl('span', { cls: 'bc-cmd-build', text: (window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown' });
   const refreshBtn = right.createEl('button', { cls: 'bc-cmd-action' });
   refreshBtn.setAttribute('type', 'button');
   refreshBtn.setAttribute('aria-label', 'Manual refresh');
   refreshBtn.textContent = '↻';
   if (onRefresh) refreshBtn.addEventListener('click', () => onRefresh());
+
+  // Tab row: full-width, all tabs visible, wraps if needed
+  const nav = shell.createDiv({ cls: 'bc-cmd-nav' });
+  for (const tab of SECTION_TABS) {
+    const btn = nav.createEl('button', { cls: 'bc-cmd-tab' });
+    if (tab.id === activeSection) btn.addClass('active');
+    btn.setAttribute('data-section-id', tab.id);
+    btn.setAttribute('aria-label', tab.label);
+    btn.setAttribute('type', 'button');
+    btn.createEl('span', { cls: 'bc-cmd-tab-label', text: tab.label });
+  }
 }
 
 function renderActiveSectionContent(
