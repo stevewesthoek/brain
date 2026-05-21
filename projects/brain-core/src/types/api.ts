@@ -10032,6 +10032,12 @@ export interface BrainCoreInfraViralFlowSummary {
   lastUpdated: string;
 }
 
+export interface BrainCoreInfraVideoOrchestratorAccountEntry {
+  platform: string;
+  count: number;
+  postedToday: number;
+}
+
 export interface BrainCoreInfraVideoOrchestratorSummary {
   databaseStatus: string;
   totalVideos: number;
@@ -10041,6 +10047,7 @@ export interface BrainCoreInfraVideoOrchestratorSummary {
   failedJobs7d: number;
   completedPackages: number;
   completionRate: number;
+  accountSummary?: BrainCoreInfraVideoOrchestratorAccountEntry[];
   error?: string;
 }
 

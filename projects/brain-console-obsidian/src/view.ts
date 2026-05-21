@@ -1510,6 +1510,26 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
       { label: 'Accounts', value: String(vo.totalAccounts) },
     ]);
     renderCard(grid, 'Video Orchestrator Pipeline', voCard);
+
+    // Multi-account breakdown card
+    if (vo.accountSummary && vo.accountSummary.length > 0) {
+      const acctCard = document.createElement('div');
+      acctCard.addClass('brain-console__card-content');
+      const table = acctCard.createEl('table', { cls: 'brain-console__compact-table' });
+      const thead = table.createEl('thead');
+      const hrow = thead.createEl('tr');
+      hrow.createEl('th', { text: 'Platform' });
+      hrow.createEl('th', { text: 'Accounts' });
+      hrow.createEl('th', { text: 'Posted today' });
+      const tbody = table.createEl('tbody');
+      for (const entry of vo.accountSummary) {
+        const row = tbody.createEl('tr');
+        row.createEl('td', { text: entry.platform });
+        row.createEl('td', { text: String(entry.count) });
+        row.createEl('td', { text: String(entry.postedToday) });
+      }
+      renderCard(grid, `Accounts by Platform (${vo.accountSummary.length})`, acctCard);
+    }
   }
 }
 

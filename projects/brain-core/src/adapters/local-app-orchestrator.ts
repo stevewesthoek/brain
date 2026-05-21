@@ -19,6 +19,7 @@ import { readManagedLocalAppProcesses } from './local-app-action-executor.js';
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
 const MODEL_ROUTER_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/model-router/latest.json');
+const MODEL_ROUTER_SCRIPT_PATH = path.resolve(process.cwd(), '..', '..', 'tools', 'scripts', 'model-router-dry-run-report.sh');
 const LOCAL_APP_ACTION_AUDIT_PATH_ENV = 'BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH';
 const DEFAULT_LOCAL_APP_ACTION_AUDIT_PATH = path.resolve(process.cwd(), 'runtime/local/local-apps/actions-audit.jsonl');
 const DISALLOWED_AUDIT_PATH_SEGMENTS = new Set(['.env', '.git', 'node_modules', 'operations', 'mind']);
@@ -41,6 +42,8 @@ type RegistryApp = {
   runtime?: unknown;
   description?: unknown;
   repoPath?: unknown;
+  serviceCount?: unknown;
+  servicePorts?: unknown;
   databaseEngine?: unknown;
   databaseServiceName?: unknown;
   dockerContainerName?: unknown;
@@ -509,12 +512,19 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
   const url = readString(raw.url ?? raw.appUrl, '');
   const runtime = readRegistryRuntime(raw.runtime);
   const database = buildDatabase(raw);
-  const services = buildServices(name, port, database);
+  const serviceCount = readNumberOrNull(raw.serviceCount) ?? undefined;
+  const servicePorts = Array.isArray(raw.servicePorts)
+    ? (raw.servicePorts as unknown[]).map((p) => (typeof p === 'number' && Number.isFinite(p) ? p : null)).filter((p): p is number => p !== null)
+    : undefined;
+  const services = buildServices(name, port, database, serviceCount, servicePorts);
   const startCommand = readStringOrNull(raw.start || raw.startCommand);
   const stopCommand = readStringOrNull(raw.stop || raw.stopCommand);
   const restartCommand = readStringOrNull(raw.restart || raw.restartCommand);
   const repoPath = readStringOrNull(raw.repoPath);
   const commandWorkdir = repoPath ? repoPath.replace(/^~/, process.env.HOME || '/root') : undefined;
+  const commandPathPrepend = runtime && Array.isArray(runtime.pathPrepend) && runtime.pathPrepend.length > 0
+    ? (runtime.pathPrepend as string[]).filter((p): p is string => typeof p === 'string' && p.length > 0)
+    : undefined;
   const definitionBase = {
     id,
     name,
@@ -535,6 +545,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     ...(stopCommand ? { stopCommand } : {}),
     ...(restartCommand ? { restartCommand } : {}),
     ...(commandWorkdir ? { commandWorkdir } : {}),
+    ...(commandPathPrepend ? { commandPathPrepend } : {}),
   } satisfies BrainCoreLocalAppDefinition;
   const safeActions = (['start', 'stop', 'restart'] as const).filter((action) =>
     evaluateLocalAppActionDefinition(definitionBase, action).executable,
@@ -552,18 +563,23 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     ...(stopCommand ? { stopCommand } : {}),
     ...(restartCommand ? { restartCommand } : {}),
     ...(commandWorkdir ? { commandWorkdir } : {}),
+    ...(commandPathPrepend ? { commandPathPrepend } : {}),
   };
 }
 
 function readModelRouterDefinition(): BrainCoreLocalAppDefinition | null {
   const report = readModelRouterReport();
-  return {
+  const scriptExists = fs.existsSync(MODEL_ROUTER_SCRIPT_PATH);
+  const startCommand = scriptExists ? `bash ${MODEL_ROUTER_SCRIPT_PATH}` : undefined;
+  const base: BrainCoreLocalAppDefinition = {
     id: 'model-router',
     name: 'Model Router',
     label: 'Model Router',
-    description: 'Brain Core model routing and report-only dry-run surface.',
+    description: report?.status === 'success'
+      ? 'Brain Core runtime report indicates Model Router is operational.'
+      : 'AI steward for Mind vault: classifies captures, routes to live/, compiles to wiki/.',
     category: 'brain-core',
-    managed: false,
+    managed: Boolean(startCommand),
     services: [
       {
         id: 'model-router-report',
@@ -579,10 +595,15 @@ function readModelRouterDefinition(): BrainCoreLocalAppDefinition | null {
     docsRef: 'docs/system/obsidian-mind-model-router-roadmap.md',
     onboardingStatus: 'registered',
     actionPolicy: { ...DEFAULT_ACTION_POLICY },
-    ...(report?.status ? { description: report.status === 'ok' ? 'Brain Core runtime report indicates Model Router is operational.' : 'Brain Core runtime report indicates Model Router is not fully reported.' } : {}),
     repoPathSummary: 'projects/model-router',
     healthUrl: '/runtime/reports/model-router',
+    commandWorkdir: path.resolve(process.cwd(), '..', '..'),
+    ...(startCommand ? { startCommand } : {}),
   };
+  const safeActions = (['start', 'stop', 'restart'] as const).filter(
+    (action) => evaluateLocalAppActionDefinition(base, action).executable,
+  );
+  return { ...base, actionPolicy: createActionPolicy(safeActions) };
 }
 
 function readModelRouterReport(): ModelRouterReport | null {
@@ -609,7 +630,22 @@ function buildDatabase(raw: RegistryApp): BrainCoreLocalAppDatabaseDefinition | 
   };
 }
 
-function buildServices(name: string, port: number | undefined, database: BrainCoreLocalAppDatabaseDefinition | undefined): BrainCoreLocalAppServiceDefinition[] {
+function buildServices(name: string, port: number | undefined, database: BrainCoreLocalAppDatabaseDefinition | undefined, serviceCount?: number, servicePorts?: number[]): BrainCoreLocalAppServiceDefinition[] {
+  // If explicit servicePorts are provided, build one service per port
+  if (servicePorts && servicePorts.length > 0) {
+    return servicePorts.map((svcPort, index) => ({
+      id: `${normalizeId(name)}-service-${index + 1}`,
+      label: `Service ${index + 1}`,
+      type: index === 0 ? 'web' : 'worker',
+      required: index === 0,
+      startOrder: index + 1,
+      stopOrder: servicePorts.length - index,
+      status: 'unknown',
+      actionPolicy: { ...DEFAULT_ACTION_POLICY },
+      port: svcPort,
+    } as BrainCoreLocalAppServiceDefinition));
+  }
+
   const services: BrainCoreLocalAppServiceDefinition[] = [];
   services.push({
     id: normalizeId(name),
@@ -622,17 +658,21 @@ function buildServices(name: string, port: number | undefined, database: BrainCo
     actionPolicy: { ...DEFAULT_ACTION_POLICY },
     ...(port !== undefined ? { port } : {}),
   });
-  if (database) {
-    services.push({
-      id: `${normalizeId(name)}-db-link`,
-      label: 'Database dependency',
-      type: 'database',
-      required: Boolean(database),
-      startOrder: 0,
-      stopOrder: 2,
-      status: database.status,
-      actionPolicy: { ...DEFAULT_ACTION_POLICY },
-    });
+  // Expand to declared service count when app has more real services
+  // Do NOT add a fake db-link service — the database field on the definition already carries that info
+  if (serviceCount !== undefined && serviceCount > services.length) {
+    for (let i = services.length + 1; i <= serviceCount; i++) {
+      services.push({
+        id: `${normalizeId(name)}-service-${i}`,
+        label: `Service ${i}`,
+        type: 'worker',
+        required: false,
+        startOrder: i,
+        stopOrder: serviceCount - i + 2,
+        status: 'unknown',
+        actionPolicy: { ...DEFAULT_ACTION_POLICY },
+      });
+    }
   }
   return services;
 }

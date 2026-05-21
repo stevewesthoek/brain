@@ -357,29 +357,5 @@
     "databaseUser": "postgres",
     "startupTimeoutMs": 30000,
     "notes": "Phase 2A/2B implementation: production package generation for 9 platform targets. Local database manages durable entities (videos, renders, packages, accounts, jobs). No automatic posting—all publishing is adapter-dependent with manual fallback. Queries the database from ProBot Studio tab."
-  },
-  {
-    "name": "Model Router",
-    "repoPath": "/Users/Office/Repos/stevewesthoek/brain",
-    "port": null,
-    "appPort": null,
-    "url": null,
-    "appUrl": null,
-    "check": null,
-    "healthCheck": null,
-    "start": "MODEL_ROUTER_REPO_ROOT=/Users/Office/Repos/stevewesthoek/brain MODEL_ROUTER_DIR=/Users/Office/Repos/stevewesthoek/brain/projects/model-router MODEL_ROUTER_RUNTIME_DIR=/Users/Office/Repos/stevewesthoek/brain/projects/brain-core/runtime/local/model-router bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/model-router-dry-run-report.sh",
-    "startCommand": "MODEL_ROUTER_REPO_ROOT=/Users/Office/Repos/stevewesthoek/brain MODEL_ROUTER_DIR=/Users/Office/Repos/stevewesthoek/brain/projects/model-router MODEL_ROUTER_RUNTIME_DIR=/Users/Office/Repos/stevewesthoek/brain/projects/brain-core/runtime/local/model-router bash /Users/Office/Repos/stevewesthoek/brain/tools/scripts/model-router-dry-run-report.sh",
-    "stop": null,
-    "stopCommand": null,
-    "restart": null,
-    "restartCommand": null,
-    "description": "AI steward for Mind vault: classifies captures, routes to live/, compiles to wiki/. Runs dry-run validation of Mind OS maintenance loops.",
-    "databaseEngine": null,
-    "databaseServiceName": null,
-    "dockerContainerName": null,
-    "databasePort": null,
-    "databaseName": null,
-    "databaseUser": null,
-    "notes": "Batch job, not a persistent daemon. Start runs the dry-run report and exits. Output at runtime/local/model-router/latest.json. Wired to Brain Core scheduler via scheduler-run-model-router-dry-run action. Scheduled nightly at 02:00 via com.office.model-router-scheduler launchd agent."
   }
 ]

@@ -38,6 +38,7 @@ type SafeCommandSpec = {
   detached: boolean;
   timeoutMs: number;
   expectedLongRunning: boolean;
+  pathPrepend?: string[];
   managedProcessRecord?: BrainCoreLocalAppManagedProcessRecord;
 };
 
@@ -257,6 +258,7 @@ async function executeStackAction(
 }
 
 function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): SafeCommandSpec {
+  const pathPrepend = app.commandPathPrepend && app.commandPathPrepend.length > 0 ? app.commandPathPrepend : undefined;
   if (action === 'restart') {
     const stopSpec = buildCommandSpec(app, 'stop');
     const startSpec = buildCommandSpec(app, 'start');
@@ -272,6 +274,7 @@ function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLoc
         detached: false,
         timeoutMs: 0,
         expectedLongRunning: false,
+        ...(pathPrepend ? { pathPrepend } : {}),
       };
     }
   }
@@ -317,10 +320,10 @@ function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLoc
 
   if (/^bash\s+scripts\/dev\/(start|stop|restart)-local\.sh$/.test(commandBody)) {
     const script = commandBody.replace(/^bash\s+/, '');
-    return scriptSpec('repo-dev-script', commandCwd, script, action);
+    return scriptSpec('repo-dev-script', commandCwd, script, action, pathPrepend);
   }
 
-  const absoluteBash = commandBody.match(/^bash\s+(~?\/?[^\s;&|`$()]+\/(?:start|stop|restart|buildflow-orchestrator|stop-firecrawl|restart-xgrow|stop-xgrow)[^\s;&|`$()]*(?:\.sh)?)\s*(start|stop|restart)?$/);
+  const absoluteBash = commandBody.match(/^bash\s+(~?\/?[^\s;&|`$()]+\/(?:start|stop|restart|buildflow-orchestrator|stop-firecrawl|restart-xgrow|stop-xgrow|model-router-dry-run-report)[^\s;&|`$()]*(?:\.sh)?)\s*(start|stop|restart)?$/);
   if (absoluteBash) {
     const scriptPath = expandHome(absoluteBash[1] ?? '');
     if (!isPathInsideAllowedRoot(scriptPath)) return disabled('Helper script is outside the allowlisted local app roots.');
@@ -410,7 +413,7 @@ function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLoc
   return disabled('Canonical command is registered but its execution strategy is not allowlisted yet.');
 }
 
-function scriptSpec(strategy: ExecutionStrategy, cwd: string, script: string, action: BrainCoreLocalAppAction): SafeCommandSpec {
+function scriptSpec(strategy: ExecutionStrategy, cwd: string, script: string, action: BrainCoreLocalAppAction, pathPrepend?: string[]): SafeCommandSpec {
   const scriptPath = path.resolve(cwd, script);
   if (!isPathInsideAllowedRoot(scriptPath) || !fs.existsSync(scriptPath)) return disabled('Repo lifecycle script is registered but missing or outside allowlisted roots.');
   return {
@@ -419,6 +422,7 @@ function scriptSpec(strategy: ExecutionStrategy, cwd: string, script: string, ac
     strategy,
     commandLabel: `bash ${script}`,
     file: 'bash',
+    ...(pathPrepend && pathPrepend.length > 0 ? { pathPrepend } : {}),
     args: [script],
     cwd,
     detached: action === 'start',
@@ -455,12 +459,15 @@ function executeSpec(
     let settled = false;
 
     try {
+      const spawnEnv = spec.pathPrepend && spec.pathPrepend.length > 0
+        ? { ...process.env, PATH: `${spec.pathPrepend.join(path.delimiter)}${path.delimiter}${process.env.PATH ?? ''}` }
+        : process.env;
       const child = spawn(spec.file, spec.args, {
         cwd: spec.cwd,
         detached: spec.detached,
         stdio: ['ignore', 'pipe', 'pipe'],
         shell: false,
-        env: process.env,
+        env: spawnEnv,
       });
 
       if (spec.detached) child.unref();

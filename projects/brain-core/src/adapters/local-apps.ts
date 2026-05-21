@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import type {
   BrainCoreLocalAppActionEnablementBacklogResponse,
@@ -330,34 +331,23 @@ function readLocalAppsDashboardSync(): BrainCoreLocalAppsDashboardResponse {
 
 export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): Promise<BrainCoreLocalAppsDashboardResponse> {
   const inventory = listLocalAppDefinitions();
-  const statusReport = await buildLocalAppsStatus(
-    inventory.map((app) => ({
-      name: app.name,
-      port: app.appPort ?? null,
-      url: app.appUrl ?? '',
-      check: app.healthUrl ?? '',
-      start: null,
-      stop: null,
-      restart: null,
-      description: app.description,
-      repoPath: app.repoPathSummary ?? null,
-      startupTimeoutMs: null,
-      runtime: null,
-      databaseEngine: null,
-      databaseServiceName: null,
-      databasePort: null,
-      databaseName: null,
-      databaseUser: null,
-      notes: app.description,
-    })),
-    fetchImpl,
+  // Use port probing instead of HTTP health checks to avoid saturating dev servers with connections
+  const portStatusByName = new Map(
+    await Promise.all(
+      inventory.map(async (app) => {
+        const port = app.appPort;
+        if (!port) return [app.name, 'unknown' as const] as const;
+        const up = await isPortListening(port);
+        return [app.name, up ? 'running' : 'stopped'] as const;
+      }),
+    ),
   );
   const timestamp = new Date().toISOString();
-  const statusByName = new Map(statusReport.apps.map((app) => [app.name, app]));
+  const statusByName = portStatusByName;
 
   const apps: BrainCoreLocalAppDashboardItem[] = inventory.map((app) => {
-    const status = statusByName.get(app.name);
-    const lifecycleStatus = normalizeDashboardStatus(status?.status ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
+    const portStatus = statusByName.get(app.name);
+    const lifecycleStatus = normalizeDashboardStatus(portStatus ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
     const managed = app.managed;
     const actionEvaluations = evaluateAppActions(app);
     const executableActions = actionEvaluations.filter((entry) => entry.executable).map((entry) => entry.action);
@@ -826,6 +816,18 @@ function resolveSafeRuntimePath(rawPath: string): string | undefined {
 
 function normalizeStatus(status: LocalAppsRuntimeReport['apps'][number]['status']): BrainCoreLocalAppSummary['status'] {
   return status === 'running' || status === 'stopped' || status === 'disabled' ? status : 'unknown';
+}
+
+function isPortListening(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(300);
+    socket
+      .on('connect', () => { socket.destroy(); resolve(true); })
+      .on('error', () => { socket.destroy(); resolve(false); })
+      .on('timeout', () => { socket.destroy(); resolve(false); })
+      .connect(port, '127.0.0.1');
+  });
 }
 
 function readString(value: unknown, fallback = ''): string {
