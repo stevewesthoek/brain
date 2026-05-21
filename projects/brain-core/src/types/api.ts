@@ -209,6 +209,7 @@ export interface BrainCoreLocalAppDefinition {
   stopCommand?: string;
   restartCommand?: string;
   commandWorkdir?: string;
+  commandPathPrepend?: string[];
 }
 
 export interface BrainCoreLocalAppActionStep {
@@ -9858,4 +9859,194 @@ export interface BrainCoreVideoProviderScaffoldingCompletionCheckpoint {
 
 export interface BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse {
   checkpoint: BrainCoreVideoProviderScaffoldingCompletionCheckpoint;
+}
+
+// ─── Infrastructure adapters ──────────────────────────────────────────────────
+
+export interface BrainCoreInfraDokployApp {
+  project: string;
+  environment: string;
+  name: string;
+  status: string;
+}
+
+export interface BrainCoreInfraDokployCompose {
+  project: string;
+  environment: string;
+  name: string;
+  status: string;
+}
+
+export interface BrainCoreInfraDokployResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  apps: BrainCoreInfraDokployApp[];
+  compose: BrainCoreInfraDokployCompose[];
+  totalApps: number;
+  totalCompose: number;
+  appsByStatus: Record<string, number>;
+  composeByStatus: Record<string, number>;
+  error?: string;
+}
+
+export interface BrainCoreInfraTunnel {
+  id: string;
+  name: string;
+  status: string;
+  hostnames: Array<{ hostname: string; service: string }>;
+}
+
+export interface BrainCoreInfraTunnelsResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  tunnels: BrainCoreInfraTunnel[];
+  error?: string;
+}
+
+export interface BrainCoreInfraDomain {
+  name: string;
+  status: string;
+  createdAt: string;
+  expiresAt: string | null;
+  daysUntilExpiry: number | null;
+}
+
+export interface BrainCoreInfraDomainsResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  domains: BrainCoreInfraDomain[];
+  error?: string;
+}
+
+export interface BrainCoreInfraNewRelicHost {
+  name: string;
+  reporting: boolean;
+  alertSeverity: string | null;
+}
+
+export interface BrainCoreInfraNewRelicSynthetic {
+  name: string;
+  reporting: boolean;
+  alertSeverity: string | null;
+  monitorId?: string;
+}
+
+export interface BrainCoreInfraNewRelicResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  hosts: BrainCoreInfraNewRelicHost[];
+  synthetics: BrainCoreInfraNewRelicSynthetic[];
+  error?: string;
+}
+
+export interface BrainCoreInfraUmamiWebsite {
+  id: string;
+  name: string;
+  domain: string;
+  active: number;
+  pageviews: number;
+  visitors: number;
+  visits: number;
+  bounceRate: number;
+  error?: string;
+}
+
+export interface BrainCoreInfraUmamiResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  websites: BrainCoreInfraUmamiWebsite[];
+  error?: string;
+}
+
+export interface BrainCoreInfraGoogleAdsResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  lastSync: string | null;
+  dailyBudgetUSD: number;
+  targetBudgetUSD: number;
+  percentOfTarget: number;
+  dayOfMonth: number;
+  daysInMonth: number;
+  lastMetricsDate: string | null;
+  pendingMutations: number;
+  mutationStatsByStatus: Record<string, number>;
+  error?: string;
+}
+
+export interface BrainCoreInfraStripeAccount {
+  profileName: string;
+  displayName: string;
+  liveAvailableAmount: number | null;
+  livePendingAmount: number | null;
+  liveCurrency: string | null;
+  testAvailableAmount: number | null;
+  testPendingAmount: number | null;
+  error?: string;
+}
+
+export interface BrainCoreInfraStripeResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  accounts: BrainCoreInfraStripeAccount[];
+  error?: string;
+}
+
+export interface BrainCoreInfraStudioTopic {
+  id: string;
+  title: string;
+  trendScore: number;
+  source: string;
+  createdAt: string;
+}
+
+export interface BrainCoreInfraStudioScript {
+  id: string;
+  title: string;
+  format: string;
+  estimatedDurationMinutes: number;
+  createdAt: string;
+}
+
+export interface BrainCoreInfraStudioBatch {
+  batchId: string;
+  topic: string;
+  stage: string;
+  stages: Record<string, { completed: boolean; inProgress: boolean }>;
+  errors: string[];
+}
+
+export interface BrainCoreInfraStudioAccount {
+  id: string;
+  platform: string;
+  name: string;
+  status: string;
+  lastPost: string | null;
+}
+
+export interface BrainCoreInfraViralFlowSummary {
+  accountCount: number;
+  accounts: BrainCoreInfraStudioAccount[];
+  activeTopicCount: number;
+  recentTopics: BrainCoreInfraStudioTopic[];
+  recentScripts: BrainCoreInfraStudioScript[];
+  activeBatch: BrainCoreInfraStudioBatch | null;
+  performance: {
+    totalVideos: number;
+    totalViews: number;
+    avgEngagementRate: number;
+    topVideos: Array<{ title: string; views: number; platform: string }>;
+  };
+  lastUpdated: string;
+}
+
+export interface BrainCoreInfraVideoOrchestratorSummary {
+  databaseStatus: string;
+  totalVideos: number;
+  totalAccounts: number;
+  pendingJobs: number;
+  runningJobs: number;
+  failedJobs7d: number;
+  completedPackages: number;
+  completionRate: number;
+  error?: string;
+}
+
+export interface BrainCoreInfraStudioResponse {
+  status: 'ok' | 'not-configured' | 'partial' | 'error';
+  viralFlow: BrainCoreInfraViralFlowSummary | null;
+  videoOrchestrator: BrainCoreInfraVideoOrchestratorSummary | null;
+  error?: string;
 }

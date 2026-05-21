@@ -189,6 +189,14 @@ import { createStatusAdapter } from '../adapters/status.js';
 import { isLocalRequest } from '../security/localhost.js';
 import { redactingJsonReplacer } from '../security/redaction.js';
 import type { BrainCoreErrorResponse } from '../types/api.js';
+import { getInfraDokployStatus } from '../adapters/infra-dokploy.js';
+import { getInfraCloudflareTunnels } from '../adapters/infra-cloudflare-tunnels.js';
+import { getInfraCloudfareDomains } from '../adapters/infra-cloudflare-domains.js';
+import { getInfraNewRelicStatus } from '../adapters/infra-new-relic.js';
+import { getInfraUmamiStatus } from '../adapters/infra-umami.js';
+import { getInfraGoogleAdsMetrics } from '../adapters/infra-google-ads.js';
+import { getInfraStripeStatus } from '../adapters/infra-stripe.js';
+import { getInfraStudioStatus } from '../adapters/infra-studio.js';
 
 const getStatus = createStatusAdapter({
   startedAt: new Date(),
@@ -245,6 +253,9 @@ export async function routeRequest(
   }
 
   switch (url.pathname) {
+    case '/health':
+      sendJson(response, 200, { ok: true, service: 'brain-core', ts: new Date().toISOString() });
+      return;
     case '/status':
       sendJson(response, 200, getStatus());
       return;
@@ -1663,6 +1674,40 @@ export async function routeRequest(
             sendJson(response, 200, readLocalAppsActionPlan(appId, action));
             return;
           }
+        }
+
+        // Infrastructure adapter routes
+        if (url.pathname === '/infra/dokploy') {
+          sendJson(response, 200, await getInfraDokployStatus());
+          return;
+        }
+        if (url.pathname === '/infra/tunnels') {
+          sendJson(response, 200, await getInfraCloudflareTunnels());
+          return;
+        }
+        if (url.pathname === '/infra/domains') {
+          sendJson(response, 200, await getInfraCloudfareDomains());
+          return;
+        }
+        if (url.pathname === '/infra/monitoring') {
+          sendJson(response, 200, await getInfraNewRelicStatus());
+          return;
+        }
+        if (url.pathname === '/infra/analytics') {
+          sendJson(response, 200, await getInfraUmamiStatus());
+          return;
+        }
+        if (url.pathname === '/infra/google-ads') {
+          sendJson(response, 200, getInfraGoogleAdsMetrics());
+          return;
+        }
+        if (url.pathname === '/infra/stripe') {
+          sendJson(response, 200, await getInfraStripeStatus());
+          return;
+        }
+        if (url.pathname === '/infra/studio') {
+          sendJson(response, 200, await getInfraStudioStatus());
+          return;
         }
       }
 

@@ -3,8 +3,11 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'brain-console-local-apps-live-actions-2026-05-19-01';
+const currentMarker = 'v2.2';
 const staleMarkers = [
+  'v2.1',
+  'v2.0',
+  'brain-console-local-apps-live-actions-2026-05-19-01',
   'brain-console-local-apps-functional-2026-05-19-01',
   'brain-console-local-apps-actions-2026-05-19-01',
   'brain-console-local-apps-orchestrator-2026-05-19-01',

@@ -120,9 +120,11 @@ declare module 'node:http' {
 
 declare module 'node:os' {
   export function hostname(): string;
+  export function homedir(): string;
 
   const os: {
     hostname: typeof hostname;
+    homedir: typeof homedir;
   };
 
   export default os;
