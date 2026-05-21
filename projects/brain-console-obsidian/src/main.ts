@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { setRequestUrl } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'v2.8';
+export const BRAIN_CONSOLE_BUILD_ID = 'v2.9';
 
 declare global {
   interface Window {
@@ -186,16 +186,14 @@ class BrainConsoleView extends ItemView {
     // Attach tab click handler to container - instant switch without reload
     this.registerDomEvent(this.contentEl, 'click', (e: Event) => {
       const target = e.target as HTMLElement;
-      if (target.classList.contains('brain-console__section-tab') || target.closest('.brain-console__section-tab')) {
-        const tab = target.closest('.brain-console__section-tab') as HTMLElement;
-        if (tab) {
-          const sectionId = tab.getAttribute('data-section-id') as BrainConsoleSectionId | null;
-          if (sectionId && sectionId !== this.activeSection) {
-            this.activeSection = sectionId;
-            this.rerenderWithCachedState();
-            e.preventDefault();
-            e.stopPropagation();
-          }
+      const tab = target.closest('[data-section-id]') as HTMLElement | null;
+      if (tab) {
+        const sectionId = tab.getAttribute('data-section-id') as BrainConsoleSectionId | null;
+        if (sectionId && sectionId !== this.activeSection) {
+          this.activeSection = sectionId;
+          this.rerenderWithCachedState();
+          e.preventDefault();
+          e.stopPropagation();
         }
       }
     });

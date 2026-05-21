@@ -116,20 +116,16 @@
   gap: 2px;
   flex: 1 1 0;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.bc-cmd-nav::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
+  flex-wrap: nowrap;
 }
 
 .bc-cmd-tab {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 5px 9px;
-  border-radius: 6px;
+  padding: 5px 8px;
+  border-radius: 5px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
@@ -139,6 +135,9 @@
   white-space: nowrap;
   flex-shrink: 0;
   transition: color 0.12s, background 0.12s;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bc-cmd-tab:hover {
@@ -146,9 +145,14 @@
   background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
 }
 
+.bc-cmd-tab:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
 .bc-cmd-tab.active {
   color: var(--text-normal);
-  background: color-mix(in srgb, var(--bc-accent-soft) 80%, var(--background-secondary) 20%);
+  background: color-mix(in srgb, var(--bc-accent-soft, rgba(99,102,241,0.15)) 80%, var(--background-secondary) 20%);
   border-color: var(--bc-border);
   font-weight: 600;
 }
@@ -156,10 +160,82 @@
 .bc-cmd-tab-icon {
   font-size: 10px;
   opacity: 0.7;
+  flex-shrink: 0;
 }
 
 .bc-cmd-tab-label {
-  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* More popover */
+.bc-cmd-more-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.bc-cmd-more-btn {
+  gap: 3px;
+}
+
+.bc-cmd-more-arrow {
+  font-size: 8px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.bc-cmd-more-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 160px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bc-cmd-more-panel--open {
+  display: flex;
+}
+
+.bc-cmd-more-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: color 0.1s, background 0.1s;
+  white-space: nowrap;
+}
+
+.bc-cmd-more-item:hover {
+  color: var(--text-normal);
+  background: color-mix(in srgb, var(--background-secondary) 60%, transparent);
+}
+
+.bc-cmd-more-item:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+.bc-cmd-more-item.active {
+  color: var(--text-normal);
+  font-weight: 600;
 }
 
 .bc-cmd-right {
@@ -1436,3 +1512,169 @@
 .bc-accounts-feedback--ok    { color: var(--bc-green, #22c55e); }
 .bc-accounts-feedback--warn  { color: var(--bc-yellow, #eab308); }
 .bc-accounts-feedback--error { color: var(--bc-red, #ef4444); }
+
+/* ── Overview section layout ───────────────────────────────────────────── */
+.bc-overview-focus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+}
+
+.bc-overview-mig-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 0;
+}
+
+.bc-overview-card {
+  background: var(--bc-card, var(--background-secondary));
+  border: 1px solid var(--bc-border, var(--background-modifier-border));
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bc-overview-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.bc-overview-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.bc-overview-card-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.bc-overview-attention-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-normal);
+  min-width: 0;
+}
+
+.bc-overview-bullet {
+  color: var(--bc-yellow, #eab308);
+  flex-shrink: 0;
+  font-size: 9px;
+  margin-top: 2px;
+}
+
+.bc-overview-prod-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bc-overview-prod-row--next {
+  border-top: 1px solid var(--bc-border, var(--background-modifier-border));
+  padding-top: 5px;
+  margin-top: 2px;
+}
+
+.bc-overview-prod-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.bc-overview-prod-age {
+  font-size: 10px;
+  color: var(--text-faint, var(--text-muted));
+  font-family: var(--font-monospace);
+}
+
+.bc-overview-next-step {
+  font-size: 10px;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.bc-overview-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.bc-overview-drill-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--bc-border, var(--background-modifier-border));
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.bc-overview-drill-btn:hover {
+  color: var(--text-normal);
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+}
+
+.bc-overview-drill-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 600px) {
+  .bc-overview-focus-grid { grid-template-columns: 1fr; }
+  .bc-overview-mig-grid   { grid-template-columns: 1fr; }
+}
+
+/* ── Overflow containment (defensive) ───────────────────────────────────── */
+.brain-console,
+.brain-console * {
+  box-sizing: border-box;
+}
+
+.brain-console {
+  overflow-x: hidden;
+}
+
+.brain-console__shell,
+.brain-console__scroll-area,
+.brain-console__section-content,
+.brain-console__dashboard-grid,
+.brain-console__grouped-grid,
+.bc-metrics-banner,
+.bc-kpi-row,
+.bc-cmd-bar,
+.bc-cmd-nav {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}

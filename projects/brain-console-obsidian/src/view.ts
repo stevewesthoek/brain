@@ -1077,32 +1077,80 @@ export function renderBrainConsoleView(
   }
 }
 
+const PRIMARY_TAB_IDS: BrainConsoleSectionId[] = ['overview', 'apps', 'pipelines', 'orchestrators', 'posts', 'agents'];
+const MORE_TAB_IDS: BrainConsoleSectionId[] = ['sessions', 'infra', 'analytics', 'stripe', 'monitoring', 'studio', 'projects', 'reports', 'recovery', 'accounts'];
+
 function renderCommandBar(shell: HTMLElement, state: BrainConsoleViewState, activeSection: BrainConsoleSectionId, onRefresh?: () => void): void {
   const bar = shell.createDiv({ cls: 'bc-cmd-bar' });
 
-  // Left: wordmark + status dot
   const left = bar.createDiv({ cls: 'bc-cmd-left' });
   left.createEl('span', { cls: 'bc-cmd-wordmark', text: 'Brain Console' });
   const online = state.status?.ok === true;
   const dot = left.createEl('span', { cls: `bc-cmd-dot ${online ? 'bc-cmd-dot--online' : 'bc-cmd-dot--offline'}` });
-  dot.title = online ? 'Brain Core online' : 'Brain Core offline';
+  dot.setAttribute('aria-label', online ? 'Brain Core online' : 'Brain Core offline');
 
-  // Center: compact nav tabs
   const nav = bar.createDiv({ cls: 'bc-cmd-nav' });
-  for (const tab of SECTION_TABS) {
+
+  // Primary tabs — always visible
+  for (const id of PRIMARY_TAB_IDS) {
+    const tab = SECTION_TABS.find(t => t.id === id);
+    if (!tab) continue;
     const btn = nav.createEl('button', { cls: 'bc-cmd-tab' });
-    if (tab.id === activeSection) btn.addClass('active');
-    btn.setAttribute('data-section-id', tab.id);
+    if (id === activeSection) btn.addClass('active');
+    btn.setAttribute('data-section-id', id);
+    btn.setAttribute('aria-label', tab.label);
+    btn.setAttribute('type', 'button');
     btn.createEl('span', { cls: 'bc-cmd-tab-icon', text: tab.icon });
     btn.createEl('span', { cls: 'bc-cmd-tab-label', text: tab.label });
   }
 
-  // Right: action buttons + build marker
+  // More popover — secondary tabs
+  const moreTabs = MORE_TAB_IDS.map(id => SECTION_TABS.find(t => t.id === id)).filter(Boolean) as SectionTabConfig[];
+  const isActiveInMore = MORE_TAB_IDS.includes(activeSection);
+
+  const moreWrap = nav.createDiv({ cls: 'bc-cmd-more-wrap' });
+  const moreBtn = moreWrap.createEl('button', { cls: `bc-cmd-tab bc-cmd-more-btn${isActiveInMore ? ' active' : ''}` });
+  moreBtn.setAttribute('type', 'button');
+  moreBtn.setAttribute('aria-label', 'More sections');
+  moreBtn.setAttribute('aria-haspopup', 'true');
+  moreBtn.setAttribute('aria-expanded', 'false');
+  moreBtn.createEl('span', { cls: 'bc-cmd-tab-label', text: isActiveInMore ? (SECTION_TABS.find(t => t.id === activeSection)?.label ?? 'More') : 'More' });
+  moreBtn.createEl('span', { cls: 'bc-cmd-more-arrow', text: '▾' });
+
+  const morePanel = moreWrap.createDiv({ cls: 'bc-cmd-more-panel' });
+  morePanel.setAttribute('role', 'menu');
+  for (const tab of moreTabs) {
+    const item = morePanel.createEl('button', { cls: `bc-cmd-more-item${tab.id === activeSection ? ' active' : ''}` });
+    item.setAttribute('data-section-id', tab.id);
+    item.setAttribute('type', 'button');
+    item.setAttribute('role', 'menuitem');
+    item.createEl('span', { cls: 'bc-cmd-tab-icon', text: tab.icon });
+    item.createEl('span', { text: tab.label });
+  }
+
+  moreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = morePanel.classList.toggle('bc-cmd-more-panel--open');
+    moreBtn.setAttribute('aria-expanded', String(open));
+  });
+
+  // Close More panel when clicking outside
+  const closeMore = () => {
+    morePanel.classList.remove('bc-cmd-more-panel--open');
+    moreBtn.setAttribute('aria-expanded', 'false');
+  };
+  document.addEventListener('click', closeMore, { once: false });
+  // Clean up listener when panel closes naturally via section switch
+  morePanel.addEventListener('click', () => {
+    setTimeout(closeMore, 50);
+  });
+
   const right = bar.createDiv({ cls: 'bc-cmd-right' });
   right.createEl('span', { cls: 'bc-cmd-build', text: (window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown' });
-  const refreshBtn = right.createEl('button', { cls: 'bc-cmd-action', text: '↻' });
+  const refreshBtn = right.createEl('button', { cls: 'bc-cmd-action' });
   refreshBtn.setAttribute('type', 'button');
-  refreshBtn.title = 'Manual refresh';
+  refreshBtn.setAttribute('aria-label', 'Manual refresh');
+  refreshBtn.textContent = '↻';
   if (onRefresh) refreshBtn.addEventListener('click', () => onRefresh());
 }
 
@@ -1228,27 +1276,137 @@ function safeCount(items: any[] | undefined | null): number {
 }
 
 function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
-  // KPI hero row
+  // Zone 1: KPI row
   const kpiRow = content.createDiv({ cls: 'bc-kpi-row' });
   const online = snapshot.brainCoreOnline;
-  createStatCard(kpiRow, 'Brain Core', online ? 'Online' : 'Offline', state.status?.version ?? undefined, online ? 'ok' : 'danger');
-  createStatCard(kpiRow, 'Approvals', String(snapshot.approvalsCount), snapshot.approvalsCount > 0 ? 'need attention' : 'none pending', snapshot.approvalsCount > 0 ? 'warn' : 'ok');
-  createStatCard(kpiRow, 'Scheduler', snapshot.schedulerHealthy ? 'Healthy' : 'Check needed', undefined, snapshot.schedulerHealthy ? 'ok' : 'warn');
-  createStatCard(kpiRow, 'Pipelines', String(snapshot.pipelineCount), `${snapshot.pipelineCount} tracked`, 'muted');
+  const kpiCore = createStatCard(kpiRow, 'Brain Core', online ? 'Online' : 'Offline', state.status?.version ?? undefined, online ? 'ok' : 'danger');
+  kpiCore.setAttribute('data-section-id', 'apps');
+  kpiCore.style.cursor = 'pointer';
+  const kpiApprovals = createStatCard(kpiRow, 'Approvals', String(snapshot.approvalsCount), snapshot.approvalsCount > 0 ? 'need attention' : 'all clear', snapshot.approvalsCount > 0 ? 'warn' : 'ok');
+  kpiApprovals.setAttribute('data-section-id', 'recovery');
+  kpiApprovals.style.cursor = 'pointer';
+  createStatCard(kpiRow, 'Scheduler', snapshot.schedulerHealthy ? 'Healthy' : 'Check', undefined, snapshot.schedulerHealthy ? 'ok' : 'warn');
+  const kpiPipelines = createStatCard(kpiRow, 'Pipelines', String(snapshot.pipelineCount), `${snapshot.pipelineCount} tracked`, 'muted');
+  kpiPipelines.setAttribute('data-section-id', 'pipelines');
+  kpiPipelines.style.cursor = 'pointer';
   createStatCard(kpiRow, 'Attention', snapshot.attentionLevel, `score ${snapshot.attentionScore}`, snapshot.attentionLevel === 'clear' ? 'ok' : snapshot.attentionLevel === 'watch' ? 'warn' : 'danger');
-  createStatCard(kpiRow, 'Orchestrators', String(snapshot.orchestratorCount), `${snapshot.orchestratorCount} registered`, 'muted');
+  const kpiOrch = createStatCard(kpiRow, 'Orchestrators', String(snapshot.orchestratorCount), `${snapshot.orchestratorCount} registered`, 'muted');
+  kpiOrch.setAttribute('data-section-id', 'orchestrators');
+  kpiOrch.style.cursor = 'pointer';
 
-  // Main card grid
-  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
-  renderCard(grid, 'Connection', renderConnectionSummaryCard(state));
-  renderCard(grid, 'What Needs Attention', renderWhatNeedsAttentionCard(state, snapshot));
-  renderCard(grid, 'Next Safe Step', renderNextSafeStepCard(state, snapshot));
-  renderCard(grid, 'Production Status', renderProductionStatusCard(state));
-  renderGroupedSummary(grid, 'Operational Summaries', [
-    { title: 'Sessions', render: renderRecentSessionsCard(state) },
-    { title: 'Local Apps', render: renderLocalAppsCard(state) },
-    { title: 'Scheduler', render: renderSchedulerCard(state) },
-  ]);
+  // Zone 2: Command focus — 2-column balanced grid
+  const focusGrid = content.createDiv({ cls: 'bc-overview-focus-grid' });
+
+  // Left: Attention panel
+  const attCard = focusGrid.createDiv({ cls: 'bc-overview-card' });
+  attCard.createEl('div', { cls: 'bc-overview-card-title', text: 'What Needs Attention' });
+  const attBody = attCard.createDiv({ cls: 'bc-overview-card-body' });
+  if (snapshot.attentionLevel === 'clear') {
+    createStatusChip(attBody, 'System clear', 'ok');
+  } else {
+    const items: string[] = [];
+    if (snapshot.approvalsCount > 0) items.push(`${snapshot.approvalsCount} approval${snapshot.approvalsCount > 1 ? 's' : ''} pending`);
+    if (!snapshot.schedulerHealthy) items.push('Scheduler needs check');
+    if (snapshot.migrationBlockedCount > 0) items.push(`${snapshot.migrationBlockedCount} migration blocker${snapshot.migrationBlockedCount > 1 ? 's' : ''}`);
+    if (snapshot.postOrchestratorBlockedCount > 0) items.push(`${snapshot.postOrchestratorBlockedCount} post orchestrator blocked`);
+    const show = items.slice(0, 5);
+    for (const item of show) {
+      const row = attBody.createDiv({ cls: 'bc-overview-attention-item' });
+      row.createEl('span', { cls: 'bc-overview-bullet', text: '▸' });
+      row.createEl('span', { text: item });
+    }
+    if (items.length > 5) createStatusChip(attBody, `+${items.length - 5} more`, 'muted');
+  }
+
+  // Right: Production state + next step
+  const prodCard = focusGrid.createDiv({ cls: 'bc-overview-card' });
+  prodCard.createEl('div', { cls: 'bc-overview-card-title', text: 'Production State' });
+  const prodBody = prodCard.createDiv({ cls: 'bc-overview-card-body' });
+
+  const stbHealth = snapshot.stbLiveStatusSummary?.health ?? snapshot.stbPipelineSummary?.health ?? 'unknown';
+  const stbStatus = snapshot.stbLiveStatusSummary?.status ?? snapshot.stbPipelineSummary?.status ?? 'unknown';
+  const stbAge = snapshot.stbLiveStatusSummary?.ageHours;
+  const stbRow = prodBody.createDiv({ cls: 'bc-overview-prod-row' });
+  stbRow.createEl('span', { cls: 'bc-overview-prod-label', text: 'STB Pipeline' });
+  createStatusChip(stbRow, stbStatus, stbHealth === 'ok' ? 'ok' : stbHealth === 'warning' ? 'warn' : 'danger');
+  if (stbAge !== undefined) stbRow.createEl('span', { cls: 'bc-overview-prod-age', text: `${Math.round(stbAge)}h ago` });
+
+  const voHealth = snapshot.videoOrchestratorSummary?.health ?? 'unknown';
+  const voStatus = snapshot.videoOrchestratorSummary?.status ?? 'unknown';
+  const voRow = prodBody.createDiv({ cls: 'bc-overview-prod-row' });
+  voRow.createEl('span', { cls: 'bc-overview-prod-label', text: 'Video Orchestrator' });
+  createStatusChip(voRow, voStatus, voHealth === 'ok' ? 'ok' : voHealth === 'warning' ? 'warn' : 'muted');
+
+  if (snapshot.videoModuleProgressSummary) {
+    const { percent, implemented, planned } = snapshot.videoModuleProgressSummary;
+    createProgressBar(prodBody, percent, percent >= 80 ? 'ok' : percent >= 40 ? 'warn' : 'danger');
+    prodBody.createEl('span', { cls: 'bc-overview-prod-age', text: `${implemented} impl · ${planned} planned` });
+  }
+
+  const nextStep = snapshot.postNextSafeStep || snapshot.nextAction;
+  if (nextStep) {
+    const nsRow = prodBody.createDiv({ cls: 'bc-overview-prod-row bc-overview-prod-row--next' });
+    nsRow.createEl('span', { cls: 'bc-overview-prod-label', text: 'Next step' });
+    nsRow.createEl('span', { cls: 'bc-overview-next-step', text: nextStep });
+  }
+
+  // Zone 3: Migration row
+  const migGrid = content.createDiv({ cls: 'bc-overview-mig-grid' });
+
+  // STB Daily Pipeline card
+  const stbCard = migGrid.createDiv({ cls: 'bc-overview-card' });
+  stbCard.createEl('div', { cls: 'bc-overview-card-title', text: 'STB Daily Pipeline' });
+  const stbBody = stbCard.createDiv({ cls: 'bc-overview-card-body' });
+  createStatusChip(stbBody, stbStatus, stbHealth === 'ok' ? 'ok' : stbHealth === 'warning' ? 'warn' : 'danger');
+  if (snapshot.stbPipelineSummary?.daysStale !== undefined && snapshot.stbPipelineSummary.daysStale > 0) {
+    stbBody.createEl('span', { cls: 'bc-overview-prod-age', text: `${snapshot.stbPipelineSummary.daysStale}d stale` });
+  }
+  stbBody.createEl('div', { cls: 'bc-overview-card-sub', text: 'Legacy production pipeline · says-the-bible' });
+
+  // Video Orchestrator card
+  const voCard = migGrid.createDiv({ cls: 'bc-overview-card' });
+  voCard.createEl('div', { cls: 'bc-overview-card-title', text: 'Video Orchestrator' });
+  const voBody = voCard.createDiv({ cls: 'bc-overview-card-body' });
+  createStatusChip(voBody, voStatus, voHealth === 'ok' ? 'ok' : 'muted');
+  if (snapshot.videoModuleProgressSummary) {
+    const { percent, implemented, partial, planned } = snapshot.videoModuleProgressSummary;
+    createProgressBar(voBody, percent, 'ok');
+    voBody.createEl('div', { cls: 'bc-overview-card-sub', text: `${implemented} impl · ${partial} partial · ${planned} planned` });
+  }
+
+  // Migration parity card
+  const migCard = migGrid.createDiv({ cls: 'bc-overview-card' });
+  migCard.createEl('div', { cls: 'bc-overview-card-title', text: 'STB → Video Migration' });
+  const migBody = migCard.createDiv({ cls: 'bc-overview-card-body' });
+  if (snapshot.stbToVideoMigrationSummary) {
+    const { parityStatus, blocked } = snapshot.stbToVideoMigrationSummary;
+    createStatusChip(migBody, parityStatus ?? 'unknown', blocked ? 'danger' : 'ok');
+  }
+  if (snapshot.migrationParitySummary) {
+    const { percent, mappedCount, totalCount } = snapshot.migrationParitySummary;
+    createProgressBar(migBody, percent, percent >= 80 ? 'ok' : 'warn');
+    migBody.createEl('div', { cls: 'bc-overview-card-sub', text: `${mappedCount}/${totalCount} mapped` });
+  }
+  if (snapshot.migrationBlockedCount > 0) {
+    createStatusChip(migBody, `${snapshot.migrationBlockedCount} blocker${snapshot.migrationBlockedCount > 1 ? 's' : ''}`, 'danger');
+  }
+
+  // Zone 4: Quick action drill-ins
+  const actionsRow = content.createDiv({ cls: 'bc-overview-actions' });
+  const drillIns: Array<{ label: string; section: BrainConsoleSectionId }> = [
+    { label: 'Apps →', section: 'apps' },
+    { label: 'Pipelines →', section: 'pipelines' },
+    { label: 'Orchestrators →', section: 'orchestrators' },
+    { label: 'Posts →', section: 'posts' },
+    { label: 'Approvals →', section: 'recovery' },
+    { label: 'Agents →', section: 'agents' },
+  ];
+  for (const { label, section } of drillIns) {
+    const btn = actionsRow.createEl('button', { cls: 'bc-overview-drill-btn' });
+    btn.setAttribute('type', 'button');
+    btn.setAttribute('data-section-id', section);
+    btn.textContent = label;
+  }
 }
 
 function renderAppsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot, settings: BrainConsoleSettings, onRefresh?: () => void): void {
