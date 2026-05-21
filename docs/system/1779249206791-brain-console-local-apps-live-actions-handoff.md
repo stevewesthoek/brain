@@ -1088,3 +1088,41 @@ Safety notes:
 
 - No `.env` files, secrets, tokens, operations config writes, or Mind writes were touched.
 - Existing unrelated dirty operations-system and local Obsidian state remained untouched.
+
+
+---
+
+## Continuation update — Brain Console plugin deployment verification
+
+Date: 2026-05-21
+
+Completed the deployment verification phase after surfacing managed-process status in the Console summary.
+
+What changed:
+
+- Rebuilt the Brain Console Obsidian plugin package.
+- Installed the current bundle into both discovered Brain Console plugin folders.
+- Verified the installed plugin copies contain the current marker and no stale Brain Console bundle markers.
+
+Installed plugin verification:
+
+- `/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console`
+  - `mainSize: 193341`
+  - marker: `brain-console-local-apps-live-actions-2026-05-19-01`
+  - `staleMarkers: []`
+- `/Users/Office/mind/.obsidian/plugins/brain-console`
+  - `mainSize: 193341`
+  - marker: `brain-console-local-apps-live-actions-2026-05-19-01`
+  - `staleMarkers: []`
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian release:install` passed.
+- Release install internally passed typecheck, build, package, install, and installed-plugin scan.
+
+Safety notes:
+
+- Brain Console remains shell-free.
+- No mutation controls were added.
+- No `.env` files, secrets, tokens, operations config writes, or Mind note writes were touched.
+- Existing unrelated operations-system dirty files were left unstaged.
