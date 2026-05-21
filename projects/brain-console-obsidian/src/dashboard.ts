@@ -570,6 +570,11 @@ function deriveNextAction(state: BrainConsoleViewState, level: AttentionLevel): 
   if ((state.approvals ?? []).length > 0) return 'Review pending approvals';
   if ((state.mindPreviews ?? []).filter(p => !p.expired).length > 0) return 'Review maintenance queue';
 
+  const managedProcessCount = state.localAppsActionStatus?.managedProcesses?.length ?? 0;
+  if (managedProcessCount > 0) {
+    return `${managedProcessCount} Brain Core-managed local app process${managedProcessCount === 1 ? '' : 'es'} active`;
+  }
+
   return 'System healthy, all clear';
 }
 

@@ -1063,3 +1063,28 @@ Safety notes:
 - Brain Console still does not execute shell commands.
 - No `.env` files, secrets, tokens, Mind writes, or operations config writes were touched.
 - Existing unrelated dirty files in `operations/system-configs/**` and local Mind/Obsidian state were left untouched.
+
+
+---
+
+## Continuation update — Managed-process next-action visibility
+
+Date: 2026-05-21
+
+Continued the Brain Console managed-process visibility phase.
+
+What changed:
+
+- Dashboard next-action derivation now surfaces active Brain Core-managed local app processes when `/local-apps/actions/status` reports them.
+- The summary remains read-only and does not add mutation buttons or shell execution.
+- If no higher-priority blocker, approval, or maintenance item exists, the Console can now show: `N Brain Core-managed local app process(es) active`.
+
+Validation:
+
+- `npm run --prefix projects/brain-console-obsidian typecheck` passed.
+- `npm run --prefix projects/brain-console-obsidian check:dashboard-source` passed.
+
+Safety notes:
+
+- No `.env` files, secrets, tokens, operations config writes, or Mind writes were touched.
+- Existing unrelated dirty operations-system and local Obsidian state remained untouched.
