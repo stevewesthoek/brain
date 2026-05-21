@@ -253,6 +253,9 @@
 }
 
 .brain-console__section-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
