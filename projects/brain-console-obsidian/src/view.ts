@@ -1682,8 +1682,12 @@ function renderVOLiveStatusCards(grid: HTMLElement, state: BrainConsoleViewState
       { label: 'Pending', value: String(qd.pending) },
       { label: 'Running', value: String(qd.running) },
       { label: 'Failed', value: String(qd.failed) },
+      { label: 'Dead', value: String(qd.dead ?? 0) },
       { label: 'Active accounts', value: String(vol.activeAccounts ?? 0) },
     ]);
+    if ((qd.dead ?? 0) > 0) {
+      qCard.createEl('p', { cls: 'brain-console__warning', text: `${qd.dead} dead jobs — run: vo jobs to inspect, vo retry <id> to re-queue` });
+    }
     if (vol.lastJobAt) {
       qCard.createEl('p', { cls: 'brain-console__detail', text: `Last job: ${formatRelativeTime(vol.lastJobAt)}` });
     }
