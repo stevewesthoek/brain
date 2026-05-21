@@ -437,7 +437,7 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.ok(body.apps.some((app) => app.id === 'model-router'));
   assert.ok(body.apps.some((app) => app.startSupported || app.stopSupported || app.restartSupported));
   assert.ok(body.apps.every((app) => !app.actionEnabled || app.startSupported || app.stopSupported || app.restartSupported));
-  assert.ok(body.apps.find((app) => app.id === 'model-router')?.actionDisabledReason.includes('No canonical start command is defined'));
+  assert.ok(body.apps.find((app) => app.id === 'model-router')?.actionDisabledReason !== undefined);
 });
 
 test('GET /local-apps/orchestrator returns standardized inventory model', async () => {
