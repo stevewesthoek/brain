@@ -1344,22 +1344,6 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
     createStatusChip(migBody, `${snapshot.migrationBlockedCount} blocker${snapshot.migrationBlockedCount > 1 ? 's' : ''}`, 'danger');
   }
 
-  // Zone 4: Quick action drill-ins
-  const actionsRow = content.createDiv({ cls: 'bc-overview-actions' });
-  const drillIns: Array<{ label: string; section: BrainConsoleSectionId }> = [
-    { label: 'Apps →', section: 'apps' },
-    { label: 'Pipelines →', section: 'pipelines' },
-    { label: 'Orchestrators →', section: 'orchestrators' },
-    { label: 'Posts →', section: 'posts' },
-    { label: 'Approvals →', section: 'recovery' },
-    { label: 'Agents →', section: 'agents' },
-  ];
-  for (const { label, section } of drillIns) {
-    const btn = actionsRow.createEl('button', { cls: 'bc-overview-drill-btn' });
-    btn.setAttribute('type', 'button');
-    btn.setAttribute('data-section-id', section);
-    btn.textContent = label;
-  }
 }
 
 function renderAppsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot, settings: BrainConsoleSettings, onRefresh?: () => void): void {

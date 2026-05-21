@@ -1452,7 +1452,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
   min-width: 0;
 }
 
@@ -1460,7 +1460,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
   min-width: 0;
 }
 
@@ -1470,6 +1470,7 @@
   border-radius: 6px;
   padding: 10px 12px;
   min-width: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1550,40 +1551,6 @@
   min-width: 0;
 }
 
-.bc-overview-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  min-width: 0;
-  padding-top: 2px;
-}
-
-.bc-overview-drill-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--bc-border, var(--background-modifier-border));
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
-}
-
-.bc-overview-drill-btn:hover {
-  color: var(--text-normal);
-  border-color: var(--interactive-accent);
-  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
-}
-
-.bc-overview-drill-btn:focus-visible {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 1px;
-}
 
 @media (max-width: 600px) {
   .bc-overview-focus-grid { grid-template-columns: 1fr; }
