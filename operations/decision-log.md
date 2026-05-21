@@ -390,3 +390,35 @@ skills   = execution workflows
 - Brain Core rollback does not use ProBot as fallback.
 
 **Rollback:** Brain Core runbook at `operations/runbooks/brain-core.md`.
+
+---
+
+## 2026-05-22 — Video Orchestrator Stage 1 complete / Stage 2 first test / n8n CF Access blocker
+
+**Context:** STB → Video Orchestrator migration work.
+
+**Stage 1 complete:** Parity matrix v1.1 — all 13 STB stages mapped to real file locations in `stb-video-parity.ts`. Entries 7–11 upgraded from `planned` → `partial` with real STB script paths. Facebook (entry-12) and Pinterest (entry-13) entries added.
+
+**Dead queue cleared:** 34 dead `post` jobs deleted from `video_orchestrator` DB. All failed with `Account X not found` — referencing deleted account IDs. Queue is clean.
+
+**Stage 2 first test:** `normalize` job `23c87e1b` ran successfully on `genesis-noah-30m.mp4` (4K, 30min source). Produced 5 platform crops in `/tmp/vo_norm_genesis_noah/` — all valid. Confirmed normalize worker is functional.
+
+**YouTube post test:** `post` job `fbe09ce7` queued to `@says-the-bible` (account `303e91f9`). Status: `succeeded` (DB), but adapter landed in `manual` mode — n8n webhook at `https://n8n.prochat.tools/webhook` returned HTTP 403 error code 1010 (Cloudflare ASN block).
+
+**Root cause:** `VO_N8N_WEBHOOK_URL` points to CF-proxied domain. Worker has no `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET`. Cloudflare Access blocks the request.
+
+**Fix applied (pending activation):**
+1. `~/.local/video-orchestrator/worker/video_worker.py` — added CF Access header injection when `CF_ACCESS_CLIENT_ID` + `CF_ACCESS_CLIENT_SECRET` are set in env.
+2. `~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist` — added placeholder keys `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`.
+
+**Required manual step:** Create a Cloudflare Access service token for the VO worker:
+1. Cloudflare Zero Trust → Access → Service Auth → Service Tokens → Create token
+2. Name: `video-orchestrator-worker`  
+3. Copy Client ID + Client Secret
+4. Replace `PLACEHOLDER_CF_ACCESS_CLIENT_ID` and `PLACEHOLDER_CF_ACCESS_CLIENT_SECRET` in `~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist`
+5. Reload: `launchctl unload ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist && launchctl load ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist`
+6. Test: `vo queue post --video /tmp/vo_norm_genesis_noah/landscape_1920x1080_16x9.mp4 --platform youtube --account 303e91f9 --title "Test"`
+
+**Also needed:** YouTube OAuth token for `@says-the-bible` — even with n8n reachable, the adapter will fail if no OAuth token is stored in keychain or configured in n8n. The n8n workflow must have the YouTube OAuth credential wired.
+
+**Guardrails preserved:** Brain Console and Brain Core remain read-only. No secrets in repo. Worker plist has placeholders, not real values.
