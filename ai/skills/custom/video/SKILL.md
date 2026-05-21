@@ -466,6 +466,33 @@ ffmpeg -i narration.wav ... [waveform filter] ... -i background.jpg output.mp4
 
 Or simpler: just overlay audio on still (same as narrated slideshow).
 
+#### C1e. Screen recording (✅ Phase 3 — live)
+
+Browser-session capture via Playwright + FFmpeg mux with optional narration. For software tutorials, product demos, UI walkthroughs.
+
+**CLI:**
+```bash
+# Direct (synchronous)
+~/.local/video-orchestrator/.venv/bin/python3 ~/.local/video-orchestrator/scripts/screen_record.py \
+  https://example.com /tmp/output.mp4 [--script actions.json] [--narration voice.wav]
+
+# Queued (worker picks up)
+~/.local/video-orchestrator/.venv/bin/python3 ~/.local/video-orchestrator/scripts/screen_record.py \
+  --queue https://example.com /tmp/output.mp4 [--script actions.json]
+```
+
+**actions.json format:**
+```json
+[
+  {"type": "wait",  "ms": 2000},
+  {"type": "click", "selector": "#btn"},
+  {"type": "type",  "selector": "#field", "text": "hello"},
+  {"type": "scroll","y": 300}
+]
+```
+
+Output: 1280×720 MP4. Default headless. Combine with C3/C4 for platform packaging.
+
 #### C1f. UGC / E-commerce product video
 
 Product name + description (+ optional product image) → vertical 9:16 MP4 for TikTok/Reels/Shorts.
@@ -514,7 +541,7 @@ ffmpeg -i ugc_video.mp4 -vf subtitles=captions.srt ugc_video_captioned.mp4
 Platforms: TikTok, Instagram Reels, YouTube Shorts. Stagger posts 30min+ apart.
 Format key: `vertical_1080x1920_9x16` from `format-specs.json`.
 
-#### C1z. Format normalization (design — Phase 3 implementation)
+#### C1z. Format normalization (✅ Phase 3 — live)
 
 Generate a **master render** (1920×1080 16:9) once, then derive all platform variants in parallel.
 
@@ -526,9 +553,21 @@ Master → landscape_1920x1080_16x9  (YouTube, LinkedIn)
        → lightweight_1280x720_16x9 (Facebook, X)
 ```
 
-Load conversion filters from `~/.config/video-orchestrator/format-specs.json`. Apply `ffmpeg_notes` per format key. Always verify center-safe crop before publishing vertical from landscape source (faces and text must stay in center 9:16 zone).
+Load conversion filters from `~/.config/video-orchestrator/format-specs.json`. Always verify center-safe crop before publishing vertical from landscape source.
 
-**Phase 3 implementation note:** Parallel FFmpeg conversion workers + job queue will automate this. Until Phase 3 ships, run conversions sequentially via `/ffmpeg`.
+**CLI (direct, offline):**
+```bash
+~/.local/video-orchestrator/.venv/bin/python3 ~/.local/video-orchestrator/scripts/normalize.py \
+  /path/to/master.mp4 /path/to/output_dir [format_key1 format_key2 ...]
+```
+
+**CLI (queued, worker picks up):**
+```bash
+~/.local/video-orchestrator/.venv/bin/python3 ~/.local/video-orchestrator/scripts/normalize.py \
+  --queue /path/to/master.mp4 /path/to/output_dir
+```
+
+**C1e (Screen recording)** is also live. See C1e section and `~/.local/video-orchestrator/scripts/screen_record.py`.
 
 ### C2. Add intro/outro (optional)
 
@@ -1106,6 +1145,14 @@ You excel at:
 - **Platform specs (deployed):** `~/.config/video-orchestrator/platform-specs.json` — 7 platforms, posting modes, hashtag/description rules, schedule windows (source: `brain/operations/specs/video-orchestrator/platform-specs.json`)
 - **Format specs (deployed):** `~/.config/video-orchestrator/format-specs.json` — 5 format keys with resolution, codec, bitrate, container (source: `brain/operations/specs/video-orchestrator/format-specs.json`)
 - **Platform specs (verify):** Validate current platform requirements at YouTube, TikTok, Instagram, LinkedIn, Facebook, X, Bluesky before each posting cycle — platform rules change
+- **Worker (Phase 3):** `~/.local/video-orchestrator/worker/video_worker.py` — Python daemon, job queue consumer
+- **Normalize CLI (C1z):** `~/.local/video-orchestrator/scripts/normalize.py` — direct or queued parallel format conversion
+- **Screen record CLI (C1e):** `~/.local/video-orchestrator/scripts/screen_record.py` — Playwright → FFmpeg browser recording
+- **Job status CLI:** `~/.local/video-orchestrator/scripts/job_status.py` — queue inspection, enqueue, resume
+- **Python venv:** `~/.local/video-orchestrator/.venv` — activate before running scripts outside launchd
+- **Worker launchd:** `~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist`
+- **DB schema migration:** `brain/operations/database/standalone/video-orchestrator/init/002_phase3_lifecycle.sql`
+- **DB endpoint:** `localhost:5450` (PostgreSQL, `video_orchestrator` database)
 
 ---
 
