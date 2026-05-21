@@ -17,6 +17,7 @@
     radial-gradient(circle at top right, rgba(96, 165, 250, 0.08), transparent 28%),
     radial-gradient(circle at top left, rgba(168, 85, 247, 0.06), transparent 30%),
     var(--background-primary);
+  /* ── Color tokens ── */
   --bc-card: color-mix(in srgb, var(--background-secondary) 92%, transparent);
   --bc-card-hover: color-mix(in srgb, var(--background-secondary) 82%, var(--interactive-accent) 18%);
   --bc-border: color-mix(in srgb, var(--background-modifier-border) 76%, transparent);
@@ -28,6 +29,10 @@
   --bc-red: #fb7185;
   --bc-blue: #60a5fa;
   --bc-purple: #a78bfa;
+  /* ── Global design tokens ── */
+  --bc-gap: 12px;        /* gap between cards in every grid */
+  --bc-radius: 6px;      /* border-radius for every card/panel */
+  --bc-pad: 12px 14px;   /* inner padding for every card body */
 }
 
 .brain-console,
@@ -57,18 +62,17 @@
   flex: 1 1 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 14px 18px 18px;
+  padding: 16px 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--bc-gap);
   min-height: 0;
 }
 
 /* ── Command bar ── */
-/* .bc-cmd-bar is kept as a no-op for any legacy references */
 .bc-cmd-bar { display: none; }
 
-/* Top identity row: wordmark + dot on left, version + refresh on right */
+/* Top identity row */
 .bc-cmd-top {
   display: flex;
   align-items: center;
@@ -111,7 +115,7 @@
   background: var(--bc-red);
 }
 
-/* Tab row: full-width row below the identity row, all tabs visible */
+/* Tab row: full-width, all tabs visible */
 .bc-cmd-nav {
   display: flex;
   align-items: center;
@@ -171,7 +175,6 @@
   min-width: 0;
 }
 
-
 .bc-cmd-right {
   display: flex;
   align-items: center;
@@ -193,7 +196,7 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   border: 1px solid var(--bc-border);
   background: transparent;
   color: var(--text-muted);
@@ -207,7 +210,7 @@
   background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
 }
 
-/* kept for backward compat with any card that still uses these */
+/* kept for backward compat */
 .brain-console__native-header,
 .brain-console__hero {
   display: none;
@@ -258,15 +261,15 @@
 .bc-kpi-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
+  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
 
 .bc-stat-card {
-  padding: 11px 13px 10px;
+  padding: var(--bc-pad);
   border: 1px solid var(--bc-border);
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   background: var(--bc-card);
   min-width: 0;
   display: flex;
@@ -315,7 +318,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--bc-border);
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   background: var(--bc-card);
   overflow: hidden;
   min-width: 0;
@@ -330,7 +333,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 14px 8px;
+  padding: var(--bc-pad);
   border-bottom: 1px solid var(--bc-border);
 }
 
@@ -342,7 +345,7 @@
 }
 
 .bc-premium-card-body {
-  padding: 10px 14px 12px;
+  padding: var(--bc-pad);
   flex: 1;
 }
 
@@ -410,8 +413,8 @@
   white-space: nowrap;
   max-width: 220px;
   white-space: normal;
-  padding: 6px 9px;
-  border-radius: 7px;
+  padding: var(--bc-pad);
+  border-radius: var(--bc-radius);
   border: 1px solid var(--bc-border);
   background: color-mix(in srgb, var(--background-secondary) 95%, var(--background-primary) 5%);
   color: var(--text-normal);
@@ -434,7 +437,7 @@
 
 .bc-popover-btn {
   padding: 4px 9px;
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   border: 1px solid var(--bc-border);
   background: var(--bc-card);
   color: var(--text-muted);
@@ -455,8 +458,8 @@
   min-width: 200px;
   max-height: 320px;
   overflow-y: auto;
-  padding: 10px;
-  border-radius: 10px;
+  padding: var(--bc-pad);
+  border-radius: var(--bc-radius);
   border: 1px solid var(--bc-border);
   background: color-mix(in srgb, var(--background-secondary) 95%, var(--background-primary) 5%);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
@@ -478,10 +481,11 @@
 .bc-scroll-panel::-webkit-scrollbar { width: 4px; }
 .bc-scroll-panel::-webkit-scrollbar-thumb { background: var(--bc-border); border-radius: 2px; }
 
+/* ── Card grids ── */
 .brain-console__dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 16px;
+  gap: var(--bc-gap);
   align-items: stretch;
   width: 100%;
   min-width: 0;
@@ -490,7 +494,7 @@
 .brain-console__apps-page {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
@@ -503,23 +507,23 @@
 .brain-console__apps-summary-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
-  gap: 8px;
+  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
 
 .brain-console__apps-summary-stat {
   min-width: 0;
-  padding: 7px 9px;
+  padding: var(--bc-pad);
   border: 1px solid var(--bc-border);
-  border-radius: 8px;
+  border-radius: var(--bc-radius);
   background: var(--bc-card);
 }
 
 .brain-console__apps-operations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  gap: 8px;
+  gap: var(--bc-gap);
   align-items: stretch;
   width: 100%;
   min-width: 0;
@@ -529,7 +533,7 @@
 .brain-console__apps-lower {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 10px;
+  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
@@ -537,38 +541,38 @@
 .brain-console__local-apps-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
 
 .brain-console__local-apps-grid--compact {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  gap: var(--bc-gap);
 }
 
+/* ── App cards (same design as all other cards) ── */
 .brain-console__local-app-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
-  padding: 16px;
+  padding: var(--bc-pad);
   border: 1px solid var(--bc-border);
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--bc-card), color-mix(in srgb, var(--bc-card) 72%, var(--background-primary) 28%));
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.08);
+  border-radius: var(--bc-radius);
+  background: var(--bc-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .brain-console__local-app-card--compact {
-  padding: 12px;
+  padding: var(--bc-pad);
   gap: 8px;
 }
 
 .brain-console__local-app-card--micro {
   min-height: 130px;
-  padding: 9px;
+  padding: var(--bc-pad);
   gap: 7px;
-  border-radius: 10px;
 }
 
 .brain-console__app-card-top {
@@ -627,7 +631,7 @@
 .brain-console__local-app-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -641,7 +645,7 @@
   min-width: 0;
   padding: 4px 5px;
   border: 1px solid var(--bc-border);
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   background: var(--interactive-normal);
   color: var(--text-normal);
   font-size: 10px;
@@ -687,9 +691,9 @@
 .brain-console__local-app-result {
   display: grid;
   gap: 2px;
-  padding: 6px 8px;
+  padding: var(--bc-pad);
   border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--bc-border));
-  border-radius: 8px;
+  border-radius: var(--bc-radius);
   background: color-mix(in srgb, var(--background-secondary) 76%, var(--bc-card));
   color: var(--text-muted);
   font-size: 9px;
@@ -705,9 +709,9 @@
   gap: 6px;
   min-width: 0;
   margin: 8px 0;
-  padding: 8px;
+  padding: var(--bc-pad);
   border: 1px solid color-mix(in srgb, var(--interactive-accent) 18%, var(--bc-border));
-  border-radius: 8px;
+  border-radius: var(--bc-radius);
   background: color-mix(in srgb, var(--background-secondary) 80%, var(--bc-card));
 }
 
@@ -754,10 +758,10 @@
   gap: 10px;
   width: 100%;
   min-width: 0;
-  padding: 16px;
+  padding: var(--bc-pad);
   border: 1px solid var(--bc-border);
-  border-radius: 16px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--bc-card) 88%, var(--interactive-accent) 12%), var(--bc-card));
+  border-radius: var(--bc-radius);
+  background: color-mix(in srgb, var(--bc-card) 88%, var(--interactive-accent) 12%);
 }
 
 .brain-console__section-heading-wrap {
@@ -781,26 +785,27 @@
   line-height: 1.4;
 }
 
+/* ── Standard card (used across all tabs) ── */
 .brain-console__card,
 .brain-console__card--grouped {
   min-width: 0;
   border: 1px solid var(--bc-border);
-  border-radius: 6px;
-  background: linear-gradient(180deg, var(--bc-card), color-mix(in srgb, var(--bc-card) 72%, var(--background-primary) 28%));
+  border-radius: var(--bc-radius);
+  background: var(--bc-card);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .brain-console__card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+  gap: 10px;
+  padding: var(--bc-pad);
   overflow: hidden;
 }
 
 .brain-console__card:hover {
   border-color: var(--bc-border-strong);
-  background: linear-gradient(180deg, var(--bc-card-hover), color-mix(in srgb, var(--bc-card-hover) 72%, var(--background-primary) 28%));
+  background: var(--bc-card-hover);
 }
 
 .brain-console__card--wide,
@@ -853,14 +858,14 @@
 .brain-console__stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
+  gap: var(--bc-gap);
   min-width: 0;
 }
 
 .brain-console__stat {
   min-width: 0;
-  padding: 10px;
-  border-radius: 12px;
+  padding: var(--bc-pad);
+  border-radius: var(--bc-radius);
   border: 1px solid var(--bc-border);
   background: color-mix(in srgb, var(--background-primary) 72%, var(--bc-card) 28%);
 }
@@ -984,7 +989,7 @@
 
 .brain-console__list {
   display: grid;
-  gap: 8px;
+  gap: var(--bc-gap);
   min-width: 0;
 }
 
@@ -993,9 +998,9 @@
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
-  padding: 8px 10px;
+  padding: var(--bc-pad);
   border: 1px solid var(--bc-border);
-  border-radius: 12px;
+  border-radius: var(--bc-radius);
   background: color-mix(in srgb, var(--background-primary) 76%, var(--bc-card) 24%);
 }
 
@@ -1052,14 +1057,14 @@
 .brain-console__grouped-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 16px;
+  gap: var(--bc-gap);
 }
 
 .brain-console__empty-state {
   display: grid;
   gap: 4px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: var(--bc-pad);
+  border-radius: var(--bc-radius);
   border: 1px dashed var(--bc-border);
   background: color-mix(in srgb, var(--background-primary) 84%, var(--bc-card) 16%);
 }
@@ -1078,7 +1083,7 @@
 .brain-console__probot-map,
 .brain-console__app-list {
   display: grid;
-  gap: 8px;
+  gap: var(--bc-gap);
   min-width: 0;
 }
 
@@ -1087,7 +1092,7 @@
 .brain-console__app-item {
   min-width: 0;
   border: 1px solid var(--bc-border);
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   background: color-mix(in srgb, var(--background-primary) 74%, var(--bc-card) 26%);
 }
 
@@ -1095,7 +1100,7 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 10px;
+  padding: var(--bc-pad);
 }
 
 .brain-console__pill-label {
@@ -1114,7 +1119,7 @@
   grid-template-columns: 1fr auto;
   gap: 8px;
   align-items: center;
-  padding: 10px;
+  padding: var(--bc-pad);
 }
 
 .brain-console__probot-name,
@@ -1128,12 +1133,12 @@
 .brain-console__offline-banner,
 .brain-console__warning,
 .brain-console__diagnostics {
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
 }
 
 .brain-console__diagnostics {
-  margin-top: 8px;
-  padding: 12px;
+  margin-top: var(--bc-gap);
+  padding: var(--bc-pad);
   border: 1px solid var(--bc-border);
   background: color-mix(in srgb, var(--background-secondary) 78%, transparent);
   color: var(--text-muted);
@@ -1149,9 +1154,9 @@
 .brain-console__diagnostics-item {
   display: grid;
   gap: 2px;
-  padding: 8px;
+  padding: var(--bc-pad);
   margin-bottom: 6px;
-  border-radius: 6px;
+  border-radius: var(--bc-radius);
   border: 1px solid var(--bc-border);
   background: color-mix(in srgb, var(--background-primary) 80%, var(--bc-card) 20%);
 }
@@ -1199,6 +1204,7 @@
     display: none;
   }
 }
+
 .brain-console__link-button {
   border: 0;
   background: transparent;
@@ -1217,28 +1223,32 @@
 
 /* ── System metrics banner ── */
 .bc-metrics-wrapper {
-  padding: 8px 14px;
+  padding: 8px 18px;
   border-bottom: 1px solid var(--bc-border);
   flex-shrink: 0;
 }
+
 .bc-metrics-banner {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 9px;
+  gap: var(--bc-gap);
 }
+
 .bc-metrics-offline {
   grid-template-columns: 1fr;
   color: var(--text-muted);
   font-size: 12px;
   padding: 8px 0;
 }
+
 .bc-mc {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 9px 12px;
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+  padding: var(--bc-pad);
   min-width: 0;
 }
+
 .bc-mc-label {
   font-size: 9px;
   font-weight: 600;
@@ -1247,6 +1257,7 @@
   color: var(--text-muted);
   margin-bottom: 3px;
 }
+
 .bc-mc-value {
   font-size: 17px;
   font-weight: 600;
@@ -1254,6 +1265,7 @@
   letter-spacing: -.5px;
   line-height: 1.2;
 }
+
 .bc-mc-sub {
   font-size: 10px;
   color: var(--text-muted);
@@ -1262,6 +1274,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .bc-mc-badge {
   font-size: 8px;
   font-weight: 600;
@@ -1272,6 +1285,7 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
 .bc-bar {
   height: 3px;
   background: rgba(255,255,255,0.07);
@@ -1279,42 +1293,50 @@
   margin-top: 6px;
   overflow: hidden;
 }
+
 .bc-bar-fill {
   height: 100%;
   border-radius: 2px;
   transition: width 0.3s ease;
 }
+
 @media (max-width: 900px) {
   .bc-metrics-banner { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
 @media (max-width: 600px) {
   .bc-metrics-banner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* ── Accounts & Credentials section ──────────────────────────────────────── */
+/* ── Accounts & Credentials section ── */
 .bc-accounts-header {
-  margin-bottom: 16px;
+  margin-bottom: var(--bc-gap);
 }
+
 .bc-accounts-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-normal);
   margin: 0 0 4px;
 }
+
 .bc-accounts-subtitle {
   font-size: 11px;
   color: var(--text-muted);
   margin: 0;
 }
+
 .bc-accounts-project {
   margin-bottom: 20px;
 }
+
 .bc-accounts-project-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: var(--bc-gap);
 }
+
 .bc-accounts-project-name {
   font-size: 12px;
   font-weight: 600;
@@ -1322,41 +1344,49 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+
 .bc-accounts-platform {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  margin-bottom: 8px;
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+  margin-bottom: var(--bc-gap);
   overflow: hidden;
 }
+
 .bc-accounts-platform-top {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  padding: var(--bc-pad);
+  border-bottom: 1px solid var(--bc-border);
   background: rgba(255,255,255,0.02);
 }
+
 .bc-accounts-platform-name {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-normal);
   flex: 1;
 }
+
 .bc-accounts-table {
   width: 100%;
   border-collapse: collapse;
 }
+
 .bc-accounts-row {
   border-bottom: 1px solid rgba(255,255,255,0.04);
 }
+
 .bc-accounts-row:last-child { border-bottom: none; }
 .bc-accounts-row--set .bc-accounts-key-label { color: var(--text-normal); }
+
 .bc-accounts-label-cell {
-  padding: 8px 12px;
+  padding: var(--bc-pad);
   width: 220px;
   vertical-align: middle;
 }
+
 .bc-accounts-key-label {
   display: block;
   font-size: 11px;
@@ -1364,6 +1394,7 @@
   color: var(--text-muted);
   font-family: var(--font-monospace);
 }
+
 .bc-accounts-required-badge {
   display: inline-block;
   font-size: 9px;
@@ -1377,6 +1408,7 @@
   margin-left: 5px;
   vertical-align: middle;
 }
+
 .bc-accounts-hint {
   display: block;
   font-size: 10px;
@@ -1384,35 +1416,41 @@
   margin-top: 2px;
   font-style: italic;
 }
+
 .bc-accounts-status-cell {
   width: 28px;
   text-align: center;
   vertical-align: middle;
   padding: 8px 4px;
 }
+
 .bc-accounts-set-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
+
 .bc-accounts-set-dot--ok        { background: var(--bc-green, #22c55e); }
 .bc-accounts-set-dot--unset     { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); }
 .bc-accounts-set-dot--placeholder { background: var(--bc-yellow, #eab308); }
+
 .bc-accounts-input-cell {
   padding: 6px 12px;
   vertical-align: middle;
 }
+
 .bc-accounts-input-wrap {
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
 .bc-accounts-input {
   flex: 1;
   background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
   padding: 4px 8px;
   font-size: 11px;
   color: var(--text-normal);
@@ -1420,15 +1458,17 @@
   min-width: 0;
   height: 26px;
 }
+
 .bc-accounts-input:focus {
   outline: none;
   border-color: var(--interactive-accent);
 }
+
 .bc-accounts-save-btn {
   background: var(--interactive-accent);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--bc-radius);
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 600;
@@ -1437,21 +1477,24 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
 .bc-accounts-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .bc-accounts-save-btn:hover:not(:disabled) { filter: brightness(1.1); }
+
 .bc-accounts-feedback {
   font-size: 11px;
   flex-shrink: 0;
 }
+
 .bc-accounts-feedback--ok    { color: var(--bc-green, #22c55e); }
 .bc-accounts-feedback--warn  { color: var(--bc-yellow, #eab308); }
 .bc-accounts-feedback--error { color: var(--bc-red, #ef4444); }
 
-/* ── Overview section layout ───────────────────────────────────────────── */
+/* ── Overview section layout ── */
 .bc-overview-focus-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--bc-gap);
   align-items: stretch;
   min-width: 0;
 }
@@ -1459,16 +1502,16 @@
 .bc-overview-mig-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: var(--bc-gap);
   align-items: stretch;
   min-width: 0;
 }
 
 .bc-overview-card {
-  background: var(--bc-card, var(--background-secondary));
-  border: 1px solid var(--bc-border, var(--background-modifier-border));
-  border-radius: 6px;
-  padding: 10px 12px;
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+  padding: var(--bc-pad);
   min-width: 0;
   height: 100%;
   display: flex;
@@ -1523,7 +1566,7 @@
 }
 
 .bc-overview-prod-row--next {
-  border-top: 1px solid var(--bc-border, var(--background-modifier-border));
+  border-top: 1px solid var(--bc-border);
   padding-top: 5px;
   margin-top: 2px;
 }
@@ -1551,13 +1594,12 @@
   min-width: 0;
 }
 
-
 @media (max-width: 600px) {
   .bc-overview-focus-grid { grid-template-columns: 1fr; }
   .bc-overview-mig-grid   { grid-template-columns: 1fr; }
 }
 
-/* ── Overflow containment (defensive) ───────────────────────────────────── */
+/* ── Overflow containment (defensive) ── */
 .brain-console,
 .brain-console * {
   box-sizing: border-box;
