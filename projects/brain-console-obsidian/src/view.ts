@@ -2216,14 +2216,19 @@ function renderVOLivePipelineCard(vo: BrainCoreInfraPipelinesStatus['videoOrches
     el.createEl('div', { cls: 'brain-console__list-sub', text: 'Status unavailable' });
     return el;
   }
+  const dead = vo.queueDepth?.dead ?? 0;
   renderCompactStatGrid(el, [
     { label: 'Status', value: vo.status },
     { label: 'Pending', value: String(vo.queueDepth?.pending ?? 0) },
     { label: 'Running', value: String(vo.queueDepth?.running ?? 0) },
     { label: 'Failed', value: String(vo.queueDepth?.failed ?? 0) },
+    { label: 'Dead', value: String(dead) },
     { label: 'Active accounts', value: String(vo.activeAccounts ?? 0) },
-    { label: 'Last job', value: vo.lastJobAt?.slice(0, 19) ?? '—' },
+    { label: 'Last job', value: vo.lastJobAt ? formatRelativeTime(vo.lastJobAt) : '—' },
   ]);
+  if (dead > 0) {
+    el.createEl('div', { cls: 'brain-console__warning', text: `${dead} dead jobs — run: vo jobs to inspect` });
+  }
   return el;
 }
 

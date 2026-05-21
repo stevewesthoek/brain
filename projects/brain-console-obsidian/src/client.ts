@@ -7705,7 +7705,7 @@ export interface BrainCoreInfraStbStatus {
 
 export interface BrainCoreInfraVOPipelineSummary {
   status: 'active' | 'error' | 'unknown';
-  queueDepth: { pending: number; running: number; failed: number };
+  queueDepth: { pending: number; running: number; failed: number; dead?: number };
   activeAccounts: number;
   lastJobAt: string | null;
   lastChecked: string;

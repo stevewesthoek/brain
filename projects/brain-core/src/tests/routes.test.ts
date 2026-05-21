@@ -2650,3 +2650,48 @@ test('non-local requests are rejected', async () => {
   assert.equal(response.statusCode, 403);
   assert.equal(body.error.code, 'forbidden_non_local_request');
 });
+
+test('GET /infra/video-orchestrator/normalize-history returns shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/normalize-history' });
+  const body = JSON.parse(response.body) as { ok: boolean; jobs: unknown[]; totalCount: number };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(typeof body.ok, 'boolean', 'ok must be boolean');
+  assert.ok(Array.isArray(body.jobs), 'jobs must be an array');
+  assert.equal(typeof body.totalCount, 'number', 'totalCount must be a number');
+});
+
+test('GET /infra/video-orchestrator/normalize-history respects limit param', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/normalize-history?limit=5' });
+  const body = JSON.parse(response.body) as { ok: boolean; jobs: unknown[] };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(body.jobs.length <= 5, 'jobs.length must respect limit');
+});
+
+test('GET /infra/video-orchestrator/manual-queue returns shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/manual-queue' });
+  const body = JSON.parse(response.body) as { ok: boolean; jobs: unknown[]; totalCount: number };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(typeof body.ok, 'boolean', 'ok must be boolean');
+  assert.ok(Array.isArray(body.jobs), 'jobs must be an array');
+  assert.equal(typeof body.totalCount, 'number', 'totalCount must be a number');
+});
+
+test('GET /infra/video-orchestrator/worker-config returns shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/worker-config' });
+  const body = JSON.parse(response.body) as { ok: boolean; manualActionsRequired: unknown[] };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(typeof body.ok, 'boolean', 'ok must be boolean');
+  assert.ok(Array.isArray(body.manualActionsRequired), 'manualActionsRequired must be an array');
+});
+
+test('GET /infra/video-orchestrator/worker-config does not expose CF Access secrets', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/worker-config' });
+  const body = response.body;
+
+  assert.ok(!body.includes('CF_ACCESS_CLIENT_SECRET='), 'must not expose raw secret');
+  assert.ok(!body.includes('PLACEHOLDER_CF_ACCESS_CLIENT_SECRET'), 'must not expose placeholder value');
+});

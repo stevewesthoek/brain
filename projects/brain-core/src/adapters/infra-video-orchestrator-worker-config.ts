@@ -71,10 +71,17 @@ function checkN8nReachable(webhookUrl: string): { reachable: boolean | null; err
   if (!webhookUrl) return { reachable: null, error: 'VO_N8N_WEBHOOK_URL not configured' };
   try {
     // Use curl with a 3s timeout for a quick HEAD check (no POST)
-    execFileSync('curl', ['-s', '-o', '/dev/null', '-w', '%{http_code}', '--max-time', '3', '--head', webhookUrl], {
-      encoding: 'utf8', timeout: 5000,
-    });
-    return { reachable: true, error: null };
+    const statusCode = execFileSync(
+      'curl',
+      ['-s', '-o', '/dev/null', '-w', '%{http_code}', '--max-time', '3', '--head', webhookUrl],
+      { encoding: 'utf8', timeout: 5000 },
+    ).trim();
+    const code = parseInt(statusCode, 10);
+    // 403 = CF Access blocking (not configured) — treat as unreachable
+    if (code === 403) return { reachable: false, error: `HTTP ${code} — Cloudflare Access blocked (service token not configured)` };
+    if (code === 0 || isNaN(code)) return { reachable: false, error: `curl returned empty status code` };
+    // 2xx, 3xx, 4xx (other than 403), 5xx all mean the host is reachable
+    return { reachable: true, error: code >= 400 ? `HTTP ${code}` : null };
   } catch (e) {
     return {
       reachable: false,
