@@ -7832,3 +7832,54 @@ export interface BrainCoreSystemMetrics {
 export function readBrainCoreSystemMetrics(baseUrl: string): Promise<HttpResult<BrainCoreSystemMetrics>> {
   return fetchJson<BrainCoreSystemMetrics>(normalizeBaseUrl(baseUrl), '/system/metrics');
 }
+
+export interface BrainCoreCredentialEntry {
+  key: string;
+  label: string;
+  type: 'app_id' | 'secret' | 'token' | 'board_id' | 'api_key' | 'url' | 'other';
+  required: boolean;
+  hint?: string;
+  isSet: boolean;
+  hasPlaceholder: boolean;
+}
+
+export interface BrainCoreCredentialPlatform {
+  platformId: string;
+  platformName: string;
+  credentials: BrainCoreCredentialEntry[];
+  allRequiredSet: boolean;
+}
+
+export interface BrainCoreCredentialListResponse {
+  projectId: string;
+  envFilePath: string;
+  platforms: BrainCoreCredentialPlatform[];
+  summary: {
+    totalRequired: number;
+    totalRequiredSet: number;
+    totalOptional: number;
+    totalOptionalSet: number;
+  };
+}
+
+export interface BrainCoreCredentialSetResult {
+  ok: boolean;
+  projectId: string;
+  key: string;
+  action?: 'created' | 'updated';
+  error?: string;
+}
+
+export function readBrainCoreCredentials(baseUrl: string, projectId: string): Promise<HttpResult<BrainCoreCredentialListResponse>> {
+  return fetchJson<BrainCoreCredentialListResponse>(normalizeBaseUrl(baseUrl), `/credentials/${encodeURIComponent(projectId)}`);
+}
+
+export async function setBrainCoreCredential(baseUrl: string, projectId: string, key: string, value: string): Promise<BrainCoreCredentialSetResult> {
+  const url = `${normalizeBaseUrl(baseUrl)}/credentials/${encodeURIComponent(projectId)}/set?key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    return (await res.json()) as BrainCoreCredentialSetResult;
+  } catch (err) {
+    return { ok: false, projectId, key, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}

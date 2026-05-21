@@ -301,6 +301,8 @@ import {
   readBrainCoreVOJobs,
   readBrainCoreVOPostingInstructions,
   readBrainCoreSystemMetrics,
+  readBrainCoreCredentials,
+  setBrainCoreCredential,
   type BrainCoreVOAccountsResponse,
   type BrainCoreVOAuthStatusResponse,
   type BrainCoreVOJobsResponse,
@@ -315,6 +317,7 @@ import {
   type BrainCoreInfraStudioResponse,
   type BrainCoreInfraVOStatusResponse,
   type BrainCoreSystemMetrics,
+  type BrainCoreCredentialListResponse,
 } from './client.js';
 import {
   deriveDashboardSnapshot,
@@ -324,7 +327,7 @@ import {
   type DashboardSnapshot,
 } from './dashboard.js';
 
-export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'studio' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery';
+export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'studio' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts';
 
 const localAppPendingActions = new Map<string, string>();
 
@@ -489,6 +492,7 @@ export interface BrainConsoleViewState {
   voAuthStatus?: BrainCoreVOAuthStatusResponse;
   voJobs?: BrainCoreVOJobsResponse;
   systemMetrics?: BrainCoreSystemMetrics;
+  credentialsByProject?: Record<string, BrainCoreCredentialListResponse>;
 }
 
 export async function loadBrainConsoleViewState(
@@ -647,14 +651,15 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVOAuthStatus(baseUrl),  // 147
     readBrainCoreVOJobs(baseUrl),        // 148
     readBrainCoreSystemMetrics(baseUrl), // 149
+    readBrainCoreCredentials(baseUrl, 'says-the-bible'), // 150
   ]);
 
   const settledValues = withSafeEndpointPadding(
     results.map((result) => result.status === 'fulfilled' ? result.value : { value: undefined, error: result.reason }),
-    149,
+    150,
   );
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult] = settledValues as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult, stbCredentialsResult] = settledValues as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -847,6 +852,9 @@ export async function loadBrainConsoleViewState(
     voAuthStatus: voAuthStatusResult.value as BrainCoreVOAuthStatusResponse | undefined,
     voJobs: voJobsResult.value as BrainCoreVOJobsResponse | undefined,
     systemMetrics: systemMetricsResult.value as BrainCoreSystemMetrics | undefined,
+    credentialsByProject: stbCredentialsResult.value
+      ? { 'says-the-bible': stbCredentialsResult.value as BrainCoreCredentialListResponse }
+      : undefined,
     warning: normalized.warning ?? normalized.error,
     offline,
     refreshedAt: new Date(),
@@ -887,6 +895,7 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'posts', label: 'Posts', icon: '✦' },
   { id: 'agents', label: 'Agents', icon: '◈' },
   { id: 'recovery', label: 'Recovery', icon: '⚠' },
+  { id: 'accounts', label: 'Accounts', icon: '🔑' },
 ];
 
 function metricsSeverityColor(pct: number): string {
@@ -1153,6 +1162,9 @@ function renderActiveSectionContent(
         break;
       case 'recovery':
         renderRecoverySection(content, state, snapshot);
+        break;
+      case 'accounts':
+        renderAccountsSection(content, state, settings);
         break;
     }
   } catch (error) {
@@ -6955,4 +6967,118 @@ function renderBrainCoreConnectionDiagnosticsCard(state: BrainConsoleViewState):
 
   container.appendChild(renderSafetyLabel('Read-only · Connection diagnostics only'));
   return container;
+}
+
+function renderAccountsSection(
+  content: HTMLElement,
+  state: BrainConsoleViewState,
+  settings: BrainConsoleSettings,
+): void {
+  const brainCoreUrl = state.brainCoreUrl ?? settings.brainCoreUrl ?? '';
+
+  const header = content.createDiv({ cls: 'bc-accounts-header' });
+  header.createEl('h2', { cls: 'bc-accounts-title', text: 'Accounts & Credentials' });
+  header.createEl('p', { cls: 'bc-accounts-subtitle', text: 'Manage platform credentials. Values are written directly to each project\'s env file.' });
+
+  const credMap = state.credentialsByProject ?? {};
+  const projectIds = Object.keys(credMap);
+
+  if (projectIds.length === 0) {
+    content.createEl('p', { cls: 'brain-console__empty', text: 'No credential data available. Brain Core must be online.' });
+    return;
+  }
+
+  for (const projectId of projectIds) {
+    const data = credMap[projectId];
+    if (!data) continue;
+
+    const projectBlock = content.createDiv({ cls: 'bc-accounts-project' });
+    const projectHeader = projectBlock.createDiv({ cls: 'bc-accounts-project-header' });
+    const { totalRequired, totalRequiredSet } = data.summary;
+    const allOk = totalRequired > 0 && totalRequiredSet === totalRequired;
+    const tone = allOk ? 'ok' : totalRequiredSet > 0 ? 'warn' : 'danger';
+    projectHeader.createEl('span', { cls: 'bc-accounts-project-name', text: projectId });
+    createStatusChip(projectHeader, `${totalRequiredSet}/${totalRequired} required`, tone);
+
+    for (const platform of data.platforms) {
+      const platformCard = projectBlock.createDiv({ cls: 'bc-accounts-platform' });
+      const platformTop = platformCard.createDiv({ cls: 'bc-accounts-platform-top' });
+      platformTop.createEl('span', { cls: 'bc-accounts-platform-name', text: platform.platformName });
+      createStatusChip(platformTop, platform.allRequiredSet ? 'Ready' : 'Incomplete', platform.allRequiredSet ? 'ok' : 'warn');
+
+      const table = platformCard.createEl('table', { cls: 'bc-accounts-table' });
+      const tbody = table.createEl('tbody');
+
+      for (const cred of platform.credentials) {
+        const tr = tbody.createEl('tr', { cls: `bc-accounts-row${cred.isSet && !cred.hasPlaceholder ? ' bc-accounts-row--set' : ''}` });
+
+        const labelTd = tr.createEl('td', { cls: 'bc-accounts-label-cell' });
+        labelTd.createEl('span', { cls: 'bc-accounts-key-label', text: cred.label });
+        if (cred.required) labelTd.createEl('span', { cls: 'bc-accounts-required-badge', text: 'required' });
+        if (cred.hint) labelTd.createEl('span', { cls: 'bc-accounts-hint', text: cred.hint });
+
+        const statusTd = tr.createEl('td', { cls: 'bc-accounts-status-cell' });
+        if (cred.isSet && !cred.hasPlaceholder) {
+          const dot = statusTd.createEl('span', { cls: 'bc-accounts-set-dot bc-accounts-set-dot--ok' });
+          dot.title = 'Set';
+        } else if (cred.hasPlaceholder) {
+          const dot = statusTd.createEl('span', { cls: 'bc-accounts-set-dot bc-accounts-set-dot--placeholder' });
+          dot.title = 'Placeholder value';
+        } else {
+          const dot = statusTd.createEl('span', { cls: 'bc-accounts-set-dot bc-accounts-set-dot--unset' });
+          dot.title = 'Not set';
+        }
+
+        const inputTd = tr.createEl('td', { cls: 'bc-accounts-input-cell' });
+        const inputWrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
+        const input = inputWrap.createEl('input', { cls: 'bc-accounts-input' });
+        input.type = cred.type === 'secret' || cred.type === 'token' || cred.type === 'api_key' ? 'password' : 'text';
+        input.placeholder = cred.isSet && !cred.hasPlaceholder ? '••••••• (set — enter new value to change)' : `Enter ${cred.label}`;
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('data-key', cred.key);
+        input.setAttribute('data-project', projectId);
+
+        const saveBtn = inputWrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Save' });
+        const feedbackEl = inputWrap.createEl('span', { cls: 'bc-accounts-feedback' });
+
+        saveBtn.addEventListener('click', async () => {
+          const val = input.value.trim();
+          if (!val) {
+            feedbackEl.textContent = 'Enter a value first.';
+            feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--warn';
+            return;
+          }
+          saveBtn.disabled = true;
+          saveBtn.textContent = '…';
+          feedbackEl.textContent = '';
+          try {
+            const result = await setBrainCoreCredential(brainCoreUrl, projectId, cred.key, val);
+            if (result.ok) {
+              input.value = '';
+              input.placeholder = '••••••• (set — enter new value to change)';
+              tr.addClass('bc-accounts-row--set');
+              statusTd.empty();
+              const newDot = statusTd.createEl('span', { cls: 'bc-accounts-set-dot bc-accounts-set-dot--ok' });
+              newDot.title = 'Set';
+              feedbackEl.textContent = result.action === 'created' ? 'Saved.' : 'Updated.';
+              feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--ok';
+            } else {
+              feedbackEl.textContent = result.error === 'key_not_allowed' ? 'Key not permitted.' : (result.error ?? 'Save failed.');
+              feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+            }
+          } catch (err) {
+            feedbackEl.textContent = err instanceof Error ? err.message : 'Network error.';
+            feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+          } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+          }
+        });
+
+        input.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter') saveBtn.click();
+        });
+      }
+    }
+  }
 }

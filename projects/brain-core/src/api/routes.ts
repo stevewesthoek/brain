@@ -7,6 +7,7 @@ import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
 import { getPlatform, listPlatforms } from '../adapters/platforms.js';
+import { listProjectCredentials, setProjectCredential } from '../adapters/credentials.js';
 import {
   readPostOrchestratorDraftFixtures,
   readPostDraftReviewQueue,
@@ -1756,6 +1757,12 @@ export async function routeRequest(
         }
       }
 
+      const credListMatch = /^\/credentials\/([^/]+)$/.exec(url.pathname);
+      if (credListMatch) {
+        sendJson(response, 200, listProjectCredentials(decodeURIComponent(credListMatch[1] ?? '')));
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -1767,6 +1774,20 @@ export async function routeRequest(
 }
 
 async function routePostRequest(url: URL, response: ServerResponse): Promise<void> {
+  const credSetMatch = /^\/credentials\/([^/]+)\/set$/.exec(url.pathname);
+  if (credSetMatch) {
+    const projectId = decodeURIComponent(credSetMatch[1] ?? '');
+    const key = url.searchParams.get('key') ?? '';
+    const value = url.searchParams.get('value') ?? '';
+    if (!key) {
+      sendJson(response, 400, { ok: false, projectId, key, error: 'key_required' });
+      return;
+    }
+    const result = setProjectCredential(projectId, key, value);
+    sendJson(response, result.ok ? 200 : result.error === 'key_not_allowed' ? 403 : 400, result);
+    return;
+  }
+
   const voAuthMethodMatch = /^\/infra\/video-orchestrator\/accounts\/([^/]+)\/auth-method$/.exec(url.pathname);
   if (voAuthMethodMatch) {
     const handle = decodeURIComponent(voAuthMethodMatch[1] ?? '');

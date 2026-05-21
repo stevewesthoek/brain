@@ -1280,3 +1280,159 @@
 @media (max-width: 600px) {
   .bc-metrics-banner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ── Accounts & Credentials section ──────────────────────────────────────── */
+.bc-accounts-header {
+  margin-bottom: 16px;
+}
+.bc-accounts-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-normal);
+  margin: 0 0 4px;
+}
+.bc-accounts-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.bc-accounts-project {
+  margin-bottom: 20px;
+}
+.bc-accounts-project-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.bc-accounts-project-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bc-accounts-platform {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.bc-accounts-platform-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: rgba(255,255,255,0.02);
+}
+.bc-accounts-platform-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+  flex: 1;
+}
+.bc-accounts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.bc-accounts-row {
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.bc-accounts-row:last-child { border-bottom: none; }
+.bc-accounts-row--set .bc-accounts-key-label { color: var(--text-normal); }
+.bc-accounts-label-cell {
+  padding: 8px 12px;
+  width: 220px;
+  vertical-align: middle;
+}
+.bc-accounts-key-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+.bc-accounts-required-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bc-yellow, #eab308);
+  background: rgba(234,179,8,0.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.bc-accounts-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint, var(--text-muted));
+  margin-top: 2px;
+  font-style: italic;
+}
+.bc-accounts-status-cell {
+  width: 28px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 4px;
+}
+.bc-accounts-set-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.bc-accounts-set-dot--ok        { background: var(--bc-green, #22c55e); }
+.bc-accounts-set-dot--unset     { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); }
+.bc-accounts-set-dot--placeholder { background: var(--bc-yellow, #eab308); }
+.bc-accounts-input-cell {
+  padding: 6px 12px;
+  vertical-align: middle;
+}
+.bc-accounts-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bc-accounts-input {
+  flex: 1;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  min-width: 0;
+  height: 26px;
+}
+.bc-accounts-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+.bc-accounts-save-btn {
+  background: var(--interactive-accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  height: 26px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.bc-accounts-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.bc-accounts-save-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.bc-accounts-feedback {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.bc-accounts-feedback--ok    { color: var(--bc-green, #22c55e); }
+.bc-accounts-feedback--warn  { color: var(--bc-yellow, #eab308); }
+.bc-accounts-feedback--error { color: var(--bc-red, #ef4444); }

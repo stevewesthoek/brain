@@ -634,6 +634,43 @@ export interface BrainCorePlatformSummary {
   pipelineIds?: string[];
 }
 
+export interface BrainCoreCredentialEntry {
+  key: string;
+  label: string;
+  type: 'app_id' | 'secret' | 'token' | 'board_id' | 'api_key' | 'url' | 'other';
+  required: boolean;
+  hint?: string;
+  isSet: boolean;
+  hasPlaceholder: boolean;
+}
+
+export interface BrainCoreCredentialPlatform {
+  platformId: string;
+  platformName: string;
+  credentials: BrainCoreCredentialEntry[];
+  allRequiredSet: boolean;
+}
+
+export interface BrainCoreCredentialListResponse {
+  projectId: string;
+  envFilePath: string;
+  platforms: BrainCoreCredentialPlatform[];
+  summary: {
+    totalRequired: number;
+    totalRequiredSet: number;
+    totalOptional: number;
+    totalOptionalSet: number;
+  };
+}
+
+export interface BrainCoreCredentialSetResult {
+  ok: boolean;
+  projectId: string;
+  key: string;
+  action?: 'created' | 'updated';
+  error?: string;
+}
+
 export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
