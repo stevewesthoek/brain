@@ -71,7 +71,16 @@ export function readAgentTaskGraph(): BrainCoreAgentTaskGraphSummary {
   const snapshot = readSnapshotFile<AgentLedgerSnapshotFile>(DEFAULT_LEDGER_PATH)?.taskGraph;
 
   if (snapshot) {
-    return snapshot;
+    return {
+      ...snapshot,
+      source: 'snapshot',
+      status: 'snapshot',
+      persistence: {
+        enabled: true,
+        path: DEFAULT_LEDGER_PATH,
+        loadedFromDisk: true,
+      },
+    };
   }
 
   const completedCount = TASK_GRAPH.filter((task) => task.status === 'completed').length;
@@ -143,6 +152,45 @@ export function readAgentLedger(): BrainCoreAgentLedgerSummary {
       loadedFromDisk: false,
     },
   };
+}
+
+export function saveAgentLedgerSnapshot(snapshot: {
+  ledger: BrainCoreAgentLedgerSummary;
+  taskGraph: BrainCoreAgentTaskGraphSummary;
+}): boolean {
+  try {
+    fs.mkdirSync(path.dirname(DEFAULT_LEDGER_PATH), { recursive: true });
+    const payload = `${JSON.stringify(
+      {
+        ledger: {
+          ...snapshot.ledger,
+          source: 'snapshot',
+          status: 'snapshot',
+          persistence: {
+            enabled: true,
+            path: DEFAULT_LEDGER_PATH,
+            loadedFromDisk: true,
+          },
+        },
+        taskGraph: {
+          ...snapshot.taskGraph,
+          source: 'snapshot',
+          status: 'snapshot',
+          persistence: {
+            enabled: true,
+            path: DEFAULT_LEDGER_PATH,
+            loadedFromDisk: true,
+          },
+        },
+      } satisfies AgentLedgerSnapshotFile,
+      null,
+      2,
+    )}\n`;
+    fs.writeFileSync(DEFAULT_LEDGER_PATH, payload);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function readSnapshotFile<T>(filePath: string): T | null {
