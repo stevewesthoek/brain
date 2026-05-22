@@ -1808,7 +1808,7 @@ export async function routeRequest(
 }
 
 async function routePostRequest(url: URL, response: ServerResponse): Promise<void> {
-  const credSetMatch = /^\/credentials\/([^/]+)\/set$/.exec(url.pathname);
+  const credSetMatch = /^\/credentials\/(?!infra\/)([^/]+)\/set$/.exec(url.pathname);
   if (credSetMatch) {
     const projectId = decodeURIComponent(credSetMatch[1] ?? '');
     const key = url.searchParams.get('key') ?? '';
@@ -1822,7 +1822,7 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
     return;
   }
 
-  const credRevokeMatch = /^\/credentials\/([^/]+)\/revoke$/.exec(url.pathname);
+  const credRevokeMatch = /^\/credentials\/(?!infra\/)([^/]+)\/revoke$/.exec(url.pathname);
   if (credRevokeMatch) {
     const projectId = decodeURIComponent(credRevokeMatch[1] ?? '');
     const key = url.searchParams.get('key') ?? '';
