@@ -274,6 +274,7 @@
 - Automatic model selection (Haiku → Sonnet → Opus)
 - Budget caps and alerts
 - Recommendations for optimization
+- Implementation plan: `docs/system/brain-agentic-os-phase-8-cost-transparency-routing.md`
 
 ### Brain Console Integration
 - Ledger view widget
@@ -304,6 +305,8 @@
 ## Next: Phase 8
 
 **Goal:** Real-time cost tracking and automatic model routing optimization
+
+**Plan:** `docs/system/brain-agentic-os-phase-8-cost-transparency-routing.md`
 
 **Estimated:** 14-16 tasks, 2 weeks
 

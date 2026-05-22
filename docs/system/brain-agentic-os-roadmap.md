@@ -137,6 +137,24 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 
 ---
 
+## Phase 8: Cost Transparency & Model Routing Optimization
+
+**Goal:** Make Brain cost-aware at the task and agent level. Track spend in real time, route work to the cheapest capable model by default, escalate only when needed, and surface the whole thing in Brain Console.
+
+**Value:** Users see cost per operation, AI routes automatically to the cheapest capable model, and budgets can warn or throttle expensive work before it surprises them.
+
+**Implementation plan:** `docs/system/brain-agentic-os-phase-8-cost-transparency-routing.md`
+
+**Exit criteria:**
+- Ledger records cost events for tasks, agents, sessions, and models
+- Routing engine selects the cheapest capable model first
+- Escalation reasons are logged and explainable
+- Budget thresholds warn, throttle, or block expensive routing
+- Brain Console shows cost summaries and expensive-task drilldowns
+- Operational standards define cost and routing behavior
+
+---
+
 ## Non-Goals (Evaluated and Rejected)
 
 | Technology | Reason for rejection |
@@ -155,3 +173,6 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 - Phase 3 depends on graphify being functional. Already is.
 - Phase 4 depends on Phase 3 (graph needed to detect duplication).
 - Phase 5 has no technical dependencies. Decision only.
+- Phase 6 depends on Phases 1-5. Already complete.
+- Phase 7 depends on Phase 6 ledger. Already complete.
+- Phase 8 depends on Phases 6-7. Ready to start.
