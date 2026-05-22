@@ -137,11 +137,11 @@ Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://19
 
 ## Provider Registry (`ai-providers.json`)
 
-Nine providers in priority order. Two local Ollama nodes, then free cloud tier, then paid escalation.
+Nine providers. Two local Ollama nodes handle all generation tasks. Gemini Flash is **reserved exclusively for large-context batch work** (save-to-mind, knowledge graph ingestion, bulk processing) — it never appears in the generation fallback chain. After local, paid cloud escalates Anthropic-first because Claude Haiku produces better faith-based and nuanced content than GPT-4o-mini.
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "providers": [
     {
       "id": "ollama-m4pro",
@@ -193,14 +193,15 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
       "base_url": "https://generativelanguage.googleapis.com/v1beta",
       "api_key_env": "GEMINI_API_KEY",
       "cost_per_1k_tokens": 0.0,
-      "priority": 3,
-      "capabilities": ["text/small", "text/medium", "text/large"],
+      "priority": 99,
+      "capabilities": ["text/large-context-batch"],
       "max_context_tokens": 1000000,
       "rate_limit": { "requests_per_minute": 15, "requests_per_day": 1500 },
       "timeout_connect_sec": 5,
-      "timeout_inference_sec": 30,
+      "timeout_inference_sec": 60,
       "schedule_preference": "any",
-      "models": ["gemini-2.5-flash"]
+      "models": ["gemini-2.5-flash"],
+      "notes": "RESERVED: large-context batch work only (save-to-mind, knowledge graph, bulk processing). Never used for content generation. Priority 99 ensures it never appears in generation fallback chain."
     },
     {
       "id": "claude-haiku",
@@ -208,8 +209,8 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
       "base_url": "https://api.anthropic.com/v1",
       "api_key_env": "ANTHROPIC_API_KEY",
       "cost_per_1k_tokens": 0.00025,
-      "priority": 4,
-      "capabilities": ["text/small", "text/medium"],
+      "priority": 3,
+      "capabilities": ["text/small", "text/medium", "text/review"],
       "max_context_tokens": 200000,
       "rate_limit": { "requests_per_minute": 50, "tokens_per_minute": 100000 },
       "timeout_connect_sec": 5,
@@ -223,7 +224,7 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
       "base_url": "https://api.openai.com/v1",
       "api_key_env": "OPENAI_API_KEY",
       "cost_per_1k_tokens": 0.00015,
-      "priority": 5,
+      "priority": 4,
       "capabilities": ["text/small", "text/medium"],
       "max_context_tokens": 128000,
       "rate_limit": { "requests_per_minute": 60 },
@@ -238,7 +239,7 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
       "base_url": "https://api.anthropic.com/v1",
       "api_key_env": "ANTHROPIC_API_KEY",
       "cost_per_1k_tokens": 0.003,
-      "priority": 6,
+      "priority": 5,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 200000,
       "rate_limit": { "requests_per_minute": 40 },
@@ -253,7 +254,7 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
       "base_url": "https://api.openai.com/v1",
       "api_key_env": "OPENAI_API_KEY",
       "cost_per_1k_tokens": 0.005,
-      "priority": 7,
+      "priority": 6,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 128000,
       "rate_limit": { "requests_per_minute": 30 },
@@ -268,7 +269,7 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
       "base_url": "https://api.anthropic.com/v1",
       "api_key_env": "ANTHROPIC_API_KEY",
       "cost_per_1k_tokens": 0.015,
-      "priority": 8,
+      "priority": 7,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 200000,
       "rate_limit": { "requests_per_minute": 20 },
@@ -287,22 +288,47 @@ Nine providers in priority order. Two local Ollama nodes, then free cloud tier, 
 
 ## Provider Escalation Order
 
-For any given task, the selector works through this ladder and stops at the first passing provider:
+### Generation tasks (`text/small`, `text/medium`, `text/large`, `text/review`)
+
+The selector works through this ladder and stops at the first passing provider:
 
 ```
-1. ollama-m4pro    (local, free, fast — preferred always)
-2. ollama-m1       (local, free, slower — preferred batch window)
-3. gemini-flash    (cloud free tier, 1500 req/day limit)
-4. claude-haiku    (paid, cheapest, fast)
-5. openai-4o-mini  (paid, cheapest OpenAI)
-6. claude-sonnet   (paid, mid-tier)
-7. openai-4o       (paid, mid-tier)
-8. claude-opus     (paid, most capable — last resort)
+1. ollama-m4pro    (local, free, fast — always preferred)
+2. ollama-m1       (local, free, slower — batch window preferred)
+   ── defer to next batch window if non-urgent ──
+3. claude-haiku    (paid Anthropic, $0.00025/1k — cheapest, best quality for faith-based content)
+4. openai-4o-mini  (paid OpenAI, $0.00015/1k — slightly cheaper, lower nuance)
+5. claude-sonnet   (paid, mid-tier — when task requires higher quality)
+6. openai-4o       (paid, mid-tier)
+7. claude-opus     (paid, most capable — last resort)
 ```
 
-For `audio/transcribe`: only `whisper-local` is in the pool. No cloud fallback (subtitles are always generated locally).
+**Gemini Flash is NOT in this chain.** It only matches `text/large-context-batch` tasks and is never a generation fallback.
 
-For `text/review` tasks (description quality check): skips local providers — `local_viable: false` — starts at `claude-haiku`.
+### Large-context batch tasks (`text/large-context-batch`)
+
+```
+1. gemini-flash    (free, 1M context — save-to-mind, knowledge graph, bulk processing)
+2. claude-sonnet   (paid fallback if Gemini Flash rate-limited)
+```
+
+Only tasks explicitly registering `text/large-context-batch` as their capability reach Gemini Flash. Metadata generation, thumbnail headlines, and all content generation tasks use `text/small`/`text/medium`/`text/large` — they never touch Gemini Flash.
+
+### Audio transcription (`audio/transcribe`)
+
+```
+1. whisper-local (faster-whisper binary — always local, no cloud fallback)
+```
+
+Subtitles are always generated locally. No cloud fallback exists for transcription.
+
+### Quality review (`text/review`)
+
+```
+1. claude-haiku    (local_viable=false for review tasks — skips Ollama entirely)
+2. claude-sonnet
+3. claude-opus
+```
 
 ---
 
@@ -555,6 +581,7 @@ ollama pull qwen2.5:14b          # Same primary model — batch overnight work
 ```json
 {"ts":"2026-05-22T03:14:22Z","task":"metadata_generation","provider":"ollama-m4pro","model":"qwen2.5:14b","reason":"local ollama healthy; batch window; cost=0.0","cost":0.0,"batch_window":true}
 {"ts":"2026-05-22T03:14:55Z","task":"metadata_generation","provider":"ollama-m4pro","model":"qwen2.5:14b","reason":"completed","latency_ms":28400,"success":true}
-{"ts":"2026-05-22T09:30:11Z","task":"metadata_generation","provider":"ollama-m1","model":"qwen2.5:14b","reason":"m4pro circuit open; m1 batch window preferred; cost=0.0","cost":0.0,"batch_window":false}
-{"ts":"2026-05-22T14:02:00Z","task":"metadata_generation","provider":"gemini-flash","reason":"all local providers unavailable; non-urgent deferred=false; using free cloud tier","cost":0.0}
+{"ts":"2026-05-22T09:30:11Z","task":"metadata_generation","provider":"ollama-m1","model":"qwen2.5:14b","reason":"m4pro circuit open; m1 available; cost=0.0","cost":0.0,"batch_window":false}
+{"ts":"2026-05-22T14:02:00Z","task":"metadata_generation","provider":"claude-haiku","reason":"all local providers unavailable; non-urgent deferred to 01:00; urgent=true so using paid fallback","cost":0.00025,"batch_window":false}
+{"ts":"2026-05-22T14:05:00Z","task":"large_context_batch","provider":"gemini-flash","reason":"task requires text/large-context-batch; gemini-flash is only eligible provider","cost":0.0,"batch_window":false}
 ```
