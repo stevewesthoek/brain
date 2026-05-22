@@ -211,6 +211,12 @@ class BrainConsoleView extends ItemView {
     this.heartbeatInterval = this.registerInterval(
       window.setInterval(async () => {
         if (this.isRefreshing) return;
+        // Skip DOM re-render on interactive tabs — fetch still updates cachedState
+        if (this.activeSection === 'accounts') {
+          const settings = await this.plugin.getSettings();
+          this.cachedState = await loadBrainConsoleViewState(settings);
+          return;
+        }
         await this.fullRefresh();
       }, 3000),
     );

@@ -7888,8 +7888,6 @@ export interface BrainCoreInfraCredentialEntry {
   isSet: boolean;
   hasPlaceholder: boolean;
   hint?: string;
-  writeInstructions?: string;
-  oauthInstructions?: string;
 }
 
 export interface BrainCoreInfraCredentialGroup {
@@ -7929,6 +7927,56 @@ export function readBrainCoreCredentials(baseUrl: string, projectId: string): Pr
 
 export function readBrainCoreCredentialCatalog(baseUrl: string): Promise<HttpResult<BrainCoreCredentialCatalogResponse>> {
   return fetchJson<BrainCoreCredentialCatalogResponse>(normalizeBaseUrl(baseUrl), '/credentials/catalog');
+}
+
+export interface BrainCoreInfraCredentialSetResult {
+  ok: boolean;
+  key: string;
+  action?: 'created' | 'updated';
+  error?: string;
+}
+
+export interface BrainCoreYouTubeOAuthUrlResult {
+  ok: boolean;
+  account: string;
+  url?: string;
+  error?: string;
+}
+
+export interface BrainCoreYouTubeOAuthExchangeResult {
+  ok: boolean;
+  account: string;
+  error?: string;
+}
+
+export async function setInfraPlistCredential(baseUrl: string, key: string, value: string): Promise<BrainCoreInfraCredentialSetResult> {
+  const url = `${normalizeBaseUrl(baseUrl)}/credentials/infra/set?key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    return (await res.json()) as BrainCoreInfraCredentialSetResult;
+  } catch (err) {
+    return { ok: false, key, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}
+
+export async function getYouTubeOAuthUrl(baseUrl: string, account: string): Promise<BrainCoreYouTubeOAuthUrlResult> {
+  const url = `${normalizeBaseUrl(baseUrl)}/credentials/infra/youtube/auth-url?account=${encodeURIComponent(account)}`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    return (await res.json()) as BrainCoreYouTubeOAuthUrlResult;
+  } catch (err) {
+    return { ok: false, account, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}
+
+export async function exchangeYouTubeOAuthCode(baseUrl: string, account: string, code: string): Promise<BrainCoreYouTubeOAuthExchangeResult> {
+  const url = `${normalizeBaseUrl(baseUrl)}/credentials/infra/youtube/auth-exchange?account=${encodeURIComponent(account)}&code=${encodeURIComponent(code)}`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    return (await res.json()) as BrainCoreYouTubeOAuthExchangeResult;
+  } catch (err) {
+    return { ok: false, account, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
 }
 
 export async function setBrainCoreCredential(baseUrl: string, projectId: string, key: string, value: string): Promise<BrainCoreCredentialSetResult> {

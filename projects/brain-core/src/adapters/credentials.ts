@@ -19,10 +19,6 @@ interface SchemaEntry {
   hint?: string;
   /** Where the value physically lives — 'env_file' is the default */
   storage?: StorageBackend;
-  /** Human-readable write instruction shown in the UI when storage !== 'env_file' */
-  writeInstructions?: string;
-  /** OAuth callback instructions (shown next to a connect button) */
-  oauthInstructions?: string;
 }
 
 interface PlatformSchema {
@@ -102,23 +98,8 @@ const INFRA_SCHEMA: PlatformSchema[] = [
     platformName: 'Cloudflare',
     platformCategory: 'infra',
     credentials: [
-      {
-        key: 'CF_ACCESS_CLIENT_ID',
-        label: 'CF Access Client ID',
-        type: 'app_id',
-        required: true,
-        storage: 'plist',
-        hint: 'Zero Trust → Access → Service Auth → Service Tokens → Create Token (name: video-orchestrator-worker)',
-        writeInstructions: 'Set in ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist under CF_ACCESS_CLIENT_ID, then reload with launchctl.',
-      },
-      {
-        key: 'CF_ACCESS_CLIENT_SECRET',
-        label: 'CF Access Client Secret',
-        type: 'secret',
-        required: true,
-        storage: 'plist',
-        writeInstructions: 'Set in ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist under CF_ACCESS_CLIENT_SECRET, then reload with launchctl.',
-      },
+      { key: 'CF_ACCESS_CLIENT_ID',     label: 'CF Access Client ID',     type: 'app_id', required: true,  storage: 'plist' },
+      { key: 'CF_ACCESS_CLIENT_SECRET', label: 'CF Access Client Secret', type: 'secret', required: true,  storage: 'plist' },
     ],
   },
   {
@@ -126,15 +107,8 @@ const INFRA_SCHEMA: PlatformSchema[] = [
     platformName: 'n8n',
     platformCategory: 'infra',
     credentials: [
-      {
-        key: 'VO_N8N_WEBHOOK_URL',
-        label: 'Webhook URL',
-        type: 'url',
-        required: true,
-        storage: 'plist',
-        hint: 'Base URL of the VO webhook endpoint on n8n (e.g. https://n8n.prochat.tools/webhook/...)',
-        writeInstructions: 'Set in ~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist under VO_N8N_WEBHOOK_URL.',
-      },
+      { key: 'VO_N8N_WEBHOOK_URL', label: 'Webhook URL', type: 'url', required: true, storage: 'plist',
+        hint: 'e.g. https://n8n.prochat.tools/webhook/...' },
     ],
   },
   {
@@ -142,27 +116,22 @@ const INFRA_SCHEMA: PlatformSchema[] = [
     platformName: 'YouTube (VO Worker)',
     platformCategory: 'infra',
     credentials: [
-      {
-        key: 'yt-oauth-client-@says-the-bible',
-        label: 'OAuth Client (@says-the-bible)',
-        type: 'secret',
-        required: true,
-        storage: 'keychain',
-        hint: 'macOS keychain: service=video-orchestrator, account=yt-oauth-client-@says-the-bible',
-        oauthInstructions: 'Run: youtube_uploader.py auth-url --account @says-the-bible\nVisit the URL, authorize access, then run:\nyoutube_uploader.py auth-exchange --account @says-the-bible --code <CODE>',
-        writeInstructions: 'Use youtube_uploader.py auth-url and auth-exchange commands to add OAuth token to keychain.',
-      },
+      { key: 'yt-oauth-client-@says-the-bible', label: '@says-the-bible', type: 'secret', required: true, storage: 'keychain' },
     ],
   },
 ];
 
-// ── Plist reader (reads worker plist for status, never writes) ─────────────
+// ── Plist read/write (worker plist EnvironmentVariables) ──────────────────
+
+const WORKER_PLIST_PATH = expandHome('~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist');
+
+// Keys that are allowed to be written via the API (allowlist — never allow arbitrary plist keys)
+const PLIST_WRITABLE_KEYS = new Set(['CF_ACCESS_CLIENT_ID', 'CF_ACCESS_CLIENT_SECRET', 'VO_N8N_WEBHOOK_URL']);
 
 function readPlistEnv(): Record<string, string> {
-  const plistPath = expandHome('~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist');
-  if (!fs.existsSync(plistPath)) return {};
+  if (!fs.existsSync(WORKER_PLIST_PATH)) return {};
   try {
-    const xml = fs.readFileSync(plistPath, 'utf8');
+    const xml = fs.readFileSync(WORKER_PLIST_PATH, 'utf8');
     const env: Record<string, string> = {};
     const envMatch = /<key>EnvironmentVariables<\/key>\s*<dict>([\s\S]*?)<\/dict>/.exec(xml);
     if (!envMatch) return {};
@@ -177,9 +146,93 @@ function readPlistEnv(): Record<string, string> {
   }
 }
 
+export function setPlistCredential(key: string, value: string): { ok: boolean; action?: 'created' | 'updated'; error?: string } {
+  if (!PLIST_WRITABLE_KEYS.has(key)) {
+    return { ok: false, error: 'key_not_allowed' };
+  }
+  if (!fs.existsSync(WORKER_PLIST_PATH)) {
+    return { ok: false, error: 'plist_not_found' };
+  }
+
+  let xml = fs.readFileSync(WORKER_PLIST_PATH, 'utf8');
+
+  // Check if key already exists inside EnvironmentVariables dict
+  const existingPattern = new RegExp(`(<key>${key}<\\/key>\\s*<string>)[^<]*(<\\/string>)`);
+  let action: 'created' | 'updated';
+
+  if (existingPattern.test(xml)) {
+    // Update existing value — replace the string content only
+    xml = xml.replace(existingPattern, `$1${escapeXml(value)}$2`);
+    action = 'updated';
+  } else {
+    // Insert new key/value pair into the EnvironmentVariables dict
+    const envDictPattern = /(<key>EnvironmentVariables<\/key>\s*<dict>)([\s\S]*?)(<\/dict>)/;
+    const m = envDictPattern.exec(xml);
+    if (!m) return { ok: false, error: 'plist_env_dict_not_found' };
+    const newEntry = `\n\t\t<key>${key}</key>\n\t\t<string>${escapeXml(value)}</string>`;
+    xml = xml.replace(envDictPattern, `$1$2${newEntry}\n\t$3`);
+    action = 'created';
+  }
+
+  fs.writeFileSync(WORKER_PLIST_PATH, xml);
+
+  // Reload the worker — unload then load
+  try {
+    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
+    execFileSync('launchctl', ['unload', WORKER_PLIST_PATH], { timeout: 5000, stdio: 'pipe' });
+    execFileSync('launchctl', ['load', WORKER_PLIST_PATH], { timeout: 5000, stdio: 'pipe' });
+  } catch {
+    // Worker reload is best-effort — the write succeeded, worker reload failure is non-fatal
+  }
+
+  return { ok: true, action };
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
 function isPlaceholderValue(val: string): boolean {
   if (!val) return false;
   return /^<.+>$/.test(val) || /^(example|placeholder|your[-_]|changeme|todo)/i.test(val) || val.includes('PLACEHOLDER') || val.includes('_example') || val.includes('_test');
+}
+
+// ── YouTube OAuth two-step flow ────────────────────────────────────────────
+
+const YT_UPLOADER_SCRIPT = expandHome('~/.local/video-orchestrator/scripts/youtube_uploader.py');
+const YT_VENV_PYTHON = expandHome('~/.local/video-orchestrator/.venv/bin/python3');
+
+export function getYouTubeOAuthUrl(account: string): { ok: boolean; url?: string; error?: string } {
+  if (!fs.existsSync(YT_VENV_PYTHON) || !fs.existsSync(YT_UPLOADER_SCRIPT)) {
+    return { ok: false, error: 'youtube_uploader_not_installed' };
+  }
+  try {
+    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
+    const out = execFileSync(YT_VENV_PYTHON, [YT_UPLOADER_SCRIPT, 'auth-url', '--account', account], {
+      encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'],
+    }) as string;
+    // Extract the URL from the output
+    const urlMatch = /(https:\/\/accounts\.google\.com\/o\/oauth2\/[^\s]+)/.exec(out) ?? /(https:\/\/[^\s]+)/.exec(out);
+    if (!urlMatch || !urlMatch[1]) return { ok: false, error: 'url_not_found_in_output' };
+    return { ok: true, url: urlMatch[1] };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'auth_url_failed' };
+  }
+}
+
+export function exchangeYouTubeOAuthCode(account: string, code: string): { ok: boolean; error?: string } {
+  if (!fs.existsSync(YT_VENV_PYTHON) || !fs.existsSync(YT_UPLOADER_SCRIPT)) {
+    return { ok: false, error: 'youtube_uploader_not_installed' };
+  }
+  try {
+    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
+    execFileSync(YT_VENV_PYTHON, [YT_UPLOADER_SCRIPT, 'auth-exchange', '--account', account, '--code', code], {
+      encoding: 'utf8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'auth_exchange_failed' };
+  }
 }
 
 // ── Keychain reader (no -g flag — account names only, no passwords) ────────
@@ -233,8 +286,6 @@ function buildInfraGroups(): BrainCoreInfraCredentialGroup[] {
         isSet,
         hasPlaceholder,
         ...(entry.hint !== undefined ? { hint: entry.hint } : {}),
-        ...(entry.writeInstructions !== undefined ? { writeInstructions: entry.writeInstructions } : {}),
-        ...(entry.oauthInstructions !== undefined ? { oauthInstructions: entry.oauthInstructions } : {}),
       };
     });
 

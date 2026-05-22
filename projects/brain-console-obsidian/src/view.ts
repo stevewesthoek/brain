@@ -310,6 +310,9 @@ import {
   readBrainCoreCredentialCatalog,
   setBrainCoreCredential,
   revokeBrainCoreCredential,
+  setInfraPlistCredential,
+  getYouTubeOAuthUrl,
+  exchangeYouTubeOAuthCode,
   type BrainCoreVOAccountsResponse,
   type BrainCoreVOAuthStatusResponse,
   type BrainCoreVOJobsResponse,
@@ -7366,7 +7369,7 @@ function renderAccountsSection(
   createStatusChip(infraHeader, `${infraReadyCount}/${catalog.infra.length} ready`, infraAllOk ? 'ok' : 'warn');
 
   for (const infraGroup of catalog.infra) {
-    renderInfraCredentialGroup(infraBlock, infraGroup);
+    renderInfraCredentialGroup(infraBlock, infraGroup, brainCoreUrl);
   }
 
   // ── Per-project sections ─────────────────────────────────────────────────
@@ -7409,47 +7412,203 @@ function renderCredStatusDot(parent: HTMLElement, isSet: boolean, hasPlaceholder
 function renderInfraCredentialGroup(
   parent: HTMLElement,
   group: BrainCoreInfraCredentialGroup,
+  brainCoreUrl: string,
 ): void {
   const card = parent.createDiv({ cls: 'bc-accounts-platform bc-accounts-platform--infra' });
   const top = card.createDiv({ cls: 'bc-accounts-platform-top' });
   top.createEl('span', { cls: 'bc-accounts-platform-name', text: group.platformName });
   createStatusChip(top, group.allRequiredSet ? 'Ready' : 'Action required', group.allRequiredSet ? 'ok' : 'danger');
 
+  const table = card.createEl('table', { cls: 'bc-accounts-table' });
+  const tbody = table.createEl('tbody');
+
   for (const cred of group.credentials) {
-    const row = card.createDiv({ cls: 'bc-accounts-infra-row' });
-    const rowTop = row.createDiv({ cls: 'bc-accounts-infra-row-top' });
-
-    // Status dot
-    const dotWrap = rowTop.createDiv({ cls: 'bc-accounts-infra-status' });
-    renderCredStatusDot(dotWrap, cred.isSet, cred.hasPlaceholder);
-
-    // Label + badges
-    const labelWrap = rowTop.createDiv({ cls: 'bc-accounts-infra-label' });
-    labelWrap.createEl('span', { cls: 'bc-accounts-key-label', text: cred.label });
-    if (cred.required) labelWrap.createEl('span', { cls: 'bc-accounts-required-badge', text: 'required' });
-    // Storage badge
-    const storageTone = cred.storage === 'keychain' ? 'warn' : cred.storage === 'plist' ? 'muted' : 'muted';
-    createStatusChip(labelWrap, cred.storage, storageTone);
-
-    // Hint
-    if (cred.hint) {
-      row.createEl('p', { cls: 'bc-accounts-hint', text: cred.hint });
+    if (cred.storage === 'keychain') {
+      // YouTube OAuth — 2-step flow rendered as its own row block
+      renderYouTubeOAuthRow(tbody, cred, brainCoreUrl);
+      continue;
     }
 
-    // OAuth instructions (if this is an OAuth cred)
-    if (cred.oauthInstructions) {
-      const oauthBox = row.createDiv({ cls: 'bc-accounts-oauth-box' });
-      oauthBox.createEl('p', { cls: 'bc-accounts-oauth-label', text: 'Connect via OAuth:' });
-      oauthBox.createEl('pre', { cls: 'bc-accounts-oauth-code', text: cred.oauthInstructions });
-    }
+    // Plist credential — identical UI to env_file credentials
+    const tr = tbody.createEl('tr', { cls: `bc-accounts-row${cred.isSet && !cred.hasPlaceholder ? ' bc-accounts-row--set' : ''}` });
 
-    // Write instructions
-    if (cred.writeInstructions && !cred.isSet) {
-      const instrBox = row.createDiv({ cls: 'bc-accounts-write-instructions' });
-      instrBox.createEl('p', { cls: 'bc-accounts-write-label', text: 'How to set:' });
-      instrBox.createEl('p', { cls: 'bc-accounts-write-text', text: cred.writeInstructions });
-    }
+    const labelTd = tr.createEl('td', { cls: 'bc-accounts-label-cell' });
+    labelTd.createEl('span', { cls: 'bc-accounts-key-label', text: cred.label });
+    if (cred.required) labelTd.createEl('span', { cls: 'bc-accounts-required-badge', text: 'required' });
+
+    const statusTd = tr.createEl('td', { cls: 'bc-accounts-status-cell' });
+    renderCredStatusDot(statusTd, cred.isSet, cred.hasPlaceholder);
+
+    const inputTd = tr.createEl('td', { cls: 'bc-accounts-input-cell' });
+    const inputWrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
+    const input = inputWrap.createEl('input', { cls: 'bc-accounts-input' });
+    input.type = cred.type === 'secret' || cred.type === 'token' || cred.type === 'api_key' ? 'password' : 'text';
+    input.placeholder = cred.isSet && !cred.hasPlaceholder ? '••••••• (set — enter new value to update)' : `Enter ${cred.label}`;
+    input.setAttribute('autocomplete', 'off');
+
+    const saveBtn = inputWrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Save' });
+    const feedbackEl = inputWrap.createEl('span', { cls: 'bc-accounts-feedback' });
+
+    saveBtn.addEventListener('click', async () => {
+      const val = input.value.trim();
+      if (!val) {
+        feedbackEl.textContent = 'Enter a value first.';
+        feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--warn';
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.textContent = '…';
+      feedbackEl.textContent = '';
+      try {
+        const result = await setInfraPlistCredential(brainCoreUrl, cred.key, val);
+        if (result.ok) {
+          input.value = '';
+          input.placeholder = '••••••• (set — enter new value to update)';
+          tr.addClass('bc-accounts-row--set');
+          statusTd.empty();
+          renderCredStatusDot(statusTd, true, false);
+          feedbackEl.textContent = result.action === 'created' ? 'Saved.' : 'Updated.';
+          feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--ok';
+        } else {
+          feedbackEl.textContent = result.error === 'key_not_allowed' ? 'Key not permitted.' : (result.error ?? 'Save failed.');
+          feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+        }
+      } catch (err) {
+        feedbackEl.textContent = err instanceof Error ? err.message : 'Network error.';
+        feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+      }
+    });
+
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') saveBtn.click();
+    });
   }
+}
+
+function renderYouTubeOAuthRow(
+  tbody: HTMLElement,
+  cred: BrainCoreInfraCredentialGroup['credentials'][number],
+  brainCoreUrl: string,
+): void {
+  const account = cred.key.replace('yt-oauth-client-', '');
+
+  const tr = tbody.createEl('tr', { cls: `bc-accounts-row${cred.isSet ? ' bc-accounts-row--set' : ''}` });
+
+  const labelTd = tr.createEl('td', { cls: 'bc-accounts-label-cell' });
+  labelTd.createEl('span', { cls: 'bc-accounts-key-label', text: cred.label });
+  if (cred.required) labelTd.createEl('span', { cls: 'bc-accounts-required-badge', text: 'required' });
+
+  const statusTd = tr.createEl('td', { cls: 'bc-accounts-status-cell' });
+  renderCredStatusDot(statusTd, cred.isSet, cred.hasPlaceholder);
+
+  const inputTd = tr.createEl('td', { cls: 'bc-accounts-input-cell' });
+
+  if (cred.isSet) {
+    // Already connected — show revoke option
+    const wrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
+    wrap.createEl('span', { cls: 'bc-accounts-feedback bc-accounts-feedback--ok', text: 'Connected' });
+    const reconnectBtn = wrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Reconnect' });
+    reconnectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, brainCoreUrl, tr, statusTd, true));
+    return;
+  }
+
+  // Not connected — show connect button
+  const wrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
+  const connectBtn = wrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Connect' });
+  connectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, brainCoreUrl, tr, statusTd, false));
+}
+
+function startYouTubeOAuthFlow(
+  inputTd: HTMLElement,
+  account: string,
+  brainCoreUrl: string,
+  tr: HTMLElement,
+  statusTd: HTMLElement,
+  isReconnect: boolean,
+): void {
+  inputTd.empty();
+
+  // Step 1: Generate URL
+  const step1 = inputTd.createDiv({ cls: 'bc-accounts-oauth-flow' });
+  const genBtn = step1.createEl('button', { cls: 'bc-accounts-save-btn', text: isReconnect ? 'Generate new URL' : 'Generate auth URL' });
+  const urlDisplay = step1.createEl('span', { cls: 'bc-accounts-feedback' });
+
+  // Step 2: Enter code (initially hidden)
+  const step2 = inputTd.createDiv({ cls: 'bc-accounts-oauth-flow bc-accounts-oauth-flow--hidden' });
+  const codeInput = step2.createEl('input', { cls: 'bc-accounts-input' });
+  codeInput.type = 'text';
+  codeInput.placeholder = 'Paste authorization code…';
+  codeInput.setAttribute('autocomplete', 'off');
+  const authorizeBtn = step2.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Authorize' });
+  const codeFeedback = step2.createEl('span', { cls: 'bc-accounts-feedback' });
+
+  genBtn.addEventListener('click', async () => {
+    genBtn.disabled = true;
+    genBtn.textContent = '…';
+    urlDisplay.textContent = '';
+    try {
+      const result = await getYouTubeOAuthUrl(brainCoreUrl, account);
+      if (result.ok && result.url) {
+        urlDisplay.empty();
+        const link = urlDisplay.createEl('a', { text: 'Open Google Auth →' });
+        link.href = result.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        step2.removeClass('bc-accounts-oauth-flow--hidden');
+      } else {
+        urlDisplay.textContent = result.error ?? 'Failed to generate URL.';
+        urlDisplay.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+      }
+    } catch (err) {
+      urlDisplay.textContent = err instanceof Error ? err.message : 'Network error.';
+      urlDisplay.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+    } finally {
+      genBtn.disabled = false;
+      genBtn.textContent = 'Regenerate URL';
+    }
+  });
+
+  authorizeBtn.addEventListener('click', async () => {
+    const code = codeInput.value.trim();
+    if (!code) {
+      codeFeedback.textContent = 'Paste the code first.';
+      codeFeedback.className = 'bc-accounts-feedback bc-accounts-feedback--warn';
+      return;
+    }
+    authorizeBtn.disabled = true;
+    authorizeBtn.textContent = '…';
+    codeFeedback.textContent = '';
+    try {
+      const result = await exchangeYouTubeOAuthCode(brainCoreUrl, account, code);
+      if (result.ok) {
+        tr.addClass('bc-accounts-row--set');
+        statusTd.empty();
+        renderCredStatusDot(statusTd, true, false);
+        inputTd.empty();
+        const wrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
+        wrap.createEl('span', { cls: 'bc-accounts-feedback bc-accounts-feedback--ok', text: 'Connected' });
+        const reconnectBtn = wrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Reconnect' });
+        reconnectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, brainCoreUrl, tr, statusTd, true));
+      } else {
+        codeFeedback.textContent = result.error ?? 'Authorization failed.';
+        codeFeedback.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+        authorizeBtn.disabled = false;
+        authorizeBtn.textContent = 'Authorize';
+      }
+    } catch (err) {
+      codeFeedback.textContent = err instanceof Error ? err.message : 'Network error.';
+      codeFeedback.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+      authorizeBtn.disabled = false;
+      authorizeBtn.textContent = 'Authorize';
+    }
+  });
+
+  codeInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') authorizeBtn.click();
+  });
 }
 
 function renderProjectPlatformCard(

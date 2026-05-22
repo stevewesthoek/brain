@@ -7,7 +7,7 @@ import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
 import { getPlatform, listPlatforms } from '../adapters/platforms.js';
-import { listProjectCredentials, setProjectCredential, getCredentialCatalog, revokeProjectCredential } from '../adapters/credentials.js';
+import { listProjectCredentials, setProjectCredential, getCredentialCatalog, revokeProjectCredential, setPlistCredential, getYouTubeOAuthUrl, exchangeYouTubeOAuthCode } from '../adapters/credentials.js';
 import {
   readPostOrchestratorDraftFixtures,
   readPostDraftReviewQueue,
@@ -1832,6 +1832,41 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
     }
     const result = revokeProjectCredential(projectId, key);
     sendJson(response, result.ok ? 200 : result.error === 'key_not_allowed' ? 403 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/credentials/infra/set') {
+    const key = url.searchParams.get('key') ?? '';
+    const value = url.searchParams.get('value') ?? '';
+    if (!key) {
+      sendJson(response, 400, { ok: false, key, error: 'key_required' });
+      return;
+    }
+    const result = setPlistCredential(key, value);
+    sendJson(response, result.ok ? 200 : result.error === 'key_not_allowed' ? 403 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/credentials/infra/youtube/auth-url') {
+    const account = url.searchParams.get('account') ?? '';
+    if (!account) {
+      sendJson(response, 400, { ok: false, account, error: 'account_required' });
+      return;
+    }
+    const result = getYouTubeOAuthUrl(account);
+    sendJson(response, result.ok ? 200 : 500, { ...result, account });
+    return;
+  }
+
+  if (url.pathname === '/credentials/infra/youtube/auth-exchange') {
+    const account = url.searchParams.get('account') ?? '';
+    const code = url.searchParams.get('code') ?? '';
+    if (!account || !code) {
+      sendJson(response, 400, { ok: false, account, error: 'account_and_code_required' });
+      return;
+    }
+    const result = exchangeYouTubeOAuthCode(account, code);
+    sendJson(response, result.ok ? 200 : 500, { ...result, account });
     return;
   }
 

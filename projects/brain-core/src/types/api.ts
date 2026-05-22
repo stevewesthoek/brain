@@ -679,6 +679,26 @@ export interface BrainCoreCredentialRevokeResult {
   error?: string;
 }
 
+export interface BrainCoreInfraCredentialSetResult {
+  ok: boolean;
+  key: string;
+  action?: 'created' | 'updated';
+  error?: string;
+}
+
+export interface BrainCoreYouTubeOAuthUrlResult {
+  ok: boolean;
+  account: string;
+  url?: string;
+  error?: string;
+}
+
+export interface BrainCoreYouTubeOAuthExchangeResult {
+  ok: boolean;
+  account: string;
+  error?: string;
+}
+
 export interface BrainCoreInfraCredentialEntry {
   key: string;
   label: string;
@@ -688,8 +708,6 @@ export interface BrainCoreInfraCredentialEntry {
   isSet: boolean;
   hasPlaceholder: boolean;
   hint?: string;
-  writeInstructions?: string;
-  oauthInstructions?: string;
 }
 
 export interface BrainCoreInfraCredentialGroup {
