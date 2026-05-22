@@ -79,8 +79,9 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 **Value:** Prevents both spaghetti (no extraction) and astronaut architecture (premature extraction). Activates only when cross-flow duplication is detected.
 
 **Exit criteria:**
-- Skill installed at `ai/skills/vendors/shimeles/code-structure/SKILL.md`
+- Skill installed at `ai/skills/custom/code-structure/SKILL.md`
 - Symlinked to `active/`
+- Added to `full-current` skill profile
 - `/code` orchestrator SKILL.md updated with integration instructions
 - Activation condition documented: "2+ callers with duplicated operational logic"
 

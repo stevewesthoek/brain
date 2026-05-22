@@ -78,6 +78,7 @@ import {
   readMaintenancePreviewDetailById,
 } from '../adapters/maintenance-previews.js';
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
+import { getAiModelSelectorStatus, controlAiModelSelector } from '../adapters/ai-model-selector-service.js';
 import { listRepos } from '../adapters/repos.js';
 import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
@@ -734,6 +735,12 @@ export async function routeRequest(
             wikiHealth,
           },
         });
+        return;
+      }
+    case '/ai-model-selector':
+      {
+        const selectorStatus = await getAiModelSelectorStatus();
+        sendJson(response, 200, { selector: selectorStatus });
         return;
       }
     default:
@@ -1851,6 +1858,17 @@ export async function routeRequest(
 }
 
 async function routePostRequest(url: URL, response: ServerResponse): Promise<void> {
+  if (url.pathname === '/ai-model-selector/control') {
+    const action = url.searchParams.get('action');
+    if (action !== 'start' && action !== 'stop') {
+      sendJson(response, 400, { error: { code: 'invalid_action', message: 'Action must be "start" or "stop". Pass as ?action=start or ?action=stop.' } });
+      return;
+    }
+    const result = controlAiModelSelector(action);
+    sendJson(response, result.success ? 200 : 500, { result });
+    return;
+  }
+
   const credSetMatch = /^\/credentials\/(?!infra\/)([^/]+)\/set$/.exec(url.pathname);
   if (credSetMatch) {
     const projectId = decodeURIComponent(credSetMatch[1] ?? '');

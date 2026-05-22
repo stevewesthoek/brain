@@ -19,3 +19,5 @@ ffmpeg
 n8n
 autoresearch
 spark
+orchestrate
+greploop

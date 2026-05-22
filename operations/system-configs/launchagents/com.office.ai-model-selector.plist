@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.office.ai-model-selector</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/Office/.local/video-orchestrator/.venv/bin/python3</string>
+      <string>/Users/Office/.local/video-orchestrator/services/model-selector/selector_service.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/Office/.local/video-orchestrator/services/model-selector</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>/Users/Office/.local/video-orchestrator/.venv/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+      <key>HOME</key>
+      <string>/Users/Office</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Office/.local/video-orchestrator/logs/model-selector.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/Office/.local/video-orchestrator/logs/model-selector.stderr.log</string>
+  </dict>
+</plist>

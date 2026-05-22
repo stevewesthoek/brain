@@ -1,7 +1,7 @@
 # Brain Agentic OS — Implementation Status
 
-**Last Updated:** 2026-06-08  
-**Status:** 8 of 8 phases complete, 100% deployed
+**Last Updated:** 2026-06-22  
+**Status:** 8 of 8 phases complete, verified and deployed
 
 ---
 
@@ -31,8 +31,9 @@
   - Escalation rules and stop conditions documented
 
 ### Status
-- ✅ Skill deployed to active/
-- ✅ Synced to all AI consumers
+- ✅ Skill source at `ai/skills/custom/greploop/SKILL.md`
+- ✅ Symlinked to `active/` (verified 2026-06-22)
+- ✅ Added to `full-current` skill profile (verified 2026-06-22)
 - ✅ Verified by Phase 6+ ledger (decision events track loop iterations)
 
 ---
@@ -77,20 +78,21 @@
 ## Phase 4: code-structure (5 tasks) ✅
 
 ### Created
-- `ai/skills/vendors/shimeles/code-structure/SKILL.md`
-  - Service layer extraction guidance
-  - Decision flowchart: 2+ callers, operational mechanics, reduces code
-  - Migration checklist and anti-patterns
+- `ai/skills/custom/code-structure/SKILL.md`
+  - Codebase structure analysis: file tree, module boundaries, entry points, dependency graph
+  - Pattern detection: architecture style, naming conventions, test organization
+  - Anomaly detection: circular deps, god modules, orphan files
 
 ### Updated
 - `ai/skills/custom/code/SKILL.md`
   - Integrated code-structure as sub-strategy
-  - Activation: 2+ files with duplicated operational logic
+  - Activation: onboarding to codebase, planning refactors, understanding component connections
 
 ### Status
-- ✅ Skill deployed to active/
+- ✅ Skill source at `ai/skills/custom/code-structure/SKILL.md` (created 2026-06-22)
+- ✅ Symlinked to `active/` (verified 2026-06-22)
+- ✅ Added to `full-current` skill profile (verified 2026-06-22)
 - ✅ Integrated with /code orchestrator
-- ✅ Prevents both spaghetti and premature abstraction
 
 ---
 
@@ -183,8 +185,9 @@
    - Round-robin with load balancing
 
 4. `projects/brain-core/src/adapters/subagent-executor.ts`
-   - spawnSubagent, getProcessStatus, killProcess
-   - Subagent lifecycle management
+   - spawnSubagent via child_process (Claude CLI, Codex CLI, Gemini CLI)
+   - Real process lifecycle: spawn, monitor, kill, output capture
+   - Output persisted to `~/.local/brain-queues/subagent-output/`
 
 5. `projects/brain-core/src/adapters/agent-pool.ts`
    - AgentPool class (3 agents, configurable)
@@ -261,10 +264,11 @@
 - ✅ Debugging runbooks with scenarios
 
 ### Deployment
-- ✅ All skills symlinked to active/
+- ✅ All skills symlinked to active/ (verified 2026-06-22)
+- ✅ All skills in `full-current` profile (verified 2026-06-22)
 - ✅ All CLI tools in ~/.local/bin/
 - ✅ All TypeScript modules in projects/brain-core/
-- ✅ All files committed and pushed to main
+- ✅ Subagent executor uses real child_process spawning (verified 2026-06-22)
 
 ---
 

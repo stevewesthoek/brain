@@ -49,7 +49,7 @@ export interface BrainCoreCapabilitySummary {
   notes: string[];
 }
 
-export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video' | 'local-apps';
+export type BrainCoreRuntimeReportId = 'model-router' | 'mind-steward' | 'approval-audit' | 'video' | 'local-apps';
 
 export interface BrainCoreRuntimeReportSummary {
   id: BrainCoreRuntimeReportId;
@@ -81,6 +81,29 @@ export interface BrainCoreModelRouterReportDetail {
     errorCount: number;
     warningCount: number;
   };
+}
+
+export interface BrainCoreAiModelSelectorStatus {
+  running: boolean;
+  healthy: boolean;
+  uptime?: string;
+  providers?: BrainCoreAiModelSelectorProvider[];
+  error?: string;
+  lastChecked: string;
+}
+
+export interface BrainCoreAiModelSelectorProvider {
+  id: string;
+  type: string;
+  healthy: boolean;
+  circuitState: string;
+  costPer1kTokens: number;
+}
+
+export interface BrainCoreAiModelSelectorControlResult {
+  success: boolean;
+  action: 'start' | 'stop';
+  message: string;
 }
 
 export interface BrainCoreSchedulerStatus {
@@ -4990,6 +5013,21 @@ export async function readBrainCoreModelRouterReportDetail(
   baseUrl: string,
 ): Promise<HttpResult<{ report?: BrainCoreModelRouterReportDetail }>> {
   return fetchJson<{ report?: BrainCoreModelRouterReportDetail }>(normalizeBaseUrl(baseUrl), '/runtime/reports/model-router');
+}
+
+export async function readBrainCoreAiModelSelectorStatus(
+  baseUrl: string,
+): Promise<HttpResult<{ selector?: BrainCoreAiModelSelectorStatus }>> {
+  return fetchJson<{ selector?: BrainCoreAiModelSelectorStatus }>(normalizeBaseUrl(baseUrl), '/ai-model-selector');
+}
+
+export async function controlBrainCoreAiModelSelector(
+  baseUrl: string,
+  action: 'start' | 'stop',
+): Promise<HttpResult<{ result?: BrainCoreAiModelSelectorControlResult }>> {
+  return fetchJson<{ result?: BrainCoreAiModelSelectorControlResult }>(normalizeBaseUrl(baseUrl), `/ai-model-selector/control?action=${action}`, {
+    method: 'POST',
+  });
 }
 
 export async function readBrainCoreMaintenancePreviewDetail(
