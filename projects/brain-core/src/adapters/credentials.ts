@@ -330,15 +330,34 @@ function isPlaceholderValue(val: string): boolean {
 const YT_UPLOADER_SCRIPT = expandHome('~/.local/video-orchestrator/scripts/youtube_uploader.py');
 const YT_VENV_PYTHON = expandHome('~/.local/video-orchestrator/.venv/bin/python3');
 
+// Read YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET from the project .env file
+// for a given account handle (e.g. '@says-the-bible' → projectId 'says-the-bible').
+function readYouTubeClientEnv(account: string): Record<string, string> {
+  const projectId = account.replace(/^@/, '');
+  const envPath = PROJECT_ENV_MAP[projectId];
+  if (!envPath || !fs.existsSync(envPath)) return {};
+  const envMap = parseEnvFile(envPath);
+  const clientId = envMap.get('YOUTUBE_CLIENT_ID') ?? '';
+  const clientSecret = envMap.get('YOUTUBE_CLIENT_SECRET') ?? '';
+  const extra: Record<string, string> = {};
+  if (clientId) extra['VO_YOUTUBE_CLIENT_ID'] = clientId;
+  if (clientSecret) extra['VO_YOUTUBE_CLIENT_SECRET'] = clientSecret;
+  return extra;
+}
+
 export function getYouTubeOAuthUrl(account: string): { ok: boolean; url?: string; error?: string } {
   if (!fs.existsSync(YT_VENV_PYTHON) || !fs.existsSync(YT_UPLOADER_SCRIPT)) {
     return { ok: false, error: 'youtube_uploader_not_installed' };
   }
+  const clientVars = readYouTubeClientEnv(account);
+  if (!clientVars['VO_YOUTUBE_CLIENT_ID'] || !clientVars['VO_YOUTUBE_CLIENT_SECRET']) {
+    return { ok: false, error: 'oauth_client_credentials_not_set — save OAuth Client ID and Secret first' };
+  }
   try {
     const out = execFileSync(YT_VENV_PYTHON, [YT_UPLOADER_SCRIPT, 'auth-url', '--account', account], {
       encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...clientVars },
     }) as string;
-    // Extract the URL from the output
     const urlMatch = /(https:\/\/accounts\.google\.com\/o\/oauth2\/[^\s]+)/.exec(out) ?? /(https:\/\/[^\s]+)/.exec(out);
     if (!urlMatch || !urlMatch[1]) return { ok: false, error: 'url_not_found_in_output' };
     return { ok: true, url: urlMatch[1] };
@@ -351,9 +370,14 @@ export function exchangeYouTubeOAuthCode(account: string, code: string): { ok: b
   if (!fs.existsSync(YT_VENV_PYTHON) || !fs.existsSync(YT_UPLOADER_SCRIPT)) {
     return { ok: false, error: 'youtube_uploader_not_installed' };
   }
+  const clientVars = readYouTubeClientEnv(account);
+  if (!clientVars['VO_YOUTUBE_CLIENT_ID'] || !clientVars['VO_YOUTUBE_CLIENT_SECRET']) {
+    return { ok: false, error: 'oauth_client_credentials_not_set — save OAuth Client ID and Secret first' };
+  }
   try {
     execFileSync(YT_VENV_PYTHON, [YT_UPLOADER_SCRIPT, 'auth-exchange', '--account', account, '--code', code], {
       encoding: 'utf8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...clientVars },
     });
     return { ok: true };
   } catch (e) {
