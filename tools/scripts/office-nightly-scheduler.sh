@@ -119,6 +119,13 @@ run_job() {
 }
 
 run_stb_pipeline_batch() {
+  # Check M1 Ollama node
+  if curl -sf --max-time 5 http://192.168.2.2:11434/api/tags > /dev/null 2>&1; then
+    echo "[scheduler] M1 MacBook Ollama: online"
+  else
+    echo "[scheduler] WARNING: M1 MacBook Ollama unreachable — batch jobs will use M4 Pro or paid fallback"
+  fi
+
   if [[ ! -f "$STB_CONFIG_FILE" ]]; then
     log "skipping job=stb-pipeline-batch reason=no_config_file file=$STB_CONFIG_FILE"
     return 0
