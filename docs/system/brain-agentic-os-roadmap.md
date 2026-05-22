@@ -22,7 +22,8 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 | **Phase 3** | Persistent codebase graph | 2026-05-25 → 2026-05-27 | **complete** |
 | **Phase 4** | code-structure — refactoring intelligence | 2026-05-27 → 2026-05-28 | **complete** |
 | **Phase 5** | SvelteKit default decision + boilerplate | 2026-05-28 → 2026-06-01 | **complete** |
-| **Phase 6** | Agent Ledger & Auditability — append-only audit trail | 2026-05-29 → 2026-06-07 | **in-progress** |
+| **Phase 6** | Agent Ledger & Auditability — append-only audit trail | 2026-05-29 → 2026-06-07 | **complete** |
+| **Phase 7** | Multi-Agent Orchestration — parallel work coordination | 2026-06-08 → 2026-06-20 | **planned** |
 
 ---
 
@@ -112,6 +113,27 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 - Forensic debugging runbook at `operations/runbooks/ledger-forensic-debugging.md`
 - Brain Console ledger view widget displaying real-time event stream
 - Cost transparency widget showing live cost tracking
+
+---
+
+## Phase 7: Multi-Agent Orchestration
+
+**Goal:** Enable parallel execution of independent subtasks across multiple agents with work queue, load balancing, and result merging.
+
+**Value:** 60-70% cost reduction for parallelizable work (e.g., code review 3 modules in parallel vs serial). Foundation for scaling to many concurrent agents.
+
+**Exit criteria:**
+- Work queue manager at `projects/brain-core/src/adapters/work-queue-manager.ts`
+- Task distributor with load balancing at `projects/brain-core/src/adapters/task-distributor.ts`
+- Subagent executor at `projects/brain-core/src/adapters/subagent-executor.ts`
+- Agent pool manager at `projects/brain-core/src/adapters/agent-pool.ts`
+- Result merger with conflict resolution at `projects/brain-core/src/adapters/result-merger.ts`
+- Transaction manager with checkpoint/rollback at `projects/brain-core/src/adapters/transaction-manager.ts`
+- `/orchestrate` skill at `ai/skills/custom/orchestrate/SKILL.md` symlinked to `active/`
+- CLI tool: `orchestrate` command-line orchestrator
+- Orchestration debugging runbook at `operations/runbooks/multi-agent-orchestration-debugging.md`
+- Orchestration standard at `operations/standards/multi-agent-orchestration-standard.md`
+- Ledger integration: `parallel_work_*` events tracked
 
 ---
 
