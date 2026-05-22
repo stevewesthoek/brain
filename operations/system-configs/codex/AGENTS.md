@@ -171,10 +171,10 @@ Startup protocol when `brain` context is relevant:
 
 Startup protocol when `mind` context is relevant:
 
-1. Read `/Users/Office/Repos/stevewesthoek/mind/AGENTS.md`.
-2. Read `/Users/Office/Repos/stevewesthoek/mind/00-start-here.md`.
-3. Read `/Users/Office/Repos/stevewesthoek/mind/00-current-context.md`.
-4. Read `/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md`.
+1. Read `/Users/Office/Repos/stevewesthoek/mind/router/AGENTS.md`.
+2. Read `/Users/Office/Repos/stevewesthoek/mind/router/00-start-here.md`.
+3. Read `/Users/Office/Repos/stevewesthoek/mind/router/00-current-context.md`.
+4. Read `/Users/Office/Repos/stevewesthoek/mind/router/00-memory-map.md`.
 5. Search/read only the relevant folders. Do not load the whole vault.
 
 These repos may be used even when Codex starts inside another repo. The current working repo remains the implementation target; `brain` and `mind` are cross-repo context sources.
