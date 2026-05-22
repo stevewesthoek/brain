@@ -4,10 +4,14 @@
   "private": true,
   "type": "module",
   "description": "Local read-only Brain Core API for Obsidian-first machine state.",
+  "bin": {
+    "brain-agent": "dist/bin/brain-agent.js"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
+    "brain-agent": "npm run build && node dist/bin/brain-agent.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "test:local-app-actions-live": "npm run build && node scripts/test-local-app-actions-live.mjs",

@@ -2,12 +2,13 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { listAgentCapabilities, readSkillFrontmatter } from '../adapters/agent-capabilities.js';
+import { listAgentCliCapabilities } from '../adapters/agent-cli-capability-manifest.js';
 
 test('listAgentCapabilities returns the seeded registry', () => {
   const capabilities = listAgentCapabilities();
   const ids = capabilities.map((capability) => capability.id);
 
-  assert.equal(capabilities.length, 14);
+  assert.equal(capabilities.length, 19);
   assert.equal(new Set(ids).size, ids.length);
 
   for (const requiredId of [
@@ -24,6 +25,11 @@ test('listAgentCapabilities returns the seeded registry', () => {
     'cli.dokploy',
     'cli.aws',
     'cli.azure',
+    'cli.gcp',
+    'cli.hetzner',
+    'cli.tailscale',
+    'cli.stripe',
+    'cli.n8n',
     'cli.github',
   ]) {
     assert.ok(ids.includes(requiredId), `missing capability ${requiredId}`);
@@ -74,6 +80,35 @@ test('AI surfaces are ordered by priority', () => {
   const priorities = aiSurfaces.map((capability) => capability.priority ?? Number.MAX_SAFE_INTEGER);
 
   assert.deepEqual([...priorities].sort((left, right) => left - right), priorities);
+});
+
+test('CLI capability manifest is normalized and approval-gated', () => {
+  const capabilities = listAgentCliCapabilities();
+
+  assert.equal(capabilities.length, 10);
+  assert.deepEqual(
+    capabilities.map((capability) => capability.id),
+    [
+      'cli.cloudflare',
+      'cli.dokploy',
+      'cli.aws',
+      'cli.azure',
+      'cli.gcp',
+      'cli.hetzner',
+      'cli.tailscale',
+      'cli.stripe',
+      'cli.n8n',
+      'cli.github',
+    ],
+  );
+
+  for (const capability of capabilities) {
+    assert.equal(capability.kind, 'cli');
+    assert.equal(typeof capability.label, 'string');
+    assert.notEqual(capability.label.trim(), '');
+    assert.ok(capability.requiresApprovalFor.length > 0, `${capability.id} should require approval`);
+    assert.ok(capability.verification.length > 0, `${capability.id} should have verification`);
+  }
 });
 
 test('skill capability metadata is enriched from live frontmatter when available', () => {

@@ -3,6 +3,7 @@ import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprova
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
+import { listAgentCapabilities } from '../adapters/agent-capabilities.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -551,6 +552,9 @@ export async function routeRequest(
       return;
     case '/capabilities':
       sendJson(response, 200, getCapabilities());
+      return;
+    case '/api/agent/capabilities':
+      sendJson(response, 200, { capabilities: listAgentCapabilities() });
       return;
     case '/scheduler/status':
       sendJson(response, 200, getSchedulerStatus());

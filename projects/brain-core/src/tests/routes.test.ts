@@ -177,6 +177,17 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.executionGate.candidateActionKinds.includes('scheduler-run-mind-steward-dry-run'), true);
 });
 
+test('GET /api/agent/capabilities returns normalized agent capability registry', async () => {
+  const response = await exercise({ method: 'GET', url: '/api/agent/capabilities' });
+  const body = JSON.parse(response.body) as { capabilities: Array<{ id: string; kind: string; enabled: boolean }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(Array.isArray(body.capabilities), true);
+  assert.equal(body.capabilities.some((capability) => capability.id === 'skill.code'), true);
+  assert.equal(body.capabilities.some((capability) => capability.id === 'cli.github'), true);
+  assert.equal(body.capabilities.every((capability) => capability.enabled === true), true);
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');

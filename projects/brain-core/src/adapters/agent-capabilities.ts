@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { listAgentCliCapabilities } from './agent-cli-capability-manifest.js';
 
 export type AgentCapabilityKind = 'skill' | 'cli' | 'ai_surface' | 'service' | 'workflow';
 export type AgentCapabilitySafetyClass =
@@ -138,70 +139,10 @@ const AGENT_CAPABILITIES: AgentCapabilitySummary[] = [
     enabled: true,
     priority: 4,
   },
-  {
-    id: 'cli.cloudflare',
-    kind: 'cli',
-    label: 'Cloudflare CLI',
-    source: 'operations/runbooks/cloudflare-deploy.md',
-    description: 'Cloudflare tooling for DNS, tunnels, and deployment-related operations.',
-    safetyClass: 'external_state',
-    requiresApprovalFor: ['dns_change', 'deploy', 'external_state', 'credential_sensitive'],
-    preferredAiTaskTypes: ['infrastructure', 'dns', 'deploy'],
-    verification: ['cloudflare --help', 'wrangler --version'],
-    enabled: true,
-  },
-  {
-    id: 'cli.dokploy',
-    kind: 'cli',
-    label: 'Dokploy CLI',
-    source: 'operations/runbooks/dokploy.md',
-    description: 'Dokploy tooling for app deployment and hosting lifecycle management.',
-    safetyClass: 'external_state',
-    requiresApprovalFor: ['deploy', 'external_state', 'credential_sensitive'],
-    preferredAiTaskTypes: ['infrastructure', 'deploy'],
-    verification: ['dokploy --help'],
-    enabled: true,
-  },
-  {
-    id: 'cli.aws',
-    kind: 'cli',
-    label: 'AWS CLI',
-    source: 'operations/runbooks/aws.md',
-    description: 'AWS tooling for cloud infrastructure, IAM, and Bedrock access.',
-    safetyClass: 'credential_sensitive',
-    requiresApprovalFor: ['deploy', 'external_state', 'credential_sensitive'],
-    preferredAiTaskTypes: ['infrastructure', 'cloud'],
-    verification: ['aws --version'],
-    enabled: true,
-  },
-  {
-    id: 'cli.azure',
-    kind: 'cli',
-    label: 'Azure CLI',
-    source: 'operations/runbooks/azure.md',
-    description: 'Azure tooling for cloud infrastructure and resource management.',
-    safetyClass: 'credential_sensitive',
-    requiresApprovalFor: ['deploy', 'external_state', 'credential_sensitive'],
-    preferredAiTaskTypes: ['infrastructure', 'cloud'],
-    verification: ['az --version'],
-    enabled: true,
-  },
-  {
-    id: 'cli.github',
-    kind: 'cli',
-    label: 'GitHub CLI',
-    source: 'operations/runbooks/github.md',
-    description: 'GitHub tooling for repository and pull request operations.',
-    safetyClass: 'repo_write',
-    requiresApprovalFor: ['commit', 'push', 'repo_write'],
-    preferredAiTaskTypes: ['code', 'repo_management'],
-    verification: ['gh --version'],
-    enabled: true,
-  },
 ];
 
 export function listAgentCapabilities(skillsRoot = getSkillsRoot()): AgentCapabilitySummary[] {
-  return AGENT_CAPABILITIES.map((capability) => {
+  const skillAndAiCapabilities = AGENT_CAPABILITIES.map((capability) => {
     const cloned = cloneCapability(capability);
 
     if (!capability.id.startsWith('skill.')) {
@@ -221,6 +162,8 @@ export function listAgentCapabilities(skillsRoot = getSkillsRoot()): AgentCapabi
       description: frontmatter.description ?? cloned.description,
     };
   });
+
+  return [...skillAndAiCapabilities, ...listAgentCliCapabilities()];
 }
 
 interface SkillFrontmatter {
