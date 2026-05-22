@@ -331,6 +331,21 @@ function isPlaceholderValue(val: string): boolean {
   return /^<.+>$/.test(val) || /^(example|placeholder|your[-_]|changeme|todo)/i.test(val) || val.includes('PLACEHOLDER') || val.includes('_example') || val.includes('_test');
 }
 
+// Extract the last meaningful line from a Node child_process error message
+// (which includes the full Python traceback). Shows the RuntimeError/ValueError
+// message instead of a truncated blob of traceback.
+function extractPythonError(e: unknown): string {
+  if (!(e instanceof Error)) return 'command_failed';
+  const lines = e.message.split('\n').map(l => l.trim()).filter(Boolean);
+  // Last line starting with a known error type is the most useful
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const l = lines[i] ?? '';
+    if (/^(RuntimeError|ValueError|TypeError|KeyError|FileNotFoundError|PermissionError|Exception):/.test(l)) return l;
+  }
+  // Fall back to last non-empty line
+  return lines[lines.length - 1]?.slice(0, 200) ?? 'command_failed';
+}
+
 // ── YouTube OAuth two-step flow ────────────────────────────────────────────
 
 const YT_UPLOADER_SCRIPT = expandHome('~/.local/video-orchestrator/scripts/youtube_uploader.py');
@@ -363,7 +378,7 @@ export function getYouTubeOAuthUrl(account: string): { ok: boolean; url?: string
     if (!urlMatch || !urlMatch[1]) return { ok: false, error: 'url_not_found_in_output' };
     return { ok: true, url: urlMatch[1] };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'auth_url_failed' };
+    return { ok: false, error: extractPythonError(e) };
   }
 }
 
@@ -382,7 +397,7 @@ export function exchangeYouTubeOAuthCode(account: string, code: string): { ok: b
     });
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'auth_exchange_failed' };
+    return { ok: false, error: extractPythonError(e) };
   }
 }
 
