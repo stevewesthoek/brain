@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/Assets.car</key>
 		<data>
-		ZJwzTSWP62atoDHH0LbSApuEfbQ=
+		20i2MYtCpeNYCWrZuv8LCXypT5Y=
 		</data>
 		<key>Resources/CUAAppIcon.icns</key>
 		<data>
@@ -18,15 +18,15 @@
 		</data>
 		<key>Resources/Package_Appshot.bundle/Contents/Info.plist</key>
 		<data>
-		oLw66FPmFJp2Ml+kwzLsbPIhM0k=
+		OYZUTKCa0kDRnDQ7qfdFezirF6U=
 		</data>
 		<key>Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
 		<data>
-		S5ADGd3otRfgVKkytGvHdsoJX6Q=
+		+xo2R7MtmojLox6YCAuxPCdpgbo=
 		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Info.plist</key>
 		<data>
-		fY3HHMEp/cpkDuu8L4RSJKei4mo=
+		eFjOGZoR3Wyg3IjDsSrV1hBUN3s=
 		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
 		<data>
@@ -214,7 +214,7 @@
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Info.plist</key>
 		<data>
-		DIxNo6vFR/bJZ+wxCclrIaEXxkA=
+		gaZzxVcHlcDDYTGuu9swmsMbBTk=
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
 		<data>
@@ -242,7 +242,7 @@
 		</data>
 		<key>Resources/Package_SlimCore.bundle/Contents/Info.plist</key>
 		<data>
-		RKmZPiLOmBDX7MHBneD9hq3vt3c=
+		F90LVRvYp16MkeyCMK9g9ngN1vw=
 		</data>
 		<key>Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
 		<data>
@@ -250,7 +250,7 @@
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<data>
-		aQ8SG4ai7ixRnuFGrM5Kw0rGurA=
+		5XTWq0dYZ+U6RadPvxORr6IbWYI=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
 		<data>
@@ -263,7 +263,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			4iwXjqLdsDs6p7CJdteBOPUmjKG24YIzbFT9Umth/4Y=
+			AuDm9qDggvbDm1ro0lk5UV8B5BMarajIViKyzeB6KuI=
 			</data>
 		</dict>
 		<key>Resources/CUAAppIcon.icns</key>
@@ -284,21 +284,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			o29a3INk3Nr50iHCmahHPBCbFU4eUZTKSgMAHoyyp34=
+			ThEiGPfCmW30LJYmdQsQHQ/1wcSJ3utmy5dN4eKNb0g=
 			</data>
 		</dict>
 		<key>Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			oSSLMnueVA0LpCwd54EqnvS6HiyYHIBxuwDxSh96B0o=
+			9EqNdIwbxEx4CnjU5RiLNlLPCI7VrtwQwXC16Qrz+cE=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			3wJVcyYPZ+WuTrHICres/Dzkr7kXTOx/BePPnX5iF6M=
+			z2DIGqE7LHZKQPbUY2QlGRwpcML33IxpQtWmA4MtQjM=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
@@ -627,7 +627,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			HOYPWMIROI2h86CEQQeY1Myn84FbToL2uYZjvhJMeZ8=
+			cLgo7DOble0ayvWPTv9emBqd6JzuCXlCB1FWnwBSz1c=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -676,7 +676,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			EeXtZ20ekTc33oJ6ssTA/ph/g2vl8iqiHvfQ3Jwkdwo=
+			ixwQCiJfqmQ2lyJIiqpvevgeFEstJCyu7ORTIBZtpGo=
 			</data>
 		</dict>
 		<key>Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
@@ -690,7 +690,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			WOv6RLLDHAtkXAh3FcjkyysyN11UE4+Aob0W5otbHgw=
+			0/GU66F02NrYE2vO5DAoH1JueVv3qfzZo9lbxF4YFVA=
 			</data>
 		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
