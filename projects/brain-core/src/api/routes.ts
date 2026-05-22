@@ -554,7 +554,7 @@ export async function routeRequest(
       sendJson(response, 200, getCapabilities());
       return;
     case '/api/agent/capabilities':
-      sendJson(response, 200, { capabilities: listAgentCapabilities() });
+      sendJson(response, 200, { capabilities: await listAgentCapabilities() });
       return;
     case '/scheduler/status':
       sendJson(response, 200, getSchedulerStatus());

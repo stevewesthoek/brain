@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-B3 — CLI capability manifest
+**Next task:** Sprint 0C-C — Run ledger and task graph
 
 ---
 
@@ -21,9 +21,9 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 - Phase 5 — YouTube Reporting API bulk sync, A/B winner declaration
 - Phase 0.7-A — Agent Orchestrator research and architecture docs
 
-**Active next (Sprint 0C-B):**
-- Build read-only Agent Capability Registry in Brain Core.
-- Current Mini slice: `Task 0C-B3 — CLI capability manifest`.
+**Active next (Sprint 0C-C):**
+- Build run ledger and task graph support in Brain Core.
+- Current Mini slice: `Task 0C-C — Run ledger and task graph`.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -80,9 +80,9 @@ The implementation plan is canonical for task status.
 
 ---
 
-## Sprint 0C-B2 Result
+## Sprint 0C-B6 Result
 
-Completed. The five skill capability records now use live `SKILL.md` frontmatter for name and description when present, and they fall back to the static registry values when a skill file is missing.
+Completed. `brain-agent capabilities` is wired as a smoke command, `/api/agent/capabilities` is exposed over Brain Core, CLI capability records are normalized, and AI surfaces now come from the live selector when available with static fallback when unavailable.
 
 ---
 
@@ -219,35 +219,20 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Your next task is Sprint 0C-B3 only: implement the static CLI capability manifest.
+Your next task is Sprint 0C-C only: build the run ledger and task graph support.
 
-Read first:
-- projects/brain-core/src/adapters/agent-capabilities.ts
-- projects/brain-core/src/tests/agent-capabilities.test.ts
-- projects/brain-core/src/adapters/skills.ts
+Start by reading:
+1. AGENTS.md
+2. .ai/handoffs/2026-05-22-vo-phases-1-5-complete.md
+3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
+4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Add a new adapter and tests for the CLI registry. Keep it read-only and static for now.
-
-Cover these CLIs:
-- Cloudflare
-- Dokploy
-- AWS
-- Azure
-- GCP
-- Hetzner
-- Tailscale
-- Stripe
-- n8n
-- GitHub
-
-Each record should normalize into the same AgentCapabilitySummary shape and clearly mark approval requirements.
-
-Do not add routes, filesystem scanning, ai-select calls, run ledger, or execution.
+Focus on read-only structure first: define the run ledger and task graph shapes, persistence strategy, and minimal endpoint or adapter surfaces if needed. Do not implement execution or approval mutations in this slice.
 
 Run:
 cd projects/brain-core
 npm run build
 node --test dist/tests/*.test.js
 
-When done, update projects/brain-core/docs/video-orchestrator-implementation-plan.md to mark Task 0C-B3 complete and leave 0C-B4 as next. Commit and push only your changes to main.
+When done, update the implementation plan to mark the run ledger/task graph task complete if the work is finished, and push only your changes to main.
 ```

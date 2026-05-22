@@ -300,18 +300,18 @@ Define:
 
 ---
 
-### Task 0C-B3 — CLI capability manifest 🔲 NEXT
+### Task 0C-B3 — CLI capability manifest ✅
 **Scope:** Keep CLI capability discovery static and explicit first.
 
 **Files:** Add `projects/brain-core/src/adapters/agent-cli-capability-manifest.ts` or equivalent.
 
 **CLIs to cover:** Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub.
 
-**Done when:** CLI records are normalized into the same `AgentCapabilitySummary` shape and clearly mark approval requirements.
+**Done:** CLI records are normalized into the same `AgentCapabilitySummary` shape and clearly mark approval requirements.
 
 ---
 
-### Task 0C-B4 — AI Selector surface adapter 🔲
+### Task 0C-B4 — AI Selector surface adapter ✅
 **Scope:** Read-only, timeout-safe adapter for AI Model Selector provider data.
 
 **Files:** Extend `projects/brain-core/src/adapters/agent-capabilities.ts` or add a helper adapter.
@@ -321,11 +321,11 @@ Define:
 - Convert returned providers into `ai_surface` capability records.
 - If the selector is unavailable, return static fallback AI surface records and include a warning field.
 
-**Done when:** Tests cover both healthy JSON provider input and selector-unavailable fallback.
+**Done:** Tests cover both healthy JSON provider input and selector-unavailable fallback.
 
 ---
 
-### Task 0C-B5 — Brain Core endpoint 🔲
+### Task 0C-B5 — Brain Core endpoint ✅
 **Scope:** Expose the normalized registry over HTTP.
 
 **Files:**
@@ -339,11 +339,11 @@ GET /api/agent/capabilities
 
 **Compatibility note:** Existing `/capabilities` must remain unchanged. The new endpoint is additive.
 
-**Done when:** Endpoint returns `{ capabilities: [...] }`, is localhost-only like all Brain Core routes, and tests pass.
+**Done:** Endpoint returns `{ capabilities: [...] }`, is localhost-only like all Brain Core routes, and tests pass.
 
 ---
 
-### Task 0C-B6 — CLI smoke command 🔲
+### Task 0C-B6 — CLI smoke command ✅
 **Scope:** Add a thin local command that calls the endpoint.
 
 Command:
@@ -351,7 +351,11 @@ Command:
 brain-agent capabilities
 ```
 
-**Done when:** The command prints normalized JSON and exits nonzero if Brain Core is unavailable.
+**Done:** The command prints normalized JSON and exits nonzero if Brain Core is unavailable.
+
+---
+
+### Task 0C-C — Run ledger and task graph 🔲 NEXT
 
 ---
 

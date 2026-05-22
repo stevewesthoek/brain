@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { listAgentAiSurfaceCapabilities } from './agent-ai-surface-capability-manifest.js';
 import { listAgentCliCapabilities } from './agent-cli-capability-manifest.js';
 
 export type AgentCapabilityKind = 'skill' | 'cli' | 'ai_surface' | 'service' | 'workflow';
@@ -87,61 +88,9 @@ const AGENT_CAPABILITIES: AgentCapabilitySummary[] = [
     verification: ['render preview', 'artifact inspection', 'git diff --check'],
     enabled: true,
   },
-  {
-    id: 'ai.ollama-m4pro',
-    kind: 'ai_surface',
-    label: 'Mac Mini M4 Pro Ollama',
-    source: 'projects/brain-core/docs/ai-model-selector-architecture.md',
-    description: 'Primary local AI execution surface on the M4 Pro.',
-    safetyClass: 'read_only',
-    requiresApprovalFor: [],
-    preferredAiTaskTypes: ['text/small', 'text/medium', 'text/large', 'text/review'],
-    verification: ['curl http://localhost:11434/api/tags'],
-    enabled: true,
-    priority: 1,
-  },
-  {
-    id: 'ai.ollama-m1',
-    kind: 'ai_surface',
-    label: 'MacBook M1 Ollama',
-    source: 'projects/brain-core/docs/ai-model-selector-architecture.md',
-    description: 'Secondary local AI execution surface on the M1 Thunderbolt node.',
-    safetyClass: 'read_only',
-    requiresApprovalFor: [],
-    preferredAiTaskTypes: ['text/small', 'text/medium'],
-    verification: ['curl http://192.168.2.2:11434/api/tags'],
-    enabled: true,
-    priority: 2,
-  },
-  {
-    id: 'ai.codex-cli',
-    kind: 'ai_surface',
-    label: 'Codex CLI',
-    source: 'projects/brain-core/docs/ai-model-selector-architecture.md',
-    description: 'Subscription-backed OpenAI execution surface for tasks local AI cannot handle well enough.',
-    safetyClass: 'read_only',
-    requiresApprovalFor: [],
-    preferredAiTaskTypes: ['code_generation', 'code_review', 'reasoning'],
-    verification: ['codex --help'],
-    enabled: true,
-    priority: 3,
-  },
-  {
-    id: 'ai.claude-bedrock',
-    kind: 'ai_surface',
-    label: 'Claude via Amazon Bedrock',
-    source: 'projects/brain-core/docs/ai-model-selector-architecture.md',
-    description: 'Paid fallback Claude execution surface for tasks that need it.',
-    safetyClass: 'read_only',
-    requiresApprovalFor: [],
-    preferredAiTaskTypes: ['reasoning', 'large_context_batch', 'code_review'],
-    verification: ['aws sts get-caller-identity'],
-    enabled: true,
-    priority: 4,
-  },
 ];
 
-export function listAgentCapabilities(skillsRoot = getSkillsRoot()): AgentCapabilitySummary[] {
+export async function listAgentCapabilities(skillsRoot = getSkillsRoot()): Promise<AgentCapabilitySummary[]> {
   const skillAndAiCapabilities = AGENT_CAPABILITIES.map((capability) => {
     const cloned = cloneCapability(capability);
 
@@ -163,7 +112,8 @@ export function listAgentCapabilities(skillsRoot = getSkillsRoot()): AgentCapabi
     };
   });
 
-  return [...skillAndAiCapabilities, ...listAgentCliCapabilities()];
+  const aiSurfaceCapabilities = (await listAgentAiSurfaceCapabilities()).capabilities;
+  return [...skillAndAiCapabilities, ...aiSurfaceCapabilities, ...listAgentCliCapabilities()];
 }
 
 interface SkillFrontmatter {

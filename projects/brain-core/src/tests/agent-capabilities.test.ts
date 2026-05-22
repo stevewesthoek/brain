@@ -4,11 +4,11 @@ import assert from 'node:assert/strict';
 import { listAgentCapabilities, readSkillFrontmatter } from '../adapters/agent-capabilities.js';
 import { listAgentCliCapabilities } from '../adapters/agent-cli-capability-manifest.js';
 
-test('listAgentCapabilities returns the seeded registry', () => {
-  const capabilities = listAgentCapabilities();
+test('listAgentCapabilities returns the seeded registry', async () => {
+  const capabilities = await listAgentCapabilities();
   const ids = capabilities.map((capability) => capability.id);
 
-  assert.equal(capabilities.length, 19);
+  assert.equal(capabilities.length, 20);
   assert.equal(new Set(ids).size, ids.length);
 
   for (const requiredId of [
@@ -58,8 +58,8 @@ test('listAgentCapabilities returns the seeded registry', () => {
   }
 });
 
-test('external-state capabilities require approval for stateful actions', () => {
-  const capabilities = listAgentCapabilities();
+test('external-state capabilities require approval for stateful actions', async () => {
+  const capabilities = await listAgentCapabilities();
   const externalStateCapabilities = capabilities.filter((capability) => capability.safetyClass === 'external_state');
 
   assert.ok(externalStateCapabilities.length > 0);
@@ -74,8 +74,8 @@ test('external-state capabilities require approval for stateful actions', () => 
   }
 });
 
-test('AI surfaces are ordered by priority', () => {
-  const capabilities = listAgentCapabilities();
+test('AI surfaces are ordered by priority', async () => {
+  const capabilities = await listAgentCapabilities();
   const aiSurfaces = capabilities.filter((capability) => capability.kind === 'ai_surface');
   const priorities = aiSurfaces.map((capability) => capability.priority ?? Number.MAX_SAFE_INTEGER);
 
@@ -111,8 +111,8 @@ test('CLI capability manifest is normalized and approval-gated', () => {
   }
 });
 
-test('skill capability metadata is enriched from live frontmatter when available', () => {
-  const capabilities = listAgentCapabilities();
+test('skill capability metadata is enriched from live frontmatter when available', async () => {
+  const capabilities = await listAgentCapabilities();
   const codeCapability = capabilities.find((capability) => capability.id === 'skill.code');
 
   assert.ok(codeCapability);
@@ -120,10 +120,10 @@ test('skill capability metadata is enriched from live frontmatter when available
   assert.match(codeCapability?.description ?? '', /single entry point for all coding work/i);
 });
 
-test('skill capability metadata falls back when a skill file is unavailable', () => {
+test('skill capability metadata falls back when a skill file is unavailable', async () => {
   const missingSkillsRoot = path.join(process.cwd(), '.tmp-missing-skills-root');
   const metadata = readSkillFrontmatter('design', missingSkillsRoot);
-  const capabilities = listAgentCapabilities(missingSkillsRoot);
+  const capabilities = await listAgentCapabilities(missingSkillsRoot);
   const designCapability = capabilities.find((capability) => capability.id === 'skill.design');
 
   assert.equal(metadata, null);

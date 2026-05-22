@@ -183,9 +183,10 @@ test('GET /api/agent/capabilities returns normalized agent capability registry',
 
   assert.equal(response.statusCode, 200);
   assert.equal(Array.isArray(body.capabilities), true);
+  assert.ok(body.capabilities.length > 0);
   assert.equal(body.capabilities.some((capability) => capability.id === 'skill.code'), true);
   assert.equal(body.capabilities.some((capability) => capability.id === 'cli.github'), true);
-  assert.equal(body.capabilities.every((capability) => capability.enabled === true), true);
+  assert.equal(body.capabilities.every((capability) => typeof capability.enabled === 'boolean'), true);
 });
 
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
