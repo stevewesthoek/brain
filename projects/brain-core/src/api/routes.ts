@@ -1858,6 +1858,21 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
     return;
   }
 
+  if (url.pathname === '/open-url') {
+    const target = url.searchParams.get('url') ?? '';
+    const allowed = target.startsWith('https://accounts.google.com/') || target.startsWith('https://console.cloud.google.com/');
+    if (!target || !allowed) {
+      sendJson(response, 400, { ok: false, error: 'url_not_allowed' });
+      return;
+    }
+    const { execFile } = await import('node:child_process');
+    execFile('open', [target], (err) => {
+      if (err) sendJson(response, 500, { ok: false, error: err.message });
+      else sendJson(response, 200, { ok: true });
+    });
+    return;
+  }
+
   if (url.pathname === '/credentials/infra/youtube/auth-url') {
     const account = url.searchParams.get('account') ?? '';
     if (!account) {

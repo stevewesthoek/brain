@@ -8001,6 +8001,16 @@ export async function exchangeYouTubeOAuthCode(baseUrl: string, account: string,
   }
 }
 
+export async function openBrowserUrl(baseUrl: string, target: string): Promise<{ ok: boolean; error?: string }> {
+  const url = `${normalizeBaseUrl(baseUrl)}/open-url?url=${encodeURIComponent(target)}`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    return (await res.json()) as { ok: boolean; error?: string };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}
+
 export async function registerBrainCoreProject(baseUrl: string, entry: BrainCoreUserProjectEntry): Promise<BrainCoreRegisterProjectResult> {
   const params = new URLSearchParams({
     projectId: entry.projectId,

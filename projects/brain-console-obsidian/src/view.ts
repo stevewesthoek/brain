@@ -313,6 +313,7 @@ import {
   setInfraPlistCredential,
   getYouTubeOAuthUrl,
   exchangeYouTubeOAuthCode,
+  openBrowserUrl,
   registerBrainCoreProject,
   type BrainCoreVOAccountsResponse,
   type BrainCoreVOAuthStatusResponse,
@@ -3401,7 +3402,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     if (app.url) {
       const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
       openBtn.title = `Open ${app.name} in browser (${app.url})`;
-      openBtn.addEventListener('click', () => { openExternalUrl(app.url!); });
+      openBtn.addEventListener('click', () => { void openExternalUrl(settings.brainCoreUrl, app.url!); });
     }
   });
 
@@ -7340,14 +7341,11 @@ function renderBrainCoreConnectionDiagnosticsCard(state: BrainConsoleViewState):
   return container;
 }
 
-// ── Open URL in system browser (Electron-safe) ───────────────────────────
-function openExternalUrl(url: string): void {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { shell } = require('electron') as { shell: { openExternal: (url: string) => Promise<void> } };
-    void shell.openExternal(url);
-  } catch {
-    window.open(url, '_blank');
+// ── Open URL via Brain Core (Node.js process opens macOS 'open', no Electron sandbox issues) ──
+async function openExternalUrl(brainCoreUrl: string, url: string): Promise<void> {
+  const result = await openBrowserUrl(brainCoreUrl, url);
+  if (!result.ok) {
+    new Notice(`Could not open browser: ${result.error ?? 'unknown error'}`);
   }
 }
 
@@ -7693,14 +7691,14 @@ function startYouTubeOAuthFlow(
     try {
       const result = await getYouTubeOAuthUrl(brainCoreUrl, account);
       if (result.ok && result.url) {
-        openExternalUrl(result.url);
+        await openExternalUrl(brainCoreUrl, result.url);
         statusMsg.textContent = 'Browser opened — authorize, then paste the code below.';
         statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--ok';
         codeRow.removeClass('bc-accounts-oauth-flow--hidden');
         codeInput.focus();
         openBtn.textContent = 'Reopen browser';
         openBtn.disabled = false;
-        openBtn.onclick = () => { openExternalUrl(result.url!); };
+        openBtn.onclick = () => { void openExternalUrl(brainCoreUrl, result.url!); };
       } else {
         statusMsg.textContent = result.error ?? 'Failed to generate URL.';
         statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--error';
@@ -7801,7 +7799,7 @@ function renderProjectPlatformCard(
       hintSpan.createEl('span', { text: cred.hint });
       if (cred.deeplink) {
         const dlBtn = hintSpan.createEl('button', { cls: 'bc-accounts-deeplink-btn', text: '↗ Open' });
-        dlBtn.addEventListener('click', () => { openExternalUrl(cred.deeplink!); });
+        dlBtn.addEventListener('click', () => { void openExternalUrl(brainCoreUrl, cred.deeplink!); });
       }
     }
 
