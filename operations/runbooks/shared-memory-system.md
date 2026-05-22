@@ -132,13 +132,13 @@ mem-facts invalidate <fact-id>
 | Agent | mem-* tools | Automatic injection | Status |
 |-------|-------------|--------------------|----|
 | Claude Code | ✓ shell access | ✓ via UserPromptSubmit hook | Live |
-| Codex CLI | ✓ shell access | ✗ no hook mechanism | Partial |
-| Gemini CLI | ✓ shell access | ✗ no hook mechanism | Partial |
+| Codex CLI | ✓ shell access | ✓ via `~/.brain/memory-context.md` (passive read at session start) | Live |
+| Gemini CLI | ✓ shell access | ✓ via `~/.brain/memory-context.md` (passive read at session start) | Live |
 | Any new AI | add shell access | include memory-context.md pointer | 2 steps |
 
-**The gap:** Codex and Gemini can call `mem-search` and `mem-write` explicitly, but there is no automatic injection when you open a session. They see memory only when they explicitly ask for it.
+**How passive injection works:** `~/.brain/memory-context.md` is regenerated nightly by `memory-context-refresh.sh` (runs as part of `office-nightly-scheduler.sh`). It contains the full memory index + active facts in ~1-2k tokens. AGENTS.md and GEMINI.md instruct those agents to read this file at session start. No hook needed — they read it directly.
 
-**Planned fix:** A nightly-generated `~/.brain/memory-context.md` — a compact always-current summary of the memory index. Codex and Gemini AGENTS.md/GEMINI.md include a pointer to this file. On session start they read it passively. No hook needed.
+**Difference from Claude hook injection:** Claude's hook injects memory into every prompt automatically, triggered by intent detection. Codex/Gemini read `memory-context.md` once at session start — same information, passive pattern.
 
 ---
 
@@ -222,17 +222,17 @@ mem-facts search ProChat        # search facts for keyword
 | `~/.brain/memory/MEMORY.md` | Index — always the first read |
 | `~/.brain/memory/*.md` | Individual memory entries |
 | `~/.brain/memory/facts.jsonl` | Structured facts (append-only) |
-| `~/.brain/memory-context.md` | Auto-generated compact summary (planned, nightly) |
+| `~/.brain/memory-context.md` | Auto-generated compact summary (nightly, live) |
 | `brain/tools/scripts/mem-*.sh` | Source scripts (committed to brain repo) |
 | `~/.local/bin/mem-*` | Symlinks — callable from any shell |
 | `~/.claude/hooks/memory-recall-hook.sh` | Claude automatic injection hook |
 
 ---
 
-## Planned work (not yet live)
+## Planned work
 
-**Item 1 — Automatic context injection for Codex/Gemini**
-Generate `~/.brain/memory-context.md` nightly. Codex and Gemini read it on session start. No hook needed. Adding a new AI = one pointer in its config.
+**Item 1 — Automatic context injection for Codex/Gemini ✓ Live**
+`~/.brain/memory-context.md` is generated nightly by `brain/tools/scripts/memory-context-refresh.sh` (wired into `office-nightly-scheduler.sh`). Codex reads it via AGENTS.md instruction at session start. Gemini reads it via GEMINI.md instruction. No hook needed. Adding a new AI = one pointer in its config.
 
 **Item 2 — Mind compile loop**
 Nightly job reads `capture/inbox/`, classifies each file, writes a proposed action to `wiki/log.md`. Suggest-only phase first (no file moves). Human reviews and approves. Runs in nightly scheduler after existing jobs.

@@ -261,6 +261,9 @@ Single entry point for all memory work: recall past decisions, save preferences,
 
 **Shared memory store: `~/.brain/memory/`** — this is the canonical cross-AI memory. All agents (Claude, Codex, Gemini) read and write the same store. A memory saved by Codex is immediately visible to Claude and Gemini. Use `mem-write`/`mem-search`/`mem-facts` — they all point to `~/.brain/memory/` by default.
 
+**Session start — read memory context passively:**
+At the start of every session, read `~/.brain/memory-context.md`. This file is regenerated nightly and contains a compact summary of the full memory index + active facts. Reading it costs ~1-2k tokens and gives you immediate cross-session context without any hook. If the file doesn't exist yet (first run before nightly refresh), call `mem-search` instead.
+
 Write-side tools:
 - `mem-write user|feedback|project|ref <name> <description> [--body "..."] [--facts "e|p|o,...]"` — create/update memory
 - `mem-facts add <entity> <predicate> <object>` — add structured fact
@@ -271,13 +274,13 @@ Read-side tools:
 - `mem-search --facts <keyword>` — search facts
 - `mem-facts list [entity]` — list active facts
 
-Automatic intent detection (UserPromptSubmit hook):
+Automatic intent detection (UserPromptSubmit hook — Claude Code only):
 - User says "what did we decide" → `--- Memory recall ---` block injected
 - User says "remember this" → capture instructions injected
 - User says "what do we know about X" → facts context injected
 - User says "show all my memories" → full memory index injected
 
-No manual invocation needed — the hook detects intent from natural language.
+Gemini has no hook mechanism — use `~/.brain/memory-context.md` at session start instead.
 
 ---
 

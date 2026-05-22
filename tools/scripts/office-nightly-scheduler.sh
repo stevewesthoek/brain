@@ -371,6 +371,21 @@ run_video_runtime_report() {
   run_job "video-runtime-report" "$timeout_seconds" "$command" "$report_log"
 }
 
+run_memory_context_refresh() {
+  local timeout_seconds="${MEMORY_CONTEXT_REFRESH_TIMEOUT_SECONDS:-30}"
+  local refresh_script="${MEMORY_CONTEXT_REFRESH_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/memory-context-refresh.sh}"
+  local refresh_log="$LOG_DIR/memory-context-refresh.log"
+  local command
+
+  if [[ ! -f "$refresh_script" ]]; then
+    log "skipping job=memory-context-refresh reason=missing_script path=$refresh_script"
+    return 0
+  fi
+
+  command="$(printf 'bash %q >> %q 2>&1' "$refresh_script" "$refresh_log")"
+  run_job "memory-context-refresh" "$timeout_seconds" "$command" "$refresh_log"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -498,6 +513,9 @@ main() {
 
   # Video runtime report — writes read-only runtime status only; never stops chain
   run_video_runtime_report || log "warning video-runtime-report failed but chain continues"
+
+  # Memory context refresh — regenerates ~/.brain/memory-context.md for passive Codex/Gemini injection
+  run_memory_context_refresh || log "warning memory-context-refresh failed but chain continues"
 
   # ING Bank Statement download — runs on the 1st of each month, never stops chain
   run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"
