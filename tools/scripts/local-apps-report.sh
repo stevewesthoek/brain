@@ -43,6 +43,15 @@ cat > "$JSON_OUTPUT" <<'JSON'
       "name": "Brain Core",
       "status": "unknown",
       "actionsSupported": false
+    },
+    {
+      "id": "fala",
+      "name": "Fala",
+      "status": "unknown",
+      "actionsSupported": true,
+      "url": "http://localhost:3050",
+      "healthCheck": "http://localhost:3050/api/health",
+      "notes": "Fala is managed through Brain Core local-app registry and exposes npm run dashboard:status for Obsidian metadata."
     }
   ]
 }
@@ -86,6 +95,7 @@ cat > "$MD_OUTPUT" <<MD
 - ProBot
 - Office Nightly Scheduler
 - Brain Core
+- Fala
 
 ## Safety
 
