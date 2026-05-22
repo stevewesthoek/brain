@@ -7871,8 +7871,64 @@ export interface BrainCoreCredentialSetResult {
   error?: string;
 }
 
+export interface BrainCoreCredentialRevokeResult {
+  ok: boolean;
+  projectId: string;
+  key: string;
+  action?: 'revoked';
+  error?: string;
+}
+
+export interface BrainCoreInfraCredentialEntry {
+  key: string;
+  label: string;
+  type: 'app_id' | 'secret' | 'token' | 'board_id' | 'api_key' | 'url' | 'other';
+  required: boolean;
+  storage: 'env_file' | 'plist' | 'keychain';
+  isSet: boolean;
+  hasPlaceholder: boolean;
+  hint?: string;
+  writeInstructions?: string;
+  oauthInstructions?: string;
+}
+
+export interface BrainCoreInfraCredentialGroup {
+  platformId: string;
+  platformName: string;
+  credentials: BrainCoreInfraCredentialEntry[];
+  allRequiredSet: boolean;
+}
+
+export interface BrainCoreProjectCredentialEntry extends BrainCoreCredentialEntry {
+  storage: 'env_file' | 'plist' | 'keychain';
+}
+
+export interface BrainCoreProjectCredentialPlatform {
+  platformId: string;
+  platformName: string;
+  platformCategory: 'social' | 'infra';
+  credentials: BrainCoreProjectCredentialEntry[];
+  allRequiredSet: boolean;
+}
+
+export interface BrainCoreCredentialCatalogProject {
+  projectId: string;
+  displayName: string;
+  envFilePath: string;
+  platforms: BrainCoreProjectCredentialPlatform[];
+}
+
+export interface BrainCoreCredentialCatalogResponse {
+  projects: BrainCoreCredentialCatalogProject[];
+  infra: BrainCoreInfraCredentialGroup[];
+}
+
 export function readBrainCoreCredentials(baseUrl: string, projectId: string): Promise<HttpResult<BrainCoreCredentialListResponse>> {
   return fetchJson<BrainCoreCredentialListResponse>(normalizeBaseUrl(baseUrl), `/credentials/${encodeURIComponent(projectId)}`);
+}
+
+export function readBrainCoreCredentialCatalog(baseUrl: string): Promise<HttpResult<BrainCoreCredentialCatalogResponse>> {
+  return fetchJson<BrainCoreCredentialCatalogResponse>(normalizeBaseUrl(baseUrl), '/credentials/catalog');
 }
 
 export async function setBrainCoreCredential(baseUrl: string, projectId: string, key: string, value: string): Promise<BrainCoreCredentialSetResult> {
@@ -7880,6 +7936,16 @@ export async function setBrainCoreCredential(baseUrl: string, projectId: string,
   try {
     const res = await fetch(url, { method: 'POST' });
     return (await res.json()) as BrainCoreCredentialSetResult;
+  } catch (err) {
+    return { ok: false, projectId, key, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}
+
+export async function revokeBrainCoreCredential(baseUrl: string, projectId: string, key: string): Promise<BrainCoreCredentialRevokeResult> {
+  const url = `${normalizeBaseUrl(baseUrl)}/credentials/${encodeURIComponent(projectId)}/revoke?key=${encodeURIComponent(key)}`;
+  try {
+    const res = await fetch(url, { method: 'POST' });
+    return (await res.json()) as BrainCoreCredentialRevokeResult;
   } catch (err) {
     return { ok: false, projectId, key, error: err instanceof Error ? err.message : 'fetch_failed' };
   }

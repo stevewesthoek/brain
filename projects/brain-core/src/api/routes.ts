@@ -7,7 +7,7 @@ import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
 import { getPlatform, listPlatforms } from '../adapters/platforms.js';
-import { listProjectCredentials, setProjectCredential } from '../adapters/credentials.js';
+import { listProjectCredentials, setProjectCredential, getCredentialCatalog, revokeProjectCredential } from '../adapters/credentials.js';
 import {
   readPostOrchestratorDraftFixtures,
   readPostDraftReviewQueue,
@@ -1786,6 +1786,11 @@ export async function routeRequest(
         }
       }
 
+      if (url.pathname === '/credentials/catalog') {
+        sendJson(response, 200, getCredentialCatalog());
+        return;
+      }
+
       const credListMatch = /^\/credentials\/([^/]+)$/.exec(url.pathname);
       if (credListMatch) {
         sendJson(response, 200, listProjectCredentials(decodeURIComponent(credListMatch[1] ?? '')));
@@ -1813,6 +1818,19 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
       return;
     }
     const result = setProjectCredential(projectId, key, value);
+    sendJson(response, result.ok ? 200 : result.error === 'key_not_allowed' ? 403 : 400, result);
+    return;
+  }
+
+  const credRevokeMatch = /^\/credentials\/([^/]+)\/revoke$/.exec(url.pathname);
+  if (credRevokeMatch) {
+    const projectId = decodeURIComponent(credRevokeMatch[1] ?? '');
+    const key = url.searchParams.get('key') ?? '';
+    if (!key) {
+      sendJson(response, 400, { ok: false, projectId, key, error: 'key_required' });
+      return;
+    }
+    const result = revokeProjectCredential(projectId, key);
     sendJson(response, result.ok ? 200 : result.error === 'key_not_allowed' ? 403 : 400, result);
     return;
   }
