@@ -250,3 +250,15 @@
 [2026-05-07 13:44:01] [DAEMON] Idle timeout reached (15 min) - shutting down containers
 [2026-05-07 13:44:04] [DAEMON] Containers shut down
 [2026-05-12 12:29:15] [DAEMON] Firecrawl Idle Daemon started (checking every 30s, timeout: 15min)
+[2026-05-22 20:46:36] Checking OrbStack status...
+[2026-05-22 20:46:36] OrbStack is already running
+[2026-05-22 20:46:36] Ensuring Firecrawl is running...
+[2026-05-22 20:46:36] Firecrawl is already running
+[2026-05-22 20:46:36] Health check: OK
+[2026-05-22 20:47:23] Checking OrbStack status...
+[2026-05-22 20:47:23] OrbStack is already running
+[2026-05-22 20:47:23] Ensuring Firecrawl is running...
+[2026-05-22 20:47:23] Firecrawl is already running
+[2026-05-22 20:47:23] Health check: OK
+[2026-05-22 21:02:40] [DAEMON] Idle timeout reached (15 min) - shutting down containers
+[2026-05-22 21:02:43] [DAEMON] Containers shut down
