@@ -7694,19 +7694,20 @@ function renderYouTubeOAuthRow(
     const wrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
     wrap.createEl('span', { cls: 'bc-accounts-feedback bc-accounts-feedback--ok', text: 'Connected' });
     const reconnectBtn = wrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Reconnect' });
-    reconnectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, brainCoreUrl, tr, statusTd, true));
+    reconnectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, cred.key, brainCoreUrl, tr, statusTd, true));
     return;
   }
 
   // Not connected — show connect button
   const wrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
   const connectBtn = wrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Connect' });
-  connectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, brainCoreUrl, tr, statusTd, false));
+  connectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, cred.key, brainCoreUrl, tr, statusTd, false));
 }
 
 function startYouTubeOAuthFlow(
   inputTd: HTMLElement,
   account: string,
+  credKey: string,
   brainCoreUrl: string,
   tr: HTMLElement,
   statusTd: HTMLElement,
@@ -7714,23 +7715,23 @@ function startYouTubeOAuthFlow(
 ): void {
   inputTd.empty();
 
+  // Stacked layout: status message, then open button, then code row (hidden until URL opened)
   const flow = inputTd.createDiv({ cls: 'bc-accounts-oauth-flow' });
-  const statusMsg = flow.createEl('span', { cls: 'bc-accounts-feedback' });
+  const statusMsg = flow.createEl('div', { cls: 'bc-accounts-feedback' });
 
-  // Code input row — shown after URL is opened
-  const codeRow = flow.createDiv({ cls: 'bc-accounts-oauth-flow bc-accounts-oauth-flow--hidden' });
-  const codeInput = codeRow.createEl('input', { cls: 'bc-accounts-input' });
-  codeInput.type = 'text';
-  codeInput.placeholder = 'Paste authorization code…';
-  codeInput.setAttribute('autocomplete', 'off');
-  const authorizeBtn = codeRow.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Authorize' });
-  const codeFeedback = codeRow.createEl('span', { cls: 'bc-accounts-feedback' });
-
-  // Open button — generates URL and opens browser in one click
   const openBtn = flow.createEl('button', {
     cls: 'bc-accounts-save-btn',
     text: isReconnect ? 'Open Google Auth (reconnect)' : 'Open Google Auth',
   });
+
+  // Code input row — shown after URL is opened
+  const codeRow = flow.createDiv({ cls: 'bc-accounts-oauth-code-row bc-accounts-oauth-flow--hidden' });
+  const codeInput = codeRow.createEl('input', { cls: 'bc-accounts-input bc-accounts-oauth-code-input' });
+  codeInput.type = 'text';
+  codeInput.placeholder = 'Paste authorization code from Google…';
+  codeInput.setAttribute('autocomplete', 'off');
+  const authorizeBtn = codeRow.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Authorize' });
+  const codeFeedback = flow.createEl('div', { cls: 'bc-accounts-feedback' });
 
   openBtn.addEventListener('click', async () => {
     openBtn.disabled = true;
@@ -7775,7 +7776,7 @@ function startYouTubeOAuthFlow(
     try {
       const result = await exchangeYouTubeOAuthCode(brainCoreUrl, account, code);
       if (result.ok) {
-        if (!tr.hasClass('bc-accounts-row--set') && cred.required) credBus.emit(cred.key, 1);
+        if (!tr.hasClass('bc-accounts-row--set')) credBus.emit(credKey, 1);
         tr.addClass('bc-accounts-row--set');
         statusTd.empty();
         renderCredStatusDot(statusTd, true, false);
@@ -7783,7 +7784,7 @@ function startYouTubeOAuthFlow(
         const wrap = inputTd.createDiv({ cls: 'bc-accounts-input-wrap' });
         wrap.createEl('span', { cls: 'bc-accounts-feedback bc-accounts-feedback--ok', text: 'Connected' });
         const reconnectBtn = wrap.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Reconnect' });
-        reconnectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, brainCoreUrl, tr, statusTd, true));
+        reconnectBtn.addEventListener('click', () => startYouTubeOAuthFlow(inputTd, account, credKey, brainCoreUrl, tr, statusTd, true));
       } else {
         codeFeedback.textContent = result.error ?? 'Authorization failed.';
         codeFeedback.className = 'bc-accounts-feedback bc-accounts-feedback--error';

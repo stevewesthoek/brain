@@ -1500,8 +1500,8 @@
 .bc-accounts-set-dot--placeholder { background: var(--bc-yellow, #eab308); }
 
 .bc-accounts-input-cell {
-  padding: 6px 12px;
-  vertical-align: middle;
+  padding: 8px 12px;
+  vertical-align: top;
 }
 
 .bc-accounts-input-wrap {
@@ -1548,11 +1548,35 @@
 .bc-accounts-feedback {
   font-size: 11px;
   flex-shrink: 0;
+  word-break: break-word;
 }
 
 .bc-accounts-feedback--ok    { color: var(--bc-green, #22c55e); }
 .bc-accounts-feedback--warn  { color: var(--bc-yellow, #eab308); }
 .bc-accounts-feedback--error { color: var(--bc-red, #ef4444); }
+
+/* ── OAuth flow — stacked, breathing room ── */
+.bc-accounts-oauth-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.bc-accounts-oauth-flow--hidden {
+  display: none;
+}
+
+.bc-accounts-oauth-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bc-accounts-oauth-code-input {
+  flex: 1;
+  min-width: 200px;
+}
 
 /* ── Overview section layout ── */
 .bc-overview-focus-grid {
