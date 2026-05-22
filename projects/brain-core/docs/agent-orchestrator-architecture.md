@@ -1,7 +1,7 @@
 # Brain Agent Orchestrator Architecture
 
-**Status:** Draft architecture contract  
-**Last updated:** 2026-05-22  
+**Status:** Draft architecture contract
+**Last updated:** 2026-05-22
 **Research basis:** `agent-orchestrator-research-2026-05-22.md`
 
 ## Purpose

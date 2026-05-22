@@ -1,7 +1,7 @@
 # Handoff — Video Orchestrator Phases 1–5 Complete
 
-**Date:** 2026-05-22  
-**Git:** commits `91fa6d03`, `b6a9b3aa`, `92d3fb97` pushed to main  
+**Date:** 2026-05-22
+**Git:** commits `91fa6d03`, `b6a9b3aa`, `92d3fb97` pushed to main
 **Next agent:** Sprint 6 — Brain Console UI
 
 ---
@@ -78,7 +78,7 @@ updated_at TIMESTAMPTZ DEFAULT NOW()
 ## Carry-Overs for Sprint 6
 
 ### Backend carry-over 1: Wire `thumbnails.set` into post job
-**File:** `~/.local/video-orchestrator/worker/video_worker.py` in `execute_post_job()`  
+**File:** `~/.local/video-orchestrator/worker/video_worker.py` in `execute_post_job()`
 After `upload_video()` succeeds and `artifact.thumbnail.variants` is populated:
 ```python
 if artifact.thumbnail and artifact.thumbnail.status == "completed":
@@ -90,7 +90,7 @@ if artifact.thumbnail and artifact.thumbnail.status == "completed":
 `set_thumbnail()` method needs to be added to `youtube_uploader.py` — it uses `thumbnails.set` API.
 
 ### Backend carry-over 2: Per-variant A/B CTR
-`declare_ab_winners()` in `analytics_sync.py` currently declares `variant_a` by default.  
+`declare_ab_winners()` in `analytics_sync.py` currently declares `variant_a` by default.
 True per-variant comparison requires YouTube Test & Compare API. Mark as future when wiring thumbnails.set.
 
 ---
@@ -166,10 +166,10 @@ True per-variant comparison requires YouTube Test & Compare API. Mark as future 
 
 ## Brain Console UI Context
 
-The Brain Console is an Obsidian plugin at `brain/projects/brain-console-obsidian/`.  
-UI entry point: `src/view.ts` — one large class `BrainConsoleView`.  
-Brain Core HTTP runs at `localhost:3000` (local Node.js server from `brain/projects/brain-core/`).  
-Pattern used throughout: fetch JSON from Brain Core endpoint → render HTML via `setInnerHTML` or DOM manipulation.  
+The Brain Console is an Obsidian plugin at `brain/projects/brain-console-obsidian/`.
+UI entry point: `src/view.ts` — one large class `BrainConsoleView`.
+Brain Core HTTP runs at `localhost:3000` (local Node.js server from `brain/projects/brain-core/`).
+Pattern used throughout: fetch JSON from Brain Core endpoint → render HTML via `setInnerHTML` or DOM manipulation.
 The VO view section starts around line 450 in `view.ts` (search for `video-orchestrator` or `VO Jobs`).
 
 New endpoints go in:
