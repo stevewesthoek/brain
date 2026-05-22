@@ -31,13 +31,13 @@ A unified AI routing microservice that all consumers (Video Orchestrator, Claude
 
 ## Hardware Inventory
 
-The AI Model Selector orchestrates inference across two local machines plus cloud APIs.
+The AI Model Selector orchestrates inference across two local machines plus a single batch-only cloud provider.
 
 ### Mac Mini M4 Pro — Primary (host machine)
 - **RAM:** 24 GB unified memory
 - **Storage:** 1 TB
 - **Thunderbolt:** TB5 port (negotiates TB3 speed with M1 MacBook)
-- **Network IP (Thunderbolt Bridge):** `192.168.100.1`
+- **Network IP (Thunderbolt Bridge):** `192.168.2.1`
 - **Ollama:** Runs locally, `localhost:11434`
 - **AI Selector service:** Runs here at `localhost:4890` — orchestrates all providers
 
@@ -53,7 +53,7 @@ The AI Model Selector orchestrates inference across two local machines plus clou
 - **RAM:** 16 GB unified memory
 - **Storage:** 1 TB
 - **Thunderbolt:** TB3/TB4 port
-- **Network IP (Thunderbolt Bridge):** `192.168.100.2`
+- **Network IP (Thunderbolt Bridge):** `192.168.2.2`
 - **Ollama:** Runs at `0.0.0.0:11434` (accessible from M4 Pro via Thunderbolt Bridge)
 - **Speed:** ~2-3× slower inference than M4 Pro — suitable for batch window / non-urgent tasks
 
@@ -83,17 +83,19 @@ The AI Model Selector orchestrates inference across two local machines plus clou
 - Stable for multi-process concurrent access
 - LM Studio cannot reliably serve requests headless overnight
 
-**Ollama API is OpenAI-compatible:** `POST /v1/chat/completions` — same interface the selector already uses for cloud providers.
+**Ollama API is OpenAI-compatible:** `POST /v1/chat/completions` — same interface the selector uses for local providers.
 
 ### Thunderbolt Bridge Setup (one-time, manual)
 
 1. Connect Mac Mini M4 Pro and MacBook M1 with Thunderbolt cable
-2. Mac Mini → System Settings → Network → Thunderbolt Bridge → assign IP `192.168.100.1`, mask `255.255.255.0`
-3. MacBook M1 → System Settings → Network → Thunderbolt Bridge → assign IP `192.168.100.2`, mask `255.255.255.0`
+2. Mac Mini → System Settings → Network → Thunderbolt Bridge → assign IP `192.168.2.1`, mask `255.255.255.0`
+3. MacBook M1 → System Settings → Network → Thunderbolt Bridge → assign IP `192.168.2.2`, mask `255.255.255.0`
 4. On M1: `launchctl setenv OLLAMA_HOST 0.0.0.0` (or set in LaunchAgent plist) — Ollama must listen on all interfaces
-5. Verify from M4 Pro: `curl http://192.168.100.2:11434/api/tags`
+5. Verify from M4 Pro: `curl http://192.168.2.2:11434/api/tags`
 
-Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://192.168.100.2:11434`.
+Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://192.168.2.2:11434`.
+
+Codex CLI usage is plan-limited under the user’s ChatGPT subscription, and Claude Code usage is via Amazon Bedrock. Both are modeled as providers inside `ai-providers.json`.
 
 ---
 
@@ -103,10 +105,12 @@ Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://19
 
 - Brain Core (TypeScript :4877) is read-only/advisory — adding execution routing violates its safety boundary
 - VO worker is Python; HTTP works for all languages
-- Claude Code, Codex, Gemini CLI cannot import Python — they need HTTP or CLI
+- Claude Code, Codex CLI, and other consumers cannot import Python — they need HTTP or CLI
 - Coupling routing to one consumer prevents reuse across tools
 
 **Result:** HTTP service + thin CLI shim. Same routing logic serves all consumers.
+
+**Consumer onboarding:** See `ai-selector-consumer-onboarding.md` for the standard repo/process integration checklist and execution contract.
 
 ---
 
@@ -120,7 +124,7 @@ Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://19
     __init__.py
 
 ~/.config/video-orchestrator/
-    ai-providers.json        # Provider registry (8 providers incl. M1 Ollama node)
+    ai-providers.json        # Provider registry (5 providers incl. M1 Ollama node)
     ai-task-types.json       # Task capability matrix (7 task types)
     ai-selector-config.json  # Behavior config (batch window, defer, timeouts)
 
@@ -137,7 +141,7 @@ Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://19
 
 ## Provider Registry (`ai-providers.json`)
 
-Nine providers. Two local Ollama nodes handle all generation tasks. Gemini Flash is **reserved exclusively for large-context batch work** (save-to-mind, knowledge graph ingestion, bulk processing) — it never appears in the generation fallback chain. After local, paid cloud escalates Anthropic-first because Claude Haiku produces better faith-based and nuanced content than GPT-4o-mini.
+Five providers. Two local Ollama nodes handle all generation tasks. Codex CLI is the second tier. Claude via Amazon Bedrock is the third tier. There is no OpenAI API fallback and no direct Anthropic API fallback in the selector.
 
 ```json
 {
@@ -157,23 +161,23 @@ Nine providers. Two local Ollama nodes handle all generation tasks. Gemini Flash
       "timeout_connect_sec": 3,
       "timeout_inference_sec": 120,
       "schedule_preference": "any",
-      "preferred_models": ["qwen2.5:14b", "llama3.1:8b"]
+      "preferred_models": ["qwen2.5:14b", "qwen2.5:32b", "llama3.1:8b"]
     },
     {
       "id": "ollama-m1",
       "label": "MacBook M1 (Thunderbolt node)",
       "type": "openai-compatible",
-      "base_url": "http://192.168.100.2:11434/v1",
+      "base_url": "http://192.168.2.2:11434/v1",
       "api_key": null,
       "cost_per_1k_tokens": 0.0,
       "priority": 2,
       "capabilities": ["text/small", "text/medium"],
       "max_context_tokens": 32768,
-      "health_check": { "endpoint": "http://192.168.100.2:11434/api/tags", "method": "GET", "expect_status": 200 },
+      "health_check": { "endpoint": "http://192.168.2.2:11434/api/tags", "method": "GET", "expect_status": 200 },
       "timeout_connect_sec": 5,
       "timeout_inference_sec": 180,
       "schedule_preference": "batch_window",
-      "preferred_models": ["qwen2.5:14b", "llama3.1:8b"],
+      "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b"],
       "notes": "M1 MacBook on Thunderbolt Bridge. 2-3x slower than M4 Pro. Prefer for batch/overnight tasks."
     },
     {
@@ -188,95 +192,34 @@ Nine providers. Two local Ollama nodes handle all generation tasks. Gemini Flash
       "models": ["large-v3", "distil-large-v3"]
     },
     {
-      "id": "gemini-flash",
-      "type": "gemini",
-      "base_url": "https://generativelanguage.googleapis.com/v1beta",
-      "api_key_env": "GEMINI_API_KEY",
+      "id": "codex-cli",
+      "label": "ChatGPT subscription Codex CLI",
+      "type": "cli",
       "cost_per_1k_tokens": 0.0,
-      "priority": 99,
-      "capabilities": ["text/large-context-batch"],
-      "max_context_tokens": 1000000,
-      "rate_limit": { "requests_per_minute": 15, "requests_per_day": 1500 },
-      "timeout_connect_sec": 5,
-      "timeout_inference_sec": 60,
-      "schedule_preference": "any",
-      "models": ["gemini-2.5-flash"],
-      "notes": "RESERVED: large-context batch work only (save-to-mind, knowledge graph, bulk processing). Never used for content generation. Priority 99 ensures it never appears in generation fallback chain."
-    },
-    {
-      "id": "claude-haiku",
-      "type": "anthropic",
-      "base_url": "https://api.anthropic.com/v1",
-      "api_key_env": "ANTHROPIC_API_KEY",
-      "cost_per_1k_tokens": 0.00025,
       "priority": 3,
-      "capabilities": ["text/small", "text/medium", "text/review"],
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 200000,
-      "rate_limit": { "requests_per_minute": 50, "tokens_per_minute": 100000 },
+      "health_check": { "binary_exists": "codex" },
       "timeout_connect_sec": 5,
-      "timeout_inference_sec": 30,
+      "timeout_inference_sec": 300,
       "schedule_preference": "any",
-      "models": ["claude-haiku-4-5"]
+      "models": ["gpt-5.4-mini", "gpt-5.4", "gpt-5.5"],
+      "notes": "Local Codex CLI routing under the ChatGPT subscription. No OpenAI API use."
     },
     {
-      "id": "openai-4o-mini",
-      "type": "openai",
-      "base_url": "https://api.openai.com/v1",
-      "api_key_env": "OPENAI_API_KEY",
-      "cost_per_1k_tokens": 0.00015,
+      "id": "claude-bedrock",
+      "label": "Claude via Amazon Bedrock",
+      "type": "bedrock",
+      "cost_per_1k_tokens": 0.0,
       "priority": 4,
-      "capabilities": ["text/small", "text/medium"],
-      "max_context_tokens": 128000,
-      "rate_limit": { "requests_per_minute": 60 },
-      "timeout_connect_sec": 5,
-      "timeout_inference_sec": 30,
-      "schedule_preference": "any",
-      "models": ["gpt-4o-mini"]
-    },
-    {
-      "id": "claude-sonnet",
-      "type": "anthropic",
-      "base_url": "https://api.anthropic.com/v1",
-      "api_key_env": "ANTHROPIC_API_KEY",
-      "cost_per_1k_tokens": 0.003,
-      "priority": 5,
-      "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "max_context_tokens": 200000,
-      "rate_limit": { "requests_per_minute": 40 },
+      "health_check": { "binary_exists": "aws" },
       "timeout_connect_sec": 5,
-      "timeout_inference_sec": 30,
+      "timeout_inference_sec": 300,
       "schedule_preference": "any",
-      "models": ["claude-sonnet-4-6"]
-    },
-    {
-      "id": "openai-4o",
-      "type": "openai",
-      "base_url": "https://api.openai.com/v1",
-      "api_key_env": "OPENAI_API_KEY",
-      "cost_per_1k_tokens": 0.005,
-      "priority": 6,
-      "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
-      "max_context_tokens": 128000,
-      "rate_limit": { "requests_per_minute": 30 },
-      "timeout_connect_sec": 5,
-      "timeout_inference_sec": 30,
-      "schedule_preference": "any",
-      "models": ["gpt-4o"]
-    },
-    {
-      "id": "claude-opus",
-      "type": "anthropic",
-      "base_url": "https://api.anthropic.com/v1",
-      "api_key_env": "ANTHROPIC_API_KEY",
-      "cost_per_1k_tokens": 0.015,
-      "priority": 7,
-      "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
-      "max_context_tokens": 200000,
-      "rate_limit": { "requests_per_minute": 20 },
-      "timeout_connect_sec": 5,
-      "timeout_inference_sec": 30,
-      "schedule_preference": "any",
-      "models": ["claude-opus-4-7"]
+      "models": ["claude-haiku", "claude-sonnet", "claude-opus"],
+      "notes": "Claude Code / Bedrock surface only. No direct Anthropic API use."
     }
   ]
 }
@@ -288,7 +231,7 @@ Nine providers. Two local Ollama nodes handle all generation tasks. Gemini Flash
 
 ## Provider Escalation Order
 
-### Generation tasks (`text/small`, `text/medium`, `text/large`, `text/review`)
+### Generation tasks (`text/small`, `text/medium`, `text/large`)
 
 The selector works through this ladder and stops at the first passing provider:
 
@@ -296,23 +239,20 @@ The selector works through this ladder and stops at the first passing provider:
 1. ollama-m4pro    (local, free, fast — always preferred)
 2. ollama-m1       (local, free, slower — batch window preferred)
    ── defer to next batch window if non-urgent ──
-3. claude-haiku    (paid Anthropic, $0.00025/1k — cheapest, best quality for faith-based content)
-4. openai-4o-mini  (paid OpenAI, $0.00015/1k — slightly cheaper, lower nuance)
-5. claude-sonnet   (paid, mid-tier — when task requires higher quality)
-6. openai-4o       (paid, mid-tier)
-7. claude-opus     (paid, most capable — last resort)
+3. codex-cli       (ChatGPT subscription, no API cost)
+4. claude-bedrock  (paid Bedrock fallback)
 ```
 
-**Gemini Flash is NOT in this chain.** It only matches `text/large-context-batch` tasks and is never a generation fallback.
+**There is no OpenAI API or Anthropic API fallback in this chain.** Codex CLI and Claude Bedrock are the fallback surfaces.
 
 ### Large-context batch tasks (`text/large-context-batch`)
 
 ```
-1. gemini-flash    (free, 1M context — save-to-mind, knowledge graph, bulk processing)
-2. claude-sonnet   (paid fallback if Gemini Flash rate-limited)
+1. codex-cli       (if supported by the task)
+2. claude-bedrock  (if supported by the task)
 ```
 
-Only tasks explicitly registering `text/large-context-batch` as their capability reach Gemini Flash. Metadata generation, thumbnail headlines, and all content generation tasks use `text/small`/`text/medium`/`text/large` — they never touch Gemini Flash.
+If Codex CLI is rate-limited or unavailable, the selector falls through to Claude Bedrock. The selector never uses OpenAI API or Anthropic API directly.
 
 ### Audio transcription (`audio/transcribe`)
 
@@ -324,11 +264,7 @@ Subtitles are always generated locally. No cloud fallback exists for transcripti
 
 ### Quality review (`text/review`)
 
-```
-1. claude-haiku    (local_viable=false for review tasks — skips Ollama entirely)
-2. claude-sonnet
-3. claude-opus
-```
+Review tasks use the same local → Codex CLI → Bedrock order as other AI tasks.
 
 ---
 
@@ -582,6 +518,6 @@ ollama pull qwen2.5:14b          # Same primary model — batch overnight work
 {"ts":"2026-05-22T03:14:22Z","task":"metadata_generation","provider":"ollama-m4pro","model":"qwen2.5:14b","reason":"local ollama healthy; batch window; cost=0.0","cost":0.0,"batch_window":true}
 {"ts":"2026-05-22T03:14:55Z","task":"metadata_generation","provider":"ollama-m4pro","model":"qwen2.5:14b","reason":"completed","latency_ms":28400,"success":true}
 {"ts":"2026-05-22T09:30:11Z","task":"metadata_generation","provider":"ollama-m1","model":"qwen2.5:14b","reason":"m4pro circuit open; m1 available; cost=0.0","cost":0.0,"batch_window":false}
-{"ts":"2026-05-22T14:02:00Z","task":"metadata_generation","provider":"claude-haiku","reason":"all local providers unavailable; non-urgent deferred to 01:00; urgent=true so using paid fallback","cost":0.00025,"batch_window":false}
+{"ts":"2026-05-22T14:02:00Z","task":"metadata_generation","provider":"ollama-m1","reason":"all local providers unavailable; non-urgent deferred to 01:00","cost":0.0,"batch_window":false}
 {"ts":"2026-05-22T14:05:00Z","task":"large_context_batch","provider":"gemini-flash","reason":"task requires text/large-context-batch; gemini-flash is only eligible provider","cost":0.0,"batch_window":false}
 ```

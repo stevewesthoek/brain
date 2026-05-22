@@ -32,20 +32,20 @@
 
 ### Hardware reference
 - **Mac Mini M4 Pro:** 24 GB RAM, primary machine, runs AI Selector at `localhost:4890`, Ollama at `localhost:11434`
-- **MacBook M1:** 16 GB RAM, always-on secondary node, Ollama at `192.168.100.2:11434` (Thunderbolt Bridge)
+- **MacBook M1:** 16 GB RAM, always-on secondary node, Ollama at `192.168.2.2:11434` (Thunderbolt Bridge)
 - **Inference ranking:** M4 Pro is 2-3× faster. M4 Pro = any-time; M1 = batch window preferred
 
-### Task A — Thunderbolt Bridge (manual, one-time on both machines)
+### Task A — Thunderbolt Bridge (manual, one-time on both machines) ✅
 1. Mac Mini M4 Pro: System Settings → Network → Thunderbolt Bridge → IP `192.168.100.1`, mask `255.255.255.0`
-2. MacBook M1: System Settings → Network → Thunderbolt Bridge → IP `192.168.100.2`, mask `255.255.255.0`
+2. MacBook M1: System Settings → Network → Thunderbolt Bridge → IP `192.168.2.2`, mask `255.255.255.0`
 3. MacBook M1: set env var `OLLAMA_HOST=0.0.0.0` before Ollama starts (LaunchAgent plist)
-4. Verify: `curl http://192.168.100.2:11434/api/tags` from M4 Pro terminal
+4. Verify: `curl http://192.168.2.2:11434/api/tags` from M4 Pro terminal
 
 **Done when:** curl returns JSON list of Ollama models from M4 Pro targeting M1's IP.
 
 ---
 
-### Task B — Install Ollama on both machines + pull models
+### Task B — Install Ollama on both machines + pull models ✅
 **Mac Mini M4 Pro:**
 ```bash
 brew install ollama
@@ -69,7 +69,7 @@ See LaunchAgent plist templates in `ai-model-selector-architecture.md`.
 
 ---
 
-### Task C — Update `ai-providers.json`
+### Task C — Update `ai-providers.json` ✅
 **File:** `~/.config/video-orchestrator/ai-providers.json`
 
 Replace the existing `lmstudio-local` provider entry with two Ollama provider entries:
@@ -95,13 +95,13 @@ Replace the existing `lmstudio-local` provider entry with two Ollama provider en
   "id": "ollama-m1",
   "label": "MacBook M1 (Thunderbolt node)",
   "type": "openai-compatible",
-  "base_url": "http://192.168.100.2:11434/v1",
+  "base_url": "http://192.168.2.2:11434/v1",
   "api_key": null,
   "cost_per_1k_tokens": 0.0,
   "priority": 2,
   "capabilities": ["text/small", "text/medium"],
   "max_context_tokens": 32768,
-  "health_check": { "endpoint": "http://192.168.100.2:11434/api/tags", "method": "GET", "expect_status": 200 },
+  "health_check": { "endpoint": "http://192.168.2.2:11434/api/tags", "method": "GET", "expect_status": 200 },
   "timeout_connect_sec": 5,
   "timeout_inference_sec": 180,
   "schedule_preference": "batch_window",
@@ -113,7 +113,7 @@ Replace the existing `lmstudio-local` provider entry with two Ollama provider en
 
 ---
 
-### Task D — Circuit breaker in `core.py`
+### Task D — Circuit breaker in `core.py` ✅
 **File:** `~/.local/video-orchestrator/services/model-selector/core.py`
 
 Add `CircuitBreaker` class with state machine: `closed` → `open` (after 3 failures in 5 min) → `half-open` (after timeout) → `closed` (on success) or back to `open` (on failure).
@@ -139,7 +139,7 @@ if circuit_breaker.is_open(provider["id"]):
 
 ---
 
-### Task E — Timeout tiers in `core.py`
+### Task E — Timeout tiers in `core.py` ✅
 **File:** `~/.local/video-orchestrator/services/model-selector/core.py`
 
 Read `timeout_connect_sec` and `timeout_inference_sec` from provider config. Use `socket.setdefaulttimeout()` or per-request timeout when calling health check endpoints and when returning provider info to callers.
@@ -151,7 +151,7 @@ For inference: `timeout_inference_sec` is returned to callers in the `SelectionR
 
 ---
 
-### Task F — Deferred result in `core.py` + worker handler
+### Task F — Deferred result in `core.py` + worker handler ✅
 **File:** `~/.local/video-orchestrator/services/model-selector/core.py`
 
 When no eligible provider is found and task is non-urgent and `prefer_defer_over_paid=true`:
@@ -173,12 +173,12 @@ if routing.get("deferred"):
 
 ---
 
-### Task G — Nightly scheduler health check for M1
+### Task G — Nightly scheduler health check for M1 ✅
 **File:** `tools/scripts/office-nightly-scheduler.sh`
 
 Before queuing batch jobs, verify M1 is reachable:
 ```bash
-if ! curl -sf --max-time 5 http://192.168.100.2:11434/api/tags > /dev/null; then
+if ! curl -sf --max-time 5 http://192.168.2.2:11434/api/tags > /dev/null; then
   echo "[scheduler] WARNING: M1 MacBook Ollama unreachable — batch jobs will use M4 Pro or cloud fallback"
 fi
 ```
