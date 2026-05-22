@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-B1 — Static Agent Capability Registry adapter
+**Next task:** Sprint 0C-B2 — Skill frontmatter discovery
 
 ---
 
@@ -23,7 +23,7 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 
 **Active next (Sprint 0C-B):**
 - Build read-only Agent Capability Registry in Brain Core.
-- First slice for Mini: `Task 0C-B1 — Static Agent Capability Registry adapter`.
+- Current Mini slice: `Task 0C-B2 — Skill frontmatter discovery`.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -80,61 +80,9 @@ The implementation plan is canonical for task status.
 
 ---
 
-## Sprint 0C-B1 Exact Task
+## Sprint 0C-B1 Result
 
-Build a static read-only adapter for agent capabilities. Do not add routes or CLI yet.
-
-Files to add:
-
-```text
-projects/brain-core/src/adapters/agent-capabilities.ts
-projects/brain-core/src/tests/agent-capabilities.test.ts
-```
-
-Required function:
-
-```typescript
-listAgentCapabilities(): AgentCapabilitySummary[]
-```
-
-Required initial capability ids:
-
-```text
-skill.code
-skill.design
-skill.research
-skill.web
-skill.video
-ai.ollama-m4pro
-ai.ollama-m1
-ai.codex-cli
-ai.claude-bedrock
-cli.cloudflare
-cli.dokploy
-cli.aws
-cli.azure
-cli.github
-```
-
-Each record should include id, kind, label, source, description, safetyClass, requiresApprovalFor, preferredAiTaskTypes, verification, and enabled.
-
-Do not do these yet:
-
-- no `GET /api/agent/capabilities`
-- no `brain-agent capabilities`
-- no filesystem scanning
-- no calls to `ai-select`
-- no run ledger
-- no approval gates
-- no execution
-
-Verification:
-
-```bash
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
-npm run build
-node --test dist/tests/agent-capabilities.test.js
-```
+Completed. The static read-only adapter exists and is covered by tests.
 
 ---
 

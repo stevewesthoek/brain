@@ -229,7 +229,7 @@ Define:
 
 ---
 
-### Task 0C-B1 — Static Agent Capability Registry adapter 🔲 NEXT MINI TASK
+### Task 0C-B1 — Static Agent Capability Registry adapter ✅
 **Scope:** Small, self-contained, read-only Brain Core change. No shell execution, no provider calls, no file writes outside the repo.
 
 **Files to add or update:**
@@ -280,11 +280,11 @@ Define:
 - Do not scan the filesystem dynamically.
 - Do not implement run ledger or approvals.
 
-**Done when:** `npm run build` and `node --test dist/tests/agent-capabilities.test.js` pass from `projects/brain-core`.
+**Done:** `npm run build` and `node --test dist/tests/agent-capabilities.test.js` pass from `projects/brain-core`.
 
 ---
 
-### Task 0C-B2 — Skill frontmatter discovery 🔲
+### Task 0C-B2 — Skill frontmatter discovery 🔲 NEXT
 **Scope:** Replace or enrich the static skill records with read-only parsing of known `SKILL.md` frontmatter.
 
 **Files:** Extend `projects/brain-core/src/adapters/agent-capabilities.ts` and tests.
