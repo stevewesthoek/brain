@@ -302,6 +302,21 @@ Invoke `/review` on the new code:
 
 > "Review my new code. Is it safe? Does it follow the codebase patterns?"
 
+### E5. Build Defaults for New Web Projects
+
+When the user requests a new web project (greenfield, new app, fresh start):
+
+- **Default frontend:** SvelteKit + TypeScript + Tailwind + shadcn-svelte
+- **Default backend:** Supabase (self-hosted) + Drizzle ORM
+- **Default deployment:** Vercel or Cloudflare (via SvelteKit adapter)
+
+Only use Next.js if:
+- The user explicitly requests React/Next.js
+- The project requires a React-only library with no Svelte equivalent
+- The project needs React Native for mobile companion
+
+Do not ask the user which framework to use — default to SvelteKit silently. If they want React, they will say so.
+
 ---
 
 ## Workflow F: DOCUMENT
@@ -512,3 +527,19 @@ This orchestrator is pure Markdown + natural language routing. Works identically
 - **Autoplan skill:** `brain/ai/skills/vendors/gstack/autoplan/SKILL.md`
 - **Benchmark skill:** `brain/ai/skills/vendors/gstack/benchmark/SKILL.md`
 - **Retro skill:** `brain/ai/skills/vendors/gstack/retro/SKILL.md`
+- **Code-structure skill:** `brain/ai/skills/vendors/shimeles/code-structure/SKILL.md`
+
+---
+
+## Sub-Strategy: Service Layer Extraction (code-structure)
+
+When the IMPROVE workflow detects duplicated operational logic across 2+ callers (identified via graphify analysis showing shared implementation patterns):
+
+1. Activate the `code-structure` skill guidance
+2. Follow its decision flowchart before extracting
+3. Use its migration checklist for safe incremental extraction
+4. Check against its anti-patterns before finalizing
+
+**Activation signal:** Graphify shows 2+ files calling the same operational pattern (API calls, email sends, file operations, queue operations) with duplicated implementation.
+
+**Do not activate for:** Single-use logic, trivial duplication (< 5 lines), or business rule differences that merely look similar.

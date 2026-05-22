@@ -397,6 +397,46 @@ graphify-out/GRAPH_REPORT.md
 Should exist and be non-empty. If missing, re-run with `graphify .` and check for errors.
 
 **Graph has only a few nodes?**
+
+---
+
+## Persistence Convention
+
+After generating a graph, persist the output for future sessions:
+
+### Cache location
+
+Store graph output at `.brain/graph.json` in the target repo root.
+
+### Save after generation
+
+```bash
+cp graphify-out/graph.json .brain/graph.json
+```
+
+### Reload at session start
+
+At the beginning of any coding session, check for a cached graph:
+
+```bash
+if [ -f .brain/graph.json ]; then
+  echo "Cached graph available — loading structural context"
+  # Use cached graph for dependency queries
+fi
+```
+
+### Incremental update rule
+
+Regenerate the graph when:
+- More than 10 files changed since last generation (check via `git diff --stat`)
+- A new dependency was added (package.json changed)
+- User explicitly requests "refresh the graph"
+
+Otherwise, use the cached version.
+
+### Gitignore
+
+Add `.brain/graph.json` to the repo's `.gitignore` — it is a local cache, not committed.
 Check detection: `graphify-out/.graphify_detect.json` — if most files were skipped, that's the issue. Re-run with `--mode deep` or add specific file patterns.
 
 **Token cost is high?**

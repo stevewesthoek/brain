@@ -491,3 +491,23 @@ Then monitor: `vo jobs --limit 5`
 - Brain Core + Brain Console remain read-only viewers. No mutation routes added.
 - Worker plist has placeholder values — no real tokens committed.
 - No secrets in repo.
+
+## 2026-05-22 — SvelteKit default for new web projects
+
+**Decision:** All new web projects default to SvelteKit instead of Next.js.
+
+**Reasoning:**
+- 30-40% less code per component (smaller context windows, cheaper AI operations)
+- No hooks footguns (stale closures, dependency arrays, rules of hooks)
+- Single-file encapsulation (AI agents reason per-file without tracing imports)
+- ONE way to do state ($state), derived values ($derived), effects ($effect)
+- Scoped styles prevent cross-component CSS leaks
+- SvelteKit adapter system enables vendor-agnostic deployment
+
+**Scope:**
+- All new greenfield web projects
+- NOT existing Next.js projects (no migrations)
+- NOT mobile (Svelte has no React Native equivalent)
+- NOT projects requiring React-only libraries with no Svelte equivalent
+
+**Stack for new projects:** SvelteKit + TypeScript + Tailwind + shadcn-svelte + Supabase + Drizzle
