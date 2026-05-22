@@ -378,13 +378,16 @@ Persist:
 
 ---
 
-### Task 0C-D — Selector-aware executor adapter 🔲 NEXT
+### Task 0C-D — Selector-aware executor adapter ⏳ IN PROGRESS
 Rules:
 - local Ollama M4/M1 first for tasks they can handle,
 - Codex CLI second for subscription-backed work when local quality is insufficient or local nodes are unavailable/rate-limited,
 - Amazon Bedrock Claude third as paid fallback,
 - no direct OpenAI API,
 - no direct Anthropic API.
+
+**Implemented so far:** Brain Core can derive and inspect a read-only executor plan from the task graph and task state, and it can persist/reload a snapshot JSON for that plan.
+**Still next:** executor-selection mutation flow, approval-bound execution gating, and live console visibility.
 
 **Done when:** A dry-run plan records which executor would handle each task and why.
 
