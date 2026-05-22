@@ -234,6 +234,17 @@ test('GET /agent-executor-plan returns recorded executor selections', async () =
   assert.ok(body.steps.some((step) => step.executorId === 'local-ollama-m4pro'));
 });
 
+test('GET /agent-approval-gates returns read-only approval gate status', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-approval-gates' });
+  const body = JSON.parse(response.body) as { id: string; status: string; approvalStoreStatus: string; nextSafeStep: string };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'agent-approval-gates');
+  assert.equal(body.status, 'read-only');
+  assert.ok(typeof body.approvalStoreStatus === 'string');
+  assert.ok(body.nextSafeStep.length > 0);
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');

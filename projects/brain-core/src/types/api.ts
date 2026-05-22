@@ -5008,6 +5008,28 @@ export interface BrainCoreAgentExecutorPlanSummary {
   };
 }
 
+export interface BrainCoreAgentApprovalGateSummary {
+  id: 'agent-approval-gates';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  approvalStoreEnabled: boolean;
+  approvalStoreStatus: BrainCoreApprovalStoreStatus;
+  approvalStorePath: string;
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  expiredCount: number;
+  supportedApprovalKinds: string[];
+  blockedApprovalKinds: string[];
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
 export interface BrainCoreAgentLedgerSummary {
   id: 'agent-ledger';
   generatedAt: string;
@@ -5560,6 +5582,7 @@ export interface BrainCoreRoutes {
   '/agent-ledger': BrainCoreAgentLedgerSummary;
   '/agent-task-state': BrainCoreAgentTaskStateSummary;
   '/agent-executor-plan': BrainCoreAgentExecutorPlanSummary;
+  '/agent-approval-gates': BrainCoreAgentApprovalGateSummary;
   '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {
     events: BrainCoreApprovalAuditEvent[];

@@ -393,7 +393,7 @@ Rules:
 
 ---
 
-### Task 0C-E — Approval gates
+### Task 0C-E — Approval gates ✅ COMPLETE
 Approval required for:
 - file writes,
 - commits and pushes,
@@ -404,11 +404,11 @@ Approval required for:
 - credential-sensitive commands,
 - memory or decision-log writes.
 
-**Done when:** Agent runs can request approval and pause until Brain Console or CLI approval is recorded.
+**Done:** Brain Core now exposes a read-only approval-gate surface that records approval store state, counts, supported kinds, blocked kinds, and a next safe step. Approval mutation remains in the existing approval routes.
 
 ---
 
-### Task 0C-F — Brain Console Agent View
+### Task 0C-F — Brain Console Agent View 🔲 NEXT
 Show:
 - active runs,
 - task graph,

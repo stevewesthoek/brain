@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-E — Approval gates
+**Next task:** Sprint 0C-F — Brain Console Agent View
 
 ---
 
@@ -21,9 +21,9 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 - Phase 5 — YouTube Reporting API bulk sync, A/B winner declaration
 - Phase 0.7-A — Agent Orchestrator research and architecture docs
 
-**Active next (Sprint 0C-E):**
-- Build approval gate records in Brain Core.
-- Current Mini slice: `Task 0C-E — Approval gates`.
+**Active next (Sprint 0C-F):**
+- Build Brain Console agent view.
+- Current Mini slice: `Task 0C-F — Brain Console Agent View`.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -83,6 +83,10 @@ The implementation plan is canonical for task status.
 ## Sprint 0C-D Snapshot Result
 
 Completed. Brain Core now exposes a read-only executor-plan surface that records intended executor/provider/model choices for each task and can persist/reload that snapshot JSON. The next gap is approval-bound execution gating.
+
+## Sprint 0C-E Snapshot Result
+
+Completed. Brain Core now exposes a read-only approval-gate surface that records approval store state, counts, supported kinds, blocked kinds, and a next safe step. Approval mutation remains in the existing approval routes.
 
 ## Sprint 0C-C Snapshot Result
 
@@ -223,7 +227,7 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Your next task is Sprint 0C-E only: build approval gate records on top of the existing read-only capability registry, ledger, task graph, task-state, and executor-plan snapshot endpoints.
+Your next task is Sprint 0C-F only: build the Brain Console agent view on top of the existing read-only capability registry, ledger, task graph, task-state, executor-plan, and approval-gate snapshot endpoints.
 
 Start by reading:
 1. AGENTS.md
@@ -231,7 +235,7 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Focus on approval gating state and persistence only. Do not implement execution mutations in this slice.
+Focus on console visibility for active runs, task graph, executor selections, approval gates, and handoff summaries. Do not implement execution mutations in this slice.
 
 Run:
 cd projects/brain-core
