@@ -6,6 +6,8 @@ personality = "pragmatic"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
+notify = ["/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+
 [mcp_servers.stitch]
 command = "npx"
 args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
@@ -14,8 +16,26 @@ args = ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"]
 DOTENV_CONFIG_QUIET = "true"
 STITCH_API_KEY = "gcloud-adc"
 
+[mcp_servers.node_repl]
+args = []
+command = "/Applications/Codex.app/Contents/Resources/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+BROWSER_USE_AVAILABLE_BACKENDS = "iab"
+BROWSER_USE_MARKETPLACE_NAME = "openai-bundled"
+CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"
+CODEX_HOME = "/Users/Office/.codex"
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = "/Applications/Codex.app/Contents/Resources/node"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "167fdf579477181fba1773c1efb067b00c5a64fe85dafb50a2001bde198dc739"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/Office/.codex"
+NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "BROWSER_USE_MARKETPLACE_NAME"
+
 [features]
 multi_agent = true
+js_repl = false
 
 [plugins."canva@openai-curated"]
 enabled = true
@@ -123,11 +143,39 @@ trust_level = "trusted"
 "gpt-5.5" = 4
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-18T22:03:35Z"
+last_updated = "2026-05-22T21:38:47Z"
 source_type = "local"
 source = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-18T22:54:14Z"
+last_updated = "2026-05-22T21:54:29Z"
 source_type = "local"
 source = "/Users/Office/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+
+[desktop]
+appearanceLightCodeThemeId = "codex"
+followUpQueueMode = "queue"
+composerEnterBehavior = "enter"
+preventSleepWhileRunning = true
+keepRemoteControlAwakeWhilePluggedIn = true
+notifications-turn-mode = "always"
+conversationDetailMode = "STEPS_COMMANDS"
+
+[desktop.appearanceLightChromeTheme]
+accent = "#0169cc"
+contrast = 45
+ink = "#0d0d0d"
+opaqueWindows = false
+surface = "#ffffff"
+
+[desktop.appearanceLightChromeTheme.fonts]
+code = "JetBrainsMono Nerd Font"
+ui = "JetBrainsMono Nerd Font"
+
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#00a240"
+diffRemoved = "#e02e2a"
+skill = "#751ed9"
+
+[desktop.open-in-target-preferences]
+global = "warp"
