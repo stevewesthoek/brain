@@ -17,7 +17,12 @@ export type AgentLedgerEventType =
   | 'approval_rejected'
   | 'error_encountered'
   | 'verification_passed'
-  | 'verification_failed';
+  | 'verification_failed'
+  | 'parallel_work_started'
+  | 'parallel_work_completed'
+  | 'parallel_work_failed'
+  | 'agent_assigned_task'
+  | 'agent_task_completed';
 
 export type AgentId = 'claude-code' | 'codex-cli' | 'gemini-cli' | 'unknown';
 export type ActorModel = 'haiku' | 'sonnet' | 'opus' | 'codex-low' | 'codex-standard' | 'codex-max' | 'gemini-flash' | 'gemini-pro' | 'unknown';
