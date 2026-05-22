@@ -1,7 +1,7 @@
 # Brain Agentic OS — Implementation Status
 
 **Last Updated:** 2026-06-08  
-**Status:** 7 of 7 phases complete, 100% deployed
+**Status:** 8 of 8 phases complete, 100% deployed
 
 ---
 
@@ -16,8 +16,9 @@
 | 5 | SvelteKit default | 2 | ✅ COMPLETE | 2026-06-01 |
 | 6 | Agent Ledger & Auditability | 15 | ✅ COMPLETE | 2026-06-07 |
 | 7 | Multi-Agent Orchestration | 18 | ✅ COMPLETE | 2026-06-08 |
+| 8 | Cost Transparency & Model Routing | 5 | ✅ COMPLETE | 2026-06-08 |
 
-**Total: 53 tasks, 17 days, 100% completion rate**
+**Total: 58 tasks, 17 days, 100% completion rate**
 
 ---
 
@@ -269,12 +270,12 @@
 
 ## Ready For
 
-### Phase 8: Cost Transparency & Model Routing (Proposed)
-- Real-time cost tracking per task/agent
-- Automatic model selection (Haiku → Sonnet → Opus)
-- Budget caps and alerts
-- Recommendations for optimization
-- Implementation plan: `docs/system/brain-agentic-os-phase-8-cost-transparency-routing.md`
+### Phase 8: Cost Transparency & Model Routing ✅
+- Read-only cost summary surface at `/agent-cost-summary`
+- Model routing policy adapter with local-first escalation rules
+- Budget summary and alert-state evaluation
+- Brain Console cost dashboard widget
+- Operational standards for cost transparency and routing
 
 ### Brain Console Integration
 - Ledger view widget
@@ -302,19 +303,6 @@
 
 ---
 
-## Next: Phase 8
+## Next
 
-**Goal:** Real-time cost tracking and automatic model routing optimization
-
-**Plan:** `docs/system/brain-agentic-os-phase-8-cost-transparency-routing.md`
-
-**Estimated:** 14-16 tasks, 2 weeks
-
-**Value:** Users see cost per operation, AI routes automatically to cheapest capable model
-
-**Exit criteria:**
-- Cost tracking per task/agent (ledger integration)
-- Model routing decision engine (Haiku default, escalate on complexity)
-- Brain Console cost dashboard widget
-- Budget enforcement with alerts
-- Operational standard for cost optimization
+Phase 8 is complete. The next implementation slice should be written only if a new expansion phase is approved.

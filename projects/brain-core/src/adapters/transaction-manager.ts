@@ -28,7 +28,7 @@ export async function createCheckpoint(
   };
 
   const line = `${JSON.stringify(checkpoint)}\n`;
-  fs.appendFileSync(DEFAULT_CHECKPOINT_PATH, line, { flag: 'a' });
+  fs.appendFileSync(DEFAULT_CHECKPOINT_PATH, line);
 
   return checkpointId;
 }
@@ -38,7 +38,7 @@ export function getCheckpoint(checkpoint_id: string): Checkpoint | null {
     return null;
   }
 
-  const lines = fs.readFileSync(DEFAULT_CHECKPOINT_PATH, 'utf-8').split('\n').filter(Boolean);
+  const lines = fs.readFileSync(DEFAULT_CHECKPOINT_PATH, 'utf8').split('\n').filter(Boolean);
 
   for (const line of lines) {
     try {

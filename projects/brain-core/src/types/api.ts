@@ -5053,6 +5053,58 @@ export interface BrainCoreAgentConsoleSummary {
   };
 }
 
+export type BrainCoreBudgetStatus = 'ok' | 'warning' | 'throttled' | 'blocked';
+export type BrainCoreRouteSurface = 'ollama-m4pro' | 'ollama-m1' | 'codex-cli' | 'claude-bedrock';
+
+export interface BrainCoreAgentCostLineItem {
+  taskId: string;
+  taskType: string;
+  surface: BrainCoreRouteSurface;
+  providerId: string;
+  model?: string;
+  estimatedTokens: number;
+  estimatedCostUsd: number;
+  routingReason: string;
+  escalationReason?: string;
+}
+
+export interface BrainCoreAgentCostBudgetSummary {
+  status: BrainCoreBudgetStatus;
+  currency: 'USD';
+  window: 'session' | 'day' | 'week' | 'month';
+  thresholdUsd: number;
+  spentUsd: number;
+  remainingUsd: number;
+  warningAtUsd: number;
+  throttleAtUsd: number;
+  blockAtUsd: number;
+}
+
+export interface BrainCoreAgentCostSummary {
+  id: 'agent-cost-summary';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  totalEstimatedUsd: number;
+  todayEstimatedUsd: number;
+  weekEstimatedUsd: number;
+  monthEstimatedUsd: number;
+  cheapestRouteCount: number;
+  escalatedRouteCount: number;
+  localRouteCount: number;
+  subscriptionRouteCount: number;
+  paidRouteCount: number;
+  budget: BrainCoreAgentCostBudgetSummary;
+  topExpensiveTasks: BrainCoreAgentCostLineItem[];
+  routeHistory: BrainCoreAgentCostLineItem[];
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
 export interface BrainCoreAgentLedgerSummary {
   id: 'agent-ledger';
   generatedAt: string;
@@ -5607,6 +5659,7 @@ export interface BrainCoreRoutes {
   '/agent-executor-plan': BrainCoreAgentExecutorPlanSummary;
   '/agent-approval-gates': BrainCoreAgentApprovalGateSummary;
   '/agent-console': BrainCoreAgentConsoleSummary;
+  '/agent-cost-summary': BrainCoreAgentCostSummary;
   '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {
     events: BrainCoreApprovalAuditEvent[];

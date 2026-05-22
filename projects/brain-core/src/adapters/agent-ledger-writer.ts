@@ -70,7 +70,7 @@ export async function writeEventToLedger(options: WriteEventOptions): Promise<bo
     entry.signature = generateSignature(entry);
 
     const line = `${JSON.stringify(entry)}\n`;
-    fs.appendFileSync(DEFAULT_LEDGER_PATH, line, { flag: 'a' });
+    fs.appendFileSync(DEFAULT_LEDGER_PATH, line);
 
     return true;
   } catch (error) {

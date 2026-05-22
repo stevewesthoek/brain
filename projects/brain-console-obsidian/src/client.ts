@@ -3873,6 +3873,58 @@ export interface BrainCoreAgentConsoleSummary {
   };
 }
 
+export type BrainCoreBudgetStatus = 'ok' | 'warning' | 'throttled' | 'blocked';
+export type BrainCoreRouteSurface = 'ollama-m4pro' | 'ollama-m1' | 'codex-cli' | 'claude-bedrock';
+
+export interface BrainCoreAgentCostLineItem {
+  taskId: string;
+  taskType: string;
+  surface: BrainCoreRouteSurface;
+  providerId: string;
+  model?: string;
+  estimatedTokens: number;
+  estimatedCostUsd: number;
+  routingReason: string;
+  escalationReason?: string;
+}
+
+export interface BrainCoreAgentCostBudgetSummary {
+  status: BrainCoreBudgetStatus;
+  currency: 'USD';
+  window: 'session' | 'day' | 'week' | 'month';
+  thresholdUsd: number;
+  spentUsd: number;
+  remainingUsd: number;
+  warningAtUsd: number;
+  throttleAtUsd: number;
+  blockAtUsd: number;
+}
+
+export interface BrainCoreAgentCostSummary {
+  id: 'agent-cost-summary';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  totalEstimatedUsd: number;
+  todayEstimatedUsd: number;
+  weekEstimatedUsd: number;
+  monthEstimatedUsd: number;
+  cheapestRouteCount: number;
+  escalatedRouteCount: number;
+  localRouteCount: number;
+  subscriptionRouteCount: number;
+  paidRouteCount: number;
+  budget: BrainCoreAgentCostBudgetSummary;
+  topExpensiveTasks: BrainCoreAgentCostLineItem[];
+  routeHistory: BrainCoreAgentCostLineItem[];
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
 export interface BrainCoreRecoveryItemSummary {
   id: string;
   severity: 'info' | 'warning' | 'error';
@@ -4030,6 +4082,7 @@ export interface BrainConsoleSnapshot {
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   agents?: BrainCoreAgentSummary[];
   agentConsole?: BrainCoreAgentConsoleSummary;
+  agentCostSummary?: BrainCoreAgentCostSummary;
 }
 
 export interface HttpResult<T> {
@@ -4058,7 +4111,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
   let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const endpointErrors: EndpointError[] = [];
 
-  const [status, capabilities, runtimeReports, localAppsDashboard, localAppsActionReadiness, localAppsActionStatus, localAppsOrchestrator, localAppsOnboardingChecklist, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, agentConsole] = await Promise.all([
+  const [status, capabilities, runtimeReports, localAppsDashboard, localAppsActionReadiness, localAppsActionStatus, localAppsOrchestrator, localAppsOnboardingChecklist, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, agentConsole, agentCostSummary] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -4087,6 +4140,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<BrainCoreStbVideoMigrationStatus>(normalizedBaseUrl, '/stb-video-migration/status'),
     fetchJson<{ agents?: BrainCoreAgentSummary[] }>(normalizedBaseUrl, '/agents'),
     fetchJson<BrainCoreAgentConsoleSummary>(normalizedBaseUrl, '/agent-console'),
+    fetchJson<BrainCoreAgentCostSummary>(normalizedBaseUrl, '/agent-cost-summary'),
   ]);
 
   // Collect endpoint errors for diagnostics
@@ -4119,6 +4173,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     ['/stb-video-migration/status', stbVideoMigrationStatus],
     ['/agents', agents],
     ['/agent-console', agentConsole],
+    ['/agent-cost-summary', agentCostSummary],
   ];
 
   endpointPairs.forEach(([pathname, result]) => {
@@ -4191,6 +4246,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     agents: agents.value?.agents,
     agentConsole: agentConsole.value,
+    agentCostSummary: agentCostSummary.value,
     endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
   };
 }
@@ -4909,6 +4965,12 @@ export async function readBrainCoreAgentEvents(
   baseUrl: string,
 ): Promise<HttpResult<{ events?: BrainCoreAgentEventSummary[] }>> {
   return fetchJson<{ events?: BrainCoreAgentEventSummary[] }>(normalizeBaseUrl(baseUrl), '/agent-events');
+}
+
+export async function readBrainCoreAgentCostSummary(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreAgentCostSummary>> {
+  return fetchJson<BrainCoreAgentCostSummary>(normalizeBaseUrl(baseUrl), '/agent-cost-summary');
 }
 
 export async function readBrainCoreRecoveryItems(

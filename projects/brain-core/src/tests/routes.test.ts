@@ -256,6 +256,18 @@ test('GET /agent-console returns the combined read-only agent console summary', 
   assert.ok(body.activeRunCount >= 0);
 });
 
+test('GET /agent-cost-summary returns the derived cost and routing summary', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-cost-summary' });
+  const body = JSON.parse(response.body) as { id: string; status: string; routeHistory: Array<{ surface: string }>; budget: { status: string } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'agent-cost-summary');
+  assert.ok(body.status === 'read-only' || body.status === 'snapshot');
+  assert.ok(Array.isArray(body.routeHistory));
+  assert.ok(body.routeHistory.length > 0);
+  assert.ok(typeof body.budget.status === 'string');
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');

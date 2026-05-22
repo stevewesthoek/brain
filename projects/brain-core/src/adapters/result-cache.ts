@@ -28,7 +28,7 @@ export async function getCachedResult(prompt: string): Promise<string | null> {
 
   const promptHash = hashPrompt(prompt);
   const now = Date.now();
-  const lines = fs.readFileSync(DEFAULT_CACHE_PATH, 'utf-8').split('\n').filter(Boolean);
+  const lines = fs.readFileSync(DEFAULT_CACHE_PATH, 'utf8').split('\n').filter(Boolean);
 
   for (const line of lines) {
     try {
@@ -59,7 +59,7 @@ export async function setCachedResult(prompt: string, result: string): Promise<v
   };
 
   const line = `${JSON.stringify(entry)}\n`;
-  fs.appendFileSync(DEFAULT_CACHE_PATH, line, { flag: 'a' });
+  fs.appendFileSync(DEFAULT_CACHE_PATH, line);
 }
 
 export async function clearExpiredCache(): Promise<number> {
@@ -68,7 +68,7 @@ export async function clearExpiredCache(): Promise<number> {
   }
 
   const now = Date.now();
-  const lines = fs.readFileSync(DEFAULT_CACHE_PATH, 'utf-8').split('\n').filter(Boolean);
+  const lines = fs.readFileSync(DEFAULT_CACHE_PATH, 'utf8').split('\n').filter(Boolean);
   const valid: string[] = [];
   let removed = 0;
 

@@ -197,9 +197,22 @@ Budget enforcement levels:
 
 ---
 
+## Completion
+
+Implemented in this phase:
+
+- Read-only `/agent-cost-summary` surface in Brain Core
+- Selector-aware routing policy adapter
+- Budget state and status evaluation
+- Brain Console cost dashboard widget
+- Cost transparency and routing standards
+
+The phase remains read-only by design. Mutation and runtime cost emission can be added in a later expansion if needed.
+
+---
+
 ## Notes
 
 - This phase should stay additive and isolated.
 - Do not break existing ledger, orchestration, or console surfaces.
 - Keep all new routes read-only unless a later phase explicitly adds mutation.
-

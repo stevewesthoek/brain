@@ -6,6 +6,9 @@ export interface MergeOptions {
 }
 
 export function mergeResults(results: TaskResult[], options: MergeOptions): string {
+  if (results.length === 0) {
+    return '';
+  }
   switch (options.strategy) {
     case 'concatenate':
       return results.map(r => r.output).join('\n---\n');
@@ -16,9 +19,9 @@ export function mergeResults(results: TaskResult[], options: MergeOptions): stri
     case 'prioritize_error':
       const errors = results.filter(r => r.output.toLowerCase().includes('error'));
       if (errors.length > 0) {
-        return errors[0].output;
+        return errors[0]!.output;
       }
-      return results[0].output;
+      return results[0]!.output;
 
     case 'custom':
       if (options.custom_fn) {
@@ -32,6 +35,9 @@ export function mergeResults(results: TaskResult[], options: MergeOptions): stri
 }
 
 function voteOnResults(results: TaskResult[]): string {
+  if (results.length === 0) {
+    return '';
+  }
   const scoreMap = new Map<string, number>();
 
   for (const result of results) {
@@ -40,7 +46,7 @@ function voteOnResults(results: TaskResult[]): string {
   }
 
   let maxScore = 0;
-  let winner = results[0].output;
+  let winner = results[0]!.output;
 
   for (const [output, score] of scoreMap.entries()) {
     if (score > maxScore) {

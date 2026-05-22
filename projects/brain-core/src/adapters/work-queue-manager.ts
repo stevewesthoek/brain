@@ -40,7 +40,7 @@ export async function enqueueTask(options: EnqueueOptions): Promise<Task> {
   };
 
   const line = `${JSON.stringify(task)}\n`;
-  fs.appendFileSync(DEFAULT_QUEUE_PATH, line, { flag: 'a' });
+  fs.appendFileSync(DEFAULT_QUEUE_PATH, line);
 
   return task;
 }
@@ -50,7 +50,7 @@ export async function getNextTask(agent_id: string): Promise<Task | null> {
     return null;
   }
 
-  const lines = fs.readFileSync(DEFAULT_QUEUE_PATH, 'utf-8').split('\n').filter(Boolean);
+  const lines = fs.readFileSync(DEFAULT_QUEUE_PATH, 'utf8').split('\n').filter(Boolean);
 
   for (const line of lines) {
     try {
@@ -72,7 +72,7 @@ export async function updateTaskStatus(task_id: string, status: TaskStatus): Pro
       return false;
     }
 
-    const lines = fs.readFileSync(DEFAULT_QUEUE_PATH, 'utf-8').split('\n').filter(Boolean);
+    const lines = fs.readFileSync(DEFAULT_QUEUE_PATH, 'utf8').split('\n').filter(Boolean);
     const updated: string[] = [];
 
     for (const line of lines) {
@@ -114,7 +114,7 @@ export async function getQueueStats(): Promise<QueueStats> {
     };
   }
 
-  const lines = fs.readFileSync(DEFAULT_QUEUE_PATH, 'utf-8').split('\n').filter(Boolean);
+  const lines = fs.readFileSync(DEFAULT_QUEUE_PATH, 'utf8').split('\n').filter(Boolean);
   const tasks: Task[] = lines.map(line => {
     try {
       return JSON.parse(line) as Task;
