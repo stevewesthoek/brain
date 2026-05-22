@@ -234,10 +234,41 @@ mem-facts search ProChat        # search facts for keyword
 **Item 1 — Automatic context injection for Codex/Gemini ✓ Live**
 `~/.brain/memory-context.md` is generated nightly by `brain/tools/scripts/memory-context-refresh.sh` (wired into `office-nightly-scheduler.sh`). Codex reads it via AGENTS.md instruction at session start. Gemini reads it via GEMINI.md instruction. No hook needed. Adding a new AI = one pointer in its config.
 
-**Item 2 — Mind compile loop**
-Nightly job reads `capture/inbox/`, classifies each file, writes a proposed action to `wiki/log.md`. Suggest-only phase first (no file moves). Human reviews and approves. Runs in nightly scheduler after existing jobs.
+**Item 2 — Mind compile loop ✓ Live (Phase 1 — suggest-only)**
+`brain/tools/scripts/mind-compile-loop.sh` runs nightly. Reads `capture/inbox/*.md`, classifies each file by frontmatter (`para_type`, `type`) and content heuristics, appends proposed moves to `mind/wiki/log.md`. No files are moved — human reviews proposals and approves manually.
 
-**Item 3 — NotebookLM integration**
-Assess `sources/research/` for content suitable as NotebookLM sources (apologetics dialogues, Bible studies). Wire via existing `/notebooklm` skill. Audio synthesis and deep topical synthesis. Memory layer remains separate.
+Classification rules:
+- `para_type=project` → propose `live/projects/<slug>.md`
+- `para_type=task` → propose append to `live/tasks.md`
+- `para_type=area` → propose `wiki/areas/<slug>.md`
+- `para_type=resource|reference` → propose `sources/research/<slug>.md`
+- `type=decision` → propose append to `live/decisions.md`
+- Anything else → propose `wiki/<slug>.md`
 
-See `mind-compile-loop.md` for the compile loop specification when built.
+Files with `compiled: true` in frontmatter are skipped (already processed).
+
+Phase 2 (future): implement approved moves after review workflow is stable.
+
+**Item 3 — NotebookLM integration assessment ✓ Assessed**
+
+NotebookLM CLI is already installed (`notebooklm-py 0.3.4` via pipx). The `/notebooklm` skill and `operations/runbooks/notebooklm.md` document full usage.
+
+**Suitable content found in `sources/research/`:**
+
+| Folder | Content | Why NotebookLM | Size |
+|--------|---------|----------------|------|
+| `apologetics/atheism-dialogue-001/` | Multi-document dialogue: original paper, atheist response, Steve's reply (~200k chars) | Deep topical synthesis, argument mapping, audio podcast for review | Very high |
+| `apologetics/gospel-dialogue-001/` | Gospel legal framework series, follow-up letter drafts | Synthesis, argument refinement | High |
+| `apologetics/steve-apologetics-voice-and-debate-standard.md` | 17k char debate standards doc | Source for NotebookLM to ingest alongside dialogues | Medium |
+| `bible/passages/`, `bible/topics/` | Bible study notes | Cross-reference synthesis, theological audio | Moderate |
+| `bible/theological-questions/` | Theological questions research | Q&A synthesis | Moderate |
+
+**Recommended wiring (not yet implemented):**
+
+1. **Apologetics notebook** — Create a permanent NotebookLM notebook named "Apologetics Research". Add all `atheism-dialogue-001/` + `gospel-dialogue-001/` sources. Nightly: check for new files and add. Generate audio summary monthly.
+2. **Bible studies notebook** — Create a notebook for `bible/` research notes. Add passages + topics + theological questions. Generate audio overview monthly.
+3. **Nightly sync script** — Add `run_notebooklm_sync` to `office-nightly-scheduler.sh`. Use `notebooklm source add` for new files only (track added files with a state file at `~/.brain/notebooklm-added-sources.txt`).
+
+**Security constraint:** NotebookLM runs via Google account. All content uploaded becomes Google-hosted. Do not upload: `.env` files, credentials, raw auth tokens, personal financial data, or private medical info. Research notes and theological content are acceptable.
+
+**Status:** Assessment complete. Wiring is a separate implementation task. See `operations/runbooks/notebooklm.md` for CLI reference.
