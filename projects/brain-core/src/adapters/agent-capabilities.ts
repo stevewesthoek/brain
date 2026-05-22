@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 export type AgentCapabilityKind = 'skill' | 'cli' | 'ai_surface' | 'service' | 'workflow';
 export type AgentCapabilitySafetyClass =
   | 'read_only'
@@ -197,11 +200,96 @@ const AGENT_CAPABILITIES: AgentCapabilitySummary[] = [
   },
 ];
 
-export function listAgentCapabilities(): AgentCapabilitySummary[] {
-  return AGENT_CAPABILITIES.map((capability) => ({
+export function listAgentCapabilities(skillsRoot = getSkillsRoot()): AgentCapabilitySummary[] {
+  return AGENT_CAPABILITIES.map((capability) => {
+    const cloned = cloneCapability(capability);
+
+    if (!capability.id.startsWith('skill.')) {
+      return cloned;
+    }
+
+    const skillName = capability.id.slice('skill.'.length);
+    const frontmatter = readSkillFrontmatter(skillName, skillsRoot);
+
+    if (!frontmatter) {
+      return cloned;
+    }
+
+    return {
+      ...cloned,
+      label: frontmatter.name ?? cloned.label,
+      description: frontmatter.description ?? cloned.description,
+    };
+  });
+}
+
+interface SkillFrontmatter {
+  name?: string;
+  description?: string;
+}
+
+function cloneCapability(capability: AgentCapabilitySummary): AgentCapabilitySummary {
+  return {
     ...capability,
     requiresApprovalFor: [...capability.requiresApprovalFor],
     preferredAiTaskTypes: [...capability.preferredAiTaskTypes],
     verification: [...capability.verification],
-  }));
+  };
+}
+
+export function readSkillFrontmatter(skillName: string, skillsRoot = getSkillsRoot()): SkillFrontmatter | null {
+  const skillFilePath = path.resolve(skillsRoot, skillName, 'SKILL.md');
+
+  if (!fs.existsSync(skillFilePath)) {
+    return null;
+  }
+
+  const content = fs.readFileSync(skillFilePath, 'utf8');
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
+
+  if (!match) {
+    return null;
+  }
+
+  return parseFrontmatter(match[1] ?? '');
+}
+
+function parseFrontmatter(input: string): SkillFrontmatter {
+  const metadata: SkillFrontmatter = {};
+
+  for (const line of input.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf(':');
+    if (separatorIndex === -1) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (key === 'name' && value) {
+      metadata.name = value;
+    }
+
+    if (key === 'description' && value) {
+      metadata.description = value;
+    }
+  }
+
+  return metadata;
+}
+
+function getSkillsRoot(): string {
+  return path.resolve(process.cwd(), '../../ai/skills/custom');
 }

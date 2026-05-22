@@ -284,7 +284,7 @@ Define:
 
 ---
 
-### Task 0C-B2 — Skill frontmatter discovery 🔲 NEXT
+### Task 0C-B2 — Skill frontmatter discovery ✅
 **Scope:** Replace or enrich the static skill records with read-only parsing of known `SKILL.md` frontmatter.
 
 **Files:** Extend `projects/brain-core/src/adapters/agent-capabilities.ts` and tests.
@@ -296,11 +296,11 @@ Define:
 - `ai/skills/custom/web/SKILL.md`
 - `ai/skills/custom/video/SKILL.md`
 
-**Done when:** The five skill capability records use live frontmatter name/description when available and gracefully fall back to static data when a file is missing.
+**Done:** The five skill capability records use live frontmatter name/description when available and gracefully fall back to static data when a file is missing.
 
 ---
 
-### Task 0C-B3 — CLI capability manifest 🔲
+### Task 0C-B3 — CLI capability manifest 🔲 NEXT
 **Scope:** Keep CLI capability discovery static and explicit first.
 
 **Files:** Add `projects/brain-core/src/adapters/agent-cli-capability-manifest.ts` or equivalent.

@@ -1,6 +1,7 @@
+import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listAgentCapabilities } from '../adapters/agent-capabilities.js';
+import { listAgentCapabilities, readSkillFrontmatter } from '../adapters/agent-capabilities.js';
 
 test('listAgentCapabilities returns the seeded registry', () => {
   const capabilities = listAgentCapabilities();
@@ -73,4 +74,25 @@ test('AI surfaces are ordered by priority', () => {
   const priorities = aiSurfaces.map((capability) => capability.priority ?? Number.MAX_SAFE_INTEGER);
 
   assert.deepEqual([...priorities].sort((left, right) => left - right), priorities);
+});
+
+test('skill capability metadata is enriched from live frontmatter when available', () => {
+  const capabilities = listAgentCapabilities();
+  const codeCapability = capabilities.find((capability) => capability.id === 'skill.code');
+
+  assert.ok(codeCapability);
+  assert.equal(codeCapability?.label, 'code');
+  assert.match(codeCapability?.description ?? '', /single entry point for all coding work/i);
+});
+
+test('skill capability metadata falls back when a skill file is unavailable', () => {
+  const missingSkillsRoot = path.join(process.cwd(), '.tmp-missing-skills-root');
+  const metadata = readSkillFrontmatter('design', missingSkillsRoot);
+  const capabilities = listAgentCapabilities(missingSkillsRoot);
+  const designCapability = capabilities.find((capability) => capability.id === 'skill.design');
+
+  assert.equal(metadata, null);
+  assert.ok(designCapability);
+  assert.equal(designCapability?.label, 'Design Orchestrator');
+  assert.match(designCapability?.description ?? '', /routes design, layout, and ui work/i);
 });

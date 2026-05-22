@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-B2 — Skill frontmatter discovery
+**Next task:** Sprint 0C-B3 — CLI capability manifest
 
 ---
 
@@ -23,7 +23,7 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 
 **Active next (Sprint 0C-B):**
 - Build read-only Agent Capability Registry in Brain Core.
-- Current Mini slice: `Task 0C-B2 — Skill frontmatter discovery`.
+- Current Mini slice: `Task 0C-B3 — CLI capability manifest`.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -80,9 +80,9 @@ The implementation plan is canonical for task status.
 
 ---
 
-## Sprint 0C-B1 Result
+## Sprint 0C-B2 Result
 
-Completed. The static read-only adapter exists and is covered by tests.
+Completed. The five skill capability records now use live `SKILL.md` frontmatter for name and description when present, and they fall back to the static registry values when a skill file is missing.
 
 ---
 
@@ -219,25 +219,35 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Your task is Sprint 0C-B1 only: implement the static read-only Agent Capability Registry adapter.
+Your next task is Sprint 0C-B3 only: implement the static CLI capability manifest.
 
-Add:
+Read first:
 - projects/brain-core/src/adapters/agent-capabilities.ts
 - projects/brain-core/src/tests/agent-capabilities.test.ts
+- projects/brain-core/src/adapters/skills.ts
 
-Implement listAgentCapabilities(): AgentCapabilitySummary[] with static seed records for:
-skill.code, skill.design, skill.research, skill.web, skill.video,
-ai.ollama-m4pro, ai.ollama-m1, ai.codex-cli, ai.claude-bedrock,
-cli.cloudflare, cli.dokploy, cli.aws, cli.azure, cli.github.
+Add a new adapter and tests for the CLI registry. Keep it read-only and static for now.
 
-Each record must include id, kind, label, source, description, safetyClass, requiresApprovalFor, preferredAiTaskTypes, verification, and enabled.
+Cover these CLIs:
+- Cloudflare
+- Dokploy
+- AWS
+- Azure
+- GCP
+- Hetzner
+- Tailscale
+- Stripe
+- n8n
+- GitHub
 
-Do not add routes, CLI commands, filesystem scanning, ai-select calls, run ledger, approvals, or execution.
+Each record should normalize into the same AgentCapabilitySummary shape and clearly mark approval requirements.
+
+Do not add routes, filesystem scanning, ai-select calls, run ledger, or execution.
 
 Run:
 cd projects/brain-core
 npm run build
-node --test dist/tests/agent-capabilities.test.js
+node --test dist/tests/*.test.js
 
-When done, update projects/brain-core/docs/video-orchestrator-implementation-plan.md to mark Task 0C-B1 complete and leave 0C-B2 as next. Commit and push only your changes to main.
+When done, update projects/brain-core/docs/video-orchestrator-implementation-plan.md to mark Task 0C-B3 complete and leave 0C-B4 as next. Commit and push only your changes to main.
 ```
