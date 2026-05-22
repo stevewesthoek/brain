@@ -245,6 +245,17 @@ test('GET /agent-approval-gates returns read-only approval gate status', async (
   assert.ok(body.nextSafeStep.length > 0);
 });
 
+test('GET /agent-console returns the combined read-only agent console summary', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-console' });
+  const body = JSON.parse(response.body) as { id: string; status: string; activeRunCount: number; executorSelectionCount: number };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'agent-console');
+  assert.equal(body.status, 'read-only');
+  assert.ok(body.executorSelectionCount > 0);
+  assert.ok(body.activeRunCount >= 0);
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');

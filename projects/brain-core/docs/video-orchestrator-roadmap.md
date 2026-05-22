@@ -20,7 +20,7 @@
 
 **Current active gap:**
 - Agent Orchestrator Sprint 0C needs the read-only capability registry before any autonomous run execution work.
-- Read-only agent ledger, task graph, task-state, executor-plan, and approval-gate snapshots are now exposed, and Brain Core can write and reload the snapshot JSON. The remaining gap is live console visibility and later approval-bound execution.
+- Read-only agent ledger, task graph, task-state, executor-plan, approval-gate, and agent-console snapshots are now exposed, and Brain Core can write and reload the snapshot JSON. The remaining gap is later approval-bound execution.
 
 **Remaining VO product gaps:**
 - Brain Console UI panels for thumbnails, metadata review, analytics, and AI selector health

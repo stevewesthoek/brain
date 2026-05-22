@@ -337,6 +337,7 @@ import {
   type BrainCoreCredentialListResponse,
   type BrainCoreCredentialCatalogResponse,
   type BrainCoreInfraCredentialGroup,
+  type BrainCoreProjectCredentialEntry,
   type BrainCoreProjectCredentialPlatform,
 } from './client.js';
 import {
@@ -486,6 +487,7 @@ export interface BrainConsoleViewState {
   videoControlledExecutionRolePolicy?: import('./client.js').BrainCoreVideoControlledExecutionRolePolicyResponse;
   controlledDualRunRequestDesign?: BrainCoreControlledDualRunRequestDesignResponse;
   agents?: BrainCoreAgentSummary[];
+  agentConsole?: import('./client.js').BrainCoreAgentConsoleSummary;
   actions?: import('./client.js').BrainCoreActionSummary[];
   agentRuns?: import('./client.js').BrainCoreAgentRunSummary[];
   agentEvents?: import('./client.js').BrainCoreAgentEventSummary[];
@@ -3399,7 +3401,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     }
 
     // Open button
-    if (app.url) {
+    if (app.url && settings) {
       const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
       openBtn.title = `Open ${app.name} in browser (${app.url})`;
       openBtn.addEventListener('click', () => { void openExternalUrl(settings.brainCoreUrl, app.url!); });
@@ -5616,15 +5618,26 @@ function renderAgentViewCard(state: BrainConsoleViewState, snapshot: DashboardSn
   const card = document.createElement('div');
 
   const list = card.createEl('ul');
-  list.createEl('li', { text: `Total agents: ${snapshot.agentCount}` });
-  list.createEl('li', { text: `External executors: ${snapshot.externalExecutorCount}` });
+  const consoleSummary = state.agentConsole;
 
-  if (snapshot.plannedAgentCount > 0) {
-    list.createEl('li', { text: `Planned: ${snapshot.plannedAgentCount}` });
-  }
+  if (consoleSummary) {
+    list.createEl('li', { text: `Active runs: ${consoleSummary.activeRunCount}` });
+    list.createEl('li', { text: `Planned runs: ${consoleSummary.plannedRunCount}` });
+    list.createEl('li', { text: `Blocked runs: ${consoleSummary.blockedRunCount}` });
+    list.createEl('li', { text: `Executor selections: ${consoleSummary.executorSelectionCount}` });
+    list.createEl('li', { text: `Pending approvals: ${consoleSummary.approvalPendingCount}` });
+    list.createEl('li', { text: `Next: ${consoleSummary.nextSafeStep}` });
+  } else {
+    list.createEl('li', { text: `Total agents: ${snapshot.agentCount}` });
+    list.createEl('li', { text: `External executors: ${snapshot.externalExecutorCount}` });
 
-  if (snapshot.modelRouterAgentSummary) {
-    list.createEl('li', { text: `Model Router: ${snapshot.modelRouterAgentSummary.health}` });
+    if (snapshot.plannedAgentCount > 0) {
+      list.createEl('li', { text: `Planned: ${snapshot.plannedAgentCount}` });
+    }
+
+    if (snapshot.modelRouterAgentSummary) {
+      list.createEl('li', { text: `Model Router: ${snapshot.modelRouterAgentSummary.health}` });
+    }
   }
 
   list.createEl('li', { text: 'Agent runtime is read-only (planned)', cls: 'brain-console__list-note' });

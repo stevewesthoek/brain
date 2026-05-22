@@ -3850,6 +3850,29 @@ export interface BrainCoreAgentEventSummary {
   relatedReportId?: string;
 }
 
+export interface BrainCoreAgentConsoleSummary {
+  id: 'agent-console';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  ledger: any;
+  taskGraph: any;
+  taskState: any;
+  executorPlan: any;
+  approvalGates: any;
+  activeRunCount: number;
+  blockedRunCount: number;
+  plannedRunCount: number;
+  approvalPendingCount: number;
+  executorSelectionCount: number;
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
 export interface BrainCoreRecoveryItemSummary {
   id: string;
   severity: 'info' | 'warning' | 'error';
@@ -4006,6 +4029,7 @@ export interface BrainConsoleSnapshot {
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
   stbVideoMigrationStatus?: BrainCoreStbVideoMigrationStatus;
   agents?: BrainCoreAgentSummary[];
+  agentConsole?: BrainCoreAgentConsoleSummary;
 }
 
 export interface HttpResult<T> {
@@ -4034,7 +4058,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
   let normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const endpointErrors: EndpointError[] = [];
 
-  const [status, capabilities, runtimeReports, localAppsDashboard, localAppsActionReadiness, localAppsActionStatus, localAppsOrchestrator, localAppsOnboardingChecklist, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents] = await Promise.all([
+  const [status, capabilities, runtimeReports, localAppsDashboard, localAppsActionReadiness, localAppsActionStatus, localAppsOrchestrator, localAppsOnboardingChecklist, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, postQaStatus, stbStatus, videoOrchestratorStatus, stbVideoMigrationStatus, agents, agentConsole] = await Promise.all([
     fetchJson<BrainCoreStatus>(normalizedBaseUrl, '/status'),
     fetchJson<BrainCoreCapabilitySummary>(normalizedBaseUrl, '/capabilities'),
     fetchJson<{ reports?: BrainCoreRuntimeReportSummary[] }>(normalizedBaseUrl, '/runtime/reports'),
@@ -4062,6 +4086,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     fetchJson<BrainCoreVideoOrchestratorStatus>(normalizedBaseUrl, '/video-orchestrator/status'),
     fetchJson<BrainCoreStbVideoMigrationStatus>(normalizedBaseUrl, '/stb-video-migration/status'),
     fetchJson<{ agents?: BrainCoreAgentSummary[] }>(normalizedBaseUrl, '/agents'),
+    fetchJson<BrainCoreAgentConsoleSummary>(normalizedBaseUrl, '/agent-console'),
   ]);
 
   // Collect endpoint errors for diagnostics
@@ -4093,6 +4118,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     ['/video-orchestrator/status', videoOrchestratorStatus],
     ['/stb-video-migration/status', stbVideoMigrationStatus],
     ['/agents', agents],
+    ['/agent-console', agentConsole],
   ];
 
   endpointPairs.forEach(([pathname, result]) => {
@@ -4164,6 +4190,7 @@ export async function readBrainConsoleSnapshot(baseUrl: string): Promise<BrainCo
     videoOrchestratorStatus: videoOrchestratorStatus.value,
     stbVideoMigrationStatus: stbVideoMigrationStatus.value,
     agents: agents.value?.agents,
+    agentConsole: agentConsole.value,
     endpointErrors: endpointErrors.length > 0 ? endpointErrors : undefined,
   };
 }

@@ -408,7 +408,7 @@ Approval required for:
 
 ---
 
-### Task 0C-F — Brain Console Agent View 🔲 NEXT
+### Task 0C-F — Brain Console Agent View ✅ COMPLETE
 Show:
 - active runs,
 - task graph,
@@ -418,7 +418,7 @@ Show:
 - verification results,
 - final summary and handoff.
 
-**Done when:** A dry-run agent plan is visible in Brain Console.
+**Done:** Brain Console now shows a read-only agent console panel powered by the aggregated `/agent-console` surface with active runs, task graph, executor selections, approval gates, and handoff summary.
 
 ---
 

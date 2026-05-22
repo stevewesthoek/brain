@@ -8,6 +8,7 @@ import { readAgentLedger, readAgentTaskGraph } from '../adapters/agent-ledger.js
 import { readAgentTaskState } from '../adapters/agent-task-state.js';
 import { readAgentExecutorPlan } from '../adapters/agent-executor-plan.js';
 import { readAgentApprovalGates } from '../adapters/agent-approval-gates.js';
+import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -562,6 +563,9 @@ export async function routeRequest(
       return;
     case '/agent-approval-gates':
       sendJson(response, 200, readAgentApprovalGates());
+      return;
+    case '/agent-console':
+      sendJson(response, 200, readAgentConsoleSummary());
       return;
     case '/approval-audit':
       sendJson(response, 200, { events: listApprovalAuditEvents() });

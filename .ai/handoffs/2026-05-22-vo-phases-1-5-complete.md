@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-F — Brain Console Agent View
+**Next task:** Sprint 0C complete; next work is future approval-bound execution slices
 
 ---
 
@@ -21,9 +21,8 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 - Phase 5 — YouTube Reporting API bulk sync, A/B winner declaration
 - Phase 0.7-A — Agent Orchestrator research and architecture docs
 
-**Active next (Sprint 0C-F):**
-- Build Brain Console agent view.
-- Current Mini slice: `Task 0C-F — Brain Console Agent View`.
+**Active next:** Sprint 0C is complete.
+- The next work should be the first approval-bound execution slice only after the implementation plan is updated again.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -83,6 +82,10 @@ The implementation plan is canonical for task status.
 ## Sprint 0C-D Snapshot Result
 
 Completed. Brain Core now exposes a read-only executor-plan surface that records intended executor/provider/model choices for each task and can persist/reload that snapshot JSON. The next gap is approval-bound execution gating.
+
+## Sprint 0C-F Snapshot Result
+
+Completed. Brain Console now shows a read-only agent console panel powered by the aggregated `/agent-console` surface with active runs, task graph, executor selections, approval gates, and handoff summary.
 
 ## Sprint 0C-E Snapshot Result
 
