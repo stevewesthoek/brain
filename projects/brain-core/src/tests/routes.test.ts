@@ -2695,3 +2695,34 @@ test('GET /infra/video-orchestrator/worker-config does not expose CF Access secr
   assert.ok(!body.includes('CF_ACCESS_CLIENT_SECRET='), 'must not expose raw secret');
   assert.ok(!body.includes('PLACEHOLDER_CF_ACCESS_CLIENT_SECRET'), 'must not expose placeholder value');
 });
+
+test('GET /infra/video-orchestrator/accounts-stats returns shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/accounts-stats' });
+  const body = JSON.parse(response.body) as { ok: boolean; stats: unknown[] };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(typeof body.ok, 'boolean', 'ok must be boolean');
+  assert.ok(Array.isArray(body.stats), 'stats must be an array');
+});
+
+test('GET /infra/video-orchestrator/readiness returns shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/readiness' });
+  const body = JSON.parse(response.body) as { ok: boolean; status: string; readinessScore: number; checks: unknown[] };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(typeof body.ok, 'boolean', 'ok must be boolean');
+  assert.ok(['ready', 'partial', 'blocked'].includes(body.status), `status must be valid: ${body.status}`);
+  assert.equal(typeof body.readinessScore, 'number', 'readinessScore must be a number');
+  assert.ok(body.readinessScore >= 0 && body.readinessScore <= 100, 'readinessScore must be 0-100');
+  assert.ok(Array.isArray(body.checks), 'checks must be an array');
+  assert.ok(body.checks.length > 0, 'checks must be non-empty');
+});
+
+test('GET /infra/video-orchestrator/readiness does not expose secrets', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/video-orchestrator/readiness' });
+  const body = response.body;
+
+  assert.ok(!body.includes('access_token'), 'must not expose access_token');
+  assert.ok(!body.includes('refresh_token'), 'must not expose refresh_token');
+  assert.ok(!body.includes('client_secret'), 'must not expose client_secret');
+});
