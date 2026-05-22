@@ -1866,9 +1866,12 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
       return;
     }
     const { execFile } = await import('node:child_process');
-    execFile('open', [target], (err) => {
-      if (err) sendJson(response, 500, { ok: false, error: err.message });
-      else sendJson(response, 200, { ok: true });
+    await new Promise<void>((resolve) => {
+      execFile('open', [target], (err) => {
+        if (err) sendJson(response, 500, { ok: false, error: err.message });
+        else sendJson(response, 200, { ok: true });
+        resolve();
+      });
     });
     return;
   }

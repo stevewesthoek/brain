@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import type {
   BrainCoreCredentialListResponse,
   BrainCoreCredentialSetResult,
@@ -334,7 +335,6 @@ export function getYouTubeOAuthUrl(account: string): { ok: boolean; url?: string
     return { ok: false, error: 'youtube_uploader_not_installed' };
   }
   try {
-    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
     const out = execFileSync(YT_VENV_PYTHON, [YT_UPLOADER_SCRIPT, 'auth-url', '--account', account], {
       encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'],
     }) as string;
@@ -352,7 +352,6 @@ export function exchangeYouTubeOAuthCode(account: string, code: string): { ok: b
     return { ok: false, error: 'youtube_uploader_not_installed' };
   }
   try {
-    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
     execFileSync(YT_VENV_PYTHON, [YT_UPLOADER_SCRIPT, 'auth-exchange', '--account', account, '--code', code], {
       encoding: 'utf8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -366,7 +365,6 @@ export function exchangeYouTubeOAuthCode(account: string, code: string): { ok: b
 
 function getKeychainAccounts(): string[] {
   try {
-    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
     const out = execFileSync('security', ['find-generic-password', '-s', 'video-orchestrator'], {
       encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000,
     }) as string;
