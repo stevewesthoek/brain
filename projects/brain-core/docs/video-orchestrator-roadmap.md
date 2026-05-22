@@ -2,7 +2,7 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-22 (agent orchestration roadmap added)
+**Last updated:** 2026-05-22 (roadmap/status sweep; Sprint 0C next)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
@@ -10,19 +10,21 @@
 ## Current State (as of 2026-05-22)
 
 **Working:**
-- Job queue with normalize, post, multi_post, render, screen_record job types
+- Job queue with normalize, compose, subtitle, thumbnail, metadata, post, multi_post, render, and screen_record job types
 - YouTube direct upload via OAuth2 (keychain-persisted token, auto-refresh)
 - n8n dispatch fallback with CF Access headers
 - Brain Console: Accounts & Credentials tab (all STB/infra credentials set)
 - Worker LaunchAgent running, picks up jobs automatically
-- First successful upload: "Genesis — The Story of Noah" → YouTube `qGtfdom5hWc`
+- Backend VO pipeline through Phase 5: composition, subtitles, thumbnails, metadata, analytics feedback, and approval gate
+- AI Model Selector running at `localhost:4890` with local Ollama M4/M1 first, Codex CLI second, Bedrock fallback third
 
-**Gaps in current upload (what the YouTube video is missing):**
-- No description (empty string posted)
-- No thumbnail (YouTube auto-selects a frame)
-- No composed video (audio only — no background image/video)
-- No subtitles/captions
-- No tags or chapters
+**Current active gap:**
+- Agent Orchestrator Sprint 0C needs the read-only capability registry before any autonomous run execution work.
+
+**Remaining VO product gaps:**
+- Brain Console UI panels for thumbnails, metadata review, analytics, and AI selector health
+- YouTube `thumbnails.set` publish wire and quota deduction
+- Multi-platform publishing expansion beyond YouTube/n8n fallback
 
 ---
 
@@ -39,7 +41,7 @@
 
 ---
 
-## Phase 0.5 — AI Model Selector (v1)
+## Phase 0.5 — AI Model Selector (v1) ✅ Complete
 > Local-first AI routing for all generation tasks
 
 **Goal:** Every AI-dependent module calls one unified selector, never an LLM API directly. Local models are preferred first; Codex CLI is the subscription-backed second tier; Amazon Bedrock Claude is the paid fallback.
@@ -73,7 +75,7 @@
 
 ---
 
-## Phase 0.6 — AI Model Selector v2: Dual-Node + Resilience
+## Phase 0.6 — AI Model Selector v2: Dual-Node + Resilience ✅ Complete
 > MacBook M1 as second inference node; circuit breaker; Ollama on both machines
 
 **Goal:** Zero-cost AI inference on all available local hardware. The selector orchestrates Mac Mini M4 Pro + MacBook M1 via Thunderbolt Bridge. Resilience means no job ever fails because a provider is temporarily unavailable.
@@ -82,50 +84,50 @@
 - Mac Mini M4 Pro: 24 GB unified memory, TB5 port, IP `192.168.2.1` (Thunderbolt Bridge)
 - MacBook M1: 16 GB unified memory, TB3 port, IP `192.168.2.2` (Thunderbolt Bridge), always on
 
-### 0.6.1 Thunderbolt Bridge setup (manual, one-time)
+### 0.6.1 Thunderbolt Bridge setup (manual, one-time) ✅
 - [x] M4 Pro: System Settings → Network → Thunderbolt Bridge → assign `192.168.2.1/24`
 - [x] M1: System Settings → Network → Thunderbolt Bridge → assign `192.168.2.2/24`
-- [ ] M1: Set `OLLAMA_HOST=0.0.0.0` in Ollama LaunchAgent plist
+- [x] M1: Set `OLLAMA_HOST=0.0.0.0` in Ollama LaunchAgent plist
 - [x] Verify from M4 Pro: `curl http://192.168.2.2:11434/api/tags`
 
-### 0.6.2 Ollama install and models on both machines
-- [ ] Install Ollama on Mac Mini M4 Pro (`brew install ollama`)
-- [ ] Install Ollama on MacBook M1 (`brew install ollama`)
+### 0.6.2 Ollama install and models on both machines ✅
+- [x] Install Ollama on Mac Mini M4 Pro (`brew install ollama`)
+- [x] Install Ollama on MacBook M1 (`brew install ollama`)
 - [x] M4 Pro: `ollama pull qwen2.5:32b` (quality primary) + `ollama pull qwen2.5:14b` (fallback) + `ollama pull llama3.1:8b` (fast)
 - [x] M1: `ollama pull qwen2.5:14b` (primary) + `ollama pull llama3.1:8b` (fallback) + `ollama pull llama3.2:3b` (fast)
-- [ ] LaunchAgent for Ollama on M4 Pro (`com.office.ollama-m4pro`, `OLLAMA_HOST=127.0.0.1:11434`)
-- [ ] LaunchAgent for Ollama on M1 (`com.office.ollama-m1`, `OLLAMA_HOST=0.0.0.0:11434`)
+- [x] LaunchAgent for Ollama on M4 Pro (`com.office.ollama-m4pro`, `OLLAMA_HOST=127.0.0.1:11434`)
+- [x] LaunchAgent for Ollama on M1 (`com.office.ollama-m1`, `OLLAMA_HOST=0.0.0.0:11434`)
 
-### 0.6.3 Update provider registry
-- [ ] Replace LM Studio provider (`lmstudio-local`, port 1234) with Ollama providers in `ai-providers.json`:
+### 0.6.3 Update provider registry ✅
+- [x] Remove old LM Studio provider (`lmstudio-local`, port 1234) and add Ollama providers in `ai-providers.json`:
   - `ollama-m4pro` — `http://localhost:11434/v1`, priority 1, any schedule
   - `ollama-m1` — `http://192.168.2.2:11434/v1`, priority 2, batch_window preferred
 
-### 0.6.4 Circuit breaker in selector `core.py`
-- [ ] Per-provider circuit state: `closed` → `open` → `half-open`
-- [ ] Opens after 3 failures within 5 min; initial open duration 10 min, doubles each trip (max 2h)
-- [ ] State persisted to `~/.local/video-orchestrator/state/circuit-breakers.json`
-- [ ] Health checks skip providers with open circuits (avoids hammering down providers)
+### 0.6.4 Circuit breaker in selector `core.py` ✅
+- [x] Per-provider circuit state: `closed` → `open` → `half-open`
+- [x] Opens after 3 failures within 5 min; initial open duration 10 min, doubles each trip (max 2h)
+- [x] State persisted to `~/.local/video-orchestrator/state/circuit-breakers.json`
+- [x] Health checks skip providers with open circuits (avoids hammering down providers)
 
-### 0.6.5 Timeout tiers in selector
-- [ ] Local same-machine: connect 3s, inference 120s
-- [ ] Local Thunderbolt (M1): connect 5s, inference 180s
-- [ ] Codex CLI / Bedrock fallback: connect 5s, inference 300s
-- [ ] Timeout triggers `report_ai_failure()` → circuit breaker registers failure
+### 0.6.5 Timeout tiers in selector ✅
+- [x] Local same-machine: connect 3s, inference 120s
+- [x] Local Thunderbolt (M1): connect 5s, inference 180s
+- [x] Codex CLI / Bedrock fallback: connect 5s, inference 300s
+- [x] Timeout triggers `report_ai_failure()` → circuit breaker registers failure
 
-### 0.6.6 Deferred result handling in worker
-- [ ] `core.py` returns `{"deferred": true, "scheduled_after": "..."}` when all providers unavailable and task is non-urgent
-- [ ] `video_worker.py` handles deferred result: updates job `scheduled_after`, exits cleanly (no error)
+### 0.6.6 Deferred result handling in worker ✅
+- [x] `core.py` returns `{"deferred": true, "scheduled_after": "..."}` when all providers unavailable and task is non-urgent
+- [x] `video_worker.py` handles deferred result: updates job `scheduled_after`, exits cleanly (no error)
 
-### 0.6.7 Update nightly scheduler
-- [ ] `office-nightly-scheduler.sh`: verify both Ollama instances healthy before queuing batch jobs
-- [ ] Alert (stdout log) if M1 is unreachable at batch window start
+### 0.6.7 Update nightly scheduler ✅
+- [x] `office-nightly-scheduler.sh`: verify both Ollama instances healthy before queuing batch jobs
+- [x] Alert (stdout log) if M1 is unreachable at batch window start
 
 **Deliverable:** AI Selector orchestrates M4 Pro + M1 Ollama + Codex/Bedrock fallback. No job fails because a single node is down. M1 handles overnight batch load automatically. If everything local is down, tasks defer to next batch window for free, use Codex CLI when quality or urgency requires it, or use Bedrock only as the paid fallback.
 
 ---
 
-## Phase 0.7 — Brain Agent Orchestrator
+## Phase 0.7 — Brain Agent Orchestrator 🔲 Active Next
 > Multi-agent project execution layer above the AI Model Selector
 
 **Goal:** Add agent mode as a Brain Core orchestration layer that can plan and coordinate full projects using local AI, Codex CLI, Amazon Bedrock Claude, existing orchestration skills, and approved infrastructure CLIs.
@@ -138,11 +140,12 @@
 - [x] Architecture doc: `agent-orchestrator-architecture.md`
 
 ### 0.7.2 Read-only capability registry
-- [ ] Index orchestration skills: `/code`, `/design`, `/research`, `/web`, `/video`
-- [ ] Index CLI capabilities from Brain skills/runbooks: Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub
-- [ ] Index AI execution surfaces from AI Model Selector `/providers`
-- [ ] Expose `GET /api/agent/capabilities`
-- [ ] Add CLI smoke command: `brain-agent capabilities`
+- [ ] 0C-B1: Add a static `agent-capabilities` adapter with seed skill/CLI/AI-surface records and tests
+- [ ] 0C-B2: Add skill frontmatter discovery for `/code`, `/design`, `/research`, `/web`, `/video`
+- [ ] 0C-B3: Add CLI capability manifest for Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub
+- [ ] 0C-B4: Add AI execution surface adapter that reads AI Model Selector `/providers` with timeout-safe fallback
+- [ ] 0C-B5: Expose `GET /api/agent/capabilities`
+- [ ] 0C-B6: Add CLI smoke command: `brain-agent capabilities`
 
 ### 0.7.3 Run ledger and task graph
 - [ ] Persist agent runs, steps, selected executors, selected model/provider, commands, files touched, approvals, verification output, and unresolved risk
@@ -374,25 +377,11 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 ## Phase Sequencing
 
 ```
-Phase 0 ✅ → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
-Foundation    Compose   Subtitles  Thumbs    SEO Meta  Analytics  All Plat  Hardening
-
-Phase 1 and Phase 2 can run in parallel (composition and subtitle modules are independent).
-Phase 3 and Phase 4 can run in parallel.
-Phase 5 requires Phase 4 (needs published videos with metadata to compare).
-Phase 6 requires Phase 1-4 (needs all modules to compose a full package per platform).
-```
-
----
-
-## Phase Sequencing (updated)
-
-```
-Phase 0 ✅ → Phase 0.5 → Phase 0.6 → Phase 0.7 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
-Foundation   AI Selector  Dual-node  Agents     Compose  Subtitles  Thumbs    SEO Meta  Analytics  All Plat  Hardening
+Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.7 🔲 → Phase 1 ✅ → Phase 2 ✅ → Phase 3 ✅ → Phase 4 ✅ → Phase 5 ✅ → Phase 6 🔲 → Phase 7 🔲
+Foundation   AI Selector    Dual-node    Agents      Compose   Subtitles  Thumbs    SEO Meta   Analytics  All Plat   Hardening
 
 Phase 0.5 must complete before Phase 3 (thumbnails) and Phase 4 (metadata) — they depend on AI.
-Phase 0.7 depends on Phase 0.6 because agent dispatch must consume the local-first selector.
+Phase 0.7 is now the active next phase because agent dispatch must consume the local-first selector.
 Phase 1 and Phase 2 are independent of Phase 0.5 (FFmpeg work, no AI needed).
 Phase 3 and Phase 4 can run in parallel after Phase 0.5.
 ```
@@ -401,35 +390,6 @@ Phase 3 and Phase 4 can run in parallel after Phase 0.5.
 
 ## Immediate Next Steps
 
-**Next Codex implementation step:** Build the read-only Agent Capability Registry:
-1. Add a Brain Core capability indexer for skill frontmatter/descriptions.
-2. Add a CLI capability manifest sourced from existing Brain runbooks/skills.
-3. Add an AI surface adapter that reads AI Model Selector `/providers`.
-4. Expose `GET /api/agent/capabilities` and a `brain-agent capabilities` smoke command.
+**Next Codex/GPT-5.4-Mini implementation step:** Sprint 0C-B1 — add the static Agent Capability Registry adapter and tests.
 
 This creates the agent orchestrator foundation without granting autonomous write/deploy power.
-
-## Historical Immediate Next Steps (Sprint 1)
-
-**Step 0 — Tech debt first (Phase 1.0):**
-1. DB migration: add `scheduled_after` and `approval_status` columns to `jobs` table
-2. Refactor `video_worker.py`: remove platform-specific logic, use `platform-specs.json`
-
-**Step 1 — Parallel tracks (can run simultaneously):**
-
-Track A — Media engine (Phase 1.1-1.4):
-1. `platform-specs.json` — all 7 platforms as config
-2. `JobArtifact` schema — Python dataclass + TypeScript type
-3. `audio_normalizer.py` — FFmpeg loudnorm -14 LUFS
-4. `composer.py` — FFmpeg filtergraph audio + background per platform
-
-Track B — AI selector (Phase 0.5):
-1. `ai-providers.json` + `ai-task-types.json` config files
-2. `selector_service.py` — HTTP service at localhost:4890
-3. `ai-select` CLI shim + LaunchAgent
-
-**Step 2 — Wire and test:**
-- Connect composer into post job worker
-- Add approval gate (Brain Console approve button)
-- Generate manual fallback package
-- E2E test: `vo queue post --audio genesis.mp3 --background bg.jpg` → composed video awaits approval in Brain Console → approve → YouTube upload

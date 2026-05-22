@@ -2,7 +2,7 @@
 
 **Document type:** Executable implementation plan  
 **Status:** Active  
-**Last updated:** 2026-05-22 (Phase 0.7 agent orchestration added)
+**Last updated:** 2026-05-22 (status sweep; next task 0C-B1)
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
 **Strategy reference:** `video-orchestrator-strategy.md`  
 **AI Selector architecture:** `ai-model-selector-architecture.md`
@@ -14,22 +14,22 @@
 | Sprint | Phase | Status |
 |--------|-------|--------|
 | Sprint 0A — AI Selector v1 | Phase 0.5 | ✅ Complete |
-| Sprint 0B — Dual-Node + Resilience | Phase 0.6 | 🔲 Next (before Sprint 6 UI) |
-| Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | 🔲 Next architecture build |
+| Sprint 0B — Dual-Node + Resilience | Phase 0.6 | ✅ Complete |
+| Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | 🔲 Active next |
 | Sprint 1 — Composition | Phase 1 | ✅ Complete |
 | Sprint 2 — Subtitles | Phase 2 | ✅ Complete |
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
 | Sprint 4 — SEO Metadata | Phase 4 | ✅ Complete (UI carry-over) |
 | Sprint 5 — Analytics | Phase 5 | ✅ Complete (UI carry-over) |
-| Sprint 6 — Brain Console UI | Phases 3.4, 4.4, 5.4 | 🔲 After Sprint 0B |
+| Sprint 6 — Brain Console UI | Phases 3.4, 4.4, 5.4 | 🔲 After Sprint 0C-B registry baseline |
 | Sprint 7 — Multi-Platform | Phase 6 | 🔲 Future |
 | Sprint 8 — Hardening | Phase 7 | 🔲 Future |
 
 ---
 
-## Sprint 0B: Dual-Node AI Selector + Resilience (Phase 0.6) 🔲
+## Sprint 0B: Dual-Node AI Selector + Resilience (Phase 0.6) ✅
 
-**Why this comes before Sprint 6:** Sprint 6 includes the AI selector health chip which should reflect both nodes. More importantly, the batch window now has two local inference machines — this should be working before any AI-dependent UI flows are built.
+**Status:** Complete. The selector now has two Ollama nodes, Codex/Bedrock fallback policy, timeout tiers, circuit breaker behavior, deferred-result handling, and scheduler health checks documented and implemented.
 
 ### Hardware reference
 - **Mac Mini M4 Pro:** 24 GB RAM, primary machine, runs AI Selector at `localhost:4890`, Ollama at `localhost:11434`
@@ -173,7 +173,7 @@ if routing.get("deferred"):
     return  # clean exit, job will retry at scheduled time
 ```
 
-**Done when:** With all local providers stopped and `prefer_defer_over_paid=true`, queuing a metadata job defers it to the next 01:00 batch window instead of calling a paid API.
+**Done when:** With all local providers stopped and `prefer_defer_over_paid=true`, queuing a metadata job defers it to the next 01:00 batch window instead of using Codex CLI or Bedrock for non-urgent work.
 
 ---
 
@@ -200,7 +200,7 @@ This is a warning only — batch window still proceeds. The selector handles fal
 - `ai-select --task metadata_generation` routes to `ollama-m1` during batch window (1–7 AM) when M4 Pro is loaded
 - Stopping Ollama on M1 → within 30s, `--health` shows M1 as degraded; tasks stop routing there
 - Restarting Ollama on M1 → within 10 min, M1 re-enters the pool
-- No paid API called when both local providers are healthy
+- No Codex CLI or Bedrock fallback used when both local providers are healthy and capable
 
 ---
 
@@ -229,25 +229,129 @@ Define:
 
 ---
 
-### Task 0C-B — Read-only Agent Capability Registry
-**Files:** Brain Core service + CLI surface, exact implementation paths to be finalized in Task 0C-A.
+### Task 0C-B1 — Static Agent Capability Registry adapter 🔲 NEXT MINI TASK
+**Scope:** Small, self-contained, read-only Brain Core change. No shell execution, no provider calls, no file writes outside the repo.
 
-Registry inputs:
-- skill frontmatter/descriptions for `/code`, `/design`, `/research`, `/web`, `/video`,
-- CLI capability manifest for Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub,
-- AI execution surfaces from AI Model Selector `/providers`.
+**Files to add or update:**
+- Add `projects/brain-core/src/adapters/agent-capabilities.ts`
+- Add `projects/brain-core/src/tests/agent-capabilities.test.ts`
 
-Initial endpoint:
+**Implement:**
+- Export type `AgentCapabilitySummary`
+- Export function `listAgentCapabilities(): AgentCapabilitySummary[]`
+- Return static seed records for:
+  - `skill.code`
+  - `skill.design`
+  - `skill.research`
+  - `skill.web`
+  - `skill.video`
+  - `ai.ollama-m4pro`
+  - `ai.ollama-m1`
+  - `ai.codex-cli`
+  - `ai.claude-bedrock`
+  - `cli.cloudflare`
+  - `cli.dokploy`
+  - `cli.aws`
+  - `cli.azure`
+  - `cli.github`
+- Each record must include:
+  - `id`
+  - `kind`: `skill | cli | ai_surface | service | workflow`
+  - `label`
+  - `source`
+  - `description`
+  - `safetyClass`: `read_only | local_write | repo_write | external_state | credential_sensitive | destructive | financial`
+  - `requiresApprovalFor`
+  - `preferredAiTaskTypes`
+  - `verification`
+  - `enabled`
+
+**Tests:**
+- Ensure `listAgentCapabilities()` returns all required ids.
+- Ensure every id is unique.
+- Ensure every record has a non-empty `label`, `description`, `safetyClass`, and `verification` array.
+- Ensure external-state CLIs require approval for at least one of `deploy`, `dns_change`, `external_state`, or `credential_sensitive`.
+- Ensure AI surfaces are local-first ordered by `priority` if a `priority` field is added.
+
+**Do not do in this task:**
+- Do not add HTTP routes.
+- Do not add a CLI.
+- Do not call `ai-select`.
+- Do not scan the filesystem dynamically.
+- Do not implement run ledger or approvals.
+
+**Done when:** `npm run build` and `node --test dist/tests/agent-capabilities.test.js` pass from `projects/brain-core`.
+
+---
+
+### Task 0C-B2 — Skill frontmatter discovery 🔲
+**Scope:** Replace or enrich the static skill records with read-only parsing of known `SKILL.md` frontmatter.
+
+**Files:** Extend `projects/brain-core/src/adapters/agent-capabilities.ts` and tests.
+
+**Inputs:**
+- `ai/skills/custom/code/SKILL.md`
+- `ai/skills/custom/design/SKILL.md`
+- `ai/skills/custom/research/SKILL.md`
+- `ai/skills/custom/web/SKILL.md`
+- `ai/skills/custom/video/SKILL.md`
+
+**Done when:** The five skill capability records use live frontmatter name/description when available and gracefully fall back to static data when a file is missing.
+
+---
+
+### Task 0C-B3 — CLI capability manifest 🔲
+**Scope:** Keep CLI capability discovery static and explicit first.
+
+**Files:** Add `projects/brain-core/src/adapters/agent-cli-capability-manifest.ts` or equivalent.
+
+**CLIs to cover:** Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub.
+
+**Done when:** CLI records are normalized into the same `AgentCapabilitySummary` shape and clearly mark approval requirements.
+
+---
+
+### Task 0C-B4 — AI Selector surface adapter 🔲
+**Scope:** Read-only, timeout-safe adapter for AI Model Selector provider data.
+
+**Files:** Extend `projects/brain-core/src/adapters/agent-capabilities.ts` or add a helper adapter.
+
+**Behavior:**
+- Try `GET http://localhost:4890/providers` with a short timeout.
+- Convert returned providers into `ai_surface` capability records.
+- If the selector is unavailable, return static fallback AI surface records and include a warning field.
+
+**Done when:** Tests cover both healthy JSON provider input and selector-unavailable fallback.
+
+---
+
+### Task 0C-B5 — Brain Core endpoint 🔲
+**Scope:** Expose the normalized registry over HTTP.
+
+**Files:**
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/tests/routes.test.ts` or focused route test
+
+Endpoint:
 ```text
 GET /api/agent/capabilities
 ```
 
-Initial CLI:
+**Compatibility note:** Existing `/capabilities` must remain unchanged. The new endpoint is additive.
+
+**Done when:** Endpoint returns `{ capabilities: [...] }`, is localhost-only like all Brain Core routes, and tests pass.
+
+---
+
+### Task 0C-B6 — CLI smoke command 🔲
+**Scope:** Add a thin local command that calls the endpoint.
+
+Command:
 ```text
 brain-agent capabilities
 ```
 
-**Done when:** The command returns normalized JSON with skills, CLIs, AI surfaces, safety class, and approval requirement.
+**Done when:** The command prints normalized JSON and exits nonzero if Brain Core is unavailable.
 
 ---
 
@@ -556,7 +660,7 @@ CLI command: `ab-check [--dry-run]`
 
 ---
 
-## Sprint 6: Brain Console UI (Next) 🔲
+## Sprint 6: Brain Console UI (Later) 🔲
 
 All backend modules are complete. The following UI panels need to be built in `brain-console-obsidian/src/view.ts`:
 

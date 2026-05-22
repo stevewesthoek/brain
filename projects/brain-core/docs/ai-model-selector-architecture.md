@@ -14,7 +14,7 @@ Two things with similar-sounding names are completely unrelated:
 
 | Name | What it is | Where |
 |------|-----------|-------|
-| **AI Model Selector** | Python HTTP microservice — decides which AI provider (local or cloud) to use for any task | `localhost:4890` |
+| **AI Model Selector** | Python HTTP microservice — decides which AI provider or fallback surface to use for any task | `localhost:4890` |
 | **Mind Steward** | TypeScript Brain Core project — routes Brain Core context/plan operations | `brain/projects/mind-steward/` |
 
 When this document says "AI Model Selector" it always means the Python service at port 4890. Never confused with mind-steward.

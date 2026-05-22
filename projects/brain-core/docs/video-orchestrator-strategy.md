@@ -236,7 +236,7 @@ The STB pipeline has these features the VO must eventually support:
 The VO view in Brain Console should display, for each account:
 
 - **Job queue** — pending, running, succeeded, failed jobs with status chips
-- **Per-job module status** — which stages completed for each job (composition ✅, subtitles ✅, thumbnail ⏳, metadata ❌, published ✅)
+- **Per-job module status** — which stages completed for each job (composition, subtitles, thumbnail, metadata, publishing, analytics)
 - **Platform credential status** — which accounts are connected (green) vs need attention (red)
 - **Analytics** — CTR, views, avg view duration for recent published videos
 - **Thumbnail A/B test status** — active tests, current winner

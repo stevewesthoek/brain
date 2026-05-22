@@ -1,24 +1,31 @@
-# Handoff — Video Orchestrator Phases 1–5 Complete
+# Handoff — Agent Orchestrator Sprint 0C Next
 
 **Date:** 2026-05-22
-**Git:** commits `91fa6d03`, `b6a9b3aa`, `92d3fb97` pushed to main
-**Next agent:** Sprint 6 — Brain Console UI
+**Git:** latest pushed main should include the planning sweep after commit
+**Next agent:** GPT-5.4-Mini or Codex Mini
+**Next task:** Sprint 0C-B1 — Static Agent Capability Registry adapter
 
 ---
 
 ## Where We Are
 
-The Video Orchestrator backend pipeline is fully built. Every module from audio normalization through analytics feedback is operational. The only remaining work is four UI panels in Brain Console and two carry-over backend wires.
+The Video Orchestrator backend pipeline is built through Phase 5, and the AI Model Selector is documented as local-first with M4/M1 Ollama, Codex CLI, and Bedrock fallback. The active next work is not Sprint 6 UI. The active next work is Sprint 0C: Brain Agent Orchestrator, starting with a read-only capability registry.
 
-**Completed backend (zero outstanding items):**
+**Completed backend/platform items:**
 - Phase 0.5 — AI Model Selector (`localhost:4890`) routing all LLM calls
+- Phase 0.6 — dual-node local Ollama + circuit breaker/defer/timeout/scheduler resilience
 - Phase 1 — Audio normalize → video compose → fallback package → approval gate
 - Phase 2 — Subtitles (faster-whisper), YouTube caption upload, quota tracking
 - Phase 3 — Thumbnail generation (Pillow, 2 variants), A/B flag in artifact
 - Phase 4 — Metadata generation (AI Model Selector, analytics-informed), YouTube metadata update
 - Phase 5 — YouTube Reporting API bulk sync, A/B winner declaration
+- Phase 0.7-A — Agent Orchestrator research and architecture docs
 
-**Pending (Sprint 6):**
+**Active next (Sprint 0C-B):**
+- Build read-only Agent Capability Registry in Brain Core.
+- First slice for Mini: `Task 0C-B1 — Static Agent Capability Registry adapter`.
+
+**Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
 - Two backend wires: `thumbnails.set` call in `execute_post_job`, `thumbnails_set` quota deduction
 
@@ -41,6 +48,9 @@ Job pipeline (Python, ~/.local/video-orchestrator/):
   scripts/analytics_sync.py     Reporting API + A/B winner declaration
 
 Brain Core (TypeScript, brain/projects/brain-core/):
+  src/adapters/capabilities.ts                    Existing general Brain Core capability manifest
+  src/adapters/agents.ts                          Existing agent placeholder registry
+  src/adapters/agent-runs.ts                      Existing placeholder run/event surfaces
   src/adapters/infra-video-orchestrator-approve.ts  approve/reject
   src/adapters/ai-model-selector.ts                 TS client for AI Selector
   src/types/vo-artifact.ts                          TS mirror of artifact.py
@@ -52,6 +62,78 @@ Config (~/.config/video-orchestrator/):
   thumbnail-templates.json      bold-text + minimal-curiosity
   metadata-prompts.json         4 LLM prompts
   ai-providers.json + ai-task-types.json  AI selector config
+```
+
+---
+
+## Agent Orchestrator Docs To Read First
+
+Read these in order:
+
+1. `projects/brain-core/docs/video-orchestrator-implementation-plan.md`
+2. `projects/brain-core/docs/agent-orchestrator-architecture.md`
+3. `projects/brain-core/docs/agent-orchestrator-research-2026-05-22.md`
+4. `projects/brain-core/docs/ai-model-selector-architecture.md`
+5. `projects/brain-core/docs/video-orchestrator-roadmap.md`
+
+The implementation plan is canonical for task status.
+
+---
+
+## Sprint 0C-B1 Exact Task
+
+Build a static read-only adapter for agent capabilities. Do not add routes or CLI yet.
+
+Files to add:
+
+```text
+projects/brain-core/src/adapters/agent-capabilities.ts
+projects/brain-core/src/tests/agent-capabilities.test.ts
+```
+
+Required function:
+
+```typescript
+listAgentCapabilities(): AgentCapabilitySummary[]
+```
+
+Required initial capability ids:
+
+```text
+skill.code
+skill.design
+skill.research
+skill.web
+skill.video
+ai.ollama-m4pro
+ai.ollama-m1
+ai.codex-cli
+ai.claude-bedrock
+cli.cloudflare
+cli.dokploy
+cli.aws
+cli.azure
+cli.github
+```
+
+Each record should include id, kind, label, source, description, safetyClass, requiresApprovalFor, preferredAiTaskTypes, verification, and enabled.
+
+Do not do these yet:
+
+- no `GET /api/agent/capabilities`
+- no `brain-agent capabilities`
+- no filesystem scanning
+- no calls to `ai-select`
+- no run ledger
+- no approval gates
+- no execution
+
+Verification:
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
+npm run build
+node --test dist/tests/agent-capabilities.test.js
 ```
 
 ---
@@ -75,7 +157,7 @@ updated_at TIMESTAMPTZ DEFAULT NOW()
 
 ---
 
-## Carry-Overs for Sprint 6
+## Later Carry-Overs for Sprint 6
 
 ### Backend carry-over 1: Wire `thumbnails.set` into post job
 **File:** `~/.local/video-orchestrator/worker/video_worker.py` in `execute_post_job()`
@@ -95,7 +177,7 @@ True per-variant comparison requires YouTube Test & Compare API. Mark as future 
 
 ---
 
-## Sprint 6 Task List
+## Later Sprint 6 Task List
 
 ### Task 21 — Thumbnail studio (Brain Console)
 **New Brain Core endpoints:**
@@ -178,6 +260,36 @@ New endpoints go in:
 
 ---
 
-## Codex Prompt
+## Resume Prompt For GPT-5.4-Mini
 
-See bottom of this file.
+```text
+You are GPT-5.4-Mini working in /Users/Office/Repos/stevewesthoek/brain.
+
+Start by reading:
+1. AGENTS.md
+2. .ai/handoffs/2026-05-22-vo-phases-1-5-complete.md
+3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
+4. projects/brain-core/docs/agent-orchestrator-architecture.md
+
+Your task is Sprint 0C-B1 only: implement the static read-only Agent Capability Registry adapter.
+
+Add:
+- projects/brain-core/src/adapters/agent-capabilities.ts
+- projects/brain-core/src/tests/agent-capabilities.test.ts
+
+Implement listAgentCapabilities(): AgentCapabilitySummary[] with static seed records for:
+skill.code, skill.design, skill.research, skill.web, skill.video,
+ai.ollama-m4pro, ai.ollama-m1, ai.codex-cli, ai.claude-bedrock,
+cli.cloudflare, cli.dokploy, cli.aws, cli.azure, cli.github.
+
+Each record must include id, kind, label, source, description, safetyClass, requiresApprovalFor, preferredAiTaskTypes, verification, and enabled.
+
+Do not add routes, CLI commands, filesystem scanning, ai-select calls, run ledger, approvals, or execution.
+
+Run:
+cd projects/brain-core
+npm run build
+node --test dist/tests/agent-capabilities.test.js
+
+When done, update projects/brain-core/docs/video-orchestrator-implementation-plan.md to mark Task 0C-B1 complete and leave 0C-B2 as next. Commit and push only your changes to main.
+```
