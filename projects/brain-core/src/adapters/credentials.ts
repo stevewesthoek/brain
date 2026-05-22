@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
+import path from 'node:path';
 import type {
   BrainCoreCredentialListResponse,
   BrainCoreCredentialSetResult,
@@ -120,6 +121,138 @@ const INFRA_SCHEMA: PlatformSchema[] = [
     ],
   },
 ];
+
+// ── Available platform templates (pick list for new projects) ─────────────
+
+const AVAILABLE_PLATFORMS: Record<string, PlatformSchema> = {
+  youtube: {
+    platformId: 'youtube', platformName: 'YouTube', platformCategory: 'social',
+    credentials: [
+      { key: 'YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true,  hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs' },
+      { key: 'YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true },
+      { key: 'YOUTUBE_TOKEN_PATH',    label: 'Token file path',     type: 'other',  required: false, hint: 'Defaults to ./data/youtube-token.json' },
+    ],
+  },
+  pinterest: {
+    platformId: 'pinterest', platformName: 'Pinterest', platformCategory: 'social',
+    credentials: [
+      { key: 'PINTEREST_APP_ID',        label: 'App ID',             type: 'app_id',   required: true,  hint: 'Register at developers.pinterest.com' },
+      { key: 'PINTEREST_APP_SECRET',    label: 'App Secret',         type: 'secret',   required: true },
+      { key: 'PINTEREST_BOARD_PROBLEM', label: 'Board ID: Problem',  type: 'board_id', required: false },
+      { key: 'PINTEREST_BOARD_SOLUTION',label: 'Board ID: Solution', type: 'board_id', required: false },
+      { key: 'PINTEREST_BOARD_STORY',   label: 'Board ID: Story',    type: 'board_id', required: false },
+      { key: 'PINTEREST_TOKEN_PATH',    label: 'Token file path',    type: 'other',    required: false },
+    ],
+  },
+  facebook: {
+    platformId: 'facebook', platformName: 'Facebook', platformCategory: 'social',
+    credentials: [
+      { key: 'FACEBOOK_PAGE_ID',                    label: 'Page ID',               type: 'app_id', required: false },
+      { key: 'FACEBOOK_PAGE_ACCESS_TOKEN',          label: 'Page Access Token',     type: 'token',  required: false },
+      { key: 'FACEBOOK_APP_ID',                     label: 'App ID',                type: 'app_id', required: false },
+      { key: 'FACEBOOK_APP_SECRET',                 label: 'App Secret',            type: 'secret', required: false },
+      { key: 'N8N_FACEBOOK_AUTOPUBLISH_WEBHOOK_URL',label: 'Autopublish Webhook URL',type: 'url',   required: false },
+      { key: 'N8N_FACEBOOK_AUTOPUBLISH_SECRET',     label: 'Autopublish Secret',    type: 'secret', required: false },
+    ],
+  },
+  instagram: {
+    platformId: 'instagram', platformName: 'Instagram', platformCategory: 'social',
+    credentials: [
+      { key: 'INSTAGRAM_ACCESS_TOKEN', label: 'Access Token', type: 'token',  required: true },
+      { key: 'INSTAGRAM_ACCOUNT_ID',   label: 'Account ID',   type: 'app_id', required: false },
+    ],
+  },
+  tiktok: {
+    platformId: 'tiktok', platformName: 'TikTok', platformCategory: 'social',
+    credentials: [
+      { key: 'TIKTOK_ACCESS_TOKEN', label: 'Access Token', type: 'token',  required: true },
+      { key: 'TIKTOK_OPEN_ID',      label: 'Open ID',      type: 'app_id', required: true },
+    ],
+  },
+  linkedin: {
+    platformId: 'linkedin', platformName: 'LinkedIn', platformCategory: 'social',
+    credentials: [
+      { key: 'LINKEDIN_ACCESS_TOKEN',    label: 'Access Token',    type: 'token',  required: true },
+      { key: 'LINKEDIN_ORGANIZATION_ID', label: 'Organization ID', type: 'app_id', required: false },
+    ],
+  },
+  twitter: {
+    platformId: 'twitter', platformName: 'X / Twitter', platformCategory: 'social',
+    credentials: [
+      { key: 'TWITTER_API_KEY',               label: 'API Key',             type: 'api_key', required: true },
+      { key: 'TWITTER_API_SECRET',            label: 'API Secret',          type: 'secret',  required: true },
+      { key: 'TWITTER_ACCESS_TOKEN',          label: 'Access Token',        type: 'token',   required: false },
+      { key: 'TWITTER_ACCESS_TOKEN_SECRET',   label: 'Access Token Secret', type: 'secret',  required: false },
+    ],
+  },
+  azure: {
+    platformId: 'azure', platformName: 'Azure TTS', platformCategory: 'infra',
+    credentials: [
+      { key: 'AZURE_SPEECH_KEY',    label: 'Speech API Key', type: 'api_key', required: true },
+      { key: 'AZURE_SPEECH_REGION', label: 'Region',         type: 'other',   required: true, hint: 'e.g. eastus' },
+    ],
+  },
+};
+
+export function getAvailablePlatforms(): Array<{ platformId: string; platformName: string; platformCategory: 'social' | 'infra' }> {
+  return Object.values(AVAILABLE_PLATFORMS)
+    .map(p => ({ platformId: p.platformId, platformName: p.platformName, platformCategory: p.platformCategory }))
+    .sort((a, b) => a.platformName.localeCompare(b.platformName));
+}
+
+// ── User-registered projects (persisted to ~/.brain-console/credential-projects.json) ──
+
+export interface UserProjectEntry {
+  projectId: string;
+  displayName: string;
+  repoPath: string;
+  envFileName: string;
+  platforms: string[];
+}
+
+const USER_PROJECTS_CONFIG = expandHome('~/.brain-console/credential-projects.json');
+
+function readUserProjects(): UserProjectEntry[] {
+  try {
+    if (!fs.existsSync(USER_PROJECTS_CONFIG)) return [];
+    const raw = fs.readFileSync(USER_PROJECTS_CONFIG, 'utf8');
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isValidUserProjectEntry);
+  } catch {
+    return [];
+  }
+}
+
+function isValidUserProjectEntry(e: unknown): e is UserProjectEntry {
+  if (!e || typeof e !== 'object') return false;
+  const obj = e as Record<string, unknown>;
+  return typeof obj['projectId'] === 'string' && typeof obj['displayName'] === 'string'
+    && typeof obj['repoPath'] === 'string' && typeof obj['envFileName'] === 'string'
+    && Array.isArray(obj['platforms']);
+}
+
+export function registerUserProject(entry: UserProjectEntry): { ok: boolean; error?: string } {
+  if (!entry.projectId || !entry.displayName || !entry.repoPath || !entry.envFileName || entry.platforms.length === 0) {
+    return { ok: false, error: 'invalid_entry' };
+  }
+  const existing = readUserProjects();
+  if (existing.some(e => e.projectId === entry.projectId) || CREDENTIAL_SCHEMA[entry.projectId]) {
+    return { ok: false, error: 'duplicate_id' };
+  }
+  const configDir = expandHome('~/.brain-console');
+  if (!fs.existsSync(configDir)) fs.mkdirSync(configDir, { recursive: true });
+  fs.writeFileSync(USER_PROJECTS_CONFIG, JSON.stringify([...existing, entry], null, 2));
+  return { ok: true };
+}
+
+export function deleteUserProject(projectId: string): { ok: boolean; error?: string } {
+  const existing = readUserProjects();
+  const filtered = existing.filter(e => e.projectId !== projectId);
+  if (filtered.length === existing.length) return { ok: false, error: 'not_found' };
+  fs.writeFileSync(USER_PROJECTS_CONFIG, JSON.stringify(filtered, null, 2));
+  return { ok: true };
+}
 
 // ── Plist read/write (worker plist EnvironmentVariables) ──────────────────
 
@@ -300,44 +433,60 @@ function buildInfraGroups(): BrainCoreInfraCredentialGroup[] {
 
 // ── Exports ────────────────────────────────────────────────────────────────
 
+function buildProjectEntry(
+  projectId: string,
+  displayName: string,
+  envFilePath: string,
+  platforms: PlatformSchema[],
+): BrainCoreCredentialCatalogResponse['projects'][number] {
+  return {
+    projectId,
+    displayName,
+    envFilePath,
+    platforms: platforms.map((platform) => {
+      const envMap = envFilePath ? parseEnvFile(envFilePath) : new Map<string, string>();
+      let allRequiredSet = true;
+      const credentials = platform.credentials.map((entry) => {
+        const rawVal = envMap.get(entry.key) ?? '';
+        const isSet = rawVal.length > 0;
+        const hasPlaceholder = isPlaceholder(rawVal);
+        if (entry.required && (!isSet || hasPlaceholder)) allRequiredSet = false;
+        return {
+          key: entry.key,
+          label: entry.label,
+          type: entry.type,
+          required: entry.required,
+          storage: 'env_file' as StorageBackend,
+          isSet,
+          hasPlaceholder,
+          ...(entry.hint !== undefined ? { hint: entry.hint } : {}),
+        };
+      });
+      return { platformId: platform.platformId, platformName: platform.platformName, platformCategory: platform.platformCategory, credentials, allRequiredSet };
+    }),
+  };
+}
+
 export function getCredentialCatalog(): BrainCoreCredentialCatalogResponse {
   const infraGroups = buildInfraGroups();
-  const projects: BrainCoreCredentialCatalogResponse['projects'] = Object.entries(CREDENTIAL_SCHEMA).map(([projectId, platforms]) => {
-    return {
-      projectId,
-      displayName: PROJECT_DISPLAY_NAMES[projectId] ?? projectId,
-      envFilePath: PROJECT_ENV_MAP[projectId] ?? '',
-      platforms: platforms.map((platform) => {
-        const envMap = PROJECT_ENV_MAP[projectId] ? parseEnvFile(PROJECT_ENV_MAP[projectId] ?? '') : new Map<string, string>();
-        let allRequiredSet = true;
-        const credentials = platform.credentials.map((entry) => {
-          const rawVal = envMap.get(entry.key) ?? '';
-          const isSet = rawVal.length > 0;
-          const hasPlaceholder = isPlaceholder(rawVal);
-          if (entry.required && (!isSet || hasPlaceholder)) allRequiredSet = false;
-          return {
-            key: entry.key,
-            label: entry.label,
-            type: entry.type,
-            required: entry.required,
-            storage: 'env_file' as StorageBackend,
-            isSet,
-            hasPlaceholder,
-            ...(entry.hint !== undefined ? { hint: entry.hint } : {}),
-          };
-        });
-        return {
-          platformId: platform.platformId,
-          platformName: platform.platformName,
-          platformCategory: platform.platformCategory,
-          credentials,
-          allRequiredSet,
-        };
-      }),
-    };
+
+  // Hardcoded projects
+  const hardcoded = Object.entries(CREDENTIAL_SCHEMA).map(([projectId, platforms]) =>
+    buildProjectEntry(projectId, PROJECT_DISPLAY_NAMES[projectId] ?? projectId, PROJECT_ENV_MAP[projectId] ?? '', platforms)
+  );
+
+  // User-registered projects (config file)
+  const userProjects = readUserProjects().map((entry) => {
+    const envFilePath = path.join(entry.repoPath, entry.envFileName);
+    const platforms = entry.platforms
+      .map(pid => AVAILABLE_PLATFORMS[pid])
+      .filter((p): p is PlatformSchema => p !== undefined);
+    return buildProjectEntry(entry.projectId, entry.displayName, envFilePath, platforms);
   });
 
-  return { projects, infra: infraGroups };
+  const availablePlatforms = getAvailablePlatforms();
+
+  return { projects: [...hardcoded, ...userProjects], infra: infraGroups, availablePlatforms };
 }
 
 const PROJECT_DISPLAY_NAMES: Record<string, string> = {
@@ -382,13 +531,33 @@ const ALLOWED_KEYS_BY_PROJECT: Record<string, Set<string>> = Object.fromEntries(
   ])
 );
 
+function resolveProjectEnvFile(projectId: string): string | undefined {
+  if (PROJECT_ENV_MAP[projectId]) return PROJECT_ENV_MAP[projectId];
+  const userEntry = readUserProjects().find(e => e.projectId === projectId);
+  if (userEntry) return path.join(userEntry.repoPath, userEntry.envFileName);
+  return undefined;
+}
+
+function resolveAllowedKeys(projectId: string): Set<string> | undefined {
+  const hardcoded = ALLOWED_KEYS_BY_PROJECT[projectId];
+  if (hardcoded) return hardcoded;
+  const userEntry = readUserProjects().find(e => e.projectId === projectId);
+  if (!userEntry) return undefined;
+  const keys = new Set<string>();
+  for (const pid of userEntry.platforms) {
+    const p = AVAILABLE_PLATFORMS[pid];
+    if (p) p.credentials.forEach(c => keys.add(c.key));
+  }
+  return keys;
+}
+
 export function setProjectCredential(projectId: string, key: string, value: string): BrainCoreCredentialSetResult {
-  const allowed = ALLOWED_KEYS_BY_PROJECT[projectId];
+  const allowed = resolveAllowedKeys(projectId);
   if (!allowed || !allowed.has(key)) {
     return { ok: false, projectId, key, error: 'key_not_allowed' };
   }
 
-  const envFilePath = PROJECT_ENV_MAP[projectId];
+  const envFilePath = resolveProjectEnvFile(projectId);
   if (!envFilePath) {
     return { ok: false, projectId, key, error: 'project_not_found' };
   }
@@ -413,12 +582,12 @@ export function setProjectCredential(projectId: string, key: string, value: stri
 }
 
 export function revokeProjectCredential(projectId: string, key: string): BrainCoreCredentialRevokeResult {
-  const allowed = ALLOWED_KEYS_BY_PROJECT[projectId];
+  const allowed = resolveAllowedKeys(projectId);
   if (!allowed || !allowed.has(key)) {
     return { ok: false, projectId, key, error: 'key_not_allowed' };
   }
 
-  const envFilePath = PROJECT_ENV_MAP[projectId];
+  const envFilePath = resolveProjectEnvFile(projectId);
   if (!envFilePath) {
     return { ok: false, projectId, key, error: 'project_not_found' };
   }

@@ -313,6 +313,7 @@ import {
   setInfraPlistCredential,
   getYouTubeOAuthUrl,
   exchangeYouTubeOAuthCode,
+  registerBrainCoreProject,
   type BrainCoreVOAccountsResponse,
   type BrainCoreVOAuthStatusResponse,
   type BrainCoreVOJobsResponse,
@@ -7341,6 +7342,39 @@ function renderBrainCoreConnectionDiagnosticsCard(state: BrainConsoleViewState):
 
 // ── Accounts & Credentials section ───────────────────────────────────────
 
+const ACCOUNTS_COLLAPSE_KEY = (groupKey: string) => `brain-console-accounts-collapsed-${groupKey}`;
+
+function isGroupCollapsed(groupKey: string): boolean {
+  try { return localStorage.getItem(ACCOUNTS_COLLAPSE_KEY(groupKey)) === '1'; } catch { return false; }
+}
+
+function setGroupCollapsed(groupKey: string, collapsed: boolean): void {
+  try { collapsed ? localStorage.setItem(ACCOUNTS_COLLAPSE_KEY(groupKey), '1') : localStorage.removeItem(ACCOUNTS_COLLAPSE_KEY(groupKey)); } catch { /* ignore */ }
+}
+
+function makeCollapsibleGroup(
+  parent: HTMLElement,
+  groupKey: string,
+  groupCls: string,
+  renderHeader: (header: HTMLElement) => void,
+  renderBody: (body: HTMLElement) => void,
+): void {
+  const block = parent.createDiv({ cls: `bc-accounts-group ${groupCls}` });
+  const headerRow = block.createDiv({ cls: 'bc-accounts-group-header bc-accounts-group-header--collapsible' });
+  const toggle = headerRow.createEl('span', { cls: 'bc-accounts-toggle', text: isGroupCollapsed(groupKey) ? '▶' : '▼' });
+  renderHeader(headerRow);
+
+  const body = block.createDiv({ cls: `bc-accounts-group-body${isGroupCollapsed(groupKey) ? ' bc-accounts-group-body--collapsed' : ''}` });
+  renderBody(body);
+
+  headerRow.addEventListener('click', () => {
+    const nowCollapsed = !isGroupCollapsed(groupKey);
+    setGroupCollapsed(groupKey, nowCollapsed);
+    toggle.textContent = nowCollapsed ? '▶' : '▼';
+    body.toggleClass('bc-accounts-group-body--collapsed', nowCollapsed);
+  });
+}
+
 function renderAccountsSection(
   content: HTMLElement,
   state: BrainConsoleViewState,
@@ -7351,49 +7385,140 @@ function renderAccountsSection(
 
   const header = content.createDiv({ cls: 'bc-accounts-header' });
   header.createEl('h2', { cls: 'bc-accounts-title', text: 'Accounts & Credentials' });
-  header.createEl('p', { cls: 'bc-accounts-subtitle', text: 'Per-project platform credentials and infrastructure service tokens. Values are written to each project\'s .env file. Infrastructure credentials require manual plist/keychain edits (shown inline).' });
 
   if (!catalog) {
-    const offline = content.createDiv({ cls: 'bc-accounts-offline' });
-    offline.createEl('p', { cls: 'brain-console__empty', text: 'Credential catalog unavailable — Brain Core must be online.' });
+    content.createEl('p', { cls: 'brain-console__empty', text: 'Credential catalog unavailable — Brain Core must be online.' });
     return;
   }
 
-  // ── Infrastructure section ───────────────────────────────────────────────
-  const infraBlock = content.createDiv({ cls: 'bc-accounts-group bc-accounts-group--infra' });
-  const infraHeader = infraBlock.createDiv({ cls: 'bc-accounts-group-header' });
-  infraHeader.createEl('span', { cls: 'bc-accounts-group-icon', text: '⚙' });
-  infraHeader.createEl('span', { cls: 'bc-accounts-group-name', text: 'Infrastructure' });
+  // ── Infrastructure section (collapsible) ────────────────────────────────
   const infraAllOk = catalog.infra.every(g => g.allRequiredSet);
   const infraReadyCount = catalog.infra.filter(g => g.allRequiredSet).length;
-  createStatusChip(infraHeader, `${infraReadyCount}/${catalog.infra.length} ready`, infraAllOk ? 'ok' : 'warn');
 
-  for (const infraGroup of catalog.infra) {
-    renderInfraCredentialGroup(infraBlock, infraGroup, brainCoreUrl);
-  }
+  makeCollapsibleGroup(content, 'infra', 'bc-accounts-group--infra',
+    (headerRow) => {
+      headerRow.createEl('span', { cls: 'bc-accounts-group-name', text: 'Infrastructure' });
+      createStatusChip(headerRow, `${infraReadyCount}/${catalog.infra.length} ready`, infraAllOk ? 'ok' : 'warn');
+    },
+    (body) => {
+      for (const infraGroup of catalog.infra) {
+        renderInfraCredentialGroup(body, infraGroup, brainCoreUrl);
+      }
+    }
+  );
 
-  // ── Per-project sections ─────────────────────────────────────────────────
+  // ── Per-project sections (collapsible) ──────────────────────────────────
   for (const project of catalog.projects) {
     const allPlatforms = project.platforms;
     const requiredTotal = allPlatforms.flatMap(p => p.credentials.filter(c => c.required)).length;
     const requiredSet = allPlatforms.flatMap(p => p.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder)).length;
     const projectTone = requiredTotal > 0 && requiredSet === requiredTotal ? 'ok' : requiredSet > 0 ? 'warn' : 'danger';
 
-    const projectBlock = content.createDiv({ cls: 'bc-accounts-group bc-accounts-group--project' });
-    const projectHeader = projectBlock.createDiv({ cls: 'bc-accounts-group-header' });
-    projectHeader.createEl('span', { cls: 'bc-accounts-group-icon', text: '◉' });
-    projectHeader.createEl('span', { cls: 'bc-accounts-group-name', text: project.displayName });
-    createStatusChip(projectHeader, `${requiredSet}/${requiredTotal} required`, projectTone);
-    projectHeader.createEl('span', { cls: 'bc-accounts-env-path', text: project.envFilePath.replace(/.*\/Repos\//, '~/Repos/') });
-
-    // Social platforms first, then infra
-    const socialPlatforms = allPlatforms.filter(p => p.platformCategory === 'social');
-    const infraPlatforms = allPlatforms.filter(p => p.platformCategory === 'infra');
-
-    for (const platform of [...socialPlatforms, ...infraPlatforms]) {
-      renderProjectPlatformCard(projectBlock, platform, project.projectId, brainCoreUrl);
-    }
+    makeCollapsibleGroup(content, project.projectId, 'bc-accounts-group--project',
+      (headerRow) => {
+        headerRow.createEl('span', { cls: 'bc-accounts-group-name', text: project.displayName });
+        createStatusChip(headerRow, `${requiredSet}/${requiredTotal} required`, projectTone);
+      },
+      (body) => {
+        const socialPlatforms = allPlatforms.filter(p => p.platformCategory === 'social');
+        const infraPlatforms = allPlatforms.filter(p => p.platformCategory === 'infra');
+        for (const platform of [...socialPlatforms, ...infraPlatforms]) {
+          renderProjectPlatformCard(body, platform, project.projectId, brainCoreUrl);
+        }
+      }
+    );
   }
+
+  // ── Add Project button + inline form ────────────────────────────────────
+  const addArea = content.createDiv({ cls: 'bc-accounts-add-area' });
+  const addBtn = addArea.createEl('button', { cls: 'bc-accounts-add-project-btn', text: '＋ Add Project' });
+
+  addBtn.addEventListener('click', () => {
+    addBtn.style.display = 'none';
+    renderAddProjectForm(addArea, brainCoreUrl, catalog.availablePlatforms, () => {
+      addBtn.style.display = '';
+    });
+  });
+}
+
+function renderAddProjectForm(
+  parent: HTMLElement,
+  brainCoreUrl: string,
+  availablePlatforms: Array<{ platformId: string; platformName: string; platformCategory: 'social' | 'infra' }>,
+  onCancel: () => void,
+): void {
+  const form = parent.createDiv({ cls: 'bc-accounts-add-form' });
+  form.createEl('p', { cls: 'bc-accounts-add-form-title', text: 'New Project' });
+
+  const nameInput = form.createEl('input', { cls: 'bc-accounts-input' });
+  nameInput.type = 'text';
+  nameInput.placeholder = 'Project name (e.g. Yeshua Academy)';
+
+  const repoInput = form.createEl('input', { cls: 'bc-accounts-input' });
+  repoInput.type = 'text';
+  repoInput.placeholder = 'Repo path (e.g. /Users/Office/Repos/yeshuaacademy/web)';
+
+  const envInput = form.createEl('input', { cls: 'bc-accounts-input' });
+  envInput.type = 'text';
+  envInput.placeholder = '.env file (e.g. .env.production)';
+  envInput.value = '.env';
+
+  form.createEl('p', { cls: 'bc-accounts-add-platform-label', text: 'Platforms:' });
+  const platformGrid = form.createDiv({ cls: 'bc-accounts-platform-chips' });
+  const selectedPlatforms = new Set<string>();
+
+  for (const p of availablePlatforms) {
+    const chip = platformGrid.createEl('label', { cls: 'bc-accounts-platform-chip' });
+    const checkbox = chip.createEl('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = p.platformId;
+    chip.createEl('span', { text: p.platformName });
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) { selectedPlatforms.add(p.platformId); chip.addClass('bc-accounts-platform-chip--selected'); }
+      else { selectedPlatforms.delete(p.platformId); chip.removeClass('bc-accounts-platform-chip--selected'); }
+    });
+  }
+
+  const btnRow = form.createDiv({ cls: 'bc-accounts-add-btn-row' });
+  const createBtn = btnRow.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Create Project' });
+  const cancelBtn = btnRow.createEl('button', { cls: 'bc-accounts-cancel-btn', text: 'Cancel' });
+  const feedbackEl = form.createEl('span', { cls: 'bc-accounts-feedback' });
+
+  cancelBtn.addEventListener('click', () => { form.remove(); onCancel(); });
+
+  createBtn.addEventListener('click', async () => {
+    const displayName = nameInput.value.trim();
+    const repoPath = repoInput.value.trim();
+    const envFileName = envInput.value.trim() || '.env';
+    const platforms = [...selectedPlatforms];
+
+    if (!displayName) { feedbackEl.textContent = 'Enter a project name.'; feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--warn'; return; }
+    if (!repoPath) { feedbackEl.textContent = 'Enter the repo path.'; feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--warn'; return; }
+    if (platforms.length === 0) { feedbackEl.textContent = 'Select at least one platform.'; feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--warn'; return; }
+
+    const projectId = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    createBtn.disabled = true;
+    createBtn.textContent = '…';
+    feedbackEl.textContent = '';
+    try {
+      const result = await registerBrainCoreProject(brainCoreUrl, { projectId, displayName, repoPath, envFileName, platforms });
+      if (result.ok) {
+        form.empty();
+        form.createEl('p', { cls: 'bc-accounts-feedback bc-accounts-feedback--ok', text: `Project "${displayName}" added. Refresh to see credentials.` });
+      } else {
+        feedbackEl.textContent = result.error === 'duplicate_id' ? 'A project with that name already exists.' : (result.error ?? 'Failed to create project.');
+        feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+        createBtn.disabled = false;
+        createBtn.textContent = 'Create Project';
+      }
+    } catch (err) {
+      feedbackEl.textContent = err instanceof Error ? err.message : 'Network error.';
+      feedbackEl.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Project';
+    }
+  });
 }
 
 function renderCredStatusDot(parent: HTMLElement, isSet: boolean, hasPlaceholder: boolean): void {

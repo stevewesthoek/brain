@@ -7919,6 +7919,27 @@ export interface BrainCoreCredentialCatalogProject {
 export interface BrainCoreCredentialCatalogResponse {
   projects: BrainCoreCredentialCatalogProject[];
   infra: BrainCoreInfraCredentialGroup[];
+  availablePlatforms: Array<{ platformId: string; platformName: string; platformCategory: 'social' | 'infra' }>;
+}
+
+export interface BrainCoreUserProjectEntry {
+  projectId: string;
+  displayName: string;
+  repoPath: string;
+  envFileName: string;
+  platforms: string[];
+}
+
+export interface BrainCoreRegisterProjectResult {
+  ok: boolean;
+  projectId?: string;
+  error?: string;
+}
+
+export interface BrainCoreDeleteProjectResult {
+  ok: boolean;
+  projectId?: string;
+  error?: string;
 }
 
 export function readBrainCoreCredentials(baseUrl: string, projectId: string): Promise<HttpResult<BrainCoreCredentialListResponse>> {
@@ -7976,6 +7997,31 @@ export async function exchangeYouTubeOAuthCode(baseUrl: string, account: string,
     return (await res.json()) as BrainCoreYouTubeOAuthExchangeResult;
   } catch (err) {
     return { ok: false, account, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}
+
+export async function registerBrainCoreProject(baseUrl: string, entry: BrainCoreUserProjectEntry): Promise<BrainCoreRegisterProjectResult> {
+  const params = new URLSearchParams({
+    projectId: entry.projectId,
+    displayName: entry.displayName,
+    repoPath: entry.repoPath,
+    envFileName: entry.envFileName,
+    platforms: entry.platforms.join(','),
+  });
+  try {
+    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/credentials/projects/register?${params.toString()}`, { method: 'POST' });
+    return (await res.json()) as BrainCoreRegisterProjectResult;
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
+}
+
+export async function deleteBrainCoreProject(baseUrl: string, projectId: string): Promise<BrainCoreDeleteProjectResult> {
+  try {
+    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/credentials/projects/${encodeURIComponent(projectId)}/delete`, { method: 'POST' });
+    return (await res.json()) as BrainCoreDeleteProjectResult;
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' };
   }
 }
 

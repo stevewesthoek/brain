@@ -739,6 +739,27 @@ export interface BrainCoreCredentialCatalogProject {
 export interface BrainCoreCredentialCatalogResponse {
   projects: BrainCoreCredentialCatalogProject[];
   infra: BrainCoreInfraCredentialGroup[];
+  availablePlatforms: Array<{ platformId: string; platformName: string; platformCategory: 'social' | 'infra' }>;
+}
+
+export interface BrainCoreUserProjectEntry {
+  projectId: string;
+  displayName: string;
+  repoPath: string;
+  envFileName: string;
+  platforms: string[];
+}
+
+export interface BrainCoreRegisterProjectResult {
+  ok: boolean;
+  projectId?: string;
+  error?: string;
+}
+
+export interface BrainCoreDeleteProjectResult {
+  ok: boolean;
+  projectId?: string;
+  error?: string;
 }
 
 export interface BrainCoreStbPipelineStatus {

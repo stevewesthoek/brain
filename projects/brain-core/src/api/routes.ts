@@ -7,7 +7,7 @@ import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
 import { getPlatform, listPlatforms } from '../adapters/platforms.js';
-import { listProjectCredentials, setProjectCredential, getCredentialCatalog, revokeProjectCredential, setPlistCredential, getYouTubeOAuthUrl, exchangeYouTubeOAuthCode } from '../adapters/credentials.js';
+import { listProjectCredentials, setProjectCredential, getCredentialCatalog, revokeProjectCredential, setPlistCredential, getYouTubeOAuthUrl, exchangeYouTubeOAuthCode, registerUserProject, deleteUserProject } from '../adapters/credentials.js';
 import {
   readPostOrchestratorDraftFixtures,
   readPostDraftReviewQueue,
@@ -1867,6 +1867,26 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
     }
     const result = exchangeYouTubeOAuthCode(account, code);
     sendJson(response, result.ok ? 200 : 500, { ...result, account });
+    return;
+  }
+
+  if (url.pathname === '/credentials/projects/register') {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const displayName = url.searchParams.get('displayName') ?? '';
+    const repoPath = url.searchParams.get('repoPath') ?? '';
+    const envFileName = url.searchParams.get('envFileName') ?? '.env';
+    const platformsRaw = url.searchParams.get('platforms') ?? '';
+    const platforms = platformsRaw.split(',').map(s => s.trim()).filter(Boolean);
+    const result = registerUserProject({ projectId, displayName, repoPath, envFileName, platforms });
+    sendJson(response, result.ok ? 200 : result.error === 'duplicate_id' ? 409 : 400, { ...result, projectId });
+    return;
+  }
+
+  const deleteProjectMatch = /^\/credentials\/projects\/([^/]+)\/delete$/.exec(url.pathname);
+  if (deleteProjectMatch) {
+    const projectId = decodeURIComponent(deleteProjectMatch[1] ?? '');
+    const result = deleteUserProject(projectId);
+    sendJson(response, result.ok ? 200 : result.error === 'not_found' ? 404 : 400, { ...result, projectId });
     return;
   }
 
