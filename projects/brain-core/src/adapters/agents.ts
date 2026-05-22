@@ -4,7 +4,7 @@ export interface BrainCoreAgentSummary {
   role: 'orchestrator' | 'executor' | 'researcher' | 'maintainer' | 'reviewer' | 'dashboard' | 'unknown';
   status: 'available' | 'planned' | 'external' | 'blocked' | 'unknown';
   health: 'ok' | 'warning' | 'error' | 'unknown';
-  owner: 'brain-core' | 'model-router' | 'external-tool' | 'planned';
+  owner: 'brain-core' | 'mind-steward' | 'external-tool' | 'planned';
   description: string;
   relatedOrchestratorId?: string;
   skills: string[];
@@ -17,14 +17,14 @@ export interface BrainCoreAgentSummary {
 
 const AGENTS: BrainCoreAgentSummary[] = [
   {
-    id: 'model-router-agent',
-    name: 'Model Router Agent',
+    id: 'mind-steward-agent',
+    name: 'Mind Steward Agent',
     role: 'orchestrator',
     status: 'available',
     health: 'ok',
     owner: 'brain-core',
     description: 'Routes AI model selection for cost optimization and capability matching',
-    relatedOrchestratorId: 'model-router',
+    relatedOrchestratorId: 'mind-steward',
     skills: ['claude-routing', 'codex-routing', 'gemini-routing', 'cost-tracking', 'dry-run-execution'],
     actions: {
       canRun: false,

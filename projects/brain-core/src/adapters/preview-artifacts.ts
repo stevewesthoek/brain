@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { BrainCoreMindPreviewDetail, BrainCoreMindPreviewSummary } from '../types/api.js';
 
-const DEFAULT_RELATIVE_PREVIEW_ROOT = 'runtime/local/model-router/previews';
+const DEFAULT_RELATIVE_PREVIEW_ROOT = 'runtime/local/mind-steward/previews';
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', 'mind'];
 
 export function listMindPreviewSummaries(): BrainCoreMindPreviewSummary[] {

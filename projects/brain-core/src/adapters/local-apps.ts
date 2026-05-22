@@ -456,7 +456,7 @@ export function readLocalAppsSourceDiagnostics() {
         error: null,
       },
       {
-        path: 'projects/brain-core/runtime/local/model-router/latest.json',
+        path: 'projects/brain-core/runtime/local/mind-steward/latest.json',
         usedFor: 'brain-core-augmented-definition',
         appCount: brainCoreAugmentedCount,
         readable: true,

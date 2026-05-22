@@ -112,7 +112,7 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
     approvalAuditPersistenceSupported: boolean;
     runtimeReportsSupported: boolean;
     runtimeReportEndpoint: string;
-    modelRouterReportSupported: boolean;
+    mindStewardReportSupported: boolean;
     obsidianPluginInstalled: boolean;
     liveSchedulerVerified: boolean;
     mindWorkspace: {
@@ -136,8 +136,8 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
     };
     executionGate: {
       executionEnabled: boolean;
-      modelRouterDryRunExecutionFlagEnabled: boolean;
-      modelRouterDryRunExecutionFlagName: string;
+      mindStewardDryRunExecutionFlagEnabled: boolean;
+      mindStewardDryRunExecutionFlagName: string;
       candidateActionKinds: string[];
       readinessEndpoint: string;
       plansEndpoint: string;
@@ -152,7 +152,7 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.approvalAuditPersistenceSupported, true);
   assert.equal(body.runtimeReportsSupported, true);
   assert.equal(body.runtimeReportEndpoint, '/runtime/reports');
-  assert.equal(body.modelRouterReportSupported, true);
+  assert.equal(body.mindStewardReportSupported, true);
   assert.equal(body.obsidianPluginInstalled, false);
   assert.equal(body.liveSchedulerVerified, false);
   assert.equal(body.mindWorkspace.legacyTaskMigrationStatus, 'completed');
@@ -169,17 +169,17 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.probot.commandAliasesEnabled, true);
   assert.equal(body.probot.actionsEnabled, false);
   assert.equal(body.executionGate.executionEnabled, false);
-  assert.equal(body.executionGate.modelRouterDryRunExecutionFlagEnabled, false);
-  assert.equal(body.executionGate.modelRouterDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
-  assert.equal(body.executionGate.firstCandidate, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.executionGate.mindStewardDryRunExecutionFlagEnabled, false);
+  assert.equal(body.executionGate.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
+  assert.equal(body.executionGate.firstCandidate, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.executionGate.readinessEndpoint, '/execution/readiness');
   assert.equal(body.executionGate.plansEndpoint, '/execution/plans');
-  assert.equal(body.executionGate.candidateActionKinds.includes('scheduler-run-model-router-dry-run'), true);
+  assert.equal(body.executionGate.candidateActionKinds.includes('scheduler-run-mind-steward-dry-run'), true);
 });
 
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
-  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');
 
   try {
     const response = await exercise({ method: 'GET', url: '/scheduler/status' });
@@ -191,16 +191,16 @@ test('GET /scheduler/status returns read-only placeholder scheduler state', asyn
     assert.equal(body.source, 'placeholder');
   } finally {
     if (previousReportPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
     }
   }
 });
 
 test('GET /scheduler/latest-run returns read-only placeholder latest run state', async () => {
-  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-latest-report.json');
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-latest-report.json');
 
   try {
     const response = await exercise({ method: 'GET', url: '/scheduler/latest-run' });
@@ -212,33 +212,33 @@ test('GET /scheduler/latest-run returns read-only placeholder latest run state',
     assert.equal(body.source, 'placeholder');
   } finally {
     if (previousReportPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
     }
   }
 });
 
-test('GET /scheduler/latest-run reads model-router runtime report when configured', async () => {
+test('GET /scheduler/latest-run reads mind-steward runtime report when configured', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-scheduler');
   const reportPath = path.join(testDir, 'latest.json');
-  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
 
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(testDir, { recursive: true });
   fs.writeFileSync(
     reportPath,
     JSON.stringify({
-      job: 'model-router-dry-run',
+      job: 'mind-steward-dry-run',
       status: 'success',
-      message: 'model-router dry-run validation passed',
+      message: 'mind-steward dry-run validation passed',
       endedAtLisbon: '2026-05-17 07:00:00 WEST',
       mode: 'dry-run-report-only',
       writesToMind: false,
       executableActions: false,
     }),
   );
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = reportPath;
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = reportPath;
 
   try {
     const response = await exercise({ method: 'GET', url: '/scheduler/latest-run' });
@@ -251,15 +251,15 @@ test('GET /scheduler/latest-run reads model-router runtime report when configure
     assert.equal(body.latestRunStatus, 'ok');
   } finally {
     if (previousReportPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
 
-test('GET /scheduler/jobs returns placeholder model-router jobs', async () => {
+test('GET /scheduler/jobs returns placeholder mind-steward jobs', async () => {
   const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
   const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean; status: string }> };
 
@@ -267,31 +267,31 @@ test('GET /scheduler/jobs returns placeholder model-router jobs', async () => {
   assert.equal(body.jobs.length, 5);
   assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
   assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
-  assert.equal(body.jobs.some((job) => job.id === 'model-router-dry-run'), true);
+  assert.equal(body.jobs.some((job) => job.id === 'mind-steward-dry-run'), true);
 });
 
-test('GET /scheduler/jobs reports model-router dry-run ok status when runtime report exists', async () => {
+test('GET /scheduler/jobs reports mind-steward dry-run ok status when runtime report exists', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-scheduler-jobs');
   const reportPath = path.join(testDir, 'latest.json');
-  const previousReportPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
 
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(testDir, { recursive: true });
   fs.writeFileSync(reportPath, JSON.stringify({ status: 'success' }));
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = reportPath;
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = reportPath;
 
   try {
     const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
     const body = JSON.parse(response.body) as { jobs: Array<{ id: string; status: string }> };
-    const modelRouterJob = body.jobs.find((job) => job.id === 'model-router-dry-run');
+    const mindStewardJob = body.jobs.find((job) => job.id === 'mind-steward-dry-run');
 
     assert.equal(response.statusCode, 200);
-    assert.equal(modelRouterJob?.status, 'ok');
+    assert.equal(mindStewardJob?.status, 'ok');
   } finally {
     if (previousReportPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousReportPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }
@@ -406,7 +406,7 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
     const probot = body.apps.find((app) => app.id === 'probot');
     assert.equal(probot?.status, 'running');
     assert.equal(probot?.source, 'runtime-report');
-    assert.equal(body.apps.some((app) => app.id === 'model-router'), true);
+    assert.equal(body.apps.some((app) => app.id === 'mind-steward'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
@@ -444,10 +444,10 @@ test('GET /local-apps/dashboard returns safe inventory dashboard payload', async
   assert.equal(body.actionPolicy.status, 'enabled');
   assert.equal(body.safety.startStopControlsEnabled, true);
   assert.ok(body.apps.length > 0);
-  assert.ok(body.apps.some((app) => app.id === 'model-router'));
+  assert.ok(body.apps.some((app) => app.id === 'mind-steward'));
   assert.ok(body.apps.some((app) => app.startSupported || app.stopSupported || app.restartSupported));
   assert.ok(body.apps.every((app) => !app.actionEnabled || app.startSupported || app.stopSupported || app.restartSupported));
-  assert.ok(body.apps.find((app) => app.id === 'model-router')?.actionDisabledReason !== undefined);
+  assert.ok(body.apps.find((app) => app.id === 'mind-steward')?.actionDisabledReason !== undefined);
 });
 
 test('GET /local-apps/orchestrator returns standardized inventory model', async () => {
@@ -498,8 +498,8 @@ test('GET /local-apps/action-plans returns disabled plans by default', async () 
   assert.ok(body.plans.every((plan) => plan.arbitraryCommandAllowed === false));
 });
 
-test('GET /local-apps/model-router/action-plan/start returns a safe executable plan', async () => {
-  const response = await exercise({ method: 'GET', url: '/local-apps/model-router/action-plan/start' });
+test('GET /local-apps/mind-steward/action-plan/start returns a safe executable plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/local-apps/mind-steward/action-plan/start' });
   const body = JSON.parse(response.body) as {
     appId: string;
     action: string;
@@ -510,11 +510,11 @@ test('GET /local-apps/model-router/action-plan/start returns a safe executable p
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.appId, 'model-router');
+  assert.equal(body.appId, 'mind-steward');
   assert.equal(body.action, 'start');
   assert.equal(body.pluginExecutesShell, false);
   assert.equal(body.arbitraryCommandAllowed, false);
-  // model-router is now wired with a canonical start command — canExecuteNow reflects script presence
+  // mind-steward is now wired with a canonical start command — canExecuteNow reflects script presence
   assert.equal(typeof body.canExecuteNow, 'boolean');
 });
 
@@ -744,8 +744,8 @@ test('POST /local-apps/action-enablement-backlog is not registered', async () =>
   assert.equal(response.statusCode, 404);
 });
 
-test('POST /local-apps/model-router/start returns structured controlled result', async () => {
-  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start' });
+test('POST /local-apps/mind-steward/start returns structured controlled result', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start' });
   const body = JSON.parse(response.body) as {
     appId: string;
     action: string;
@@ -759,9 +759,9 @@ test('POST /local-apps/model-router/start returns structured controlled result',
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.appId, 'model-router');
+  assert.equal(body.appId, 'mind-steward');
   assert.equal(body.action, 'start');
-  // model-router is now wired with a canonical start command — expect a terminal status (success or failed)
+  // mind-steward is now wired with a canonical start command — expect a terminal status (success or failed)
   assert.ok(['success', 'failed', 'not_executable'].includes(body.status), `unexpected status: ${body.status}`);
   assert.equal(typeof body.ok, 'boolean');
   assert.equal(typeof body.message, 'string');
@@ -773,8 +773,8 @@ test('POST /local-apps/model-router/start returns structured controlled result',
   assert.equal(body.safety.canonicalAppIdRequired, true);
 });
 
-test('POST /local-apps/model-router/start rejects command override parameters', async () => {
-  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start?command=rm%20-rf%20%2Ftmp%2Funsafe' });
+test('POST /local-apps/mind-steward/start rejects command override parameters', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start?command=rm%20-rf%20%2Ftmp%2Funsafe' });
   const body = JSON.parse(response.body) as {
     appId: string;
     action: string;
@@ -783,7 +783,7 @@ test('POST /local-apps/model-router/start rejects command override parameters', 
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.appId, 'model-router');
+  assert.equal(body.appId, 'mind-steward');
   assert.equal(body.action, 'start');
   assert.equal(body.safety.arbitraryCommandAllowed, false);
   assert.equal(body.safety.commandOverrideAccepted, false);
@@ -801,13 +801,13 @@ test('POST /local-apps/unknown/start rejects unknown app id', async () => {
   assert.equal(body.safety.commandOverrideAccepted, false);
 });
 
-test('POST /local-apps/model-router/delete is not registered', async () => {
-  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/delete' });
+test('POST /local-apps/mind-steward/delete is not registered', async () => {
+  const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/delete' });
   assert.equal(response.statusCode, 404);
 });
 
 test('local app executor errors are converted to structured failed results', async () => {
-  const result = await executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
+  const result = await executeLocalAppActionRequest('mind-steward', 'start', { forceExecutorError: true });
   assert.equal(result.status, 'failed');
   assert.equal(result.ok, false);
   assert.equal(result.errorCode, 'local_app_action_failed');
@@ -825,7 +825,7 @@ test('GET /local-apps/actions/status works after local app action failure', asyn
   fs.mkdirSync(testDir, { recursive: true });
   process.env.BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH = auditPath;
 
-  await executeLocalAppActionRequest('model-router', 'start', { forceExecutorError: true });
+  await executeLocalAppActionRequest('mind-steward', 'start', { forceExecutorError: true });
   const response = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
   const body = JSON.parse(response.body) as {
     id: string;
@@ -845,8 +845,8 @@ test('GET /local-apps/actions/status works after local app action failure', asyn
   assert.equal(response.statusCode, 200);
   assert.equal(body.id, 'local-apps-actions-status');
   assert.equal(Array.isArray(body.inFlight), true);
-  assert.equal(body.recentResults.some((result) => result.appId === 'model-router' && result.status === 'failed'), true);
-  assert.equal(body.lastErrorByApp['model-router']?.status, 'failed');
+  assert.equal(body.recentResults.some((result) => result.appId === 'mind-steward' && result.status === 'failed'), true);
+  assert.equal(body.lastErrorByApp['mind-steward']?.status, 'failed');
   assert.equal(body.audit.status, 'enabled');
   assert.equal(body.audit.path, '.buildflow-test-local-app-action-audit/actions-audit.jsonl');
   assert.equal(body.audit.persistedResultCount > 0, true);
@@ -855,7 +855,7 @@ test('GET /local-apps/actions/status works after local app action failure', asyn
   assert.equal(body.audit.safety.writesToMind, false);
   assert.equal(body.audit.safety.writesOperationsConfig, false);
   const auditRows = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
-  assert.equal(auditRows.some((row) => row.appId === 'model-router' && row.status === 'failed'), true);
+  assert.equal(auditRows.some((row) => row.appId === 'mind-steward' && row.status === 'failed'), true);
   assert.equal(JSON.stringify(auditRows).includes('TOKEN='), false);
   assert.equal(JSON.stringify(body).includes('TOKEN='), false);
   assert.equal(body.safety.pluginExecutesShell, false);
@@ -929,7 +929,7 @@ test('GET /video/status falls back to failed read-only state when runtime report
 });
 
 test('GET /local-apps/actions/status includes the recent result after POST', async () => {
-  const response = await exercise({ method: 'POST', url: '/local-apps/model-router/start' });
+  const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start' });
   const postBody = JSON.parse(response.body) as { id: string; ok: boolean; status: string };
   const statusResponse = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
   const statusBody = JSON.parse(statusResponse.body) as {
@@ -962,7 +962,7 @@ test('GET /local-apps ignores invalid runtime reports and keeps canonical invent
     assert.equal(body.apps.length >= 16, true);
     assert.equal(body.apps.some((app) => app.id === 'local-apps-report'), false);
     assert.equal(body.apps.some((app) => app.id === 'probot'), true);
-    assert.equal(body.apps.some((app) => app.id === 'model-router'), true);
+    assert.equal(body.apps.some((app) => app.id === 'mind-steward'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
@@ -1123,8 +1123,8 @@ test('POST /actions/request creates an approval record without executing', async
   assert.equal(body.executed, false);
 });
 
-test('POST /scheduler/jobs/model-router-dry-run/request-run uses execution plan preview metadata without executing', async () => {
-  const response = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+test('POST /scheduler/jobs/mind-steward-dry-run/request-run uses execution plan preview metadata without executing', async () => {
+  const response = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
   const body = JSON.parse(response.body) as {
     approval: { kind: string; status: string };
     preview: { kind: string; summary: string; wouldExecute: boolean; writesToMind: boolean };
@@ -1133,10 +1133,10 @@ test('POST /scheduler/jobs/model-router-dry-run/request-run uses execution plan 
   };
 
   assert.equal(response.statusCode, 202);
-  assert.equal(body.approval.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.approval.kind, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.approval.status, 'pending');
-  assert.equal(body.preview.kind, 'scheduler-run-model-router-dry-run');
-  assert.equal(body.preview.summary.toLowerCase().includes('report-only model-router dry-run'), true);
+  assert.equal(body.preview.kind, 'scheduler-run-mind-steward-dry-run');
+  assert.equal(body.preview.summary.toLowerCase().includes('report-only mind-steward dry-run'), true);
   assert.equal(body.preview.wouldExecute, false);
   assert.equal(body.preview.writesToMind, false);
   assert.equal(body.policy.executionEnabled, false);
@@ -1152,8 +1152,8 @@ test('GET /execution/plans returns the future first execution candidate', async 
       kind: string;
       candidate: boolean;
       executionEnabled: boolean;
-      modelRouterDryRunExecutionFlagEnabled: boolean;
-      modelRouterDryRunExecutionFlagName: string;
+      mindStewardDryRunExecutionFlagEnabled: boolean;
+      mindStewardDryRunExecutionFlagName: string;
       wouldExecute: boolean;
       executed: boolean;
       writesToMind: boolean;
@@ -1173,16 +1173,16 @@ test('GET /execution/plans returns the future first execution candidate', async 
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.plans.length, 1);
-  assert.equal(body.plans[0]?.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.plans[0]?.kind, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.plans[0]?.candidate, true);
   assert.equal(body.plans[0]?.executionEnabled, false);
-  assert.equal(body.plans[0]?.modelRouterDryRunExecutionFlagEnabled, false);
-  assert.equal(body.plans[0]?.modelRouterDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
+  assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagEnabled, false);
+  assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
   assert.equal(body.plans[0]?.wouldExecute, false);
   assert.equal(body.plans[0]?.executed, false);
   assert.equal(body.plans[0]?.writesToMind, false);
   assert.equal(body.plans[0]?.mindPreviewPolicy.status, 'preview-only');
-  assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedAction, 'model-router-update-current-context');
+  assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedAction, 'mind-steward-update-current-context');
   assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedTarget, 'router/current.md');
   assert.equal(body.plans[0]?.mindPreviewPolicy.writesToMind, false);
   assert.equal(body.plans[0]?.mindPreviewPolicy.externalSideEffects, false);
@@ -1210,7 +1210,7 @@ test('GET /execution/mind-preview-policy returns preview-only policy metadata', 
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.status, 'preview-only');
-  assert.equal(body.firstProposedAction, 'model-router-update-current-context');
+  assert.equal(body.firstProposedAction, 'mind-steward-update-current-context');
   assert.equal(body.firstProposedTarget, 'router/current.md');
   assert.equal(body.applyRouteEnabled, false);
   assert.equal(body.writesToMind, false);
@@ -1220,11 +1220,11 @@ test('GET /execution/mind-preview-policy returns preview-only policy metadata', 
   assert.equal(body.blockedPrefixes.includes('01-inbox/'), true);
   assert.equal(body.requiredGates.includes('localhost-only request'), true);
   assert.equal(
-    body.docs.some((doc) => doc.path === 'operations/specs/1779034874780-model-router-mind-write-apply-policy.md'),
+    body.docs.some((doc) => doc.path === 'operations/specs/1779034874780-mind-steward-mind-write-apply-policy.md'),
     true,
   );
   assert.equal(
-    body.docs.some((doc) => doc.path === 'docs/system/1779034841996-obsidian-mind-model-router-handoff.md'),
+    body.docs.some((doc) => doc.path === 'docs/system/1779034841996-obsidian-mind-mind-steward-handoff.md'),
     true,
   );
 });
@@ -1267,7 +1267,7 @@ test('GET /execution/mind-previews/:id returns not found for unknown id', async 
 
 test('GET /execution/mind-previews lists safe fixture preview artifacts', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-mind-previews');
-  const previewDir = path.join(testDir, 'runtime', 'local', 'model-router', 'previews');
+  const previewDir = path.join(testDir, 'runtime', 'local', 'mind-steward', 'previews');
   const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(previewDir, { recursive: true });
@@ -1275,7 +1275,7 @@ test('GET /execution/mind-previews lists safe fixture preview artifacts', async 
     path.join(previewDir, 'preview-test.json'),
     JSON.stringify({
       id: 'preview-test',
-      actionKind: 'model-router-update-current-context',
+      actionKind: 'mind-steward-update-current-context',
       targetPath: 'router/current.md',
       createdAt: '2026-05-17T12:00:00.000Z',
       expiresAt: '2026-05-18T12:00:00.000Z',
@@ -1313,7 +1313,7 @@ test('GET /execution/mind-previews lists safe fixture preview artifacts', async 
 
 test('GET /execution/mind-previews ignores unsafe preview path configuration', async () => {
   const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = '/Users/Office/Repos/stevewesthoek/mind/runtime/local/model-router/previews';
+  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = '/Users/Office/Repos/stevewesthoek/mind/runtime/local/mind-steward/previews';
   try {
     const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
     const body = JSON.parse(response.body) as { previews: unknown[] };
@@ -1326,14 +1326,14 @@ test('GET /execution/mind-previews ignores unsafe preview path configuration', a
 });
 
 test('GET /execution/plans/:kind returns the execution plan by kind', async () => {
-  const response = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-model-router-dry-run' });
+  const response = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-mind-steward-dry-run' });
   const body = JSON.parse(response.body) as { plan: { kind: string; summary: string; executed: boolean; wouldExecute: boolean } };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.plan.kind, 'scheduler-run-model-router-dry-run');
+  assert.equal(body.plan.kind, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.plan.executed, false);
   assert.equal(body.plan.wouldExecute, false);
-  assert.equal(body.plan.summary.toLowerCase().includes('report-only model-router dry-run'), true);
+  assert.equal(body.plan.summary.toLowerCase().includes('report-only mind-steward dry-run'), true);
 });
 
 test('GET /execution/plans/:kind returns not found for unknown kind', async () => {
@@ -1348,8 +1348,8 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
   const response = await exercise({ method: 'GET', url: '/execution/readiness' });
   const body = JSON.parse(response.body) as {
     executionEnabled: boolean;
-    modelRouterDryRunExecutionFlagEnabled: boolean;
-    modelRouterDryRunExecutionFlagName: string;
+    mindStewardDryRunExecutionFlagEnabled: boolean;
+    mindStewardDryRunExecutionFlagName: string;
     candidateCount: number;
     readyCandidateCount: number;
     blockers: string[];
@@ -1359,8 +1359,8 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.executionEnabled, false);
-  assert.equal(body.modelRouterDryRunExecutionFlagEnabled, false);
-  assert.equal(body.modelRouterDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
+  assert.equal(body.mindStewardDryRunExecutionFlagEnabled, false);
+  assert.equal(body.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
   assert.equal(body.candidateCount, 1);
   assert.equal(body.readyCandidateCount, 0);
   assert.equal(body.writesToMind, false);
@@ -1376,7 +1376,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     const readinessResponse = await exercise({ method: 'GET', url: '/execution/readiness' });
     const readinessBody = JSON.parse(readinessResponse.body) as {
       executionEnabled: boolean;
-      modelRouterDryRunExecutionFlagEnabled: boolean;
+      mindStewardDryRunExecutionFlagEnabled: boolean;
       readyCandidateCount: number;
       blockers: string[];
       executableActions: boolean;
@@ -1384,15 +1384,15 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     const capabilitiesResponse = await exercise({ method: 'GET', url: '/capabilities' });
     const capabilitiesBody = JSON.parse(capabilitiesResponse.body) as {
       executableActionsEnabled: boolean;
-      executionGate: { executionEnabled: boolean; modelRouterDryRunExecutionFlagEnabled: boolean };
+      executionGate: { executionEnabled: boolean; mindStewardDryRunExecutionFlagEnabled: boolean };
     };
-    const planResponse = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-model-router-dry-run' });
+    const planResponse = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-mind-steward-dry-run' });
     const planBody = JSON.parse(planResponse.body) as {
-      plan: { executionEnabled: boolean; modelRouterDryRunExecutionFlagEnabled: boolean; wouldExecute: boolean; executed: boolean };
+      plan: { executionEnabled: boolean; mindStewardDryRunExecutionFlagEnabled: boolean; wouldExecute: boolean; executed: boolean };
     };
 
     assert.equal(readinessResponse.statusCode, 200);
-    assert.equal(readinessBody.modelRouterDryRunExecutionFlagEnabled, true);
+    assert.equal(readinessBody.mindStewardDryRunExecutionFlagEnabled, true);
     assert.equal(readinessBody.executionEnabled, false);
     assert.equal(readinessBody.readyCandidateCount, 0);
     assert.equal(readinessBody.executableActions, false);
@@ -1400,8 +1400,8 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     assert.equal(readinessBody.blockers.includes('durable approval store not proven for this request'), true);
     assert.equal(capabilitiesBody.executableActionsEnabled, false);
     assert.equal(capabilitiesBody.executionGate.executionEnabled, false);
-    assert.equal(capabilitiesBody.executionGate.modelRouterDryRunExecutionFlagEnabled, true);
-    assert.equal(planBody.plan.modelRouterDryRunExecutionFlagEnabled, true);
+    assert.equal(capabilitiesBody.executionGate.mindStewardDryRunExecutionFlagEnabled, true);
+    assert.equal(planBody.plan.mindStewardDryRunExecutionFlagEnabled, true);
     assert.equal(planBody.plan.executionEnabled, false);
     assert.equal(planBody.plan.wouldExecute, false);
     assert.equal(planBody.plan.executed, false);
@@ -1414,7 +1414,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
   }
 });
 
-test('approved scheduler-run-model-router-dry-run executes exactly one report-only action when all gates pass', async () => {
+test('approved scheduler-run-mind-steward-dry-run executes exactly one report-only action when all gates pass', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
   const storePath = path.join(testDir, 'approvals.json');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
@@ -1429,7 +1429,7 @@ test('approved scheduler-run-model-router-dry-run executes exactly one report-on
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
 
   try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
     const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
     const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
     const approvalBody = JSON.parse(approvalResponse.body) as {
@@ -1444,7 +1444,7 @@ test('approved scheduler-run-model-router-dry-run executes exactly one report-on
     const outputPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
 
     assert.equal(requestResponse.statusCode, 202);
-    assert.equal(requestBody.approval.kind, 'scheduler-run-model-router-dry-run');
+    assert.equal(requestBody.approval.kind, 'scheduler-run-mind-steward-dry-run');
     assert.equal(requestBody.executed, false);
     assert.equal(approvalResponse.statusCode, 200);
     assert.equal(approvalBody.approval.status, 'approved');
@@ -1454,15 +1454,15 @@ test('approved scheduler-run-model-router-dry-run executes exactly one report-on
     assert.equal(approvalBody.preview.externalSideEffects, false);
     assert.equal(approvalBody.preview.commands.length, 1);
     assert.equal(approvalBody.execution.status, 'ok');
-    assert.equal(approvalBody.execution.command, 'bash tools/scripts/model-router-dry-run-report.sh');
-    assert.equal(approvalBody.execution.outputPath, 'runtime/local/model-router/latest.json');
+    assert.equal(approvalBody.execution.command, 'bash tools/scripts/mind-steward-dry-run-report.sh');
+    assert.equal(approvalBody.execution.outputPath, 'runtime/local/mind-steward/latest.json');
     assert.equal(approvalBody.execution.writesToMind, false);
     assert.equal(approvalBody.execution.externalSideEffects, false);
     assert.equal(approvalBody.policy.executionEnabled, true);
-    assert.equal(approvalBody.policy.executionGate, 'enabled-for-model-router-dry-run');
+    assert.equal(approvalBody.policy.executionGate, 'enabled-for-mind-steward-dry-run');
     assert.equal(fs.existsSync(outputPath), true);
     assert.equal(
-      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-model-router-dry-run' && event.executed === true),
+      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-mind-steward-dry-run' && event.executed === true),
       true,
     );
   } finally {
@@ -1505,7 +1505,7 @@ test('GET /runtime/reports returns report summaries', async () => {
   const body = JSON.parse(response.body) as { reports: Array<{ id: string; writesToMind: boolean; executableActions: boolean }> };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.reports.some((report) => report.id === 'model-router'), true);
+  assert.equal(body.reports.some((report) => report.id === 'mind-steward'), true);
   assert.equal(body.reports.every((report) => report.writesToMind === false), true);
   assert.equal(body.reports.every((report) => report.executableActions === false), true);
 });
@@ -1603,7 +1603,7 @@ test('roadmap POST targets create approval requests without executing', async ()
   }
 });
 
-test('POST /approvals/:id/approve executes only the approved model-router dry-run when all gates pass', async () => {
+test('POST /approvals/:id/approve executes only the approved mind-steward dry-run when all gates pass', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
   const storePath = path.join(testDir, 'approvals.json');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
@@ -1618,7 +1618,7 @@ test('POST /approvals/:id/approve executes only the approved model-router dry-ru
   process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
 
   try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
     const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
     const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
     const body = JSON.parse(response.body) as {
@@ -1637,12 +1637,12 @@ test('POST /approvals/:id/approve executes only the approved model-router dry-ru
     assert.equal(body.preview.wouldExecute, true);
     assert.equal(body.preview.writesToMind, false);
     assert.equal(body.preview.externalSideEffects, false);
-    assert.equal(body.preview.commands.includes('bash tools/scripts/model-router-dry-run-report.sh'), true);
+    assert.equal(body.preview.commands.includes('bash tools/scripts/mind-steward-dry-run-report.sh'), true);
     assert.equal(body.policy.executionEnabled, true);
-    assert.equal(body.policy.executionGate, 'enabled-for-model-router-dry-run');
+    assert.equal(body.policy.executionGate, 'enabled-for-mind-steward-dry-run');
     assert.equal(body.execution.status, 'ok');
-    assert.equal(body.execution.command, 'bash tools/scripts/model-router-dry-run-report.sh');
-    assert.equal(body.execution.outputPath, 'runtime/local/model-router/latest.json');
+    assert.equal(body.execution.command, 'bash tools/scripts/mind-steward-dry-run-report.sh');
+    assert.equal(body.execution.outputPath, 'runtime/local/mind-steward/latest.json');
     assert.equal(body.execution.exitCode, 0);
     assert.equal(body.execution.writesToMind, false);
     assert.equal(body.execution.externalSideEffects, false);
@@ -1667,7 +1667,7 @@ test('POST /approvals/:id/approve executes only the approved model-router dry-ru
   }
 });
 
-test('POST /approvals/:id/approve does not execute the model-router dry-run when the feature flag is disabled', async () => {
+test('POST /approvals/:id/approve does not execute the mind-steward dry-run when the feature flag is disabled', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-first-action-blocked');
   const storePath = path.join(testDir, 'approvals.json');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
@@ -1682,7 +1682,7 @@ test('POST /approvals/:id/approve does not execute the model-router dry-run when
   delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
 
   try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
     const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
     const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
     const body = JSON.parse(response.body) as {
@@ -1750,7 +1750,7 @@ test('POST /approvals/:id/approve records missing audit event when approval does
 
 test('GET /approvals/:id returns approval detail with age and expiration', async () => {
   // Create an approval first
-  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
   const requestBody = JSON.parse(requestResponse.body) as { approval?: { id: string } };
   const approvalId = requestBody.approval?.id;
   assert.ok(approvalId, 'approval should be created');
@@ -1785,8 +1785,8 @@ test('GET /approvals/:id returns not found for unknown approval', async () => {
   assert.equal(body.error?.code, 'not_found');
 });
 
-test('GET /runtime/reports/model-router returns safe detail metadata', async () => {
-  const response = await exercise({ method: 'GET', url: '/runtime/reports/model-router' });
+test('GET /runtime/reports/mind-steward returns safe detail metadata', async () => {
+  const response = await exercise({ method: 'GET', url: '/runtime/reports/mind-steward' });
   const body = JSON.parse(response.body) as {
     report?: {
       exists: boolean;
@@ -1805,7 +1805,7 @@ test('GET /runtime/reports/model-router returns safe detail metadata', async () 
   assert.equal(body.report.applyEnabled, false, 'report must not have apply enabled');
 });
 
-test('GET /runtime/reports includes model-router report with wikiHealth', async () => {
+test('GET /runtime/reports includes mind-steward report with wikiHealth', async () => {
   const response = await exercise({ method: 'GET', url: '/runtime/reports' });
   const body = JSON.parse(response.body) as {
     reports?: Array<{
@@ -1819,8 +1819,8 @@ test('GET /runtime/reports includes model-router report with wikiHealth', async 
 
   assert.equal(response.statusCode, 200);
   assert.ok(body.reports, 'reports should exist');
-  const mrReport = body.reports?.find((r) => r.id === 'model-router');
-  assert.ok(mrReport, 'model-router report should be present');
+  const mrReport = body.reports?.find((r) => r.id === 'mind-steward');
+  assert.ok(mrReport, 'mind-steward report should be present');
   assert.equal(mrReport.writesToMind, false, 'report should not write to Mind');
   assert.equal(mrReport.executableActions, false, 'report should have no executable actions');
 });
@@ -1850,7 +1850,7 @@ test('GET /runtime/reports report status is never applied when read', async () =
   }
 });
 
-test('approved model-router dry-run generates report with metadata', async () => {
+test('approved mind-steward dry-run generates report with metadata', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-report-metadata-' + Date.now());
   const storePath = path.join(testDir, 'approvals.json');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
@@ -1862,9 +1862,9 @@ test('approved model-router dry-run generates report with metadata', async () =>
     process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
     process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
     process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
-    process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = reportPath;
+    process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = reportPath;
 
-    // Create a mock report file that would be generated by model-router
+    // Create a mock report file that would be generated by mind-steward
     const mockReport = {
       generatedAt: new Date().toISOString(),
       mode: 'dry-run-report-only',
@@ -1883,11 +1883,11 @@ test('approved model-router dry-run generates report with metadata', async () =>
     };
 
     // Request approval
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/model-router-dry-run/request-run' });
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
     const requestBody = JSON.parse(requestResponse.body) as { approval?: { id: string } };
     assert.ok(requestBody.approval?.id, 'approval should be created');
 
-    // Create the mock report (simulating model-router execution)
+    // Create the mock report (simulating mind-steward execution)
     fs.mkdirSync(path.dirname(reportPath), { recursive: true });
     fs.writeFileSync(reportPath, JSON.stringify(mockReport));
 
@@ -1903,7 +1903,7 @@ test('approved model-router dry-run generates report with metadata', async () =>
     };
 
     assert.equal(reportsResponse.statusCode, 200);
-    const mrReport = reportsBody.reports?.find((r) => r.id === 'model-router');
+    const mrReport = reportsBody.reports?.find((r) => r.id === 'mind-steward');
     assert.equal(mrReport?.status, 'available', 'report should be available');
     assert.equal(mrReport?.latestRunStatus, 'ok', 'report status should be ok');
     assert.ok(mrReport?.wikiHealth, 'wiki health should be extracted');
@@ -1913,7 +1913,7 @@ test('approved model-router dry-run generates report with metadata', async () =>
     delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
     delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
     delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
-    delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
@@ -2093,7 +2093,7 @@ test('exact ten still-disabled actions are in backlog', async () => {
     'prochat:stop', 'prochat:restart',
     'jpv-bootcamp:stop', 'jpv-bootcamp:restart',
     'fala:start', 'fala:stop', 'fala:restart',
-    'model-router:start', 'model-router:stop', 'model-router:restart',
+    'mind-steward:start', 'mind-steward:stop', 'mind-steward:restart',
   ];
   for (const key of expectedDisabled) {
     assert.ok(disabledKeys.has(key), `${key} should be in disabled backlog`);

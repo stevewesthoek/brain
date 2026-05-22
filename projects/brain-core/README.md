@@ -106,7 +106,7 @@ GET /stb-video-migration/status
 GET /stb-video/parity-matrix
 GET /stb-video/dual-run-status
 GET /runtime/reports
-GET /runtime/reports/model-router
+GET /runtime/reports/mind-steward
 ```
 
 Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION_DIRS`, `CLAUDE_PROJECTS_DIR`, `CODEX_SESSIONS_DIR`, and `GEMINI_SESSIONS_DIR`. It recursively discovers session-like files, infers the tool from names/paths, adds age and intent labels, applies simple recency/intent scoring, and returns a placeholder when no readable session directory is configured.
@@ -115,11 +115,11 @@ Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the defa
 
 Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` or `PROBOT_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
 
-Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Model Router, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state, Brain Console scaffold status, and ProBot thin-client wiring.
+Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Mind Steward, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state, Brain Console scaffold status, and ProBot thin-client wiring.
 
-Current `/runtime/reports` returns read-only runtime report summaries for the model-router dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
+Current `/runtime/reports` returns read-only runtime report summaries for the mind-steward dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
 
-Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/model-router/latest.json` exists, or when `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. They do not inspect logs, run jobs, or mutate scheduler state.
+Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/mind-steward/latest.json` exists, or when `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. They do not inspect logs, run jobs, or mutate scheduler state.
 
 Current `/local-apps` is a read-only placeholder or report-backed list for local services. When `runtime/local/local-apps/latest.json` exists, or when `BRAIN_CORE_LOCAL_APPS_REPORT_PATH` points to a safe JSON report, the endpoint returns report-backed summaries. It still does not start, stop, or restart apps.
 
@@ -159,7 +159,7 @@ Current `/approvals` reads the in-memory approval request store, or returns pers
 
 Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there and reports `status: "available"`; otherwise it falls back to memory and reports `status: "memory"`. Unsafe paths are rejected and reported as `status: "unsafe"`.
 
-Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The first candidate is `scheduler-run-model-router-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
+Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The first candidate is `scheduler-run-mind-steward-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
 
 Current mutation surface is intentionally minimal:
 

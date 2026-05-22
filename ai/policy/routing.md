@@ -9,17 +9,43 @@ When updating routing rules, update this file first, then sync the tool configs.
 
 ---
 
+## Local AI Tier (Tier 0) — Free, Local, Batch-Window Priority
+
+**LM Studio** is installed at `/Applications/LM Studio.app` with an OpenAI-compatible API at `http://localhost:1234/v1`.  
+When a model is loaded, it is always the first choice for generation tasks — zero cost, zero latency for small tasks, private.
+
+**This tier is managed by the AI Model Selector** (`localhost:4890`). Claude Code, Codex, and Gemini do not call LM Studio directly. They call `ai-select --task <type>` or `POST /select` and receive back the best available provider, which may be LM Studio or a paid API.
+
+**Local model preference window:** 1:00–7:00 AM (batch window). During this window, non-urgent AI tasks are routed local-first. Outside this window, prefer fast paid APIs for interactive responsiveness.
+
+**Local capabilities (when a 7B+ model is loaded):**
+- Metadata generation (title, description, tags, chapters)
+- Thumbnail headline text (3-5 word hook)
+- SEO keyword expansion
+- Transcript summarization (requires 8B+ for quality)
+- Classification, triage, short structured outputs
+
+**Does NOT replace:** Gemini Flash for 1M-token context ingestion, Claude for code/architecture reasoning, Codex for code review.
+
+**Recommended models to download in LM Studio** (Apple Silicon M-series):
+- `mistral-7b-instruct-v0.3-Q4_K_M` (~4.4 GB) — fast, small tasks
+- `llama-3.1-8b-instruct-Q4_K_M` (~5.0 GB) — metadata, summarization, 128K context
+- `qwen2.5-14b-instruct-Q4_K_M` (~8.5 GB) — best local quality for metadata
+
+---
+
 ## The unified system
 
-Three AI engines work together. Claude always orchestrates — route sub-tasks by fit and cost:
+Four AI engines now work together. Claude always orchestrates — route sub-tasks by fit and cost:
 
 | Engine | Role | Best at |
 |--------|------|---------|
+| **LM Studio (local)** | Tier 0 batch worker | Generation tasks during 1-7 AM: metadata, summaries, SEO, headlines. Zero cost. |
 | **Claude** | Orchestrator | Long-context reasoning, repo-wide tasks, iterative coding, architecture, memory, skills |
 | **Codex** | Reviewer / Parallel executor | Isolated well-scoped tasks, code review, second opinions, fast parallel checks |
 | **Gemini Flash** | Preprocessor | Large context ingestion (1M tokens), bulk analysis, free-tier summarization |
 
-**Cost priority:** Gemini Flash (free) > Haiku (cheapest paid) > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
+**Cost priority (updated):** LM Studio local (free) > Gemini Flash (free) > Haiku (cheapest paid) > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
 
 **Shell-output discipline:** Use RTK for noisy shell commands before spending model context on raw terminal output. RTK complements routing; it does not replace Gemini preprocessing, Firecrawl, handoffs, or model escalation rules.
 
@@ -191,6 +217,8 @@ Referenced by:
 - `brain/operations/system-configs/claude/CLAUDE.md` (Claude Code global config)
 - `brain/operations/system-configs/codex/AGENTS.md` (Codex global config)
 - `brain/operations/system-configs/gemini/GEMINI.md` (Gemini global config)
-- `brain/ai/skills/custom/model-router/SKILL.md` (Claude skill shim)
+- `brain/ai/skills/custom/model-router/SKILL.md` (Claude skill shim — `/model-router` invokes this policy)
+
+**Naming note:** The `/model-router` skill and `brain/ai/policy/routing.md` are about AI *provider* and *agent* routing (which model to use for each task). The vault maintenance project is `brain/projects/mind-steward` — a completely separate concern. See `brain/docs/platform-architecture.md` for the AI Model Selector microservice (`localhost:4890`).
 
 **Sync discipline:** `AGENTS.md` and `GEMINI.md` embed role-specific routing summaries inline for agent-local context. When updating routing rules here, check those files for stale inline tables or contradicting instructions. The model tiers table and cost priority order are the most likely to drift.

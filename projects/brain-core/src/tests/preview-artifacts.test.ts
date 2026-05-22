@@ -23,9 +23,9 @@ function withPreviewPath<T>(previewPath: string, callback: () => T): T {
   }
 }
 
-test('Brain Core reads model-router previewId artifacts', () => {
+test('Brain Core reads mind-steward previewId artifacts', () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-brain-core-previews');
-  const previewRoot = path.join(testDir, 'runtime', 'local', 'model-router', 'previews');
+  const previewRoot = path.join(testDir, 'runtime', 'local', 'mind-steward', 'previews');
   const previewId = 'preview-compat-1';
 
   fs.rmSync(testDir, { recursive: true, force: true });
@@ -35,7 +35,7 @@ test('Brain Core reads model-router previewId artifacts', () => {
     `${JSON.stringify(
       {
         previewId,
-        actionKind: 'model-router-update-current-context',
+        actionKind: 'mind-steward-update-current-context',
         targetPath: 'router/current.md',
         operation: 'overwrite',
         oldHash: 'old-hash',
@@ -82,7 +82,7 @@ test('Brain Core reads model-router previewId artifacts', () => {
 
 test('Brain Core still reads legacy id preview artifacts', () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-brain-core-previews-id');
-  const previewRoot = path.join(testDir, 'runtime', 'local', 'model-router', 'previews');
+  const previewRoot = path.join(testDir, 'runtime', 'local', 'mind-steward', 'previews');
   const id = 'preview-id-compat-1';
 
   fs.rmSync(testDir, { recursive: true, force: true });
@@ -91,7 +91,7 @@ test('Brain Core still reads legacy id preview artifacts', () => {
     path.join(previewRoot, `${id}.json`),
     `${JSON.stringify({
       id,
-      actionKind: 'model-router-update-current-context',
+      actionKind: 'mind-steward-update-current-context',
       targetPath: 'router/current.md',
       createdAt: '2026-05-17T12:00:00.000Z',
       expiresAt: '2026-05-18T12:00:00.000Z',

@@ -26,7 +26,7 @@ export function listAgentRuns(): BrainCoreAgentRunSummary[] {
   // Add agent runs from approvals
   for (const approval of (approvalsSummary || []).slice(0, 50)) {
     const action = actionMap.get(approval.kind);
-    const agent = agentMap.get('model-router-agent');
+    const agent = agentMap.get('mind-steward-agent');
 
     const statusEnum: BrainCoreAgentRunSummary['status'] = mapApprovalStatusToRunStatus(approval.status) as any;
     const now = new Date();
@@ -40,7 +40,7 @@ export function listAgentRuns(): BrainCoreAgentRunSummary[] {
       status: statusEnum,
       startedAt: baseTime,
       targetType: action?.targetType || 'system',
-      targetId: approval.kind.includes('scheduler') ? 'model-router-dry-run' : 'brain-core',
+      targetId: approval.kind.includes('scheduler') ? 'mind-steward-dry-run' : 'brain-core',
       source: 'approval',
       summary: buildRunSummary(approval, action),
       relatedApprovalId: approval.id,
@@ -124,7 +124,7 @@ export function listAgentEvents(): BrainCoreAgentEventSummary[] {
     events.push({
       id: auditEvent.id,
       runId: `run-${auditEvent.approvalId}`,
-      agentId: 'model-router-agent',
+      agentId: 'mind-steward-agent',
       type: eventType,
       createdAt: auditEvent.createdAt,
       status: auditEvent.executed ? 'completed' : 'pending',
@@ -166,17 +166,17 @@ export function listRecoveryItems(): BrainCoreRecoveryItemSummary[] {
   }
 
   // Add missing/invalid reports
-  const mrReport = reports.find(r => r.id === 'model-router');
+  const mrReport = reports.find(r => r.id === 'mind-steward');
   if (!mrReport || mrReport.status !== 'available') {
     items.push({
       id: 'recovery-report-mr',
       severity: 'warning',
       source: 'report',
       title: 'Model-router report missing',
-      summary: 'Latest model-router dry-run report not available',
+      summary: 'Latest mind-steward dry-run report not available',
       blocker: 'No recent report data',
-      nextSafeStep: 'Request approval for model-router-dry-run action',
-      relatedActionId: 'model-router-dry-run',
+      nextSafeStep: 'Request approval for mind-steward-dry-run action',
+      relatedActionId: 'mind-steward-dry-run',
       safety: {
         canAutoFix: false,
         requiresApproval: true,

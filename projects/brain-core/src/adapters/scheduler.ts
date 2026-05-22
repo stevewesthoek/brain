@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { BrainCoreSchedulerJobSummary, BrainCoreSchedulerStatus } from '../types/api.js';
 
-interface ModelRouterRuntimeReport {
+interface MindStewardRuntimeReport {
   job?: string;
   status?: string;
   message?: string;
@@ -14,10 +14,10 @@ interface ModelRouterRuntimeReport {
 }
 
 export function getSchedulerStatus(): BrainCoreSchedulerStatus {
-  const report = readModelRouterRuntimeReport();
+  const report = readMindStewardRuntimeReport();
 
   if (report) {
-    return toRuntimeSchedulerStatus(report, 'Scheduler runtime report is available from the model-router dry-run job.');
+    return toRuntimeSchedulerStatus(report, 'Scheduler runtime report is available from the mind-steward dry-run job.');
   }
 
   return {
@@ -25,15 +25,15 @@ export function getSchedulerStatus(): BrainCoreSchedulerStatus {
     enabled: false,
     latestRunStatus: 'unknown',
     source: 'placeholder',
-    message: 'Scheduler adapter has no runtime report yet. The Office Nightly Scheduler integration should generate runtime/local/model-router/latest.json after the next report-only run.',
+    message: 'Scheduler adapter has no runtime report yet. The Office Nightly Scheduler integration should generate runtime/local/mind-steward/latest.json after the next report-only run.',
   };
 }
 
 export function getSchedulerLatestRun(): BrainCoreSchedulerStatus {
-  const report = readModelRouterRuntimeReport();
+  const report = readMindStewardRuntimeReport();
 
   if (report) {
-    return toRuntimeSchedulerStatus(report, report.message || 'Latest model-router dry-run report loaded.');
+    return toRuntimeSchedulerStatus(report, report.message || 'Latest mind-steward dry-run report loaded.');
   }
 
   return {
@@ -41,12 +41,12 @@ export function getSchedulerLatestRun(): BrainCoreSchedulerStatus {
     enabled: false,
     latestRunStatus: 'unknown',
     source: 'placeholder',
-    message: 'Latest scheduler run metadata is not available yet. Brain Core did not find the model-router runtime report.',
+    message: 'Latest scheduler run metadata is not available yet. Brain Core did not find the mind-steward runtime report.',
   };
 }
 
 export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
-  const report = readModelRouterRuntimeReport();
+  const report = readMindStewardRuntimeReport();
   const reportStatus = report ? toJobStatus(report.status) : 'placeholder';
 
   return [
@@ -75,7 +75,7 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
       mutationRequired: false,
     },
     {
-      id: 'model-router-dry-run',
+      id: 'mind-steward-dry-run',
       name: 'Model-router dry-run report',
       status: reportStatus,
       mutationRequired: false,
@@ -83,15 +83,15 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
   ];
 }
 
-function readModelRouterRuntimeReport(): ModelRouterRuntimeReport | undefined {
-  const reportPath = getModelRouterReportPath();
+function readMindStewardRuntimeReport(): MindStewardRuntimeReport | undefined {
+  const reportPath = getMindStewardReportPath();
 
   if (!fs.existsSync(reportPath)) {
     return undefined;
   }
 
   try {
-    return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as ModelRouterRuntimeReport;
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as MindStewardRuntimeReport;
   } catch {
     return {
       status: 'failed',
@@ -100,18 +100,18 @@ function readModelRouterRuntimeReport(): ModelRouterRuntimeReport | undefined {
   }
 }
 
-function getModelRouterReportPath(): string {
-  const configuredPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+function getMindStewardReportPath(): string {
+  const configuredPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
 
   if (configuredPath && !configuredPath.includes('..')) {
     return path.resolve(configuredPath);
   }
 
-  return path.resolve(process.cwd(), '../..', 'runtime/local/model-router/latest.json');
+  return path.resolve(process.cwd(), '../..', 'runtime/local/mind-steward/latest.json');
 }
 
 function toRuntimeSchedulerStatus(
-  report: ModelRouterRuntimeReport,
+  report: MindStewardRuntimeReport,
   fallbackMessage: string,
 ): BrainCoreSchedulerStatus {
   const status = toLatestRunStatus(report.status);

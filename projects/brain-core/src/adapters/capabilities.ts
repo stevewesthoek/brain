@@ -40,7 +40,7 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     approvalAuditPersistenceSupported: true,
     runtimeReportsSupported: true,
     runtimeReportEndpoint: '/runtime/reports',
-    modelRouterReportSupported: true,
+    mindStewardReportSupported: true,
     obsidianPluginInstalled: false,
     liveSchedulerVerified: false,
     mindWorkspace: {
@@ -69,12 +69,12 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     },
     executionGate: {
       executionEnabled: false,
-      modelRouterDryRunExecutionFlagEnabled: executionReadiness.modelRouterDryRunExecutionFlagEnabled,
-      modelRouterDryRunExecutionFlagName: executionReadiness.modelRouterDryRunExecutionFlagName,
+      mindStewardDryRunExecutionFlagEnabled: executionReadiness.mindStewardDryRunExecutionFlagEnabled,
+      mindStewardDryRunExecutionFlagName: executionReadiness.mindStewardDryRunExecutionFlagName,
       candidateActionKinds: getExecutionCandidateKinds(),
       readinessEndpoint: '/execution/readiness',
       plansEndpoint: '/execution/plans',
-      firstCandidate: 'scheduler-run-model-router-dry-run',
+      firstCandidate: 'scheduler-run-mind-steward-dry-run',
     },
     notes: [
       'Brain Core is local-only by default.',

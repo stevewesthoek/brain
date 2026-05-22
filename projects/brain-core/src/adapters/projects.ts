@@ -47,7 +47,7 @@ const PROJECTS: BrainCoreProjectSummary[] = [
     category: 'infrastructure',
     status: 'operational',
     health: 'ok',
-    orchestratorIds: ['code-orchestrator', 'model-router'],
+    orchestratorIds: ['code-orchestrator', 'mind-steward'],
     pipelineIds: ['code-analysis-pipeline'],
     platformIds: ['github', 'local-runtime'],
   },

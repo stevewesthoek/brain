@@ -68,8 +68,8 @@ test('GET /actions returns list of all actions', async () => {
   assert.ok(Array.isArray(body.actions));
   assert.ok(body.actions.length > 0);
 
-  const modelRouterAction = body.actions.find((a) => a.id === 'model-router-dry-run');
-  assert.ok(modelRouterAction, 'model-router-dry-run action should exist');
+  const mindStewardAction = body.actions.find((a) => a.id === 'mind-steward-dry-run');
+  assert.ok(mindStewardAction, 'mind-steward-dry-run action should exist');
 });
 
 test('GET /actions - every action has canExecuteNow false', async () => {
@@ -140,8 +140,8 @@ test('GET /actions - no action has executesShell true except safe ones', async (
   };
 
   body.actions.forEach((action) => {
-    if (action.kind === 'model-router-dry-run') {
-      assert.equal(action.safety.executesShell, true, 'model-router-dry-run should have executesShell');
+    if (action.kind === 'mind-steward-dry-run') {
+      assert.equal(action.safety.executesShell, true, 'mind-steward-dry-run should have executesShell');
     } else if (
       action.kind === 'stb-status-refresh' ||
       action.kind === 'video-status-refresh' ||
@@ -153,8 +153,8 @@ test('GET /actions - no action has executesShell true except safe ones', async (
   });
 });
 
-test('GET /actions/:id returns model-router-dry-run action', async () => {
-  const response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+test('GET /actions/:id returns mind-steward-dry-run action', async () => {
+  const response = await exercise({ method: 'GET', url: '/actions/mind-steward-dry-run' });
   const body = JSON.parse(response.body) as {
     action: {
       id: string;
@@ -167,7 +167,7 @@ test('GET /actions/:id returns model-router-dry-run action', async () => {
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.action.id, 'model-router-dry-run');
+  assert.equal(body.action.id, 'mind-steward-dry-run');
   assert.equal(body.action.status, 'approval-required');
   assert.equal(body.action.canRequestApproval, true);
   assert.equal(body.action.canExecuteNow, false);
@@ -199,8 +199,8 @@ test('GET /actions/:id returns not found for unknown action', async () => {
   assert.equal(body.error.code, 'not_found');
 });
 
-test('POST /actions/model-router-dry-run/request-approval returns action request', async () => {
-  const response = await exercise({ method: 'POST', url: '/actions/model-router-dry-run/request-approval' });
+test('POST /actions/mind-steward-dry-run/request-approval returns action request', async () => {
+  const response = await exercise({ method: 'POST', url: '/actions/mind-steward-dry-run/request-approval' });
   const body = JSON.parse(response.body) as {
     actionId: string;
     status: string;
@@ -209,7 +209,7 @@ test('POST /actions/model-router-dry-run/request-approval returns action request
   };
 
   assert.ok([200, 202, 400].includes(response.statusCode), `Unexpected status: ${response.statusCode}`);
-  assert.equal(body.actionId, 'model-router-dry-run');
+  assert.equal(body.actionId, 'mind-steward-dry-run');
   assert.equal(body.executionDidRun, false);
   assert.ok(body.safety, 'Should have safety object');
 });
@@ -280,7 +280,7 @@ test('Requestable actions cannot request if status is blocked/planned', async ()
 });
 
 test('No action response has executionDidRun true', async () => {
-  const actions = ['model-router-dry-run', 'mind-write-apply', 'local-app-start'];
+  const actions = ['mind-steward-dry-run', 'mind-write-apply', 'local-app-start'];
 
   for (const actionId of actions) {
     const response = await exercise({ method: 'POST', url: `/actions/${actionId}/request-approval` });
@@ -354,8 +354,8 @@ test('GET /actions/video-status-refresh is read-only available', async () => {
   assert.equal(body.action.requiresApproval, false);
 });
 
-test('GET /actions/model-router-dry-run includes readiness status', async () => {
-  const response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+test('GET /actions/mind-steward-dry-run includes readiness status', async () => {
+  const response = await exercise({ method: 'GET', url: '/actions/mind-steward-dry-run' });
   const body = JSON.parse(response.body) as {
     action: {
       id: string;
@@ -370,7 +370,7 @@ test('GET /actions/model-router-dry-run includes readiness status', async () => 
   };
 
   assert.equal(response.statusCode, 200);
-  assert.ok(body.action.readiness, 'model-router-dry-run should have readiness field');
+  assert.ok(body.action.readiness, 'mind-steward-dry-run should have readiness field');
   assert.ok(['ready', 'blocked'].includes(body.action.readiness!.status), 'readiness status should be ready or blocked');
   assert.ok(Array.isArray(body.action.readiness!.blockers), 'blockers should be an array');
   assert.equal(body.action.readiness!.executionWillWriteToMind, false, 'should never write to mind');
@@ -378,7 +378,7 @@ test('GET /actions/model-router-dry-run includes readiness status', async () => 
   assert.equal(body.action.readiness!.executionKind, 'report-only', 'execution kind should be report-only');
 });
 
-test('GET /actions returns all actions with readiness for model-router-dry-run', async () => {
+test('GET /actions returns all actions with readiness for mind-steward-dry-run', async () => {
   const response = await exercise({ method: 'GET', url: '/actions' });
   const body = JSON.parse(response.body) as {
     actions: Array<{
@@ -389,19 +389,19 @@ test('GET /actions returns all actions with readiness for model-router-dry-run',
 
   assert.equal(response.statusCode, 200);
 
-  const modelRouterAction = body.actions.find((a) => a.id === 'model-router-dry-run');
-  assert.ok(modelRouterAction, 'model-router-dry-run action should exist');
-  assert.ok(modelRouterAction!.readiness, 'model-router-dry-run should have readiness in list response');
+  const mindStewardAction = body.actions.find((a) => a.id === 'mind-steward-dry-run');
+  assert.ok(mindStewardAction, 'mind-steward-dry-run action should exist');
+  assert.ok(mindStewardAction!.readiness, 'mind-steward-dry-run should have readiness in list response');
 });
 
-test('GET /actions/model-router-dry-run readiness respects execution flag', async () => {
+test('GET /actions/mind-steward-dry-run readiness respects execution flag', async () => {
   const flagName = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   const originalValue = process.env[flagName];
 
   try {
     // Test with flag disabled (default)
     delete process.env[flagName];
-    let response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+    let response = await exercise({ method: 'GET', url: '/actions/mind-steward-dry-run' });
     let body = JSON.parse(response.body) as {
       action: { readiness?: { status: string; blockers: string[] } };
     };
@@ -414,7 +414,7 @@ test('GET /actions/model-router-dry-run readiness respects execution flag', asyn
 
     // Test with flag enabled
     process.env[flagName] = 'true';
-    response = await exercise({ method: 'GET', url: '/actions/model-router-dry-run' });
+    response = await exercise({ method: 'GET', url: '/actions/mind-steward-dry-run' });
     body = JSON.parse(response.body) as {
       action: { readiness?: { status: string; blockers: string[] } };
     };

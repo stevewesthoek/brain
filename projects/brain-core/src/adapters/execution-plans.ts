@@ -4,7 +4,7 @@ import type {
   BrainCoreExecutionReadiness,
 } from '../types/api.js';
 
-const CANDIDATE_KINDS = ['scheduler-run-model-router-dry-run'] as const;
+const CANDIDATE_KINDS = ['scheduler-run-mind-steward-dry-run'] as const;
 const MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
 
 const MIND_PREVIEW_ALLOWED_TARGETS = [
@@ -52,16 +52,16 @@ const MIND_PREVIEW_REQUIRED_GATES = [
 
 export type BrainCoreExecutionCandidateKind = typeof CANDIDATE_KINDS[number];
 
-export function isModelRouterDryRunExecutionFlagEnabled(): boolean {
+export function isMindStewardDryRunExecutionFlagEnabled(): boolean {
   return process.env[MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
 }
 
-export function getModelRouterDryRunExecutionFlagName(): typeof MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG {
+export function getMindStewardDryRunExecutionFlagName(): typeof MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG {
   return MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG;
 }
 
 export function listExecutionPlans(): BrainCoreExecutionPlan[] {
-  return [createModelRouterDryRunPlan()];
+  return [createMindStewardDryRunPlan()];
 }
 
 export function getExecutionPlan(kind: string): BrainCoreExecutionPlan | undefined {
@@ -69,7 +69,7 @@ export function getExecutionPlan(kind: string): BrainCoreExecutionPlan | undefin
 }
 
 export function getExecutionReadiness(): BrainCoreExecutionReadiness {
-  const modelRouterDryRunExecutionFlagEnabled = isModelRouterDryRunExecutionFlagEnabled();
+  const mindStewardDryRunExecutionFlagEnabled = isMindStewardDryRunExecutionFlagEnabled();
   const blockers = [
     'durable approval store not proven for this request',
     'durable audit not proven for this request',
@@ -78,14 +78,14 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
     'rollback drill not performed',
   ];
 
-  if (!modelRouterDryRunExecutionFlagEnabled) {
+  if (!mindStewardDryRunExecutionFlagEnabled) {
     blockers.unshift('execution feature flag disabled');
   }
 
   return {
     executionEnabled: false,
-    modelRouterDryRunExecutionFlagEnabled,
-    modelRouterDryRunExecutionFlagName: getModelRouterDryRunExecutionFlagName(),
+    mindStewardDryRunExecutionFlagEnabled,
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
     candidateCount: listExecutionPlans().length,
     readyCandidateCount: 0,
     blockers,
@@ -106,7 +106,7 @@ export function getExecutionPlanPreview(kind: string): string | undefined {
 export function getMindPreviewPolicy(): BrainCoreMindPreviewPolicy {
   return {
     status: 'preview-only',
-    firstProposedAction: 'model-router-update-current-context',
+    firstProposedAction: 'mind-steward-update-current-context',
     firstProposedTarget: 'router/current.md',
     applyRouteEnabled: false,
     writesToMind: false,
@@ -116,24 +116,24 @@ export function getMindPreviewPolicy(): BrainCoreMindPreviewPolicy {
     requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
     docs: [
       {
-        path: 'operations/specs/1779034874780-model-router-mind-write-apply-policy.md',
+        path: 'operations/specs/1779034874780-mind-steward-mind-write-apply-policy.md',
         description: 'Draft apply policy defining approval gates, rollback, and audit requirements.',
       },
       {
-        path: 'docs/system/1779034841996-obsidian-mind-model-router-handoff.md',
+        path: 'docs/system/1779034841996-obsidian-mind-mind-steward-handoff.md',
         description: 'Roadmap continuation handoff documenting the current preview-only state.',
       },
     ],
   };
 }
 
-function createModelRouterDryRunPlan(): BrainCoreExecutionPlan {
+function createMindStewardDryRunPlan(): BrainCoreExecutionPlan {
   return {
-    kind: 'scheduler-run-model-router-dry-run',
+    kind: 'scheduler-run-mind-steward-dry-run',
     candidate: true,
     executionEnabled: false,
-    modelRouterDryRunExecutionFlagEnabled: isModelRouterDryRunExecutionFlagEnabled(),
-    modelRouterDryRunExecutionFlagName: getModelRouterDryRunExecutionFlagName(),
+    mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
     wouldExecute: false,
     executed: false,
     riskLevel: 'low',
@@ -143,11 +143,11 @@ function createModelRouterDryRunPlan(): BrainCoreExecutionPlan {
     requiresDurableApprovalStore: true,
     requiresDurableAudit: true,
     requiresRollbackPlan: true,
-    rollbackPlan: 'Remove generated runtime/local/model-router report files if needed; no Mind content is changed.',
-    summary: 'Report-only model-router dry-run candidate. Safe first execution-gate target remains disabled.',
+    rollbackPlan: 'Remove generated runtime/local/mind-steward report files if needed; no Mind content is changed.',
+    summary: 'Report-only mind-steward dry-run candidate. Safe first execution-gate target remains disabled.',
     mindPreviewPolicy: {
       status: 'preview-only',
-      firstProposedAction: 'model-router-update-current-context',
+      firstProposedAction: 'mind-steward-update-current-context',
       firstProposedTarget: 'router/current.md',
       writesToMind: false,
       externalSideEffects: false,
@@ -158,15 +158,15 @@ function createModelRouterDryRunPlan(): BrainCoreExecutionPlan {
     },
     steps: [
       {
-        id: 'validate-model-router',
-        description: 'Run model-router CI',
-        commandPreview: 'npm run --prefix projects/model-router ci',
+        id: 'validate-mind-steward',
+        description: 'Run mind-steward CI',
+        commandPreview: 'npm run --prefix projects/mind-steward ci',
         willRunNow: false,
       },
       {
         id: 'write-runtime-report',
-        description: 'Run report-only model-router dry-run helper',
-        commandPreview: 'bash tools/scripts/model-router-dry-run-report.sh',
+        description: 'Run report-only mind-steward dry-run helper',
+        commandPreview: 'bash tools/scripts/mind-steward-dry-run-report.sh',
         willRunNow: false,
       },
     ],

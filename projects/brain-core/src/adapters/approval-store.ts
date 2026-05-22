@@ -110,11 +110,11 @@ function normalizeRecord(record: BrainCoreApprovalRecord): BrainCoreApprovalReco
       requiresApproval: true,
       writesToMind: false,
       externalSideEffects: false,
-      commands: record.execution?.status === 'ok' ? ['bash tools/scripts/model-router-dry-run-report.sh'] : [],
+      commands: record.execution?.status === 'ok' ? ['bash tools/scripts/mind-steward-dry-run-report.sh'] : [],
     },
     policy: {
       executionEnabled: record.execution?.status === 'ok',
-      executionGate: record.execution?.status === 'ok' ? 'enabled-for-model-router-dry-run' : 'disabled-until-explicit-enable',
+      executionGate: record.execution?.status === 'ok' ? 'enabled-for-mind-steward-dry-run' : 'disabled-until-explicit-enable',
       requiresDurableAudit: true,
       requiresRollbackPlan: true,
     },

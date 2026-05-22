@@ -4860,7 +4860,7 @@ export interface BrainCoreAgentSummary {
   role: 'orchestrator' | 'executor' | 'researcher' | 'maintainer' | 'reviewer' | 'dashboard' | 'unknown';
   status: 'available' | 'planned' | 'external' | 'blocked' | 'unknown';
   health: BrainCoreHealth;
-  owner: 'brain-core' | 'model-router' | 'external-tool' | 'planned';
+  owner: 'brain-core' | 'mind-steward' | 'external-tool' | 'planned';
   description: string;
   relatedOrchestratorId?: string;
   skills: string[];
@@ -4934,7 +4934,7 @@ export interface BrainCoreCapabilitySummary {
   approvalAuditPersistenceSupported: boolean;
   runtimeReportsSupported: boolean;
   runtimeReportEndpoint: '/runtime/reports';
-  modelRouterReportSupported: boolean;
+  mindStewardReportSupported: boolean;
   obsidianPluginInstalled: boolean;
   liveSchedulerVerified: boolean;
   mindWorkspace: {
@@ -4958,12 +4958,12 @@ export interface BrainCoreCapabilitySummary {
   };
   executionGate: {
     executionEnabled: false;
-    modelRouterDryRunExecutionFlagEnabled: boolean;
-    modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+    mindStewardDryRunExecutionFlagEnabled: boolean;
+    mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
     candidateActionKinds: string[];
     readinessEndpoint: '/execution/readiness';
     plansEndpoint: '/execution/plans';
-    firstCandidate: 'scheduler-run-model-router-dry-run';
+    firstCandidate: 'scheduler-run-mind-steward-dry-run';
   };
   notes: string[];
 }
@@ -5033,7 +5033,7 @@ export interface BrainCoreApprovalPreview {
 
 export interface BrainCoreExecutionGatePolicy {
   executionEnabled: boolean;
-  executionGate: 'disabled-until-explicit-enable' | 'enabled-for-model-router-dry-run';
+  executionGate: 'disabled-until-explicit-enable' | 'enabled-for-mind-steward-dry-run';
   requiresDurableAudit: true;
   requiresRollbackPlan: true;
 }
@@ -5070,7 +5070,7 @@ export interface BrainCoreApprovalStoreSummary {
 
 export interface BrainCoreApprovalExecutionSummary {
   status: 'ok' | 'error' | 'blocked';
-  command: 'bash tools/scripts/model-router-dry-run-report.sh';
+  command: 'bash tools/scripts/mind-steward-dry-run-report.sh';
   outputPath?: string;
   exitCode?: number;
   message: string;
@@ -5087,7 +5087,7 @@ export interface BrainCoreExecutionPlanStep {
 
 export interface BrainCoreMindPreviewPolicySummary {
   status: 'preview-only';
-  firstProposedAction: 'model-router-update-current-context';
+  firstProposedAction: 'mind-steward-update-current-context';
   firstProposedTarget: 'router/current.md';
   writesToMind: false;
   externalSideEffects: false;
@@ -5098,11 +5098,11 @@ export interface BrainCoreMindPreviewPolicySummary {
 }
 
 export interface BrainCoreExecutionPlan {
-  kind: 'scheduler-run-model-router-dry-run';
+  kind: 'scheduler-run-mind-steward-dry-run';
   candidate: true;
   executionEnabled: false;
-  modelRouterDryRunExecutionFlagEnabled: boolean;
-  modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  mindStewardDryRunExecutionFlagEnabled: boolean;
+  mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   wouldExecute: false;
   executed: false;
   riskLevel: 'low';
@@ -5125,7 +5125,7 @@ export interface BrainCoreMindPreviewPolicyDocument {
 
 export interface BrainCoreMindPreviewPolicy {
   status: 'preview-only';
-  firstProposedAction: 'model-router-update-current-context';
+  firstProposedAction: 'mind-steward-update-current-context';
   firstProposedTarget: 'router/current.md';
   applyRouteEnabled: false;
   writesToMind: false;
@@ -5138,7 +5138,7 @@ export interface BrainCoreMindPreviewPolicy {
 
 export interface BrainCoreMindPreviewSummary {
   id: string;
-  actionKind: 'model-router-update-current-context';
+  actionKind: 'mind-steward-update-current-context';
   targetPath: string;
   createdAt: string;
   expiresAt: string;
@@ -5184,8 +5184,8 @@ export interface BrainCoreMaintenancePreviewDetail extends BrainCoreMaintenanceP
 
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
-  modelRouterDryRunExecutionFlagEnabled: boolean;
-  modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  mindStewardDryRunExecutionFlagEnabled: boolean;
+  mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
@@ -5194,7 +5194,7 @@ export interface BrainCoreExecutionReadiness {
 }
 
 export type BrainCoreActionKind =
-  | 'model-router-dry-run'
+  | 'mind-steward-dry-run'
   | 'stb-status-refresh'
   | 'video-status-refresh'
   | 'stb-video-migration-review'
@@ -5303,7 +5303,7 @@ export interface BrainCoreErrorResponse {
   };
 }
 
-export type BrainCoreRuntimeReportId = 'model-router' | 'approval-audit' | 'video' | 'local-apps';
+export type BrainCoreRuntimeReportId = 'mind-steward' | 'approval-audit' | 'video' | 'local-apps';
 
 export type BrainCoreRuntimeReportStatus = 'available' | 'missing' | 'invalid';
 

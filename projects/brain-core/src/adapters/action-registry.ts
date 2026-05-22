@@ -83,18 +83,18 @@ const APP_LIFECYCLE_RISK: BrainCoreActionSafety = {
 
 const ACTIONS_REGISTRY: BrainCoreActionSummary[] = [
   {
-    id: 'model-router-dry-run',
-    kind: 'model-router-dry-run',
-    label: 'Model Router Dry Run',
-    description: 'Generate model-router context report without applying changes. Request approval does not execute; approval allows report-only dry-run if gates pass (env flag disabled by default).',
+    id: 'mind-steward-dry-run',
+    kind: 'mind-steward-dry-run',
+    label: 'Mind Steward Dry Run',
+    description: 'Generate mind-steward context report without applying changes. Request approval does not execute; approval allows report-only dry-run if gates pass (env flag disabled by default).',
     targetType: 'agent',
-    targetId: 'model-router',
+    targetId: 'mind-steward',
     status: 'approval-required',
     risk: 'low',
     requiresApproval: true,
     canRequestApproval: true,
     canExecuteNow: false,
-    reason: 'Request approval creates pending approval record only (does not execute). Approval delegates to existing guarded execution path. Output: Brain-owned runtime/local/model-router. Apply/write disabled.',
+    reason: 'Request approval creates pending approval record only (does not execute). Approval delegates to existing guarded execution path. Output: Brain-owned runtime/local/mind-steward. Apply/write disabled.',
     safety: SHELL_EXECUTION,
   },
 
@@ -222,7 +222,7 @@ const ACTIONS_REGISTRY: BrainCoreActionSummary[] = [
     requiresApproval: true,
     canRequestApproval: false,
     canExecuteNow: false,
-    reason: 'Direct orchestrator execution is blocked. Use model-router for safe dry-runs only.',
+    reason: 'Direct orchestrator execution is blocked. Use mind-steward for safe dry-runs only.',
     safety: BLOCKED_HUMAN_REVIEW,
   },
 
@@ -238,7 +238,7 @@ const ACTIONS_REGISTRY: BrainCoreActionSummary[] = [
     requiresApproval: true,
     canRequestApproval: false,
     canExecuteNow: false,
-    reason: 'Pipeline dry-run capability blocked. Use model-router dry-run for safe analysis only.',
+    reason: 'Pipeline dry-run capability blocked. Use mind-steward dry-run for safe analysis only.',
     safety: BLOCKED_HUMAN_REVIEW,
   },
 
@@ -269,7 +269,7 @@ export function getActionSummary(id: string): BrainCoreActionSummary | undefined
 }
 
 function enrichActionWithReadiness(action: BrainCoreActionSummary): BrainCoreActionSummary {
-  if (action.kind !== 'model-router-dry-run') {
+  if (action.kind !== 'mind-steward-dry-run') {
     return action;
   }
 
@@ -352,8 +352,8 @@ export async function requestActionApprovalById(id: string): Promise<BrainCoreAc
 
 function mapActionKindToApprovalRequestKind(kind: BrainCoreActionKind): string {
   switch (kind) {
-    case 'model-router-dry-run':
-      return 'scheduler-run-model-router-dry-run';
+    case 'mind-steward-dry-run':
+      return 'scheduler-run-mind-steward-dry-run';
     case 'stb-status-refresh':
     case 'video-status-refresh':
     case 'stb-video-migration-review':

@@ -259,7 +259,7 @@ async function executeStackAction(
 
 function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLocalAppAction): SafeCommandSpec {
   const pathPrepend = app.commandPathPrepend && app.commandPathPrepend.length > 0 ? app.commandPathPrepend : undefined;
-  if (app.id === 'model-router') {
+  if (app.id === 'mind-steward') {
     return disabled(`No canonical ${action} command is defined for this app.`);
   }
   if (isManualLaunchOnly(app)) {
@@ -351,7 +351,7 @@ function buildCommandSpec(app: BrainCoreLocalAppDefinition, action: BrainCoreLoc
     return scriptSpec('repo-dev-script', commandCwd, script, action, pathPrepend);
   }
 
-  const absoluteBash = commandBody.match(/^bash\s+(~?\/?[^\s;&|`$()]+\/(?:start|stop|restart|buildflow-orchestrator|stop-firecrawl|restart-xgrow|stop-xgrow|model-router-dry-run-report)[^\s;&|`$()]*(?:\.sh)?)\s*(start|stop|restart)?$/);
+  const absoluteBash = commandBody.match(/^bash\s+(~?\/?[^\s;&|`$()]+\/(?:start|stop|restart|buildflow-orchestrator|stop-firecrawl|restart-xgrow|stop-xgrow|mind-steward-dry-run-report)[^\s;&|`$()]*(?:\.sh)?)\s*(start|stop|restart)?$/);
   if (absoluteBash) {
     const scriptPath = expandHome(absoluteBash[1] ?? '');
     if (!isPathInsideAllowedRoot(scriptPath)) return disabled('Helper script is outside the allowlisted local app roots.');

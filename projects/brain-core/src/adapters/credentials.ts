@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import pg from 'pg';
 import type {
   BrainCoreCredentialListResponse,
   BrainCoreCredentialSetResult,
@@ -31,6 +32,8 @@ interface PlatformSchema {
   /** 'social' = project-level social media account, 'infra' = infrastructure service */
   platformCategory: 'social' | 'infra';
   credentials: SchemaEntry[];
+  /** Override the project-level env file for this platform's credentials */
+  envFile?: string;
 }
 
 // ── Project-level .env schemas ─────────────────────────────────────────────
@@ -46,7 +49,7 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
       platformName: 'YouTube',
       platformCategory: 'social',
       credentials: [
-        { key: 'yt-oauth-client-@says-the-bible', label: 'Channel OAuth (@says-the-bible)', type: 'secret', required: true, storage: 'keychain',
+        { key: 'yt-oauth-@says-the-bible', label: 'Channel OAuth (@says-the-bible)', type: 'secret', required: true, storage: 'keychain',
           hint: 'Authorizes the VO worker to upload to this channel — click Connect' },
       ],
     },
@@ -54,6 +57,7 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
       platformId: 'pinterest',
       platformName: 'Pinterest',
       platformCategory: 'social',
+      envFile: expandHome('~/Repos/prochattools/web/says-the-bible/.env'),
       credentials: [
         { key: 'PINTEREST_APP_ID',       label: 'App ID',              type: 'app_id',   required: true,  hint: 'Register at developers.pinterest.com' },
         { key: 'PINTEREST_APP_SECRET',   label: 'App Secret',          type: 'secret',   required: true },
@@ -66,6 +70,7 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
       platformId: 'facebook',
       platformName: 'Facebook',
       platformCategory: 'social',
+      envFile: expandHome('~/Repos/prochattools/web/says-the-bible/.env'),
       credentials: [
         { key: 'FACEBOOK_PAGE_ID',                    label: 'Page ID',                  type: 'app_id', required: false },
         { key: 'FACEBOOK_PAGE_ACCESS_TOKEN',          label: 'Page Access Token',        type: 'token',  required: false },
@@ -79,6 +84,7 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
       platformId: 'azure',
       platformName: 'Azure TTS',
       platformCategory: 'infra',
+      envFile: expandHome('~/Repos/prochattools/web/says-the-bible/.env'),
       credentials: [
         { key: 'AZURE_SPEECH_KEY',    label: 'Speech API Key', type: 'api_key', required: true },
         { key: 'AZURE_SPEECH_REGION', label: 'Region',         type: 'other',   required: true, hint: 'e.g. eastus' },
@@ -131,7 +137,7 @@ const AVAILABLE_PLATFORMS: Record<string, PlatformSchema> = {
     platformId: 'youtube', platformName: 'YouTube', platformCategory: 'social',
     credentials: [
       // Channel-specific OAuth token only — the shared OAuth app credentials live in Infrastructure
-      { key: 'yt-oauth-client-@channel-handle', label: 'Channel OAuth (@channel-handle)', type: 'secret', required: true, storage: 'keychain',
+      { key: 'yt-oauth-@channel-handle', label: 'Channel OAuth (@channel-handle)', type: 'secret', required: true, storage: 'keychain',
         hint: 'Authorizes the VO worker to upload to this channel — click Connect' },
     ],
   },
@@ -312,7 +318,6 @@ export function setPlistCredential(key: string, value: string): { ok: boolean; a
 
   // Reload the worker — unload then load
   try {
-    const { execFileSync } = require('node:child_process') as typeof import('node:child_process');
     execFileSync('launchctl', ['unload', WORKER_PLIST_PATH], { timeout: 5000, stdio: 'pipe' });
     execFileSync('launchctl', ['load', WORKER_PLIST_PATH], { timeout: 5000, stdio: 'pipe' });
   } catch {
@@ -395,10 +400,21 @@ export function exchangeYouTubeOAuthCode(account: string, code: string): { ok: b
       encoding: 'utf8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, ...clientVars },
     });
+    // Token saved to keychain — also mark the VO Postgres account as oauth2 so the
+    // worker routes to direct upload instead of the n8n fallback.
+    void markVoAccountOAuth2(account);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: extractPythonError(e) };
   }
+}
+
+function markVoAccountOAuth2(accountHandle: string): Promise<void> {
+  const pool = new pg.Pool({ host: '127.0.0.1', port: 5450, database: 'video_orchestrator', user: 'postgres', password: 'postgres', connectionTimeoutMillis: 3000 });
+  return pool.query(
+    "UPDATE accounts SET auth_method = 'oauth2', account_status = 'active' WHERE account_handle = $1",
+    [accountHandle],
+  ).then(() => pool.end()).catch(() => pool.end());
 }
 
 // ── Keychain reader (no -g flag — account names only, no passwords) ────────
@@ -410,7 +426,8 @@ function getKeychainAccounts(): string[] {
     }) as string;
     const accounts: string[] = [];
     for (const line of out.split('\n')) {
-      const m = /"acct"<blob>="(yt-oauth-client-[^"]+)"/.exec(line) ?? /acct.*"(yt-oauth-client-[^"]+)"/.exec(line);
+      // Match any yt-oauth-* account name (channel tokens stored as "yt-oauth-@handle")
+      const m = /"acct"<blob>="(yt-oauth-[^"]+)"/.exec(line) ?? /acct.*"(yt-oauth-[^"]+)"/.exec(line);
       if (m?.[1]) accounts.push(m[1]);
     }
     return accounts;
@@ -477,7 +494,8 @@ function buildProjectEntry(
     displayName,
     envFilePath,
     platforms: platforms.map((platform) => {
-      const envMap = envFilePath ? parseEnvFile(envFilePath) : new Map<string, string>();
+      const resolvedEnvPath = platform.envFile ?? envFilePath;
+      const envMap = resolvedEnvPath ? parseEnvFile(resolvedEnvPath) : new Map<string, string>();
       const keychainAccounts = getKeychainAccounts();
       let allRequiredSet = true;
       const credentials = platform.credentials.map((entry) => {

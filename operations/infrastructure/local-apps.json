@@ -282,7 +282,7 @@
     "databaseName": "fala",
     "databaseUser": "fala_user",
     "startupTimeoutMs": 120000,
-    "notes": "Local-first language app. Fala owns the app lifecycle scripts; OrbStack/PostgreSQL and Ollama remain external prerequisites. Run npm run dashboard:status in the repo for safe Obsidian metadata including LAN phone URL candidates, model-router fallback flags, and router-owned Bedrock policy."
+    "notes": "Local-first language app. Fala owns the app lifecycle scripts; OrbStack/PostgreSQL and Ollama remain external prerequisites. Run npm run dashboard:status in the repo for safe Obsidian metadata including LAN phone URL candidates, mind-steward fallback flags, and router-owned Bedrock policy."
   },
   {
     "name": "BuildFlow",

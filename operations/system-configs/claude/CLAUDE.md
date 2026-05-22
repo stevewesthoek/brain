@@ -47,10 +47,10 @@ Startup protocol when `brain` context is relevant:
 
 Startup protocol when `mind` context is relevant:
 
-1. Read `/Users/Office/Repos/stevewesthoek/mind/AGENTS.md`.
-2. Read `/Users/Office/Repos/stevewesthoek/mind/00-start-here.md`.
-3. Read `/Users/Office/Repos/stevewesthoek/mind/00-current-context.md`.
-4. Read `/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md`.
+1. Read `/Users/Office/Repos/stevewesthoek/mind/router/AGENTS.md`.
+2. Read `/Users/Office/Repos/stevewesthoek/mind/router/00-start-here.md`.
+3. Read `/Users/Office/Repos/stevewesthoek/mind/router/00-current-context.md`.
+4. Read `/Users/Office/Repos/stevewesthoek/mind/router/00-memory-map.md`.
 5. Search/read only the relevant folders. Do not load the whole vault.
 
 These repos may be used even when Claude Code starts inside another repo. The current working repo remains the implementation target; `brain` and `mind` are cross-repo context sources.
@@ -61,8 +61,10 @@ Use a 4-layer memory model:
 
 1. **Global memory** — this file (`~/.claude/CLAUDE.md`). Stable personal workflow rules and global conventions that apply in every session.
 2. **Repo memory** — `CLAUDE.md` at each repo root. Repo-specific architecture decisions, commands, constraints, and conventions.
-3. **Auto memory** — Claude Code auto memory for repeated corrections and stable preferences learned over time.
+3. **Shared AI memory** — `~/.brain/memory/` — the canonical cross-AI memory store. Shared by Claude, Codex, and Gemini. Use `mem-write`, `mem-search`, `mem-facts` to read and write. This is the persistent memory layer visible to all agents.
 4. **Decision log** — `decision-log.md` (location is repo-specific). Confirmed decisions, successful recovery steps, stable conventions. Not temporary notes or speculative ideas.
+
+**Shared memory is the primary explicit memory store.** When the user asks you to remember something or when you identify a durable fact/preference, write it to `~/.brain/memory/` via `mem-write`. Claude Code auto-memory (this file's auto-memory section) handles session-level corrections; `~/.brain/memory/` handles durable knowledge that must survive across all AI agents.
 
 # Memory policy
 

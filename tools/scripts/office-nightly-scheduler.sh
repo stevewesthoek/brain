@@ -328,7 +328,7 @@ run_gws_token_refresh() {
 
 run_model_router_dry_run_report() {
   local timeout_seconds="${MODEL_ROUTER_DRY_RUN_TIMEOUT_SECONDS:-300}"
-  local report_script="${MODEL_ROUTER_DRY_RUN_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/model-router-dry-run-report.sh}"
+  local report_script="${MODEL_ROUTER_DRY_RUN_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mind-steward-dry-run-report.sh}"
   local report_log="$LOG_DIR/model-router-dry-run.log"
   local command
 

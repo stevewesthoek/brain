@@ -22,7 +22,7 @@ interface MindMaintenancePreviewQueue {
   }>;
 }
 
-const DEFAULT_RELATIVE_MAINTENANCE_PREVIEW_ROOT = 'runtime/local/model-router/maintenance-previews';
+const DEFAULT_RELATIVE_MAINTENANCE_PREVIEW_ROOT = 'runtime/local/mind-steward/maintenance-previews';
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', 'mind'];
 
 export function listMaintenancePreviewSummaries(): BrainCoreMaintenancePreviewSummary[] {

@@ -24,8 +24,8 @@ const ORCHESTRATORS: BrainCoreOrchestratorSummary[] = [
     description: 'Obsidian plugin for unified dashboard',
   },
   {
-    id: 'model-router',
-    name: 'Model Router',
+    id: 'mind-steward',
+    name: 'Mind Steward',
     status: 'placeholder',
     source: 'placeholder',
     actionsSupported: false,

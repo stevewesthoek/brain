@@ -139,7 +139,7 @@ test('GET /stb-video-migration/status has decommissionBlocked true', async () =>
   assert.ok(Array.isArray(body.blockers));
 });
 
-test('GET /agents returns model-router-agent, claude-code-executor, codex-executor', async () => {
+test('GET /agents returns mind-steward-agent, claude-code-executor, codex-executor', async () => {
   const response = await exercise({ method: 'GET', url: '/agents' });
   const body = JSON.parse(response.body) as {
     agents: Array<{
@@ -157,7 +157,7 @@ test('GET /agents returns model-router-agent, claude-code-executor, codex-execut
   assert.ok(body.agents.length > 0);
 
   const agentIds = body.agents.map(a => a.id);
-  assert.ok(agentIds.includes('model-router-agent'));
+  assert.ok(agentIds.includes('mind-steward-agent'));
   assert.ok(agentIds.includes('claude-code-executor'));
   assert.ok(agentIds.includes('codex-executor'));
 
@@ -166,7 +166,7 @@ test('GET /agents returns model-router-agent, claude-code-executor, codex-execut
 });
 
 test('GET /agents/:id returns one agent', async () => {
-  const response = await exercise({ method: 'GET', url: '/agents/model-router-agent' });
+  const response = await exercise({ method: 'GET', url: '/agents/mind-steward-agent' });
   const body = JSON.parse(response.body) as {
     agent: {
       id: string;
@@ -180,7 +180,7 @@ test('GET /agents/:id returns one agent', async () => {
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.agent.id, 'model-router-agent');
+  assert.equal(body.agent.id, 'mind-steward-agent');
   assert.equal(body.agent.owner, 'brain-core');
   assert.ok(['orchestrator', 'executor', 'researcher', 'reviewer', 'dashboard'].includes(body.agent.role));
   assert.equal(body.agent.actions.canRun, false);

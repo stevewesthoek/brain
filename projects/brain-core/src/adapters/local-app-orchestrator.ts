@@ -18,8 +18,8 @@ import { LocalAppActionExecutor, evaluateLocalAppActionDefinition } from './loca
 import { readManagedLocalAppProcesses } from './local-app-action-executor.js';
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
-const MODEL_ROUTER_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/model-router/latest.json');
-const MODEL_ROUTER_SCRIPT_PATH = path.resolve(process.cwd(), '..', '..', 'tools', 'scripts', 'model-router-dry-run-report.sh');
+const MIND_STEWARD_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/mind-steward/latest.json');
+const MODEL_ROUTER_SCRIPT_PATH = path.resolve(process.cwd(), '..', '..', 'tools', 'scripts', 'mind-steward-dry-run-report.sh');
 const LOCAL_APP_ACTION_AUDIT_PATH_ENV = 'BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH';
 const DEFAULT_LOCAL_APP_ACTION_AUDIT_PATH = path.resolve(process.cwd(), 'runtime/local/local-apps/actions-audit.jsonl');
 const DISALLOWED_AUDIT_PATH_SEGMENTS = new Set(['.env', '.git', 'node_modules', 'operations', 'mind']);
@@ -59,7 +59,7 @@ type RegistryRuntime = {
   notes?: unknown;
 };
 
-type ModelRouterReport = {
+type MindStewardReport = {
   status?: string;
   writesToMind?: boolean;
   executableActions?: boolean;
@@ -114,8 +114,8 @@ type ExecuteLocalAppActionRequestOptions = {
 
 export function listLocalAppDefinitions(): BrainCoreLocalAppDefinition[] {
   const registry = readRegistryApps();
-  const modelRouter = readModelRouterDefinition();
-  return [...registry, ...(modelRouter ? [modelRouter] : [])];
+  const mindSteward = readMindStewardDefinition();
+  return [...registry, ...(mindSteward ? [mindSteward] : [])];
 }
 
 export function createLocalAppActionPlan(appId: string, action: BrainCoreLocalAppAction): BrainCoreLocalAppActionPlan {
@@ -570,22 +570,22 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
   };
 }
 
-function readModelRouterDefinition(): BrainCoreLocalAppDefinition | null {
-  const report = readModelRouterReport();
+function readMindStewardDefinition(): BrainCoreLocalAppDefinition | null {
+  const report = readMindStewardReport();
   const scriptExists = fs.existsSync(MODEL_ROUTER_SCRIPT_PATH);
   const startCommand = scriptExists ? `bash ${MODEL_ROUTER_SCRIPT_PATH}` : undefined;
   const base: BrainCoreLocalAppDefinition = {
-    id: 'model-router',
-    name: 'Model Router',
-    label: 'Model Router',
+    id: 'mind-steward',
+    name: 'Mind Steward',
+    label: 'Mind Steward',
     description: report?.status === 'success'
-      ? 'Brain Core runtime report indicates Model Router is operational.'
+      ? 'Brain Core runtime report indicates Mind Steward is operational.'
       : 'AI steward for Mind vault: classifies captures, routes to live/, compiles to wiki/.',
     category: 'brain-core',
     managed: Boolean(startCommand),
     services: [
       {
-        id: 'model-router-report',
+        id: 'mind-steward-report',
         label: 'Runtime report',
         type: 'worker',
         required: true,
@@ -595,11 +595,11 @@ function readModelRouterDefinition(): BrainCoreLocalAppDefinition | null {
         actionPolicy: { ...DEFAULT_ACTION_POLICY },
       },
     ],
-    docsRef: 'docs/system/obsidian-mind-model-router-roadmap.md',
+    docsRef: 'docs/system/obsidian-mind-mind-steward-roadmap.md',
     onboardingStatus: 'registered',
     actionPolicy: { ...DEFAULT_ACTION_POLICY },
-    repoPathSummary: 'projects/model-router',
-    healthUrl: '/runtime/reports/model-router',
+    repoPathSummary: 'projects/mind-steward',
+    healthUrl: '/runtime/reports/mind-steward',
     commandWorkdir: path.resolve(process.cwd(), '..', '..'),
     ...(startCommand ? { startCommand } : {}),
   };
@@ -609,10 +609,10 @@ function readModelRouterDefinition(): BrainCoreLocalAppDefinition | null {
   return { ...base, actionPolicy: createActionPolicy(safeActions) };
 }
 
-function readModelRouterReport(): ModelRouterReport | null {
+function readMindStewardReport(): MindStewardReport | null {
   try {
-    const raw = fs.readFileSync(MODEL_ROUTER_REPORT_PATH, 'utf8');
-    return JSON.parse(raw) as ModelRouterReport;
+    const raw = fs.readFileSync(MIND_STEWARD_REPORT_PATH, 'utf8');
+    return JSON.parse(raw) as MindStewardReport;
   } catch {
     return null;
   }

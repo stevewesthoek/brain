@@ -7676,7 +7676,8 @@ function renderYouTubeOAuthRow(
   cred: BrainCoreInfraCredentialGroup['credentials'][number] | BrainCoreProjectCredentialEntry,
   brainCoreUrl: string,
 ): void {
-  const account = cred.key.replace('yt-oauth-client-', '');
+  // Key is "yt-oauth-@handle" — strip the "yt-oauth-" prefix to get the account handle
+  const account = cred.key.replace('yt-oauth-', '');
 
   const tr = tbody.createEl('tr', { cls: `bc-accounts-row${cred.isSet ? ' bc-accounts-row--set' : ''}` });
 

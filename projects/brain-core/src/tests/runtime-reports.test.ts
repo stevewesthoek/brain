@@ -5,33 +5,33 @@ import assert from 'node:assert/strict';
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
 
 test('runtime reports return missing by default', () => {
-  const previousModelRouterPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+  const previousMindStewardPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
   const previousVideoPath = process.env.BRAIN_CORE_VIDEO_REPORT_PATH;
   const previousLocalAppsPath = process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = '/tmp/brain-core-missing-model-router.json';
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = '/tmp/brain-core-missing-mind-steward.json';
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = '/tmp/brain-core-missing-approval-audit.jsonl';
   process.env.BRAIN_CORE_VIDEO_REPORT_PATH = '/tmp/brain-core-missing-video.json';
   process.env.BRAIN_CORE_LOCAL_APPS_REPORT_PATH = '/tmp/brain-core-missing-local-apps.json';
 
   try {
     const reports = listRuntimeReports();
-    const modelRouter = reports.find((report) => report.id === 'model-router');
+    const mindSteward = reports.find((report) => report.id === 'mind-steward');
     const approvalAudit = reports.find((report) => report.id === 'approval-audit');
     const video = reports.find((report) => report.id === 'video');
     const localApps = reports.find((report) => report.id === 'local-apps');
 
-    assert.equal(modelRouter?.status, 'missing');
+    assert.equal(mindSteward?.status, 'missing');
     assert.equal(approvalAudit?.status, 'missing');
     assert.equal(video?.status, 'missing');
     assert.equal(localApps?.status, 'missing');
     assert.equal(reports.every((report) => report.writesToMind === false), true);
     assert.equal(reports.every((report) => report.executableActions === false), true);
   } finally {
-    if (previousModelRouterPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    if (previousMindStewardPath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousModelRouterPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousMindStewardPath;
     }
     if (previousAuditPath === undefined) {
       delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
@@ -51,21 +51,21 @@ test('runtime reports return missing by default', () => {
   }
 });
 
-test('runtime reports honor configured model-router JSON and approval-audit JSONL paths', () => {
+test('runtime reports honor configured mind-steward JSON and approval-audit JSONL paths', () => {
   const baseDir = '/tmp/codex-runtime-reports-test';
-  const modelRouterPath = path.join(baseDir, 'runtime', 'local', 'model-router', 'latest.json');
+  const mindStewardPath = path.join(baseDir, 'runtime', 'local', 'mind-steward', 'latest.json');
   const auditPath = path.join(baseDir, 'runtime', 'local', 'brain-core', 'approval-audit.jsonl');
-  const previousModelRouterPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+  const previousMindStewardPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
 
   fs.rmSync(baseDir, { recursive: true, force: true });
-  fs.mkdirSync(path.dirname(modelRouterPath), { recursive: true });
+  fs.mkdirSync(path.dirname(mindStewardPath), { recursive: true });
   fs.mkdirSync(path.dirname(auditPath), { recursive: true });
   fs.writeFileSync(
-    modelRouterPath,
+    mindStewardPath,
     JSON.stringify({
       status: 'success',
-      message: 'model-router dry-run validation passed',
+      message: 'mind-steward dry-run validation passed',
       writesToMind: false,
       executableActions: false,
       wikiHealth: {
@@ -79,25 +79,25 @@ test('runtime reports honor configured model-router JSON and approval-audit JSON
     }),
   );
   fs.writeFileSync(auditPath, JSON.stringify({ persisted: true }) + '\n');
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = modelRouterPath;
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = mindStewardPath;
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
 
   try {
     const reports = listRuntimeReports();
-    const modelRouter = reports.find((report) => report.id === 'model-router');
+    const mindSteward = reports.find((report) => report.id === 'mind-steward');
     const approvalAudit = reports.find((report) => report.id === 'approval-audit');
 
-    assert.equal(modelRouter?.status, 'available');
-    assert.equal(modelRouter?.latestRunStatus, 'ok');
-    assert.equal(modelRouter?.wikiHealth?.status, 'available');
-    assert.equal(modelRouter?.wikiHealth?.warningCount, 2);
+    assert.equal(mindSteward?.status, 'available');
+    assert.equal(mindSteward?.latestRunStatus, 'ok');
+    assert.equal(mindSteward?.wikiHealth?.status, 'available');
+    assert.equal(mindSteward?.wikiHealth?.warningCount, 2);
     assert.equal(approvalAudit?.status, 'available');
     assert.equal(approvalAudit?.latestRunStatus, 'unknown');
   } finally {
-    if (previousModelRouterPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    if (previousMindStewardPath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousModelRouterPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousMindStewardPath;
     }
     if (previousAuditPath === undefined) {
       delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
@@ -109,19 +109,19 @@ test('runtime reports honor configured model-router JSON and approval-audit JSON
 });
 
 test('runtime reports reject unsafe paths and return invalid', () => {
-  const previousModelRouterPath = process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = '/Users/Office/Repos/stevewesthoek/mind/.env/latest.json';
+  const previousMindStewardPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = '/Users/Office/Repos/stevewesthoek/mind/.env/latest.json';
 
   try {
     const reports = listRuntimeReports();
-    const modelRouter = reports.find((report) => report.id === 'model-router');
+    const mindSteward = reports.find((report) => report.id === 'mind-steward');
 
-    assert.equal(modelRouter?.status, 'invalid');
+    assert.equal(mindSteward?.status, 'invalid');
   } finally {
-    if (previousModelRouterPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH;
+    if (previousMindStewardPath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_REPORT_PATH = previousModelRouterPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousMindStewardPath;
     }
   }
 });
