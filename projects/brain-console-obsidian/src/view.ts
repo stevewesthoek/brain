@@ -7349,6 +7349,21 @@ async function openExternalUrl(brainCoreUrl: string, url: string): Promise<void>
   }
 }
 
+// ── Credential event bus ─────────────────────────────────────────────────
+// Any mutation (save/revoke/oauth-connect) fires credBus.emit(key, delta).
+// Chips subscribe via credBus.subscribe(keys, handler) and update in-place.
+// This is the single normalized mechanism for all dynamic chip updates in the console.
+
+type CredBusHandler = (key: string, delta: number) => void;
+const credBus = (() => {
+  const listeners: CredBusHandler[] = [];
+  return {
+    emit(key: string, delta: number) { listeners.forEach(h => h(key, delta)); },
+    subscribe(handler: CredBusHandler) { listeners.push(handler); },
+    unsubscribe(handler: CredBusHandler) { const i = listeners.indexOf(handler); if (i !== -1) listeners.splice(i, 1); },
+  };
+})();
+
 // ── Accounts & Credentials section ───────────────────────────────────────
 
 const ACCOUNTS_COLLAPSE_KEY = (groupKey: string) => `brain-console-accounts-collapsed-${groupKey}`;
@@ -7420,28 +7435,31 @@ function renderAccountsSection(
   for (const project of catalog.projects) {
     const allPlatforms = project.platforms;
     const requiredTotal = allPlatforms.flatMap(p => p.credentials.filter(c => c.required)).length;
+    const allRequiredKeys = new Set(allPlatforms.flatMap(p => p.credentials.filter(c => c.required).map(c => c.key)));
     let groupSetCount = allPlatforms.flatMap(p => p.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder)).length;
-    const groupTone = () => requiredTotal > 0 && groupSetCount === requiredTotal ? 'ok' : groupSetCount > 0 ? 'warn' : 'danger';
 
     let groupChip: HTMLElement;
-    function refreshGroupChip() {
+    const groupChipHandler: CredBusHandler = (key, delta) => {
+      if (!allRequiredKeys.has(key)) return;
+      groupSetCount = Math.max(0, Math.min(requiredTotal, groupSetCount + delta));
+      const tone = requiredTotal > 0 && groupSetCount === requiredTotal ? 'ok' : groupSetCount > 0 ? 'warn' : 'danger';
       groupChip.textContent = `${groupSetCount}/${requiredTotal} required`;
-      groupChip.className = `bc-chip bc-chip--${groupTone()}`;
-    }
+      groupChip.className = `bc-chip bc-chip--${tone}`;
+    };
+    credBus.subscribe(groupChipHandler);
 
     makeCollapsibleGroup(content, project.projectId, 'bc-accounts-group--project',
       (headerRow) => {
         headerRow.createEl('span', { cls: 'bc-accounts-group-name', text: project.displayName });
-        groupChip = createStatusChip(headerRow, `${groupSetCount}/${requiredTotal} required`, groupTone());
+        const tone = requiredTotal > 0 && groupSetCount === requiredTotal ? 'ok' : groupSetCount > 0 ? 'warn' : 'danger';
+        groupChip = createStatusChip(headerRow, `${groupSetCount}/${requiredTotal} required`, tone);
+        headerRow.addEventListener('remove', () => credBus.unsubscribe(groupChipHandler));
       },
       (body) => {
         const socialPlatforms = allPlatforms.filter(p => p.platformCategory === 'social');
         const infraPlatforms = allPlatforms.filter(p => p.platformCategory === 'infra');
         for (const platform of [...socialPlatforms, ...infraPlatforms]) {
-          renderProjectPlatformCard(body, platform, project.projectId, brainCoreUrl, (delta: number) => {
-            groupSetCount += delta;
-            refreshGroupChip();
-          });
+          renderProjectPlatformCard(body, platform, project.projectId, brainCoreUrl);
         }
       }
     );
@@ -7562,13 +7580,18 @@ function renderInfraCredentialGroup(
   top.createEl('span', { cls: 'bc-accounts-platform-name', text: group.platformName });
   const statusChip = createStatusChip(top, group.allRequiredSet ? 'Ready' : 'Action required', group.allRequiredSet ? 'ok' : 'danger');
 
+  const requiredKeys = new Set(group.credentials.filter(c => c.required).map(c => c.key));
   let setCount = group.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder).length;
-  const requiredCount = group.credentials.filter(c => c.required).length;
-  function refreshInfraChip() {
+  const requiredCount = requiredKeys.size;
+  const infraChipHandler: CredBusHandler = (key, delta) => {
+    if (!requiredKeys.has(key)) return;
+    setCount = Math.max(0, Math.min(requiredCount, setCount + delta));
     const allSet = setCount >= requiredCount;
     statusChip.textContent = allSet ? 'Ready' : 'Action required';
     statusChip.className = `bc-chip bc-chip--${allSet ? 'ok' : 'danger'}`;
-  }
+  };
+  credBus.subscribe(infraChipHandler);
+  card.addEventListener('remove', () => credBus.unsubscribe(infraChipHandler));
 
   const table = card.createEl('table', { cls: 'bc-accounts-table' });
   const tbody = table.createEl('tbody');
@@ -7623,7 +7646,7 @@ function renderInfraCredentialGroup(
         if (result.ok) {
           input.value = '';
           input.placeholder = '••••••• (set — enter new value to update)';
-          if (!tr.hasClass('bc-accounts-row--set') && cred.required) { setCount++; refreshInfraChip(); }
+          if (!tr.hasClass('bc-accounts-row--set') && cred.required) credBus.emit(cred.key, 1);
           tr.addClass('bc-accounts-row--set');
           statusTd.empty();
           renderCredStatusDot(statusTd, true, false);
@@ -7650,7 +7673,7 @@ function renderInfraCredentialGroup(
 
 function renderYouTubeOAuthRow(
   tbody: HTMLElement,
-  cred: BrainCoreInfraCredentialGroup['credentials'][number],
+  cred: BrainCoreInfraCredentialGroup['credentials'][number] | BrainCoreProjectCredentialEntry,
   brainCoreUrl: string,
 ): void {
   const account = cred.key.replace('yt-oauth-client-', '');
@@ -7752,6 +7775,7 @@ function startYouTubeOAuthFlow(
     try {
       const result = await exchangeYouTubeOAuthCode(brainCoreUrl, account, code);
       if (result.ok) {
+        if (!tr.hasClass('bc-accounts-row--set') && cred.required) credBus.emit(cred.key, 1);
         tr.addClass('bc-accounts-row--set');
         statusTd.empty();
         renderCredStatusDot(statusTd, true, false);
@@ -7784,7 +7808,6 @@ function renderProjectPlatformCard(
   platform: BrainCoreProjectCredentialPlatform,
   projectId: string,
   brainCoreUrl: string,
-  onRequiredChange?: (delta: number) => void,
 ): void {
   const card = parent.createDiv({ cls: `bc-accounts-platform${platform.platformCategory === 'infra' ? ' bc-accounts-platform--secondary' : ''}` });
   const top = card.createDiv({ cls: 'bc-accounts-platform-top' });
@@ -7805,13 +7828,18 @@ function renderProjectPlatformCard(
   top.createEl('span', { cls: 'bc-accounts-platform-name', text: platform.platformName });
   const platformStatusChip = createStatusChip(top, platform.allRequiredSet ? 'Ready' : 'Incomplete', platform.allRequiredSet ? 'ok' : 'warn');
 
+  const platformRequiredKeys = new Set(platform.credentials.filter(c => c.required).map(c => c.key));
   let platformSetCount = platform.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder).length;
-  const platformRequiredCount = platform.credentials.filter(c => c.required).length;
-  function refreshPlatformChip() {
+  const platformRequiredCount = platformRequiredKeys.size;
+  const platformChipHandler: CredBusHandler = (key, delta) => {
+    if (!platformRequiredKeys.has(key)) return;
+    platformSetCount = Math.max(0, Math.min(platformRequiredCount, platformSetCount + delta));
     const allSet = platformSetCount >= platformRequiredCount;
     platformStatusChip.textContent = allSet ? 'Ready' : 'Incomplete';
     platformStatusChip.className = `bc-chip bc-chip--${allSet ? 'ok' : 'warn'}`;
-  }
+  };
+  credBus.subscribe(platformChipHandler);
+  card.addEventListener('remove', () => credBus.unsubscribe(platformChipHandler));
 
   const table = card.createEl('table', { cls: 'bc-accounts-table' });
   const tbody = table.createEl('tbody');
@@ -7867,7 +7895,7 @@ function renderProjectPlatformCard(
         try {
           const result = await revokeBrainCoreCredential(brainCoreUrl, projectId, cred.key);
           if (result.ok) {
-            if (cred.required) { platformSetCount = Math.max(0, platformSetCount - 1); refreshPlatformChip(); onRequiredChange?.(-1); }
+            if (cred.required) credBus.emit(cred.key, -1);
             tr.removeClass('bc-accounts-row--set');
             statusTd.empty();
             renderCredStatusDot(statusTd, false, false);
@@ -7905,7 +7933,7 @@ function renderProjectPlatformCard(
         if (result.ok) {
           input.value = '';
           input.placeholder = '••••••• (set — enter new value to update)';
-          if (!tr.hasClass('bc-accounts-row--set') && cred.required) { platformSetCount++; refreshPlatformChip(); onRequiredChange?.(1); }
+          if (!tr.hasClass('bc-accounts-row--set') && cred.required) credBus.emit(cred.key, 1);
           tr.addClass('bc-accounts-row--set');
           statusTd.empty();
           renderCredStatusDot(statusTd, true, false);
