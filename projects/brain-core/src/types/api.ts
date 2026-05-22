@@ -10205,3 +10205,22 @@ export interface BrainCoreInfraVOAccountStatsResponse {
   stats: BrainCoreInfraVOAccountStat[];
   error?: string;
 }
+
+export interface BrainCoreInfraVOReadinessCheck {
+  id: string;
+  label: string;
+  status: 'pass' | 'fail' | 'warn' | 'unknown';
+  detail: string;
+}
+
+export interface BrainCoreInfraVOReadinessResponse {
+  ok: boolean;
+  status: 'ready' | 'partial' | 'blocked';
+  readinessScore: number;
+  checks: BrainCoreInfraVOReadinessCheck[];
+  passCount: number;
+  failCount: number;
+  warnCount: number;
+  manualActionsRequired: string[];
+  error?: string;
+}

@@ -7984,3 +7984,28 @@ export interface BrainCoreVOAccountStatsResponse {
 export async function readBrainCoreVOAccountStats(baseUrl: string): Promise<HttpResult<BrainCoreVOAccountStatsResponse>> {
   return fetchJson<BrainCoreVOAccountStatsResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/accounts-stats');
 }
+
+// ── VO Readiness ─────────────────────────────────────────────────────────────
+
+export interface BrainCoreVOReadinessCheck {
+  id: string;
+  label: string;
+  status: 'pass' | 'fail' | 'warn' | 'unknown';
+  detail: string;
+}
+
+export interface BrainCoreVOReadinessResponse {
+  ok: boolean;
+  status: 'ready' | 'partial' | 'blocked';
+  readinessScore: number;
+  checks: BrainCoreVOReadinessCheck[];
+  passCount: number;
+  failCount: number;
+  warnCount: number;
+  manualActionsRequired: string[];
+  error?: string;
+}
+
+export async function readBrainCoreVOReadiness(baseUrl: string): Promise<HttpResult<BrainCoreVOReadinessResponse>> {
+  return fetchJson<BrainCoreVOReadinessResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/readiness');
+}
