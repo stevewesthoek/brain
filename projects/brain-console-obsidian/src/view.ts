@@ -7656,43 +7656,52 @@ function startYouTubeOAuthFlow(
 ): void {
   inputTd.empty();
 
-  // Step 1: Generate URL
-  const step1 = inputTd.createDiv({ cls: 'bc-accounts-oauth-flow' });
-  const genBtn = step1.createEl('button', { cls: 'bc-accounts-save-btn', text: isReconnect ? 'Generate new URL' : 'Generate auth URL' });
-  const urlDisplay = step1.createEl('span', { cls: 'bc-accounts-feedback' });
+  const flow = inputTd.createDiv({ cls: 'bc-accounts-oauth-flow' });
+  const statusMsg = flow.createEl('span', { cls: 'bc-accounts-feedback' });
 
-  // Step 2: Enter code (initially hidden)
-  const step2 = inputTd.createDiv({ cls: 'bc-accounts-oauth-flow bc-accounts-oauth-flow--hidden' });
-  const codeInput = step2.createEl('input', { cls: 'bc-accounts-input' });
+  // Code input row — shown after URL is opened
+  const codeRow = flow.createDiv({ cls: 'bc-accounts-oauth-flow bc-accounts-oauth-flow--hidden' });
+  const codeInput = codeRow.createEl('input', { cls: 'bc-accounts-input' });
   codeInput.type = 'text';
   codeInput.placeholder = 'Paste authorization code…';
   codeInput.setAttribute('autocomplete', 'off');
-  const authorizeBtn = step2.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Authorize' });
-  const codeFeedback = step2.createEl('span', { cls: 'bc-accounts-feedback' });
+  const authorizeBtn = codeRow.createEl('button', { cls: 'bc-accounts-save-btn', text: 'Authorize' });
+  const codeFeedback = codeRow.createEl('span', { cls: 'bc-accounts-feedback' });
 
-  genBtn.addEventListener('click', async () => {
-    genBtn.disabled = true;
-    genBtn.textContent = '…';
-    urlDisplay.textContent = '';
+  // Open button — generates URL and opens browser in one click
+  const openBtn = flow.createEl('button', {
+    cls: 'bc-accounts-save-btn',
+    text: isReconnect ? 'Open Google Auth (reconnect)' : 'Open Google Auth',
+  });
+
+  openBtn.addEventListener('click', async () => {
+    openBtn.disabled = true;
+    openBtn.textContent = 'Opening…';
+    statusMsg.textContent = '';
+    statusMsg.className = 'bc-accounts-feedback';
     try {
       const result = await getYouTubeOAuthUrl(brainCoreUrl, account);
       if (result.ok && result.url) {
-        urlDisplay.empty();
-        const link = urlDisplay.createEl('a', { text: 'Open Google Auth →' });
-        link.href = result.url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        step2.removeClass('bc-accounts-oauth-flow--hidden');
+        window.open(result.url);
+        statusMsg.textContent = 'Browser opened — authorize, then paste the code below.';
+        statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--ok';
+        codeRow.removeClass('bc-accounts-oauth-flow--hidden');
+        codeInput.focus();
+        // Show a fallback link in case the window didn't open
+        openBtn.textContent = 'Reopen browser';
+        openBtn.disabled = false;
+        openBtn.onclick = () => { window.open(result.url!); };
       } else {
-        urlDisplay.textContent = result.error ?? 'Failed to generate URL.';
-        urlDisplay.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+        statusMsg.textContent = result.error ?? 'Failed to generate URL.';
+        statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+        openBtn.disabled = false;
+        openBtn.textContent = isReconnect ? 'Open Google Auth (reconnect)' : 'Open Google Auth';
       }
     } catch (err) {
-      urlDisplay.textContent = err instanceof Error ? err.message : 'Network error.';
-      urlDisplay.className = 'bc-accounts-feedback bc-accounts-feedback--error';
-    } finally {
-      genBtn.disabled = false;
-      genBtn.textContent = 'Regenerate URL';
+      statusMsg.textContent = err instanceof Error ? err.message : 'Network error.';
+      statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--error';
+      openBtn.disabled = false;
+      openBtn.textContent = isReconnect ? 'Open Google Auth (reconnect)' : 'Open Google Auth';
     }
   });
 
