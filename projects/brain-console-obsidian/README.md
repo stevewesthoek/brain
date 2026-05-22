@@ -98,6 +98,7 @@ npm run --prefix projects/brain-console-obsidian package
 - Brain Core action routes catch failures and return structured JSON with `commandOverrideAccepted: false`.
 - Release/install command: `npm run --prefix projects/brain-console-obsidian release:install`
 - Model Router is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
+- Fala is registered in `operations/infrastructure/local-apps.json` and appears in the Apps tab via `GET /local-apps/dashboard` with port `3050`, `/api/health`, Start/Stop controls, and the Fala-owned `npm run dashboard:status` metadata contract for LAN phone URLs and model-router/Bedrock policy flags.
 
 ## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
 
