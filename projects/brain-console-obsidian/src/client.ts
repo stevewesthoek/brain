@@ -7840,6 +7840,7 @@ export interface BrainCoreCredentialEntry {
   type: 'app_id' | 'secret' | 'token' | 'board_id' | 'api_key' | 'url' | 'other';
   required: boolean;
   hint?: string;
+  deeplink?: string;
   isSet: boolean;
   hasPlaceholder: boolean;
 }

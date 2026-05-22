@@ -7784,13 +7784,26 @@ function renderProjectPlatformCard(
   const tbody = table.createEl('tbody');
 
   for (const cred of platform.credentials) {
+    // Keychain credentials use the OAuth browser flow, not a text input
+    if (cred.storage === 'keychain') {
+      renderYouTubeOAuthRow(tbody, cred, brainCoreUrl);
+      continue;
+    }
+
     const tr = tbody.createEl('tr', { cls: `bc-accounts-row${cred.isSet && !cred.hasPlaceholder ? ' bc-accounts-row--set' : ''}` });
 
     // Label cell
     const labelTd = tr.createEl('td', { cls: 'bc-accounts-label-cell' });
     labelTd.createEl('span', { cls: 'bc-accounts-key-label', text: cred.label });
     if (cred.required) labelTd.createEl('span', { cls: 'bc-accounts-required-badge', text: 'required' });
-    if (cred.hint) labelTd.createEl('span', { cls: 'bc-accounts-hint', text: cred.hint });
+    if (cred.hint) {
+      const hintSpan = labelTd.createEl('span', { cls: 'bc-accounts-hint' });
+      hintSpan.createEl('span', { text: cred.hint });
+      if (cred.deeplink) {
+        const dlBtn = hintSpan.createEl('button', { cls: 'bc-accounts-deeplink-btn', text: '↗ Open' });
+        dlBtn.addEventListener('click', () => { openExternalUrl(cred.deeplink!); });
+      }
+    }
 
     // Status dot cell
     const statusTd = tr.createEl('td', { cls: 'bc-accounts-status-cell' });

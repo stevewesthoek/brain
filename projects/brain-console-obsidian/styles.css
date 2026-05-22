@@ -1464,6 +1464,23 @@
   font-style: italic;
 }
 
+.bc-accounts-deeplink-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 5px;
+  color: var(--text-accent);
+  cursor: pointer;
+  font-size: 10px;
+  font-style: normal;
+  text-decoration: underline;
+  vertical-align: baseline;
+}
+
+.bc-accounts-deeplink-btn:hover {
+  color: var(--text-accent-hover, var(--interactive-accent-hover, var(--text-accent)));
+}
+
 .bc-accounts-status-cell {
   width: 28px;
   text-align: center;

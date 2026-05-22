@@ -20,6 +20,8 @@ interface SchemaEntry {
   hint?: string;
   /** Where the value physically lives — 'env_file' is the default */
   storage?: StorageBackend;
+  /** If set, a button renders next to the hint that opens this URL in the browser */
+  deeplink?: string;
 }
 
 interface PlatformSchema {
@@ -44,12 +46,11 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
       platformCategory: 'social',
       credentials: [
         { key: 'YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true,
-          hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs' },
+          hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs',
+          deeplink: 'https://console.cloud.google.com/apis/credentials' },
         { key: 'YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true },
-        { key: 'YOUTUBE_TOKEN_PATH',    label: 'Token file path',     type: 'other',  required: false,
-          hint: 'Defaults to ./data/youtube-token.json' },
         { key: 'yt-oauth-client-@says-the-bible', label: 'VO Worker OAuth (@says-the-bible)', type: 'secret', required: true, storage: 'keychain',
-          hint: 'OAuth token used by the video orchestrator worker to upload to this channel' },
+          hint: 'OAuth token for the video orchestrator worker — click Connect to authorize via browser' },
       ],
     },
     {
@@ -62,7 +63,6 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
         { key: 'PINTEREST_BOARD_PROBLEM',label: 'Board ID: Problem',   type: 'board_id', required: false, hint: 'Get from pinterest.com/{user}/{board}/{id}/' },
         { key: 'PINTEREST_BOARD_SOLUTION',label:'Board ID: Solution',  type: 'board_id', required: false },
         { key: 'PINTEREST_BOARD_STORY',  label: 'Board ID: Story',     type: 'board_id', required: false },
-        { key: 'PINTEREST_TOKEN_PATH',   label: 'Token file path',     type: 'other',    required: false, hint: 'Defaults to ./data/pinterest-token.json' },
       ],
     },
     {
@@ -122,9 +122,10 @@ const AVAILABLE_PLATFORMS: Record<string, PlatformSchema> = {
   youtube: {
     platformId: 'youtube', platformName: 'YouTube', platformCategory: 'social',
     credentials: [
-      { key: 'YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true,  hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs' },
+      { key: 'YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true,
+        hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs',
+        deeplink: 'https://console.cloud.google.com/apis/credentials' },
       { key: 'YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true },
-      { key: 'YOUTUBE_TOKEN_PATH',    label: 'Token file path',     type: 'other',  required: false, hint: 'Defaults to ./data/youtube-token.json' },
     ],
   },
   pinterest: {
@@ -135,7 +136,6 @@ const AVAILABLE_PLATFORMS: Record<string, PlatformSchema> = {
       { key: 'PINTEREST_BOARD_PROBLEM', label: 'Board ID: Problem',  type: 'board_id', required: false },
       { key: 'PINTEREST_BOARD_SOLUTION',label: 'Board ID: Solution', type: 'board_id', required: false },
       { key: 'PINTEREST_BOARD_STORY',   label: 'Board ID: Story',    type: 'board_id', required: false },
-      { key: 'PINTEREST_TOKEN_PATH',    label: 'Token file path',    type: 'other',    required: false },
     ],
   },
   facebook: {
@@ -463,6 +463,7 @@ function buildProjectEntry(
           isSet,
           hasPlaceholder,
           ...(entry.hint !== undefined ? { hint: entry.hint } : {}),
+          ...(entry.deeplink !== undefined ? { deeplink: entry.deeplink } : {}),
         };
       });
       return { platformId: platform.platformId, platformName: platform.platformName, platformCategory: platform.platformCategory, credentials, allRequiredSet };
