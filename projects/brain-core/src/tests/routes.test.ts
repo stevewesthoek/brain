@@ -297,13 +297,23 @@ test('GET /scheduler/jobs reports model-router dry-run ok status when runtime re
   }
 });
 
-test('GET /local-apps returns placeholder local app list', async () => {
+test('GET /local-apps returns registered local app list including Fala', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps' });
-  const body = JSON.parse(response.body) as { apps: Array<{ id: string; actionsSupported: boolean }> };
+  const body = JSON.parse(response.body) as {
+    apps: Array<{
+      id: string;
+      name: string;
+      actionsSupported: boolean;
+    }>;
+  };
 
   assert.equal(response.statusCode, 200);
   assert.equal(body.apps.length >= 16, true);
   assert.equal(body.apps.some((app) => app.actionsSupported === true), true);
+
+  const fala = body.apps.find((app) => app.id === 'fala');
+  assert.equal(fala?.name, 'Fala');
+  assert.equal(fala?.actionsSupported, true);
 });
 
 test('GET /video/status returns read-only placeholder video state', async () => {
