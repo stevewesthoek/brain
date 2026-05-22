@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-MEMORY_DIR="${HOME}/.claude/projects/-Users-Office-Repos-stevewesthoek-brain/memory"
+MEMORY_DIR="${BRAIN_MEMORY_DIR:-$HOME/.brain/memory}"
 FACTS_FILE="${MEMORY_DIR}/facts.jsonl"
 
 mkdir -p "$MEMORY_DIR"

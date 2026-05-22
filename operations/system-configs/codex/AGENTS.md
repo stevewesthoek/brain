@@ -262,6 +262,8 @@ Codex
 
 Single entry point for all memory work: recall past decisions, save preferences, query facts, review memory, maintain entries. Works identically on Claude Code, Codex, Gemini, all IDEs.
 
+**Shared memory store: `~/.brain/memory/`** — this is the canonical cross-AI memory. All agents (Claude, Codex, Gemini) read and write the same store. A memory saved by Codex is immediately visible to Claude and Gemini. Use `mem-write`/`mem-search`/`mem-facts` — they all point to `~/.brain/memory/` by default.
+
 Write-side tools:
 - `mem-write user|feedback|project|ref <name> <description> [--body "..."] [--facts "e|p|o,...]"` — create/update memory
 - `mem-facts add <entity> <predicate> <object>` — add structured fact
