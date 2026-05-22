@@ -29,6 +29,7 @@ Brain Core now models local apps as a declarative registry plus an orchestration
 - `GET /local-apps/actions/status` returns in-flight actions, recent action results, last error by app, and lock state.
 - `POST /local-apps/:id/start|stop|restart` returns a structured controlled action result.
 - Model Router is surfaced from Brain Core runtime-report sources.
+- Fala is surfaced from the canonical local-app registry as a managed local-first app on port `3050`; the Obsidian dashboard reads it through Brain Core rather than hardcoding it in the plugin.
 
 ## Stability Fix
 
