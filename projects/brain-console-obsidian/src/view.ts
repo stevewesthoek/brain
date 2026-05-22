@@ -7420,19 +7420,28 @@ function renderAccountsSection(
   for (const project of catalog.projects) {
     const allPlatforms = project.platforms;
     const requiredTotal = allPlatforms.flatMap(p => p.credentials.filter(c => c.required)).length;
-    const requiredSet = allPlatforms.flatMap(p => p.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder)).length;
-    const projectTone = requiredTotal > 0 && requiredSet === requiredTotal ? 'ok' : requiredSet > 0 ? 'warn' : 'danger';
+    let groupSetCount = allPlatforms.flatMap(p => p.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder)).length;
+    const groupTone = () => requiredTotal > 0 && groupSetCount === requiredTotal ? 'ok' : groupSetCount > 0 ? 'warn' : 'danger';
+
+    let groupChip: HTMLElement;
+    function refreshGroupChip() {
+      groupChip.textContent = `${groupSetCount}/${requiredTotal} required`;
+      groupChip.className = `bc-chip bc-chip--${groupTone()}`;
+    }
 
     makeCollapsibleGroup(content, project.projectId, 'bc-accounts-group--project',
       (headerRow) => {
         headerRow.createEl('span', { cls: 'bc-accounts-group-name', text: project.displayName });
-        createStatusChip(headerRow, `${requiredSet}/${requiredTotal} required`, projectTone);
+        groupChip = createStatusChip(headerRow, `${groupSetCount}/${requiredTotal} required`, groupTone());
       },
       (body) => {
         const socialPlatforms = allPlatforms.filter(p => p.platformCategory === 'social');
         const infraPlatforms = allPlatforms.filter(p => p.platformCategory === 'infra');
         for (const platform of [...socialPlatforms, ...infraPlatforms]) {
-          renderProjectPlatformCard(body, platform, project.projectId, brainCoreUrl);
+          renderProjectPlatformCard(body, platform, project.projectId, brainCoreUrl, (delta: number) => {
+            groupSetCount += delta;
+            refreshGroupChip();
+          });
         }
       }
     );
@@ -7551,7 +7560,15 @@ function renderInfraCredentialGroup(
   const card = parent.createDiv({ cls: 'bc-accounts-platform bc-accounts-platform--infra' });
   const top = card.createDiv({ cls: 'bc-accounts-platform-top' });
   top.createEl('span', { cls: 'bc-accounts-platform-name', text: group.platformName });
-  createStatusChip(top, group.allRequiredSet ? 'Ready' : 'Action required', group.allRequiredSet ? 'ok' : 'danger');
+  const statusChip = createStatusChip(top, group.allRequiredSet ? 'Ready' : 'Action required', group.allRequiredSet ? 'ok' : 'danger');
+
+  let setCount = group.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder).length;
+  const requiredCount = group.credentials.filter(c => c.required).length;
+  function refreshInfraChip() {
+    const allSet = setCount >= requiredCount;
+    statusChip.textContent = allSet ? 'Ready' : 'Action required';
+    statusChip.className = `bc-chip bc-chip--${allSet ? 'ok' : 'danger'}`;
+  }
 
   const table = card.createEl('table', { cls: 'bc-accounts-table' });
   const tbody = table.createEl('tbody');
@@ -7606,6 +7623,7 @@ function renderInfraCredentialGroup(
         if (result.ok) {
           input.value = '';
           input.placeholder = '••••••• (set — enter new value to update)';
+          if (!tr.hasClass('bc-accounts-row--set') && cred.required) { setCount++; refreshInfraChip(); }
           tr.addClass('bc-accounts-row--set');
           statusTd.empty();
           renderCredStatusDot(statusTd, true, false);
@@ -7766,6 +7784,7 @@ function renderProjectPlatformCard(
   platform: BrainCoreProjectCredentialPlatform,
   projectId: string,
   brainCoreUrl: string,
+  onRequiredChange?: (delta: number) => void,
 ): void {
   const card = parent.createDiv({ cls: `bc-accounts-platform${platform.platformCategory === 'infra' ? ' bc-accounts-platform--secondary' : ''}` });
   const top = card.createDiv({ cls: 'bc-accounts-platform-top' });
@@ -7784,7 +7803,15 @@ function renderProjectPlatformCard(
   const icon = platformIcons[platform.platformId] ?? '◈';
   top.createEl('span', { cls: 'bc-accounts-platform-icon', text: icon });
   top.createEl('span', { cls: 'bc-accounts-platform-name', text: platform.platformName });
-  createStatusChip(top, platform.allRequiredSet ? 'Ready' : 'Incomplete', platform.allRequiredSet ? 'ok' : 'warn');
+  const platformStatusChip = createStatusChip(top, platform.allRequiredSet ? 'Ready' : 'Incomplete', platform.allRequiredSet ? 'ok' : 'warn');
+
+  let platformSetCount = platform.credentials.filter(c => c.required && c.isSet && !c.hasPlaceholder).length;
+  const platformRequiredCount = platform.credentials.filter(c => c.required).length;
+  function refreshPlatformChip() {
+    const allSet = platformSetCount >= platformRequiredCount;
+    platformStatusChip.textContent = allSet ? 'Ready' : 'Incomplete';
+    platformStatusChip.className = `bc-chip bc-chip--${allSet ? 'ok' : 'warn'}`;
+  }
 
   const table = card.createEl('table', { cls: 'bc-accounts-table' });
   const tbody = table.createEl('tbody');
@@ -7840,6 +7867,7 @@ function renderProjectPlatformCard(
         try {
           const result = await revokeBrainCoreCredential(brainCoreUrl, projectId, cred.key);
           if (result.ok) {
+            if (cred.required) { platformSetCount = Math.max(0, platformSetCount - 1); refreshPlatformChip(); onRequiredChange?.(-1); }
             tr.removeClass('bc-accounts-row--set');
             statusTd.empty();
             renderCredStatusDot(statusTd, false, false);
@@ -7877,6 +7905,7 @@ function renderProjectPlatformCard(
         if (result.ok) {
           input.value = '';
           input.placeholder = '••••••• (set — enter new value to update)';
+          if (!tr.hasClass('bc-accounts-row--set') && cred.required) { platformSetCount++; refreshPlatformChip(); onRequiredChange?.(1); }
           tr.addClass('bc-accounts-row--set');
           statusTd.empty();
           renderCredStatusDot(statusTd, true, false);
