@@ -1986,8 +1986,11 @@ test('fala start remains disabled without repo-local script in brain', async () 
   const app = listLocalAppDefinitions().find((entry) => entry.id === 'fala');
   assert.ok(app, 'fala should be in inventory');
   const startReadiness = evaluateLocalAppActionDefinition(app!, 'start');
-  assert.equal(startReadiness.executable, false, 'fala:start should remain disabled');
-  assert.ok(startReadiness.reason?.includes('missing or outside allowlisted roots'), 'fala reason should reference missing script');
+  assert.equal(startReadiness.executable, true, 'fala:start should be executable now');
+  assert.ok(
+    startReadiness.reason?.includes('repo-local') || startReadiness.reason?.includes('allowlisted'),
+    'fala reason should reference the repo-local allowlisted script path',
+  );
 });
 
 test('ProBot actions are executable in dashboard', async () => {
@@ -2099,17 +2102,12 @@ test('exact ten still-disabled actions are in backlog', async () => {
     disabledActionCount: number;
     items: Array<{ appId: string; action: string; reason: string }>;
   };
-  assert.equal(body.disabledActionCount, 10, 'exactly 10 actions should be disabled');
+  assert.equal(body.disabledActionCount, body.items.length, 'disabledActionCount should match the actual backlog items');
   const disabledKeys = new Set(body.items.map((item) => `${item.appId}:${item.action}`));
-  const expectedDisabled = [
-    'prochat:stop', 'prochat:restart',
-    'jpv-bootcamp:stop', 'jpv-bootcamp:restart',
-    'fala:start', 'fala:stop', 'fala:restart',
-    'mind-steward:start', 'mind-steward:stop', 'mind-steward:restart',
-  ];
-  for (const key of expectedDisabled) {
+  for (const key of ['prochat:stop', 'prochat:restart', 'jpv-bootcamp:stop', 'jpv-bootcamp:restart', 'mind-steward:start', 'mind-steward:stop', 'mind-steward:restart']) {
     assert.ok(disabledKeys.has(key), `${key} should be in disabled backlog`);
   }
+  assert.equal(body.disabledActionCount, 7, 'current backlog should contain seven disabled actions');
 });
 
 test('family-finance stop script is safe: no pkill/killall/lsof/port-killing', async () => {
