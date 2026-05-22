@@ -355,10 +355,10 @@ brain-agent capabilities
 
 ---
 
-### Task 0C-C — Run ledger and task graph 🔲 NEXT
+### Task 0C-C — Run ledger and task graph ⏳ IN PROGRESS
 **In progress:** Read-only ledger and task graph snapshot endpoints are now exposed in Brain Core.
-**Implemented so far:** `/agent-ledger` and `/agent-task-graph` return derived or persisted read-only snapshots, and Brain Core can now write and reload an append-only JSON snapshot for those records.
-**Still next:** resumable task state, executor selection records, approval-bound mutation flow, and console visibility for live agent runs.
+**Implemented so far:** `/agent-ledger`, `/agent-task-graph`, and `/agent-task-state` return derived or persisted read-only snapshots, and Brain Core can now write and reload append-only JSON snapshots for ledger/task-state records.
+**Still next:** executor selection records, approval-bound mutation flow, and console visibility for live agent runs.
 
 ---
 
@@ -378,7 +378,7 @@ Persist:
 
 ---
 
-### Task 0C-D — Selector-aware executor adapter
+### Task 0C-D — Selector-aware executor adapter 🔲 NEXT
 Rules:
 - local Ollama M4/M1 first for tasks they can handle,
 - Codex CLI second for subscription-backed work when local quality is insufficient or local nodes are unavailable/rate-limited,

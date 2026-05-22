@@ -212,6 +212,17 @@ test('GET /agent-ledger returns the derived read-only agent ledger', async () =>
   assert.equal(body.taskGraph.id, 'agent-task-graph');
 });
 
+test('GET /agent-task-state returns a resumable task state surface', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-task-state' });
+  const body = JSON.parse(response.body) as { id: string; status: string; taskGraphId: string; stepCount: number };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'agent-task-state');
+  assert.equal(body.status, 'read-only');
+  assert.equal(body.taskGraphId, 'agent-task-graph');
+  assert.ok(body.stepCount > 0);
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');

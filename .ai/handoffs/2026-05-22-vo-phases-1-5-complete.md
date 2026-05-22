@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-C — Run ledger append-only persistence and resumable task state
+**Next task:** Sprint 0C-D — Selector-aware executor adapter
 
 ---
 
@@ -21,9 +21,9 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 - Phase 5 — YouTube Reporting API bulk sync, A/B winner declaration
 - Phase 0.7-A — Agent Orchestrator research and architecture docs
 
-**Active next (Sprint 0C-C):**
-- Build run ledger and task graph support in Brain Core.
-- Current Mini slice: `Task 0C-C — Run ledger append-only persistence and resumable task state`.
+**Active next (Sprint 0C-D):**
+- Build selector-aware executor selection records in Brain Core.
+- Current Mini slice: `Task 0C-D — Selector-aware executor adapter`.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -82,7 +82,7 @@ The implementation plan is canonical for task status.
 
 ## Sprint 0C-C Snapshot Result
 
-Completed. `brain-agent capabilities` is wired as a smoke command, `/api/agent/capabilities` is exposed over Brain Core, CLI capability records are normalized, AI surfaces come from the live selector when available with static fallback when unavailable, and read-only `/agent-ledger` + `/agent-task-graph` snapshot endpoints are now exposed.
+Completed. `brain-agent capabilities` is wired as a smoke command, `/api/agent/capabilities` is exposed over Brain Core, CLI capability records are normalized, AI surfaces come from the live selector when available with static fallback when unavailable, and read-only `/agent-ledger` + `/agent-task-graph` + `/agent-task-state` snapshot endpoints are now exposed.
 
 ---
 
@@ -219,7 +219,7 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Your next task is Sprint 0C-C only: build append-only persistence and resumable task state on top of the existing read-only ledger and task graph snapshot endpoints.
+Your next task is Sprint 0C-D only: build selector-aware executor selection records on top of the existing read-only capability registry, ledger, task graph, and task-state snapshot endpoints.
 
 Start by reading:
 1. AGENTS.md
@@ -227,7 +227,7 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Focus on append-only persistence, snapshot loading, and resumable task state. Do not implement execution or approval mutations in this slice.
+Focus on selecting and recording the intended executor/provider/model for each task. Do not implement execution or approval mutations in this slice.
 
 Run:
 cd projects/brain-core

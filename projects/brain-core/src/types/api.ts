@@ -4951,6 +4951,37 @@ export interface BrainCoreAgentTaskGraphSummary {
   };
 }
 
+export interface BrainCoreAgentTaskStateStepSummary {
+  taskId: string;
+  status: BrainCoreAgentTaskStatus;
+  startedAt?: string;
+  completedAt?: string;
+  selectedExecutorId?: string;
+  selectedProviderId?: string;
+  selectedModel?: string;
+  note?: string;
+}
+
+export interface BrainCoreAgentTaskStateSummary {
+  id: 'agent-task-state';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  runId?: string;
+  taskGraphId: 'agent-task-graph';
+  currentTaskId?: string;
+  resumedTaskId?: string;
+  lastCompletedTaskId?: string;
+  stepCount: number;
+  steps: BrainCoreAgentTaskStateStepSummary[];
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
 export interface BrainCoreAgentLedgerSummary {
   id: 'agent-ledger';
   generatedAt: string;
@@ -5499,6 +5530,9 @@ export interface BrainCoreRoutes {
   '/agents/:id': {
     agent: BrainCoreAgentSummary;
   };
+  '/agent-task-graph': BrainCoreAgentTaskGraphSummary;
+  '/agent-ledger': BrainCoreAgentLedgerSummary;
+  '/agent-task-state': BrainCoreAgentTaskStateSummary;
   '/capabilities': BrainCoreCapabilitySummary;
   '/approvals/audit': {
     events: BrainCoreApprovalAuditEvent[];
