@@ -17,11 +17,12 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 
 | Phase | Goal | Timeline | Status |
 |-------|------|----------|--------|
-| **Phase 1** | GrepLoop — autonomous verification loops | 2026-05-22 → 2026-05-24 | **ready** |
-| **Phase 2** | opensrc — dependency source access | 2026-05-24 → 2026-05-25 | planned |
-| **Phase 3** | Persistent codebase graph | 2026-05-25 → 2026-05-27 | planned |
-| **Phase 4** | code-structure — refactoring intelligence | 2026-05-27 → 2026-05-28 | planned |
-| **Phase 5** | SvelteKit default decision + boilerplate | 2026-05-28 → 2026-06-01 | planned |
+| **Phase 1** | GrepLoop — autonomous verification loops | 2026-05-22 → 2026-05-24 | **complete** |
+| **Phase 2** | opensrc — dependency source access | 2026-05-24 → 2026-05-25 | **complete** |
+| **Phase 3** | Persistent codebase graph | 2026-05-25 → 2026-05-27 | **complete** |
+| **Phase 4** | code-structure — refactoring intelligence | 2026-05-27 → 2026-05-28 | **complete** |
+| **Phase 5** | SvelteKit default decision + boilerplate | 2026-05-28 → 2026-06-01 | **complete** |
+| **Phase 6** | Agent Ledger & Auditability — append-only audit trail | 2026-05-29 → 2026-06-07 | **in-progress** |
 
 ---
 
@@ -94,6 +95,23 @@ Brain evolves from a skill/config layer into a complete agentic operating system
 - SvelteKit boilerplate repo created or template documented
 - `/code build` workflow updated to default to SvelteKit for new web projects
 - Existing Next.js projects explicitly excluded from migration
+
+---
+
+## Phase 6: Agent Ledger & Auditability
+
+**Goal:** Build an append-only event ledger that logs all agent decisions, tool calls, state mutations, and approvals.
+
+**Value:** Enables forensic debugging ("why did agent choose X?"), compliance reporting, cost tracking, and reproducible investigation of failures.
+
+**Exit criteria:**
+- Ledger writer at `projects/brain-core/src/adapters/agent-ledger-writer.ts` with validation
+- Ledger reader with query interface at `projects/brain-core/src/adapters/agent-ledger-reader.ts`
+- CLI tools: `ledger-query`, `ledger-replay`, `ledger-report` all symlinked to `~/.local/bin/`
+- Ledger schema documented in `operations/standards/agent-ledger-standard.md`
+- Forensic debugging runbook at `operations/runbooks/ledger-forensic-debugging.md`
+- Brain Console ledger view widget displaying real-time event stream
+- Cost transparency widget showing live cost tracking
 
 ---
 
