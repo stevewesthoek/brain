@@ -356,6 +356,8 @@ brain-agent capabilities
 ---
 
 ### Task 0C-C — Run ledger and task graph 🔲 NEXT
+**In progress:** Read-only ledger and task graph snapshot endpoints are now exposed in Brain Core. Append-only recording, task resumption, and approval-bound execution remain next.
+**Implemented so far:** `/agent-ledger` and `/agent-task-graph` return derived or persisted read-only snapshots, and the graph is now visible in tests and route coverage.
 
 ---
 

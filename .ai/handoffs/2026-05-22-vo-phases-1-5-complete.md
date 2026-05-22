@@ -3,7 +3,7 @@
 **Date:** 2026-05-22
 **Git:** latest pushed main should include the planning sweep after commit
 **Next agent:** GPT-5.4-Mini or Codex Mini
-**Next task:** Sprint 0C-C — Run ledger and task graph
+**Next task:** Sprint 0C-C — Run ledger append-only persistence and resumable task state
 
 ---
 
@@ -23,7 +23,7 @@ The Video Orchestrator backend pipeline is built through Phase 5, and the AI Mod
 
 **Active next (Sprint 0C-C):**
 - Build run ledger and task graph support in Brain Core.
-- Current Mini slice: `Task 0C-C — Run ledger and task graph`.
+- Current Mini slice: `Task 0C-C — Run ledger append-only persistence and resumable task state`.
 
 **Still pending later (Sprint 6):**
 - Brain Console UI: thumbnail studio, metadata review panel, analytics dashboard, AI health chip
@@ -80,9 +80,9 @@ The implementation plan is canonical for task status.
 
 ---
 
-## Sprint 0C-B6 Result
+## Sprint 0C-C Snapshot Result
 
-Completed. `brain-agent capabilities` is wired as a smoke command, `/api/agent/capabilities` is exposed over Brain Core, CLI capability records are normalized, and AI surfaces now come from the live selector when available with static fallback when unavailable.
+Completed. `brain-agent capabilities` is wired as a smoke command, `/api/agent/capabilities` is exposed over Brain Core, CLI capability records are normalized, AI surfaces come from the live selector when available with static fallback when unavailable, and read-only `/agent-ledger` + `/agent-task-graph` snapshot endpoints are now exposed.
 
 ---
 
@@ -219,7 +219,7 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Your next task is Sprint 0C-C only: build the run ledger and task graph support.
+Your next task is Sprint 0C-C only: build append-only persistence and resumable task state on top of the existing read-only ledger and task graph snapshot endpoints.
 
 Start by reading:
 1. AGENTS.md
@@ -227,7 +227,7 @@ Start by reading:
 3. projects/brain-core/docs/video-orchestrator-implementation-plan.md
 4. projects/brain-core/docs/agent-orchestrator-architecture.md
 
-Focus on read-only structure first: define the run ledger and task graph shapes, persistence strategy, and minimal endpoint or adapter surfaces if needed. Do not implement execution or approval mutations in this slice.
+Focus on append-only persistence, snapshot loading, and resumable task state. Do not implement execution or approval mutations in this slice.
 
 Run:
 cd projects/brain-core

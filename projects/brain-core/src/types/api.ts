@@ -4911,6 +4911,67 @@ export interface BrainCoreAgentEventSummary {
   relatedReportId?: string;
 }
 
+export type BrainCoreAgentTaskStatus =
+  | 'pending'
+  | 'planned'
+  | 'waiting_approval'
+  | 'running'
+  | 'blocked'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export interface BrainCoreAgentTaskSummary {
+  taskId: string;
+  title: string;
+  status: BrainCoreAgentTaskStatus;
+  dependsOn: string[];
+  role: string;
+  capabilityIds: string[];
+  aiTaskType: string;
+  approvalRequired: boolean;
+  notes: string;
+}
+
+export interface BrainCoreAgentTaskGraphSummary {
+  id: 'agent-task-graph';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  taskCount: number;
+  completedCount: number;
+  blockedCount: number;
+  pendingCount: number;
+  tasks: BrainCoreAgentTaskSummary[];
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
+export interface BrainCoreAgentLedgerSummary {
+  id: 'agent-ledger';
+  generatedAt: string;
+  source: 'derived' | 'snapshot';
+  status: 'read-only' | 'snapshot';
+  runCount: number;
+  eventCount: number;
+  taskCount: number;
+  approvalCount: number;
+  runs: BrainCoreAgentRunSummary[];
+  events: BrainCoreAgentEventSummary[];
+  taskGraph: BrainCoreAgentTaskGraphSummary;
+  approvalIds: string[];
+  nextSafeStep: string;
+  persistence: {
+    enabled: boolean;
+    path: string;
+    loadedFromDisk: boolean;
+  };
+}
+
 export interface BrainCoreRecoveryItemSummary {
   id: string;
   severity: 'info' | 'warning' | 'error';

@@ -189,6 +189,29 @@ test('GET /api/agent/capabilities returns normalized agent capability registry',
   assert.equal(body.capabilities.every((capability) => typeof capability.enabled === 'boolean'), true);
 });
 
+test('GET /agent-task-graph returns the read-only agent task graph', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-task-graph' });
+  const body = JSON.parse(response.body) as { id: string; status: string; taskCount: number; tasks: Array<{ taskId: string }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'agent-task-graph');
+  assert.equal(body.status, 'read-only');
+  assert.ok(body.taskCount > 0);
+  assert.ok(body.tasks.some((task) => task.taskId === '0C-C'));
+});
+
+test('GET /agent-ledger returns the derived read-only agent ledger', async () => {
+  const response = await exercise({ method: 'GET', url: '/agent-ledger' });
+  const body = JSON.parse(response.body) as { id: string; status: string; runCount: number; eventCount: number; taskGraph: { id: string } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'agent-ledger');
+  assert.equal(body.status, 'read-only');
+  assert.ok(body.runCount >= 0);
+  assert.ok(body.eventCount >= 0);
+  assert.equal(body.taskGraph.id, 'agent-task-graph');
+});
+
 test('GET /scheduler/status returns read-only placeholder scheduler state', async () => {
   const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
   process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(process.cwd(), '.buildflow-test-missing-scheduler-report.json');
