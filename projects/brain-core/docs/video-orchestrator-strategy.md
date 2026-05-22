@@ -38,7 +38,7 @@ These are non-negotiable. Any implementation decision that violates a guardrail 
 
 9. **Manual fallback always exists** — Every completed job produces a self-contained Manual Fallback Package: a directory with final video files (absolute paths), SRT/VTT subtitles, and a JSON block of all platform metadata. A human can upload manually from this package with zero system involvement if all automation fails.
 
-10. **Local AI first** — All AI generation tasks (metadata, thumbnails, summaries) route through the AI Model Selector. Local models (LM Studio) are always tried first. Paid APIs are only used when local is unavailable or the task exceeds local capability. This preference is encoded in the selector, not in individual modules.
+10. **Local AI first** — All AI generation tasks (metadata, thumbnails, summaries) route through the AI Model Selector. Local Ollama models on the Mac Mini M4 Pro and MacBook M1 are always tried first when they are capable enough for the task. Codex CLI is the second tier because it uses the ChatGPT subscription surface rather than a direct API bill. Amazon Bedrock Claude is the third tier and is used only when local AI and Codex CLI are unavailable, rate-limited, or insufficient for quality. Direct OpenAI API and direct Anthropic API calls are forbidden.
 
 ---
 
@@ -131,13 +131,23 @@ source audio + script
 - Standalone Python HTTP microservice at `localhost:4890`
 - All VO modules call it for every AI generation task — never call LLM APIs directly
 - Provider registry: `~/.config/video-orchestrator/ai-providers.json` (config-driven, no code changes to add a provider)
-- Escalation order: LM Studio local (free) → Gemini Flash (free) → Claude Haiku → GPT-4o-mini → Claude Sonnet → GPT-4o → Claude Opus
-- Batch window (1-7 AM): strongly prefer local/free. Outside window: prefer fast paid for interactive use
+- Escalation order: local Ollama M4 Pro/M1 → Codex CLI → Amazon Bedrock Claude
+- Local model preference: M4 Pro prefers `qwen2.5:32b`, then `qwen2.5:14b`, then fast fallback models. M1 prefers `qwen2.5:14b`, then `llama3.1:8b`, then `llama3.2:3b`.
+- Batch window (1-7 AM): strongly prefer local. Outside window: use local when quality is adequate; use Codex CLI for tasks local models cannot do reliably.
 - Non-urgent tasks outside batch window can be deferred to next batch window (`scheduled_after` in job DB)
 - Rate limits tracked in-memory + persisted to JSON; exponential backoff per provider
 - Audit log: every selection logged to `~/.local/video-orchestrator/logs/ai-selections.jsonl`
 - CLI: `ai-select --task <type>` — usable from Claude Code, Codex, Gemini, and VO worker
 - **This module must exist before any AI-dependent module is built**
+
+### 0A. Brain Agent Orchestrator
+- Shared Brain Core layer above the VO and above the AI Model Selector
+- Owns multi-step agent-mode planning, task decomposition, run ledger, event log, handoffs, approval gates, capability registry, and worker coordination
+- Uses the AI Model Selector for every LLM execution decision; it does not duplicate model routing logic
+- Uses orchestration skills as capabilities: `/code`, `/design`, `/research`, `/web`, `/video`
+- Uses CLI capabilities through registered adapters and runbooks: Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub, and other approved infrastructure CLIs
+- Starts read-only: capability discovery, planning, run tracking, and status surfaces first. File writes, commits, pushes, deploys, DNS changes, database mutations, and credential-sensitive operations require explicit approval.
+- Research basis: `agent-orchestrator-research-2026-05-22.md`
 
 ### 1. Audio Normalization
 - Normalizes audio to -14 LUFS (YouTube/Spotify standard)
@@ -174,7 +184,7 @@ source audio + script
 - Reads transcript + channel performance context
 - Generates platform-specific: title, description, tags, chapters
 - Respects per-platform constraints (title length, description length, hashtag rules)
-- Tool: LLM via AI Model Selector — local LM Studio (batch window) → Gemini Flash (free) → Claude Haiku (paid)
+- Tool: LLM via AI Model Selector — local Ollama M4/M1 first → Codex CLI → Amazon Bedrock Claude
 - **Analytics-informed prompting**: before each generation, queries top 10 videos by CTR from `performance_metrics` and injects their titles as `{top_performing_titles}` into the prompt — continuous feedback loop
 - **Faith-based prompt template structure**: `{series}`, `{episode_title}`, `{transcript}`, `{top_performing_titles}` → title (under 70 chars, curiosity-driven) + description (hook + chapters at top for search visibility) + 15-20 tags
 - Output: stored in job artifact, manually reviewable before publishing

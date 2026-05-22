@@ -2,7 +2,7 @@
 
 **Document type:** Executable implementation plan  
 **Status:** Active  
-**Last updated:** 2026-05-22 (Phase 0.6 dual-node + resilience added)  
+**Last updated:** 2026-05-22 (Phase 0.7 agent orchestration added)
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
 **Strategy reference:** `video-orchestrator-strategy.md`  
 **AI Selector architecture:** `ai-model-selector-architecture.md`
@@ -15,6 +15,7 @@
 |--------|-------|--------|
 | Sprint 0A — AI Selector v1 | Phase 0.5 | ✅ Complete |
 | Sprint 0B — Dual-Node + Resilience | Phase 0.6 | 🔲 Next (before Sprint 6 UI) |
+| Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | 🔲 Next architecture build |
 | Sprint 1 — Composition | Phase 1 | ✅ Complete |
 | Sprint 2 — Subtitles | Phase 2 | ✅ Complete |
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
@@ -36,7 +37,7 @@
 - **Inference ranking:** M4 Pro is 2-3× faster. M4 Pro = any-time; M1 = batch window preferred
 
 ### Task A — Thunderbolt Bridge (manual, one-time on both machines) ✅
-1. Mac Mini M4 Pro: System Settings → Network → Thunderbolt Bridge → IP `192.168.100.1`, mask `255.255.255.0`
+1. Mac Mini M4 Pro: System Settings → Network → Thunderbolt Bridge → IP `192.168.2.1`, mask `255.255.255.0`
 2. MacBook M1: System Settings → Network → Thunderbolt Bridge → IP `192.168.2.2`, mask `255.255.255.0`
 3. MacBook M1: set env var `OLLAMA_HOST=0.0.0.0` before Ollama starts (LaunchAgent plist)
 4. Verify: `curl http://192.168.2.2:11434/api/tags` from M4 Pro terminal
@@ -49,14 +50,17 @@
 **Mac Mini M4 Pro:**
 ```bash
 brew install ollama
-ollama pull qwen2.5:14b      # primary, best quality (8.5 GB)
-ollama pull llama3.1:8b      # fast tasks, headlines (5.0 GB)
+ollama pull qwen2.5:32b      # quality primary on M4 Pro
+ollama pull qwen2.5:14b      # fallback
+ollama pull llama3.1:8b      # fast tasks, headlines
 ```
 
 **MacBook M1:**
 ```bash
 brew install ollama
-ollama pull qwen2.5:14b      # batch overnight (8.5 GB, fits in 16 GB)
+ollama pull qwen2.5:14b      # primary on M1
+ollama pull llama3.1:8b      # fallback
+ollama pull llama3.2:3b      # fast fallback
 ```
 
 **LaunchAgents to create:**
@@ -89,7 +93,7 @@ Replace the existing `lmstudio-local` provider entry with two Ollama provider en
   "timeout_connect_sec": 3,
   "timeout_inference_sec": 120,
   "schedule_preference": "any",
-  "preferred_models": ["qwen2.5:14b", "llama3.1:8b"]
+  "preferred_models": ["qwen2.5:32b", "qwen2.5:14b", "llama3.1:8b"]
 },
 {
   "id": "ollama-m1",
@@ -105,7 +109,7 @@ Replace the existing `lmstudio-local` provider entry with two Ollama provider en
   "timeout_connect_sec": 5,
   "timeout_inference_sec": 180,
   "schedule_preference": "batch_window",
-  "preferred_models": ["qwen2.5:14b"]
+  "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b"]
 }
 ```
 
@@ -179,7 +183,7 @@ if routing.get("deferred"):
 Before queuing batch jobs, verify M1 is reachable:
 ```bash
 if ! curl -sf --max-time 5 http://192.168.2.2:11434/api/tags > /dev/null; then
-  echo "[scheduler] WARNING: M1 MacBook Ollama unreachable — batch jobs will use M4 Pro or cloud fallback"
+  echo "[scheduler] WARNING: M1 MacBook Ollama unreachable — batch jobs will use M4 Pro or Codex/Bedrock fallback"
 fi
 ```
 
@@ -197,6 +201,119 @@ This is a warning only — batch window still proceeds. The selector handles fal
 - Stopping Ollama on M1 → within 30s, `--health` shows M1 as degraded; tasks stop routing there
 - Restarting Ollama on M1 → within 10 min, M1 re-enters the pool
 - No paid API called when both local providers are healthy
+
+---
+
+## Sprint 0C: Brain Agent Orchestrator (Phase 0.7) 🔲
+
+**Purpose:** Add agent mode as a Brain Core orchestration layer that can coordinate full-project work across local Ollama, Codex CLI, Amazon Bedrock Claude, the Brain skill layer, and infrastructure CLIs.
+
+**Research basis:** `agent-orchestrator-research-2026-05-22.md`
+
+**Boundary rule:** Do not put this inside the AI Model Selector. The selector routes LLM execution. The Agent Orchestrator owns planning, task graph, run state, skill/CLI capability discovery, approvals, and handoffs.
+
+### Task 0C-A — Architecture contract ✅
+**Files:**
+- `projects/brain-core/docs/agent-orchestrator-architecture.md`
+- `projects/brain-core/docs/agent-orchestrator-research-2026-05-22.md`
+
+Define:
+- agent roles and responsibilities,
+- capability registry schema,
+- task graph/run ledger schema,
+- approval classes,
+- selector/executor contract,
+- Brain Console surfaces.
+
+**Done:** `agent-orchestrator-architecture.md` defines the layer boundary, provider policy, roles, capability registry schema, run ledger, task graph, approval model, executor contract, and first implementation slice.
+
+---
+
+### Task 0C-B — Read-only Agent Capability Registry
+**Files:** Brain Core service + CLI surface, exact implementation paths to be finalized in Task 0C-A.
+
+Registry inputs:
+- skill frontmatter/descriptions for `/code`, `/design`, `/research`, `/web`, `/video`,
+- CLI capability manifest for Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub,
+- AI execution surfaces from AI Model Selector `/providers`.
+
+Initial endpoint:
+```text
+GET /api/agent/capabilities
+```
+
+Initial CLI:
+```text
+brain-agent capabilities
+```
+
+**Done when:** The command returns normalized JSON with skills, CLIs, AI surfaces, safety class, and approval requirement.
+
+---
+
+### Task 0C-C — Run ledger and event log
+Persist:
+- run id, goal, repo, status,
+- task graph nodes and dependencies,
+- selected skill/CLI/executor,
+- selected model/provider from AI Model Selector,
+- commands run,
+- files touched,
+- approvals requested/approved/rejected,
+- verification output,
+- unresolved risk.
+
+**Done when:** A dry-run plan can be recorded and resumed without performing mutations.
+
+---
+
+### Task 0C-D — Selector-aware executor adapter
+Rules:
+- local Ollama M4/M1 first for tasks they can handle,
+- Codex CLI second for subscription-backed work when local quality is insufficient or local nodes are unavailable/rate-limited,
+- Amazon Bedrock Claude third as paid fallback,
+- no direct OpenAI API,
+- no direct Anthropic API.
+
+**Done when:** A dry-run plan records which executor would handle each task and why.
+
+---
+
+### Task 0C-E — Approval gates
+Approval required for:
+- file writes,
+- commits and pushes,
+- deploys,
+- DNS changes,
+- database mutations,
+- destructive shell commands,
+- credential-sensitive commands,
+- memory or decision-log writes.
+
+**Done when:** Agent runs can request approval and pause until Brain Console or CLI approval is recorded.
+
+---
+
+### Task 0C-F — Brain Console Agent View
+Show:
+- active runs,
+- task graph,
+- selected providers/executors,
+- running CLI actions,
+- blocked approval requests,
+- verification results,
+- final summary and handoff.
+
+**Done when:** A dry-run agent plan is visible in Brain Console.
+
+---
+
+### Sprint 0C Definition of Done
+
+- `brain-agent capabilities` returns registered skills, CLI capabilities, and AI execution surfaces.
+- `GET /api/agent/capabilities` returns the same normalized registry.
+- A dry-run agent plan can be created, recorded, resumed, and inspected.
+- No autonomous file write, deploy, DNS, DB, credential, or destructive operation is possible without an approval record.
 
 ---
 
@@ -560,6 +677,12 @@ Currently `max_retries=3` flat in `video_worker.py`. Add exponential backoff wit
   selector_service.py          ✅ Phase 0.5
   core.py                      ✅ Phase 0.5
   client.py                    ✅ Phase 0.5
+
+brain-core agent orchestrator/
+  capability registry          🔲 Sprint 0C
+  run ledger/event log         🔲 Sprint 0C
+  approval gate adapter        🔲 Sprint 0C
+  selector-aware executors     🔲 Sprint 0C
 
 brain-core/src/types/
   vo-artifact.ts               ✅ Task 2

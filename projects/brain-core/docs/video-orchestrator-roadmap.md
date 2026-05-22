@@ -2,7 +2,7 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-22 (updated after NotebookLM research validation)  
+**Last updated:** 2026-05-22 (agent orchestration roadmap added)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
@@ -42,7 +42,7 @@
 ## Phase 0.5 — AI Model Selector (v1)
 > Local-first AI routing for all generation tasks
 
-**Goal:** Every AI-dependent module calls one unified selector, never an LLM API directly. Local models preferred at night; paid APIs for interactive use.
+**Goal:** Every AI-dependent module calls one unified selector, never an LLM API directly. Local models are preferred first; Codex CLI is the subscription-backed second tier; Amazon Bedrock Claude is the paid fallback.
 
 **Naming clarity:** The AI Model Selector (`localhost:4890`) is NOT the same as Mind Steward (TypeScript Brain Core project). They are completely different. AI Model Selector = LLM routing engine.
 
@@ -69,7 +69,7 @@
 ### 0.5.4 Platform architecture doc
 - [x] `brain/docs/platform-architecture.md` — canonical scaffold standard for all projects
 
-**Deliverable:** ✅ `ai-select --task metadata_generation` returns a routing decision. Ollama (if running) is chosen during 1-7 AM; Gemini Flash (free) outside batch window; paid APIs as fallback.
+**Deliverable:** ✅ `ai-select --task metadata_generation` returns a routing decision. Ollama is chosen when capable and healthy; Codex CLI is the next fallback; Amazon Bedrock Claude is the paid fallback. Direct OpenAI API and direct Anthropic API are not valid providers.
 
 ---
 
@@ -79,27 +79,27 @@
 **Goal:** Zero-cost AI inference on all available local hardware. The selector orchestrates Mac Mini M4 Pro + MacBook M1 via Thunderbolt Bridge. Resilience means no job ever fails because a provider is temporarily unavailable.
 
 **Hardware:**
-- Mac Mini M4 Pro: 24 GB unified memory, TB5 port, IP `192.168.100.1` (Thunderbolt Bridge)
-- MacBook M1: 16 GB unified memory, TB3 port, IP `192.168.100.2` (Thunderbolt Bridge), always on
+- Mac Mini M4 Pro: 24 GB unified memory, TB5 port, IP `192.168.2.1` (Thunderbolt Bridge)
+- MacBook M1: 16 GB unified memory, TB3 port, IP `192.168.2.2` (Thunderbolt Bridge), always on
 
 ### 0.6.1 Thunderbolt Bridge setup (manual, one-time)
-- [ ] M4 Pro: System Settings → Network → Thunderbolt Bridge → assign `192.168.100.1/24`
-- [ ] M1: System Settings → Network → Thunderbolt Bridge → assign `192.168.100.2/24`
+- [x] M4 Pro: System Settings → Network → Thunderbolt Bridge → assign `192.168.2.1/24`
+- [x] M1: System Settings → Network → Thunderbolt Bridge → assign `192.168.2.2/24`
 - [ ] M1: Set `OLLAMA_HOST=0.0.0.0` in Ollama LaunchAgent plist
-- [ ] Verify from M4 Pro: `curl http://192.168.100.2:11434/api/tags`
+- [x] Verify from M4 Pro: `curl http://192.168.2.2:11434/api/tags`
 
 ### 0.6.2 Ollama install and models on both machines
 - [ ] Install Ollama on Mac Mini M4 Pro (`brew install ollama`)
 - [ ] Install Ollama on MacBook M1 (`brew install ollama`)
-- [ ] M4 Pro: `ollama pull qwen2.5:14b` (primary, best quality) + `ollama pull llama3.1:8b` (fast)
-- [ ] M1: `ollama pull qwen2.5:14b` (batch overnight work; runs at 2-3× slower, still free)
+- [x] M4 Pro: `ollama pull qwen2.5:32b` (quality primary) + `ollama pull qwen2.5:14b` (fallback) + `ollama pull llama3.1:8b` (fast)
+- [x] M1: `ollama pull qwen2.5:14b` (primary) + `ollama pull llama3.1:8b` (fallback) + `ollama pull llama3.2:3b` (fast)
 - [ ] LaunchAgent for Ollama on M4 Pro (`com.office.ollama-m4pro`, `OLLAMA_HOST=127.0.0.1:11434`)
 - [ ] LaunchAgent for Ollama on M1 (`com.office.ollama-m1`, `OLLAMA_HOST=0.0.0.0:11434`)
 
 ### 0.6.3 Update provider registry
 - [ ] Replace LM Studio provider (`lmstudio-local`, port 1234) with Ollama providers in `ai-providers.json`:
   - `ollama-m4pro` — `http://localhost:11434/v1`, priority 1, any schedule
-  - `ollama-m1` — `http://192.168.100.2:11434/v1`, priority 2, batch_window preferred
+  - `ollama-m1` — `http://192.168.2.2:11434/v1`, priority 2, batch_window preferred
 
 ### 0.6.4 Circuit breaker in selector `core.py`
 - [ ] Per-provider circuit state: `closed` → `open` → `half-open`
@@ -110,7 +110,7 @@
 ### 0.6.5 Timeout tiers in selector
 - [ ] Local same-machine: connect 3s, inference 120s
 - [ ] Local Thunderbolt (M1): connect 5s, inference 180s
-- [ ] Cloud APIs: connect 5s, inference 30s
+- [ ] Codex CLI / Bedrock fallback: connect 5s, inference 300s
 - [ ] Timeout triggers `report_ai_failure()` → circuit breaker registers failure
 
 ### 0.6.6 Deferred result handling in worker
@@ -121,7 +121,51 @@
 - [ ] `office-nightly-scheduler.sh`: verify both Ollama instances healthy before queuing batch jobs
 - [ ] Alert (stdout log) if M1 is unreachable at batch window start
 
-**Deliverable:** AI Selector orchestrates M4 Pro + M1 Ollama + cloud fallback. No job fails because a single node is down. M1 handles overnight batch load automatically. If everything local is down, tasks defer to next batch window for free, or pay cloud only when urgent.
+**Deliverable:** AI Selector orchestrates M4 Pro + M1 Ollama + Codex/Bedrock fallback. No job fails because a single node is down. M1 handles overnight batch load automatically. If everything local is down, tasks defer to next batch window for free, use Codex CLI when quality or urgency requires it, or use Bedrock only as the paid fallback.
+
+---
+
+## Phase 0.7 — Brain Agent Orchestrator
+> Multi-agent project execution layer above the AI Model Selector
+
+**Goal:** Add agent mode as a Brain Core orchestration layer that can plan and coordinate full projects using local AI, Codex CLI, Amazon Bedrock Claude, existing orchestration skills, and approved infrastructure CLIs.
+
+**Boundary:** The Agent Orchestrator is not the AI Model Selector. The selector chooses an AI execution surface. The orchestrator decomposes work, assigns tasks, calls skills/CLIs, records run state, handles handoffs, and asks for approval before risky actions.
+
+### 0.7.1 Research and architecture
+- [x] NotebookLM and research-orchestrator synthesis completed
+- [x] Research note: `agent-orchestrator-research-2026-05-22.md`
+- [x] Architecture doc: `agent-orchestrator-architecture.md`
+
+### 0.7.2 Read-only capability registry
+- [ ] Index orchestration skills: `/code`, `/design`, `/research`, `/web`, `/video`
+- [ ] Index CLI capabilities from Brain skills/runbooks: Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub
+- [ ] Index AI execution surfaces from AI Model Selector `/providers`
+- [ ] Expose `GET /api/agent/capabilities`
+- [ ] Add CLI smoke command: `brain-agent capabilities`
+
+### 0.7.3 Run ledger and task graph
+- [ ] Persist agent runs, steps, selected executors, selected model/provider, commands, files touched, approvals, verification output, and unresolved risk
+- [ ] Represent large work as a task graph with dependencies and status
+- [ ] Support handoff summaries between research, code, design, web, and video tasks
+
+### 0.7.4 Selector-aware executor dispatch
+- [ ] Route each LLM task through the AI Model Selector
+- [ ] Prefer M4/M1 local models for tasks they can handle
+- [ ] Use Codex CLI when local quality is insufficient or local nodes are unavailable/rate-limited
+- [ ] Use Amazon Bedrock Claude only as the paid fallback
+- [ ] Allow parallel local work on M4 and M1 for independent simple tasks
+
+### 0.7.5 Approval and safety gates
+- [ ] Default mode is read-only planning and verification
+- [ ] Require explicit approval for file writes, commits, pushes, deploys, DNS changes, database mutations, destructive commands, and credential-sensitive operations
+- [ ] Record every approval decision in the run ledger
+
+### 0.7.6 Brain Console Agent View
+- [ ] Show active runs, task graph, selected providers, running CLIs, blocked approvals, and verification results
+- [ ] Provide approve/reject controls for gated steps
+
+**Deliverable:** `brain-agent capabilities` and Brain Core `GET /api/agent/capabilities` show registered skills, CLI capabilities, and AI execution surfaces. A dry-run agent plan can be recorded without mutating files or infrastructure.
 
 ---
 
@@ -344,17 +388,28 @@ Phase 6 requires Phase 1-4 (needs all modules to compose a full package per plat
 ## Phase Sequencing (updated)
 
 ```
-Phase 0 ✅ → Phase 0.5 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
-Foundation   AI Selector  Compose  Subtitles  Thumbs    SEO Meta  Analytics  All Plat  Hardening
+Phase 0 ✅ → Phase 0.5 → Phase 0.6 → Phase 0.7 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
+Foundation   AI Selector  Dual-node  Agents     Compose  Subtitles  Thumbs    SEO Meta  Analytics  All Plat  Hardening
 
 Phase 0.5 must complete before Phase 3 (thumbnails) and Phase 4 (metadata) — they depend on AI.
+Phase 0.7 depends on Phase 0.6 because agent dispatch must consume the local-first selector.
 Phase 1 and Phase 2 are independent of Phase 0.5 (FFmpeg work, no AI needed).
 Phase 3 and Phase 4 can run in parallel after Phase 0.5.
 ```
 
 ---
 
-## Immediate Next Steps (Sprint 1)
+## Immediate Next Steps
+
+**Next Codex implementation step:** Build the read-only Agent Capability Registry:
+1. Add a Brain Core capability indexer for skill frontmatter/descriptions.
+2. Add a CLI capability manifest sourced from existing Brain runbooks/skills.
+3. Add an AI surface adapter that reads AI Model Selector `/providers`.
+4. Expose `GET /api/agent/capabilities` and a `brain-agent capabilities` smoke command.
+
+This creates the agent orchestrator foundation without granting autonomous write/deploy power.
+
+## Historical Immediate Next Steps (Sprint 1)
 
 **Step 0 — Tech debt first (Phase 1.0):**
 1. DB migration: add `scheduled_after` and `approval_status` columns to `jobs` table

@@ -21,6 +21,9 @@ projects/model-router/dist/
 # AI memory — ephemeral session handoff
 .ai/current.md
 
+# Local Claude runtime/worktrees at repo root
+.claude/
+
 # Generated model caches (regenerable via sync commands)
 ai/models/bedrock-models.generated.json
 
@@ -63,6 +66,9 @@ operations/system-configs/codex/log/
 operations/system-configs/codex/logs_*.sqlite
 operations/system-configs/codex/logs_*.sqlite-shm
 operations/system-configs/codex/logs_*.sqlite-wal
+operations/system-configs/codex/goals_*.sqlite
+operations/system-configs/codex/goals_*.sqlite-shm
+operations/system-configs/codex/goals_*.sqlite-wal
 operations/system-configs/codex/models_cache.json
 operations/system-configs/codex/plugins/
 operations/system-configs/codex/session_index.jsonl
