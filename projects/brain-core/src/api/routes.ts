@@ -236,6 +236,17 @@ export async function routeRequest(
   const method = request.method || 'GET';
   const url = new URL(request.url || '/', 'http://127.0.0.1');
 
+  if (method === 'OPTIONS') {
+    response.writeHead(204, {
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-headers': 'content-type',
+      'access-control-max-age': '86400',
+    });
+    response.end();
+    return;
+  }
+
   if (method === 'POST') {
     try {
       await routePostRequest(url, response);
@@ -2007,6 +2018,9 @@ function sendJson(response: ServerResponse, statusCode: number, body: unknown): 
   response.writeHead(statusCode, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
+    'access-control-allow-origin': '*',
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': 'content-type',
   });
   response.end(`${payload}\n`);
 }
