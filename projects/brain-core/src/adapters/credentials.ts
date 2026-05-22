@@ -46,12 +46,8 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
       platformName: 'YouTube',
       platformCategory: 'social',
       credentials: [
-        { key: 'YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true,
-          hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs',
-          deeplink: 'https://console.cloud.google.com/apis/credentials' },
-        { key: 'YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true },
-        { key: 'yt-oauth-client-@says-the-bible', label: 'VO Worker OAuth (@says-the-bible)', type: 'secret', required: true, storage: 'keychain',
-          hint: 'OAuth token for the video orchestrator worker — click Connect to authorize via browser' },
+        { key: 'yt-oauth-client-@says-the-bible', label: 'Channel OAuth (@says-the-bible)', type: 'secret', required: true, storage: 'keychain',
+          hint: 'Authorizes the VO worker to upload to this channel — click Connect' },
       ],
     },
     {
@@ -115,6 +111,17 @@ const INFRA_SCHEMA: PlatformSchema[] = [
         hint: 'e.g. https://n8n.prochat.tools/webhook/...' },
     ],
   },
+  {
+    platformId: 'youtube-oauth-app',
+    platformName: 'YouTube OAuth App',
+    platformCategory: 'infra',
+    credentials: [
+      { key: 'VO_YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true, storage: 'plist',
+        hint: 'Shared across all channels — from Google Cloud Console → Credentials → OAuth 2.0 Client IDs',
+        deeplink: 'https://console.cloud.google.com/apis/credentials' },
+      { key: 'VO_YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true, storage: 'plist' },
+    ],
+  },
 ];
 
 // ── Available platform templates (pick list for new projects) ─────────────
@@ -123,10 +130,9 @@ const AVAILABLE_PLATFORMS: Record<string, PlatformSchema> = {
   youtube: {
     platformId: 'youtube', platformName: 'YouTube', platformCategory: 'social',
     credentials: [
-      { key: 'YOUTUBE_CLIENT_ID',     label: 'OAuth Client ID',     type: 'app_id', required: true,
-        hint: 'From Google Cloud Console → Credentials → OAuth 2.0 Client IDs',
-        deeplink: 'https://console.cloud.google.com/apis/credentials' },
-      { key: 'YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true },
+      // Channel-specific OAuth token only — the shared OAuth app credentials live in Infrastructure
+      { key: 'yt-oauth-client-@channel-handle', label: 'Channel OAuth (@channel-handle)', type: 'secret', required: true, storage: 'keychain',
+        hint: 'Authorizes the VO worker to upload to this channel — click Connect' },
     ],
   },
   pinterest: {
@@ -254,7 +260,7 @@ export function deleteUserProject(projectId: string): { ok: boolean; error?: str
 const WORKER_PLIST_PATH = expandHome('~/Library/LaunchAgents/com.office.video-orchestrator-worker.plist');
 
 // Keys that are allowed to be written via the API (allowlist — never allow arbitrary plist keys)
-const PLIST_WRITABLE_KEYS = new Set(['CF_ACCESS_CLIENT_ID', 'CF_ACCESS_CLIENT_SECRET', 'VO_N8N_WEBHOOK_URL']);
+const PLIST_WRITABLE_KEYS = new Set(['CF_ACCESS_CLIENT_ID', 'CF_ACCESS_CLIENT_SECRET', 'VO_N8N_WEBHOOK_URL', 'VO_YOUTUBE_CLIENT_ID', 'VO_YOUTUBE_CLIENT_SECRET']);
 
 function readPlistEnv(): Record<string, string> {
   if (!fs.existsSync(WORKER_PLIST_PATH)) return {};
@@ -330,18 +336,13 @@ function isPlaceholderValue(val: string): boolean {
 const YT_UPLOADER_SCRIPT = expandHome('~/.local/video-orchestrator/scripts/youtube_uploader.py');
 const YT_VENV_PYTHON = expandHome('~/.local/video-orchestrator/.venv/bin/python3');
 
-// Read YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET from the project .env file
-// for a given account handle (e.g. '@says-the-bible' → projectId 'says-the-bible').
-function readYouTubeClientEnv(account: string): Record<string, string> {
-  const projectId = account.replace(/^@/, '');
-  const envPath = PROJECT_ENV_MAP[projectId];
-  if (!envPath || !fs.existsSync(envPath)) return {};
-  const envMap = parseEnvFile(envPath);
-  const clientId = envMap.get('YOUTUBE_CLIENT_ID') ?? '';
-  const clientSecret = envMap.get('YOUTUBE_CLIENT_SECRET') ?? '';
+// Read VO_YOUTUBE_CLIENT_ID and VO_YOUTUBE_CLIENT_SECRET from the worker plist
+// (they live in Infrastructure, shared across all channels).
+function readYouTubeClientEnv(_account: string): Record<string, string> {
+  const plistEnv = readPlistEnv();
   const extra: Record<string, string> = {};
-  if (clientId) extra['VO_YOUTUBE_CLIENT_ID'] = clientId;
-  if (clientSecret) extra['VO_YOUTUBE_CLIENT_SECRET'] = clientSecret;
+  if (plistEnv['VO_YOUTUBE_CLIENT_ID']) extra['VO_YOUTUBE_CLIENT_ID'] = plistEnv['VO_YOUTUBE_CLIENT_ID'];
+  if (plistEnv['VO_YOUTUBE_CLIENT_SECRET']) extra['VO_YOUTUBE_CLIENT_SECRET'] = plistEnv['VO_YOUTUBE_CLIENT_SECRET'];
   return extra;
 }
 
@@ -435,6 +436,7 @@ function buildInfraGroups(): BrainCoreInfraCredentialGroup[] {
         isSet,
         hasPlaceholder,
         ...(entry.hint !== undefined ? { hint: entry.hint } : {}),
+        ...(entry.deeplink !== undefined ? { deeplink: entry.deeplink } : {}),
       };
     });
 

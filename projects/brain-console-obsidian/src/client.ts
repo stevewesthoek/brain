@@ -7889,6 +7889,7 @@ export interface BrainCoreInfraCredentialEntry {
   isSet: boolean;
   hasPlaceholder: boolean;
   hint?: string;
+  deeplink?: string;
 }
 
 export interface BrainCoreInfraCredentialGroup {

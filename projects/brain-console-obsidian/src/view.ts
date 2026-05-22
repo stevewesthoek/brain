@@ -7569,6 +7569,14 @@ function renderInfraCredentialGroup(
     const labelTd = tr.createEl('td', { cls: 'bc-accounts-label-cell' });
     labelTd.createEl('span', { cls: 'bc-accounts-key-label', text: cred.label });
     if (cred.required) labelTd.createEl('span', { cls: 'bc-accounts-required-badge', text: 'required' });
+    if (cred.hint) {
+      const hintSpan = labelTd.createEl('span', { cls: 'bc-accounts-hint' });
+      hintSpan.createEl('span', { text: cred.hint });
+      if (cred.deeplink) {
+        const dlBtn = hintSpan.createEl('button', { cls: 'bc-accounts-deeplink-btn', text: '↗ Open' });
+        dlBtn.addEventListener('click', () => { void openExternalUrl(brainCoreUrl, cred.deeplink!); });
+      }
+    }
 
     const statusTd = tr.createEl('td', { cls: 'bc-accounts-status-cell' });
     renderCredStatusDot(statusTd, cred.isSet, cred.hasPlaceholder);
