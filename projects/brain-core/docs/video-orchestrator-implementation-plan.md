@@ -2,9 +2,10 @@
 
 **Document type:** Executable implementation plan  
 **Status:** Active  
-**Last updated:** 2026-05-22 (Phases 1–5 backend complete)  
+**Last updated:** 2026-05-22 (Phase 0.6 dual-node + resilience added)  
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
-**Strategy reference:** `video-orchestrator-strategy.md`
+**Strategy reference:** `video-orchestrator-strategy.md`  
+**AI Selector architecture:** `ai-model-selector-architecture.md`
 
 ---
 
@@ -12,14 +13,190 @@
 
 | Sprint | Phase | Status |
 |--------|-------|--------|
+| Sprint 0A — AI Selector v1 | Phase 0.5 | ✅ Complete |
+| Sprint 0B — Dual-Node + Resilience | Phase 0.6 | 🔲 Next (before Sprint 6 UI) |
 | Sprint 1 — Composition | Phase 1 | ✅ Complete |
 | Sprint 2 — Subtitles | Phase 2 | ✅ Complete |
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
 | Sprint 4 — SEO Metadata | Phase 4 | ✅ Complete (UI carry-over) |
 | Sprint 5 — Analytics | Phase 5 | ✅ Complete (UI carry-over) |
-| Sprint 6 — Brain Console UI | Phases 3.4, 4.4, 5.4 | 🔲 Next sprint |
+| Sprint 6 — Brain Console UI | Phases 3.4, 4.4, 5.4 | 🔲 After Sprint 0B |
 | Sprint 7 — Multi-Platform | Phase 6 | 🔲 Future |
 | Sprint 8 — Hardening | Phase 7 | 🔲 Future |
+
+---
+
+## Sprint 0B: Dual-Node AI Selector + Resilience (Phase 0.6) 🔲
+
+**Why this comes before Sprint 6:** Sprint 6 includes the AI selector health chip which should reflect both nodes. More importantly, the batch window now has two local inference machines — this should be working before any AI-dependent UI flows are built.
+
+### Hardware reference
+- **Mac Mini M4 Pro:** 24 GB RAM, primary machine, runs AI Selector at `localhost:4890`, Ollama at `localhost:11434`
+- **MacBook M1:** 16 GB RAM, always-on secondary node, Ollama at `192.168.100.2:11434` (Thunderbolt Bridge)
+- **Inference ranking:** M4 Pro is 2-3× faster. M4 Pro = any-time; M1 = batch window preferred
+
+### Task A — Thunderbolt Bridge (manual, one-time on both machines)
+1. Mac Mini M4 Pro: System Settings → Network → Thunderbolt Bridge → IP `192.168.100.1`, mask `255.255.255.0`
+2. MacBook M1: System Settings → Network → Thunderbolt Bridge → IP `192.168.100.2`, mask `255.255.255.0`
+3. MacBook M1: set env var `OLLAMA_HOST=0.0.0.0` before Ollama starts (LaunchAgent plist)
+4. Verify: `curl http://192.168.100.2:11434/api/tags` from M4 Pro terminal
+
+**Done when:** curl returns JSON list of Ollama models from M4 Pro targeting M1's IP.
+
+---
+
+### Task B — Install Ollama on both machines + pull models
+**Mac Mini M4 Pro:**
+```bash
+brew install ollama
+ollama pull qwen2.5:14b      # primary, best quality (8.5 GB)
+ollama pull llama3.1:8b      # fast tasks, headlines (5.0 GB)
+```
+
+**MacBook M1:**
+```bash
+brew install ollama
+ollama pull qwen2.5:14b      # batch overnight (8.5 GB, fits in 16 GB)
+```
+
+**LaunchAgents to create:**
+- `~/Library/LaunchAgents/com.office.ollama-m4pro.plist` — starts Ollama at boot on M4 Pro (`OLLAMA_HOST=127.0.0.1:11434`)
+- `~/Library/LaunchAgents/com.office.ollama-m1.plist` — starts Ollama at boot on M1 (`OLLAMA_HOST=0.0.0.0:11434`)
+
+See LaunchAgent plist templates in `ai-model-selector-architecture.md`.
+
+**Done when:** `ollama list` shows models on both machines; `launchctl list | grep ollama` shows both agents running.
+
+---
+
+### Task C — Update `ai-providers.json`
+**File:** `~/.config/video-orchestrator/ai-providers.json`
+
+Replace the existing `lmstudio-local` provider entry with two Ollama provider entries:
+
+```json
+{
+  "id": "ollama-m4pro",
+  "label": "Mac Mini M4 Pro (local)",
+  "type": "openai-compatible",
+  "base_url": "http://localhost:11434/v1",
+  "api_key": null,
+  "cost_per_1k_tokens": 0.0,
+  "priority": 1,
+  "capabilities": ["text/small", "text/medium", "text/large"],
+  "max_context_tokens": 128000,
+  "health_check": { "endpoint": "http://localhost:11434/api/tags", "method": "GET", "expect_status": 200 },
+  "timeout_connect_sec": 3,
+  "timeout_inference_sec": 120,
+  "schedule_preference": "any",
+  "preferred_models": ["qwen2.5:14b", "llama3.1:8b"]
+},
+{
+  "id": "ollama-m1",
+  "label": "MacBook M1 (Thunderbolt node)",
+  "type": "openai-compatible",
+  "base_url": "http://192.168.100.2:11434/v1",
+  "api_key": null,
+  "cost_per_1k_tokens": 0.0,
+  "priority": 2,
+  "capabilities": ["text/small", "text/medium"],
+  "max_context_tokens": 32768,
+  "health_check": { "endpoint": "http://192.168.100.2:11434/api/tags", "method": "GET", "expect_status": 200 },
+  "timeout_connect_sec": 5,
+  "timeout_inference_sec": 180,
+  "schedule_preference": "batch_window",
+  "preferred_models": ["qwen2.5:14b"]
+}
+```
+
+**Done when:** `ai-select --providers` lists both Ollama providers with their health status.
+
+---
+
+### Task D — Circuit breaker in `core.py`
+**File:** `~/.local/video-orchestrator/services/model-selector/core.py`
+
+Add `CircuitBreaker` class with state machine: `closed` → `open` (after 3 failures in 5 min) → `half-open` (after timeout) → `closed` (on success) or back to `open` (on failure).
+
+```python
+class CircuitBreaker:
+    def is_open(self, provider_id: str) -> bool: ...
+    def register_failure(self, provider_id: str): ...
+    def register_success(self, provider_id: str): ...
+    def save_state(self): ...   # writes circuit-breakers.json
+    def load_state(self): ...   # reads circuit-breakers.json on startup
+```
+
+State file: `~/.local/video-orchestrator/state/circuit-breakers.json`
+
+In `select_provider()`, add circuit breaker check before health check:
+```python
+if circuit_breaker.is_open(provider["id"]):
+    continue
+```
+
+**Done when:** If Ollama on M1 is stopped, M1 is excluded from selection within 3 failed attempts. When M1 restarts, it re-enters the pool automatically within 10 min.
+
+---
+
+### Task E — Timeout tiers in `core.py`
+**File:** `~/.local/video-orchestrator/services/model-selector/core.py`
+
+Read `timeout_connect_sec` and `timeout_inference_sec` from provider config. Use `socket.setdefaulttimeout()` or per-request timeout when calling health check endpoints and when returning provider info to callers.
+
+For health checks: use `timeout_connect_sec` (short — just testing reachability).  
+For inference: `timeout_inference_sec` is returned to callers in the `SelectionResult` so the caller (VO worker) sets the correct timeout on the actual inference request.
+
+**Done when:** Health check to an unreachable M1 fails in ≤5s. Worker uses 180s timeout for M1 inference calls.
+
+---
+
+### Task F — Deferred result in `core.py` + worker handler
+**File:** `~/.local/video-orchestrator/services/model-selector/core.py`
+
+When no eligible provider is found and task is non-urgent and `prefer_defer_over_paid=true`:
+```python
+return {"deferred": True, "scheduled_after": next_batch_window_iso()}
+```
+
+**File:** `~/.local/video-orchestrator/worker/video_worker.py`
+
+In every job executor that calls `select_ai()`, check for deferred result:
+```python
+routing = select_ai("metadata_generation", input_tokens=8000, urgent=False)
+if routing.get("deferred"):
+    update_job_scheduled_after(conn, job_id, routing["scheduled_after"])
+    return  # clean exit, job will retry at scheduled time
+```
+
+**Done when:** With all local providers stopped and `prefer_defer_over_paid=true`, queuing a metadata job defers it to the next 01:00 batch window instead of calling a paid API.
+
+---
+
+### Task G — Nightly scheduler health check for M1
+**File:** `tools/scripts/office-nightly-scheduler.sh`
+
+Before queuing batch jobs, verify M1 is reachable:
+```bash
+if ! curl -sf --max-time 5 http://192.168.100.2:11434/api/tags > /dev/null; then
+  echo "[scheduler] WARNING: M1 MacBook Ollama unreachable — batch jobs will use M4 Pro or cloud fallback"
+fi
+```
+
+This is a warning only — batch window still proceeds. The selector handles fallback.
+
+**Done when:** Nightly scheduler logs M1 status before batch jobs start.
+
+---
+
+### Sprint 0B Definition of Done
+
+- `ai-select --health` shows both Ollama nodes with status (healthy/degraded/offline)
+- `ai-select --task metadata_generation` routes to `ollama-m4pro` during day
+- `ai-select --task metadata_generation` routes to `ollama-m1` during batch window (1–7 AM) when M4 Pro is loaded
+- Stopping Ollama on M1 → within 30s, `--health` shows M1 as degraded; tasks stop routing there
+- Restarting Ollama on M1 → within 10 min, M1 re-enters the pool
+- No paid API called when both local providers are healthy
 
 ---
 

@@ -1,36 +1,110 @@
 # AI Model Selector — Architecture
 
 **Document type:** Architecture design  
-**Status:** Active — ready for implementation  
-**Last updated:** 2026-05-22  
+**Status:** Active  
+**Last updated:** 2026-05-22 (M1 MacBook node added; Ollama replaces LM Studio; resilience model added)  
 **Routing policy:** `brain/ai/policy/routing.md`  
 **VO strategy:** `video-orchestrator-strategy.md`
 
 ---
 
+## Naming Clarity (read this first)
+
+Two things with similar-sounding names are completely unrelated:
+
+| Name | What it is | Where |
+|------|-----------|-------|
+| **AI Model Selector** | Python HTTP microservice — decides which AI provider (local or cloud) to use for any task | `localhost:4890` |
+| **Mind Steward** | TypeScript Brain Core project — routes Brain Core context/plan operations | `brain/projects/mind-steward/` |
+
+When this document says "AI Model Selector" it always means the Python service at port 4890. Never confused with mind-steward.
+
+---
+
 ## Purpose
 
-A unified AI routing microservice that all consumers (Video Orchestrator, Claude Code, Codex, Gemini) use to select the right AI provider for any generation task. Local-first, cost-aware, schedule-aware, fully auditable.
+A unified AI routing microservice that all consumers (Video Orchestrator, Claude Code, Codex, Gemini) use to select the right AI provider for any generation task. Local-first, cost-aware, schedule-aware, multi-node, fully resilient.
 
-**Problem it solves:** Without a selector, every module hardcodes an API call to a specific provider. Adding a new provider (e.g., a better local model) requires touching every module. Rate limits cause silent failures. Batch window optimization is impossible.
+**Problem it solves:** Without a selector, every module hardcodes an API call to a specific provider. Adding a new provider requires touching every module. Rate limits cause silent failures. A second local machine (M1 MacBook) can't be utilized. Batch window optimization is impossible.
+
+---
+
+## Hardware Inventory
+
+The AI Model Selector orchestrates inference across two local machines plus cloud APIs.
+
+### Mac Mini M4 Pro — Primary (host machine)
+- **RAM:** 24 GB unified memory
+- **Storage:** 1 TB
+- **Thunderbolt:** TB5 port (negotiates TB3 speed with M1 MacBook)
+- **Network IP (Thunderbolt Bridge):** `192.168.100.1`
+- **Ollama:** Runs locally, `localhost:11434`
+- **AI Selector service:** Runs here at `localhost:4890` — orchestrates all providers
+
+**Model capacity (M4 Pro, 24 GB):**
+
+| Model | Size Q4_K_M | Use |
+|-------|------------|-----|
+| `qwen2.5:14b` | 8.5 GB | Primary — best local quality, metadata generation |
+| `llama3.1:8b` | 5.0 GB | Fast tasks — headlines, keywords, small text |
+| Both simultaneously | 13.5 GB | Leaves 10.5 GB headroom ✅ |
+
+### MacBook M1 — Secondary inference node (always on)
+- **RAM:** 16 GB unified memory
+- **Storage:** 1 TB
+- **Thunderbolt:** TB3/TB4 port
+- **Network IP (Thunderbolt Bridge):** `192.168.100.2`
+- **Ollama:** Runs at `0.0.0.0:11434` (accessible from M4 Pro via Thunderbolt Bridge)
+- **Speed:** ~2-3× slower inference than M4 Pro — suitable for batch window / non-urgent tasks
+
+**Model capacity (M1, 16 GB):**
+
+| Model | Size Q4_K_M | Use |
+|-------|------------|-----|
+| `qwen2.5:14b` | 8.5 GB | Primary — same model as M4 Pro, batch overnight work |
+| `llama3.1:8b` | 5.0 GB | Alternative when qwen is loaded |
+| Both simultaneously | 13.5 GB | Leaves 2.5 GB headroom — run one at a time ⚠️ |
+
+---
+
+## Inference Stack — Ollama (not LM Studio)
+
+**Ollama is the inference server on both machines.** LM Studio is not used for serving.
+
+| Tool | Role | Where |
+|------|------|-------|
+| **Ollama** | Always-on headless inference server, OpenAI-compatible API | Both machines |
+| **LM Studio** | Optional — only for browsing/downloading model files interactively | M4 Pro only, optional |
+
+**Why Ollama over LM Studio for serving:**
+- Runs headless as a LaunchAgent — no GUI session required
+- Starts at boot automatically
+- Designed for scripting and automation
+- Stable for multi-process concurrent access
+- LM Studio cannot reliably serve requests headless overnight
+
+**Ollama API is OpenAI-compatible:** `POST /v1/chat/completions` — same interface the selector already uses for cloud providers.
+
+### Thunderbolt Bridge Setup (one-time, manual)
+
+1. Connect Mac Mini M4 Pro and MacBook M1 with Thunderbolt cable
+2. Mac Mini → System Settings → Network → Thunderbolt Bridge → assign IP `192.168.100.1`, mask `255.255.255.0`
+3. MacBook M1 → System Settings → Network → Thunderbolt Bridge → assign IP `192.168.100.2`, mask `255.255.255.0`
+4. On M1: `launchctl setenv OLLAMA_HOST 0.0.0.0` (or set in LaunchAgent plist) — Ollama must listen on all interfaces
+5. Verify from M4 Pro: `curl http://192.168.100.2:11434/api/tags`
+
+Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://192.168.100.2:11434`.
 
 ---
 
 ## Architecture Decision
 
-**Standalone Python HTTP microservice at `localhost:4890`**, co-located with the VO worker virtualenv.
+**Standalone Python HTTP microservice at `localhost:4890`**, running on Mac Mini M4 Pro.
 
-Why not Brain Core (TypeScript at :4877)?
-- Brain Core is read-only/advisory by design — adding execution routing violates its safety boundary
-- VO worker is Python; HTTP works for all languages anyway
-
-Why not a Python module inside the VO worker?
-- Claude Code, Codex, Gemini can't `import` Python — they need HTTP or CLI
-- Coupling routing to one consumer prevents reuse
-
-Why not a pure CLI tool?
-- No state persistence for rate limits across calls
-- Cold-start per invocation, can't background-probe LM Studio health
+- Brain Core (TypeScript :4877) is read-only/advisory — adding execution routing violates its safety boundary
+- VO worker is Python; HTTP works for all languages
+- Claude Code, Codex, Gemini CLI cannot import Python — they need HTTP or CLI
+- Coupling routing to one consumer prevents reuse across tools
 
 **Result:** HTTP service + thin CLI shim. Same routing logic serves all consumers.
 
@@ -46,42 +120,61 @@ Why not a pure CLI tool?
     __init__.py
 
 ~/.config/video-orchestrator/
-    ai-providers.json        # Provider registry
-    ai-task-types.json       # Task capability matrix
-    ai-selector-config.json  # Behavior config (batch window, defer preference)
+    ai-providers.json        # Provider registry (8 providers incl. M1 Ollama node)
+    ai-task-types.json       # Task capability matrix (7 task types)
+    ai-selector-config.json  # Behavior config (batch window, defer, timeouts)
 
 ~/.local/video-orchestrator/state/
     rate-limits.json         # Persisted rate limit state
+    circuit-breakers.json    # Circuit breaker state per provider (NEW)
 
 ~/.local/video-orchestrator/logs/
     ai-selections.jsonl      # Audit log (one JSON line per selection)
     model-selector.log       # Service stdout/stderr
-
-~/.local/bin/ai-select       # CLI shim
-~/Library/LaunchAgents/com.office.ai-model-selector.plist  # LaunchAgent
 ```
 
 ---
 
 ## Provider Registry (`ai-providers.json`)
 
+Nine providers in priority order. Two local Ollama nodes, then free cloud tier, then paid escalation.
+
 ```json
 {
-  "version": 1,
+  "version": 2,
   "providers": [
     {
-      "id": "lmstudio-local",
+      "id": "ollama-m4pro",
+      "label": "Mac Mini M4 Pro (local)",
       "type": "openai-compatible",
-      "base_url": "http://localhost:1234/v1",
+      "base_url": "http://localhost:11434/v1",
       "api_key": null,
       "cost_per_1k_tokens": 0.0,
       "priority": 1,
-      "capabilities": ["text/small", "text/medium", "image/generate"],
-      "max_context_tokens": 8192,
-      "health_check": { "endpoint": "/models", "method": "GET", "expect_status": 200 },
-      "rate_limit": null,
+      "capabilities": ["text/small", "text/medium", "text/large"],
+      "max_context_tokens": 128000,
+      "health_check": { "endpoint": "http://localhost:11434/api/tags", "method": "GET", "expect_status": 200 },
+      "timeout_connect_sec": 3,
+      "timeout_inference_sec": 120,
+      "schedule_preference": "any",
+      "preferred_models": ["qwen2.5:14b", "llama3.1:8b"]
+    },
+    {
+      "id": "ollama-m1",
+      "label": "MacBook M1 (Thunderbolt node)",
+      "type": "openai-compatible",
+      "base_url": "http://192.168.100.2:11434/v1",
+      "api_key": null,
+      "cost_per_1k_tokens": 0.0,
+      "priority": 2,
+      "capabilities": ["text/small", "text/medium"],
+      "max_context_tokens": 32768,
+      "health_check": { "endpoint": "http://192.168.100.2:11434/api/tags", "method": "GET", "expect_status": 200 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 180,
       "schedule_preference": "batch_window",
-      "models": []
+      "preferred_models": ["qwen2.5:14b", "llama3.1:8b"],
+      "notes": "M1 MacBook on Thunderbolt Bridge. 2-3x slower than M4 Pro. Prefer for batch/overnight tasks."
     },
     {
       "id": "whisper-local",
@@ -91,7 +184,7 @@ Why not a pure CLI tool?
       "priority": 1,
       "capabilities": ["audio/transcribe"],
       "health_check": { "binary_exists": "faster-whisper" },
-      "schedule_preference": "batch_window",
+      "schedule_preference": "any",
       "models": ["large-v3", "distil-large-v3"]
     },
     {
@@ -100,10 +193,12 @@ Why not a pure CLI tool?
       "base_url": "https://generativelanguage.googleapis.com/v1beta",
       "api_key_env": "GEMINI_API_KEY",
       "cost_per_1k_tokens": 0.0,
-      "priority": 2,
+      "priority": 3,
       "capabilities": ["text/small", "text/medium", "text/large"],
       "max_context_tokens": 1000000,
       "rate_limit": { "requests_per_minute": 15, "requests_per_day": 1500 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 30,
       "schedule_preference": "any",
       "models": ["gemini-2.5-flash"]
     },
@@ -113,10 +208,12 @@ Why not a pure CLI tool?
       "base_url": "https://api.anthropic.com/v1",
       "api_key_env": "ANTHROPIC_API_KEY",
       "cost_per_1k_tokens": 0.00025,
-      "priority": 3,
+      "priority": 4,
       "capabilities": ["text/small", "text/medium"],
       "max_context_tokens": 200000,
       "rate_limit": { "requests_per_minute": 50, "tokens_per_minute": 100000 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 30,
       "schedule_preference": "any",
       "models": ["claude-haiku-4-5"]
     },
@@ -126,10 +223,12 @@ Why not a pure CLI tool?
       "base_url": "https://api.openai.com/v1",
       "api_key_env": "OPENAI_API_KEY",
       "cost_per_1k_tokens": 0.00015,
-      "priority": 4,
+      "priority": 5,
       "capabilities": ["text/small", "text/medium"],
       "max_context_tokens": 128000,
       "rate_limit": { "requests_per_minute": 60 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 30,
       "schedule_preference": "any",
       "models": ["gpt-4o-mini"]
     },
@@ -139,10 +238,12 @@ Why not a pure CLI tool?
       "base_url": "https://api.anthropic.com/v1",
       "api_key_env": "ANTHROPIC_API_KEY",
       "cost_per_1k_tokens": 0.003,
-      "priority": 5,
+      "priority": 6,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 200000,
       "rate_limit": { "requests_per_minute": 40 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 30,
       "schedule_preference": "any",
       "models": ["claude-sonnet-4-6"]
     },
@@ -152,10 +253,12 @@ Why not a pure CLI tool?
       "base_url": "https://api.openai.com/v1",
       "api_key_env": "OPENAI_API_KEY",
       "cost_per_1k_tokens": 0.005,
-      "priority": 6,
+      "priority": 7,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 128000,
       "rate_limit": { "requests_per_minute": 30 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 30,
       "schedule_preference": "any",
       "models": ["gpt-4o"]
     },
@@ -165,10 +268,12 @@ Why not a pure CLI tool?
       "base_url": "https://api.anthropic.com/v1",
       "api_key_env": "ANTHROPIC_API_KEY",
       "cost_per_1k_tokens": 0.015,
-      "priority": 7,
+      "priority": 8,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 200000,
       "rate_limit": { "requests_per_minute": 20 },
+      "timeout_connect_sec": 5,
+      "timeout_inference_sec": 30,
       "schedule_preference": "any",
       "models": ["claude-opus-4-7"]
     }
@@ -176,68 +281,81 @@ Why not a pure CLI tool?
 }
 ```
 
-**Adding a new provider:** Add one record to this file. Zero code changes.  
-**LM Studio models:** The `"models": []` array auto-populates at runtime from the LM Studio `/v1/models` health-check response.
+**Adding a new provider:** add one record to this file. Zero code changes.
 
 ---
 
-## Task Capability Matrix (`ai-task-types.json`)
+## Provider Escalation Order
 
-```json
-{
-  "task_types": {
-    "metadata_generation": {
-      "capability": "text/medium",
-      "typical_input_tokens": 8000,
-      "typical_output_tokens": 2000,
-      "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "7B"
-    },
-    "thumbnail_headline": {
-      "capability": "text/small",
-      "typical_input_tokens": 500,
-      "typical_output_tokens": 20,
-      "latency_tolerance": "seconds",
-      "local_viable": true,
-      "min_local_model_params": "7B"
-    },
-    "seo_keyword_expansion": {
-      "capability": "text/small",
-      "typical_input_tokens": 300,
-      "typical_output_tokens": 200,
-      "latency_tolerance": "seconds",
-      "local_viable": true,
-      "min_local_model_params": "7B"
-    },
-    "transcript_summarization": {
-      "capability": "text/large",
-      "typical_input_tokens": 30000,
-      "typical_output_tokens": 1500,
-      "latency_tolerance": "minutes",
-      "local_viable": true,
-      "min_local_model_params": "8B"
-    },
-    "subtitle_generation": {
-      "capability": "audio/transcribe",
-      "latency_tolerance": "minutes",
-      "local_viable": true
-    },
-    "background_image": {
-      "capability": "image/generate",
-      "latency_tolerance": "minutes",
-      "local_viable": true
-    },
-    "description_quality_review": {
-      "capability": "text/review",
-      "typical_input_tokens": 2000,
-      "typical_output_tokens": 2000,
-      "latency_tolerance": "minutes",
-      "local_viable": false
-    }
-  }
-}
+For any given task, the selector works through this ladder and stops at the first passing provider:
+
 ```
+1. ollama-m4pro    (local, free, fast — preferred always)
+2. ollama-m1       (local, free, slower — preferred batch window)
+3. gemini-flash    (cloud free tier, 1500 req/day limit)
+4. claude-haiku    (paid, cheapest, fast)
+5. openai-4o-mini  (paid, cheapest OpenAI)
+6. claude-sonnet   (paid, mid-tier)
+7. openai-4o       (paid, mid-tier)
+8. claude-opus     (paid, most capable — last resort)
+```
+
+For `audio/transcribe`: only `whisper-local` is in the pool. No cloud fallback (subtitles are always generated locally).
+
+For `text/review` tasks (description quality check): skips local providers — `local_viable: false` — starts at `claude-haiku`.
+
+---
+
+## Resilience Model
+
+The selector is the critical path for all AI work. It must never cause a job to fail just because a provider is temporarily unavailable.
+
+### Circuit Breaker (per provider)
+
+```
+CLOSED (healthy)
+  │  3 consecutive failures within 5 min
+  ▼
+OPEN (degraded) — provider excluded from pool
+  │  10 min timeout (doubles each trip: 10 → 20 → 40 min, max 2h)
+  ▼
+HALF-OPEN — try one request
+  │ success → CLOSED
+  │ failure → OPEN (double timeout)
+```
+
+State persisted to `~/.local/video-orchestrator/state/circuit-breakers.json` so service restarts don't reset it.
+
+### Timeout Tiers
+
+| Provider type | Connect timeout | Inference timeout |
+|--------------|----------------|------------------|
+| Local (same machine) | 3s | 120s |
+| Local (M1 via Thunderbolt) | 5s | 180s |
+| Cloud APIs | 5s | 30s |
+
+Inference timeouts trigger `report_ai_failure()` → circuit breaker registers a failure.
+
+### What Happens When M1 Goes Offline
+
+1. Health check fails within 30s → M1 excluded from eligible pool
+2. All tasks fall through to M4 Pro (or cloud if M4 Pro is also loaded)
+3. Zero error to any caller — selector just picks next eligible provider
+4. M1 comes back → health check passes → automatically re-enters pool
+5. Caller never knows. This is the required behavior.
+
+### What Happens When All Local Providers Are Down
+
+1. Selector checks `prefer_defer_over_paid` config
+2. If `true` and task is non-urgent → set job `scheduled_after = next 01:00` → return deferred signal to worker
+3. If `true` and task is urgent → pay for cloud, log cost reason
+4. If `false` → always use cloud (never defer)
+
+### What Happens When Cloud API Is Rate-Limited
+
+1. Provider marked rate-limited in `rate-limits.json`
+2. Next provider in escalation ladder tried
+3. If all paid providers exhausted → defer to batch window (non-urgent) or raise error (urgent)
 
 ---
 
@@ -247,53 +365,42 @@ Why not a pure CLI tool?
 def select_provider(task_type, input_token_count=0, urgent=False, previous_failures=[]):
     task_spec = TASK_TYPES[task_type]
     required_capability = task_spec["capability"]
-    now = datetime.now()
-    in_batch_window = 1 <= now.hour < 7
+    in_batch_window = 1 <= datetime.now().hour < 7
 
-    # 1. Filter: capability match + not previously failed
     eligible = [
         p for p in PROVIDERS
         if required_capability in p["capabilities"]
         and p["id"] not in previous_failures
+        and not is_circuit_open(p["id"])         # NEW: circuit breaker check
+        and not is_rate_limited(p["id"])
+        and check_health(p)                       # timeout-bounded health check
+        and fits_context(p, input_token_count)
     ]
 
-    # 2. Sort by priority, with batch-window preference
-    if in_batch_window:
-        # Strongly prefer free/local providers during batch
-        eligible.sort(key=lambda p: (p["cost_per_1k_tokens"] > 0, p["priority"]))
-    else:
-        # Outside batch: prefer fast any-time providers, deprioritize batch-only
-        eligible.sort(key=lambda p: (
-            p["schedule_preference"] == "batch_window" and not urgent,
-            p["priority"]
-        ))
+    # Sort: free first, then by priority; batch window deprioritizes slow remote nodes
+    eligible.sort(key=lambda p: (
+        p["cost_per_1k_tokens"] > 0,
+        p["schedule_preference"] == "batch_window" and not in_batch_window and not urgent,
+        p["priority"]
+    ))
 
     for provider in eligible:
-        if is_rate_limited(provider["id"]):
-            continue
-        if provider.get("health_check") and not check_health(provider):
-            continue
-        if provider.get("max_context_tokens") and input_token_count > provider["max_context_tokens"]:
-            continue
-        if is_lmstudio(provider):
-            loaded_models = get_lmstudio_models()
-            if not loaded_models:
+        if is_ollama(provider):
+            models = get_ollama_models(provider)  # calls /api/tags on correct host
+            if not models:
+                register_failure(provider["id"], "no_models_loaded")
                 continue
-            if not any(model_meets_min_params(m, task_spec) for m in loaded_models):
+            if not any(model_meets_task(m, task_spec) for m in models):
                 continue
+        return SelectionResult(provider_id=provider["id"], ...)
 
-        # Provider passes all gates
-        return SelectionResult(
-            provider_id=provider["id"],
-            model=pick_model(provider, task_spec),
-            base_url=provider["base_url"],
-            api_key=resolve_key(provider),
-            reason=build_reason(provider, in_batch_window, urgent),
-            cost_estimate=estimate_cost(provider, task_spec, input_token_count),
-        )
-
-    raise NoProviderAvailable(task_type, previous_failures)
+    # Nothing available
+    if not urgent and DEFER_OVER_PAID:
+        return DeferResult(scheduled_after=next_batch_window())
+    raise NoProviderAvailable(task_type)
 ```
+
+Key change from prior version: `is_circuit_open()` is now checked before health, which avoids hammering a known-down provider with health checks.
 
 ---
 
@@ -305,12 +412,17 @@ def select_provider(task_type, input_token_count=0, urgent=False, previous_failu
   "prefer_defer_over_paid": true,
   "max_defer_hours": 18,
   "urgent_tasks_use_paid": true,
-  "lmstudio_health_check_interval_sec": 30,
-  "rate_limit_state_persist_interval_sec": 60
+  "ollama_health_check_interval_sec": 30,
+  "rate_limit_state_persist_interval_sec": 60,
+  "circuit_breaker": {
+    "failure_threshold": 3,
+    "failure_window_sec": 300,
+    "open_duration_sec": 600,
+    "max_open_duration_sec": 7200,
+    "half_open_probe_count": 1
+  }
 }
 ```
-
-When `prefer_defer_over_paid` is `true`: non-urgent AI tasks that would require a paid API outside the batch window get their job's `scheduled_after` set to the next 1:00 AM instead of incurring API cost.
 
 ---
 
@@ -320,10 +432,10 @@ Running at `localhost:4890`:
 
 | Endpoint | Method | Body/Query | Returns |
 |----------|--------|------------|---------|
-| `/select` | POST | `{task_type, input_token_count, urgent, previous_failures}` | `{provider_id, model, base_url, api_key, reason, cost_estimate}` |
+| `/select` | POST | `{task_type, input_token_count, urgent, previous_failures}` | `{provider_id, model, base_url, api_key, reason, cost_estimate}` or `{deferred: true, scheduled_after}` |
 | `/report-failure` | POST | `{provider_id, error_type, error_message}` | `{ok}` |
-| `/providers` | GET | — | All providers with live health status |
-| `/health` | GET | — | Service health, LM Studio status, rate limits |
+| `/providers` | GET | — | All providers with live health + circuit breaker state |
+| `/health` | GET | — | Service health, all node status, rate limits, circuit states |
 | `/audit` | GET | `?limit=N&task_type=X` | Recent selection log entries |
 | `/config` | GET | — | Current config (no secrets) |
 
@@ -332,34 +444,25 @@ Running at `localhost:4890`:
 ## VO Worker Integration
 
 ```python
-# In any VO module that needs AI:
-import httpx
+# In any VO module that needs AI (unchanged interface):
+from client import select_ai, report_ai_failure
 
-def select_ai(task_type: str, input_tokens: int = 0, urgent: bool = False) -> dict:
-    resp = httpx.post("http://localhost:4890/select", json={
-        "task_type": task_type,
-        "input_token_count": input_tokens,
-        "urgent": urgent,
-    }, timeout=5.0)
-    resp.raise_for_status()
-    return resp.json()
+routing = select_ai("metadata_generation", input_tokens=8000, urgent=False)
 
-def report_ai_failure(provider_id: str, error_type: str, message: str):
-    httpx.post("http://localhost:4890/report-failure", json={
-        "provider_id": provider_id,
-        "error_type": error_type,  # "rate_limit" | "timeout" | "error"
-        "error_message": message,
-    }, timeout=3.0)
-```
+if routing.get("deferred"):
+    # Task was deferred — update job scheduled_after and exit
+    update_job_scheduled_after(job_id, routing["scheduled_after"])
+    return
 
-Usage in `metadata_generator.py`:
-```python
-routing = select_ai("metadata_generation", input_tokens=len(transcript) // 4)
-# routing["base_url"] and routing["api_key"] → pass directly to openai.AsyncOpenAI()
-client = openai.AsyncOpenAI(
+client = openai.OpenAI(
     base_url=routing["base_url"],
     api_key=routing["api_key"] or "local",
 )
+try:
+    response = client.chat.completions.create(model=routing["model"], ...)
+except Exception as e:
+    report_ai_failure(routing["provider_id"], "error", str(e))
+    raise
 ```
 
 ---
@@ -368,77 +471,90 @@ client = openai.AsyncOpenAI(
 
 ```bash
 #!/usr/bin/env bash
-# Thin wrapper around the AI Model Selector HTTP service.
-# Works from Claude Code, Codex, Gemini CLI, and shell scripts.
-
 SELECTOR_URL="${AI_SELECTOR_URL:-http://localhost:4890}"
 
 case "${1:-}" in
-  --task)
-    curl -s -X POST "$SELECTOR_URL/select" \
-      -H "Content-Type: application/json" \
-      -d "{\"task_type\":\"$2\",\"input_token_count\":${TOKENS:-0},\"urgent\":${URGENT:-false}}" \
-      | python3 -m json.tool
-    ;;
-  --providers)  curl -s "$SELECTOR_URL/providers" | python3 -m json.tool ;;
-  --health)     curl -s "$SELECTOR_URL/health" | python3 -m json.tool ;;
-  --audit)      curl -s "$SELECTOR_URL/audit?limit=${2:-20}" | python3 -m json.tool ;;
-  *)
-    echo "Usage: ai-select --task <task_type>"
-    echo "       ai-select --providers | --health | --audit [N]"
-    ;;
+  --task)      curl -s -X POST "$SELECTOR_URL/select" \
+                 -H "Content-Type: application/json" \
+                 -d "{\"task_type\":\"$2\",\"input_token_count\":${TOKENS:-0},\"urgent\":${URGENT:-false}}" \
+                 | python3 -m json.tool ;;
+  --providers) curl -s "$SELECTOR_URL/providers" | python3 -m json.tool ;;
+  --health)    curl -s "$SELECTOR_URL/health" | python3 -m json.tool ;;
+  --audit)     curl -s "$SELECTOR_URL/audit?limit=${2:-20}" | python3 -m json.tool ;;
+  *) echo "Usage: ai-select --task <type> | --providers | --health | --audit [N]" ;;
 esac
 ```
 
 ---
 
-## LaunchAgent Plist
+## LaunchAgents (Both Machines)
 
+### Mac Mini M4 Pro — AI Selector service
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
+<key>Label</key><string>com.office.ai-model-selector</string>
+<key>ProgramArguments</key>
+<array>
+  <string>/Users/Office/.local/video-orchestrator/.venv/bin/python3</string>
+  <string>/Users/Office/.local/video-orchestrator/services/model-selector/selector_service.py</string>
+</array>
+<key>RunAtLoad</key><true/>
+<key>KeepAlive</key><true/>
+```
+
+### Mac Mini M4 Pro — Ollama
+```xml
+<key>Label</key><string>com.office.ollama-m4pro</string>
+<key>ProgramArguments</key>
+<array>
+  <string>/usr/local/bin/ollama</string>
+  <string>serve</string>
+</array>
+<key>RunAtLoad</key><true/>
+<key>KeepAlive</key><true/>
+<key>EnvironmentVariables</key>
 <dict>
-  <key>Label</key><string>com.office.ai-model-selector</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/Users/Office/.local/video-orchestrator/.venv/bin/python3</string>
-    <string>/Users/Office/.local/video-orchestrator/services/model-selector/selector_service.py</string>
-  </array>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key>
-  <string>/Users/Office/.local/video-orchestrator/logs/model-selector.log</string>
-  <key>StandardErrorPath</key>
-  <string>/Users/Office/.local/video-orchestrator/logs/model-selector.log</string>
+  <key>OLLAMA_HOST</key><string>127.0.0.1:11434</string>
 </dict>
-</plist>
+```
+
+### MacBook M1 — Ollama (listens on all interfaces for Thunderbolt access)
+```xml
+<key>Label</key><string>com.office.ollama-m1</string>
+<key>ProgramArguments</key>
+<array>
+  <string>/usr/local/bin/ollama</string>
+  <string>serve</string>
+</array>
+<key>RunAtLoad</key><true/>
+<key>KeepAlive</key><true/>
+<key>EnvironmentVariables</key>
+<dict>
+  <key>OLLAMA_HOST</key><string>0.0.0.0:11434</string>
+</dict>
+```
+
+---
+
+## Recommended Model Install
+
+### Mac Mini M4 Pro
+```bash
+ollama pull qwen2.5:14b          # Primary — best local quality
+ollama pull llama3.1:8b          # Secondary — fastest local
+```
+
+### MacBook M1
+```bash
+ollama pull qwen2.5:14b          # Same primary model — batch overnight work
 ```
 
 ---
 
 ## Audit Log Format
 
-Every selection is appended to `~/.local/video-orchestrator/logs/ai-selections.jsonl`:
-
 ```json
-{"ts":"2026-05-22T03:14:22Z","task":"metadata_generation","provider":"lmstudio-local","model":"llama-3.1-8b-instruct","reason":"local model available; batch window; cost=0.0","cost":0.0,"tokens_in":8200,"batch_window":true}
-{"ts":"2026-05-22T03:14:55Z","task":"metadata_generation","provider":"lmstudio-local","model":"llama-3.1-8b-instruct","reason":"completed","latency_ms":33200,"success":true}
+{"ts":"2026-05-22T03:14:22Z","task":"metadata_generation","provider":"ollama-m4pro","model":"qwen2.5:14b","reason":"local ollama healthy; batch window; cost=0.0","cost":0.0,"batch_window":true}
+{"ts":"2026-05-22T03:14:55Z","task":"metadata_generation","provider":"ollama-m4pro","model":"qwen2.5:14b","reason":"completed","latency_ms":28400,"success":true}
+{"ts":"2026-05-22T09:30:11Z","task":"metadata_generation","provider":"ollama-m1","model":"qwen2.5:14b","reason":"m4pro circuit open; m1 batch window preferred; cost=0.0","cost":0.0,"batch_window":false}
+{"ts":"2026-05-22T14:02:00Z","task":"metadata_generation","provider":"gemini-flash","reason":"all local providers unavailable; non-urgent deferred=false; using free cloud tier","cost":0.0}
 ```
-
----
-
-## Adding LM Studio Models (zero config required)
-
-1. Download a model in LM Studio (e.g., `llama-3.1-8b-instruct-Q4_K_M`)
-2. Load it in LM Studio
-3. The selector's health-check polls `/v1/models` every 30s and auto-discovers the loaded model
-4. No changes to `ai-providers.json` or any code
-
-**Recommended downloads (Apple Silicon, 24 GB unified memory):**
-
-| Model | Size | Best for |
-|-------|------|---------|
-| `mistral-7b-instruct-v0.3-Q4_K_M` | 4.4 GB | Headlines, SEO, small tasks |
-| `llama-3.1-8b-instruct-Q4_K_M` | 5.0 GB | Metadata gen, summarization (128K context) |
-| `qwen2.5-14b-instruct-Q4_K_M` | 8.5 GB | Highest local quality |
