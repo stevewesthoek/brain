@@ -3401,7 +3401,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     if (app.url) {
       const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
       openBtn.title = `Open ${app.name} in browser (${app.url})`;
-      openBtn.addEventListener('click', () => { window.open(app.url!); });
+      openBtn.addEventListener('click', () => { openExternalUrl(app.url!); });
     }
   });
 
@@ -7340,6 +7340,17 @@ function renderBrainCoreConnectionDiagnosticsCard(state: BrainConsoleViewState):
   return container;
 }
 
+// ── Open URL in system browser (Electron-safe) ───────────────────────────
+function openExternalUrl(url: string): void {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { shell } = require('electron') as { shell: { openExternal: (url: string) => Promise<void> } };
+    void shell.openExternal(url);
+  } catch {
+    window.open(url, '_blank');
+  }
+}
+
 // ── Accounts & Credentials section ───────────────────────────────────────
 
 const ACCOUNTS_COLLAPSE_KEY = (groupKey: string) => `brain-console-accounts-collapsed-${groupKey}`;
@@ -7682,15 +7693,14 @@ function startYouTubeOAuthFlow(
     try {
       const result = await getYouTubeOAuthUrl(brainCoreUrl, account);
       if (result.ok && result.url) {
-        window.open(result.url);
+        openExternalUrl(result.url);
         statusMsg.textContent = 'Browser opened — authorize, then paste the code below.';
         statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--ok';
         codeRow.removeClass('bc-accounts-oauth-flow--hidden');
         codeInput.focus();
-        // Show a fallback link in case the window didn't open
         openBtn.textContent = 'Reopen browser';
         openBtn.disabled = false;
-        openBtn.onclick = () => { window.open(result.url!); };
+        openBtn.onclick = () => { openExternalUrl(result.url!); };
       } else {
         statusMsg.textContent = result.error ?? 'Failed to generate URL.';
         statusMsg.className = 'bc-accounts-feedback bc-accounts-feedback--error';

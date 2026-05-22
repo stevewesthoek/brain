@@ -48,6 +48,8 @@ const CREDENTIAL_SCHEMA: Record<string, PlatformSchema[]> = {
         { key: 'YOUTUBE_CLIENT_SECRET', label: 'OAuth Client Secret', type: 'secret', required: true },
         { key: 'YOUTUBE_TOKEN_PATH',    label: 'Token file path',     type: 'other',  required: false,
           hint: 'Defaults to ./data/youtube-token.json' },
+        { key: 'yt-oauth-client-@says-the-bible', label: 'VO Worker OAuth (@says-the-bible)', type: 'secret', required: true, storage: 'keychain',
+          hint: 'OAuth token used by the video orchestrator worker to upload to this channel' },
       ],
     },
     {
@@ -110,14 +112,6 @@ const INFRA_SCHEMA: PlatformSchema[] = [
     credentials: [
       { key: 'VO_N8N_WEBHOOK_URL', label: 'Webhook URL', type: 'url', required: true, storage: 'plist',
         hint: 'e.g. https://n8n.prochat.tools/webhook/...' },
-    ],
-  },
-  {
-    platformId: 'youtube-worker',
-    platformName: 'YouTube (VO Worker)',
-    platformCategory: 'infra',
-    credentials: [
-      { key: 'yt-oauth-client-@says-the-bible', label: '@says-the-bible', type: 'secret', required: true, storage: 'keychain' },
     ],
   },
 ];
@@ -445,18 +439,27 @@ function buildProjectEntry(
     envFilePath,
     platforms: platforms.map((platform) => {
       const envMap = envFilePath ? parseEnvFile(envFilePath) : new Map<string, string>();
+      const keychainAccounts = getKeychainAccounts();
       let allRequiredSet = true;
       const credentials = platform.credentials.map((entry) => {
-        const rawVal = envMap.get(entry.key) ?? '';
-        const isSet = rawVal.length > 0;
-        const hasPlaceholder = isPlaceholder(rawVal);
+        let isSet: boolean;
+        let hasPlaceholder: boolean;
+        const storage: StorageBackend = entry.storage ?? 'env_file';
+        if (storage === 'keychain') {
+          isSet = keychainAccounts.includes(entry.key);
+          hasPlaceholder = false;
+        } else {
+          const rawVal = envMap.get(entry.key) ?? '';
+          isSet = rawVal.length > 0;
+          hasPlaceholder = isPlaceholder(rawVal);
+        }
         if (entry.required && (!isSet || hasPlaceholder)) allRequiredSet = false;
         return {
           key: entry.key,
           label: entry.label,
           type: entry.type,
           required: entry.required,
-          storage: 'env_file' as StorageBackend,
+          storage,
           isSet,
           hasPlaceholder,
           ...(entry.hint !== undefined ? { hint: entry.hint } : {}),
