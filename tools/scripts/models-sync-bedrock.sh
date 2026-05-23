@@ -12,7 +12,7 @@ EXPORT_FILE="$SCRIPT_DIR/tools/scripts/bedrock-models.generated.sh"
 REGION="${AWS_REGION:-us-east-1}"
 PROFILE="${AWS_PROFILE:-}"
 ALLOW_PREVIEW_MODELS="${ALLOW_PREVIEW_MODELS:-0}"
-PREFER_PINNED="${PREFER_PINNED_MODELS:-0}"
+PREFER_PINNED="${PREFER_PINNED_MODELS:-1}"
 
 PINNED_OPUS="us.anthropic.claude-opus-4-7"
 PINNED_SONNET="us.anthropic.claude-sonnet-4-6"

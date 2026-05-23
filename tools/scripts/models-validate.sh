@@ -180,6 +180,10 @@ main() {
     log_info "Run: npm run models:sync:bedrock"
   fi
 
+  if [[ "$opus" != "$FALLBACK_OPUS" || "$sonnet" != "$FALLBACK_SONNET" || "$haiku" != "$FALLBACK_HAIKU" ]]; then
+    log_warn "Generated exports are using discovered models rather than pinned fallbacks. If Bedrock access is unstable, rerun with PREFER_PINNED_MODELS=1."
+  fi
+
   local env_stale=0
   if [[ -n "${ANTHROPIC_DEFAULT_OPUS_MODEL:-}" && "${ANTHROPIC_DEFAULT_OPUS_MODEL}" != "$opus" ]]; then
     log_warn "Current shell ANTHROPIC_DEFAULT_OPUS_MODEL is stale: ${ANTHROPIC_DEFAULT_OPUS_MODEL}"
