@@ -3523,10 +3523,10 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     }
 
     // Open button
-    if (app.url && settings) {
+    if (app.url) {
       const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
       openBtn.title = `Open ${app.name} in browser (${app.url})`;
-      openBtn.addEventListener('click', () => { void openExternalUrl(settings.brainCoreUrl, app.url!); });
+      openBtn.addEventListener('click', () => { window.open(app.url!); });
     }
   });
 

@@ -1910,19 +1910,12 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
 
   if (url.pathname === '/open-url') {
     const target = url.searchParams.get('url') ?? '';
-    const allowed = target.startsWith('https://accounts.google.com/') || target.startsWith('https://console.cloud.google.com/');
+    const allowed = target.startsWith('http://localhost:') || target.startsWith('http://127.0.0.1:') || target.startsWith('http://[::1]:');
     if (!target || !allowed) {
       sendJson(response, 400, { ok: false, error: 'url_not_allowed' });
       return;
     }
-    const { execFile } = await import('node:child_process');
-    await new Promise<void>((resolve) => {
-      execFile('open', [target], (err) => {
-        if (err) sendJson(response, 500, { ok: false, error: err.message });
-        else sendJson(response, 200, { ok: true });
-        resolve();
-      });
-    });
+    sendJson(response, 200, { ok: true, url: target });
     return;
   }
 
