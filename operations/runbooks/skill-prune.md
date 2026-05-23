@@ -151,7 +151,7 @@ Confirm deletion? (type 'delete old-skill' to confirm): delete old-skill
 These skills are **exempt from all pruning** — they are intentional workflow/design/operational tools:
 
 - **Design tools (9):** design-system, web-design, huashu-design, ui-ux-pro-max, taste-skill, redesign-skill, design-review, design-consultation, plan-design-review
-- **Workflow tools (11):** autoplan, setup-deploy, land-and-deploy, model-router, learner, handoff, codex, gemini, cso, careful, guard
+- **Workflow tools (10):** autoplan, setup-deploy, land-and-deploy, learner, handoff, codex, gemini, cso, careful, guard
 - **Infrastructure tools (15):** dokploy, aws, azure, cloudflare, gcp, gws, hetzner, n8n, orbstack, supabase, stripe, clerk, apify, firecrawl, googleads
 - **Operational tools (9):** gh, freeze, unfreeze, keep-alive, benchmark, canary, investigate, setup-browser-cookies, skill-prune
 - **Special (1):** probot-app-launcher-diagnostics, probot-dashboard-scheduler-registration

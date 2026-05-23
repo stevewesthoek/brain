@@ -170,7 +170,7 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.probot.actionsEnabled, false);
   assert.equal(body.executionGate.executionEnabled, false);
   assert.equal(body.executionGate.mindStewardDryRunExecutionFlagEnabled, false);
-  assert.equal(body.executionGate.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
+  assert.equal(body.executionGate.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION');
   assert.equal(body.executionGate.firstCandidate, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.executionGate.readinessEndpoint, '/execution/readiness');
   assert.equal(body.executionGate.plansEndpoint, '/execution/plans');
@@ -1268,7 +1268,7 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans[0]?.candidate, true);
   assert.equal(body.plans[0]?.executionEnabled, false);
   assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagEnabled, false);
-  assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
+  assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION');
   assert.equal(body.plans[0]?.wouldExecute, false);
   assert.equal(body.plans[0]?.executed, false);
   assert.equal(body.plans[0]?.writesToMind, false);
@@ -1315,28 +1315,28 @@ test('GET /execution/mind-preview-policy returns preview-only policy metadata', 
     true,
   );
   assert.equal(
-    body.docs.some((doc) => doc.path === 'docs/system/1779034841996-obsidian-mind-mind-steward-handoff.md'),
+    body.docs.some((doc) => doc.path === 'docs/system/1779034841996-obsidian-mind-steward-handoff.md'),
     true,
   );
 });
 
 test('GET /execution/mind-previews returns empty list when no preview artifacts exist', async () => {
-  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = path.join(process.cwd(), '.buildflow-test-mind-previews-missing');
+  const previous = process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+  process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = path.join(process.cwd(), '.buildflow-test-mind-previews-missing');
   try {
     const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
     const body = JSON.parse(response.body) as { previews: Array<{ writesToMind: boolean; externalSideEffects: boolean }> };
     assert.equal(response.statusCode, 200);
     assert.equal(body.previews.length, 0);
   } finally {
-    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+    if (previous === undefined) delete process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previous;
   }
 });
 
 test('GET /execution/mind-previews/latest returns empty state when no preview artifacts exist', async () => {
-  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = path.join(process.cwd(), '.buildflow-test-mind-previews-empty');
+  const previous = process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+  process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = path.join(process.cwd(), '.buildflow-test-mind-previews-empty');
   try {
     const response = await exercise({ method: 'GET', url: '/execution/mind-previews/latest' });
     const body = JSON.parse(response.body) as { status: string; preview?: { writesToMind: boolean } };
@@ -1344,8 +1344,8 @@ test('GET /execution/mind-previews/latest returns empty state when no preview ar
     assert.equal(body.status, 'empty');
     assert.equal(body.preview, undefined);
   } finally {
-    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+    if (previous === undefined) delete process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previous;
   }
 });
 
@@ -1359,7 +1359,7 @@ test('GET /execution/mind-previews/:id returns not found for unknown id', async 
 test('GET /execution/mind-previews lists safe fixture preview artifacts', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-mind-previews');
   const previewDir = path.join(testDir, 'runtime', 'local', 'mind-steward', 'previews');
-  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+  const previous = process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(previewDir, { recursive: true });
   fs.writeFileSync(
@@ -1385,7 +1385,7 @@ test('GET /execution/mind-previews lists safe fixture preview artifacts', async 
       externalSideEffects: false,
     }),
   );
-  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previewDir;
+  process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previewDir;
 
   try {
     const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
@@ -1396,23 +1396,23 @@ test('GET /execution/mind-previews lists safe fixture preview artifacts', async 
     assert.equal(body.previews[0]?.writesToMind, false);
     assert.equal(body.previews[0]?.externalSideEffects, false);
   } finally {
-    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+    if (previous === undefined) delete process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previous;
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
 
 test('GET /execution/mind-previews ignores unsafe preview path configuration', async () => {
-  const previous = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = '/Users/Office/Repos/stevewesthoek/mind/runtime/local/mind-steward/previews';
+  const previous = process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+  process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = '/Users/Office/Repos/stevewesthoek/mind/runtime/local/mind-steward/previews';
   try {
     const response = await exercise({ method: 'GET', url: '/execution/mind-previews' });
     const body = JSON.parse(response.body) as { previews: unknown[] };
     assert.equal(response.statusCode, 200);
     assert.equal(body.previews.length, 0);
   } finally {
-    if (previous === undefined) delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
-    else process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previous;
+    if (previous === undefined) delete process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
+    else process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previous;
   }
 });
 
@@ -1451,7 +1451,7 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
   assert.equal(response.statusCode, 200);
   assert.equal(body.executionEnabled, false);
   assert.equal(body.mindStewardDryRunExecutionFlagEnabled, false);
-  assert.equal(body.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION');
+  assert.equal(body.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION');
   assert.equal(body.candidateCount, 1);
   assert.equal(body.readyCandidateCount, 0);
   assert.equal(body.writesToMind, false);
@@ -1460,8 +1460,8 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
 });
 
 test('GET /execution/readiness reports the feature flag when enabled but keeps execution disabled', async () => {
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
-  process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
+  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = 'true';
 
   try {
     const readinessResponse = await exercise({ method: 'GET', url: '/execution/readiness' });
@@ -1498,9 +1498,9 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     assert.equal(planBody.plan.executed, false);
   } finally {
     if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
     } else {
-      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
     }
   }
 });
@@ -1509,13 +1509,13 @@ test('approved scheduler-run-mind-steward-dry-run executes exactly one report-on
   const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
   const storePath = path.join(testDir, 'approvals.json');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
   const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
   const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
 
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = 'true';
   process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
 
@@ -1558,9 +1558,9 @@ test('approved scheduler-run-mind-steward-dry-run executes exactly one report-on
     );
   } finally {
     if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
     } else {
-      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
     }
     if (previousStorePath === undefined) {
       delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
@@ -1700,13 +1700,13 @@ test('POST /approvals/:id/approve executes only the approved mind-steward dry-ru
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
   const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
   const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
 
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(testDir, { recursive: true });
   process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = 'true';
 
   try {
     const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
@@ -1750,9 +1750,9 @@ test('POST /approvals/:id/approve executes only the approved mind-steward dry-ru
       process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
     }
     if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
     } else {
-      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }
@@ -1764,13 +1764,13 @@ test('POST /approvals/:id/approve does not execute the mind-steward dry-run when
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
   const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
   const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
 
   fs.rmSync(testDir, { recursive: true, force: true });
   fs.mkdirSync(testDir, { recursive: true });
   process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+  delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
 
   try {
     const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
@@ -1786,7 +1786,7 @@ test('POST /approvals/:id/approve does not execute the mind-steward dry-run when
     assert.equal(body.executed, false);
     assert.equal(body.policy.executionEnabled, false);
     assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION'), true);
+    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION'), true);
     assert.equal(body.execution.writesToMind, false);
   } finally {
     if (previousStorePath === undefined) {
@@ -1800,9 +1800,9 @@ test('POST /approvals/:id/approve does not execute the mind-steward dry-run when
       process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
     }
     if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
     } else {
-      process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = previousFlag;
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }
@@ -1952,7 +1952,7 @@ test('approved mind-steward dry-run generates report with metadata', async () =>
 
     process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
     process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-    process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION = 'true';
+    process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = 'true';
     process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = reportPath;
 
     // Create a mock report file that would be generated by mind-steward
@@ -2003,7 +2003,7 @@ test('approved mind-steward dry-run generates report with metadata', async () =>
   } finally {
     delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
     delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    delete process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION;
+    delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
     delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
     fs.rmSync(testDir, { recursive: true, force: true });
   }

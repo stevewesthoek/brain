@@ -43,7 +43,7 @@ ProBot status also includes the read-only execution readiness view from `/execut
 - ✅ Approval store persistence verified (JSON)
 - ✅ Approval audit persistence verified (JSONL)
 - ✅ Execution disabled state confirmed
-- ✅ First candidate `scheduler-run-model-router-dry-run` shows in readiness view
+- ✅ First candidate `scheduler-run-mind-steward-dry-run` shows in readiness view
 
 ## Current Direction: Dashboard Freeze
 

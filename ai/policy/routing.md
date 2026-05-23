@@ -217,8 +217,7 @@ Referenced by:
 - `brain/operations/system-configs/claude/CLAUDE.md` (Claude Code global config)
 - `brain/operations/system-configs/codex/AGENTS.md` (Codex global config)
 - `brain/operations/system-configs/gemini/GEMINI.md` (Gemini global config)
-- `brain/ai/skills/custom/model-router/SKILL.md` (Claude skill shim — `/model-router` invokes this policy)
 
-**Naming note:** The `/model-router` skill and `brain/ai/policy/routing.md` are about AI *provider* and *agent* routing (which model to use for each task). The vault maintenance project is `brain/projects/mind-steward` — a completely separate concern. See `brain/docs/platform-architecture.md` for the AI Model Selector microservice (`localhost:4890`).
+**Naming note:** This policy is about AI *provider* and *agent* routing (which model to use for each task). The live runtime service for application API routing is the AI Model Selector (`localhost:4890`). The vault maintenance project is `brain/projects/mind-steward` — a completely separate concern. See `brain/docs/platform-architecture.md` for the full naming split.
 
 **Sync discipline:** `AGENTS.md` and `GEMINI.md` embed role-specific routing summaries inline for agent-local context. When updating routing rules here, check those files for stale inline tables or contradicting instructions. The model tiers table and cost priority order are the most likely to drift.

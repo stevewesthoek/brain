@@ -49,7 +49,7 @@ Brain Console is the **single future cockpit** for:
 **Endpoints**:
 - `GET /status` — system ready, execution readiness
 - `GET /capabilities` — feature flags, installed components  
-- `GET /runtime/reports` — model-router health, runtime state
+- `GET /runtime/reports` — mind-steward health, runtime state
 - `GET /scheduler/status` — nightly job queue
 - `GET /scheduler/jobs` — individual jobs
 - `GET /approvals` — pending approval requests
@@ -111,13 +111,13 @@ Brain Console is the **single future cockpit** for:
 
 ### Orchestrator Skills (Planned)
 
-**model-router**: ✅ Exists, primary orchestrator for Mind compilation and model routing  
-**video/content**: 🏗️ Partial, video orchestrator (STB migration target)  
-**design**: 🔴 Planned/future skill  
-**code**: 🔴 Planned/future skill  
-**research**: 🔴 Planned/future skill  
-**Bible research**: 🔴 Planned/future skill  
-**project/domain**: 🔴 Planned, maps projects to orchestrator workflows  
+**mind-steward**: ✅ Exists, primary orchestrator for Mind compilation and Mind maintenance
+**video/content**: 🏗️ Partial, video orchestrator (STB migration target)
+**design**: 🔴 Planned/future skill
+**code**: 🔴 Planned/future skill
+**research**: 🔴 Planned/future skill
+**Bible research**: 🔴 Planned/future skill
+**project/domain**: 🔴 Planned, maps projects to orchestrator workflows
 **scheduler**: ✅ Exists, nightly job runner  
 **Save-to-Mind**: ✅ Exists, n8n capture pipeline  
 
@@ -270,7 +270,7 @@ interface ApprovalRequest {
                     │
                     ↓
 ┌─ Brain Core Adapters ──────────────────────────────────┐
-│  - read from ProBot, model-router, STB runner, video   │
+│  - read from ProBot, mind-steward, STB runner, video   │
 │  - expose normalized read-only summaries               │
 │  - no writes, no execution, no mutations               │
 └───────────────────────────────────────────────────────┬─┘
@@ -280,7 +280,7 @@ interface ApprovalRequest {
 │  STB Pipeline: operational, primary daily workflow     │
 │  ProBot Dashboard: legacy command surface              │
 │  Video Orchestrator: future architecture (partial)     │
-│  Model Router: Mind compilation                        │
+│  Mind Steward: Mind compilation                        │
 │  Scheduler: nightly jobs                               │
 │  Local Apps: Brain Core, ProBot, build tools           │
 └────────────────────────────────────────────────────────┘
@@ -288,7 +288,7 @@ interface ApprovalRequest {
                     ↓
 ┌─ Mind Vault (Durable Memory) ──────────────────────────┐
 │  - wiki/log.md: append-only maintenance ledger         │
-│  - router/model-router.md: orchestrator contract       │
+│  - router/mind-steward.md: orchestrator contract       │
 │  - live/dashboard.md: fallback Markdown dashboard      │
 │  - live/machine.md: Brain Core visibility (readonly)   │
 │  - capture/, live/, wiki/: human memory layers         │
@@ -332,7 +332,7 @@ archive/logging         → archive-logging stage
 ### Dashboard Sections (Phased Rollout)
 
 #### **Overview Tab** (Phase 1, Current MVP)
-- System health: Brain Core, model-router, wiki health
+- System health: Brain Core, mind-steward, wiki health
 - Attention score: 0-100 burn bar
 - Next safe action
 - Pending approvals (count, risk summary)
@@ -348,7 +348,7 @@ archive/logging         → archive-logging stage
 - Start/stop buttons: read-only UI for now, planned approval-gated later
 
 #### **Orchestrators Tab** (Phase 3)
-- **model-router**: ✅ operational/primary, wiki health, next run
+- **mind-steward**: ✅ operational/primary, wiki health, next run
 - **video-orchestrator**: 🏗️ partial/future, STB migration target relationship
 - **Says the Bible (STB)**: ⭐ legacy/operational, daily primary use, migration status
 - **design-orchestrator**: 🔴 planned/future
@@ -400,7 +400,7 @@ For STB/video specifically:
 
 #### **Projects/Domains Tab** (Phase 5)
 - **Says the Bible**: faith/content, operational primary, linked to STB pipeline + video migration
-- **Brain/Mind System**: system, operational, linked to model-router
+- **Brain/Mind System**: system, operational, linked to mind-steward
 - **Research**: research domain, planned orchestrators
 - **Code/Buildflow**: code domain, planned orchestrators
 - **Video/Content**: content domain, linked to video orchestrator
@@ -449,7 +449,7 @@ For STB/video specifically:
 - Arbitrary shell execution
 - Credential display/modification
 - Billing/payment mutations
-- Direct Mind vault mutation (use model-router instead)
+- Direct Mind vault mutation (use mind-steward instead)
 - STB script modification from dashboard
 - Video orchestrator direct execution (approval-gated only)
 

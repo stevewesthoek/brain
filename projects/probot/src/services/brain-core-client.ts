@@ -13,8 +13,8 @@ export interface BrainCoreCapabilitiesResponse {
   runtimeReportsSupported?: boolean;
   executionGate?: {
     executionEnabled?: boolean;
-    modelRouterDryRunExecutionFlagEnabled?: boolean;
-    modelRouterDryRunExecutionFlagName?: string;
+    mindStewardDryRunExecutionFlagEnabled?: boolean;
+    mindStewardDryRunExecutionFlagName?: string;
     firstCandidate?: string;
   };
 }
@@ -24,8 +24,8 @@ export interface BrainCoreExecutionPlanResponse {
     kind: string;
     candidate: boolean;
     executionEnabled: boolean;
-    modelRouterDryRunExecutionFlagEnabled?: boolean;
-    modelRouterDryRunExecutionFlagName?: string;
+    mindStewardDryRunExecutionFlagEnabled?: boolean;
+    mindStewardDryRunExecutionFlagName?: string;
     wouldExecute: boolean;
     executed: boolean;
     summary: string;
@@ -34,8 +34,8 @@ export interface BrainCoreExecutionPlanResponse {
 
 export interface BrainCoreExecutionReadinessResponse {
   executionEnabled: boolean;
-  modelRouterDryRunExecutionFlagEnabled?: boolean;
-  modelRouterDryRunExecutionFlagName?: string;
+  mindStewardDryRunExecutionFlagEnabled?: boolean;
+  mindStewardDryRunExecutionFlagName?: string;
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
@@ -141,8 +141,8 @@ export interface BrainCoreCapabilitySummary {
   available: boolean;
   executableActionsEnabled: boolean;
   runtimeReportsSupported: boolean;
-  modelRouterDryRunExecutionFlagEnabled: boolean;
-  modelRouterDryRunExecutionFlagName: string;
+  mindStewardDryRunExecutionFlagEnabled: boolean;
+  mindStewardDryRunExecutionFlagName: string;
   line: string;
 }
 
@@ -194,16 +194,16 @@ export interface BrainCoreExecutionPlansSummary {
   available: boolean;
   count: number;
   firstCandidate: string;
-  modelRouterDryRunExecutionFlagEnabled: boolean;
-  modelRouterDryRunExecutionFlagName: string;
+  mindStewardDryRunExecutionFlagEnabled: boolean;
+  mindStewardDryRunExecutionFlagName: string;
   line: string;
 }
 
 export interface BrainCoreExecutionReadinessSummary {
   available: boolean;
   executionEnabled: boolean;
-  modelRouterDryRunExecutionFlagEnabled: boolean;
-  modelRouterDryRunExecutionFlagName: string;
+  mindStewardDryRunExecutionFlagEnabled: boolean;
+  mindStewardDryRunExecutionFlagName: string;
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
@@ -266,20 +266,20 @@ export async function readBrainCoreCapabilities(baseUrl: string): Promise<BrainC
       available: false,
       executableActionsEnabled: false,
       runtimeReportsSupported: false,
-      modelRouterDryRunExecutionFlagEnabled: false,
-      modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION',
+      mindStewardDryRunExecutionFlagEnabled: false,
+      mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION',
       line: 'Brain Core capabilities: unavailable',
     };
   }
-  const modelRouterDryRunExecutionFlagEnabled = response.executionGate?.modelRouterDryRunExecutionFlagEnabled === true;
-  const modelRouterDryRunExecutionFlagName = response.executionGate?.modelRouterDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  const mindStewardDryRunExecutionFlagEnabled = response.executionGate?.mindStewardDryRunExecutionFlagEnabled === true;
+  const mindStewardDryRunExecutionFlagName = response.executionGate?.mindStewardDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   return {
     available: true,
     executableActionsEnabled: response.executableActionsEnabled,
     runtimeReportsSupported: response.runtimeReportsSupported === true,
-    modelRouterDryRunExecutionFlagEnabled,
-    modelRouterDryRunExecutionFlagName,
-    line: `Brain Core capabilities: executableActionsEnabled=${response.executableActionsEnabled} runtimeReportsSupported=${response.runtimeReportsSupported === true} modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled}`,
+    mindStewardDryRunExecutionFlagEnabled,
+    mindStewardDryRunExecutionFlagName,
+    line: `Brain Core capabilities: executableActionsEnabled=${response.executableActionsEnabled} runtimeReportsSupported=${response.runtimeReportsSupported === true} mindStewardDryRunFlag=${mindStewardDryRunExecutionFlagEnabled}`,
   };
 }
 
@@ -376,22 +376,22 @@ export async function readBrainCoreExecutionPlans(baseUrl: string): Promise<Brai
       available: false,
       count: 0,
       firstCandidate: 'none',
-      modelRouterDryRunExecutionFlagEnabled: false,
-      modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION',
+      mindStewardDryRunExecutionFlagEnabled: false,
+      mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION',
       line: 'Brain Core execution plans: unavailable',
     };
   }
   const firstPlan = response.plans[0];
   const firstCandidate = firstPlan?.kind ?? 'none';
-  const modelRouterDryRunExecutionFlagEnabled = firstPlan?.modelRouterDryRunExecutionFlagEnabled === true;
-  const modelRouterDryRunExecutionFlagName = firstPlan?.modelRouterDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  const mindStewardDryRunExecutionFlagEnabled = firstPlan?.mindStewardDryRunExecutionFlagEnabled === true;
+  const mindStewardDryRunExecutionFlagName = firstPlan?.mindStewardDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   return {
     available: true,
     count: response.plans.length,
     firstCandidate,
-    modelRouterDryRunExecutionFlagEnabled,
-    modelRouterDryRunExecutionFlagName,
-    line: `Brain Core execution plans: ${response.plans.length} · first=${firstCandidate} · modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled}`,
+    mindStewardDryRunExecutionFlagEnabled,
+    mindStewardDryRunExecutionFlagName,
+    line: `Brain Core execution plans: ${response.plans.length} · first=${firstCandidate} · mindStewardDryRunFlag=${mindStewardDryRunExecutionFlagEnabled}`,
   };
 }
 
@@ -401,25 +401,25 @@ export async function readBrainCoreExecutionReadiness(baseUrl: string): Promise<
     return {
       available: false,
       executionEnabled: false,
-      modelRouterDryRunExecutionFlagEnabled: false,
-      modelRouterDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION',
+      mindStewardDryRunExecutionFlagEnabled: false,
+      mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION',
       candidateCount: 0,
       readyCandidateCount: 0,
       blockers: [],
       line: 'Brain Core execution readiness: unavailable',
     };
   }
-  const modelRouterDryRunExecutionFlagEnabled = response.modelRouterDryRunExecutionFlagEnabled === true;
-  const modelRouterDryRunExecutionFlagName = response.modelRouterDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  const mindStewardDryRunExecutionFlagEnabled = response.mindStewardDryRunExecutionFlagEnabled === true;
+  const mindStewardDryRunExecutionFlagName = response.mindStewardDryRunExecutionFlagName ?? 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   return {
     available: true,
     executionEnabled: response.executionEnabled,
-    modelRouterDryRunExecutionFlagEnabled,
-    modelRouterDryRunExecutionFlagName,
+    mindStewardDryRunExecutionFlagEnabled,
+    mindStewardDryRunExecutionFlagName,
     candidateCount: response.candidateCount,
     readyCandidateCount: response.readyCandidateCount,
     blockers: response.blockers,
-    line: `Brain Core execution readiness: enabled=${response.executionEnabled} modelRouterDryRunFlag=${modelRouterDryRunExecutionFlagEnabled} candidates=${response.candidateCount} ready=${response.readyCandidateCount}`,
+    line: `Brain Core execution readiness: enabled=${response.executionEnabled} mindStewardDryRunFlag=${mindStewardDryRunExecutionFlagEnabled} candidates=${response.candidateCount} ready=${response.readyCandidateCount}`,
   };
 }
 
@@ -429,7 +429,7 @@ export async function readBrainCoreMindPreviewPolicy(baseUrl: string): Promise<B
     return {
       available: false,
       status: 'preview-only',
-      firstProposedAction: 'model-router-update-current-context',
+      firstProposedAction: 'mind-steward-update-current-context',
       firstProposedTarget: 'router/current.md',
       applyRouteEnabled: false,
       writesToMind: false,

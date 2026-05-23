@@ -42,7 +42,7 @@ Brain Core already exposes system health, local apps, sessions, and skill status
 - ✅ Says the Bible (daily production pipeline, YouTube/Pinterest/Facebook publishing)
 - ✅ Video Orchestrator (design-phase ProBot artifacts, no live execution)
 - ✅ Model-router (report-only dry-runs, no Mind writes yet)
-- ✅ Scheduler (nightly jobs, model-router dry-run hooks exist)
+- ✅ Scheduler (nightly jobs, mind-steward dry-run hooks exist)
 
 ### What's missing for the next implementation slice
 - ❌ Brain Core read-only registry endpoints for orchestrators, pipelines, projects/domains, and platforms
@@ -164,7 +164,7 @@ GET /approvals → {
 
 **To create/extend (in order):**
 5. **orchestrators.ts** (EXTEND if exists, else CREATE)
-   - Index video, research, design, code, model-router, scheduler orchestrators
+   - Index video, research, design, code, mind-steward, scheduler orchestrators
    - Read from `brain/projects/*/`, `brain/ai/skills/active/`
    - Safe, read-only, no execution
 
@@ -272,7 +272,7 @@ Routes tests:
    - Migration card (progress tracking, safeguards enforced)
 
 2. **Orchestrators Tab** (NEW - consumes `/orchestrators`)
-   - Model Router status
+   - Mind Steward status
    - Video Orchestrator progress
    - Skills registry (research, design, code, Bible research)
    - Scheduler status
@@ -457,5 +457,5 @@ After Brain Console section navigation (Phase 5 complete as of 2026-05-18):
 - Proofly/Xgrow shown as "planning" modules
 - Publishing clearly marked disabled
 
-**See:** `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` and `docs/system/obsidian-mind-model-router-roadmap.md` (Post Orchestrator Consolidation section)
+**See:** `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` and `docs/system/obsidian-mind-steward-roadmap.md` (Post Orchestrator Consolidation section)
 

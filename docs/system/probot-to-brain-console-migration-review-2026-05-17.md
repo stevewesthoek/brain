@@ -156,7 +156,7 @@ ProBot dashboard is a web-based control plane with mixed concerns: local app man
 **Concerns:**
 - Very ProBot-specific, not universally useful
 - Complex state machine
-- Overlaps with scheduler/model-router
+- Overlaps with scheduler/mind-steward
 
 **Decision:** **DROP for now** — Defer to Phase 2. Focus on local apps + orchestrator status first.
 
@@ -236,14 +236,14 @@ ProBot dashboard is a web-based control plane with mixed concerns: local app man
 
 ### 3.1 Existing Brain Core Endpoints (Already Consuming)
 
-✅ `GET /status` — system ready, execution gate status  
-✅ `GET /capabilities` — feature flags, installed components  
-✅ `GET /runtime/reports` — model-router wiki health, runtime state  
-✅ `GET /scheduler/status` — nightly job queue health  
-✅ `GET /scheduler/jobs` — individual job list  
-✅ `GET /approvals` — pending approval requests  
-✅ `GET /approvals/store` — approval audit trail  
-✅ `GET /execution/readiness` — execution candidates, blockers  
+✅ `GET /status` — system ready, execution gate status
+✅ `GET /capabilities` — feature flags, installed components
+✅ `GET /runtime/reports` — mind-steward wiki health, runtime state
+✅ `GET /scheduler/status` — nightly job queue health
+✅ `GET /scheduler/jobs` — individual job list
+✅ `GET /approvals` — pending approval requests
+✅ `GET /approvals/store` — approval audit trail
+✅ `GET /execution/readiness` — execution candidates, blockers
 ✅ `GET /execution/plans` — maintenance + capture plans  
 ✅ `GET /execution/mind-preview-policy` — safe paths, blocked roots  
 ✅ `GET /execution/mind-previews` — queued maintenance actions  
@@ -256,7 +256,7 @@ ProBot dashboard is a web-based control plane with mixed concerns: local app man
 ### 3.2 Missing Brain Core Endpoints (Phase 2-4)
 
 ❌ **`GET /orchestrators`** — Phase 3  
-   - Need: registry of orchestrators (model-router, video, design, code, research, Bible research, scheduler, capture)
+   - Need: registry of orchestrators (mind-steward, video, design, code, research, Bible research, scheduler, capture)
    - Status: available/partial/planned/blocked
    - Health: ok/warning/error
    - Data: summary only, no execution details
@@ -321,7 +321,7 @@ ProBot dashboard is a web-based control plane with mixed concerns: local app man
 ┌─ Brain Console ────────────────────────────────┐
 │ [Overview Tab] [Apps] [Orchestrators] [Projects]│
 ├───────────────────────────────────────────────┤
-│ Status pills (6x): Brain Core | Model Router │ Scheduler | ...
+│ Status pills (6x): Brain Core | Mind Steward │ Scheduler | ...
 │ Attention panel: 0-100 burn bar               │
 ├───────────────────────────────────────────────┤
 │ WIKI HEALTH          MAINTENANCE    APPROVALS │
@@ -363,7 +363,7 @@ ProBot dashboard is a web-based control plane with mixed concerns: local app man
 - Arbitrary shell execution
 - Credential display/modification
 - Billing/payment mutation
-- Mind vault direct mutation (use model-router instead)
+- Mind vault direct mutation (use mind-steward instead)
 
 ### 5.2 Approval Request Flow
 
@@ -413,7 +413,7 @@ Brain Console shows: "Started successfully"
 
 ### Phase 3: Orchestrator Registry
 - Create Brain Core `/orchestrators` endpoint
-- Registry: model-router, video, design, code, research, Bible research, scheduler, capture
+- Registry: mind-steward, video, design, code, research, Bible research, scheduler, capture
 - Status: available/partial/planned/blocked
 - Add Brain Console Orchestrators section
 - Cards + status badges
@@ -507,4 +507,4 @@ Implement Phase 2A (local apps UI) and Phase 3 (orchestrator registry API).
 - Brain Core routes: `projects/brain-core/src/api/routes.ts`
 - Brain Core adapters: `projects/brain-core/src/adapters/`
 - Mind vault structure: `/Users/Office/Repos/stevewesthoek/mind/`
-- Roadmap: `docs/system/obsidian-mind-model-router-roadmap.md`
+- Roadmap: `docs/system/obsidian-mind-steward-roadmap.md`

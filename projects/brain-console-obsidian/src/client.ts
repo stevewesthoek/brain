@@ -15,7 +15,7 @@ export interface BrainCoreCapabilitySummary {
   approvalAuditPersistenceSupported: boolean;
   runtimeReportsSupported: boolean;
   runtimeReportEndpoint: string;
-  modelRouterReportSupported: boolean;
+  mindStewardReportSupported: boolean;
   obsidianPluginInstalled: boolean;
   liveSchedulerVerified: boolean;
   mindWorkspace?: {
@@ -39,8 +39,8 @@ export interface BrainCoreCapabilitySummary {
   };
   executionGate?: {
     executionEnabled?: boolean;
-    modelRouterDryRunExecutionFlagEnabled?: boolean;
-    modelRouterDryRunExecutionFlagName?: string;
+    mindStewardDryRunExecutionFlagEnabled?: boolean;
+    mindStewardDryRunExecutionFlagName?: string;
     candidateActionKinds?: string[];
     readinessEndpoint?: string;
     plansEndpoint?: string;
@@ -49,7 +49,7 @@ export interface BrainCoreCapabilitySummary {
   notes: string[];
 }
 
-export type BrainCoreRuntimeReportId = 'model-router' | 'mind-steward' | 'approval-audit' | 'video' | 'local-apps';
+export type BrainCoreRuntimeReportId = 'mind-steward' | 'approval-audit' | 'video' | 'local-apps';
 
 export interface BrainCoreRuntimeReportSummary {
   id: BrainCoreRuntimeReportId;
@@ -67,7 +67,7 @@ export interface BrainCoreRuntimeReportSummary {
   };
 }
 
-export interface BrainCoreModelRouterReportDetail {
+export interface BrainCoreMindStewardReportDetail {
   exists: boolean;
   status: 'available' | 'missing' | 'invalid';
   latestRunStatus?: 'ok' | 'failed' | 'unknown';
@@ -88,6 +88,7 @@ export interface BrainCoreAiModelSelectorStatus {
   healthy: boolean;
   uptime?: string;
   providers?: BrainCoreAiModelSelectorProvider[];
+  bedrockClaudeCode?: BrainCoreAiModelSelectorBedrockClaudeCode;
   error?: string;
   lastChecked: string;
 }
@@ -104,6 +105,26 @@ export interface BrainCoreAiModelSelectorControlResult {
   success: boolean;
   action: 'start' | 'stop';
   message: string;
+}
+
+export interface BrainCoreAiModelSelectorBedrockClaudeCode {
+  enabled: boolean;
+  region: string;
+  cachePath: string;
+  exportPath: string;
+  cacheExists: boolean;
+  exportExists: boolean;
+  generatedAt?: string;
+  models?: BrainCoreAiModelSelectorBedrockModelMap;
+  currentEnv: BrainCoreAiModelSelectorBedrockModelMap;
+  claudeCodeVersion?: string;
+  warnings: string[];
+}
+
+export interface BrainCoreAiModelSelectorBedrockModelMap {
+  opus?: string;
+  sonnet?: string;
+  haiku?: string;
 }
 
 export interface BrainCoreSchedulerStatus {
@@ -3744,7 +3765,7 @@ export interface BrainCoreAgentSummary {
 }
 
 export type BrainCoreActionKind =
-  | 'model-router-dry-run'
+  | 'mind-steward-dry-run'
   | 'stb-status-refresh'
   | 'video-status-refresh'
   | 'stb-video-migration-review'
@@ -3988,8 +4009,8 @@ export interface BrainCoreExecutionPlan {
   kind: string;
   candidate: boolean;
   executionEnabled: false;
-  modelRouterDryRunExecutionFlagEnabled?: boolean;
-  modelRouterDryRunExecutionFlagName?: string;
+  mindStewardDryRunExecutionFlagEnabled?: boolean;
+  mindStewardDryRunExecutionFlagName?: string;
   wouldExecute: false;
   executed: false;
   riskLevel: 'low' | 'medium' | 'high';
@@ -4006,8 +4027,8 @@ export interface BrainCoreExecutionPlan {
 
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
-  modelRouterDryRunExecutionFlagEnabled?: boolean;
-  modelRouterDryRunExecutionFlagName?: string;
+  mindStewardDryRunExecutionFlagEnabled?: boolean;
+  mindStewardDryRunExecutionFlagName?: string;
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
@@ -5009,10 +5030,10 @@ export async function readBrainCoreApprovalDetail(
   return fetchJson<{ approval?: BrainCoreApprovalDetail }>(normalizeBaseUrl(baseUrl), `/approvals/${approvalId}`);
 }
 
-export async function readBrainCoreModelRouterReportDetail(
+export async function readBrainCoreMindStewardReportDetail(
   baseUrl: string,
-): Promise<HttpResult<{ report?: BrainCoreModelRouterReportDetail }>> {
-  return fetchJson<{ report?: BrainCoreModelRouterReportDetail }>(normalizeBaseUrl(baseUrl), '/runtime/reports/model-router');
+): Promise<HttpResult<{ report?: BrainCoreMindStewardReportDetail }>> {
+  return fetchJson<{ report?: BrainCoreMindStewardReportDetail }>(normalizeBaseUrl(baseUrl), '/runtime/reports/mind-steward');
 }
 
 export async function readBrainCoreAiModelSelectorStatus(

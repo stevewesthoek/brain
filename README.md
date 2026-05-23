@@ -98,8 +98,8 @@ Canonical docs:
 
 - `docs/system/obsidian-brain-core-roadmap.md` — architecture roadmap and boundaries
 - `docs/system/obsidian-brain-core-implementation-plan.md` — execution plan and migration phases
-- `docs/system/obsidian-mind-model-router-roadmap.md` — mind vault, model-router, Save-to-Mind, and scheduler-loop roadmap
-- `docs/system/obsidian-mind-model-router-implementation-plan.md` — 11-step implementation plan for the mind/model-router migration
+- `docs/system/obsidian-mind-steward-roadmap.md` — historical mind vault roadmap; current implementation name is Mind Steward
+- `docs/system/obsidian-mind-steward-implementation-plan.md` — historical implementation plan; current project lives at `projects/mind-steward`
 
 The ProBot dashboard is deprecated as a primary UI. Future machine-control work should target a small local Brain Core API consumed by Obsidian, while retaining only reusable ProBot backend capabilities during migration.
 

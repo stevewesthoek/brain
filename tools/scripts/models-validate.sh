@@ -1,6 +1,6 @@
 #!/bin/bash
 # models-validate.sh
-# Validate that the Bedrock model router resolves exactly one model per Claude tier.
+# Validate that Bedrock model selection resolves exactly one model per Claude tier.
 
 set -euo pipefail
 
@@ -26,9 +26,43 @@ log_success() { echo -e "${GREEN}✓${NC} $*"; }
 
 version_key() {
   local model_id="$1"
-  echo "$model_id" \
-    | sed -E 's/.*claude-[a-z]+-//' \
-    | sed -E 's/[^0-9]+/./g; s/^\.//; s/\.$//'
+  python3 - "$model_id" <<'PY'
+import re
+import sys
+
+model_id = sys.argv[1]
+match = re.search(r"claude-(?:opus|sonnet|haiku)-(.+)$", model_id)
+if not match:
+    print("")
+    raise SystemExit
+
+parts = [int(part) for part in re.findall(r"\d+", match.group(1))]
+if not parts:
+    print("")
+    raise SystemExit
+
+major = parts[0]
+minor = 0
+date = 0
+revision = 0
+
+if len(parts) >= 2:
+    if parts[1] > 1000:
+        date = parts[1]
+        if len(parts) >= 3:
+            revision = parts[2]
+    else:
+        minor = parts[1]
+        if len(parts) >= 3:
+            if parts[2] > 1000:
+                date = parts[2]
+                if len(parts) >= 4:
+                    revision = parts[3]
+            else:
+                revision = parts[2]
+
+print(f"{major:03d}.{minor:03d}.{date:08d}.{revision:03d}")
+PY
 }
 
 compare_models() {
@@ -54,6 +88,13 @@ get_agent_model() {
   fi
 }
 
+agent_model_matches_tier() {
+  local model="$1"
+  local tier="$2"
+  local resolved="$3"
+  [[ "$model" == "$tier" || "$model" == "$resolved" || "$model" == *"claude-$tier"* ]]
+}
+
 require_model() {
   local tier="$1"
   local value="$2"
@@ -68,7 +109,7 @@ require_model() {
 }
 
 main() {
-  log_info "Validating Bedrock model router"
+  log_info "Validating Bedrock model selection"
   echo ""
 
   if [[ ! -f "$CACHE_FILE" ]]; then
@@ -114,8 +155,16 @@ main() {
   echo "  • deep-architect: $deep_architect_model"
   echo ""
 
-  if [[ "$deep_architect_model" != "$opus" ]]; then
-    log_warn "deep-architect model differs from resolved Opus cache: $deep_architect_model vs $opus"
+  if ! agent_model_matches_tier "$cheap_prep_model" haiku "$haiku"; then
+    log_warn "cheap-prep model does not resolve to the Haiku tier: $cheap_prep_model"
+  fi
+
+  if ! agent_model_matches_tier "$coder_default_model" sonnet "$sonnet"; then
+    log_warn "coder-default model does not resolve to the Sonnet tier: $coder_default_model"
+  fi
+
+  if ! agent_model_matches_tier "$deep_architect_model" opus "$opus"; then
+    log_warn "deep-architect model does not resolve to the Opus tier: $deep_architect_model"
   fi
 
   log_info "Resolved Bedrock model map:"
@@ -131,8 +180,20 @@ main() {
     log_info "Run: npm run models:sync:bedrock"
   fi
 
+  local env_stale=0
   if [[ -n "${ANTHROPIC_DEFAULT_OPUS_MODEL:-}" && "${ANTHROPIC_DEFAULT_OPUS_MODEL}" != "$opus" ]]; then
     log_warn "Current shell ANTHROPIC_DEFAULT_OPUS_MODEL is stale: ${ANTHROPIC_DEFAULT_OPUS_MODEL}"
+    env_stale=1
+  fi
+  if [[ -n "${ANTHROPIC_DEFAULT_SONNET_MODEL:-}" && "${ANTHROPIC_DEFAULT_SONNET_MODEL}" != "$sonnet" ]]; then
+    log_warn "Current shell ANTHROPIC_DEFAULT_SONNET_MODEL is stale: ${ANTHROPIC_DEFAULT_SONNET_MODEL}"
+    env_stale=1
+  fi
+  if [[ -n "${ANTHROPIC_DEFAULT_HAIKU_MODEL:-}" && "${ANTHROPIC_DEFAULT_HAIKU_MODEL}" != "$haiku" ]]; then
+    log_warn "Current shell ANTHROPIC_DEFAULT_HAIKU_MODEL is stale: ${ANTHROPIC_DEFAULT_HAIKU_MODEL}"
+    env_stale=1
+  fi
+  if [[ "$env_stale" -ne 0 ]]; then
     log_info "Source generated exports before starting Claude Code: source tools/scripts/bedrock-models.generated.sh"
   fi
 

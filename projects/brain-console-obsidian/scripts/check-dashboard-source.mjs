@@ -15,7 +15,7 @@ assert(view.includes('Dashboard Self Check'), 'view.ts missing Dashboard Self Ch
 assert(view.includes('Local Apps'), 'view.ts missing Local Apps section');
 assert(view.includes('App Operations Policy'), 'view.ts missing App Operations Policy card');
 assert(view.includes('Onboarding Standards'), 'view.ts missing Onboarding Standards card');
-assert(view.includes('Model Router'), 'view.ts missing Model Router handling');
+assert(view.includes('Mind Steward'), 'view.ts missing Mind Steward handling');
 assert(view.includes('requestBrainCoreLocalAppAction'), 'view.ts missing local app action request wiring');
 assert(view.includes('Reports & System Health'), 'view.ts missing Reports & System Health card');
 assert(view.includes('readBrainCoreLocalAppsDashboard('), 'view.ts missing local apps dashboard reader');

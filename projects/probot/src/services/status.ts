@@ -84,7 +84,7 @@ export async function getStatusSummary(config: Config): Promise<string> {
     brainCoreMaintenancePreviews.line,
     `Wiki health: ${describeWikiHealth(brainCoreRuntimeReports)}`,
     `Execution gate: ${brainCoreExecutionReadiness.executionEnabled ? 'enabled' : 'disabled'} · first candidate: ${brainCoreExecutionPlans.firstCandidate}`,
-    `Model-router execution flag: ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagEnabled ? 'enabled (still gated)' : 'disabled'} · ${brainCoreExecutionReadiness.modelRouterDryRunExecutionFlagName}`,
+    `Mind Steward execution flag: ${brainCoreExecutionReadiness.mindStewardDryRunExecutionFlagEnabled ? 'enabled (still gated)' : 'disabled'} · ${brainCoreExecutionReadiness.mindStewardDryRunExecutionFlagName}`,
     `Mind preview policy: ${brainCoreMindPreviewPolicy.status} · apply route: ${brainCoreMindPreviewPolicy.applyRouteEnabled ? 'enabled' : 'disabled'}`,
     `Mind previews: ${brainCoreMindPreviews.count} · latest=${brainCoreMindPreviews.latest?.targetPath ?? 'none'}`,
     latest ? `Latest thread: ${latest.tool} · ${latest.projectLabel} · ${latest.headline}` : "Latest thread: none detected",
@@ -96,8 +96,8 @@ export async function getStatusSummary(config: Config): Promise<string> {
 }
 
 function describeWikiHealth(reports: Awaited<ReturnType<typeof readBrainCoreRuntimeReports>>): string {
-  const modelRouter = reports.reports.find((report) => report.id === 'model-router');
-  if (!modelRouter?.wikiHealth) return 'unavailable';
-  const { ok, errorCount, warningCount } = modelRouter.wikiHealth;
+  const mindSteward = reports.reports.find((report) => report.id === 'mind-steward');
+  if (!mindSteward?.wikiHealth) return 'unavailable';
+  const { ok, errorCount, warningCount } = mindSteward.wikiHealth;
   return ok ? 'ok' : `warnings=${warningCount} errors=${errorCount}`;
 }

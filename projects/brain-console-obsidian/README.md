@@ -43,7 +43,7 @@ projects/brain-console-obsidian/
 - Runtime reports and capabilities are read from Brain Core, not copied into Mind notes.
 - Runtime reports include the read-only `local-apps` and `video` summaries generated under `runtime/local/`.
 - The read-only approval gate view includes approval store health when Brain Core exposes `/approvals/store`.
-- The read-only execution readiness view includes `/execution/plans` and `/execution/readiness`, with `scheduler-run-model-router-dry-run` as the first future candidate and execution still disabled.
+- The read-only execution readiness view includes `/execution/plans` and `/execution/readiness`, with `scheduler-run-mind-steward-dry-run` as the first future candidate and execution still disabled.
 - **2026-05-18 live verified:** Approval store and audit log surfaces are operational and read-only.
 - **2026-05-18 live verified:** Execution readiness view shows disabled state and no-execute behavior.
 - Manual installation into `mind/.obsidian/plugins/` is required and should be approved separately.
@@ -97,8 +97,8 @@ npm run --prefix projects/brain-console-obsidian package
 - Buttons are enabled per app/action only when Brain Core reports that specific action is executable.
 - Brain Core action routes catch failures and return structured JSON with `commandOverrideAccepted: false`.
 - Release/install command: `npm run --prefix projects/brain-console-obsidian release:install`
-- Model Router is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
-- Fala is registered in `operations/infrastructure/local-apps.json` and appears in the Apps tab via `GET /local-apps/dashboard` with port `3050`, `/api/health`, Start/Stop controls, and the Fala-owned `npm run dashboard:status` metadata contract for LAN phone URLs and model-router/Bedrock policy flags.
+- Mind Steward is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
+- Fala is registered in `operations/infrastructure/local-apps.json` and appears in the Apps tab via `GET /local-apps/dashboard` with port `3050`, `/api/health`, Start/Stop controls, and the Fala-owned `npm run dashboard:status` metadata contract for LAN phone URLs and Mind Steward/Bedrock policy flags.
 
 ## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
 

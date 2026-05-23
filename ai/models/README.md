@@ -1,4 +1,4 @@
-# Model Router Configuration
+# Model Selection Configuration
 
 Local Claude Code / AWS Bedrock model discovery and management.
 
@@ -14,7 +14,7 @@ The sync command writes:
 - `ai/models/bedrock-models.generated.json` — resolved model cache
 - `tools/scripts/bedrock-models.generated.sh` — sourceable Claude Code model exports
 
-Before starting a new Claude Code session, source the generated exports so `/model` sees the latest resolved Bedrock IDs:
+New login/interactive shells source the generated exports through Brain's shell config. In an already-open shell, source the generated exports before starting Claude Code so `/model` sees the latest resolved Bedrock IDs:
 
 ```bash
 source tools/scripts/bedrock-models.generated.sh
@@ -49,9 +49,11 @@ The sync script must never silently downgrade Opus below the pinned fallback. If
 
 | Agent | Current model | Tier |
 |---|---|---|
-| `cheap-prep` | `claude-haiku-4-5-20251001` | Haiku |
-| `coder-default` | `claude-sonnet-4-6` | Sonnet |
-| `deep-architect` | `us.anthropic.claude-opus-4-7` | Opus |
+| `cheap-prep` | `haiku` | Haiku |
+| `coder-default` | `sonnet` | Sonnet |
+| `deep-architect` | `opus` | Opus |
+
+The exact Bedrock IDs come from `tools/scripts/bedrock-models.generated.sh`, not from agent frontmatter.
 
 ## Configuration options
 
@@ -104,7 +106,7 @@ Expected Opus export:
 us.anthropic.claude-opus-4-7
 ```
 
-If `/model` still has several Opus entries, that is Claude Code's built-in selector. Use the Opus 4.7/default entry and ignore older built-ins such as Opus 4.1, Opus 4.6, or long-context Opus 4.6. If the custom environment value still shows `us.anthropic.claude-opus-4-6-v1`, the running Claude Code process was started with stale environment variables; exit it, source the generated script, and start Claude Code again.
+If `/model` still has several Opus entries, that is Claude Code's built-in selector. Use the Opus 4.7/default entry and ignore older built-ins such as Opus 4.1, Opus 4.6, or long-context Opus 4.6. If the custom environment value still shows an older Opus 4.6 ID, the running Claude Code process was started with stale environment variables; exit it, open a new shell, or source the generated script, then start Claude Code again.
 
 ## Related files
 
@@ -112,8 +114,9 @@ If `/model` still has several Opus entries, that is Claude Code's built-in selec
 - `tools/scripts/models-validate.sh`
 - `tools/scripts/bedrock-models.generated.sh`
 - `ai/models/bedrock-models.generated.json`
-- `ai/skills/custom/model-router/SKILL.md`
+- `operations/system-configs/shell/.zprofile`
+- `operations/system-configs/shell/.zshrc`
 - `ai/policy/routing.md`
 - `operations/system-configs/claude/agents/deep-architect.md`
 
-Last updated: 2026-05-07
+Last updated: 2026-05-23

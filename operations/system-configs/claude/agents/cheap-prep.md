@@ -1,7 +1,7 @@
 ---
 name: cheap-prep
 description: Use for summarization, file triage, context compaction, extracting relevant files, lightweight classification, and commit message drafting. Invoke before handing off to coder-default or deep-architect when context needs compacting first.
-model: claude-haiku-4-5-20251001
+model: haiku
 tools:
   - Read
   - Grep

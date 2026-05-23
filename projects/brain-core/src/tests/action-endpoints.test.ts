@@ -395,7 +395,7 @@ test('GET /actions returns all actions with readiness for mind-steward-dry-run',
 });
 
 test('GET /actions/mind-steward-dry-run readiness respects execution flag', async () => {
-  const flagName = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  const flagName = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   const originalValue = process.env[flagName];
 
   try {
@@ -408,7 +408,7 @@ test('GET /actions/mind-steward-dry-run readiness respects execution flag', asyn
 
     assert.equal(body.action.readiness!.status, 'blocked', 'should be blocked without execution flag');
     assert.ok(
-      body.action.readiness!.blockers.some((b) => b.includes('BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION')),
+      body.action.readiness!.blockers.some((b) => b.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION')),
       'should include flag name in blockers',
     );
 

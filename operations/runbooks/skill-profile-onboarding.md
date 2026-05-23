@@ -217,8 +217,18 @@ If Codex warns that skill descriptions were shortened, first check:
 2. large active orchestrator sizes
 3. whether default accidentally contains domain/tool skills
 4. whether `power`, `research`, `video`, or `design` is active instead of default
+5. whether Codex-only plugins are enabled for domains that are not used in normal sessions
 
 Do not solve context pressure by deleting skills. Use profiles.
+
+For the shared AI-agnostic skill layer, the default state must pass:
+
+```bash
+node tools/scripts/switch-skill-profile.mjs default --check
+node tools/scripts/sync-ai-skills.mjs --check
+```
+
+For Codex specifically, remember that plugin skills are an additional metadata surface outside `ai/skills/active/`. If the shared default profile is clean and Codex still warns, assess `operations/system-configs/codex/config.toml` separately and disable unused plugins only after deciding they are not part of normal Codex sessions.
 
 ---
 

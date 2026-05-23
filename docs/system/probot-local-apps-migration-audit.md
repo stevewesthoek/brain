@@ -71,7 +71,7 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 - `GET /local-apps/action-plans`
 - `GET /local-apps/:id/action-plan/:action`
 - `POST /local-apps/:id/start|stop|restart`
-- Runtime report parsing for local apps and model-router runtime status
+- Runtime report parsing for local apps and mind-steward runtime status
 
 ## Brain Console Gaps
 
@@ -88,9 +88,9 @@ Audit the ProBot Local Apps implementation, identify what is safe to reuse, and 
 5. Return `not_executable` for apps without a registered safe execution strategy instead of exposing raw commands.
 6. Enable buttons only when the app/action has an approved execution strategy; otherwise keep them disabled with a reason.
 
-## Model Router Check
+## Mind Steward Check
 
-- `Model Router` exists in Brain Core runtime-report and scheduler context, but it is not registered as a canonical local-app row in `operations/infrastructure/local-apps.json`.
+- `Mind Steward` exists in Brain Core runtime-report and scheduler context, but it is not registered as a canonical local-app row in `operations/infrastructure/local-apps.json`.
 - Brain Console surfaces it through the orchestrator/dashboard transformation when runtime-report data is present.
 - Do not invent unsafe command semantics; use the same controlled action result path as every other app.
-- If Model Router later gets a canonical local-app registration, it should inherit the same safe inventory transformation.
+- If Mind Steward later gets a canonical local-app registration, it should inherit the same safe inventory transformation.

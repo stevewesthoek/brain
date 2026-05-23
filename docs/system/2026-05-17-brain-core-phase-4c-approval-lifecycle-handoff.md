@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-17
 **Primary source:** `brain`
-**Task scope:** Wire model-router dry-run approval request into existing preview/report generation with strict safety preservation
+**Task scope:** Wire mind-steward dry-run approval request into existing preview/report generation with strict safety preservation
 
 ## Summary
 
@@ -23,7 +23,7 @@ Phase 4C implemented the next safe slice: clarified approval-request lifecycle, 
 **File:** `projects/brain-core/src/adapters/action-registry.ts`
 
 **Changes:**
-- Updated model-router-dry-run action `reason` field to clarify: "Request approval creates pending approval record only (does not execute). Approval delegates to existing guarded execution path. Output: Brain-owned runtime/local/model-router. Apply/write disabled."
+- Updated mind-steward-dry-run action `reason` field to clarify: "Request approval creates pending approval record only (does not execute). Approval delegates to existing guarded execution path. Output: Brain-owned runtime/local/mind-steward. Apply/write disabled."
 - All existing action safety metadata unchanged.
 
 **Safety:** Read-only documentation. No code execution changes.
@@ -44,8 +44,8 @@ Phase 4C implemented the next safe slice: clarified approval-request lifecycle, 
 
 **Implementation:** `projects/brain-core/src/adapters/action-registry.ts`
 
-- Modified `enrichActionWithReadiness()` to compute readiness status for model-router-dry-run by:
-  - Checking `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION` environment variable
+- Modified `enrichActionWithReadiness()` to compute readiness status for mind-steward-dry-run by:
+  - Checking `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION` environment variable
   - Populating blockers when flag is disabled
   - Setting status to 'ready' only when all blockers clear
 - Modified `listActionSummaries()` and `getActionSummary()` to call enrichActionWithReadiness()
@@ -75,16 +75,16 @@ Phase 4C implemented the next safe slice: clarified approval-request lifecycle, 
 
 **New tests (4 additions):**
 
-1. `GET /actions/model-router-dry-run includes readiness status`
+1. `GET /actions/mind-steward-dry-run includes readiness status`
    - Verifies readiness field exists and has correct structure
    - Validates all safety guarantees are hardcoded to safe values
    - Confirms executionKind is 'report-only'
 
-2. `GET /actions returns all actions with readiness for model-router-dry-run`
+2. `GET /actions returns all actions with readiness for mind-steward-dry-run`
    - Validates readiness is included in list responses
-   - Ensures model-router action has readiness in collection
+   - Ensures mind-steward action has readiness in collection
 
-3. `GET /actions/model-router-dry-run readiness respects execution flag`
+3. `GET /actions/mind-steward-dry-run readiness respects execution flag`
    - Tests readiness status with flag disabled (should be 'blocked')
    - Tests readiness status with flag enabled (should be 'ready')
    - Validates blockers list includes flag name when disabled
@@ -111,11 +111,11 @@ npm run typecheck
 - UI changes compile without error
 - No type violations in readiness display code
 
-### Model Router (typecheck passed)
+### Mind Steward (typecheck passed)
 ```bash
 npm run typecheck
 ```
-- No changes to model-router flow
+- No changes to mind-steward flow
 - Dry-run report path unchanged
 
 ### ProBot (typecheck passed)

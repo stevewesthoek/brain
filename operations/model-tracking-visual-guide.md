@@ -392,7 +392,7 @@ See: `operations/decision-log.md` → "Model Tracking System" section
 Decision: Implement real-time model visibility in status line
 Rationale: Model router works invisibly; users had no way to know when expensive models (Sonnet/Opus) were running or why. This system makes routing decisions transparent.
 Trade-offs: Minimal overhead (just reading/writing JSON file); no performance impact.
-Outcome: Users can now see cost signals in real-time and understand model router's decisions.
+Outcome: Users can now see cost signals in real-time and understand automatic model-selection decisions.
 
 ---
 

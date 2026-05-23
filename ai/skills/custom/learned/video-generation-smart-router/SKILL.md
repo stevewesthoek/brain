@@ -1,6 +1,6 @@
 ---
 name: video-generation-smart-router
-description: Smart model router for local video/image generation. Classifies task intent and routes to best model (SDXL, Wave, FLUX, Roop). Optimizes for quality + resource efficiency. Zero platform costs.
+description: Smart model selector for local video/image generation. Classifies task intent and routes to best model (SDXL, Wave, FLUX, Roop). Optimizes for quality + resource efficiency. Zero platform costs.
 ---
 
 # Video Generation Smart Router

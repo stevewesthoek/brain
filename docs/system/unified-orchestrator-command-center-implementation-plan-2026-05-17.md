@@ -3,7 +3,7 @@
 **Date:** 2026-05-17  
 **Status:** Ready for Phase 2 execution  
 **Related:** 
-- `docs/system/obsidian-mind-model-router-roadmap.md` (unified cockpit roadmap)
+- `docs/system/obsidian-mind-steward-roadmap.md` (unified cockpit roadmap)
 - `docs/system/stb-to-video-orchestrator-migration-plan-2026-05-17.md` (STB migration details)
 - `docs/system/probot-to-brain-console-migration-review-2026-05-17.md` (ProBot feature disposition)
 
@@ -49,7 +49,7 @@ Local apps, Scheduler, Model-router, Skills, Projects/domains
 Lock direction, document architecture, preserve existing systems, stop ProBot dashboard expansion.
 
 ### Completed Tasks
-- ✅ Unified cockpit roadmap created (`obsidian-mind-model-router-roadmap.md`)
+- ✅ Unified cockpit roadmap created (`obsidian-mind-steward-roadmap.md`)
 - ✅ STB migration plan created (`stb-to-video-orchestrator-migration-plan-2026-05-17.md`)
 - ✅ ProBot feature disposition analyzed (`probot-to-brain-console-migration-review-2026-05-17.md`)
 - ✅ Brain Console architecture documented
@@ -148,7 +148,7 @@ Add read-only unified orchestrator registry surfaces to existing Brain Core runn
 #### 2.1 Extend Brain Core adapters
 **Files to create/extend in `projects/brain-core/src/adapters/`:**
 
-- **orchestrators.ts** — Index all orchestrators (video, research, design, code, model-router, scheduler)
+- **orchestrators.ts** — Index all orchestrators (video, research, design, code, mind-steward, scheduler)
 - **pipelines.ts** — STB status adapter (read ProBot), video orchestrator adapter (progress tracking), migration card (aggregated)
 - **projects.ts** or **domains.ts** — Project registry (link to pipelines and orchestrators)
 - **platforms.ts** — Platform registry (YouTube, Pinterest, Facebook, etc.)
@@ -275,7 +275,7 @@ Phase 3o adds a read-only render/export policy surface:
 **New content:**
 - Render orchestrator registry
 - Show: name, category (skill/pipeline/system), status, last run, queue count
-- Display all 7 agents: model-router, video, research, design, code, Bible research, scheduler
+- Display all 7 agents: mind-steward, video, research, design, code, Bible research, scheduler
 - Link to projects/pipelines if applicable
 - Status pills (ready/partial/error/future)
 
@@ -536,7 +536,7 @@ interface AgentSkill {
 ```
 
 **Responsibility:**
-- Register 7 agent roles: model-router, video, research, design, code, Bible research, scheduler
+- Register 7 agent roles: mind-steward, video, research, design, code, Bible research, scheduler
 - Index skills from `brain/ai/skills/active/` and orchestrators from `brain/projects/*/`
 - Expose as read-only HTTP
 
@@ -699,17 +699,17 @@ GET /agent-events/:runId → AgentEvent[] (per run)
 - No mutations (read-only)
 - Tests pass
 
-#### 2C.6 Integrate model-router as first registered agent
+#### 2C.6 Integrate mind-steward as first registered agent
 **File:** `projects/brain-core/src/adapters/agent-registry.ts` (extend)
 
 **Responsibility:**
-- Query model-router job history from `~/.office-scheduler/`
+- Query mind-steward job history from `~/.office-scheduler/`
 - Expose vault maintenance runs as agent runs
-- Register model-router capabilities (compile, memory, hygiene, drift loops)
+- Register mind-steward capabilities (compile, memory, hygiene, drift loops)
 
 **Endpoints:**
-- `GET /agents/model-router` → model-router role + capabilities
-- `GET /agent-runs?agentId=model-router` → vault maintenance run history
+- `GET /agents/mind-steward` → mind-steward role + capabilities
+- `GET /agent-runs?agentId=mind-steward` → vault maintenance run history
 
 **Exit criteria:**
 - Model-router appears as registered agent
@@ -721,7 +721,7 @@ GET /agent-events/:runId → AgentEvent[] (per run)
 **File:** `projects/brain-core/src/adapters/agent-registry.ts` (extend)
 
 **Agents to register:**
-1. Model Router (vault maintenance)
+1. Mind Steward (vault maintenance)
 2. Video Orchestrator (pipeline)
 3. Research Orchestrator (web search, synthesis)
 4. Design Orchestrator (image generation, thumbnails)
@@ -832,7 +832,7 @@ GET /agent-approvals/:id → AgentApproval (detail)
 - ✅ Agent events recorded for audit trail
 - ✅ Agent View section renders all cards
 - ✅ Model-router appears as first registered agent
-- ✅ All 7 orchestrators registered (video, research, design, code, Bible research, scheduler, model-router)
+- ✅ All 7 orchestrators registered (video, research, design, code, Bible research, scheduler, mind-steward)
 - ✅ Brain Core `/agent-readiness` reports accurate status
 - ✅ No autonomous writes to Mind
 - ✅ Tests pass (80% coverage)
@@ -874,7 +874,7 @@ interface Orchestrator {
 
 **Orchestrators to index:**
 
-1. Model Router — `brain/projects/model-router/`
+1. Mind Steward — `brain/projects/mind-steward/`
 2. Video Orchestrator — `brain/projects/video-orchestrator/` (future)
 3. Research Orchestrator — `brain/ai/skills/active/research/` or similar
 4. Design Orchestrator — `brain/ai/skills/active/design/`
@@ -934,7 +934,7 @@ interface Project {
 
 **Projects to index:**
 1. Says the Bible (linked to stb-daily-pipeline)
-2. Machine Brain (linked to model-router, video-orchestrator)
+2. Machine Brain (linked to mind-steward, video-orchestrator)
 3. Active research projects (from mind vault)
 4. Other active business projects
 
@@ -1520,7 +1520,7 @@ Get explicit user approval and switch one platform at a time.
 ## Reference
 
 **Related documents:**
-- Roadmap: `docs/system/obsidian-mind-model-router-roadmap.md`
+- Roadmap: `docs/system/obsidian-mind-steward-roadmap.md`
 - STB migration: `docs/system/stb-to-video-orchestrator-migration-plan-2026-05-17.md`
 - ProBot review: `docs/system/probot-to-brain-console-migration-review-2026-05-17.md`
 - Architecture: `docs/system/obsidian-command-center-orchestrator-architecture-2026-05-17.md`
@@ -1682,7 +1682,7 @@ projects/brain-console-obsidian/src/client.ts (add reader)
 projects/brain-console-obsidian/src/dashboard.ts (add snapshot fields)
 projects/brain-console-obsidian/src/view.ts (add section and cards)
 projects/brain-console-obsidian/styles.css (add styles if needed)
-docs/system/1779034841996-obsidian-mind-model-router-handoff.md (continuation update)
+docs/system/1779034841996-obsidian-mind-steward-handoff.md (continuation update)
 ```
 
 ---
@@ -1790,7 +1790,7 @@ See `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.
 
 **Related documents:**
 - `docs/system/post-orchestrator-proofly-xgrow-architecture-review-2026-05-18.md` (full architecture)
-- `docs/system/obsidian-mind-model-router-roadmap.md` (post orchestrator roadmap)
+- `docs/system/obsidian-mind-steward-roadmap.md` (post orchestrator roadmap)
 
 ### Phase P4: Post Draft Review Queue (2026-06-02+)
 

@@ -14,7 +14,7 @@ export function listRuntimeReports(): BrainCoreRuntimeReportSummary[] {
       id: 'mind-steward',
       envPath: process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH,
       defaultPath: path.resolve(process.cwd(), 'runtime/local/mind-steward/latest.json'),
-      fallbackMessage: 'Model-router dry-run report not connected yet.',
+      fallbackMessage: 'Mind Steward dry-run report not connected yet.',
     }),
     readApprovalAuditReport(),
     readJsonRuntimeReport({

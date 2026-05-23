@@ -2,23 +2,23 @@
 
 ## Status
 
-**Controlled first-action execution implemented for `scheduler-run-model-router-dry-run` only. Broad execution remains disabled.**
+**Controlled first-action execution implemented for `scheduler-run-mind-steward-dry-run` only. Broad execution remains disabled.**
 
-This document specifies how to enable execution for the first action (`scheduler-run-model-router-dry-run`) when explicit approval is given.
+This document specifies how to enable execution for the first action (`scheduler-run-mind-steward-dry-run`) when explicit approval is given.
 
 ## Proposed Environment Flag
 
 ```bash
 # Default: false (execution disabled)
-BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=false
+BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=false
 
 # To enable: set to true
-BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true
+BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true
 ```
 
 ## Proposed Allowed Action
 
-- **Kind:** `scheduler-run-model-router-dry-run`
+- **Kind:** `scheduler-run-mind-steward-dry-run`
 - **Type:** Report-only
 - **Scope:** Single action, not batch execution
 - **Default:** Disabled until explicit flag is set
@@ -45,20 +45,20 @@ All of these must be true for execution to proceed:
    - Approval has not expired
 
 5. **Execution plan kind matches exactly**
-   - Requested kind: `scheduler-run-model-router-dry-run`
+   - Requested kind: `scheduler-run-mind-steward-dry-run`
    - No other kinds allowed
 
 6. **Feature flag true**
-   - `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true`
+   - `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true`
    - Flag is checked at request time, not at startup
 
 7. **Runtime output path safe**
-   - Output target: `runtime/local/model-router/`
+   - Output target: `runtime/local/mind-steward/`
    - Path is within `runtime/local/`, not in Mind or system directories
    - Path exists and is writable
 
 8. **Command allowlist exact match**
-   - Only `bash tools/scripts/model-router-dry-run-report.sh`
+   - Only `bash tools/scripts/mind-steward-dry-run-report.sh`
    - No other commands
    - No environment variable injection
    - No piping, no redirection override
@@ -74,21 +74,21 @@ All of these must be true for execution to proceed:
 
 ```bash
 # Execution would run:
-bash tools/scripts/model-router-dry-run-report.sh
+bash tools/scripts/mind-steward-dry-run-report.sh
 
 # Output would be written to:
-runtime/local/model-router/dry-run-report-${timestamp}.json
+runtime/local/mind-steward/dry-run-report-${timestamp}.json
 
 # Approval audit event:
 {
   "event": "executed",
   "approvalId": "approval-1",
-  "kind": "scheduler-run-model-router-dry-run",
+  "kind": "scheduler-run-mind-steward-dry-run",
   "status": "ok",
   "executedAt": "2026-05-18T13:35:43.216Z",
   "executed": true,
   "output": {
-    "path": "runtime/local/model-router/dry-run-report-2026-05-18.json",
+    "path": "runtime/local/mind-steward/dry-run-report-2026-05-18.json",
     "size": 12345,
     "lines": 42
   }
@@ -106,7 +106,7 @@ The following are explicitly NOT supported in this first action:
    - No task mutations
 
 2. **No arbitrary commands**
-   - Only `bash tools/scripts/model-router-dry-run-report.sh`
+   - Only `bash tools/scripts/mind-steward-dry-run-report.sh`
    - No shell variable expansion in commands
    - No piping to other commands
    - No command substitution
@@ -139,14 +139,14 @@ If execution needs to be rolled back:
 
 1. **Disable flag immediately:**
    ```bash
-   unset BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION
+   unset BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION
    # or
-   BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=false
+   BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=false
    ```
 
 2. **Remove generated runtime output (if needed):**
    ```bash
-   rm -rf /Users/Office/Repos/stevewesthoek/brain/runtime/local/model-router/
+   rm -rf /Users/Office/Repos/stevewesthoek/brain/runtime/local/mind-steward/
    ```
 
 3. **Verify execution disabled:**
@@ -171,7 +171,7 @@ When execution occurs, a new audit event is created:
 {
   "event": "executed",
   "approvalId": "approval-1",
-  "kind": "scheduler-run-model-router-dry-run",
+  "kind": "scheduler-run-mind-steward-dry-run",
   "status": "ok|error",
   "executedAt": "ISO-8601-timestamp",
   "duration_ms": 1234,
@@ -197,7 +197,7 @@ When execution occurs, a new audit event is created:
 - `/execution/readiness`, `/execution/plans`, and `/capabilities` expose flag state
 - Brain Console and ProBot display flag state read-only
 - Approval store/audit is verified operational
-- The only implemented execution path is `scheduler-run-model-router-dry-run`
+- The only implemented execution path is `scheduler-run-mind-steward-dry-run`
 - Execution requires the feature flag, durable approval store, durable audit path, approved record, exact command allowlist, and Brain `runtime/local/` output
 - No broad CLI execution trigger exists
 - Operator rollback drill is documented in `operations/runbooks/brain-core-approval-gates.md`
@@ -206,7 +206,7 @@ When execution occurs, a new audit event is created:
 
 ### Phase 1: Feature Flag Implementation
 
-- Implement `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION` env flag
+- Implement `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION` env flag
 - Add guards in execution path
 - Add unit tests for flag-gated execution
 - Update Brain Console to show flag state
@@ -234,14 +234,14 @@ When execution occurs, a new audit event is created:
 
 ## Design Decisions
 
-**Why `scheduler-run-model-router-dry-run` first?**
+**Why `scheduler-run-mind-steward-dry-run` first?**
 - Report-only, no side effects
 - Safe to test execution gates
 - Provides useful operational data
 - No Mind writes
 - Can be rolled back instantly
 
-**Why `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION` env flag?**
+**Why `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION` env flag?**
 - Simple to toggle on/off
 - No database or config file needed
 - Clear intent
@@ -279,7 +279,7 @@ Before any future execution path can proceed:
 - [ ] Live rollback drill performed against a local Brain Core process
 - [ ] Incident response playbook reviewed
 - [ ] Exact one-action execution path implemented and tested
-- [ ] Execution still limited to `scheduler-run-model-router-dry-run` only
+- [ ] Execution still limited to `scheduler-run-mind-steward-dry-run` only
 
 ## References
 

@@ -29,7 +29,7 @@ Transform Brain Console from a basic, childish-looking functional dashboard into
 - Tab-based navigation keeps scope bounded
 
 ### Minimal Visual Noise
-- Remove concatenated labels like "Model Routermissing"
+- Remove concatenated labels like "Mind Stewardmissing"
 - Increase card margins and text breathing room
 - Use typography (size, weight, monospace vs. sans) to separate concerns
 - Status colors only: green (ok), yellow (warning), red (error), orange (accent), gray (neutral)
@@ -134,7 +134,7 @@ Transform Brain Console from a basic, childish-looking functional dashboard into
 ┌─────────────────────────────────────────────────────────┐
 │ ACTIVITY / RECENT EVENTS                          [⊕]   │
 ├─────────────────────────────────────────────────────────┤
-│ 2026-05-17 19:30:00 scheduler-run-model-router ok      │
+│ 2026-05-17 19:30:00 scheduler-run-mind-steward ok      │
 │ 2026-05-17 18:15:00 approval pending: review changes   │
 │ 2026-05-17 17:45:00 capture inbox: 3 new items        │
 └─────────────────────────────────────────────────────────┘
@@ -153,7 +153,7 @@ Transform Brain Console from a basic, childish-looking functional dashboard into
 
 | State | Color | Icon | Meaning | Example |
 |-------|-------|------|---------|---------|
-| **online** | Green (#4ade80) | ✓ | System working normally | Brain Core LIVE, model-router ready |
+| **online** | Green (#4ade80) | ✓ | System working normally | Brain Core LIVE, mind-steward ready |
 | **degraded** | Yellow (#facc15) | ⚠ | Partial functionality | Model-router stale, wiki has warnings |
 | **review** | Amber (#f59e0b) | ◆ | Maintenance pending, no blocker | 8 maintenance actions queued |
 | **blocked** | Red (#ef4444) | ✗ | Action required, system affected | Approvals needed, publishing disabled |
@@ -476,7 +476,7 @@ Transform Brain Console from a basic, childish-looking functional dashboard into
 ### Phase 5: Card Density & Safety Labels (Sprint 2)
 **Goal:** Improved spacing, clear visual hierarchy, safety indicators  
 **Tasks:**
-1. Tighten card spacing: reduce concatenation ("Model Routermissing" → "Model Router" + "missing" on next line)
+1. Tighten card spacing: reduce concatenation ("Mind Stewardmissing" → "Mind Steward" + "missing" on next line)
 2. Add [Read-Only], [No Writes], [Safety Gated] labels to appropriate cards
 3. Implement card border-left in status color (3px)
 4. Add badge styling for counts and risk levels

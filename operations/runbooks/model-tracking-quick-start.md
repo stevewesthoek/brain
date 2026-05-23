@@ -256,4 +256,4 @@ The system is completely transparent and requires zero user action. It's just th
 
 - `brain/ai/policy/routing.md` — Routing policy (how router decides which model)
 - `brain/ai/policy/guardrails.md` — Safety policy
-- `/model-router` skill — Manual model routing control (if needed)
+- `brain/ai/policy/routing.md` — Shared routing policy reference

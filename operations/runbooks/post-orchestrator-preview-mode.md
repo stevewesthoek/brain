@@ -84,7 +84,7 @@ It is intentionally preview-only. It does not publish, schedule, export files, c
    - Refresh button visible and clickable.
 
 5. **Verify Status Strip Below Header**
-   - 6 pills visible: Brain Core, Model Router, Scheduler, Save-to-Mind, Approvals, Maintenance.
+   - 6 pills visible: Brain Core, Mind Steward, Scheduler, Save-to-Mind, Approvals, Maintenance.
    - No overlapping text (all pills readable, properly spaced).
    - Status values visible (e.g., "online", "missing", "runtime-report").
 

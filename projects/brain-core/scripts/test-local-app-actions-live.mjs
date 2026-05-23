@@ -118,13 +118,13 @@ try {
   assert(unknownApp.statusCode === 404, 'unknown app POST should return 404');
   assert(unknownApp.body.status === 'not_found', 'unknown app POST should return not_found');
 
-  const unsupportedAction = await post('/local-apps/model-router/delete');
+  const unsupportedAction = await post('/local-apps/mind-steward/delete');
   assert(unsupportedAction.statusCode === 404, 'unsupported action POST should return 404');
 
-  const notExecutable = await post('/local-apps/model-router/start');
-  assert(notExecutable.statusCode === 200, 'model-router start probe should return structured 200 result');
-  assert(notExecutable.body.status === 'not_executable', 'model-router start should be not_executable');
-  assert(notExecutable.body.safety?.commandOverrideAccepted === false, 'model-router probe must not accept command overrides');
+  const notExecutable = await post('/local-apps/mind-steward/start');
+  assert(notExecutable.statusCode === 200, 'mind-steward start probe should return structured 200 result');
+  assert(notExecutable.body.status === 'not_executable', 'mind-steward start should be not_executable');
+  assert(notExecutable.body.safety?.commandOverrideAccepted === false, 'mind-steward probe must not accept command overrides');
 
   const executable = selectExecutableAction(dashboard.apps);
   let liveActionResult = null;

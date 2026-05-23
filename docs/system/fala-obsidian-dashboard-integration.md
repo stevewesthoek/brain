@@ -40,14 +40,14 @@ That command returns JSON with:
 - LAN phone URL candidates
 - safe command labels
 - local AI provider flags
-- model-router fallback flags
+- mind-steward fallback flags
 - router-owned Amazon Bedrock policy state
 
 ## Runtime model policy
 
 Fala should prefer local Ollama for learner runtime by default.
 
-Paid fallback should flow through the model router, not direct provider APIs from Fala. Amazon Bedrock credentials, model selection, cost policy, and paid fallback routing belong behind the router.
+Paid fallback should flow through the mind steward, not direct provider APIs from Fala. Amazon Bedrock credentials, model selection, cost policy, and paid fallback routing belong behind the AI model-selection policy.
 
 Codex CLI and similar coding agents are not learner-runtime chat providers. They may be used only for supervised development or offline automation jobs with a separate approval model.
 

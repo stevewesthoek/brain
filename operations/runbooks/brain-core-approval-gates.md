@@ -12,7 +12,7 @@ Brain Core approval handling is currently read-only and non-executing.
 - Approval audit JSONL persistence enabled with `BRAIN_CORE_APPROVAL_AUDIT_PATH`.
 - All responses return `executed: false`.
 - Execution remains disabled.
-- Read-only execution readiness endpoints exist for the first future candidate, `scheduler-run-model-router-dry-run`, reporting `executionEnabled: false`.
+- Read-only execution readiness endpoints exist for the first future candidate, `scheduler-run-mind-steward-dry-run`, reporting `executionEnabled: false`.
 - Feature flag design complete: see `operations/specs/brain-core-first-action-feature-flag.md`
 
 ## Safe runtime paths
@@ -29,7 +29,7 @@ curl http://127.0.0.1:4877/approvals
 curl http://127.0.0.1:4877/approvals/audit
 curl http://127.0.0.1:4877/approvals/store
 curl http://127.0.0.1:4877/execution/plans
-curl http://127.0.0.1:4877/execution/plans/scheduler-run-model-router-dry-run
+curl http://127.0.0.1:4877/execution/plans/scheduler-run-mind-steward-dry-run
 curl http://127.0.0.1:4877/execution/readiness
 ```
 
@@ -61,7 +61,7 @@ The following must exist first:
 The first-action feature flag is now implemented as a read-only signal:
 
 ```bash
-BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=false
+BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=false
 ```
 
 Operator surfaces should show both values separately:
@@ -69,13 +69,13 @@ Operator surfaces should show both values separately:
 - feature flag state: enabled/disabled
 - execution state: enabled/disabled
 
-Important: `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true` is not enough to execute anything. It only removes the feature-flag blocker. Execution remains disabled until all other gates are proven for the exact request:
+Important: `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true` is not enough to execute anything. It only removes the feature-flag blocker. Execution remains disabled until all other gates are proven for the exact request:
 
 1. safe localhost request
 2. durable approval store available
 3. durable audit JSONL available
 4. unexpired approval with status `approved`
-5. exact action kind `scheduler-run-model-router-dry-run`
+5. exact action kind `scheduler-run-mind-steward-dry-run`
 6. safe runtime output path under Brain `runtime/local/`
 7. exact command allowlist match
 8. rollback plan present
@@ -88,7 +88,7 @@ Brain Console and ProBot must display the flag state as an operator warning, not
 Before any future execution implementation is allowed, complete this drill without running the action:
 
 ```bash
-unset BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION
+unset BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION
 curl -fsS http://127.0.0.1:4877/execution/readiness
 curl -fsS http://127.0.0.1:4877/capabilities
 ```
@@ -97,7 +97,7 @@ Expected result:
 
 ```text
 executionEnabled=false
-modelRouterDryRunExecutionFlagEnabled=false
+mindStewardDryRunExecutionFlagEnabled=false
 executableActions=false
 readyCandidateCount=0
 ```
@@ -105,16 +105,16 @@ readyCandidateCount=0
 Then simulate the flag-on operator view without executing:
 
 ```bash
-BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true npm run --prefix projects/brain-core dev
+BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true npm run --prefix projects/brain-core dev
 curl -fsS http://127.0.0.1:4877/execution/readiness
-curl -fsS http://127.0.0.1:4877/execution/plans/scheduler-run-model-router-dry-run
+curl -fsS http://127.0.0.1:4877/execution/plans/scheduler-run-mind-steward-dry-run
 curl -fsS http://127.0.0.1:4877/capabilities
 ```
 
 Expected result:
 
 ```text
-modelRouterDryRunExecutionFlagEnabled=true
+mindStewardDryRunExecutionFlagEnabled=true
 executionEnabled=false
 wouldExecute=false
 executed=false
@@ -125,7 +125,7 @@ readyCandidateCount=0
 Rollback procedure:
 
 1. Stop Brain Core.
-2. Unset `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION` or set it to `false`.
+2. Unset `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION` or set it to `false`.
 3. Restart Brain Core.
 4. Recheck `/execution/readiness` and `/capabilities`.
 5. Preserve approval store and audit logs; do not delete audit evidence.

@@ -333,19 +333,19 @@ run_gws_token_refresh() {
   run_job "gws-token-refresh" "$timeout_seconds" "$command" "$token_log"
 }
 
-run_model_router_dry_run_report() {
-  local timeout_seconds="${MODEL_ROUTER_DRY_RUN_TIMEOUT_SECONDS:-300}"
-  local report_script="${MODEL_ROUTER_DRY_RUN_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mind-steward-dry-run-report.sh}"
-  local report_log="$LOG_DIR/model-router-dry-run.log"
+run_mind_steward_dry_run_report() {
+  local timeout_seconds="${MIND_STEWARD_DRY_RUN_TIMEOUT_SECONDS:-300}"
+  local report_script="${MIND_STEWARD_DRY_RUN_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mind-steward-dry-run-report.sh}"
+  local report_log="$LOG_DIR/mind-steward-dry-run.log"
   local command
 
   if [[ ! -f "$report_script" ]]; then
-    log "skipping job=model-router-dry-run reason=missing_script path=$report_script"
+    log "skipping job=mind-steward-dry-run reason=missing_script path=$report_script"
     return 0
   fi
 
   command="$(printf 'bash %q >> %q 2>&1' "$report_script" "$report_log")"
-  run_job "model-router-dry-run" "$timeout_seconds" "$command" "$report_log"
+  run_job "mind-steward-dry-run" "$timeout_seconds" "$command" "$report_log"
 }
 
 run_local_apps_report() {
@@ -527,8 +527,8 @@ main() {
   # GWS token refresh — daily, keeps auth fresh for skill-prune emails, never stops chain
   run_gws_token_refresh || log "warning gws-token-refresh failed but chain continues"
 
-  # Model Router dry-run report — validates planner package and writes runtime report only; never stops chain
-  run_model_router_dry_run_report || log "warning model-router-dry-run failed but chain continues"
+  # Mind Steward dry-run report — validates planner package and writes runtime report only; never stops chain
+  run_mind_steward_dry_run_report || log "warning mind-steward-dry-run failed but chain continues"
 
   # Local apps report — writes read-only runtime status only; never stops chain
   run_local_apps_report || log "warning local-apps-report failed but chain continues"

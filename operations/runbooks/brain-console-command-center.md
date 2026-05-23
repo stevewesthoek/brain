@@ -9,7 +9,7 @@
 ## Quick Start
 
 1. **Open Brain Console**: Obsidian right sidebar → click brain icon, OR command palette "Open Brain Console"
-2. **Status pills** show: Brain Core, Model Router, Scheduler, Save-to-Mind, Approvals, Maintenance
+2. **Status pills** show: Brain Core, Mind Steward, Scheduler, Save-to-Mind, Approvals, Maintenance
 3. **6 core cards** display: Wiki Health, Maintenance Previews, Approvals, Scheduler Status, Brain Core readiness, Next Safe Action
 4. **Refresh button** polls all endpoints manually (read-only, no automatic POST calls)
 5. **That's it** — the dashboard is your system cockpit
@@ -44,7 +44,7 @@
              ↓
     ┌─────────────────────────────────────────┐
     │  Brain Runtime                          │
-    │  • Model Router (vault maintenance)     │
+    │  • Mind Steward (vault maintenance)     │
     │  • Scheduler (nightly jobs)             │
     │  • Approval gate (safety boundaries)    │
     └─────────────────────────────────────────┘
@@ -61,7 +61,7 @@ Located at top, showing quick health indicators:
 | Pill | Shows | Source |
 |------|-------|--------|
 | **Brain Core** | `online` / `offline` + mode | `/status` |
-| **Model Router** | job status (`idle`, `running`, `failed`, etc) | `/runtime/reports` |
+| **Mind Steward** | job status (`idle`, `running`, `failed`, etc) | `/runtime/reports` |
 | **Scheduler** | nightly job queue status | `/scheduler/status` |
 | **Save-to-Mind** | capture pipeline status (always `live`) | n8n webhook health |
 | **Approvals** | count of pending approval requests | `/approvals` |
@@ -72,9 +72,9 @@ Located at top, showing quick health indicators:
 ### Core Cards (6 MVP)
 
 #### 1. Wiki Health
-**Shows:** Model-router lint results (ok/warnings/errors)  
-**Source:** `/runtime/reports` → `model-router.wikiHealth`  
-**Details:** Warning count, error count, example lint issues  
+**Shows:** Mind Steward lint results (ok/warnings/errors)
+**Source:** `/runtime/reports` → `mind-steward.wikiHealth`
+**Details:** Warning count, error count, example lint issues
 **Safety:** Read-only; shows lint report only, no writes
 
 #### 2. Maintenance Previews
@@ -126,7 +126,7 @@ Located in header. Manual-only, read-only requests:
 | Button | Function | Status |
 |--------|----------|--------|
 | **Refresh** | Poll all endpoints again | ✅ Enabled |
-| **Request Dry Run** | Trigger model-router preview | 🔒 Disabled (future expansion) |
+| **Request Dry Run** | Trigger Mind Steward preview | 🔒 Disabled (future expansion) |
 | **View Latest** | Inspect latest artifact/preview | 🔒 Disabled (future expansion) |
 | **Open Mind** | Navigate to Mind vault | 🔒 Disabled (future expansion) |
 | **Wiki Log** | Jump to wiki/log.md | 🔒 Disabled (future expansion) |
@@ -152,9 +152,9 @@ GET /capabilities
 
 GET /runtime/reports
   → { reports: BrainCoreRuntimeReportSummary[] }
-  → id: 'model-router' → Wiki Health card
+  → id: 'mind-steward' → Wiki Health card
   → id: 'approval-audit' → Approvals audit trail
-  → Used by: model-router pill, Wiki Health card
+  → Used by: Mind Steward pill, Wiki Health card
 
 GET /scheduler/status
   → BrainCoreSchedulerStatus (queue health, latest run, enabled flag)
@@ -275,7 +275,7 @@ Brain Console settings are in Obsidian plugin settings:
 
 **Cause:** Feature not yet implemented (expected behavior in v0.1.0).
 
-**Expected timeline:** See roadmap in `docs/system/obsidian-mind-model-router-roadmap.md` for planned expansion.
+**Expected timeline:** See roadmap in `docs/system/obsidian-mind-steward-roadmap.md` for planned expansion.
 
 **Current state:** Only "Refresh" button is enabled. Other buttons (Dry Run, View Latest, Open Mind, Wiki Log) are reserved for future phases.
 
@@ -315,10 +315,10 @@ Brain Console settings are in Obsidian plugin settings:
 - [ ] Maintenance action preview inspector
 - [ ] Approval request UI (inspect + approve/reject in-plugin)
 - [ ] Execution plan viewer + candidate comparison
-- [ ] Model-router lint report drill-down
+- [ ] Mind Steward lint report drill-down
 - [ ] Scheduler job runner + history viewer
 
-See `docs/system/obsidian-mind-model-router-roadmap.md` for full strategic roadmap.
+See `docs/system/obsidian-mind-steward-roadmap.md` for full strategic roadmap.
 
 ---
 
@@ -371,8 +371,8 @@ See `docs/system/obsidian-mind-model-router-roadmap.md` for full strategic roadm
 ## References
 
 - **Architecture Spec:** `docs/system/obsidian-command-center-dashboard-spec-2026-05-17.md`
-- **Roadmap:** `docs/system/obsidian-mind-model-router-roadmap.md`
-- **Implementation Plan:** `docs/system/obsidian-mind-model-router-implementation-plan.md`
+- **Roadmap:** `docs/system/obsidian-mind-steward-roadmap.md`
+- **Implementation Plan:** `docs/system/obsidian-mind-steward-implementation-plan.md`
 - **Brain Core API:** `projects/brain-core/src/api/routes.ts` and generated OpenAPI docs
 - **Plugin Source:** `projects/brain-console-obsidian/src/`
 - **Mind Vault Reference:** `mind/HOME.md`, `mind/live/dashboard.md`

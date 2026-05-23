@@ -137,7 +137,7 @@ export interface DashboardSnapshot {
   externalExecutorCount: number;
   plannedAgentCount: number;
   blockedAgentCount: number;
-  modelRouterAgentSummary?: { status: string; health: string };
+  mindStewardAgentSummary?: { status: string; health: string };
   claudeCodexExecutorSummary?: { count: number };
   actionCount: number;
   requestableActionCount: number;
@@ -170,8 +170,8 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     : 'degraded';
 
   // Wiki health
-  const modelRouterReport = state.runtimeReports?.find((r) => r.id === 'model-router');
-  const wikiHealth = modelRouterReport?.wikiHealth;
+  const mindStewardReport = state.runtimeReports?.find((r) => r.id === 'mind-steward');
+  const wikiHealth = mindStewardReport?.wikiHealth;
   const wikiHealthOk = wikiHealth?.ok === true;
   const wikiHealthWarnings = wikiHealth?.warningCount ?? 0;
   const wikiHealthErrors = wikiHealth?.errorCount ?? 0;
@@ -384,10 +384,10 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
   const externalExecutorCount = (state.agents ?? []).filter(a => a.owner === 'external-tool').length;
   const plannedAgentCount = (state.agents ?? []).filter(a => a.status === 'planned').length;
   const blockedAgentCount = (state.agents ?? []).filter(a => a.status === 'blocked').length;
-  const modelRouterAgent = (state.agents ?? []).find(a => a.id === 'model-router-agent');
-  const modelRouterAgentSummary = modelRouterAgent ? {
-    status: modelRouterAgent.status,
-    health: modelRouterAgent.health,
+  const mindStewardAgent = (state.agents ?? []).find(a => a.id === 'mind-steward-agent');
+  const mindStewardAgentSummary = mindStewardAgent ? {
+    status: mindStewardAgent.status,
+    health: mindStewardAgent.health,
   } : undefined;
   const claudeCodexCount = (state.agents ?? []).filter(a => ['claude-code-executor', 'codex-executor'].includes(a.id)).length;
   const claudeCodexExecutorSummary = claudeCodexCount > 0 ? { count: claudeCodexCount } : undefined;
@@ -542,7 +542,7 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     externalExecutorCount,
     plannedAgentCount,
     blockedAgentCount,
-    modelRouterAgentSummary,
+    mindStewardAgentSummary,
     claudeCodexExecutorSummary,
     actionCount,
     requestableActionCount,

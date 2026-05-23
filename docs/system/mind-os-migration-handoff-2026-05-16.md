@@ -16,7 +16,7 @@ Brain docs read and used as source of truth:
 
 - `docs/system/obsidian-brain-core-roadmap.md`
 - `docs/system/obsidian-brain-core-implementation-plan.md`
-- `docs/system/obsidian-mind-model-router-roadmap.md`
+- `docs/system/obsidian-mind-steward-roadmap.md`
 
 Mind docs read and used as source of truth:
 
@@ -32,7 +32,7 @@ n8n docs/workflow read:
 
 - Obsidian is the primary human cockpit.
 - `mind` stores human memory, live work, sources, wiki, capture, and archive.
-- `brain` owns executable infrastructure: Brain Core, model-router implementation, scheduler integration, skills, orchestrators, and n8n operational assets.
+- `brain` owns executable infrastructure: Brain Core, mind-steward implementation, scheduler integration, skills, orchestrators, and n8n operational assets.
 - ProBot dashboard is deprecated as a primary dashboard. Do not add new dashboard product features to ProBot.
 - Save-to-Mind remains permanent.
 - Public webhook path remains `/mind-inbox` for compatibility.
@@ -104,10 +104,10 @@ Verified on: 2026-05-16
 
 Created:
 
-- `projects/model-router/README.md`
-- `projects/model-router/src/contracts.ts`
-- `projects/model-router/src/jobs.ts`
-- `projects/model-router/src/index.ts`
+- `projects/mind-steward/README.md`
+- `projects/mind-steward/src/contracts.ts`
+- `projects/mind-steward/src/jobs.ts`
+- `projects/mind-steward/src/index.ts`
 
 Current scope:
 
@@ -120,7 +120,7 @@ Current scope:
   - `mind-drift-error-loop`
 - No live scheduler integration.
 - No destructive migration code.
-- No writes to `mind` from the model-router implementation yet.
+- No writes to `mind` from the mind-steward implementation yet.
 
 ## Validation completed in `brain`
 
@@ -134,10 +134,10 @@ Security scan target files:
 
 - `operations/automations/n8n/workflows/mind-inbox-fixed.json`
 - `operations/runbooks/n8n-mind-inbox.md`
-- `projects/model-router/README.md`
-- `projects/model-router/src/contracts.ts`
-- `projects/model-router/src/jobs.ts`
-- `projects/model-router/src/index.ts`
+- `projects/mind-steward/README.md`
+- `projects/mind-steward/src/contracts.ts`
+- `projects/mind-steward/src/jobs.ts`
+- `projects/mind-steward/src/index.ts`
 
 ## Known dirty state in `brain`
 
@@ -152,7 +152,7 @@ Migration-related changed paths from this slice:
 
 - `operations/automations/n8n/workflows/mind-inbox-fixed.json`
 - `operations/runbooks/n8n-mind-inbox.md`
-- `projects/model-router/`
+- `projects/mind-steward/`
 - this handoff: `docs/system/mind-os-migration-handoff-2026-05-16.md`
 
 ## Matching Mind handoff
@@ -174,14 +174,14 @@ Validation performed through BuildFlow:
 - `git_status_short` completed in both `brain` and `mind`.
 - Mind `capture/inbox/`, `capture/failed/`, `router/`, and `live/` structures were confirmed present.
 - `validate_json_files` passed for `operations/automations/n8n/workflows/mind-inbox-fixed.json`.
-- Secret-pattern scan passed for the changed model-router files.
+- Secret-pattern scan passed for the changed mind-steward files.
 
 Repo-local implementation advanced:
 
-- `projects/model-router/src/contracts.ts` now includes typed Mind OS snapshot and contract dry-run result types.
-- `projects/model-router/src/jobs.ts` now includes `createMindContractDryRunResult(...)` for read-only drift/error validation.
-- `projects/model-router/src/index.ts` exports the new contract checker API.
-- `projects/model-router/README.md` documents the dry-run capability and safety boundary.
+- `projects/mind-steward/src/contracts.ts` now includes typed Mind OS snapshot and contract dry-run result types.
+- `projects/mind-steward/src/jobs.ts` now includes `createMindContractDryRunResult(...)` for read-only drift/error validation.
+- `projects/mind-steward/src/index.ts` exports the new contract checker API.
+- `projects/mind-steward/README.md` documents the dry-run capability and safety boundary.
 
 Still not verified / still needs cleanup:
 
@@ -208,28 +208,28 @@ Type-check note:
 
 - BuildFlow `type_check_cli` is not applicable to this repo layout at this time; it attempted `pnpm --dir packages/cli type-check` and failed because `packages/cli` does not exist.
 
-## Brain Core and model-router hardening — 2026-05-17
+## Brain Core and mind-steward hardening — 2026-05-17
 
-Implemented a safer approval-audit scaffold and a stat-only model-router snapshot/report path.
+Implemented a safer approval-audit scaffold and a stat-only mind-steward snapshot/report path.
 
 Brain Core changes:
 
 - `GET /approvals/audit` remains read-only and now surfaces `executed: false` plus `source: memory|jsonl`.
 - `BRAIN_CORE_APPROVAL_AUDIT_PATH` now rejects unsafe paths containing `..`, `mind`, `.env`, `.git`, `node_modules`, `dist`, or `build`.
 - Approval requests are normalized through a strict allowlist scaffold; unsupported kinds are rejected without execution.
-- Capability output now advertises approval-audit persistence support, model-router report support, and the current read-only/offline state of the scheduler and Obsidian plugin integration.
-- Brain Core now also exposes read-only execution readiness for the first future candidate, `scheduler-run-model-router-dry-run`, via `/execution/plans` and `/execution/readiness`. Execution remains disabled.
+- Capability output now advertises approval-audit persistence support, mind-steward report support, and the current read-only/offline state of the scheduler and Obsidian plugin integration.
+- Brain Core now also exposes read-only execution readiness for the first future candidate, `scheduler-run-mind-steward-dry-run`, via `/execution/plans` and `/execution/readiness`. Execution remains disabled.
 
 Model-router changes:
 
 - Added a stat-only Mind snapshot collector for trusted roots.
-- Added a report-only CLI path for the nightly scheduler helper when `MODEL_ROUTER_MIND_ROOT` is configured.
+- Added a report-only CLI path for the nightly scheduler helper when `MIND_STEWARD_MIND_ROOT` is configured.
 - Added tests for the new snapshot helper and kept planner behavior read-only.
 
 Validation:
 
 - `npm run --prefix projects/brain-core ci` passed after installing local package dependencies.
-- `npm run --prefix projects/model-router ci` passed after installing local package dependencies.
+- `npm run --prefix projects/mind-steward ci` passed after installing local package dependencies.
 - `python3 -m json.tool operations/automations/n8n/workflows/mind-inbox-fixed.json` passed.
 
 Known remaining noise:
@@ -246,7 +246,7 @@ Completed live server verification of approval persistence and audit logging:
 - ✅ Approval audit JSONL persistence operational with `BRAIN_CORE_APPROVAL_AUDIT_PATH`
 - ✅ Request/approve/reject workflow verified (all return `executed: false`)
 - ✅ Audit events persist with correct `executed: false` status
-- ✅ First candidate `scheduler-run-model-router-dry-run` execution readiness verified (disabled)
+- ✅ First candidate `scheduler-run-mind-steward-dry-run` execution readiness verified (disabled)
 - ✅ All 48 automated tests passing, including unsafe path rejection and corrupted store handling
 
 **Documentation Created:**
@@ -349,7 +349,7 @@ Start with a small validation/deployment slice:
 7. Confirm the new capture lands in `mind/capture/inbox/`.
 8. Only after success, update docs from “target/pending live deployment” to “verified live”.
 9. Add failure-buffer behavior as a separate slice.
-10. Start model-router dry-run implementation. Do not write/move legacy content yet.
+10. Start mind-steward dry-run implementation. Do not write/move legacy content yet.
 
 ## Suggested BuildFlow-safe next commands
 
@@ -370,10 +370,10 @@ If asked to commit, stage explicit paths only. Suggested `brain` paths:
 docs/system/mind-os-migration-handoff-2026-05-16.md
 operations/automations/n8n/workflows/mind-inbox-fixed.json
 operations/runbooks/n8n-mind-inbox.md
-projects/model-router/README.md
-projects/model-router/src/contracts.ts
-projects/model-router/src/jobs.ts
-projects/model-router/src/index.ts
+projects/mind-steward/README.md
+projects/mind-steward/src/contracts.ts
+projects/mind-steward/src/jobs.ts
+projects/mind-steward/src/index.ts
 projects/brain-core/README.md
 projects/brain-core/package.json
 projects/brain-core/tsconfig.json
@@ -431,7 +431,7 @@ Validation after hardening:
 - CI included `npm run typecheck` and `npm test`.
 - Node test runner passed 6 tests, 0 failed.
 - JSON validation passed for `projects/brain-core/package.json`, `projects/brain-core/tsconfig.json`, and `operations/automations/n8n/workflows/mind-inbox-fixed.json`.
-- Secret scan passed on Brain Core, model-router, and handoff files.
+- Secret scan passed on Brain Core, mind-steward, and handoff files.
 
 Still not done:
 
@@ -472,7 +472,7 @@ Validation after `/repos`:
 - `npm run ci` in `projects/brain-core` passed.
 - CI included typecheck and 7 Node route/adapter tests.
 - JSON validation passed for Brain Core package/config and n8n workflow JSON.
-- Secret scan passed on Brain Core, model-router, n8n runbook, Codex prompt docs, and handoff files.
+- Secret scan passed on Brain Core, mind-steward, n8n runbook, Codex prompt docs, and handoff files.
 
 Next safe implementation phase:
 
@@ -906,30 +906,30 @@ Validation:
 
 ## Model-router dry-run loop planner — 2026-05-17
 
-Completed the next safe model-router roadmap slice.
+Completed the next safe mind-steward roadmap slice.
 
 New package/config files:
 
 ```text
-projects/model-router/package.json
-projects/model-router/tsconfig.json
-projects/model-router/src/types/node-shims.d.ts
+projects/mind-steward/package.json
+projects/mind-steward/tsconfig.json
+projects/mind-steward/src/types/node-shims.d.ts
 ```
 
 New planner/test files:
 
 ```text
-projects/model-router/src/plans.ts
-projects/model-router/src/tests/plans.test.ts
+projects/mind-steward/src/plans.ts
+projects/mind-steward/src/tests/plans.test.ts
 ```
 
 Updated files:
 
 ```text
-projects/model-router/README.md
-projects/model-router/src/contracts.ts
-projects/model-router/src/index.ts
-projects/model-router/src/jobs.ts
+projects/mind-steward/README.md
+projects/mind-steward/src/contracts.ts
+projects/mind-steward/src/index.ts
+projects/mind-steward/src/jobs.ts
 ```
 
 What changed:
@@ -950,17 +950,17 @@ Safety boundary:
 
 Validation:
 
-- `npm run ci` in `projects/model-router` passed.
+- `npm run ci` in `projects/mind-steward` passed.
 - CI included typecheck and 4 Node dry-run planner tests.
 
-## Office scheduler model-router dry-run integration — 2026-05-17
+## Office scheduler mind-steward dry-run integration — 2026-05-17
 
 Completed a safe scheduler integration slice.
 
 New script:
 
 ```text
-tools/scripts/model-router-dry-run-report.sh
+tools/scripts/mind-steward-dry-run-report.sh
 ```
 
 Updated files:
@@ -972,27 +972,27 @@ operations/infrastructure/scheduler-inventory.md
 
 What changed:
 
-- Added a non-blocking `model-router-dry-run` nightly chain member.
-- The job runs `projects/model-router` CI and writes runtime report files under `runtime/local/model-router/`.
+- Added a non-blocking `mind-steward-dry-run` nightly chain member.
+- The job runs `projects/mind-steward` CI and writes runtime report files under `runtime/local/mind-steward/`.
 - The job is report-only and never stops the scheduler chain.
 - The job does not write, move, delete, archive, compact, split, or rewrite Mind files.
 - The scheduler inventory now documents the job and its report-only safety boundary.
 
 Validation planned/performed:
 
-- `npm run ci` in `projects/model-router` remains the validation command for the job.
+- `npm run ci` in `projects/mind-steward` remains the validation command for the job.
 - Shell script safety review preserved the no-Mind-write boundary.
 
 Generated/runtime outputs remain unstaged and should not be committed.
 
-## Office nightly scheduler model-router report integration — 2026-05-17
+## Office nightly scheduler mind-steward report integration — 2026-05-17
 
 Completed a safe report-only scheduler integration slice.
 
 New file:
 
 ```text
-tools/scripts/model-router-dry-run-report.sh
+tools/scripts/mind-steward-dry-run-report.sh
 ```
 
 Updated files:
@@ -1000,21 +1000,21 @@ Updated files:
 ```text
 tools/scripts/office-nightly-scheduler.sh
 operations/infrastructure/scheduler-inventory.md
-operations/runbooks/model-router.md
+operations/runbooks/mind-steward.md
 ```
 
 What changed:
 
-- Added `model-router-dry-run` to the Office nightly scheduler chain.
+- Added `mind-steward-dry-run` to the Office nightly scheduler chain.
 - The job runs after `gws-token-refresh`.
 - The job is non-blocking and never stops the nightly chain.
-- The helper runs `npm run ci` in `projects/model-router` and writes runtime status files only.
+- The helper runs `npm run ci` in `projects/mind-steward` and writes runtime status files only.
 
 Runtime outputs:
 
 ```text
-runtime/local/model-router/latest.md
-runtime/local/model-router/latest.json
+runtime/local/mind-steward/latest.md
+runtime/local/mind-steward/latest.json
 ```
 
 Safety boundary:
@@ -1026,12 +1026,12 @@ Safety boundary:
 
 Validation:
 
-- `npm run ci` in `projects/model-router` passed before scheduler integration.
+- `npm run ci` in `projects/mind-steward` passed before scheduler integration.
 - The scheduler shell script was patched but not executed by BuildFlow; live scheduler execution still needs local runtime verification.
 
 ## Brain Core scheduler runtime report adapter — 2026-05-17
 
-Completed the Brain Core side of the model-router scheduler report integration.
+Completed the Brain Core side of the mind-steward scheduler report integration.
 
 Updated files:
 
@@ -1045,9 +1045,9 @@ projects/brain-core/README.md
 What changed:
 
 - `GET /scheduler/status` and `GET /scheduler/latest-run` now read a safe JSON runtime report when available.
-- Default report path is `runtime/local/model-router/latest.json` relative to the repo.
-- Override path is `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH`, with traversal rejected.
-- `GET /scheduler/jobs` now includes `model-router-dry-run` as a non-mutating scheduler job.
+- Default report path is `runtime/local/mind-steward/latest.json` relative to the repo.
+- Override path is `BRAIN_CORE_MIND_STEWARD_REPORT_PATH`, with traversal rejected.
+- `GET /scheduler/jobs` now includes `mind-steward-dry-run` as a non-mutating scheduler job.
 - Added route test coverage for the configured runtime report path.
 
 Safety boundary:
@@ -1079,15 +1079,15 @@ mind/live/machine.md
 
 What changed:
 
-- Brain Core `/scheduler/status` and `/scheduler/latest-run` now read the model-router dry-run runtime report when present.
-- Brain Core `/runtime/reports` now exposes read-only summaries for the model-router dry-run report, approval audit JSONL health, and future report slots. The endpoint stays Brain-owned and reports `writesToMind: false` and `executableActions: false`.
+- Brain Core `/scheduler/status` and `/scheduler/latest-run` now read the mind-steward dry-run runtime report when present.
+- Brain Core `/runtime/reports` now exposes read-only summaries for the mind-steward dry-run report, approval audit JSONL health, and future report slots. The endpoint stays Brain-owned and reports `writesToMind: false` and `executableActions: false`.
 - Approval requests and audit records remain non-executing scaffolds. Rejected requests are recorded with `executed: false`; unsupported kinds are rejected without creating approval records.
 - Mind workspace isolation guidance now lives in `operations/runbooks/mind-workspace-isolation.md` for later category-by-category cleanup of unrelated dirty state.
 - ProBot is being reduced to a thin GET-only client over Brain Core, and the Brain Console plugin remains standalone until manually approved for vault installation.
 - The ProBot Brain Core command alias mapping is documented in `operations/specs/probot-brain-core-thin-client-commands.md` because the live command handlers are still too tangled for a low-risk insertion.
-- Default report path: `runtime/local/model-router/latest.json`.
-- Override path: `BRAIN_CORE_MODEL_ROUTER_REPORT_PATH`.
-- `/scheduler/jobs` now includes `model-router-dry-run` in addition to Mind loop job placeholders.
+- Default report path: `runtime/local/mind-steward/latest.json`.
+- Override path: `BRAIN_CORE_MIND_STEWARD_REPORT_PATH`.
+- `/scheduler/jobs` now includes `mind-steward-dry-run` in addition to Mind loop job placeholders.
 
 Safety boundary:
 

@@ -9,7 +9,7 @@ Marker: `brain-console-local-apps-live-actions-2026-05-19-01`
 - Kept Obsidian shell-free: Brain Console only POSTs canonical app/action requests to Brain Core.
 - Made canonical inventory primary for `/local-apps`; runtime reports can augment status but cannot replace inventory.
 - Added per-action disabled reasons through `actionDisabledReasons` and exact app-level summary text.
-- Fixed source diagnostics so 15 registry apps plus 1 Brain Core Model Router augmentation is expected.
+- Fixed source diagnostics so 15 registry apps plus 1 Brain Core Mind Steward augmentation is expected.
 - Added live HTTP verifier `projects/brain-core/scripts/test-local-app-actions-live.mjs` and package script `test:local-app-actions-live`.
 - Updated Brain Console marker and Online/Degraded/Offline semantics.
 - Hardened release packaging/install checks to scrub and reject stale build markers.
@@ -22,7 +22,7 @@ Marker: `brain-console-local-apps-live-actions-2026-05-19-01`
 - Source diagnostics: canonical count 15, displayed count 16, mismatches empty.
 - Unknown app POST returned 404.
 - Unsupported action POST returned 404.
-- Model Router start returned structured `not_executable`.
+- Mind Steward start returned structured `not_executable`.
 - Safe executable action live-tested: `video-orchestrator:restart` returned `success`, `ok: true`.
 - Brain Core `/status` still returned OK after POST probes.
 
@@ -158,9 +158,9 @@ Current still-disabled actions and reasons:
 - `fala:restart` - no canonical restart command is defined for this app.
 - `tradebot:stop` - no canonical stop command is defined for this app.
 - `tradebot:restart` - no canonical restart command is defined for this app.
-- `model-router:start` - no canonical start command is defined for this app.
-- `model-router:stop` - no canonical stop command is defined for this app.
-- `model-router:restart` - no canonical restart command is defined for this app.
+- `mind-steward:start` - no canonical start command is defined for this app.
+- `mind-steward:stop` - no canonical stop command is defined for this app.
+- `mind-steward:restart` - no canonical restart command is defined for this app.
 
 Validation results after the ProBot fix:
 
@@ -371,9 +371,9 @@ Still-disabled actions and reasons:
 - `fala:restart` - no canonical restart command is defined.
 - `tradebot:stop` - no canonical stop command is defined.
 - `tradebot:restart` - no canonical restart command is defined.
-- `model-router:start` - no canonical start command is defined.
-- `model-router:stop` - no canonical stop command is defined.
-- `model-router:restart` - no canonical restart command is defined.
+- `mind-steward:start` - no canonical start command is defined.
+- `mind-steward:stop` - no canonical stop command is defined.
+- `mind-steward:restart` - no canonical restart command is defined.
 
 Live verifier results:
 
@@ -617,9 +617,9 @@ Model: Claude Sonnet 4.6
 | `fala:start` | Script missing or outside allowlisted roots; Fala app not present in brain repo |
 | `fala:stop` | No canonical stop command |
 | `fala:restart` | No canonical restart command |
-| `model-router:start` | No canonical shell lifecycle contract for Model Router |
-| `model-router:stop` | No canonical shell lifecycle contract for Model Router |
-| `model-router:restart` | No canonical shell lifecycle contract for Model Router |
+| `mind-steward:start` | No canonical shell lifecycle contract for Mind Steward |
+| `mind-steward:stop` | No canonical shell lifecycle contract for Mind Steward |
+| `mind-steward:restart` | No canonical shell lifecycle contract for Mind Steward |
 
 ### Executable count
 
@@ -631,7 +631,7 @@ Model: Claude Sonnet 4.6
 - Supervisor command action-match enforcement was pre-existing in executor; no new allowlist broadening.
 - Family Finance restart script is fixed/no-arg delegate; no env access.
 - No external repos modified except adding the restart script to family-finance.
-- Model Router, Fala, JPV Bootcamp stop remain intentionally disabled.
+- Mind Steward, Fala, JPV Bootcamp stop remain intentionally disabled.
 - Brain Console unchanged; UI picks up new support flags from dashboard response automatically.
 
 ### Validation results
@@ -1217,7 +1217,7 @@ Live verifier evidence:
 - Source diagnostics: canonical app count 15, displayed app count 16, mismatches empty.
 - Unknown app POST returned 404.
 - Unsupported action POST returned 404.
-- `model-router:start` returned structured `not_executable`.
+- `mind-steward:start` returned structured `not_executable`.
 - Real live action: `video-orchestrator:restart` returned `success`, `ok: true`.
 - Composite restart: `says-the-bible:restart` returned `success`, `ok: true`.
 - Brain Core `/status` remained 200/OK after POST probes.

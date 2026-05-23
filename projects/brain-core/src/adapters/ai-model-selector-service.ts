@@ -1,15 +1,20 @@
 import { execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 
 const SELECTOR_URL = process.env.AI_SELECTOR_URL ?? 'http://127.0.0.1:4890';
 const LAUNCHD_LABEL = 'com.office.ai-model-selector';
 const PLIST_PATH = `${process.env.HOME ?? '/Users/Office'}/Library/LaunchAgents/com.office.ai-model-selector.plist`;
 const HEALTH_TIMEOUT_MS = 3000;
+const REPO_ROOT = process.env.BRAIN_REPO_ROOT ?? '/Users/Office/Repos/stevewesthoek/brain';
+const BEDROCK_MODEL_CACHE_PATH = `${REPO_ROOT}/ai/models/bedrock-models.generated.json`;
+const BEDROCK_MODEL_EXPORT_PATH = `${REPO_ROOT}/tools/scripts/bedrock-models.generated.sh`;
 
 export interface AiModelSelectorStatus {
   running: boolean;
   healthy: boolean;
   uptime?: string | undefined;
   providers?: AiModelSelectorProvider[] | undefined;
+  bedrockClaudeCode?: AiModelSelectorBedrockClaudeCode | undefined;
   error?: string | undefined;
   lastChecked: string;
 }
@@ -28,8 +33,29 @@ export interface AiModelSelectorControlResult {
   message: string;
 }
 
+export interface AiModelSelectorBedrockClaudeCode {
+  enabled: boolean;
+  region: string;
+  cachePath: string;
+  exportPath: string;
+  cacheExists: boolean;
+  exportExists: boolean;
+  generatedAt?: string | undefined;
+  models?: AiModelSelectorBedrockModelMap | undefined;
+  currentEnv: AiModelSelectorBedrockModelMap;
+  claudeCodeVersion?: string | undefined;
+  warnings: string[];
+}
+
+export interface AiModelSelectorBedrockModelMap {
+  opus?: string | undefined;
+  sonnet?: string | undefined;
+  haiku?: string | undefined;
+}
+
 export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus> {
   const now = new Date().toISOString();
+  const bedrockClaudeCode = readBedrockClaudeCodeStatus();
 
   const running = isLaunchdJobRunning();
 
@@ -37,6 +63,7 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
     return {
       running: false,
       healthy: false,
+      bedrockClaudeCode,
       lastChecked: now,
     };
   }
@@ -52,6 +79,7 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
         running: true,
         healthy: false,
         error: `Health endpoint returned ${response.status}`,
+        bedrockClaudeCode,
         lastChecked: now,
       };
     }
@@ -82,6 +110,7 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
       healthy: true,
       uptime: data.uptime,
       providers,
+      bedrockClaudeCode,
       lastChecked: now,
     };
   } catch (err) {
@@ -89,6 +118,7 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
       running: true,
       healthy: false,
       error: err instanceof Error ? err.message : 'Unknown health check error',
+      bedrockClaudeCode,
       lastChecked: now,
     };
   }
@@ -118,5 +148,83 @@ function isLaunchdJobRunning(): boolean {
     return !output.includes('Could not find');
   } catch {
     return false;
+  }
+}
+
+function readBedrockClaudeCodeStatus(): AiModelSelectorBedrockClaudeCode {
+  const cacheExists = existsSync(BEDROCK_MODEL_CACHE_PATH);
+  const exportExists = existsSync(BEDROCK_MODEL_EXPORT_PATH);
+  const warnings: string[] = [];
+  let generatedAt: string | undefined;
+  let models: AiModelSelectorBedrockModelMap | undefined;
+
+  if (cacheExists) {
+    try {
+      const cache = JSON.parse(readFileSync(BEDROCK_MODEL_CACHE_PATH, 'utf8')) as {
+        generated_at?: string;
+        models?: AiModelSelectorBedrockModelMap;
+      };
+      generatedAt = cache.generated_at;
+      models = cache.models;
+    } catch (err) {
+      warnings.push(`Bedrock model cache is unreadable: ${err instanceof Error ? err.message : 'unknown error'}`);
+    }
+  } else {
+    warnings.push('Bedrock model cache is missing. Run npm run models:sync:bedrock.');
+  }
+
+  if (!exportExists) {
+    warnings.push('Claude Code Bedrock export file is missing. Run npm run models:sync:bedrock.');
+  }
+
+  const currentEnv: AiModelSelectorBedrockModelMap = {
+    opus: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL,
+    sonnet: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL,
+    haiku: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL,
+  };
+
+  for (const tier of ['opus', 'sonnet', 'haiku'] as const) {
+    const expected = models?.[tier];
+    const actual = currentEnv[tier];
+    if (expected && actual && expected !== actual) {
+      warnings.push(`Current process ${envNameForTier(tier)} is stale: ${actual}`);
+    }
+  }
+
+  if (process.env.CLAUDE_CODE_USE_BEDROCK !== '1') {
+    warnings.push('CLAUDE_CODE_USE_BEDROCK is not enabled in the current process.');
+  }
+
+  return {
+    enabled: process.env.CLAUDE_CODE_USE_BEDROCK === '1',
+    region: process.env.AWS_REGION ?? 'us-east-1',
+    cachePath: BEDROCK_MODEL_CACHE_PATH,
+    exportPath: BEDROCK_MODEL_EXPORT_PATH,
+    cacheExists,
+    exportExists,
+    generatedAt,
+    models,
+    currentEnv,
+    claudeCodeVersion: readClaudeCodeVersion(),
+    warnings,
+  };
+}
+
+function envNameForTier(tier: keyof AiModelSelectorBedrockModelMap): string {
+  switch (tier) {
+    case 'opus':
+      return 'ANTHROPIC_DEFAULT_OPUS_MODEL';
+    case 'sonnet':
+      return 'ANTHROPIC_DEFAULT_SONNET_MODEL';
+    case 'haiku':
+      return 'ANTHROPIC_DEFAULT_HAIKU_MODEL';
+  }
+}
+
+function readClaudeCodeVersion(): string | undefined {
+  try {
+    return execSync('claude --version 2>/dev/null', { encoding: 'utf8', timeout: 2000 }).trim() || undefined;
+  } catch {
+    return undefined;
   }
 }

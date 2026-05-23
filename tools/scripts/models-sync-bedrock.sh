@@ -40,9 +40,45 @@ aws_bedrock_cmd() {
 
 version_key() {
   local model_id="$1"
-  echo "$model_id" \
-    | sed -E 's/.*claude-[a-z]+-//' \
-    | sed -E 's/[^0-9]+/./g; s/^\.//; s/\.$//'
+  python3 - "$model_id" <<'PY'
+import re
+import sys
+
+model_id = sys.argv[1]
+match = re.search(r"claude-(?:opus|sonnet|haiku)-(.+)$", model_id)
+if not match:
+    print("")
+    raise SystemExit
+
+parts = [int(part) for part in re.findall(r"\d+", match.group(1))]
+if not parts:
+    print("")
+    raise SystemExit
+
+major = parts[0]
+minor = 0
+date = 0
+revision = 0
+
+if len(parts) >= 2:
+    # Claude semantic releases use 4-6 / 4-7. Base date-stamped IDs use
+    # 4-20250514; those must sort below 4-5, 4-6, and 4-7 releases.
+    if parts[1] > 1000:
+        date = parts[1]
+        if len(parts) >= 3:
+            revision = parts[2]
+    else:
+        minor = parts[1]
+        if len(parts) >= 3:
+            if parts[2] > 1000:
+                date = parts[2]
+                if len(parts) >= 4:
+                    revision = parts[3]
+            else:
+                revision = parts[2]
+
+print(f"{major:03d}.{minor:03d}.{date:08d}.{revision:03d}")
+PY
 }
 
 compare_models() {

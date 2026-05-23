@@ -494,12 +494,11 @@ There are three things in this system that could be confused with each other. Th
 |------|---------|---------|
 | **AI Model Selector** | `localhost:4890` | Routes AI API calls to the right provider (Gemini, Claude, OpenAI, local). This document. |
 | **Mind Steward** | `brain/projects/mind-steward` | TypeScript library that maintains the Mind vault (captures, memories, wiki compile). Has nothing to do with AI API routing. |
-| **`/model-router` skill** | `brain/ai/policy/routing.md` | Claude's internal policy for which *agent* to use (Haiku/Sonnet/Opus). Not a runtime service — a policy document. |
 
 **When to use which name:**
 - "AI Model Selector" or "the selector" — for the `:4890` HTTP service that routes AI API calls
 - "Mind Steward" — for the vault maintenance TypeScript library
-- "routing policy" or "/model-router skill" — for Claude's agent-selection policy
+- "routing policy" — for shared Claude/Codex/Gemini/local-model routing rules in `brain/ai/policy/routing.md`
 
 ---
 

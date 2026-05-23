@@ -10,7 +10,7 @@ Real-time dynamic model detection with visibility into why each model is in use.
 
 ## Overview
 
-The Claude Code model router works *under the surface* — traditionally, you never know when a task escalates from Haiku to Sonnet to Opus. This system makes it **always visible in your terminal status line** with clear reasons why.
+Claude Code model selection works *under the surface* — traditionally, you never know when a task escalates from Haiku to Sonnet to Opus. This system makes it **always visible in your terminal status line** with clear reasons why.
 
 ### What You See
 
@@ -241,15 +241,15 @@ bash ~/.claude/statusline-command.sh < ~/.claude/statusline-payload-sample.json
 
 ---
 
-## Integration with Model Router
+## Integration with Routing Policy
 
-This system works **alongside** the automatic model router (`/model-router` skill):
+This system works alongside the shared routing policy in `brain/ai/policy/routing.md`:
 
-- **Router logic:** Decides which model to use based on task complexity
+- **Routing policy:** Decides which model to use based on task complexity
 - **Tracking system:** Makes that decision **visible** in your terminal
 
 They're independent:
-- Router can escalate without user knowing
+- Routing can escalate without user knowing
 - Tracking makes it immediately visible
 - Status line is your cost accountability tool
 

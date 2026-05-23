@@ -19,7 +19,7 @@ import { readManagedLocalAppProcesses } from './local-app-action-executor.js';
 
 const LOCAL_APPS_CONFIG_PATH = path.join(process.cwd(), '..', '..', 'operations', 'infrastructure', 'local-apps.json');
 const MIND_STEWARD_REPORT_PATH = path.resolve(process.cwd(), 'runtime/local/mind-steward/latest.json');
-const MODEL_ROUTER_SCRIPT_PATH = path.resolve(process.cwd(), '..', '..', 'tools', 'scripts', 'mind-steward-dry-run-report.sh');
+const MIND_STEWARD_SCRIPT_PATH = path.resolve(process.cwd(), '..', '..', 'tools', 'scripts', 'mind-steward-dry-run-report.sh');
 const LOCAL_APP_ACTION_AUDIT_PATH_ENV = 'BRAIN_CORE_LOCAL_APP_ACTION_AUDIT_PATH';
 const DEFAULT_LOCAL_APP_ACTION_AUDIT_PATH = path.resolve(process.cwd(), 'runtime/local/local-apps/actions-audit.jsonl');
 const DISALLOWED_AUDIT_PATH_SEGMENTS = new Set(['.env', '.git', 'node_modules', 'operations', 'mind']);
@@ -572,8 +572,8 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
 
 function readMindStewardDefinition(): BrainCoreLocalAppDefinition | null {
   const report = readMindStewardReport();
-  const scriptExists = fs.existsSync(MODEL_ROUTER_SCRIPT_PATH);
-  const startCommand = scriptExists ? `bash ${MODEL_ROUTER_SCRIPT_PATH}` : undefined;
+  const scriptExists = fs.existsSync(MIND_STEWARD_SCRIPT_PATH);
+  const startCommand = scriptExists ? `bash ${MIND_STEWARD_SCRIPT_PATH}` : undefined;
   const base: BrainCoreLocalAppDefinition = {
     id: 'mind-steward',
     name: 'Mind Steward',
@@ -595,7 +595,7 @@ function readMindStewardDefinition(): BrainCoreLocalAppDefinition | null {
         actionPolicy: { ...DEFAULT_ACTION_POLICY },
       },
     ],
-    docsRef: 'docs/system/obsidian-mind-mind-steward-roadmap.md',
+    docsRef: 'docs/system/obsidian-mind-steward-roadmap.md',
     onboardingStatus: 'registered',
     actionPolicy: { ...DEFAULT_ACTION_POLICY },
     repoPathSummary: 'projects/mind-steward',
@@ -624,6 +624,8 @@ function buildDatabase(raw: RegistryApp): BrainCoreLocalAppDatabaseDefinition | 
   return {
     id: normalizeId(`${readString(raw.name, 'database')}-database`),
     type: normalizeDatabaseType(readStringOrNull(raw.databaseEngine)),
+    ...(readStringOrNull(raw.databaseEngine) ? { engine: readStringOrNull(raw.databaseEngine)! } : {}),
+    ...(readStringOrNull(raw.databaseName) ? { name: readStringOrNull(raw.databaseName)! } : {}),
     orbStackManaged: true,
     status: 'unknown',
     actionPolicy: { ...DEFAULT_ACTION_POLICY },
@@ -699,7 +701,9 @@ function readRegistryRuntime(value: unknown): RegistryRuntime | null {
 }
 
 function normalizeDatabaseType(value: string | null): BrainCoreLocalAppDatabaseDefinition['type'] {
-  if (value === 'postgres' || value === 'mysql' || value === 'redis' || value === 'sqlite') return value;
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === 'postgresql') return 'postgres';
+  if (normalized === 'postgres' || normalized === 'mysql' || normalized === 'redis' || normalized === 'sqlite') return normalized;
   return 'other';
 }
 
@@ -712,7 +716,7 @@ function normalizeSlug(value: string): string {
 }
 
 function deriveCategory(name: string, repoPath: string | null): BrainCoreLocalAppDefinition['category'] {
-  if (/model router/i.test(name)) return 'brain-core';
+  if (/mind steward/i.test(name)) return 'brain-core';
   if (/video/i.test(name)) return 'video';
   if (/scheduler|automation/i.test(name)) return 'operations';
   if (/probot/i.test(name)) return 'dashboard';

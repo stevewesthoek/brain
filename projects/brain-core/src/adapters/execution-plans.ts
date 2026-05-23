@@ -5,7 +5,7 @@ import type {
 } from '../types/api.js';
 
 const CANDIDATE_KINDS = ['scheduler-run-mind-steward-dry-run'] as const;
-const MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 
 const MIND_PREVIEW_ALLOWED_TARGETS = [
   'router/current.md',
@@ -53,11 +53,11 @@ const MIND_PREVIEW_REQUIRED_GATES = [
 export type BrainCoreExecutionCandidateKind = typeof CANDIDATE_KINDS[number];
 
 export function isMindStewardDryRunExecutionFlagEnabled(): boolean {
-  return process.env[MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+  return process.env[MIND_STEWARD_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
 }
 
-export function getMindStewardDryRunExecutionFlagName(): typeof MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG {
-  return MODEL_ROUTER_DRY_RUN_EXECUTION_FLAG;
+export function getMindStewardDryRunExecutionFlagName(): typeof MIND_STEWARD_DRY_RUN_EXECUTION_FLAG {
+  return MIND_STEWARD_DRY_RUN_EXECUTION_FLAG;
 }
 
 export function listExecutionPlans(): BrainCoreExecutionPlan[] {
@@ -120,7 +120,7 @@ export function getMindPreviewPolicy(): BrainCoreMindPreviewPolicy {
         description: 'Draft apply policy defining approval gates, rollback, and audit requirements.',
       },
       {
-        path: 'docs/system/1779034841996-obsidian-mind-mind-steward-handoff.md',
+        path: 'docs/system/1779034841996-obsidian-mind-steward-handoff.md',
         description: 'Roadmap continuation handoff documenting the current preview-only state.',
       },
     ],

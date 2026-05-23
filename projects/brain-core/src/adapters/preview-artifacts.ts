@@ -103,7 +103,7 @@ function readPreview(filePath: string, now: Date): BrainCoreMindPreviewSummary |
 }
 
 function resolveSafePreviewRoot(): string | undefined {
-  const configured = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH ?? path.resolve(process.cwd(), DEFAULT_RELATIVE_PREVIEW_ROOT);
+  const configured = process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH ?? path.resolve(process.cwd(), DEFAULT_RELATIVE_PREVIEW_ROOT);
   const normalized = configured.replace(/\\/g, '/');
   const segments = normalized.split('/').map((segment) => segment.toLowerCase());
   if (segments.some((segment) => DISALLOWED_SEGMENTS.includes(segment))) {

@@ -129,7 +129,7 @@ Brain Console now treats local apps as a compact operations inventory backed by 
 - Declarative action plans
 - Read-only onboarding checklist
 
-Model Router is surfaced from Brain Core runtime-report sources when present, but Brain Console still does not execute shell commands or enable unsafe lifecycle controls.
+Mind Steward is surfaced from Brain Core runtime-report sources when present, but Brain Console still does not execute shell commands or enable unsafe lifecycle controls.
 7. 1.4rem logo, dense layout
 
 ### Changes Implemented

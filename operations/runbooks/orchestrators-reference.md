@@ -267,7 +267,6 @@ This document is your **primary reference for orchestrators**. Bookmark it, refe
 
 See also:
 - `brain/ai/policy/routing.md` — Full model/agent routing policy (Haiku vs Sonnet vs Opus, Codex tiers, Gemini escalation)
-- `/model-router` skill — Re-prime full routing awareness if needed
 - `.claude/CLAUDE.md` — Global workflow rules and memory system
 
 ---

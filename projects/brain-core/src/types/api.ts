@@ -5176,7 +5176,7 @@ export interface BrainCoreCapabilitySummary {
   executionGate: {
     executionEnabled: false;
     mindStewardDryRunExecutionFlagEnabled: boolean;
-    mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+    mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
     candidateActionKinds: string[];
     readinessEndpoint: '/execution/readiness';
     plansEndpoint: '/execution/plans';
@@ -5319,7 +5319,7 @@ export interface BrainCoreExecutionPlan {
   candidate: true;
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;
-  mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   wouldExecute: false;
   executed: false;
   riskLevel: 'low';
@@ -5402,7 +5402,7 @@ export interface BrainCoreMaintenancePreviewDetail extends BrainCoreMaintenanceP
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;
-  mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION';
+  mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];

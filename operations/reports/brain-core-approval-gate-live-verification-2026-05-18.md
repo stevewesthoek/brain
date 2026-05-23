@@ -35,10 +35,10 @@ npm run --prefix projects/brain-core dev
 |----------|--------|--------|
 | `/status` | GET | ✓ Returns read-only mode |
 | `/execution/plans` | GET | ✓ Lists candidate plans |
-| `/execution/plans/scheduler-run-model-router-dry-run` | GET | ✓ Returns plan metadata |
+| `/execution/plans/scheduler-run-mind-steward-dry-run` | GET | ✓ Returns plan metadata |
 | `/execution/readiness` | GET | ✓ Returns disabled state |
 | `/capabilities` | GET | ✓ Returns manifest |
-| `/scheduler/jobs/model-router-dry-run/request-run` | POST | ✓ Creates approval request |
+| `/scheduler/jobs/mind-steward-dry-run/request-run` | POST | ✓ Creates approval request |
 | `/approvals/store` | GET | ✓ Returns store health |
 | `/approvals` | GET | ✓ Lists approval records |
 | `/approvals/audit` | GET | ✓ Returns audit events |
@@ -65,7 +65,7 @@ npm run --prefix projects/brain-core dev
 - ✓ Audit endpoint reports all events with `executed: false`
 
 ### Request/Approve/Reject Workflow
-- ✓ `/scheduler/jobs/model-router-dry-run/request-run` POST creates approval request
+- ✓ `/scheduler/jobs/mind-steward-dry-run/request-run` POST creates approval request
   - Response: `accepted: true`, `executed: false`
   - Approval created with `status: "pending"`
   - Audit event created: `event: "requested"`, `executed: false`
@@ -86,7 +86,7 @@ npm run --prefix projects/brain-core dev
 - ✓ `executed: false` (all approval responses, all audit events)
 - ✓ `writesToMind: false` (all responses)
 - ✓ `externalSideEffects: false` (all execution plans)
-- ✓ First candidate `scheduler-run-model-router-dry-run` remains report-only
+- ✓ First candidate `scheduler-run-mind-steward-dry-run` remains report-only
 
 ## Test Coverage
 
@@ -125,7 +125,7 @@ These files are in `.gitignore` and safe to leave for inspection.
 1. **Explicit user decision** — Feature flag design and approval to enable the first action
 2. **Feature flag design** — See `operations/specs/brain-core-first-action-feature-flag.md`
 3. **Rollback drill** — Validate recovery procedures if needed
-4. **One-action-only enforcement** — Ensure only `scheduler-run-model-router-dry-run` is allowed
+4. **One-action-only enforcement** — Ensure only `scheduler-run-mind-steward-dry-run` is allowed
 5. **Operator UI confirmation** — Brain Console/ProBot must surface the enabled state clearly
 
 ## Next Steps

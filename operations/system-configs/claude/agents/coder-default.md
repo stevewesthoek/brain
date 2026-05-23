@@ -1,7 +1,7 @@
 ---
 name: coder-default
 description: Default agent for coding tasks — implementation, refactoring, debugging, test fixes, and repo-aware code changes. Use for the vast majority of programming work.
-model: claude-sonnet-4-6
+model: sonnet
 tools:
   - Read
   - Edit

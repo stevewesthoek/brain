@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Assess the Brain + Mind + Obsidian + model-router roadmap against Andrej Karpathy's LLM Wiki pattern and record only the lean improvements that add value to this workflow.
+Assess the Brain + Mind + Obsidian + mind-steward roadmap against Andrej Karpathy's LLM Wiki pattern and record only the lean improvements that add value to this workflow.
 
 ## Conclusion
 
@@ -16,7 +16,7 @@ The repo split is also correct:
 
 ```text
 mind  = human cockpit, durable markdown memory, sources, compiled wiki
-brain = execution boundary, model-router implementation, scheduler, API, tools
+brain = execution boundary, mind-steward implementation, scheduler, API, tools
 ```
 
 This is better for this workflow than putting all automation inside the Obsidian vault, because Brain can own runtime state, approvals, reports, tests, and execution safety while Mind remains a clean human-readable memory.
@@ -39,7 +39,7 @@ This is better for this workflow than putting all automation inside the Obsidian
 Karpathy treats raw sources as immutable source-of-truth material. The roadmap already has `sources/`, but the rule should be explicit:
 
 - raw sources and original captures are never silently rewritten;
-- compiled pages may be rewritten by approved model-router flows;
+- compiled pages may be rewritten by approved mind-steward flows;
 - every compiled claim should be traceable to source or capture context when useful.
 
 ### 2. Add an append-only wiki/activity log
@@ -73,7 +73,7 @@ The current hygiene/drift loops are directionally correct. Strengthen them befor
 
 ### 4. Keep the dashboard black-box and sparse
 
-Do not expose every internal model-router primitive to the user. The Obsidian dashboard should show only:
+Do not expose every internal mind-steward primitive to the user. The Obsidian dashboard should show only:
 
 - what needs attention;
 - what changed;
@@ -100,7 +100,7 @@ Add these lean tasks before any broad Mind mutation:
 
 1. Document source immutability and compiled-wiki ownership in Brain and Mind docs.
 2. Add `wiki/log.md` to the target structure and maintenance contract.
-3. Extend model-router dry-run reports with wiki health/lint findings before write/apply.
+3. Extend mind-steward dry-run reports with wiki health/lint findings before write/apply.
 4. Add source-trace expectations for compiled wiki updates.
 5. Keep the first apply action small: `router/current.md` only, then one compiled page type, then broader loops after validation.
 

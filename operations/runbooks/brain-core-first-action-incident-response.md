@@ -5,15 +5,15 @@
 This playbook covers the first future Brain Core execution candidate:
 
 ```text
-scheduler-run-model-router-dry-run
+scheduler-run-mind-steward-dry-run
 ```
 
 Current state:
 
 - Feature-flag scaffold exists.
 - Broad execution remains disabled.
-- One exact Brain Core execution path exists for `scheduler-run-model-router-dry-run` only.
-- Model-router remains report-only and must not write to Mind.
+- One exact Brain Core execution path exists for `scheduler-run-mind-steward-dry-run` only.
+- Mind Steward remains report-only through this scheduler path and must not write to Mind.
 
 ## Safety invariants
 
@@ -31,9 +31,9 @@ During any incident or suspected misconfiguration:
 If execution appears unexpectedly enabled, or an operator is unsure:
 
 ```bash
-unset BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION
+unset BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION
 # or explicitly set:
-export BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=false
+export BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=false
 ```
 
 Then stop and restart Brain Core using the normal local service procedure.
@@ -49,7 +49,7 @@ Expected safety values:
 
 ```text
 executionEnabled=false
-modelRouterDryRunExecutionFlagEnabled=false
+mindStewardDryRunExecutionFlagEnabled=false
 executableActions=false
 readyCandidateCount=0
 ```
@@ -61,7 +61,7 @@ Collect read-only evidence only:
 ```bash
 curl -fsS http://127.0.0.1:4877/status
 curl -fsS http://127.0.0.1:4877/execution/readiness
-curl -fsS http://127.0.0.1:4877/execution/plans/scheduler-run-model-router-dry-run
+curl -fsS http://127.0.0.1:4877/execution/plans/scheduler-run-mind-steward-dry-run
 curl -fsS http://127.0.0.1:4877/approvals
 curl -fsS http://127.0.0.1:4877/approvals/store
 curl -fsS http://127.0.0.1:4877/approvals/audit
@@ -76,7 +76,7 @@ Record:
 - execution readiness blockers
 - approval store status
 - audit status
-- latest model-router report path, if any
+- latest Mind Steward report path, if any
 
 ## Classification
 
@@ -125,7 +125,7 @@ Response:
 3. Preserve approval store, audit JSONL, runtime reports, and terminal logs.
 4. Do not delete files until evidence is copied or summarized.
 5. Inspect changed files and runtime paths.
-6. Verify Mind git status before and after; there should be no model-router writes.
+6. Verify Mind git status before and after; there should be no Mind Steward writes.
 7. Open a remediation task before restarting with the flag enabled.
 
 ## Recovery
@@ -135,7 +135,7 @@ After containment:
 ```bash
 git status --short
 npm run --prefix projects/brain-core ci
-npm run --prefix projects/model-router ci
+npm run --prefix projects/mind-steward ci
 ```
 
 If runtime reports need cleanup, remove only generated Brain runtime report files after evidence is preserved and only when the operator explicitly approves cleanup.
@@ -143,7 +143,7 @@ If runtime reports need cleanup, remove only generated Brain runtime report file
 Allowed cleanup target for this first action only:
 
 ```text
-runtime/local/model-router/
+runtime/local/mind-steward/
 ```
 
 Never cleanup:
@@ -180,7 +180,7 @@ operations/runbooks/brain-core-first-action-incident-response.md
 Do not resume any execution-path work until:
 
 - Brain Core CI passes
-- model-router CI passes
+- Mind Steward CI passes
 - `/execution/readiness` reports `executionEnabled=false`
 - `/capabilities` reports `executableActionsEnabled=false`
 - Mind git status is reviewed

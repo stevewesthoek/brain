@@ -13,8 +13,8 @@ This agent pass resumed from:
 - `docs/system/brain-mind-roadmap-handoff-2026-05-17.md`
 - `docs/system/obsidian-brain-core-roadmap.md`
 - `docs/system/obsidian-brain-core-implementation-plan.md`
-- `docs/system/obsidian-mind-model-router-roadmap.md`
-- `docs/system/obsidian-mind-model-router-implementation-plan.md`
+- `docs/system/obsidian-mind-steward-roadmap.md`
+- `docs/system/obsidian-mind-steward-implementation-plan.md`
 - `operations/specs/brain-core-first-action-feature-flag.md`
 - `operations/reports/brain-core-approval-gate-live-verification-2026-05-18.md`
 - Mind handoff and roadmap docs in the `mind` repo
@@ -22,8 +22,8 @@ This agent pass resumed from:
 ## Current safety boundaries
 
 - Do not enable execution.
-- Do not run model-router from Brain Core.
-- Do not mutate Mind from model-router.
+- Do not run mind-steward from Brain Core.
+- Do not mutate Mind from mind-steward.
 - Do not install Brain Console into `mind/.obsidian/plugins/` without explicit approval.
 - Do not stage or commit unrelated Brain dirty state under `operations/system-configs/claude/**` or `tools/firecrawl/logs/firecrawl.log`.
 - Do not stage or commit Mind `.obsidian` plugin/config state without explicit approval.
@@ -69,13 +69,13 @@ These were treated as separate non-roadmap state unless explicitly part of the s
 Implemented the safe, default-off scaffold for:
 
 ```text
-BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION
+BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION
 ```
 
 Changed Brain Core behavior:
 
 - `/execution/readiness` now reports the feature flag name and boolean state.
-- `/execution/plans` and `/execution/plans/scheduler-run-model-router-dry-run` now report the same flag state on the candidate plan.
+- `/execution/plans` and `/execution/plans/scheduler-run-mind-steward-dry-run` now report the same flag state on the candidate plan.
 - `/capabilities` now reports the flag state through `executionGate`.
 - `executionEnabled` remains `false` in all responses.
 - `wouldExecute` remains `false`.
@@ -113,7 +113,7 @@ The suite includes new tests proving:
 
 - default flag state is disabled;
 - `/capabilities`, `/execution/readiness`, and execution plans expose the flag state;
-- `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true` alone does not enable execution;
+- `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true` alone does not enable execution;
 - execution still returns/advertises `false` for `executionEnabled`, `wouldExecute`, `executed`, and `executableActions`.
 
 ## Next task
@@ -121,7 +121,7 @@ The suite includes new tests proving:
 Run the broader roadmap validation set:
 
 ```bash
-npm run --prefix projects/model-router ci
+npm run --prefix projects/mind-steward ci
 npm run --prefix projects/probot typecheck
 npm run --prefix projects/brain-console-obsidian typecheck
 npm run --prefix projects/brain-console-obsidian build
@@ -136,7 +136,7 @@ Commands run through BuildFlow:
 
 ```bash
 npm run --prefix projects/brain-core ci
-npm run --prefix projects/model-router ci
+npm run --prefix projects/mind-steward ci
 npm run --prefix projects/probot typecheck
 npm run --prefix projects/brain-console-obsidian typecheck
 npm run --prefix projects/brain-console-obsidian build
@@ -203,19 +203,19 @@ Commit only the roadmap implementation files listed above after explicit user co
 Implemented the narrow execution path for the first action only:
 
 ```text
-scheduler-run-model-router-dry-run
+scheduler-run-mind-steward-dry-run
 ```
 
 Safety properties:
 
 - exact action kind only
-- feature flag required: `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true`
+- feature flag required: `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true`
 - durable approval store required
 - durable approval audit path required
 - approved approval record required
-- exact command only: `bash tools/scripts/model-router-dry-run-report.sh`
-- Brain-owned runtime output only: `runtime/local/model-router/latest.json`
-- `MODEL_ROUTER_MIND_ROOT` is stripped before execution
+- exact command only: `bash tools/scripts/mind-steward-dry-run-report.sh`
+- Brain-owned runtime output only: `runtime/local/mind-steward/latest.json`
+- `MIND_STEWARD_MIND_ROOT` is stripped before execution
 - execution summary records `writesToMind=false` and `externalSideEffects=false`
 - approval audit records an `executed` event only after the report-only action succeeds
 
@@ -256,5 +256,5 @@ Current wording now distinguishes:
 
 - broad execution remains disabled;
 - one exact report-only action exists;
-- the implemented action is `scheduler-run-model-router-dry-run` only;
+- the implemented action is `scheduler-run-mind-steward-dry-run` only;
 - all safety gates remain required for each approved request.

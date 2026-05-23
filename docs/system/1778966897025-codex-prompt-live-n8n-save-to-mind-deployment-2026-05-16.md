@@ -6,7 +6,7 @@ Work from the `brain` repo.
 
 Relevant connected repos:
 
-- `brain` — executable infrastructure, n8n workflow JSON, runbooks, model-router implementation.
+- `brain` — executable infrastructure, n8n workflow JSON, runbooks, mind-steward implementation.
 - `mind` — Obsidian vault and Mind OS target structure.
 
 ## Goal
@@ -36,7 +36,7 @@ The following was already verified through BuildFlow before this prompt was crea
 - Roadmap / implementation files were read:
   - `brain/docs/system/obsidian-brain-core-roadmap.md`
   - `brain/docs/system/obsidian-brain-core-implementation-plan.md`
-  - `brain/docs/system/obsidian-mind-model-router-roadmap.md`
+  - `brain/docs/system/obsidian-mind-steward-roadmap.md`
   - `mind/MIND-OS-ROADMAP.md`
   - `mind/MIND-OS-IMPLEMENTATION-PLAN.md`
 - Mind OS scaffold exists in `mind`, including:
@@ -62,10 +62,10 @@ instead of:
 ```
 
 - Model-router scaffold was advanced with a read-only contract dry-run helper:
-  - `brain/projects/model-router/src/contracts.ts`
-  - `brain/projects/model-router/src/jobs.ts`
-  - `brain/projects/model-router/src/index.ts`
-  - `brain/projects/model-router/README.md`
+  - `brain/projects/mind-steward/src/contracts.ts`
+  - `brain/projects/mind-steward/src/jobs.ts`
+  - `brain/projects/mind-steward/src/index.ts`
+  - `brain/projects/mind-steward/README.md`
 
 ## Important current limitation
 
@@ -122,14 +122,14 @@ Read these before changing anything:
 brain/docs/system/mind-os-migration-handoff-2026-05-16.md
 brain/operations/runbooks/n8n-mind-inbox.md
 brain/operations/automations/n8n/workflows/mind-inbox-fixed.json
-brain/projects/model-router/README.md
-brain/projects/model-router/src/contracts.ts
-brain/projects/model-router/src/jobs.ts
-brain/projects/model-router/src/index.ts
+brain/projects/mind-steward/README.md
+brain/projects/mind-steward/src/contracts.ts
+brain/projects/mind-steward/src/jobs.ts
+brain/projects/mind-steward/src/index.ts
 mind/MIND-OS-HANDOFF-2026-05-16.md
 mind/HOME.md
 mind/README.md
-mind/router/model-router.md
+mind/router/mind-steward.md
 mind/router/rules.md
 mind/capture/inbox/README.md
 mind/capture/failed/README.md
@@ -266,7 +266,7 @@ Include:
 
 Do not overstate. If only successful captures are verified, say exactly that.
 
-## Task 8 — Optional: run model-router dry-run contract helper
+## Task 8 — Optional: run mind-steward dry-run contract helper
 
 If practical, create a small temporary/manual validation script or use existing test harness to exercise:
 

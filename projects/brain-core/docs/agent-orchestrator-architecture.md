@@ -8,7 +8,7 @@
 
 The Brain Agent Orchestrator is the project-level agent mode for Brain. It coordinates multi-step work across local AI, Codex CLI, Amazon Bedrock Claude, the Brain skills layer, and approved infrastructure CLIs.
 
-It is not a model router. It consumes the AI Model Selector whenever LLM execution is needed.
+It is not an AI model selector. It consumes the AI Model Selector whenever LLM execution is needed.
 
 ```text
 User goal

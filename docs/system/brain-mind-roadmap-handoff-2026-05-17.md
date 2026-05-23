@@ -14,10 +14,10 @@ Restart handoff for the next conversation. This file records the verified Brain 
 These were committed and pushed to `origin/main`:
 
 ```text
-0e1f9318 Add Brain Core model-router execution flag scaffold
+0e1f9318 Add Brain Core mind-steward execution flag scaffold
 b6377f3d Surface Brain Core execution flag in operator clients
 6b6eba0e Document first-action execution incident response
-40d7d1d8 Add gated Brain Core model-router dry-run execution
+40d7d1d8 Add gated Brain Core mind-steward dry-run execution
 9e40c0b1 Update first-action execution status docs
 ```
 
@@ -108,23 +108,23 @@ Implemented and validated:
 A controlled first-action execution path now exists for exactly:
 
 ```text
-scheduler-run-model-router-dry-run
+scheduler-run-mind-steward-dry-run
 ```
 
 Safety gates:
 
 - exact action kind only
-- `BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION=true`
+- `BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION=true`
 - durable approval store available
 - durable approval audit path available
 - approved approval record
-- exact command only: `bash tools/scripts/model-router-dry-run-report.sh`
-- Brain-owned runtime output only: `runtime/local/model-router/latest.json`
-- `MODEL_ROUTER_MIND_ROOT` is stripped before execution
+- exact command only: `bash tools/scripts/mind-steward-dry-run-report.sh`
+- Brain-owned runtime output only: `runtime/local/mind-steward/latest.json`
+- `MIND_STEWARD_MIND_ROOT` is stripped before execution
 - execution summary records `writesToMind=false` and `externalSideEffects=false`
 - audit records an `executed` event only after success
 
-Broad execution remains disabled. Brain Core is not a shell runner. No model-router write/apply path exists for Mind.
+Broad execution remains disabled. Brain Core is not a shell runner. No mind-steward write/apply path exists for Mind.
 
 ## Operator clients
 
@@ -132,7 +132,7 @@ Broad execution remains disabled. Brain Core is not a shell runner. No model-rou
 
 - Project exists at `projects/brain-console-obsidian/`.
 - It reads Brain Core through GET helpers.
-- It surfaces the model-router execution flag and readiness state.
+- It surfaces the mind-steward execution flag and readiness state.
 - Typecheck/build passed.
 - It is not installed into `mind/.obsidian/plugins/` by default.
 
@@ -149,12 +149,12 @@ Implemented and validated:
 
 - dry-run loop planner
 - stat-only Mind snapshot collector
-- dry-run report script: `tools/scripts/model-router-dry-run-report.sh`
-- model-router CI with 8 tests
+- dry-run report script: `tools/scripts/mind-steward-dry-run-report.sh`
+- mind-steward CI with 8 tests
 
 Current invariant:
 
-- model-router remains report-only for Mind.
+- mind-steward remains report-only for Mind.
 - It must not write, move, delete, archive, compact, split, or rewrite Mind content until a separate write/apply policy is approved and tested.
 
 ## Mind state relevant to Brain
@@ -174,7 +174,7 @@ Mind must not store:
 
 - Brain runtime logs
 - approval/audit JSONL
-- model-router runtime output
+- mind-steward runtime output
 - secrets
 - duplicated machine runtime truth
 
@@ -187,8 +187,8 @@ docs/system/brain-mind-roadmap-handoff-2026-05-17.md
 docs/system/brain-mind-roadmap-agent-handoff-2026-05-17.md
 docs/system/obsidian-brain-core-roadmap.md
 docs/system/obsidian-brain-core-implementation-plan.md
-docs/system/obsidian-mind-model-router-roadmap.md
-docs/system/obsidian-mind-model-router-implementation-plan.md
+docs/system/obsidian-mind-steward-roadmap.md
+docs/system/obsidian-mind-steward-implementation-plan.md
 operations/specs/brain-core-first-action-feature-flag.md
 operations/runbooks/brain-core-approval-gates.md
 operations/runbooks/brain-core-first-action-incident-response.md
@@ -210,7 +210,7 @@ MIND-OS-IMPLEMENTATION-PLAN.md
 
 ```bash
 npm run --prefix projects/brain-core ci
-npm run --prefix projects/model-router ci
+npm run --prefix projects/mind-steward ci
 npm run --prefix projects/probot typecheck
 npm run --prefix projects/brain-console-obsidian typecheck
 npm run --prefix projects/brain-console-obsidian build
@@ -228,7 +228,7 @@ tools/firecrawl/logs/firecrawl.log
 
 4. Continue the roadmap only after preserving the current boundaries:
 
-- no Mind writes from model-router
+- no Mind writes from mind-steward
 - no broad Brain Core command runner
 - no plugin install into Mind without explicit approval
 - no generated runtime/log output in commits
@@ -236,5 +236,5 @@ tools/firecrawl/logs/firecrawl.log
 ## Copy/paste prompt for the next conversation
 
 ```text
-Please continue from the Brain and Mind handoffs. First read, in brain: docs/system/brain-mind-roadmap-handoff-2026-05-17.md, docs/system/brain-mind-roadmap-agent-handoff-2026-05-17.md, operations/specs/brain-core-first-action-feature-flag.md, operations/runbooks/brain-core-approval-gates.md, and operations/runbooks/brain-core-first-action-incident-response.md. Then read, in mind: MIND-OS-HANDOFF-2026-05-17-CONTINUATION.md, MIND-OS-ROADMAP.md, and MIND-OS-IMPLEMENTATION-PLAN.md. Verify git status in both repos. Treat the latest Brain pushed commit as 9e40c0b1. Do not stage unrelated Claude plan cleanup, Firecrawl logs, or Mind .obsidian plugin/config state unless explicitly reviewed. Continue the roadmap from the documented state, preserving the safety boundaries: no broad shell runner, no model-router writes to Mind, no runtime logs/secrets in Mind, and no plugin install into Mind without approval. Validate before committing and push only reviewed, tested changes.
+Please continue from the Brain and Mind handoffs. First read, in brain: docs/system/brain-mind-roadmap-handoff-2026-05-17.md, docs/system/brain-mind-roadmap-agent-handoff-2026-05-17.md, operations/specs/brain-core-first-action-feature-flag.md, operations/runbooks/brain-core-approval-gates.md, and operations/runbooks/brain-core-first-action-incident-response.md. Then read, in mind: MIND-OS-HANDOFF-2026-05-17-CONTINUATION.md, MIND-OS-ROADMAP.md, and MIND-OS-IMPLEMENTATION-PLAN.md. Verify git status in both repos. Treat the latest Brain pushed commit as 9e40c0b1. Do not stage unrelated Claude plan cleanup, Firecrawl logs, or Mind .obsidian plugin/config state unless explicitly reviewed. Continue the roadmap from the documented state, preserving the safety boundaries: no broad shell runner, no mind-steward writes to Mind, no runtime logs/secrets in Mind, and no plugin install into Mind without approval. Validate before committing and push only reviewed, tested changes.
 ```

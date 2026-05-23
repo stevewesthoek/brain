@@ -8,17 +8,17 @@ import {
   readMindPreviewDetailById,
 } from '../adapters/preview-artifacts.js';
 
-const previousPreviewPath = process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+const previousPreviewPath = process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
 
 function withPreviewPath<T>(previewPath: string, callback: () => T): T {
-  process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previewPath;
+  process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previewPath;
   try {
     return callback();
   } finally {
     if (previousPreviewPath === undefined) {
-      delete process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH;
+      delete process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH;
     } else {
-      process.env.BRAIN_CORE_MODEL_ROUTER_PREVIEW_PATH = previousPreviewPath;
+      process.env.BRAIN_CORE_MIND_STEWARD_PREVIEW_PATH = previousPreviewPath;
     }
   }
 }

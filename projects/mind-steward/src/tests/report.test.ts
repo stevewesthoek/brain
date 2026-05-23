@@ -27,10 +27,10 @@ test('mind-steward dry-run report includes all loops and safe flags', () => {
 });
 
 test('mind-steward dry-run report computes counts and blockers', () => {
-  const previousRoot = process.env.MODEL_ROUTER_MIND_ROOT;
+  const previousRoot = process.env.MIND_STEWARD_MIND_ROOT;
   const missingRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mind-steward-missing-root-'));
   fs.rmSync(missingRoot, { recursive: true, force: true });
-  process.env.MODEL_ROUTER_MIND_ROOT = missingRoot;
+  process.env.MIND_STEWARD_MIND_ROOT = missingRoot;
   try {
     const report = createMindStewardDryRunReport(
       snapshot([
@@ -53,9 +53,9 @@ test('mind-steward dry-run report computes counts and blockers', () => {
     assert.equal(report.wikiHealth.ok, false);
   } finally {
     if (previousRoot === undefined) {
-      delete process.env.MODEL_ROUTER_MIND_ROOT;
+      delete process.env.MIND_STEWARD_MIND_ROOT;
     } else {
-      process.env.MODEL_ROUTER_MIND_ROOT = previousRoot;
+      process.env.MIND_STEWARD_MIND_ROOT = previousRoot;
     }
   }
 });

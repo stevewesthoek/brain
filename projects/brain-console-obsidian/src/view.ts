@@ -22,7 +22,7 @@ import {
   readBrainCoreMindPreviews,
   readBrainCoreRepos,
   readBrainCoreRuntimeReports,
-  readBrainCoreModelRouterReportDetail,
+  readBrainCoreMindStewardReportDetail,
   readBrainCoreAiModelSelectorStatus,
   controlBrainCoreAiModelSelector,
   readBrainCoreAgentCostSummary,
@@ -284,7 +284,7 @@ import {
   type BrainCoreVideoControlledExecutionDisabledGateResponse,
   type BrainCoreControlledDualRunRequestDesignResponse,
   type BrainCoreAgentSummary,
-  type BrainCoreModelRouterReportDetail,
+  type BrainCoreMindStewardReportDetail,
   type BrainCoreAiModelSelectorStatus,
   type BrainCoreMaintenancePreviewDetail,
   type BrainCoreAgentRunSummary,
@@ -382,7 +382,7 @@ export interface BrainConsoleViewState {
   executionReadiness?: BrainCoreExecutionReadiness;
   mindPreviewPolicy?: import('./client.js').BrainCoreMindPreviewPolicy;
   mindPreviews?: import('./client.js').BrainCoreMindPreviewSummary[];
-  modelRouterReportDetail?: BrainCoreModelRouterReportDetail;
+  mindStewardReportDetail?: BrainCoreMindStewardReportDetail;
   aiModelSelectorStatus?: BrainCoreAiModelSelectorStatus;
   maintenancePreviewDetail?: BrainCoreMaintenancePreviewDetail;
   orchestrators?: BrainCoreOrchestratorSummary[];
@@ -664,7 +664,7 @@ export async function loadBrainConsoleViewState(
     readBrainCoreControlledDualRunRequestDesign(baseUrl),
     readBrainCoreAgents(baseUrl),
     readBrainCoreActions(baseUrl),
-    readBrainCoreModelRouterReportDetail(baseUrl),
+    readBrainCoreMindStewardReportDetail(baseUrl),
     readBrainCoreAgentRuns(baseUrl),
     readBrainCoreAgentEvents(baseUrl),
     readBrainCoreAgentCostSummary(baseUrl),
@@ -701,7 +701,7 @@ export async function loadBrainConsoleViewState(
     158,
   );
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, modelRouterReportDetail, agentRuns, agentEvents, agentCostSummary, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult, stbCredentialsResult, voNormalizeHistoryResult, voManualQueueResult, voWorkerConfigResult, voAccountStatsResult, voReadinessResult, credentialCatalogResult, aiModelSelectorResult] = settledValues as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, mindStewardReportDetail, agentRuns, agentEvents, agentCostSummary, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult, stbCredentialsResult, voNormalizeHistoryResult, voManualQueueResult, voWorkerConfigResult, voAccountStatsResult, voReadinessResult, credentialCatalogResult, aiModelSelectorResult] = settledValues as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -767,7 +767,7 @@ export async function loadBrainConsoleViewState(
     executionReadiness: executionReadiness.value,
     mindPreviewPolicy: mindPreviewPolicy.value,
     mindPreviews: mindPreviews.value?.previews,
-    modelRouterReportDetail: modelRouterReportDetail.value?.report,
+    mindStewardReportDetail: mindStewardReportDetail.value?.report,
     aiModelSelectorStatus: aiModelSelectorResult.value?.selector,
     maintenancePreviewDetail,
     orchestrators: orchestrators.value?.orchestrators,
@@ -2538,7 +2538,7 @@ function renderReportsSectionIntro(state: BrainConsoleViewState): HTMLElement {
   container.className = 'brain-console__card-content';
   container.createEl('p', {
     cls: 'brain-console__detail',
-    text: 'Runtime diagnostics, model-router state, local app health, and wiki availability.',
+    text: 'Runtime diagnostics, Mind Steward state, local app health, and wiki availability.',
   });
   renderCompactStatGrid(container, [
     { label: 'Build', value: safeText((window as any).BRAIN_CONSOLE_BUILD_ID, 'unknown') },
@@ -2684,12 +2684,12 @@ function renderReportsDiagnosticsCard(state: BrainConsoleViewState): HTMLElement
 function renderStatusPills(shell: HTMLElement, state: BrainConsoleViewState): void {
   const pills = shell.createDiv({ cls: 'brain-console__pills' });
 
-  const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
+  const mrReport = state.runtimeReports?.find((r) => r.id === 'mind-steward');
   const brainCoreOnline = state.status?.ok === true;
 
   const data = [
     { label: 'Brain Core', value: brainCoreOnline ? '● online' : '○ offline' },
-    { label: 'Model Router', value: mrReport ? `${mrReport.status}` : 'unknown' },
+    { label: 'Mind Steward', value: mrReport ? `${mrReport.status}` : 'unknown' },
     { label: 'Scheduler', value: state.schedulerStatus?.status ?? 'unknown' },
     { label: 'Save-to-Mind', value: 'live' },
     { label: 'Approvals', value: `${state.approvals?.length ?? 0}` },
@@ -2885,12 +2885,12 @@ function runtimeReportsTone(state: BrainConsoleViewState): CardTone {
   return 'muted';
 }
 
-function modelRouterDisplayStatus(state: BrainConsoleViewState): string {
-  return state.modelRouterReportDetail ? (state.modelRouterReportDetail.exists ? 'available' : 'not reported') : 'Not reported in dashboard data';
+function mindStewardDisplayStatus(state: BrainConsoleViewState): string {
+  return state.mindStewardReportDetail ? (state.mindStewardReportDetail.exists ? 'available' : 'not reported') : 'Not reported in dashboard data';
 }
 
-function modelRouterTone(state: BrainConsoleViewState): CardTone {
-  return state.modelRouterReportDetail?.exists ? 'ok' : 'muted';
+function mindStewardTone(state: BrainConsoleViewState): CardTone {
+  return state.mindStewardReportDetail?.exists ? 'ok' : 'muted';
 }
 
 function aiModelSelectorDisplayStatus(state: BrainConsoleViewState): string {
@@ -2910,13 +2910,13 @@ function aiModelSelectorTone(state: BrainConsoleViewState): CardTone {
 }
 
 function wikiHealthStatus(state: BrainConsoleViewState): string {
-  const report = state.runtimeReports?.find((r) => r.id === 'model-router');
+  const report = state.runtimeReports?.find((r) => r.id === 'mind-steward');
   if (!report?.wikiHealth) return 'Not reported';
   return report.wikiHealth.ok ? 'healthy' : 'needs attention';
 }
 
 function wikiHealthTone(state: BrainConsoleViewState): CardTone {
-  const report = state.runtimeReports?.find((r) => r.id === 'model-router');
+  const report = state.runtimeReports?.find((r) => r.id === 'mind-steward');
   if (!report?.wikiHealth) return 'muted';
   return report.wikiHealth.ok ? 'ok' : 'warn';
 }
@@ -2948,7 +2948,7 @@ function renderWikiHealthCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
 
-  const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
+  const mrReport = state.runtimeReports?.find((r) => r.id === 'mind-steward');
   if (!mrReport?.wikiHealth) {
     container.appendChild(renderEmptyState('Wiki health is not reported in the current dashboard payload.', 'Check Brain Core route wiring.'));
     return container;
@@ -3004,12 +3004,12 @@ function renderRuntimeReportsCard(state: BrainConsoleViewState): HTMLElement {
   return container;
 }
 
-function renderModelRouterCard(state: BrainConsoleViewState): HTMLElement {
+function renderMindStewardCard(state: BrainConsoleViewState): HTMLElement {
   const container = document.createElement('div');
   container.className = 'brain-console__card-content';
-  const report = state.modelRouterReportDetail;
+  const report = state.mindStewardReportDetail;
   if (!report) {
-    container.appendChild(renderEmptyState('Model Router is not present in the current dashboard payload.', 'Check Brain Core route wiring.'));
+    container.appendChild(renderEmptyState('Mind Steward is not present in the current dashboard payload.', 'Check Brain Core route wiring.'));
     return container;
   }
 
@@ -3019,7 +3019,7 @@ function renderModelRouterCard(state: BrainConsoleViewState): HTMLElement {
     { label: 'Latest run', value: statValue(report.latestRunStatus, 'Not reported') },
     { label: 'Wiki health', value: report.wikiHealth ? (report.wikiHealth.ok ? 'Healthy' : 'Warnings') : 'Not reported' },
   ]);
-  container.createEl('p', { cls: 'brain-console__detail', text: 'Model Router status is read-only and derived from dashboard payload data.' });
+  container.createEl('p', { cls: 'brain-console__detail', text: 'Mind Steward status is read-only and derived from dashboard payload data.' });
   return container;
 }
 
@@ -3287,7 +3287,7 @@ function renderOverviewStatusCard(state: BrainConsoleViewState): HTMLElement {
 
   container.createEl('p', { cls: 'brain-console__detail', text: `v${state.status?.version ?? '?'}` });
 
-  const mrReport = state.runtimeReports?.find(r => r.id === 'model-router');
+  const mrReport = state.runtimeReports?.find(r => r.id === 'mind-steward');
   if (mrReport?.wikiHealth) {
     const wikiText = mrReport.wikiHealth.ok
       ? 'Wiki: ✓ ok'
@@ -5757,8 +5757,8 @@ function renderAgentViewCard(state: BrainConsoleViewState, snapshot: DashboardSn
       list.createEl('li', { text: `Planned: ${snapshot.plannedAgentCount}` });
     }
 
-    if (snapshot.modelRouterAgentSummary) {
-      list.createEl('li', { text: `Model Router: ${snapshot.modelRouterAgentSummary.health}` });
+    if (snapshot.mindStewardAgentSummary) {
+      list.createEl('li', { text: `Mind Steward: ${snapshot.mindStewardAgentSummary.health}` });
     }
   }
 
@@ -5807,9 +5807,9 @@ function renderActionPreviewCard(state: BrainConsoleViewState, settings: BrainCo
           item.createEl('span', { text: ` ${statusEmoji} ${readiness.latestApprovalStatus}${ageText}`, cls: 'brain-console__latest-approval' });
         }
 
-        // Show latest report availability if model-router action
-        if (action.id === 'model-router-dry-run') {
-          const mrReport = state.runtimeReports?.find((r) => r.id === 'model-router');
+        // Show latest report availability if Mind Steward action
+        if (action.id === 'mind-steward-dry-run') {
+          const mrReport = state.runtimeReports?.find((r) => r.id === 'mind-steward');
           if (mrReport && mrReport.status === 'available') {
             item.createEl('span', { text: ' 📄 report available', cls: 'brain-console__report-available' });
           }
@@ -5885,7 +5885,7 @@ function renderApprovalDetailCard(detail: import('./client.js').BrainCoreApprova
   return el;
 }
 
-function renderModelRouterReportDetailCard(detail: import('./client.js').BrainCoreModelRouterReportDetail): HTMLElement {
+function renderMindStewardReportDetailCard(detail: import('./client.js').BrainCoreMindStewardReportDetail): HTMLElement {
   const el = document.createElement('div');
   const rows = [
     { label: 'Exists', value: detail.exists ? 'yes' : 'no' },

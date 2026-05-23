@@ -8,7 +8,7 @@ const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
 const RUNTIME_DIR = path.resolve(PACKAGE_ROOT, 'runtime/local/mind-steward');
 
 const args = parseArgs(process.argv.slice(2));
-const mindRoot = args['mind-root'] || process.env.MODEL_ROUTER_MIND_ROOT;
+const mindRoot = args['mind-root'] || process.env.MIND_STEWARD_MIND_ROOT;
 const jsonOutput = args['output-json'] || path.resolve(RUNTIME_DIR, 'latest.json');
 const mdOutput = args['output-md'] || path.resolve(RUNTIME_DIR, 'latest.md');
 
@@ -63,7 +63,7 @@ function createMindRelativePaths(): string[] {
 
 function renderMarkdown(report: ReturnType<typeof createMindStewardDryRunReport>): string {
   const lines = [
-    '# Model Router Dry-Run Report',
+    '# Mind Steward Dry-Run Report',
     '',
     `- Generated: ${report.generatedAt}`,
     `- Mode: ${report.mode}`,

@@ -131,7 +131,7 @@ export function createMindStewardDryRunReport(
 }
 
 function createWikiHealthReport(now: Date): MindStewardWikiHealthReport {
-  const configuredRoot = process.env.MODEL_ROUTER_MIND_ROOT;
+  const configuredRoot = process.env.MIND_STEWARD_MIND_ROOT;
   const root = configuredRoot;
   try {
     if (!root || !fs.existsSync(root)) {

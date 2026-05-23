@@ -41,7 +41,7 @@ When Brain Console opens successfully:
 ### Status Strip (Top)
 - 6 pills showing quick health indicators:
   - Brain Core: `online` / `offline` + mode
-  - Model Router: job status
+  - Mind Steward: job status
   - Scheduler: queue status
   - Save-to-Mind: capture status
   - Approvals: count pending

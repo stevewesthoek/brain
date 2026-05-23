@@ -274,9 +274,9 @@ function enrichActionWithReadiness(action: BrainCoreActionSummary): BrainCoreAct
   }
 
   const blockers: string[] = [];
-  const flagEnabled = process.env.BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION === 'true';
+  const flagEnabled = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION === 'true';
   if (!flagEnabled) {
-    blockers.push('BRAIN_CORE_ENABLE_MODEL_ROUTER_DRY_RUN_EXECUTION not enabled');
+    blockers.push('BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION not enabled');
   }
 
   const readiness: import('../types/api.js').BrainCoreActionReadiness = {

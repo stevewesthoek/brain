@@ -42,7 +42,7 @@ docs/skills/profiles/default.txt
 
 Target size: about 7 active skills (minimal, truly always-on).
 
-**Philosophy:** Default includes only core orchestrators and safety skills. Heavy domain orchestrators (`design`, `video`) and tool skills (`gh`, `firecrawl`, `playwright`, `ffmpeg`, `n8n`, `autoresearch`) are dormant to reduce skill context pressure on Codex. They remain available through domain-specific profiles and natural-language routing.
+**Philosophy:** Default includes only core orchestrators, session continuity, review/QA, memory, and safety skills. `handoff` stays default-active because cross-agent continuity is common. Heavy domain orchestrators (`design`, `video`) and tool skills (`gh`, `firecrawl`, `playwright`, `ffmpeg`, `n8n`, `autoresearch`) are dormant to reduce skill context pressure on Codex. They remain available through domain-specific profiles and natural-language routing.
 
 Includes:
 

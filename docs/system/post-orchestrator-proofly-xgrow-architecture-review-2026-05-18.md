@@ -66,7 +66,7 @@ The Brain repo will become the canonical orchestration engine for all post (cont
 - Brain Console: Obsidian plugin dashboard (read-only, approval-request-only)
 - Scheduler: Cron-based task execution (Brain Core scheduler jobs)
 - Approval gates: Approval request/approval store/approval detail workflow
-- Runtime reports: Status reports for major systems (model-router, Brain Core, scheduler)
+- Runtime reports: Status reports for major systems (mind-steward, Brain Core, scheduler)
 - Agent View: Read-only agent execution ledger
 - Recovery/Blockers: Error tracking and recovery guidance
 - Dashboard sections: Overview, Apps, Orchestrators, Pipelines, Projects, Reports, Agents, Recovery
@@ -661,8 +661,8 @@ Until decommission approval:
 
 ## 11. Related Documents
 
-- `docs/system/obsidian-mind-model-router-roadmap.md` — Brain Core and Brain Console strategy
+- `docs/system/obsidian-mind-steward-roadmap.md` — Brain Core and Brain Console strategy
 - `docs/system/unified-orchestrator-command-center-implementation-plan-2026-05-17.md` — Brain Console phases
 - `docs/system/obsidian-command-center-dashboard-spec-2026-05-17.md` — Dashboard design
 - `docs/system/stb-to-video-orchestrator-migration-plan-2026-05-17.md` — Video Orchestrator migration (similar consolidation pattern)
-- `docs/system/1779034841996-obsidian-mind-model-router-handoff.md` — Current Brain Core phase status
+- `docs/system/1779034841996-obsidian-mind-steward-handoff.md` — Current Brain Core phase status

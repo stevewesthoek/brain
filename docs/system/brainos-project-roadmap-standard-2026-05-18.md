@@ -55,10 +55,10 @@ Also supported (legacy/current):
 **Brain repo example:**
 ```
 operations/project-state.json
-docs/system/obsidian-mind-model-router-roadmap.md
+docs/system/obsidian-mind-steward-roadmap.md
 docs/system/unified-orchestrator-command-center-implementation-plan-2026-05-17.md
 docs/system/stb-to-video-orchestrator-migration-plan-2026-05-17.md
-docs/system/1779034841996-obsidian-mind-model-router-handoff.md
+docs/system/1779034841996-obsidian-mind-steward-handoff.md
 operations/decision-log.md
 operations/runbooks/
 ```
@@ -107,7 +107,7 @@ Minimal JSON shape for quick status queries:
       ],
       "next_safe_task": "Implement parity matrix adapter and routes",
       "blockers": ["Design orchestrator not yet built"],
-      "roadmap_doc": "docs/system/obsidian-mind-model-router-roadmap.md"
+      "roadmap_doc": "docs/system/obsidian-mind-steward-roadmap.md"
     }
   ],
   "decision_log_path": "operations/decision-log.md",

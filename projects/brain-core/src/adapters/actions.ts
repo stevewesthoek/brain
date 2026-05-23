@@ -464,10 +464,10 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
   }
 
   const env: Record<string, string | undefined> = { ...process.env };
-  delete env.MODEL_ROUTER_MIND_ROOT;
-  env.MODEL_ROUTER_REPO_ROOT = repoRoot;
-  env.MODEL_ROUTER_DIR = path.join(repoRoot, 'projects/mind-steward');
-  env.MODEL_ROUTER_RUNTIME_DIR = runtimeDir;
+  delete env.MIND_STEWARD_MIND_ROOT;
+  env.MIND_STEWARD_REPO_ROOT = repoRoot;
+  env.MIND_STEWARD_DIR = path.join(repoRoot, 'projects/mind-steward');
+  env.MIND_STEWARD_RUNTIME_DIR = runtimeDir;
 
   const result = spawnSync('bash', ['tools/scripts/mind-steward-dry-run-report.sh'], {
     cwd: repoRoot,

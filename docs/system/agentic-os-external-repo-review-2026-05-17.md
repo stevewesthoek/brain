@@ -590,7 +590,7 @@ interface AgentMetric {
 - Agent skills registry
 - Agent event log
 - Brain Console Agent View (read-only)
-- Integration: model-router registered as first agent
+- Integration: mind-steward registered as first agent
 - Integration: orchestrators (STB, video, research, design, code, Bible research) as registered agents
 
 ### Phase 2: Approval Gates (3 weeks)
@@ -666,7 +666,7 @@ The user should:
 
 1. **NOT install external frameworks**—they're too heavy and coupled to autonomous execution
 2. **Build Brain-native agentic OS layer**—thin, approval-gated, readable in Brain Console
-3. **Treat model-router as one agent**—not the whole OS
+3. **Treat mind-steward as one agent**—not the whole OS
 4. **Use Claude Code/Codex as executors**—don't wrap them
 5. **Keep Mind durable memory-only**—no agent runtime state
 6. **Stage implementations**—read-only first, approvals second, learning third
@@ -677,4 +677,4 @@ This approach:
 - ✅ Supports future scaling (multi-agent, handoffs, learning)
 - ✅ Keeps Mind clean (durable memory only)
 - ✅ Works with any LLM (Claude, Codex, Gemini, local)
-- ✅ Integrates existing systems (STB, ProBot, model-router, Brain Console)
+- ✅ Integrates existing systems (STB, ProBot, mind-steward, Brain Console)

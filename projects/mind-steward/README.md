@@ -1,6 +1,6 @@
 # Mind Steward
 
-The model router is the AI steward for the `mind` vault and related Brain Core workflows.
+Mind Steward is the AI steward for the `mind` vault and related Brain Core workflows.
 
 ## Status
 
@@ -66,7 +66,7 @@ The loop planner also accepts an observed path snapshot and creates dry-run acti
 - `review-failed-capture`
 - `verify-contract`
 
-Planner output is blocked from execution by design. It reports `plannedWrites` as intended targets, but no write/apply implementation exists yet.
+Planner output is blocked from execution by design. It reports `plannedWrites` as intended targets, but the scheduler dry-run path never mutates Mind. A narrow approved-preview apply helper exists for `mind-steward-update-current-context`; broad automated write/apply execution remains disabled.
 
 The legacy task migration was performed manually and approved by the user. The mind-steward only consumes the resulting dry-run context; it does not execute that migration.
 

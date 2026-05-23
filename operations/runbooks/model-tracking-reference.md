@@ -25,10 +25,10 @@ brain  |  sonnet ↑ (complex) [coder-default]  |  ▓▓▓░░░░░ 35%
 
 ## Why This Matters
 
-The model router in Claude Code makes routing decisions *automatically and invisibly*:
+Claude Code model selection makes routing decisions *automatically and invisibly*:
 
 ```
-Task arrives → Router decides → Model escalates
+Task arrives → Routing policy decides → Model escalates
                   ↓
           You had no idea
               
@@ -38,7 +38,7 @@ Task arrives → Router decides → Model escalates
 **With model tracking:**
 
 ```
-Task arrives → Router decides → Model escalates
+Task arrives → Routing policy decides → Model escalates
                   ↓                     ↓
           Status line updates    You see it in real-time
               
@@ -161,7 +161,7 @@ The status line lets you see this journey in real-time.
 - Model stays at Haiku (you pay baseline, not escalation)
 - Status line shows: `haiku ◊ (review)`
 
-### With `/model-router` skill
+### With the shared routing policy
 - Router makes escalation decisions automatically
 - Tracking system makes those decisions **visible**
 - Status line shows when router escalated you
@@ -206,16 +206,16 @@ brain | haiku ⊙ (plan) (200k) | ▓░░░░░░ 15%
 
 ---
 
-## Model Tracking vs The Router
+## Model Tracking vs Routing Policy
 
 Two separate systems working together:
 
 | System | Role | Visibility |
 |--------|------|-----------|
-| **Model Router** | Decides which model to use based on task complexity | Invisible (backend logic) |
+| **Routing Policy** | Decides which model to use based on task complexity | Invisible (backend logic) |
 | **Model Tracking** | Makes that decision visible in your status line | Visible (real-time display) |
 
-- Router works automatically — you don't invoke it
+- Routing works automatically — you don't invoke it
 - Tracking makes router's decisions transparent
 - Status line is your window into the router's thinking
 

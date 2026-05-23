@@ -9,7 +9,7 @@
 
 The Obsidian Command Center dashboard transforms the Brain Console plugin into the user's single operating cockpit. It provides:
 
-- **System health at a glance**: Brain Core status, model-router health, wiki maintenance needs, approval queue status
+- **System health at a glance**: Brain Core status, mind-steward health, wiki maintenance needs, approval queue status
 - **Black-box automation visibility**: What changed, what failed, what needs approval
 - **Sparse, actionable design**: No raw JSON, logs, or noise—only what requires attention
 - **Clear governance boundaries**: All actions are preview-first, approval-gated, reversible
@@ -95,7 +95,7 @@ The user should **never need to browse raw Markdown files** to understand:
 
 ### Layout Patterns
 
-- **Top status strip**: Horizontal bar showing system status pills (Brain Core, model-router, wiki, maintenance, approvals, scheduler)
+- **Top status strip**: Horizontal bar showing system status pills (Brain Core, mind-steward, wiki, maintenance, approvals, scheduler)
 - **Cards**: Fixed width (280-320px), stack vertically on small screens, grid on wide
 - **Tabs**: Horizontal tab bar (Overview, Mind, Automation, Research, Approvals) with active indicator
 - **Hero burn bar**: Progress bar showing system attention (based on error/warning/approval counts)
@@ -157,7 +157,7 @@ The main operational view. Shows system health, pending actions, and next steps.
 │   Risk: low                                                 │
 ├─────────────────────────────────────────────────────────────┤
 │ ACTIVITY / RECENT EVENTS (monospace panel)                   │
-│ 2026-05-17 19:30:00 scheduler-run-model-router-dry-run ok  │
+│ 2026-05-17 19:30:00 scheduler-run-mind-steward-dry-run ok  │
 │ 2026-05-17 18:15:00 approval pending: review wiki changes  │
 │ 2026-05-17 17:45:00 capture inbox routine: 3 new items     │
 │ 2026-05-17 15:22:00 wiki health check: 1 stale found       │
@@ -171,7 +171,7 @@ The main operational view. Shows system health, pending actions, and next steps.
 
 1. **Status Strip** (top, horizontal)
    - Brain Core: LIVE / OFFLINE / DEGRADED (pill color)
-   - Model Router: OK / STALE / ERROR (pill)
+   - Mind Steward: OK / STALE / ERROR (pill)
    - Wiki Health: OK / WARNINGS / ERRORS (pill)
    - Maintenance Previews: count badge
    - Approvals: count badge (red if >0 pending)
@@ -207,7 +207,7 @@ The main operational view. Shows system health, pending actions, and next steps.
    - Latest run: timestamp + age (e.g., "1h ago")
    - Status: OK / FAILED / UNKNOWN (pill)
    - Active jobs: count (e.g., "4 jobs")
-   - Last job: one-liner (e.g., "model-router-dry-run")
+   - Last job: one-liner (e.g., "mind-steward-dry-run")
 
 7. **Captures** (card)
    - Inbox count: badge (e.g., "3 in inbox")
@@ -237,7 +237,7 @@ The main operational view. Shows system health, pending actions, and next steps.
 
 11. **Activity Panel** (monospace, scrollable, bottom)
     - Rows: `TIMESTAMP source event_type status`
-    - Example: `2026-05-17 19:30:00 scheduler-run-model-router-dry-run ok`
+    - Example: `2026-05-17 19:30:00 scheduler-run-mind-steward-dry-run ok`
     - Limit: last 10-20 events (avoid scroll)
     - Format: monospace, gray background, green text for ok, red for error
 
@@ -246,7 +246,7 @@ The main operational view. Shows system health, pending actions, and next steps.
 Buttons for safe, request-only actions:
 
 - **[ Refresh ]**: Fetch latest data from Brain Core (no arguments)
-- **[ Request Model-Router Dry-Run ]**: POST to `/scheduler/jobs/scheduler-run-model-router-dry-run/request-run` (safe, already approved endpoint)
+- **[ Request Model-Router Dry-Run ]**: POST to `/scheduler/jobs/scheduler-run-mind-steward-dry-run/request-run` (safe, already approved endpoint)
 - **[ View Latest Preview ]**: Navigate to `/execution/maintenance-previews/latest` (future modal)
 - **[ Open Mind Dashboard ]**: Deep link to `HOME.md` in Obsidian
 - **[ Open Wiki Log ]**: Deep link to `wiki/log.md`
@@ -290,7 +290,7 @@ Registry of all orchestrators (skills, pipelines, system services).
   - Last execution timestamp
   - Queue count (if applicable)
   - Linked project (if any)
-- Model Router
+- Mind Steward
   - Status: ready/stale/error
   - Last dry-run: timestamp
   - Current mode: report-only/preview/apply
@@ -557,7 +557,7 @@ Each card is fed by Brain Core endpoints or direct Mind file links:
 |------|---|---|---|
 | **Status Strip** | `/status` | offline if unreachable | manual refresh |
 | **System Burn** | `/runtime/reports` + `/execution/maintenance-previews` | empty/0 if missing | manual refresh |
-| **Wiki Health** | `/runtime/reports` (model-router.wikiHealth) | "unavailable" | manual refresh |
+| **Wiki Health** | `/runtime/reports` (mind-steward.wikiHealth) | "unavailable" | manual refresh |
 | **Maintenance Previews** | `/execution/maintenance-previews/latest` | "unavailable" | manual refresh |
 | **Approvals** | `/approvals` + `/approvals/store` | empty list | manual refresh |
 | **Scheduler** | `/scheduler/latest-run` + `/scheduler/jobs` | "unavailable" | manual refresh |
@@ -675,7 +675,7 @@ GET /actions/:id/status
 - Dark cockpit CSS styling
 - Graceful error states (show "unavailable" if endpoint fails)
 
-**Scope:** Primarily model-router health and maintenance queue visibility
+**Scope:** Primarily mind-steward health and maintenance queue visibility
 
 ### Phase 2A+ Extended: Unified Orchestrator Cockpit
 
@@ -684,7 +684,7 @@ GET /actions/:id/status
 | Tab | Phase | Cards | Status |
 |-----|-------|-------|--------|
 | **Apps** | 2A | Local Apps, ProBot Legacy | Phase 2A |
-| **Orchestrators** | 2B | Orchestrator Registry, Model Router, Video Orchestrator | Phase 2B |
+| **Orchestrators** | 2B | Orchestrator Registry, Mind Steward, Video Orchestrator | Phase 2B |
 | **Pipelines** | 2A+3 | STB Operational, Video Orchestrator, Migration Card | Phase 2A (STB) + Phase 3 (Video) |
 | **Projects/Domains** | 3 | Projects, Platforms | Phase 3 |
 | **Approvals** | 4 | Approvals Queue (detail, approve/reject Phase 5) | Phase 4 |
@@ -706,7 +706,7 @@ GET /actions/:id/status
 
 **Phase 1 (MVP, 2-3 weeks):** Model-router health, maintenance previews, approvals, scheduler
 **Phase 2A (Orchestrator Awareness, 1-2 weeks):** Says the Bible visibility, apps, local status
-**Phase 2B (Skill Registry, 1-2 weeks):** Orchestrators, model-router, video orchestrator basics
+**Phase 2B (Skill Registry, 1-2 weeks):** Orchestrators, mind-steward, video orchestrator basics
 **Phase 3 (Project Integration, 1-2 weeks):** Projects, domains, platforms
 **Phase 4+ (Interactivity):** Approval decision flow, action execution, detail modals
 
@@ -866,7 +866,7 @@ Manual test in Obsidian (not auto-deployed):
 
 7. **Activity Panel (optional)**
    - Glance at monospace activity log
-   - "scheduler-run-model-router-dry-run ok" ← executed automatically at night
+   - "scheduler-run-mind-steward-dry-run ok" ← executed automatically at night
 
 ### No Direct Execution
 
