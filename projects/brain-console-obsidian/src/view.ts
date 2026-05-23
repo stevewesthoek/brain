@@ -2255,7 +2255,10 @@ const _orchResearchState: {
   result: Record<string, unknown> | null;
   error: string | null;
   running: boolean;
-} = { url: '', focus: '', result: null, error: null, running: false };
+  phase: 'idle' | 'call1' | 'call2' | 'done';
+  startedAt: number;
+  timerInterval: ReturnType<typeof setInterval> | null;
+} = { url: '', focus: '', result: null, error: null, running: false, phase: 'idle', startedAt: 0, timerInterval: null };
 
 function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleViewState, _snapshot: DashboardSnapshot): void {
   // ── Inject CSS once ──────────────────────────────────────────────────────────
@@ -2315,7 +2318,7 @@ function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleVie
 .bc-orch-pre { background: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 3px; padding: 8px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 10px; color: #aaa; line-height: 1.5; }
 .bc-orch-claim { color: #aaa; padding: 2px 0; border-bottom: 1px solid #2a2a2a; }
 .bc-orch-skeleton { background: #333; border-radius: 3px; height: 10px; margin: 4px 0; animation: bc-orch-shimmer 1.5s infinite; }
-@keyframes bc-orch-shimmer { 0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5} }
+@keyframes bc-orch-shimmer { 0%{opacity:0.4;width:20%}50%{opacity:0.8;width:80%}100%{opacity:0.4;width:20%} }
 .bc-orch-section-header { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 0; border-bottom: 1px solid #2a2a2a; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     `;
     document.head.appendChild(styleEl);
@@ -2637,10 +2640,31 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
     }
 
     _orchResearchState.running = true;
+    _orchResearchState.phase = 'call1';
+    _orchResearchState.startedAt = Date.now();
     _orchResearchState.error = null;
     _orchResearchState.result = null;
     processBtn.disabled = true;
+
+    // Clear any previous timer
+    if (_orchResearchState.timerInterval) {
+      clearInterval(_orchResearchState.timerInterval);
+      _orchResearchState.timerInterval = null;
+    }
+
     renderOutput();
+
+    // Start live elapsed timer — updates the running UI every second
+    _orchResearchState.timerInterval = setInterval(() => {
+      if (_orchResearchState.running) {
+        renderOutput();
+      } else {
+        if (_orchResearchState.timerInterval) {
+          clearInterval(_orchResearchState.timerInterval);
+          _orchResearchState.timerInterval = null;
+        }
+      }
+    }, 1000);
 
     try {
       const resp = await fetch('http://localhost:4877/research/video-analyze', {
@@ -2666,6 +2690,11 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
       _orchResearchState.result = null;
     } finally {
       _orchResearchState.running = false;
+      _orchResearchState.phase = 'done';
+      if (_orchResearchState.timerInterval) {
+        clearInterval(_orchResearchState.timerInterval);
+        _orchResearchState.timerInterval = null;
+      }
       processBtn.disabled = false;
       renderOutput();
     }
@@ -2675,14 +2704,79 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
 }
 
 function bcOrchRenderSkeletons(outputArea: HTMLElement): void {
-  ['TRANSCRIPTION', 'HUMAN SUMMARY', 'AI SUMMARY', 'ACTIONS'].forEach(label => {
+  const elapsed = Math.floor((Date.now() - _orchResearchState.startedAt) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  // Typical timing: call1 (structured) ~60-90s, call2 (transcript) ~60-120s
+  // We estimate 150s total for a typical 10-min video
+  const estimatedTotal = 150;
+  const pct = Math.min(95, Math.round((elapsed / estimatedTotal) * 100));
+
+  // Phase descriptions
+  const phaseLabel = elapsed < 90
+    ? 'Analyzing video structure, chapters & key moments…'
+    : 'Transcribing speech…';
+
+  // Top status bar
+  const statusRow = outputArea.createDiv();
+  statusRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
+  const statusLeft = statusRow.createEl('span');
+  statusLeft.style.cssText = 'font-size:11px;color:#3b82f6;';
+  statusLeft.textContent = `⟳ ${phaseLabel}`;
+  const statusRight = statusRow.createEl('span');
+  statusRight.style.cssText = 'font-size:11px;color:#888;font-family:monospace;';
+  statusRight.textContent = `${elapsedStr} elapsed`;
+
+  // Progress bar
+  const barWrap = outputArea.createDiv();
+  barWrap.style.cssText = 'background:#1a1a1a;border-radius:3px;height:6px;margin-bottom:16px;overflow:hidden;border:1px solid #3a3a3a;';
+  const barFill = barWrap.createDiv();
+  barFill.style.cssText = `height:100%;background:#3b82f6;border-radius:3px;transition:width 1s linear;width:${pct}%;`;
+
+  // Phase rows
+  const phases = [
+    { label: 'STRUCTURE ANALYSIS', active: elapsed < 90, done: elapsed >= 90 },
+    { label: 'TRANSCRIPTION', active: elapsed >= 90, done: false },
+    { label: 'HUMAN SUMMARY', active: false, done: false },
+    { label: 'ACTIONS', active: false, done: false },
+  ];
+
+  phases.forEach(p => {
     const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
     const hdr = sec.createDiv({ cls: 'bc-orch-section-header' });
-    hdr.createEl('span', { text: label });
-    hdr.createEl('span', { cls: 'bc-orch-badge', text: label === 'TRANSCRIPTION' ? 'running' : 'pending' });
-    sec.createDiv({ cls: 'bc-orch-skeleton' });
-    sec.createDiv({ cls: 'bc-orch-skeleton' });
+    hdr.createEl('span', { text: p.label });
+    const badge = hdr.createEl('span', { cls: 'bc-orch-badge' });
+    if (p.done) {
+      badge.textContent = '✓ done';
+      badge.style.color = '#2ecc71';
+      badge.style.borderColor = '#2ecc71';
+    } else if (p.active) {
+      badge.textContent = '⟳ running';
+      badge.style.color = '#3b82f6';
+      badge.style.borderColor = '#3b82f6';
+    } else {
+      badge.textContent = 'pending';
+    }
+    const skelWrap = sec.createDiv();
+    skelWrap.style.cssText = 'background:#1a1a1a;border-radius:3px;height:4px;margin:6px 0;overflow:hidden;';
+    if (p.active) {
+      const skelFill = skelWrap.createDiv();
+      skelFill.style.cssText = 'height:100%;background:#3b82f6;opacity:0.5;animation:bc-orch-shimmer 2s infinite;width:60%;';
+    }
   });
+
+  // Estimated time remaining
+  const remaining = Math.max(0, estimatedTotal - elapsed);
+  const remMins = Math.floor(remaining / 60);
+  const remSecs = remaining % 60;
+  const remStr = remaining > 5
+    ? `~${remMins > 0 ? remMins + 'm ' : ''}${remSecs}s remaining (estimate)`
+    : 'Almost done…';
+  const etaEl = outputArea.createEl('div');
+  etaEl.style.cssText = 'font-size:10px;color:#555;margin-top:8px;font-style:italic;';
+  etaEl.textContent = remStr;
 }
 
 function bcOrchRenderResult(outputArea: HTMLElement, data: Record<string, unknown>): void {
