@@ -95,21 +95,8 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
 }
 
 function loadNewRelicCredentials(): { apiKey?: string; accountId?: string } {
-  const envSources = [
-    path.join(os.homedir(), '.config', 'newrelic', '.env'),
-    path.join(os.homedir(), '.config', 'probot', '.env'),
-  ];
-
-  const merged = new Map<string, string>();
-  for (const source of envSources) {
-    const entries = parseEnvFile(source);
-    for (const [key, value] of entries) {
-      if (!merged.has(key) && value) {
-        merged.set(key, value);
-      }
-    }
-  }
-
+  const envPath = path.join(os.homedir(), '.config', 'newrelic', '.env');
+  const merged = parseEnvFile(envPath);
   const apiKey = process.env.NEW_RELIC_USER_API_KEY || merged.get('NEW_RELIC_USER_API_KEY');
   const accountId = process.env.NEW_RELIC_ACCOUNT_ID || merged.get('NEW_RELIC_ACCOUNT_ID');
 
