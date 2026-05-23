@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 export interface InfraNewRelicHost {
   name: string;
   reporting: boolean;
@@ -19,15 +23,16 @@ export interface InfraNewRelicStatus {
 }
 
 export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
-  const apiKey = process.env.NEW_RELIC_USER_API_KEY;
-  const accountId = process.env.NEW_RELIC_ACCOUNT_ID;
+  const credentials = loadNewRelicCredentials();
+  const apiKey = credentials.apiKey;
+  const accountId = credentials.accountId;
 
   if (!apiKey || !accountId) {
     return {
       status: 'not-configured',
       hosts: [],
       synthetics: [],
-      error: 'New Relic credentials not configured. Set NEW_RELIC_USER_API_KEY and NEW_RELIC_ACCOUNT_ID environment variables.',
+      error: 'New Relic credentials not configured. Set NEW_RELIC_USER_API_KEY and NEW_RELIC_ACCOUNT_ID in the process env or ~/.config/newrelic/.env.',
     };
   }
 
@@ -87,4 +92,58 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
   } catch (err) {
     return { status: 'error', hosts: [], synthetics: [], error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+function loadNewRelicCredentials(): { apiKey?: string; accountId?: string } {
+  const envSources = [
+    path.join(os.homedir(), '.config', 'newrelic', '.env'),
+    path.join(os.homedir(), '.config', 'probot', '.env'),
+  ];
+
+  const merged = new Map<string, string>();
+  for (const source of envSources) {
+    const entries = parseEnvFile(source);
+    for (const [key, value] of entries) {
+      if (!merged.has(key) && value) {
+        merged.set(key, value);
+      }
+    }
+  }
+
+  const apiKey = process.env.NEW_RELIC_USER_API_KEY || merged.get('NEW_RELIC_USER_API_KEY');
+  const accountId = process.env.NEW_RELIC_ACCOUNT_ID || merged.get('NEW_RELIC_ACCOUNT_ID');
+
+  return {
+    ...(apiKey ? { apiKey } : {}),
+    ...(accountId ? { accountId } : {}),
+  };
+}
+
+function parseEnvFile(filePath: string): Map<string, string> {
+  const env = new Map<string, string>();
+  if (!fs.existsSync(filePath)) {
+    return env;
+  }
+
+  const contents = fs.readFileSync(filePath, 'utf8');
+  for (const rawLine of contents.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) {
+      continue;
+    }
+
+    const equalsIndex = line.indexOf('=');
+    if (equalsIndex === -1) {
+      continue;
+    }
+
+    const key = line.slice(0, equalsIndex).trim();
+    let value = line.slice(equalsIndex + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    env.set(key, value);
+  }
+
+  return env;
 }

@@ -1677,7 +1677,7 @@ function renderMonitoringSection(content: HTMLElement, state: BrainConsoleViewSt
     const card = document.createElement('div');
     card.addClass('brain-console__card-content');
     card.createEl('p', { text: nr?.error ?? 'New Relic not configured.' });
-    card.createEl('p', { cls: 'brain-console__detail', text: 'Set NEW_RELIC_USER_API_KEY and NEW_RELIC_ACCOUNT_ID env vars.' });
+    card.createEl('p', { cls: 'brain-console__detail', text: 'Use ~/.config/newrelic/.env or set NEW_RELIC_USER_API_KEY and NEW_RELIC_ACCOUNT_ID in the process env.' });
     renderCard(grid, 'New Relic', card);
     return;
   }
@@ -2260,6 +2260,34 @@ const _orchResearchState: {
   timerInterval: ReturnType<typeof setInterval> | null;
 } = { url: '', focus: '', result: null, error: null, running: false, phase: 'idle', startedAt: 0, timerInterval: null };
 
+const RESEARCH_HISTORY_KEY = 'bc-orch-research-history';
+
+interface ResearchHistoryEntry {
+  title: string;
+  url: string;
+  savedAt: number;
+  result: Record<string, unknown>;
+}
+
+function bcOrchLoadHistory(): ResearchHistoryEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(RESEARCH_HISTORY_KEY) ?? '[]') as ResearchHistoryEntry[];
+  } catch {
+    return [];
+  }
+}
+
+function bcOrchSaveToHistory(result: Record<string, unknown>): void {
+  const entries = bcOrchLoadHistory();
+  const entry: ResearchHistoryEntry = {
+    title: (result.title as string) || (result.url as string) || 'Untitled',
+    url: (result.url as string) ?? '',
+    savedAt: Date.now(),
+    result,
+  };
+  localStorage.setItem(RESEARCH_HISTORY_KEY, JSON.stringify([entry, ...entries].slice(0, 5)));
+}
+
 function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleViewState, _snapshot: DashboardSnapshot): void {
   // ── Inject CSS once ──────────────────────────────────────────────────────────
   const styleId = 'bc-orch-styles';
@@ -2572,9 +2600,21 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
   left.createEl('div', { cls: 'bc-orch-label', text: 'YouTube URL' });
   const urlInput = left.createEl('input', { cls: 'bc-orch-input' }) as HTMLInputElement;
   urlInput.type = 'text';
-  urlInput.placeholder = 'https://youtube.com/...';
+  urlInput.placeholder = 'Click to paste…';
   urlInput.value = _orchResearchState.url;  // restore after re-render
   urlInput.addEventListener('input', () => { _orchResearchState.url = urlInput.value; });
+  // Paste clipboard contents on focus/click if field is empty
+  urlInput.addEventListener('focus', async () => {
+    if (!urlInput.value) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          urlInput.value = text.trim();
+          _orchResearchState.url = urlInput.value;
+        }
+      } catch { /* clipboard permission denied — ignore */ }
+    }
+  });
 
   left.createEl('div', { cls: 'bc-orch-label', text: 'Focus (optional)' });
   const focusInput = left.createEl('textarea', { cls: 'bc-orch-input' }) as HTMLTextAreaElement;
@@ -2582,32 +2622,82 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
   focusInput.value = _orchResearchState.focus;  // restore after re-render
   focusInput.addEventListener('input', () => { _orchResearchState.focus = focusInput.value; });
 
-  // Toggle row
-  const toggleRow = left.createDiv();
-  toggleRow.style.display = 'flex';
-  toggleRow.style.flexDirection = 'column';
-  toggleRow.style.gap = '4px';
+  // Mode toggle: Video & Transcript vs Transcript only
+  const modeRow = left.createDiv();
+  modeRow.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+  left.createEl('div', { cls: 'bc-orch-label', text: 'Mode' });
 
-  const watchRow = toggleRow.createDiv();
-  watchRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#888';
-  const watchCb = watchRow.createEl('input') as HTMLInputElement;
-  watchCb.type = 'checkbox';
-  watchRow.createEl('span', { text: '👁 Watch live' });
+  const modeVideoRow = modeRow.createDiv();
+  modeVideoRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#ccc;cursor:pointer;';
+  const modeVideoCb = modeVideoRow.createEl('input') as HTMLInputElement;
+  modeVideoCb.type = 'radio';
+  modeVideoCb.name = 'bc-orch-mode';
+  modeVideoCb.value = 'full';
+  modeVideoCb.checked = true;
+  modeVideoRow.createEl('span', { text: '🎬 Video & Transcript' });
+  modeVideoRow.addEventListener('click', () => { modeVideoCb.checked = true; });
 
-  const researchRow = toggleRow.createDiv();
-  researchRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#888';
-  const researchCb = researchRow.createEl('input') as HTMLInputElement;
-  researchCb.type = 'checkbox';
-  researchCb.checked = true;
-  researchRow.createEl('span', { text: '🔬 → Research' });
+  const modeTranscriptRow = modeRow.createDiv();
+  modeTranscriptRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#888;cursor:pointer;';
+  const modeTranscriptCb = modeTranscriptRow.createEl('input') as HTMLInputElement;
+  modeTranscriptCb.type = 'radio';
+  modeTranscriptCb.name = 'bc-orch-mode';
+  modeTranscriptCb.value = 'transcript';
+  modeTranscriptRow.createEl('span', { text: '📝 Transcript only' });
+  modeTranscriptRow.addEventListener('click', () => { modeTranscriptCb.checked = true; });
 
-  void watchCb; void researchCb;
+  left.appendChild(modeRow);
 
   const processBtn = left.createEl('button', { cls: 'bc-orch-btn bc-orch-btn--primary', text: '▶ Process' }) as HTMLButtonElement;
   processBtn.disabled = _orchResearchState.running;
 
-  // Right output panel (75%)
+  // Right output panel (75%) — history sidebar + output area
   const right = split.createDiv({ cls: 'bc-orch-split-right' });
+
+  // History sidebar
+  const historyBar = right.createDiv();
+  historyBar.style.cssText = 'border-bottom:1px solid #2a2a2a;padding-bottom:6px;margin-bottom:10px;';
+
+  function renderHistoryBar(): void {
+    historyBar.empty();
+    const entries = bcOrchLoadHistory();
+    if (entries.length === 0) return;
+
+    const histHeader = historyBar.createDiv();
+    histHeader.style.cssText = 'font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;';
+    histHeader.textContent = 'Recent';
+
+    const list = historyBar.createDiv();
+    list.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
+
+    entries.forEach(entry => {
+      const row = list.createDiv();
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer;transition:background 0.15s;';
+      row.onmouseenter = () => { row.style.background = '#2a2a2a'; };
+      row.onmouseleave = () => { row.style.background = 'transparent'; };
+
+      const label = row.createEl('span');
+      label.style.cssText = 'flex:1;font-size:11px;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      label.textContent = entry.title;
+
+      const ts = row.createEl('span');
+      ts.style.cssText = 'font-size:10px;color:#555;white-space:nowrap;font-family:monospace;';
+      const d = new Date(entry.savedAt);
+      ts.textContent = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+      row.addEventListener('click', () => {
+        _orchResearchState.result = entry.result;
+        _orchResearchState.error = null;
+        _orchResearchState.running = false;
+        urlInput.value = entry.url;
+        _orchResearchState.url = entry.url;
+        renderOutput();
+        renderHistoryBar();
+      });
+    });
+  }
+  renderHistoryBar();
+
   const outputArea = right.createDiv();
 
   // Restore output from state on re-render
@@ -2684,6 +2774,7 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
       } else {
         _orchResearchState.result = data;
         _orchResearchState.error = null;
+        bcOrchSaveToHistory(data);
       }
     } catch (_err) {
       _orchResearchState.error = 'Brain Core offline or request failed.';
@@ -2696,6 +2787,7 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
         _orchResearchState.timerInterval = null;
       }
       processBtn.disabled = false;
+      renderHistoryBar();
       renderOutput();
     }
   });
@@ -2779,6 +2871,49 @@ function bcOrchRenderSkeletons(outputArea: HTMLElement): void {
   etaEl.textContent = remStr;
 }
 
+function bcOrchFoldableSection(parent: HTMLElement, label: string, defaultOpen: boolean, buildContent: (body: HTMLElement) => string | null): void {
+  const sec = parent.createDiv({ cls: 'bc-orch-result-section' });
+  sec.style.cssText = 'border:1px solid #2a2a2a;border-radius:4px;margin-bottom:8px;overflow:hidden;';
+
+  const hdr = sec.createDiv();
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;background:#1e1e1e;user-select:none;';
+
+  const hdrLeft = hdr.createDiv();
+  hdrLeft.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  const arrow = hdrLeft.createEl('span');
+  arrow.style.cssText = 'font-size:9px;color:#555;width:10px;display:inline-block;';
+  arrow.textContent = defaultOpen ? '▼' : '▶';
+  hdrLeft.createEl('span', { cls: 'bc-orch-result-section-title', text: label });
+
+  const copyBtn = hdr.createEl('button');
+  copyBtn.style.cssText = 'font-size:10px;color:#555;background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:3px;transition:color 0.15s;';
+  copyBtn.textContent = 'copy';
+  copyBtn.setAttribute('type', 'button');
+  copyBtn.onmouseenter = () => { copyBtn.style.color = '#aaa'; };
+  copyBtn.onmouseleave = () => { copyBtn.style.color = '#555'; };
+
+  const body = sec.createDiv();
+  body.style.cssText = `padding:10px;background:#1a1a1a;${defaultOpen ? '' : 'display:none;'}`;
+
+  const copyText = buildContent(body);
+
+  copyBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!copyText) return;
+    try {
+      await navigator.clipboard.writeText(copyText);
+      copyBtn.textContent = '✓';
+      setTimeout(() => { copyBtn.textContent = 'copy'; }, 1500);
+    } catch { /* ignore */ }
+  });
+
+  hdr.addEventListener('click', () => {
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    arrow.textContent = open ? '▶' : '▼';
+  });
+}
+
 function bcOrchRenderResult(outputArea: HTMLElement, data: Record<string, unknown>): void {
   outputArea.createEl('div', { cls: 'bc-orch-result-title', text: (data.title as string) ?? 'Untitled' });
   const meta = outputArea.createEl('div', { cls: 'bc-orch-result-meta' });
@@ -2786,60 +2921,64 @@ function bcOrchRenderResult(outputArea: HTMLElement, data: Record<string, unknow
   const durStr = durSec ? `${Math.floor(durSec / 60)}m ${durSec % 60}s` : null;
   meta.textContent = [(data.channel as string) ?? null, durStr].filter(Boolean).join(' · ');
 
-  // Transcript excerpt — new Gemini field name
-  const transcript = (data.transcript_excerpt ?? data.transcript) as string | undefined;
-  if (transcript) {
-    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
-    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'TRANSCRIPTION' });
-    const pre = sec.createEl('pre', { cls: 'bc-orch-pre' });
-    pre.textContent = transcript;
-  }
-
-  // Human summary — new Gemini field name
+  // 1. Human summary — open by default
   const humanSummary = (data.human_summary ?? data.humanSummary) as string | undefined;
   if (humanSummary) {
-    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
-    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'HUMAN SUMMARY' });
-    sec.createEl('div', { text: humanSummary });
-  }
-
-  // AI summary / structured — new Gemini field name
-  const aiSummary = data.ai_summary ?? data.aiSummary;
-  if (aiSummary) {
-    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
-    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'AI SUMMARY' });
-    const structured = aiSummary as Record<string, unknown>;
-    if (structured.topic) sec.createEl('div', { cls: 'bc-orch-claim', text: `Topic: ${structured.topic as string}` });
-    if (structured.speaker) sec.createEl('div', { cls: 'bc-orch-claim', text: `Speaker: ${structured.speaker as string}` });
-    if (structured.evidence_type) sec.createEl('div', { cls: 'bc-orch-claim', text: `Evidence: ${structured.evidence_type as string} · Confidence: ${structured.confidence as string ?? '—'}` });
-    if (Array.isArray(structured.key_claims)) {
-      const claimsWrap = sec.createDiv();
-      claimsWrap.createEl('div', { cls: 'bc-orch-label', text: 'Key claims' });
-      (structured.key_claims as string[]).forEach(c => claimsWrap.createEl('div', { cls: 'bc-orch-claim', text: `• ${c}` }));
-    }
-    if (Array.isArray(structured.research_hooks)) {
-      const hooksWrap = sec.createDiv();
-      hooksWrap.style.marginTop = '6px';
-      hooksWrap.createEl('div', { cls: 'bc-orch-label', text: 'Research hooks' });
-      (structured.research_hooks as string[]).forEach(h => hooksWrap.createEl('div', { cls: 'bc-orch-claim', text: `→ ${h}` }));
-    }
-  }
-
-  // Actions section
-  const keyTs = data.key_timestamps as Record<string, string> | undefined;
-  if (keyTs && Object.keys(keyTs).length > 0) {
-    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
-    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'KEY TIMESTAMPS' });
-    Object.entries(keyTs).forEach(([desc, ts]) => {
-      sec.createEl('div', { cls: 'bc-orch-claim', text: `[${ts}] ${desc}` });
+    bcOrchFoldableSection(outputArea, 'HUMAN SUMMARY', true, (body) => {
+      body.createEl('div', { text: humanSummary });
+      return humanSummary;
     });
   }
 
-  // Rate limit usage
+  // 2. AI summary — collapsed by default
+  const aiSummary = data.ai_summary ?? data.aiSummary;
+  if (aiSummary) {
+    const structured = aiSummary as Record<string, unknown>;
+    let copyLines: string[] = [];
+    bcOrchFoldableSection(outputArea, 'AI SUMMARY', false, (body) => {
+      if (structured.topic) { body.createEl('div', { cls: 'bc-orch-claim', text: `Topic: ${structured.topic as string}` }); copyLines.push(`Topic: ${structured.topic as string}`); }
+      if (structured.speaker) { body.createEl('div', { cls: 'bc-orch-claim', text: `Speaker: ${structured.speaker as string}` }); copyLines.push(`Speaker: ${structured.speaker as string}`); }
+      if (structured.evidence_type) { body.createEl('div', { cls: 'bc-orch-claim', text: `Evidence: ${structured.evidence_type as string} · Confidence: ${(structured.confidence as string) ?? '—'}` }); copyLines.push(`Evidence: ${structured.evidence_type as string} · Confidence: ${(structured.confidence as string) ?? '—'}`); }
+      if (Array.isArray(structured.key_claims)) {
+        const claimsWrap = body.createDiv();
+        claimsWrap.style.marginTop = '6px';
+        claimsWrap.createEl('div', { cls: 'bc-orch-label', text: 'Key claims' });
+        (structured.key_claims as string[]).forEach(c => { claimsWrap.createEl('div', { cls: 'bc-orch-claim', text: `• ${c}` }); copyLines.push(`• ${c}`); });
+      }
+      if (Array.isArray(structured.research_hooks)) {
+        const hooksWrap = body.createDiv();
+        hooksWrap.style.marginTop = '6px';
+        hooksWrap.createEl('div', { cls: 'bc-orch-label', text: 'Research hooks' });
+        (structured.research_hooks as string[]).forEach(h => { hooksWrap.createEl('div', { cls: 'bc-orch-claim', text: `→ ${h}` }); copyLines.push(`→ ${h}`); });
+      }
+      // Key timestamps inside AI summary
+      const keyTs = data.key_timestamps as Record<string, string> | undefined;
+      if (keyTs && Object.keys(keyTs).length > 0) {
+        const tsWrap = body.createDiv();
+        tsWrap.style.marginTop = '6px';
+        tsWrap.createEl('div', { cls: 'bc-orch-label', text: 'Key timestamps' });
+        Object.entries(keyTs).forEach(([desc, ts]) => { tsWrap.createEl('div', { cls: 'bc-orch-claim', text: `[${ts}] ${desc}` }); copyLines.push(`[${ts}] ${desc}`); });
+      }
+      return copyLines.join('\n') || null;
+    });
+  }
+
+  // 3. Transcription — collapsed by default
+  const transcript = (data.transcript_excerpt ?? data.transcript) as string | undefined;
+  if (transcript) {
+    bcOrchFoldableSection(outputArea, 'TRANSCRIPTION', false, (body) => {
+      const pre = body.createEl('pre', { cls: 'bc-orch-pre' });
+      pre.style.maxHeight = 'none';
+      pre.textContent = transcript;
+      return transcript;
+    });
+  }
+
+  // Rate limit usage (compact footer, no section)
   const usage = data.rate_limit_usage as Record<string, unknown> | undefined;
   if (usage) {
     const usageEl = outputArea.createEl('div', { cls: 'bc-orch-result-meta' });
-    usageEl.style.marginTop = '10px';
+    usageEl.style.marginTop = '6px';
     usageEl.textContent = `Quota: ${usage.calls_today as number} calls today · ${usage.video_minutes_today as number} min used · ${usage.calls_remaining as number} remaining`;
   }
 }
