@@ -31,9 +31,9 @@ npx license-checker --production --json > THIRD_PARTY_LICENSES.json
 
 | Package | Role | Declared/known license | Risk |
 |---|---|---|---|
-| machine-brain | private package metadata | MIT currently declared | Change before publishing if commercial use is restricted. |
+| machine-brain | private package metadata | UNLICENSED | Low; private package metadata now avoids accidental MIT publication. |
 
-The root package currently declares `MIT`. That conflicts with the desired commercial-use restriction. Public ProChat OS packages should use:
+The root package previously declared `MIT`; it now declares `UNLICENSED` because the private brain repo is not the public product license. Public ProChat OS packages should use:
 
 ```json
 "license": "SEE LICENSE IN LICENSE.md"
