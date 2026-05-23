@@ -10,7 +10,7 @@ MODELS_DIR="$SCRIPT_DIR/ai/models"
 CACHE_FILE="$MODELS_DIR/bedrock-models.generated.json"
 ENV_FILE="$SCRIPT_DIR/tools/scripts/bedrock-models.generated.sh"
 
-FALLBACK_OPUS="us.anthropic.claude-opus-4-7"
+FALLBACK_OPUS="us.anthropic.claude-opus-4-6-v1"
 FALLBACK_SONNET="us.anthropic.claude-sonnet-4-6"
 FALLBACK_HAIKU="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 

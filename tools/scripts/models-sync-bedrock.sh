@@ -14,7 +14,7 @@ PROFILE="${AWS_PROFILE:-}"
 ALLOW_PREVIEW_MODELS="${ALLOW_PREVIEW_MODELS:-0}"
 PREFER_PINNED="${PREFER_PINNED_MODELS:-1}"
 
-PINNED_OPUS="us.anthropic.claude-opus-4-7"
+PINNED_OPUS="us.anthropic.claude-opus-4-6-v1"
 PINNED_SONNET="us.anthropic.claude-sonnet-4-6"
 PINNED_HAIKU="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 

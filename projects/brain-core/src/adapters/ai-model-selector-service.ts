@@ -25,6 +25,29 @@ export interface AiModelSelectorProvider {
   healthy: boolean;
   circuitState: string;
   costPer1kTokens: number;
+  bedrockModels?: AiModelSelectorBedrockPortfolioModel[] | undefined;
+}
+
+export interface AiModelSelectorBedrockPortfolioModel {
+  id?: string | undefined;
+  label?: string | undefined;
+  modelId?: string | undefined;
+  region?: string | undefined;
+  enabled: boolean;
+  roles: string[];
+  priceInputPer1m?: number | undefined;
+  priceOutputPer1m?: number | undefined;
+  access?: {
+    available?: boolean | undefined;
+    checkedAt?: number | undefined;
+    error?: unknown;
+  } | undefined;
+  outcome?: {
+    successes?: number | undefined;
+    failures?: number | undefined;
+    lastOutcome?: string | undefined;
+    lastUpdated?: number | undefined;
+  } | undefined;
 }
 
 export interface AiModelSelectorControlResult {
@@ -92,6 +115,27 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
         healthy: boolean;
         circuit_state?: { status: string } | string;
         cost_per_1k_tokens: number;
+        bedrock_models?: Array<{
+          id?: string;
+          label?: string;
+          model_id?: string;
+          region?: string;
+          enabled?: boolean;
+          roles?: string[];
+          price_input_per_1m?: number;
+          price_output_per_1m?: number;
+          access?: {
+            available?: boolean;
+            checked_at?: number;
+            error?: unknown;
+          };
+          outcome?: {
+            successes?: number;
+            failures?: number;
+            last_outcome?: string;
+            last_updated?: number;
+          };
+        }>;
       }>;
     };
 
@@ -103,6 +147,31 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
         ? (p.circuit_state as { status: string }).status
         : String(p.circuit_state ?? 'unknown'),
       costPer1kTokens: p.cost_per_1k_tokens,
+      bedrockModels: p.bedrock_models?.map((model) => ({
+        id: model.id,
+        label: model.label,
+        modelId: model.model_id,
+        region: model.region,
+        enabled: Boolean(model.enabled),
+        roles: model.roles ?? [],
+        priceInputPer1m: model.price_input_per_1m,
+        priceOutputPer1m: model.price_output_per_1m,
+        access: model.access
+          ? {
+              available: model.access.available,
+              checkedAt: model.access.checked_at,
+              error: model.access.error,
+            }
+          : undefined,
+        outcome: model.outcome
+          ? {
+              successes: model.outcome.successes,
+              failures: model.outcome.failures,
+              lastOutcome: model.outcome.last_outcome,
+              lastUpdated: model.outcome.last_updated,
+            }
+          : undefined,
+      })),
     }));
 
     return {

@@ -26,7 +26,7 @@ export interface ModelRoutingPolicyResult {
   escalationReason?: string;
 }
 
-const SURFACE_PRIORITY: BrainCoreRouteSurface[] = ['ollama-m4pro', 'ollama-m1', 'codex-cli', 'claude-bedrock'];
+const SURFACE_PRIORITY: BrainCoreRouteSurface[] = ['ollama-m4pro', 'ollama-m1', 'claude-bedrock', 'codex-cli'];
 
 const TASK_SURFACE_CAPABILITIES: Record<string, BrainCoreRouteSurface[]> = {
   metadata_generation: ['ollama-m4pro', 'ollama-m1', 'codex-cli', 'claude-bedrock'],
@@ -70,7 +70,9 @@ export function selectModelRouteSnapshot(
       ? input.inputTokens > 6000 ? 'qwen2.5:14b' : 'llama3.1:8b'
       : surface === 'codex-cli'
         ? input.qualityPriority === 'quality' ? 'gpt-5.5' : 'gpt-5.4-mini'
-        : 'claude-sonnet';
+        : input.taskType === 'description_quality_review' || input.taskType === 'orchestration'
+          ? 'qwen.qwen3-coder-next'
+          : 'nvidia.nemotron-super-3-120b';
 
   const estimatedTokens = estimateTokens(input);
   const estimatedCostUsd = estimateCost(surface, estimatedTokens);
@@ -81,9 +83,9 @@ export function selectModelRouteSnapshot(
     ? 'Cheapest capable local route selected first.'
     : surface === 'ollama-m1'
       ? 'Secondary local route selected for batch-friendly work.'
-      : surface === 'codex-cli'
-        ? 'Subscription-backed CLI used after local surface fit was insufficient.'
-        : 'Paid Claude fallback used after local and CLI routes.';
+    : surface === 'codex-cli'
+      ? 'Subscription-backed CLI used after local and Bedrock value routes.'
+      : 'Paid Bedrock value portfolio selected after local routes, before premium fallbacks.';
 
   const result: Omit<ModelRoutingPolicyResult, 'budgetStatus'> = {
     surface,
@@ -139,5 +141,5 @@ function estimateCost(surface: BrainCoreRouteSurface, estimatedTokens: number): 
   if (surface === 'codex-cli') {
     return Number((estimatedTokens / 1000 * 0.002).toFixed(4));
   }
-  return Number((estimatedTokens / 1000 * 0.006).toFixed(4));
+  return Number((estimatedTokens / 1_000_000 * 0.65).toFixed(4));
 }

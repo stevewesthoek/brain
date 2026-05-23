@@ -45,7 +45,11 @@ Four AI engines now work together. Claude always orchestrates — route sub-task
 | **Codex** | Reviewer / Parallel executor | Isolated well-scoped tasks, code review, second opinions, fast parallel checks |
 | **Gemini Flash** | Preprocessor | Large context ingestion (1M tokens), bulk analysis, free-tier summarization |
 
-**Cost priority (updated):** LM Studio local (free) > Gemini Flash (free) > Haiku (cheapest paid) > Codex low > Codex mini > Sonnet > Codex standard > Opus / Codex max
+**Cost priority (updated):** Local Ollama (free) > Gemini Flash (free preprocessing) > Bedrock value portfolio (`nvidia.nemotron-super-3-120b`, `qwen.qwen3-coder-next`, `deepseek.v3.2`, Kimi/gpt-oss challengers) > Codex low/mini when a subscription-backed surface is a better fit > Sonnet > Opus / Codex max.
+
+**Bedrock value portfolio:** The AI Model Selector validates account/region access before selecting Bedrock models. Cheap capable models are tried before premium Claude. `us.anthropic.claude-opus-4-7` remains disabled until the AWS account has access.
+
+**Manual terminal entrypoint:** `repos` offers `Auto`, `Claude`, `Codex`, and `Gemini`. `Auto` chooses the interactive runtime only: Claude for repo-wide/multi-step work, Codex for isolated review/small execution, and Gemini for large-context preprocessing. Raw Bedrock models stay behind the AI Model Selector and are not exposed as manual top-level choices.
 
 **Shell-output discipline:** Use RTK for noisy shell commands before spending model context on raw terminal output. RTK complements routing; it does not replace Gemini preprocessing, Firecrawl, handoffs, or model escalation rules.
 

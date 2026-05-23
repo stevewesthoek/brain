@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# repos — unified repo picker for Claude and Codex.
+# repos — unified repo picker for Claude, Codex, Gemini, and Auto routing.
 # Invoked as the `repos` shell function (defined in ~/.zshrc).
 #
-# Step 1: pick AI tool with fzf (Claude is default).
+# Step 1: pick AI tool with fzf (Auto is default).
 # Step 2: pick a repo from ~/Repos (sorted by most recently used).
-# Opens the selected repo in Claude (`claude`) or Codex (`codex`).
+# Opens the selected repo in the chosen interactive runtime.
 #
 # Repo list is cached at ~/.claude/cache/repos.json and rescanned in the
 # background on every run to stay fresh. Usage timestamps are tracked in
@@ -13,6 +13,7 @@
 CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
 REPOS_ROOT="$HOME/Repos"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 scan_to_cache() {
   python3 - "$REPOS_ROOT" "$CACHE_FILE" <<'PYEOF'
@@ -70,8 +71,8 @@ with open(usage_file, 'w') as f:
 PYEOF
 }
 
-# Step 1: pick AI tool — Claude is default (first item)
-tool=$(printf "Claude\nCodex\nGemini" | fzf \
+# Step 1: pick AI tool — Auto is default (first item)
+tool=$(printf "Auto\nClaude\nCodex\nGemini" | fzf \
   --prompt="  open with: " \
   --height=10 \
   --layout=reverse \
@@ -115,4 +116,6 @@ elif [[ "$tool" == "Codex" ]]; then
   exec codex
 elif [[ "$tool" == "Gemini" ]]; then
   exec gemini
+elif [[ "$tool" == "Auto" ]]; then
+  exec "$SCRIPT_DIR/ai-auto-route.sh" --repo "$selected_path" --exec
 fi

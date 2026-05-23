@@ -8,11 +8,11 @@
     <key>ProgramArguments</key>
     <array>
       <string>/Users/Office/.local/video-orchestrator/.venv/bin/python3</string>
-      <string>/Users/Office/.local/video-orchestrator/services/model-selector/selector_service.py</string>
+      <string>/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/model-selector/runtime/selector_service.py</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/Office/.local/video-orchestrator/services/model-selector</string>
+    <string>/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/model-selector/runtime</string>
 
     <key>EnvironmentVariables</key>
     <dict>

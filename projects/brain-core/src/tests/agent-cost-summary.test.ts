@@ -55,6 +55,49 @@ test('describeRouteLineItem preserves route metadata', () => {
   assert.equal(item.routingReason, route.rationale);
 });
 
+test('selectModelRouteSnapshot prefers Bedrock value portfolio before Codex when local is unavailable', () => {
+  const route = selectModelRouteSnapshot(
+    {
+      taskId: 't-bedrock',
+      taskType: 'description_quality_review',
+      inputTokens: 12000,
+      urgent: true,
+      contextBreadth: 'medium',
+      qualityPriority: 'quality',
+    },
+    [
+      { id: 'ai.ollama-m4pro', enabled: false, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
+      { id: 'ai.claude-bedrock', enabled: true, priority: 3, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
+      { id: 'ai.codex-cli', enabled: true, priority: 4, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
+    ],
+  );
+
+  assert.equal(route.surface, 'claude-bedrock');
+  assert.equal(route.model, 'qwen.qwen3-coder-next');
+  assert.match(route.rationale, /Bedrock value portfolio/);
+});
+
+test('selectModelRouteSnapshot uses Nemotron as the general Bedrock value model', () => {
+  const route = selectModelRouteSnapshot(
+    {
+      taskId: 't-nemotron',
+      taskType: 'transcript_summarization',
+      inputTokens: 30000,
+      urgent: true,
+      contextBreadth: 'wide',
+      qualityPriority: 'balanced',
+    },
+    [
+      { id: 'ai.ollama-m4pro', enabled: false, priority: 1, capabilities: ['text/small', 'text/medium', 'text/large'] },
+      { id: 'ai.claude-bedrock', enabled: true, priority: 3, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
+      { id: 'ai.codex-cli', enabled: true, priority: 4, capabilities: ['text/small', 'text/medium', 'text/large', 'text/review'] },
+    ],
+  );
+
+  assert.equal(route.surface, 'claude-bedrock');
+  assert.equal(route.model, 'nvidia.nemotron-super-3-120b');
+});
+
 test('budget helpers evaluate status from spend thresholds', () => {
   assert.equal(
     evaluateBudgetStatus({

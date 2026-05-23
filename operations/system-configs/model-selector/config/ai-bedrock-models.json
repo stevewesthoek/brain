@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "default_region": "us-east-1",
+  "access_probe_ttl_hours": 24,
+  "access_probe_max_output_tokens": 4,
+  "access_probe_prompt": "Reply OK only.",
+  "exploration_rate": 0.05,
+  "models": [
+    {
+      "id": "nemotron-super-3",
+      "label": "NVIDIA Nemotron 3 Super 120B A12B",
+      "provider": "NVIDIA",
+      "model_id": "nvidia.nemotron-super-3-120b",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 10,
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
+      "roles": ["agentic", "reasoning", "batch", "cost-saving"],
+      "task_affinity": {
+        "metadata_generation": 1.05,
+        "transcript_summarization": 1.05,
+        "description_quality_review": 1.0,
+        "orchestration": 1.1
+      },
+      "max_context_tokens": 1000000,
+      "max_output_tokens": 32000,
+      "price_input_per_1m": 0.15,
+      "price_output_per_1m": 0.65,
+      "quality_score": 0.78,
+      "notes": "Primary cheap agentic Bedrock candidate. Keep ahead of premium Claude while local models are unavailable or insufficient."
+    },
+    {
+      "id": "qwen3-coder-next",
+      "label": "Qwen3 Coder Next",
+      "provider": "Qwen",
+      "model_id": "qwen.qwen3-coder-next",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 20,
+      "capabilities": ["text/medium", "text/large", "text/review"],
+      "roles": ["coding", "debugging", "software-engineering"],
+      "task_affinity": {
+        "description_quality_review": 1.15,
+        "orchestration": 1.1
+      },
+      "max_context_tokens": 256000,
+      "max_output_tokens": 16000,
+      "price_input_per_1m": 0.5,
+      "price_output_per_1m": 1.2,
+      "quality_score": 0.82,
+      "notes": "Coding specialist and first Bedrock challenger for code-heavy tasks."
+    },
+    {
+      "id": "deepseek-v3-2",
+      "label": "DeepSeek V3.2",
+      "provider": "DeepSeek",
+      "model_id": "deepseek.v3.2",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 30,
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
+      "roles": ["reasoning", "coding", "instruction-following"],
+      "task_affinity": {
+        "metadata_generation": 1.0,
+        "transcript_summarization": 1.0,
+        "description_quality_review": 1.05,
+        "orchestration": 1.05
+      },
+      "max_context_tokens": 164000,
+      "max_output_tokens": 8000,
+      "price_input_per_1m": 0.62,
+      "price_output_per_1m": 1.85,
+      "quality_score": 0.8,
+      "notes": "General reasoning fallback when Nemotron or Qwen is a poor task fit."
+    },
+    {
+      "id": "kimi-k2-thinking",
+      "label": "Kimi K2 Thinking",
+      "provider": "Moonshot AI",
+      "model_id": "moonshot.kimi-k2-thinking",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 40,
+      "capabilities": ["text/medium", "text/large", "text/review"],
+      "roles": ["reasoning", "logic", "coding"],
+      "task_affinity": {
+        "description_quality_review": 1.1,
+        "orchestration": 1.08
+      },
+      "max_context_tokens": 256000,
+      "max_output_tokens": 16000,
+      "price_input_per_1m": 0.6,
+      "price_output_per_1m": 2.5,
+      "quality_score": 0.81,
+      "notes": "Reasoning challenger. Use selectively because output price is higher than Nemotron/Qwen."
+    },
+    {
+      "id": "kimi-k2-5",
+      "label": "Kimi K2.5",
+      "provider": "Moonshot AI",
+      "model_id": "moonshotai.kimi-k2.5",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 50,
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
+      "roles": ["general", "multimodal", "multilingual"],
+      "task_affinity": {
+        "metadata_generation": 1.0,
+        "transcript_summarization": 1.0
+      },
+      "max_context_tokens": 256000,
+      "max_output_tokens": 16000,
+      "price_input_per_1m": 0.6,
+      "price_output_per_1m": 2.5,
+      "quality_score": 0.77,
+      "notes": "General Moonshot fallback, useful for mixed or multimodal workloads."
+    },
+    {
+      "id": "gpt-oss-120b",
+      "label": "gpt-oss-120b",
+      "provider": "OpenAI",
+      "model_id": "openai.gpt-oss-120b-1:0",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 60,
+      "capabilities": ["text/small", "text/medium", "text/large"],
+      "roles": ["general", "reasoning", "exploration"],
+      "task_affinity": {
+        "metadata_generation": 1.0,
+        "transcript_summarization": 0.98
+      },
+      "max_context_tokens": 128000,
+      "max_output_tokens": 16000,
+      "price_input_per_1m": 0.15,
+      "price_output_per_1m": 0.6,
+      "quality_score": 0.72,
+      "notes": "Cheap general candidate. Keep below stronger coding/reasoning models until local benchmarks prove otherwise."
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "label": "Claude Sonnet 4.6",
+      "provider": "Anthropic",
+      "model_id": "us.anthropic.claude-sonnet-4-6",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 90,
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
+      "roles": ["premium", "reliable", "fallback"],
+      "task_affinity": {
+        "description_quality_review": 1.15,
+        "orchestration": 1.15
+      },
+      "max_context_tokens": 1000000,
+      "max_output_tokens": 64000,
+      "price_input_per_1m": 3.0,
+      "price_output_per_1m": 15.0,
+      "quality_score": 0.9,
+      "notes": "Premium quality fallback. Do not use as the default when cheaper candidates are healthy."
+    },
+    {
+      "id": "claude-opus-4-7",
+      "label": "Claude Opus 4.7",
+      "provider": "Anthropic",
+      "model_id": "us.anthropic.claude-opus-4-7",
+      "region": "us-east-1",
+      "enabled": false,
+      "priority": 100,
+      "capabilities": ["text/large", "text/review", "text/large-context-batch"],
+      "roles": ["premium", "deep-architecture", "last-resort"],
+      "task_affinity": {
+        "description_quality_review": 1.2,
+        "orchestration": 1.2
+      },
+      "max_context_tokens": 1000000,
+      "max_output_tokens": 64000,
+      "price_input_per_1m": 15.0,
+      "price_output_per_1m": 75.0,
+      "quality_score": 0.96,
+      "notes": "Disabled because the current AWS account returns AccessDeniedException. Enable only after Bedrock access is granted."
+    }
+  ]
+}

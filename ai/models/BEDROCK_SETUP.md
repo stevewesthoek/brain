@@ -16,7 +16,7 @@ This setup keeps Claude Code's Bedrock model selection safe and current:
 
 | Tier | Model ID |
 |---|---|
-| Opus | `us.anthropic.claude-opus-4-7` |
+| Opus | `us.anthropic.claude-opus-4-6-v1` |
 | Sonnet | `us.anthropic.claude-sonnet-4-6` |
 | Haiku | `us.anthropic.claude-haiku-4-5-20251001-v1:0` |
 
@@ -67,12 +67,12 @@ claude
 Expected exports:
 
 ```bash
-export ANTHROPIC_DEFAULT_OPUS_MODEL="us.anthropic.claude-opus-4-7"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="us.anthropic.claude-opus-4-6-v1"
 export ANTHROPIC_DEFAULT_SONNET_MODEL="us.anthropic.claude-sonnet-4-6"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 ```
 
-If `/model` still shows an older Opus 4.6 ID, the current Claude Code process was started with stale environment variables. Exit Claude Code, source `tools/scripts/bedrock-models.generated.sh`, and start Claude Code again.
+Opus 4.7 is not the default because the current AWS account returns `AccessDeniedException` for that model. If `/model` still shows a different custom default, the current Claude Code process was started with stale environment variables. Exit Claude Code, source `tools/scripts/bedrock-models.generated.sh`, and start Claude Code again.
 
 Brain-owned startup files:
 
@@ -87,7 +87,7 @@ Both files point Claude Code to the generated Bedrock model exports and fall bac
 
 - exactly one non-empty model for Opus, Sonnet, and Haiku
 - all resolved models use `us.anthropic.*`
-- resolved Opus is not older than pinned Opus 4.7
+- resolved Opus matches the pinned safe Opus-tier fallback unless discovery is explicitly enabled
 - `deep-architect` matches the resolved Opus cache
 - the generated sourceable shell export file exists
 - the current shell is not still using a stale `ANTHROPIC_DEFAULT_OPUS_MODEL`

@@ -112,12 +112,26 @@ export async function reportAIFailure(
   providerId: string,
   errorType: 'rate_limit' | 'timeout' | 'error',
   message = '',
+  model?: string,
 ): Promise<void> {
   try {
     await fetch(`${SELECTOR_URL}/report-failure`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider_id: providerId, error_type: errorType, error_message: message }),
+      body: JSON.stringify({ provider_id: providerId, error_type: errorType, error_message: message, model }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    // best-effort — never throw
+  }
+}
+
+export async function reportAISuccess(providerId: string, model?: string): Promise<void> {
+  try {
+    await fetch(`${SELECTOR_URL}/report-success`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider_id: providerId, model }),
       signal: AbortSignal.timeout(3000),
     });
   } catch {

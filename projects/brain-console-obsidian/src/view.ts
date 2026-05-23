@@ -3061,6 +3061,28 @@ function renderAiModelSelectorCard(state: BrainConsoleViewState, settings?: Brai
     }
   }
 
+  const bedrockModels = selector.providers?.flatMap((provider) => provider.bedrockModels ?? []) ?? [];
+  if (bedrockModels.length > 0) {
+    const enabled = bedrockModels.filter((model) => model.enabled);
+    const accessible = enabled.filter((model) => model.access?.available).length;
+    container.createEl('p', {
+      cls: 'brain-console__detail',
+      text: `Bedrock portfolio: ${accessible}/${enabled.length} enabled models access-checked`,
+    });
+    const bedrockList = container.createDiv({ cls: 'brain-console__list' });
+    for (const model of enabled.slice(0, 5)) {
+      const row = bedrockList.createDiv({ cls: 'brain-console__list-row' });
+      row.createEl('span', { cls: 'brain-console__list-label', text: model.id ?? model.modelId ?? 'unknown-model' });
+      const value = row.createEl('span', { cls: 'brain-console__list-value' });
+      const access = model.access?.available ? 'OK' : model.access ? 'blocked' : 'unknown';
+      const price = typeof model.priceInputPer1m === 'number' && typeof model.priceOutputPer1m === 'number'
+        ? `$${model.priceInputPer1m}/$${model.priceOutputPer1m}/1M`
+        : 'price n/a';
+      value.textContent = `${access} | ${price}`;
+      if (access === 'blocked') value.style.color = 'var(--bc-yellow)';
+    }
+  }
+
   if (settings) {
     const actions = container.createDiv({ cls: 'brain-console__local-app-actions' });
     const brainCoreUrl = settings.brainCoreUrl;

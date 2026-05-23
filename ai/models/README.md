@@ -25,7 +25,7 @@ claude
 
 ```json
 {
-  "opus": "us.anthropic.claude-opus-4-7",
+  "opus": "us.anthropic.claude-opus-4-6-v1",
   "sonnet": "us.anthropic.claude-sonnet-4-6",
   "haiku": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
@@ -37,13 +37,13 @@ These are safe defaults used when AWS discovery fails or returns stale/missing m
 
 ```json
 {
-  "opus": "us.anthropic.claude-opus-4-7",
+  "opus": "us.anthropic.claude-opus-4-6-v1",
   "sonnet": "us.anthropic.claude-sonnet-4-6",
   "haiku": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
 ```
 
-The sync script must never silently downgrade Opus below the pinned fallback. If AWS discovery returns an older Opus, the pinned fallback wins and the command prints a warning.
+The sync script defaults to pinned models that are known to work in the current AWS account. Opus 4.7 remains disabled until Bedrock account access is granted; Opus 4.6 is the safe Opus-tier fallback.
 
 ## Agent assignments
 
@@ -54,6 +54,37 @@ The sync script must never silently downgrade Opus below the pinned fallback. If
 | `deep-architect` | `opus` | Opus |
 
 The exact Bedrock IDs come from `tools/scripts/bedrock-models.generated.sh`, not from agent frontmatter.
+
+## AI Model Selector Bedrock portfolio
+
+Claude Code tier exports are separate from the runtime AI Model Selector portfolio.
+
+The selector reads:
+
+- `~/.config/video-orchestrator/ai-bedrock-models.json` — explicit model roster, prices, task roles, and enabled flags
+- `~/.local/video-orchestrator/state/bedrock-model-access.json` — cached account/region access probes
+- `~/.local/video-orchestrator/state/bedrock-model-outcomes.json` — model-level success/failure learning data
+
+Current selector policy:
+
+1. Use local Ollama first.
+2. Use cheap capable Bedrock models before premium Claude.
+3. Use Codex CLI when the Bedrock value portfolio is unavailable or the subscription-backed surface is a better fit.
+4. Use Sonnet as a premium fallback.
+5. Keep Opus disabled until the AWS account has explicit access.
+
+Initial Bedrock value roster:
+
+| Role | Model ID |
+|---|---|
+| Agentic default | `nvidia.nemotron-super-3-120b` |
+| Coding specialist | `qwen.qwen3-coder-next` |
+| General reasoning fallback | `deepseek.v3.2` |
+| Reasoning challenger | `moonshot.kimi-k2-thinking` |
+| General Moonshot fallback | `moonshotai.kimi-k2.5` |
+| Cheap OpenAI open model | `openai.gpt-oss-120b-1:0` |
+| Premium fallback | `us.anthropic.claude-sonnet-4-6` |
+| Disabled until access is granted | `us.anthropic.claude-opus-4-7` |
 
 ## Configuration options
 
@@ -103,10 +134,10 @@ claude
 Expected Opus export:
 
 ```bash
-us.anthropic.claude-opus-4-7
+us.anthropic.claude-opus-4-6-v1
 ```
 
-If `/model` still has several Opus entries, that is Claude Code's built-in selector. Use the Opus 4.7/default entry and ignore older built-ins such as Opus 4.1, Opus 4.6, or long-context Opus 4.6. If the custom environment value still shows an older Opus 4.6 ID, the running Claude Code process was started with stale environment variables; exit it, open a new shell, or source the generated script, then start Claude Code again.
+If `/model` still has several Opus entries, that is Claude Code's built-in selector. Use the generated default entry from `ANTHROPIC_DEFAULT_OPUS_MODEL`. Do not select Opus 4.7 until the AWS account has Bedrock access for that model.
 
 ## Related files
 

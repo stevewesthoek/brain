@@ -99,6 +99,29 @@ export interface BrainCoreAiModelSelectorProvider {
   healthy: boolean;
   circuitState: string;
   costPer1kTokens: number;
+  bedrockModels?: BrainCoreAiModelSelectorBedrockPortfolioModel[];
+}
+
+export interface BrainCoreAiModelSelectorBedrockPortfolioModel {
+  id?: string;
+  label?: string;
+  modelId?: string;
+  region?: string;
+  enabled: boolean;
+  roles: string[];
+  priceInputPer1m?: number;
+  priceOutputPer1m?: number;
+  access?: {
+    available?: boolean;
+    checkedAt?: number;
+    error?: unknown;
+  };
+  outcome?: {
+    successes?: number;
+    failures?: number;
+    lastOutcome?: string;
+    lastUpdated?: number;
+  };
 }
 
 export interface BrainCoreAiModelSelectorControlResult {

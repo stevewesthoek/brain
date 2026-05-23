@@ -144,7 +144,7 @@ Codex CLI usage is plan-limited under the user's ChatGPT subscription, and Claud
 
 ## Provider Registry (`ai-providers.json`)
 
-Five providers. Two local Ollama nodes handle all generation tasks. Codex CLI is the second tier. Claude via Amazon Bedrock is the third tier. There is no OpenAI API fallback and no direct Anthropic API fallback in the selector.
+Five providers plus a Bedrock model portfolio. Two local Ollama nodes handle all generation tasks first. The Bedrock portfolio is the paid value tier and chooses cheap capable models before premium Claude fallbacks. Codex CLI remains available after the Bedrock value tier when a subscription-backed surface is a better fit. There is no direct OpenAI API fallback and no direct Anthropic API fallback in the selector.
 
 ```json
 {
@@ -199,7 +199,7 @@ Five providers. Two local Ollama nodes handle all generation tasks. Codex CLI is
       "label": "ChatGPT subscription Codex CLI",
       "type": "cli",
       "cost_per_1k_tokens": 0.0,
-      "priority": 3,
+      "priority": 4,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review"],
       "max_context_tokens": 200000,
       "health_check": { "binary_exists": "codex" },
@@ -211,18 +211,18 @@ Five providers. Two local Ollama nodes handle all generation tasks. Codex CLI is
     },
     {
       "id": "claude-bedrock",
-      "label": "Claude via Amazon Bedrock",
+      "label": "Amazon Bedrock model portfolio",
       "type": "bedrock",
       "cost_per_1k_tokens": 0.0,
-      "priority": 4,
+      "priority": 3,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "max_context_tokens": 200000,
       "health_check": { "binary_exists": "aws" },
       "timeout_connect_sec": 5,
       "timeout_inference_sec": 300,
       "schedule_preference": "any",
-      "models": ["claude-haiku", "claude-sonnet", "claude-opus"],
-      "notes": "Claude Code / Bedrock surface only. No direct Anthropic API use."
+      "models": ["bedrock-model-portfolio"],
+      "notes": "Cost-quality Bedrock portfolio. Cheap capable models are tried before premium Claude fallbacks. No direct Anthropic API use."
     }
   ]
 }
@@ -242,11 +242,30 @@ The selector works through this ladder and stops at the first passing provider:
 1. ollama-m4pro    (local, free, fast — always preferred)
 2. ollama-m1       (local, free, slower — batch window preferred)
    ── defer to next batch window if non-urgent ──
-3. codex-cli       (ChatGPT subscription, no API cost)
-4. claude-bedrock  (paid Bedrock fallback)
+3. claude-bedrock  (paid Bedrock value portfolio: Nemotron/Qwen/DeepSeek/Kimi/gpt-oss, then Sonnet)
+4. codex-cli       (ChatGPT subscription fallback)
 ```
 
-**There is no OpenAI API or Anthropic API fallback in this chain.** Codex CLI and Claude Bedrock are the fallback surfaces.
+**There is no direct OpenAI API or Anthropic API fallback in this chain.** Bedrock model access is region/account validated before use. Opus stays disabled unless the AWS account is entitled to use it.
+
+### Bedrock Model Portfolio
+
+The Bedrock provider reads `~/.config/video-orchestrator/ai-bedrock-models.json`.
+
+Initial enabled roster:
+
+| Role | Model ID | Use |
+|---|---|---|
+| Cheapest strong agentic default | `nvidia.nemotron-super-3-120b` | General long-running and batch reasoning |
+| Coding specialist | `qwen.qwen3-coder-next` | Code generation, debugging, software engineering review |
+| General reasoning fallback | `deepseek.v3.2` | Reasoning and instruction-following fallback |
+| Reasoning challenger | `moonshot.kimi-k2-thinking` | Harder logic/coding experiments |
+| General Moonshot fallback | `moonshotai.kimi-k2.5` | Mixed general, multilingual, or multimodal work |
+| Cheap OpenAI open model | `openai.gpt-oss-120b-1:0` | Cheap general challenger |
+| Premium fallback | `us.anthropic.claude-sonnet-4-6` | Use after cheaper models are unavailable or insufficient |
+| Disabled until entitlement | `us.anthropic.claude-opus-4-7` | Last resort only after Bedrock access is granted |
+
+The selector caches tiny `bedrock-runtime converse` access probes in `~/.local/video-orchestrator/state/bedrock-model-access.json`, then scores eligible models by task affinity, quality score, observed outcomes, cost, and priority. Model outcome feedback is stored in `~/.local/video-orchestrator/state/bedrock-model-outcomes.json`.
 
 ---
 
