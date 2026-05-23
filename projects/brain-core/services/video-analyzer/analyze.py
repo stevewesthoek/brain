@@ -160,84 +160,90 @@ def load_api_key() -> str:
 
 # ── Gemini call ────────────────────────────────────────────────────────────────
 
-ANALYSIS_PROMPT = """\
-Analyze this YouTube video thoroughly. Return ONLY raw JSON (no markdown, no code fences).
+STRUCTURED_PROMPT = """\
+Analyze this YouTube video.
 
-Required JSON schema:
-{
-  "title": "<video title>",
-  "channel": "<channel/uploader name>",
-  "duration_seconds": <integer>,
-  "transcript_excerpt": "<first 2000 chars of speech verbatim, or best approximation>",
-  "full_summary": "<3-5 paragraph natural prose summary of what was said and shown>",
-  "structured": {
-    "topic": "<one-line topic>",
-    "speaker": "<speaker name/role if identifiable, else null>",
-    "key_claims": ["claim1", "claim2", "claim3"],
-    "visual_elements": ["element1", "element2"],
-    "evidence_type": "<anecdotal|empirical|opinion|tutorial|news|other>",
-    "confidence": "<high|medium|low>",
-    "research_hooks": ["hook1", "hook2"]
-  },
-  "chapters": [{"title": "...", "start_seconds": 0}],
-  "key_timestamps": {"moment_description": "seconds_as_string"}
-}
+Return a JSON object with exactly these keys (no extras, keep all string values short):
+- title: string (video title)
+- channel: string (channel name)
+- duration_seconds: integer
+- full_summary: string (max 800 chars, prose summary of what was said and shown)
+- structured: object with keys: topic (string, one line), speaker (string or null), key_claims (array of max 5 short strings), visual_elements (array of max 5 short strings), evidence_type (one of: anecdotal|empirical|opinion|tutorial|news|other), confidence (one of: high|medium|low), research_hooks (array of max 4 short strings)
+- chapters: array of objects with keys: title (string), start_seconds (integer)
+- key_timestamps: object mapping short moment labels to timestamp strings (max 6 entries)
 
-If a field is unavailable, use null or empty array. Do not add extra keys."""
+Use null for unavailable fields, empty arrays for unavailable lists. Be concise."""
+
+TRANSCRIPT_PROMPT = """\
+Transcribe the spoken words in this YouTube video verbatim. Output only the transcript text, no labels, no timestamps, no formatting. Just the raw speech."""
 
 
 def analyze_video(youtube_url: str, focus: str = "") -> dict:
-    """Call Gemini API with the YouTube URL. Returns parsed JSON dict."""
+    """Two Gemini calls: structured JSON first, transcript second."""
     try:
         from google import genai
         from google.genai import types
     except ImportError:
-        raise RuntimeError(
-            "google-genai not installed. Run: "
-            "python3 -m pip install google-genai"
-        )
+        raise RuntimeError("google-genai not installed. Run: python3 -m pip install google-genai")
 
     api_key = load_api_key()
     client = genai.Client(api_key=api_key)
 
-    prompt = ANALYSIS_PROMPT
-    if focus:
-        prompt += f"\n\nAdditional focus for this analysis: {focus}"
+    video_part = types.Part(file_data=types.FileData(file_uri=youtube_url, mime_type="video/*"))
 
-    log(f"Sending to Gemini API: {youtube_url}")
+    # ── Call 1: structured JSON ────────────────────────────────────────────────
+    struct_prompt = STRUCTURED_PROMPT
+    if focus:
+        struct_prompt += f"\n\nAdditional focus: {focus}"
+
+    log(f"Sending to Gemini API (structured): {youtube_url}")
     t0 = time.time()
 
-    response = client.models.generate_content(
+    struct_resp = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=[
-            types.Part(file_data=types.FileData(
-                file_uri=youtube_url,
-                mime_type="video/*",
-            )),
-            types.Part(text=prompt),
-        ],
+        contents=[video_part, types.Part(text=struct_prompt)],
         config=types.GenerateContentConfig(
             max_output_tokens=4096,
             temperature=0.1,
+            response_mime_type="application/json",
         ),
     )
 
-    elapsed = time.time() - t0
-    log(f"Gemini responded in {elapsed:.1f}s")
-
-    raw = response.text.strip()
-
-    # Strip code fences if Gemini wrapped anyway
-    if raw.startswith("```"):
-        lines = raw.splitlines()
-        raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+    elapsed1 = time.time() - t0
+    log(f"Structured call done in {elapsed1:.1f}s")
 
     try:
-        data = json.loads(raw)
+        data = json.loads(struct_resp.text.strip())
     except json.JSONDecodeError as e:
-        raise RuntimeError(f"Gemini returned non-JSON response: {e}\n\nRaw output:\n{raw[:500]}")
+        raw = struct_resp.text.strip()
+        raise RuntimeError(f"Gemini structured call returned non-JSON: {e}\n\nRaw:\n{raw[:400]}")
 
-    data["_gemini_elapsed_seconds"] = round(elapsed, 1)
+    # ── Call 2: transcript (plain text, no JSON) ───────────────────────────────
+    log("Sending to Gemini API (transcript)...")
+    t1 = time.time()
+
+    transcript_prompt = TRANSCRIPT_PROMPT
+    if focus:
+        transcript_prompt += f"\n\nPay special attention to content about: {focus}"
+
+    try:
+        trans_resp = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[video_part, types.Part(text=transcript_prompt)],
+            config=types.GenerateContentConfig(
+                max_output_tokens=16384,
+                temperature=0.0,
+            ),
+        )
+        transcript = trans_resp.text.strip()
+        elapsed2 = time.time() - t1
+        log(f"Transcript call done in {elapsed2:.1f}s ({len(transcript)} chars)")
+    except Exception as e:
+        log(f"Transcript call failed (non-fatal): {e}")
+        transcript = ""
+
+    data["transcript_excerpt"] = transcript
+    data["_gemini_elapsed_seconds"] = round(time.time() - t0, 1)
     return data
 
 

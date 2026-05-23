@@ -2248,15 +2248,646 @@ function renderLocalAppActionAuditCard(state: BrainConsoleViewState): HTMLElemen
   return container;
 }
 
-function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
-  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+// ── Research drawer persistent state (survives DOM re-renders) ───────────────
+const _orchResearchState: {
+  url: string;
+  focus: string;
+  result: Record<string, unknown> | null;
+  error: string | null;
+  running: boolean;
+} = { url: '', focus: '', result: null, error: null, running: false };
 
-  renderCard(grid, 'Orchestrators', renderOrchestratorsCard(state, snapshot));
-
-  const videoOrch = state.orchestrators?.find(o => o.id === 'video-orchestrator');
-  if (videoOrch) {
-    renderCard(grid, 'Video Orchestrator', renderVideoOrchestratorCard(state, snapshot));
+function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleViewState, _snapshot: DashboardSnapshot): void {
+  // ── Inject CSS once ──────────────────────────────────────────────────────────
+  const styleId = 'bc-orch-styles';
+  if (!document.getElementById(styleId)) {
+    const styleEl = document.createElement('style');
+    styleEl.id = styleId;
+    styleEl.textContent = `
+.bc-orch-section { display: flex; gap: 0; background: #1a1a1a; min-height: 400px; position: relative; }
+.bc-orch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; width: 100%; transition: width 0.2s ease; box-sizing: border-box; }
+.bc-orch-section--drawer-open .bc-orch-grid { width: 35%; }
+.bc-orch-drawer-container { width: 0; overflow: hidden; transition: width 0.2s ease; background: #242424; border-left: 1px solid #3a3a3a; display: flex; flex-direction: column; }
+.bc-orch-section--drawer-open .bc-orch-drawer-container { width: 65%; }
+.bc-orch-drawer { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.bc-orch-drawer--active { display: flex; }
+.bc-orch-card { background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px; font-family: monospace; transition: border-color 0.15s; }
+.bc-orch-card:hover { border-color: #4a4a4a; }
+.bc-orch-card-header { display: flex; align-items: center; gap: 6px; }
+.bc-orch-card-title { font-size: 11px; font-weight: bold; color: #fff; letter-spacing: 0.5px; }
+.bc-orch-card-stat { font-size: 11px; color: #888; }
+.bc-orch-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 6px; }
+.bc-orch-health { display: flex; gap: 3px; align-items: center; }
+.bc-orch-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; }
+.bc-orch-dot--running { background: #3b82f6; animation: bc-orch-pulse 1.5s ease-in-out infinite; }
+.bc-orch-dot--done { background: #2ecc71; }
+.bc-orch-dot--partial { background: #e67e22; }
+.bc-orch-dot--error { background: #e74c3c; }
+@keyframes bc-orch-pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+.bc-orch-open-btn { font-size: 10px; color: #888; background: none; border: 1px solid #3a3a3a; border-radius: 3px; padding: 2px 8px; cursor: pointer; font-family: monospace; }
+.bc-orch-open-btn:hover { color: #fff; border-color: #888; }
+.bc-orch-open-btn--active { color: #3b82f6; border-color: #3b82f6; }
+.bc-orch-drawer-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #3a3a3a; flex-shrink: 0; }
+.bc-orch-drawer-title { font-size: 12px; font-weight: bold; color: #fff; font-family: monospace; }
+.bc-orch-drawer-close { background: none; border: none; color: #666; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
+.bc-orch-drawer-close:hover { color: #fff; }
+.bc-orch-drawer-body { padding: 14px; flex: 1; overflow-y: auto; font-family: monospace; font-size: 11px; color: #888; }
+.bc-orch-split { display: flex; gap: 0; height: 100%; overflow: hidden; }
+.bc-orch-split-left { padding: 14px; border-right: 1px solid #3a3a3a; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex-shrink: 0; }
+.bc-orch-split-right { padding: 14px; flex: 1; overflow-y: auto; }
+.bc-orch-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.bc-orch-input { width: 100%; background: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 3px; color: #fff; font-family: monospace; font-size: 11px; padding: 6px 8px; box-sizing: border-box; resize: vertical; }
+.bc-orch-input:focus { outline: none; border-color: #3b82f6; }
+.bc-orch-btn { font-family: monospace; font-size: 11px; padding: 5px 12px; border-radius: 3px; cursor: pointer; border: 1px solid #3a3a3a; background: #333; color: #fff; }
+.bc-orch-btn:hover { background: #3a3a3a; }
+.bc-orch-btn--primary { background: #1d4ed8; border-color: #2563eb; }
+.bc-orch-btn--primary:hover { background: #2563eb; }
+.bc-orch-btn:disabled { opacity: 0.4; cursor: default; }
+.bc-orch-output-empty { color: #555; font-style: italic; padding: 20px 0; }
+.bc-orch-phase-grid { width: 100%; border-collapse: collapse; font-size: 10px; }
+.bc-orch-phase-grid th { color: #666; font-weight: normal; padding: 4px 6px; text-align: center; border-bottom: 1px solid #3a3a3a; white-space: nowrap; }
+.bc-orch-phase-grid td { padding: 4px 6px; text-align: center; border-bottom: 1px solid #2a2a2a; color: #888; }
+.bc-orch-badge { display: inline-block; background: #333; border: 1px solid #3a3a3a; border-radius: 3px; padding: 2px 6px; font-size: 10px; color: #888; margin: 2px; }
+.bc-orch-result-title { font-size: 13px; color: #fff; font-weight: bold; margin-bottom: 4px; }
+.bc-orch-result-meta { color: #666; font-size: 10px; margin-bottom: 10px; }
+.bc-orch-result-section { margin-bottom: 12px; }
+.bc-orch-result-section-title { font-size: 10px; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.bc-orch-pre { background: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 3px; padding: 8px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; font-size: 10px; color: #aaa; line-height: 1.5; }
+.bc-orch-claim { color: #aaa; padding: 2px 0; border-bottom: 1px solid #2a2a2a; }
+.bc-orch-skeleton { background: #333; border-radius: 3px; height: 10px; margin: 4px 0; animation: bc-orch-shimmer 1.5s infinite; }
+@keyframes bc-orch-shimmer { 0%{opacity:0.5}50%{opacity:1}100%{opacity:0.5} }
+.bc-orch-section-header { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 0; border-bottom: 1px solid #2a2a2a; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    `;
+    document.head.appendChild(styleEl);
   }
+
+  // ── Root section element ─────────────────────────────────────────────────────
+  const section = content.createDiv({ cls: 'bc-orch-section' });
+
+  // ── 2×2 card grid ────────────────────────────────────────────────────────────
+  const grid = section.createDiv({ cls: 'bc-orch-grid' });
+
+  // ── Drawer container (right side) ────────────────────────────────────────────
+  const drawerContainer = section.createDiv({ cls: 'bc-orch-drawer-container' });
+
+  // ── Drawer open/close helpers ────────────────────────────────────────────────
+  type OrchDrawerId = 'video' | 'research' | 'bible' | 'design';
+  const DRAWER_KEY = 'bc-orch-active-drawer';
+
+  const openBtns: Record<OrchDrawerId, HTMLButtonElement> = {} as Record<OrchDrawerId, HTMLButtonElement>;
+  const drawers: Record<OrchDrawerId, HTMLElement> = {} as Record<OrchDrawerId, HTMLElement>;
+
+  function openDrawer(id: OrchDrawerId): void {
+    localStorage.setItem(DRAWER_KEY, id);
+    section.addClass('bc-orch-section--drawer-open');
+    (Object.keys(drawers) as OrchDrawerId[]).forEach(k => {
+      drawers[k].toggleClass('bc-orch-drawer--active', k === id);
+    });
+    (Object.keys(openBtns) as OrchDrawerId[]).forEach(k => {
+      openBtns[k].toggleClass('bc-orch-open-btn--active', k === id);
+    });
+  }
+
+  function closeDrawer(): void {
+    localStorage.removeItem(DRAWER_KEY);
+    section.removeClass('bc-orch-section--drawer-open');
+    (Object.keys(drawers) as OrchDrawerId[]).forEach(k => {
+      drawers[k].removeClass('bc-orch-drawer--active');
+    });
+    (Object.keys(openBtns) as OrchDrawerId[]).forEach(k => {
+      openBtns[k].removeClass('bc-orch-open-btn--active');
+    });
+  }
+
+  // ── Derive Video Orchestrator status ─────────────────────────────────────────
+  const vol = state.pipelinesLiveStatus?.videoOrchestrator;
+  type OrchStatus = 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR';
+
+  function voStatus(): OrchStatus {
+    if (!vol) return 'IDLE';
+    if (vol.status === 'active') return 'RUNNING';
+    if (vol.status === 'error') return 'ERROR';
+    return 'IDLE';
+  }
+
+  // ── Build the 4 cards ────────────────────────────────────────────────────────
+  // Card 1: Video Orchestrator
+  const videoBtn = bcOrchBuildCard(grid, {
+    id: 'video',
+    title: 'VIDEO ORCHESTRATOR',
+    status: voStatus(),
+    stats: [
+      `Running jobs: ${vol?.queueDepth?.running ?? 0}`,
+      `Active accounts: ${vol?.activeAccounts ?? 0}`,
+    ],
+    healthDots: bcOrchHealthDots(voStatus()),
+    onOpen: () => openDrawer('video'),
+  });
+  openBtns['video'] = videoBtn;
+
+  // Card 2: Research Orchestrator
+  const researchBtn = bcOrchBuildCard(grid, {
+    id: 'research',
+    title: 'RESEARCH ORCHESTRATOR',
+    status: 'IDLE',
+    stats: ['Last: —', 'Quota: —'],
+    healthDots: [null, null, null, null, null],
+    onOpen: () => openDrawer('research'),
+  });
+  openBtns['research'] = researchBtn;
+
+  // Card 3: Bible Research
+  const bibleBtn = bcOrchBuildCard(grid, {
+    id: 'bible',
+    title: 'BIBLE RESEARCH',
+    status: 'IDLE',
+    stats: ['Pipelines: 0', 'Pending: —'],
+    healthDots: [null, null, null, null, null],
+    onOpen: () => openDrawer('bible'),
+  });
+  openBtns['bible'] = bibleBtn;
+
+  // Card 4: Design Orchestrator
+  const designBtn = bcOrchBuildCard(grid, {
+    id: 'design',
+    title: 'DESIGN ORCHESTRATOR',
+    status: 'IDLE',
+    stats: ['Skills ready: 8', 'Last PRD: —'],
+    healthDots: [null, null, null, null, null],
+    onOpen: () => openDrawer('design'),
+  });
+  openBtns['design'] = designBtn;
+
+  // ── Build the 4 drawers ──────────────────────────────────────────────────────
+  drawers['video'] = bcOrchBuildVideoDrawer(drawerContainer, vol, closeDrawer);
+  drawers['research'] = bcOrchBuildResearchDrawer(drawerContainer, closeDrawer);
+  drawers['bible'] = bcOrchBuildBibleDrawer(drawerContainer, state, closeDrawer);
+  drawers['design'] = bcOrchBuildDesignDrawer(drawerContainer, closeDrawer);
+
+  // ── Restore persisted drawer state ──────────────────────────────────────────
+  try {
+    const saved = localStorage.getItem(DRAWER_KEY) as OrchDrawerId | null;
+    if (saved && drawers[saved]) {
+      openDrawer(saved);
+    }
+  } catch { /* ignore */ }
+}
+
+// ── Helper: build a single orchestrator status card ──────────────────────────
+function bcOrchBuildCard(
+  parent: HTMLElement,
+  opts: {
+    id: string;
+    title: string;
+    status: 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR';
+    stats: [string, string];
+    healthDots: (null | 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR')[];
+    onOpen: () => void;
+  },
+): HTMLButtonElement {
+  const card = parent.createDiv({ cls: 'bc-orch-card' });
+
+  // Header row: status dot + title
+  const header = card.createDiv({ cls: 'bc-orch-card-header' });
+  const dot = header.createEl('span', { cls: 'bc-orch-dot' });
+  bcOrchApplyDotStatus(dot, opts.status);
+  header.createEl('span', { cls: 'bc-orch-card-title', text: opts.title });
+
+  // Stat lines
+  card.createEl('div', { cls: 'bc-orch-card-stat', text: opts.stats[0] });
+  card.createEl('div', { cls: 'bc-orch-card-stat', text: opts.stats[1] });
+
+  // Footer: health strip + open button
+  const footer = card.createDiv({ cls: 'bc-orch-card-footer' });
+  const health = footer.createDiv({ cls: 'bc-orch-health' });
+  opts.healthDots.forEach(s => {
+    const d = health.createEl('span', { cls: 'bc-orch-dot' });
+    bcOrchApplyDotStatus(d, s ?? 'IDLE');
+  });
+
+  const btn = footer.createEl('button', { cls: 'bc-orch-open-btn', text: 'Open →' }) as HTMLButtonElement;
+  btn.addEventListener('click', opts.onOpen);
+  return btn;
+}
+
+// ── Helper: apply status modifier class to a dot element ─────────────────────
+function bcOrchApplyDotStatus(el: HTMLElement, status: 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR'): void {
+  el.removeClass('bc-orch-dot--running');
+  el.removeClass('bc-orch-dot--done');
+  el.removeClass('bc-orch-dot--partial');
+  el.removeClass('bc-orch-dot--error');
+  if (status === 'RUNNING') el.addClass('bc-orch-dot--running');
+  else if (status === 'DONE') el.addClass('bc-orch-dot--done');
+  else if (status === 'PARTIAL') el.addClass('bc-orch-dot--partial');
+  else if (status === 'ERROR') el.addClass('bc-orch-dot--error');
+  // IDLE: no modifier class → default #555
+}
+
+// ── Helper: produce 5 health dots array from a single status ─────────────────
+function bcOrchHealthDots(status: 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR'): (null | 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR')[] {
+  if (status === 'RUNNING') return ['DONE', 'DONE', 'RUNNING', null, null];
+  if (status === 'ERROR') return ['DONE', 'ERROR', null, null, null];
+  if (status === 'PARTIAL') return ['DONE', 'PARTIAL', null, null, null];
+  return [null, null, null, null, null]; // IDLE / DONE
+}
+
+// ── Helper: build a drawer with standard header ───────────────────────────────
+function bcOrchBuildDrawerShell(
+  container: HTMLElement,
+  id: string,
+  title: string,
+  onClose: () => void,
+): { drawer: HTMLElement; body: HTMLElement } {
+  const drawer = container.createDiv({ cls: 'bc-orch-drawer' });
+  drawer.dataset['orchId'] = id;
+
+  const hdr = drawer.createDiv({ cls: 'bc-orch-drawer-header' });
+  hdr.createEl('span', { cls: 'bc-orch-drawer-title', text: title });
+  const closeBtn = hdr.createEl('button', { cls: 'bc-orch-drawer-close', text: '✕' });
+  closeBtn.addEventListener('click', onClose);
+
+  const body = drawer.createDiv({ cls: 'bc-orch-drawer-body' });
+  body.style.padding = '0';
+  body.style.overflow = 'hidden';
+  body.style.flex = '1';
+  body.style.display = 'flex';
+  body.style.flexDirection = 'column';
+
+  return { drawer, body };
+}
+
+// ── Drawer 1: Video Orchestrator ──────────────────────────────────────────────
+function bcOrchBuildVideoDrawer(
+  container: HTMLElement,
+  vol: import('./client.js').BrainCoreInfraVOPipelineSummary | undefined,
+  onClose: () => void,
+): HTMLElement {
+  const { drawer, body } = bcOrchBuildDrawerShell(container, 'video', 'VIDEO ORCHESTRATOR', onClose);
+
+  const phases = ['🔉 Audio', '🎬 Comp', 'CC', '🖼 Thumb', '🔍 SEO', '📤 Pub', '📊 Analytics'];
+  const wrap = body.createDiv();
+  wrap.style.padding = '14px';
+  wrap.style.overflowY = 'auto';
+  wrap.style.flex = '1';
+  wrap.style.fontFamily = 'monospace';
+  wrap.style.fontSize = '11px';
+
+  const statusLine = wrap.createDiv({ cls: 'bc-orch-card-stat' });
+  const voSt = vol?.status ?? 'unknown';
+  statusLine.textContent = `Status: ${voSt === 'active' ? 'RUNNING' : voSt === 'error' ? 'ERROR' : 'IDLE'} · Running: ${vol?.queueDepth?.running ?? 0} · Pending: ${vol?.queueDepth?.pending ?? 0} · Accounts: ${vol?.activeAccounts ?? 0}`;
+  statusLine.style.marginBottom = '12px';
+
+  const table = wrap.createEl('table', { cls: 'bc-orch-phase-grid' });
+  const thead = table.createEl('thead');
+  const headerRow = thead.createEl('tr');
+  phases.forEach(ph => headerRow.createEl('th', { text: ph }));
+
+  const tbody = table.createEl('tbody');
+  const dataRow = tbody.createEl('tr');
+  phases.forEach(_ph => {
+    const td = dataRow.createEl('td');
+    const dot = td.createEl('span', { cls: 'bc-orch-dot', text: '' });
+    dot.style.display = 'inline-block';
+    // All phases idle by default
+    void dot;
+  });
+
+  return drawer;
+}
+
+// ── Drawer 2: Research Orchestrator ──────────────────────────────────────────
+function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void): HTMLElement {
+  const { drawer, body } = bcOrchBuildDrawerShell(container, 'research', 'RESEARCH ORCHESTRATOR', onClose);
+
+  const split = body.createDiv({ cls: 'bc-orch-split' });
+
+  // Left intake panel (25%) — inputs survive re-renders via _orchResearchState
+  const left = split.createDiv({ cls: 'bc-orch-split-left' });
+  left.style.width = '25%';
+  left.style.minWidth = '180px';
+
+  left.createEl('div', { cls: 'bc-orch-label', text: 'YouTube URL' });
+  const urlInput = left.createEl('input', { cls: 'bc-orch-input' }) as HTMLInputElement;
+  urlInput.type = 'text';
+  urlInput.placeholder = 'https://youtube.com/...';
+  urlInput.value = _orchResearchState.url;  // restore after re-render
+  urlInput.addEventListener('input', () => { _orchResearchState.url = urlInput.value; });
+
+  left.createEl('div', { cls: 'bc-orch-label', text: 'Focus (optional)' });
+  const focusInput = left.createEl('textarea', { cls: 'bc-orch-input' }) as HTMLTextAreaElement;
+  focusInput.rows = 3;
+  focusInput.value = _orchResearchState.focus;  // restore after re-render
+  focusInput.addEventListener('input', () => { _orchResearchState.focus = focusInput.value; });
+
+  // Toggle row
+  const toggleRow = left.createDiv();
+  toggleRow.style.display = 'flex';
+  toggleRow.style.flexDirection = 'column';
+  toggleRow.style.gap = '4px';
+
+  const watchRow = toggleRow.createDiv();
+  watchRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#888';
+  const watchCb = watchRow.createEl('input') as HTMLInputElement;
+  watchCb.type = 'checkbox';
+  watchRow.createEl('span', { text: '👁 Watch live' });
+
+  const researchRow = toggleRow.createDiv();
+  researchRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#888';
+  const researchCb = researchRow.createEl('input') as HTMLInputElement;
+  researchCb.type = 'checkbox';
+  researchCb.checked = true;
+  researchRow.createEl('span', { text: '🔬 → Research' });
+
+  void watchCb; void researchCb;
+
+  const processBtn = left.createEl('button', { cls: 'bc-orch-btn bc-orch-btn--primary', text: '▶ Process' }) as HTMLButtonElement;
+  processBtn.disabled = _orchResearchState.running;
+
+  // Right output panel (75%)
+  const right = split.createDiv({ cls: 'bc-orch-split-right' });
+  const outputArea = right.createDiv();
+
+  // Restore output from state on re-render
+  function renderOutput(): void {
+    outputArea.empty();
+    if (_orchResearchState.running) {
+      bcOrchRenderSkeletons(outputArea);
+      return;
+    }
+    if (_orchResearchState.error) {
+      outputArea.createEl('div', { cls: 'bc-orch-output-empty', text: _orchResearchState.error });
+      return;
+    }
+    if (_orchResearchState.result) {
+      bcOrchRenderResult(outputArea, _orchResearchState.result);
+      return;
+    }
+    outputArea.createEl('div', { cls: 'bc-orch-output-empty', text: 'Submit a YouTube URL to analyze' });
+  }
+  renderOutput();
+
+  // Process button click handler
+  processBtn.addEventListener('click', async () => {
+    const url = urlInput.value.trim();
+    if (!url) {
+      _orchResearchState.error = 'Please enter a YouTube URL.';
+      _orchResearchState.result = null;
+      renderOutput();
+      return;
+    }
+
+    _orchResearchState.running = true;
+    _orchResearchState.error = null;
+    _orchResearchState.result = null;
+    processBtn.disabled = true;
+    renderOutput();
+
+    try {
+      const resp = await fetch('http://localhost:4877/research/video-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, focus: focusInput.value.trim() }),
+      });
+      const data = await resp.json() as Record<string, unknown>;
+
+      if (!data.ok) {
+        const errField = data.error;
+        const errMsg = typeof errField === 'string' ? errField
+          : typeof errField === 'object' && errField !== null ? ((errField as Record<string,unknown>).message as string ?? JSON.stringify(errField))
+          : 'Unknown error';
+        _orchResearchState.error = `Error: ${errMsg}`;
+        _orchResearchState.result = null;
+      } else {
+        _orchResearchState.result = data;
+        _orchResearchState.error = null;
+      }
+    } catch (_err) {
+      _orchResearchState.error = 'Brain Core offline or request failed.';
+      _orchResearchState.result = null;
+    } finally {
+      _orchResearchState.running = false;
+      processBtn.disabled = false;
+      renderOutput();
+    }
+  });
+
+  return drawer;
+}
+
+function bcOrchRenderSkeletons(outputArea: HTMLElement): void {
+  ['TRANSCRIPTION', 'HUMAN SUMMARY', 'AI SUMMARY', 'ACTIONS'].forEach(label => {
+    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
+    const hdr = sec.createDiv({ cls: 'bc-orch-section-header' });
+    hdr.createEl('span', { text: label });
+    hdr.createEl('span', { cls: 'bc-orch-badge', text: label === 'TRANSCRIPTION' ? 'running' : 'pending' });
+    sec.createDiv({ cls: 'bc-orch-skeleton' });
+    sec.createDiv({ cls: 'bc-orch-skeleton' });
+  });
+}
+
+function bcOrchRenderResult(outputArea: HTMLElement, data: Record<string, unknown>): void {
+  outputArea.createEl('div', { cls: 'bc-orch-result-title', text: (data.title as string) ?? 'Untitled' });
+  const meta = outputArea.createEl('div', { cls: 'bc-orch-result-meta' });
+  const durSec = data.duration_seconds as number | undefined;
+  const durStr = durSec ? `${Math.floor(durSec / 60)}m ${durSec % 60}s` : null;
+  meta.textContent = [(data.channel as string) ?? null, durStr].filter(Boolean).join(' · ');
+
+  // Transcript excerpt — new Gemini field name
+  const transcript = (data.transcript_excerpt ?? data.transcript) as string | undefined;
+  if (transcript) {
+    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
+    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'TRANSCRIPTION' });
+    const pre = sec.createEl('pre', { cls: 'bc-orch-pre' });
+    pre.textContent = transcript;
+  }
+
+  // Human summary — new Gemini field name
+  const humanSummary = (data.human_summary ?? data.humanSummary) as string | undefined;
+  if (humanSummary) {
+    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
+    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'HUMAN SUMMARY' });
+    sec.createEl('div', { text: humanSummary });
+  }
+
+  // AI summary / structured — new Gemini field name
+  const aiSummary = data.ai_summary ?? data.aiSummary;
+  if (aiSummary) {
+    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
+    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'AI SUMMARY' });
+    const structured = aiSummary as Record<string, unknown>;
+    if (structured.topic) sec.createEl('div', { cls: 'bc-orch-claim', text: `Topic: ${structured.topic as string}` });
+    if (structured.speaker) sec.createEl('div', { cls: 'bc-orch-claim', text: `Speaker: ${structured.speaker as string}` });
+    if (structured.evidence_type) sec.createEl('div', { cls: 'bc-orch-claim', text: `Evidence: ${structured.evidence_type as string} · Confidence: ${structured.confidence as string ?? '—'}` });
+    if (Array.isArray(structured.key_claims)) {
+      const claimsWrap = sec.createDiv();
+      claimsWrap.createEl('div', { cls: 'bc-orch-label', text: 'Key claims' });
+      (structured.key_claims as string[]).forEach(c => claimsWrap.createEl('div', { cls: 'bc-orch-claim', text: `• ${c}` }));
+    }
+    if (Array.isArray(structured.research_hooks)) {
+      const hooksWrap = sec.createDiv();
+      hooksWrap.style.marginTop = '6px';
+      hooksWrap.createEl('div', { cls: 'bc-orch-label', text: 'Research hooks' });
+      (structured.research_hooks as string[]).forEach(h => hooksWrap.createEl('div', { cls: 'bc-orch-claim', text: `→ ${h}` }));
+    }
+  }
+
+  // Actions section
+  const keyTs = data.key_timestamps as Record<string, string> | undefined;
+  if (keyTs && Object.keys(keyTs).length > 0) {
+    const sec = outputArea.createDiv({ cls: 'bc-orch-result-section' });
+    sec.createEl('div', { cls: 'bc-orch-result-section-title', text: 'KEY TIMESTAMPS' });
+    Object.entries(keyTs).forEach(([desc, ts]) => {
+      sec.createEl('div', { cls: 'bc-orch-claim', text: `[${ts}] ${desc}` });
+    });
+  }
+
+  // Rate limit usage
+  const usage = data.rate_limit_usage as Record<string, unknown> | undefined;
+  if (usage) {
+    const usageEl = outputArea.createEl('div', { cls: 'bc-orch-result-meta' });
+    usageEl.style.marginTop = '10px';
+    usageEl.textContent = `Quota: ${usage.calls_today as number} calls today · ${usage.video_minutes_today as number} min used · ${usage.calls_remaining as number} remaining`;
+  }
+}
+
+// ── Drawer 3: Bible Research ──────────────────────────────────────────────────
+function bcOrchBuildBibleDrawer(
+  container: HTMLElement,
+  state: BrainConsoleViewState,
+  onClose: () => void,
+): HTMLElement {
+  const { drawer, body } = bcOrchBuildDrawerShell(container, 'bible', 'BIBLE RESEARCH', onClose);
+  const split = body.createDiv({ cls: 'bc-orch-split' });
+
+  // Left: pipelines (40%)
+  const left = split.createDiv({ cls: 'bc-orch-split-left' });
+  left.style.width = '40%';
+
+  const bibleOrch = state.orchestrators?.find(o => o.id === 'bible-research');
+  const pipelines = (bibleOrch as any)?.pipelines as { id: string; name: string }[] | undefined;
+
+  left.createEl('div', { cls: 'bc-orch-section-header' }).createEl('span', { text: 'PIPELINES' });
+
+  if (!pipelines || pipelines.length === 0) {
+    left.createEl('div', { cls: 'bc-orch-output-empty', text: 'No pipelines configured' });
+  } else {
+    pipelines.forEach(p => {
+      left.createEl('div', { cls: 'bc-orch-card-stat', text: `▶ ${p.name ?? p.id}` });
+    });
+  }
+
+  const addBtn = left.createEl('button', { cls: 'bc-orch-btn', text: '+ Add pipeline' }) as HTMLButtonElement;
+  addBtn.style.marginTop = 'auto';
+
+  // Right: history & actions (60%)
+  const right = split.createDiv({ cls: 'bc-orch-split-right' });
+
+  const histHdr = right.createDiv({ cls: 'bc-orch-section-header' });
+  histHdr.createEl('span', { text: 'DOCUMENT HISTORY' });
+  right.createEl('div', { cls: 'bc-orch-output-empty', text: 'No history yet' });
+
+  const newHdr = right.createDiv({ cls: 'bc-orch-section-header' });
+  newHdr.style.marginTop = '12px';
+  newHdr.createEl('span', { text: 'NEW RESEARCH' });
+
+  right.createEl('div', { cls: 'bc-orch-label', text: 'Pipeline' });
+  const pipelineSelect = right.createEl('select', { cls: 'bc-orch-input' }) as HTMLSelectElement;
+  pipelineSelect.createEl('option', { text: '— select pipeline —' });
+  if (pipelines) {
+    pipelines.forEach(p => {
+      const opt = pipelineSelect.createEl('option', { text: p.name ?? p.id });
+      (opt as HTMLOptionElement).value = p.id;
+    });
+  }
+
+  right.createEl('div', { cls: 'bc-orch-label', text: 'Prompt' });
+  const promptArea = right.createEl('textarea', { cls: 'bc-orch-input' }) as HTMLTextAreaElement;
+  promptArea.rows = 4;
+
+  const actionRow = right.createDiv();
+  actionRow.style.display = 'flex';
+  actionRow.style.gap = '8px';
+  actionRow.style.marginTop = '8px';
+  const runBtn = actionRow.createEl('button', { cls: 'bc-orch-btn bc-orch-btn--primary', text: '▶ Run Pipeline' }) as HTMLButtonElement;
+  const stopBtn = actionRow.createEl('button', { cls: 'bc-orch-btn', text: '⏹ Stop current' }) as HTMLButtonElement;
+  stopBtn.disabled = true;
+
+  void addBtn; void runBtn; void stopBtn; void promptArea; void pipelineSelect;
+
+  return drawer;
+}
+
+// ── Drawer 4: Design Orchestrator ─────────────────────────────────────────────
+function bcOrchBuildDesignDrawer(container: HTMLElement, onClose: () => void): HTMLElement {
+  const { drawer, body } = bcOrchBuildDrawerShell(container, 'design', 'DESIGN ORCHESTRATOR', onClose);
+  const split = body.createDiv({ cls: 'bc-orch-split' });
+
+  // Left: conversation (40%)
+  const left = split.createDiv({ cls: 'bc-orch-split-left' });
+  left.style.width = '40%';
+
+  left.createEl('div', { cls: 'bc-orch-section-header' }).createEl('span', { text: 'CONVERSATION' });
+
+  // Bot bubble
+  const botBubble = left.createDiv();
+  botBubble.style.background = '#333';
+  botBubble.style.border = '1px solid #3a3a3a';
+  botBubble.style.borderRadius = '6px';
+  botBubble.style.padding = '8px';
+  botBubble.style.fontSize = '11px';
+  botBubble.style.color = '#aaa';
+  botBubble.textContent = '🤖 What are you building?';
+
+  const inputArea = left.createEl('textarea', { cls: 'bc-orch-input' }) as HTMLTextAreaElement;
+  inputArea.rows = 3;
+  inputArea.placeholder = 'Your answer…';
+
+  const sendBtn = left.createEl('button', { cls: 'bc-orch-btn bc-orch-btn--primary', text: 'Send ↵' }) as HTMLButtonElement;
+  void sendBtn;
+
+  // Right: live PRD (60%)
+  const right = split.createDiv({ cls: 'bc-orch-split-right' });
+
+  const skillsHdr = right.createDiv({ cls: 'bc-orch-section-header' });
+  skillsHdr.createEl('span', { text: 'ACTIVE SKILLS' });
+  const badgeRow = right.createDiv();
+  badgeRow.style.marginBottom = '12px';
+  ['/design-system', '/web-design', '/taste-skill'].forEach(s => {
+    badgeRow.createEl('span', { cls: 'bc-orch-badge', text: s });
+  });
+
+  const prdHdr = right.createDiv({ cls: 'bc-orch-section-header' });
+  prdHdr.createEl('span', { text: 'PRD' });
+
+  const fields: [string, string][] = [
+    ['Project type', '(pending)'],
+    ['Scenario', '(pending)'],
+    ['Audience', '(pending)'],
+    ['Tone', '(pending)'],
+    ['Goal', '(pending)'],
+  ];
+  fields.forEach(([label, val]) => {
+    const row = right.createDiv();
+    row.style.display = 'flex';
+    row.style.gap = '8px';
+    row.style.marginBottom = '4px';
+    row.style.fontSize = '11px';
+    row.createEl('span', { text: label + ':' }).style.color = '#666';
+    row.createEl('span', { text: val }).style.color = '#555';
+  });
+
+  const exportRow = right.createDiv();
+  exportRow.style.display = 'flex';
+  exportRow.style.gap = '8px';
+  exportRow.style.marginTop = '16px';
+  const exportBtn = exportRow.createEl('button', { cls: 'bc-orch-btn', text: '↗ Export PRD' }) as HTMLButtonElement;
+  const genBtn = exportRow.createEl('button', { cls: 'bc-orch-btn bc-orch-btn--primary', text: '▶ Generate DESIGN.md' }) as HTMLButtonElement;
+  exportBtn.disabled = true;
+  genBtn.disabled = true;
+
+  void inputArea; void exportBtn; void genBtn;
+
+  return drawer;
 }
 
 function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
