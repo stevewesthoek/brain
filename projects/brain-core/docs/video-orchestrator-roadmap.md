@@ -35,7 +35,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - Remaining roadmap work lives in later phases only.
 
 **Remaining VO product gaps:**
-- Remaining hardening items: storage cleanup and any retry-policy doc/runtime alignment still desired
+- Hardening roadmap items are implemented; only future extensions or doc refinements remain if desired
 - Test & Compare remains manual via YouTube Studio until/if YouTube exposes a public developer API
 - Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
 
@@ -546,7 +546,7 @@ The next work must proceed in this order:
 - [x] Declares the current active variant as winner; sets `ab_test_active=false`, updates variant `active` flags, writes `winner_declared_at`, and re-applies the winning thumbnail via `thumbnails.set`
 - [x] `analytics_sync.py ab-check [--dry-run]` CLI command
 - [x] Runtime capability explicitly reports Test & Compare automation as manual YouTube Studio only until an official developer API is confirmed
-- [ ] Per-variant CTR comparison requires an official YouTube developer API surface; current flow does not automate Studio-only experiments
+- [blocked external dependency] Per-variant CTR comparison requires an official YouTube developer API surface; current flow intentionally does not automate Studio-only experiments
 - [x] `thumbnails.set` API call after winner declaration
 
 ### 5.4 Analytics in Brain Console
@@ -692,7 +692,7 @@ Later roadmap phases remain open.
 
 ## Immediate Next Steps
 
-**Next session:** Start with storage cleanup unless a public YouTube developer API for Test & Compare becomes available. The five-step next-phase plan is already complete.
+**Next session:** Roadmap work is complete except for the blocked external YouTube Test & Compare API dependency. Resume only if YouTube exposes a public developer API or if the roadmap is extended with new product work.
 
 **Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
 

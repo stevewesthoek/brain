@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# repos — unified repo picker for Claude, Codex, Gemini, and Auto routing.
+# repos — unified repo picker for Claude, Codex, and Gemini.
 # Invoked as the `repos` shell function (defined in ~/.zshrc).
 #
-# Step 1: pick AI tool with fzf (Auto is default).
+# Step 1: pick AI tool with fzf.
 # Step 2: pick a repo from ~/Repos (sorted by most recently used).
+# Step 3: for Claude, pick a clean model label ordered by cost.
 # Opens the selected repo in the chosen interactive runtime.
 #
 # Repo list is cached at ~/.claude/cache/repos.json and rescanned in the
@@ -71,16 +72,46 @@ with open(usage_file, 'w') as f:
 PYEOF
 }
 
-launch_claude() {
-  # Re-source immediately before launch so stale parent shells cannot keep
-  # Claude Code on an unavailable Bedrock model.
-  # shellcheck source=/dev/null
-  source "$SCRIPT_DIR/claude-bedrock-env.sh"
-  exec claude --model "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}"
+claude_clean_model_label() {
+  local model_id="$1"
+  local family="Claude"
+  local major=""
+  local minor=""
+
+  if [[ "$model_id" =~ claude-([a-z]+)-([0-9]+)-([0-9]+) ]]; then
+    case "${BASH_REMATCH[1]}" in
+      haiku) family="Haiku" ;;
+      sonnet) family="Sonnet" ;;
+      opus) family="Opus" ;;
+    esac
+    major="${BASH_REMATCH[2]}"
+    minor="${BASH_REMATCH[3]}"
+    printf '%s %s.%s\n' "$family" "$major" "$minor"
+    return
+  fi
+
+  case "$model_id" in
+    *haiku*) family="Haiku" ;;
+    *sonnet*) family="Sonnet" ;;
+    *opus*) family="Opus" ;;
+  esac
+  printf '%s\n' "$family"
 }
 
-# Step 1: pick AI tool — Auto is default (first item)
-tool=$(printf "Auto\nClaude\nCodex\nGemini" | fzf \
+claude_model_menu_lines() {
+  printf '%s\t%s\n' "$(claude_clean_model_label "${ANTHROPIC_DEFAULT_HAIKU_MODEL:-haiku}")" "${ANTHROPIC_DEFAULT_HAIKU_MODEL:-haiku}"
+  printf '%s\t%s\n' "$(claude_clean_model_label "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}")" "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}"
+  printf '%s\t%s\n' "$(claude_clean_model_label "${ANTHROPIC_DEFAULT_OPUS_MODEL:-opus}")" "${ANTHROPIC_DEFAULT_OPUS_MODEL:-opus}"
+}
+
+launch_claude() {
+  local model_id="${1:-${ANTHROPIC_DEFAULT_HAIKU_MODEL:-haiku}}"
+
+  exec claude --model "$model_id"
+}
+
+# Step 1: pick AI tool
+tool=$(printf "Claude\nCodex\nGemini" | fzf \
   --prompt="  open with: " \
   --height=10 \
   --layout=reverse \
@@ -119,11 +150,23 @@ record_usage "$selected_path"
 
 cd "$selected_path" || exit 1
 if [[ "$tool" == "Claude" ]]; then
-  launch_claude
+  # Re-source immediately before launch so stale parent shells cannot keep
+  # Claude Code on an unavailable Bedrock model.
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/claude-bedrock-env.sh"
+  selected_model=$(claude_model_menu_lines | fzf \
+    --prompt="  Claude model: " \
+    --height=10 \
+    --layout=reverse \
+    --border=rounded \
+    --delimiter=$'\t' \
+    --with-nth=1 \
+    --bind='tab:down,btab:up' \
+    2>/dev/null)
+  [[ -z "$selected_model" ]] && exit 0
+  launch_claude "$(echo "$selected_model" | cut -f2)"
 elif [[ "$tool" == "Codex" ]]; then
   exec codex
 elif [[ "$tool" == "Gemini" ]]; then
   exec gemini
-elif [[ "$tool" == "Auto" ]]; then
-  exec "$SCRIPT_DIR/ai-auto-route.sh" --repo "$selected_path" --exec
 fi
