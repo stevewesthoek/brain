@@ -99,8 +99,8 @@ import {
   readVOStudioPipelineProfiles,
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
-import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest } from '../adapters/vo-studio-write.js';
-import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis } from '../adapters/vo-studio-read.js';
+import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
+import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics } from '../adapters/vo-studio-read.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2325,6 +2325,61 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  if (url.pathname === '/api/video-orchestrator/package/final-approval') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const finalReq: {
+      packageId: string;
+      notes?: string;
+    } = {
+      packageId: (body?.packageId as string) ?? '',
+    };
+
+    if (body?.notes !== undefined) {
+      finalReq.notes = body.notes as string;
+    }
+
+    const result = finalApprovalRequest(finalReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/package/publish') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const publishReq: {
+      packageId: string;
+      scheduleAt?: string;
+    } = {
+      packageId: (body?.packageId as string) ?? '',
+    };
+
+    if (body?.scheduleAt !== undefined) {
+      publishReq.scheduleAt = body.scheduleAt as string;
+    }
+
+    const result = publishPackageRequest(publishReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/packages/batch-publish') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const packageIds = Array.isArray(body?.packageIds) ? body.packageIds : [];
+    const batchReq: {
+      packageIds: string[];
+      scheduleAt?: string;
+    } = {
+      packageIds: packageIds.map((id: unknown) => (id as string) ?? ''),
+    };
+
+    if (body?.scheduleAt !== undefined) {
+      batchReq.scheduleAt = body.scheduleAt as string;
+    }
+
+    const result = batchPublishRequest(batchReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
   if (url.pathname.startsWith('/api/video-orchestrator/approvals/queue')) {
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readApprovalQueue(projectId);
@@ -2371,6 +2426,28 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
   if (url.pathname.startsWith('/api/video-orchestrator/analytics/errors')) {
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readErrorAnalysis(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/publishing/queue')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const status = url.searchParams.get('status');
+    const result = readPublishingQueue(projectId, status ?? undefined);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/distribution/summary/')) {
+    const packageId = url.pathname.split('/').pop() ?? '';
+    const result = readDistributionSummary(packageId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/publishing')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readPublishingMetrics(projectId);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }

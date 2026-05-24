@@ -312,3 +312,142 @@ export function readErrorAnalysis(
     projectId,
   };
 }
+
+export interface PublishingJob {
+  id: string;
+  packageId: string;
+  platformId: string;
+  accountId: string;
+  status: string;
+  scheduledAt?: string;
+  publishedAt?: string;
+  publishedUrl?: string;
+  error?: string;
+}
+
+export interface PublishingQueueResponse {
+  ok: boolean;
+  jobs: PublishingJob[];
+  count: number;
+  error?: string;
+}
+
+export interface DistributionSummary {
+  packageId: string;
+  totalPlatforms: number;
+  published: number;
+  scheduled: number;
+  failed: number;
+  platforms: Array<{
+    platformId: string;
+    status: string;
+    accounts: number;
+  }>;
+}
+
+export interface DistributionSummaryResponse {
+  ok: boolean;
+  summary?: DistributionSummary;
+  error?: string;
+}
+
+export interface PublishingMetrics {
+  totalPublished: number;
+  thisWeek: number;
+  thisMonth: number;
+  avgTimeToPublish: number;
+  platformBreakdown: Record<string, number>;
+  failureRate: number;
+}
+
+export interface PublishingMetricsResponse {
+  ok: boolean;
+  metrics?: PublishingMetrics;
+  projectId?: string;
+  error?: string;
+}
+
+export function readPublishingQueue(
+  projectId: string,
+  status?: string,
+): PublishingQueueResponse {
+  const errors: string[] = [];
+
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      jobs: [],
+      count: 0,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    jobs: [],
+    count: 0,
+  };
+}
+
+export function readDistributionSummary(
+  packageId: string,
+): DistributionSummaryResponse {
+  const errors: string[] = [];
+
+  if (!packageId?.trim()) {
+    errors.push('packageId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    summary: {
+      packageId,
+      totalPlatforms: 0,
+      published: 0,
+      scheduled: 0,
+      failed: 0,
+      platforms: [],
+    },
+  };
+}
+
+export function readPublishingMetrics(
+  projectId: string,
+): PublishingMetricsResponse {
+  const errors: string[] = [];
+
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    metrics: {
+      totalPublished: 0,
+      thisWeek: 0,
+      thisMonth: 0,
+      avgTimeToPublish: 0,
+      platformBreakdown: {},
+      failureRate: 0,
+    },
+    projectId,
+  };
+}

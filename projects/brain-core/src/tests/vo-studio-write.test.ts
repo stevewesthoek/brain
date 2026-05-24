@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest } from '../adapters/vo-studio-write.js';
+import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
 
 test('createContentItemRequest accepts valid input and returns approval preview', () => {
   const result = createContentItemRequest({
@@ -720,4 +720,113 @@ test('retryPackageRequest rejects missing packageId', () => {
 
   assert.equal(result.ok, false);
   assert.match(result.error!, /packageId is required/);
+});
+
+test('finalApprovalRequest accepts valid package approval', () => {
+  const result = finalApprovalRequest({
+    packageId: 'pkg-123',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.equal(result.approval.status, 'pending');
+  assert.ok(result.preview);
+  assert.equal(result.preview!.approval!.type, 'final_review');
+  assert.equal(result.preview!.approval!.status, 'approved');
+});
+
+test('finalApprovalRequest accepts optional notes', () => {
+  const result = finalApprovalRequest({
+    packageId: 'pkg-123',
+    notes: 'Ready for publication',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.preview);
+});
+
+test('finalApprovalRequest rejects missing packageId', () => {
+  const result = finalApprovalRequest({
+    packageId: '',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /packageId is required/);
+});
+
+test('publishPackageRequest accepts immediate publish', () => {
+  const result = publishPackageRequest({
+    packageId: 'pkg-123',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.ok(result.preview);
+  assert.equal(result.preview!.package!.status, 'publishing');
+  assert.ok(result.preview!.package!.publishedAt);
+  assert.equal(result.preview!.package!.scheduledAt, undefined);
+});
+
+test('publishPackageRequest accepts scheduled publish', () => {
+  const scheduledTime = new Date(Date.now() + 3600000).toISOString();
+  const result = publishPackageRequest({
+    packageId: 'pkg-123',
+    scheduleAt: scheduledTime,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.preview!.package!.status, 'scheduled');
+  assert.equal(result.preview!.package!.scheduledAt, scheduledTime);
+  assert.equal(result.preview!.package!.publishedAt, undefined);
+});
+
+test('publishPackageRequest rejects missing packageId', () => {
+  const result = publishPackageRequest({
+    packageId: '',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /packageId is required/);
+});
+
+test('batchPublishRequest accepts multiple packages', () => {
+  const result = batchPublishRequest({
+    packageIds: ['pkg-1', 'pkg-2', 'pkg-3'],
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.ok(result.preview);
+  assert.equal(result.preview!.batch!.packageCount, 3);
+  assert.equal(result.preview!.batch!.status, 'publishing');
+});
+
+test('batchPublishRequest accepts scheduled batch publish', () => {
+  const scheduledTime = new Date(Date.now() + 7200000).toISOString();
+  const result = batchPublishRequest({
+    packageIds: ['pkg-1', 'pkg-2'],
+    scheduleAt: scheduledTime,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.preview!.batch!.status, 'scheduled');
+  assert.equal(result.preview!.batch!.scheduledAt, scheduledTime);
+});
+
+test('batchPublishRequest rejects empty packageIds', () => {
+  const result = batchPublishRequest({
+    packageIds: [],
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /packageIds must be a non-empty array/);
+});
+
+test('batchPublishRequest rejects packageIds with empty strings', () => {
+  const result = batchPublishRequest({
+    packageIds: ['pkg-1', '', 'pkg-3'],
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /packageIds\[1\] is required/);
 });

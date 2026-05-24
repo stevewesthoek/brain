@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis } from '../adapters/vo-studio-read.js';
+import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics } from '../adapters/vo-studio-read.js';
 
 test('readApprovalQueue accepts valid projectId', () => {
   const result = readApprovalQueue('project-123');
@@ -133,6 +133,62 @@ test('readErrorAnalysis accepts valid projectId', () => {
 
 test('readErrorAnalysis rejects missing projectId', () => {
   const result = readErrorAnalysis('');
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /projectId is required/);
+});
+
+test('readPublishingQueue accepts valid projectId', () => {
+  const result = readPublishingQueue('project-123');
+
+  assert.equal(result.ok, true);
+  assert.equal(result.count, 0);
+  assert.deepEqual(result.jobs, []);
+});
+
+test('readPublishingQueue accepts optional status filter', () => {
+  const result = readPublishingQueue('project-123', 'scheduled');
+
+  assert.equal(result.ok, true);
+  assert.equal(result.count, 0);
+});
+
+test('readPublishingQueue rejects missing projectId', () => {
+  const result = readPublishingQueue('');
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /projectId is required/);
+});
+
+test('readDistributionSummary accepts valid packageId', () => {
+  const result = readDistributionSummary('pkg-123');
+
+  assert.equal(result.ok, true);
+  assert.ok(result.summary);
+  assert.equal(result.summary!.packageId, 'pkg-123');
+  assert.equal(result.summary!.totalPlatforms, 0);
+  assert.deepEqual(result.summary!.platforms, []);
+});
+
+test('readDistributionSummary rejects missing packageId', () => {
+  const result = readDistributionSummary('');
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /packageId is required/);
+});
+
+test('readPublishingMetrics accepts valid projectId', () => {
+  const result = readPublishingMetrics('project-123');
+
+  assert.equal(result.ok, true);
+  assert.equal(result.projectId, 'project-123');
+  assert.ok(result.metrics);
+  assert.equal(result.metrics!.totalPublished, 0);
+  assert.equal(result.metrics!.failureRate, 0);
+});
+
+test('readPublishingMetrics rejects missing projectId', () => {
+  const result = readPublishingMetrics('');
 
   assert.equal(result.ok, false);
   assert.match(result.error!, /projectId is required/);

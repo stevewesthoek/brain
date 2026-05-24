@@ -797,3 +797,231 @@ export function retryPackageRequest(
     preview,
   };
 }
+
+export interface FinalApprovalRequest {
+  packageId: string;
+  notes?: string;
+}
+
+export interface FinalApprovalResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    approval: {
+      id: string;
+      type: string;
+      packageId: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function finalApprovalRequest(
+  request: FinalApprovalRequest,
+): FinalApprovalResponse {
+  const errors: string[] = [];
+
+  if (!request.packageId?.trim()) {
+    errors.push('packageId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const approvalId = `approval-final-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result = requestAction('custom-final-approval');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      approval: {
+        id: approvalId,
+        type: 'final_review',
+        packageId: request.packageId,
+        status: 'approved',
+      },
+    },
+  };
+}
+
+export interface PublishPackageRequest {
+  packageId: string;
+  scheduleAt?: string;
+}
+
+export interface PublishPackageResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    package: {
+      id: string;
+      status: string;
+      publishedAt?: string;
+      scheduledAt?: string;
+    };
+  };
+  error?: string;
+}
+
+export function publishPackageRequest(
+  request: PublishPackageRequest,
+): PublishPackageResponse {
+  const errors: string[] = [];
+
+  if (!request.packageId?.trim()) {
+    errors.push('packageId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const result = requestAction('custom-package-publish');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  const preview: {
+    package: {
+      id: string;
+      status: string;
+      publishedAt?: string;
+      scheduledAt?: string;
+    };
+  } = {
+    package: {
+      id: request.packageId,
+      status: request.scheduleAt ? 'scheduled' : 'publishing',
+    },
+  };
+
+  if (request.scheduleAt !== undefined) {
+    preview.package.scheduledAt = request.scheduleAt;
+  } else {
+    preview.package.publishedAt = new Date().toISOString();
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview,
+  };
+}
+
+export interface BatchPublishRequest {
+  packageIds: string[];
+  scheduleAt?: string;
+}
+
+export interface BatchPublishResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    batch: {
+      packageCount: number;
+      status: string;
+      scheduledAt?: string;
+    };
+  };
+  error?: string;
+}
+
+export function batchPublishRequest(
+  request: BatchPublishRequest,
+): BatchPublishResponse {
+  const errors: string[] = [];
+
+  if (!Array.isArray(request.packageIds) || request.packageIds.length === 0) {
+    errors.push('packageIds must be a non-empty array');
+  }
+
+  for (let i = 0; i < (request.packageIds?.length ?? 0); i++) {
+    if (!request.packageIds[i]?.trim()) {
+      errors.push(`packageIds[${i}] is required`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const result = requestAction('custom-batch-publish');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  const preview: {
+    batch: {
+      packageCount: number;
+      status: string;
+      scheduledAt?: string;
+    };
+  } = {
+    batch: {
+      packageCount: request.packageIds.length,
+      status: request.scheduleAt ? 'scheduled' : 'publishing',
+    },
+  };
+
+  if (request.scheduleAt !== undefined) {
+    preview.batch.scheduledAt = request.scheduleAt;
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview,
+  };
+}
