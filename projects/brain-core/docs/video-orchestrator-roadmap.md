@@ -282,24 +282,51 @@ The next work must proceed in this order:
 
 ---
 
-## Phase 1W — Approval-Gated Studio Writes 🔲 Future
+## Phase 1W — Approval-Gated Studio Writes 🔲 In Progress (research complete)
 > Add writes only after read models and Console shell are stable
 
-**Goal:** Add controlled write actions one at a time with explicit approval and idempotency.
+**Goal:** Prevent unauthorized writes by requiring operator approval before content/package changes are committed. Phase 1W gates the write-side: UI approval panel, decision handlers, and audit trail.
 
-**Boundary:** Each write action is a separate task with route tests, UI disabled/loading/error states, audit event, and rollback/manual fallback behavior.
+**Strategy reference:** `phase-1w-approval-workflow-research.md` (industry patterns from Airflow, Dagster, n8n), `phase-1w-implementation-plan.md` (executable tasks).
 
-Write sequence:
-- [ ] Create content item
-- [ ] Update content item brief/script fields
-- [ ] Generate thumbnail variants
-- [ ] Approve thumbnail
-- [ ] Generate metadata
-- [ ] Approve metadata
-- [ ] Queue package generation
-- [ ] Queue posting target
+**Boundary:** 
+- UI: Integrate ApprovalQueuePanel into VOShell as new "Approvals" tab
+- Backend: Wire approval decision endpoints and handlers
+- Scope: Project-level approvals (not role-based; Phase 2W adds role matrix)
+- No timeout/escalation (Phase 2W), no email notifications (Phase 2W), no batch approvals (Phase 2W)
 
-**Exit criterion:** A content item can move from draft to approved package with no direct publishing and with complete audit/approval history.
+### 1W.1 ApprovalQueuePanel integration
+- [ ] Integrate ApprovalQueuePanel into VOShell; add "Approvals" tab
+- [ ] Panel loads approval queue from `GET /api/video-orchestrator/approvals/queue?projectId=X`
+- [ ] Panel shows pending items with type badge + timestamp + content/package ID
+- [ ] Click item → expand to show variants (for thumbnail/metadata approvals)
+- [ ] Click "Approve Selected" → send decision via POST endpoint
+
+### 1W.2 Approval decision endpoints
+- [ ] Add `POST /api/video-orchestrator/approvals/decide` handler in routes.ts
+- [ ] Add `POST /api/video-orchestrator/thumbnails/approve` handler (tunnel to decide handler)
+- [ ] Add `POST /api/video-orchestrator/metadata/approve` handler (tunnel to decide handler)
+- [ ] Add `GET /api/video-orchestrator/approvals/queue` handler (read approval queue)
+
+### 1W.3 Approval decision logic
+- [ ] Implement `decideApprovalRequest()` in vo-studio-write.ts
+- [ ] Accept approvalId, projectId, approved (boolean), variantId, rejectionReason
+- [ ] Update approval record: status ('approved' | 'rejected'), decidedAt, decidedBy
+- [ ] If approved: trigger write commitment (call corresponding write adapter)
+
+### 1W.4 Audit & approval record schema
+- [ ] Define `ApprovalRequest` interface: id, projectId, type, actor, requestedAt, requestPayload, preview, status, decidedBy, decidedAt, rejectionReason, expiresAt
+- [ ] Persistence: store in approval store (DB or JSON; Phase 2W adds DB schema)
+- [ ] Immutability: never rewrite approval record after decided; new record for resubmission
+
+### 1W.5 End-to-end validation
+- [ ] Verify ApprovalQueuePanel renders with no pending approvals
+- [ ] Create test approval via API (curl or manual request)
+- [ ] Verify approval appears in queue
+- [ ] Click approval, select variant, approve
+- [ ] Verify success toast + queue refreshes
+
+**Exit criterion:** Operator can view pending approvals in VO Studio, select variants, and approve/reject with proper audit trail. No writes are committed without approval decision recorded in approval store.
 
 ---
 
@@ -505,16 +532,79 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 
 ---
 
+## Phase 10 — Webhook Events & Analytics ✅ Complete
+> Event streaming, dashboard health, webhook security
+
+**Goal:** VO Studio has real-time event visibility and operational dashboard showing pipeline health, routing stats, webhook delivery, and recent activity.
+
+**Boundary:** Read-only event log and analytics surfaces. No event mutations or webhook modifications.
+
+### 10.1 Event streaming infrastructure
+- [x] Webhook handler (processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest)
+- [x] Event processor (emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest)
+- [x] Analytics endpoints (readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth)
+- [x] Webhook security (rotateWebhookSecretRequest, disableWebhookRequest, readWebhookSecurityAudit, readWebhookStatus)
+- [x] EventLogPanel UI with 15-second auto-refresh
+
+### 10.2 Dashboard Panel
+- [x] StudioDashboardPanel (Phase 10) — Pipeline health, routing stats, webhook summary, recent events, quick actions
+- [x] 60-second auto-refresh with Promise.allSettled
+- [x] Operational summary: health score + status badge, platform routing count, event delivery rates, last 5 events
+
+### 10.3 Brain Console integration (Phase 11)
+- [x] Remove Studio/Orchestrators/Pipelines from top-level SECTION_TABS
+- [x] Add single "Video Orchestrator" root tab
+- [x] Create renderVideoOrchestratorSection() to host VOShell
+- [x] CSS styling for scoped VO container
+
+**Deliverable:** ✅ Backend: event routing, webhook security, analytics read paths. UI: Dashboard panel + EventLogPanel. Phase 10: VO internal dashboard. Phase 11: Brain Console integration and scoped "Video Orchestrator" section.
+
+---
+
+## Phase 11 — Brain Console VO Studio Integration ✅ Complete
+> Scoped VO section with unified internal tabs
+
+**Goal:** Video Orchestrator is a unified scoped section within Brain Console with internal tabs (Overview, Studio, Pipelines, Accounts, History, Dashboard), not competing top-level tabs.
+
+**Boundary:** UI restructuring and integration. No backend changes.
+
+### 11.1 Tab restructuring
+- [x] Remove Studio, Orchestrators, Pipelines from SECTION_TABS (3 entries removed)
+- [x] Add single "Video Orchestrator" entry to SECTION_TABS
+- [x] Update BrainConsoleSectionId type (removed 3 values, added video-orchestrator)
+
+### 11.2 VOShell mounting
+- [x] Create renderVideoOrchestratorSection() function
+- [x] Mount VOShell in scoped .vo-studio-container
+- [x] Pass state data (projects, accounts, profiles, contentItems, selector, analytics, accountStats) to VOShell
+
+### 11.3 CSS for VO container
+- [x] .vo-studio-container — full-height flex layout with dark theme
+- [x] .vo-studio-tabs-row — horizontal tab bar with scrollable overflow
+- [x] .vo-studio-content — scrollable area matching Brain Console viewport
+- [x] Responsive fallback for narrow viewports (<768px)
+- [x] CSS variables inherited from Brain Console (--bg-primary, --accent-warm, --text-primary)
+
+**Exit criterion:** User clicks "Video Orchestrator" root tab and sees unified internal tabs. No Studio/Orchestrators/Pipelines as separate entries in top navigation. Information is readable and responsive.
+
+**Deliverable:** ✅ Brain Console top navigation is organized and clear. VO Studio is scoped within unified "Video Orchestrator" section. All 6 internal VO tabs (Overview, Studio, Pipelines, Accounts, History, Dashboard) accessible and functional.
+
+---
+
 ## Phase Sequencing
 
 ```
 Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R 🔲 → Phase 0.7 🔲 → Phase 0.8 🔲 → Phase 0.9 🔲 → Phase 1W 🔲 → Phase 6 🔲 → Phase 7 🔲
 Foundation   Selector v1    Dual-node    Gemini policy  Agents      Read model   Console UI   Studio writes  Platforms   Hardening
 
+Phase 10 ✅ → Phase 11 ✅ → Phase 1W 🔲 → Phase 6 🔲
+Webhooks/Analytics  Brain Console integration   Studio writes   Platforms
+
 Existing backend Phases 1-5 are implemented from the earlier VO worker plan, but the product build now proceeds through the normalized read model and Console shell before adding new writes.
 Phase 0.5R must complete before expanding AI-dependent generation because it aligns implementation with the current Gemini-first strategy.
 Phase 0.8 must complete before Phase 0.9 so the UI consumes canonical APIs instead of STB-specific or filesystem assumptions.
-Phase 1W must not start until Phase 0.9 is read-only and stable.
+Phase 10 completes webhook/event infrastructure and dashboard. Phase 11 integrates VO into Brain Console as a scoped section.
+Phase 1W must not start until Phase 0.9 is read-only and stable, and Phase 11 (Brain Console integration) is complete.
 Phase 6 direct publishing must not start until manual package parity and adapter capability checks exist for each target.
 ```
 

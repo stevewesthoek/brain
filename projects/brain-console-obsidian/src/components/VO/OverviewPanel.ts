@@ -3,8 +3,12 @@ import type {
   BrainCoreVOStudioAnalyticsSummary,
   BrainCoreVOAccountStatsResponse,
   BrainCoreVOStudioPlatformAccount,
+  BrainCoreInfraVOStatusResponse,
 } from '../../client.js';
 import { getVOContextManager } from './VOContext.js';
+
+const BASE_URL = 'http://localhost:4877';
+const REFRESH_INTERVAL_MS = 30_000;
 
 export class OverviewPanel {
   private container: HTMLElement;
@@ -12,8 +16,11 @@ export class OverviewPanel {
   private analytics: BrainCoreVOStudioAnalyticsSummary | undefined;
   private accountStats: BrainCoreVOAccountStatsResponse | undefined;
   private accounts: BrainCoreVOStudioPlatformAccount[] = [];
+  private voStatus: BrainCoreInfraVOStatusResponse | undefined;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
+  private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private loading = false;
 
   constructor(container: HTMLElement, data: {
     selector?: BrainCoreAiModelSelectorStatus;
@@ -29,104 +36,295 @@ export class OverviewPanel {
 
     this.unsubscribe = this.ctx.subscribe(() => this.render());
     this.render();
+    // Kick off live fetch and start refresh loop
+    this.fetchLiveData();
+    this.refreshTimer = setInterval(() => this.fetchLiveData(), REFRESH_INTERVAL_MS);
+  }
+
+  private async fetchLiveData(): Promise<void> {
+    this.loading = true;
+    try {
+      const [statusRes, analyticsRes] = await Promise.allSettled([
+        fetch(`${BASE_URL}/api/infra/video-orchestrator/status`).then((r) => r.json() as Promise<BrainCoreInfraVOStatusResponse>),
+        fetch(`${BASE_URL}/api/video-orchestrator/analytics/summary`).then((r) => r.json() as Promise<BrainCoreVOStudioAnalyticsSummary>),
+      ]);
+
+      if (statusRes.status === 'fulfilled') {
+        this.voStatus = statusRes.value;
+      }
+      if (analyticsRes.status === 'fulfilled') {
+        this.analytics = analyticsRes.value;
+      }
+    } catch {
+      // Silently continue with existing data
+    } finally {
+      this.loading = false;
+      this.render();
+    }
   }
 
   private render(): void {
     this.container.innerHTML = `
       <div class="vo-overview-panel">
-        ${this.renderHealthIndicators()}
-        ${this.renderActiveJobsSummary()}
+        ${this.renderRefreshIndicator()}
+        ${this.renderWorkerHealthCard()}
+        ${this.renderAiSelectorCard()}
+        ${this.renderActiveJobsCard()}
+        ${this.renderQuotaWarningsCard()}
+        ${this.renderCredentialStatusCard()}
         ${this.renderBlockers()}
-        ${this.renderRecentStats()}
       </div>
     `;
   }
 
-  private renderHealthIndicators(): string {
+  private renderRefreshIndicator(): string {
+    return `
+      <div class="vo-overview-refresh-bar">
+        <span class="vo-overview-refresh-label">
+          ${this.loading ? 'Refreshing...' : 'Auto-refreshes every 30s'}
+        </span>
+        <span class="vo-overview-refresh-dot ${this.loading ? 'vo-refresh-dot--active' : ''}"></span>
+      </div>
+    `;
+  }
+
+  private renderWorkerHealthCard(): string {
+    const queueDepth = this.voStatus?.queueDepth;
+    const pending = queueDepth?.pending ?? '–';
+    const running = queueDepth?.running ?? '–';
+    const failed = queueDepth?.failed ?? '–';
+    const hasStatus = this.voStatus?.ok !== undefined;
+    const workerOk = this.voStatus?.ok ?? null;
+    const workerStatus = workerOk === true ? 'Online' : workerOk === false ? 'Error' : 'Unknown';
+    const workerColor = workerOk === true ? 'var(--bc-green)' : workerOk === false ? 'var(--bc-red)' : 'var(--bc-yellow)';
+
+    return `
+      <div class="vo-overview-card">
+        <div class="vo-card-header">
+          <span class="vo-card-icon">⚙</span>
+          <span class="vo-card-label">Worker Health</span>
+          <span class="vo-card-badge" style="background: color-mix(in srgb, ${workerColor} 20%, transparent); color: ${workerColor};">${workerStatus}</span>
+        </div>
+        <div class="vo-card-body">
+          <div class="vo-card-stat-row">
+            <span class="vo-card-stat-label">Queue: Pending</span>
+            <span class="vo-card-stat-value">${pending}</span>
+          </div>
+          <div class="vo-card-stat-row">
+            <span class="vo-card-stat-label">Queue: Running</span>
+            <span class="vo-card-stat-value" style="color: var(--bc-blue)">${running}</span>
+          </div>
+          <div class="vo-card-stat-row">
+            <span class="vo-card-stat-label">Queue: Failed</span>
+            <span class="vo-card-stat-value" style="color: var(--bc-red)">${failed}</span>
+          </div>
+          ${this.voStatus?.lastJobAt ? `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Last Job</span>
+              <span class="vo-card-stat-value">${this.formatDate(this.voStatus.lastJobAt)}</span>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderAiSelectorCard(): string {
     const selectorHealthy = this.selector?.healthy ?? false;
     const selectorRunning = this.selector?.running ?? false;
-
-    const selectorColor = selectorHealthy ? '#4ade80' : selectorRunning ? '#facc15' : '#fb7185';
     const selectorLabel = selectorHealthy ? 'Healthy' : selectorRunning ? 'Degraded' : 'Offline';
+    const selectorColor = selectorHealthy ? 'var(--bc-green)' : selectorRunning ? 'var(--bc-yellow)' : 'var(--bc-red)';
+    const providerCount = this.selector?.providers?.length ?? 0;
+    const healthyProviders = this.selector?.providers?.filter((p) => p.healthy).length ?? 0;
 
     return `
       <div class="vo-overview-card">
-        <h3 class="vo-overview-title">System Health</h3>
-        <div class="vo-health-grid">
-          <div class="vo-health-indicator">
-            <div class="vo-health-badge" style="background-color: ${selectorColor}"></div>
-            <div class="vo-health-label">
-              <span class="vo-health-name">AI Selector</span>
-              <span class="vo-health-status">${selectorLabel}</span>
+        <div class="vo-card-header">
+          <span class="vo-card-icon">◆</span>
+          <span class="vo-card-label">AI Selector Status</span>
+          <span class="vo-card-badge" style="background: color-mix(in srgb, ${selectorColor} 20%, transparent); color: ${selectorColor};">${selectorLabel}</span>
+        </div>
+        <div class="vo-card-body">
+          ${providerCount > 0 ? `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Providers</span>
+              <span class="vo-card-stat-value">${healthyProviders}/${providerCount} healthy</span>
             </div>
-          </div>
-          ${this.renderProviderStatus()}
+          ` : `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Providers</span>
+              <span class="vo-card-stat-value vo-muted">No data</span>
+            </div>
+          `}
+          ${this.selector?.error ? `
+            <div class="vo-card-alert">${this.selector.error}</div>
+          ` : ''}
+          ${this.selector?.uptime ? `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Uptime</span>
+              <span class="vo-card-stat-value">${this.selector.uptime}</span>
+            </div>
+          ` : ''}
+          ${(this.selector?.providers ?? []).map((p) => `
+            <div class="vo-card-provider-row">
+              <span class="vo-card-provider-dot" style="background: ${p.healthy ? 'var(--bc-green)' : 'var(--bc-red)'}"></span>
+              <span class="vo-card-provider-name">${p.id}</span>
+              <span class="vo-card-provider-state vo-muted">${p.circuitState}</span>
+            </div>
+          `).join('')}
         </div>
       </div>
     `;
   }
 
-  private renderProviderStatus(): string {
-    if (!this.selector?.providers || this.selector.providers.length === 0) {
-      return '';
-    }
-
-    return this.selector.providers
-      .map((provider) => {
-        const color = provider.healthy ? '#4ade80' : '#fb7185';
-        const status = provider.healthy ? 'Healthy' : `Circuit: ${provider.circuitState}`;
-
-        return `
-          <div class="vo-health-indicator">
-            <div class="vo-health-badge" style="background-color: ${color}"></div>
-            <div class="vo-health-label">
-              <span class="vo-health-name">${provider.id}</span>
-              <span class="vo-health-status">${status}</span>
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-  }
-
-  private renderActiveJobsSummary(): string {
-    const analytics = this.analytics;
-    if (!analytics) {
-      return `
-        <div class="vo-overview-card">
-          <h3 class="vo-overview-title">Activity</h3>
-          <p class="vo-placeholder">No analytics data available</p>
-        </div>
-      `;
-    }
-
-    const published = analytics.byPlatform?.reduce((sum, p) => sum + p.publishedCount, 0) ?? 0;
-    const scheduled = analytics.byPlatform?.reduce((sum, p) => sum + p.scheduledCount, 0) ?? 0;
-    const failed = analytics.byPlatform?.reduce((sum, p) => sum + p.failedCount, 0) ?? 0;
+  private renderActiveJobsCard(): string {
+    const running = this.voStatus?.queueDepth?.running ?? null;
+    const byType = this.voStatus?.jobsByType ?? {};
+    const typeEntries = Object.entries(byType);
+    const accounts = this.voStatus?.activeAccounts ?? null;
 
     return `
       <div class="vo-overview-card">
-        <h3 class="vo-overview-title">Activity Summary</h3>
-        <div class="vo-activity-grid">
-          <div class="vo-activity-stat">
-            <span class="vo-stat-value" style="color: #4ade80">${published}</span>
-            <span class="vo-stat-label">Published</span>
-          </div>
-          <div class="vo-activity-stat">
-            <span class="vo-stat-value" style="color: #60a5fa">${scheduled}</span>
-            <span class="vo-stat-label">Scheduled</span>
-          </div>
-          <div class="vo-activity-stat">
-            <span class="vo-stat-value" style="color: #fb7185">${failed}</span>
-            <span class="vo-stat-label">Failed</span>
-          </div>
+        <div class="vo-card-header">
+          <span class="vo-card-icon">▶</span>
+          <span class="vo-card-label">Active Jobs</span>
+          <span class="vo-card-badge" style="background: color-mix(in srgb, var(--bc-blue) 20%, transparent); color: var(--bc-blue);">${running ?? '–'} running</span>
+        </div>
+        <div class="vo-card-body">
+          ${accounts !== null ? `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Active Accounts</span>
+              <span class="vo-card-stat-value">${accounts}</span>
+            </div>
+          ` : ''}
+          ${typeEntries.length > 0 ? typeEntries.map(([type, count]) => `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">${type}</span>
+              <span class="vo-card-stat-value">${count}</span>
+            </div>
+          `).join('') : `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label vo-muted">No active job breakdown</span>
+            </div>
+          `}
+          ${this.renderRecentPosts()}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderRecentPosts(): string {
+    const recent = this.voStatus?.recentPosts;
+    if (!recent || recent.length === 0) return '';
+
+    return `
+      <div class="vo-card-divider"></div>
+      <div class="vo-card-sublabel">Recent Posts</div>
+      ${recent.slice(0, 3).map((post) => `
+        <div class="vo-card-post-row">
+          <span class="vo-card-post-platform">${post.platform}</span>
+          <span class="vo-card-post-handle">${post.accountHandle}</span>
+          <span class="vo-card-post-time vo-muted">${this.formatDate(post.postedAt)}</span>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  private renderQuotaWarningsCard(): string {
+    const accountsByPlatform = this.voStatus?.accountsByPlatform ?? {};
+    const platformEntries = Object.entries(accountsByPlatform);
+
+    // Check for quota issues from accountStats
+    const quotaWarnings: string[] = [];
+    for (const account of this.accounts) {
+      if (account.quotaState === 'limited') {
+        quotaWarnings.push(`${account.handle} (${account.platform}) quota limited`);
+      }
+    }
+
+    const hasWarnings = quotaWarnings.length > 0;
+
+    return `
+      <div class="vo-overview-card ${hasWarnings ? 'vo-overview-card--warn' : ''}">
+        <div class="vo-card-header">
+          <span class="vo-card-icon">⚡</span>
+          <span class="vo-card-label">Quota Warnings</span>
+          <span class="vo-card-badge" style="background: color-mix(in srgb, ${hasWarnings ? 'var(--bc-yellow)' : 'var(--bc-green)'} 20%, transparent); color: ${hasWarnings ? 'var(--bc-yellow)' : 'var(--bc-green)'};">${hasWarnings ? `${quotaWarnings.length} warning${quotaWarnings.length !== 1 ? 's' : ''}` : 'All OK'}</span>
+        </div>
+        <div class="vo-card-body">
+          ${hasWarnings ? quotaWarnings.map((w) => `
+            <div class="vo-card-warning-row">
+              <span class="vo-card-warning-dot" style="background: var(--bc-yellow)"></span>
+              <span class="vo-card-warning-text">${w}</span>
+            </div>
+          `).join('') : `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label vo-muted">No quota warnings</span>
+            </div>
+          `}
+          ${platformEntries.length > 0 ? `
+            <div class="vo-card-divider"></div>
+            <div class="vo-card-sublabel">Accounts by Platform</div>
+            ${platformEntries.map(([platform, count]) => `
+              <div class="vo-card-stat-row">
+                <span class="vo-card-stat-label">${platform}</span>
+                <span class="vo-card-stat-value">${count}</span>
+              </div>
+            `).join('')}
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderCredentialStatusCard(): string {
+    const missing = this.accounts.filter((a) => a.credentialState === 'missing');
+    const manual = this.accounts.filter((a) => a.credentialState === 'manual');
+    const connected = this.accounts.filter((a) => a.credentialState === 'connected');
+    const total = this.accounts.length;
+    const hasIssues = missing.length > 0;
+
+    return `
+      <div class="vo-overview-card ${hasIssues ? 'vo-overview-card--alert' : ''}">
+        <div class="vo-card-header">
+          <span class="vo-card-icon">🔑</span>
+          <span class="vo-card-label">Credential Status</span>
+          <span class="vo-card-badge" style="background: color-mix(in srgb, ${hasIssues ? 'var(--bc-red)' : 'var(--bc-green)'} 20%, transparent); color: ${hasIssues ? 'var(--bc-red)' : 'var(--bc-green)'};">${hasIssues ? `${missing.length} missing` : total > 0 ? 'All configured' : 'No accounts'}</span>
+        </div>
+        <div class="vo-card-body">
+          ${total === 0 ? `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label vo-muted">No accounts configured</span>
+            </div>
+          ` : `
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Connected</span>
+              <span class="vo-card-stat-value" style="color: var(--bc-green)">${connected.length}</span>
+            </div>
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Manual</span>
+              <span class="vo-card-stat-value" style="color: var(--bc-yellow)">${manual.length}</span>
+            </div>
+            <div class="vo-card-stat-row">
+              <span class="vo-card-stat-label">Missing</span>
+              <span class="vo-card-stat-value" style="color: var(--bc-red)">${missing.length}</span>
+            </div>
+          `}
+          ${missing.length > 0 ? `
+            <div class="vo-card-divider"></div>
+            ${missing.map((a) => `
+              <div class="vo-card-warning-row">
+                <span class="vo-card-warning-dot" style="background: var(--bc-red)"></span>
+                <span class="vo-card-warning-text">${a.handle} (${a.platform})</span>
+              </div>
+            `).join('')}
+          ` : ''}
         </div>
       </div>
     `;
   }
 
   private renderBlockers(): string {
-    const state = this.ctx.getState();
     const blockers = this.collectBlockers();
 
     if (blockers.length === 0) {
@@ -135,18 +333,24 @@ export class OverviewPanel {
 
     return `
       <div class="vo-overview-card vo-overview-card--alert">
-        <h3 class="vo-overview-title">⚠️ Blockers</h3>
-        <div class="vo-blockers-list">
-          ${blockers.map((blocker) => `
-            <div class="vo-blocker">
-              <div class="vo-blocker-icon">⚠️</div>
-              <div class="vo-blocker-content">
-                <div class="vo-blocker-title">${blocker.title}</div>
-                <div class="vo-blocker-detail">${blocker.detail}</div>
-                <div class="vo-blocker-guidance">${blocker.guidance}</div>
+        <div class="vo-card-header">
+          <span class="vo-card-icon">⚠</span>
+          <span class="vo-card-label">Blockers</span>
+          <span class="vo-card-badge" style="background: color-mix(in srgb, var(--bc-red) 20%, transparent); color: var(--bc-red);">${blockers.length}</span>
+        </div>
+        <div class="vo-card-body">
+          <div class="vo-blockers-list">
+            ${blockers.map((blocker) => `
+              <div class="vo-blocker">
+                <div class="vo-blocker-icon">⚠️</div>
+                <div class="vo-blocker-content">
+                  <div class="vo-blocker-title">${blocker.title}</div>
+                  <div class="vo-blocker-detail">${blocker.detail}</div>
+                  <div class="vo-blocker-guidance">${blocker.guidance}</div>
+                </div>
               </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
         </div>
       </div>
     `;
@@ -172,16 +376,16 @@ export class OverviewPanel {
         blockers.push({
           title: 'Missing Credentials',
           detail: `${account.handle} (${account.platform}) lacks configured credentials`,
-          guidance: `Configure credentials in Brain Console credentials section, then restart the worker.`,
+          guidance: 'Configure credentials in Brain Console credentials section, then restart the worker.',
         });
       }
     }
 
-    // Check for quota issues on selected account
+    // Check for high failure rate
     if (state.accountId && this.accountStats?.stats) {
       const stats = this.accountStats.stats.find((s) => s.accountId === state.accountId);
-      if (stats && stats.failedJobs30d > stats.succeededJobs30d * 2) {
-        const failRate = ((stats.failedJobs30d / (stats.succeededJobs30d + stats.failedJobs30d)) * 100).toFixed(0);
+      if (stats && stats.failedJobs30d > stats.succeededJobs30d * 2 && stats.totalJobs30d > 0) {
+        const failRate = ((stats.failedJobs30d / stats.totalJobs30d) * 100).toFixed(0);
         blockers.push({
           title: `High Failure Rate (${failRate}%)`,
           detail: `${stats.accountHandle} has ${stats.failedJobs30d} failed jobs in last 30 days`,
@@ -193,62 +397,27 @@ export class OverviewPanel {
     return blockers;
   }
 
-  private renderRecentStats(): string {
-    const state = this.ctx.getState();
-    if (!state.accountId || !this.accountStats?.stats) {
-      return '';
+  private formatDate(iso: string | null): string {
+    if (!iso) return '–';
+    try {
+      return new Date(iso).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return iso;
     }
-
-    const stats = this.accountStats.stats.find((s) => s.accountId === state.accountId);
-    if (!stats) {
-      return '';
-    }
-
-    const successRate = stats.successRate30d !== null
-      ? `${(stats.successRate30d * 100).toFixed(0)}%`
-      : 'N/A';
-
-    const lastJob = stats.lastJobAt
-      ? new Date(stats.lastJobAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : 'Never';
-
-    return `
-      <div class="vo-overview-card">
-        <h3 class="vo-overview-title">Account Statistics (30d)</h3>
-        <div class="vo-stats-table">
-          <div class="vo-stat-row">
-            <span class="vo-stat-key">Total Jobs</span>
-            <span class="vo-stat-value">${stats.totalJobs30d}</span>
-          </div>
-          <div class="vo-stat-row">
-            <span class="vo-stat-key">Succeeded</span>
-            <span class="vo-stat-value" style="color: #4ade80">${stats.succeededJobs30d}</span>
-          </div>
-          <div class="vo-stat-row">
-            <span class="vo-stat-key">Failed</span>
-            <span class="vo-stat-value" style="color: #fb7185">${stats.failedJobs30d}</span>
-          </div>
-          <div class="vo-stat-row">
-            <span class="vo-stat-key">Success Rate</span>
-            <span class="vo-stat-value">${successRate}</span>
-          </div>
-          <div class="vo-stat-row">
-            <span class="vo-stat-key">Last Job</span>
-            <span class="vo-stat-value">${lastJob}</span>
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   destroy(): void {
     if (this.unsubscribe) {
       this.unsubscribe();
+    }
+    if (this.refreshTimer !== null) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
     }
     this.container.innerHTML = '';
   }

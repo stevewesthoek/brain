@@ -1,5 +1,6 @@
 import { ItemView, Notice } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
+import { VOShell } from './components/VO/VOShell.js';
 import {
   diagnoseBrainCoreConnection,
   type BrainCoreConnectionDiagnostic,
@@ -365,7 +366,7 @@ import {
   type DashboardSnapshot,
 } from './dashboard.js';
 
-export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'studio' | 'orchestrators' | 'pipelines' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts';
+export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'video-orchestrator' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts';
 
 const localAppPendingActions = new Map<string, string>();
 
@@ -983,9 +984,7 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'analytics', label: 'Analytics', icon: '▣' },
   { id: 'stripe', label: 'Stripe', icon: '$' },
   { id: 'monitoring', label: 'Monitoring', icon: '◎' },
-  { id: 'studio', label: 'Studio', icon: '◈' },
-  { id: 'orchestrators', label: 'Orchestrators', icon: '▲' },
-  { id: 'pipelines', label: 'Pipelines', icon: '→' },
+  { id: 'video-orchestrator', label: 'Video Orchestrator', icon: '◈' },
   { id: 'projects', label: 'Projects', icon: '◉' },
   { id: 'reports', label: 'Reports', icon: '📋' },
   { id: 'posts', label: 'Posts', icon: '✦' },
@@ -1272,14 +1271,8 @@ function renderActiveSectionContent(
       case 'monitoring':
         renderMonitoringSection(content, state);
         break;
-      case 'studio':
-        renderStudioSection(content, state);
-        break;
-      case 'orchestrators':
-        renderOrchestratorsSection(content, state, snapshot);
-        break;
-      case 'pipelines':
-        renderPipelinesSection(content, state, snapshot);
+      case 'video-orchestrator':
+        renderVideoOrchestratorSection(content, state);
         break;
       case 'projects':
         renderProjectsSection(content, state, snapshot);
@@ -1803,6 +1796,20 @@ function renderMonitoringSection(content: HTMLElement, state: BrainConsoleViewSt
     syntheticsCard.createEl('p', { cls: 'brain-console__detail', text: `${synthetics.length - 20} more monitor(s).` });
   }
   renderCard(grid, `Synthetic Monitors (${synthetics.length})`, syntheticsCard);
+}
+
+function renderVideoOrchestratorSection(content: HTMLElement, state: BrainConsoleViewState): void {
+  const container = content.createDiv({ cls: 'vo-studio-container' });
+
+  const voShell = new VOShell(container, {
+    projects: state.voStudioProjects?.items,
+    accounts: state.voStudioAccounts?.items,
+    pipelineProfiles: state.voStudioPipelineProfiles?.items,
+    contentItems: state.voStudioContentItems?.items,
+    selector: state.aiModelSelectorStatus,
+    analytics: state.voStudioAnalytics,
+    accountStats: state.voAccountStats,
+  });
 }
 
 function renderVOContextBar(parent: HTMLElement, state: BrainConsoleViewState): void {

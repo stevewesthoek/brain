@@ -12,10 +12,15 @@ export interface HistoryEntry {
   accountId: string;
   accountHandle: string;
   platform: string;
-  status: 'published' | 'failed' | 'pending' | 'scheduled';
-  publishedDate: string;
-  errorMessage?: string;
+  status: 'published' | 'failed' | 'draft' | 'scheduled';
+  publishedAt: string;
+  error?: string;
 }
+
+type SortField = 'publishedAt' | 'status' | 'account' | 'platform';
+type StatusFilter = '' | 'published' | 'failed' | 'draft' | 'scheduled';
+
+const PAGE_SIZE = 50;
 
 export class HistoryPanel {
   private container: HTMLElement;
@@ -23,8 +28,16 @@ export class HistoryPanel {
   private accounts: BrainCoreVOStudioPlatformAccount[] = [];
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
-  private sortBy: 'date' | 'status' | 'account' = 'date';
-  private expandedEntryId: string | null = null;
+
+  // Filter state
+  private filterAccount = '';
+  private filterPlatform = '';
+  private filterStatus: StatusFilter = '';
+  private filterDateStart = '';
+  private filterDateEnd = '';
+  private sortBy: SortField = 'publishedAt';
+  private sortDesc = true;
+  private currentPage = 0;
 
   constructor(container: HTMLElement, data: {
     contentItems?: BrainCoreVOStudioContentItem[];
@@ -34,70 +47,112 @@ export class HistoryPanel {
     this.contentItems = data.contentItems || [];
     this.accounts = data.accounts || [];
 
-    this.unsubscribe = this.ctx.subscribe(() => this.render());
+    this.unsubscribe = this.ctx.subscribe(() => {
+      this.currentPage = 0;
+      this.render();
+    });
     this.render();
   }
 
   private render(): void {
     const state = this.ctx.getState();
-
-    // Generate fixture history entries
-    const entries = this.getFilteredHistory(state);
+    const allEntries = this.buildEntries(state);
+    const filtered = this.applyFilters(allEntries);
+    const sorted = this.applySort(filtered);
+    const pageEntries = sorted.slice(this.currentPage * PAGE_SIZE, (this.currentPage + 1) * PAGE_SIZE);
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 
     this.container.innerHTML = `
       <div class="vo-history-panel">
-        ${this.renderFilters()}
-        ${this.renderHistoryTable(entries)}
+        ${this.renderFilters(state, allEntries)}
+        ${this.renderTable(pageEntries)}
+        ${this.renderPagination(sorted.length, totalPages)}
       </div>
     `;
 
     this.attachEventListeners();
   }
 
-  private renderFilters(): string {
-    const state = this.ctx.getState();
-
-    const projects = [...new Set(this.contentItems.map((i) => i.projectId))];
+  private renderFilters(state: any, allEntries: HistoryEntry[]): string {
     const accountsForProject = this.accounts.filter((a) => a.projectId === state.projectId);
+    const platforms = [...new Set(allEntries.map((e) => e.platform).filter(Boolean))].sort();
 
     return `
       <div class="vo-history-filters">
-        <div class="vo-filter-group">
-          <label class="vo-filter-label">Sort by</label>
-          <select class="vo-filter-select vo-sort-select">
-            <option value="date" ${this.sortBy === 'date' ? 'selected' : ''}>Date</option>
-            <option value="status" ${this.sortBy === 'status' ? 'selected' : ''}>Status</option>
-            <option value="account" ${this.sortBy === 'account' ? 'selected' : ''}>Account</option>
-          </select>
-        </div>
-
         ${accountsForProject.length > 0 ? `
           <div class="vo-filter-group">
             <label class="vo-filter-label">Account</label>
-            <select class="vo-filter-select vo-account-filter">
+            <select class="vo-filter-select" data-filter="account">
               <option value="">All accounts</option>
               ${accountsForProject.map((a) => `
-                <option value="${a.id}">${a.handle}</option>
+                <option value="${a.id}" ${this.filterAccount === a.id ? 'selected' : ''}>${a.handle}</option>
               `).join('')}
             </select>
           </div>
         ` : ''}
 
         <div class="vo-filter-group">
-          <label class="vo-filter-label">Status</label>
-          <select class="vo-filter-select vo-status-filter">
-            <option value="">All statuses</option>
-            <option value="published">Published</option>
-            <option value="failed">Failed</option>
-            <option value="pending">Pending</option>
-            <option value="scheduled">Scheduled</option>
+          <label class="vo-filter-label">Platform</label>
+          <select class="vo-filter-select" data-filter="platform">
+            <option value="">All platforms</option>
+            ${platforms.map((p) => `
+              <option value="${p}" ${this.filterPlatform === p ? 'selected' : ''}>${p}</option>
+            `).join('')}
           </select>
+        </div>
+
+        <div class="vo-filter-group">
+          <label class="vo-filter-label">Status</label>
+          <select class="vo-filter-select" data-filter="status">
+            <option value="">All statuses</option>
+            <option value="published" ${this.filterStatus === 'published' ? 'selected' : ''}>Published</option>
+            <option value="scheduled" ${this.filterStatus === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+            <option value="failed" ${this.filterStatus === 'failed' ? 'selected' : ''}>Failed</option>
+            <option value="draft" ${this.filterStatus === 'draft' ? 'selected' : ''}>Draft</option>
+          </select>
+        </div>
+
+        <div class="vo-filter-group">
+          <label class="vo-filter-label">From</label>
+          <input
+            class="vo-filter-date"
+            type="date"
+            data-filter="dateStart"
+            value="${this.filterDateStart}"
+          />
+        </div>
+
+        <div class="vo-filter-group">
+          <label class="vo-filter-label">To</label>
+          <input
+            class="vo-filter-date"
+            type="date"
+            data-filter="dateEnd"
+            value="${this.filterDateEnd}"
+          />
+        </div>
+
+        <div class="vo-filter-group">
+          <label class="vo-filter-label">Sort</label>
+          <select class="vo-filter-select" data-filter="sortBy">
+            <option value="publishedAt" ${this.sortBy === 'publishedAt' ? 'selected' : ''}>Published At</option>
+            <option value="status" ${this.sortBy === 'status' ? 'selected' : ''}>Status</option>
+            <option value="account" ${this.sortBy === 'account' ? 'selected' : ''}>Account</option>
+            <option value="platform" ${this.sortBy === 'platform' ? 'selected' : ''}>Platform</option>
+          </select>
+        </div>
+
+        <div class="vo-filter-group">
+          <label class="vo-filter-label">Order</label>
+          <button class="vo-filter-sort-btn" data-action="toggle-sort" title="Toggle sort direction">
+            ${this.sortDesc ? '↓ Desc' : '↑ Asc'}
+          </button>
         </div>
       </div>
     `;
   }
 
-  private renderHistoryTable(entries: HistoryEntry[]): string {
+  private renderTable(entries: HistoryEntry[]): string {
     if (entries.length === 0) {
       return `
         <div class="vo-empty-state">
@@ -108,50 +163,143 @@ export class HistoryPanel {
 
     return `
       <div class="vo-history-table">
-        <div class="vo-history-header">
-          <div class="vo-history-col-date">Date</div>
-          <div class="vo-history-col-content">Content</div>
-          <div class="vo-history-col-account">Account</div>
+        <div class="vo-history-header vo-history-header--extended">
+          <div class="vo-history-col-id">Content Item ID</div>
           <div class="vo-history-col-platform">Platform</div>
+          <div class="vo-history-col-account">Account</div>
           <div class="vo-history-col-status">Status</div>
+          <div class="vo-history-col-date">Published At</div>
+          <div class="vo-history-col-error">Error</div>
         </div>
-        ${entries.map((entry) => this.renderHistoryRow(entry)).join('')}
+        ${entries.map((entry) => this.renderRow(entry)).join('')}
       </div>
     `;
   }
 
-  private renderHistoryRow(entry: HistoryEntry): string {
+  private renderRow(entry: HistoryEntry): string {
     return `
-      <div class="vo-history-row ${this.expandedEntryId === entry.id ? 'expanded' : ''}" data-entry-id="${entry.id}">
-        <div class="vo-history-row-main">
-          <div class="vo-history-col-date">${entry.publishedDate}</div>
-          <div class="vo-history-col-content">${entry.contentTitle}</div>
-          <div class="vo-history-col-account">${entry.accountHandle}</div>
+      <div class="vo-history-row" data-entry-id="${entry.id}">
+        <div class="vo-history-row-main vo-history-row-main--extended">
+          <div class="vo-history-col-id vo-monospace">${entry.contentItemId.slice(0, 12)}…</div>
           <div class="vo-history-col-platform">${entry.platform}</div>
+          <div class="vo-history-col-account">${entry.accountHandle}</div>
           <div class="vo-history-col-status">
             <span class="vo-history-status ${this.getStatusClass(entry.status)}">${entry.status}</span>
           </div>
-        </div>
-        ${this.expandedEntryId === entry.id ? `
-          <div class="vo-history-detail">
-            <div class="vo-history-detail-row">
-              <span class="vo-detail-key">Content ID:</span>
-              <span class="vo-detail-value vo-detail-monospace">${entry.contentItemId}</span>
-            </div>
-            <div class="vo-history-detail-row">
-              <span class="vo-detail-key">Account ID:</span>
-              <span class="vo-detail-value vo-detail-monospace">${entry.accountId}</span>
-            </div>
-            ${entry.errorMessage ? `
-              <div class="vo-history-detail-row vo-detail-error">
-                <span class="vo-detail-key">Error:</span>
-                <span class="vo-detail-value vo-detail-monospace">${entry.errorMessage}</span>
-              </div>
-            ` : ''}
+          <div class="vo-history-col-date">${entry.publishedAt}</div>
+          <div class="vo-history-col-error ${entry.error ? 'vo-detail-error' : 'vo-muted'}">
+            ${entry.error ? entry.error.slice(0, 40) + (entry.error.length > 40 ? '…' : '') : '–'}
           </div>
-        ` : ''}
+        </div>
       </div>
     `;
+  }
+
+  private renderPagination(total: number, totalPages: number): string {
+    if (totalPages <= 1) {
+      return `<div class="vo-history-pagination-bar"><span class="vo-muted">${total} entries</span></div>`;
+    }
+
+    const start = this.currentPage * PAGE_SIZE + 1;
+    const end = Math.min((this.currentPage + 1) * PAGE_SIZE, total);
+
+    return `
+      <div class="vo-history-pagination-bar">
+        <span class="vo-muted">${start}–${end} of ${total}</span>
+        <div class="vo-history-pagination-controls">
+          <button
+            class="vo-pagination-btn"
+            data-action="page-prev"
+            ${this.currentPage === 0 ? 'disabled' : ''}
+          >← Prev</button>
+          <span class="vo-pagination-page">${this.currentPage + 1} / ${totalPages}</span>
+          <button
+            class="vo-pagination-btn"
+            data-action="page-next"
+            ${this.currentPage >= totalPages - 1 ? 'disabled' : ''}
+          >Next →</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private buildEntries(state: any): HistoryEntry[] {
+    const now = new Date();
+    const fixtureStatuses: HistoryEntry['status'][] = ['published', 'published', 'failed', 'scheduled', 'draft'];
+    const errors = [
+      'Connection timeout to platform API',
+      'OAuth token expired',
+      'Upload size limit exceeded',
+    ];
+
+    const projectItems = this.contentItems.filter((i) => i.projectId === state.projectId);
+    const entries: HistoryEntry[] = [];
+
+    projectItems.forEach((item, itemIdx) => {
+      // Each content item can have multiple posting targets → one history row each
+      const targets = item.platformTargets.length > 0 ? item.platformTargets : [{ platformAccountId: null, platform: 'unknown', mode: 'manual-package', status: 'draft', approvalRequired: false, id: item.id }];
+
+      targets.forEach((target, targetIdx) => {
+        const account = this.accounts.find((a) => a.id === target.platformAccountId);
+        const entryDate = new Date(now.getTime() - (itemIdx * 3 + targetIdx) * 12 * 60 * 60 * 1000);
+        const statusIdx = (itemIdx + targetIdx) % fixtureStatuses.length;
+        const status = fixtureStatuses[statusIdx];
+        const hasError = status === 'failed';
+
+        entries.push({
+          id: `h-${item.id}-${targetIdx}`,
+          contentItemId: item.id,
+          contentTitle: item.title,
+          projectId: item.projectId,
+          accountId: account?.id ?? 'unknown',
+          accountHandle: account?.handle ?? (target as any).platform ?? 'Unknown',
+          platform: account?.platform ?? (target as any).platform ?? 'unknown',
+          status,
+          publishedAt: entryDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          error: hasError ? errors[itemIdx % errors.length] : undefined,
+        });
+      });
+    });
+
+    return entries;
+  }
+
+  private applyFilters(entries: HistoryEntry[]): HistoryEntry[] {
+    return entries.filter((e) => {
+      if (this.filterAccount && e.accountId !== this.filterAccount) return false;
+      if (this.filterPlatform && e.platform !== this.filterPlatform) return false;
+      if (this.filterStatus && e.status !== this.filterStatus) return false;
+      return true;
+    });
+  }
+
+  private applySort(entries: HistoryEntry[]): HistoryEntry[] {
+    const sorted = [...entries].sort((a, b) => {
+      let cmp = 0;
+      switch (this.sortBy) {
+        case 'status':
+          cmp = a.status.localeCompare(b.status);
+          break;
+        case 'account':
+          cmp = a.accountHandle.localeCompare(b.accountHandle);
+          break;
+        case 'platform':
+          cmp = a.platform.localeCompare(b.platform);
+          break;
+        case 'publishedAt':
+        default:
+          // Already in most-recent-first order by construction
+          cmp = 0;
+          break;
+      }
+      return this.sortDesc ? -cmp : cmp;
+    });
+    return sorted;
   }
 
   private getStatusClass(status: string): string {
@@ -160,7 +308,7 @@ export class HistoryPanel {
         return 'vo-history-published';
       case 'failed':
         return 'vo-history-failed';
-      case 'pending':
+      case 'draft':
         return 'vo-history-pending';
       case 'scheduled':
         return 'vo-history-scheduled';
@@ -169,82 +317,70 @@ export class HistoryPanel {
     }
   }
 
-  private getFilteredHistory(state: any): HistoryEntry[] {
-    // Generate fixture history entries from content items
-    const entries: HistoryEntry[] = [];
-    const now = new Date();
-
-    const fixtureStatuses = ['published', 'published', 'failed', 'pending', 'scheduled'];
-
-    const projectItems = this.contentItems.filter((i) => i.projectId === state.projectId);
-
-    projectItems.slice(0, 10).forEach((item, idx) => {
-      const account = this.accounts.find((a) => a.id === item.platformTargets[0]?.platformAccountId);
-      const date = new Date(now.getTime() - (idx * 24 * 60 * 60 * 1000));
-
-      entries.push({
-        id: `entry-${item.id}-${idx}`,
-        contentItemId: item.id,
-        contentTitle: item.title,
-        projectId: item.projectId,
-        accountId: account?.id || 'unknown',
-        accountHandle: account?.handle || 'Unknown',
-        platform: account?.platform || 'unknown',
-        status: (fixtureStatuses[idx % fixtureStatuses.length] as any) || 'pending',
-        publishedDate: date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        errorMessage: idx % 4 === 0 ? 'Connection timeout to platform API' : undefined,
+  private attachEventListeners(): void {
+    // Filter selects
+    this.container.querySelectorAll('.vo-filter-select[data-filter]').forEach((el) => {
+      el.addEventListener('change', (e) => {
+        const filter = (e.currentTarget as HTMLSelectElement).getAttribute('data-filter');
+        const value = (e.currentTarget as HTMLSelectElement).value;
+        this.currentPage = 0;
+        switch (filter) {
+          case 'account':
+            this.filterAccount = value;
+            break;
+          case 'platform':
+            this.filterPlatform = value;
+            break;
+          case 'status':
+            this.filterStatus = value as StatusFilter;
+            break;
+          case 'sortBy':
+            this.sortBy = value as SortField;
+            break;
+        }
+        this.render();
       });
     });
 
-    // Apply sorting
-    switch (this.sortBy) {
-      case 'status':
-        entries.sort((a, b) => a.status.localeCompare(b.status));
-        break;
-      case 'account':
-        entries.sort((a, b) => a.accountHandle.localeCompare(b.accountHandle));
-        break;
-      case 'date':
-      default:
-        // Already sorted by date from fixture generation
-        break;
-    }
+    // Date filters
+    this.container.querySelectorAll('.vo-filter-date[data-filter]').forEach((el) => {
+      el.addEventListener('change', (e) => {
+        const filter = (e.currentTarget as HTMLInputElement).getAttribute('data-filter');
+        const value = (e.currentTarget as HTMLInputElement).value;
+        this.currentPage = 0;
+        if (filter === 'dateStart') this.filterDateStart = value;
+        if (filter === 'dateEnd') this.filterDateEnd = value;
+        this.render();
+      });
+    });
 
-    return entries;
-  }
-
-  private attachEventListeners(): void {
-    // Sort selector
-    const sortSelect = this.container.querySelector('.vo-sort-select') as HTMLSelectElement;
-    if (sortSelect) {
-      sortSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        this.sortBy = (target.value as any) || 'date';
+    // Sort direction toggle
+    const sortBtn = this.container.querySelector('[data-action="toggle-sort"]');
+    if (sortBtn) {
+      sortBtn.addEventListener('click', () => {
+        this.sortDesc = !this.sortDesc;
+        this.currentPage = 0;
         this.render();
       });
     }
 
-    // Row expansion
-    this.container.querySelectorAll('.vo-history-row').forEach((row) => {
-      row.addEventListener('click', () => {
-        const entryId = row.getAttribute('data-entry-id');
-        if (this.expandedEntryId === entryId) {
-          this.expandedEntryId = null;
-        } else {
-          this.expandedEntryId = entryId;
-        }
-
-        this.container.querySelectorAll('.vo-history-row').forEach((r) => r.classList.remove('expanded'));
-        if (this.expandedEntryId) {
-          row.classList.add('expanded');
+    // Pagination
+    const prevBtn = this.container.querySelector('[data-action="page-prev"]');
+    const nextBtn = this.container.querySelector('[data-action="page-next"]');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this.currentPage > 0) {
+          this.currentPage--;
+          this.render();
         }
       });
-    });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        this.currentPage++;
+        this.render();
+      });
+    }
   }
 
   destroy(): void {

@@ -5,6 +5,26 @@ import type {
 } from '../../client.js';
 import { getVOContextManager } from './VOContext.js';
 
+const PLATFORM_ICONS: Record<string, string> = {
+  youtube: '▶',
+  'youtube-shorts': '▶',
+  tiktok: '♪',
+  instagram: '◉',
+  facebook: 'f',
+  linkedin: 'in',
+  pinterest: 'P',
+};
+
+const QUOTA_LIMITS: Record<string, number> = {
+  youtube: 10000,
+  'youtube-shorts': 10000,
+  tiktok: 500,
+  instagram: 200,
+  facebook: 300,
+  linkedin: 300,
+  pinterest: 1000,
+};
+
 export class AccountsPanel {
   private container: HTMLElement;
   private accounts: BrainCoreVOStudioPlatformAccount[] = [];
@@ -29,13 +49,46 @@ export class AccountsPanel {
 
   private render(): void {
     const state = this.ctx.getState();
-
-    // Get filtered accounts for current project
     const accountsForProject = this.accounts.filter((a) => a.projectId === state.projectId);
 
     this.container.innerHTML = `
       <div class="vo-accounts-panel">
+        ${this.renderSummaryBar(accountsForProject)}
         ${this.renderAccountCards(accountsForProject)}
+      </div>
+    `;
+  }
+
+  private renderSummaryBar(accounts: BrainCoreVOStudioPlatformAccount[]): string {
+    if (accounts.length === 0) return '';
+
+    const configured = accounts.filter((a) => a.credentialState === 'connected').length;
+    const expired = accounts.filter((a) => a.credentialState === 'missing').length;
+    const manual = accounts.filter((a) => a.credentialState === 'manual').length;
+    const active = accounts.filter((a) => a.status === 'active').length;
+
+    return `
+      <div class="vo-accounts-summary-bar">
+        <div class="vo-accounts-summary-stat">
+          <span class="vo-accounts-summary-value" style="color: var(--bc-green)">${configured}</span>
+          <span class="vo-accounts-summary-label">Connected</span>
+        </div>
+        <div class="vo-accounts-summary-stat">
+          <span class="vo-accounts-summary-value" style="color: var(--bc-yellow)">${manual}</span>
+          <span class="vo-accounts-summary-label">Manual</span>
+        </div>
+        <div class="vo-accounts-summary-stat">
+          <span class="vo-accounts-summary-value" style="color: var(--bc-red)">${expired}</span>
+          <span class="vo-accounts-summary-label">Missing</span>
+        </div>
+        <div class="vo-accounts-summary-stat">
+          <span class="vo-accounts-summary-value" style="color: var(--bc-blue)">${active}</span>
+          <span class="vo-accounts-summary-label">Active</span>
+        </div>
+        <div class="vo-accounts-summary-stat">
+          <span class="vo-accounts-summary-value">${accounts.length}</span>
+          <span class="vo-accounts-summary-label">Total</span>
+        </div>
       </div>
     `;
   }
@@ -62,73 +115,133 @@ export class AccountsPanel {
       ? `${(stats.successRate30d * 100).toFixed(0)}%`
       : 'N/A';
 
-    const credentialColor = this.getCredentialColor(account.credentialState);
-    const adapterColor = this.getAdapterColor(account.adapterStatus);
-
     return `
       <div class="vo-account-card">
-        <div class="vo-account-header">
-          <div class="vo-account-icon">
-            <span class="vo-platform-icon">${this.getPlatformIcon(account.platform)}</span>
-          </div>
-          <div class="vo-account-title">
-            <div class="vo-account-handle">${account.handle}</div>
-            <div class="vo-account-platform">${account.platform}</div>
-          </div>
+        ${this.renderAccountHeader(account)}
+        ${this.renderConnectionStateBadge(account)}
+        ${this.renderAccountBody(account, stats, successRate)}
+        ${this.renderQuotaBar(account, stats)}
+        ${this.renderSchedulerToggle(account)}
+        ${this.renderAccountFooter(account)}
+      </div>
+    `;
+  }
+
+  private renderAccountHeader(account: BrainCoreVOStudioPlatformAccount): string {
+    const icon = PLATFORM_ICONS[account.platform] ?? '○';
+    return `
+      <div class="vo-account-header">
+        <div class="vo-account-icon">
+          <span class="vo-platform-icon">${icon}</span>
+        </div>
+        <div class="vo-account-title">
+          <div class="vo-account-handle">${account.handle}</div>
+          <div class="vo-account-platform">${account.platform}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderConnectionStateBadge(account: BrainCoreVOStudioPlatformAccount): string {
+    const badgeColor = this.getCredentialColor(account.credentialState);
+    const label = this.getConnectionStateLabel(account.credentialState);
+    return `
+      <div class="vo-account-connection-banner" style="background: color-mix(in srgb, ${badgeColor} 15%, var(--background-primary) 85%); border-left: 3px solid ${badgeColor};">
+        <span class="vo-account-connection-dot" style="background: ${badgeColor}"></span>
+        <span class="vo-account-connection-label">${label}</span>
+        <span class="vo-account-adapter-badge" style="background: color-mix(in srgb, ${this.getAdapterColor(account.adapterStatus)} 20%, transparent); color: ${this.getAdapterColor(account.adapterStatus)};">${this.getAdapterLabel(account.adapterStatus)}</span>
+      </div>
+    `;
+  }
+
+  private renderAccountBody(
+    account: BrainCoreVOStudioPlatformAccount,
+    stats: BrainCoreVOAccountStat | undefined,
+    successRate: string,
+  ): string {
+    return `
+      <div class="vo-account-body">
+        <div class="vo-account-row">
+          <span class="vo-account-label">Status</span>
+          <span class="vo-account-value ${this.getStatusClass(account.status)}">${account.status}</span>
         </div>
 
-        <div class="vo-account-body">
-          <div class="vo-account-row">
-            <span class="vo-account-label">Status</span>
-            <span class="vo-account-value ${this.getStatusClass(account.status)}">${account.status}</span>
-          </div>
+        <div class="vo-account-row">
+          <span class="vo-account-label">Quota State</span>
+          <span class="vo-account-value ${this.getQuotaStateClass(account.quotaState)}">${account.quotaState}</span>
+        </div>
 
+        ${stats ? `
           <div class="vo-account-row">
-            <span class="vo-account-label">Credentials</span>
-            <span class="vo-account-badge" style="background-color: ${credentialColor}">
-              ${account.credentialState}
-            </span>
+            <span class="vo-account-label">Success Rate (30d)</span>
+            <span class="vo-account-value">${successRate}</span>
           </div>
-
           <div class="vo-account-row">
-            <span class="vo-account-label">Adapter</span>
-            <span class="vo-account-badge" style="background-color: ${adapterColor}">
-              ${account.adapterStatus}
-            </span>
+            <span class="vo-account-label">Jobs (30d)</span>
+            <span class="vo-account-value">${stats.succeededJobs30d}/${stats.totalJobs30d}</span>
           </div>
-
-          <div class="vo-account-row">
-            <span class="vo-account-label">Quota</span>
-            <span class="vo-account-value">${account.quotaState}</span>
-          </div>
-
-          ${stats ? `
+          ${stats.lastJobAt ? `
             <div class="vo-account-row">
-              <span class="vo-account-label">Success Rate (30d)</span>
-              <span class="vo-account-value">${successRate}</span>
-            </div>
-
-            <div class="vo-account-row">
-              <span class="vo-account-label">Jobs (30d)</span>
-              <span class="vo-account-value">${stats.succeededJobs30d}/${stats.totalJobs30d}</span>
+              <span class="vo-account-label">Last Job</span>
+              <span class="vo-account-value">${this.formatDate(stats.lastJobAt)}</span>
             </div>
           ` : ''}
+        ` : ''}
+      </div>
+    `;
+  }
 
-          <div class="vo-account-row">
-            <span class="vo-account-label">Scheduler</span>
-            <span class="vo-account-value vo-scheduler-label">${account.schedulerPolicy}</span>
+  private renderQuotaBar(account: BrainCoreVOStudioPlatformAccount, stats: BrainCoreVOAccountStat | undefined): string {
+    const limit = QUOTA_LIMITS[account.platform] ?? 1000;
+    const usage = stats?.totalJobs30d ?? 0;
+    const pct = Math.min(100, Math.round((usage / limit) * 100));
+    const barColor = pct >= 90 ? 'var(--bc-red)' : pct >= 70 ? 'var(--bc-yellow)' : 'var(--bc-green)';
+
+    return `
+      <div class="vo-account-quota-section">
+        <div class="vo-account-quota-row">
+          <span class="vo-account-label">Quota Usage</span>
+          <span class="vo-account-quota-text">${usage} / ${limit}</span>
+        </div>
+        <div class="vo-quota-bar-track">
+          <div
+            class="vo-quota-bar-fill"
+            style="width: ${pct}%; background: ${barColor};"
+            title="${pct}% of quota used"
+          ></div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderSchedulerToggle(account: BrainCoreVOStudioPlatformAccount): string {
+    const isActive = account.status === 'active';
+    const policyLabel = account.schedulerPolicy || 'not-set';
+
+    return `
+      <div class="vo-account-scheduler-row">
+        <span class="vo-account-label">Scheduler</span>
+        <div class="vo-scheduler-toggle-wrap">
+          <div class="vo-scheduler-toggle vo-scheduler-toggle--${isActive ? 'on' : 'off'}" title="Read-only in Phase 0.9">
+            <div class="vo-scheduler-toggle-thumb"></div>
+          </div>
+          <span class="vo-scheduler-policy-label">${policyLabel}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderAccountFooter(account: BrainCoreVOStudioPlatformAccount): string {
+    return `
+      <div class="vo-account-footer">
+        <div class="vo-account-profiles">
+          <div class="vo-profiles-label">Enabled Profiles</div>
+          <div class="vo-profiles-list">
+            ${this.renderEnabledProfiles(account.enabledPipelineProfileIds)}
           </div>
         </div>
-
-        <div class="vo-account-footer">
-          <div class="vo-account-profiles">
-            <div class="vo-profiles-label">Enabled Profiles</div>
-            <div class="vo-profiles-list">
-              ${this.renderEnabledProfiles(account.enabledPipelineProfileIds)}
-            </div>
-          </div>
-        </div>
-
+      </div>
+      ${account.capabilities.length > 0 ? `
         <div class="vo-account-capabilities">
           <div class="vo-capabilities-label">Capabilities</div>
           <div class="vo-capabilities-tags">
@@ -137,7 +250,7 @@ export class AccountsPanel {
             `).join('')}
           </div>
         </div>
-      </div>
+      ` : ''}
     `;
   }
 
@@ -151,26 +264,33 @@ export class AccountsPanel {
       .slice(0, 3);
 
     const more = profileIds.length > 3 ? ` +${profileIds.length - 3}` : '';
-
-    return profileNames.map((name) => `<span class="vo-profile-tag">${name}</span>`).join('') + (more ? `<span class="vo-profile-tag">${more}</span>` : '');
+    return profileNames.map((name) => `<span class="vo-profile-tag">${name}</span>`).join('') +
+      (more ? `<span class="vo-profile-tag">${more}</span>` : '');
   }
 
-  private getPlatformIcon(platform: string): string {
-    switch (platform.toLowerCase()) {
-      case 'youtube':
-        return '▶️';
-      case 'facebook':
-        return 'f';
-      case 'tiktok':
-        return '♪';
-      case 'instagram':
-        return '📷';
-      case 'linkedin':
-        return 'in';
-      case 'pinterest':
-        return 'P';
+  private getConnectionStateLabel(state: string): string {
+    switch (state) {
+      case 'connected':
+        return 'Connected';
+      case 'missing':
+        return 'Credentials Missing';
+      case 'manual':
+        return 'Manual';
       default:
-        return '○';
+        return state;
+    }
+  }
+
+  private getAdapterLabel(state: string): string {
+    switch (state) {
+      case 'ready-read-only':
+        return 'direct_upload';
+      case 'manual-package':
+        return 'n8n_fallback';
+      case 'disabled':
+        return 'manual_only';
+      default:
+        return state;
     }
   }
 
@@ -210,6 +330,32 @@ export class AccountsPanel {
         return 'vo-status-blocked';
       default:
         return '';
+    }
+  }
+
+  private getQuotaStateClass(quotaState: string): string {
+    switch (quotaState) {
+      case 'ok':
+        return 'vo-status-active';
+      case 'limited':
+        return 'vo-status-manual';
+      case 'unknown':
+      default:
+        return '';
+    }
+  }
+
+  private formatDate(iso: string | null): string {
+    if (!iso) return '–';
+    try {
+      return new Date(iso).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return iso;
     }
   }
 

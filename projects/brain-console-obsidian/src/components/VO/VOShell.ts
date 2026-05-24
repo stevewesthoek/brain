@@ -4,10 +4,12 @@ import { PipelinesPanel } from './PipelinesPanel.js';
 import { AccountsPanel } from './AccountsPanel.js';
 import { HistoryPanel } from './HistoryPanel.js';
 import { ContentCreationPanel } from './ContentCreationPanel.js';
+import { StudioPanel } from './StudioPanel.js';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
 import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 import { EventLogPanel } from './EventLogPanel.js';
+import { StudioDashboardPanel } from './StudioDashboardPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -26,11 +28,13 @@ export class VOShell {
   private pipelinesPanel: PipelinesPanel | null = null;
   private accountsPanel: AccountsPanel | null = null;
   private contentCreationPanel: ContentCreationPanel | null = null;
+  private studioPanel: StudioPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
   private packageStatusPanel: PackageStatusPanel | null = null;
   private publishingDashboardPanel: PublishingDashboardPanel | null = null;
   private eventLogPanel: EventLogPanel | null = null;
+  private studioDashboardPanel: StudioDashboardPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
   private contentContainer: HTMLElement | null = null;
@@ -77,6 +81,7 @@ export class VOShell {
         <button class="vo-tab" data-tab="publishing">Publishing</button>
         <button class="vo-tab" data-tab="history">History</button>
         <button class="vo-tab" data-tab="events">Events</button>
+        <button class="vo-tab" data-tab="dashboard">Dashboard</button>
       </div>
     `;
     this.container.appendChild(tabsContainer);
@@ -132,6 +137,10 @@ export class VOShell {
       this.contentCreationPanel.destroy();
       this.contentCreationPanel = null;
     }
+    if (this.studioPanel) {
+      this.studioPanel.destroy();
+      this.studioPanel = null;
+    }
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
       this.approvalQueuePanel = null;
@@ -151,6 +160,10 @@ export class VOShell {
     if (this.eventLogPanel) {
       this.eventLogPanel.destroy();
       this.eventLogPanel = null;
+    }
+    if (this.studioDashboardPanel) {
+      this.studioDashboardPanel.destroy();
+      this.studioDashboardPanel = null;
     }
 
     const state = this.ctx.getState();
@@ -207,11 +220,13 @@ export class VOShell {
 
       case 'content':
         if (state.projectId) {
-          this.contentCreationPanel = new ContentCreationPanel(this.contentContainer);
+          this.studioPanel = new StudioPanel(this.contentContainer, {
+            contentItems: this.data.contentItems,
+          });
         } else {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">
-              <p>Select a project to create content items</p>
+              <p>Select a project to view Studio content</p>
             </div>
           `;
         }
@@ -283,6 +298,19 @@ export class VOShell {
           `;
         }
         break;
+
+      case 'dashboard':
+        if (state.projectId) {
+          this.studioDashboardPanel = new StudioDashboardPanel(this.contentContainer, state.projectId);
+          this.studioDashboardPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view dashboard</p>
+            </div>
+          `;
+        }
+        break;
     }
   }
 
@@ -300,6 +328,9 @@ export class VOShell {
     if (this.contentCreationPanel) {
       this.contentCreationPanel.destroy();
     }
+    if (this.studioPanel) {
+      this.studioPanel.destroy();
+    }
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
     }
@@ -314,6 +345,9 @@ export class VOShell {
     }
     if (this.eventLogPanel) {
       this.eventLogPanel.destroy();
+    }
+    if (this.studioDashboardPanel) {
+      this.studioDashboardPanel.destroy();
     }
     if (this.unsubscribe) {
       this.unsubscribe();
