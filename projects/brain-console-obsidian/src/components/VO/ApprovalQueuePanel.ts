@@ -33,6 +33,7 @@ interface VOApprovalEntry {
   createdAt: string;
   expiresAt?: string;
   decisionReason?: string;
+  requestPayload?: Record<string, unknown>;
 }
 
 function formatRelativeTime(iso: string): string {
@@ -61,6 +62,14 @@ export class ApprovalQueuePanel {
   private projectId: string;
   private approvals: VOApprovalEntry[] = [];
   private selectedIds = new Set<string>();
+  private selectedApprovalId: string | null = null;
+  private selectedVariantId: string | null = null;
+  private metadataDraft = {
+    title: '',
+    description: '',
+    tags: '',
+    hashtags: '',
+  };
   private isLoading = false;
 
   constructor(container: HTMLElement, projectId: string) {
@@ -210,6 +219,9 @@ export class ApprovalQueuePanel {
       for (const approval of pending) {
         const item = document.createElement('div');
         item.className = 'bc-aq__item bc-aq__item--pending';
+        if (approval.id === this.selectedApprovalId) {
+          item.classList.add('bc-aq__item--selected');
+        }
 
         const cbLabel = document.createElement('label');
         cbLabel.className = 'bc-aq__item-cb-label';
@@ -285,11 +297,25 @@ export class ApprovalQueuePanel {
         item.appendChild(cbLabel);
         item.appendChild(info);
         item.appendChild(actions);
+        item.addEventListener('click', (event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest('button') || target.closest('input')) return;
+          this.selectedApprovalId = approval.id;
+          this.seedDraftFromApproval(approval);
+          this.renderBody();
+        });
         list.appendChild(item);
       }
 
       section.appendChild(list);
       body.appendChild(section);
+    }
+
+    if (this.selectedApprovalId) {
+      const selected = pending.find((a) => a.id === this.selectedApprovalId) ?? null;
+      if (selected) {
+        body.appendChild(this.renderPreviewPanel(selected));
+      }
     }
 
     // Decided summary
@@ -343,6 +369,203 @@ export class ApprovalQueuePanel {
     }
   }
 
+  private seedDraftFromApproval(approval: VOApprovalEntry): void {
+    this.selectedVariantId = null;
+    this.metadataDraft = {
+      title: '',
+      description: '',
+      tags: '',
+      hashtags: '',
+    };
+
+    if (approval.type === 'metadata') {
+      const payload = approval.requestPayload ?? {};
+      this.metadataDraft = {
+        title: String(payload.title ?? payload.youtubeTitle ?? ''),
+        description: String(payload.description ?? payload.youtubeDescription ?? ''),
+        tags: Array.isArray(payload.tags) ? (payload.tags as string[]).join(', ') : String(payload.tags ?? ''),
+        hashtags: Array.isArray(payload.hashtags) ? (payload.hashtags as string[]).join(' ') : String(payload.hashtags ?? ''),
+      };
+    }
+  }
+
+  private renderPreviewPanel(approval: VOApprovalEntry): HTMLElement {
+    const panel = document.createElement('div');
+    panel.className = 'bc-aq__preview';
+
+    const header = document.createElement('div');
+    header.className = 'bc-aq__preview-header';
+    header.innerHTML = `
+      <div>
+        <div class="bc-aq__preview-title">Preview: ${approval.type}</div>
+        <div class="brain-console__detail">${approval.id}</div>
+      </div>
+      <button class="brain-console__link-button" id="bc-aq-close-preview">Close</button>
+    `;
+    panel.appendChild(header);
+
+    const content = document.createElement('div');
+    content.className = 'bc-aq__preview-content';
+    if (approval.type === 'thumbnail') {
+      content.appendChild(this.renderThumbnailPreview(approval));
+    } else if (approval.type === 'metadata') {
+      content.appendChild(this.renderMetadataPreview(approval));
+    } else {
+      const empty = document.createElement('div');
+      empty.className = 'vo-empty-state';
+      empty.textContent = 'No special preview available for this approval type.';
+      content.appendChild(empty);
+    }
+    panel.appendChild(content);
+
+    const actions = document.createElement('div');
+    actions.className = 'bc-aq__preview-actions';
+
+    const approveBtn = document.createElement('button');
+    approveBtn.className = 'brain-console__local-app-action is-enabled bc-aq__btn-approve';
+    approveBtn.textContent = 'Approve Selected';
+    approveBtn.addEventListener('click', () => {
+      approveBtn.disabled = true;
+      void this.singleDecide(approval.id, true, this.buildDecisionNote(approval)).then(() => this.loadApprovals());
+    });
+
+    const rejectBtn = document.createElement('button');
+    rejectBtn.className = 'brain-console__local-app-action bc-aq__btn-reject';
+    rejectBtn.textContent = 'Reject';
+    rejectBtn.addEventListener('click', () => {
+      rejectBtn.disabled = true;
+      void this.singleDecide(approval.id, false, this.buildDecisionNote(approval)).then(() => this.loadApprovals());
+    });
+
+    actions.appendChild(approveBtn);
+    actions.appendChild(rejectBtn);
+    panel.appendChild(actions);
+
+    panel.querySelector('#bc-aq-close-preview')?.addEventListener('click', () => {
+      this.selectedApprovalId = null;
+      this.selectedVariantId = null;
+      this.renderBody();
+    });
+
+    return panel;
+  }
+
+  private renderThumbnailPreview(approval: VOApprovalEntry): HTMLElement {
+    const wrap = document.createElement('div');
+    const variants = this.extractVariants(approval);
+
+    wrap.innerHTML = `
+      <div class="bc-aq__preview-section">
+        <div class="bc-aq__preview-section-label">Thumbnail variants</div>
+        <div class="bc-aq__variant-grid" id="bc-aq-thumbnail-variants"></div>
+      </div>
+    `;
+
+    const grid = wrap.querySelector('#bc-aq-thumbnail-variants') as HTMLElement | null;
+    if (!grid) return wrap;
+
+    variants.forEach((variant, index) => {
+      const card = document.createElement('button');
+      const isSelected = this.selectedVariantId === variant.id || (!this.selectedVariantId && index === 0);
+      if (!this.selectedVariantId && index === 0) {
+        this.selectedVariantId = variant.id;
+      }
+      card.type = 'button';
+      card.className = `bc-aq__variant-card${isSelected ? ' bc-aq__variant-card--selected' : ''}`;
+      card.innerHTML = `
+        <div class="bc-aq__variant-media">${variant.previewUrl ? `<img src="${variant.previewUrl}" alt="${variant.label} preview" />` : `<div class="bc-aq__variant-placeholder">${variant.label}</div>`}</div>
+        <div class="bc-aq__variant-meta">
+          <div class="bc-aq__variant-label">${variant.label}</div>
+          <div class="brain-console__detail">${variant.id}</div>
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        this.selectedVariantId = variant.id;
+        this.renderBody();
+      });
+      grid.appendChild(card);
+    });
+
+    return wrap;
+  }
+
+  private renderMetadataPreview(approval: VOApprovalEntry): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'bc-aq__metadata-preview';
+    wrap.innerHTML = `
+      <div class="bc-aq__preview-section">
+        <div class="bc-aq__preview-section-label">Edit metadata before approval</div>
+        <label class="bc-aq__field">
+          <span>Title</span>
+          <input id="bc-aq-title" type="text" value="${this.escapeAttr(this.metadataDraft.title)}" />
+        </label>
+        <label class="bc-aq__field">
+          <span>Description</span>
+          <textarea id="bc-aq-description" rows="4">${this.metadataDraft.description}</textarea>
+        </label>
+        <label class="bc-aq__field">
+          <span>Tags</span>
+          <input id="bc-aq-tags" type="text" value="${this.escapeAttr(this.metadataDraft.tags)}" placeholder="comma-separated" />
+        </label>
+        <label class="bc-aq__field">
+          <span>Hashtags</span>
+          <input id="bc-aq-hashtags" type="text" value="${this.escapeAttr(this.metadataDraft.hashtags)}" placeholder="#tag #tag" />
+        </label>
+      </div>
+    `;
+
+    const sync = () => {
+      this.metadataDraft = {
+        title: (wrap.querySelector('#bc-aq-title') as HTMLInputElement | null)?.value ?? '',
+        description: (wrap.querySelector('#bc-aq-description') as HTMLTextAreaElement | null)?.value ?? '',
+        tags: (wrap.querySelector('#bc-aq-tags') as HTMLInputElement | null)?.value ?? '',
+        hashtags: (wrap.querySelector('#bc-aq-hashtags') as HTMLInputElement | null)?.value ?? '',
+      };
+    };
+
+    wrap.querySelectorAll('input, textarea').forEach((el) => {
+      el.addEventListener('input', sync);
+    });
+
+    return wrap;
+  }
+
+  private extractVariants(approval: VOApprovalEntry): Array<{ id: string; label: string; previewUrl?: string }> {
+    const payload = approval.requestPayload ?? {};
+    const rawVariants = Array.isArray(payload.variants) ? payload.variants as Array<Record<string, unknown>> : [];
+    if (rawVariants.length > 0) {
+      return rawVariants.map((variant, index) => ({
+        id: String(variant.id ?? `variant-${index + 1}`),
+        label: String(variant.label ?? variant.name ?? `Variant ${index + 1}`),
+        previewUrl: typeof variant.previewUrl === 'string' ? variant.previewUrl : undefined,
+      }));
+    }
+
+    const baseLabel = approval.type === 'thumbnail' ? 'Thumbnail' : 'Variant';
+    return [
+      { id: 'variant-a', label: `${baseLabel} A` },
+      { id: 'variant-b', label: `${baseLabel} B` },
+    ];
+  }
+
+  private buildDecisionNote(approval: VOApprovalEntry): string | undefined {
+    if (approval.type === 'thumbnail' && this.selectedVariantId) {
+      return `selected_variant:${this.selectedVariantId}`;
+    }
+    if (approval.type === 'metadata') {
+      return JSON.stringify(this.metadataDraft);
+    }
+    return undefined;
+  }
+
+  private escapeAttr(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('"', '&quot;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
+  }
+
   private async bulkDecide(ids: string[], approved: boolean): Promise<boolean> {
     try {
       const res = await fetch(`${BASE_URL}/api/video-orchestrator/approvals/bulk-decide`, {
@@ -357,11 +580,13 @@ export class ApprovalQueuePanel {
     }
   }
 
-  private async singleDecide(approvalId: string, approved: boolean): Promise<void> {
+  private async singleDecide(approvalId: string, approved: boolean, note?: string): Promise<void> {
     const action = approved ? 'approve' : 'reject';
     try {
       await fetch(`${BASE_URL}/api/video-orchestrator/approvals/${encodeURIComponent(approvalId)}/${action}`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ note }),
       });
     } catch {
       // Silently absorb — reload will show updated state

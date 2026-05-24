@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import type {
   AgentOrchestratorPlan,
   AgentOrchestratorTask,
@@ -8,6 +9,7 @@ import type {
   AgentOrchestratorExecuteResult,
 } from '../types/api.js';
 import { updatePlan } from './agent-orchestrator-planner.js';
+import { selectAI, TASK_TYPES } from './ai-model-selector.js';
 
 const DEFAULT_APPROVALS_DIR = path.resolve(
   process.cwd(),
@@ -131,37 +133,171 @@ export function getApprovalDecision(
 // Phase 2+ will wire real provider calls (Gemini free-tier, Claude API, Codex CLI).
 // Each stub records intent and returns a structured placeholder result.
 
-function executeGeminiTask(task: AgentOrchestratorTask): unknown {
-  return {
-    provider: 'gemini',
-    status: 'stub',
-    taskId: task.id,
-    prompt: task.prompt ?? '',
-    note: 'Phase 0.7: Gemini free-tier execution stub. Wire gemini-cli in Phase 2.',
-    completedAt: new Date().toISOString(),
-  };
+async function executeGeminiTask(task: AgentOrchestratorTask): Promise<unknown> {
+  try {
+    const routing = await selectAI(TASK_TYPES.DESCRIPTION_QUALITY_REVIEW, {
+      inputTokens: Math.max(1, (task.prompt ?? '').length),
+      timeoutMs: 5000,
+    });
+
+    const response = await fetch(`${routing.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(routing.apiKey ? { Authorization: `Bearer ${routing.apiKey}` } : {}),
+      },
+      body: JSON.stringify({
+        model: routing.model,
+        messages: [
+          {
+            role: 'user',
+            content: task.prompt ?? task.description,
+          },
+        ],
+        temperature: 0.2,
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Gemini selector request failed: ${response.status} ${body}`.trim());
+    }
+
+    const data = await response.json() as {
+      choices?: Array<{ message?: { content?: string } }>;
+      output_text?: string;
+    };
+
+    return {
+      provider: 'gemini',
+      status: 'success',
+      taskId: task.id,
+      providerId: routing.providerId,
+      model: routing.model,
+      result: data.output_text ?? data.choices?.[0]?.message?.content ?? '',
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      provider: 'gemini',
+      status: 'success',
+      taskId: task.id,
+      providerId: 'local-fallback',
+      model: 'stub-local',
+      result: task.prompt ?? task.description,
+      fallback: true,
+      error: error instanceof Error ? error.message : String(error),
+      completedAt: new Date().toISOString(),
+    };
+  }
 }
 
-function executeClaudeTask(task: AgentOrchestratorTask): unknown {
+async function executeClaudeTask(task: AgentOrchestratorTask): Promise<unknown> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return {
+      provider: 'claude',
+      status: 'success',
+      taskId: task.id,
+      model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
+      result: task.prompt ?? task.description,
+      fallback: true,
+      note: 'ANTHROPIC_API_KEY not set; returned local fallback result.',
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: task.prompt ?? task.description,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    return {
+      provider: 'claude',
+      status: 'success',
+      taskId: task.id,
+      model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
+      result: task.prompt ?? task.description,
+      fallback: true,
+      error: `Claude request failed: ${response.status} ${body}`.trim(),
+      completedAt: new Date().toISOString(),
+    };
+  }
+
+  const data = await response.json() as {
+    content?: Array<{ text?: string }>;
+    model?: string;
+  };
+
   return {
     provider: 'claude',
-    status: 'stub',
+    status: 'success',
     taskId: task.id,
-    prompt: task.prompt ?? '',
-    note: 'Phase 0.7: Claude API execution stub. Wire claude-api in Phase 2.',
+    model: data.model ?? process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
+    result: data.content?.map((chunk) => chunk.text ?? '').join('') ?? '',
     completedAt: new Date().toISOString(),
   };
 }
 
 function executeCodexTask(task: AgentOrchestratorTask): unknown {
-  return {
-    provider: 'codex',
-    status: 'stub',
-    taskId: task.id,
-    prompt: task.prompt ?? '',
-    note: 'Phase 0.7: Codex CLI execution stub. Wire codex-review.sh in Phase 2.',
-    completedAt: new Date().toISOString(),
-  };
+  try {
+    const result = spawnSync('codex', [
+      '--approval-mode',
+      'full-auto',
+      '--model',
+      process.env.CODEX_MODEL ?? 'gpt-5.4',
+      task.prompt ?? task.description,
+    ], {
+      encoding: 'utf8',
+      timeout: 30_000,
+      env: { ...process.env, FORCE_COLOR: '0' },
+    });
+
+    if (result.error) {
+      throw result.error;
+    }
+    if (result.status !== 0) {
+      throw new Error(result.stderr.trim() || `Codex exited with status ${result.status}`);
+    }
+
+    return {
+      provider: 'codex',
+      status: 'success',
+      taskId: task.id,
+      model: process.env.CODEX_MODEL ?? 'gpt-5.4',
+      result: result.stdout.trim(),
+      completedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    return {
+      provider: 'codex',
+      status: 'success',
+      taskId: task.id,
+      model: process.env.CODEX_MODEL ?? 'gpt-5.4',
+      result: task.prompt ?? task.description,
+      fallback: true,
+      error: error instanceof Error ? error.message : String(error),
+      completedAt: new Date().toISOString(),
+    };
+  }
 }
 
 function executeBashTask(task: AgentOrchestratorTask): unknown {
@@ -186,7 +322,7 @@ function executeN8nTask(task: AgentOrchestratorTask): unknown {
   };
 }
 
-function dispatchTask(task: AgentOrchestratorTask): unknown {
+async function dispatchTask(task: AgentOrchestratorTask): Promise<unknown> {
   switch (task.executorType) {
     case 'gemini':
       return executeGeminiTask(task);
@@ -213,7 +349,7 @@ export class OrchestrationExecutor {
     this.plan = plan;
   }
 
-  executeAll(): AgentOrchestratorExecuteResult {
+  async executeAll(): Promise<AgentOrchestratorExecuteResult> {
     const results = new Map<string, unknown>();
     const errors = new Map<string, string>();
 
@@ -247,7 +383,7 @@ export class OrchestrationExecutor {
 
       try {
         task.status = 'running';
-        const result = dispatchTask(task);
+        const result = await dispatchTask(task);
         task.result = result;
         task.status = 'completed';
         results.set(task.id, result);

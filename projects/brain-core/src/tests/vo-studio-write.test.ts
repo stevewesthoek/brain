@@ -349,8 +349,8 @@ test('approveThumbnailRequest approval has unique IDs', () => {
   );
 });
 
-test('generateMetadataRequest accepts valid metadata request', () => {
-  const result = generateMetadataRequest({
+test('generateMetadataRequest accepts valid metadata request', async () => {
+  const result = await generateMetadataRequest({
     projectId: 'project-123',
     contentItemId: 'content-abc123',
   });
@@ -365,8 +365,8 @@ test('generateMetadataRequest accepts valid metadata request', () => {
   assert.equal(result.preview!.job!.status, 'pending_approval');
 });
 
-test('generateMetadataRequest accepts optional templateId', () => {
-  const result = generateMetadataRequest({
+test('generateMetadataRequest accepts optional templateId', async () => {
+  const result = await generateMetadataRequest({
     projectId: 'project-123',
     contentItemId: 'content-abc123',
     templateId: 'default-template',
@@ -376,8 +376,8 @@ test('generateMetadataRequest accepts optional templateId', () => {
   assert.ok(result.preview);
 });
 
-test('generateMetadataRequest rejects missing projectId', () => {
-  const result = generateMetadataRequest({
+test('generateMetadataRequest rejects missing projectId', async () => {
+  const result = await generateMetadataRequest({
     projectId: '',
     contentItemId: 'content-abc123',
   });
@@ -386,8 +386,8 @@ test('generateMetadataRequest rejects missing projectId', () => {
   assert.match(result.error!, /projectId is required/);
 });
 
-test('generateMetadataRequest rejects missing contentItemId', () => {
-  const result = generateMetadataRequest({
+test('generateMetadataRequest rejects missing contentItemId', async () => {
+  const result = await generateMetadataRequest({
     projectId: 'project-123',
     contentItemId: '',
   });
@@ -396,13 +396,13 @@ test('generateMetadataRequest rejects missing contentItemId', () => {
   assert.match(result.error!, /contentItemId is required/);
 });
 
-test('generateMetadataRequest job has unique IDs', () => {
-  const result1 = generateMetadataRequest({
+test('generateMetadataRequest job has unique IDs', async () => {
+  const result1 = await generateMetadataRequest({
     projectId: 'project-123',
     contentItemId: 'content-abc123',
   });
 
-  const result2 = generateMetadataRequest({
+  const result2 = await generateMetadataRequest({
     projectId: 'project-123',
     contentItemId: 'content-abc123',
   });

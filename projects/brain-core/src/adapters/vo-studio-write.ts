@@ -1,5 +1,6 @@
 import { requestAction } from './actions.js';
 import { createVOApproval } from './vo-studio-approval-store.js';
+import { generateVideoOrchestratorMetadata } from './video-orchestrator-metadata-generator.js';
 import type { ContentItem } from '../types/vo-studio.js';
 
 export interface CreateContentItemRequest {
@@ -359,13 +360,25 @@ export interface GenerateMetadataResponse {
       contentItemId: string;
       status: string;
     };
+    metadata?: {
+      youtubeTitle: string;
+      youtubeDescription: string;
+      youtubeTags: string[];
+      tiktokCaption: string;
+      instagramCaption: string;
+      hashtags: string[];
+      platforms: Record<string, { title: string; description: string; tags: string[]; hashtags: string[] }>;
+      source: 'ai' | 'fallback';
+      provider?: string;
+      model?: string;
+    };
   };
   error?: string;
 }
 
-export function generateMetadataRequest(
+export async function generateMetadataRequest(
   request: GenerateMetadataRequest,
-): GenerateMetadataResponse {
+): Promise<GenerateMetadataResponse> {
   const errors: string[] = [];
 
   if (!request.projectId?.trim()) {
@@ -385,10 +398,6 @@ export function generateMetadataRequest(
   // Phase 1W: create a VO-specific approval record before committing the write.
   const metaPayload: Record<string, unknown> = { contentItemId: request.contentItemId };
   if (request.templateId !== undefined) metaPayload.templateId = request.templateId;
-  const voApproval = createVOApproval('metadata', request.projectId, metaPayload);
-
-  const jobId = `job-metadata-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
   const result = requestAction('custom-metadata-generate');
 
   if (!result.accepted) {
@@ -397,6 +406,19 @@ export function generateMetadataRequest(
       error: result.message,
     };
   }
+
+  const metadata = await generateVideoOrchestratorMetadata({
+    projectId: request.projectId,
+    contentItemId: request.contentItemId,
+    ...(request.templateId !== undefined ? { templateId: request.templateId } : {}),
+  });
+
+  const voApproval = createVOApproval('metadata', request.projectId, {
+    ...metaPayload,
+    generatedMetadata: metadata,
+  });
+
+  const jobId = `job-metadata-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   return {
     ok: true,
@@ -410,6 +432,9 @@ export function generateMetadataRequest(
         type: 'metadata',
         contentItemId: request.contentItemId,
         status: 'pending_approval',
+      },
+      metadata: {
+        ...metadata,
       },
     },
   };

@@ -101,6 +101,7 @@ import {
 } from '../adapters/video-orchestrator-studio-model.js';
 import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
 import { checkAndEscalateExpiredApprovals, decideVOApproval, readPendingVOApprovals, readAllVOApprovals, getVOApprovalsPath } from '../adapters/vo-studio-approval-store.js';
+import { recordPublishOutcome, recordVideoMetrics, summarizeFeedback } from '../adapters/video-orchestrator-analytics-feedback.js';
 import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest, rotateWebhookSecretRequest, disableWebhookRequest } from '../adapters/vo-studio-orchestration.js';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics, readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit, readWebhookSecurityAudit, readWebhookStatus } from '../adapters/vo-studio-orchestration.js';
@@ -1928,6 +1929,7 @@ export async function routeRequest(
           createdAt: r.requestedAt,
           expiresAt: r.expiresAt,
           decisionReason: r.decisionNote,
+          requestPayload: r.requestPayload,
         }));
         sendJson(response, 200, { ok: true, approvals, count: approvals.length });
         return;
@@ -2018,7 +2020,7 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     }
 
     const executor = new OrchestrationExecutor(plan);
-    const result = executor.executeAll();
+    const result = await executor.executeAll();
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
@@ -2426,7 +2428,7 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       metaReq.templateId = body.templateId as string;
     }
 
-    const result = generateMetadataRequest(metaReq);
+    const result = await generateMetadataRequest(metaReq);
     sendJson(response, result.ok ? 202 : 400, result);
     return;
   }
@@ -2792,6 +2794,13 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/feedback')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = summarizeFeedback(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
   if (url.pathname.startsWith('/api/video-orchestrator/automation/rules')) {
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readAutomationRules(projectId);
@@ -3043,6 +3052,58 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readPipelineHealth(projectId);
     sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/analytics/publish-outcome') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const outcomeReq: {
+      projectId: string;
+      packageId: string;
+      contentItemId?: string;
+      thumbnailVariant?: string;
+      metadataVariant?: string;
+      status: 'succeeded' | 'failed';
+      platform?: string;
+      note?: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      packageId: (body?.packageId as string) ?? '',
+      status: (body?.status as 'succeeded' | 'failed') ?? 'succeeded',
+    };
+    if (body?.contentItemId !== undefined) outcomeReq.contentItemId = body.contentItemId as string;
+    if (body?.thumbnailVariant !== undefined) outcomeReq.thumbnailVariant = body.thumbnailVariant as string;
+    if (body?.metadataVariant !== undefined) outcomeReq.metadataVariant = body.metadataVariant as string;
+    if (body?.platform !== undefined) outcomeReq.platform = body.platform as string;
+    if (body?.note !== undefined) outcomeReq.note = body.note as string;
+    const result = recordPublishOutcome(outcomeReq);
+    sendJson(response, 202, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/analytics/video-metrics') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const metricsReq: {
+      projectId: string;
+      packageId: string;
+      contentItemId?: string;
+      thumbnailVariant?: string;
+      metadataVariant?: string;
+      views24h: number;
+      ctr: number;
+      engagementRate: number;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      packageId: (body?.packageId as string) ?? '',
+      views24h: Number(body?.views24h ?? 0),
+      ctr: Number(body?.ctr ?? 0),
+      engagementRate: Number(body?.engagementRate ?? 0),
+    };
+    if (body?.contentItemId !== undefined) metricsReq.contentItemId = body.contentItemId as string;
+    if (body?.thumbnailVariant !== undefined) metricsReq.thumbnailVariant = body.thumbnailVariant as string;
+    if (body?.metadataVariant !== undefined) metricsReq.metadataVariant = body.metadataVariant as string;
+    const result = recordVideoMetrics(metricsReq);
+    sendJson(response, 202, result);
     return;
   }
 

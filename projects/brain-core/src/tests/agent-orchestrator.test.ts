@@ -274,14 +274,14 @@ test('dependenciesComplete returns true for task with no dependencies', () => {
 
 // ─── Executor: happy path ─────────────────────────────────────────────────────
 
-test('OrchestrationExecutor executes all tasks in order (no gates)', () => {
+test('OrchestrationExecutor executes all tasks in order (no gates)', async () => {
   cleanupDirs();
   const plan = planProjectExecution('analyze the system', '');
   // Remove all approval gates for this test
   plan.approvalGates = [];
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, true);
@@ -294,7 +294,7 @@ test('OrchestrationExecutor executes all tasks in order (no gates)', () => {
   assert.equal(ledger.every((entry) => typeof entry.timestamp === 'string'), true);
 });
 
-test('OrchestrationExecutor records completed task results in ledger', () => {
+test('OrchestrationExecutor records completed task results in ledger', async () => {
   cleanupDirs();
   const tasks: AgentOrchestratorTask[] = [
     { id: 't1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'gemini' },
@@ -312,7 +312,7 @@ test('OrchestrationExecutor records completed task results in ledger', () => {
   };
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, true);
@@ -326,7 +326,7 @@ test('OrchestrationExecutor records completed task results in ledger', () => {
 
 // ─── Executor: dependency blocking ───────────────────────────────────────────
 
-test('OrchestrationExecutor reports error when dependency references unknown task', () => {
+test('OrchestrationExecutor reports error when dependency references unknown task', async () => {
   cleanupDirs();
   // When a dependency ID is not in the task list, Kahn's algorithm treats it as
   // a cycle (unreachable node) and returns a topology error.
@@ -346,7 +346,7 @@ test('OrchestrationExecutor reports error when dependency references unknown tas
   };
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, false);
@@ -357,7 +357,7 @@ test('OrchestrationExecutor reports error when dependency references unknown tas
 
 // ─── Executor: approval gates ─────────────────────────────────────────────────
 
-test('OrchestrationExecutor blocks task at unapproved gate', () => {
+test('OrchestrationExecutor blocks task at unapproved gate', async () => {
   cleanupDirs();
   const tasks: AgentOrchestratorTask[] = [
     { id: 'task-1', description: 'Analyze', type: 'ai_analysis', dependencies: [], status: 'pending', executorType: 'gemini' },
@@ -377,7 +377,7 @@ test('OrchestrationExecutor blocks task at unapproved gate', () => {
   };
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, false);
@@ -386,7 +386,7 @@ test('OrchestrationExecutor blocks task at unapproved gate', () => {
   assert.equal((gateError?.[1] as string).includes('approval gate'), true);
 });
 
-test('OrchestrationExecutor proceeds past gate when approved', () => {
+test('OrchestrationExecutor proceeds past gate when approved', async () => {
   cleanupDirs();
   const planId = `plan-${Date.now()}`;
 
@@ -410,7 +410,7 @@ test('OrchestrationExecutor proceeds past gate when approved', () => {
   recordApprovalDecision(planId, 'gate-1', true, 'test');
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, true);
@@ -629,7 +629,7 @@ test('POST /api/agent/plan-approval returns 400 when fields missing', async () =
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 
-test('OrchestrationExecutor handles cycle gracefully without crashing', () => {
+test('OrchestrationExecutor handles cycle gracefully without crashing', async () => {
   cleanupDirs();
   const tasks: AgentOrchestratorTask[] = [
     { id: 'a', description: 'A', type: 'ai_analysis', dependencies: ['b'], status: 'pending', executorType: 'gemini' },
@@ -647,7 +647,7 @@ test('OrchestrationExecutor handles cycle gracefully without crashing', () => {
   };
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, false);
@@ -656,7 +656,7 @@ test('OrchestrationExecutor handles cycle gracefully without crashing', () => {
   assert.equal(topologyError !== undefined, true);
 });
 
-test('OrchestrationExecutor blocks downstream task when upstream is at approval gate', () => {
+test('OrchestrationExecutor blocks downstream task when upstream is at approval gate', async () => {
   cleanupDirs();
   // t1 runs, gate is blocked (no approval), t2 depends on gate so also gets blocked
   const tasks: AgentOrchestratorTask[] = [
@@ -676,7 +676,7 @@ test('OrchestrationExecutor blocks downstream task when upstream is at approval 
   };
 
   const executor = new OrchestrationExecutor(plan);
-  const result = executor.executeAll();
+  const result = await executor.executeAll();
   cleanupDirs();
 
   assert.equal(result.ok, false);

@@ -12,6 +12,9 @@ import { EventLogPanel } from './EventLogPanel.js';
 import { StudioDashboardPanel } from './StudioDashboardPanel.js';
 import { AuditLogPanel } from './AuditLogPanel.js';
 import { OperatorDashboardPanel } from './OperatorDashboardPanel.js';
+import { JobProgressPanel } from './JobProgressPanel.js';
+import { MetadataGeneratorPanel } from './MetadataGeneratorPanel.js';
+import { FeedbackLoopPanel } from './FeedbackLoopPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -33,6 +36,9 @@ export class VOShell {
   private studioPanel: StudioPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
+  private jobProgressPanel: JobProgressPanel | null = null;
+  private metadataGeneratorPanel: MetadataGeneratorPanel | null = null;
+  private feedbackLoopPanel: FeedbackLoopPanel | null = null;
   private packageStatusPanel: PackageStatusPanel | null = null;
   private publishingDashboardPanel: PublishingDashboardPanel | null = null;
   private eventLogPanel: EventLogPanel | null = null;
@@ -81,6 +87,9 @@ export class VOShell {
         <button class="vo-tab" data-tab="accounts">Accounts</button>
         <button class="vo-tab" data-tab="content">Content</button>
         <button class="vo-tab" data-tab="approvals">Approvals</button>
+        <button class="vo-tab" data-tab="jobs">Jobs</button>
+        <button class="vo-tab" data-tab="metadata">Metadata</button>
+        <button class="vo-tab" data-tab="feedback">Feedback</button>
         <button class="vo-tab" data-tab="packages">Packages</button>
         <button class="vo-tab" data-tab="publishing">Publishing</button>
         <button class="vo-tab" data-tab="history">History</button>
@@ -149,6 +158,18 @@ export class VOShell {
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
       this.approvalQueuePanel = null;
+    }
+    if (this.jobProgressPanel) {
+      this.jobProgressPanel.destroy();
+      this.jobProgressPanel = null;
+    }
+    if (this.metadataGeneratorPanel) {
+      this.metadataGeneratorPanel.destroy();
+      this.metadataGeneratorPanel = null;
+    }
+    if (this.feedbackLoopPanel) {
+      this.feedbackLoopPanel.destroy();
+      this.feedbackLoopPanel = null;
     }
     if (this.packageStatusPanel) {
       this.packageStatusPanel.destroy();
@@ -253,6 +274,45 @@ export class VOShell {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">
               <p>Select a project to view approval queue</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'jobs':
+        if (state.projectId) {
+          this.jobProgressPanel = new JobProgressPanel(this.contentContainer, state.projectId);
+          this.jobProgressPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view job progress</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'metadata':
+        if (state.projectId) {
+          this.metadataGeneratorPanel = new MetadataGeneratorPanel(this.contentContainer, state.projectId);
+          this.metadataGeneratorPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to generate metadata</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'feedback':
+        if (state.projectId) {
+          this.feedbackLoopPanel = new FeedbackLoopPanel(this.contentContainer, state.projectId);
+          this.feedbackLoopPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view feedback loop</p>
             </div>
           `;
         }
@@ -376,6 +436,15 @@ export class VOShell {
     }
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
+    }
+    if (this.jobProgressPanel) {
+      this.jobProgressPanel.destroy();
+    }
+    if (this.metadataGeneratorPanel) {
+      this.metadataGeneratorPanel.destroy();
+    }
+    if (this.feedbackLoopPanel) {
+      this.feedbackLoopPanel.destroy();
     }
     if (this.packageStatusPanel) {
       this.packageStatusPanel.destroy();
