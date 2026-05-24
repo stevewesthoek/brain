@@ -1,24 +1,43 @@
 import { VOContextBar } from './VOContextBar.js';
+import { OverviewPanel } from './OverviewPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
   BrainCoreVOStudioPlatformAccount,
   BrainCoreVOStudioPipelineProfile,
+  BrainCoreAiModelSelectorStatus,
+  BrainCoreVOStudioAnalyticsSummary,
+  BrainCoreVOAccountStatsResponse,
 } from '../../client.js';
 
 export class VOShell {
   private container: HTMLElement;
   private contextBar: VOContextBar;
+  private overviewPanel: OverviewPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
+  private contentContainer: HTMLElement | null = null;
+  private currentTab: string = 'overview';
+  private data: {
+    projects?: BrainCoreVOStudioProject[];
+    accounts?: BrainCoreVOStudioPlatformAccount[];
+    pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
+    selector?: BrainCoreAiModelSelectorStatus;
+    analytics?: BrainCoreVOStudioAnalyticsSummary;
+    accountStats?: BrainCoreVOAccountStatsResponse;
+  };
 
   constructor(container: HTMLElement, data: {
     projects?: BrainCoreVOStudioProject[];
     accounts?: BrainCoreVOStudioPlatformAccount[];
     pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
+    selector?: BrainCoreAiModelSelectorStatus;
+    analytics?: BrainCoreVOStudioAnalyticsSummary;
+    accountStats?: BrainCoreVOAccountStatsResponse;
   }) {
     this.container = container;
     this.container.classList.add('vo-shell');
+    this.data = data;
 
     // Create and mount context bar
     const barContainer = document.createElement('div');
@@ -39,48 +58,106 @@ export class VOShell {
     `;
     this.container.appendChild(tabsContainer);
 
-    const contentContainer = document.createElement('div');
-    contentContainer.className = 'vo-tab-content';
-    this.container.appendChild(contentContainer);
+    this.contentContainer = document.createElement('div');
+    this.contentContainer.className = 'vo-tab-content';
+    this.container.appendChild(this.contentContainer);
 
     // Attach tab listeners
     tabsContainer.querySelectorAll('.vo-tab').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const target = e.target as HTMLButtonElement;
-        tabsContainer.querySelectorAll('.vo-tab').forEach((b) => b.classList.remove('vo-tab--active'));
-        target.classList.add('vo-tab--active');
+        const tab = target.getAttribute('data-tab');
+        if (tab) {
+          this.switchTab(tab, tabsContainer);
+        }
       });
     });
 
     // Subscribe to context changes to update content
-    this.unsubscribe = this.ctx.subscribe(() => this.updateContent(contentContainer));
-    this.updateContent(contentContainer);
+    this.unsubscribe = this.ctx.subscribe(() => this.renderCurrentTab());
+    this.renderCurrentTab();
   }
 
-  private updateContent(contentContainer: HTMLElement): void {
+  private switchTab(tabName: string, tabsContainer: HTMLElement): void {
+    this.currentTab = tabName;
+
+    // Update active tab button
+    tabsContainer.querySelectorAll('.vo-tab').forEach((b) => b.classList.remove('vo-tab--active'));
+    tabsContainer.querySelector(`[data-tab="${tabName}"]`)?.classList.add('vo-tab--active');
+
+    // Render new tab content
+    this.renderCurrentTab();
+  }
+
+  private renderCurrentTab(): void {
+    if (!this.contentContainer) return;
+
+    // Clean up previous panel if it exists
+    if (this.overviewPanel) {
+      this.overviewPanel.destroy();
+      this.overviewPanel = null;
+    }
+
     const state = this.ctx.getState();
 
-    if (state.projectId && state.accountId) {
-      contentContainer.innerHTML = `
-        <div class="vo-selected-state">
-          <p><strong>Project:</strong> ${state.projectId}</p>
-          <p><strong>Account:</strong> ${state.accountId}</p>
-          <p><strong>Platforms:</strong> ${state.platformTargets.join(', ') || 'None selected'}</p>
-          <p><strong>Profile:</strong> ${state.pipelineProfileId || 'None'}</p>
-          <p><strong>Date Range:</strong> ${state.dateRange.startDate} to ${state.dateRange.endDate}</p>
-        </div>
-      `;
-    } else {
-      contentContainer.innerHTML = `
-        <div class="vo-empty-state">
-          <p>Select a project and account to begin</p>
-        </div>
-      `;
+    // Render based on current tab
+    switch (this.currentTab) {
+      case 'overview':
+        if (state.projectId && state.accountId) {
+          this.overviewPanel = new OverviewPanel(this.contentContainer, {
+            selector: this.data.selector,
+            analytics: this.data.analytics,
+            accountStats: this.data.accountStats,
+            accounts: this.data.accounts,
+          });
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project and account to view overview</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'pipelines':
+        this.contentContainer.innerHTML = `
+          <div class="vo-empty-state">
+            <p>Pipelines panel — coming soon</p>
+          </div>
+        `;
+        break;
+
+      case 'accounts':
+        this.contentContainer.innerHTML = `
+          <div class="vo-empty-state">
+            <p>Accounts panel — coming soon</p>
+          </div>
+        `;
+        break;
+
+      case 'content':
+        this.contentContainer.innerHTML = `
+          <div class="vo-empty-state">
+            <p>Content panel — coming soon</p>
+          </div>
+        `;
+        break;
+
+      case 'history':
+        this.contentContainer.innerHTML = `
+          <div class="vo-empty-state">
+            <p>History panel — coming soon</p>
+          </div>
+        `;
+        break;
     }
   }
 
   destroy(): void {
     this.contextBar.destroy();
+    if (this.overviewPanel) {
+      this.overviewPanel.destroy();
+    }
     if (this.unsubscribe) {
       this.unsubscribe();
     }
