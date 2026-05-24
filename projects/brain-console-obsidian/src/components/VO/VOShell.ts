@@ -6,6 +6,7 @@ import { HistoryPanel } from './HistoryPanel.js';
 import { ContentCreationPanel } from './ContentCreationPanel.js';
 import { StudioPanel } from './StudioPanel.js';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
+import { ThumbnailStudioPanel } from './ThumbnailStudioPanel.js';
 import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 import { EventLogPanel } from './EventLogPanel.js';
@@ -36,6 +37,7 @@ export class VOShell {
   private studioPanel: StudioPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
+  private thumbnailStudioPanel: ThumbnailStudioPanel | null = null;
   private jobProgressPanel: JobProgressPanel | null = null;
   private metadataGeneratorPanel: MetadataGeneratorPanel | null = null;
   private feedbackLoopPanel: FeedbackLoopPanel | null = null;
@@ -87,6 +89,7 @@ export class VOShell {
         <button class="vo-tab" data-tab="accounts">Accounts</button>
         <button class="vo-tab" data-tab="content">Content</button>
         <button class="vo-tab" data-tab="approvals">Approvals</button>
+        <button class="vo-tab" data-tab="thumbnails">Thumbnails</button>
         <button class="vo-tab" data-tab="jobs">Jobs</button>
         <button class="vo-tab" data-tab="metadata">Metadata</button>
         <button class="vo-tab" data-tab="feedback">Feedback</button>
@@ -158,6 +161,10 @@ export class VOShell {
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
       this.approvalQueuePanel = null;
+    }
+    if (this.thumbnailStudioPanel) {
+      this.thumbnailStudioPanel.destroy();
+      this.thumbnailStudioPanel = null;
     }
     if (this.jobProgressPanel) {
       this.jobProgressPanel.destroy();
@@ -274,6 +281,19 @@ export class VOShell {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">
               <p>Select a project to view approval queue</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'thumbnails':
+        if (state.projectId) {
+          this.thumbnailStudioPanel = new ThumbnailStudioPanel(this.contentContainer, state.projectId);
+          this.thumbnailStudioPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view thumbnail studio</p>
             </div>
           `;
         }
@@ -436,6 +456,9 @@ export class VOShell {
     }
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
+    }
+    if (this.thumbnailStudioPanel) {
+      this.thumbnailStudioPanel.destroy();
     }
     if (this.jobProgressPanel) {
       this.jobProgressPanel.destroy();
