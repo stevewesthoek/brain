@@ -105,6 +105,8 @@ import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHist
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit } from '../adapters/vo-studio-orchestration.js';
 import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
 import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
+import { processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest } from '../adapters/vo-studio-webhook-handler.js';
+import { readWebhookDeliveries, readPlatformEventMapping } from '../adapters/vo-studio-webhook-handler.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2627,6 +2629,82 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
   if (url.pathname.startsWith('/api/video-orchestrator/events/subscriptions')) {
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readActiveSubscriptions(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/webhooks/process') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const procReq: {
+      webhookId: string;
+      projectId: string;
+      platform: string;
+      eventType: string;
+      payload: Record<string, unknown>;
+      signature?: string;
+    } = {
+      webhookId: (body?.webhookId as string) ?? '',
+      projectId: (body?.projectId as string) ?? '',
+      platform: (body?.platform as string) ?? '',
+      eventType: (body?.eventType as string) ?? '',
+      payload: (body?.payload as Record<string, unknown>) ?? {},
+    };
+    if (body?.signature !== undefined) {
+      procReq.signature = body.signature as string;
+    }
+    const result = processWebhookEventRequest(procReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/webhooks/verify') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const verReq: {
+      webhookId: string;
+      projectId: string;
+      secret: string;
+      signature: string;
+      rawBody: string;
+    } = {
+      webhookId: (body?.webhookId as string) ?? '',
+      projectId: (body?.projectId as string) ?? '',
+      secret: (body?.secret as string) ?? '',
+      signature: (body?.signature as string) ?? '',
+      rawBody: (body?.rawBody as string) ?? '',
+    };
+    const result = verifyWebhookSignatureRequest(verReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/events/route') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const routeReq: {
+      projectId: string;
+      platform: string;
+      platformEventType: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      platform: (body?.platform as string) ?? '',
+      platformEventType: (body?.platformEventType as string) ?? '',
+    };
+    const result = routeEventRequest(routeReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/webhooks/deliveries')) {
+    const webhookId = url.searchParams.get('webhookId') ?? '';
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const result = readWebhookDeliveries(webhookId, projectId, limit);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/events/platform-mapping')) {
+    const platform = url.searchParams.get('platform') ?? '';
+    const result = readPlatformEventMapping(platform);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }

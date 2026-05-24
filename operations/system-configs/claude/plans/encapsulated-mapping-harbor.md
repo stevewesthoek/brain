@@ -1,158 +1,108 @@
-# Plan: Phase 6 — Event Processing & Real-time Updates
+# Plan: Phase 7 — Webhook Handler & Event Routing
 
 ## Context
 
-Phases 1–5 of the VO Studio framework established write operations (approval-gated mutations), read operations (analytics and queue reads), and workflow automation (rules, scheduling, webhooks). Phase 6 closes the feedback loop: events that fire from those operations need to be captured, read back, acknowledged, and displayed in the UI. This phase adds event emission, event history reads, subscription management, an EventLogPanel UI component, and test coverage — all following the established patterns exactly.
+Phase 6 added event emission and subscription management. Phase 7 completes the inbound side: processing webhook deliveries, validating signatures, and routing platform-specific event types to internal VO Studio event types. This closes the loop between outbound webhook registration (Phase 5) and the event stream (Phase 6). All operations follow the same approval-gated adapter pattern as previous phases — no public endpoint exposure needed.
 
 ---
 
 ## What changes
 
-### 1. New adapter: `projects/brain-core/src/adapters/vo-studio-events.ts`
+### 1. New adapter: `projects/brain-core/src/adapters/vo-studio-webhook-handler.ts`
 
-**Write functions:**
+**Self-contained types** (inline, no external imports). Only imports: `import { requestAction } from './actions.js'`.
 
-- `emitEventRequest({ projectId, type, payload, actor })` — emits a custom event for a project. Validates all 4 fields required. Routes through `custom-event-emit`. Preview returns `{ event: { id, projectId, type, payload, actor, at, status: 'queued' } }`.
-- `acknowledgeEventRequest({ eventId, projectId })` — marks an event acknowledged. Validates both fields. Routes through `custom-event-acknowledge`. Preview returns `{ event: { id, projectId, acknowledgedAt, status: 'acknowledged' } }`.
-- `subscribeToEventsRequest({ projectId, eventTypes, webhookId? })` — creates an event subscription. Validates projectId and non-empty eventTypes array. Routes through `custom-event-subscribe`. Generates unique `subscriptionId`. Preview returns `{ subscription: { id, projectId, eventTypes, webhookId?, status: 'active', createdAt } }`.
+**Write functions (3):**
 
-**Read functions:**
+- `processWebhookEventRequest({ webhookId, projectId, platform, eventType, payload, signature? })`
+  - Validates `webhookId`, `projectId`, `platform`, `eventType`, `payload` (must be non-null object)
+  - Routes: `'custom-webhook-receive'`
+  - Generates unique `deliveryId` (`delivery-${Date.now().toString(36)}-${random}`)
+  - Preview: `{ delivery: { id, webhookId, projectId, platform, eventType, payload, receivedAt, status: 'received' } }`
+  - Optional `signature` — only added to preview when provided
 
-- `readEventStream(projectId, limit = 50, since?)` — list recent events. Validates projectId, limit 1–500. Returns `{ ok, events: [], count: 0, projectId }`.
-- `readEventHistory(projectId, eventType?, limit = 50)` — filtered history. Validates projectId, limit 1–500. Returns `{ ok, events: [], count: 0, projectId }`.
-- `readActiveSubscriptions(projectId)` — list subscriptions. Validates projectId. Returns `{ ok, subscriptions: [], count: 0, projectId }`.
+- `verifyWebhookSignatureRequest({ webhookId, projectId, secret, signature, rawBody })`
+  - Validates all 5 fields required (non-empty strings)
+  - Routes: `'custom-webhook-verify'`
+  - Preview: `{ verification: { webhookId, projectId, status: 'verified', verifiedAt } }`
 
-**Inline types** (same self-contained pattern as `vo-studio-orchestration.ts` — no external type imports):
+- `routeEventRequest({ projectId, platform, platformEventType })`
+  - Validates `projectId`, `platform`, `platformEventType`
+  - Routes: `'custom-event-route'`
+  - Generates deterministic `internalEventType` by mapping platform prefixes:
+    - `youtube.*` → `publish.*`
+    - `tiktok.*` → `publish.*`
+    - `approval.*` → `approval.*`
+    - Any other → `package.*` (fallback)
+  - Preview: `{ routing: { projectId, platform, platformEventType, internalEventType, status: 'mapped', mappedAt } }`
+
+**Read functions (2):**
+
+- `readWebhookDeliveries(webhookId, projectId, limit = 50)`
+  - Validates `webhookId`, `projectId`; limit 1–500
+  - Returns: `{ ok, deliveries: [], count: 0, webhookId, projectId }`
+
+- `readPlatformEventMapping(platform)`
+  - Validates `platform` (non-empty)
+  - Returns: `{ ok, mappings: [], count: 0, platform }`
+
+---
+
+### 2. Routes in `projects/brain-core/src/api/routes.ts`
+
+Add import lines after the event imports (lines 106-107):
 ```typescript
-type EmitEventRequest = { projectId: string; type: string; payload: Record<string,unknown>; actor: string }
-type AcknowledgeEventRequest = { eventId: string; projectId: string }
-type SubscribeToEventsRequest = { projectId: string; eventTypes: string[]; webhookId?: string }
-// Response types: { ok, approval?, preview?, error? } for writes; { ok, events/subscriptions, count, projectId?, error? } for reads
+import { processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest } from '../adapters/vo-studio-webhook-handler.js';
+import { readWebhookDeliveries, readPlatformEventMapping } from '../adapters/vo-studio-webhook-handler.js';
 ```
 
-Only import: `import { requestAction } from './actions.js';`
+Add 5 routes between the last event route and `/research/video-analyze`:
+
+**POST (exact `===` match, 202/400):**
+- `/api/video-orchestrator/webhooks/process` — body: `{ webhookId, projectId, platform, eventType, payload, signature? }` — conditional `signature`
+- `/api/video-orchestrator/webhooks/verify` — body: `{ webhookId, projectId, secret, signature, rawBody }`
+- `/api/video-orchestrator/events/route` — body: `{ projectId, platform, platformEventType }`
+
+**GET (`.startsWith()` match, 200/400):**
+- `/api/video-orchestrator/webhooks/deliveries?webhookId=X&projectId=Y&limit=N`
+- `/api/video-orchestrator/events/platform-mapping?platform=X`
 
 ---
 
-### 2. New routes in `projects/brain-core/src/api/routes.ts`
+### 3. Test file: `projects/brain-core/src/tests/vo-studio-webhook-handler.test.ts`
 
-Add two import lines (alongside existing orchestration imports):
-```typescript
-import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
-import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
-```
+~35 tests, `node:test` + `node:assert/strict`, flat `test()` blocks:
 
-Add 6 routes (3 POST, 3 GET) following exact existing patterns:
+**Write tests (~22):**
 
-**POST (exact `===` match, 202 on success / 400 on error):**
-- `/api/video-orchestrator/events/emit` — body: `{ projectId, type, payload, actor }`
-- `/api/video-orchestrator/events/acknowledge` — body: `{ eventId, projectId }`
-- `/api/video-orchestrator/events/subscribe` — body: `{ projectId, eventTypes[], webhookId? }` — use conditional assignment for optional `webhookId`
+`processWebhookEventRequest` (7 tests):
+- Valid case: `ok`, `approval.status === 'pending'`, `preview.delivery.status === 'received'`, `preview.delivery.webhookId`/`.platform`/`.eventType` echoed
+- Missing `webhookId`, `projectId`, `platform`, `eventType` → error regex
+- Missing `payload` (null) → `/payload is required/`
+- Unique delivery IDs (two calls)
 
-**GET (`.startsWith()` match, 200 on success / 400 on error):**
-- `/api/video-orchestrator/events/stream?projectId=X&limit=N&since=Y` — clamp limit inline, pass `since ?? undefined`
-- `/api/video-orchestrator/events/history?projectId=X&eventType=Z&limit=N` — clamp limit, pass `eventType ?? undefined`
-- `/api/video-orchestrator/events/subscriptions?projectId=X`
+`verifyWebhookSignatureRequest` (6 tests):
+- Valid case: `ok`, `preview.verification.status === 'verified'`
+- Missing each of: `webhookId`, `projectId`, `secret`, `signature`, `rawBody` → error regex
 
----
+`routeEventRequest` (4 tests):
+- Valid case with youtube platform: `ok`, `preview.routing.internalEventType` contains `publish`
+- Missing `projectId`, `platform`, `platformEventType` → error regex
 
-### 3. New test file: `projects/brain-core/src/tests/vo-studio-events.test.ts`
+Uniqueness (2 tests):
+- `processWebhookEventRequest` generates unique delivery IDs
+- `routeEventRequest` maps `tiktok.*` → `publish.*` variant
 
-~30 tests using `node:test` + `node:assert/strict`, flat `test()` blocks:
+**Read tests (~13):**
 
-**Write tests (~18):**
-- `emitEventRequest`: valid case (ok, approval, preview.event.status === 'queued'), each required field empty rejection, payload shape echoed
-- `acknowledgeEventRequest`: valid case (ok, preview.event.status === 'acknowledged'), missing eventId, missing projectId
-- `subscribeToEventsRequest`: valid case (ok, preview.subscription.status === 'active'), missing projectId, empty eventTypes, with webhookId echoed, unique subscriptionId across 2 calls
+`readWebhookDeliveries` (5 tests):
+- Valid case: `ok`, `count === 0`, `deliveries === []`, both IDs echoed
+- Missing `webhookId`, missing `projectId`
+- Limit below 1, limit above 500
 
-**Read tests (~12):**
-- `readEventStream`: valid case (ok, count 0, empty events, projectId echoed), missing projectId, limit below 1, limit above 500, accepts valid limit
-- `readEventHistory`: valid case, missing projectId, optional eventType accepted when provided
-- `readActiveSubscriptions`: valid case, missing projectId
-
----
-
-### 4. New UI component: `projects/brain-console-obsidian/src/components/VO/EventLogPanel.ts`
-
-Constructor: `(container: HTMLElement, projectId: string)`
-
-**Fields:**
-```typescript
-private refreshInterval: number | null = null;
-private eventTypeFilter: string = '';
-```
-
-**Lifecycle** (`initialize()` / `destroy()`):
-```typescript
-async initialize(): Promise<void> {
-  this.render();
-  await this.loadEvents();
-  this.startAutoRefresh();        // 15-second interval
-}
-destroy(): void {
-  if (this.refreshInterval) clearInterval(this.refreshInterval);
-  this.container.innerHTML = '';
-}
-```
-
-**Render layout:**
-- Header: "Event Log" + filter dropdown (All / package.* / approval.* / publish.* / webhook.*) + Refresh button
-- Metrics row: total events, last event timestamp, active subscriptions count
-- Events table: columns `Type | Actor | Timestamp | Status | Payload preview`
-- Empty state: "No events recorded yet"
-- Loading/error states
-
-**Fetch pattern** — native `fetch` with relative URLs (same as `ApprovalQueuePanel`/`PublishingDashboardPanel`):
-```typescript
-const res = await fetch(`/api/video-orchestrator/events/stream?projectId=${this.projectId}&limit=50${filter}`);
-const data = await res.json() as { ok: boolean; events?: EventEntry[]; error?: string };
-```
-
----
-
-### 5. Modify VOShell: `projects/brain-console-obsidian/src/components/VO/VOShell.ts`
-
-1. Add import: `import { EventLogPanel } from './EventLogPanel.js';`
-2. Add field: `private eventLogPanel: EventLogPanel | null = null;`
-3. Add tab button to HTML string: `<button class="vo-tab" data-tab="events">Events</button>`
-4. Add teardown guard in `renderCurrentTab()` (before the switch):
-   ```typescript
-   if (this.eventLogPanel) { this.eventLogPanel.destroy(); this.eventLogPanel = null; }
-   ```
-5. Add switch case:
-   ```typescript
-   case 'events':
-     if (state.projectId) {
-       this.eventLogPanel = new EventLogPanel(this.contentContainer, state.projectId);
-       this.eventLogPanel.initialize();
-     } else {
-       this.contentContainer.innerHTML = `<div class="vo-empty-state"><p>Select a project to view event log</p></div>`;
-     }
-     break;
-   ```
-6. Add null-guard in `destroy()`:
-   ```typescript
-   if (this.eventLogPanel) { this.eventLogPanel.destroy(); }
-   ```
-
----
-
-### 6. Export from index: `projects/brain-console-obsidian/src/components/VO/index.ts`
-
-Add: `export { EventLogPanel } from './EventLogPanel.js';`
-
----
-
-### 7. CSS additions in `projects/brain-console-obsidian/styles.css`
-
-~100 lines for EventLogPanel:
-- `.vo-event-log` container
-- `.vo-event-filter-bar` with dropdown + refresh button
-- `.vo-event-table` — standard table with `border-collapse`, alternating row tints
-- `.vo-event-type-badge` with color variants per event category (package/approval/publish/webhook)
-- `.vo-event-payload-preview` — truncated monospace, expands on click
-- `.vo-event-status-queued`, `.vo-event-status-acknowledged` badges
-- Reuse existing `.vo-empty-state`, `.vo-loading`, `.vo-error` classes
+`readPlatformEventMapping` (3 tests):
+- Valid case: `ok`, `mappings` is array, `platform` echoed
+- Missing platform → error regex
 
 ---
 
@@ -160,14 +110,8 @@ Add: `export { EventLogPanel } from './EventLogPanel.js';`
 
 ```bash
 # From projects/brain-core/
-npm test                          # all tests must pass including new vo-studio-events suite
-npx tsc --noEmit                  # no TypeScript errors
-
-# From projects/brain-console-obsidian/
-npm run build && npm run package && npm run install:active-vault
-pkill -x "Obsidian" && sleep 2 && open -a Obsidian
-# → Open Brain Console → VO Studio → select a project → click "Events" tab → see EventLogPanel
+npm test             # all tests must pass including new webhook-handler suite
+npx tsc --noEmit     # no TypeScript errors
 ```
 
-**Promise/destructuring alignment check** (run after any view.ts change):
-If `EventLogPanel` is wired into the main snapshot load in `view.ts`, run the alignment check. If the panel only uses independent `fetch` calls (preferred), no snapshot change is needed and the alignment check is not required.
+No UI changes needed for Phase 7 — this is a pure server-side adapter/routing layer. The EventLogPanel from Phase 6 will surface routed events naturally when the event stream is populated.
