@@ -26,7 +26,7 @@
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
 | Sprint 4 — SEO Metadata | Phase 4 | ✅ Complete (UI carry-over) |
 | Sprint 5 — Analytics | Phase 5 | ✅ Complete (UI carry-over) |
-| Sprint 6 — Approval-Gated Studio Writes | Phase 1W | 🔲 After read-only Console shell |
+| Sprint 6 — Approval-Gated Studio Writes | Phase 1W | ⏳ In progress |
 | Sprint 7 — Multi-Platform | Phase 6 | 🔲 Future |
 | Sprint 8 — Hardening | Phase 7 | 🔲 Future |
 
@@ -691,6 +691,64 @@ Show:
 - `GET /api/agent/capabilities` returns the same normalized registry.
 - A dry-run agent plan can be created, recorded, resumed, and inspected.
 - No autonomous file write, deploy, DNS, DB, credential, or destructive operation is possible without an approval record.
+
+---
+
+## Sprint 6: Approval-Gated Studio Writes (Phase 1W) ⏳
+
+**Purpose:** Add controlled write actions to Brain Console, one at a time, with explicit approval and idempotency.
+
+**Boundary:** Each write action is a Brain Core adapter, route, and tests only. Brain Console UI is a separate task per action.
+
+### Task 1W-A — Create Content Item ✅
+
+**Scope:** Small, self-contained Brain Core write. Validation, approval routing, unique ID generation.
+
+**Files:**
+- Add `projects/brain-core/src/adapters/vo-studio-write.ts`
+- Add `projects/brain-core/src/tests/vo-studio-write.test.ts`
+- Update `projects/brain-core/src/api/routes.ts` (add POST route)
+
+**Implement:**
+- Export `createContentItemRequest()` function
+- Input: projectId, title, description, sourceAudioPath, backgroundImagePath
+- Validate: projectId, title, sourceAudioPath, backgroundImagePath required
+- Output: approval summary + content item preview
+- Route request through existing approval system with kind `custom-content-item-create`
+- Generate unique content item IDs with timestamp + random suffix
+
+**Tests:**
+- ✅ Accepts valid input and returns approval preview
+- ✅ Rejects missing projectId
+- ✅ Rejects missing title  
+- ✅ Rejects missing sourceAudioPath
+- ✅ Rejects missing backgroundImagePath
+- ✅ Allows empty description
+- ✅ Preview has correct structure and defaults
+- ✅ Generated IDs are unique
+- ✅ Reports all validation errors
+
+**Done:** `npm run build && npm test` pass (700/700 tests). POST `/api/video-orchestrator/content-items/create` accepts JSON, validates, routes through approval system, returns 202 Accepted with approval ID and preview.
+
+---
+
+### Task 1W-B — Brain Console: Create Content Item UI
+
+**Scope:** Brain Console UI panel for content item creation. Not yet started.
+
+### Task 1W-C — Update Content Item Brief/Script
+
+### Task 1W-D — Generate Thumbnail Variants
+
+### Task 1W-E — Approve Thumbnail
+
+### Task 1W-F — Generate Metadata
+
+### Task 1W-G — Approve Metadata
+
+### Task 1W-H — Queue Package & Posting Targets
+
+**Sprint 1W done when:** A content item can move from creation to approved package with complete audit history and no autonomous publishing.
 
 ---
 
