@@ -20,7 +20,7 @@
 | Sprint 0D — Gemini-First Selector Policy | Phase 0.5R | ✅ Complete |
 | Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | ⏳ Continue after selector policy alignment |
 | Sprint 0E — Normalized VO Studio Read Model | Phase 0.8 | ✅ Complete |
-| Sprint 0F — Brain Console VO Shell | Phase 0.9 | 🔲 Active next |
+| Sprint 0F — Brain Console VO Shell | Phase 0.9 | ✅ Complete |
 | Sprint 1 — Composition | Phase 1 | ✅ Complete |
 | Sprint 2 — Subtitles | Phase 2 | ✅ Complete |
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
@@ -276,9 +276,9 @@ Done when:
 Atomic tasks:
 - 0F-A: Global VO context bar with Project, Account, Platform Targets, Pipeline Profile, Date Range. ✅ Complete
 - 0F-B: Overview panel with worker/selector health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counters. ✅ Complete
-- 0F-C: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary. 🔲 Next
-- 0F-D: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles. 🔲
-- 0F-E: History/Analytics table with project/account/platform/status filters. 🔲
+- 0F-C: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary. ✅ Complete
+- 0F-D: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles. ✅ Complete
+- 0F-E: History/Analytics table with project/account/platform/status filters. ✅ Complete
 
 Done when:
 - `npm run typecheck && npm run build` passes.
