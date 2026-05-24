@@ -51,7 +51,7 @@ The next active backlog is the later-phase roadmap, not the five-step implementa
 
 Relevant remaining areas:
 - Later hardening items
-- True per-variant CTR measurement via YouTube Test & Compare API
+- Test & Compare remains manual in YouTube Studio unless YouTube exposes a public developer API
 - Multi-platform expansion beyond the current publish adapters
 
 ---

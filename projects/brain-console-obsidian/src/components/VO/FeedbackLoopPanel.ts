@@ -142,6 +142,12 @@ export class FeedbackLoopPanel {
           <div class="vo-feedback-subvalue">${this.escapeHtml(thumbnailStatus.secondary)}</div>
         </div>
       </div>
+      <div class="vo-feedback-card vo-feedback-card--manual">
+        <div class="vo-feedback-label">YouTube Test & Compare</div>
+        <div class="vo-feedback-value">Manual in YouTube Studio</div>
+        <div class="vo-feedback-subvalue">No public developer API is currently wired for starting or reading thumbnail experiments.</div>
+        <div class="vo-feedback-subvalue">Operator flow: open YouTube Studio on desktop, use Thumbnail → Test & compare, upload up to 3 thumbnails, then review Reach analytics.</div>
+      </div>
       <div class="vo-feedback-section">
         <div class="vo-feedback-section-title">Per-Video Performance</div>
         <div class="vo-feedback-video-grid">

@@ -32,6 +32,7 @@
 - YouTube direct posting now performs captions upload, metadata update, and thumbnail attachment explicitly after upload, with matching quota accounting
 - Brain Console now includes a dedicated `Thumbnails` tab with template library, preview surface, variant selector, and manual headline edit
 - Analytics winner declaration now re-applies the winning thumbnail via `thumbnails.set` and persists the winner state in the artifact
+- Test & Compare automation is now explicitly treated as manual YouTube Studio only until an official developer API is confirmed
 
 **Testing:**
 - 997 tests passing, 0 failures

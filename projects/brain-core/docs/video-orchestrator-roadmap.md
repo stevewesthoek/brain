@@ -36,7 +36,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 
 **Remaining VO product gaps:**
 - Later hardening items
-- True per-variant CTR measurement via YouTube Test & Compare API
+- Test & Compare remains manual via YouTube Studio until/if YouTube exposes a public developer API
 - Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
 
 ---
@@ -483,7 +483,7 @@ The next work must proceed in this order:
 - [x] `thumbnails.set` API call wired into `youtube_uploader.py`
 
 ### 3.5 A/B testing
-- [ ] Analytics nightly: compare true CTR per variant via YouTube Test & Compare API
+- [ ] Analytics nightly: compare true CTR per variant if/when YouTube exposes a public developer API
 - [x] Winner declaration workflow updates the active thumbnail and re-applies it via `thumbnails.set`
 
 **Deliverable:** ✅ `thumbnail` job type generates 2 JPG variants per video from configurable templates. Variant A is active by default. A/B test flag set.
@@ -542,7 +542,8 @@ The next work must proceed in this order:
 - [x] `declare_ab_winners()` in `analytics_sync.py` — checks `ab_test_active=true` jobs with `>= 300` impressions
 - [x] Declares the current active variant as winner; sets `ab_test_active=false`, updates variant `active` flags, writes `winner_declared_at`, and re-applies the winning thumbnail via `thumbnails.set`
 - [x] `analytics_sync.py ab-check [--dry-run]` CLI command
-- [ ] Per-variant CTR comparison requires YouTube Test & Compare API (future; current: variant_a default winner)
+- [x] Runtime capability explicitly reports Test & Compare automation as manual YouTube Studio only until an official developer API is confirmed
+- [ ] Per-variant CTR comparison requires an official YouTube developer API surface; current flow does not automate Studio-only experiments
 - [x] `thumbnails.set` API call after winner declaration
 
 ### 5.4 Analytics in Brain Console
@@ -688,7 +689,7 @@ Later roadmap phases remain open.
 
 ## Immediate Next Steps
 
-**Next session:** Start with the remaining roadmap work in true per-variant CTR measurement or later hardening items. The five-step next-phase plan is already complete.
+**Next session:** Start with later hardening items unless a public YouTube developer API for Test & Compare becomes available. The five-step next-phase plan is already complete.
 
 **Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
 
