@@ -60,6 +60,12 @@ import {
   readBrainCorePostQaStatus,
   readBrainCoreStbStatus,
   readBrainCoreVideoOrchestratorStatus,
+  readBrainCoreVOStudioAccounts,
+  readBrainCoreVOStudioAnalyticsSummary,
+  readBrainCoreVOStudioContentItems,
+  readBrainCoreVOStudioPackage,
+  readBrainCoreVOStudioPipelineProfiles,
+  readBrainCoreVOStudioProjects,
   readBrainCoreVideoOrchestratorIntake,
   readBrainCoreVideoOrchestratorAssetPlans,
   readBrainCoreVideoOrchestratorDesignPlans,
@@ -218,6 +224,13 @@ import {
   type BrainCorePostOrchestratorStatusResponse,
   type BrainCoreStbPipelineStatus,
   type BrainCoreVideoOrchestratorStatus,
+  type BrainCoreVOStudioAnalyticsSummary,
+  type BrainCoreVOStudioContentItem,
+  type BrainCoreVOStudioListResponse,
+  type BrainCoreVOStudioPipelineProfile,
+  type BrainCoreVOStudioPlatformAccount,
+  type BrainCoreVOStudioProductionPackage,
+  type BrainCoreVOStudioProject,
   type BrainCoreVideoOrchestratorIntakeResponse,
   type BrainCoreVideoAssetPlanListResponse,
   type BrainCoreVideoDesignPlanListResponse,
@@ -423,6 +436,12 @@ export interface BrainConsoleViewState {
   postOrchestratorQaStatus?: BrainCorePostQaStatusResponse;
   stbStatus?: BrainCoreStbPipelineStatus;
   videoOrchestratorStatus?: BrainCoreVideoOrchestratorStatus;
+  voStudioProjects?: BrainCoreVOStudioListResponse<BrainCoreVOStudioProject>;
+  voStudioAccounts?: BrainCoreVOStudioListResponse<BrainCoreVOStudioPlatformAccount>;
+  voStudioPipelineProfiles?: BrainCoreVOStudioListResponse<BrainCoreVOStudioPipelineProfile>;
+  voStudioContentItems?: BrainCoreVOStudioListResponse<BrainCoreVOStudioContentItem>;
+  voStudioPackage?: BrainCoreVOStudioProductionPackage;
+  voStudioAnalytics?: BrainCoreVOStudioAnalyticsSummary;
   videoOrchestratorIntake?: BrainCoreVideoOrchestratorIntakeResponse;
   videoAssetPlans?: BrainCoreVideoAssetPlanListResponse;
   videoDesignPlans?: BrainCoreVideoDesignPlanListResponse;
@@ -594,6 +613,12 @@ export async function loadBrainConsoleViewState(
     readBrainCorePostQaStatus(baseUrl),
     readBrainCoreStbStatus(baseUrl),
     readBrainCoreVideoOrchestratorStatus(baseUrl),
+    readBrainCoreVOStudioProjects(baseUrl),
+    readBrainCoreVOStudioAccounts(baseUrl),
+    readBrainCoreVOStudioPipelineProfiles(baseUrl),
+    readBrainCoreVOStudioContentItems(baseUrl),
+    readBrainCoreVOStudioPackage(baseUrl, 'pkg-stb-story-052'),
+    readBrainCoreVOStudioAnalyticsSummary(baseUrl),
     readBrainCoreVideoOrchestratorIntake(baseUrl),
     readBrainCoreVideoOrchestratorAssetPlans(baseUrl),
     readBrainCoreVideoOrchestratorDesignPlans(baseUrl),
@@ -693,15 +718,15 @@ export async function loadBrainConsoleViewState(
     readBrainCoreVOAccountStats(baseUrl),               // 154
     readBrainCoreVOReadiness(baseUrl),                  // 155
     readBrainCoreCredentialCatalog(baseUrl),             // 156
-    readBrainCoreAiModelSelectorStatus(baseUrl),         // 157
+    readBrainCoreAiModelSelectorStatus(baseUrl),         // 163
   ]);
 
   const settledValues = withSafeEndpointPadding(
     results.map((result) => result.status === 'fulfilled' ? result.value : { value: undefined, error: result.reason }),
-    158,
+    164,
   );
 
-  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, mindStewardReportDetail, agentRuns, agentEvents, agentCostSummary, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult, stbCredentialsResult, voNormalizeHistoryResult, voManualQueueResult, voWorkerConfigResult, voAccountStatsResult, voReadinessResult, credentialCatalogResult, aiModelSelectorResult] = settledValues as any[];
+  const [status, capabilities, runtimeReports, videoStatus, videoQueue, localApps, localAppsDashboard, localAppsActionReadiness, localAppsActionEnablementBacklog, localAppsActionStatus, schedulerStatus, schedulerJobs, sessions, repos, approvals, approvalStore, executionPlans, executionReadiness, mindPreviewPolicy, mindPreviews, orchestrators, pipelines, projects, platforms, probotDashboardParity, probotSessionsParity, probotLocalAppsParity, probotSchedulerParity, probotStudioParity, probotExternalAdminParity, probotDecommissionReadiness, probotExternalAdminSafeMetadata, probotFeatureParityMatrix, probotPhaseOutChecklist, postOrchestratorStatus, postOrchestratorOverview, postOrchestratorFlows, postOrchestratorDrafts, postOrchestratorEvents, postOrchestratorDryRun, postOrchestratorReviewQueue, postOrchestratorSchedulePreview, postOrchestratorAnalytics, postOrchestratorPipeline, postOrchestratorReadiness, postOrchestratorPlatformPolicies, postOrchestratorDecommissionReadiness, postOrchestratorOperatorGuidance, postOrchestratorManualExportPackage, postOrchestratorAcceptanceChecklist, postOrchestratorMigrationParity, postOrchestratorRoadmapCheckpoint, postOrchestratorContracts, postOrchestratorIntegrations, postOrchestratorRecovery, postOrchestratorQaStatus, stbStatus, videoOrchestratorStatus, voStudioProjectsResult, voStudioAccountsResult, voStudioPipelineProfilesResult, voStudioContentItemsResult, voStudioPackageResult, voStudioAnalyticsResult, videoOrchestratorIntake, videoAssetPlans, videoDesignPlans, videoVoiceoverPlans, videoVisualPlans, videoAssemblyPlans, videoMetadataPlans, videoPublishingPrepPlans, videoManualExportPackages, videoThumbnailDesignPlans, videoArchiveLoggingPlans, videoDesignProviderBoundaryPlans, videoDesignProviderCredentialIsolationPlans, videoDesignProviderPromptReviewPolicyPlans, videoArtifactSandboxProviderHandoffPlans, videoProviderOutputRedactionPolicyPlans, videoDesignProviderComplianceChecklistPlans, videoDesignProviderEnablementReadinessIndex, videoProviderIntegrationFinalPlanningCheckpoint, videoCredentialStoreImplementationBoundaryPlan, videoPromptReviewUxImplementationPlan, videoProviderAuditPersistenceBoundaryPlan, videoProviderWrapperSecurityReviewPlan, videoProviderImplementationPhaseStartGate, videoProviderImplementationReadinessDashboardSummary, videoProviderImplementationApprovalPacket, videoProviderApprovalPacketConsoleReviewSummary, videoProviderPlanningSurfaceIndex, videoCredentialReferenceScaffold, videoProviderRequestWrapperScaffold, videoProviderWrapperValidationHarness, videoProviderRequestEnvelopeScaffold, videoProviderResponseEnvelopeScaffold, videoProviderScaffoldingIntegrationSummary, videoProviderRequestWrapperInertShell, videoCredentialReferenceValidator, videoProviderResponseRedactionSkeleton, videoProviderAuditEventTypes, videoProviderDisabledOrchestrationFacade, videoProviderCapabilityPolicyEvaluator, videoProviderBlockedActionLedgerTypes, videoProviderDisabledOrchestrationIntegrationSummary, stbVideoMigrationStatus, stbVideoParityMatrix, stbVideoDualRunStatus, stbVideoDualRunEvidence, videoProductionGate, videoRenderExportPolicy, videoControlledDryRunDesign, videoProductionCutoverGate, videoReleaseCandidateReadiness, videoOperatorDecisionQueue, videoControlledExecutionPolicyBoundary, videoControlledExecutionReadinessIndex, videoRoadmapCheckpoint, videoOperatorReviewPacket, videoControlledExecutionApprovalPayloadSchema, videoPreviewCompletionIndex, videoControlledExecutionPreflightChecklist, videoControlledExecutionRiskRegister, videoControlledExecutionPreflightValidatorSchema, videoControlledExecutionPlanStub, videoControlledExecutionApprovalRequestDesign, videoControlledExecutionDisabledGate, videoControlledExecutionSecondApprovalPolicy, videoControlledExecutionOperatorIdentityProtocol, videoControlledExecutionRolePolicy, controlledDualRunRequestDesign, agents, actions, mindStewardReportDetail, agentRuns, agentEvents, agentCostSummary, recoveryItems, localAppsOperationalReadiness, localAppsOperatorSummary, localAppsOrchestratorDef, infraDokploy, infraTunnels, infraDomains, infraNewRelic, infraUmami, infraGoogleAds, infraStripe, infraStudio, voLiveStatus, pipelinesLiveStatus, voAccountsResult, voAuthStatusResult, voJobsResult, systemMetricsResult, stbCredentialsResult, voNormalizeHistoryResult, voManualQueueResult, voWorkerConfigResult, voAccountStatsResult, voReadinessResult, credentialCatalogResult, aiModelSelectorResult] = settledValues as any[];
 
   let approvalDetail: import('./client.js').BrainCoreApprovalDetail | undefined;
   const latestApprovalId = approvals.value?.approvals?.[0]?.id;
@@ -823,6 +848,12 @@ export async function loadBrainConsoleViewState(
     postOrchestratorRecovery: postOrchestratorRecovery.value,
     stbStatus: stbStatus.value,
     videoOrchestratorStatus: videoOrchestratorStatus.value,
+    voStudioProjects: voStudioProjectsResult.value,
+    voStudioAccounts: voStudioAccountsResult.value,
+    voStudioPipelineProfiles: voStudioPipelineProfilesResult.value,
+    voStudioContentItems: voStudioContentItemsResult.value,
+    voStudioPackage: voStudioPackageResult.value,
+    voStudioAnalytics: voStudioAnalyticsResult.value,
     videoOrchestratorIntake: videoOrchestratorIntake.value,
     videoAssetPlans: videoAssetPlans.value,
     videoDesignPlans: videoDesignPlans.value,
@@ -1774,6 +1805,123 @@ function renderMonitoringSection(content: HTMLElement, state: BrainConsoleViewSt
   renderCard(grid, `Synthetic Monitors (${synthetics.length})`, syntheticsCard);
 }
 
+function renderVOContextBar(parent: HTMLElement, state: BrainConsoleViewState): void {
+  const project = state.voStudioProjects?.items?.[0];
+  const profile = state.voStudioPipelineProfiles?.items?.find((item) => item.id === project?.defaultPipelineProfileId) ?? state.voStudioPipelineProfiles?.items?.[0];
+  const accountCount = state.voStudioAccounts?.items?.length ?? 0;
+  const targetText = profile?.targetPlatforms?.join(', ') ?? 'not configured';
+  const bar = parent.createDiv({ cls: 'bc-vo-context-bar' });
+  [
+    ['Project', project?.name ?? 'Unavailable'],
+    ['Account', accountCount > 0 ? `${accountCount} configured` : 'Unavailable'],
+    ['Platform targets', targetText],
+    ['Pipeline profile', profile?.name ?? 'Unavailable'],
+    ['Date range', '7d read-only'],
+  ].forEach(([label, value]) => {
+    const item = bar.createDiv({ cls: 'bc-vo-context-item' });
+    item.createEl('span', { cls: 'bc-vo-context-label', text: label });
+    item.createEl('span', { cls: 'bc-vo-context-value', text: value });
+  });
+}
+
+function renderVOStudioOverviewCard(state: BrainConsoleViewState): HTMLElement {
+  const card = document.createElement('div');
+  card.addClass('brain-console__card-content');
+  const analytics = state.voStudioAnalytics;
+  renderCompactStatGrid(card, [
+    { label: 'Projects', value: String(state.voStudioProjects?.items?.length ?? 0) },
+    { label: 'Accounts', value: String(state.voStudioAccounts?.items?.length ?? 0) },
+    { label: 'Profiles', value: String(state.voStudioPipelineProfiles?.items?.length ?? 0) },
+    { label: 'Content items', value: String(state.voStudioContentItems?.items?.length ?? 0) },
+    { label: 'Studio model', value: analytics?.status ?? 'Unavailable' },
+  ]);
+  card.createEl('p', { cls: 'brain-console__detail', text: state.voStudioProjects?.nextSafeStep ?? 'Normalized Video Orchestrator model not available.' });
+  return card;
+}
+
+function renderVOStudioWorkspaceCard(state: BrainConsoleViewState): HTMLElement {
+  const card = document.createElement('div');
+  card.addClass('brain-console__card-content');
+  const item = state.voStudioContentItems?.items?.[0];
+  if (!item) {
+    card.createEl('p', { cls: 'brain-console__empty', text: 'No normalized content items available.' });
+    return card;
+  }
+  const tabs = ['Brief', 'Script', 'Media', 'Captions', 'Thumbnails', 'SEO', 'Preview', 'Approval'];
+  const tabRow = card.createDiv({ cls: 'bc-vo-tab-row' });
+  for (const tab of tabs) {
+    tabRow.createEl('span', { cls: 'bc-vo-tab-chip', text: tab });
+  }
+  renderCompactStatGrid(card, [
+    { label: 'Current item', value: item.title },
+    { label: 'Status', value: item.status },
+    { label: 'Targets', value: String(item.platformTargets.length) },
+    { label: 'Variants', value: String(item.artifactVariants.length) },
+    { label: 'Package', value: item.packageId },
+  ]);
+  card.createEl('p', { cls: 'brain-console__detail', text: item.canonicalSource });
+  return card;
+}
+
+function renderVOThumbnailStudioCard(state: BrainConsoleViewState): HTMLElement {
+  const card = document.createElement('div');
+  card.addClass('brain-console__card-content');
+  const item = state.voStudioContentItems?.items?.[0];
+  const thumbnailVariants = item?.artifactVariants.filter((variant) => variant.kind === 'thumbnail') ?? [];
+  const strip = card.createDiv({ cls: 'bc-vo-preview-strip' });
+  ['16:9', '9:16', '1:1', '4:5', '2:3'].forEach((ratio) => {
+    const frame = strip.createDiv({ cls: 'bc-vo-preview-frame' });
+    frame.createEl('span', { text: ratio });
+  });
+  renderCompactStatGrid(card, [
+    { label: 'Template source', value: thumbnailVariants[0]?.sourceTemplateId ?? 'template-thumbnail-unified' },
+    { label: 'Generated variants', value: String(thumbnailVariants.length) },
+    { label: 'Provider calls', value: 'disabled' },
+    { label: 'Safe zones', value: 'enabled in spec' },
+  ]);
+  card.createEl('p', { cls: 'brain-console__detail', text: 'One Thumbnail Studio generates landscape, vertical, square, 4:5, and Pinterest variants from shared fields.' });
+  return card;
+}
+
+function renderVOPipelineProfileCard(state: BrainConsoleViewState): HTMLElement {
+  const card = document.createElement('div');
+  card.addClass('brain-console__card-content');
+  const profile = state.voStudioPipelineProfiles?.items?.[0];
+  if (!profile) {
+    card.createEl('p', { cls: 'brain-console__empty', text: 'No pipeline profile available.' });
+    return card;
+  }
+  const stageMap = card.createDiv({ cls: 'bc-vo-stage-map' });
+  for (const stage of profile.enabledStages) {
+    const stageEl = stageMap.createDiv({ cls: `bc-vo-stage bc-vo-stage--${stage.status}` });
+    stageEl.createEl('span', { text: stage.label });
+  }
+  renderCompactStatGrid(card, [
+    { label: 'Profile', value: profile.name },
+    { label: 'Targets', value: profile.targetPlatforms.join(', ') },
+    { label: 'Stages', value: String(profile.enabledStages.length) },
+    { label: 'Fallback', value: 'manual package' },
+  ]);
+  card.createEl('p', { cls: 'brain-console__detail', text: profile.fallbackBehavior });
+  return card;
+}
+
+function renderVOAccountsRegistryCard(state: BrainConsoleViewState): HTMLElement {
+  const card = document.createElement('div');
+  card.addClass('brain-console__card-content');
+  const list = card.createDiv({ cls: 'brain-console__list' });
+  for (const account of state.voStudioAccounts?.items ?? []) {
+    const row = list.createDiv({ cls: 'brain-console__list-row' });
+    row.createEl('span', { cls: 'brain-console__list-label', text: `${account.handle} (${account.platform})` });
+    row.createEl('span', { cls: 'brain-console__list-value', text: account.adapterStatus });
+    row.createEl('span', { cls: 'brain-console__detail', text: `${account.credentialState} · quota ${account.quotaState}` });
+  }
+  if ((state.voStudioAccounts?.items?.length ?? 0) === 0) {
+    card.createEl('p', { cls: 'brain-console__empty', text: 'No normalized VO accounts available.' });
+  }
+  return card;
+}
+
 function renderVOLiveStatusCards(grid: HTMLElement, state: BrainConsoleViewState): void {
   const vol = state.voLiveStatus;
 
@@ -1856,7 +2004,12 @@ function renderVOLiveStatusCards(grid: HTMLElement, state: BrainConsoleViewState
 }
 
 function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState): void {
+  renderVOContextBar(content, state);
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'VO Studio Overview', renderVOStudioOverviewCard(state));
+  renderCard(grid, 'Creation Workspace', renderVOStudioWorkspaceCard(state), { wide: true });
+  renderCard(grid, 'Thumbnail Studio', renderVOThumbnailStudioCard(state));
 
   const studio = state.infraStudio;
 
@@ -3167,7 +3320,10 @@ function bcOrchBuildDesignDrawer(container: HTMLElement, onClose: () => void): H
 }
 
 function renderPipelinesSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  renderVOContextBar(content, state);
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+
+  renderCard(grid, 'Pipeline Profile', renderVOPipelineProfileCard(state), { wide: true });
 
   // Live pipeline status cards (Stage 0 dual visibility)
   const ps = state.pipelinesLiveStatus;
@@ -8384,6 +8540,9 @@ function renderAccountsSection(
 
   const header = content.createDiv({ cls: 'bc-accounts-header' });
   header.createEl('h2', { cls: 'bc-accounts-title', text: 'Accounts & Credentials' });
+  renderVOContextBar(content, state);
+  const voGrid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+  renderCard(voGrid, 'VO Account Registry', renderVOAccountsRegistryCard(state), { wide: true });
 
   if (!catalog) {
     content.createEl('p', { cls: 'brain-console__empty', text: 'Credential catalog unavailable — Brain Core must be online.' });

@@ -196,3 +196,51 @@ test('GET /pipelines returns pipelines with stages', async () => {
   assert.ok(Array.isArray(stbPipeline?.stages));
   assert.ok(stbPipeline?.stages?.includes('generate'));
 });
+
+test('GET /video-orchestrator/projects returns normalized VO projects', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/projects' });
+  const body = JSON.parse(response.body) as { items: Array<{ id: string; defaultPipelineProfileId: string }>; safety: { readOnly: boolean } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.items[0]?.id, 'says-the-bible');
+  assert.equal(body.items[0]?.defaultPipelineProfileId, 'profile-stb-package-parity');
+});
+
+test('GET /video-orchestrator/pipeline-profiles returns profile-driven stages', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/pipeline-profiles' });
+  const body = JSON.parse(response.body) as { items: Array<{ id: string; enabledStages: Array<{ id: string; status: string }> }> };
+  const profile = body.items[0];
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(profile?.id, 'profile-stb-package-parity');
+  assert.equal(profile?.enabledStages.find((stage) => stage.id === 'publish')?.status, 'disabled');
+});
+
+test('GET /video-orchestrator/content-items returns canonical content with package id', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/content-items' });
+  const body = JSON.parse(response.body) as { items: Array<{ sourceSlug: string; packageId: string; platformTargets: unknown[] }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.items[0]?.sourceSlug, 'story-052-genesis-creation');
+  assert.equal(body.items[0]?.packageId, 'pkg-stb-story-052');
+  assert.equal(body.items[0]?.platformTargets.length, 4);
+});
+
+test('GET /video-orchestrator/packages/:id returns manual fallback package', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/packages/pkg-stb-story-052' });
+  const body = JSON.parse(response.body) as { id: string; packageType: string; approvals: Array<{ status: string }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'pkg-stb-story-052');
+  assert.equal(body.packageType, 'manual-fallback');
+  assert.equal(body.approvals.some((approval) => approval.status === 'required'), true);
+});
+
+test('GET /video-orchestrator/analytics/summary returns disabled publishing KPI', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/analytics/summary' });
+  const body = JSON.parse(response.body) as { kpis: Array<{ label: string; value: string }> };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.kpis.some((kpi) => kpi.label === 'Direct publishing' && kpi.value === 'disabled'), true);
+});

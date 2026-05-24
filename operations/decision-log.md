@@ -511,3 +511,11 @@ Then monitor: `vo jobs --limit 5`
 - NOT projects requiring React-only libraries with no Svelte equivalent
 
 **Stack for new projects:** SvelteKit + TypeScript + Tailwind + shadcn-svelte + Supabase + Drizzle
+
+## 2026-05-24 — Video Orchestrator Gemini-first AI routing policy
+
+**Decision:** Video Orchestrator and the shared AI Model Selector policy now use Gemini free-tier first for eligible non-sensitive text generation, then local Ollama, then Codex CLI, then Amazon Bedrock Claude.
+
+**Reasoning:** Gemini free-tier can absorb high-volume draft generation before consuming local compute or paid Bedrock budget. Local Ollama remains mandatory first for sensitive, private, offline, external-provider-disallowed, or high-control review payloads, and becomes the default fallback when Gemini is exhausted, rate-limited, unhealthy, or fails quality checks.
+
+**Impact:** VO strategy, roadmap, selector onboarding, agent orchestrator architecture, AI selector architecture, and implementation plan docs must describe quota-aware Gemini routing. The selector must track Gemini RPM/TPM/RPD budgets, daily reset state, 429/quota exhaustion, health failures, and quality-gate fallbacks. Direct OpenAI API and direct Anthropic API calls remain forbidden.

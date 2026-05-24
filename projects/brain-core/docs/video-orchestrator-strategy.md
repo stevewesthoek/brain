@@ -2,7 +2,7 @@
 
 **Document type:** Architecture strategy and guardrails  
 **Status:** Active  
-**Last updated:** 2026-05-22  
+**Last updated:** 2026-05-24 (documentation clarity and Gemini-first routing policy)
 **Platform architecture:** `brain/docs/platform-architecture.md`  
 **Research validated:** NotebookLM research report `/tmp/vo-research-report.md` (2026-05-22)
 
@@ -10,9 +10,46 @@
 
 ## Purpose
 
-The Video Orchestrator (VO) is the production system that takes source content (audio + script) and produces fully-packaged, platform-ready video posts — with thumbnails, descriptions, captions, and all metadata — and publishes them automatically across every platform.
+The Video Orchestrator (VO) is the production system that takes source content (audio + script) and produces fully-packaged, platform-ready video posts — with thumbnails, descriptions, captions, and all metadata. It publishes directly only when a platform adapter, credentials, quota, scopes, idempotency key, and approval policy all pass. Otherwise it produces a complete manual upload package.
 
 It is not a port of the STB pipeline. It is a platform-agnostic, format-agnostic, modular production engine. The STB pipeline is a **feature reference** — it shows what the VO needs to *do*, not how to build it.
+
+---
+
+## Strategy Stack
+
+This document is the top-level contract. The roadmap and implementation plan must follow it exactly.
+
+| Layer | Owns | Must not do |
+|-------|------|-------------|
+| Strategy | Product shape, system boundaries, guardrails, source-of-truth decisions | Task-level sequencing or implementation details |
+| Roadmap | Phased build order, dependencies, exit criteria, active gaps | New architecture decisions that contradict this strategy |
+| Implementation plan | Small executable tasks for Codex Mini or Claude Code Haiku, file scope, tests, rollback boundaries | Broad refactors, hidden assumptions, or multi-phase work in one task |
+
+If any implementation task needs to violate a hard guardrail, the strategy must be revised first and the decision must be recorded in `operations/decision-log.md`.
+
+---
+
+## Research and Fact Basis
+
+This strategy is grounded in primary/current docs and local research. Platform behavior that may change must be rechecked before implementation.
+
+| Area | Verified fact used by VO | Source |
+|------|--------------------------|--------|
+| Gemini routing | Gemini API rate limits are evaluated across RPM, TPM, and RPD; exceeding any limit triggers a rate-limit error. VO must track all three before selecting Gemini. | Google AI Gemini API rate limits, accessed 2026-05-24: `https://ai.google.dev/gemini-api/docs/rate-limits` |
+| YouTube quota | YouTube Data API projects default to 10,000 quota units/day, reset at midnight Pacific Time; `videos.insert` costs 1,600 units. VO must budget uploads before queueing publish jobs. | YouTube Data API quota costs, accessed 2026-05-24: `https://developers.google.com/youtube/v3/determine_quota_cost` |
+| Pipeline UI | Airflow exposes overview, grid/status heatmap, graph/dependencies, runs, tasks, events, logs, and details. VO Pipeline UI should borrow this operational shape without copying Airflow. | Apache Airflow UI docs, accessed 2026-05-24: `https://airflow.apache.org/docs/apache-airflow/stable/ui.html` |
+| Run observability | Dagster run details expose timing, errors, structured event logs, raw logs, and re-execution context. VO run views must show stage timing, errors, logs, and retry context. | Dagster UI docs, accessed 2026-05-24: `https://master.dagster.dagster-docs.io/concepts/webserver/ui` |
+| Workflow execution history | n8n exposes execution lists with workflow, status, and date filters. VO History must provide equivalent filters for packages, posting jobs, and fallback actions. | n8n executions docs, accessed 2026-05-24: `https://docs.n8n.io/workflows/executions/all-executions/` |
+| TikTok adapter | TikTok Content Posting API has user-level pending share/upload caps. VO must treat TikTok as capability/approval/limit-gated, not always-direct publish. | TikTok Content Posting API docs, accessed 2026-05-24: `https://developers.tiktok.com/doc/content-posting-api-reference-upload-video` |
+| Pinterest adapter | Pinterest uses OAuth scopes such as `pins:write`; tokens are secrets. VO must gate Pinterest writes by scopes, account capability, and secret handling. | Pinterest auth docs, accessed 2026-05-24: `https://developers.pinterest.com/docs/getting-started/set-up-authentication-and-authorization/` |
+| LinkedIn adapter | LinkedIn Posts API supports organic/sponsored post creation through versioned APIs. VO must treat LinkedIn as version/scope/app-access-gated. | LinkedIn Posts API docs, accessed 2026-05-24: `https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/posts-api` |
+
+Local research inputs:
+- NotebookLM notebook: `Video Orchestrator — Production Pipeline Architecture Research`
+- `projects/brain-core/docs/video-orchestrator-roadmap.md`
+- `projects/brain-core/docs/video-orchestrator-implementation-plan.md`
+- STB admin pipeline and thumbnail implementation as workflow reference only
 
 ---
 
@@ -38,7 +75,50 @@ These are non-negotiable. Any implementation decision that violates a guardrail 
 
 9. **Manual fallback always exists** — Every completed job produces a self-contained Manual Fallback Package: a directory with final video files (absolute paths), SRT/VTT subtitles, and a JSON block of all platform metadata. A human can upload manually from this package with zero system involvement if all automation fails.
 
-10. **Local AI first** — All AI generation tasks (metadata, thumbnails, summaries) route through the AI Model Selector. Local Ollama models on the Mac Mini M4 Pro and MacBook M1 are always tried first when they are capable enough for the task. Codex CLI is the second tier because it uses the ChatGPT subscription surface rather than a direct API bill. Amazon Bedrock Claude is the third tier and is used only when local AI and Codex CLI are unavailable, rate-limited, or insufficient for quality. Direct OpenAI API and direct Anthropic API calls are forbidden.
+10. **Gemini free-tier first, privacy-gated** — All AI generation tasks (metadata, thumbnails, summaries) route through the AI Model Selector. Eligible non-sensitive, high-volume text tasks try Gemini free-tier first and must be tracked against RPM/TPM/RPD budgets. When Gemini is exhausted, rate-limited, unhealthy, or fails quality checks, the selector falls back to local Ollama on the Mac Mini M4 Pro and MacBook M1. Local Ollama is mandatory first for sensitive, private, offline, or external-provider-disallowed payloads. Codex CLI is the next quality/escalation tier because it uses the ChatGPT subscription surface rather than a direct API bill. Amazon Bedrock Claude is the paid fallback. Direct OpenAI API and direct Anthropic API calls are forbidden.
+
+11. **Read-first Console** — Brain Console surfaces are read-only until the underlying package, approval, quota, and idempotency records exist. Mutation buttons can be added only after the matching read model, audit event, approval policy, and tests exist.
+
+12. **Adapter capability gating** — Direct publishing is never assumed. Each posting target resolves `adapter_mode`: `direct`, `manual_package`, or `disabled`. A target may use `direct` only when credentials, scopes, platform limits, app review/access status, quota, idempotency, and approval checks pass.
+
+---
+
+## Product Shape
+
+The VO product has five Console surfaces. These are the canonical surfaces; do not create duplicate project-specific pages.
+
+| Surface | Purpose | Primary records | First build mode |
+|---------|---------|-----------------|------------------|
+| Overview | One-screen operator status: worker health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counts | Project, PlatformAccount, PostingJob, PerformanceSnapshot, AuditEvent | Read-only |
+| Studio | Create and review one content item or batch: brief, script, media, captions, thumbnails, SEO, preview, approval | ContentItem, ProductionPackage, ArtifactVariant, Approval | Read-first, then approval-gated writes |
+| Pipelines | Execution view: stage map, retries, logs, dead-letter jobs, run history, manual fallback state | PipelineProfile, ProductionPackage, Run, AuditEvent | Read-only |
+| Accounts | Registry for brands, platform accounts, credentials, quotas, scheduler rules, adapter status | Project, BrandProfile, PlatformAccount, PlatformSpec, PipelineProfile | Read-only with credential status only |
+| History/Analytics | Published, scheduled, failed, draft, and manual-fallback content with account/platform/status filters | ContentItem, PostingTarget, PostingJob, PerformanceSnapshot | Read-only |
+
+Studio uses compact tabs: `Brief`, `Script`, `Media`, `Captions`, `Thumbnails`, `SEO`, `Preview`, `Approval`. The Thumbnails tab is one Thumbnail Studio with platform preview frames; there must not be separate thumbnail generators per project or platform.
+
+---
+
+## Canonical Data Model
+
+These normalized entities are the shared VO vocabulary. STB-specific names must map into these terms before they enter shared VO APIs.
+
+| Entity | Meaning |
+|--------|---------|
+| Project | A production context such as Says the Bible, Yeshua Academy, or another brand/channel family |
+| BrandProfile | Visual, voice, typography, color, logo, disclosure, and editorial rules for a project |
+| PlatformAccount | A connected or manual platform account, including credential state and adapter capability |
+| PlatformSpec | Platform-level rules: upload constraints, metadata limits, scopes, quotas, scheduling capabilities |
+| FormatSpec | Render shape: aspect ratio, resolution, codec, bitrate, safe zones, thumbnail frame |
+| PipelineProfile | Project/account-selected stages, target platforms, approval rules, schedule windows, quota policy |
+| ContentItem | Canonical source item: brief, script/transcript, source media, project, status |
+| ProductionPackage | Generated package for a content item and pipeline profile |
+| ArtifactVariant | A video, thumbnail, caption, metadata, or fallback variant derived from the package |
+| PostingTarget | Intended platform/account/format destination with adapter mode and approval state |
+| PostingJob | A concrete direct or manual posting attempt with idempotency key and audit trail |
+| PerformanceSnapshot | Platform metrics captured at a point in time |
+| Approval | Human decision record for thumbnail, metadata, package, or posting |
+| AuditEvent | Append-only event describing state changes, provider choices, retries, approvals, and errors |
 
 ---
 
@@ -131,9 +211,11 @@ source audio + script
 - Standalone Python HTTP microservice at `localhost:4890`
 - All VO modules call it for every AI generation task — never call LLM APIs directly
 - Provider registry: `~/.config/video-orchestrator/ai-providers.json` (config-driven, no code changes to add a provider)
-- Escalation order: local Ollama M4 Pro/M1 → Codex CLI → Amazon Bedrock Claude
+- Default eligible escalation order: Gemini free-tier → local Ollama M4 Pro/M1 → Codex CLI → Amazon Bedrock Claude
+- Privacy/quality override: route sensitive, private, offline, external-provider-disallowed, or high-control theological review tasks to local Ollama first.
+- Gemini quota policy: track RPM, TPM, RPD, daily reset metadata, and 429/quota-exhaustion state; open a circuit and fall back to local when quota is exhausted or quality checks fail.
 - Local model preference: M4 Pro prefers `qwen2.5:32b`, then `qwen2.5:14b`, then fast fallback models. M1 prefers `qwen2.5:14b`, then `llama3.1:8b`, then `llama3.2:3b`.
-- Batch window (1-7 AM): strongly prefer local. Outside window: use local when quality is adequate; use Codex CLI for tasks local models cannot do reliably.
+- Batch window (1-7 AM): use remaining Gemini free-tier quota first for eligible queued text tasks; local handles sensitive/offline work and all Gemini fallback load. Outside window: use Gemini for eligible lightweight drafts while quota remains, local when privacy or quality policy requires it, and Codex CLI for tasks local models cannot do reliably.
 - Non-urgent tasks outside batch window can be deferred to next batch window (`scheduled_after` in job DB)
 - Rate limits tracked in-memory + persisted to JSON; exponential backoff per provider
 - Audit log: every selection logged to `~/.local/video-orchestrator/logs/ai-selections.jsonl`
@@ -184,15 +266,15 @@ source audio + script
 - Reads transcript + channel performance context
 - Generates platform-specific: title, description, tags, chapters
 - Respects per-platform constraints (title length, description length, hashtag rules)
-- Tool: LLM via AI Model Selector — local Ollama M4/M1 first → Codex CLI → Amazon Bedrock Claude
+- Tool: LLM via AI Model Selector — Gemini free-tier first for eligible drafts → local Ollama M4/M1 → Codex CLI → Amazon Bedrock Claude; local-first override for sensitive/offline/quality-gated tasks
 - **Analytics-informed prompting**: before each generation, queries top 10 videos by CTR from `performance_metrics` and injects their titles as `{top_performing_titles}` into the prompt — continuous feedback loop
 - **Faith-based prompt template structure**: `{series}`, `{episode_title}`, `{transcript}`, `{top_performing_titles}` → title (under 70 chars, curiosity-driven) + description (hook + chapters at top for search visibility) + 15-20 tags
 - Output: stored in job artifact, manually reviewable before publishing
 
 ### 6. Publishing
 - Reads job artifact (video paths + metadata per platform)
-- Direct upload for YouTube (OAuth2 via `youtube_uploader.py`)
-- n8n webhook dispatch for other platforms
+- Direct upload for YouTube only when OAuth2, quota, idempotency, approval, and adapter checks pass
+- n8n webhook dispatch for other platforms only when platform/account capability checks pass
 - Manual fallback: generates instructions package
 - Updates artifact with platform video IDs and URLs on success
 

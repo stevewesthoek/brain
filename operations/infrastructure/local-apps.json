@@ -307,7 +307,7 @@
     "databasePort": null,
     "databaseName": null,
     "databaseUser": null,
-    "notes": "Uses production-grade orchestrator with fact-checking, atomic operations, and graceful shutdown. Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay. Health check validates all three services (agent, relay, web) are healthy. The buildflow-orchestrator.sh script handles all three services (agent port 3052, relay port 3053, web port 3054) with verified start/stop including health checks — Brain Core defers full lifecycle to it."
+    "notes": "Multi-service app (agent 3052, relay 3053, web 3054). Requires OrbStack with Docker daemon running and ~/.config/buildflow/.env.relay. Must implement unified health endpoint that returns 200 only when all services are healthy."
   },
   {
     "name": "TradeBot",

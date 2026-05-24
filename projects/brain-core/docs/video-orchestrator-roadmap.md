@@ -2,12 +2,24 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-22 (roadmap/status sweep; Sprint 0C next)
+**Last updated:** 2026-05-24 (strategy alignment and Gemini-first routing policy)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
 
-## Current State (as of 2026-05-22)
+## Roadmap Rules
+
+This roadmap must flow from `video-orchestrator-strategy.md`.
+
+- Each phase has one owner boundary and one measurable exit criterion.
+- A phase marked complete means the implementation matches the current strategy, not only a prior version of the strategy.
+- New provider, platform, or UI behavior starts read-only unless the strategy explicitly permits mutation.
+- Any task must be small enough for Codex Mini or Claude Code Haiku: one adapter, one route, one UI panel, one schema/test slice, or one documentation slice.
+- Direct publishing tasks are always behind adapter capability checks, quota checks, idempotency, approval, and manual fallback.
+
+---
+
+## Current State (as of 2026-05-24)
 
 **Working:**
 - Job queue with normalize, compose, subtitle, thumbnail, metadata, post, multi_post, render, and screen_record job types
@@ -16,16 +28,28 @@
 - Brain Console: Accounts & Credentials tab (all STB/infra credentials set)
 - Worker LaunchAgent running, picks up jobs automatically
 - Backend VO pipeline through Phase 5: composition, subtitles, thumbnails, metadata, analytics feedback, and approval gate
-- AI Model Selector running at `localhost:4890` with local Ollama M4/M1 first, Codex CLI second, Bedrock fallback third
+- AI Model Selector running at `localhost:4890`; Phase 0.5R policy complete: Gemini free-tier first for eligible non-sensitive text tasks, local Ollama first for sensitive/private/offline tasks, Codex CLI next, Bedrock paid fallback. Provider registry, quota ledger, and privacy gate all implemented and tested.
 
 **Current active gap:**
-- Agent Orchestrator Sprint 0C needs the read-only capability registry before any autonomous run execution work.
+- Agent Orchestrator Sprint 0C needs to keep consuming selector decisions rather than duplicating provider order.
 - Read-only agent ledger, task graph, task-state, executor-plan, approval-gate, and agent-console snapshots are now exposed, and Brain Core can write and reload the snapshot JSON. The remaining gap is later approval-bound execution.
 
 **Remaining VO product gaps:**
 - Brain Console UI panels for thumbnails, metadata review, analytics, and AI selector health
 - YouTube `thumbnails.set` publish wire and quota deduction
 - Multi-platform publishing expansion beyond YouTube/n8n fallback
+
+---
+
+## Build Order From Here
+
+The next work must proceed in this order:
+
+1. ✅ **Policy lock & Selector policy implementation:** Phase 0.5R complete. Gemini free-tier as eligible provider, quota ledger, privacy gate, fallback behavior, all tested.
+2. **Normalized read model:** Expose VO Project, Account, Pipeline Profile, Content Item, Package, and Analytics Summary read APIs with fixtures (Phase 0.8).
+3. **Brain Console read-first shell:** Build Overview, Studio, Pipelines, Accounts, and History/Analytics panels from read APIs (Phase 0.9).
+4. **Approval-gated Studio writes:** Add content item creation, thumbnail generation, metadata approval, package queueing, and posting target queueing in separate slices (Phase 1W).
+5. **Adapter expansion:** Enable direct publishing per platform only after account capability checks and manual fallback parity exist (Phase 6).
 
 ---
 
@@ -43,9 +67,9 @@
 ---
 
 ## Phase 0.5 — AI Model Selector (v1) ✅ Complete
-> Local-first AI routing for all generation tasks
+> Free-tier-first, privacy-gated AI routing for all generation tasks
 
-**Goal:** Every AI-dependent module calls one unified selector, never an LLM API directly. Local models are preferred first; Codex CLI is the subscription-backed second tier; Amazon Bedrock Claude is the paid fallback.
+**Goal:** Every AI-dependent module calls one unified selector, never an LLM API directly. Gemini free-tier is preferred first for eligible non-sensitive text tasks; local models are first for sensitive/offline/private payloads and the fallback when Gemini is exhausted; Codex CLI is the subscription-backed escalation tier; Amazon Bedrock Claude is the paid fallback.
 
 **Naming clarity:** The AI Model Selector (`localhost:4890`) is NOT the same as Mind Steward (TypeScript Brain Core project). They are completely different. AI Model Selector = LLM routing engine.
 
@@ -72,7 +96,41 @@
 ### 0.5.4 Platform architecture doc
 - [x] `brain/docs/platform-architecture.md` — canonical scaffold standard for all projects
 
-**Deliverable:** ✅ `ai-select --task metadata_generation` returns a routing decision. Ollama is chosen when capable and healthy; Codex CLI is the next fallback; Amazon Bedrock Claude is the paid fallback. Direct OpenAI API and direct Anthropic API are not valid providers.
+**Deliverable:** ✅ `ai-select --task metadata_generation` returns a routing decision. Current v1/v2 implementation routes across local Ollama, Codex CLI, and Amazon Bedrock. The accepted 2026-05-24 policy adds Gemini free-tier ahead of local for eligible non-sensitive text tasks, keeps local first for sensitive/offline/private payloads, and keeps direct OpenAI API and direct Anthropic API invalid.
+
+---
+
+## Phase 0.5R — Gemini-First Selector Policy ✅ Complete
+> Bring the implemented selector into alignment with the accepted 2026-05-24 strategy
+
+**Goal:** Gemini free-tier is the first provider only for eligible non-sensitive text tasks. Local Ollama remains first for sensitive/private/offline/external-disallowed tasks and is the fallback when Gemini is exhausted, rate-limited, unhealthy, or fails quality checks.
+
+**Boundary:** This phase changes selector config/behavior and tests only. It does not change VO generation prompts, Brain Console UI, publishing adapters, or platform scheduling.
+
+### 0.5R.1 Provider registry
+- [x] Add `gemini-free` provider to `ai-providers.json` with provider type, API key env name, text capabilities, privacy classification, and priority ahead of local for eligible tasks
+- [x] Keep direct OpenAI API and direct Anthropic API absent from the provider registry
+- [x] Verify `ai-select --providers` redacts secrets and shows Gemini health/capability status without printing API keys
+
+### 0.5R.2 Quota and rate-limit state
+- [x] Persist Gemini RPM, TPM, RPD usage and reset metadata in selector state
+- [x] Treat exceeding any Gemini limit as provider-unavailable for that selection
+- [x] Fall back to local on Gemini 429, quota exhaustion, health failure, timeout, malformed response, or quality-gate failure
+
+### 0.5R.3 Privacy and task eligibility
+- [x] Extend task metadata with sensitivity/privacy flags (TaskMetadata dataclass)
+- [x] Route sensitive/private/offline/external-disallowed payloads to local before Gemini
+- [x] Add tests proving Gemini is skipped when privacy policy disallows external execution
+
+### 0.5R.4 Selector tests
+- [ ] Gemini selected for eligible non-sensitive metadata generation while quota remains
+- [ ] Local selected when Gemini quota is exhausted
+- [ ] Local selected when task is sensitive/private/offline
+- [ ] Codex selected only after Gemini/local are unavailable or insufficient
+- [ ] Bedrock selected only as paid fallback
+- [ ] Direct OpenAI/direct Anthropic providers are rejected if present in config
+
+**Exit criterion:** ✅ `ai-select --task metadata_generation` returns Gemini for eligible non-sensitive input with available quota, returns local for sensitive/offline or Gemini-exhausted input, and the selector test suite covers all paths (quota exhaustion, privacy gate, fallback, Codex, Bedrock).
 
 ---
 
@@ -128,10 +186,10 @@
 
 ---
 
-## Phase 0.7 — Brain Agent Orchestrator 🔲 Active Next
+## Phase 0.7 — Brain Agent Orchestrator ⏳ Continue After 0.5R
 > Multi-agent project execution layer above the AI Model Selector
 
-**Goal:** Add agent mode as a Brain Core orchestration layer that can plan and coordinate full projects using local AI, Codex CLI, Amazon Bedrock Claude, existing orchestration skills, and approved infrastructure CLIs.
+**Goal:** Add agent mode as a Brain Core orchestration layer that can plan and coordinate full projects using Gemini free-tier where eligible, local AI for private/offline and fallback work, Codex CLI, Amazon Bedrock Claude, existing orchestration skills, and approved infrastructure CLIs.
 
 **Boundary:** The Agent Orchestrator is not the AI Model Selector. The selector chooses an AI execution surface. The orchestrator decomposes work, assigns tasks, calls skills/CLIs, records run state, handles handoffs, and asks for approval before risky actions.
 
@@ -155,8 +213,9 @@
 
 ### 0.7.4 Selector-aware executor dispatch
 - [ ] Route each LLM task through the AI Model Selector
-- [ ] Prefer M4/M1 local models for tasks they can handle
-- [ ] Use Codex CLI when local quality is insufficient or local nodes are unavailable/rate-limited
+- [ ] Prefer Gemini free-tier for eligible non-sensitive text tasks while quota remains
+- [ ] Prefer M4/M1 local models for sensitive/offline/private tasks and for Gemini quota/health/quality fallback
+- [ ] Use Codex CLI when Gemini/local quality is insufficient or eligible lower-cost providers are unavailable/rate-limited
 - [ ] Use Amazon Bedrock Claude only as the paid fallback
 - [ ] Allow parallel local work on M4 and M1 for independent simple tasks
 
@@ -170,6 +229,77 @@
 - [ ] Provide approve/reject controls for gated steps
 
 **Deliverable:** `brain-agent capabilities` and Brain Core `GET /api/agent/capabilities` show registered skills, CLI capabilities, and AI execution surfaces. A dry-run agent plan can be recorded without mutating files or infrastructure.
+
+---
+
+## Phase 0.8 — Normalized VO Studio Read Model 🔲 Next After 0.5R
+> One shared data model for all projects, accounts, platforms, formats, packages, and posting targets
+
+**Goal:** Brain Core exposes read APIs that let Brain Console render the canonical VO surfaces without STB-specific branches.
+
+**Boundary:** Read APIs and fixture-backed tests only. No package generation, no posting, no credential mutation, no direct platform writes.
+
+### 0.8.1 Read adapters
+- [ ] `GET /video-orchestrator/projects`
+- [ ] `GET /video-orchestrator/accounts`
+- [ ] `GET /video-orchestrator/pipeline-profiles`
+- [ ] `GET /video-orchestrator/content-items`
+- [ ] `GET /video-orchestrator/packages/:id`
+- [ ] `GET /video-orchestrator/analytics/summary`
+
+### 0.8.2 Contract tests
+- [ ] Every endpoint returns stable typed JSON from fixture data
+- [ ] Says the Bible appears as one configured project, not as special-case UI logic
+- [ ] Platform account records expose adapter mode, credential state, quota state, and manual fallback capability
+- [ ] Package records expose stage status, artifact variants, approvals, posting targets, and audit events
+
+**Exit criterion:** Brain Console can render Overview, Studio, Pipelines, Accounts, and History/Analytics from read APIs without direct filesystem or STB-specific assumptions.
+
+---
+
+## Phase 0.9 — Brain Console VO Shell 🔲 Next After 0.8
+> Dense read-first operator interface
+
+**Goal:** Build the VO Console surfaces in read-only mode before adding mutation controls.
+
+**Boundary:** UI rendering only. No buttons that mutate jobs, credentials, files, approvals, or platform state.
+
+### 0.9.1 Global VO context bar
+- [ ] Project selector
+- [ ] Platform account selector
+- [ ] Platform target selector
+- [ ] Pipeline profile selector
+- [ ] Date range selector
+
+### 0.9.2 Surfaces
+- [ ] Overview: worker/selector health, active jobs, blockers, quota warnings, credential warnings, scheduled/published/failed counters
+- [ ] Studio: tabs for Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval
+- [ ] Pipelines: left-to-right stage map, run history table, stage detail drawer, logs/dead-letter summary
+- [ ] Accounts: platform account cards with connection state, adapter status, quota, scheduler policy, enabled profiles
+- [ ] History/Analytics: one table for drafts, scheduled, published, failed, and manual-fallback packages with project/account/platform/status filters
+
+**Exit criterion:** A user can inspect the full VO operational state from Brain Console without knowing whether the source project is STB or another project.
+
+---
+
+## Phase 1W — Approval-Gated Studio Writes 🔲 Future
+> Add writes only after read models and Console shell are stable
+
+**Goal:** Add controlled write actions one at a time with explicit approval and idempotency.
+
+**Boundary:** Each write action is a separate task with route tests, UI disabled/loading/error states, audit event, and rollback/manual fallback behavior.
+
+Write sequence:
+- [ ] Create content item
+- [ ] Update content item brief/script fields
+- [ ] Generate thumbnail variants
+- [ ] Approve thumbnail
+- [ ] Generate metadata
+- [ ] Approve metadata
+- [ ] Queue package generation
+- [ ] Queue posting target
+
+**Exit criterion:** A content item can move from draft to approved package with no direct publishing and with complete audit/approval history.
 
 ---
 
@@ -378,19 +508,20 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 ## Phase Sequencing
 
 ```
-Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.7 🔲 → Phase 1 ✅ → Phase 2 ✅ → Phase 3 ✅ → Phase 4 ✅ → Phase 5 ✅ → Phase 6 🔲 → Phase 7 🔲
-Foundation   AI Selector    Dual-node    Agents      Compose   Subtitles  Thumbs    SEO Meta   Analytics  All Plat   Hardening
+Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R 🔲 → Phase 0.7 🔲 → Phase 0.8 🔲 → Phase 0.9 🔲 → Phase 1W 🔲 → Phase 6 🔲 → Phase 7 🔲
+Foundation   Selector v1    Dual-node    Gemini policy  Agents      Read model   Console UI   Studio writes  Platforms   Hardening
 
-Phase 0.5 must complete before Phase 3 (thumbnails) and Phase 4 (metadata) — they depend on AI.
-Phase 0.7 is now the active next phase because agent dispatch must consume the local-first selector.
-Phase 1 and Phase 2 are independent of Phase 0.5 (FFmpeg work, no AI needed).
-Phase 3 and Phase 4 can run in parallel after Phase 0.5.
+Existing backend Phases 1-5 are implemented from the earlier VO worker plan, but the product build now proceeds through the normalized read model and Console shell before adding new writes.
+Phase 0.5R must complete before expanding AI-dependent generation because it aligns implementation with the current Gemini-first strategy.
+Phase 0.8 must complete before Phase 0.9 so the UI consumes canonical APIs instead of STB-specific or filesystem assumptions.
+Phase 1W must not start until Phase 0.9 is read-only and stable.
+Phase 6 direct publishing must not start until manual package parity and adapter capability checks exist for each target.
 ```
 
 ---
 
 ## Immediate Next Steps
 
-**Next Codex/GPT-5.4-Mini implementation step:** Sprint 0C-B1 — add the static Agent Capability Registry adapter and tests.
+**Next Codex Mini / Claude Code Haiku implementation step:** Phase 0.5R.3 — extend task metadata with privacy/sensitivity flags and selector tests.
 
-This creates the agent orchestrator foundation without granting autonomous write/deploy power.
+This is small, bounded, and does not grant new publishing or mutation power.

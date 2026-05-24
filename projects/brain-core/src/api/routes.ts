@@ -91,6 +91,14 @@ import { listSkills } from '../adapters/skills.js';
 import { getVideoStatus, listVideoQueue } from '../adapters/video.js';
 import { getStbPipelineStatus } from '../adapters/stb-status.js';
 import { getVideoOrchestratorStatus } from '../adapters/video-orchestrator-status.js';
+import {
+  readVOStudioAccounts,
+  readVOStudioAnalyticsSummary,
+  readVOStudioContentItems,
+  readVOStudioPackage,
+  readVOStudioPipelineProfiles,
+  readVOStudioProjects,
+} from '../adapters/video-orchestrator-studio-model.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -415,6 +423,21 @@ export async function routeRequest(
       return;
     case '/video-orchestrator/status':
       sendJson(response, 200, getVideoOrchestratorStatus());
+      return;
+    case '/video-orchestrator/projects':
+      sendJson(response, 200, readVOStudioProjects());
+      return;
+    case '/video-orchestrator/accounts':
+      sendJson(response, 200, readVOStudioAccounts());
+      return;
+    case '/video-orchestrator/pipeline-profiles':
+      sendJson(response, 200, readVOStudioPipelineProfiles());
+      return;
+    case '/video-orchestrator/content-items':
+      sendJson(response, 200, readVOStudioContentItems());
+      return;
+    case '/video-orchestrator/analytics/summary':
+      sendJson(response, 200, readVOStudioAnalyticsSummary());
       return;
     case '/video-orchestrator/intake':
       sendJson(response, 200, getVideoOrchestratorIntake());
@@ -1077,6 +1100,22 @@ export async function routeRequest(
             error: {
               code: 'not_found',
               message: 'Video Orchestrator intake plan not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        const packageMatch = /^\/video-orchestrator\/packages\/([^/]+)$/.exec(url.pathname);
+        if (packageMatch) {
+          const pkg = readVOStudioPackage(decodeURIComponent(packageMatch[1] ?? ''));
+          if (pkg) {
+            sendJson(response, 200, pkg);
+            return;
+          }
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator production package not found.',
             },
           } satisfies BrainCoreErrorResponse);
           return;

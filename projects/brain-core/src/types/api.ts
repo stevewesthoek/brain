@@ -7683,6 +7683,147 @@ export interface BrainCoreVideoThumbnailDesignPlanResponse {
   nextSafeStep: string;
 }
 
+export type BrainCoreVOStudioPlatformId = 'youtube' | 'youtube-shorts' | 'tiktok' | 'pinterest' | 'facebook' | 'linkedin';
+export type BrainCoreVOStudioStatus = 'ready-read-only' | 'partial' | 'blocked';
+
+export interface BrainCoreVOStudioFormatSpec {
+  id: string;
+  label: string;
+  aspectRatio: '16:9' | '9:16' | '1:1' | '4:5' | '2:3';
+  width: number;
+  height: number;
+  safeZones: string[];
+}
+
+export interface BrainCoreVOStudioProject {
+  id: string;
+  name: string;
+  status: BrainCoreVOStudioStatus;
+  brandProfileId: string;
+  defaultPipelineProfileId: string;
+  platformAccountIds: string[];
+  summary: string;
+}
+
+export interface BrainCoreVOStudioBrandProfile {
+  id: string;
+  projectId: string;
+  name: string;
+  tone: string;
+  colorTokens: string[];
+  typography: string[];
+  thumbnailRules: string[];
+}
+
+export interface BrainCoreVOStudioPlatformSpec {
+  id: BrainCoreVOStudioPlatformId;
+  label: string;
+  publishMode: 'direct-disabled' | 'manual-package' | 'limited-adapter';
+  formats: BrainCoreVOStudioFormatSpec[];
+  capabilityNotes: string[];
+}
+
+export interface BrainCoreVOStudioPlatformAccount {
+  id: string;
+  projectId: string;
+  platform: BrainCoreVOStudioPlatformId;
+  handle: string;
+  status: 'active' | 'manual-only' | 'blocked';
+  credentialState: 'connected' | 'missing' | 'manual';
+  adapterStatus: 'disabled' | 'manual-package' | 'ready-read-only';
+  quotaState: 'unknown' | 'ok' | 'limited';
+  schedulerPolicy: string;
+  enabledPipelineProfileIds: string[];
+  capabilities: string[];
+}
+
+export interface BrainCoreVOStudioPipelineStage {
+  id: string;
+  label: string;
+  status: 'enabled' | 'approval-gated' | 'manual-only' | 'disabled';
+}
+
+export interface BrainCoreVOStudioPipelineProfile {
+  id: string;
+  projectId: string;
+  name: string;
+  status: BrainCoreVOStudioStatus;
+  targetPlatforms: BrainCoreVOStudioPlatformId[];
+  enabledStages: BrainCoreVOStudioPipelineStage[];
+  approvalRules: string[];
+  scheduleWindows: string[];
+  fallbackBehavior: string;
+}
+
+export interface BrainCoreVOStudioArtifactVariant {
+  id: string;
+  kind: 'video' | 'thumbnail' | 'metadata' | 'captions' | 'manual-package';
+  platform: BrainCoreVOStudioPlatformId;
+  formatId: string;
+  status: 'planned' | 'preview-ready' | 'blocked';
+  sourceTemplateId: string;
+}
+
+export interface BrainCoreVOStudioPostingTarget {
+  id: string;
+  platformAccountId: string;
+  platform: BrainCoreVOStudioPlatformId;
+  mode: 'manual-package' | 'direct-disabled';
+  status: 'draft' | 'approval-required' | 'blocked';
+  approvalRequired: boolean;
+}
+
+export interface BrainCoreVOStudioContentItem {
+  id: string;
+  projectId: string;
+  sourceSlug: string;
+  title: string;
+  status: 'draft' | 'package-preview' | 'blocked';
+  canonicalSource: string;
+  pipelineProfileId: string;
+  packageId: string;
+  platformTargets: BrainCoreVOStudioPostingTarget[];
+  artifactVariants: BrainCoreVOStudioArtifactVariant[];
+}
+
+export interface BrainCoreVOStudioProductionPackage {
+  id: string;
+  contentItemId: string;
+  projectId: string;
+  status: 'preview-ready' | 'blocked';
+  packageType: 'manual-fallback';
+  variants: BrainCoreVOStudioArtifactVariant[];
+  postingTargets: BrainCoreVOStudioPostingTarget[];
+  approvals: Array<{ id: string; label: string; status: 'required' | 'blocked' | 'not-requested' }>;
+  auditEvents: Array<{ id: string; event: string; at: string; actor: string }>;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVOStudioAnalyticsSummary {
+  id: 'video-orchestrator-analytics-summary';
+  status: BrainCoreVOStudioStatus;
+  generatedAt: string;
+  kpis: Array<{ label: string; value: string; detail: string }>;
+  byPlatform: Array<{ platform: BrainCoreVOStudioPlatformId; accountCount: number; publishedCount: number; scheduledCount: number; failedCount: number }>;
+}
+
+export interface BrainCoreVOStudioListResponse<T> {
+  id: string;
+  generatedAt: string;
+  items: T[];
+  summary: Record<string, number | string | boolean>;
+  safety: {
+    readOnly: true;
+    writesFiles: false;
+    publishesContent: false;
+    schedulesPost: false;
+    callsPlatformApi: false;
+    writesToMind: false;
+  };
+  nextSafeStep: string;
+}
+
 
 export type BrainCoreVideoArchiveLoggingPlanStatus = 'planned' | 'blocked';
 

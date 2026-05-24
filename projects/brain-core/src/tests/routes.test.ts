@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { routeRequest } from '../api/routes.js';
 import { executeLocalAppActionRequest, listLocalAppDefinitions, readLocalAppActionStatus } from '../adapters/local-app-orchestrator.js';
 import { evaluateLocalAppActionDefinition } from '../adapters/local-app-action-executor.js';
+import { isAppAlreadyRunning } from '../adapters/local-app-stack-orchestrator.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 class MockResponse implements ServerResponse {
@@ -889,6 +890,41 @@ test('POST /local-apps/mind-steward/start rejects command override parameters', 
   assert.equal(body.safety.commandOverrideAccepted, false);
   assert.equal(body.safety.canonicalAppIdRequired, true);
   assert.equal(JSON.stringify(body.steps).includes('rm -rf'), false);
+});
+
+test('start preflight treats healthy apps as already running and blocks unhealthy occupied ports', async () => {
+  const http = await import('node:http');
+  const healthyServer = http.createServer((req, res) => {
+    if (req.url === '/health') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  const unhealthyServer = http.createServer((_, res) => {
+    res.writeHead(500, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ ok: false }));
+  });
+
+  await new Promise<void>((resolve) => (healthyServer as any).listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve) => (unhealthyServer as any).listen(0, '127.0.0.1', resolve));
+
+  try {
+    const healthyPort = ((healthyServer as any).address() as { port: number }).port;
+    const unhealthyPort = ((unhealthyServer as any).address() as { port: number }).port;
+    const healthy = await isAppAlreadyRunning({ appPort: healthyPort, healthUrl: `http://127.0.0.1:${healthyPort}/health` } as never);
+    const unhealthy = await isAppAlreadyRunning({ appPort: unhealthyPort, healthUrl: `http://127.0.0.1:${unhealthyPort}/health` } as never);
+
+    assert.equal(healthy.ok, true);
+    assert.equal(healthy.steps.some((step) => step.status === 'success'), true);
+    assert.equal(unhealthy.ok, false);
+    assert.equal((unhealthy as { reason?: string }).reason?.includes('not healthy'), true);
+  } finally {
+    await new Promise<void>((resolve) => healthyServer.close(() => resolve()));
+    await new Promise<void>((resolve) => unhealthyServer.close(() => resolve()));
+  }
 });
 
 test('POST /local-apps/unknown/start rejects unknown app id', async () => {

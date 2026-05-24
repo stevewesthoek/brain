@@ -1755,6 +1755,111 @@ export interface BrainCoreVideoOrchestratorStatus {
   actions: { canPreview: boolean; canRequestRun: boolean; requiresApproval: boolean };
 }
 
+export type BrainCoreVOStudioPlatformId = 'youtube' | 'youtube-shorts' | 'tiktok' | 'pinterest' | 'facebook' | 'linkedin';
+export type BrainCoreVOStudioStatus = 'ready-read-only' | 'partial' | 'blocked';
+
+export interface BrainCoreVOStudioProject {
+  id: string;
+  name: string;
+  status: BrainCoreVOStudioStatus;
+  brandProfileId: string;
+  defaultPipelineProfileId: string;
+  platformAccountIds: string[];
+  summary: string;
+}
+
+export interface BrainCoreVOStudioPlatformAccount {
+  id: string;
+  projectId: string;
+  platform: BrainCoreVOStudioPlatformId;
+  handle: string;
+  status: 'active' | 'manual-only' | 'blocked';
+  credentialState: 'connected' | 'missing' | 'manual';
+  adapterStatus: 'disabled' | 'manual-package' | 'ready-read-only';
+  quotaState: 'unknown' | 'ok' | 'limited';
+  schedulerPolicy: string;
+  enabledPipelineProfileIds: string[];
+  capabilities: string[];
+}
+
+export interface BrainCoreVOStudioPipelineStage {
+  id: string;
+  label: string;
+  status: 'enabled' | 'approval-gated' | 'manual-only' | 'disabled';
+}
+
+export interface BrainCoreVOStudioPipelineProfile {
+  id: string;
+  projectId: string;
+  name: string;
+  status: BrainCoreVOStudioStatus;
+  targetPlatforms: BrainCoreVOStudioPlatformId[];
+  enabledStages: BrainCoreVOStudioPipelineStage[];
+  approvalRules: string[];
+  scheduleWindows: string[];
+  fallbackBehavior: string;
+}
+
+export interface BrainCoreVOStudioArtifactVariant {
+  id: string;
+  kind: 'video' | 'thumbnail' | 'metadata' | 'captions' | 'manual-package';
+  platform: BrainCoreVOStudioPlatformId;
+  formatId: string;
+  status: 'planned' | 'preview-ready' | 'blocked';
+  sourceTemplateId: string;
+}
+
+export interface BrainCoreVOStudioPostingTarget {
+  id: string;
+  platformAccountId: string;
+  platform: BrainCoreVOStudioPlatformId;
+  mode: 'manual-package' | 'direct-disabled';
+  status: 'draft' | 'approval-required' | 'blocked';
+  approvalRequired: boolean;
+}
+
+export interface BrainCoreVOStudioContentItem {
+  id: string;
+  projectId: string;
+  sourceSlug: string;
+  title: string;
+  status: 'draft' | 'package-preview' | 'blocked';
+  canonicalSource: string;
+  pipelineProfileId: string;
+  packageId: string;
+  platformTargets: BrainCoreVOStudioPostingTarget[];
+  artifactVariants: BrainCoreVOStudioArtifactVariant[];
+}
+
+export interface BrainCoreVOStudioProductionPackage {
+  id: string;
+  contentItemId: string;
+  projectId: string;
+  status: 'preview-ready' | 'blocked';
+  packageType: 'manual-fallback';
+  variants: BrainCoreVOStudioArtifactVariant[];
+  postingTargets: BrainCoreVOStudioPostingTarget[];
+  approvals: Array<{ id: string; label: string; status: 'required' | 'blocked' | 'not-requested' }>;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreVOStudioAnalyticsSummary {
+  id: 'video-orchestrator-analytics-summary';
+  status: BrainCoreVOStudioStatus;
+  generatedAt: string;
+  kpis: Array<{ label: string; value: string; detail: string }>;
+  byPlatform: Array<{ platform: BrainCoreVOStudioPlatformId; accountCount: number; publishedCount: number; scheduledCount: number; failedCount: number }>;
+}
+
+export interface BrainCoreVOStudioListResponse<T> {
+  id: string;
+  generatedAt: string;
+  items: T[];
+  summary: Record<string, number | string | boolean>;
+  nextSafeStep: string;
+}
+
 export interface BrainCoreVideoIntakeSource {
   id: string;
   source: string;
@@ -4713,6 +4818,30 @@ export async function readBrainCoreVideoOrchestratorStatus(
   baseUrl: string,
 ): Promise<HttpResult<import('./client.js').BrainCoreVideoOrchestratorStatus>> {
   return fetchJson<import('./client.js').BrainCoreVideoOrchestratorStatus>(normalizeBaseUrl(baseUrl), '/video-orchestrator/status');
+}
+
+export async function readBrainCoreVOStudioProjects(baseUrl: string): Promise<HttpResult<BrainCoreVOStudioListResponse<BrainCoreVOStudioProject>>> {
+  return fetchJson<BrainCoreVOStudioListResponse<BrainCoreVOStudioProject>>(normalizeBaseUrl(baseUrl), '/video-orchestrator/projects');
+}
+
+export async function readBrainCoreVOStudioAccounts(baseUrl: string): Promise<HttpResult<BrainCoreVOStudioListResponse<BrainCoreVOStudioPlatformAccount>>> {
+  return fetchJson<BrainCoreVOStudioListResponse<BrainCoreVOStudioPlatformAccount>>(normalizeBaseUrl(baseUrl), '/video-orchestrator/accounts');
+}
+
+export async function readBrainCoreVOStudioPipelineProfiles(baseUrl: string): Promise<HttpResult<BrainCoreVOStudioListResponse<BrainCoreVOStudioPipelineProfile>>> {
+  return fetchJson<BrainCoreVOStudioListResponse<BrainCoreVOStudioPipelineProfile>>(normalizeBaseUrl(baseUrl), '/video-orchestrator/pipeline-profiles');
+}
+
+export async function readBrainCoreVOStudioContentItems(baseUrl: string): Promise<HttpResult<BrainCoreVOStudioListResponse<BrainCoreVOStudioContentItem>>> {
+  return fetchJson<BrainCoreVOStudioListResponse<BrainCoreVOStudioContentItem>>(normalizeBaseUrl(baseUrl), '/video-orchestrator/content-items');
+}
+
+export async function readBrainCoreVOStudioPackage(baseUrl: string, packageId: string): Promise<HttpResult<BrainCoreVOStudioProductionPackage>> {
+  return fetchJson<BrainCoreVOStudioProductionPackage>(normalizeBaseUrl(baseUrl), `/video-orchestrator/packages/${encodeURIComponent(packageId)}`);
+}
+
+export async function readBrainCoreVOStudioAnalyticsSummary(baseUrl: string): Promise<HttpResult<BrainCoreVOStudioAnalyticsSummary>> {
+  return fetchJson<BrainCoreVOStudioAnalyticsSummary>(normalizeBaseUrl(baseUrl), '/video-orchestrator/analytics/summary');
 }
 
 export async function readBrainCoreVideoOrchestratorIntake(

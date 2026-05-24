@@ -2,7 +2,7 @@
 
 **Document type:** Executable implementation plan  
 **Status:** Active  
-**Last updated:** 2026-05-22 (status sweep; next task 0C-B1)
+**Last updated:** 2026-05-24 (strategy alignment and Gemini-first routing policy)
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
 **Strategy reference:** `video-orchestrator-strategy.md`  
 **AI Selector architecture:** `ai-model-selector-architecture.md`
@@ -11,19 +11,179 @@
 
 ## Completion Status
 
+**Policy update 2026-05-24:** This plan originally documented local-first routing. The accepted current policy is Gemini free-tier first for eligible non-sensitive text tasks, then local Ollama, then Codex CLI, then Amazon Bedrock. Local remains first for sensitive, private, offline, external-provider-disallowed, and high-control review payloads. Future selector implementation slices must add Gemini provider registration, RPM/TPM/RPD quota state, and fallback-on-429 behavior before treating the policy as fully implemented.
+
 | Sprint | Phase | Status |
 |--------|-------|--------|
 | Sprint 0A — AI Selector v1 | Phase 0.5 | ✅ Complete |
 | Sprint 0B — Dual-Node + Resilience | Phase 0.6 | ✅ Complete |
-| Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | 🔲 Active next |
+| Sprint 0D — Gemini-First Selector Policy | Phase 0.5R | 🔲 Active next |
+| Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | ⏳ Continue after selector policy alignment |
+| Sprint 0E — Normalized VO Studio Read Model | Phase 0.8 | 🔲 Next |
+| Sprint 0F — Brain Console VO Shell | Phase 0.9 | 🔲 Next |
 | Sprint 1 — Composition | Phase 1 | ✅ Complete |
 | Sprint 2 — Subtitles | Phase 2 | ✅ Complete |
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
 | Sprint 4 — SEO Metadata | Phase 4 | ✅ Complete (UI carry-over) |
 | Sprint 5 — Analytics | Phase 5 | ✅ Complete (UI carry-over) |
-| Sprint 6 — Brain Console UI | Phases 3.4, 4.4, 5.4 | 🔲 After Sprint 0C-B registry baseline |
+| Sprint 6 — Approval-Gated Studio Writes | Phase 1W | 🔲 After read-only Console shell |
 | Sprint 7 — Multi-Platform | Phase 6 | 🔲 Future |
 | Sprint 8 — Hardening | Phase 7 | 🔲 Future |
+
+---
+
+## Small-Agent Task Contract
+
+Every implementation task in this plan must be executable by Codex Mini or Claude Code Haiku.
+
+Required task shape:
+- One clear goal.
+- One owner boundary: selector, Brain Core API, Brain Console UI, worker, or docs.
+- Explicit files allowed to change.
+- Explicit files not allowed to change.
+- No credential printing, no secret reads unless the task is specifically a credential-status read with redaction.
+- No external platform mutation unless the task is explicitly an approved adapter-write task.
+- Tests or verification commands listed before implementation starts.
+- Done means code, tests, docs, and guardrail checks all match the strategy.
+
+Default verification:
+- Docs-only: `git diff --check` plus stale-phrase `rg` checks.
+- Brain Core API/types: `npm run build` and focused `node --test dist/tests/<test>.js`.
+- Brain Console UI: `npm run typecheck && npm run build`; use browser screenshot checks when visual layout changes.
+- Selector Python: focused unit tests or deterministic CLI dry runs; never print API keys.
+
+---
+
+## Sprint 0D: Gemini-First Selector Policy (Phase 0.5R) 🔲 Active Next
+
+**Purpose:** Align the implemented AI Model Selector with the accepted strategy: Gemini free-tier first for eligible non-sensitive text tasks; local Ollama first for sensitive/private/offline tasks and Gemini fallback; Codex CLI next; Bedrock last.
+
+**Boundary:** Selector config, selector core, selector tests, selector docs only. Do not change Brain Console UI, publishing adapters, VO prompts, platform accounts, or worker publishing behavior.
+
+### Task 0D-A — Provider registry record ✅
+**Allowed files:**
+- `~/.config/video-orchestrator/ai-providers.json`
+- selector fixture/test files if present
+- `projects/brain-core/docs/ai-model-selector-architecture.md` if implementation details differ from docs
+
+**Implemented:**
+- Added `gemini-free` provider with provider type, API key env name, text capabilities, privacy classification, and priority ahead of local for eligible non-sensitive text.
+- Kept direct OpenAI API and direct Anthropic API absent.
+- Added Gemini provider-type health handling based on credential presence without burning API quota.
+- Ensured provider listing exposes `api_key_env` only and does not print API key values.
+- Fixed local Ollama fallback model ordering so text tasks prefer configured text models over whichever Ollama model appears first in `/api/tags`.
+
+**Tests/verification:**
+- `ai-select --providers` shows Gemini capability/status and no API key value.
+- Focused selector tests prove Gemini-first selection when `GEMINI_API_KEY` exists, local fallback when it does not, and secret-safe provider health output.
+
+**Did not do:**
+- Do not call Gemini for real generation.
+- Do not edit Brain Console.
+- Do not change publishing behavior.
+
+### Task 0D-B — Gemini quota ledger ✅
+**Allowed files:**
+- `~/.local/video-orchestrator/services/model-selector/core.py`
+- selector state/test files
+
+**Implemented:**
+- Persist RPM, TPM, RPD usage and reset metadata.
+- Treat any exhausted dimension as provider-unavailable.
+- Record quota decisions in the selector audit log.
+- Reserve quota on Gemini selection so repeated picks respect the same local state.
+- Fall back to local when Gemini is quota-exhausted.
+
+**Tests/verification:**
+- Test quota-available selects Gemini for eligible text.
+- Test RPM exhausted falls back to local.
+- Test RPD exhausted falls back to local.
+- Test TPM exhausted falls back to local.
+- Test reservation increments the quota state for selected Gemini calls.
+
+**Do not do:**
+- Do not hardcode model-specific rate numbers in code. Limits must come from config because Google changes tiers and model limits.
+
+### Task 0D-C — Privacy eligibility gate ✅
+**Allowed files:**
+- selector task metadata/config files
+- selector core/tests
+- selector client docs if request fields change
+
+**Implemented:**
+- Added TaskMetadata dataclass with sensitivity/privacy flags: sensitive, private, offline, external_provider_disallowed
+- Updated select_provider() to accept task_metadata parameter
+- Added privacy gate logic: skip Gemini when any privacy flag is True
+- Preserved local-first behavior for privacy-restricted tasks
+- Updated SelectionResult to include task_metadata
+
+**Tests/verification:**
+- ✅ Sensitive metadata task selects local even when Gemini quota is available
+- ✅ Private metadata task selects local
+- ✅ Offline metadata task selects local
+- ✅ External-disallowed metadata task selects local
+- ✅ Non-sensitive metadata task selects Gemini when quota is available
+- ✅ Multiple privacy flags work correctly
+- ✅ None task_metadata allows Gemini (backward compatible)
+- ✅ Result includes task_metadata for audit/observability
+
+### Task 0D-D — Failure fallback policy
+**Allowed files:**
+- selector core/tests
+
+**Implement:**
+- Fall back to local on Gemini 429, timeout, health failure, malformed response, quota exhaustion, or quality-gate failure.
+- Open circuit for repeated Gemini failures.
+
+**Tests/verification:**
+- Simulated 429 falls back to local and records failure.
+- Simulated malformed response falls back to local.
+- Repeated failures open circuit.
+
+**Sprint 0D done when:** `ai-select --task metadata_generation` can prove Gemini-selected, local-privacy-selected, local-quota-fallback, Codex fallback, and Bedrock paid fallback paths through deterministic tests or dry runs without exposing secrets.
+
+---
+
+## Sprint 0E: Normalized VO Studio Read Model (Phase 0.8) 🔲
+
+**Purpose:** Expose canonical read APIs for the Brain Console VO surfaces.
+
+**Boundary:** Brain Core read adapters, types, routes, and tests only. No worker changes. No UI mutation controls. No platform writes.
+
+Atomic tasks:
+- 0E-A: Define TypeScript DTOs for Project, BrandProfile, PlatformAccount, PlatformSpec, FormatSpec, PipelineProfile, ContentItem, ProductionPackage, ArtifactVariant, PostingTarget, PostingJob, PerformanceSnapshot, Approval, AuditEvent.
+- 0E-B: Add fixture-backed `projects` and `accounts` read adapters and tests.
+- 0E-C: Add fixture-backed `pipeline-profiles` and `content-items` read adapters and tests.
+- 0E-D: Add `packages/:id` read adapter with stage status, variants, approvals, posting targets, and audit events.
+- 0E-E: Add `analytics/summary` read adapter with project/account/platform rollups.
+- 0E-F: Expose the six read routes and API contract tests.
+
+Done when:
+- All six routes return typed JSON from fixtures.
+- STB is represented as one Project, not a special route or UI branch.
+- Tests prove adapter mode, credential state, quota state, and manual fallback capability are exposed for accounts/targets.
+
+---
+
+## Sprint 0F: Brain Console VO Shell (Phase 0.9) 🔲
+
+**Purpose:** Build the read-only operator interface from canonical VO read APIs.
+
+**Boundary:** Brain Console UI and client types only. No mutation buttons. No worker changes. No platform writes.
+
+Atomic tasks:
+- 0F-A: Global VO context bar with Project, Account, Platform Targets, Pipeline Profile, Date Range.
+- 0F-B: Overview panel with worker/selector health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counters.
+- 0F-C: Studio shell with tabs: Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval.
+- 0F-D: Thumbnail Studio read-only panel with one canvas/preview area and platform preview strip.
+- 0F-E: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary.
+- 0F-F: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles.
+- 0F-G: History/Analytics table with project/account/platform/status filters.
+
+Done when:
+- `npm run typecheck && npm run build` passes.
+- The UI can render fixture/read API data for all five canonical surfaces.
+- No UI card duplicates a project-specific thumbnail generator or project-specific pipeline.
 
 ---
 
@@ -196,17 +356,18 @@ This is a warning only — batch window still proceeds. The selector handles fal
 ### Sprint 0B Definition of Done
 
 - `ai-select --health` shows both Ollama nodes with status (healthy/degraded/offline)
-- `ai-select --task metadata_generation` routes to `ollama-m4pro` during day
-- `ai-select --task metadata_generation` routes to `ollama-m1` during batch window (1–7 AM) when M4 Pro is loaded
+- `ai-select --task metadata_generation` routes to Gemini free-tier first for eligible non-sensitive text once the 2026-05-24 policy follow-up is implemented
+- `ai-select --task metadata_generation` routes to `ollama-m4pro` for sensitive/offline tasks and Gemini fallback
+- `ai-select --task metadata_generation` routes to `ollama-m1` during batch window (1–7 AM) when M4 Pro is loaded or Gemini/local policy selects the secondary node
 - Stopping Ollama on M1 → within 30s, `--health` shows M1 as degraded; tasks stop routing there
 - Restarting Ollama on M1 → within 10 min, M1 re-enters the pool
-- No Codex CLI or Bedrock fallback used when both local providers are healthy and capable
+- No Codex CLI or Bedrock fallback used when Gemini/local providers are healthy, allowed, quota-available, and capable
 
 ---
 
 ## Sprint 0C: Brain Agent Orchestrator (Phase 0.7) 🔲
 
-**Purpose:** Add agent mode as a Brain Core orchestration layer that can coordinate full-project work across local Ollama, Codex CLI, Amazon Bedrock Claude, the Brain skill layer, and infrastructure CLIs.
+**Purpose:** Add agent mode as a Brain Core orchestration layer that can coordinate full-project work across Gemini free-tier where eligible, local Ollama for privacy/offline and fallback work, Codex CLI, Amazon Bedrock Claude, the Brain skill layer, and infrastructure CLIs.
 
 **Research basis:** `agent-orchestrator-research-2026-05-22.md`
 
@@ -245,6 +406,7 @@ Define:
   - `skill.research`
   - `skill.web`
   - `skill.video`
+  - `ai.gemini-free`
   - `ai.ollama-m4pro`
   - `ai.ollama-m1`
   - `ai.codex-cli`
@@ -271,7 +433,7 @@ Define:
 - Ensure every id is unique.
 - Ensure every record has a non-empty `label`, `description`, `safetyClass`, and `verification` array.
 - Ensure external-state CLIs require approval for at least one of `deploy`, `dns_change`, `external_state`, or `credential_sensitive`.
-- Ensure AI surfaces are local-first ordered by `priority` if a `priority` field is added.
+- Ensure AI surfaces are ordered by selector policy if a `priority` field is added: Gemini free-tier for eligible text first, local Ollama first for sensitive/offline and fallback work, Codex CLI next, Bedrock paid fallback last.
 
 **Do not do in this task:**
 - Do not add HTTP routes.
@@ -380,9 +542,10 @@ Persist:
 
 ### Task 0C-D — Selector-aware executor adapter ⏳ IN PROGRESS
 Rules:
-- local Ollama M4/M1 first for tasks they can handle,
-- Codex CLI second for subscription-backed work when local quality is insufficient or local nodes are unavailable/rate-limited,
-- Amazon Bedrock Claude third as paid fallback,
+- Gemini free-tier first for eligible non-sensitive text tasks while quota remains,
+- local Ollama M4/M1 first for sensitive/private/offline tasks and as Gemini quota/health/quality fallback,
+- Codex CLI next for subscription-backed work when Gemini/local quality is insufficient or lower-cost providers are unavailable/rate-limited,
+- Amazon Bedrock Claude last as paid fallback,
 - no direct OpenAI API,
 - no direct Anthropic API.
 

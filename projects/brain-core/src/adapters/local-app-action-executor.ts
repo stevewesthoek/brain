@@ -12,6 +12,7 @@ import { listLocalAppDefinitions } from './local-app-orchestrator.js';
 import {
   startDatabasePhase,
   stopDatabasePhase,
+  isAppAlreadyRunning,
   verifyAppStarted,
   verifyAppStopped,
 } from './local-app-stack-orchestrator.js';
@@ -184,6 +185,40 @@ async function executeStackAction(
 
   // ── START: bring DB up first, then app ──────────────────────────────────
   if (action === 'start') {
+    const alreadyRunning = await isAppAlreadyRunning(app);
+    if (alreadyRunning.ok) {
+      return createResult({
+        id,
+        appId: app.id,
+        action,
+        status: 'success',
+        ok: true,
+        message: 'App is already running; start was skipped.',
+        startedAtMs,
+        steps: alreadyRunning.steps,
+        allowlistedApp: true,
+        allowlistedAction: true,
+        nextState: 'running',
+      });
+    }
+
+    if (alreadyRunning.reason?.includes('not healthy')) {
+      return createResult({
+        id,
+        appId: app.id,
+        action,
+        status: 'blocked',
+        ok: false,
+        message: alreadyRunning.reason,
+        errorCode: 'local_app_already_running_but_unhealthy',
+        startedAtMs,
+        steps: alreadyRunning.steps,
+        allowlistedApp: true,
+        allowlistedAction: true,
+        nextState: 'unknown',
+      });
+    }
+
     const dbPhase = await startDatabasePhase(app);
     preSteps.push(...dbPhase.steps);
     if (!dbPhase.ok) {

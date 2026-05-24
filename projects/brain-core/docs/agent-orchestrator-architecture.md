@@ -1,12 +1,12 @@
 # Brain Agent Orchestrator Architecture
 
 **Status:** Draft architecture contract
-**Last updated:** 2026-05-22
+**Last updated:** 2026-05-24
 **Research basis:** `agent-orchestrator-research-2026-05-22.md`
 
 ## Purpose
 
-The Brain Agent Orchestrator is the project-level agent mode for Brain. It coordinates multi-step work across local AI, Codex CLI, Amazon Bedrock Claude, the Brain skills layer, and approved infrastructure CLIs.
+The Brain Agent Orchestrator is the project-level agent mode for Brain. It coordinates multi-step work across Gemini free-tier where eligible, local AI for private/offline and fallback work, Codex CLI, Amazon Bedrock Claude, the Brain skills layer, and approved infrastructure CLIs.
 
 It is not an AI model selector. It consumes the AI Model Selector whenever LLM execution is needed.
 
@@ -35,9 +35,10 @@ User goal
 
 Every LLM task goes through the AI Model Selector. Provider order:
 
-1. Local Ollama on Mac Mini M4 Pro and MacBook M1.
-2. Codex CLI through the ChatGPT subscription surface.
-3. Amazon Bedrock Claude as the paid fallback.
+1. Gemini free-tier for eligible non-sensitive text tasks while RPM/TPM/RPD budgets remain available.
+2. Local Ollama on Mac Mini M4 Pro and MacBook M1 for sensitive, private, offline, external-provider-disallowed, or Gemini-exhausted tasks.
+3. Codex CLI through the ChatGPT subscription surface when Gemini/local quality is insufficient or lower-cost providers are unavailable.
+4. Amazon Bedrock Claude as the paid fallback.
 
 Direct OpenAI API and direct Anthropic API are not valid executor surfaces.
 

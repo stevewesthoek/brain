@@ -2,7 +2,7 @@
 
 **Document type:** Architecture design  
 **Status:** Active  
-**Last updated:** 2026-05-22 (dual-node load policy added)
+**Last updated:** 2026-05-24 (Gemini-first routing policy)
 **Routing policy:** `brain/ai/policy/routing.md`  
 **VO strategy:** `video-orchestrator-strategy.md`
 
@@ -23,7 +23,7 @@ When this document says "AI Model Selector" it always means the Python service a
 
 ## Purpose
 
-A unified AI routing microservice that all consumers (Video Orchestrator, Claude Code, Codex, agent orchestrator, and future services) use to select the right AI provider for any generation task. Local-first, cost-aware, schedule-aware, multi-node, fully resilient.
+A unified AI routing microservice that all consumers (Video Orchestrator, Claude Code, Codex, agent orchestrator, and future services) use to select the right AI provider for any generation task. Free-tier-first where eligible, privacy-gated, cost-aware, schedule-aware, multi-node, fully resilient.
 
 **Problem it solves:** Without a selector, every module hardcodes an API call to a specific provider. Adding a new provider requires touching every module. Rate limits cause silent failures. A second local machine (M1 MacBook) can't be utilized. Batch window optimization is impossible.
 
@@ -31,7 +31,7 @@ A unified AI routing microservice that all consumers (Video Orchestrator, Claude
 
 ## Hardware Inventory
 
-The AI Model Selector orchestrates inference across two local machines plus nonlocal fallback surfaces.
+The AI Model Selector orchestrates inference across Gemini free-tier, two local machines, and nonlocal fallback surfaces.
 
 ### Mac Mini M4 Pro — Primary (host machine)
 - **RAM:** 24 GB unified memory
@@ -144,12 +144,25 @@ Codex CLI usage is plan-limited under the user's ChatGPT subscription, and Claud
 
 ## Provider Registry (`ai-providers.json`)
 
-Five providers plus a Bedrock model portfolio. Two local Ollama nodes handle all generation tasks first. The Bedrock portfolio is the paid value tier and chooses cheap capable models before premium Claude fallbacks. Codex CLI remains available after the Bedrock value tier when a subscription-backed surface is a better fit. There is no direct OpenAI API fallback and no direct Anthropic API fallback in the selector.
+Provider order is policy-driven. Gemini free-tier handles eligible non-sensitive text tasks first while RPM/TPM/RPD quota remains. Two local Ollama nodes handle sensitive/private/offline payloads first and take over when Gemini is exhausted, rate-limited, unhealthy, or fails quality gates. Codex CLI remains available as the subscription-backed escalation tier. The Bedrock portfolio is the paid fallback and chooses cheap capable models before premium Claude fallbacks. There is no direct OpenAI API fallback and no direct Anthropic API fallback in the selector.
 
 ```json
 {
-  "version": 3,
+  "version": 4,
   "providers": [
+    {
+      "id": "gemini-free",
+      "label": "Gemini free-tier",
+      "type": "gemini",
+      "api_key_env": "GEMINI_API_KEY",
+      "cost_per_1k_tokens": 0.0,
+      "priority": 1,
+      "capabilities": ["text/small", "text/medium", "text/large"],
+      "privacy_allowed": "non_sensitive_only",
+      "quota_policy": { "track": ["rpm", "tpm", "rpd"], "fallback_on": ["quota_exhausted", "429", "health_failure", "quality_failure"] },
+      "schedule_preference": "any",
+      "notes": "Use first for eligible high-volume drafts. Do not use for sensitive/private/offline payloads."
+    },
     {
       "id": "ollama-m4pro",
       "label": "Mac Mini M4 Pro (local)",
@@ -157,7 +170,7 @@ Five providers plus a Bedrock model portfolio. Two local Ollama nodes handle all
       "base_url": "http://localhost:11434/v1",
       "api_key": null,
       "cost_per_1k_tokens": 0.0,
-      "priority": 1,
+      "priority": 2,
       "capabilities": ["text/small", "text/medium", "text/large"],
       "max_context_tokens": 128000,
       "health_check": { "endpoint": "http://localhost:11434/api/tags", "method": "GET", "expect_status": 200 },
@@ -173,7 +186,7 @@ Five providers plus a Bedrock model portfolio. Two local Ollama nodes handle all
       "base_url": "http://192.168.2.2:11434/v1",
       "api_key": null,
       "cost_per_1k_tokens": 0.0,
-      "priority": 2,
+      "priority": 3,
       "capabilities": ["text/small", "text/medium"],
       "max_context_tokens": 32768,
       "health_check": { "endpoint": "http://192.168.2.2:11434/api/tags", "method": "GET", "expect_status": 200 },
@@ -214,7 +227,7 @@ Five providers plus a Bedrock model portfolio. Two local Ollama nodes handle all
       "label": "Amazon Bedrock model portfolio",
       "type": "bedrock",
       "cost_per_1k_tokens": 0.0,
-      "priority": 3,
+      "priority": 5,
       "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "max_context_tokens": 200000,
       "health_check": { "binary_exists": "aws" },
@@ -239,11 +252,12 @@ Five providers plus a Bedrock model portfolio. Two local Ollama nodes handle all
 The selector works through this ladder and stops at the first passing provider:
 
 ```
-1. ollama-m4pro    (local, free, fast — always preferred)
-2. ollama-m1       (local, free, slower — batch window preferred)
+1. gemini-free     (free-tier, non-sensitive text only, quota-gated)
+2. ollama-m4pro    (local, free, fast — sensitive/offline first and Gemini fallback)
+3. ollama-m1       (local, free, slower — batch window preferred)
    ── defer to next batch window if non-urgent ──
-3. claude-bedrock  (paid Bedrock value portfolio: Nemotron/Qwen/DeepSeek/Kimi/gpt-oss, then Sonnet)
-4. codex-cli       (ChatGPT subscription fallback)
+4. codex-cli       (ChatGPT subscription escalation)
+5. claude-bedrock  (paid Bedrock value portfolio: Nemotron/Qwen/DeepSeek/Kimi/gpt-oss, then Sonnet)
 ```
 
 **There is no direct OpenAI API or Anthropic API fallback in this chain.** Bedrock model access is region/account validated before use. Opus stays disabled unless the AWS account is entitled to use it.

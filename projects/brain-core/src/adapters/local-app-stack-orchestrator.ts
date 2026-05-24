@@ -11,6 +11,7 @@ const PORT_POLL_INTERVAL_MS = 500;
 const APP_STOP_GRACE_MS = 8_000;
 const APP_START_VERIFY_TIMEOUT_MS = 30_000;
 const APP_STOP_VERIFY_TIMEOUT_MS = 15_000;
+const APP_HEALTH_CHECK_TIMEOUT_MS = 3_000;
 
 export type StackStep = BrainCoreLocalAppActionResultStep;
 
@@ -196,6 +197,37 @@ export async function verifyAppStarted(app: BrainCoreLocalAppDefinition): Promis
   };
 }
 
+export async function isAppAlreadyRunning(app: BrainCoreLocalAppDefinition): Promise<StackPhaseResult> {
+  const steps: StackStep[] = [];
+  const port = app.appPort;
+  const healthUrl = app.healthUrl || app.appUrl;
+
+  if (healthUrl) {
+    const healthy = await probeHealthUrl(healthUrl, APP_HEALTH_CHECK_TIMEOUT_MS);
+    if (healthy) {
+      steps.push(step('app-health-verify', `Verify app health ${healthUrl}`, 'health-check', 'success', `Health endpoint ${healthUrl} returned ok.`));
+      return { ok: true, steps };
+    }
+    steps.push(step('app-health-verify', `Verify app health ${healthUrl}`, 'health-check', 'failed', `Health endpoint ${healthUrl} did not return ok.`));
+  }
+
+  if (!port) {
+    return { ok: false, steps, reason: 'No app port registered; cannot determine running state.' };
+  }
+
+  const listening = await isPortListening(port);
+  if (listening) {
+    steps.push(step('app-port-verify', `Verify app port ${port}`, 'health-check', 'success', `App port ${port} is accepting connections.`));
+    if (healthUrl) {
+      return { ok: false, steps, reason: `App port ${port} is open but ${healthUrl} is not healthy.` };
+    }
+    return { ok: true, steps };
+  }
+
+  steps.push(step('app-port-verify', `Verify app port ${port}`, 'health-check', 'failed', `App port ${port} is not accepting connections.`));
+  return { ok: false, steps, reason: `App port ${port} is not open.` };
+}
+
 // ─── App phase: verify stopped ───────────────────────────────────────────────
 
 export async function verifyAppStopped(app: BrainCoreLocalAppDefinition): Promise<StackPhaseResult> {
@@ -266,4 +298,17 @@ function step(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function probeHealthUrl(healthUrl: string, timeoutMs: number): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(healthUrl, { signal: controller.signal });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }

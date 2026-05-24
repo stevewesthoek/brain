@@ -44,7 +44,7 @@ Recommended stack:
 
 2. **AI Model Selector**
    - Resource allocator for AI work.
-   - Provider order is fixed by policy: local Ollama M4/M1 first, Codex CLI second, Amazon Bedrock Claude third.
+   - Provider order was updated by the 2026-05-24 policy: Gemini free-tier first for eligible non-sensitive text tasks, local Ollama M4/M1 first for sensitive/offline and Gemini fallback work, Codex CLI next, Amazon Bedrock Claude last as the paid fallback.
    - No direct OpenAI API and no direct Anthropic API providers.
 
 3. **Execution Adapters**
