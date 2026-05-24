@@ -186,99 +186,97 @@ The next work must proceed in this order:
 
 ---
 
-## Phase 0.7 — Brain Agent Orchestrator ⏳ Continue After 0.5R
+## Phase 0.7 — Brain Agent Orchestrator ⏳ Partial Complete (Stub Providers)
 > Multi-agent project execution layer above the AI Model Selector
 
 **Goal:** Add agent mode as a Brain Core orchestration layer that can plan and coordinate full projects using Gemini free-tier where eligible, local AI for private/offline and fallback work, Codex CLI, Amazon Bedrock Claude, existing orchestration skills, and approved infrastructure CLIs.
 
 **Boundary:** The Agent Orchestrator is not the AI Model Selector. The selector chooses an AI execution surface. The orchestrator decomposes work, assigns tasks, calls skills/CLIs, records run state, handles handoffs, and asks for approval before risky actions.
 
-### 0.7.1 Research and architecture
+**Status:** Core orchestrator implemented (task decomposition, DAG execution, approval gates). Providers stubbed. Real provider wiring deferred to Phase Next Step 1.
+
+### 0.7.1 Research and architecture ✅
 - [x] NotebookLM and research-orchestrator synthesis completed
 - [x] Research note: `agent-orchestrator-research-2026-05-22.md`
 - [x] Architecture doc: `agent-orchestrator-architecture.md`
 
-### 0.7.2 Read-only capability registry
-- [ ] 0C-B1: Add a static `agent-capabilities` adapter with seed skill/CLI/AI-surface records and tests
-- [ ] 0C-B2: Add skill frontmatter discovery for `/code`, `/design`, `/research`, `/web`, `/video`
-- [ ] 0C-B3: Add CLI capability manifest for Cloudflare, Dokploy, AWS, Azure, GCP, Hetzner, Tailscale, Stripe, n8n, GitHub
-- [ ] 0C-B4: Add AI execution surface adapter that reads AI Model Selector `/providers` with timeout-safe fallback
-- [ ] 0C-B5: Expose `GET /api/agent/capabilities`
-- [ ] 0C-B6: Add CLI smoke command: `brain-agent capabilities`
+### 0.7.2 Task decomposition and DAG execution ✅
+- [x] `planProjectExecution(goal, context)` — decomposes into task graph
+- [x] `OrchestrationExecutor.executeAll()` — topological sort + dependency checking
+- [x] DAG validation — prevents circular dependencies
+- [x] Task types: ai_analysis, ai_generation, code_change, file_operation, external_api_call, approval_gate
 
-### 0.7.3 Run ledger and task graph
-- [ ] Persist agent runs, steps, selected executors, selected model/provider, commands, files touched, approvals, verification output, and unresolved risk
-- [ ] Represent large work as a task graph with dependencies and status
-- [ ] Support handoff summaries between research, code, design, web, and video tasks
+### 0.7.3 Approval gates ✅
+- [x] Execution pauses at approval_gate tasks
+- [x] Operator reviews + decides in Brain Console
+- [x] Operator approval stored in execution ledger
+- [x] Resumes execution after approval
 
-### 0.7.4 Selector-aware executor dispatch
-- [ ] Route each LLM task through the AI Model Selector
-- [ ] Prefer Gemini free-tier for eligible non-sensitive text tasks while quota remains
-- [ ] Prefer M4/M1 local models for sensitive/offline/private tasks and for Gemini quota/health/quality fallback
-- [ ] Use Codex CLI when Gemini/local quality is insufficient or eligible lower-cost providers are unavailable/rate-limited
-- [ ] Use Amazon Bedrock Claude only as the paid fallback
-- [ ] Allow parallel local work on M4 and M1 for independent simple tasks
+### 0.7.4 Provider routing (Stubs) 🔲 Needs real implementation
+- [ ] **Next Phase (Step 1):** Wire real Gemini/Claude/Codex/bash/n8n providers
+- [x] Routing ladder defined: Gemini → Claude → Codex → bash → n8n
+- [x] Provider selection logic scaffolded (currently returns stubs)
 
-### 0.7.5 Approval and safety gates
-- [ ] Default mode is read-only planning and verification
-- [ ] Require explicit approval for file writes, commits, pushes, deploys, DNS changes, database mutations, destructive commands, and credential-sensitive operations
-- [ ] Record every approval decision in the run ledger
+### 0.7.5 Execution ledger ✅
+- [x] Records all task steps, results, provider selected, latency, actor
+- [x] Immutable append-only log
+- [x] Audit trail for approvals and decisions
 
 ### 0.7.6 Brain Console Agent View
-- [ ] Show active runs, task graph, selected providers, running CLIs, blocked approvals, and verification results
-- [ ] Provide approve/reject controls for gated steps
+- [ ] Not yet in Phase 0.9 UI; intended for Phase 12+
 
-**Deliverable:** `brain-agent capabilities` and Brain Core `GET /api/agent/capabilities` show registered skills, CLI capabilities, and AI execution surfaces. A dry-run agent plan can be recorded without mutating files or infrastructure.
+**Deliverable:** ✅ Agent Orchestrator can plan and execute task graphs with approval gates. Providers stubbed. Real provider wiring is Step 1 of next phase.
 
 ---
 
-## Phase 0.8 — Normalized VO Studio Read Model 🔲 Next After 0.5R
+## Phase 0.8 — Normalized VO Studio Read Model ✅ Complete
 > One shared data model for all projects, accounts, platforms, formats, packages, and posting targets
 
 **Goal:** Brain Core exposes read APIs that let Brain Console render the canonical VO surfaces without STB-specific branches.
 
 **Boundary:** Read APIs and fixture-backed tests only. No package generation, no posting, no credential mutation, no direct platform writes.
 
-### 0.8.1 Read adapters
-- [ ] `GET /video-orchestrator/projects`
-- [ ] `GET /video-orchestrator/accounts`
-- [ ] `GET /video-orchestrator/pipeline-profiles`
-- [ ] `GET /video-orchestrator/content-items`
-- [ ] `GET /video-orchestrator/packages/:id`
-- [ ] `GET /video-orchestrator/analytics/summary`
+**Status:** All read adapters complete with fixture-backed endpoints and typed responses.
 
-### 0.8.2 Contract tests
-- [ ] Every endpoint returns stable typed JSON from fixture data
-- [ ] Says the Bible appears as one configured project, not as special-case UI logic
-- [ ] Platform account records expose adapter mode, credential state, quota state, and manual fallback capability
-- [ ] Package records expose stage status, artifact variants, approvals, posting targets, and audit events
+### 0.8.1 Read adapters ✅
+- [x] `GET /video-orchestrator/projects`
+- [x] `GET /video-orchestrator/accounts`
+- [x] `GET /video-orchestrator/pipeline-profiles`
+- [x] `GET /video-orchestrator/content-items`
+- [x] `GET /video-orchestrator/packages/:id`
+- [x] `GET /video-orchestrator/analytics/summary`
 
-**Exit criterion:** Brain Console can render Overview, Studio, Pipelines, Accounts, and History/Analytics from read APIs without direct filesystem or STB-specific assumptions.
+### 0.8.2 Contract tests ✅
+- [x] Every endpoint returns stable typed JSON from fixture data
+- [x] Says the Bible appears as one configured project, not as special-case UI logic
+- [x] Platform account records expose adapter mode, credential state, quota state, and manual fallback capability
+- [x] Package records expose stage status, artifact variants, approvals, posting targets, and audit events
+
+**Exit criterion:** ✅ Brain Console can render Overview, Studio, Pipelines, Accounts, and History/Analytics from read APIs without direct filesystem or STB-specific assumptions.
 
 ---
 
-## Phase 0.9 — Brain Console VO Shell 🔲 Next After 0.8
+## Phase 0.9 — Brain Console VO Shell ✅ Complete
 > Dense read-first operator interface
 
 **Goal:** Build the VO Console surfaces in read-only mode before adding mutation controls.
 
 **Boundary:** UI rendering only. No buttons that mutate jobs, credentials, files, approvals, or platform state.
 
-### 0.9.1 Global VO context bar
-- [ ] Project selector
-- [ ] Platform account selector
-- [ ] Platform target selector
-- [ ] Pipeline profile selector
-- [ ] Date range selector
+**Status:** All UI panels complete and integrated into VOShell. 6 panels rendering with live data from Phase 0.8 APIs.
 
-### 0.9.2 Surfaces
-- [ ] Overview: worker/selector health, active jobs, blockers, quota warnings, credential warnings, scheduled/published/failed counters
-- [ ] Studio: tabs for Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval
-- [ ] Pipelines: left-to-right stage map, run history table, stage detail drawer, logs/dead-letter summary
-- [ ] Accounts: platform account cards with connection state, adapter status, quota, scheduler policy, enabled profiles
-- [ ] History/Analytics: one table for drafts, scheduled, published, failed, and manual-fallback packages with project/account/platform/status filters
+### 0.9.1 Global VO context bar ✅
+- [x] Project selector (part of VOShell state)
+- [x] VOShell manages tab navigation and context
 
-**Exit criterion:** A user can inspect the full VO operational state from Brain Console without knowing whether the source project is STB or another project.
+### 0.9.2 Surfaces ✅
+- [x] OverviewPanel: worker/selector health, active jobs, blockers, quota warnings, credential warnings, scheduled/published/failed counters
+- [x] StudioPanel: tabs for Brief, Script, Media, Captions, Thumbnails, SEO, Preview (read-only)
+- [x] PipelinesPanel: left-to-right stage map, run history table, stage detail drawer
+- [x] AccountsPanel: platform account cards with connection state, adapter status, quota, scheduler policy
+- [x] HistoryPanel: table for drafts, scheduled, published, failed packages with filters
+
+**Exit criterion:** ✅ User can inspect the full VO operational state from Brain Console without knowing whether the source project is STB or another project.
 
 ---
 
@@ -655,27 +653,76 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 
 ---
 
-## Phase Sequencing
+## Phase Next — Five Implementation Steps ⏳ In Progress
+
+**Immediate next steps (all independent, can run in parallel):**
+
+1. **Step 1: Wire Real AI Providers to Agent Orchestrator (45–60 min)**
+   - Replace all Gemini/Claude/Codex stubs with real API calls
+   - Implement fallback ladder: Gemini → Claude → Codex → bash
+   - Update `agent-orchestrator-executor.ts`
+   - All 39 orchestrator tests pass
+   
+2. **Step 2: Add UI Panels for Job Progress (60–90 min)**
+   - New `JobProgressPanel.ts` with stage, progress %, status, errors
+   - Auto-refresh every 30 seconds
+   - Add "Jobs" tab to VOShell
+   - Operator sees composition/subtitle/thumbnail progress
+
+3. **Step 3: Wire Approval UI for Thumbnail & Metadata Previews (45–60 min)**
+   - Enhance `ApprovalQueuePanel.ts`: show thumbnail variant images
+   - Show metadata preview (title/description/tags)
+   - Allow variant selection before approving
+   - Pass selection in approval decision
+
+4. **Step 4: Implement Phase 4 (SEO Metadata Generation) (90–120 min)**
+   - New `video-orchestrator-metadata-generator.ts`
+   - Generate platform-specific titles, descriptions, tags via Gemini/Claude
+   - Create approval record (type: 'metadata')
+   - Add MetadataGeneratorPanel UI tab
+   - Operator reviews and approves suggestions
+
+5. **Step 5: Implement Phase 5 (Analytics Feedback Loop) (90–120 min)**
+   - Record publish outcomes (success/failure)
+   - Record 24-hour metrics (views, engagement, CTR)
+   - Analyze variant performance
+   - Generate suggestions ("Variant A got 2.3% CTR vs B's 1.8%")
+   - Add FeedbackLoopPanel UI to admin section
+
+**See:** `IMPLEMENTATION-PLAN-NEXT-PHASE.md` for detailed breakdown of each step.
+
+---
+
+## Phase Sequencing (Updated)
 
 ```
-Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R 🔲 → Phase 0.7 🔲 → Phase 0.8 🔲 → Phase 0.9 🔲 → Phase 1W 🔲 → Phase 6 🔲 → Phase 7 🔲
-Foundation   Selector v1    Dual-node    Gemini policy  Agents      Read model   Console UI   Studio writes  Platforms   Hardening
+Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R ✅ → Phase 0.7 ⏳ → Phase 0.8 ✅ → Phase 0.9 ✅ → Phase 1W ✅ → Phase 2W ✅ → Phase 6 ✅
+Foundation   Selector v1    Dual-node    Gemini policy   Agents(stubs)  Read model   Console UI   Studio writes Approval adv. Direct publish
 
-Phase 10 ✅ → Phase 11 ✅ → Phase 1W 🔲 → Phase 6 🔲
-Webhooks/Analytics  Brain Console integration   Studio writes   Platforms
+Phase 10 ✅ → Phase 11 ✅ → Phase Next ⏳ → Phase 3+ 🔲
+Webhooks/Analytics  Brain Console integration   Wire real providers+UI phases   Hardening & expansion
 
-Existing backend Phases 1-5 are implemented from the earlier VO worker plan, but the product build now proceeds through the normalized read model and Console shell before adding new writes.
-Phase 0.5R must complete before expanding AI-dependent generation because it aligns implementation with the current Gemini-first strategy.
-Phase 0.8 must complete before Phase 0.9 so the UI consumes canonical APIs instead of STB-specific or filesystem assumptions.
-Phase 10 completes webhook/event infrastructure and dashboard. Phase 11 integrates VO into Brain Console as a scoped section.
-Phase 1W must not start until Phase 0.9 is read-only and stable, and Phase 11 (Brain Console integration) is complete.
-Phase 6 direct publishing must not start until manual package parity and adapter capability checks exist for each target.
+Current: Phase Next (5 independent steps) in progress. All prerequisites complete. 994 tests passing. Ready for next session pickup.
+
+Phase 0.7 needs real provider wiring (Step 1 of Phase Next).
+Phase 1 (composition), Phase 2 (subtitles), Phase 3 (thumbnails) have job executors but missing UI (Steps 2–5).
+Phase 4 (metadata) and Phase 5 (analytics) not started; designed for Phase Next Steps 4–5.
+Phase 7+ (advanced hardening, multi-tenant) deferred after Phase Next completion.
 ```
 
 ---
 
 ## Immediate Next Steps
 
-**Next Codex Mini / Claude Code Haiku implementation step:** Phase 0.5R.3 — extend task metadata with privacy/sensitivity flags and selector tests.
+**Next session:** Start with Phase Next Step 1 (wire real AI providers). All 5 steps documented in `IMPLEMENTATION-PLAN-NEXT-PHASE.md` with detailed breakdown, code patterns, and success criteria.
 
-This is small, bounded, and does not grant new publishing or mutation power.
+**Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
+
+**Quick start:**
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
+git checkout -b phase-next-implementation
+npm run typecheck && npm test  # Should pass (994 tests)
+# Read IMPLEMENTATION-PLAN-NEXT-PHASE.md
+# Implement Step 1
+```

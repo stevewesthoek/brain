@@ -1,17 +1,4 @@
 {
   "mode": "default",
-  "agents": [
-    {
-      "id": "coder-default-1779629070-23692",
-      "type": "coder-default",
-      "model": "sonnet",
-      "status": "done"
-    },
-    {
-      "id": "coder-default-1779632144-23561",
-      "type": "coder-default",
-      "model": "sonnet",
-      "status": "done"
-    }
-  ]
+  "agents": []
 }
