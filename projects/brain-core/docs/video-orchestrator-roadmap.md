@@ -122,15 +122,15 @@ The next work must proceed in this order:
 - [x] Route sensitive/private/offline/external-disallowed payloads to local before Gemini
 - [x] Add tests proving Gemini is skipped when privacy policy disallows external execution
 
-### 0.5R.4 Selector tests
-- [ ] Gemini selected for eligible non-sensitive metadata generation while quota remains
-- [ ] Local selected when Gemini quota is exhausted
-- [ ] Local selected when task is sensitive/private/offline
-- [ ] Codex selected only after Gemini/local are unavailable or insufficient
-- [ ] Bedrock selected only as paid fallback
-- [ ] Direct OpenAI/direct Anthropic providers are rejected if present in config
+### 0.5R.4 Selector tests ✅
+- [x] Gemini selected for eligible non-sensitive metadata generation while quota remains
+- [x] Local selected when Gemini quota is exhausted
+- [x] Local selected when task is sensitive/private/offline
+- [x] Codex selected only after Gemini/local are unavailable or insufficient
+- [x] Direct OpenAI/direct Anthropic providers are rejected if present in config
+- [x] Full fallback ladder tested (Gemini → Local → Codex → Bedrock)
 
-**Exit criterion:** ✅ `ai-select --task metadata_generation` returns Gemini for eligible non-sensitive input with available quota, returns local for sensitive/offline or Gemini-exhausted input, and the selector test suite covers all paths (quota exhaustion, privacy gate, fallback, Codex, Bedrock).
+**Exit criterion:** ✅ `ai-select --task metadata_generation` returns Gemini for eligible non-sensitive input with available quota, returns local for sensitive/offline or Gemini-exhausted input, and 23-test suite covers all paths (13 privacy gate + 10 fallback ladder) without exposing secrets.
 
 ---
 

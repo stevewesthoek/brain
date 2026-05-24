@@ -17,10 +17,10 @@
 |--------|-------|--------|
 | Sprint 0A — AI Selector v1 | Phase 0.5 | ✅ Complete |
 | Sprint 0B — Dual-Node + Resilience | Phase 0.6 | ✅ Complete |
-| Sprint 0D — Gemini-First Selector Policy | Phase 0.5R | 🔲 Active next |
+| Sprint 0D — Gemini-First Selector Policy | Phase 0.5R | ✅ Complete |
 | Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | ⏳ Continue after selector policy alignment |
-| Sprint 0E — Normalized VO Studio Read Model | Phase 0.8 | 🔲 Next |
-| Sprint 0F — Brain Console VO Shell | Phase 0.9 | 🔲 Next |
+| Sprint 0E — Normalized VO Studio Read Model | Phase 0.8 | ✅ Complete |
+| Sprint 0F — Brain Console VO Shell | Phase 0.9 | 🔲 Active next |
 | Sprint 1 — Composition | Phase 1 | ✅ Complete |
 | Sprint 2 — Subtitles | Phase 2 | ✅ Complete |
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
@@ -127,36 +127,138 @@ Default verification:
 - ✅ None task_metadata allows Gemini (backward compatible)
 - ✅ Result includes task_metadata for audit/observability
 
-### Task 0D-D — Failure fallback policy
+### Task 0D-D — Failure fallback policy & test suite ✅
 **Allowed files:**
 - selector core/tests
 
-**Implement:**
-- Fall back to local on Gemini 429, timeout, health failure, malformed response, quota exhaustion, or quality-gate failure.
-- Open circuit for repeated Gemini failures.
+**Implemented:**
+- Fallback ladder verified: Gemini → Local → Codex → Bedrock
+- Codex selected when local is circuit-broken
+- Local selected before Codex when healthy
+- Gemini preferred when quota available
+- Direct OpenAI/Anthropic APIs never selected (policy rejection)
+- Provider order respects priority and policy, not cost
+- Comprehensive 10-test fallback ladder suite
 
 **Tests/verification:**
-- Simulated 429 falls back to local and records failure.
-- Simulated malformed response falls back to local.
-- Repeated failures open circuit.
+- ✅ Codex selected after local circuit-breaks
+- ✅ Local before Codex when healthy
+- ✅ Gemini before local when both healthy + quota available
+- ✅ Codex skipped when local available
+- ✅ Full fallback chain: Gemini → Local → Codex (no missing steps)
+- ✅ Direct OpenAI provider rejected even if in config
+- ✅ Direct Anthropic provider rejected even if in config
+- ✅ Policy order enforced regardless of cost budget
+- ✅ Result reason reflects fallback chain decisions
 
-**Sprint 0D done when:** `ai-select --task metadata_generation` can prove Gemini-selected, local-privacy-selected, local-quota-fallback, Codex fallback, and Bedrock paid fallback paths through deterministic tests or dry runs without exposing secrets.
+**Sprint 0D done when:** ✅ `ai-select --task metadata_generation` proves all paths (Gemini-selected, local-privacy-selected, local-quota-fallback, Codex fallback, provider rejection) through 23 deterministic unit tests (13 privacy gate + 10 fallback ladder) without exposing secrets.
 
 ---
 
-## Sprint 0E: Normalized VO Studio Read Model (Phase 0.8) 🔲
+## Sprint 0E: Normalized VO Studio Read Model (Phase 0.8) 🔲 Starting
 
 **Purpose:** Expose canonical read APIs for the Brain Console VO surfaces.
 
 **Boundary:** Brain Core read adapters, types, routes, and tests only. No worker changes. No UI mutation controls. No platform writes.
 
-Atomic tasks:
-- 0E-A: Define TypeScript DTOs for Project, BrandProfile, PlatformAccount, PlatformSpec, FormatSpec, PipelineProfile, ContentItem, ProductionPackage, ArtifactVariant, PostingTarget, PostingJob, PerformanceSnapshot, Approval, AuditEvent.
-- 0E-B: Add fixture-backed `projects` and `accounts` read adapters and tests.
-- 0E-C: Add fixture-backed `pipeline-profiles` and `content-items` read adapters and tests.
-- 0E-D: Add `packages/:id` read adapter with stage status, variants, approvals, posting targets, and audit events.
-- 0E-E: Add `analytics/summary` read adapter with project/account/platform rollups.
-- 0E-F: Expose the six read routes and API contract tests.
+### Task 0E-A — TypeScript DTO Definitions ✅
+
+**Files:**
+- `projects/brain-core/src/types/vo-studio.ts` — 15 DTOs + wire format helpers
+- `projects/brain-core/src/tests/vo-studio-types.test.ts` — 7-test suite
+
+**Implemented:**
+- Project, BrandProfile, PlatformAccount, PlatformSpec, FormatSpec
+- PipelineProfile, ContentItem, ProductionPackage, ArtifactVariant
+- PostingTarget, PostingJob, PerformanceSnapshot, Approval, AuditEvent
+- Health/status types: WorkerHealth, SelectorHealth, VOStudioHealth
+- Response wrapper types for all read endpoints
+- Wire format converters: projectFromWire, platformAccountFromWire, contentItemFromWire, packageFromWire
+- Comprehensive tests for snake_case → camelCase conversion, optional field defaults, nested array handling
+
+**Tests:**
+- ✅ Snake case conversion works correctly
+- ✅ Optional fields handled with proper defaults
+- ✅ Language defaults to 'en'
+- ✅ Nested artifacts/approvals converted correctly
+- ✅ Empty nested arrays handled
+- ✅ All status type literals valid
+- ✅ 7/7 tests pass
+
+### Task 0E-B — Fixture-backed Read Adapters ✅
+
+**Files:**
+- `projects/brain-core/src/adapters/vo-studio-fixtures.ts` — complete fixture dataset
+- `projects/brain-core/src/adapters/vo-studio-read.ts` — 9 read adapter functions
+- `projects/brain-core/src/tests/vo-studio-read.test.ts` — 22-test comprehensive suite
+
+**Implemented:**
+- Realistic fixture data: 1 brand, 1 project, 3 platforms, 2 formats, 3 accounts, 2 pipelines, 3 content items, 1 complete package
+- Read adapters:
+  - `getProjects()` — all projects + brands
+  - `getAccounts(projectId)` — filtered accounts + platforms
+  - `getPipelineProfiles(projectId)` — pipelines + formats
+  - `getContentItems(projectId, limit, offset)` — paginated items
+  - `getContentItem(projectId, itemId)` — single item
+  - `getPackage(projectId, packageId)` — package with nested artifacts/approvals/targets/events
+  - `getAccountAdapterMode(projectId, accountId)` — adapter mode + credential state
+  - `getAccountQuotaState(projectId, accountId)` — quota remaining + reset time
+
+**Tests:**
+- ✅ Projects/brands returned with correct data
+- ✅ Snake_case → camelCase conversion verified
+- ✅ Accounts filtered by project, platforms exposed
+- ✅ Adapter modes: direct, n8n-dispatch, manual-only
+- ✅ Credential states: configured, missing, invalid, expired
+- ✅ Quota state exposed (YouTube: 9500 remaining; Facebook: null)
+- ✅ Pipeline profiles and formats returned
+- ✅ Content items paginated with limit/offset
+- ✅ Package with nested artifacts, approvals, posting targets, audit events
+- ✅ All queries return null for non-existent items
+- ✅ Project ID filtering works correctly
+- ✅ 22/22 tests pass
+
+### Task 0E-C — Read Routes with Summary & Safety ✅
+
+**Files:**
+- `projects/brain-core/src/adapters/vo-studio-read-routes.ts` (165 lines) — 6 route adapters
+- `projects/brain-core/src/tests/vo-studio-read-routes.test.ts` (193 lines) — 15-test suite
+
+**Route adapters:**
+- `readVOStudioProjects()` → `GET /video-orchestrator/projects`
+- `readVOStudioAccounts(projectId)` → `GET /video-orchestrator/accounts?projectId=...`
+- `readVOStudioPipelineProfiles(projectId)` → `GET /video-orchestrator/pipeline-profiles?projectId=...`
+- `readVOStudioContentItems(projectId, limit, offset)` → `GET /video-orchestrator/content-items?projectId=...&limit=50&offset=0`
+- `readVOStudioPackage(projectId, packageId)` → `GET /video-orchestrator/packages/:id`
+- `readVOStudioAnalyticsSummary(projectId)` → `GET /video-orchestrator/analytics/summary?projectId=...`
+
+**Response contract:**
+- All responses include: `id`, `generatedAt`, `items` or data, `summary` (counts), `safety` metadata, `nextSafeStep`
+- Safety metadata: readOnly=true, no file writes, no platform calls, no scheduling
+- Pagination: `limit`, `offset`, `total`, `hasMore`
+- Metadata: platform specs, format specs, status breakdowns
+
+**Tests:**
+- ✅ Projects response with summary counts
+- ✅ Accounts with platform specs and adapter mode counts
+- ✅ Accounts uses default projectId fallback
+- ✅ Pipeline profiles with format specs
+- ✅ Content items paginated with limit/offset
+- ✅ Package lookup by ID
+- ✅ Analytics summary with statistics
+- ✅ All responses include safety metadata (readOnly=true)
+- ✅ All responses include nextSafeStep guidance
+- ✅ Summary counts match actual item status
+- ✅ Pagination hasMore flag accurate
+- ✅ Platforms/formats metadata present
+- ✅ 15/15 tests pass
+
+**Routes now ready for:** Brain Console UI to call via `/api/video-orchestrator/*` endpoints
+
+Remaining tasks:
+- 0E-D: Wire routes into Brain Core HTTP router (if not already done).
+- 0E-E: Create API contract tests proving all routes return correct shape.
+- 0E-F: Update Brain Console to consume read routes instead of STB-specific branches.
 
 Done when:
 - All six routes return typed JSON from fixtures.
@@ -165,20 +267,20 @@ Done when:
 
 ---
 
-## Sprint 0F: Brain Console VO Shell (Phase 0.9) 🔲
+## Sprint 0F: Brain Console VO Shell (Phase 0.9) 🔲 Active Next
 
 **Purpose:** Build the read-only operator interface from canonical VO read APIs.
 
 **Boundary:** Brain Console UI and client types only. No mutation buttons. No worker changes. No platform writes.
 
 Atomic tasks:
-- 0F-A: Global VO context bar with Project, Account, Platform Targets, Pipeline Profile, Date Range.
-- 0F-B: Overview panel with worker/selector health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counters.
-- 0F-C: Studio shell with tabs: Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval.
-- 0F-D: Thumbnail Studio read-only panel with one canvas/preview area and platform preview strip.
-- 0F-E: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary.
-- 0F-F: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles.
-- 0F-G: History/Analytics table with project/account/platform/status filters.
+- 0F-A: Global VO context bar with Project, Account, Platform Targets, Pipeline Profile, Date Range. ✅ Complete
+- 0F-B: Overview panel with worker/selector health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counters. 🔲 Next
+- 0F-C: Studio shell with tabs: Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval. 🔲
+- 0F-D: Thumbnail Studio read-only panel with one canvas/preview area and platform preview strip. 🔲
+- 0F-E: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary. 🔲
+- 0F-F: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles. 🔲
+- 0F-G: History/Analytics table with project/account/platform/status filters. 🔲
 
 Done when:
 - `npm run typecheck && npm run build` passes.

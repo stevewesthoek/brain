@@ -379,7 +379,9 @@ export async function buildRecentContinuationCards(config: Config, limit = 5): P
     config.codexSessionsDir,
     config.codexSessionIndex,
   );
-  return rankSessionsForContinuation(sessions, config)
+  const ranked = rankSessionsForContinuation(sessions, config);
+  console.log(`[buildRecentContinuationCards] limit=${limit}, ranked.length=${ranked.length}, returning=${Math.min(limit, ranked.length)}`);
+  return ranked
     .slice(0, limit)
     .map((ranked, index) => ({
       selection: index + 1,
