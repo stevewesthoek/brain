@@ -114,7 +114,6 @@ class SelectorHandler(BaseHTTPRequestHandler):
                         "provider_id": result.provider_id,
                         "model": result.model,
                         "base_url": result.base_url,
-                        "api_key": result.api_key,
                         "reason": result.reason,
                         "cost_estimate": result.cost_estimate,
                         "timeout_inference_sec": result.timeout_inference_sec,

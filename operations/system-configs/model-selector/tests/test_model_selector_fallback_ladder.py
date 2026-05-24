@@ -110,6 +110,7 @@ class TestFallbackLadder(unittest.TestCase):
                     "priority": 3,
                     "capabilities": ["text/small", "text/medium", "text/large"],
                     "models": ["gpt-5.4"],
+                    "health_check": {"binary_exists": "codex"},
                 },
             ],
         }
@@ -168,6 +169,7 @@ class TestFallbackLadder(unittest.TestCase):
         selector._circuit_breaker.register_failure("ollama-m4pro")
         selector._circuit_breaker.register_failure("ollama-m4pro")
         selector._circuit_breaker.register_failure("ollama-m4pro")
+        selector._check_cli_health = lambda provider: True
 
         result = selector.select("metadata_generation", input_token_count=1000)
 
@@ -235,13 +237,8 @@ class TestFallbackLadder(unittest.TestCase):
 
         os.environ.pop("GEMINI_API_KEY", None)
         self._seed_gemini_quota()
-        selector = self._selector_with_local_health()
-
-        result = selector.select("metadata_generation", input_token_count=1000)
-
-        # Local Ollama should be selected, NOT direct OpenAI
-        self.assertEqual(result.provider_id, "ollama-m4pro")
-        self.assertNotEqual(result.provider_id, "openai-direct")
+        with self.assertRaisesRegex(ValueError, "Unsupported provider type"):
+            core.ModelSelector()
 
     def test_direct_anthropic_provider_rejected_if_present(self):
         """Direct Anthropic API provider (if present) is never selected."""
@@ -261,13 +258,40 @@ class TestFallbackLadder(unittest.TestCase):
 
         os.environ.pop("GEMINI_API_KEY", None)
         self._seed_gemini_quota()
-        selector = self._selector_with_local_health()
+        with self.assertRaisesRegex(ValueError, "Unsupported provider type"):
+            core.ModelSelector()
+
+    def test_cli_provider_requires_binary_health(self):
+        """CLI providers are not selected when their configured binary is unavailable."""
+        os.environ.pop("GEMINI_API_KEY", None)
+        self._seed_gemini_quota()
+        selector = core.ModelSelector()
+        selector._check_cli_health = lambda provider: False
+
+        selector._circuit_breaker.register_failure("ollama-m4pro")
+        selector._circuit_breaker.register_failure("ollama-m4pro")
+        selector._circuit_breaker.register_failure("ollama-m4pro")
 
         result = selector.select("metadata_generation", input_token_count=1000)
 
-        # Local Ollama should be selected, NOT direct Anthropic
-        self.assertEqual(result.provider_id, "ollama-m4pro")
-        self.assertNotEqual(result.provider_id, "anthropic-direct")
+        self.assertIsInstance(result, dict)
+        self.assertTrue(result["deferred"])
+
+    def test_cli_provider_selected_when_binary_health_passes(self):
+        """CLI providers remain selectable after local providers fail when binary health passes."""
+        os.environ.pop("GEMINI_API_KEY", None)
+        self._seed_gemini_quota()
+        selector = core.ModelSelector()
+        selector._check_cli_health = lambda provider: True
+
+        selector._circuit_breaker.register_failure("ollama-m4pro")
+        selector._circuit_breaker.register_failure("ollama-m4pro")
+        selector._circuit_breaker.register_failure("ollama-m4pro")
+
+        result = selector.select("metadata_generation", input_token_count=1000)
+
+        self.assertEqual(result.provider_id, "codex-cli")
+        self.assertEqual(result.model, "gpt-5.4")
 
     def test_provider_order_respects_priority_and_policy(self):
         """Providers are sorted by priority, not insertion order."""

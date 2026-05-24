@@ -15,7 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +35,15 @@ GEMINI_QUOTA_PATH = STATE_DIR / "gemini-quota.json"
 BEDROCK_ACCESS_PATH = STATE_DIR / "bedrock-model-access.json"
 BEDROCK_OUTCOMES_PATH = STATE_DIR / "bedrock-model-outcomes.json"
 AUDIT_LOG_PATH = LOG_DIR / "ai-selections.jsonl"
+
+ALLOWED_PROVIDER_TYPES = {
+    "bedrock",
+    "cli",
+    "gemini",
+    "openai-compatible",
+    "whisper",
+    "whisper-remote",
+}
 
 
 @dataclass
@@ -220,6 +229,7 @@ class ModelSelector:
         with open(PROVIDERS_PATH) as f:
             data = json.load(f)
         self._providers = data["providers"] if isinstance(data, dict) else data
+        self._validate_providers()
 
         with open(TASK_TYPES_PATH) as f:
             self._task_types = json.load(f)["task_types"]
@@ -234,6 +244,17 @@ class ModelSelector:
         else:
             self._bedrock_config = {}
             self._bedrock_models = []
+
+    def _validate_providers(self) -> None:
+        for provider in self._providers:
+            provider_id = provider.get("id", "<missing>")
+            provider_type = provider.get("type", "")
+            if provider_type not in ALLOWED_PROVIDER_TYPES:
+                allowed = ", ".join(sorted(ALLOWED_PROVIDER_TYPES))
+                raise ValueError(
+                    f"Unsupported provider type for {provider_id!r}: {provider_type!r}. "
+                    f"Allowed provider types: {allowed}"
+                )
 
     def _load_rate_limits(self) -> None:
         if RATE_LIMITS_PATH.exists():
@@ -377,12 +398,20 @@ class ModelSelector:
             return False
         return bool(os.environ.get(str(env_name)))
 
+    def _check_cli_health(self, provider: dict) -> bool:
+        health_check = provider.get("health_check", {})
+        binary = health_check.get("binary_exists") or provider.get("binary")
+        if not binary:
+            models = provider.get("models", [])
+            return bool(models)
+        return shutil.which(str(binary)) is not None
+
     def _quota_policy(self, provider: dict) -> dict:
         return provider.get("quota_policy", {}) or {}
 
     def _gemini_quota_reset_key(self, provider: dict) -> str:
         tz_name = self._config.get("quota_timezone", "UTC")
-        return f"{provider['id']}:{datetime.utcnow().date().isoformat()}:{tz_name}"
+        return f"{provider['id']}:{datetime.now(UTC).date().isoformat()}:{tz_name}"
 
     def _load_gemini_quota_entry(self, provider: dict) -> dict:
         key = self._gemini_quota_reset_key(provider)
@@ -391,7 +420,7 @@ class ModelSelector:
             return entry
         policy = self._quota_policy(provider)
         entry = {
-            "date": datetime.utcnow().date().isoformat(),
+            "date": datetime.now(UTC).date().isoformat(),
             "rpm_used": 0,
             "tpm_used": 0,
             "rpd_used": 0,
@@ -456,6 +485,8 @@ class ModelSelector:
             return self._check_whisper_remote_health(provider)
         if ptype == "gemini":
             return self._check_gemini_health(provider)
+        if ptype == "cli":
+            return self._check_cli_health(provider)
         return True
 
     def _model_meets_min_params(self, model_id: str, task_spec: dict) -> bool:
@@ -691,7 +722,7 @@ class ModelSelector:
                 if exhausted:
                     log.debug("selector  skip gemini_quota_exhausted  reason=%s provider=%s", exhausted_reason, provider["id"])
                     continue
-            if ptype in ("openai-compatible", "whisper", "whisper-remote", "gemini"):
+            if ptype in ("openai-compatible", "whisper", "whisper-remote", "gemini", "cli"):
                 if not self._check_health(provider):
                     if ptype != "gemini":
                         self._circuit_breaker.register_failure(provider["id"])
@@ -802,7 +833,7 @@ class ModelSelector:
         for p in self._providers:
             entry = dict(p)
             ptype = p.get("type", "")
-            if ptype in ("openai-compatible", "whisper", "whisper-remote", "gemini"):
+            if ptype in ("openai-compatible", "whisper", "whisper-remote", "gemini", "cli"):
                 entry["healthy"] = self._check_health(p)
                 if ptype == "openai-compatible":
                     entry["loaded_models"] = list(self._provider_models.get(p["id"], []))
@@ -845,7 +876,7 @@ class ModelSelector:
     def _audit_log(self, result: SelectionResult, event: str, **extra: Any) -> None:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
         record = {
-            "ts": datetime.utcnow().isoformat() + "Z",
+            "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "event": event,
             "task": result.task_type,
             "provider": result.provider_id,

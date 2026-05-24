@@ -27,6 +27,8 @@ State and audit files stay local-only:
 
 The selector validates each enabled Bedrock model with a tiny cached `bedrock-runtime converse` probe before selecting it. Access cache and model outcome learning are local runtime state, not committed source.
 
+Provider configs fail closed: only `bedrock`, `cli`, `gemini`, `openai-compatible`, `whisper`, and `whisper-remote` provider types are accepted. Direct OpenAI/Anthropic API provider types are intentionally rejected unless a future explicit provider adapter is added. `/select` responses return routing metadata only and do not expose provider API keys.
+
 ## Manual Terminal Launchers
 
 Manual terminal selection stays at the runtime layer. The `repos` launcher offers:
