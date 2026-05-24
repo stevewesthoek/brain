@@ -100,10 +100,11 @@ import {
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
 import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
-import { decideVOApproval, readPendingVOApprovals, readAllVOApprovals, getVOApprovalsPath } from '../adapters/vo-studio-approval-store.js';
+import { checkAndEscalateExpiredApprovals, decideVOApproval, readPendingVOApprovals, readAllVOApprovals, getVOApprovalsPath } from '../adapters/vo-studio-approval-store.js';
 import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest, rotateWebhookSecretRequest, disableWebhookRequest } from '../adapters/vo-studio-orchestration.js';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics, readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit, readWebhookSecurityAudit, readWebhookStatus } from '../adapters/vo-studio-orchestration.js';
+import { publishToPlatform, PLATFORM_CAPABILITIES, type PublishRequest, type PublishingPlatform } from '../adapters/vo-studio-publishing-platform.js';
 import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
 import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
 import { processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest } from '../adapters/vo-studio-webhook-handler.js';
@@ -1890,7 +1891,24 @@ export async function routeRequest(
         }
       }
 
-      // ── VO Approval Store: read endpoints (Phase 1W) ─────────────────────────
+      // ── VO Approval Store: read endpoints (Phase 1W + Phase 2W) ─────────────
+      // Simple list endpoint for ApprovalQueuePanel — returns { approvals: VOApprovalItem[] }
+      if (url.pathname === '/api/video-orchestrator/approvals') {
+        const projectId = url.searchParams.get('projectId') ?? undefined;
+        const records = readAllVOApprovals(projectId);
+        const approvals = records.map((r) => ({
+          id: r.id,
+          projectId: r.projectId,
+          type: r.type,
+          status: r.status,
+          createdAt: r.requestedAt,
+          expiresAt: r.expiresAt,
+          decisionReason: r.decisionNote,
+        }));
+        sendJson(response, 200, { ok: true, approvals, count: approvals.length });
+        return;
+      }
+
       if (url.pathname.startsWith('/api/video-orchestrator/approvals/queue')) {
         const projectId = url.searchParams.get('projectId') ?? '';
         const result = readApprovalQueue(projectId);
@@ -1907,6 +1925,11 @@ export async function routeRequest(
           count: records.length,
           storePath: getVOApprovalsPath(),
         });
+        return;
+      }
+
+      if (url.pathname === '/api/video-orchestrator/platforms/capabilities') {
+        sendJson(response, 200, { capabilities: PLATFORM_CAPABILITIES });
         return;
       }
 
@@ -2388,6 +2411,27 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  if (url.pathname === '/api/video-orchestrator/package/publish-direct') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const metaRaw = (body?.metadata as Record<string, unknown> | undefined) ?? {};
+    const req: PublishRequest = {
+      packageId: (body?.packageId as string) ?? '',
+      platform: (body?.platform as PublishingPlatform) ?? 'youtube',
+      accountId: (body?.accountId as string) ?? '',
+      videoPath: (body?.videoPath as string) ?? '',
+      metadata: {
+        title: (metaRaw.title as string) ?? '',
+        description: (metaRaw.description as string) ?? '',
+        tags: Array.isArray(metaRaw.tags) ? (metaRaw.tags as string[]) : [],
+        thumbnail: (metaRaw.thumbnail as string) ?? undefined,
+      },
+    };
+
+    const result = await publishToPlatform(req);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
   if (url.pathname === '/api/video-orchestrator/packages/batch-publish') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
     const packageIds = Array.isArray(body?.packageIds) ? body.packageIds : [];
@@ -2475,6 +2519,39 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
     const result = registerWebhookRequest(webhookReq);
     sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  // ── VO Approval Store: bulk-decide (Phase 2W) ────────────────────────────────
+  if (url.pathname === '/api/video-orchestrator/approvals/bulk-decide') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const ids = Array.isArray(body?.approvalIds) ? (body.approvalIds as string[]) : [];
+    const approved = body?.approved === true;
+
+    if (ids.length === 0) {
+      sendJson(response, 400, { ok: false, error: 'approvalIds array is required and must be non-empty' });
+      return;
+    }
+
+    const results = ids.map((id) =>
+      decideVOApproval(id, approved ? 'approved' : 'rejected', approved ? 'bulk_approved' : 'bulk_rejected'),
+    );
+    const succeeded = results.filter((r) => r.ok).length;
+    const failed = results.filter((r) => !r.ok).length;
+    sendJson(response, 200, { ok: true, processed: results.length, succeeded, failed });
+    return;
+  }
+
+  // ── VO Approval Store: check + escalate expired approvals (Phase 2W) ────────
+  if (url.pathname === '/api/video-orchestrator/approvals/check-expiry') {
+    const result = checkAndEscalateExpiredApprovals();
+    sendJson(response, 200, {
+      ok: true,
+      escalated: result.escalated.length,
+      failed: result.failed.length,
+      escalatedIds: result.escalated,
+      failedIds: result.failed,
+    });
     return;
   }
 

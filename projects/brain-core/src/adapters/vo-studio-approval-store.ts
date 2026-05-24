@@ -168,3 +168,50 @@ export function decideVOApproval(
 export function getVOApprovalsPath(): string {
   return APPROVALS_PATH;
 }
+
+export interface CheckExpiryResult {
+  escalated: string[];
+  failed: string[];
+}
+
+/**
+ * Check for expired pending approvals and auto-reject them.
+ * Returns escalated IDs (near expiry) and failed IDs (auto-rejected).
+ *
+ * Phase 2W: timeout + escalation support.
+ * Writes directly to avoid the expiry guard in decideVOApproval.
+ */
+export function checkAndEscalateExpiredApprovals(): CheckExpiryResult {
+  const records = readAllApprovals();
+  const now = new Date();
+  const escalated: string[] = [];
+  const failed: string[] = [];
+  let dirty = false;
+
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
+    if (!record || record.status !== 'pending' || !record.expiresAt) continue;
+
+    const expiresAt = new Date(record.expiresAt);
+    if (now > expiresAt) {
+      // Auto-reject — write directly so status stays 'rejected', not 'expired'
+      records[i] = {
+        ...record,
+        status: 'rejected',
+        decidedAt: now.toISOString(),
+        decisionNote: 'auto_rejected_timeout',
+      };
+      failed.push(record.id);
+      dirty = true;
+    } else if (now.getTime() > expiresAt.getTime() - 5 * 60 * 1000) {
+      // Within 5 minutes of expiry — flag for escalation notification
+      escalated.push(record.id);
+    }
+  }
+
+  if (dirty) {
+    writeAllApprovals(records);
+  }
+
+  return { escalated, failed };
+}

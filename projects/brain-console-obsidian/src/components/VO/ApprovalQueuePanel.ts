@@ -1,24 +1,66 @@
-import { getVOContextManager } from './VOContext.js';
+/**
+ * ApprovalQueuePanel — Phase 2W upgrade
+ *
+ * Bulk approval UI for VO Studio approvals.
+ *
+ * Features:
+ *  - Fetches from GET /api/video-orchestrator/approvals
+ *  - Per-item checkboxes + "Select All" for bulk operations
+ *  - "Approve Selected" / "Reject Selected" bulk action buttons
+ *  - Per-item approve/reject fallback buttons
+ *  - Expiry countdown indicators
+ *  - Decided approvals shown in a collapsed summary below
+ */
 
 const BASE_URL = 'http://localhost:4877';
 
+// Legacy export kept for backward compatibility with VOShell
 export interface ApprovalQueueItem {
   id: string;
-  type: 'thumbnail' | 'metadata' | 'final_review';
-  contentItemId: string;
-  packageId: string;
-  requestedAt: string;
-  variants: Array<{
-    id: string;
-    label: string;
-  }>;
+  type: string;
+  contentItemId?: string;
+  packageId?: string;
+  requestedAt?: string;
+  variants?: Array<{ id: string; label: string }>;
+}
+
+// Internal shape from the new /api/video-orchestrator/approvals endpoint
+interface VOApprovalEntry {
+  id: string;
+  projectId: string;
+  type: string;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  createdAt: string;
+  expiresAt?: string;
+  decisionReason?: string;
+}
+
+function formatRelativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 2) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function formatExpiryLabel(expiresAt: string): string {
+  const remaining = new Date(expiresAt).getTime() - Date.now();
+  if (remaining < 0) return 'expired';
+  const minutes = Math.floor(remaining / 60000);
+  if (minutes < 5) return `expires in ${minutes}m ⚠`;
+  if (minutes < 60) return `expires in ${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `expires in ${hours}h`;
+  return `expires in ${Math.floor(hours / 24)}d`;
 }
 
 export class ApprovalQueuePanel {
   private container: HTMLElement;
   private projectId: string;
-  private items: ApprovalQueueItem[] = [];
-  private selectedApprovalId: string | null = null;
+  private approvals: VOApprovalEntry[] = [];
+  private selectedIds = new Set<string>();
   private isLoading = false;
 
   constructor(container: HTMLElement, projectId: string) {
@@ -27,235 +69,303 @@ export class ApprovalQueuePanel {
   }
 
   async initialize(): Promise<void> {
-    this.render();
+    this.renderShell();
     await this.loadApprovals();
   }
 
-  private render(): void {
-    const html = `
-      <div class="vo-approval-queue">
-        <div class="vo-panel-header">
-          <h3>Approval Queue</h3>
-          <button class="vo-btn-secondary" id="approval-refresh">Refresh</button>
-        </div>
-        
-        <div class="vo-queue-stats">
-          <div class="vo-stat-item">
-            <span class="vo-stat-label">Pending</span>
-            <span class="vo-stat-value" id="approval-count">0</span>
+  private renderShell(): void {
+    this.container.innerHTML = `
+      <div class="vo-approval-queue bc-aq">
+        <div class="bc-aq__header">
+          <span class="bc-aq__title">VO Approval Queue</span>
+          <div class="bc-aq__header-actions">
+            <button class="brain-console__link-button" id="bc-aq-refresh">Refresh</button>
           </div>
         </div>
-
-        <div class="vo-queue-list" id="approval-list">
-          <div class="vo-empty-state">Loading approvals...</div>
-        </div>
-
-        <div class="vo-queue-detail" id="approval-detail" style="display: none;">
-          <div class="vo-detail-header">
-            <button class="vo-btn-icon" id="approval-back">← Back</button>
-            <h4 id="approval-detail-title">Approval Detail</h4>
-          </div>
-          <div id="approval-detail-content"></div>
+        <div class="bc-aq__body" id="bc-aq-body">
+          <p class="brain-console__detail">Loading approvals...</p>
         </div>
       </div>
     `;
-
-    this.container.innerHTML = html;
-    this.attachEventListeners();
-  }
-
-  private attachEventListeners(): void {
-    const refreshBtn = this.container.querySelector('#approval-refresh');
+    const refreshBtn = this.container.querySelector('#bc-aq-refresh');
     refreshBtn?.addEventListener('click', () => this.loadApprovals());
-
-    const backBtn = this.container.querySelector('#approval-back');
-    backBtn?.addEventListener('click', () => this.showList());
   }
 
   private async loadApprovals(): Promise<void> {
+    if (this.isLoading) return;
     this.isLoading = true;
-    try {
-      const response = await fetch(
-        `${BASE_URL}/api/video-orchestrator/approvals/queue?projectId=${encodeURIComponent(this.projectId)}`,
-      );
-      const data = await response.json();
 
-      if (data.ok) {
-        this.items = data.items || [];
-        this.renderList();
-      } else {
-        this.showError(data.error || 'Failed to load approvals');
-      }
-    } catch (error) {
-      this.showError(error instanceof Error ? error.message : 'Network error');
+    const body = this.container.querySelector('#bc-aq-body');
+    if (body) body.innerHTML = '<p class="brain-console__detail">Loading...</p>';
+
+    try {
+      const qs = this.projectId ? `?projectId=${encodeURIComponent(this.projectId)}` : '';
+      const res = await fetch(`${BASE_URL}/api/video-orchestrator/approvals${qs}`);
+      const data = (await res.json()) as { ok?: boolean; approvals?: VOApprovalEntry[] };
+      this.approvals = Array.isArray(data.approvals) ? data.approvals : [];
+      this.selectedIds = new Set();
+      this.renderBody();
+    } catch {
+      if (body) body.innerHTML = '<p class="brain-console__detail">Failed to load approvals.</p>';
     } finally {
       this.isLoading = false;
     }
   }
 
-  private renderList(): void {
-    const listContainer = this.container.querySelector('#approval-list');
-    if (!listContainer) return;
+  private renderBody(): void {
+    const body = this.container.querySelector('#bc-aq-body') as HTMLElement | null;
+    if (!body) return;
 
-    const countEl = this.container.querySelector('#approval-count');
-    if (countEl) countEl.textContent = String(this.items.length);
+    body.innerHTML = '';
+    this.selectedIds = new Set();
 
-    if (this.items.length === 0) {
-      listContainer.innerHTML = '<div class="vo-empty-state">No pending approvals</div>';
+    const pending = this.approvals.filter((a) => a.status === 'pending');
+    const decided = this.approvals.filter((a) => a.status !== 'pending');
+
+    if (pending.length === 0 && decided.length === 0) {
+      body.innerHTML = '<p class="brain-console__detail">No approval records found.</p>';
       return;
     }
 
-    const itemsHtml = this.items
-      .map(
-        (item) => `
-      <div class="vo-queue-item" data-id="${item.id}">
-        <div class="vo-queue-item-header">
-          <span class="vo-approval-type vo-type-${item.type}">${item.type}</span>
-          <span class="vo-queue-time">${new Date(item.requestedAt).toLocaleTimeString()}</span>
-        </div>
-        <div class="vo-queue-item-content">
-          <p class="vo-content-id">Content: ${item.contentItemId}</p>
-          <p class="vo-variants-count">${item.variants.length} variant(s)</p>
-        </div>
-      </div>
-    `,
-      )
-      .join('');
+    if (pending.length > 0) {
+      // Toolbar
+      const toolbar = document.createElement('div');
+      toolbar.className = 'bc-aq__toolbar';
 
-    listContainer.innerHTML = itemsHtml;
+      const selectAllLabel = document.createElement('label');
+      selectAllLabel.className = 'bc-aq__select-all-label';
+      const selectAllCb = document.createElement('input');
+      selectAllCb.type = 'checkbox';
+      selectAllCb.title = 'Select all pending';
+      selectAllLabel.appendChild(selectAllCb);
+      selectAllLabel.append(' Select all');
 
-    this.container.querySelectorAll('.vo-queue-item').forEach((el) => {
-      el.addEventListener('click', () => {
-        const approvalId = el.getAttribute('data-id');
-        if (approvalId) {
-          this.showDetail(approvalId);
+      const bulkApproveBtn = document.createElement('button');
+      bulkApproveBtn.className = 'brain-console__local-app-action is-enabled bc-aq__btn-approve';
+      bulkApproveBtn.textContent = 'Approve Selected';
+      bulkApproveBtn.disabled = true;
+
+      const bulkRejectBtn = document.createElement('button');
+      bulkRejectBtn.className = 'brain-console__local-app-action bc-aq__btn-reject';
+      bulkRejectBtn.textContent = 'Reject Selected';
+      bulkRejectBtn.disabled = true;
+
+      toolbar.appendChild(selectAllLabel);
+      toolbar.appendChild(bulkApproveBtn);
+      toolbar.appendChild(bulkRejectBtn);
+      body.appendChild(toolbar);
+
+      const updateToolbar = () => {
+        const has = this.selectedIds.size > 0;
+        bulkApproveBtn.disabled = !has;
+        bulkRejectBtn.disabled = !has;
+        selectAllCb.indeterminate = this.selectedIds.size > 0 && this.selectedIds.size < pending.length;
+        selectAllCb.checked = this.selectedIds.size === pending.length && pending.length > 0;
+      };
+
+      selectAllCb.addEventListener('change', () => {
+        if (selectAllCb.checked) {
+          for (const a of pending) this.selectedIds.add(a.id);
+        } else {
+          this.selectedIds.clear();
         }
-      });
-    });
-  }
-
-  private showDetail(approvalId: string): void {
-    const item = this.items.find((i) => i.id === approvalId);
-    if (!item) return;
-
-    this.selectedApprovalId = approvalId;
-
-    const detailEl = this.container.querySelector('#approval-detail');
-    const listEl = this.container.querySelector('.vo-queue-list');
-
-    if (detailEl) {
-      (detailEl as HTMLElement).style.display = 'block';
-    }
-    if (listEl) {
-      (listEl as HTMLElement).style.display = 'none';
-    }
-
-    const titleEl = this.container.querySelector('#approval-detail-title');
-    if (titleEl) {
-      titleEl.textContent = `${item.type.toUpperCase()} Approval`;
-    }
-
-    const contentEl = this.container.querySelector('#approval-detail-content');
-    if (contentEl) {
-      const variantsHtml = item.variants
-        .map(
-          (v) => `
-        <div class="vo-variant-option">
-          <input type="radio" name="variant" value="${v.id}" id="var-${v.id}">
-          <label for="var-${v.id}">${v.label}</label>
-        </div>
-      `,
-        )
-        .join('');
-
-      contentEl.innerHTML = `
-        <div class="vo-approval-form">
-          <div class="vo-form-section">
-            <label>Package ID</label>
-            <p class="vo-form-value">${item.packageId}</p>
-          </div>
-          
-          <div class="vo-form-section">
-            <label>Select Variant</label>
-            <div class="vo-variants-list">
-              ${variantsHtml}
-            </div>
-          </div>
-
-          <div class="vo-form-actions">
-            <button class="vo-btn-primary" id="approval-submit">Approve Selected</button>
-            <button class="vo-btn-secondary" id="approval-reject">Reject</button>
-          </div>
-        </div>
-      `;
-
-      const submitBtn = contentEl.querySelector('#approval-submit');
-      submitBtn?.addEventListener('click', () => this.handleApproval(item, true));
-
-      const rejectBtn = contentEl.querySelector('#approval-reject');
-      rejectBtn?.addEventListener('click', () => this.handleApproval(item, false));
-    }
-  }
-
-  private showList(): void {
-    this.selectedApprovalId = null;
-
-    const detailEl = this.container.querySelector('#approval-detail');
-    const listEl = this.container.querySelector('.vo-queue-list');
-
-    if (detailEl) {
-      (detailEl as HTMLElement).style.display = 'none';
-    }
-    if (listEl) {
-      (listEl as HTMLElement).style.display = 'block';
-    }
-  }
-
-  private async handleApproval(item: ApprovalQueueItem, approved: boolean): Promise<void> {
-    if (!this.selectedApprovalId) return;
-
-    try {
-      // Phase 1W: route to the VO approval store decision endpoint.
-      // This updates the persisted record in ~/.local/video-orchestrator/state/approvals.json.
-      const decision = approved ? 'approve' : 'reject';
-      const endpoint = `${BASE_URL}/api/video-orchestrator/approvals/${encodeURIComponent(this.selectedApprovalId)}/${decision}`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: approved ? undefined : 'Rejected by operator' }),
+        body.querySelectorAll<HTMLInputElement>('.bc-aq__item-cb').forEach((cb) => {
+          cb.checked = selectAllCb.checked;
+        });
+        updateToolbar();
       });
 
-      const data = await response.json() as { ok: boolean; error?: string };
+      const handleBulk = (approved: boolean) => {
+        if (this.selectedIds.size === 0) return;
+        const ids = Array.from(this.selectedIds);
+        bulkApproveBtn.disabled = true;
+        bulkRejectBtn.disabled = true;
+        bulkApproveBtn.textContent = approved ? 'Approving...' : 'Approve Selected';
+        bulkRejectBtn.textContent = approved ? 'Reject Selected' : 'Rejecting...';
 
-      if (data.ok) {
-        this.showSuccess(
-          approved ? `${item.type} approved successfully` : `${item.type} rejected`,
-        );
-        await this.loadApprovals();
-        this.showList();
-      } else {
-        this.showError(data.error ?? 'Failed to process approval');
+        void this.bulkDecide(ids, approved).then((ok) => {
+          if (ok) void this.loadApprovals();
+          else {
+            bulkApproveBtn.textContent = 'Approve Selected';
+            bulkRejectBtn.textContent = 'Reject Selected';
+            updateToolbar();
+          }
+        });
+      };
+
+      bulkApproveBtn.addEventListener('click', () => handleBulk(true));
+      bulkRejectBtn.addEventListener('click', () => handleBulk(false));
+
+      // Pending list
+      const section = document.createElement('div');
+      section.className = 'bc-aq__section';
+      const sectionLabel = document.createElement('p');
+      sectionLabel.className = 'bc-aq__section-label';
+      sectionLabel.textContent = `Pending (${pending.length})`;
+      section.appendChild(sectionLabel);
+
+      const list = document.createElement('div');
+      list.className = 'bc-aq__list';
+
+      for (const approval of pending) {
+        const item = document.createElement('div');
+        item.className = 'bc-aq__item bc-aq__item--pending';
+
+        const cbLabel = document.createElement('label');
+        cbLabel.className = 'bc-aq__item-cb-label';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'bc-aq__item-cb';
+        cbLabel.appendChild(cb);
+
+        cb.addEventListener('change', () => {
+          if (cb.checked) this.selectedIds.add(approval.id);
+          else this.selectedIds.delete(approval.id);
+          updateToolbar();
+        });
+
+        const info = document.createElement('div');
+        info.className = 'bc-aq__item-info';
+
+        const typeEl = document.createElement('span');
+        typeEl.className = 'bc-aq__item-type';
+        typeEl.textContent = approval.type;
+
+        const projEl = document.createElement('span');
+        projEl.className = 'bc-aq__item-project brain-console__detail';
+        projEl.textContent = approval.projectId;
+
+        const ageEl = document.createElement('span');
+        ageEl.className = 'bc-aq__item-age brain-console__detail';
+        ageEl.textContent = formatRelativeTime(approval.createdAt);
+
+        info.appendChild(typeEl);
+        info.appendChild(projEl);
+        info.appendChild(ageEl);
+
+        if (approval.expiresAt) {
+          const expiryLabel = formatExpiryLabel(approval.expiresAt);
+          const expiryEl = document.createElement('span');
+          expiryEl.className = 'bc-aq__item-expiry brain-console__detail';
+          expiryEl.textContent = expiryLabel;
+          if (expiryLabel.includes('⚠')) {
+            expiryEl.style.color = 'var(--bc-yellow, orange)';
+          }
+          info.appendChild(expiryEl);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'bc-aq__item-actions';
+
+        const approveBtn = document.createElement('button');
+        approveBtn.className = 'brain-console__local-app-action is-enabled bc-aq__btn-approve bc-aq__btn-sm';
+        approveBtn.textContent = 'Approve';
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.className = 'brain-console__local-app-action bc-aq__btn-reject bc-aq__btn-sm';
+        rejectBtn.textContent = 'Reject';
+
+        approveBtn.addEventListener('click', () => {
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          approveBtn.textContent = '...';
+          void this.singleDecide(approval.id, true).then(() => this.loadApprovals());
+        });
+
+        rejectBtn.addEventListener('click', () => {
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          rejectBtn.textContent = '...';
+          void this.singleDecide(approval.id, false).then(() => this.loadApprovals());
+        });
+
+        actions.appendChild(approveBtn);
+        actions.appendChild(rejectBtn);
+
+        item.appendChild(cbLabel);
+        item.appendChild(info);
+        item.appendChild(actions);
+        list.appendChild(item);
       }
-    } catch (error) {
-      this.showError(error instanceof Error ? error.message : 'Network error');
+
+      section.appendChild(list);
+      body.appendChild(section);
+    }
+
+    // Decided summary
+    if (decided.length > 0) {
+      const decidedSection = document.createElement('div');
+      decidedSection.className = 'bc-aq__section';
+      const decidedLabel = document.createElement('p');
+      decidedLabel.className = 'bc-aq__section-label brain-console__detail';
+      decidedLabel.textContent = `Decided (${decided.length})`;
+      decidedSection.appendChild(decidedLabel);
+
+      const decidedList = document.createElement('div');
+      decidedList.className = 'bc-aq__list bc-aq__list--decided';
+
+      for (const approval of decided.slice(0, 10)) {
+        const item = document.createElement('div');
+        item.className = `bc-aq__item bc-aq__item--${approval.status}`;
+
+        const info = document.createElement('div');
+        info.className = 'bc-aq__item-info';
+
+        const typeEl = document.createElement('span');
+        typeEl.className = 'bc-aq__item-type';
+        typeEl.textContent = approval.type;
+
+        const projEl = document.createElement('span');
+        projEl.className = 'bc-aq__item-project brain-console__detail';
+        projEl.textContent = approval.projectId;
+
+        const badge = document.createElement('span');
+        badge.className = `bc-aq__badge bc-aq__badge--${approval.status}`;
+        badge.textContent = approval.status;
+        badge.title = approval.decisionReason ?? '';
+
+        info.appendChild(typeEl);
+        info.appendChild(projEl);
+        info.appendChild(badge);
+        item.appendChild(info);
+        decidedList.appendChild(item);
+      }
+
+      if (decided.length > 10) {
+        const more = document.createElement('p');
+        more.className = 'brain-console__detail';
+        more.textContent = `…and ${decided.length - 10} more`;
+        decidedSection.appendChild(more);
+      }
+
+      decidedSection.appendChild(decidedList);
+      body.appendChild(decidedSection);
     }
   }
 
-  private showSuccess(message: string): void {
-    const msgEl = document.createElement('div');
-    msgEl.className = 'vo-message vo-message-success';
-    msgEl.textContent = `✓ ${message}`;
-    this.container.appendChild(msgEl);
-    setTimeout(() => msgEl.remove(), 5000);
+  private async bulkDecide(ids: string[], approved: boolean): Promise<boolean> {
+    try {
+      const res = await fetch(`${BASE_URL}/api/video-orchestrator/approvals/bulk-decide`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvalIds: ids, approved }),
+      });
+      const data = (await res.json()) as { ok: boolean };
+      return data.ok === true;
+    } catch {
+      return false;
+    }
   }
 
-  private showError(message: string): void {
-    const msgEl = document.createElement('div');
-    msgEl.className = 'vo-message vo-message-error';
-    msgEl.textContent = `⚠ ${message}`;
-    this.container.appendChild(msgEl);
-    setTimeout(() => msgEl.remove(), 5000);
+  private async singleDecide(approvalId: string, approved: boolean): Promise<void> {
+    const action = approved ? 'approve' : 'reject';
+    try {
+      await fetch(`${BASE_URL}/api/video-orchestrator/approvals/${encodeURIComponent(approvalId)}/${action}`, {
+        method: 'POST',
+      });
+    } catch {
+      // Silently absorb — reload will show updated state
+    }
   }
 
   destroy(): void {
