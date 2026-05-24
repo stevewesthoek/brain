@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createContentItemRequest } from '../adapters/vo-studio-write.js';
+import { createContentItemRequest, updateContentItemRequest } from '../adapters/vo-studio-write.js';
 
 test('createContentItemRequest accepts valid input and returns approval preview', () => {
   const result = createContentItemRequest({
@@ -147,4 +147,73 @@ test('multiple validation errors are reported', () => {
   assert.ok(result.error!.includes('title'));
   assert.ok(result.error!.includes('sourceAudioPath'));
   assert.ok(result.error!.includes('backgroundImagePath'));
+});
+
+test('updateContentItemRequest accepts valid update with title only', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+    title: 'Updated Title',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.ok(result.preview);
+  assert.equal(result.preview!.contentItem!.title, 'Updated Title');
+});
+
+test('updateContentItemRequest accepts valid update with description only', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+    description: 'Updated description',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.ok(result.preview);
+  assert.equal(result.preview!.contentItem!.description, 'Updated description');
+});
+
+test('updateContentItemRequest rejects missing projectId', () => {
+  const result = updateContentItemRequest({
+    projectId: '',
+    contentItemId: 'content-abc123',
+    title: 'New Title',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /projectId is required/);
+});
+
+test('updateContentItemRequest rejects missing contentItemId', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: '',
+    title: 'New Title',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /contentItemId is required/);
+});
+
+test('updateContentItemRequest rejects empty title', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+    title: '',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /title cannot be empty/);
+});
+
+test('updateContentItemRequest allows undefined fields', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.preview);
 });

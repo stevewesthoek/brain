@@ -99,7 +99,7 @@ import {
   readVOStudioPipelineProfiles,
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
-import { createContentItemRequest } from '../adapters/vo-studio-write.js';
+import { createContentItemRequest, updateContentItemRequest } from '../adapters/vo-studio-write.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2136,6 +2136,30 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       sourceAudioPath: (body?.sourceAudioPath as string) ?? '',
       backgroundImagePath: (body?.backgroundImagePath as string) ?? '',
     });
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/content-items/update') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const updateReq: {
+      projectId: string;
+      contentItemId: string;
+      title?: string;
+      description?: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+    };
+
+    if (body?.title !== undefined) {
+      updateReq.title = body.title as string;
+    }
+    if (body?.description !== undefined) {
+      updateReq.description = body.description as string;
+    }
+
+    const result = updateContentItemRequest(updateReq);
     sendJson(response, result.ok ? 202 : 400, result);
     return;
   }

@@ -92,3 +92,85 @@ function generateContentItemId(): string {
   const random = Math.random().toString(36).slice(2, 8);
   return `content-${timestamp}-${random}`;
 }
+
+export interface UpdateContentItemRequest {
+  projectId: string;
+  contentItemId: string;
+  title?: string;
+  description?: string;
+}
+
+export interface UpdateContentItemResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    contentItem: ContentItem;
+  };
+  error?: string;
+}
+
+export function updateContentItemRequest(
+  request: UpdateContentItemRequest,
+): UpdateContentItemResponse {
+  const errors: string[] = [];
+
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.contentItemId?.trim()) {
+    errors.push('contentItemId is required');
+  }
+  if (request.title !== undefined && !request.title?.trim()) {
+    errors.push('title cannot be empty');
+  }
+  if (request.description !== undefined && typeof request.description !== 'string') {
+    errors.push('description must be a string');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const now = new Date().toISOString();
+  const contentItem: ContentItem = {
+    id: request.contentItemId,
+    projectId: request.projectId,
+    title: request.title || '',
+    description: request.description ?? '',
+    status: 'queued',
+    sourceAudioPath: '',
+    backgroundImagePath: '',
+    durationSec: null,
+    language: 'en',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const result = requestAction('custom-content-item-update');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      contentItem,
+    },
+  };
+}
