@@ -100,6 +100,7 @@ import {
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
 import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
+import { decideVOApproval, readPendingVOApprovals, readAllVOApprovals, getVOApprovalsPath } from '../adapters/vo-studio-approval-store.js';
 import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest, rotateWebhookSecretRequest, disableWebhookRequest } from '../adapters/vo-studio-orchestration.js';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics, readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit, readWebhookSecurityAudit, readWebhookStatus } from '../adapters/vo-studio-orchestration.js';
@@ -1889,6 +1890,26 @@ export async function routeRequest(
         }
       }
 
+      // ── VO Approval Store: read endpoints (Phase 1W) ─────────────────────────
+      if (url.pathname.startsWith('/api/video-orchestrator/approvals/queue')) {
+        const projectId = url.searchParams.get('projectId') ?? '';
+        const result = readApprovalQueue(projectId);
+        sendJson(response, result.ok ? 200 : 400, result);
+        return;
+      }
+
+      if (url.pathname === '/api/video-orchestrator/approvals/all') {
+        const projectId = url.searchParams.get('projectId') ?? undefined;
+        const records = readAllVOApprovals(projectId);
+        sendJson(response, 200, {
+          ok: true,
+          items: records,
+          count: records.length,
+          storePath: getVOApprovalsPath(),
+        });
+        return;
+      }
+
       if (url.pathname === '/credentials/catalog') {
         sendJson(response, 200, getCredentialCatalog());
         return;
@@ -2457,10 +2478,20 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
-  if (url.pathname.startsWith('/api/video-orchestrator/approvals/queue')) {
-    const projectId = url.searchParams.get('projectId') ?? '';
-    const result = readApprovalQueue(projectId);
-    sendJson(response, result.ok ? 200 : 400, result);
+  // ── VO Approval Store: approve or reject a pending approval (Phase 1W) ──────
+  const voApprovalDecisionMatch = /^\/api\/video-orchestrator\/approvals\/([^/]+)\/(approve|reject)$/.exec(url.pathname);
+  if (voApprovalDecisionMatch) {
+    const approvalId = voApprovalDecisionMatch[1] ?? '';
+    const decision = voApprovalDecisionMatch[2] as 'approve' | 'reject';
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const note = (body?.note as string | undefined) ?? (body?.reason as string | undefined);
+    const result = decideVOApproval(approvalId, decision === 'approve' ? 'approved' : 'rejected', note);
+    sendJson(response, result.ok ? 200 : 422, {
+      ok: result.ok,
+      approvalId,
+      decision,
+      ...(result.error ? { error: result.error } : {}),
+    });
     return;
   }
 

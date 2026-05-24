@@ -8,6 +8,7 @@
  * - Job execution tracking
  */
 
+import { readPendingVOApprovals } from './vo-studio-approval-store.js';
 import type { Approval, ProductionPackage } from '../types/vo-studio.js';
 
 export interface PendingApproval {
@@ -85,10 +86,30 @@ export function readApprovalQueue(
     };
   }
 
+  // Phase 1W: read from the VO approval store persisted to
+  // ~/.local/video-orchestrator/state/approvals.json
+  const pending = readPendingVOApprovals(projectId);
+  const items: PendingApproval[] = pending.map((record) => ({
+    id: record.id,
+    // Map VO approval types to the PendingApproval type union.
+    // 'content' → 'metadata' (closest semantic match for draft/queue review)
+    // 'thumbnail' | 'metadata' → direct pass-through
+    // 'package' → 'final_review'
+    type: record.type === 'thumbnail'
+      ? 'thumbnail'
+      : record.type === 'metadata'
+      ? 'metadata'
+      : 'final_review',
+    packageId: (record.requestPayload.packageId as string | undefined) ?? '',
+    contentItemId: (record.requestPayload.contentItemId as string | undefined) ?? '',
+    requestedAt: record.requestedAt,
+    variants: [],
+  }));
+
   return {
     ok: true,
-    items: [],
-    count: 0,
+    items,
+    count: items.length,
   };
 }
 

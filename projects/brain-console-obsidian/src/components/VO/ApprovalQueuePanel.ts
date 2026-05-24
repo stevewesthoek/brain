@@ -1,5 +1,7 @@
 import { getVOContextManager } from './VOContext.js';
 
+const BASE_URL = 'http://localhost:4877';
+
 export interface ApprovalQueueItem {
   id: string;
   type: 'thumbnail' | 'metadata' | 'final_review';
@@ -74,7 +76,7 @@ export class ApprovalQueuePanel {
     this.isLoading = true;
     try {
       const response = await fetch(
-        `/api/video-orchestrator/approvals/queue?projectId=${this.projectId}`,
+        `${BASE_URL}/api/video-orchestrator/approvals/queue?projectId=${encodeURIComponent(this.projectId)}`,
       );
       const data = await response.json();
 
@@ -213,26 +215,18 @@ export class ApprovalQueuePanel {
     if (!this.selectedApprovalId) return;
 
     try {
-      const endpoint = item.type === 'thumbnail' 
-        ? '/api/video-orchestrator/thumbnails/approve'
-        : item.type === 'metadata'
-          ? '/api/video-orchestrator/metadata/approve'
-          : '/api/video-orchestrator/package/final-approval';
-
-      const variantEl = this.container.querySelector('input[name="variant"]:checked') as HTMLInputElement;
-      const variantId = variantEl?.value || 'default';
+      // Phase 1W: route to the VO approval store decision endpoint.
+      // This updates the persisted record in ~/.local/video-orchestrator/state/approvals.json.
+      const decision = approved ? 'approve' : 'reject';
+      const endpoint = `${BASE_URL}/api/video-orchestrator/approvals/${encodeURIComponent(this.selectedApprovalId)}/${decision}`;
 
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          packageId: item.packageId,
-          contentItemId: item.contentItemId,
-          variantId,
-        }),
+        body: JSON.stringify({ note: approved ? undefined : 'Rejected by operator' }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as { ok: boolean; error?: string };
 
       if (data.ok) {
         this.showSuccess(
@@ -241,7 +235,7 @@ export class ApprovalQueuePanel {
         await this.loadApprovals();
         this.showList();
       } else {
-        this.showError(data.error || 'Failed to process approval');
+        this.showError(data.error ?? 'Failed to process approval');
       }
     } catch (error) {
       this.showError(error instanceof Error ? error.message : 'Network error');

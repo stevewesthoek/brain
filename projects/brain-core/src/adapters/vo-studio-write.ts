@@ -1,5 +1,5 @@
 import { requestAction } from './actions.js';
-import type { BrainCoreActionRequestResult } from '../types/api.js';
+import { createVOApproval } from './vo-studio-approval-store.js';
 import type { ContentItem } from '../types/vo-studio.js';
 
 export interface CreateContentItemRequest {
@@ -47,6 +47,15 @@ export function createContentItemRequest(
     };
   }
 
+  // Phase 1W: create a VO-specific approval record before committing the write.
+  // The write is NOT committed yet — it is stored as pending until the operator approves.
+  const voApproval = createVOApproval('content', request.projectId, {
+    title: request.title,
+    description: request.description,
+    sourceAudioPath: request.sourceAudioPath,
+    backgroundImagePath: request.backgroundImagePath,
+  });
+
   const contentItemId = generateContentItemId();
   const now = new Date().toISOString();
 
@@ -75,12 +84,10 @@ export function createContentItemRequest(
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: voApproval.id,
+      status: voApproval.status,
+    },
     preview: {
       contentItem,
     },
@@ -137,6 +144,12 @@ export function updateContentItemRequest(
     };
   }
 
+  // Phase 1W: create a VO-specific approval record before committing the write.
+  const updatePayload: Record<string, unknown> = { contentItemId: request.contentItemId };
+  if (request.title !== undefined) updatePayload.title = request.title;
+  if (request.description !== undefined) updatePayload.description = request.description;
+  const voApproval = createVOApproval('content', request.projectId, updatePayload);
+
   const now = new Date().toISOString();
   const contentItem: ContentItem = {
     id: request.contentItemId,
@@ -163,12 +176,10 @@ export function updateContentItemRequest(
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: voApproval.id,
+      status: voApproval.status,
+    },
     preview: {
       contentItem,
     },
@@ -218,6 +229,12 @@ export function generateThumbnailRequest(
     };
   }
 
+  // Phase 1W: create a VO-specific approval record before committing the write.
+  const thumbPayload: Record<string, unknown> = { contentItemId: request.contentItemId };
+  if (request.templateId !== undefined) thumbPayload.templateId = request.templateId;
+  if (request.boldText !== undefined) thumbPayload.boldText = request.boldText;
+  const voApproval = createVOApproval('thumbnail', request.projectId, thumbPayload);
+
   const jobId = `job-thumbnail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const result = requestAction('custom-thumbnail-generate');
@@ -231,12 +248,10 @@ export function generateThumbnailRequest(
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: voApproval.id,
+      status: voApproval.status,
+    },
     preview: {
       job: {
         id: jobId,
@@ -367,6 +382,11 @@ export function generateMetadataRequest(
     };
   }
 
+  // Phase 1W: create a VO-specific approval record before committing the write.
+  const metaPayload: Record<string, unknown> = { contentItemId: request.contentItemId };
+  if (request.templateId !== undefined) metaPayload.templateId = request.templateId;
+  const voApproval = createVOApproval('metadata', request.projectId, metaPayload);
+
   const jobId = `job-metadata-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const result = requestAction('custom-metadata-generate');
@@ -380,12 +400,10 @@ export function generateMetadataRequest(
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: voApproval.id,
+      status: voApproval.status,
+    },
     preview: {
       job: {
         id: jobId,
@@ -543,6 +561,13 @@ export function queuePackageRequest(
     };
   }
 
+  // Phase 1W: create a VO-specific approval record before committing the write.
+  const voApproval = createVOApproval('package', request.projectId, {
+    contentItemId: request.contentItemId,
+    pipelineProfileId: request.pipelineProfileId,
+    postingTargets: request.postingTargets,
+  });
+
   const packageId = `pkg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const result = requestAction('custom-package-queue');
@@ -556,12 +581,10 @@ export function queuePackageRequest(
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: voApproval.id,
+      status: voApproval.status,
+    },
     preview: {
       package: {
         id: packageId,
