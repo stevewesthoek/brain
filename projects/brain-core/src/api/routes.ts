@@ -100,7 +100,9 @@ import {
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
 import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
+import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest } from '../adapters/vo-studio-orchestration.js';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics } from '../adapters/vo-studio-read.js';
+import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit } from '../adapters/vo-studio-orchestration.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2380,6 +2382,77 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  if (url.pathname === '/api/video-orchestrator/automation/rule/create') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const ruleReq: {
+      projectId: string;
+      name: string;
+      condition: string;
+      action: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      name: (body?.name as string) ?? '',
+      condition: (body?.condition as string) ?? '',
+      action: (body?.action as string) ?? '',
+    };
+
+    const result = createAutomationRuleRequest(ruleReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/approvals/bulk-approve') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const packageIds = Array.isArray(body?.packageIds) ? body.packageIds : [];
+    const bulkReq: {
+      packageIds: string[];
+      approvalType: 'thumbnail' | 'metadata' | 'final_review';
+    } = {
+      packageIds: packageIds.map((id: unknown) => (id as string) ?? ''),
+      approvalType: (body?.approvalType as 'thumbnail' | 'metadata' | 'final_review') ?? 'metadata',
+    };
+
+    const result = bulkApproveRequest(bulkReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/workflows/schedule') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const packageIds = Array.isArray(body?.packageIds) ? body.packageIds : [];
+    const schedReq: {
+      packageIds: string[];
+      cronExpression: string;
+      action: string;
+    } = {
+      packageIds: packageIds.map((id: unknown) => (id as string) ?? ''),
+      cronExpression: (body?.cronExpression as string) ?? '',
+      action: (body?.action as string) ?? '',
+    };
+
+    const result = scheduleWorkflowRequest(schedReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/webhooks/register') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const events = Array.isArray(body?.events) ? body.events : [];
+    const webhookReq: {
+      projectId: string;
+      url: string;
+      events: string[];
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      url: (body?.url as string) ?? '',
+      events: events.map((e: unknown) => (e as string) ?? ''),
+    };
+
+    const result = registerWebhookRequest(webhookReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
   if (url.pathname.startsWith('/api/video-orchestrator/approvals/queue')) {
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readApprovalQueue(projectId);
@@ -2448,6 +2521,35 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
   if (url.pathname.startsWith('/api/video-orchestrator/analytics/publishing')) {
     const projectId = url.searchParams.get('projectId') ?? '';
     const result = readPublishingMetrics(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/automation/rules')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readAutomationRules(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/workflows/schedules')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readSchedules(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/webhooks')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readWebhooks(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/audit/execution')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const result = readExecutionAudit(projectId, limit);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
