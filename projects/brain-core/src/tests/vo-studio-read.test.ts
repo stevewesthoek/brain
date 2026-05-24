@@ -3,11 +3,22 @@ import assert from 'node:assert/strict';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics } from '../adapters/vo-studio-read.js';
 
 test('readApprovalQueue accepts valid projectId', () => {
-  const result = readApprovalQueue('project-123');
+  // Point to a non-existent path so real local approvals.json doesn't interfere.
+  const orig = process.env['VO_APPROVALS_PATH'];
+  process.env['VO_APPROVALS_PATH'] = '/tmp/vo-test-approvals-nonexistent-12345.json';
+  try {
+    const result = readApprovalQueue('project-123');
 
-  assert.equal(result.ok, true);
-  assert.equal(result.count, 0);
-  assert.deepEqual(result.items, []);
+    assert.equal(result.ok, true);
+    assert.equal(result.count, 0);
+    assert.deepEqual(result.items, []);
+  } finally {
+    if (orig !== undefined) {
+      process.env['VO_APPROVALS_PATH'] = orig;
+    } else {
+      delete process.env['VO_APPROVALS_PATH'];
+    }
+  }
 });
 
 test('readApprovalQueue rejects missing projectId', () => {

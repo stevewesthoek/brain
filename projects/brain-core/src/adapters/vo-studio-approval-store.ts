@@ -15,8 +15,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-const STATE_DIR = path.join(os.homedir(), '.local', 'video-orchestrator', 'state');
-const APPROVALS_PATH = path.join(STATE_DIR, 'approvals.json');
+const DEFAULT_STATE_DIR = path.join(os.homedir(), '.local', 'video-orchestrator', 'state');
+
+/** Returns the approvals file path. Reads env at call time so tests can override. */
+function getApprovalsPath(): string {
+  return process.env['VO_APPROVALS_PATH'] ?? path.join(DEFAULT_STATE_DIR, 'approvals.json');
+}
+
+/** Returns the state dir for the current approvals path. */
+function getStateDir(): string {
+  return path.dirname(getApprovalsPath());
+}
 
 const DEFAULT_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -42,15 +51,16 @@ export interface VOApprovalSummary {
 }
 
 function ensureStateDir(): void {
-  fs.mkdirSync(STATE_DIR, { recursive: true });
+  fs.mkdirSync(getStateDir(), { recursive: true });
 }
 
 function readAllApprovals(): VOApprovalRecord[] {
-  if (!fs.existsSync(APPROVALS_PATH)) {
+  const approvalsPath = getApprovalsPath();
+  if (!fs.existsSync(approvalsPath)) {
     return [];
   }
   try {
-    const raw = fs.readFileSync(APPROVALS_PATH, 'utf8');
+    const raw = fs.readFileSync(approvalsPath, 'utf8');
     const parsed = JSON.parse(raw) as unknown;
     if (Array.isArray(parsed)) {
       return parsed as VOApprovalRecord[];
@@ -63,7 +73,7 @@ function readAllApprovals(): VOApprovalRecord[] {
 
 function writeAllApprovals(records: VOApprovalRecord[]): void {
   ensureStateDir();
-  fs.writeFileSync(APPROVALS_PATH, JSON.stringify(records, null, 2));
+  fs.writeFileSync(getApprovalsPath(), JSON.stringify(records, null, 2));
 }
 
 /**
@@ -166,7 +176,7 @@ export function decideVOApproval(
  * Get the path to the approvals file (for diagnostics).
  */
 export function getVOApprovalsPath(): string {
-  return APPROVALS_PATH;
+  return getApprovalsPath();
 }
 
 export interface CheckExpiryResult {

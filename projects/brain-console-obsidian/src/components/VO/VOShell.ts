@@ -10,6 +10,8 @@ import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 import { EventLogPanel } from './EventLogPanel.js';
 import { StudioDashboardPanel } from './StudioDashboardPanel.js';
+import { AuditLogPanel } from './AuditLogPanel.js';
+import { OperatorDashboardPanel } from './OperatorDashboardPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -35,6 +37,8 @@ export class VOShell {
   private publishingDashboardPanel: PublishingDashboardPanel | null = null;
   private eventLogPanel: EventLogPanel | null = null;
   private studioDashboardPanel: StudioDashboardPanel | null = null;
+  private auditLogPanel: AuditLogPanel | null = null;
+  private operatorDashboardPanel: OperatorDashboardPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
   private contentContainer: HTMLElement | null = null;
@@ -82,6 +86,7 @@ export class VOShell {
         <button class="vo-tab" data-tab="history">History</button>
         <button class="vo-tab" data-tab="events">Events</button>
         <button class="vo-tab" data-tab="dashboard">Dashboard</button>
+        <button class="vo-tab" data-tab="admin">Admin</button>
       </div>
     `;
     this.container.appendChild(tabsContainer);
@@ -164,6 +169,14 @@ export class VOShell {
     if (this.studioDashboardPanel) {
       this.studioDashboardPanel.destroy();
       this.studioDashboardPanel = null;
+    }
+    if (this.auditLogPanel) {
+      this.auditLogPanel.destroy();
+      this.auditLogPanel = null;
+    }
+    if (this.operatorDashboardPanel) {
+      this.operatorDashboardPanel.destroy();
+      this.operatorDashboardPanel = null;
     }
 
     const state = this.ctx.getState();
@@ -311,6 +324,36 @@ export class VOShell {
           `;
         }
         break;
+
+      case 'admin':
+        if (state.projectId) {
+          // Admin tab shows two sub-panels: Operator Dashboard + Audit Log
+          const adminContainer = document.createElement('div');
+          adminContainer.className = 'vo-admin-tab';
+          this.contentContainer.innerHTML = '';
+          this.contentContainer.appendChild(adminContainer);
+
+          const dashSection = document.createElement('div');
+          dashSection.className = 'vo-admin-section';
+          adminContainer.appendChild(dashSection);
+
+          const auditSection = document.createElement('div');
+          auditSection.className = 'vo-admin-section';
+          adminContainer.appendChild(auditSection);
+
+          this.operatorDashboardPanel = new OperatorDashboardPanel(dashSection, state.projectId);
+          this.operatorDashboardPanel.initialize();
+
+          this.auditLogPanel = new AuditLogPanel(auditSection, state.projectId);
+          this.auditLogPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view admin panel</p>
+            </div>
+          `;
+        }
+        break;
     }
   }
 
@@ -348,6 +391,12 @@ export class VOShell {
     }
     if (this.studioDashboardPanel) {
       this.studioDashboardPanel.destroy();
+    }
+    if (this.auditLogPanel) {
+      this.auditLogPanel.destroy();
+    }
+    if (this.operatorDashboardPanel) {
+      this.operatorDashboardPanel.destroy();
     }
     if (this.unsubscribe) {
       this.unsubscribe();
