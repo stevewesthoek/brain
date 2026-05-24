@@ -99,7 +99,8 @@ import {
   readVOStudioPipelineProfiles,
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
-import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest } from '../adapters/vo-studio-write.js';
+import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest } from '../adapters/vo-studio-write.js';
+import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis } from '../adapters/vo-studio-read.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2185,6 +2186,192 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
     const result = generateThumbnailRequest(thumbReq);
     sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/thumbnails/approve') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const approveReq: {
+      projectId: string;
+      contentItemId: string;
+      variantId: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+      variantId: (body?.variantId as string) ?? '',
+    };
+
+    const result = approveThumbnailRequest(approveReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/metadata/generate') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const metaReq: {
+      projectId: string;
+      contentItemId: string;
+      templateId?: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+    };
+
+    if (body?.templateId !== undefined) {
+      metaReq.templateId = body.templateId as string;
+    }
+
+    const result = generateMetadataRequest(metaReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/metadata/approve') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const approveReq: {
+      projectId: string;
+      contentItemId: string;
+      variantId: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+      variantId: (body?.variantId as string) ?? '',
+    };
+
+    const result = approveMetadataRequest(approveReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/package/queue') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const targets = Array.isArray(body?.postingTargets) ? body.postingTargets : [];
+    const queueReq: {
+      projectId: string;
+      contentItemId: string;
+      pipelineProfileId: string;
+      postingTargets: Array<{ platformId: string; accountId: string }>;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+      pipelineProfileId: (body?.pipelineProfileId as string) ?? '',
+      postingTargets: targets.map((t: Record<string, unknown>) => ({
+        platformId: (t?.platformId as string) ?? '',
+        accountId: (t?.accountId as string) ?? '',
+      })),
+    };
+
+    const result = queuePackageRequest(queueReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/package/edit') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const targets = Array.isArray(body?.postingTargets) ? body.postingTargets : [];
+    const editReq: {
+      packageId: string;
+      postingTargets?: Array<{ platformId: string; accountId: string }>;
+      stageOverrides?: Record<string, string>;
+    } = {
+      packageId: (body?.packageId as string) ?? '',
+    };
+
+    if (targets.length > 0) {
+      editReq.postingTargets = targets.map((t: Record<string, unknown>) => ({
+        platformId: (t?.platformId as string) ?? '',
+        accountId: (t?.accountId as string) ?? '',
+      }));
+    }
+    if (body?.stageOverrides !== undefined && typeof body.stageOverrides === 'object') {
+      editReq.stageOverrides = body.stageOverrides as Record<string, string>;
+    }
+
+    const result = editPackageRequest(editReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/package/cancel') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const cancelReq: {
+      packageId: string;
+      reason: string;
+    } = {
+      packageId: (body?.packageId as string) ?? '',
+      reason: (body?.reason as string) ?? '',
+    };
+
+    const result = cancelPackageRequest(cancelReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/package/retry') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const retryReq: {
+      packageId: string;
+      stageId?: string;
+    } = {
+      packageId: (body?.packageId as string) ?? '',
+    };
+
+    if (body?.stageId !== undefined) {
+      retryReq.stageId = body.stageId as string;
+    }
+
+    const result = retryPackageRequest(retryReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/approvals/queue')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readApprovalQueue(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/workflow/state/')) {
+    const packageId = url.pathname.split('/').pop() ?? '';
+    const result = readWorkflowState(packageId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/execution/summary/')) {
+    const packageId = url.pathname.split('/').pop() ?? '';
+    const result = readExecutionSummary(packageId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/jobs/history')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const limit = Math.min(1000, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const result = readJobHistory(projectId, limit);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/metrics/performance')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readPerformanceMetrics(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/approvals')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readApprovalStatistics(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/errors')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readErrorAnalysis(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
 

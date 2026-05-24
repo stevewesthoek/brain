@@ -247,3 +247,553 @@ export function generateThumbnailRequest(
     },
   };
 }
+
+export interface ApproveThumbnailRequest {
+  projectId: string;
+  contentItemId: string;
+  variantId: string;
+}
+
+export interface ApproveThumbnailResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    approval: {
+      id: string;
+      type: string;
+      contentItemId: string;
+      variantId: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function approveThumbnailRequest(
+  request: ApproveThumbnailRequest,
+): ApproveThumbnailResponse {
+  const errors: string[] = [];
+
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.contentItemId?.trim()) {
+    errors.push('contentItemId is required');
+  }
+  if (!request.variantId?.trim()) {
+    errors.push('variantId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const approvalId = `approval-thumbnail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result = requestAction('custom-thumbnail-approve');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      approval: {
+        id: approvalId,
+        type: 'thumbnail',
+        contentItemId: request.contentItemId,
+        variantId: request.variantId,
+        status: 'pending_approval',
+      },
+    },
+  };
+}
+
+export interface GenerateMetadataRequest {
+  projectId: string;
+  contentItemId: string;
+  templateId?: string;
+}
+
+export interface GenerateMetadataResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    job: {
+      id: string;
+      type: string;
+      contentItemId: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function generateMetadataRequest(
+  request: GenerateMetadataRequest,
+): GenerateMetadataResponse {
+  const errors: string[] = [];
+
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.contentItemId?.trim()) {
+    errors.push('contentItemId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const jobId = `job-metadata-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result = requestAction('custom-metadata-generate');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      job: {
+        id: jobId,
+        type: 'metadata',
+        contentItemId: request.contentItemId,
+        status: 'pending_approval',
+      },
+    },
+  };
+}
+
+export interface ApproveMetadataRequest {
+  projectId: string;
+  contentItemId: string;
+  variantId: string;
+}
+
+export interface ApproveMetadataResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    approval: {
+      id: string;
+      type: string;
+      contentItemId: string;
+      variantId: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function approveMetadataRequest(
+  request: ApproveMetadataRequest,
+): ApproveMetadataResponse {
+  const errors: string[] = [];
+
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.contentItemId?.trim()) {
+    errors.push('contentItemId is required');
+  }
+  if (!request.variantId?.trim()) {
+    errors.push('variantId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const approvalId = `approval-metadata-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result = requestAction('custom-metadata-approve');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      approval: {
+        id: approvalId,
+        type: 'metadata',
+        contentItemId: request.contentItemId,
+        variantId: request.variantId,
+        status: 'pending_approval',
+      },
+    },
+  };
+}
+
+export interface PostingTarget {
+  platformId: string;
+  accountId: string;
+}
+
+export interface QueuePackageRequest {
+  projectId: string;
+  contentItemId: string;
+  pipelineProfileId: string;
+  postingTargets: PostingTarget[];
+}
+
+export interface QueuePackageResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    package: {
+      id: string;
+      contentItemId: string;
+      pipelineProfileId: string;
+      status: string;
+      postingTargets: Array<{
+        platformId: string;
+        accountId: string;
+        status: string;
+      }>;
+    };
+  };
+  error?: string;
+}
+
+export function queuePackageRequest(
+  request: QueuePackageRequest,
+): QueuePackageResponse {
+  const errors: string[] = [];
+
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.contentItemId?.trim()) {
+    errors.push('contentItemId is required');
+  }
+  if (!request.pipelineProfileId?.trim()) {
+    errors.push('pipelineProfileId is required');
+  }
+  if (!Array.isArray(request.postingTargets) || request.postingTargets.length === 0) {
+    errors.push('postingTargets must be a non-empty array');
+  }
+
+  for (let i = 0; i < (request.postingTargets?.length ?? 0); i++) {
+    const target = request.postingTargets[i];
+    if (!target?.platformId?.trim()) {
+      errors.push(`postingTargets[${i}].platformId is required`);
+    }
+    if (!target?.accountId?.trim()) {
+      errors.push(`postingTargets[${i}].accountId is required`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const packageId = `pkg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result = requestAction('custom-package-queue');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      package: {
+        id: packageId,
+        contentItemId: request.contentItemId,
+        pipelineProfileId: request.pipelineProfileId,
+        status: 'queued',
+        postingTargets: request.postingTargets.map((target) => ({
+          platformId: target.platformId,
+          accountId: target.accountId,
+          status: 'pending',
+        })),
+      },
+    },
+  };
+}
+
+export interface EditPackageRequest {
+  packageId: string;
+  postingTargets?: PostingTarget[];
+  stageOverrides?: Record<string, string>;
+}
+
+export interface EditPackageResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    package: {
+      id: string;
+      status: string;
+      modifiedFields: string[];
+    };
+  };
+  error?: string;
+}
+
+export function editPackageRequest(
+  request: EditPackageRequest,
+): EditPackageResponse {
+  const errors: string[] = [];
+
+  if (!request.packageId?.trim()) {
+    errors.push('packageId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const modifiedFields: string[] = [];
+  if (request.postingTargets) {
+    modifiedFields.push('postingTargets');
+  }
+  if (request.stageOverrides) {
+    modifiedFields.push('stageOverrides');
+  }
+
+  const result = requestAction('custom-package-edit');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      package: {
+        id: request.packageId,
+        status: 'modified',
+        modifiedFields,
+      },
+    },
+  };
+}
+
+export interface CancelPackageRequest {
+  packageId: string;
+  reason: string;
+}
+
+export interface CancelPackageResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    package: {
+      id: string;
+      status: string;
+      cancelledAt: string;
+      reason: string;
+    };
+  };
+  error?: string;
+}
+
+export function cancelPackageRequest(
+  request: CancelPackageRequest,
+): CancelPackageResponse {
+  const errors: string[] = [];
+
+  if (!request.packageId?.trim()) {
+    errors.push('packageId is required');
+  }
+  if (!request.reason?.trim()) {
+    errors.push('reason is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const result = requestAction('custom-package-cancel');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      package: {
+        id: request.packageId,
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString(),
+        reason: request.reason,
+      },
+    },
+  };
+}
+
+export interface RetryPackageRequest {
+  packageId: string;
+  stageId?: string;
+}
+
+export interface RetryPackageResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    package: {
+      id: string;
+      status: string;
+      retryStage?: string;
+      retryCount: number;
+    };
+  };
+  error?: string;
+}
+
+export function retryPackageRequest(
+  request: RetryPackageRequest,
+): RetryPackageResponse {
+  const errors: string[] = [];
+
+  if (!request.packageId?.trim()) {
+    errors.push('packageId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const result = requestAction('custom-package-retry');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  const preview: {
+    package: {
+      id: string;
+      status: string;
+      retryStage?: string;
+      retryCount: number;
+    };
+  } = {
+    package: {
+      id: request.packageId,
+      status: 'retrying',
+      retryCount: 1,
+    },
+  };
+
+  if (request.stageId !== undefined) {
+    preview.package.retryStage = request.stageId;
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview,
+  };
+}
