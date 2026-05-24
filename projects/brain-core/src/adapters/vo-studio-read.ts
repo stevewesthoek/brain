@@ -451,3 +451,161 @@ export function readPublishingMetrics(
     projectId,
   };
 }
+
+export interface WebhookDeliveryRates {
+  successCount: number;
+  failureCount: number;
+  pendingCount: number;
+  successRate: number;
+  byPlatform: Record<string, { success: number; failure: number; pending: number }>;
+}
+
+export interface WebhookDeliveryRatesResponse {
+  ok: boolean;
+  metrics?: WebhookDeliveryRates;
+  projectId?: string;
+  error?: string;
+}
+
+export function readWebhookDeliveryRates(projectId: string): WebhookDeliveryRatesResponse {
+  const errors: string[] = [];
+
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    metrics: {
+      successCount: 0,
+      failureCount: 0,
+      pendingCount: 0,
+      successRate: 0,
+      byPlatform: {},
+    },
+    projectId,
+  };
+}
+
+export interface EventLatencyEntry {
+  eventType: string;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  p99LatencyMs: number;
+  sampleCount: number;
+}
+
+export interface EventLatencyMetricsResponse {
+  ok: boolean;
+  entries: EventLatencyEntry[];
+  projectId?: string;
+  error?: string;
+}
+
+export function readEventLatencyMetrics(projectId: string): EventLatencyMetricsResponse {
+  const errors: string[] = [];
+
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      entries: [],
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    entries: [],
+    projectId,
+  };
+}
+
+export interface RoutingStatEntry {
+  platform: string;
+  mappingCount: number;
+  eventTypes: string[];
+  lastRoutedAt: string;
+}
+
+export interface RoutingStatisticsResponse {
+  ok: boolean;
+  stats: RoutingStatEntry[];
+  projectId?: string;
+  error?: string;
+}
+
+export function readRoutingStatistics(projectId: string): RoutingStatisticsResponse {
+  const errors: string[] = [];
+
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      stats: [],
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    stats: [],
+    projectId,
+  };
+}
+
+export interface PipelineHealthComponent {
+  score: number;
+  status: 'healthy' | 'degraded' | 'critical';
+}
+
+export interface PipelineHealth {
+  score: number;
+  status: 'healthy' | 'degraded' | 'critical';
+  components: Record<string, PipelineHealthComponent>;
+}
+
+export interface PipelineHealthResponse {
+  ok: boolean;
+  health?: PipelineHealth;
+  projectId?: string;
+  error?: string;
+}
+
+export function readPipelineHealth(projectId: string): PipelineHealthResponse {
+  const errors: string[] = [];
+
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    health: {
+      score: 100,
+      status: 'healthy',
+      components: {},
+    },
+    projectId,
+  };
+}

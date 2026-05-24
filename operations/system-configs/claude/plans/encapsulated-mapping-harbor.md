@@ -1,108 +1,160 @@
-# Plan: Phase 7 — Webhook Handler & Event Routing
+# Plan: Phase 8 — Analytics & Metrics
 
 ## Context
 
-Phase 6 added event emission and subscription management. Phase 7 completes the inbound side: processing webhook deliveries, validating signatures, and routing platform-specific event types to internal VO Studio event types. This closes the loop between outbound webhook registration (Phase 5) and the event stream (Phase 6). All operations follow the same approval-gated adapter pattern as previous phases — no public endpoint exposure needed.
+Phases 5–7 built webhook registration, event emission, and inbound webhook routing. All those operations now produce data (deliveries, events, routing decisions) but nothing aggregates or reports on them. Phase 8 adds four analytics read functions that aggregate delivery rates, event latency, routing statistics, and overall pipeline health. These are pure read stubs that follow the exact pattern already in `vo-studio-read.ts` — no new file needed.
 
 ---
 
 ## What changes
 
-### 1. New adapter: `projects/brain-core/src/adapters/vo-studio-webhook-handler.ts`
+### 1. Extend `projects/brain-core/src/adapters/vo-studio-read.ts`
 
-**Self-contained types** (inline, no external imports). Only imports: `import { requestAction } from './actions.js'`.
+Add 4 new exported interfaces and 4 new exported functions at the end of the file. All follow the exact patterns already in the file:
+- Singular-metrics functions (like `readPublishingMetrics`): validate `projectId`, return `{ ok, metrics?: XxxMetrics, projectId? }`
+- Array-metrics functions (like `readPerformanceMetrics`): validate `projectId`, return `{ ok, <collection>: [], projectId? }`
 
-**Write functions (3):**
+**New interfaces:**
 
-- `processWebhookEventRequest({ webhookId, projectId, platform, eventType, payload, signature? })`
-  - Validates `webhookId`, `projectId`, `platform`, `eventType`, `payload` (must be non-null object)
-  - Routes: `'custom-webhook-receive'`
-  - Generates unique `deliveryId` (`delivery-${Date.now().toString(36)}-${random}`)
-  - Preview: `{ delivery: { id, webhookId, projectId, platform, eventType, payload, receivedAt, status: 'received' } }`
-  - Optional `signature` — only added to preview when provided
+```typescript
+export interface WebhookDeliveryRates {
+  successCount: number;
+  failureCount: number;
+  pendingCount: number;
+  successRate: number;
+  byPlatform: Record<string, { success: number; failure: number; pending: number }>;
+}
+export interface WebhookDeliveryRatesResponse {
+  ok: boolean;
+  metrics?: WebhookDeliveryRates;
+  projectId?: string;
+  error?: string;
+}
 
-- `verifyWebhookSignatureRequest({ webhookId, projectId, secret, signature, rawBody })`
-  - Validates all 5 fields required (non-empty strings)
-  - Routes: `'custom-webhook-verify'`
-  - Preview: `{ verification: { webhookId, projectId, status: 'verified', verifiedAt } }`
+export interface EventLatencyEntry {
+  eventType: string;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  p99LatencyMs: number;
+  sampleCount: number;
+}
+export interface EventLatencyMetricsResponse {
+  ok: boolean;
+  entries: EventLatencyEntry[];
+  projectId?: string;
+  error?: string;
+}
 
-- `routeEventRequest({ projectId, platform, platformEventType })`
-  - Validates `projectId`, `platform`, `platformEventType`
-  - Routes: `'custom-event-route'`
-  - Generates deterministic `internalEventType` by mapping platform prefixes:
-    - `youtube.*` → `publish.*`
-    - `tiktok.*` → `publish.*`
-    - `approval.*` → `approval.*`
-    - Any other → `package.*` (fallback)
-  - Preview: `{ routing: { projectId, platform, platformEventType, internalEventType, status: 'mapped', mappedAt } }`
+export interface RoutingStatEntry {
+  platform: string;
+  mappingCount: number;
+  eventTypes: string[];
+  lastRoutedAt: string;
+}
+export interface RoutingStatisticsResponse {
+  ok: boolean;
+  stats: RoutingStatEntry[];
+  projectId?: string;
+  error?: string;
+}
 
-**Read functions (2):**
+export interface PipelineHealthComponent {
+  score: number;
+  status: 'healthy' | 'degraded' | 'critical';
+}
+export interface PipelineHealth {
+  score: number;
+  status: 'healthy' | 'degraded' | 'critical';
+  components: Record<string, PipelineHealthComponent>;
+}
+export interface PipelineHealthResponse {
+  ok: boolean;
+  health?: PipelineHealth;
+  projectId?: string;
+  error?: string;
+}
+```
 
-- `readWebhookDeliveries(webhookId, projectId, limit = 50)`
-  - Validates `webhookId`, `projectId`; limit 1–500
-  - Returns: `{ ok, deliveries: [], count: 0, webhookId, projectId }`
+**New functions:**
 
-- `readPlatformEventMapping(platform)`
-  - Validates `platform` (non-empty)
-  - Returns: `{ ok, mappings: [], count: 0, platform }`
+```typescript
+export function readWebhookDeliveryRates(projectId: string): WebhookDeliveryRatesResponse
+// validates projectId; returns { ok: true, metrics: { successCount:0, failureCount:0, pendingCount:0, successRate:0, byPlatform:{} }, projectId }
+
+export function readEventLatencyMetrics(projectId: string): EventLatencyMetricsResponse
+// validates projectId; returns { ok: true, entries: [], projectId }
+
+export function readRoutingStatistics(projectId: string): RoutingStatisticsResponse
+// validates projectId; returns { ok: true, stats: [], projectId }
+
+export function readPipelineHealth(projectId: string): PipelineHealthResponse
+// validates projectId; returns { ok: true, health: { score:100, status:'healthy', components:{} }, projectId }
+```
+
+Each follows the identical validation pattern already in the file:
+```typescript
+if (!projectId?.trim()) {
+  return { ok: false, error: 'projectId is required', ... };
+}
+```
 
 ---
 
 ### 2. Routes in `projects/brain-core/src/api/routes.ts`
 
-Add import lines after the event imports (lines 106-107):
+Add 1 import line after the existing vo-studio-read imports (line ~104):
 ```typescript
-import { processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest } from '../adapters/vo-studio-webhook-handler.js';
-import { readWebhookDeliveries, readPlatformEventMapping } from '../adapters/vo-studio-webhook-handler.js';
+import { ..., readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
+```
+(Extend the existing import line, don't add a new one — the 4 new functions join the existing `readApprovalQueue, readWorkflowState, ...` import.)
+
+Add 4 GET routes after the last `platform-mapping` route, before `/research/video-analyze`:
+
+```
+GET /api/video-orchestrator/analytics/webhook-delivery-rates?projectId=X
+GET /api/video-orchestrator/analytics/event-latency?projectId=X
+GET /api/video-orchestrator/analytics/routing-statistics?projectId=X
+GET /api/video-orchestrator/analytics/pipeline-health?projectId=X
 ```
 
-Add 5 routes between the last event route and `/research/video-analyze`:
-
-**POST (exact `===` match, 202/400):**
-- `/api/video-orchestrator/webhooks/process` — body: `{ webhookId, projectId, platform, eventType, payload, signature? }` — conditional `signature`
-- `/api/video-orchestrator/webhooks/verify` — body: `{ webhookId, projectId, secret, signature, rawBody }`
-- `/api/video-orchestrator/events/route` — body: `{ projectId, platform, platformEventType }`
-
-**GET (`.startsWith()` match, 200/400):**
-- `/api/video-orchestrator/webhooks/deliveries?webhookId=X&projectId=Y&limit=N`
-- `/api/video-orchestrator/events/platform-mapping?platform=X`
+All use `.startsWith()` match, `url.searchParams.get('projectId') ?? ''`, `sendJson(response, result.ok ? 200 : 400, result)`.
 
 ---
 
-### 3. Test file: `projects/brain-core/src/tests/vo-studio-webhook-handler.test.ts`
+### 3. New test file: `projects/brain-core/src/tests/vo-studio-analytics.test.ts`
 
-~35 tests, `node:test` + `node:assert/strict`, flat `test()` blocks:
+~20 tests, `node:test` + `node:assert/strict`, flat `test()` blocks:
 
-**Write tests (~22):**
+**`readWebhookDeliveryRates`** (3 tests):
+- Valid: `ok === true`, `metrics` exists, `metrics.successCount === 0`, `metrics.byPlatform` is object, `projectId` echoed
+- Missing projectId: `ok === false`, `/projectId is required/`
+- Empty string projectId: same failure
 
-`processWebhookEventRequest` (7 tests):
-- Valid case: `ok`, `approval.status === 'pending'`, `preview.delivery.status === 'received'`, `preview.delivery.webhookId`/`.platform`/`.eventType` echoed
-- Missing `webhookId`, `projectId`, `platform`, `eventType` → error regex
-- Missing `payload` (null) → `/payload is required/`
-- Unique delivery IDs (two calls)
+**`readEventLatencyMetrics`** (3 tests):
+- Valid: `ok === true`, `entries` is empty array, `projectId` echoed
+- Missing projectId: `ok === false`, `/projectId is required/`
+- entries is an array (deepEqual `[]`)
 
-`verifyWebhookSignatureRequest` (6 tests):
-- Valid case: `ok`, `preview.verification.status === 'verified'`
-- Missing each of: `webhookId`, `projectId`, `secret`, `signature`, `rawBody` → error regex
+**`readRoutingStatistics`** (3 tests):
+- Valid: `ok === true`, `stats` is empty array, `projectId` echoed
+- Missing projectId: `ok === false`, `/projectId is required/`
+- stats deepEqual `[]`
 
-`routeEventRequest` (4 tests):
-- Valid case with youtube platform: `ok`, `preview.routing.internalEventType` contains `publish`
-- Missing `projectId`, `platform`, `platformEventType` → error regex
+**`readPipelineHealth`** (4 tests):
+- Valid: `ok === true`, `health` exists, `health.score === 100`, `health.status === 'healthy'`, `projectId` echoed
+- Missing projectId: `ok === false`, `/projectId is required/`
+- `health.components` is object
+- `health.status` is one of valid literal values
 
-Uniqueness (2 tests):
-- `processWebhookEventRequest` generates unique delivery IDs
-- `routeEventRequest` maps `tiktok.*` → `publish.*` variant
+**Cross-function** (2 tests):
+- All four functions echo back the same projectId passed in
+- All four return `ok: true` with non-null response objects for a valid projectId
 
-**Read tests (~13):**
+---
 
-`readWebhookDeliveries` (5 tests):
-- Valid case: `ok`, `count === 0`, `deliveries === []`, both IDs echoed
-- Missing `webhookId`, missing `projectId`
-- Limit below 1, limit above 500
+### 4. UI: Add analytics tab to EventLogPanel — NO (out of scope for Phase 8)
 
-`readPlatformEventMapping` (3 tests):
-- Valid case: `ok`, `mappings` is array, `platform` echoed
-- Missing platform → error regex
+Phase 8 is server-side only. No UI changes needed — the OverviewPanel in the console already calls `readPublishingMetrics` and `readApprovalStatistics`; the new analytics endpoints can be wired into an existing or future panel without any blocking work here.
 
 ---
 
@@ -110,8 +162,6 @@ Uniqueness (2 tests):
 
 ```bash
 # From projects/brain-core/
-npm test             # all tests must pass including new webhook-handler suite
+npm test             # all tests must pass including new vo-studio-analytics suite
 npx tsc --noEmit     # no TypeScript errors
 ```
-
-No UI changes needed for Phase 7 — this is a pure server-side adapter/routing layer. The EventLogPanel from Phase 6 will surface routed events naturally when the event stream is populated.

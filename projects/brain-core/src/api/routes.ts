@@ -101,7 +101,7 @@ import {
 } from '../adapters/video-orchestrator-studio-model.js';
 import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
 import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest } from '../adapters/vo-studio-orchestration.js';
-import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics } from '../adapters/vo-studio-read.js';
+import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics, readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit } from '../adapters/vo-studio-orchestration.js';
 import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
 import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
@@ -2705,6 +2705,34 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
   if (url.pathname.startsWith('/api/video-orchestrator/events/platform-mapping')) {
     const platform = url.searchParams.get('platform') ?? '';
     const result = readPlatformEventMapping(platform);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/webhook-delivery-rates')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readWebhookDeliveryRates(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/event-latency')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readEventLatencyMetrics(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/routing-statistics')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readRoutingStatistics(projectId);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/analytics/pipeline-health')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readPipelineHealth(projectId);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
