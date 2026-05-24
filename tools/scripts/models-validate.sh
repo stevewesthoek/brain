@@ -92,7 +92,7 @@ agent_model_matches_tier() {
   local model="$1"
   local tier="$2"
   local resolved="$3"
-  [[ "$model" == "$tier" || "$model" == "$resolved" || "$model" == *"claude-$tier"* ]]
+  [[ "$model" == "$tier" || "$model" == "$resolved" || "$model" == *claude-*"$tier"* ]]
 }
 
 require_model() {
@@ -102,8 +102,8 @@ require_model() {
     log_error "$tier model is empty"
     return 1
   fi
-  if [[ "$value" != us.anthropic.* ]]; then
-    log_error "$tier model is not a Bedrock geo inference/profile ID: $value"
+  if [[ "$value" != us.anthropic.* && "$value" != anthropic.* && "$value" != claude-* ]]; then
+    log_error "$tier model is not a Bedrock Claude model/profile ID: $value"
     return 1
   fi
 }
@@ -198,7 +198,7 @@ main() {
     env_stale=1
   fi
   if [[ "$env_stale" -ne 0 ]]; then
-    log_info "Source generated exports before starting Claude Code: source tools/scripts/bedrock-models.generated.sh"
+    log_info "Source launcher env before starting Claude Code: source tools/scripts/claude-bedrock-env.sh"
   fi
 
   if [[ $valid -ne 0 ]]; then
@@ -209,8 +209,8 @@ main() {
   log_success "Validation complete"
   echo ""
   echo "To update Claude Code's /model selector in a new session:"
-  echo "  source tools/scripts/bedrock-models.generated.sh"
-  echo "  claude"
+  echo "  source tools/scripts/claude-bedrock-env.sh"
+  echo '  claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"'
 }
 
 main "$@"

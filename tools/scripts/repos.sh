@@ -71,6 +71,14 @@ with open(usage_file, 'w') as f:
 PYEOF
 }
 
+launch_claude() {
+  # Re-source immediately before launch so stale parent shells cannot keep
+  # Claude Code on an unavailable Bedrock model.
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/claude-bedrock-env.sh"
+  exec claude --model "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}"
+}
+
 # Step 1: pick AI tool — Auto is default (first item)
 tool=$(printf "Auto\nClaude\nCodex\nGemini" | fzf \
   --prompt="  open with: " \
@@ -111,7 +119,7 @@ record_usage "$selected_path"
 
 cd "$selected_path" || exit 1
 if [[ "$tool" == "Claude" ]]; then
-  exec claude
+  launch_claude
 elif [[ "$tool" == "Codex" ]]; then
   exec codex
 elif [[ "$tool" == "Gemini" ]]; then

@@ -38,7 +38,7 @@ Codex
 Gemini
 ```
 
-`Auto` calls `tools/scripts/ai-auto-route.sh`, which chooses Claude, Codex, or Gemini from repo and prompt signals. It does not expose Qwen, Nemotron, DeepSeek, Kimi, or gpt-oss as manual top-level choices. Those remain behind the AI Model Selector for structured app/workflow calls.
+`Auto` calls `tools/scripts/ai-auto-route.sh`, which chooses Claude, Codex, or Gemini from repo and prompt signals. Claude launches from `repos` and `sessions` source `tools/scripts/claude-bedrock-env.sh` immediately before startup and pass the resolved Sonnet model explicitly, so stale shells or persisted Opus 4.7 selections do not control new sessions. It does not expose Qwen, Nemotron, DeepSeek, Kimi, or gpt-oss as manual top-level choices. Those remain behind the AI Model Selector for structured app/workflow calls.
 
 ## Apply Runtime Config
 

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.office.brain-core</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/Office/Repos/stevewesthoek/brain/projects/brain-core/dist/index.js</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain/projects/brain-core</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/Office</string>
+        <key>BRAIN_CORE_HOST</key>
+        <string>127.0.0.1</string>
+        <key>BRAIN_CORE_PORT</key>
+        <string>4877</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain/runtime/local/brain-core/launchd.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/Office/Repos/stevewesthoek/brain/runtime/local/brain-core/launchd.stderr.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

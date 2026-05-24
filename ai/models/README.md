@@ -14,11 +14,11 @@ The sync command writes:
 - `ai/models/bedrock-models.generated.json` — resolved model cache
 - `tools/scripts/bedrock-models.generated.sh` — sourceable Claude Code model exports
 
-New login/interactive shells source the generated exports through Brain's shell config. In an already-open shell, source the generated exports before starting Claude Code so `/model` sees the latest resolved Bedrock IDs:
+New login/interactive shells source the generated exports through Brain's Claude Bedrock launcher env. In an already-open shell, source the launcher env before starting Claude Code so `/model` sees the latest resolved Bedrock IDs and stale Opus 4.7 selections are guarded:
 
 ```bash
-source tools/scripts/bedrock-models.generated.sh
-claude
+source tools/scripts/claude-bedrock-env.sh
+claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"
 ```
 
 ## Current resolved model map
@@ -33,7 +33,7 @@ claude
 
 ## Pinned fallback models
 
-These are safe defaults used when AWS discovery fails or returns stale/missing models:
+These are safe emergency defaults used when AWS discovery/access probing fails or returns no callable model:
 
 ```json
 {
@@ -43,7 +43,7 @@ These are safe defaults used when AWS discovery fails or returns stale/missing m
 }
 ```
 
-The sync script defaults to pinned models that are known to work in the current AWS account. Opus 4.7 remains disabled until Bedrock account access is granted; Opus 4.6 is the safe Opus-tier fallback.
+The sync script discovers stable Claude Bedrock candidates, probes actual `bedrock-runtime converse` access, and writes the newest callable model per tier. Opus 4.7 remains guarded until Bedrock account access is granted; Opus 4.6 is the safe Opus-tier fallback.
 
 ## Agent assignments
 
@@ -95,8 +95,11 @@ AWS_REGION=us-west-2 npm run models:sync:bedrock
 # AWS profile
 AWS_PROFILE=work npm run models:sync:bedrock
 
-# Force pinned models
+# Force pinned models first, then discovered candidates
 PREFER_PINNED_MODELS=1 npm run models:sync:bedrock
+
+# Disable live access probes and trust discovery only
+PROBE_BEDROCK_ACCESS=0 npm run models:sync:bedrock
 
 # Allow preview/beta/experimental IDs when explicitly intended
 ALLOW_PREVIEW_MODELS=1 npm run models:sync:bedrock
@@ -111,7 +114,8 @@ The sync command uses:
   "Effect": "Allow",
   "Action": [
     "bedrock:ListInferenceProfiles",
-    "bedrock:ListFoundationModels"
+    "bedrock:ListFoundationModels",
+    "bedrock:InvokeModel"
   ],
   "Resource": "*"
 }
@@ -123,12 +127,12 @@ If IAM or SCP policy blocks discovery, the command warns and keeps pinned fallba
 
 Claude Code's `/model` selector includes built-in Claude options that the Brain repo cannot remove. The repo controls the custom/default Bedrock environment values, not Claude Code's built-in menu list.
 
-After syncing, restart Claude Code from a shell where the generated exports have been sourced:
+After syncing, restart Claude Code from a shell where the launcher env has been sourced:
 
 ```bash
-source tools/scripts/bedrock-models.generated.sh
+source tools/scripts/claude-bedrock-env.sh
 echo "$ANTHROPIC_DEFAULT_OPUS_MODEL"
-claude
+claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"
 ```
 
 Expected Opus export:
@@ -143,7 +147,10 @@ If `/model` still has several Opus entries, that is Claude Code's built-in selec
 
 - `tools/scripts/models-sync-bedrock.sh`
 - `tools/scripts/models-validate.sh`
+- `tools/scripts/claude-bedrock-env.sh`
 - `tools/scripts/bedrock-models.generated.sh`
+- `tools/scripts/repos.sh`
+- `tools/scripts/sessions.sh`
 - `ai/models/bedrock-models.generated.json`
 - `operations/system-configs/shell/.zprofile`
 - `operations/system-configs/shell/.zshrc`

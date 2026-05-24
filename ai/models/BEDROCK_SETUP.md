@@ -52,16 +52,16 @@ It filters to stable Anthropic Claude IDs, prefers `us.anthropic.*` inference/pr
 }
 ```
 
-If those calls fail due to IAM or SCP restrictions, the script prints warnings and keeps the pinned fallbacks.
+If discovery or access probes fail due to IAM, SCP, or account-access restrictions, the script prints warnings and keeps the pinned fallbacks.
 
 ## Applying the models to Claude Code
 
-Run sync. New shells source the generated shell exports automatically from Brain's shell config. For the current shell, source the generated exports before starting Claude Code:
+Run sync. New shells source the generated shell exports automatically through Brain's Claude Bedrock launcher env. For the current shell, source that env before starting Claude Code:
 
 ```bash
 npm run models:sync:bedrock
-source tools/scripts/bedrock-models.generated.sh
-claude
+source tools/scripts/claude-bedrock-env.sh
+claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"
 ```
 
 Expected exports:
@@ -72,22 +72,22 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="us.anthropic.claude-sonnet-4-6"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 ```
 
-Opus 4.7 is not the default because the current AWS account returns `AccessDeniedException` for that model. If `/model` still shows a different custom default, the current Claude Code process was started with stale environment variables. Exit Claude Code, source `tools/scripts/bedrock-models.generated.sh`, and start Claude Code again.
+Opus 4.7 is not the default because the current AWS account returns `AccessDeniedException` for that model. If `/model` still shows a different custom default, the current Claude Code process was started with stale environment variables or a persisted per-session selection. Exit Claude Code, source `tools/scripts/claude-bedrock-env.sh`, and start Claude Code with `--model "$ANTHROPIC_DEFAULT_SONNET_MODEL"`.
 
 Brain-owned startup files:
 
 - `operations/system-configs/shell/.zprofile` — login shells
 - `operations/system-configs/shell/.zshrc` — interactive shells
 
-Both files point Claude Code to the generated Bedrock model exports and fall back to the pinned safe IDs only when the generated file is missing.
+Both files source `tools/scripts/claude-bedrock-env.sh`, which points Claude Code to the generated Bedrock model exports and falls back to pinned safe IDs only when the generated file is missing.
 
 ## Validation behavior
 
 `npm run models:validate` verifies:
 
 - exactly one non-empty model for Opus, Sonnet, and Haiku
-- all resolved models use `us.anthropic.*`
-- resolved Opus matches the pinned safe Opus-tier fallback unless discovery is explicitly enabled
+- all resolved models use Bedrock Claude model/profile IDs
+- generated exports resolve to the current newest callable models or safe fallbacks
 - `deep-architect` matches the resolved Opus cache
 - the generated sourceable shell export file exists
 - the current shell is not still using a stale `ANTHROPIC_DEFAULT_OPUS_MODEL`
@@ -96,7 +96,10 @@ Both files point Claude Code to the generated Bedrock model exports and fall bac
 
 - `tools/scripts/models-sync-bedrock.sh` — discovery and cache/export generation
 - `tools/scripts/models-validate.sh` — validation and stale environment warning
+- `tools/scripts/claude-bedrock-env.sh` — sourceable launcher env used by shells and `repos`
 - `tools/scripts/bedrock-models.generated.sh` — sourceable Claude Code exports
+- `tools/scripts/repos.sh` — starts new manual sessions with a safe resolved Claude model
+- `tools/scripts/sessions.sh` — resumes manual sessions with the same launcher env
 - `ai/models/bedrock-models.generated.json` — generated resolved model cache
 - `operations/system-configs/shell/.zprofile` — login-shell export loading
 - `operations/system-configs/shell/.zshrc` — interactive-shell export loading

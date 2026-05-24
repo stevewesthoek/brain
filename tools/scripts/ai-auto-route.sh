@@ -3,6 +3,8 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -123,7 +125,11 @@ fi
 
 cd "$REPO_PATH"
 case "$TOOL" in
-  Claude) exec claude ;;
+  Claude)
+    # shellcheck source=/dev/null
+    source "$SCRIPT_DIR/claude-bedrock-env.sh"
+    exec claude --model "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}"
+    ;;
   Codex) exec codex ;;
   Gemini) exec gemini ;;
   *)

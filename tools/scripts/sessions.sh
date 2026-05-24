@@ -10,8 +10,10 @@
 # resolved from ~/.codex/session_index.jsonl.
 #
 # On selection, cd to the session's original project directory and resume:
-#   Claude → `claude --resume <session_id>`
+#   Claude → source Bedrock env, then `claude --resume <session_id>`
 #   Codex  → `codex resume <session_id>`
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 list_claude_sessions() {
   python3 - "$HOME/.claude/projects" <<'PYEOF'
@@ -350,7 +352,9 @@ if [[ "$tool" == "Claude" ]]; then
   [[ -z "$selected" ]] && exit 0
   selected_cwd=$(echo "$selected" | cut -f4)
   selected_sid=$(echo "$selected" | cut -f5)
-  cd "$selected_cwd" && exec claude --resume "$selected_sid"
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/claude-bedrock-env.sh"
+  cd "$selected_cwd" && exec claude --resume "$selected_sid" --model "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}"
 elif [[ "$tool" == "Codex" ]]; then
   selected=$(list_codex_sessions | fzf \
     --prompt="  session (Codex): " \

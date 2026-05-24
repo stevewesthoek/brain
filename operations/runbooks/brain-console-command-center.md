@@ -11,7 +11,7 @@
 1. **Open Brain Console**: Obsidian right sidebar → click brain icon, OR command palette "Open Brain Console"
 2. **Status pills** show: Brain Core, Mind Steward, Scheduler, Save-to-Mind, Approvals, Maintenance
 3. **6 core cards** display: Wiki Health, Maintenance Previews, Approvals, Scheduler Status, Brain Core readiness, Next Safe Action
-4. **Refresh button** polls all endpoints manually (read-only, no automatic POST calls)
+4. **Refresh button** requests a verified Brain Core `launchd` restart: boot out the service, prove the port is free, bootstrap/kickstart it again, then prove the API is back online
 5. **That's it** — the dashboard is your system cockpit
 
 ---
@@ -67,7 +67,7 @@ Located at top, showing quick health indicators:
 | **Approvals** | count of pending approval requests | `/approvals` |
 | **Maintenance** | count of pending maintenance previews | `/execution/mind-previews` |
 
-**Action:** Refresh button in header polls all endpoints.
+**Action:** Refresh button in header requests the Brain Core restart helper, which uses the `com.office.brain-core` LaunchAgent, verifies stop, port-free state, bootstrap/kickstart, and status recovery.
 
 ### Core Cards (6 MVP)
 
@@ -342,7 +342,7 @@ See `docs/system/obsidian-mind-steward-roadmap.md` for full strategic roadmap.
 **If stuck:**
 - **Plugin won't load?** See Troubleshooting section
 - **Brain Core offline?** Start Brain Core: `brain-core start` or check status: `brain-core status`
-- **Data looks stale?** Click "Refresh" button
+- **Data looks stale?** Use the top-right `↻` control to request a verified Brain Core `launchd` restart, then wait for the dashboard to come back
 - **Need raw data?** Browse Mind Markdown: HOME.md, live/dashboard.md, live/machine.md
 
 ### For Developers
@@ -364,7 +364,7 @@ See `docs/system/obsidian-mind-steward-roadmap.md` for full strategic roadmap.
 2. Install Brain Console plugin in Obsidian (from `projects/brain-console-obsidian/release/`)
 3. Open Obsidian, click Brain Console icon
 4. Verify 6 cards render and data populates
-5. Click "Refresh" button, verify data updates
+5. Click the top-right `↻` control, verify Brain Core stops, frees port 4877, restarts, and returns to `ok: true`
 
 ---
 

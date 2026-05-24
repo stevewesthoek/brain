@@ -600,6 +600,11 @@ class ModelSelector:
                 model = str(bedrock_model.get("model_id", ""))
             else:
                 model = self._pick_model(provider, task_spec)
+                # For vision tasks, override with the task-specified local model
+                if required_capability == "image/analyze":
+                    task_preferred = task_spec.get("preferred_local_model")
+                    if task_preferred:
+                        model = task_preferred
             if not model and ptype == "openai-compatible":
                 continue
             result = SelectionResult(
