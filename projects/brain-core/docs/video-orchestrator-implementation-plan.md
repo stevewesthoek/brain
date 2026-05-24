@@ -275,12 +275,10 @@ Done when:
 
 Atomic tasks:
 - 0F-A: Global VO context bar with Project, Account, Platform Targets, Pipeline Profile, Date Range. ✅ Complete
-- 0F-B: Overview panel with worker/selector health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counters. 🔲 Next
-- 0F-C: Studio shell with tabs: Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval. 🔲
-- 0F-D: Thumbnail Studio read-only panel with one canvas/preview area and platform preview strip. 🔲
-- 0F-E: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary. 🔲
-- 0F-F: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles. 🔲
-- 0F-G: History/Analytics table with project/account/platform/status filters. 🔲
+- 0F-B: Overview panel with worker/selector health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counters. ✅ Complete
+- 0F-C: Pipelines panel with stage map, run history table, detail drawer, logs/dead-letter summary. 🔲 Next
+- 0F-D: Accounts panel with platform account cards, adapter status, quota, scheduler policy, enabled profiles. 🔲
+- 0F-E: History/Analytics table with project/account/platform/status filters. 🔲
 
 Done when:
 - `npm run typecheck && npm run build` passes.

@@ -1,10 +1,14 @@
 import { VOContextBar } from './VOContextBar.js';
 import { OverviewPanel } from './OverviewPanel.js';
+import { PipelinesPanel } from './PipelinesPanel.js';
+import { AccountsPanel } from './AccountsPanel.js';
+import { HistoryPanel } from './HistoryPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
   BrainCoreVOStudioPlatformAccount,
   BrainCoreVOStudioPipelineProfile,
+  BrainCoreVOStudioContentItem,
   BrainCoreAiModelSelectorStatus,
   BrainCoreVOStudioAnalyticsSummary,
   BrainCoreVOAccountStatsResponse,
@@ -14,6 +18,9 @@ export class VOShell {
   private container: HTMLElement;
   private contextBar: VOContextBar;
   private overviewPanel: OverviewPanel | null = null;
+  private pipelinesPanel: PipelinesPanel | null = null;
+  private accountsPanel: AccountsPanel | null = null;
+  private historyPanel: HistoryPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
   private contentContainer: HTMLElement | null = null;
@@ -22,6 +29,7 @@ export class VOShell {
     projects?: BrainCoreVOStudioProject[];
     accounts?: BrainCoreVOStudioPlatformAccount[];
     pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
+    contentItems?: BrainCoreVOStudioContentItem[];
     selector?: BrainCoreAiModelSelectorStatus;
     analytics?: BrainCoreVOStudioAnalyticsSummary;
     accountStats?: BrainCoreVOAccountStatsResponse;
@@ -31,6 +39,7 @@ export class VOShell {
     projects?: BrainCoreVOStudioProject[];
     accounts?: BrainCoreVOStudioPlatformAccount[];
     pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
+    contentItems?: BrainCoreVOStudioContentItem[];
     selector?: BrainCoreAiModelSelectorStatus;
     analytics?: BrainCoreVOStudioAnalyticsSummary;
     accountStats?: BrainCoreVOAccountStatsResponse;
@@ -92,10 +101,22 @@ export class VOShell {
   private renderCurrentTab(): void {
     if (!this.contentContainer) return;
 
-    // Clean up previous panel if it exists
+    // Clean up previous panels
     if (this.overviewPanel) {
       this.overviewPanel.destroy();
       this.overviewPanel = null;
+    }
+    if (this.pipelinesPanel) {
+      this.pipelinesPanel.destroy();
+      this.pipelinesPanel = null;
+    }
+    if (this.accountsPanel) {
+      this.accountsPanel.destroy();
+      this.accountsPanel = null;
+    }
+    if (this.historyPanel) {
+      this.historyPanel.destroy();
+      this.historyPanel = null;
     }
 
     const state = this.ctx.getState();
@@ -120,19 +141,34 @@ export class VOShell {
         break;
 
       case 'pipelines':
-        this.contentContainer.innerHTML = `
-          <div class="vo-empty-state">
-            <p>Pipelines panel — coming soon</p>
-          </div>
-        `;
+        if (state.projectId) {
+          this.pipelinesPanel = new PipelinesPanel(this.contentContainer, {
+            profiles: this.data.pipelineProfiles,
+            contentItems: this.data.contentItems,
+          });
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view pipelines</p>
+            </div>
+          `;
+        }
         break;
 
       case 'accounts':
-        this.contentContainer.innerHTML = `
-          <div class="vo-empty-state">
-            <p>Accounts panel — coming soon</p>
-          </div>
-        `;
+        if (state.projectId) {
+          this.accountsPanel = new AccountsPanel(this.contentContainer, {
+            accounts: this.data.accounts,
+            profiles: this.data.pipelineProfiles,
+            accountStats: this.data.accountStats?.stats,
+          });
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view accounts</p>
+            </div>
+          `;
+        }
         break;
 
       case 'content':
@@ -144,11 +180,18 @@ export class VOShell {
         break;
 
       case 'history':
-        this.contentContainer.innerHTML = `
-          <div class="vo-empty-state">
-            <p>History panel — coming soon</p>
-          </div>
-        `;
+        if (state.projectId) {
+          this.historyPanel = new HistoryPanel(this.contentContainer, {
+            contentItems: this.data.contentItems,
+            accounts: this.data.accounts,
+          });
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view history</p>
+            </div>
+          `;
+        }
         break;
     }
   }
@@ -157,6 +200,15 @@ export class VOShell {
     this.contextBar.destroy();
     if (this.overviewPanel) {
       this.overviewPanel.destroy();
+    }
+    if (this.pipelinesPanel) {
+      this.pipelinesPanel.destroy();
+    }
+    if (this.accountsPanel) {
+      this.accountsPanel.destroy();
+    }
+    if (this.historyPanel) {
+      this.historyPanel.destroy();
     }
     if (this.unsubscribe) {
       this.unsubscribe();
