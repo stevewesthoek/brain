@@ -3,6 +3,7 @@ import { OverviewPanel } from './OverviewPanel.js';
 import { PipelinesPanel } from './PipelinesPanel.js';
 import { AccountsPanel } from './AccountsPanel.js';
 import { HistoryPanel } from './HistoryPanel.js';
+import { ContentCreationPanel } from './ContentCreationPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -20,6 +21,7 @@ export class VOShell {
   private overviewPanel: OverviewPanel | null = null;
   private pipelinesPanel: PipelinesPanel | null = null;
   private accountsPanel: AccountsPanel | null = null;
+  private contentCreationPanel: ContentCreationPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
@@ -114,6 +116,10 @@ export class VOShell {
       this.accountsPanel.destroy();
       this.accountsPanel = null;
     }
+    if (this.contentCreationPanel) {
+      this.contentCreationPanel.destroy();
+      this.contentCreationPanel = null;
+    }
     if (this.historyPanel) {
       this.historyPanel.destroy();
       this.historyPanel = null;
@@ -172,11 +178,15 @@ export class VOShell {
         break;
 
       case 'content':
-        this.contentContainer.innerHTML = `
-          <div class="vo-empty-state">
-            <p>Content panel — coming soon</p>
-          </div>
-        `;
+        if (state.projectId) {
+          this.contentCreationPanel = new ContentCreationPanel(this.contentContainer);
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to create content items</p>
+            </div>
+          `;
+        }
         break;
 
       case 'history':
@@ -206,6 +216,9 @@ export class VOShell {
     }
     if (this.accountsPanel) {
       this.accountsPanel.destroy();
+    }
+    if (this.contentCreationPanel) {
+      this.contentCreationPanel.destroy();
     }
     if (this.historyPanel) {
       this.historyPanel.destroy();

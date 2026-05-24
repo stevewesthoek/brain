@@ -4,6 +4,7 @@ export { VOShell } from './VOShell.js';
 export { OverviewPanel } from './OverviewPanel.js';
 export { PipelinesPanel } from './PipelinesPanel.js';
 export { AccountsPanel } from './AccountsPanel.js';
+export { ContentCreationPanel } from './ContentCreationPanel.js';
 export { HistoryPanel } from './HistoryPanel.js';
 export type { VOContextState, DateRange } from './types.js';
 export type { PipelineRun } from './PipelinesPanel.js';
