@@ -17,6 +17,7 @@ Completed:
 - SEO metadata generation
 - Analytics feedback loop
 - Brain Console AI selector health chip
+- YouTube post-upload captions / metadata / thumbnail attachment flow
 
 ---
 
@@ -30,6 +31,7 @@ Completed:
 - Feedback loop records publish outcomes and 24h metrics.
 - VO context bar shows AI selector running/degraded/stopped/unknown state and current healthy provider.
 - Claude-labelled orchestrator execution routes through the AI Model Selector / approved fallback surfaces, not direct Anthropic API.
+- Direct YouTube uploads now attach captions, finalize metadata, and upload thumbnails explicitly in the worker with aligned quota accounting.
 
 **Test status:**
 - `997` tests passing
@@ -43,8 +45,8 @@ The next active backlog is the later-phase roadmap, not the five-step implementa
 
 Relevant remaining areas:
 - Later hardening items
-- Thumbnail upload wiring and A/B test maturity work
-- Metadata publishing integration details
+- Thumbnail studio and A/B test maturity work
+- Advanced analytics UI surfaces
 - Multi-platform expansion beyond the current publish adapters
 
 ---

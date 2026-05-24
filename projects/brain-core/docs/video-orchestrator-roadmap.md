@@ -2,7 +2,7 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-24 (next-phase implementation completed)
+**Last updated:** 2026-05-24 (next-phase implementation + YouTube attachment completion)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
@@ -36,8 +36,8 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 
 **Remaining VO product gaps:**
 - Later hardening items
-- Thumbnail upload / A/B test maturation
-- Metadata publishing integration details
+- Thumbnail studio / A/B test maturation
+- Advanced analytics surfaces in Brain Console
 - Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
 
 ---
@@ -375,13 +375,13 @@ The next work must proceed in this order:
 
 ### 2.3 Subtitle delivery
 - [x] SRT + VTT written to job output dir; symlinked into `fallback/` package
-- [ ] YouTube upload: `youtube_uploader.py` `upload_captions(video_id, srt_path)` — Phase 2.3 carry-over
+- [x] YouTube upload: `youtube_uploader.py` `upload_captions(video_id, srt_path)`
 
 ### 2.4 YouTube API quota tracking
 - [x] `yt_quota.py` — state in `~/.local/video-orchestrator/state/yt-quota.json`; resets midnight Pacific
 - [x] `execute_post_job`: quota gate before any YouTube upload; defers to next 01:00 if < 2,100 units
 - [x] Quota consumed on successful upload (`video_insert` + `videos_update`)
-- [ ] Caption + thumbnail quota consumed on those operations (wired when those modules land)
+- [x] Caption + thumbnail quota consumed on those operations
 
 **Deliverable:** ✅ `subtitle` job type runs, transcribes audio, writes SRT/VTT to job dir. Quota gate prevents uploads when exhausted — defers to next batch window automatically.
 
@@ -475,13 +475,13 @@ The next work must proceed in this order:
 ### 3.3 New job type: `thumbnail`
 - [x] `thumbnail` already in DB constraint (was pre-existing)
 - [x] `execute_thumbnail_job` registered in `JOB_EXECUTORS`
-- [ ] YouTube upload: `thumbnails.set` after video upload — carry-over to 3.4
+- [x] YouTube upload: `thumbnails.set` after video upload
 
 ### 3.4 Thumbnail studio in Brain Console
 - [ ] Template library card in VO view
-- [ ] Per-job thumbnail preview before publishing
-- [ ] A/B variant selector + manual headline edit
-- [ ] `thumbnails.set` API call wired into `youtube_uploader.py`
+- [x] Per-job thumbnail preview before publishing (approval queue preview)
+- [ ] A/B variant selector + manual headline edit in dedicated studio UI
+- [x] `thumbnails.set` API call wired into `youtube_uploader.py`
 
 ### 3.5 A/B testing
 - [ ] Analytics nightly: compare CTR per variant; declare winner at 300+ impressions
@@ -512,10 +512,10 @@ The next work must proceed in this order:
 - [x] `execute_metadata_job` registered in `JOB_EXECUTORS`
 
 ### 4.4 Metadata review in Brain Console
-- [ ] Per-job metadata preview and edit before publishing (UI — carry-over)
+- [x] Per-job metadata preview and edit before publishing (approval queue preview)
 
 ### 4.5 YouTube upload uses metadata
-- [ ] `youtube_uploader.py` reads `artifact.metadata.youtube_standard` (carry-over)
+- [x] `execute_post_job` reads finalized artifact metadata and passes title/description/tags into the YouTube upload + metadata update flow
 
 **Deliverable:** ✅ `metadata` job type generates description/tags/chapters via LLM, analytics-informed, through AI Model Selector. DB migration adds `impressions`, `ctr`, `avg_view_duration_sec` to `performance_metrics`.
 

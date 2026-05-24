@@ -335,7 +335,7 @@ try {
 
 **Phase 3+** — Thumbnail studio, A/B testing, subscriber workflows
 
-**Phase 2 YouTube** — Caption upload, platform-specific quota tracking
+**YouTube publishing maturity** — winner-driven thumbnail replacement and richer analytics surfaces
 
 **Database v2** — Migrate state files to full DB (currently hybrid: JSON + PostgreSQL)
 

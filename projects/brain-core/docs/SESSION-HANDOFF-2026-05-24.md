@@ -1,7 +1,7 @@
 # Session Handoff — VO Studio Implementation Status
 
 **Date:** 2026-05-24 (End of Session)  
-**Status:** Next-phase implementation plus Brain Console AI selector health chip complete  
+**Status:** Next-phase implementation, Brain Console AI selector health chip, and YouTube attachment completion complete  
 **Git State:** Implementation commits are on `main`; later review edits may be uncommitted until checkpointed  
 **Test Coverage:** 997 tests passing, 0 failures
 
@@ -28,6 +28,7 @@
 - Feedback loop now records publish outcomes and 24h metrics
 - Brain Console VO context bar now shows AI selector running/stopped state and current healthy provider
 - Agent Orchestrator Claude-labelled execution no longer calls Anthropic directly; it routes through the AI Model Selector / approved fallback surfaces
+- YouTube direct posting now performs captions upload, metadata update, and thumbnail attachment explicitly after upload, with matching quota accounting
 
 **Testing:**
 - 997 tests passing, 0 failures
@@ -89,6 +90,16 @@
 ### 7. Analytics feedback store fix
 - `projects/brain-core/src/adapters/video-orchestrator-analytics-feedback.ts`
 - Resolves `VO_FEEDBACK_PATH` at read/write time so tests and callers can safely override the store path
+
+### 8. YouTube attachment completion
+- `~/.local/video-orchestrator/scripts/youtube_uploader.py`
+- `~/.local/video-orchestrator/worker/video_worker.py`
+- `~/.local/video-orchestrator/tests/test_youtube_uploader.py`
+- `~/.local/video-orchestrator/tests/test_worker.py`
+- Added a public thumbnail attachment function
+- Worker direct-upload flow now owns post-upload captions, metadata, and thumbnail steps explicitly
+- Quota consumption now matches the operations that actually ran
+- Runtime verification: uploader tests `21 passed`, worker tests `38 passed`
 
 ---
 
@@ -161,4 +172,4 @@ If resuming later:
 
 ## Resume Prompt
 
-Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, and Brain Console AI selector health chip are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
+Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, and YouTube post-upload attachment flow are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
