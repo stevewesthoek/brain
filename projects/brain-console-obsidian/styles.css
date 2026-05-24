@@ -3582,6 +3582,18 @@
   color: var(--bc-red);
 }
 
+.vo-worker-health-running {
+  color: var(--bc-green);
+}
+
+.vo-worker-health-stopped {
+  color: var(--bc-red);
+}
+
+.vo-worker-health-degraded {
+  color: var(--bc-yellow);
+}
+
 .vo-progress-section {
   display: flex;
   align-items: center;

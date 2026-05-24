@@ -18,6 +18,16 @@ type WebhookDeliveryRates = {
   successRate: number;
 };
 
+type WorkerHealth = {
+  ok: boolean;
+  status: 'running' | 'stopped' | 'degraded';
+  pid: number | null;
+  label: string;
+  logPath: string;
+  detail: string;
+  error?: string;
+};
+
 type EventEntry = {
   id: string;
   type: string;
@@ -102,6 +112,24 @@ export class StudioDashboardPanel {
         </div>
 
         <div class="vo-overview-card">
+          <div class="vo-overview-title">Worker Health</div>
+          <div class="vo-stats-table" id="dashboard-worker-health">
+            <div class="vo-stat-row">
+              <span class="vo-stat-key">Status</span>
+              <span class="vo-stat-value" id="worker-health-status">—</span>
+            </div>
+            <div class="vo-stat-row">
+              <span class="vo-stat-key">PID</span>
+              <span class="vo-stat-value" id="worker-health-pid">—</span>
+            </div>
+            <div class="vo-stat-row">
+              <span class="vo-stat-key">Detail</span>
+              <span class="vo-stat-value" id="worker-health-detail">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vo-overview-card">
           <div class="vo-overview-title">Recent Events</div>
           <div id="dashboard-events-list" class="vo-event-list-preview">
             <!-- Events will be populated here -->
@@ -132,6 +160,7 @@ export class StudioDashboardPanel {
       this.loadHealth(),
       this.loadRoutingStats(),
       this.loadWebhookSummary(),
+      this.loadWorkerHealth(),
       this.loadRecentEvents(),
     ]);
   }
@@ -209,6 +238,30 @@ export class StudioDashboardPanel {
         }
       }
     } catch (error) {
+      // Silently fail
+    }
+  }
+
+  private async loadWorkerHealth(): Promise<void> {
+    try {
+      const res = await fetch(`/api/infra/video-orchestrator/worker-health`);
+      const data = (await res.json()) as WorkerHealth;
+
+      const statusEl = this.container.querySelector('#worker-health-status');
+      const pidEl = this.container.querySelector('#worker-health-pid');
+      const detailEl = this.container.querySelector('#worker-health-detail');
+
+      if (statusEl) {
+        statusEl.textContent = data.status;
+        statusEl.className = `vo-stat-value vo-worker-health-${data.status}`;
+      }
+      if (pidEl) {
+        pidEl.textContent = data.pid ? String(data.pid) : '—';
+      }
+      if (detailEl) {
+        detailEl.textContent = data.detail;
+      }
+    } catch {
       // Silently fail
     }
   }
