@@ -1,174 +1,147 @@
-# Agent Orchestrator View — Brain Console Tab
+# Phase 6: Multi-Platform Direct Publishing — Codex Handoff
 
-## Context
+## Current Status (2026-05-24)
 
-The Phase 0.7 agent orchestration backend is fully implemented in brain-core (39 tests, committed). The Brain Console already has an `agents` section in `SECTION_TABS` and a stub `renderAgentsSection()` that renders 4 basic cards using list-style markup. The goal is to replace this stub with a rich, production-quality Agent Orchestrator View that renders the task graph, approval gates, agent registry, run history, cost summary, and recovery blockers using the global design system (`renderCard`, `renderCompactStatGrid`, `.bc-badge`, `.bc-stat-card`, `.bc-kpi-row` etc.). No new tabs, no new endpoints, no new client fetch functions — all data is already being fetched. This is a pure view.ts rendering upgrade.
+✅ **Complete:**
+- Brain Console design system (global tokens, fonts, spacing, radius, colors)
+- CSS pipeline fixed (styles.css from dist/ with Tailwind build)
+- Version management (VERSION.md, auto-update script)
+- Agent Orchestrator View (Phase 0.7 UI) — 6-card dashboard
+- Video Orchestrator Phases 0–5.2 (normalize → subtitle → compose → thumbnail → metadata → multi-post)
 
----
+⏳ **Next: Phase 6 Multi-Platform Content Generation**
 
-## What Already Exists (no changes needed)
-
-**Already fetched in `Promise.allSettled` (164 items, aligned ✓):**
-- `state.agents` — agent registry (10 entries)
-- `state.agentRuns` — run history
-- `state.agentEvents` — approval audit events
-- `state.agentCostSummary` — cost tracking
-- `state.recoveryItems` — recovery blockers
-- `state.agentConsole` — composite: taskGraph, taskState, executorPlan, approvalGates, counts (fetched in `readBrainConsoleSnapshot()`)
-
-**Already in `client.ts`:** `BrainCoreAgentConsoleSummary` interface with `taskGraph: any`, `taskState: any`, `executorPlan: any`, `approvalGates: any` fields. All needed data comes via these `any`-typed sub-fields.
-
-**Already in `SECTION_TABS`:** `{ id: 'agents', label: 'Agents', icon: '◈' }` — tab already visible.
-
-**`renderAgentsSection()` exists** at view.ts line 3549 — currently a 4-card stub using `<ul><li>` markup. This is what we replace.
+Goal: Expand metadata generation from YouTube-only to 7 platforms. Post to YouTube → Pinterest → Facebook first, then expand to TikTok, Instagram, LinkedIn, Bluesky, X.
 
 ---
 
-## Implementation Plan
+## Phase 6 Implementation Tasks (for Codex)
 
-### Single file to modify: `src/view.ts`
+### Priority Order
 
-Replace `renderAgentsSection()` at line 3549 and rewrite the four card renderer functions (`renderAgentViewCard`, `renderAgentViewLedgerCard`, `renderApprovalAuditTrailCard`, `renderRecoveryPanelCard`) to use the design system properly.
+1. **A1. Pinterest to platform-specs.json** — config update
+2. **A2. Platform prompts to metadata-prompts.json** — config update
+3. **A3. Extend metadata_generator.py** — Python logic (platform-specific captions)
+4. **A4. n8n workflow JSON stubs** — workflow templates (4 files)
+5. **A5. `vo queue pipeline` command** — CLI command (job queueing)
+6. **A6. Python tests** — test coverage for multi-platform
+
+### Detailed Tasks
+
+**A1. Add Pinterest to platform-specs.json**
+- File: `~/.config/video-orchestrator/platform-specs.json`
+- Add entry: `pinterest`: description (500 char max), 20 hashtags, `n8n_webhook_path: "video-orchestrator-post/pinterest"`, adapter status `manual_only`
+
+**A2. Add 6 platform prompts to metadata-prompts.json**
+- File: `~/.config/video-orchestrator/metadata-prompts.json`
+- Add keys: `tiktok_caption`, `instagram_caption`, `facebook_post`, `linkedin_post`, `bluesky_post`, `x_post`
+- Each: platform-specific tone, char limit constraints, hashtag counts, faith-based Yeshua Academy voice
+
+**A3. Extend metadata_generator.py platform loop**
+- File: `~/.local/video-orchestrator/worker/metadata_generator.py`
+- For each platform_key in target_platforms: generate platform-specific caption
+- Add `_truncate_to_limit(text, platform_key)` helper (reads platform-specs.json, enforces max_length)
+- Wire up `youtube_title_variants` prompt (currently defined but unused)
+- Result: `platforms[platform_key]` populated for all 7 platforms
+
+**A4. Create n8n workflow JSON stubs**
+- New directory: `~/.local/video-orchestrator/n8n/workflows/`
+- 4 files (standard n8n export format):
+  - `facebook-video-post.json` — webhook → HTTP node → Facebook Graph API page post
+  - `tiktok-video-post.json` — webhook → HTTP node → TikTok Content Posting API
+  - `instagram-reels-post.json` — webhook → HTTP node → Instagram Graph API Reels
+  - `pinterest-pin-post.json` — webhook → HTTP node → Pinterest API v5
+- Each: webhook trigger, HTTP request node, success/error branches, placeholder credentials
+
+**A5. Add `vo queue pipeline` command**
+- File: `~/.local/video-orchestrator/scripts/vo.py`
+- New subcommand: `vo queue pipeline --audio episode.mp3 --background series-bg.jpg --title "Genesis — Noah" --platforms youtube,facebook,pinterest --account 303e91f9`
+- Queues jobs: normalize → subtitle → compose → thumbnail → metadata → multi_post (one job with platform list)
+- Validates: platform list against VALID_PLATFORMS, account_id exists in DB, audio/background files exist
+- Output: prints queued job IDs for tracking
+
+**A6. Update Python tests**
+- File: `~/.local/video-orchestrator/tests/test_worker.py`
+- Test metadata generator produces all 7 platform outputs
+- Test character truncation works per platform
+- Test platform validation in `vo queue pipeline`
 
 ---
 
-### Section Layout
+## Critical Context
 
-`renderAgentsSection()` will render two rows:
+**Already implemented:**
+- Job queuing API (normalize, subtitle, compose, thumbnail, metadata, multi_post)
+- `depends_on` chaining for sequential execution
+- AI Model Selector at localhost:4890 (Gemini → Claude → Codex → bash fallback)
+- YouTube uploader (used by metadata jobs)
 
-**Row 1 — KPI bar (`.bc-kpi-row`):**
-- Active Runs
-- Blocked Runs
-- Pending Approvals
-- Tasks Complete / Total
-- Cost Today
+**Data sources:**
+- Platform specs: `~/.config/video-orchestrator/platform-specs.json` (8 platforms: YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, now adding Pinterest)
+- Prompts: `~/.config/video-orchestrator/metadata-prompts.json` (faith-based Yeshua Academy voice)
 
-**Row 2 — Card grid (`.brain-console__dashboard-grid`):**
-- **Task Graph** — task list with status badges and dependency counts
-- **Approval Gates** — pending/approved/rejected counts + supported kinds + blockers
-- **Agent Registry** — compact grid of 10 agents: name, role, status badge, health indicator
-- **Run History** — last 8 runs with status badge, age, safety chips
-- **Cost Summary** — budget status, today/week/month estimates, top 3 expensive tasks
-- **Recovery / Blockers** — severity-colored list of actionable blockers
-
----
-
-### Card Design Patterns (strict adherence)
-
-All cards use existing helpers — no new CSS classes needed:
-
-```ts
-// KPI bar
-renderCompactStatGrid(el, [
-  { label: 'Active', value: String(n) },
-  ...
-])
-
-// Status badges — use bc-badge with tone classes
-const badge = el.createEl('span', { cls: 'bc-badge' });
-badge.textContent = status;
-badge.classList.add(`bc-badge--${mapStatusTone(status)}`);
-
-// Task list rows
-el.createEl('div', { cls: 'brain-console__list-note', text: '...' })
+**Multi-platform flow:**
+```
+audio/background → normalize → subtitle → compose → thumbnail → metadata (all 7 platforms) → multi_post (queues 1 job per platform)
 ```
 
-Status → tone mapping (local helper function):
-- `running` / `ok` / `completed` / `available` → `ok` (green)
-- `blocked` / `error` / `failed` / `rejected` → `error` (red)
-- `pending` / `planned` / `waiting_approval` → `warn` (yellow)
-- `unknown` / `external` / `cancelled` → `neutral`
-
 ---
 
-### Exact Changes to `view.ts`
+## Files to Touch
 
-#### 1. Replace `renderAgentsSection()` (line 3549–3562)
-
-New implementation renders a KPI row from `state.agentConsole` (or zero-state fallback), then a 3-column `brain-console__dashboard-grid` with 6 cards.
-
-#### 2. Replace `renderAgentViewCard()` (line 6742–6771)
-
-New implementation: compact agent registry table. For each of the 10 agents: icon-dot for health status, name in bold, role badge, status badge, skills count. Uses `renderCompactStatGrid` for the summary header.
-
-#### 3. Replace `renderAgentViewLedgerCard()` (line 6940–7011)
-
-New implementation: run history. Header stat row (total/blocked/completed). For each of 8 most recent runs: status badge, title, agent ID, age, one-line safety summary. Safety chips as `bc-badge--neutral` pills.
-
-#### 4. Add `renderApprovalGatesCard()` — new function
-
-Reads `state.agentConsole?.approvalGates` and renders a stat grid (pending/approved/rejected/expired counts) + supported kinds list + blocker list if any.
-
-Rename existing `renderApprovalAuditTrailCard()` to use `bc-badge` for event type styling instead of ad-hoc classes.
-
-#### 5. Keep `renderRecoveryPanelCard()` (line 7054+)
-
-Minor touch-up: replace raw `brain-console__list-warning` class with `bc-badge--error` for severity indicators.
-
-#### 6. Add `renderAgentTaskGraphCard()` — new function
-
-Reads `state.agentConsole?.taskGraph`. Shows:
-- Header stats: total tasks, completed, blocked, pending
-- Task list (max 8): task title, status badge, `approvalRequired` indicator
-- `nextSafeStep` text at bottom
-
-#### 7. Add `renderAgentCostCard()` — new function
-
-Reads `state.agentCostSummary`. Shows:
-- Budget badge (ok/warning/throttled) + spent/threshold
-- Today / week / month cost grid
-- Top 3 expensive tasks as compact rows
-
----
-
-### No Promise Changes Needed
-
-The Promise.allSettled array stays at 164/164. No new fetches — `agentConsole` (which contains taskGraph, approvalGates, executorPlan) is already fetched via `readBrainConsoleSnapshot()`.
-
-The `agentConsole` fields are typed as `any` in `BrainCoreAgentConsoleSummary` — we access them with optional chaining (`state.agentConsole?.taskGraph?.tasks`) and handle undefined gracefully.
-
----
-
-## Files Changed
-
-| File | What changes |
-|------|-------------|
-| `src/view.ts` | Replace `renderAgentsSection()` + 4 card renderers + add 2 new card functions |
-
-No changes to: `src/client.ts`, `src/main.ts`, `styles.css`, `manifest.json`.
+| File | Action |
+|------|--------|
+| `~/.config/video-orchestrator/platform-specs.json` | Add Pinterest entry |
+| `~/.config/video-orchestrator/metadata-prompts.json` | Add 6 platform prompts |
+| `~/.local/video-orchestrator/worker/metadata_generator.py` | Extend platform loop, add truncation |
+| `~/.local/video-orchestrator/n8n/workflows/facebook-video-post.json` | Create |
+| `~/.local/video-orchestrator/n8n/workflows/tiktok-video-post.json` | Create |
+| `~/.local/video-orchestrator/n8n/workflows/instagram-reels-post.json` | Create |
+| `~/.local/video-orchestrator/n8n/workflows/pinterest-pin-post.json` | Create |
+| `~/.local/video-orchestrator/scripts/vo.py` | Add `queue pipeline` command |
+| `~/.local/video-orchestrator/tests/test_worker.py` | Add multi-platform tests |
 
 ---
 
 ## Verification
 
 ```bash
-# 1. Type check (must pass clean)
-npm run typecheck
+# Python tests
+cd ~/.local/video-orchestrator
+.venv/bin/python3 -m pytest tests/ -v
 
-# 2. Promise alignment check (must stay 164/164)
-python3 -c "
-import re
-with open('src/view.ts') as f: content = f.read()
-pm = re.search(r'await Promise\.allSettled\(\[(.*?)\]\s*\);', content, re.DOTALL)
-promises = [e.strip() for e in pm.group(1).split('\n') if e.strip() and not e.strip().startswith('//')]
-dm = re.search(r'const \[(.+?)\] = settledValues', content, re.DOTALL)
-dvars = [v.strip() for v in dm.group(1).split(',')]
-ok = len(promises) == len(dvars)
-print(f'Promises: {len(promises)}, Destructured: {len(dvars)}', '✓' if ok else '✗ MISALIGNED')
-"
+# Metadata dry-run (all platforms)
+.venv/bin/python3 worker/metadata_generator.py \
+  --episode "Genesis — Noah" \
+  --platforms youtube,tiktok,instagram,facebook,linkedin,bluesky,x \
+  --dry-run
 
-# 3. Deploy
-npm run build && npm run package && npm run install:active-vault
-pkill -x "Obsidian" && sleep 2 && open -a Obsidian
+# Metadata for 3 priority platforms
+.venv/bin/python3 worker/metadata_generator.py \
+  --episode "Genesis — Noah" \
+  --platforms youtube,facebook,pinterest \
+  --dry-run
 
-# 4. Visual checks in Obsidian:
-# - Click "Agents" tab
-# - KPI bar shows Active/Blocked/Approvals/Tasks/Cost
-# - Task graph card shows task list with status badges
-# - Approval gates card shows pending/approved counts
-# - Agent registry shows 10 agents with health/role/status
-# - Run history shows last 8 runs
-# - Cost card shows budget status + today/week estimates
-# - Recovery card shows blockers (or "No blockers" state)
-# - All cards use orange/zinc/mono design system (no rogue colors)
+# Pipeline command (dry-run)
+python3 ~/.local/video-orchestrator/scripts/vo.py queue pipeline \
+  --audio /tmp/test.mp3 --title "Genesis — Noah" \
+  --platforms youtube,facebook,pinterest \
+  --account test --dry-run
+
+# n8n JSON validity
+for f in ~/.local/video-orchestrator/n8n/workflows/*.json; do
+  python3 -c "import json; json.load(open('$f'))" && echo "✓ $f"
+done
 ```
+
+---
+
+## Next After Phase 6
+
+**Phase 3 — A/B Testing (YouTube Thumbnails):**
+- Time-slice CTR comparison: switch variant after 7 days, compare CTR before/after
+- Manual winner override API: POST /api/video-orchestrator/thumbnails/declare-winner
+
+**Phase 5.3+ — Vertical Scaling:**
+- Multi-account support (currently single account)
+- Batch job queueing (queue multiple episodes at once)
