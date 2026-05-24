@@ -43,6 +43,7 @@ declare module 'node:fs' {
 
   export interface Stats {
     mtime: Date;
+    size: number;
   }
 
   export function existsSync(path: string): boolean;
