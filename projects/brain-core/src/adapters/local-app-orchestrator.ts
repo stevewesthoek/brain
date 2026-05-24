@@ -526,6 +526,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
   const commandPathPrepend = runtime && Array.isArray(runtime.pathPrepend) && runtime.pathPrepend.length > 0
     ? (runtime.pathPrepend as string[]).filter((p): p is string => typeof p === 'string' && p.length > 0)
     : undefined;
+  const startupTimeoutMs = readNumberOrNull(raw.startupTimeoutMs) ?? undefined;
   const definitionBase = {
     id,
     name,
@@ -548,6 +549,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     ...(commandWorkdir ? { commandWorkdir } : {}),
     ...(commandPathPrepend ? { commandPathPrepend } : {}),
     ...(lifecycleNotes ? { lifecycleNotes } : {}),
+    ...(startupTimeoutMs !== undefined ? { startupTimeoutMs } : {}),
   } satisfies BrainCoreLocalAppDefinition;
   const safeActions = (['start', 'stop', 'restart'] as const).filter((action) =>
     evaluateLocalAppActionDefinition(definitionBase, action).executable,
@@ -567,6 +569,7 @@ function normalizeRegistryApp(raw: RegistryApp): BrainCoreLocalAppDefinition | n
     ...(commandWorkdir ? { commandWorkdir } : {}),
     ...(commandPathPrepend ? { commandPathPrepend } : {}),
     ...(lifecycleNotes ? { lifecycleNotes } : {}),
+    ...(startupTimeoutMs !== undefined ? { startupTimeoutMs } : {}),
   };
 }
 

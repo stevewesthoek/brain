@@ -8,7 +8,7 @@ test('listAgentCapabilities returns the seeded registry', async () => {
   const capabilities = await listAgentCapabilities();
   const ids = capabilities.map((capability) => capability.id);
 
-  assert.equal(capabilities.length, 21);
+  assert.equal(capabilities.length, 22);
   assert.equal(new Set(ids).size, ids.length);
 
   for (const requiredId of [

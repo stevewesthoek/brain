@@ -213,6 +213,7 @@ export interface BrainCoreLocalAppDefinition {
   commandWorkdir?: string;
   commandPathPrepend?: string[];
   lifecycleNotes?: string;
+  startupTimeoutMs?: number;
 }
 
 export interface BrainCoreLocalAppActionStep {

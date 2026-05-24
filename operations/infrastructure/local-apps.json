@@ -300,6 +300,7 @@
     "restart": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
     "restartCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
     "description": "BuildFlow: unified lifecycle for agent (3052), web (3054), and relay (3053)",
+    "startupTimeoutMs": 90000,
     "servicePorts": [3052, 3053, 3054],
     "databaseEngine": null,
     "databaseServiceName": null,

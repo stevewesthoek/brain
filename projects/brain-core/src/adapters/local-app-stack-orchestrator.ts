@@ -10,6 +10,7 @@ const DB_STOP_TIMEOUT_MS = 15_000;
 const PORT_POLL_INTERVAL_MS = 500;
 const APP_STOP_GRACE_MS = 8_000;
 const APP_START_VERIFY_TIMEOUT_MS = 30_000;
+const APP_START_HEALTH_VERIFY_TIMEOUT_MS = 15_000;
 const APP_STOP_VERIFY_TIMEOUT_MS = 15_000;
 const APP_HEALTH_CHECK_TIMEOUT_MS = 3_000;
 
@@ -177,24 +178,43 @@ export async function stopDatabasePhase(app: BrainCoreLocalAppDefinition): Promi
 
 export async function verifyAppStarted(app: BrainCoreLocalAppDefinition): Promise<StackPhaseResult> {
   const port = app.appPort;
+  const healthUrl = app.healthUrl;
+  const portTimeoutMs = app.startupTimeoutMs ?? APP_START_VERIFY_TIMEOUT_MS;
+
   if (!port) {
     return { ok: true, steps: [step('app-port-verify', 'Verify app port', 'health-check', 'skipped', 'No app port registered; cannot verify.')] };
   }
 
-  const up = await waitForPort(port, true, APP_START_VERIFY_TIMEOUT_MS);
+  const steps: StackStep[] = [];
+
+  const up = await waitForPort(port, true, portTimeoutMs);
   if (!up) {
     return {
       ok: false,
       steps: [step('app-port-verify', `Verify app port ${port}`, 'health-check', 'failed',
-        `App port ${port} did not come up within ${APP_START_VERIFY_TIMEOUT_MS / 1000}s.`)],
-      reason: `App did not start: port ${port} never opened within ${APP_START_VERIFY_TIMEOUT_MS / 1000}s.`,
+        `App port ${port} did not come up within ${portTimeoutMs / 1000}s.`)],
+      reason: `App did not start: port ${port} never opened within ${portTimeoutMs / 1000}s.`,
     };
   }
-  return {
-    ok: true,
-    steps: [step('app-port-verify', `Verify app port ${port}`, 'health-check', 'success',
-      `App port ${port} is accepting connections.`)],
-  };
+  steps.push(step('app-port-verify', `Verify app port ${port}`, 'health-check', 'success',
+    `App port ${port} is accepting connections.`));
+
+  if (healthUrl) {
+    const healthy = await waitForHealth(healthUrl, APP_START_HEALTH_VERIFY_TIMEOUT_MS);
+    if (!healthy) {
+      steps.push(step('app-health-verify', `Verify app health ${healthUrl}`, 'health-check', 'failed',
+        `Health endpoint ${healthUrl} did not return ok within ${APP_START_HEALTH_VERIFY_TIMEOUT_MS / 1000}s.`));
+      return {
+        ok: false,
+        steps,
+        reason: `App port ${port} opened but health endpoint ${healthUrl} did not respond within ${APP_START_HEALTH_VERIFY_TIMEOUT_MS / 1000}s.`,
+      };
+    }
+    steps.push(step('app-health-verify', `Verify app health ${healthUrl}`, 'health-check', 'success',
+      `Health endpoint ${healthUrl} returned ok.`));
+  }
+
+  return { ok: true, steps };
 }
 
 export async function isAppAlreadyRunning(app: BrainCoreLocalAppDefinition): Promise<StackPhaseResult> {
@@ -311,4 +331,14 @@ async function probeHealthUrl(healthUrl: string, timeoutMs: number): Promise<boo
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function waitForHealth(healthUrl: string, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const healthy = await probeHealthUrl(healthUrl, APP_HEALTH_CHECK_TIMEOUT_MS);
+    if (healthy) return true;
+    await sleep(PORT_POLL_INTERVAL_MS);
+  }
+  return false;
 }

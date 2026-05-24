@@ -40,6 +40,7 @@ type SafeCommandSpec = {
   timeoutMs: number;
   expectedLongRunning: boolean;
   pathPrepend?: string[];
+  appPort?: number;
   managedProcessRecord?: BrainCoreLocalAppManagedProcessRecord;
 };
 
@@ -145,7 +146,8 @@ async function runActionCore(
   id: string,
   startedAtMs: number,
 ): Promise<BrainCoreLocalAppActionResult> {
-  const spec = buildCommandSpec(app, action);
+  const rawSpec = buildCommandSpec(app, action);
+  const spec: SafeCommandSpec = app.appPort !== undefined ? { ...rawSpec, appPort: app.appPort } : rawSpec;
   if (!spec.executable) {
     const managedStop = action === 'stop' ? readManagedProcessForApp(app.id) : null;
     if (managedStop) {
@@ -522,9 +524,12 @@ function executeSpec(
     let settled = false;
 
     try {
-      const spawnEnv = spec.pathPrepend && spec.pathPrepend.length > 0
+      const spawnEnv: Record<string, string | undefined> = spec.pathPrepend && spec.pathPrepend.length > 0
         ? { ...process.env, PATH: `${spec.pathPrepend.join(path.delimiter)}${path.delimiter}${process.env.PATH ?? ''}` }
-        : process.env;
+        : { ...process.env };
+      if (spec.appPort !== undefined) {
+        spawnEnv['PORT'] = String(spec.appPort);
+      }
       const child = spawn(spec.file, spec.args, {
         cwd: spec.cwd,
         detached: spec.detached,

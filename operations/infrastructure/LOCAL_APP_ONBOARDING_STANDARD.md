@@ -64,6 +64,8 @@ Location: `your-repo/scripts/dev/`
 
 ### start-local.sh (required)
 
+Brain Core injects `PORT` from the registry `appPort` into the script environment. Use `${PORT:-fallback}` to accept it.
+
 ```bash
 #!/bin/bash
 set -euo pipefail
@@ -79,7 +81,7 @@ if [ -f "$PID_FILE" ]; then
   fi
 fi
 
-# Start app in background
+# Start app in background — Brain Core polls health endpoint after this returns
 cd "$(dirname "$0")/../.."
 npm run dev > /tmp/myapp.log 2>&1 &
 echo $! > "$PID_FILE"
@@ -171,11 +173,12 @@ If your app requires special handling:
 
 Brain Core reads the registry and orchestrates all apps through one path:
 
-1. Stop app gracefully (SIGTERM → SIGKILL)
-2. Free all registered ports
-3. Verify ports are actually free
-4. Start app with PORT injected
-5. Verify health endpoint returns 200
-6. Record action in audit log
+1. **Start:** check if already running → start database (if any) → run `startCommand` → wait for port to open (up to `startupTimeoutMs`, default 30s) → poll health endpoint until 200 (up to 15s)
+2. **Stop:** run `stopCommand` → wait for port to close → force-kill port if still bound
+3. **Restart:** full stop sequence → full start sequence
+4. All actions recorded in audit log
+
+PORT is injected into every lifecycle script's environment from the registry `appPort`.  
+`startupTimeoutMs` controls how long Brain Core waits for the port to open. Default is 30s. Set higher for slow-starting apps (e.g., multi-service stacks).
 
 No app bypasses this path.
