@@ -499,3 +499,246 @@ export function readExecutionAudit(
     projectId,
   };
 }
+
+export interface RotateWebhookSecretRequest {
+  webhookId: string;
+  projectId: string;
+}
+
+export interface RotateWebhookSecretResponse {
+  ok: boolean;
+  approval?: { id: string; status: string };
+  preview?: {
+    webhook?: {
+      id: string;
+      projectId: string;
+      newSecret: string;
+      rotatedAt: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function rotateWebhookSecretRequest(
+  request: RotateWebhookSecretRequest,
+): RotateWebhookSecretResponse {
+  const errors: string[] = [];
+
+  if (!request.webhookId?.trim()) {
+    errors.push('webhookId is required');
+  }
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const result = requestAction('custom-webhook-rotate-secret');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  const newSecret = Math.random().toString(36).slice(2, 32);
+  const now = new Date().toISOString();
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      webhook: {
+        id: request.webhookId,
+        projectId: request.projectId,
+        newSecret,
+        rotatedAt: now,
+        status: 'active',
+      },
+    },
+  };
+}
+
+export interface DisableWebhookRequest {
+  webhookId: string;
+  projectId: string;
+  reason: string;
+}
+
+export interface DisableWebhookResponse {
+  ok: boolean;
+  approval?: { id: string; status: string };
+  preview?: {
+    webhook?: {
+      id: string;
+      projectId: string;
+      reason: string;
+      disabledAt: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function disableWebhookRequest(
+  request: DisableWebhookRequest,
+): DisableWebhookResponse {
+  const errors: string[] = [];
+
+  if (!request.webhookId?.trim()) {
+    errors.push('webhookId is required');
+  }
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.reason?.trim()) {
+    errors.push('reason is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const result = requestAction('custom-webhook-disable');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      webhook: {
+        id: request.webhookId,
+        projectId: request.projectId,
+        reason: request.reason,
+        disabledAt: now,
+        status: 'disabled',
+      },
+    },
+  };
+}
+
+export interface WebhookSecurityAuditEntry {
+  id: string;
+  webhookId: string;
+  event: string;
+  actor: string;
+  at: string;
+  detail?: string;
+}
+
+export interface WebhookSecurityAuditResponse {
+  ok: boolean;
+  entries: WebhookSecurityAuditEntry[];
+  count: number;
+  webhookId?: string;
+  projectId?: string;
+  error?: string;
+}
+
+export function readWebhookSecurityAudit(
+  webhookId: string,
+  projectId: string,
+  limit?: number,
+): WebhookSecurityAuditResponse {
+  const errors: string[] = [];
+  const finalLimit = limit ?? 50;
+
+  if (!webhookId?.trim()) {
+    errors.push('webhookId is required');
+  }
+  if (!projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (finalLimit < 1 || finalLimit > 500) {
+    errors.push('limit must be between 1 and 500');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      entries: [],
+      count: 0,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    entries: [],
+    count: 0,
+    webhookId,
+    projectId,
+  };
+}
+
+export interface WebhookStatus {
+  webhookId: string;
+  status: 'active' | 'disabled' | 'rate-limited';
+  lastDeliveryAt?: string;
+  deliveryCount: number;
+  failureCount: number;
+  secretRotatedAt?: string;
+}
+
+export interface WebhookStatusResponse {
+  ok: boolean;
+  status?: WebhookStatus;
+  webhookId?: string;
+  error?: string;
+}
+
+export function readWebhookStatus(
+  webhookId: string,
+): WebhookStatusResponse {
+  const errors: string[] = [];
+
+  if (!webhookId?.trim()) {
+    errors.push('webhookId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  return {
+    ok: true,
+    status: {
+      webhookId,
+      status: 'active',
+      deliveryCount: 0,
+      failureCount: 0,
+    },
+    webhookId,
+  };
+}

@@ -100,9 +100,9 @@ import {
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
 import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest, approveThumbnailRequest, generateMetadataRequest, approveMetadataRequest, queuePackageRequest, editPackageRequest, cancelPackageRequest, retryPackageRequest, finalApprovalRequest, publishPackageRequest, batchPublishRequest } from '../adapters/vo-studio-write.js';
-import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest } from '../adapters/vo-studio-orchestration.js';
+import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest, rotateWebhookSecretRequest, disableWebhookRequest } from '../adapters/vo-studio-orchestration.js';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics, readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
-import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit } from '../adapters/vo-studio-orchestration.js';
+import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit, readWebhookSecurityAudit, readWebhookStatus } from '../adapters/vo-studio-orchestration.js';
 import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
 import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
 import { processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest } from '../adapters/vo-studio-webhook-handler.js';
@@ -2677,6 +2677,36 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  if (url.pathname === '/api/video-orchestrator/webhooks/rotate-secret') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const rotReq: {
+      webhookId: string;
+      projectId: string;
+    } = {
+      webhookId: (body?.webhookId as string) ?? '',
+      projectId: (body?.projectId as string) ?? '',
+    };
+    const result = rotateWebhookSecretRequest(rotReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/webhooks/disable') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const disReq: {
+      webhookId: string;
+      projectId: string;
+      reason: string;
+    } = {
+      webhookId: (body?.webhookId as string) ?? '',
+      projectId: (body?.projectId as string) ?? '',
+      reason: (body?.reason as string) ?? '',
+    };
+    const result = disableWebhookRequest(disReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
   if (url.pathname === '/api/video-orchestrator/events/route') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
     const routeReq: {
@@ -2698,6 +2728,22 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     const projectId = url.searchParams.get('projectId') ?? '';
     const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
     const result = readWebhookDeliveries(webhookId, projectId, limit);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/webhooks/security-audit')) {
+    const webhookId = url.searchParams.get('webhookId') ?? '';
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const result = readWebhookSecurityAudit(webhookId, projectId, limit);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/webhooks/status')) {
+    const webhookId = url.searchParams.get('webhookId') ?? '';
+    const result = readWebhookStatus(webhookId);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }

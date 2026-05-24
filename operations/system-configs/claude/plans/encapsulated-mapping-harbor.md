@@ -1,160 +1,170 @@
-# Plan: Phase 8 — Analytics & Metrics
+# Plan: Phase 9 — Webhook Authorization & Security
 
 ## Context
 
-Phases 5–7 built webhook registration, event emission, and inbound webhook routing. All those operations now produce data (deliveries, events, routing decisions) but nothing aggregates or reports on them. Phase 8 adds four analytics read functions that aggregate delivery rates, event latency, routing statistics, and overall pipeline health. These are pure read stubs that follow the exact pattern already in `vo-studio-read.ts` — no new file needed.
+Phases 5–8 built webhook registration, event routing, and analytics. The security lifecycle of a webhook (rotating its secret when compromised, disabling it when no longer needed, auditing security events) is currently missing. Phase 9 closes that gap by extending `vo-studio-orchestration.ts` with two write operations (rotate secret, disable webhook) and two read operations (security audit log, operational status), following exactly the same patterns already in that file.
 
 ---
 
 ## What changes
 
-### 1. Extend `projects/brain-core/src/adapters/vo-studio-read.ts`
+### 1. Extend `projects/brain-core/src/adapters/vo-studio-orchestration.ts`
 
-Add 4 new exported interfaces and 4 new exported functions at the end of the file. All follow the exact patterns already in the file:
-- Singular-metrics functions (like `readPublishingMetrics`): validate `projectId`, return `{ ok, metrics?: XxxMetrics, projectId? }`
-- Array-metrics functions (like `readPerformanceMetrics`): validate `projectId`, return `{ ok, <collection>: [], projectId? }`
+Add 4 new `export interface` types and 4 new exported functions at the end of the file. All use `export interface` (matching the existing convention in this file — not unexported `type`).
 
 **New interfaces:**
 
 ```typescript
-export interface WebhookDeliveryRates {
-  successCount: number;
+export interface RotateWebhookSecretRequest {
+  webhookId: string;
+  projectId: string;
+}
+export interface RotateWebhookSecretResponse {
+  ok: boolean;
+  approval?: { id: string; status: string };
+  preview?: {
+    webhook?: {
+      id: string;
+      projectId: string;
+      newSecret: string;
+      rotatedAt: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export interface DisableWebhookRequest {
+  webhookId: string;
+  projectId: string;
+  reason: string;
+}
+export interface DisableWebhookResponse {
+  ok: boolean;
+  approval?: { id: string; status: string };
+  preview?: {
+    webhook?: {
+      id: string;
+      projectId: string;
+      reason: string;
+      disabledAt: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export interface WebhookSecurityAuditEntry {
+  id: string;
+  webhookId: string;
+  event: string;
+  actor: string;
+  at: string;
+  detail?: string;
+}
+export interface WebhookSecurityAuditResponse {
+  ok: boolean;
+  entries: WebhookSecurityAuditEntry[];
+  count: number;
+  webhookId?: string;
+  projectId?: string;
+  error?: string;
+}
+
+export interface WebhookStatus {
+  webhookId: string;
+  status: 'active' | 'disabled' | 'rate-limited';
+  lastDeliveryAt?: string;
+  deliveryCount: number;
   failureCount: number;
-  pendingCount: number;
-  successRate: number;
-  byPlatform: Record<string, { success: number; failure: number; pending: number }>;
+  secretRotatedAt?: string;
 }
-export interface WebhookDeliveryRatesResponse {
+export interface WebhookStatusResponse {
   ok: boolean;
-  metrics?: WebhookDeliveryRates;
-  projectId?: string;
-  error?: string;
-}
-
-export interface EventLatencyEntry {
-  eventType: string;
-  avgLatencyMs: number;
-  p95LatencyMs: number;
-  p99LatencyMs: number;
-  sampleCount: number;
-}
-export interface EventLatencyMetricsResponse {
-  ok: boolean;
-  entries: EventLatencyEntry[];
-  projectId?: string;
-  error?: string;
-}
-
-export interface RoutingStatEntry {
-  platform: string;
-  mappingCount: number;
-  eventTypes: string[];
-  lastRoutedAt: string;
-}
-export interface RoutingStatisticsResponse {
-  ok: boolean;
-  stats: RoutingStatEntry[];
-  projectId?: string;
-  error?: string;
-}
-
-export interface PipelineHealthComponent {
-  score: number;
-  status: 'healthy' | 'degraded' | 'critical';
-}
-export interface PipelineHealth {
-  score: number;
-  status: 'healthy' | 'degraded' | 'critical';
-  components: Record<string, PipelineHealthComponent>;
-}
-export interface PipelineHealthResponse {
-  ok: boolean;
-  health?: PipelineHealth;
-  projectId?: string;
+  status?: WebhookStatus;
+  webhookId?: string;
   error?: string;
 }
 ```
 
-**New functions:**
+**New write functions:**
 
-```typescript
-export function readWebhookDeliveryRates(projectId: string): WebhookDeliveryRatesResponse
-// validates projectId; returns { ok: true, metrics: { successCount:0, failureCount:0, pendingCount:0, successRate:0, byPlatform:{} }, projectId }
+- `rotateWebhookSecretRequest(request: RotateWebhookSecretRequest): RotateWebhookSecretResponse`
+  - Validates `webhookId`, `projectId`
+  - Calls `requestAction('custom-webhook-rotate-secret')`
+  - Generates new secret: `Math.random().toString(36).slice(2, 32)` (exact same as `registerWebhookRequest`)
+  - Preview: `{ webhook: { id: webhookId, projectId, newSecret, rotatedAt: now, status: 'active' } }`
 
-export function readEventLatencyMetrics(projectId: string): EventLatencyMetricsResponse
-// validates projectId; returns { ok: true, entries: [], projectId }
+- `disableWebhookRequest(request: DisableWebhookRequest): DisableWebhookResponse`
+  - Validates `webhookId`, `projectId`, `reason`
+  - Calls `requestAction('custom-webhook-disable')`
+  - Preview: `{ webhook: { id: webhookId, projectId, reason, disabledAt: now, status: 'disabled' } }`
 
-export function readRoutingStatistics(projectId: string): RoutingStatisticsResponse
-// validates projectId; returns { ok: true, stats: [], projectId }
+**New read functions:**
 
-export function readPipelineHealth(projectId: string): PipelineHealthResponse
-// validates projectId; returns { ok: true, health: { score:100, status:'healthy', components:{} }, projectId }
-```
+- `readWebhookSecurityAudit(webhookId: string, projectId: string, limit = 50): WebhookSecurityAuditResponse`
+  - Validates `webhookId`, `projectId`; limit 1–500
+  - Returns: `{ ok: true, entries: [], count: 0, webhookId, projectId }`
 
-Each follows the identical validation pattern already in the file:
-```typescript
-if (!projectId?.trim()) {
-  return { ok: false, error: 'projectId is required', ... };
-}
-```
+- `readWebhookStatus(webhookId: string): WebhookStatusResponse`
+  - Validates `webhookId`
+  - Returns: `{ ok: true, status: { webhookId, status: 'active', deliveryCount: 0, failureCount: 0 }, webhookId }`
 
 ---
 
 ### 2. Routes in `projects/brain-core/src/api/routes.ts`
 
-Add 1 import line after the existing vo-studio-read imports (line ~104):
+Extend the existing `vo-studio-orchestration.js` import lines (lines 103 and 105):
+
 ```typescript
-import { ..., readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
-```
-(Extend the existing import line, don't add a new one — the 4 new functions join the existing `readApprovalQueue, readWorkflowState, ...` import.)
+// Line 103 — extend write imports:
+import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest,
+  registerWebhookRequest, rotateWebhookSecretRequest, disableWebhookRequest }
+  from '../adapters/vo-studio-orchestration.js';
 
-Add 4 GET routes after the last `platform-mapping` route, before `/research/video-analyze`:
-
-```
-GET /api/video-orchestrator/analytics/webhook-delivery-rates?projectId=X
-GET /api/video-orchestrator/analytics/event-latency?projectId=X
-GET /api/video-orchestrator/analytics/routing-statistics?projectId=X
-GET /api/video-orchestrator/analytics/pipeline-health?projectId=X
+// Line 105 — extend read imports:
+import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit,
+  readWebhookSecurityAudit, readWebhookStatus }
+  from '../adapters/vo-studio-orchestration.js';
 ```
 
-All use `.startsWith()` match, `url.searchParams.get('projectId') ?? ''`, `sendJson(response, result.ok ? 200 : 400, result)`.
+Add 2 POST routes (after `/webhooks/verify`, before `/events/route`):
+- `/api/video-orchestrator/webhooks/rotate-secret` — body: `{ webhookId, projectId }` — 202/400
+- `/api/video-orchestrator/webhooks/disable` — body: `{ webhookId, projectId, reason }` — 202/400
+
+Add 2 GET routes (after `/webhooks/deliveries`, before `/events/platform-mapping`):
+- `/api/video-orchestrator/webhooks/security-audit?webhookId=X&projectId=Y&limit=N` — clamp limit inline — 200/400
+- `/api/video-orchestrator/webhooks/status?webhookId=X` — 200/400
 
 ---
 
-### 3. New test file: `projects/brain-core/src/tests/vo-studio-analytics.test.ts`
+### 3. New test file: `projects/brain-core/src/tests/vo-studio-webhook-security.test.ts`
 
-~20 tests, `node:test` + `node:assert/strict`, flat `test()` blocks:
+~25 tests, `node:test` + `node:assert/strict`, flat `test()` blocks. Two import blocks (writes first, then reads) following the established pattern.
 
-**`readWebhookDeliveryRates`** (3 tests):
-- Valid: `ok === true`, `metrics` exists, `metrics.successCount === 0`, `metrics.byPlatform` is object, `projectId` echoed
-- Missing projectId: `ok === false`, `/projectId is required/`
-- Empty string projectId: same failure
+**`rotateWebhookSecretRequest`** (5 tests):
+- Valid: `ok`, `approval.status === 'pending'`, `preview.webhook.status === 'active'`, `preview.webhook.newSecret` is truthy, `webhookId` echoed
+- Missing `webhookId` → `/webhookId is required/`
+- Missing `projectId` → `/projectId is required/`
+- Generates unique secrets (two calls, `assert.notEqual`)
+- Secret is a non-empty string
 
-**`readEventLatencyMetrics`** (3 tests):
-- Valid: `ok === true`, `entries` is empty array, `projectId` echoed
-- Missing projectId: `ok === false`, `/projectId is required/`
-- entries is an array (deepEqual `[]`)
+**`disableWebhookRequest`** (4 tests):
+- Valid: `ok`, `approval.status === 'pending'`, `preview.webhook.status === 'disabled'`, `reason` echoed
+- Missing `webhookId`, `projectId`, `reason` → error regex each
 
-**`readRoutingStatistics`** (3 tests):
-- Valid: `ok === true`, `stats` is empty array, `projectId` echoed
-- Missing projectId: `ok === false`, `/projectId is required/`
-- stats deepEqual `[]`
+**`readWebhookSecurityAudit`** (5 tests):
+- Valid: `ok`, `entries === []`, `count === 0`, both IDs echoed
+- Missing `webhookId` → `/webhookId is required/`
+- Missing `projectId` → `/projectId is required/`
+- Limit below 1 → `/limit must be between 1 and 500/`
+- Limit above 500 → same
 
-**`readPipelineHealth`** (4 tests):
-- Valid: `ok === true`, `health` exists, `health.score === 100`, `health.status === 'healthy'`, `projectId` echoed
-- Missing projectId: `ok === false`, `/projectId is required/`
-- `health.components` is object
-- `health.status` is one of valid literal values
-
-**Cross-function** (2 tests):
-- All four functions echo back the same projectId passed in
-- All four return `ok: true` with non-null response objects for a valid projectId
-
----
-
-### 4. UI: Add analytics tab to EventLogPanel — NO (out of scope for Phase 8)
-
-Phase 8 is server-side only. No UI changes needed — the OverviewPanel in the console already calls `readPublishingMetrics` and `readApprovalStatistics`; the new analytics endpoints can be wired into an existing or future panel without any blocking work here.
+**`readWebhookStatus`** (4 tests):
+- Valid: `ok`, `status.webhookId` echoed, `status.status === 'active'`, `status.deliveryCount === 0`
+- Missing `webhookId` → `/webhookId is required/`
+- `status.status` is a valid literal (`'active' | 'disabled' | 'rate-limited'`)
+- `webhookId` echoed at top level
 
 ---
 
@@ -162,6 +172,8 @@ Phase 8 is server-side only. No UI changes needed — the OverviewPanel in the c
 
 ```bash
 # From projects/brain-core/
-npm test             # all tests must pass including new vo-studio-analytics suite
+npm test             # all 840 + ~18 new tests must pass
 npx tsc --noEmit     # no TypeScript errors
 ```
+
+No UI changes needed for Phase 9.
