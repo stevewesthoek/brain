@@ -35,7 +35,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - Remaining roadmap work lives in later phases only.
 
 **Remaining VO product gaps:**
-- Later hardening items
+- Remaining hardening items: storage cleanup and any retry-policy doc/runtime alignment still desired
 - Test & Compare remains manual via YouTube Studio until/if YouTube exposes a public developer API
 - Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
 
@@ -588,9 +588,9 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 > Reliability, observability, recovery
 
 - [ ] Job retry with exponential backoff (currently max_retries=3 flat)
-- [ ] Dead letter review in Brain Console (not just CLI)
-- [ ] Worker health endpoint and alerting (currently only launchctl PID check)
-- [ ] Artifact versioning — store v1/v2 of artifact when metadata regenerated
+- [x] Dead letter review in Brain Console (read-only operator review tab)
+- [x] Worker health endpoint and dashboard card
+- [x] Artifact versioning — preserve previous artifacts in `task_config.artifact_versions`
 - [ ] Storage cleanup — archive completed job output files after 30d, keep artifact forever
 - [x] VO view in Brain Console shows per-job module progress (Jobs tab)
 
@@ -689,7 +689,7 @@ Later roadmap phases remain open.
 
 ## Immediate Next Steps
 
-**Next session:** Start with later hardening items unless a public YouTube developer API for Test & Compare becomes available. The five-step next-phase plan is already complete.
+**Next session:** Start with storage cleanup unless a public YouTube developer API for Test & Compare becomes available. The five-step next-phase plan is already complete.
 
 **Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
 

@@ -21,6 +21,9 @@ Completed:
 - Brain Console Thumbnail Studio UI
 - Brain Console analytics cards in the Feedback tab
 - Winner-driven thumbnail replacement after A/B declaration
+- Brain Console dead-letter review UI
+- Worker health endpoint and dashboard card
+- Artifact versioning for module rewrites
 
 ---
 
@@ -38,6 +41,9 @@ Completed:
 - Claude-labelled orchestrator execution routes through the AI Model Selector / approved fallback surfaces, not direct Anthropic API.
 - Direct YouTube uploads now attach captions, finalize metadata, and upload thumbnails explicitly in the worker with aligned quota accounting.
 - `analytics_sync.py ab-check` now re-applies the winning thumbnail and persists the winner state.
+- Brain Console includes a Dead Letter tab for read-only review of exhausted jobs.
+- The VO dashboard exposes worker running/stopped/degraded health from a dedicated infra endpoint.
+- Worker module rewrites now snapshot prior artifacts into `task_config.artifact_versions`.
 
 **Test status:**
 - `997` tests passing
@@ -50,7 +56,8 @@ Completed:
 The next active backlog is the later-phase roadmap, not the five-step implementation plan.
 
 Relevant remaining areas:
-- Later hardening items
+- Storage cleanup
+- Retry-policy doc/runtime alignment if desired
 - Test & Compare remains manual in YouTube Studio unless YouTube exposes a public developer API
 - Multi-platform expansion beyond the current publish adapters
 

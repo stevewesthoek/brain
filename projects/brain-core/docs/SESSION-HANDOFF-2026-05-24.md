@@ -1,7 +1,7 @@
 # Session Handoff — VO Studio Implementation Status
 
 **Date:** 2026-05-24 (End of Session)  
-**Status:** Next-phase implementation, Brain Console AI selector health chip, Thumbnail Studio UI, analytics cards, and winner-driven thumbnail replacement complete  
+**Status:** Next-phase implementation plus recent hardening slices complete: Thumbnail Studio UI, analytics cards, winner-driven thumbnail replacement, dead-letter review UI, worker health, and artifact versioning  
 **Git State:** Implementation commits are on `main`; later review edits may be uncommitted until checkpointed  
 **Test Coverage:** 997 tests passing, 0 failures
 
@@ -33,6 +33,9 @@
 - Brain Console now includes a dedicated `Thumbnails` tab with template library, preview surface, variant selector, and manual headline edit
 - Analytics winner declaration now re-applies the winning thumbnail via `thumbnails.set` and persists the winner state in the artifact
 - Test & Compare automation is now explicitly treated as manual YouTube Studio only until an official developer API is confirmed
+- Brain Console now includes a dedicated `Dead Letter` tab for operator review of exhausted jobs
+- Brain Core now exposes a worker health endpoint and the VO dashboard shows live worker health
+- Worker artifact writes now preserve prior versions in `task_config.artifact_versions`
 
 **Testing:**
 - 997 tests passing, 0 failures
@@ -45,7 +48,7 @@
 - Instagram Graph API v18
 
 **UI:**
-- Brain Console VO tabs now include Overview, Studio, Pipelines, Accounts, History, Dashboard, Approvals, Thumbnails, Jobs, Metadata, Feedback
+- Brain Console VO tabs now include Overview, Studio, Pipelines, Accounts, History, Dashboard, Approvals, Thumbnails, Jobs, Dead Letter, Metadata, Feedback
 
 ---
 
@@ -121,6 +124,28 @@
 - Winner declaration now persists `active` flags and `winner_declared_at` in the artifact
 - Runtime verification: analytics sync tests `16 passed`
 
+### 11. Dead-letter review UI
+- `projects/brain-console-obsidian/src/components/VO/DeadLetterReviewPanel.ts`
+- `projects/brain-console-obsidian/src/components/VO/VOShell.ts`
+- Added a dedicated Brain Console tab for read-only review of `dead` jobs
+- Shows failure context, timestamps, adapter mode, and recorded error messages
+- Brain Console build verification passed
+
+### 12. Worker health endpoint + dashboard card
+- `projects/brain-core/src/adapters/infra-video-orchestrator-worker-health.ts`
+- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-console-obsidian/src/components/VO/StudioDashboardPanel.ts`
+- Added `GET /api/infra/video-orchestrator/worker-health`
+- Dashboard now shows running/stopped/degraded worker health with PID and detail text
+- Brain Core typecheck and Brain Console build verification passed
+
+### 13. Artifact versioning
+- `~/.local/video-orchestrator/worker/video_worker.py`
+- `~/.local/video-orchestrator/tests/test_worker.py`
+- Module writes now snapshot the previous artifact into `task_config.artifact_versions`
+- History is bounded to the latest 10 snapshots
+- Runtime verification: worker tests `40 passed`
+
 ---
 
 ## Open Tasks
@@ -192,4 +217,4 @@ If resuming later:
 
 ## Resume Prompt
 
-Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, dedicated Thumbnail Studio UI, analytics cards, YouTube post-upload attachment flow, and winner-driven thumbnail replacement are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
+Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, dedicated Thumbnail Studio UI, analytics cards, YouTube post-upload attachment flow, winner-driven thumbnail replacement, dead-letter review UI, worker health endpoint/dashboard card, and artifact versioning are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
