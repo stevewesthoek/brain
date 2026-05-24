@@ -4,6 +4,7 @@ import type {
   BrainCoreVOAccountStat,
 } from '../../client.js';
 import { getVOContextManager } from './VOContext.js';
+import { StatusPill } from '../Design/shadcn-components.js';
 
 const PLATFORM_ICONS: Record<string, string> = {
   youtube: '▶',
@@ -70,19 +71,19 @@ export class AccountsPanel {
     return `
       <div class="vo-accounts-summary-bar">
         <div class="vo-accounts-summary-stat">
-          <span class="vo-accounts-summary-value" style="color: var(--bc-green)">${configured}</span>
+          <span class="vo-accounts-summary-value" style="color: var(--bc-status-ok)">${configured}</span>
           <span class="vo-accounts-summary-label">Connected</span>
         </div>
         <div class="vo-accounts-summary-stat">
-          <span class="vo-accounts-summary-value" style="color: var(--bc-yellow)">${manual}</span>
+          <span class="vo-accounts-summary-value" style="color: var(--bc-status-warning)">${manual}</span>
           <span class="vo-accounts-summary-label">Manual</span>
         </div>
         <div class="vo-accounts-summary-stat">
-          <span class="vo-accounts-summary-value" style="color: var(--bc-red)">${expired}</span>
+          <span class="vo-accounts-summary-value" style="color: var(--bc-status-error)">${expired}</span>
           <span class="vo-accounts-summary-label">Missing</span>
         </div>
         <div class="vo-accounts-summary-stat">
-          <span class="vo-accounts-summary-value" style="color: var(--bc-blue)">${active}</span>
+          <span class="vo-accounts-summary-value" style="color: var(--bc-accent)">${active}</span>
           <span class="vo-accounts-summary-label">Active</span>
         </div>
         <div class="vo-accounts-summary-stat">
@@ -143,13 +144,12 @@ export class AccountsPanel {
   }
 
   private renderConnectionStateBadge(account: BrainCoreVOStudioPlatformAccount): string {
-    const badgeColor = this.getCredentialColor(account.credentialState);
     const label = this.getConnectionStateLabel(account.credentialState);
+    const statusPill = this.getConnectionStatusForPill(account.credentialState);
     return `
-      <div class="vo-account-connection-banner" style="background: color-mix(in srgb, ${badgeColor} 15%, var(--background-primary) 85%); border-left: 3px solid ${badgeColor};">
-        <span class="vo-account-connection-dot" style="background: ${badgeColor}"></span>
-        <span class="vo-account-connection-label">${label}</span>
-        <span class="vo-account-adapter-badge" style="background: color-mix(in srgb, ${this.getAdapterColor(account.adapterStatus)} 20%, transparent); color: ${this.getAdapterColor(account.adapterStatus)};">${this.getAdapterLabel(account.adapterStatus)}</span>
+      <div class="vo-account-connection-banner">
+        ${StatusPill({ status: statusPill, label: label })}
+        ${StatusPill({ status: this.getAdapterStatusForPill(account.adapterStatus), label: this.getAdapterLabel(account.adapterStatus) })}
       </div>
     `;
   }
@@ -291,6 +291,32 @@ export class AccountsPanel {
         return 'manual_only';
       default:
         return state;
+    }
+  }
+
+  private getConnectionStatusForPill(state: string): 'ok' | 'warning' | 'error' {
+    switch (state) {
+      case 'connected':
+        return 'ok';
+      case 'missing':
+        return 'error';
+      case 'manual':
+        return 'warning';
+      default:
+        return 'warning';
+    }
+  }
+
+  private getAdapterStatusForPill(state: string): 'ok' | 'warning' | 'error' {
+    switch (state) {
+      case 'ready-read-only':
+        return 'ok';
+      case 'manual-package':
+        return 'warning';
+      case 'disabled':
+        return 'error';
+      default:
+        return 'warning';
     }
   }
 

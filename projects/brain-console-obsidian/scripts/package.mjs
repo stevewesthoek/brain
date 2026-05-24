@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'v2.17';
+const currentMarker = 'v2.18';
 const staleMarkers = [
   'v2.16',
   'v2.15',
@@ -47,12 +47,20 @@ await rm(releaseDir, { recursive: true, force: true });
 await mkdir(releaseDir, { recursive: true });
 
 // Copy only the bundled main.js and static files
-for (const file of ['manifest.json', 'styles.css']) {
+for (const file of ['manifest.json']) {
   try {
     await copyFile(new URL(`../${file}`, import.meta.url), new URL(`../release/${file}`, import.meta.url));
   } catch (err) {
     console.warn(`Warning: could not copy ${file}`);
   }
+}
+
+// Copy the generated CSS from dist (contains combined original + Tailwind)
+try {
+  await copyFile(new URL('../dist/styles.css', import.meta.url), new URL('../release/styles.css', import.meta.url));
+} catch (err) {
+  console.error(`Error: could not copy dist/styles.css to release/`);
+  process.exit(1);
 }
 
 // Copy only the bundled main.js (not individual modules), after removing historical marker strings.

@@ -6,6 +6,7 @@ import type {
   BrainCoreInfraVOStatusResponse,
 } from '../../client.js';
 import { getVOContextManager } from './VOContext.js';
+import { StatusPill, Badge } from '../Design/shadcn-components.js';
 
 const BASE_URL = 'http://localhost:4877';
 const REFRESH_INTERVAL_MS = 30_000;
@@ -96,14 +97,14 @@ export class OverviewPanel {
     const hasStatus = this.voStatus?.ok !== undefined;
     const workerOk = this.voStatus?.ok ?? null;
     const workerStatus = workerOk === true ? 'Online' : workerOk === false ? 'Error' : 'Unknown';
-    const workerColor = workerOk === true ? 'var(--bc-green)' : workerOk === false ? 'var(--bc-red)' : 'var(--bc-yellow)';
+    const statusPill = workerOk === true ? 'ok' : workerOk === false ? 'error' : 'warning';
 
     return `
       <div class="vo-overview-card">
         <div class="vo-card-header">
           <span class="vo-card-icon">⚙</span>
           <span class="vo-card-label">Worker Health</span>
-          <span class="vo-card-badge" style="background: color-mix(in srgb, ${workerColor} 20%, transparent); color: ${workerColor};">${workerStatus}</span>
+          ${StatusPill({ status: statusPill, label: workerStatus })}
         </div>
         <div class="vo-card-body">
           <div class="vo-card-stat-row">
@@ -133,7 +134,7 @@ export class OverviewPanel {
     const selectorHealthy = this.selector?.healthy ?? false;
     const selectorRunning = this.selector?.running ?? false;
     const selectorLabel = selectorHealthy ? 'Healthy' : selectorRunning ? 'Degraded' : 'Offline';
-    const selectorColor = selectorHealthy ? 'var(--bc-green)' : selectorRunning ? 'var(--bc-yellow)' : 'var(--bc-red)';
+    const statusPill = selectorHealthy ? 'ok' : selectorRunning ? 'warning' : 'error';
     const providerCount = this.selector?.providers?.length ?? 0;
     const healthyProviders = this.selector?.providers?.filter((p) => p.healthy).length ?? 0;
 
@@ -142,7 +143,7 @@ export class OverviewPanel {
         <div class="vo-card-header">
           <span class="vo-card-icon">◆</span>
           <span class="vo-card-label">AI Selector Status</span>
-          <span class="vo-card-badge" style="background: color-mix(in srgb, ${selectorColor} 20%, transparent); color: ${selectorColor};">${selectorLabel}</span>
+          ${StatusPill({ status: statusPill, label: selectorLabel })}
         </div>
         <div class="vo-card-body">
           ${providerCount > 0 ? `
@@ -188,7 +189,7 @@ export class OverviewPanel {
         <div class="vo-card-header">
           <span class="vo-card-icon">▶</span>
           <span class="vo-card-label">Active Jobs</span>
-          <span class="vo-card-badge" style="background: color-mix(in srgb, var(--bc-blue) 20%, transparent); color: var(--bc-blue);">${running ?? '–'} running</span>
+          ${StatusPill({ status: 'ok', label: `${running ?? '–'} running` })}
         </div>
         <div class="vo-card-body">
           ${accounts !== null ? `
@@ -243,13 +244,15 @@ export class OverviewPanel {
     }
 
     const hasWarnings = quotaWarnings.length > 0;
+    const statusPill = hasWarnings ? 'warning' : 'ok';
+    const badgeLabel = hasWarnings ? `${quotaWarnings.length} warning${quotaWarnings.length !== 1 ? 's' : ''}` : 'All OK';
 
     return `
       <div class="vo-overview-card ${hasWarnings ? 'vo-overview-card--warn' : ''}">
         <div class="vo-card-header">
           <span class="vo-card-icon">⚡</span>
           <span class="vo-card-label">Quota Warnings</span>
-          <span class="vo-card-badge" style="background: color-mix(in srgb, ${hasWarnings ? 'var(--bc-yellow)' : 'var(--bc-green)'} 20%, transparent); color: ${hasWarnings ? 'var(--bc-yellow)' : 'var(--bc-green)'};">${hasWarnings ? `${quotaWarnings.length} warning${quotaWarnings.length !== 1 ? 's' : ''}` : 'All OK'}</span>
+          ${StatusPill({ status: statusPill, label: badgeLabel })}
         </div>
         <div class="vo-card-body">
           ${hasWarnings ? quotaWarnings.map((w) => `
@@ -283,13 +286,15 @@ export class OverviewPanel {
     const connected = this.accounts.filter((a) => a.credentialState === 'connected');
     const total = this.accounts.length;
     const hasIssues = missing.length > 0;
+    const statusPill = hasIssues ? 'error' : 'ok';
+    const badgeLabel = hasIssues ? `${missing.length} missing` : total > 0 ? 'All configured' : 'No accounts';
 
     return `
       <div class="vo-overview-card ${hasIssues ? 'vo-overview-card--alert' : ''}">
         <div class="vo-card-header">
           <span class="vo-card-icon">🔑</span>
           <span class="vo-card-label">Credential Status</span>
-          <span class="vo-card-badge" style="background: color-mix(in srgb, ${hasIssues ? 'var(--bc-red)' : 'var(--bc-green)'} 20%, transparent); color: ${hasIssues ? 'var(--bc-red)' : 'var(--bc-green)'};">${hasIssues ? `${missing.length} missing` : total > 0 ? 'All configured' : 'No accounts'}</span>
+          ${StatusPill({ status: statusPill, label: badgeLabel })}
         </div>
         <div class="vo-card-body">
           ${total === 0 ? `
@@ -336,7 +341,7 @@ export class OverviewPanel {
         <div class="vo-card-header">
           <span class="vo-card-icon">⚠</span>
           <span class="vo-card-label">Blockers</span>
-          <span class="vo-card-badge" style="background: color-mix(in srgb, var(--bc-red) 20%, transparent); color: var(--bc-red);">${blockers.length}</span>
+          ${Badge({ count: blockers.length, status: 'error' })}
         </div>
         <div class="vo-card-body">
           <div class="vo-blockers-list">

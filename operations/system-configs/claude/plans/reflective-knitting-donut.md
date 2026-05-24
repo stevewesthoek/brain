@@ -1,113 +1,174 @@
-# Phase 7 Hardening: Retry Backoff + Storage Cleanup
+# Agent Orchestrator View — Brain Console Tab
 
 ## Context
 
-Two open Phase 7 items remain in `video-orchestrator-roadmap.md`. Both are small, targeted improvements to production reliability and storage management. The roadmap notes "currently max_retries=3 flat" for retry, and "archive completed job output files after 30d, keep artifact forever" for storage cleanup.
+The Phase 0.7 agent orchestration backend is fully implemented in brain-core (39 tests, committed). The Brain Console already has an `agents` section in `SECTION_TABS` and a stub `renderAgentsSection()` that renders 4 basic cards using list-style markup. The goal is to replace this stub with a rich, production-quality Agent Orchestrator View that renders the task graph, approval gates, agent registry, run history, cost summary, and recovery blockers using the global design system (`renderCard`, `renderCompactStatGrid`, `.bc-badge`, `.bc-stat-card`, `.bc-kpi-row` etc.). No new tabs, no new endpoints, no new client fetch functions — all data is already being fetched. This is a pure view.ts rendering upgrade.
 
 ---
 
-## Task 1 — Non-blocking Job Retry with Exponential Backoff
+## What Already Exists (no changes needed)
 
-### Problem
-The Python worker already computes exponential backoff (`min(2 ** retry_count * 5, 300)`) but blocks the worker process with `time.sleep(backoff)`. During the sleep (up to 300s), no other jobs can be processed. The `scheduled_after` column already exists on the `jobs` table and the job-claim query already respects it — it just isn't used by the retry path.
+**Already fetched in `Promise.allSettled` (164 items, aligned ✓):**
+- `state.agents` — agent registry (10 entries)
+- `state.agentRuns` — run history
+- `state.agentEvents` — approval audit events
+- `state.agentCostSummary` — cost tracking
+- `state.recoveryItems` — recovery blockers
+- `state.agentConsole` — composite: taskGraph, taskState, executorPlan, approvalGates, counts (fetched in `readBrainConsoleSnapshot()`)
 
-### Change
-**File:** `~/.local/video-orchestrator/worker/video_worker.py`
+**Already in `client.ts`:** `BrainCoreAgentConsoleSummary` interface with `taskGraph: any`, `taskState: any`, `executorPlan: any`, `approvalGates: any` fields. All needed data comes via these `any`-typed sub-fields.
 
-In the retry block (lines ~1149–1155), replace the `time.sleep(backoff)` with a `scheduled_after` update:
+**Already in `SECTION_TABS`:** `{ id: 'agents', label: 'Agents', icon: '◈' }` — tab already visible.
 
-```python
-# Before:
-update_job(jid, job_status="pending", retry_count=retry_count)
-time.sleep(backoff)
-
-# After:
-from datetime import timezone
-scheduled_after = datetime.now(timezone.utc) + timedelta(seconds=backoff)
-update_job(jid, job_status="pending", retry_count=retry_count, scheduled_after=scheduled_after.isoformat())
-# Worker no longer sleeps — job-claim query filters scheduled_after <= NOW()
-```
-
-First verify `update_job` accepts `scheduled_after` as a keyword arg (check how the function builds the SQL). If it doesn't, add `scheduled_after` to the column whitelist.
-
-### Verify
-```bash
-cd ~/.local/video-orchestrator
-python -m pytest tests/test_worker.py -v
-```
-Add one test: a job that fails should have `scheduled_after` set and `job_status = 'pending'` on the retry path, and `status = 'dead'` on final exhaustion.
+**`renderAgentsSection()` exists** at view.ts line 3549 — currently a 4-card stub using `<ul><li>` markup. This is what we replace.
 
 ---
 
-## Task 2 — Storage Cleanup: Extended Coverage + Automation
+## Implementation Plan
 
-### Problem
-`storage_cleanup.py` already handles `~/.local/video-orchestrator/data/` (compose/subtitle/thumbnail output) but misses:
-- `~/.local/video-orchestrator/packages/` (post/render/lora output)
-- `~/.local/video-orchestrator/output/` (CLI `vo queue render` default)
-- No automatic invocation — must be run manually
+### Single file to modify: `src/view.ts`
 
-### Change 1 — Extend `storage_cleanup.py`
-**File:** `~/.local/video-orchestrator/scripts/storage_cleanup.py`
-
-Add `packages/` and `output/` scanning alongside the existing `data/` scanning. The directory resolution logic stays the same — check `task_config.output_dir` first, fall back to each directory. The archive path scheme stays the same. Add a constant for `PACKAGES_DIR`:
-
-```python
-DEFAULT_PACKAGES_DIR = Path.home() / ".local/video-orchestrator/packages"
-DEFAULT_OUTPUT_DIR = Path.home() / ".local/video-orchestrator/output"
-```
-
-And extend `list_cleanup_candidates()` to include job types `post`, `render`, `lora_render` whose output may land in `packages/` or `output/`.
-
-### Change 2 — Add Brain Core storage endpoint
-**New file:** `projects/brain-core/src/adapters/infra-video-orchestrator-storage-cleanup.ts`
-
-- `readStorageStats()` — returns: directories scanned, total file count, total size bytes, oldest job age, jobs eligible for archival (>30d)
-- `triggerStorageCleanup(dryRun: boolean)` — shells out to `storage_cleanup.py run [--dry-run]` and returns the result
-
-**File:** `projects/brain-core/src/api/routes.ts`
-- Add `GET /api/infra/video-orchestrator/storage-stats` — calls `readStorageStats()`
-- Add `POST /api/infra/video-orchestrator/storage-cleanup` with body `{ dryRun: boolean }` — calls `triggerStorageCleanup()`
-
-**Tests:** `projects/brain-core/src/tests/infra-video-orchestrator-storage-cleanup.test.ts`
-- readStorageStats returns valid shape
-- triggerStorageCleanup dry-run returns candidates without deleting
-
-### Change 3 — Nightly scheduler automation
-**File:** `~/.local/video-orchestrator/scripts/office-nightly-scheduler.sh` (or check the correct nightly scheduler path)
-
-Add a call to `storage_cleanup.py run --days 30` to run nightly (after analytics sync, before sleep). Should respect dry-run flag or just run silently with exit code logging.
+Replace `renderAgentsSection()` at line 3549 and rewrite the four card renderer functions (`renderAgentViewCard`, `renderAgentViewLedgerCard`, `renderApprovalAuditTrailCard`, `renderRecoveryPanelCard`) to use the design system properly.
 
 ---
 
-## Roadmap Update
-**File:** `projects/brain-core/docs/video-orchestrator-roadmap.md`
+### Section Layout
 
-Mark both Phase 7 items complete:
-```markdown
-- [x] Job retry with exponential backoff (non-blocking via scheduled_after)
-- [x] Storage cleanup — archive completed job output files after 30d, keep artifact forever
-```
+`renderAgentsSection()` will render two rows:
+
+**Row 1 — KPI bar (`.bc-kpi-row`):**
+- Active Runs
+- Blocked Runs
+- Pending Approvals
+- Tasks Complete / Total
+- Cost Today
+
+**Row 2 — Card grid (`.brain-console__dashboard-grid`):**
+- **Task Graph** — task list with status badges and dependency counts
+- **Approval Gates** — pending/approved/rejected counts + supported kinds + blockers
+- **Agent Registry** — compact grid of 10 agents: name, role, status badge, health indicator
+- **Run History** — last 8 runs with status badge, age, safety chips
+- **Cost Summary** — budget status, today/week/month estimates, top 3 expensive tasks
+- **Recovery / Blockers** — severity-colored list of actionable blockers
 
 ---
 
-## Sequence
-1. Retry backoff: verify `update_job`, make change, add test, run worker tests
-2. Storage cleanup Python extension: extend `storage_cleanup.py`, run existing cleanup tests
-3. Brain Core storage endpoint: new adapter + routes, add tests
-4. Nightly scheduler: add cleanup call
-5. Roadmap update + doc commit
-6. Run full test suite (npm test in brain-core, worker tests, typecheck)
+### Card Design Patterns (strict adherence)
+
+All cards use existing helpers — no new CSS classes needed:
+
+```ts
+// KPI bar
+renderCompactStatGrid(el, [
+  { label: 'Active', value: String(n) },
+  ...
+])
+
+// Status badges — use bc-badge with tone classes
+const badge = el.createEl('span', { cls: 'bc-badge' });
+badge.textContent = status;
+badge.classList.add(`bc-badge--${mapStatusTone(status)}`);
+
+// Task list rows
+el.createEl('div', { cls: 'brain-console__list-note', text: '...' })
+```
+
+Status → tone mapping (local helper function):
+- `running` / `ok` / `completed` / `available` → `ok` (green)
+- `blocked` / `error` / `failed` / `rejected` → `error` (red)
+- `pending` / `planned` / `waiting_approval` → `warn` (yellow)
+- `unknown` / `external` / `cancelled` → `neutral`
+
+---
+
+### Exact Changes to `view.ts`
+
+#### 1. Replace `renderAgentsSection()` (line 3549–3562)
+
+New implementation renders a KPI row from `state.agentConsole` (or zero-state fallback), then a 3-column `brain-console__dashboard-grid` with 6 cards.
+
+#### 2. Replace `renderAgentViewCard()` (line 6742–6771)
+
+New implementation: compact agent registry table. For each of the 10 agents: icon-dot for health status, name in bold, role badge, status badge, skills count. Uses `renderCompactStatGrid` for the summary header.
+
+#### 3. Replace `renderAgentViewLedgerCard()` (line 6940–7011)
+
+New implementation: run history. Header stat row (total/blocked/completed). For each of 8 most recent runs: status badge, title, agent ID, age, one-line safety summary. Safety chips as `bc-badge--neutral` pills.
+
+#### 4. Add `renderApprovalGatesCard()` — new function
+
+Reads `state.agentConsole?.approvalGates` and renders a stat grid (pending/approved/rejected/expired counts) + supported kinds list + blocker list if any.
+
+Rename existing `renderApprovalAuditTrailCard()` to use `bc-badge` for event type styling instead of ad-hoc classes.
+
+#### 5. Keep `renderRecoveryPanelCard()` (line 7054+)
+
+Minor touch-up: replace raw `brain-console__list-warning` class with `bc-badge--error` for severity indicators.
+
+#### 6. Add `renderAgentTaskGraphCard()` — new function
+
+Reads `state.agentConsole?.taskGraph`. Shows:
+- Header stats: total tasks, completed, blocked, pending
+- Task list (max 8): task title, status badge, `approvalRequired` indicator
+- `nextSafeStep` text at bottom
+
+#### 7. Add `renderAgentCostCard()` — new function
+
+Reads `state.agentCostSummary`. Shows:
+- Budget badge (ok/warning/throttled) + spent/threshold
+- Today / week / month cost grid
+- Top 3 expensive tasks as compact rows
+
+---
+
+### No Promise Changes Needed
+
+The Promise.allSettled array stays at 164/164. No new fetches — `agentConsole` (which contains taskGraph, approvalGates, executorPlan) is already fetched via `readBrainConsoleSnapshot()`.
+
+The `agentConsole` fields are typed as `any` in `BrainCoreAgentConsoleSummary` — we access them with optional chaining (`state.agentConsole?.taskGraph?.tasks`) and handle undefined gracefully.
+
+---
+
+## Files Changed
+
+| File | What changes |
+|------|-------------|
+| `src/view.ts` | Replace `renderAgentsSection()` + 4 card renderers + add 2 new card functions |
+
+No changes to: `src/client.ts`, `src/main.ts`, `styles.css`, `manifest.json`.
+
+---
 
 ## Verification
+
 ```bash
-# Worker tests (after retry change)
-cd ~/.local/video-orchestrator && python -m pytest tests/test_worker.py -v
+# 1. Type check (must pass clean)
+npm run typecheck
 
-# Brain Core (after storage endpoint)
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
-npm run typecheck && npm test
+# 2. Promise alignment check (must stay 164/164)
+python3 -c "
+import re
+with open('src/view.ts') as f: content = f.read()
+pm = re.search(r'await Promise\.allSettled\(\[(.*?)\]\s*\);', content, re.DOTALL)
+promises = [e.strip() for e in pm.group(1).split('\n') if e.strip() and not e.strip().startswith('//')]
+dm = re.search(r'const \[(.+?)\] = settledValues', content, re.DOTALL)
+dvars = [v.strip() for v in dm.group(1).split(',')]
+ok = len(promises) == len(dvars)
+print(f'Promises: {len(promises)}, Destructured: {len(dvars)}', '✓' if ok else '✗ MISALIGNED')
+"
 
-# Manual cleanup dry-run
-python ~/.local/video-orchestrator/scripts/storage_cleanup.py run --dry-run --days 30
+# 3. Deploy
+npm run build && npm run package && npm run install:active-vault
+pkill -x "Obsidian" && sleep 2 && open -a Obsidian
+
+# 4. Visual checks in Obsidian:
+# - Click "Agents" tab
+# - KPI bar shows Active/Blocked/Approvals/Tasks/Cost
+# - Task graph card shows task list with status badges
+# - Approval gates card shows pending/approved counts
+# - Agent registry shows 10 agents with health/role/status
+# - Run history shows last 8 runs
+# - Cost card shows budget status + today/week estimates
+# - Recovery card shows blockers (or "No blockers" state)
+# - All cards use orange/zinc/mono design system (no rogue colors)
 ```

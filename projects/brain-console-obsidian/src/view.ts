@@ -3498,7 +3498,7 @@ function renderReportsSection(content: HTMLElement, state: BrainConsoleViewState
 }
 
 function renderPostOrchestratorSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
-  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
+  const grid = content.createDiv({ cls: 'brain-console__post-section' });
 
   renderPostGroup(grid, 'Status', [
     { title: 'Overview', render: renderPostOrchestratorOverviewCard(state) },
@@ -3550,14 +3550,32 @@ function renderAgentsSection(content: HTMLElement, state: BrainConsoleViewState,
   const intro = content.createDiv({ cls: 'brain-console__section-intro' });
   intro.createEl('p', {
     cls: 'brain-console__detail',
-    text: 'Read-only agent telemetry, approvals, and recovery blockers in one place.',
+    text: 'Agent orchestration, task graph, approval gates, and cost tracking.',
   });
+
+  // KPI row from agentConsole
+  if (state.agentConsole) {
+    const kpiDiv = content.createDiv({ cls: 'bc-kpi-row' });
+    renderCompactStatGrid(kpiDiv, [
+      { label: 'Active Runs', value: String(state.agentConsole.activeRunCount ?? 0) },
+      { label: 'Blocked Runs', value: String(state.agentConsole.blockedRunCount ?? 0) },
+      { label: 'Pending Approvals', value: String(state.agentConsole.approvalPendingCount ?? 0) },
+      {
+        label: 'Tasks Done',
+        value: `${state.agentConsole.taskGraph?.completedCount ?? 0}/${state.agentConsole.taskGraph?.taskCount ?? 0}`,
+      },
+      { label: 'Cost Today', value: formatCostUsd(state.agentCostSummary?.todayEstimatedUsd ?? 0) },
+    ]);
+  }
 
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
-  renderCard(grid, 'Agent Ledger', renderAgentViewLedgerCard(state));
-  renderCard(grid, 'Approval Trail', renderApprovalAuditTrailCard(state));
-  renderCard(grid, 'Agents Summary', renderAgentViewCard(state, snapshot));
+  // 6 cards
+  renderCard(grid, 'Task Graph', renderAgentTaskGraphCard(state));
+  renderCard(grid, 'Approval Gates', renderApprovalGatesCard(state));
+  renderCard(grid, 'Agent Registry', renderAgentViewCard(state, snapshot));
+  renderCard(grid, 'Run History', renderAgentViewLedgerCard(state));
+  renderCard(grid, 'Cost Summary', renderAgentCostCard(state));
   renderCard(grid, 'Recovery / Blockers', renderRecoveryPanelCard(state));
 }
 
@@ -4583,7 +4601,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     // Start button: smart — restarts if already running
     if (app.startSupported || app.restartSupported) {
       const isRunning = app.status === 'running';
-      const startLabel = isRunning ? 'Restart app' : 'Start app';
+      const startLabel = isRunning ? 'Restart' : 'Start';
       const startAction: 'start' | 'restart' = isRunning ? 'restart' : 'start';
       const startEnabled = !pendingAction && controlsEnabled && (isRunning ? app.restartSupported : app.startSupported);
       const startBtn = actions.createEl('button', { text: startLabel, cls: 'brain-console__local-app-action brain-console__local-app-action--start' });
@@ -4603,7 +4621,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     // Stop button
     if (app.stopSupported) {
       const stopEnabled = !pendingAction && controlsEnabled && app.stopSupported;
-      const stopBtn = actions.createEl('button', { text: 'Stop app', cls: 'brain-console__local-app-action brain-console__local-app-action--stop' });
+      const stopBtn = actions.createEl('button', { text: 'Stop', cls: 'brain-console__local-app-action brain-console__local-app-action--stop' });
       stopBtn.addClass(stopEnabled ? 'is-enabled' : 'is-disabled');
       if (pendingAction) stopBtn.addClass('is-pending');
       stopBtn.disabled = !stopEnabled;
@@ -4619,7 +4637,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
 
     // Open button
     if (app.url) {
-      const openBtn = actions.createEl('button', { text: 'Open app', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
+      const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
       openBtn.title = `Open ${app.name} in browser (${app.url})`;
       openBtn.addEventListener('click', () => { window.open(app.url!); });
     }
@@ -6739,33 +6757,51 @@ function renderDualRunEvidenceCard(state: BrainConsoleViewState, snapshot: Dashb
   return card;
 }
 
+// Agent view helpers
+function mapStatusToTone(status: string): string {
+  const statusLower = (status || '').toLowerCase();
+  if (['running', 'ok', 'completed', 'available'].includes(statusLower)) return 'ok';
+  if (['blocked', 'error', 'failed', 'rejected'].includes(statusLower)) return 'error';
+  if (['pending', 'planned', 'waiting_approval'].includes(statusLower)) return 'warn';
+  return 'neutral';
+}
+
+function formatCostUsd(cents: number): string {
+  const dollars = (cents / 100).toFixed(2);
+  return dollars === '0.00' ? '-' : `$${dollars}`;
+}
+
 function renderAgentViewCard(state: BrainConsoleViewState, snapshot: DashboardSnapshot): HTMLElement {
   const card = document.createElement('div');
 
-  const list = card.createEl('ul');
-  const consoleSummary = state.agentConsole;
-
-  if (consoleSummary) {
-    list.createEl('li', { text: `Active runs: ${consoleSummary.activeRunCount}` });
-    list.createEl('li', { text: `Planned runs: ${consoleSummary.plannedRunCount}` });
-    list.createEl('li', { text: `Blocked runs: ${consoleSummary.blockedRunCount}` });
-    list.createEl('li', { text: `Executor selections: ${consoleSummary.executorSelectionCount}` });
-    list.createEl('li', { text: `Pending approvals: ${consoleSummary.approvalPendingCount}` });
-    list.createEl('li', { text: `Next: ${consoleSummary.nextSafeStep}` });
-  } else {
-    list.createEl('li', { text: `Total agents: ${snapshot.agentCount}` });
-    list.createEl('li', { text: `External executors: ${snapshot.externalExecutorCount}` });
-
-    if (snapshot.plannedAgentCount > 0) {
-      list.createEl('li', { text: `Planned: ${snapshot.plannedAgentCount}` });
-    }
-
-    if (snapshot.mindStewardAgentSummary) {
-      list.createEl('li', { text: `Mind Steward: ${snapshot.mindStewardAgentSummary.health}` });
-    }
+  if (!state.agents || state.agents.length === 0) {
+    card.createEl('div', { cls: 'brain-console__list-note', text: 'No agents available.' });
+    return card;
   }
 
-  list.createEl('li', { text: 'Agent runtime is read-only (planned)', cls: 'brain-console__list-note' });
+  renderCompactStatGrid(card, [
+    { label: 'Total Agents', value: String(state.agents.length) },
+    { label: 'Available', value: String(state.agents.filter(a => a.status === 'available').length) },
+    { label: 'Planned', value: String(state.agents.filter(a => a.status === 'planned').length) },
+  ]);
+
+  const list = card.createEl('ul', { cls: 'brain-console__list' });
+  for (const agent of state.agents.slice(0, 10)) {
+    const li = list.createEl('li');
+
+    // Health indicator dot
+    const healthDot = li.createEl('span', { cls: 'brain-console__stat-label' });
+    healthDot.textContent = agent.health === 'ok' ? '● ' : agent.health === 'warning' ? '◐ ' : '○ ';
+
+    // Agent name and role
+    li.createEl('strong', { text: agent.name });
+    li.appendText(` (${agent.role})`);
+
+    // Status badge
+    const statusBadge = li.createEl('span', { cls: 'bc-badge' });
+    statusBadge.textContent = agent.status;
+    statusBadge.classList.add(`bc-badge--${mapStatusToTone(agent.status)}`);
+  }
 
   return card;
 }
@@ -6940,72 +6976,45 @@ function renderMaintenancePreviewDetailCard(detail: import('./client.js').BrainC
 function renderAgentViewLedgerCard(state: BrainConsoleViewState): HTMLElement {
   const el = document.createElement('div');
 
-  // Operating mode note
-  const note = el.createEl('div', { cls: 'brain-console__list-note' });
-  note.textContent = '● Read-only ledger · Approval-gated · Execution disabled';
-
-  // Count summary
-  const counts = el.createDiv({ cls: 'brain-console__row' });
-  counts.createEl('dt', { text: 'Total Runs' });
-  counts.createEl('dd', { text: `${state.agentRuns?.length ?? 0}` });
-
-  if (state.agentRuns && state.agentRuns.length > 0) {
-    const blocked = state.agentRuns.filter(r => r.status === 'blocked').length;
-    const completed = state.agentRuns.filter(r => r.status === 'completed').length;
-
-    if (blocked > 0) {
-      const blockedRow = el.createDiv({ cls: 'brain-console__row' });
-      blockedRow.createEl('dt', { text: 'Blocked' });
-      blockedRow.createEl('dd', { text: `${blocked}`, cls: 'brain-console__list-warning' });
-    }
-    if (completed > 0) {
-      const completedRow = el.createDiv({ cls: 'brain-console__row' });
-      completedRow.createEl('dt', { text: 'Completed' });
-      completedRow.createEl('dd', { text: `${completed}`, cls: 'brain-console__list-item-highlight' });
-    }
-  }
-
-  // Latest runs (max 5)
-  if (state.agentRuns && state.agentRuns.length > 0) {
-    el.createEl('hr');
-    el.createEl('strong', { text: 'Latest Runs (read-only):' });
-    const list = el.createEl('ul', { cls: 'brain-console__list' });
-
-    const maxRuns = Math.min(5, state.agentRuns.length);
-    for (let i = 0; i < maxRuns; i++) {
-      const run = state.agentRuns[i];
-      const li = list.createEl('li');
-
-      const title = li.createEl('strong', { text: run.title });
-      li.appendText(` (${run.agentId})`);
-
-      const details = li.createEl('div', { cls: 'brain-console__list-note' });
-      const parts: string[] = [];
-      parts.push(run.status);
-      if (run.ageMinutes !== undefined) parts.push(`${run.ageMinutes}m old`);
-      if (run.targetId) parts.push(`→ ${run.targetId}`);
-      details.textContent = parts.join(' · ');
-
-      if (run.blockers.length > 0) {
-        const blocker = li.createEl('div', { cls: 'brain-console__list-warning', text: `⚠ ${run.blockers[0]}` });
-      }
-
-      // Safety chips
-      const safety = li.createEl('div', { cls: 'brain-console__list-note' });
-      const chips: string[] = [];
-      if (!run.safety.writesToMind) chips.push('no Mind write');
-      if (!run.safety.executesShell) chips.push('no shell');
-      if (!run.safety.mutatesRuntime) chips.push('no runtime mutation');
-      if (!run.safety.executionEnabled) chips.push('execution disabled');
-      if (run.safety.requiresApproval) chips.push('approval required');
-      safety.textContent = chips.join(' · ');
-    }
-  } else {
+  if (!state.agentRuns || state.agentRuns.length === 0) {
     el.createEl('div', { cls: 'brain-console__list-note', text: 'No agent runs available yet.' });
+    return el;
   }
 
-  const footer = el.createEl('div', { cls: 'brain-console__list-note' });
-  footer.innerHTML = '<em>Agent runtime is not autonomous. This view is a read-only ledger derived from approvals, reports, and status scans.</em>';
+  renderCompactStatGrid(el, [
+    { label: 'Total Runs', value: String(state.agentRuns.length) },
+    { label: 'Blocked', value: String(state.agentRuns.filter(r => r.status === 'blocked').length) },
+    { label: 'Completed', value: String(state.agentRuns.filter(r => r.status === 'completed').length) },
+  ]);
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  const maxRuns = Math.min(8, state.agentRuns.length);
+
+  for (let i = 0; i < maxRuns; i++) {
+    const run = state.agentRuns[i];
+    const li = list.createEl('li');
+
+    // Status badge
+    const badge = li.createEl('span', { cls: 'bc-badge' });
+    badge.textContent = run.status.toUpperCase();
+    badge.classList.add(`bc-badge--${mapStatusToTone(run.status)}`);
+
+    // Run title and agent
+    li.createEl('strong', { text: run.title });
+    li.appendText(` (${run.agentId})`);
+
+    // Age and target
+    const details = li.createEl('div', { cls: 'brain-console__list-note' });
+    const parts: string[] = [];
+    if (run.ageMinutes !== undefined) parts.push(`${run.ageMinutes}m old`);
+    if (run.targetId) parts.push(`→ ${run.targetId}`);
+    if (parts.length > 0) details.textContent = parts.join(' · ');
+
+    // Safety summary
+    if (run.blockers.length > 0) {
+      const blockerSpan = li.createEl('div', { cls: 'brain-console__list-error', text: `⚠ ${run.blockers[0]}` });
+    }
+  }
 
   return el;
 }
@@ -7018,7 +7027,6 @@ function renderApprovalAuditTrailCard(state: BrainConsoleViewState): HTMLElement
     return el;
   }
 
-  // Latest audit events (max 8)
   const list = el.createEl('ul', { cls: 'brain-console__list' });
   const maxEvents = Math.min(8, state.agentEvents.length);
 
@@ -7026,25 +7034,20 @@ function renderApprovalAuditTrailCard(state: BrainConsoleViewState): HTMLElement
     const event = state.agentEvents[i];
     const li = list.createEl('li');
 
-    // Event type with severity color
-    const typeSpan = li.createEl('span', { cls: 'brain-console__list-item-highlight' });
-    typeSpan.textContent = event.type.toUpperCase();
+    // Event type badge
+    const badge = li.createEl('span', { cls: 'bc-badge' });
+    badge.textContent = event.type.toUpperCase();
+    badge.classList.add(`bc-badge--${mapStatusToTone(event.severity)}`);
 
-    if (event.severity === 'error') {
-      li.classList.add('brain-console__list-error');
-    } else if (event.severity === 'warning') {
-      li.classList.add('brain-console__list-warning');
-    }
-
-    // Timestamp and approval ID
+    // Timestamp and summary
     const meta = li.createEl('div', { cls: 'brain-console__list-note' });
     const parts: string[] = [];
     if (event.createdAt) {
       const timeStr = formatRelativeTime(new Date(event.createdAt));
       parts.push(timeStr);
     }
-    if (event.relatedApprovalId) parts.push(`#${event.relatedApprovalId}`);
     if (event.summary) parts.push(event.summary);
+    if (event.relatedApprovalId) parts.push(`#${event.relatedApprovalId}`);
     meta.textContent = parts.join(' · ');
   }
 
@@ -7116,6 +7119,133 @@ function renderRecoveryPanelCard(state: BrainConsoleViewState): HTMLElement {
     if (!item.safety.canAutoFix) safetyChips.push('no auto-fix');
     if (!item.safety.writesToMind) safetyChips.push('no Mind write');
     safetyDiv.textContent = safetyChips.join(' · ');
+  }
+
+  return el;
+}
+
+function renderAgentTaskGraphCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const taskGraph = state.agentConsole?.taskGraph;
+
+  if (!taskGraph || !taskGraph.tasks || taskGraph.tasks.length === 0) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No task graph available.' });
+    return el;
+  }
+
+  renderCompactStatGrid(el, [
+    { label: 'Total Tasks', value: String(taskGraph.taskCount ?? 0) },
+    { label: 'Done', value: String(taskGraph.completedCount ?? 0) },
+    { label: 'Blocked', value: String(taskGraph.blockedCount ?? 0) },
+    { label: 'Pending', value: String(taskGraph.pendingCount ?? 0) },
+  ]);
+
+  const list = el.createEl('ul', { cls: 'brain-console__list' });
+  const maxTasks = Math.min(8, taskGraph.tasks.length);
+
+  for (let i = 0; i < maxTasks; i++) {
+    const task = taskGraph.tasks[i];
+    const li = list.createEl('li');
+
+    // Status badge
+    const badge = li.createEl('span', { cls: 'bc-badge' });
+    badge.textContent = task.status.toUpperCase();
+    badge.classList.add(`bc-badge--${mapStatusToTone(task.status)}`);
+
+    // Task title and ID
+    li.createEl('strong', { text: task.title });
+    li.appendText(` (${task.taskId})`);
+
+    // Approval required indicator
+    if (task.approvalRequired) {
+      li.appendText(' [approval]');
+    }
+
+    // Dependencies
+    if (task.dependsOn && task.dependsOn.length > 0) {
+      const depDiv = li.createEl('div', { cls: 'brain-console__list-note', text: `depends on: ${task.dependsOn.join(', ')}` });
+    }
+  }
+
+  if (taskGraph.nextSafeStep) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: `→ Next: ${taskGraph.nextSafeStep}` });
+  }
+
+  return el;
+}
+
+function renderApprovalGatesCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const gates = state.agentConsole?.approvalGates;
+
+  if (!gates) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No approval gate data available.' });
+    return el;
+  }
+
+  renderCompactStatGrid(el, [
+    { label: 'Pending', value: String(gates.pendingCount ?? 0) },
+    { label: 'Approved', value: String(gates.approvedCount ?? 0) },
+    { label: 'Rejected', value: String(gates.rejectedCount ?? 0) },
+    { label: 'Expired', value: String(gates.expiredCount ?? 0) },
+  ]);
+
+  if (gates.supportedApprovalKinds && gates.supportedApprovalKinds.length > 0) {
+    el.createEl('strong', { text: 'Supported kinds:' });
+    const kindList = el.createEl('ul', { cls: 'brain-console__list' });
+    for (const kind of gates.supportedApprovalKinds) {
+      kindList.createEl('li', { text: kind });
+    }
+  }
+
+  if (gates.blockedApprovalKinds && gates.blockedApprovalKinds.length > 0) {
+    el.createEl('strong', { text: 'Blocked kinds:' });
+    const blockedList = el.createEl('ul', { cls: 'brain-console__list' });
+    for (const kind of gates.blockedApprovalKinds) {
+      const li = blockedList.createEl('li', { text: kind });
+      li.classList.add('brain-console__list-error');
+    }
+  }
+
+  return el;
+}
+
+function renderAgentCostCard(state: BrainConsoleViewState): HTMLElement {
+  const el = document.createElement('div');
+  const cost = state.agentCostSummary;
+
+  if (!cost) {
+    el.createEl('div', { cls: 'brain-console__list-note', text: 'No cost data available.' });
+    return el;
+  }
+
+  // Budget status badge
+  const budgetDiv = el.createDiv();
+  const budgetBadge = budgetDiv.createEl('span', { cls: 'bc-badge' });
+  budgetBadge.textContent = cost.budget?.status?.toUpperCase() ?? 'UNKNOWN';
+  budgetBadge.classList.add(`bc-badge--${mapStatusToTone(cost.budget?.status ?? 'unknown')}`);
+
+  if (cost.budget) {
+    renderCompactStatGrid(el, [
+      { label: 'Today', value: formatCostUsd(cost.todayEstimatedUsd) },
+      { label: 'Week', value: formatCostUsd(cost.weekEstimatedUsd) },
+      { label: 'Month', value: formatCostUsd(cost.monthEstimatedUsd) },
+      { label: 'Total', value: formatCostUsd(cost.totalEstimatedUsd) },
+    ]);
+
+    el.createEl('strong', { text: 'Budget Status:' });
+    const budgetList = el.createEl('ul', { cls: 'brain-console__list' });
+    budgetList.createEl('li', { text: `Spent: ${formatCostUsd(cost.budget.spentUsd)}` });
+    budgetList.createEl('li', { text: `Threshold: ${formatCostUsd(cost.budget.thresholdUsd)}` });
+    budgetList.createEl('li', { text: `Remaining: ${formatCostUsd(cost.budget.remainingUsd)}` });
+  }
+
+  if (cost.topExpensiveTasks && cost.topExpensiveTasks.length > 0) {
+    el.createEl('strong', { text: 'Top Expenses:' });
+    const topList = el.createEl('ul', { cls: 'brain-console__list' });
+    for (const task of cost.topExpensiveTasks.slice(0, 3)) {
+      topList.createEl('li', { text: `${task.taskId}: ${formatCostUsd(task.estimatedCostUsd)}` });
+    }
   }
 
   return el;
