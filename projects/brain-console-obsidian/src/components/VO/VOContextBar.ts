@@ -1,5 +1,6 @@
 import { getVOContextManager } from './VOContext.js';
 import type {
+  BrainCoreAiModelSelectorStatus,
   BrainCoreVOStudioProject,
   BrainCoreVOStudioPlatformAccount,
   BrainCoreVOStudioPipelineProfile,
@@ -10,6 +11,7 @@ export class VOContextBar {
   private projects: BrainCoreVOStudioProject[] = [];
   private accounts: BrainCoreVOStudioPlatformAccount[] = [];
   private pipelineProfiles: BrainCoreVOStudioPipelineProfile[] = [];
+  private selector: BrainCoreAiModelSelectorStatus | undefined;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
 
@@ -17,11 +19,13 @@ export class VOContextBar {
     projects?: BrainCoreVOStudioProject[];
     accounts?: BrainCoreVOStudioPlatformAccount[];
     pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
+    selector?: BrainCoreAiModelSelectorStatus;
   }) {
     this.container = container;
     this.projects = data.projects || [];
     this.accounts = data.accounts || [];
     this.pipelineProfiles = data.pipelineProfiles || [];
+    this.selector = data.selector;
 
     this.unsubscribe = this.ctx.subscribe(() => this.render());
     this.render();
@@ -62,7 +66,10 @@ export class VOContextBar {
           ${this.renderPlatformTargets(selectedAccount)}
           ${this.renderProfileSelector(filteredProfiles)}
         </div>
-        ${this.renderDateRange()}
+        <div class="vo-context-meta">
+          ${this.renderSelectorHealthChip()}
+          ${this.renderDateRange()}
+        </div>
       </div>
     `;
 
@@ -176,6 +183,38 @@ export class VOContextBar {
           </button>
         </div>
         <span class="vo-date-display">${dateLabel}</span>
+      </div>
+    `;
+  }
+
+  private renderSelectorHealthChip(): string {
+    const selector = this.selector;
+    const state = !selector
+      ? 'unknown'
+      : selector.running && selector.healthy
+        ? 'healthy'
+        : selector.running
+          ? 'degraded'
+          : 'stopped';
+    const statusLabel = state === 'healthy'
+      ? 'Running'
+      : state === 'degraded'
+        ? 'Degraded'
+        : state === 'stopped'
+          ? 'Stopped'
+          : 'Unknown';
+    const currentProvider = selector?.providers?.find((provider) => provider.healthy)?.id
+      ?? selector?.providers?.[0]?.id
+      ?? 'No provider';
+    const lastChecked = selector?.lastChecked
+      ? new Date(selector.lastChecked).toLocaleTimeString()
+      : 'Not checked';
+
+    return `
+      <div class="vo-selector-health-chip vo-selector-health-chip--${state}" title="AI selector last checked: ${lastChecked}">
+        <span class="vo-selector-health-dot"></span>
+        <span class="vo-selector-health-main">AI Selector ${statusLabel}</span>
+        <span class="vo-selector-health-provider">${currentProvider}</span>
       </div>
     `;
   }

@@ -128,16 +128,17 @@ export function getApprovalDecision(
   }
 }
 
-// ─── Task execution stubs ────────────────────────────────────────────────────
-// These are execution stubs for Phase 0.7.
-// Phase 2+ will wire real provider calls (Gemini free-tier, Claude API, Codex CLI).
-// Each stub records intent and returns a structured placeholder result.
+// ─── Task execution adapters ─────────────────────────────────────────────────
 
-async function executeGeminiTask(task: AgentOrchestratorTask): Promise<unknown> {
+async function executeSelectorRoutedChatTask(
+  task: AgentOrchestratorTask,
+  requestedProvider: 'gemini' | 'claude',
+): Promise<unknown> {
   try {
     const routing = await selectAI(TASK_TYPES.DESCRIPTION_QUALITY_REVIEW, {
       inputTokens: Math.max(1, (task.prompt ?? '').length),
       timeoutMs: 5000,
+      urgent: requestedProvider === 'claude',
     });
 
     const response = await fetch(`${routing.baseUrl}/chat/completions`, {
@@ -170,7 +171,7 @@ async function executeGeminiTask(task: AgentOrchestratorTask): Promise<unknown> 
     };
 
     return {
-      provider: 'gemini',
+      provider: requestedProvider,
       status: 'success',
       taskId: task.id,
       providerId: routing.providerId,
@@ -180,81 +181,26 @@ async function executeGeminiTask(task: AgentOrchestratorTask): Promise<unknown> 
     };
   } catch (error) {
     return {
-      provider: 'gemini',
+      provider: requestedProvider,
       status: 'success',
       taskId: task.id,
       providerId: 'local-fallback',
       model: 'stub-local',
       result: task.prompt ?? task.description,
       fallback: true,
+      note: `${requestedProvider} executor could not reach the selector-routed chat surface; returned local fallback result.`,
       error: error instanceof Error ? error.message : String(error),
       completedAt: new Date().toISOString(),
     };
   }
 }
 
+async function executeGeminiTask(task: AgentOrchestratorTask): Promise<unknown> {
+  return executeSelectorRoutedChatTask(task, 'gemini');
+}
+
 async function executeClaudeTask(task: AgentOrchestratorTask): Promise<unknown> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return {
-      provider: 'claude',
-      status: 'success',
-      taskId: task.id,
-      model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
-      result: task.prompt ?? task.description,
-      fallback: true,
-      note: 'ANTHROPIC_API_KEY not set; returned local fallback result.',
-      completedAt: new Date().toISOString(),
-    };
-  }
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: task.prompt ?? task.description,
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    return {
-      provider: 'claude',
-      status: 'success',
-      taskId: task.id,
-      model: process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
-      result: task.prompt ?? task.description,
-      fallback: true,
-      error: `Claude request failed: ${response.status} ${body}`.trim(),
-      completedAt: new Date().toISOString(),
-    };
-  }
-
-  const data = await response.json() as {
-    content?: Array<{ text?: string }>;
-    model?: string;
-  };
-
-  return {
-    provider: 'claude',
-    status: 'success',
-    taskId: task.id,
-    model: data.model ?? process.env.ANTHROPIC_MODEL ?? 'claude-3-5-sonnet-latest',
-    result: data.content?.map((chunk) => chunk.text ?? '').join('') ?? '',
-    completedAt: new Date().toISOString(),
-  };
+  return executeSelectorRoutedChatTask(task, 'claude');
 }
 
 function executeCodexTask(task: AgentOrchestratorTask): unknown {

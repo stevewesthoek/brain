@@ -1,8 +1,8 @@
 # Session Handoff — VO Studio Implementation Status
 
 **Date:** 2026-05-24 (End of Session)  
-**Status:** Next-phase implementation complete, ready for future roadmap work  
-**Git State:** Committed to `main` and worktree clean at end of session  
+**Status:** Next-phase implementation plus Brain Console AI selector health chip complete  
+**Git State:** Implementation commits are on `main`; later review edits may be uncommitted until checkpointed  
 **Test Coverage:** 997 tests passing, 0 failures
 
 ---
@@ -26,6 +26,8 @@
 - Approval queue now opens thumbnail and metadata previews
 - Metadata generation now returns real preview payloads
 - Feedback loop now records publish outcomes and 24h metrics
+- Brain Console VO context bar now shows AI selector running/stopped state and current healthy provider
+- Agent Orchestrator Claude-labelled execution no longer calls Anthropic directly; it routes through the AI Model Selector / approved fallback surfaces
 
 **Testing:**
 - 997 tests passing, 0 failures
@@ -47,7 +49,7 @@
 ### 1. Agent Orchestrator provider wiring
 - `projects/brain-core/src/adapters/agent-orchestrator-executor.ts`
 - Gemini now routes through the local AI selector
-- Claude uses Anthropic when configured, otherwise falls back safely
+- Claude-labelled execution now routes through the local AI selector / approved fallback surfaces
 - Codex uses the CLI path, otherwise falls back safely
 - Bash and n8n paths remain available
 - Orchestrator execution is async
@@ -78,6 +80,16 @@
 - `Feedback` tab added to `VOShell`
 - Records publish outcomes and 24h metrics, then summarizes recommendations
 
+### 6. Brain Console AI selector health chip
+- `projects/brain-console-obsidian/src/components/VO/VOContextBar.ts`
+- `projects/brain-console-obsidian/styles.css`
+- Shows selector state as Running, Degraded, Stopped, or Unknown
+- Shows the current healthy provider when available
+
+### 7. Analytics feedback store fix
+- `projects/brain-core/src/adapters/video-orchestrator-analytics-feedback.ts`
+- Resolves `VO_FEEDBACK_PATH` at read/write time so tests and callers can safely override the store path
+
 ---
 
 ## Open Tasks
@@ -90,10 +102,11 @@ Remaining roadmap work exists, but it is outside the completed next-phase plan a
 
 ## Git State
 
-Work was committed to `main` and the repository was clean at the end of the session.
+The five-step implementation and doc sync were committed to `main`.
 
 ```
-6d768ef6 (HEAD) VO Studio: complete next-phase implementation
+63bbfa96 Docs: sync VO roadmap and handoff state
+6d768ef6 VO Studio: complete next-phase implementation
 f760d0ae Admin: Analytics, audit logs, operator dashboard
 aea8fdf0 Hardening: Circuit breakers, retry, monitoring, alerts
 c39539b3 Orchestrator: Agent planning and execution engine
@@ -115,7 +128,7 @@ Latest docs:
 - Brain Console: `npm run build` succeeds
 - PostgreSQL: configured and migrations applied
 - TikTok/Instagram credentials: optional, fall back to n8n
-- Gemini/Claude access: optional, fallback paths are safe
+- Gemini/selector access: optional, fallback paths are safe
 
 **Test Environment:**
 ```bash
@@ -137,6 +150,7 @@ If resuming later:
 - Approval workflow uses PostgreSQL and an append-only audit trail.
 - Publishing falls back to n8n if direct upload is unavailable.
 - Orchestrator and metadata generation use selector-first routing and safe fallback behavior.
+- Direct Anthropic/OpenAI API calls remain forbidden by strategy.
 - UI additions are additive and preserve the existing console structure.
 
 **Potential future work:**
@@ -147,4 +161,4 @@ If resuming later:
 
 ## Resume Prompt
 
-Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, and analytics feedback loop are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
+Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, and Brain Console AI selector health chip are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.

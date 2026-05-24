@@ -16,6 +16,7 @@ Completed:
 - Approval previews
 - SEO metadata generation
 - Analytics feedback loop
+- Brain Console AI selector health chip
 
 ---
 
@@ -27,6 +28,8 @@ Completed:
 - Approval queue previews thumbnails and metadata.
 - Metadata generation returns real preview payloads.
 - Feedback loop records publish outcomes and 24h metrics.
+- VO context bar shows AI selector running/degraded/stopped/unknown state and current healthy provider.
+- Claude-labelled orchestrator execution routes through the AI Model Selector / approved fallback surfaces, not direct Anthropic API.
 
 **Test status:**
 - `997` tests passing
@@ -39,7 +42,6 @@ Completed:
 The next active backlog is the later-phase roadmap, not the five-step implementation plan.
 
 Relevant remaining areas:
-- AI selector health chip in the Brain Console VO view
 - Later hardening items
 - Thumbnail upload wiring and A/B test maturity work
 - Metadata publishing integration details
@@ -52,6 +54,7 @@ Relevant remaining areas:
 - The orchestrator and metadata generator already use fallback behavior when live external services are unavailable.
 - Approval previews use the persisted approval payloads rather than a second preview source of truth.
 - The feedback loop is file-backed and additive.
+- `VO_FEEDBACK_PATH` is resolved at read/write time so test and runtime overrides work correctly.
 
 ---
 
@@ -68,6 +71,7 @@ Relevant remaining areas:
 - `projects/brain-core/src/adapters/agent-orchestrator-executor.ts`
 - `projects/brain-console-obsidian/src/components/VO/VOShell.ts`
 - `projects/brain-console-obsidian/src/components/VO/ApprovalQueuePanel.ts`
+- `projects/brain-console-obsidian/src/components/VO/VOContextBar.ts`
 - `projects/brain-core/src/adapters/video-orchestrator-metadata-generator.ts`
 - `projects/brain-core/src/adapters/video-orchestrator-analytics-feedback.ts`
 

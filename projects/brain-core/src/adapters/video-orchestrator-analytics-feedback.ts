@@ -3,7 +3,6 @@ import path from 'node:path';
 import os from 'node:os';
 
 const DEFAULT_STATE_DIR = path.join(os.homedir(), '.local', 'video-orchestrator', 'state');
-const FEEDBACK_PATH = process.env['VO_FEEDBACK_PATH'] ?? path.join(DEFAULT_STATE_DIR, 'analytics-feedback.json');
 
 export interface PublishOutcomeRecord {
   id: string;
@@ -52,15 +51,20 @@ export interface FeedbackSummary {
 }
 
 function ensureDir(): void {
-  fs.mkdirSync(path.dirname(FEEDBACK_PATH), { recursive: true });
+  fs.mkdirSync(path.dirname(getFeedbackPath()), { recursive: true });
+}
+
+function getFeedbackPath(): string {
+  return process.env['VO_FEEDBACK_PATH'] ?? path.join(DEFAULT_STATE_DIR, 'analytics-feedback.json');
 }
 
 function readStore(): FeedbackStore {
-  if (!fs.existsSync(FEEDBACK_PATH)) {
+  const feedbackPath = getFeedbackPath();
+  if (!fs.existsSync(feedbackPath)) {
     return { outcomes: [], metrics: [] };
   }
   try {
-    const parsed = JSON.parse(fs.readFileSync(FEEDBACK_PATH, 'utf8')) as Partial<FeedbackStore>;
+    const parsed = JSON.parse(fs.readFileSync(feedbackPath, 'utf8')) as Partial<FeedbackStore>;
     return {
       outcomes: Array.isArray(parsed.outcomes) ? parsed.outcomes as PublishOutcomeRecord[] : [],
       metrics: Array.isArray(parsed.metrics) ? parsed.metrics as VideoMetricsRecord[] : [],
@@ -72,7 +76,7 @@ function readStore(): FeedbackStore {
 
 function writeStore(store: FeedbackStore): void {
   ensureDir();
-  fs.writeFileSync(FEEDBACK_PATH, `${JSON.stringify(store, null, 2)}\n`);
+  fs.writeFileSync(getFeedbackPath(), `${JSON.stringify(store, null, 2)}\n`);
 }
 
 export function recordPublishOutcome(input: Omit<PublishOutcomeRecord, 'id' | 'createdAt'>): FeedbackSummary {

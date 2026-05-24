@@ -35,7 +35,6 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - Remaining roadmap work lives in later phases only.
 
 **Remaining VO product gaps:**
-- AI selector health chip in Brain Console
 - Later hardening items
 - Thumbnail upload / A/B test maturation
 - Metadata publishing integration details
@@ -93,7 +92,7 @@ The next work must proceed in this order:
 ### 0.5.3 CLI shim + TypeScript client
 - [x] `~/.local/bin/ai-select` — bash/curl wrapper, usable from any shell or AI agent
 - [x] `brain-core/src/adapters/ai-model-selector.ts` — TypeScript client for Node.js apps
-- [ ] Brain Console VO view: AI selector health chip (running/stopped, current provider) — still open
+- [x] Brain Console VO view: AI selector health chip (running/stopped, current provider)
 
 ### 0.5.4 Platform architecture doc
 - [x] `brain/docs/platform-architecture.md` — canonical scaffold standard for all projects
@@ -195,7 +194,7 @@ The next work must proceed in this order:
 
 **Boundary:** The Agent Orchestrator is not the AI Model Selector. The selector chooses an AI execution surface. The orchestrator decomposes work, assigns tasks, calls skills/CLIs, records run state, handles handoffs, and asks for approval before risky actions.
 
-**Status:** Core orchestrator implemented (task decomposition, DAG execution, approval gates) and provider wiring is now implemented.
+**Status:** Core orchestrator implemented (task decomposition, DAG execution, approval gates) and provider wiring is now implemented through approved selector/CLI surfaces.
 
 ### 0.7.1 Research and architecture ✅
 - [x] NotebookLM and research-orchestrator synthesis completed
@@ -215,7 +214,7 @@ The next work must proceed in this order:
 - [x] Resumes execution after approval
 
 ### 0.7.4 Provider routing ✅ Implemented
-- [x] Real Gemini/Claude/Codex/bash/n8n provider paths wired in the orchestrator
+- [x] Gemini/Claude-labelled AI execution paths route through the AI Model Selector; Codex routes through Codex CLI
 - [x] Routing ladder defined: Gemini → Claude → Codex → bash → n8n
 - [x] Provider selection logic now executes real provider paths with safe fallback behavior
 
@@ -227,7 +226,7 @@ The next work must proceed in this order:
 ### 0.7.6 Brain Console Agent View
 - [ ] Not yet in Brain Console UI; intended for a later phase
 
-**Deliverable:** ✅ Agent Orchestrator can plan and execute task graphs with approval gates and real provider paths.
+**Deliverable:** ✅ Agent Orchestrator can plan and execute task graphs with approval gates and approved provider paths. Direct Anthropic/OpenAI API calls remain forbidden.
 
 ---
 
@@ -678,7 +677,7 @@ Foundation   Selector v1    Dual-node    Gemini policy   Agents        Read mode
 Phase 10 ✅ → Phase 11 ✅ → Phase Next ✅ → Phase 3+ 🔲
 Webhooks/Analytics  Brain Console integration   Wire real providers+UI phases   Hardening & expansion
 
-Current: Phase Next has been completed. 997 tests passing. Ready for future roadmap work.
+Current: Phase Next and the Brain Console AI selector health chip have been completed. Ready for future roadmap work.
 
 Phase 0.7 is complete.
 Phase 1-5 next-phase implementation items are complete.
