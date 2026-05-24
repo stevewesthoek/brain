@@ -3225,3 +3225,591 @@
     width: 100%;
   }
 }
+
+/* ── Phase 4: Approval Queue Panel ── */
+
+.vo-approval-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-gap);
+  height: 100%;
+}
+
+.vo-queue-stats {
+  display: flex;
+  gap: var(--bc-gap);
+  justify-content: space-around;
+}
+
+.vo-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+}
+
+.vo-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vo-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--bc-accent);
+  margin-top: 4px;
+}
+
+.vo-queue-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-gap);
+}
+
+.vo-queue-item {
+  padding: var(--bc-pad);
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vo-queue-item:hover {
+  background: var(--bc-card-hover);
+  border-color: var(--bc-border-strong);
+}
+
+.vo-queue-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.vo-approval-type {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vo-type-thumbnail {
+  background: color-mix(in srgb, var(--bc-blue) 20%, transparent);
+  color: var(--bc-blue);
+}
+
+.vo-type-metadata {
+  background: color-mix(in srgb, var(--bc-purple) 20%, transparent);
+  color: var(--bc-purple);
+}
+
+.vo-type-final_review {
+  background: color-mix(in srgb, var(--bc-yellow) 20%, transparent);
+  color: var(--bc-yellow);
+}
+
+.vo-queue-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vo-queue-item-content {
+  font-size: 13px;
+  color: var(--text-normal);
+}
+
+.vo-content-id,
+.vo-variants-count {
+  margin: 2px 0;
+}
+
+.vo-queue-detail {
+  padding: var(--bc-pad);
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+}
+
+.vo-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.vo-btn-icon {
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: var(--bc-accent);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.vo-btn-icon:hover {
+  opacity: 0.8;
+}
+
+.vo-approval-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vo-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vo-form-section label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.vo-form-value {
+  font-size: 13px;
+  color: var(--text-normal);
+  padding: 8px;
+  background: color-mix(in srgb, var(--background-primary) 50%, transparent);
+  border-radius: 3px;
+}
+
+.vo-variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vo-variant-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vo-variant-option input[type="radio"] {
+  cursor: pointer;
+}
+
+.vo-variant-option label {
+  cursor: pointer;
+  font-size: 13px;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.vo-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vo-btn-primary,
+.vo-btn-secondary,
+.vo-btn-small {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vo-btn-primary {
+  background: var(--bc-accent);
+  color: white;
+  flex: 1;
+}
+
+.vo-btn-primary:hover {
+  opacity: 0.9;
+}
+
+.vo-btn-secondary {
+  background: transparent;
+  color: var(--bc-accent);
+  border: 1px solid var(--bc-border);
+  flex: 1;
+}
+
+.vo-btn-secondary:hover {
+  background: color-mix(in srgb, var(--bc-accent) 10%, transparent);
+}
+
+.vo-btn-small {
+  padding: 4px 8px;
+  background: var(--bc-accent);
+  color: white;
+  font-size: 11px;
+}
+
+/* ── Phase 4: Package Status Panel ── */
+
+.vo-package-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-gap);
+  height: 100%;
+}
+
+.vo-packages-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-gap);
+}
+
+.vo-package-card {
+  padding: var(--bc-pad);
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+}
+
+.vo-package-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.vo-package-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vo-status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vo-status-queued {
+  background: color-mix(in srgb, var(--bc-blue) 20%, transparent);
+  color: var(--bc-blue);
+}
+
+.vo-status-in_progress {
+  background: color-mix(in srgb, var(--bc-yellow) 20%, transparent);
+  color: var(--bc-yellow);
+}
+
+.vo-status-published {
+  background: color-mix(in srgb, var(--bc-green) 20%, transparent);
+  color: var(--bc-green);
+}
+
+.vo-status-failed {
+  background: color-mix(in srgb, var(--bc-red) 20%, transparent);
+  color: var(--bc-red);
+}
+
+.vo-progress-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.vo-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.vo-progress-fill {
+  height: 100%;
+  background: var(--bc-accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.vo-progress-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-normal);
+  min-width: 35px;
+}
+
+.vo-stages-section {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.vo-stage-item {
+  flex: 1;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+  border: 1px solid var(--bc-border);
+  background: color-mix(in srgb, var(--background-primary) 50%, transparent);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.vo-stage-completed {
+  background: color-mix(in srgb, var(--bc-green) 20%, transparent);
+  border-color: var(--bc-green);
+  color: var(--bc-green);
+}
+
+.vo-stage-active {
+  background: color-mix(in srgb, var(--bc-accent) 20%, transparent);
+  border-color: var(--bc-accent);
+  color: var(--bc-accent);
+}
+
+.vo-stage-failed {
+  background: color-mix(in srgb, var(--bc-red) 20%, transparent);
+  border-color: var(--bc-red);
+  color: var(--bc-red);
+}
+
+.vo-current-job {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--background-primary) 50%, transparent);
+  border-radius: 3px;
+  margin-bottom: 12px;
+}
+
+.vo-job-status {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  background: var(--bc-accent);
+  color: white;
+  border-radius: 2px;
+  margin-left: auto;
+}
+
+.vo-package-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ── Phase 4: Publishing Dashboard Panel ── */
+
+.vo-publishing-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-gap);
+  height: 100%;
+}
+
+.vo-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--bc-gap);
+}
+
+.vo-metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: var(--bc-card);
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+}
+
+.vo-metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.vo-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--bc-accent);
+  margin-top: 6px;
+}
+
+.vo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vo-section h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.vo-platform-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vo-platform-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.vo-platform-name {
+  min-width: 80px;
+  font-weight: 500;
+}
+
+.vo-platform-bar {
+  flex: 1;
+  height: 16px;
+  background: color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vo-platform-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bc-blue), var(--bc-purple));
+  border-radius: 2px;
+}
+
+.vo-platform-count {
+  min-width: 30px;
+  text-align: right;
+  font-weight: 600;
+}
+
+.vo-queue-table {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius);
+  background: var(--bc-card);
+}
+
+.vo-queue-header,
+.vo-queue-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 100px;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--bc-border);
+  align-items: center;
+}
+
+.vo-queue-header {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--background-primary) 50%, transparent);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vo-queue-row:last-child {
+  border-bottom: none;
+}
+
+.vo-queue-col {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vo-message {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.vo-message-success {
+  background: var(--bc-green);
+  color: white;
+}
+
+.vo-message-error {
+  background: var(--bc-red);
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.vo-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.vo-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+}
+
+.vo-panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.vo-panel-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -4,6 +4,9 @@ import { PipelinesPanel } from './PipelinesPanel.js';
 import { AccountsPanel } from './AccountsPanel.js';
 import { HistoryPanel } from './HistoryPanel.js';
 import { ContentCreationPanel } from './ContentCreationPanel.js';
+import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
+import { PackageStatusPanel } from './PackageStatusPanel.js';
+import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -23,6 +26,9 @@ export class VOShell {
   private accountsPanel: AccountsPanel | null = null;
   private contentCreationPanel: ContentCreationPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
+  private approvalQueuePanel: ApprovalQueuePanel | null = null;
+  private packageStatusPanel: PackageStatusPanel | null = null;
+  private publishingDashboardPanel: PublishingDashboardPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
   private contentContainer: HTMLElement | null = null;
@@ -64,6 +70,9 @@ export class VOShell {
         <button class="vo-tab" data-tab="pipelines">Pipelines</button>
         <button class="vo-tab" data-tab="accounts">Accounts</button>
         <button class="vo-tab" data-tab="content">Content</button>
+        <button class="vo-tab" data-tab="approvals">Approvals</button>
+        <button class="vo-tab" data-tab="packages">Packages</button>
+        <button class="vo-tab" data-tab="publishing">Publishing</button>
         <button class="vo-tab" data-tab="history">History</button>
       </div>
     `;
@@ -119,6 +128,18 @@ export class VOShell {
     if (this.contentCreationPanel) {
       this.contentCreationPanel.destroy();
       this.contentCreationPanel = null;
+    }
+    if (this.approvalQueuePanel) {
+      this.approvalQueuePanel.destroy();
+      this.approvalQueuePanel = null;
+    }
+    if (this.packageStatusPanel) {
+      this.packageStatusPanel.destroy();
+      this.packageStatusPanel = null;
+    }
+    if (this.publishingDashboardPanel) {
+      this.publishingDashboardPanel.destroy();
+      this.publishingDashboardPanel = null;
     }
     if (this.historyPanel) {
       this.historyPanel.destroy();
@@ -189,6 +210,45 @@ export class VOShell {
         }
         break;
 
+      case 'approvals':
+        if (state.projectId) {
+          this.approvalQueuePanel = new ApprovalQueuePanel(this.contentContainer, state.projectId);
+          this.approvalQueuePanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view approval queue</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'packages':
+        if (state.projectId) {
+          this.packageStatusPanel = new PackageStatusPanel(this.contentContainer);
+          this.packageStatusPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view package status</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'publishing':
+        if (state.projectId) {
+          this.publishingDashboardPanel = new PublishingDashboardPanel(this.contentContainer, state.projectId);
+          this.publishingDashboardPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view publishing dashboard</p>
+            </div>
+          `;
+        }
+        break;
+
       case 'history':
         if (state.projectId) {
           this.historyPanel = new HistoryPanel(this.contentContainer, {
@@ -219,6 +279,15 @@ export class VOShell {
     }
     if (this.contentCreationPanel) {
       this.contentCreationPanel.destroy();
+    }
+    if (this.approvalQueuePanel) {
+      this.approvalQueuePanel.destroy();
+    }
+    if (this.packageStatusPanel) {
+      this.packageStatusPanel.destroy();
+    }
+    if (this.publishingDashboardPanel) {
+      this.publishingDashboardPanel.destroy();
     }
     if (this.historyPanel) {
       this.historyPanel.destroy();
