@@ -99,6 +99,7 @@ import {
   readVOStudioPipelineProfiles,
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
+import { createContentItemRequest } from '../adapters/vo-studio-write.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2123,6 +2124,19 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       ? await approveVOJob(jobId)
       : await rejectVOJob(jobId);
     sendJson(response, result.ok ? 200 : 422, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/content-items/create') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const result = createContentItemRequest({
+      projectId: (body?.projectId as string) ?? '',
+      title: (body?.title as string) ?? '',
+      description: (body?.description as string) ?? '',
+      sourceAudioPath: (body?.sourceAudioPath as string) ?? '',
+      backgroundImagePath: (body?.backgroundImagePath as string) ?? '',
+    });
+    sendJson(response, result.ok ? 202 : 400, result);
     return;
   }
 
