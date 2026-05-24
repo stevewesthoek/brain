@@ -253,10 +253,43 @@ Buttons for safe, request-only actions:
 
 ### Extended Tab Structure (Unified Orchestrator Cockpit)
 
-The dashboard expands beyond MVP to serve as the unified cockpit for all operational intelligence:
+The dashboard expands beyond MVP to serve as the unified cockpit for all operational intelligence. Second-level tabs are scoped within their parent top-level section.
 
-#### Tab 1: **Overview** (MVP)
-Primary operational view (current section above).
+#### Root Brain Console Tabs (Top Level)
+
+**Top-level tab organization:**
+- Overview (MVP)
+- Apps (Phase 2A) — contains local app/ProBot cards
+- **Video Orchestrator** (Phase 2B+) — unified VO Studio entry point
+- Posts (Phase Post-1)
+- Projects (Phase 3)
+- Reports (Phase 3+)
+- Agents (Phase 2C)
+- System (Future)
+- And existing system tabs (Sessions, Infra, Analytics, Stripe, Monitoring, Accounts, etc.)
+
+**Key change:** Studio, Orchestrators, Pipelines are NOT separate root tabs. They are internal tabs within the "Video Orchestrator" section.
+
+---
+
+#### Video Orchestrator Section — Internal Tabs
+
+When user clicks the "Video Orchestrator" root tab, they enter a scoped dashboard with its own tab bar:
+
+**Internal VO tabs:**
+1. Overview (operational summary)
+2. Studio (creation/approval workflow)
+3. Pipelines (execution/history)
+4. Accounts (credential/adapter status)
+5. History/Analytics (published/scheduled/failed content)
+6. Dashboard (Phase 10 — health, routing stats, webhooks, recent events)
+
+Each internal tab is a self-contained view. The VO section maintains its own state and does not interfere with Brain Console root navigation.
+
+---
+
+#### Brain Console Tab 1: **Overview** (MVP)
+Primary operational view for system health (not VO-specific).
 
 **Cards (6 core):**
 - Status strip
@@ -266,7 +299,7 @@ Primary operational view (current section above).
 - Scheduler
 - Brain Core
 
-#### Tab 2: **Apps** (Phase 2A)
+#### Brain Console Tab 2: **Apps** (Phase 2A)
 Local app lifecycle and ProBot legacy status.
 
 **Cards:**
@@ -280,64 +313,82 @@ Local app lifecycle and ProBot legacy status.
   - Features migrated to Brain Console: count
   - Migration progress: %
 
-#### Tab 3: **Orchestrators** (Phase 2B)
-Registry of all orchestrators (skills, pipelines, system services).
+#### Brain Console Tab 3: **Video Orchestrator** (Phase 2B+)
+Unified entry point for VO Studio. Contains internal tabs:
+- Overview, Studio, Pipelines, Accounts, History, Dashboard
+
+#### Video Orchestrator — Overview (Internal Tab)
+Operational status summary: worker health, active jobs, blockers, recent activity.
 
 **Cards:**
-- Orchestrator Registry (list or grid)
-  - Name, category (skill/pipeline/system)
-  - Status (ready/partial/error/future)
-  - Last execution timestamp
-  - Queue count (if applicable)
-  - Linked project (if any)
-- Mind Steward
-  - Status: ready/stale/error
-  - Last dry-run: timestamp
-  - Current mode: report-only/preview/apply
-- Video Orchestrator
-  - Status: designing/partial/validating/ready
-  - Module progress: X/12 modules
-  - Migration progress: %
-  - Next task
-  - Decommission status: BLOCKED
-
-#### Tab 4: **Pipelines** (Phase 3 + unified scope)
-Operational and canonical-future pipelines with migration tracking.
-
-**Cards:**
-- Says the Bible Operational Pipeline
+- Pipeline Status (Says the Bible + Video Orchestrator)
   - Status: LIVE / PAUSED / ERROR (large pill)
-  - Category: "operational" (legacy, non-breakable)
+  - Category: "operational" (legacy) or "canonical-future" (VO)
   - Last run: timestamp + duration
   - Queue count, failure count
   - Current processing: topic, stage, progress %
-  - Platform status: YouTube ✓, Pinterest ✓, Facebook ✓
-  - Next run estimate
-  - Warning: "No production changes during migration"
+  - Platform status per account (YouTube ✓, Pinterest ✓, etc.)
 
-- Video Orchestrator Future Pipeline
-  - Status: designing/partial/validating/ready
-  - Category: "canonical-future" (replacement architecture)
-  - Module progress: 3/12 completed
-  - Parity status: mapping/partial/dual-run/ready
-  - Migration progress: %
-  - Decommission status: BLOCKED (until parity complete)
-  - Next safe task
+- Active Jobs (VO only)
+  - Pending count, running count, failed count
+  - Top 3 jobs with status chips
+  - Oldest pending job: age + reason
 
-- STB → Video Orchestrator Migration Card
-  - Legacy pipeline: Says the Bible (operational)
-  - Target: Video Orchestrator (canonical future)
-  - Status: mapping/building/validating/cutover/complete
-  - Progress: modules completed %, timeline %, phase #
-  - Safeguards enforced:
-    ✓ Legacy operational (STB still running)
-    ✓ Dual visibility (both shown in dashboard)
-    ✓ Dual-run validation (outputs compared)
-    ✓ User approval required (before cutover)
-  - Next phase: name + task
-  - Action: view detailed migration plan
+- Blockers/Alerts
+  - Quota exhaustion warnings
+  - Credential/scope issues
+  - Failed stages requiring retry
 
-#### Tab 5: **Posts** (Phase Post-1 — Read-Only Status)
+#### Video Orchestrator — Studio (Internal Tab)
+Creation and approval workflow: brief, script, media, captions, thumbnails, SEO, preview, approval.
+
+**Structure:**
+- Content item selector (or creation form)
+- Tab bar: Brief, Script, Media, Captions, Thumbnails, SEO, Preview, Approval
+- Each tab editable; changes staged until approval
+- Approval button triggers workflow
+
+#### Video Orchestrator — Pipelines (Internal Tab)
+Execution view: stage map, retries, logs, dead-letter jobs, run history.
+
+**Cards:**
+- Pipeline Profile Card
+  - Name, target platforms, enabled stages, fallback behavior
+- Recent Runs
+  - Run ID, status, duration, timestamp
+  - Click to drill into run logs and stage details
+
+#### Video Orchestrator — Accounts (Internal Tab)
+Registry: brands, platform accounts, credentials, quotas, adapter status.
+
+**Cards:**
+- Platform Accounts List
+  - Account name, platform, status (connected/needs attention)
+  - Credential state, quota state, adapter mode
+  - Last sync: timestamp
+
+#### Video Orchestrator — History/Analytics (Internal Tab)
+Published, scheduled, failed, draft content with account/platform/status filters.
+
+**Cards:**
+- Content Item List (filterable)
+  - Status: published, scheduled, draft, failed
+  - Account, platform, publish timestamp
+  - Performance: views, CTR, engagement
+
+#### Video Orchestrator — Dashboard (Internal Tab — Phase 10)
+Operational health snapshot: pipeline health, routing stats, webhooks, recent events.
+
+**Cards:**
+- Pipeline Health (score + status badge)
+- Routing Statistics (platforms, mapped events, last routed)
+- Webhook Summary (success/failure/rate)
+- Recent Events (last 5, type badge + actor + time)
+- Quick Actions (buttons linking to Approvals, Packages, Publishing, Events, Webhooks)
+
+---
+
+#### Brain Console Tab 4: **Posts** (Phase Post-1 — Read-Only Status)
 Social content and post orchestration pipeline (planned).
 
 **Naming boundary:**
@@ -411,7 +462,7 @@ Social content and post orchestration pipeline (planned).
 
 ---
 
-#### Tab 6: **Projects/Domains** (Phase 3)
+#### Brain Console Tab 5: **Projects/Domains** (Phase 3)
 Active projects, business domains, and platforms.
 
 **Cards:**
@@ -428,7 +479,7 @@ Active projects, business domains, and platforms.
   - Last post timestamp
   - Queue status (if applicable)
 
-#### Tab 6: **Approvals** (Phase 4)
+#### Brain Console Tab 6: **Approvals** (Phase 4)
 Pending and historical approval records.
 
 **Cards:**
@@ -441,7 +492,7 @@ Pending and historical approval records.
     - Description (one-liner)
     - Request actions: approve/reject buttons (Phase 5)
 
-#### Tab 7: **Research** (Future)
+#### Brain Console Tab 7: **Research** (Future)
 Wiki health, source synthesis, and knowledge maintenance.
 
 **Cards:**
@@ -458,7 +509,7 @@ Wiki health, source synthesis, and knowledge maintenance.
   - Stale tasks: count
   - Stale claims: count (no recent update)
 
-#### Tab 8: **Agents** (Phase 2C)
+#### Brain Console Tab 8: **Agents** (Phase 2C)
 Persistent agent orchestration layer: active runs, queue, plans, skills, approvals, learning proposals.
 
 **Cards:**
@@ -524,7 +575,7 @@ Persistent agent orchestration layer: active runs, queue, plans, skills, approva
 
 **Design rule:** Same dark cockpit aesthetic. Sparse data, progressive disclosure. One concept per card. Monospaced IDs/timestamps, sans-serif descriptions. Status indicators (pills, progress bars). Click-to-drill (future) for run logs, skill details, approval flow.
 
-#### Tab 9: **System** (Future)
+#### Brain Console Tab 9: **System** (Future)
 Brain Core runtime, scheduler jobs, and operational health.
 
 **Cards:**

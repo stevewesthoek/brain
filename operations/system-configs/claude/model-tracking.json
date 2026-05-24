@@ -2,10 +2,22 @@
   "mode": "default",
   "agents": [
     {
-      "id": "Explore-1779624732-15520",
-      "type": "Explore",
+      "id": "coder-default-1779627374-23118",
+      "type": "coder-default",
       "model": "sonnet",
       "status": "done"
+    },
+    {
+      "id": "coder-default-1779627374-7189",
+      "type": "coder-default",
+      "model": "sonnet",
+      "status": "done"
+    },
+    {
+      "id": "coder-default-1779627895-19054",
+      "type": "coder-default",
+      "model": "sonnet",
+      "status": "running"
     }
   ]
 }

@@ -1,179 +1,148 @@
-# Plan: Phase 9 — Webhook Authorization & Security
+# Plan: Phase 10 — Dashboard & Summary
 
 ## Context
 
-Phases 5–8 built webhook registration, event routing, and analytics. The security lifecycle of a webhook (rotating its secret when compromised, disabling it when no longer needed, auditing security events) is currently missing. Phase 9 closes that gap by extending `vo-studio-orchestration.ts` with two write operations (rotate secret, disable webhook) and two read operations (security audit log, operational status), following exactly the same patterns already in that file.
+Phases 5–9 built the complete VO Studio server-side framework (writes, reads, events, webhooks, analytics, security). Phase 10 surfaces all of it in the UI: a new `StudioDashboardPanel` that consolidates pipeline health, routing stats, webhook status, and recent events into a single at-a-glance view. This is the capstone UI panel that ties together the work from all prior phases.
 
 ---
 
 ## What changes
 
-### 1. Extend `projects/brain-core/src/adapters/vo-studio-orchestration.ts`
+### 1. New UI component: `projects/brain-console-obsidian/src/components/VO/StudioDashboardPanel.ts`
 
-Add 4 new `export interface` types and 4 new exported functions at the end of the file. All use `export interface` (matching the existing convention in this file — not unexported `type`).
+**Pattern:** Two-phase `PublishingDashboardPanel` — constructor + `async initialize()`. Constructor takes `(container: HTMLElement, projectId: string)`. VOShell calls `.initialize()` after `new`.
 
-**New interfaces:**
-
+**Fields:**
 ```typescript
-export interface RotateWebhookSecretRequest {
-  webhookId: string;
-  projectId: string;
-}
-export interface RotateWebhookSecretResponse {
-  ok: boolean;
-  approval?: { id: string; status: string };
-  preview?: {
-    webhook?: {
-      id: string;
-      projectId: string;
-      newSecret: string;
-      rotatedAt: string;
-      status: string;
-    };
-  };
-  error?: string;
+private refreshInterval: number | null = null;
+private projectId: string;
+```
+
+**Lifecycle:**
+```typescript
+async initialize(): Promise<void> {
+  this.render();           // skeleton HTML with placeholder dashes
+  await this.loadAll();    // 4 parallel fetches, patch results in-place
+  this.startAutoRefresh(); // 60-second interval
 }
 
-export interface DisableWebhookRequest {
-  webhookId: string;
-  projectId: string;
-  reason: string;
-}
-export interface DisableWebhookResponse {
-  ok: boolean;
-  approval?: { id: string; status: string };
-  preview?: {
-    webhook?: {
-      id: string;
-      projectId: string;
-      reason: string;
-      disabledAt: string;
-      status: string;
-    };
-  };
-  error?: string;
-}
-
-export interface WebhookSecurityAuditEntry {
-  id: string;
-  webhookId: string;
-  event: string;
-  actor: string;
-  at: string;
-  detail?: string;
-}
-export interface WebhookSecurityAuditResponse {
-  ok: boolean;
-  entries: WebhookSecurityAuditEntry[];
-  count: number;
-  webhookId?: string;
-  projectId?: string;
-  error?: string;
-}
-
-export interface WebhookStatus {
-  webhookId: string;
-  status: 'active' | 'disabled' | 'rate-limited';
-  lastDeliveryAt?: string;
-  deliveryCount: number;
-  failureCount: number;
-  secretRotatedAt?: string;
-}
-export interface WebhookStatusResponse {
-  ok: boolean;
-  status?: WebhookStatus;
-  webhookId?: string;
-  error?: string;
+destroy(): void {
+  if (this.refreshInterval) clearInterval(this.refreshInterval);
+  this.container.innerHTML = '';
 }
 ```
 
-**New write functions:**
+**`render()` — skeleton HTML structure:**
+```
+.vo-dashboard-panel
+  .vo-panel-header
+    h2 "VO Studio Dashboard"
+    button#dashboard-refresh "Refresh"
 
-- `rotateWebhookSecretRequest(request: RotateWebhookSecretRequest): RotateWebhookSecretResponse`
-  - Validates `webhookId`, `projectId`
-  - Calls `requestAction('custom-webhook-rotate-secret')`
-  - Generates new secret: `Math.random().toString(36).slice(2, 32)` (exact same as `registerWebhookRequest`)
-  - Preview: `{ webhook: { id: webhookId, projectId, newSecret, rotatedAt: now, status: 'active' } }`
+  .vo-overview-card                          ← Health
+    .vo-overview-title "Pipeline Health"
+    .vo-health-grid#dashboard-health-grid
 
-- `disableWebhookRequest(request: DisableWebhookRequest): DisableWebhookResponse`
-  - Validates `webhookId`, `projectId`, `reason`
-  - Calls `requestAction('custom-webhook-disable')`
-  - Preview: `{ webhook: { id: webhookId, projectId, reason, disabledAt: now, status: 'disabled' } }`
+  .vo-overview-card                          ← Routing Stats
+    .vo-overview-title "Routing Statistics"
+    .vo-activity-grid#dashboard-routing-grid
 
-**New read functions:**
+  .vo-overview-card                          ← Webhook Summary
+    .vo-overview-title "Webhook Summary"
+    .vo-stats-table#dashboard-webhook-table
 
-- `readWebhookSecurityAudit(webhookId: string, projectId: string, limit = 50): WebhookSecurityAuditResponse`
-  - Validates `webhookId`, `projectId`; limit 1–500
-  - Returns: `{ ok: true, entries: [], count: 0, webhookId, projectId }`
+  .vo-overview-card                          ← Recent Events
+    .vo-overview-title "Recent Events"
+    #dashboard-events-list
 
-- `readWebhookStatus(webhookId: string): WebhookStatusResponse`
-  - Validates `webhookId`
-  - Returns: `{ ok: true, status: { webhookId, status: 'active', deliveryCount: 0, failureCount: 0 }, webhookId }`
-
----
-
-### 2. Routes in `projects/brain-core/src/api/routes.ts`
-
-Extend the existing `vo-studio-orchestration.js` import lines (lines 103 and 105):
-
-```typescript
-// Line 103 — extend write imports:
-import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest,
-  registerWebhookRequest, rotateWebhookSecretRequest, disableWebhookRequest }
-  from '../adapters/vo-studio-orchestration.js';
-
-// Line 105 — extend read imports:
-import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit,
-  readWebhookSecurityAudit, readWebhookStatus }
-  from '../adapters/vo-studio-orchestration.js';
+  .vo-overview-card                          ← Quick Actions
+    .vo-overview-title "Quick Actions"
+    .vo-quick-actions
+      buttons: Approvals | Packages | Publishing | Events | Webhooks
 ```
 
-Add 2 POST routes (after `/webhooks/verify`, before `/events/route`):
-- `/api/video-orchestrator/webhooks/rotate-secret` — body: `{ webhookId, projectId }` — 202/400
-- `/api/video-orchestrator/webhooks/disable` — body: `{ webhookId, projectId, reason }` — 202/400
+**`loadAll()` — 4 parallel native fetch calls:**
+```typescript
+private async loadAll(): Promise<void> {
+  await Promise.allSettled([
+    this.loadHealth(),
+    this.loadRoutingStats(),
+    this.loadWebhookSummary(),
+    this.loadRecentEvents(),
+  ]);
+}
+```
 
-Add 2 GET routes (after `/webhooks/deliveries`, before `/events/platform-mapping`):
-- `/api/video-orchestrator/webhooks/security-audit?webhookId=X&projectId=Y&limit=N` — clamp limit inline — 200/400
-- `/api/video-orchestrator/webhooks/status?webhookId=X` — 200/400
+Each loader fetches from the Phase 8/9 endpoints and patches `querySelector` targets in-place:
+
+- `loadHealth()` → `GET /api/video-orchestrator/analytics/pipeline-health?projectId=X`
+  - Shows score (big number), status badge (`healthy`/`degraded`/`critical`)
+  - Uses `.vo-health-badge` color classes already in CSS
+
+- `loadRoutingStats()` → `GET /api/video-orchestrator/analytics/routing-statistics?projectId=X`
+  - Shows 3 stats: total platforms, total mapped events, last routed timestamp
+  - Uses `.vo-activity-grid` + `.vo-activity-stat` already in CSS
+
+- `loadWebhookSummary()` → `GET /api/video-orchestrator/analytics/webhook-delivery-rates?projectId=X`
+  - Shows success count, failure count, success rate
+  - Uses `.vo-stats-table` rows already in CSS
+
+- `loadRecentEvents()` → `GET /api/video-orchestrator/events/stream?projectId=X&limit=5`
+  - Shows 5 most recent events: type badge + actor + time
+  - Uses `.vo-event-type-badge` and `.vo-badge-*` classes from Phase 6
+
+**Quick Actions** — simple buttons using existing `.vo-btn-secondary` class. No navigation logic needed; just labelled for context (display only in this phase).
+
+**`startAutoRefresh()`:**
+```typescript
+private startAutoRefresh(): void {
+  if (this.refreshInterval) clearInterval(this.refreshInterval);
+  this.refreshInterval = window.setInterval(() => { this.loadAll(); }, 60000);
+}
+```
 
 ---
 
-### 3. New test file: `projects/brain-core/src/tests/vo-studio-webhook-security.test.ts`
+### 2. Modify `projects/brain-console-obsidian/src/components/VO/VOShell.ts`
 
-~25 tests, `node:test` + `node:assert/strict`, flat `test()` blocks. Two import blocks (writes first, then reads) following the established pattern.
+4 changes, all following identical patterns to existing panels:
 
-**`rotateWebhookSecretRequest`** (5 tests):
-- Valid: `ok`, `approval.status === 'pending'`, `preview.webhook.status === 'active'`, `preview.webhook.newSecret` is truthy, `webhookId` echoed
-- Missing `webhookId` → `/webhookId is required/`
-- Missing `projectId` → `/projectId is required/`
-- Generates unique secrets (two calls, `assert.notEqual`)
-- Secret is a non-empty string
+1. Import: `import { StudioDashboardPanel } from './StudioDashboardPanel.js';`
+2. Field: `private studioDashboardPanel: StudioDashboardPanel | null = null;`
+3. Tab button added after `events` in the HTML string: `<button class="vo-tab" data-tab="dashboard">Dashboard</button>`
+4. In `renderCurrentTab()`:
+   - Add teardown guard in the cleanup block: `if (this.studioDashboardPanel) { this.studioDashboardPanel.destroy(); this.studioDashboardPanel = null; }`
+   - Add `case 'dashboard':` in switch — requires `state.projectId`, instantiates and calls `.initialize()`
+5. In `destroy()`: add null-guard: `if (this.studioDashboardPanel) { this.studioDashboardPanel.destroy(); }`
 
-**`disableWebhookRequest`** (4 tests):
-- Valid: `ok`, `approval.status === 'pending'`, `preview.webhook.status === 'disabled'`, `reason` echoed
-- Missing `webhookId`, `projectId`, `reason` → error regex each
+---
 
-**`readWebhookSecurityAudit`** (5 tests):
-- Valid: `ok`, `entries === []`, `count === 0`, both IDs echoed
-- Missing `webhookId` → `/webhookId is required/`
-- Missing `projectId` → `/projectId is required/`
-- Limit below 1 → `/limit must be between 1 and 500/`
-- Limit above 500 → same
+### 3. Export from `projects/brain-console-obsidian/src/components/VO/index.ts`
 
-**`readWebhookStatus`** (4 tests):
-- Valid: `ok`, `status.webhookId` echoed, `status.status === 'active'`, `status.deliveryCount === 0`
-- Missing `webhookId` → `/webhookId is required/`
-- `status.status` is a valid literal (`'active' | 'disabled' | 'rate-limited'`)
-- `webhookId` echoed at top level
+Add: `export { StudioDashboardPanel } from './StudioDashboardPanel.js';`
+
+---
+
+### 4. CSS additions in `projects/brain-console-obsidian/styles.css`
+
+Minimal — most classes already exist. Append ~40 lines after the closing `.vo-error` rule:
+
+- `.vo-dashboard-panel` — flex column, gap 12px, padding 16px (same as `.vo-event-log`)
+- `.vo-quick-actions` — flex row, gap 8px, flex-wrap wrap
+- `.vo-health-score` — large number display (font-size 48px, font-weight 700, line-height 1)
+- `.vo-health-score-healthy` / `.vo-health-score-degraded` / `.vo-health-score-critical` — color variants (green/amber/red)
 
 ---
 
 ## Verification
 
 ```bash
-# From projects/brain-core/
-npm test             # all 840 + ~18 new tests must pass
-npx tsc --noEmit     # no TypeScript errors
+# From projects/brain-console-obsidian/
+npm run build && npm run package && npm run install:active-vault
+pkill -x "Obsidian" && sleep 2 && open -a Obsidian
+# → Open Brain Console → VO Studio → select project → click "Dashboard" tab
+# → Should show: Pipeline Health, Routing Stats, Webhook Summary, Recent Events, Quick Actions
+# → Auto-refreshes every 60s
 ```
 
-No UI changes needed for Phase 9.
+No brain-core changes — Phase 10 is UI-only, consuming the Phase 8/9 endpoints already live.
