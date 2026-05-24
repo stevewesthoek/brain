@@ -10681,3 +10681,80 @@ export interface BrainCoreInfraVOReadinessResponse {
   manualActionsRequired: string[];
   error?: string;
 }
+
+// ─── Agent Orchestrator ───────────────────────────────────────────────────────
+
+export type AgentOrchestratorExecutorType = 'gemini' | 'claude' | 'codex' | 'bash' | 'n8n';
+export type AgentOrchestratorTaskType =
+  | 'ai_analysis'
+  | 'ai_generation'
+  | 'code_change'
+  | 'file_operation'
+  | 'external_api_call'
+  | 'approval_gate';
+export type AgentOrchestratorTaskStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'blocked';
+export type AgentOrchestratorPlanStatus =
+  | 'planning'
+  | 'executing'
+  | 'completed'
+  | 'failed';
+
+export interface AgentOrchestratorTask {
+  id: string;
+  description: string;
+  type: AgentOrchestratorTaskType;
+  dependencies: string[];
+  status: AgentOrchestratorTaskStatus;
+  executorType: AgentOrchestratorExecutorType;
+  prompt?: string;
+  result?: unknown;
+  error?: string;
+}
+
+export interface AgentOrchestratorPlan {
+  id: string;
+  projectId: string;
+  goal: string;
+  tasks: AgentOrchestratorTask[];
+  createdAt: string;
+  completedAt?: string;
+  status: AgentOrchestratorPlanStatus;
+  approvalGates: string[];
+}
+
+export interface AgentOrchestratorRunRecord {
+  taskId: string;
+  outcome: 'completed' | 'failed';
+  data: unknown;
+  timestamp: string;
+}
+
+export interface AgentOrchestratorApprovalDecision {
+  id: number;
+  planId: string;
+  taskId: string;
+  approved: boolean;
+  approvedBy: string | undefined;
+  approvedAt: string;
+}
+
+export interface AgentOrchestratorExecuteResult {
+  ok: boolean;
+  results: Array<[string, unknown]>;
+  errors: Array<[string, string]>;
+  ledger: AgentOrchestratorRunRecord[];
+}
+
+export interface AgentOrchestratorPlanResponse {
+  ok: true;
+  plan: AgentOrchestratorPlan;
+}
+
+export interface AgentOrchestratorApprovalResponse {
+  ok: true;
+}

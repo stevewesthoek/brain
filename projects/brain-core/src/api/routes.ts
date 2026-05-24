@@ -105,6 +105,7 @@ import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowReques
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics, readWebhookDeliveryRates, readEventLatencyMetrics, readRoutingStatistics, readPipelineHealth } from '../adapters/vo-studio-read.js';
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit, readWebhookSecurityAudit, readWebhookStatus } from '../adapters/vo-studio-orchestration.js';
 import { publishToPlatform, PLATFORM_CAPABILITIES, type PublishRequest, type PublishingPlatform } from '../adapters/vo-studio-publishing-platform.js';
+import { getTikTokAuthUrl, exchangeTikTokCode } from '../adapters/tiktok-auth.js';
 import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
 import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
 import { processWebhookEventRequest, verifyWebhookSignatureRequest, routeEventRequest } from '../adapters/vo-studio-webhook-handler.js';
@@ -246,6 +247,9 @@ import { getInfraVOReadiness } from '../adapters/infra-video-orchestrator-readin
 import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
 import type { VideoAnalysisResult } from '../adapters/research-video.js';
+import { defaultAlertManager } from '../adapters/alerting.js';
+import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
+import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
 
 const getStatus = createStatusAdapter({
   startedAt: new Date(),
@@ -315,6 +319,9 @@ export async function routeRequest(
   switch (url.pathname) {
     case '/health':
       sendJson(response, 200, { ok: true, service: 'brain-core', ts: new Date().toISOString() });
+      return;
+    case '/api/health':
+      sendJson(response, 200, await buildHealthReport());
       return;
     case '/status':
       sendJson(response, 200, getStatus());
@@ -875,6 +882,23 @@ export async function routeRequest(
               message: 'Agent run not found.',
             },
           } satisfies BrainCoreErrorResponse);
+          return;
+        }
+        // ── Agent Orchestrator GET routes ────────────────────────────────────
+        const agentPlanMatch = /^\/api\/agent\/plans\/([^/]+)$/.exec(url.pathname);
+        if (agentPlanMatch) {
+          const plan = retrievePlan(agentPlanMatch[1] ?? '');
+          if (plan) {
+            sendJson(response, 200, { ok: true, plan });
+            return;
+          }
+          sendJson(response, 404, { error: { code: 'not_found', message: 'Plan not found.' } } satisfies BrainCoreErrorResponse);
+          return;
+        }
+        if (url.pathname === '/api/agent/plans') {
+          const { listPlans } = await import('../adapters/agent-orchestrator-planner.js');
+          const plans = listPlans();
+          sendJson(response, 200, { ok: true, plans });
           return;
         }
         const executionPlanMatch = /^\/execution\/plans\/([^/]+)$/.exec(url.pathname);
@@ -1955,6 +1979,69 @@ export async function routeRequest(
 }
 
 async function routePostRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  // ── Agent Orchestrator routes ─────────────────────────────────────────────
+  if (url.pathname === '/api/agent/plan') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const goal = (body?.goal as string) ?? '';
+    const context = (body?.context as string) ?? '';
+
+    if (!goal) {
+      sendJson(response, 400, {
+        error: { code: 'missing_goal', message: 'goal is required' },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    const plan = planProjectExecution(goal, context);
+    savePlan(plan);
+    sendJson(response, 200, { ok: true, plan });
+    return;
+  }
+
+  if (url.pathname === '/api/agent/execute') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const planId = (body?.planId as string) ?? '';
+
+    if (!planId) {
+      sendJson(response, 400, {
+        error: { code: 'missing_plan_id', message: 'planId is required' },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    const plan = retrievePlan(planId);
+    if (!plan) {
+      sendJson(response, 404, {
+        error: { code: 'not_found', message: 'Plan not found.' },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    const executor = new OrchestrationExecutor(plan);
+    const result = executor.executeAll();
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/agent/plan-approval') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const planId = (body?.planId as string) ?? '';
+    const taskId = (body?.taskId as string) ?? '';
+    const approved = body?.approved === true;
+    const approvedBy = (body?.approvedBy as string | undefined);
+
+    if (!planId || !taskId) {
+      sendJson(response, 400, {
+        error: { code: 'missing_fields', message: 'planId and taskId are required' },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    const decision = recordApprovalDecision(planId, taskId, approved, approvedBy);
+    sendJson(response, 200, { ok: true, decision });
+    return;
+  }
+
   if (url.pathname === '/ai-model-selector/control') {
     const action = url.searchParams.get('action');
     if (action !== 'start' && action !== 'stop') {
@@ -2036,6 +2123,74 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     }
     const result = exchangeYouTubeOAuthCode(account, code);
     sendJson(response, result.ok ? 200 : 500, { ...result, account });
+    return;
+  }
+
+  // ── TikTok OAuth2 flow ───────────────────────────────────────────────────
+
+  if (url.pathname === '/api/video-orchestrator/auth/tiktok') {
+    const state = url.searchParams.get('state') ?? crypto.randomUUID();
+    const authUrl = getTikTokAuthUrl(state);
+    sendJson(response, 200, { ok: true, authUrl, state });
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/auth/tiktok/callback') {
+    const code = url.searchParams.get('code') ?? '';
+    const errorParam = url.searchParams.get('error') ?? '';
+    if (errorParam) {
+      sendJson(response, 400, { ok: false, error: `tiktok_oauth_denied: ${errorParam}` });
+      return;
+    }
+    if (!code) {
+      sendJson(response, 400, { ok: false, error: 'tiktok_oauth_code_missing' });
+      return;
+    }
+    const result = await exchangeTikTokCode(code);
+    if (!result.ok) {
+      sendJson(response, 400, { ok: false, error: result.error });
+      return;
+    }
+    // Token is in result.accessToken — callers store via credential system.
+    sendJson(response, 200, { ok: true, openId: result.openId, expiresIn: result.expiresIn });
+    return;
+  }
+
+  // ── Instagram OAuth2 flow ────────────────────────────────────────────────
+
+  if (url.pathname === '/api/video-orchestrator/auth/instagram') {
+    const state = url.searchParams.get('state') ?? crypto.randomUUID();
+    const appId = process.env['INSTAGRAM_APP_ID'] ?? '';
+    const redirectUri = 'http://localhost:4877/api/video-orchestrator/auth/instagram/callback';
+    if (!appId) {
+      sendJson(response, 400, { ok: false, error: 'instagram_app_id_not_configured' });
+      return;
+    }
+    const params = new URLSearchParams({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      scope: 'instagram_business_basic,instagram_business_manage_media',
+      response_type: 'code',
+      state,
+    });
+    const authUrl = `https://api.instagram.com/oauth/authorize?${params.toString()}`;
+    sendJson(response, 200, { ok: true, authUrl, state });
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/auth/instagram/callback') {
+    const code = url.searchParams.get('code') ?? '';
+    const errorParam = url.searchParams.get('error') ?? '';
+    if (errorParam) {
+      sendJson(response, 400, { ok: false, error: `instagram_oauth_denied: ${errorParam}` });
+      return;
+    }
+    if (!code) {
+      sendJson(response, 400, { ok: false, error: 'instagram_oauth_code_missing' });
+      return;
+    }
+    // Return the authorization code — callers exchange it server-side.
+    sendJson(response, 200, { ok: true, code });
     return;
   }
 
@@ -2980,6 +3135,44 @@ function getApprovalRequestKind(url: URL): string | undefined {
   }
 
   return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// /api/health — comprehensive health report
+// ---------------------------------------------------------------------------
+
+async function probeUrl(url: string, timeoutMs = 2000): Promise<'ok' | 'degraded' | 'unreachable'> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    return res.ok ? 'ok' : 'degraded';
+  } catch {
+    return 'unreachable';
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function buildHealthReport(): Promise<Record<string, unknown>> {
+  const [n8n, studio] = await Promise.allSettled([
+    probeUrl('http://127.0.0.1:5678/healthz'),
+    probeUrl('http://127.0.0.1:4820/health'),
+  ]);
+
+  const resolve = (settled: PromiseSettledResult<'ok' | 'degraded' | 'unreachable'>) =>
+    settled.status === 'fulfilled' ? settled.value : 'unreachable';
+
+  return {
+    ok: true,
+    timestamp: new Date().toISOString(),
+    service: 'brain-core',
+    externalServices: {
+      n8n: resolve(n8n),
+      studio: resolve(studio),
+    },
+    activeAlerts: defaultAlertManager.getActiveAlerts().length,
+  };
 }
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {
