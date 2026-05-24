@@ -1,7 +1,7 @@
 # Session Handoff — VO Studio Implementation Status
 
 **Date:** 2026-05-24 (End of Session)  
-**Status:** Next-phase implementation, Brain Console AI selector health chip, and YouTube attachment completion complete  
+**Status:** Next-phase implementation, Brain Console AI selector health chip, Thumbnail Studio UI, analytics cards, and winner-driven thumbnail replacement complete  
 **Git State:** Implementation commits are on `main`; later review edits may be uncommitted until checkpointed  
 **Test Coverage:** 997 tests passing, 0 failures
 
@@ -26,9 +26,12 @@
 - Approval queue now opens thumbnail and metadata previews
 - Metadata generation now returns real preview payloads
 - Feedback loop now records publish outcomes and 24h metrics
+- Brain Console `Feedback` tab now shows per-video analytics cards, rolling 7d/30d channel summaries, and thumbnail A/B status
 - Brain Console VO context bar now shows AI selector running/stopped state and current healthy provider
 - Agent Orchestrator Claude-labelled execution no longer calls Anthropic directly; it routes through the AI Model Selector / approved fallback surfaces
 - YouTube direct posting now performs captions upload, metadata update, and thumbnail attachment explicitly after upload, with matching quota accounting
+- Brain Console now includes a dedicated `Thumbnails` tab with template library, preview surface, variant selector, and manual headline edit
+- Analytics winner declaration now re-applies the winning thumbnail via `thumbnails.set` and persists the winner state in the artifact
 
 **Testing:**
 - 997 tests passing, 0 failures
@@ -41,7 +44,7 @@
 - Instagram Graph API v18
 
 **UI:**
-- Brain Console VO tabs now include Overview, Studio, Pipelines, Accounts, History, Dashboard, Approvals, Jobs, Metadata, Feedback
+- Brain Console VO tabs now include Overview, Studio, Pipelines, Accounts, History, Dashboard, Approvals, Thumbnails, Jobs, Metadata, Feedback
 
 ---
 
@@ -100,6 +103,22 @@
 - Worker direct-upload flow now owns post-upload captions, metadata, and thumbnail steps explicitly
 - Quota consumption now matches the operations that actually ran
 - Runtime verification: uploader tests `21 passed`, worker tests `38 passed`
+
+### 9. Thumbnail Studio UI + analytics cards
+- `projects/brain-console-obsidian/src/components/VO/ThumbnailStudioPanel.ts`
+- `projects/brain-console-obsidian/src/components/VO/FeedbackLoopPanel.ts`
+- `projects/brain-console-obsidian/src/components/VO/VOShell.ts`
+- `projects/brain-console-obsidian/styles.css`
+- Added a dedicated Thumbnail Studio UI with approval queue, template library, preview, variant selection, and headline editing
+- Expanded the Feedback tab with per-video analytics cards, 7d/30d channel summaries, and thumbnail A/B status
+- Brain Console build verification passed
+
+### 10. Winner-driven thumbnail replacement
+- `~/.local/video-orchestrator/scripts/analytics_sync.py`
+- `~/.local/video-orchestrator/tests/test_analytics_sync.py`
+- `declare_ab_winners()` now re-applies the winning thumbnail via `youtube_uploader.set_thumbnail(...)`
+- Winner declaration now persists `active` flags and `winner_declared_at` in the artifact
+- Runtime verification: analytics sync tests `16 passed`
 
 ---
 
@@ -172,4 +191,4 @@ If resuming later:
 
 ## Resume Prompt
 
-Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, and YouTube post-upload attachment flow are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
+Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, dedicated Thumbnail Studio UI, analytics cards, YouTube post-upload attachment flow, and winner-driven thumbnail replacement are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.

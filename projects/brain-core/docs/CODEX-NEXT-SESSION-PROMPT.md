@@ -18,6 +18,9 @@ Completed:
 - Analytics feedback loop
 - Brain Console AI selector health chip
 - YouTube post-upload captions / metadata / thumbnail attachment flow
+- Brain Console Thumbnail Studio UI
+- Brain Console analytics cards in the Feedback tab
+- Winner-driven thumbnail replacement after A/B declaration
 
 ---
 
@@ -26,12 +29,15 @@ Completed:
 **Completed and tested:**
 - Agent orchestrator execution now uses real provider paths with safe fallback behavior.
 - Brain Console includes Jobs, Metadata, and Feedback tabs.
+- Brain Console also includes a dedicated Thumbnails tab for operator thumbnail decisions.
 - Approval queue previews thumbnails and metadata.
 - Metadata generation returns real preview payloads.
 - Feedback loop records publish outcomes and 24h metrics.
+- Feedback loop UI shows per-video cards, 7d/30d summaries, and thumbnail A/B status.
 - VO context bar shows AI selector running/degraded/stopped/unknown state and current healthy provider.
 - Claude-labelled orchestrator execution routes through the AI Model Selector / approved fallback surfaces, not direct Anthropic API.
 - Direct YouTube uploads now attach captions, finalize metadata, and upload thumbnails explicitly in the worker with aligned quota accounting.
+- `analytics_sync.py ab-check` now re-applies the winning thumbnail and persists the winner state.
 
 **Test status:**
 - `997` tests passing
@@ -45,8 +51,7 @@ The next active backlog is the later-phase roadmap, not the five-step implementa
 
 Relevant remaining areas:
 - Later hardening items
-- Thumbnail studio and A/B test maturity work
-- Advanced analytics UI surfaces
+- True per-variant CTR measurement via YouTube Test & Compare API
 - Multi-platform expansion beyond the current publish adapters
 
 ---

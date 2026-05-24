@@ -333,7 +333,7 @@ try {
 
 **Phase 0.7 Complete** — Agent Orchestrator task execution and provider wiring implemented
 
-**Phase 3+** — Thumbnail studio, A/B testing, subscriber workflows
+**Phase 3+** — True per-variant CTR measurement, subscriber workflows
 
 **YouTube publishing maturity** — winner-driven thumbnail replacement and richer analytics surfaces
 

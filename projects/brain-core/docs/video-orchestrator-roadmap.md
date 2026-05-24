@@ -2,7 +2,7 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-24 (next-phase implementation + YouTube attachment completion)
+**Last updated:** 2026-05-24 (next-phase implementation + thumbnail studio + winner-driven thumbnail replacement)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
@@ -36,8 +36,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 
 **Remaining VO product gaps:**
 - Later hardening items
-- Thumbnail studio / A/B test maturation
-- Advanced analytics surfaces in Brain Console
+- True per-variant CTR measurement via YouTube Test & Compare API
 - Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
 
 ---
@@ -478,13 +477,14 @@ The next work must proceed in this order:
 - [x] YouTube upload: `thumbnails.set` after video upload
 
 ### 3.4 Thumbnail studio in Brain Console
-- [ ] Template library card in VO view
+- [x] Template library card in VO view
 - [x] Per-job thumbnail preview before publishing (approval queue preview)
-- [ ] A/B variant selector + manual headline edit in dedicated studio UI
+- [x] A/B variant selector + manual headline edit in dedicated studio UI
 - [x] `thumbnails.set` API call wired into `youtube_uploader.py`
 
 ### 3.5 A/B testing
-- [ ] Analytics nightly: compare CTR per variant; declare winner at 300+ impressions
+- [ ] Analytics nightly: compare true CTR per variant via YouTube Test & Compare API
+- [x] Winner declaration workflow updates the active thumbnail and re-applies it via `thumbnails.set`
 
 **Deliverable:** ✅ `thumbnail` job type generates 2 JPG variants per video from configurable templates. Variant A is active by default. A/B test flag set.
 
@@ -540,15 +540,15 @@ The next work must proceed in this order:
 
 ### 5.3 A/B winner declaration
 - [x] `declare_ab_winners()` in `analytics_sync.py` — checks `ab_test_active=true` jobs with `>= 300` impressions
-- [x] Declares variant_a winner; sets `ab_test_active=false` + `winner_declared_at` in JSONB via `jsonb_set`
+- [x] Declares the current active variant as winner; sets `ab_test_active=false`, updates variant `active` flags, writes `winner_declared_at`, and re-applies the winning thumbnail via `thumbnails.set`
 - [x] `analytics_sync.py ab-check [--dry-run]` CLI command
 - [ ] Per-variant CTR comparison requires YouTube Test & Compare API (future; current: variant_a default winner)
-- [ ] `thumbnails.set` API call after winner declaration (carry-over — uploader scaffolded, not wired here)
+- [x] `thumbnails.set` API call after winner declaration
 
 ### 5.4 Analytics in Brain Console
-- [ ] Per-video analytics card: impressions, CTR, views, avg duration
-- [ ] Channel summary: rolling 7d/30d totals
-- [ ] Thumbnail A/B test status: active, winner declared
+- [x] Per-video analytics card
+- [x] Channel summary: rolling 7d/30d totals
+- [x] Thumbnail A/B test status: active, winner declared
 
 **Deliverable:** ✅ `reporting-setup` creates YouTube Reporting job. `reporting-fetch` downloads daily CSV and upserts impressions/CTR/duration into `performance_metrics`. Metadata generation pulls top-performing titles as LLM context. A/B winner declaration runs via `ab-check` command.
 
@@ -677,7 +677,7 @@ Foundation   Selector v1    Dual-node    Gemini policy   Agents        Read mode
 Phase 10 ✅ → Phase 11 ✅ → Phase Next ✅ → Phase 3+ 🔲
 Webhooks/Analytics  Brain Console integration   Wire real providers+UI phases   Hardening & expansion
 
-Current: Phase Next and the Brain Console AI selector health chip have been completed. Ready for future roadmap work.
+Current: Phase Next, the Brain Console AI selector health chip, the dedicated Thumbnail Studio UI, and winner-driven thumbnail replacement have been completed. Ready for future roadmap work.
 
 Phase 0.7 is complete.
 Phase 1-5 next-phase implementation items are complete.
@@ -688,7 +688,7 @@ Later roadmap phases remain open.
 
 ## Immediate Next Steps
 
-**Next session:** Start with the remaining roadmap work in Phase 3+ and later hardening items. The five-step next-phase plan is already complete.
+**Next session:** Start with the remaining roadmap work in true per-variant CTR measurement or later hardening items. The five-step next-phase plan is already complete.
 
 **Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
 
