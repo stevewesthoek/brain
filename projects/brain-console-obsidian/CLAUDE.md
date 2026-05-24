@@ -34,24 +34,24 @@ The vault path is confirmed in:
 ~/Library/Application Support/obsidian/obsidian.json
 ```
 
-## Version naming
+## Version management
 
-`BRAIN_CONSOLE_BUILD_ID` in `src/main.ts` is the version string shown in the UI header.
+**Single source of truth:** `VERSION.md` for release notes + `CHANGELOG.md` for all history
 
-Format: `v{major}.{minor}` — e.g. `v2.0`, `v2.1`, `v3.0`
+**To update version:**
 
-| Change size | Example |
-|---|---|
-| Small iteration | v2.0 → v2.1 |
-| Bigger feature | v2.0 → v2.2 |
-| Major overhaul | v2.x → v3.0 |
+1. Edit `VERSION.md` (add new entry at top with date, status, changes)
+2. Run: `npm run version:update -- v2.X` (auto-updates all 4 locations)
+3. Deploy: `npm run build && npm run package && npm run install:active-vault`
+4. Restart: `pkill -x "Obsidian" && sleep 2 && open -a Obsidian`
 
-**When you change the version, update ALL THREE places:**
-1. `BRAIN_CONSOLE_BUILD_ID` in `src/main.ts`
-2. `currentMarker` in `scripts/package.mjs`
-3. `expectedMarker` in `scripts/install-active-vault.mjs`
+**Auto-updated by script:**
+- `src/main.ts` → `BRAIN_CONSOLE_BUILD_ID`
+- `scripts/package.mjs` → `currentMarker`
+- `scripts/install-active-vault.mjs` → `expectedMarker`
+- `manifest.json` → `version` field
 
-Also add the old version string to `staleMarkers` in `scripts/package.mjs` so it gets scrubbed from old installs.
+**Never manually edit these files for versioning — use the script.**
 
 ## Why there was a ghost vault (never repeat this)
 

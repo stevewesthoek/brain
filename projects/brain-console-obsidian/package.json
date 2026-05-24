@@ -12,11 +12,24 @@
     "find:installed": "node ./scripts/find-installed-brain-console.mjs",
     "release:install": "node ./scripts/release-and-install-all.mjs",
     "check:dashboard-source": "node ./scripts/check-dashboard-source.mjs",
-    "verify-alignment": "node ./scripts/verify-alignment.mjs"
+    "verify-alignment": "node ./scripts/verify-alignment.mjs",
+    "version:update": "node ./scripts/update-version.mjs"
   },
   "devDependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@tailwindcss/postcss": "^4.3.0",
+    "autoprefixer": "^10.5.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "esbuild": "^0.28.0",
     "obsidian": "^1.12.3",
+    "postcss": "^8.5.15",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.0",
     "typescript": "^5.9.2"
   }
 }
