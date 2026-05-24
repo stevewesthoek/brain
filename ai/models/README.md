@@ -43,7 +43,7 @@ These are safe emergency defaults used when AWS discovery/access probing fails o
 }
 ```
 
-The sync script discovers stable Claude Bedrock candidates, probes actual `bedrock-runtime converse` access, and writes the newest callable model per tier. Opus 4.7 remains guarded until Bedrock account access is granted; Opus 4.6 is the safe Opus-tier fallback.
+The sync script discovers stable Claude Bedrock candidates, probes actual `bedrock-runtime converse` access, and writes the newest callable model per tier. Opus 4.6 is the current callable Opus-tier fallback. Opus 4.7 remains an upgrade candidate and should replace Opus 4.6 automatically after periodic access probes start succeeding.
 
 ## Agent assignments
 
@@ -71,7 +71,7 @@ Current selector policy:
 2. Use cheap capable Bedrock models before premium Claude.
 3. Use Codex CLI when the Bedrock value portfolio is unavailable or the subscription-backed surface is a better fit.
 4. Use Sonnet as a premium fallback.
-5. Keep Opus disabled until the AWS account has explicit access.
+5. Keep Opus 4.6 enabled as the callable Opus-tier fallback while probing Opus 4.7 as the upgrade candidate.
 
 Initial Bedrock value roster:
 
@@ -84,7 +84,8 @@ Initial Bedrock value roster:
 | General Moonshot fallback | `moonshotai.kimi-k2.5` |
 | Cheap OpenAI open model | `openai.gpt-oss-120b-1:0` |
 | Premium fallback | `us.anthropic.claude-sonnet-4-6` |
-| Disabled until access is granted | `us.anthropic.claude-opus-4-7` |
+| Opus fallback | `us.anthropic.claude-opus-4-6-v1` |
+| Opus upgrade candidate | `us.anthropic.claude-opus-4-7` |
 
 ## Configuration options
 
@@ -141,7 +142,7 @@ Expected Opus export:
 us.anthropic.claude-opus-4-6-v1
 ```
 
-If `/model` still has several built-in entries, that is Claude Code's own selector. Brain-owned launchers use the `haiku` alias by default and the generated Bedrock env controls the clean custom labels. Do not select Opus 4.7 until the AWS account has Bedrock access for that model.
+If `/model` still has several built-in entries, that is Claude Code's own selector. Brain-owned launchers use the `haiku` alias by default and the generated Bedrock env controls the clean custom labels. Opus 4.6 remains the callable Opus fallback until Opus 4.7 access probes succeed.
 
 ## Related files
 

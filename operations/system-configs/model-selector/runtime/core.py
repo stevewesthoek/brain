@@ -509,7 +509,7 @@ class ModelSelector:
     def _bedrock_access_status(self, model: dict) -> dict:
         key = self._bedrock_cache_key(model)
         cached = self._bedrock_access.get(key)
-        ttl_sec = int(self._bedrock_config.get("access_probe_ttl_hours", 24)) * 3600
+        ttl_sec = int(model.get("access_probe_ttl_hours", self._bedrock_config.get("access_probe_ttl_hours", 24))) * 3600
         now = time.time()
         if cached and now - float(cached.get("checked_at", 0)) < ttl_sec:
             return cached
@@ -541,6 +541,11 @@ class ModelSelector:
         self._save_bedrock_access()
         return status
 
+    def _bedrock_model_selectable(self, model: dict, access: dict) -> bool:
+        if model.get("enabled", True):
+            return True
+        return bool(model.get("upgrade_candidate") and access.get("available"))
+
     def _bedrock_outcome_score(self, model: dict) -> float:
         model_id = model.get("model_id", "")
         outcome = self._bedrock_outcomes.get(model_id, {})
@@ -569,14 +574,20 @@ class ModelSelector:
         required_capability = task_spec["capability"]
         candidates = []
         for model in self._bedrock_models:
-            if not model.get("enabled", True):
-                continue
             if required_capability not in model.get("capabilities", []):
                 continue
             max_ctx = model.get("max_context_tokens")
             if max_ctx and input_tokens > int(max_ctx):
                 continue
             access = self._bedrock_access_status(model)
+            if not self._bedrock_model_selectable(model, access):
+                log.debug(
+                    "selector  skip bedrock_model_disabled  model=%s  upgrade_candidate=%s  access=%s",
+                    model.get("model_id"),
+                    bool(model.get("upgrade_candidate")),
+                    bool(access.get("available")),
+                )
+                continue
             if not access.get("available"):
                 log.info(
                     "selector  skip bedrock_model_unavailable  model=%s  region=%s",

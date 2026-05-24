@@ -29,6 +29,8 @@ The selector validates each enabled Bedrock model with a tiny cached `bedrock-ru
 
 Provider configs fail closed: only `bedrock`, `cli`, `gemini`, `openai-compatible`, `whisper`, and `whisper-remote` provider types are accepted. Direct OpenAI/Anthropic API provider types are intentionally rejected unless a future explicit provider adapter is added. `/select` responses return routing metadata only and do not expose provider API keys.
 
+Premium Claude fallback keeps Opus 4.6 enabled as the callable Opus-tier model. Opus 4.7 is configured as a disabled `upgrade_candidate` with a 48-hour access probe TTL; once the probe succeeds, it becomes selectable automatically and scores above Opus 4.6.
+
 ## Manual Terminal Launchers
 
 Manual terminal selection stays at the runtime layer. The `repos` launcher offers:

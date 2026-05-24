@@ -158,12 +158,35 @@
       "notes": "Premium quality fallback. Do not use as the default when cheaper candidates are healthy."
     },
     {
+      "id": "claude-opus-4-6",
+      "label": "Claude Opus 4.6",
+      "provider": "Anthropic",
+      "model_id": "us.anthropic.claude-opus-4-6-v1",
+      "region": "us-east-1",
+      "enabled": true,
+      "priority": 95,
+      "capabilities": ["text/large", "text/review", "text/large-context-batch"],
+      "roles": ["premium", "deep-architecture", "last-resort"],
+      "task_affinity": {
+        "description_quality_review": 1.18,
+        "orchestration": 1.18
+      },
+      "max_context_tokens": 1000000,
+      "max_output_tokens": 64000,
+      "price_input_per_1m": 15.0,
+      "price_output_per_1m": 75.0,
+      "quality_score": 0.95,
+      "notes": "Callable Opus-tier fallback while Opus 4.7 is unavailable in the AWS account."
+    },
+    {
       "id": "claude-opus-4-7",
       "label": "Claude Opus 4.7",
       "provider": "Anthropic",
       "model_id": "us.anthropic.claude-opus-4-7",
       "region": "us-east-1",
       "enabled": false,
+      "upgrade_candidate": true,
+      "access_probe_ttl_hours": 48,
       "priority": 100,
       "capabilities": ["text/large", "text/review", "text/large-context-batch"],
       "roles": ["premium", "deep-architecture", "last-resort"],
@@ -176,7 +199,7 @@
       "price_input_per_1m": 15.0,
       "price_output_per_1m": 75.0,
       "quality_score": 0.96,
-      "notes": "Disabled because the current AWS account returns AccessDeniedException. Enable only after Bedrock access is granted."
+      "notes": "Probed every 48 hours as the Opus upgrade candidate. It becomes selectable automatically once Bedrock access succeeds."
     }
   ]
 }
