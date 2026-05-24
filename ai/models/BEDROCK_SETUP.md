@@ -61,7 +61,7 @@ Run sync. New shells source the generated shell exports automatically through Br
 ```bash
 npm run models:sync:bedrock
 source tools/scripts/claude-bedrock-env.sh
-claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"
+claude --model haiku
 ```
 
 Expected exports:
@@ -72,7 +72,7 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="us.anthropic.claude-sonnet-4-6"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="us.anthropic.claude-haiku-4-5-20251001-v1:0"
 ```
 
-Opus 4.7 is not the default because the current AWS account returns `AccessDeniedException` for that model. If `/model` still shows a different custom default, the current Claude Code process was started with stale environment variables or a persisted per-session selection. Exit Claude Code, source `tools/scripts/claude-bedrock-env.sh`, and start Claude Code with `--model "$ANTHROPIC_DEFAULT_SONNET_MODEL"`.
+Opus 4.7 is not the default because the current AWS account returns `AccessDeniedException` for that model. If `/model` still shows stale custom labels, the current Claude Code process was started with stale environment variables or a persisted per-session selection. Exit Claude Code, source `tools/scripts/claude-bedrock-env.sh`, and start Claude Code with `--model haiku`.
 
 Brain-owned startup files:
 

@@ -128,7 +128,7 @@ case "$TOOL" in
   Claude)
     # shellcheck source=/dev/null
     source "$SCRIPT_DIR/claude-bedrock-env.sh"
-    exec claude --model "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}"
+    exec claude --model haiku
     ;;
   Codex) exec codex ;;
   Gemini) exec gemini ;;

@@ -210,7 +210,7 @@ main() {
   echo ""
   echo "To update Claude Code's /model selector in a new session:"
   echo "  source tools/scripts/claude-bedrock-env.sh"
-  echo '  claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"'
+  echo '  claude --model haiku'
 }
 
 main "$@"

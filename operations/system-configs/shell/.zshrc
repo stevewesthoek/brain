@@ -47,6 +47,30 @@ LOCAL_SHELL_ENV="$HOME/Repos/stevewesthoek/brain/operations/system-configs/shell
 # Brain scripts and tools
 export PATH="$HOME/Repos/stevewesthoek/brain/tools/scripts:$PATH"
 
+claude() {
+  local bedrock_env="$HOME/Repos/stevewesthoek/brain/tools/scripts/claude-bedrock-env.sh"
+  [[ -f "$bedrock_env" ]] && source "$bedrock_env"
+
+  local arg
+  for arg in "$@"; do
+    case "$arg" in
+      --model|--model=*)
+        command claude "$@"
+        return
+        ;;
+    esac
+  done
+
+  case "${1:-}" in
+    agents|auth|auto-mode|doctor|install|mcp|plugin|plugins|project|setup-token|ultrareview|update|upgrade|-h|--help|-v|--version)
+      command claude "$@"
+      ;;
+    *)
+      command claude --model haiku "$@"
+      ;;
+  esac
+}
+
 # Unified pickers — one command for both AI tools
 repos() {
   bash ~/Repos/stevewesthoek/brain/tools/scripts/repos.sh

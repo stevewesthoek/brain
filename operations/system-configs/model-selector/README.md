@@ -27,18 +27,17 @@ State and audit files stay local-only:
 
 The selector validates each enabled Bedrock model with a tiny cached `bedrock-runtime converse` probe before selecting it. Access cache and model outcome learning are local runtime state, not committed source.
 
-## Manual Auto Mode
+## Manual Terminal Launchers
 
 Manual terminal selection stays at the runtime layer. The `repos` launcher offers:
 
 ```text
-Auto
 Claude
 Codex
 Gemini
 ```
 
-`Auto` calls `tools/scripts/ai-auto-route.sh`, which chooses Claude, Codex, or Gemini from repo and prompt signals. Claude launches from `repos` and `sessions` source `tools/scripts/claude-bedrock-env.sh` immediately before startup and pass the resolved Sonnet model explicitly, so stale shells or persisted Opus 4.7 selections do not control new sessions. It does not expose Qwen, Nemotron, DeepSeek, Kimi, or gpt-oss as manual top-level choices. Those remain behind the AI Model Selector for structured app/workflow calls.
+Claude launches from `repos`, `sessions`, and the shell `claude` wrapper source `tools/scripts/claude-bedrock-env.sh` immediately before startup and pass the `haiku` alias explicitly, so stale shells or persisted Opus/Sonnet selections do not control new sessions. The Bedrock env supplies dynamic clean labels for the Claude Code `/model` picker, such as `Haiku 4.5`, `Sonnet 4.6`, and `Opus 4.6`. It does not expose Qwen, Nemotron, DeepSeek, Kimi, or gpt-oss as manual top-level choices. Those remain behind the AI Model Selector for structured app/workflow calls.
 
 ## Apply Runtime Config
 

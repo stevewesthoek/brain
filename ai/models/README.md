@@ -18,7 +18,7 @@ New login/interactive shells source the generated exports through Brain's Claude
 
 ```bash
 source tools/scripts/claude-bedrock-env.sh
-claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"
+claude --model haiku
 ```
 
 ## Current resolved model map
@@ -132,7 +132,7 @@ After syncing, restart Claude Code from a shell where the launcher env has been 
 ```bash
 source tools/scripts/claude-bedrock-env.sh
 echo "$ANTHROPIC_DEFAULT_OPUS_MODEL"
-claude --model "$ANTHROPIC_DEFAULT_SONNET_MODEL"
+claude --model haiku
 ```
 
 Expected Opus export:
@@ -141,7 +141,7 @@ Expected Opus export:
 us.anthropic.claude-opus-4-6-v1
 ```
 
-If `/model` still has several Opus entries, that is Claude Code's built-in selector. Use the generated default entry from `ANTHROPIC_DEFAULT_OPUS_MODEL`. Do not select Opus 4.7 until the AWS account has Bedrock access for that model.
+If `/model` still has several built-in entries, that is Claude Code's own selector. Brain-owned launchers use the `haiku` alias by default and the generated Bedrock env controls the clean custom labels. Do not select Opus 4.7 until the AWS account has Bedrock access for that model.
 
 ## Related files
 
@@ -157,4 +157,4 @@ If `/model` still has several Opus entries, that is Claude Code's built-in selec
 - `ai/policy/routing.md`
 - `operations/system-configs/claude/agents/deep-architect.md`
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
