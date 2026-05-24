@@ -1,4 +1,70 @@
-/* Brain Console Obsidian Dashboard */
+/* Brain Console Obsidian Dashboard — Global Design System */
+
+:root {
+  /* ── Brain Console Design System (Dark Cockpit) ── */
+  --bc-bg-primary: #0a0e27;
+  --bc-bg-surface: #1a1f3a;
+  --bc-bg-secondary: #2a2f4a;
+  --bc-bg-muted: #0f1320;
+
+  --bc-text-primary: #e5e7eb;
+  --bc-text-secondary: #9ca3af;
+  --bc-text-muted: #6b7280;
+
+  --bc-accent: #ff6b3d;
+  --bc-accent-hover: #e55a2c;
+  --bc-accent-faded: rgba(255, 107, 61, 0.2);
+
+  --bc-status-ok: #4ade80;
+  --bc-status-warning: #facc15;
+  --bc-status-error: #ef4444;
+  --bc-status-review: #f59e0b;
+  --bc-status-preview: #ff6b3d;
+  --bc-status-disabled: #9ca3af;
+
+  --bc-border-default: #2d3354;
+  --bc-border-hover: #4a4a4a;
+  --bc-border-strong: #3d4558;
+
+  --bc-spacing-xs: 4px;
+  --bc-spacing-sm: 8px;
+  --bc-spacing-md: 12px;
+  --bc-spacing-lg: 16px;
+  --bc-spacing-xl: 20px;
+  --bc-spacing-2xl: 24px;
+
+  --bc-radius: 4px;
+  --bc-radius-sm: 2px;
+  --bc-radius-md: 4px;
+  --bc-radius-lg: 6px;
+
+  --bc-font-cmd-bar: 0.95rem;
+  --bc-font-section-header: 0.75rem;
+  --bc-font-card-title: 0.875rem;
+  --bc-font-card-body: 0.8125rem;
+  --bc-font-system-data: 0.75rem;
+  --bc-font-label: 0.7rem;
+  --bc-font-pill: 0.75rem;
+  --bc-font-activity: 0.75rem;
+
+  --bc-font-family-cmd-bar: system-ui, -apple-system, sans-serif;
+  --bc-font-family-section-header: ui-monospace, monospace;
+  --bc-font-family-card-title: system-ui, -apple-system, sans-serif;
+  --bc-font-family-card-body: system-ui, -apple-system, sans-serif;
+  --bc-font-family-system-data: ui-monospace, monospace;
+  --bc-font-family-label: system-ui, -apple-system, sans-serif;
+  --bc-font-family-pill: system-ui, -apple-system, sans-serif;
+  --bc-font-family-activity: ui-monospace, monospace;
+
+  --bc-font-line-height-cmd-bar: 1.4;
+  --bc-font-line-height-section-header: 1.2;
+  --bc-font-line-height-card-title: 1.3;
+  --bc-font-line-height-card-body: 1.4;
+  --bc-font-line-height-system-data: 1.4;
+  --bc-font-line-height-label: 1.2;
+  --bc-font-line-height-pill: 1.2;
+  --bc-font-line-height-activity: 1.4;
+}
 
 .brain-console {
   width: 100%;
@@ -10,29 +76,19 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: var(--text-normal);
-  font-family: var(--font-interface);
-  line-height: 1.45;
+
+  /* ── Brain Console Design System ── */
+  background-color: var(--bc-bg-primary);
+  color: var(--bc-text-primary);
+  font-family: var(--bc-font-family-card-body);
+  font-size: var(--bc-font-card-body);
+  line-height: var(--bc-font-line-height-card-body);
+
+  /* ── Legacy Obsidian tokens (fallback) ── */
   background:
     radial-gradient(circle at top right, rgba(96, 165, 250, 0.08), transparent 28%),
     radial-gradient(circle at top left, rgba(168, 85, 247, 0.06), transparent 30%),
-    var(--background-primary);
-  /* ── Color tokens ── */
-  --bc-card: color-mix(in srgb, var(--background-secondary) 92%, transparent);
-  --bc-card-hover: color-mix(in srgb, var(--background-secondary) 82%, var(--interactive-accent) 18%);
-  --bc-border: color-mix(in srgb, var(--background-modifier-border) 76%, transparent);
-  --bc-border-strong: color-mix(in srgb, var(--interactive-accent) 42%, var(--background-modifier-border) 58%);
-  --bc-accent: var(--interactive-accent);
-  --bc-accent-soft: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
-  --bc-green: #4ade80;
-  --bc-yellow: #facc15;
-  --bc-red: #fb7185;
-  --bc-blue: #60a5fa;
-  --bc-purple: #a78bfa;
-  /* ── Global design tokens ── */
-  --bc-gap: 12px;        /* gap between cards in every grid */
-  --bc-radius: 6px;      /* border-radius for every card/panel */
-  --bc-pad: 12px 14px;   /* inner padding for every card body */
+    var(--bc-bg-primary);
 }
 
 .brain-console,
@@ -62,11 +118,12 @@
   flex: 1 1 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 18px 20px;
+  padding: var(--bc-spacing-lg) var(--bc-spacing-xl) var(--bc-spacing-2xl);
   display: flex;
   flex-direction: column;
-  gap: var(--bc-gap);
+  gap: var(--bc-spacing-md);
   min-height: 0;
+  background-color: var(--bc-bg-primary);
 }
 
 /* ── Command bar ── */
@@ -77,11 +134,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 var(--bc-spacing-lg);
   height: 36px;
   min-height: 36px;
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--background-secondary) 70%, var(--background-primary) 30%);
+  background-color: var(--bc-bg-surface);
+  border-bottom: 1px solid var(--bc-border-default);
 }
 
 .bc-cmd-left {
@@ -92,9 +150,9 @@
 }
 
 .bc-cmd-wordmark {
-  font-size: 13px;
+  font-size: var(--bc-font-cmd-bar);
   font-weight: 700;
-  color: var(--text-normal);
+  color: var(--bc-text-primary);
   letter-spacing: -0.2px;
   white-space: nowrap;
 }
@@ -107,12 +165,12 @@
 }
 
 .bc-cmd-dot--online {
-  background: var(--bc-green);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--bc-green) 60%, transparent);
+  background: var(--bc-status-ok);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bc-status-ok) 60%, transparent);
 }
 
 .bc-cmd-dot--offline {
-  background: var(--bc-red);
+  background: var(--bc-status-error);
 }
 
 /* Tab row: full-width, all tabs visible */
@@ -121,9 +179,9 @@
   align-items: center;
   gap: 2px;
   width: 100%;
-  padding: 4px 10px;
-  border-bottom: 1px solid var(--bc-border);
-  background: color-mix(in srgb, var(--background-secondary) 60%, var(--background-primary) 40%);
+  padding: var(--bc-spacing-xs) var(--bc-spacing-md);
+  border-bottom: 1px solid var(--bc-border-default);
+  background-color: var(--bc-bg-secondary);
   flex-shrink: 0;
   flex-wrap: wrap;
   overflow: visible;
@@ -132,13 +190,13 @@
 .bc-cmd-tab {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 5px;
+  gap: var(--bc-spacing-xs);
+  padding: var(--bc-spacing-xs) var(--bc-spacing-sm);
+  border-radius: var(--bc-radius);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text-muted);
-  font-size: 10.5px;
+  color: var(--bc-text-muted);
+  font-size: var(--bc-font-section-header);
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -147,19 +205,19 @@
 }
 
 .bc-cmd-tab:hover {
-  color: var(--text-normal);
-  background: color-mix(in srgb, var(--background-secondary) 80%, transparent);
+  color: var(--bc-text-primary);
+  background-color: var(--bc-bg-muted);
 }
 
 .bc-cmd-tab:focus-visible {
-  outline: 2px solid var(--interactive-accent);
+  outline: 2px solid var(--bc-accent);
   outline-offset: -2px;
 }
 
 .bc-cmd-tab.active {
-  color: var(--text-normal);
-  background: color-mix(in srgb, var(--bc-accent-soft, rgba(99,102,241,0.15)) 80%, var(--background-secondary) 20%);
-  border-color: var(--bc-border);
+  color: var(--bc-text-primary);
+  background-color: var(--bc-accent-faded);
+  border-color: var(--bc-accent);
   font-weight: 600;
 }
 
@@ -184,9 +242,9 @@
 }
 
 .bc-cmd-build {
-  font-size: 10px;
-  font-family: var(--font-monospace);
-  color: var(--text-faint);
+  font-size: var(--bc-font-label);
+  font-family: var(--bc-font-family-system-data);
+  color: var(--bc-text-muted);
   white-space: nowrap;
 }
 
@@ -197,7 +255,7 @@
   width: 26px;
   height: 26px;
   border-radius: var(--bc-radius);
-  border: 1px solid var(--bc-border);
+  border: 1px solid var(--bc-border-default);
   background: transparent;
   color: var(--text-muted);
   font-size: 14px;
@@ -890,23 +948,23 @@
 .brain-console__card,
 .brain-console__card--grouped {
   min-width: 0;
-  border: 1px solid var(--bc-border);
+  border: 1px solid var(--bc-border-default);
   border-radius: var(--bc-radius);
-  background: var(--bc-card);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background-color: var(--bc-bg-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .brain-console__card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: var(--bc-pad);
+  gap: var(--bc-spacing-md);
+  padding: var(--bc-spacing-lg);
   overflow: hidden;
 }
 
 .brain-console__card:hover {
   border-color: var(--bc-border-strong);
-  background: var(--bc-card-hover);
+  background-color: var(--bc-bg-surface);
 }
 
 .brain-console__card--wide,
@@ -932,17 +990,17 @@
 }
 
 .brain-console__card-title {
-  font-size: 13px;
+  font-size: var(--bc-font-card-title);
   font-weight: 700;
-  color: var(--text-normal);
+  color: var(--bc-text-primary);
   white-space: normal;
 }
 
 .brain-console__card-subtitle {
-  color: var(--text-muted);
-  font-size: 11px;
+  color: var(--bc-text-secondary);
+  font-size: var(--bc-font-label);
   white-space: normal;
-  line-height: 1.4;
+  line-height: var(--bc-font-line-height-label);
 }
 
 .brain-console__card-body {
@@ -959,7 +1017,7 @@
 .brain-console__stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--bc-gap);
+  gap: var(--bc-spacing-md);
   min-width: 0;
 }
 
