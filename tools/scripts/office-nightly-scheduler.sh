@@ -378,6 +378,21 @@ run_video_runtime_report() {
   run_job "video-runtime-report" "$timeout_seconds" "$command" "$report_log"
 }
 
+run_video_orchestrator_storage_cleanup() {
+  local timeout_seconds="${VIDEO_ORCHESTRATOR_CLEANUP_TIMEOUT_SECONDS:-600}"  # 10 minutes
+  local cleanup_script="${HOME}/.local/video-orchestrator/scripts/storage_cleanup.py"
+  local cleanup_log="$LOG_DIR/video-orchestrator-storage-cleanup.log"
+  local command
+
+  if [[ ! -f "$cleanup_script" ]]; then
+    log "skipping job=video-orchestrator-storage-cleanup reason=missing_script path=$cleanup_script"
+    return 0
+  fi
+
+  command=$(printf 'python3 %q run --days 30 >> %q 2>&1' "$cleanup_script" "$cleanup_log")
+  run_job "video-orchestrator-storage-cleanup" "$timeout_seconds" "$command" "$cleanup_log"
+}
+
 run_memory_context_refresh() {
   local timeout_seconds="${MEMORY_CONTEXT_REFRESH_TIMEOUT_SECONDS:-30}"
   local refresh_script="${MEMORY_CONTEXT_REFRESH_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/memory-context-refresh.sh}"
@@ -535,6 +550,9 @@ main() {
 
   # Video runtime report — writes read-only runtime status only; never stops chain
   run_video_runtime_report || log "warning video-runtime-report failed but chain continues"
+
+  # Video Orchestrator storage cleanup — archives completed job files after 30d, never stops chain
+  run_video_orchestrator_storage_cleanup || log "warning video-orchestrator-storage-cleanup failed but chain continues"
 
   # Memory context refresh — regenerates ~/.brain/memory-context.md for passive Codex/Gemini injection
   run_memory_context_refresh || log "warning memory-context-refresh failed but chain continues"

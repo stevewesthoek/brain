@@ -10682,6 +10682,41 @@ export interface BrainCoreInfraVOReadinessResponse {
   error?: string;
 }
 
+// ─── Storage Cleanup ──────────────────────────────────────────────────────────
+
+export interface InfraVOStorageStats {
+  ok: boolean;
+  status: string;
+  dirs_scanned: number;
+  total_files: number;
+  total_bytes: number;
+  oldest_job_age_seconds: number;
+  eligible_for_cleanup_30d: boolean;
+}
+
+export interface InfraVOStorageCleanupRequest {
+  retention_days?: number;
+  dry_run?: boolean;
+}
+
+export interface InfraVOStorageCleanupCandidate {
+  job_id: string;
+  completed_at: string | null;
+  output_dir: string;
+  size_bytes: number;
+  archive_path?: string;
+}
+
+export interface InfraVOStorageCleanupResponse {
+  ok: boolean;
+  status: string;
+  retention_days: number;
+  dry_run: boolean;
+  candidate_count: number;
+  archived_count: number;
+  candidates: InfraVOStorageCleanupCandidate[];
+}
+
 // ─── Agent Orchestrator ───────────────────────────────────────────────────────
 
 export type AgentOrchestratorExecutorType = 'gemini' | 'claude' | 'codex' | 'bash' | 'n8n';

@@ -587,11 +587,11 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 ## Phase 7 — Production Hardening
 > Reliability, observability, recovery
 
-- [ ] Job retry with exponential backoff (currently max_retries=3 flat)
+- [x] Job retry with exponential backoff (non-blocking via scheduled_after)
 - [x] Dead letter review in Brain Console (read-only operator review tab)
 - [x] Worker health endpoint and dashboard card
 - [x] Artifact versioning — preserve previous artifacts in `task_config.artifact_versions`
-- [ ] Storage cleanup — archive completed job output files after 30d, keep artifact forever
+- [x] Storage cleanup — archive completed job output files after 30d, keep artifact forever
 - [x] VO view in Brain Console shows per-job module progress (Jobs tab)
 
 ---

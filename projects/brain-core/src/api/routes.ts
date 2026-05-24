@@ -1911,6 +1911,42 @@ export async function routeRequest(
           sendJson(response, 200, await getInfraVOReadiness());
           return;
         }
+        if (url.pathname === '/infra/video-orchestrator/storage-stats') {
+          const mod = await import('../adapters/infra-video-orchestrator-storage-cleanup.js');
+          if (mod.readStorageStats) {
+            sendJson(response, 200, await mod.readStorageStats());
+          } else {
+            sendJson(response, 500, { error: 'readStorageStats not available' });
+          }
+          return;
+        }
+        if (url.pathname === '/infra/video-orchestrator/storage-cleanup') {
+          if (request.method !== 'POST') {
+            sendJson(response, 405, { error: 'Method not allowed' });
+            return;
+          }
+          const mod = await import('../adapters/infra-video-orchestrator-storage-cleanup.js');
+          let body = '';
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const req = request as any;
+          req.on('data', (chunk: Buffer) => {
+            body += chunk.toString();
+          });
+          req.on('end', async () => {
+            try {
+              const payload = JSON.parse(body || '{}');
+              if (mod.triggerStorageCleanup) {
+                const result = await mod.triggerStorageCleanup(payload);
+                sendJson(response, 200, result);
+              } else {
+                sendJson(response, 500, { error: 'triggerStorageCleanup not available' });
+              }
+            } catch (error) {
+              sendJson(response, 400, { error: String(error) });
+            }
+          });
+          return;
+        }
         if (url.pathname === '/infra/pipelines/status') {
           sendJson(response, 200, await getInfraPipelinesStatus());
           return;
