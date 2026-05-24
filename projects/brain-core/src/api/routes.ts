@@ -2454,6 +2454,28 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  if (url.pathname === '/api/video-orchestrator/thumbnails/declare-winner') {
+    if (request.method !== 'POST') {
+      sendJson(response, 405, { error: 'Method not allowed' });
+      return;
+    }
+    const mod = await import('../adapters/infra-video-orchestrator-thumbnail-winner.js');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const jobId = (body?.jobId as string) ?? '';
+    const variantId = (body?.variantId as string) ?? '';
+    if (!jobId || !variantId) {
+      sendJson(response, 400, { error: 'jobId and variantId are required' });
+      return;
+    }
+    const result = await mod.declareThumbnailWinner({
+      jobId,
+      variantId,
+      reason: (body?.reason as string) ?? 'manual',
+    });
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
   if (url.pathname === '/api/video-orchestrator/metadata/generate') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
     const metaReq: {

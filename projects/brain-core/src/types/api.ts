@@ -10793,3 +10793,29 @@ export interface AgentOrchestratorPlanResponse {
 export interface AgentOrchestratorApprovalResponse {
   ok: true;
 }
+
+// ── Video Orchestrator Metadata ───────────────────────────────────────────────
+
+/**
+ * Input type for the video orchestrator metadata generator.
+ * Mirrors VideoOrchestratorMetadataInput in the adapter — kept here for
+ * cross-adapter type safety and API contract documentation.
+ */
+export interface VideoOrchestratorMetadataInput {
+  projectId: string;
+  contentItemId: string;
+  title?: string;
+  description?: string;
+  targetPlatforms?: Array<'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'linkedin' | 'bluesky'>;
+  templateId?: string;
+}
+
+/**
+ * Per-platform capability descriptor returned by the platform-specs endpoint.
+ */
+export interface PlatformSpec {
+  platform: string;
+  max_description: number;
+  max_hashtags: number;
+  adapter_status: 'manual_only' | 'partially_supported' | 'fully_supported';
+}
