@@ -9,6 +9,7 @@ export { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
 export { PackageStatusPanel } from './PackageStatusPanel.js';
 export { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 export { HistoryPanel } from './HistoryPanel.js';
+export { EventLogPanel } from './EventLogPanel.js';
 export type { VOContextState, DateRange } from './types.js';
 export type { PipelineRun } from './PipelinesPanel.js';
 export type { ApprovalQueueItem } from './ApprovalQueuePanel.js';

@@ -7,6 +7,7 @@ import { ContentCreationPanel } from './ContentCreationPanel.js';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
 import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
+import { EventLogPanel } from './EventLogPanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -29,6 +30,7 @@ export class VOShell {
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
   private packageStatusPanel: PackageStatusPanel | null = null;
   private publishingDashboardPanel: PublishingDashboardPanel | null = null;
+  private eventLogPanel: EventLogPanel | null = null;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
   private contentContainer: HTMLElement | null = null;
@@ -74,6 +76,7 @@ export class VOShell {
         <button class="vo-tab" data-tab="packages">Packages</button>
         <button class="vo-tab" data-tab="publishing">Publishing</button>
         <button class="vo-tab" data-tab="history">History</button>
+        <button class="vo-tab" data-tab="events">Events</button>
       </div>
     `;
     this.container.appendChild(tabsContainer);
@@ -144,6 +147,10 @@ export class VOShell {
     if (this.historyPanel) {
       this.historyPanel.destroy();
       this.historyPanel = null;
+    }
+    if (this.eventLogPanel) {
+      this.eventLogPanel.destroy();
+      this.eventLogPanel = null;
     }
 
     const state = this.ctx.getState();
@@ -263,6 +270,19 @@ export class VOShell {
           `;
         }
         break;
+
+      case 'events':
+        if (state.projectId) {
+          this.eventLogPanel = new EventLogPanel(this.contentContainer, state.projectId);
+          this.eventLogPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to view event log</p>
+            </div>
+          `;
+        }
+        break;
     }
   }
 
@@ -291,6 +311,9 @@ export class VOShell {
     }
     if (this.historyPanel) {
       this.historyPanel.destroy();
+    }
+    if (this.eventLogPanel) {
+      this.eventLogPanel.destroy();
     }
     if (this.unsubscribe) {
       this.unsubscribe();

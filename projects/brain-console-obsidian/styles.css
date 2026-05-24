@@ -3813,3 +3813,206 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+/* Event Log Panel Styles */
+.vo-event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  height: 100%;
+  overflow: auto;
+}
+
+.vo-event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vo-event-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.vo-event-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.vo-event-filter-select {
+  padding: 6px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.vo-event-refresh-btn {
+  padding: 6px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vo-event-refresh-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.vo-event-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.vo-event-metric {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+}
+
+.vo-metric-label {
+  font-size: 11px;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.vo-metric-value {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.vo-status-ready {
+  color: #22c55e;
+}
+
+.vo-status-busy {
+  color: #f59e0b;
+}
+
+.vo-status-error {
+  color: #ef4444;
+}
+
+.vo-event-table-container {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.vo-event-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.vo-event-table thead {
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #d0d0d0;
+  position: sticky;
+  top: 0;
+}
+
+.vo-event-table th {
+  padding: 10px;
+  text-align: left;
+  font-weight: 700;
+  color: #333;
+}
+
+.vo-event-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.vo-event-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.vo-event-table tbody tr:hover {
+  background-color: #f0f0f0;
+}
+
+.vo-event-table td {
+  padding: 10px;
+  vertical-align: middle;
+}
+
+.vo-event-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+}
+
+.vo-badge-package {
+  background-color: #3b82f6;
+}
+
+.vo-badge-approval {
+  background-color: #8b5cf6;
+}
+
+.vo-badge-publish {
+  background-color: #ec4899;
+}
+
+.vo-badge-webhook {
+  background-color: #06b6d4;
+}
+
+.vo-event-status-queued {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.vo-event-status-acknowledged {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.vo-event-payload-preview {
+  display: block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: #666;
+  background-color: #f5f5f5;
+  padding: 4px 6px;
+  border-radius: 3px;
+}
+
+.vo-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 14px;
+  color: #888;
+}
+
+.vo-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 14px;
+  color: #ef4444;
+  background-color: #fee2e2;
+  border-radius: 6px;
+}

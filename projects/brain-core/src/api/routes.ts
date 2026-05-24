@@ -103,6 +103,8 @@ import { createContentItemRequest, updateContentItemRequest, generateThumbnailRe
 import { createAutomationRuleRequest, bulkApproveRequest, scheduleWorkflowRequest, registerWebhookRequest } from '../adapters/vo-studio-orchestration.js';
 import { readApprovalQueue, readWorkflowState, readExecutionSummary, readJobHistory, readPerformanceMetrics, readApprovalStatistics, readErrorAnalysis, readPublishingQueue, readDistributionSummary, readPublishingMetrics } from '../adapters/vo-studio-read.js';
 import { readAutomationRules, readSchedules, readWebhooks, readExecutionAudit } from '../adapters/vo-studio-orchestration.js';
+import { emitEventRequest, acknowledgeEventRequest, subscribeToEventsRequest } from '../adapters/vo-studio-events.js';
+import { readEventStream, readEventHistory, readActiveSubscriptions } from '../adapters/vo-studio-events.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2550,6 +2552,81 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     const projectId = url.searchParams.get('projectId') ?? '';
     const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
     const result = readExecutionAudit(projectId, limit);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/events/emit') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const emitReq: {
+      projectId: string;
+      type: string;
+      payload: Record<string, unknown>;
+      actor: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      type: (body?.type as string) ?? '',
+      payload: (body?.payload as Record<string, unknown>) ?? {},
+      actor: (body?.actor as string) ?? '',
+    };
+    const result = emitEventRequest(emitReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/events/acknowledge') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const ackReq: {
+      eventId: string;
+      projectId: string;
+    } = {
+      eventId: (body?.eventId as string) ?? '',
+      projectId: (body?.projectId as string) ?? '',
+    };
+    const result = acknowledgeEventRequest(ackReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/events/subscribe') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const subReq: {
+      projectId: string;
+      eventTypes: string[];
+      webhookId?: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      eventTypes: (body?.eventTypes as string[]) ?? [],
+    };
+    if (body?.webhookId !== undefined) {
+      subReq.webhookId = body.webhookId as string;
+    }
+    const result = subscribeToEventsRequest(subReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/events/stream')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const since = url.searchParams.get('since');
+    const result = readEventStream(projectId, limit, since ?? undefined);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/events/history')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const eventType = url.searchParams.get('eventType');
+    const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') ?? '50', 10)));
+    const result = readEventHistory(projectId, eventType ?? undefined, limit);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/video-orchestrator/events/subscriptions')) {
+    const projectId = url.searchParams.get('projectId') ?? '';
+    const result = readActiveSubscriptions(projectId);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
