@@ -4,7 +4,7 @@
 
 Video Orchestrator is a production automation pipeline: audio/background → normalize → subtitle → compose → thumbnail → metadata → multi_post → YouTube/social media.
 
-**Current state:** Metadata generator only produces YouTube copy. We need to expand to 7 platforms (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X) so we can post to YouTube → Pinterest → Facebook first, then all 7 platforms after.
+**Current state:** Metadata generator has now been expanded beyond YouTube. The active platform set is 8 platforms: YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, and Pinterest.
 
 **Your job:** Implement multi-platform metadata generation and job queueing command.
 
@@ -55,7 +55,7 @@ Video Orchestrator is a production automation pipeline: audio/background → nor
 
 **File:** `~/.local/video-orchestrator/worker/metadata_generator.py`
 
-**What:** Rewrite the platform loop to generate platform-specific captions for all 7 platforms.
+**What:** Rewrite the platform loop to generate platform-specific captions for all 8 platforms.
 
 **Changes:**
 
@@ -83,7 +83,7 @@ Video Orchestrator is a production automation pipeline: audio/background → nor
        elif 'instagram' in platform_key:
            caption = _generate_instagram_caption(...)
            platforms[platform_key] = ...
-       # ... etc for all 7
+       # ... etc for all 8
    ```
 
 3. **Add helper functions** (call AI selector to generate each):
@@ -108,7 +108,7 @@ Video Orchestrator is a production automation pipeline: audio/background → nor
 5. **Wire up `youtube_title_variants`** (currently unused):
    - Call `_generate_youtube_title_variants()` and store variants in artifact
 
-**Success:** Metadata generator produces all 7 platform outputs when run with `--platforms youtube,tiktok,instagram,facebook,linkedin,bluesky,x`. Character limits enforced.
+**Success:** Metadata generator produces all 8 platform outputs when run with `--platforms youtube,tiktok,instagram,facebook,linkedin,bluesky,x,pinterest`. Character limits enforced.
 
 ---
 
@@ -202,7 +202,7 @@ vo queue pipeline \
 **What:** Add test coverage for multi-platform metadata generation.
 
 **New tests:**
-1. `test_metadata_generator_all_platforms()` — verify all 7 platforms produced
+1. `test_metadata_generator_all_platforms()` — verify all 8 platforms produced
 2. `test_metadata_char_truncation_per_platform()` — verify truncation works (e.g., X at 280 chars, TikTok at 2200)
 3. `test_metadata_prompt_keys_used()` — verify correct prompt keys used for each platform
 4. `test_platform_validation_in_queue_pipeline()` — verify invalid platform rejected
@@ -233,16 +233,16 @@ vo queue pipeline \
 
 ```
 audio → normalize job → subtitle job → compose job → thumbnail job → 
-metadata job (calls AI for all 7 platforms) → 
+metadata job (calls AI for all 8 platforms) → 
 multi_post job (queues 1 dispatch per platform to n8n webhooks)
 ```
 
 ### Platform Priority
 
-User directive: **YouTube → Pinterest → Facebook first, then expand to all 7 after.**
+User directive: **YouTube → Pinterest → Facebook first, then expand to all 8 after.**
 
 This means:
-- Implement all 7 (complete implementation)
+- Implement all 8 (complete implementation)
 - Test with YouTube, Pinterest, Facebook first (those are the proven paths)
 - TikTok, Instagram, LinkedIn, Bluesky, X come after (when we expand)
 
@@ -257,7 +257,7 @@ Phase 6 is Python + config. Brain-core TypeScript adapter already exists and han
 ✅ **All tasks complete when:**
 1. Pinterest added to platform-specs.json (valid JSON)
 2. 6 platform prompts in metadata-prompts.json (valid JSON)
-3. metadata_generator.py produces all 7 platform outputs (verified via dry-run)
+3. metadata_generator.py produces all 8 platform outputs (verified via dry-run)
 4. n8n workflow JSONs created and parse valid
 5. `vo queue pipeline` queues jobs correctly (dry-run shows job IDs)
 6. Python tests pass (`pytest -v`, 5+ new tests)

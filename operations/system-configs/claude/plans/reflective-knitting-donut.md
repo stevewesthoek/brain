@@ -11,7 +11,7 @@
 
 ⏳ **Next: Phase 6 Multi-Platform Content Generation**
 
-Goal: Expand metadata generation from YouTube-only to 7 platforms. Post to YouTube → Pinterest → Facebook first, then expand to TikTok, Instagram, LinkedIn, Bluesky, X.
+Goal: Expand metadata generation from YouTube-only to 8 platforms. Post to YouTube → Pinterest → Facebook first, then expand to TikTok, Instagram, LinkedIn, Bluesky, X.
 
 ---
 
@@ -42,7 +42,7 @@ Goal: Expand metadata generation from YouTube-only to 7 platforms. Post to YouTu
 - For each platform_key in target_platforms: generate platform-specific caption
 - Add `_truncate_to_limit(text, platform_key)` helper (reads platform-specs.json, enforces max_length)
 - Wire up `youtube_title_variants` prompt (currently defined but unused)
-- Result: `platforms[platform_key]` populated for all 7 platforms
+- Result: `platforms[platform_key]` populated for all 8 platforms
 
 **A4. Create n8n workflow JSON stubs**
 - New directory: `~/.local/video-orchestrator/n8n/workflows/`
@@ -62,7 +62,7 @@ Goal: Expand metadata generation from YouTube-only to 7 platforms. Post to YouTu
 
 **A6. Update Python tests**
 - File: `~/.local/video-orchestrator/tests/test_worker.py`
-- Test metadata generator produces all 7 platform outputs
+- Test metadata generator produces all 8 platform outputs
 - Test character truncation works per platform
 - Test platform validation in `vo queue pipeline`
 
@@ -82,7 +82,7 @@ Goal: Expand metadata generation from YouTube-only to 7 platforms. Post to YouTu
 
 **Multi-platform flow:**
 ```
-audio/background → normalize → subtitle → compose → thumbnail → metadata (all 7 platforms) → multi_post (queues 1 job per platform)
+audio/background → normalize → subtitle → compose → thumbnail → metadata (all 8 platforms) → multi_post (queues 1 job per platform)
 ```
 
 ---

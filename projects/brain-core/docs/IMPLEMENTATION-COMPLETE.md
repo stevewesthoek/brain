@@ -44,8 +44,10 @@
 - **TikTok** — OAuth2 + Content Posting API v2 (3-step flow)
 - **Instagram** — Graph API v18 Reels (container + publish)
 - **LinkedIn/Facebook/Bluesky** — n8n webhook fallback
+- **Pinterest** — manual-first pin metadata + n8n workflow stub
 - Capability registry (aspect ratios, duration limits, direct_upload flags)
 - Validation layer (file size, title/description length checks)
+- Metadata generator now produces platform-specific copy for YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, and Pinterest
 
 ### New Phase: Database Migration ✅
 **Commits:** Database commit (17 tests)

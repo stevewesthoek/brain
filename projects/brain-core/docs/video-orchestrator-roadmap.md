@@ -568,7 +568,7 @@ The next work must proceed in this order:
 - [x] Instagram Reels: post with caption + hashtags
 
 ### 6.2 Platform-specific metadata ✅
-- [x] Metadata generator produces platform-specific copy for all active platforms (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X)
+- [x] Metadata generator produces platform-specific copy for all active platforms (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, Pinterest)
 - [x] Character limit enforcement per platform (500 chars Facebook, 280 X, etc.)
 - [x] Platform-specific prompts in metadata-prompts.json with faith-based YeshuaAcademy voice
 

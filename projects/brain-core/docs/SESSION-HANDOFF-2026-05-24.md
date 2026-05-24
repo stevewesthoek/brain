@@ -36,6 +36,7 @@
 - Brain Console now includes a dedicated `Dead Letter` tab for operator review of exhausted jobs
 - Brain Core now exposes a worker health endpoint and the VO dashboard shows live worker health
 - Worker artifact writes now preserve prior versions in `task_config.artifact_versions`
+- Phase 6 multi-platform metadata now includes Pinterest, n8n workflow stubs now include success/error branches, and the full `vo queue pipeline --audio --background ...` chain now resolves real per-platform account IDs for the `multi_post` step
 
 **Testing:**
 - 997 tests passing, 0 failures
