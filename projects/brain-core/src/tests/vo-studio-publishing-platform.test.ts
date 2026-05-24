@@ -110,7 +110,7 @@ test('publishToPlatform returns fallback mode when description exceeds platform 
 });
 
 // ---------------------------------------------------------------------------
-// publishToPlatform — stub results for direct-upload platforms
+// publishToPlatform — direct-upload platforms
 // ---------------------------------------------------------------------------
 
 test('publishToPlatform YouTube stub returns ok with publishedUrl', async () => {
@@ -122,20 +122,35 @@ test('publishToPlatform YouTube stub returns ok with publishedUrl', async () => 
   assert.equal(result.fallbackMode, undefined); // direct path, not fallback
 });
 
-test('publishToPlatform TikTok stub returns ok with publishedUrl', async () => {
-  const req = makeRequest({ platform: 'tiktok' });
-  const result = await publishToPlatform(req);
-  assert.equal(result.ok, true);
-  assert.ok(result.publishedUrl?.includes('tiktok.com'), 'publishedUrl should contain tiktok.com');
-  assert.ok(result.videoId, 'videoId should be set');
+test('publishToPlatform TikTok falls back to n8n when TIKTOK_ACCESS_TOKEN not configured', async () => {
+  // In test env, TIKTOK_ACCESS_TOKEN is not set — expect n8n fallback path
+  const orig = process.env['TIKTOK_ACCESS_TOKEN'];
+  delete process.env['TIKTOK_ACCESS_TOKEN'];
+  try {
+    const req = makeRequest({ platform: 'tiktok' });
+    const result = await publishToPlatform(req);
+    assert.equal(result.fallbackMode, true);
+    assert.equal(typeof result.ok, 'boolean');
+  } finally {
+    if (orig !== undefined) process.env['TIKTOK_ACCESS_TOKEN'] = orig;
+  }
 });
 
-test('publishToPlatform Instagram stub returns ok with publishedUrl', async () => {
-  const req = makeRequest({ platform: 'instagram' });
-  const result = await publishToPlatform(req);
-  assert.equal(result.ok, true);
-  assert.ok(result.publishedUrl?.includes('instagram.com'), 'publishedUrl should contain instagram.com');
-  assert.ok(result.videoId, 'videoId should be set');
+test('publishToPlatform Instagram falls back to n8n when credentials not configured', async () => {
+  // In test env, INSTAGRAM_* vars are not set — expect n8n fallback path
+  const origToken = process.env['INSTAGRAM_ACCESS_TOKEN'];
+  const origAcct = process.env['INSTAGRAM_BUSINESS_ACCOUNT_ID'];
+  delete process.env['INSTAGRAM_ACCESS_TOKEN'];
+  delete process.env['INSTAGRAM_BUSINESS_ACCOUNT_ID'];
+  try {
+    const req = makeRequest({ platform: 'instagram' });
+    const result = await publishToPlatform(req);
+    assert.equal(result.fallbackMode, true);
+    assert.equal(typeof result.ok, 'boolean');
+  } finally {
+    if (origToken !== undefined) process.env['INSTAGRAM_ACCESS_TOKEN'] = origToken;
+    if (origAcct !== undefined) process.env['INSTAGRAM_BUSINESS_ACCOUNT_ID'] = origAcct;
+  }
 });
 
 // ---------------------------------------------------------------------------

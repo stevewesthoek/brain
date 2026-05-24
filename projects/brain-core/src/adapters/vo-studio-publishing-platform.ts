@@ -5,12 +5,23 @@
  * Handles capability checks, direct upload for supported platforms,
  * and automatic fallback to n8n webhook for unsupported or failed platforms.
  *
- * Direct upload is currently stubbed for YouTube, TikTok, and Instagram.
+ * Direct upload is implemented for TikTok and Instagram via real API adapters.
+ * YouTube uses the existing Python-based OAuth2 uploader via credentials.ts.
  * LinkedIn, Facebook, and Bluesky always use the n8n fallback path.
+ *
+ * Credential lookup for TikTok/Instagram:
+ *   TIKTOK_ACCESS_TOKEN              — TikTok user access token
+ *   INSTAGRAM_ACCESS_TOKEN           — Instagram long-lived access token
+ *   INSTAGRAM_BUSINESS_ACCOUNT_ID    — Instagram Business/Creator account ID
+ *
+ * If credentials are absent the adapter returns ok=false and publishDirect
+ * falls back to the n8n webhook automatically.
  */
 
 import { statSync } from 'node:fs';
 import { existsSync } from 'node:fs';
+import { publishToTikTok as tiktokPublish } from './tiktok-publisher.js';
+import { publishToInstagram as instagramPublish } from './instagram-publisher.js';
 
 export type PublishingPlatform = 'youtube' | 'tiktok' | 'instagram' | 'linkedin' | 'facebook' | 'bluesky';
 
@@ -139,16 +150,19 @@ function validateForPlatform(
   request: PublishRequest,
   capability: PlatformCapability,
 ): { ok: boolean; error?: string } {
-  // Check file exists
-  if (!existsSync(request.videoPath)) {
+  // Check file exists (for local paths; public URLs skip this check)
+  const isUrl = request.videoPath.startsWith('https://') || request.videoPath.startsWith('http://');
+  if (!isUrl && !existsSync(request.videoPath)) {
     return { ok: false, error: 'video_file_not_found' };
   }
 
-  // Check file size (rough guard — duration check requires media inspection)
-  const stats = statSync(request.videoPath);
-  const sizeMb = stats.size / (1024 * 1024);
-  if (sizeMb > MAX_VIDEO_SIZE_MB) {
-    return { ok: false, error: 'video_too_large' };
+  // Check file size only for local files (rough guard)
+  if (!isUrl) {
+    const stats = statSync(request.videoPath);
+    const sizeMb = stats.size / (1024 * 1024);
+    if (sizeMb > MAX_VIDEO_SIZE_MB) {
+      return { ok: false, error: 'video_too_large' };
+    }
   }
 
   // Check title length
@@ -254,33 +268,62 @@ async function publishToYouTube(request: PublishRequest): Promise<PublishResult>
 }
 
 /**
- * TikTok direct upload stub.
- * Real implementation: POST /v2/post/video/init + chunk upload + publish.
+ * TikTok direct upload — uses Content Posting API v2.
+ * Reads access token from TIKTOK_ACCESS_TOKEN env var.
+ * Returns ok=false (no fallbackMode) when token is not configured so the
+ * caller's fallback gate can route to n8n.
  */
 async function publishToTikTok(request: PublishRequest): Promise<PublishResult> {
-  // TODO(Phase 6+): implement TikTok Content Posting API v2
-  // Requires: TikTok app credentials + user access token via OAuth2
-  // API flow: init → chunk upload → publish confirm
-  void request;
-  return {
-    ok: true,
-    videoId: `tt-stub-${Date.now().toString(36)}`,
-    publishedUrl: `https://tiktok.com/@account/video/stub-${request.packageId}`,
+  const accessToken = process.env['TIKTOK_ACCESS_TOKEN'] ?? '';
+  if (!accessToken) {
+    return { ok: false, error: 'tiktok_access_token_not_configured' };
+  }
+
+  const publishReq: Parameters<typeof tiktokPublish>[0] = {
+    accessToken,
+    videoPath: request.videoPath,
+    title: request.metadata.title,
+    description: request.metadata.description,
   };
+  if (request.metadata.tags !== undefined) {
+    publishReq.tags = request.metadata.tags;
+  }
+
+  return tiktokPublish(publishReq);
 }
 
 /**
- * Instagram direct upload stub.
- * Real implementation: Instagram Graph API — create media container → publish.
+ * Instagram direct upload — uses Instagram Graph API v18.
+ * Reads credentials from env vars (see module-level doc).
+ * Returns ok=false (no fallbackMode) when credentials or public URL are
+ * missing so the caller's fallback gate can route to n8n.
+ *
+ * NOTE: Instagram Graph API requires a publicly accessible video URL —
+ * local file paths cause this function to return an error and trigger n8n.
  */
 async function publishToInstagram(request: PublishRequest): Promise<PublishResult> {
-  // TODO(Phase 6+): implement Instagram Graph API Reels upload
-  // Requires: Facebook App + Instagram Business/Creator account
-  // API flow: POST /me/media (container) → POST /me/media_publish
-  void request;
-  return {
-    ok: true,
-    videoId: `ig-stub-${Date.now().toString(36)}`,
-    publishedUrl: `https://instagram.com/reel/stub-${request.packageId}/`,
-  };
+  const accessToken = process.env['INSTAGRAM_ACCESS_TOKEN'] ?? '';
+  const accountId = process.env['INSTAGRAM_BUSINESS_ACCOUNT_ID'] ?? '';
+
+  if (!accessToken || !accountId) {
+    return { ok: false, error: 'instagram_credentials_not_configured' };
+  }
+
+  // Instagram requires a public URL — local paths must go through n8n
+  const isPublicUrl = request.videoPath.startsWith('https://') || request.videoPath.startsWith('http://');
+  if (!isPublicUrl) {
+    return { ok: false, error: 'instagram_requires_public_video_url' };
+  }
+
+  const caption = request.metadata.description
+    ? `${request.metadata.title}\n\n${request.metadata.description}`
+    : request.metadata.title;
+
+  return instagramPublish({
+    accessToken,
+    accountId,
+    videoUrl: request.videoPath,
+    caption,
+    mediaType: 'REELS',
+  });
 }
