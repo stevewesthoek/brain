@@ -835,6 +835,15 @@ test('POST /local-apps/action-enablement-backlog is not registered', async () =>
   assert.equal(response.statusCode, 404);
 });
 
+test('POST /ops/brain-core/restart requires explicit confirmation', async () => {
+  const response = await exercise({ method: 'POST', url: '/ops/brain-core/restart' });
+  const body = JSON.parse(response.body) as { error?: { code?: string; message?: string } };
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(body.error?.code, 'missing_confirmation');
+  assert.equal(body.error?.message, 'Brain Core restart requests require confirmation: true.');
+});
+
 test('POST /local-apps/mind-steward/start returns structured controlled result', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start' });
   const body = JSON.parse(response.body) as {

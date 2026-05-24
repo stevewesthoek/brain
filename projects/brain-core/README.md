@@ -195,6 +195,13 @@ npm install
 npm run dev
 ```
 
+Brain Core also has a `launchd` LaunchAgent at `operations/system-configs/launchagents/com.office.brain-core.plist`.
+The restart helper installs that plist into `~/Library/LaunchAgents/com.office.brain-core.plist` if needed and then performs a verified stop → port-free check → bootstrap → kickstart → health check restart:
+
+```bash
+npm run brain-core:restart
+```
+
 Default URL:
 
 ```text

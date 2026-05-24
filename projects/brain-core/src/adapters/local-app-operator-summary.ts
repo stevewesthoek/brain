@@ -139,8 +139,20 @@ function deriveNextAction(
   disabledActions: BrainCoreLocalAppOperatorSummaryDisabledAction[],
   recentFailedAction?: BrainCoreLocalAppOperatorSummaryLastAction,
 ): BrainCoreLocalAppOperatorSummaryNextAction {
+  const lifecycleGap = disabledActions.find(
+    (da) => da.category === 'missing-command' || da.category === 'missing-repo-local-script',
+  );
+
   if (recentFailedAction) {
     const failureReason = `Recent ${recentFailedAction.action} action failed: ${sanitizeOperatorSummaryText(recentFailedAction.message)}`;
+    if (lifecycleGap) {
+      return {
+        label: 'Add lifecycle script',
+        kind: 'add-lifecycle-script',
+        reason: `${app.name} ${lifecycleGap.action} action needs a lifecycle script: ${lifecycleGap.reason}`,
+        executable: false,
+      };
+    }
     if (supportedActions.includes('restart')) {
       return {
         label: `Restart ${app.name}`,
@@ -176,23 +188,20 @@ function deriveNextAction(
     };
   }
 
-  if (!app.healthUrl) {
-    return {
-      label: 'Configure health URL',
-      kind: 'configure-health-url',
-      reason: `${app.name} has no health URL configured — reachability cannot be checked.`,
-      executable: false,
-    };
-  }
-
-  const lifecycleGap = disabledActions.find(
-    (da) => da.category === 'missing-command' || da.category === 'missing-repo-local-script',
-  );
   if (lifecycleGap) {
     return {
       label: 'Add lifecycle script',
       kind: 'add-lifecycle-script',
       reason: `${app.name} ${lifecycleGap.action} action needs a lifecycle script: ${lifecycleGap.reason}`,
+      executable: false,
+    };
+  }
+
+  if (!app.healthUrl) {
+    return {
+      label: 'Configure health URL',
+      kind: 'configure-health-url',
+      reason: `${app.name} has no health URL configured — reachability cannot be checked.`,
       executable: false,
     };
   }

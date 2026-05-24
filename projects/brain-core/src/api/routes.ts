@@ -1,4 +1,9 @@
+import { spawn } from 'node:child_process';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { existsSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -222,6 +227,7 @@ import { getInfraVOAccountStats } from '../adapters/infra-video-orchestrator-acc
 import { getInfraVOReadiness } from '../adapters/infra-video-orchestrator-readiness.js';
 import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
+import type { VideoAnalysisResult } from '../adapters/research-video.js';
 
 const getStatus = createStatusAdapter({
   startedAt: new Date(),
@@ -258,7 +264,7 @@ export async function routeRequest(
 
   if (method === 'POST') {
     try {
-      await routePostRequest(url, response);
+      await routePostRequest(url, request, response);
     } catch (error) {
       sendJson(response, 500, {
         id: 'local-app-action-crash-safe-fallback',
@@ -1857,7 +1863,7 @@ export async function routeRequest(
     }
 }
 
-async function routePostRequest(url: URL, response: ServerResponse): Promise<void> {
+async function routePostRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
   if (url.pathname === '/ai-model-selector/control') {
     const action = url.searchParams.get('action');
     if (action !== 'start' && action !== 'stop') {
@@ -2029,6 +2035,33 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
     return;
   }
 
+  if (url.pathname === '/ops/brain-core/restart') {
+    const body = await readJsonBody(request);
+    if (body?.confirmation !== true) {
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_confirmation',
+          message: 'Brain Core restart requests require confirmation: true.',
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    const result = launchBrainCoreRestartHelper();
+    if (!result.ok) {
+      sendJson(response, 500, {
+        error: {
+          code: 'restart_launch_failed',
+          message: result.message,
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    sendJson(response, 202, result.payload);
+    return;
+  }
+
   const requestKind = getApprovalRequestKind(url);
   if (requestKind) {
     sendJson(response, 202, requestAction(requestKind));
@@ -2054,12 +2087,72 @@ async function routePostRequest(url: URL, response: ServerResponse): Promise<voi
     return;
   }
 
+  if (url.pathname === '/research/video-analyze') {
+    const body = await readJsonBody(request);
+    const youtubeUrl = body?.url as string | undefined;
+    const focus = body?.focus as string | undefined;
+
+    if (!youtubeUrl) {
+      sendJson(response, 400, { error: { code: 'missing_url', message: 'url is required' } });
+      return;
+    }
+
+    const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+    const analyzerPath = path.resolve(moduleDir, '..', '..', 'services', 'video-analyzer', 'analyze.py');
+    const venvPython = path.join(os.homedir(), '.local', 'video-orchestrator', 'venv', 'bin', 'python3');
+    const spawnArgs = [analyzerPath, youtubeUrl, ...(focus ? ['--focus', focus] : [])];
+
+    const result = await new Promise<string>((resolve, reject) => {
+      const proc = spawn(venvPython, spawnArgs, { timeout: 1800000 });
+      let stdout = '';
+      let stderr = '';
+      proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+      proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+      proc.on('close', (code: number | null) => {
+        if (code === 0) {
+          resolve(stdout);
+        } else {
+          reject(new Error(`analyzer exited ${code}: ${stderr.slice(-500)}`));
+        }
+      });
+      proc.on('error', reject);
+    });
+
+    let parsed: VideoAnalysisResult;
+    try {
+      parsed = JSON.parse(result) as VideoAnalysisResult;
+    } catch {
+      sendJson(response, 500, { ok: false, error: 'analyzer produced invalid JSON', raw: result.slice(0, 500) });
+      return;
+    }
+    sendJson(response, parsed.ok ? 200 : 500, parsed);
+    return;
+  }
+
   sendJson(response, 404, {
     error: {
       code: 'not_found',
-      message: 'POST route not found. Available POST routes: /actions/request, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject.',
+          message: 'POST route not found. Available POST routes: /actions/request, /ops/brain-core/restart, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject, /research/video-analyze.',
     },
   } satisfies BrainCoreErrorResponse);
+}
+
+async function readJsonBody(request: IncomingMessage): Promise<Record<string, unknown> | null> {
+  if (!request.on) return null;
+  return new Promise((resolve) => {
+    let body = '';
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    request.on!('data', (chunk: Buffer) => { body += chunk.toString(); });
+    request.on!('end', () => {
+      try {
+        const parsed = JSON.parse(body);
+        resolve(typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null);
+      } catch {
+        resolve(null);
+      }
+    });
+    request.on!('error', () => resolve(null));
+  });
 }
 
 function getApprovalRequestKind(url: URL): string | undefined {
@@ -2097,10 +2190,64 @@ function sendJson(response: ServerResponse, statusCode: number, body: unknown): 
   response.end(`${payload}\n`);
 }
 
+function launchBrainCoreRestartHelper(): { ok: true; payload: BrainCoreRestartLaunchResponse } | { ok: false; message: string } {
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const helperScriptPath = path.resolve(moduleDir, '..', '..', 'scripts', 'dev', 'restart-brain-core.mjs');
+  if (!existsSync(helperScriptPath)) {
+    return { ok: false, message: `Brain Core restart helper is missing: ${helperScriptPath}` };
+  }
+
+  const operationId = `brain-core-restart-${Date.now()}`;
+  const logPath = path.resolve(process.cwd(), 'runtime', 'local', 'brain-core', 'restart.log');
+
+  try {
+    const child = spawn(process.execPath, [helperScriptPath, 'restart'], {
+      detached: true,
+      stdio: 'ignore',
+      env: {
+        ...process.env,
+        BRAIN_CORE_RESTART_OPERATION_ID: operationId,
+        BRAIN_CORE_RESTART_LOG_PATH: logPath,
+      },
+    });
+    child.unref();
+
+    return {
+      ok: true,
+      payload: {
+        accepted: true,
+        operationId,
+        message: 'Brain Core restart helper started. Waiting for stop/start verification.',
+        statusUrl: '/status',
+        logPath,
+        launcherPid: child.pid ?? 0,
+        nextPollMs: 2500,
+        startedAt: new Date().toISOString(),
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to launch Brain Core restart helper.',
+    };
+  }
+}
+
 function redactRouteError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
   return raw
     .replace(/([A-Z0-9_]*(?:TOKEN|SECRET|KEY|PASSWORD|COOKIE|CREDENTIAL)[A-Z0-9_]*=)[^\s]+/gi, '$1[redacted]')
     .replace(/\/Users\/[^/\s]+\/[^\s]*/g, '[local-path]')
     .slice(0, 240);
+}
+
+interface BrainCoreRestartLaunchResponse {
+  accepted: true;
+  operationId: string;
+  message: string;
+  statusUrl: string;
+  logPath: string;
+  launcherPid: number;
+  nextPollMs: number;
+  startedAt: string;
 }
