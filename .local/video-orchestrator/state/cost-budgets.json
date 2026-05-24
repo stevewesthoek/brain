@@ -1,0 +1,13 @@
+{
+  "budget": {
+    "status": "ok",
+    "currency": "USD",
+    "window": "day",
+    "thresholdUsd": 20,
+    "spentUsd": 0,
+    "remainingUsd": 20,
+    "warningAtUsd": 12,
+    "throttleAtUsd": 16,
+    "blockAtUsd": 20
+  }
+}

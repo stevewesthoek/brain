@@ -1,0 +1,138 @@
+{
+  "costSummary": {
+    "id": "agent-cost-summary",
+    "generatedAt": "2026-05-24T13:21:55.979Z",
+    "source": "snapshot",
+    "status": "snapshot",
+    "totalEstimatedUsd": 0,
+    "todayEstimatedUsd": 0,
+    "weekEstimatedUsd": 0,
+    "monthEstimatedUsd": 0,
+    "cheapestRouteCount": 5,
+    "escalatedRouteCount": 0,
+    "localRouteCount": 5,
+    "subscriptionRouteCount": 0,
+    "paidRouteCount": 0,
+    "budget": {
+      "status": "ok",
+      "currency": "USD",
+      "window": "day",
+      "thresholdUsd": 20,
+      "spentUsd": 0,
+      "remainingUsd": 20,
+      "warningAtUsd": 12,
+      "throttleAtUsd": 16,
+      "blockAtUsd": 20
+    },
+    "topExpensiveTasks": [
+      {
+        "taskId": "8.1.1",
+        "taskType": "metadata_generation",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 4320,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.2.1",
+        "taskType": "description_quality_review",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 2340,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.3.1",
+        "taskType": "orchestration",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 4860,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.4.1",
+        "taskType": "seo_keyword_expansion",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 2066,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.4.2",
+        "taskType": "transcript_summarization",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 8100,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      }
+    ],
+    "routeHistory": [
+      {
+        "taskId": "8.1.1",
+        "taskType": "metadata_generation",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 4320,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.2.1",
+        "taskType": "description_quality_review",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 2340,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.3.1",
+        "taskType": "orchestration",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 4860,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.4.1",
+        "taskType": "seo_keyword_expansion",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 2066,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      },
+      {
+        "taskId": "8.4.2",
+        "taskType": "transcript_summarization",
+        "surface": "ollama-m4pro",
+        "providerId": "ollama-m4pro",
+        "estimatedTokens": 8100,
+        "estimatedCostUsd": 0,
+        "routingReason": "Cheapest capable local route selected first.",
+        "model": "qwen2.5:14b"
+      }
+    ],
+    "nextSafeStep": "Add runtime cost event emission once the read-only routing summary is stable.",
+    "persistence": {
+      "enabled": true,
+      "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-cost-summary.json",
+      "loadedFromDisk": true
+    }
+  }
+}

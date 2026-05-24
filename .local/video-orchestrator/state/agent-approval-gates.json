@@ -1,0 +1,23 @@
+{
+  "approvalGates": {
+    "id": "agent-approval-gates",
+    "generatedAt": "2026-05-24T13:21:55.974Z",
+    "source": "snapshot",
+    "status": "snapshot",
+    "approvalStoreEnabled": false,
+    "approvalStoreStatus": "memory",
+    "approvalStorePath": "runtime/local/brain-core/approvals.json",
+    "pendingCount": 0,
+    "approvedCount": 0,
+    "rejectedCount": 0,
+    "expiredCount": 0,
+    "supportedApprovalKinds": [],
+    "blockedApprovalKinds": [],
+    "nextSafeStep": "Request an approval to seed the gate record, then inspect the audit log before execution.",
+    "persistence": {
+      "enabled": true,
+      "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-approval-gates.json",
+      "loadedFromDisk": true
+    }
+  }
+}

@@ -1,0 +1,382 @@
+{
+  "agentConsole": {
+    "id": "agent-console",
+    "generatedAt": "2026-05-24T13:21:55.967Z",
+    "source": "snapshot",
+    "status": "snapshot",
+    "ledger": {
+      "id": "agent-ledger",
+      "generatedAt": "2026-05-24T13:21:55.967Z",
+      "source": "derived",
+      "status": "read-only",
+      "runCount": 3,
+      "eventCount": 0,
+      "taskCount": 4,
+      "approvalCount": 1,
+      "runs": [
+        {
+          "id": "run-approval-store-placeholder",
+          "agentId": "mind-steward-agent",
+          "title": "not-connected",
+          "kind": "not-connected",
+          "status": "unknown",
+          "startedAt": "2026-05-24T13:21:55.967Z",
+          "targetType": "system",
+          "targetId": "brain-core",
+          "source": "approval",
+          "summary": "Approval request pending",
+          "relatedApprovalId": "approval-store-placeholder",
+          "relatedActionId": "not-connected",
+          "blockers": [],
+          "safety": {
+            "writesToMind": false,
+            "executesShell": false,
+            "mutatesRuntime": false,
+            "requiresApproval": true,
+            "executionEnabled": false
+          },
+          "completedAt": "2026-05-24T13:21:55.967Z"
+        },
+        {
+          "id": "run-claude-code-executor-external",
+          "agentId": "claude-code-executor",
+          "title": "Claude Code Session",
+          "kind": "external-claude-code",
+          "status": "planned",
+          "startedAt": "2026-05-24T13:21:55.967Z",
+          "targetType": "agent",
+          "targetId": "claude-code-executor",
+          "source": "placeholder",
+          "summary": "External Claude Code executor. No in-app execution visible.",
+          "blockers": [
+            "External tool; no Brain Core integration"
+          ],
+          "safety": {
+            "writesToMind": false,
+            "executesShell": false,
+            "mutatesRuntime": false,
+            "requiresApproval": false,
+            "executionEnabled": false
+          }
+        },
+        {
+          "id": "run-codex-executor-external",
+          "agentId": "codex-executor",
+          "title": "Codex Session",
+          "kind": "external-codex",
+          "status": "planned",
+          "startedAt": "2026-05-24T13:21:55.967Z",
+          "targetType": "agent",
+          "targetId": "codex-executor",
+          "source": "placeholder",
+          "summary": "External Codex executor. No in-app execution visible.",
+          "blockers": [
+            "External tool; no Brain Core integration"
+          ],
+          "safety": {
+            "writesToMind": false,
+            "executesShell": false,
+            "mutatesRuntime": false,
+            "requiresApproval": false,
+            "executionEnabled": false
+          }
+        }
+      ],
+      "events": [],
+      "taskGraph": {
+        "id": "agent-task-graph",
+        "generatedAt": "2026-05-24T13:21:55.967Z",
+        "source": "derived",
+        "status": "read-only",
+        "taskCount": 4,
+        "completedCount": 0,
+        "blockedCount": 0,
+        "pendingCount": 3,
+        "tasks": [
+          {
+            "taskId": "0C-C",
+            "title": "Run ledger and task graph",
+            "status": "running",
+            "dependsOn": [],
+            "role": "Coordinator",
+            "capabilityIds": [
+              "skill.code"
+            ],
+            "aiTaskType": "orchestration",
+            "approvalRequired": false,
+            "notes": "Read-only ledger and task graph snapshot surface."
+          },
+          {
+            "taskId": "0C-D",
+            "title": "Selector-aware executor adapter",
+            "status": "pending",
+            "dependsOn": [
+              "0C-C"
+            ],
+            "role": "Coordinator",
+            "capabilityIds": [
+              "ai.ollama-m4pro",
+              "ai.ollama-m1",
+              "ai.codex-cli",
+              "ai.claude-bedrock"
+            ],
+            "aiTaskType": "executor_selection",
+            "approvalRequired": false,
+            "notes": "Map selected executors without performing execution."
+          },
+          {
+            "taskId": "0C-E",
+            "title": "Approval gates",
+            "status": "pending",
+            "dependsOn": [
+              "0C-C"
+            ],
+            "role": "Coordinator",
+            "capabilityIds": [
+              "cli.github"
+            ],
+            "aiTaskType": "approval_policy",
+            "approvalRequired": true,
+            "notes": "Approval policy surface only; no mutation logic yet."
+          },
+          {
+            "taskId": "0C-F",
+            "title": "Brain Console Agent View",
+            "status": "pending",
+            "dependsOn": [
+              "0C-C",
+              "0C-D",
+              "0C-E"
+            ],
+            "role": "Dashboard",
+            "capabilityIds": [
+              "skill.code",
+              "skill.web",
+              "skill.video"
+            ],
+            "aiTaskType": "ui_planning",
+            "approvalRequired": false,
+            "notes": "UI visibility for future agent plans and ledger snapshots."
+          }
+        ],
+        "nextSafeStep": "Extend the ledger with a persisted snapshot schema after the read-only graph is stable.",
+        "persistence": {
+          "enabled": false,
+          "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-ledger.json",
+          "loadedFromDisk": false
+        }
+      },
+      "approvalIds": [
+        "approval-store-placeholder"
+      ],
+      "nextSafeStep": "Add append-only persistence only after the read-only snapshot contract is stable.",
+      "persistence": {
+        "enabled": false,
+        "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-ledger.json",
+        "loadedFromDisk": false
+      }
+    },
+    "taskGraph": {
+      "id": "agent-task-graph",
+      "generatedAt": "2026-05-24T13:21:55.967Z",
+      "source": "derived",
+      "status": "read-only",
+      "taskCount": 4,
+      "completedCount": 0,
+      "blockedCount": 0,
+      "pendingCount": 3,
+      "tasks": [
+        {
+          "taskId": "0C-C",
+          "title": "Run ledger and task graph",
+          "status": "running",
+          "dependsOn": [],
+          "role": "Coordinator",
+          "capabilityIds": [
+            "skill.code"
+          ],
+          "aiTaskType": "orchestration",
+          "approvalRequired": false,
+          "notes": "Read-only ledger and task graph snapshot surface."
+        },
+        {
+          "taskId": "0C-D",
+          "title": "Selector-aware executor adapter",
+          "status": "pending",
+          "dependsOn": [
+            "0C-C"
+          ],
+          "role": "Coordinator",
+          "capabilityIds": [
+            "ai.ollama-m4pro",
+            "ai.ollama-m1",
+            "ai.codex-cli",
+            "ai.claude-bedrock"
+          ],
+          "aiTaskType": "executor_selection",
+          "approvalRequired": false,
+          "notes": "Map selected executors without performing execution."
+        },
+        {
+          "taskId": "0C-E",
+          "title": "Approval gates",
+          "status": "pending",
+          "dependsOn": [
+            "0C-C"
+          ],
+          "role": "Coordinator",
+          "capabilityIds": [
+            "cli.github"
+          ],
+          "aiTaskType": "approval_policy",
+          "approvalRequired": true,
+          "notes": "Approval policy surface only; no mutation logic yet."
+        },
+        {
+          "taskId": "0C-F",
+          "title": "Brain Console Agent View",
+          "status": "pending",
+          "dependsOn": [
+            "0C-C",
+            "0C-D",
+            "0C-E"
+          ],
+          "role": "Dashboard",
+          "capabilityIds": [
+            "skill.code",
+            "skill.web",
+            "skill.video"
+          ],
+          "aiTaskType": "ui_planning",
+          "approvalRequired": false,
+          "notes": "UI visibility for future agent plans and ledger snapshots."
+        }
+      ],
+      "nextSafeStep": "Extend the ledger with a persisted snapshot schema after the read-only graph is stable.",
+      "persistence": {
+        "enabled": false,
+        "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-ledger.json",
+        "loadedFromDisk": false
+      }
+    },
+    "taskState": {
+      "id": "agent-task-state",
+      "generatedAt": "2026-05-24T13:21:55.967Z",
+      "source": "derived",
+      "status": "read-only",
+      "taskGraphId": "agent-task-graph",
+      "currentTaskId": "0C-C",
+      "resumedTaskId": "0C-C",
+      "stepCount": 4,
+      "steps": [
+        {
+          "taskId": "0C-C",
+          "status": "running",
+          "note": "Read-only ledger and task graph snapshot surface."
+        },
+        {
+          "taskId": "0C-D",
+          "status": "pending",
+          "note": "Map selected executors without performing execution."
+        },
+        {
+          "taskId": "0C-E",
+          "status": "pending",
+          "note": "Approval policy surface only; no mutation logic yet."
+        },
+        {
+          "taskId": "0C-F",
+          "status": "pending",
+          "note": "UI visibility for future agent plans and ledger snapshots."
+        }
+      ],
+      "nextSafeStep": "Resume with task 0C-C (Run ledger and task graph) after verifying executor selection and approval status.",
+      "persistence": {
+        "enabled": false,
+        "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-task-state.json",
+        "loadedFromDisk": false
+      }
+    },
+    "executorPlan": {
+      "id": "agent-executor-plan",
+      "generatedAt": "2026-05-24T13:21:55.967Z",
+      "source": "derived",
+      "status": "read-only",
+      "taskGraphId": "agent-task-graph",
+      "taskStateId": "agent-task-state",
+      "stepCount": 4,
+      "steps": [
+        {
+          "taskId": "0C-C",
+          "executorId": "local-ollama-m4pro",
+          "providerId": "ollama-m4pro",
+          "reason": "Skill-first task; use the strongest local M4 executor before paid fallbacks.",
+          "source": "derived",
+          "model": "qwen2.5:32b"
+        },
+        {
+          "taskId": "0C-D",
+          "executorId": "codex-cli",
+          "providerId": "codex-cli",
+          "reason": "Orchestration or executor-selection work should prefer Codex CLI after local intent is recorded.",
+          "source": "derived",
+          "model": "gpt-5.4"
+        },
+        {
+          "taskId": "0C-E",
+          "executorId": "claude-bedrock",
+          "providerId": "claude-bedrock",
+          "reason": "Approval-sensitive coordination is assigned to the paid fallback surface for reliability.",
+          "source": "derived",
+          "model": "claude-sonnet"
+        },
+        {
+          "taskId": "0C-F",
+          "executorId": "local-ollama-m4pro",
+          "providerId": "ollama-m4pro",
+          "reason": "Skill-first task; use the strongest local M4 executor before paid fallbacks.",
+          "source": "derived",
+          "model": "qwen2.5:32b"
+        }
+      ],
+      "nextSafeStep": "Use these recorded executor selections as intent only; do not execute without approval gates.",
+      "persistence": {
+        "enabled": false,
+        "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-executor-plan.json",
+        "loadedFromDisk": false
+      }
+    },
+    "approvalGates": {
+      "id": "agent-approval-gates",
+      "generatedAt": "2026-05-24T13:21:55.967Z",
+      "source": "derived",
+      "status": "read-only",
+      "approvalStoreEnabled": false,
+      "approvalStoreStatus": "memory",
+      "approvalStorePath": "runtime/local/brain-core/approvals.json",
+      "pendingCount": 0,
+      "approvedCount": 0,
+      "rejectedCount": 0,
+      "expiredCount": 0,
+      "supportedApprovalKinds": [],
+      "blockedApprovalKinds": [],
+      "nextSafeStep": "Request an approval to seed the gate record, then inspect the audit log before execution.",
+      "persistence": {
+        "enabled": false,
+        "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-approval-gates.json",
+        "loadedFromDisk": false
+      }
+    },
+    "activeRunCount": 0,
+    "blockedRunCount": 0,
+    "plannedRunCount": 2,
+    "approvalPendingCount": 0,
+    "executorSelectionCount": 4,
+    "nextSafeStep": "Add append-only persistence only after the read-only snapshot contract is stable.",
+    "persistence": {
+      "enabled": true,
+      "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-console.json",
+      "loadedFromDisk": true
+    }
+  }
+}

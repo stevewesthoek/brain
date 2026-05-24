@@ -1,0 +1,40 @@
+{
+  "taskState": {
+    "id": "agent-task-state",
+    "generatedAt": "2026-05-24T13:21:55.975Z",
+    "source": "snapshot",
+    "status": "snapshot",
+    "taskGraphId": "agent-task-graph",
+    "currentTaskId": "0C-C",
+    "resumedTaskId": "0C-C",
+    "stepCount": 4,
+    "steps": [
+      {
+        "taskId": "0C-C",
+        "status": "running",
+        "note": "Read-only ledger and task graph snapshot surface."
+      },
+      {
+        "taskId": "0C-D",
+        "status": "pending",
+        "note": "Map selected executors without performing execution."
+      },
+      {
+        "taskId": "0C-E",
+        "status": "pending",
+        "note": "Approval policy surface only; no mutation logic yet."
+      },
+      {
+        "taskId": "0C-F",
+        "status": "pending",
+        "note": "UI visibility for future agent plans and ledger snapshots."
+      }
+    ],
+    "nextSafeStep": "Resume with task 0C-C (Run ledger and task graph) after verifying executor selection and approval status.",
+    "persistence": {
+      "enabled": true,
+      "path": "/Users/Office/Repos/stevewesthoek/brain/.local/video-orchestrator/state/agent-task-state.json",
+      "loadedFromDisk": true
+    }
+  }
+}
