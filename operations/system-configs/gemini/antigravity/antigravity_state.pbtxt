@@ -6,6 +6,7 @@ post_onboarding: {
 }
 seen_nuxs: {
   uids: 24
+  uids: 26
 }
 agent_onboarding_completed: AGENT_ONBOARDING_STATE_COMPLETED
 migrate_convos_into_projects: MIGRATION_STATUS_COMPLETED
