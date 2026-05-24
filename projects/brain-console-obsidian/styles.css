@@ -2472,6 +2472,94 @@ body.theme-light .brain-console {
   }
 }
 
+.vo-agent-panel,
+.vo-agent-console {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.vo-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.vo-agent-grid--detail {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.vo-agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vo-agent-list-item {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--bc-border);
+  background: var(--bc-bg);
+}
+
+.vo-agent-list-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.vo-agent-list-meta {
+  color: var(--bc-fg-subtle);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.vo-agent-list-copy,
+.vo-agent-next-step {
+  color: var(--bc-fg);
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.vo-agent-task-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vo-agent-task-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(100px, 0.9fr) minmax(100px, 0.9fr) minmax(120px, 1fr) minmax(100px, 0.8fr);
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bc-bg);
+  border: 1px solid var(--bc-border);
+  align-items: start;
+}
+
+.vo-agent-task-row--header {
+  background: transparent;
+  border: 0;
+  padding: 0 4px 8px;
+  color: var(--bc-fg-subtle);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 900px) {
+  .vo-agent-task-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vo-agent-task-row--header {
+    display: none;
+  }
+}
+
 /* ── VO Pipelines Panel ── */
 .vo-pipelines-panel {
   display: grid;

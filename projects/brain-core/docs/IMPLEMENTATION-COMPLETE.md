@@ -70,6 +70,7 @@
 - Task decomposition (goal → task graph)
 - Topological sort (DAG validation)
 - Provider routing (Gemini → Claude → Codex → bash → n8n)
+- Brain Console read-only `Agents` tab for run summary, task graph, executor plan, approval gates, and cost visibility
 - Approval gates (pause execution until operator decides)
 - Execution ledger (records all steps + results)
 - 39 tests covering planning, execution, approval flows

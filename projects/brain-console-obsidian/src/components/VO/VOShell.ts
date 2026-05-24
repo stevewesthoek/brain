@@ -17,6 +17,7 @@ import { OperatorDashboardPanel } from './OperatorDashboardPanel.js';
 import { JobProgressPanel } from './JobProgressPanel.js';
 import { MetadataGeneratorPanel } from './MetadataGeneratorPanel.js';
 import { FeedbackLoopPanel } from './FeedbackLoopPanel.js';
+import { AgentConsolePanel } from './AgentConsolePanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
   BrainCoreVOStudioProject,
@@ -43,6 +44,7 @@ export class VOShell {
   private jobProgressPanel: JobProgressPanel | null = null;
   private metadataGeneratorPanel: MetadataGeneratorPanel | null = null;
   private feedbackLoopPanel: FeedbackLoopPanel | null = null;
+  private agentConsolePanel: AgentConsolePanel | null = null;
   private packageStatusPanel: PackageStatusPanel | null = null;
   private publishingDashboardPanel: PublishingDashboardPanel | null = null;
   private eventLogPanel: EventLogPanel | null = null;
@@ -96,6 +98,7 @@ export class VOShell {
         <button class="vo-tab" data-tab="dead-letter">Dead Letter</button>
         <button class="vo-tab" data-tab="metadata">Metadata</button>
         <button class="vo-tab" data-tab="feedback">Feedback</button>
+        <button class="vo-tab" data-tab="agents">Agents</button>
         <button class="vo-tab" data-tab="packages">Packages</button>
         <button class="vo-tab" data-tab="publishing">Publishing</button>
         <button class="vo-tab" data-tab="history">History</button>
@@ -184,6 +187,10 @@ export class VOShell {
     if (this.feedbackLoopPanel) {
       this.feedbackLoopPanel.destroy();
       this.feedbackLoopPanel = null;
+    }
+    if (this.agentConsolePanel) {
+      this.agentConsolePanel.destroy();
+      this.agentConsolePanel = null;
     }
     if (this.packageStatusPanel) {
       this.packageStatusPanel.destroy();
@@ -358,6 +365,11 @@ export class VOShell {
         }
         break;
 
+      case 'agents':
+        this.agentConsolePanel = new AgentConsolePanel(this.contentContainer);
+        this.agentConsolePanel.initialize();
+        break;
+
       case 'packages':
         if (state.projectId) {
           this.packageStatusPanel = new PackageStatusPanel(this.contentContainer);
@@ -491,6 +503,9 @@ export class VOShell {
     }
     if (this.feedbackLoopPanel) {
       this.feedbackLoopPanel.destroy();
+    }
+    if (this.agentConsolePanel) {
+      this.agentConsolePanel.destroy();
     }
     if (this.packageStatusPanel) {
       this.packageStatusPanel.destroy();

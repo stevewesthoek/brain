@@ -222,8 +222,10 @@ The next work must proceed in this order:
 - [x] Immutable append-only log
 - [x] Audit trail for approvals and decisions
 
-### 0.7.6 Brain Console Agent View
-- [ ] Not yet in Brain Console UI; intended for a later phase
+### 0.7.6 Brain Console Agent View ✅
+- [x] Brain Console `Agents` tab in VO shell
+- [x] Read-only agent console surface wired to `/agent-console` and `/agent-cost-summary`
+- [x] Shows run summary, task graph, executor plan, approval gates, event stream, and cost snapshot
 
 **Deliverable:** ✅ Agent Orchestrator can plan and execute task graphs with approval gates and approved provider paths. Direct Anthropic/OpenAI API calls remain forbidden.
 

@@ -12,6 +12,7 @@ export { DeadLetterReviewPanel } from './DeadLetterReviewPanel.js';
 export { JobProgressPanel } from './JobProgressPanel.js';
 export { MetadataGeneratorPanel } from './MetadataGeneratorPanel.js';
 export { FeedbackLoopPanel } from './FeedbackLoopPanel.js';
+export { AgentConsolePanel } from './AgentConsolePanel.js';
 export { PackageStatusPanel } from './PackageStatusPanel.js';
 export { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 export { HistoryPanel } from './HistoryPanel.js';
