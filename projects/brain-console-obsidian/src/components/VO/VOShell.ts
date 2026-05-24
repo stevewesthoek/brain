@@ -7,6 +7,7 @@ import { ContentCreationPanel } from './ContentCreationPanel.js';
 import { StudioPanel } from './StudioPanel.js';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
 import { ThumbnailStudioPanel } from './ThumbnailStudioPanel.js';
+import { DeadLetterReviewPanel } from './DeadLetterReviewPanel.js';
 import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
 import { EventLogPanel } from './EventLogPanel.js';
@@ -38,6 +39,7 @@ export class VOShell {
   private historyPanel: HistoryPanel | null = null;
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
   private thumbnailStudioPanel: ThumbnailStudioPanel | null = null;
+  private deadLetterReviewPanel: DeadLetterReviewPanel | null = null;
   private jobProgressPanel: JobProgressPanel | null = null;
   private metadataGeneratorPanel: MetadataGeneratorPanel | null = null;
   private feedbackLoopPanel: FeedbackLoopPanel | null = null;
@@ -91,6 +93,7 @@ export class VOShell {
         <button class="vo-tab" data-tab="approvals">Approvals</button>
         <button class="vo-tab" data-tab="thumbnails">Thumbnails</button>
         <button class="vo-tab" data-tab="jobs">Jobs</button>
+        <button class="vo-tab" data-tab="dead-letter">Dead Letter</button>
         <button class="vo-tab" data-tab="metadata">Metadata</button>
         <button class="vo-tab" data-tab="feedback">Feedback</button>
         <button class="vo-tab" data-tab="packages">Packages</button>
@@ -165,6 +168,10 @@ export class VOShell {
     if (this.thumbnailStudioPanel) {
       this.thumbnailStudioPanel.destroy();
       this.thumbnailStudioPanel = null;
+    }
+    if (this.deadLetterReviewPanel) {
+      this.deadLetterReviewPanel.destroy();
+      this.deadLetterReviewPanel = null;
     }
     if (this.jobProgressPanel) {
       this.jobProgressPanel.destroy();
@@ -307,6 +314,19 @@ export class VOShell {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">
               <p>Select a project to view job progress</p>
+            </div>
+          `;
+        }
+        break;
+
+      case 'dead-letter':
+        if (state.projectId) {
+          this.deadLetterReviewPanel = new DeadLetterReviewPanel(this.contentContainer, state.projectId);
+          this.deadLetterReviewPanel.initialize();
+        } else {
+          this.contentContainer.innerHTML = `
+            <div class="vo-empty-state">
+              <p>Select a project to review dead jobs</p>
             </div>
           `;
         }
@@ -459,6 +479,9 @@ export class VOShell {
     }
     if (this.thumbnailStudioPanel) {
       this.thumbnailStudioPanel.destroy();
+    }
+    if (this.deadLetterReviewPanel) {
+      this.deadLetterReviewPanel.destroy();
     }
     if (this.jobProgressPanel) {
       this.jobProgressPanel.destroy();

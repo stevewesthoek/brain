@@ -5631,6 +5631,92 @@
   border-style: dashed;
 }
 
+.vo-dead-letter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vo-dead-letter__subtitle {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.vo-dead-letter__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vo-dead-letter__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bc-card);
+  border: 1px solid color-mix(in srgb, var(--bc-red) 30%, var(--bc-border));
+  border-radius: var(--bc-radius);
+}
+
+.vo-dead-letter__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.vo-dead-letter__title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.vo-dead-letter__meta {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.vo-dead-letter__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.vo-dead-letter__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
+.vo-dead-letter__value {
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.vo-dead-letter__error {
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--bc-red) 8%, var(--background-primary));
+  border: 1px solid color-mix(in srgb, var(--bc-red) 18%, var(--bc-border));
+  border-radius: 6px;
+}
+
+.vo-dead-letter__error-text {
+  color: var(--text-normal);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.vo-dead-letter__action-note {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 /* Preview tab */
 .vo-studio-preview-player {
   display: flex;

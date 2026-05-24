@@ -8,6 +8,7 @@ export { ContentCreationPanel } from './ContentCreationPanel.js';
 export { StudioPanel } from './StudioPanel.js';
 export { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
 export { ThumbnailStudioPanel } from './ThumbnailStudioPanel.js';
+export { DeadLetterReviewPanel } from './DeadLetterReviewPanel.js';
 export { JobProgressPanel } from './JobProgressPanel.js';
 export { MetadataGeneratorPanel } from './MetadataGeneratorPanel.js';
 export { FeedbackLoopPanel } from './FeedbackLoopPanel.js';
