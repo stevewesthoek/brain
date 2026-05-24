@@ -130,6 +130,17 @@ export interface BrainCoreAiModelSelectorControlResult {
   message: string;
 }
 
+export interface BrainCoreRestartRequestResult {
+  accepted: boolean;
+  operationId: string;
+  message: string;
+  statusUrl: string;
+  logPath: string;
+  launcherPid: number;
+  nextPollMs: number;
+  startedAt: string;
+}
+
 export interface BrainCoreAiModelSelectorBedrockClaudeCode {
   enabled: boolean;
   region: string;
@@ -5074,6 +5085,92 @@ export async function controlBrainCoreAiModelSelector(
   });
 }
 
+export async function requestBrainCoreRestart(baseUrl: string): Promise<HttpResult<BrainCoreRestartRequestResult>> {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const url = `${normalizedBaseUrl}/ops/brain-core/restart`;
+  const startTime = performance.now();
+
+  if (!requestUrlFn) {
+    return {
+      error: 'Obsidian requestUrl not initialized',
+      url,
+    };
+  }
+
+  try {
+    const response = await Promise.race([
+      requestUrlFn({
+        url,
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmation: true,
+          requestedBy: 'brain-console',
+        }),
+        throw: false,
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+      ),
+    ]);
+
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    const parsed = safeParseJson<BrainCoreRestartRequestResult>(response.text ?? '{}');
+
+    if (response.status < 200 || response.status >= 300) {
+      return {
+        error: parsed?.message ?? `HTTP ${response.status}`,
+        status: response.status,
+        detail: response.text ? response.text.slice(0, 240) : undefined,
+        value: parsed,
+        url,
+        responseTimeMs,
+      };
+    }
+
+    return {
+      value: parsed,
+      url,
+      responseTimeMs,
+    };
+  } catch (error) {
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    return {
+      error: error instanceof Error ? error.message : 'request failed',
+      url,
+      responseTimeMs,
+    };
+  }
+}
+
+export async function waitForBrainCoreStatus(
+  baseUrl: string,
+  timeoutMs = 120_000,
+  pollIntervalMs = 1_500,
+): Promise<HttpResult<BrainCoreStatus>> {
+  const deadline = Date.now() + timeoutMs;
+  let lastResult: HttpResult<BrainCoreStatus> | undefined;
+
+  while (Date.now() < deadline) {
+    lastResult = await fetchJson<BrainCoreStatus>(normalizeBaseUrl(baseUrl), '/status', {}, 3000);
+    if (lastResult.value?.ok === true) {
+      return lastResult;
+    }
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, pollIntervalMs);
+    });
+  }
+
+  return {
+    ...lastResult,
+    error: lastResult?.error ?? 'Brain Core did not report ok=true before the restart timeout elapsed.',
+    detail: lastResult?.detail ?? 'Brain Core restart verification timed out.',
+  };
+}
+
 export async function readBrainCoreMaintenancePreviewDetail(
   baseUrl: string,
   previewId: string,
@@ -5158,6 +5255,7 @@ async function fetchJson<T>(
   baseUrl: string,
   pathname: string,
   options: { method?: 'GET' | 'POST'; body?: string } = {},
+  timeoutMs = REQUEST_TIMEOUT_MS,
 ): Promise<HttpResult<T>> {
   const url = `${baseUrl}${pathname}`;
   const startTime = performance.now();
@@ -5179,7 +5277,7 @@ async function fetchJson<T>(
         throw: false,
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+        setTimeout(() => reject(new Error('request timeout')), timeoutMs)
       ),
     ]);
 
@@ -5220,7 +5318,7 @@ async function fetchJson<T>(
     ) {
       const fallbackUrl = tryGetFallbackLocalUrl(baseUrl);
       if (fallbackUrl && fallbackUrl !== baseUrl) {
-        return fetchJsonWithFallback<T>(fallbackUrl, pathname, responseTimeMs);
+        return fetchJsonWithFallback<T>(fallbackUrl, pathname, responseTimeMs, timeoutMs);
       }
     }
 
@@ -5243,7 +5341,8 @@ function safeParseJson<T>(text: string): T | undefined {
 async function fetchJsonWithFallback<T>(
   fallbackUrl: string,
   pathname: string,
-  firstAttemptMs: number
+  firstAttemptMs: number,
+  timeoutMs = REQUEST_TIMEOUT_MS,
 ): Promise<HttpResult<T>> {
   try {
     const response = await Promise.race([
@@ -5254,7 +5353,7 @@ async function fetchJsonWithFallback<T>(
         throw: false,
       }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('request timeout')), REQUEST_TIMEOUT_MS)
+        setTimeout(() => reject(new Error('request timeout')), timeoutMs)
       ),
     ]);
 
@@ -8351,4 +8450,47 @@ export interface BrainCoreVOReadinessResponse {
 
 export async function readBrainCoreVOReadiness(baseUrl: string): Promise<HttpResult<BrainCoreVOReadinessResponse>> {
   return fetchJson<BrainCoreVOReadinessResponse>(normalizeBaseUrl(baseUrl), '/infra/video-orchestrator/readiness');
+}
+
+// ── Research: YouTube Video Analysis ──────────────────────────────────────────
+
+export interface BrainCoreVideoAnalysisResult {
+  ok: boolean;
+  video_id?: string;
+  title?: string;
+  duration_seconds?: number;
+  transcript?: string;
+  frame_count?: number;
+  frames_analyzed?: number;
+  frames_escalated?: number;
+  human_summary?: string;
+  ai_summary?: string;
+  chapters?: Array<{ title: string; start_time: number; end_time?: number }>;
+  frame_analyses?: Array<{
+    timestamp: number;
+    frame_type: string;
+    description: string;
+    escalated: boolean;
+    error?: string;
+  }>;
+  error?: string;
+  step?: string;
+}
+
+export async function analyzeYouTubeVideo(
+  baseUrl: string,
+  url: string,
+  focus?: string,
+): Promise<BrainCoreVideoAnalysisResult> {
+  const endpoint = `${normalizeBaseUrl(baseUrl)}/research/video-analyze`;
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, ...(focus ? { focus } : {}) }),
+    });
+    return (await res.json()) as BrainCoreVideoAnalysisResult;
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' };
+  }
 }

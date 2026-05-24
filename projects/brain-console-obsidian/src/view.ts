@@ -739,8 +739,23 @@ export async function loadBrainConsoleViewState(
     }
   });
 
-  // Gather connection diagnostics
-  const connectionDiagnostics = await diagnoseBrainCoreConnection(baseUrl);
+  // Keep the connection card lightweight on healthy refreshes.
+  // Only run the full multi-URL diagnostic when the primary status probe is already failing.
+  const connectionDiagnostics = status.value?.ok === true
+    ? {
+        configuredUrl: baseUrl,
+        selectedUrl: baseUrl,
+        attempts: [
+          {
+            url: baseUrl,
+            ok: true,
+            status: 200,
+          },
+        ],
+        allFailed: false,
+        recommendation: `Connected to ${baseUrl}`,
+      }
+    : await diagnoseBrainCoreConnection(baseUrl);
 
   return {
     status: status.value,
@@ -944,7 +959,6 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'reports', label: 'Reports', icon: '📋' },
   { id: 'posts', label: 'Posts', icon: '✦' },
   { id: 'agents', label: 'Agents', icon: '◈' },
-  { id: 'recovery', label: 'Recovery', icon: '⚠' },
   { id: 'accounts', label: 'Accounts', icon: '🔑' },
 ];
 
@@ -1087,6 +1101,7 @@ export function renderBrainConsoleView(
   state: BrainConsoleViewState,
   settings: BrainConsoleSettings,
   onRefresh?: () => void,
+  onBrainCoreRestart?: () => Promise<void>,
 ): void {
   container.empty();
   container.addClass('brain-console');
@@ -1098,7 +1113,7 @@ export function renderBrainConsoleView(
     const shell = container.createDiv({ cls: 'brain-console__shell' });
 
     // Premium command bar (compact header + tabs in one row)
-    renderCommandBar(shell, state, activeSection, onRefresh);
+    renderCommandBar(shell, state, activeSection, onRefresh, onBrainCoreRestart);
 
     // System metrics banner
     const metricsBanner = shell.createDiv({ cls: 'bc-metrics-wrapper' });
@@ -1107,9 +1122,16 @@ export function renderBrainConsoleView(
     // Main content area
     const scrollArea = shell.createDiv({ cls: 'brain-console__scroll-area' });
     if (snapshot.connectionStatus === 'offline') {
-      renderOfflineState(scrollArea, state.brainCoreUrl || settings.brainCoreUrl, state.statusError, state.endpointErrors);
+      renderOfflineState(
+        scrollArea,
+        state.brainCoreUrl || settings.brainCoreUrl,
+        state.statusError,
+        state.endpointErrors,
+        onRefresh,
+        onBrainCoreRestart,
+      );
     } else {
-      renderActiveSectionContent(scrollArea, activeSection, state, snapshot, settings, onRefresh);
+      renderActiveSectionContent(scrollArea, activeSection, state, snapshot, settings, onRefresh, onBrainCoreRestart);
       renderDiagnosticsPanel(scrollArea, state);
     }
   } catch (error) {
@@ -1127,7 +1149,13 @@ export function renderBrainConsoleView(
   }
 }
 
-function renderCommandBar(shell: HTMLElement, state: BrainConsoleViewState, activeSection: BrainConsoleSectionId, onRefresh?: () => void): void {
+function renderCommandBar(
+  shell: HTMLElement,
+  state: BrainConsoleViewState,
+  activeSection: BrainConsoleSectionId,
+  onRefresh?: () => void,
+  onBrainCoreRestart?: () => Promise<void>,
+): void {
   // Top identity row: wordmark + dot on left, version + refresh on right
   const topRow = shell.createDiv({ cls: 'bc-cmd-top' });
 
@@ -1141,9 +1169,31 @@ function renderCommandBar(shell: HTMLElement, state: BrainConsoleViewState, acti
   right.createEl('span', { cls: 'bc-cmd-build', text: (window as any).BRAIN_CONSOLE_BUILD_ID || 'unknown' });
   const refreshBtn = right.createEl('button', { cls: 'bc-cmd-action' });
   refreshBtn.setAttribute('type', 'button');
-  refreshBtn.setAttribute('aria-label', 'Manual refresh');
+  refreshBtn.setAttribute('aria-label', onBrainCoreRestart ? 'Restart Brain Core' : 'Manual refresh');
+  refreshBtn.setAttribute('title', onBrainCoreRestart ? 'Restart Brain Core and re-verify the service' : 'Manual refresh');
   refreshBtn.textContent = '↻';
-  if (onRefresh) refreshBtn.addEventListener('click', () => onRefresh());
+  if (onBrainCoreRestart) {
+    refreshBtn.addEventListener('click', () => {
+      if (refreshBtn.disabled) return;
+      refreshBtn.disabled = true;
+      refreshBtn.setAttribute('aria-busy', 'true');
+      const originalText = refreshBtn.textContent || '↻';
+      refreshBtn.textContent = '…';
+      void (async () => {
+        try {
+          await onBrainCoreRestart();
+        } catch (error) {
+          console.error('Brain Core restart button failed', error);
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.removeAttribute('aria-busy');
+          refreshBtn.textContent = originalText;
+        }
+      })();
+    });
+  } else if (onRefresh) {
+    refreshBtn.addEventListener('click', () => onRefresh());
+  }
 
   // Tab row: full-width, all tabs visible, wraps if needed
   const nav = shell.createDiv({ cls: 'bc-cmd-nav' });
@@ -1164,6 +1214,7 @@ function renderActiveSectionContent(
   snapshot: DashboardSnapshot,
   settings: BrainConsoleSettings,
   onRefresh?: () => void,
+  onBrainCoreRestart?: () => Promise<void>,
 ): void {
   const content = shell.createDiv({ cls: 'brain-console__section-content' });
 
@@ -1210,9 +1261,6 @@ function renderActiveSectionContent(
         break;
       case 'agents':
         renderAgentsSection(content, state, snapshot);
-        break;
-      case 'recovery':
-        renderRecoverySection(content, state, snapshot);
         break;
       case 'accounts':
         renderAccountsSection(content, state, settings);
@@ -1399,11 +1447,6 @@ function renderOverviewSection(content: HTMLElement, state: BrainConsoleViewStat
 function renderAppsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot, settings: BrainConsoleSettings, onRefresh?: () => void): void {
   const page = content.createDiv({ cls: 'brain-console__apps-page' });
   page.appendChild(renderLocalAppsCard(state, settings, onRefresh));
-
-  const lower = page.createDiv({ cls: 'brain-console__apps-lower' });
-  renderCard(lower, 'Local App Action Audit', renderLocalAppActionAuditCard(state));
-  renderCard(lower, 'Brain Core', renderBrainCoreCard(state));
-  renderCard(lower, 'Scheduler', renderSchedulerCard(state));
 }
 
 function renderSessionsSection(content: HTMLElement, state: BrainConsoleViewState): void {
@@ -3341,16 +3384,17 @@ function renderPostGroup(parent: HTMLElement, title: string, cards: Array<{ titl
 }
 
 function renderAgentsSection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
+  const intro = content.createDiv({ cls: 'brain-console__section-intro' });
+  intro.createEl('p', {
+    cls: 'brain-console__detail',
+    text: 'Read-only agent telemetry, approvals, and recovery blockers in one place.',
+  });
+
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
-  renderCard(grid, 'Agent View', renderAgentViewLedgerCard(state));
-  renderCard(grid, 'Approval Audit Trail', renderApprovalAuditTrailCard(state));
-  renderCard(grid, 'Agents (Summary)', renderAgentViewCard(state, snapshot));
-}
-
-function renderRecoverySection(content: HTMLElement, state: BrainConsoleViewState, snapshot: DashboardSnapshot): void {
-  const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
-
+  renderCard(grid, 'Agent Ledger', renderAgentViewLedgerCard(state));
+  renderCard(grid, 'Approval Trail', renderApprovalAuditTrailCard(state));
+  renderCard(grid, 'Agents Summary', renderAgentViewCard(state, snapshot));
   renderCard(grid, 'Recovery / Blockers', renderRecoveryPanelCard(state));
 }
 
@@ -4286,6 +4330,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
   const actionStatus = state.localAppsActionStatus;
   const orchestrator = state.localAppsOrchestrator;
   const onboarding = state.localAppsOnboardingChecklist;
+  const operatorSummary = state.localAppsOperatorSummary;
   const apps = dashboard?.apps ?? (state.localApps ?? []).map((app) => ({
     id: app.id,
     name: app.name,
@@ -4306,6 +4351,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     lastCheckedAt: new Date().toISOString(),
     notes: '',
   }));
+  const visibleApps = apps.filter((app) => app.id !== 'mind-steward');
 
   const header = container.createDiv({ cls: 'brain-console__apps-header' });
   renderCardSectionHeading(header, 'Local Apps', 'Compact operations inventory with controlled Brain Core actions.');
@@ -4319,11 +4365,11 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     renderMicroStat(strip, 'Controls', dashboard.safety.startStopControlsEnabled ? 'Enabled' : 'Disabled');
   } else {
     const strip = container.createDiv({ cls: 'brain-console__apps-summary-strip' });
-    renderMicroStat(strip, 'Apps', String(apps.length));
+    renderMicroStat(strip, 'Apps', String(visibleApps.length));
     renderMicroStat(strip, 'Controls', 'Unknown');
   }
 
-  if (apps.length === 0) {
+  if (visibleApps.length === 0) {
     container.appendChild(renderEmptyState('No local apps available', 'Check the canonical inventory source.'));
     return container;
   }
@@ -4331,7 +4377,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
   const definitionsById = new Map((orchestrator?.definitions ?? []).map((definition) => [definition.id, definition]));
   const controlsEnabled = dashboard?.actionPolicy.status === 'enabled' || readiness?.ready === true || (readiness != null && readiness.criteria?.every((c) => c.satisfied || c.id === 'audit-logging'));
   const list = container.createDiv({ cls: 'brain-console__apps-operations-grid' });
-  apps.forEach((app) => {
+  visibleApps.forEach((app) => {
     const definition = definitionsById.get(app.id);
     const pendingAction = localAppPendingActions.get(app.id);
     const item = list.createDiv({ cls: 'brain-console__local-app-card brain-console__local-app-card--micro' });
@@ -4374,10 +4420,10 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     // Start button: smart — restarts if already running
     if (app.startSupported || app.restartSupported) {
       const isRunning = app.status === 'running';
-      const startLabel = isRunning ? 'Restart' : 'Start';
+      const startLabel = isRunning ? 'Restart app' : 'Start app';
       const startAction: 'start' | 'restart' = isRunning ? 'restart' : 'start';
       const startEnabled = !pendingAction && controlsEnabled && (isRunning ? app.restartSupported : app.startSupported);
-      const startBtn = actions.createEl('button', { text: startLabel, cls: 'brain-console__local-app-action' });
+      const startBtn = actions.createEl('button', { text: startLabel, cls: 'brain-console__local-app-action brain-console__local-app-action--start' });
       startBtn.addClass(startEnabled ? 'is-enabled' : 'is-disabled');
       if (pendingAction) startBtn.addClass('is-pending');
       startBtn.disabled = !startEnabled;
@@ -4394,7 +4440,7 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
     // Stop button
     if (app.stopSupported) {
       const stopEnabled = !pendingAction && controlsEnabled && app.stopSupported;
-      const stopBtn = actions.createEl('button', { text: 'Stop', cls: 'brain-console__local-app-action' });
+      const stopBtn = actions.createEl('button', { text: 'Stop app', cls: 'brain-console__local-app-action brain-console__local-app-action--stop' });
       stopBtn.addClass(stopEnabled ? 'is-enabled' : 'is-disabled');
       if (pendingAction) stopBtn.addClass('is-pending');
       stopBtn.disabled = !stopEnabled;
@@ -4410,118 +4456,11 @@ function renderLocalAppsCard(state: BrainConsoleViewState, settings?: BrainConso
 
     // Open button
     if (app.url) {
-      const openBtn = actions.createEl('button', { text: 'Open', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
+      const openBtn = actions.createEl('button', { text: 'Open app', cls: 'brain-console__local-app-action brain-console__local-app-action--open is-enabled' });
       openBtn.title = `Open ${app.name} in browser (${app.url})`;
       openBtn.addEventListener('click', () => { window.open(app.url!); });
     }
   });
-
-  const lower = container.createDiv({ cls: 'brain-console__apps-detail-row' });
-  if (dashboard) {
-    const policyCard = lower.createDiv({ cls: 'brain-console__local-app-readiness' });
-    policyCard.createEl('div', { cls: 'brain-console__section-heading', text: 'App Operations Policy' });
-    policyCard.appendChild(renderStatusBadge(dashboard.actionPolicy.status, dashboard.actionPolicy.status === 'enabled' ? 'ok' : 'warn'));
-    renderCompactStatGrid(policyCard, [
-      { label: 'Path', value: dashboard.actionPolicy.executionPath },
-      { label: 'Confirm', value: dashboard.actionPolicy.requiresConfirmation ? 'Required' : 'No' },
-      { label: 'Shell', value: dashboard.safety.pluginExecutesShell ? 'Plugin shell' : 'Never' },
-    ]);
-    policyCard.createEl('div', { cls: 'brain-console__safety-note', text: 'Brain Console posts only canonical app id + start/stop/restart to Brain Core.' });
-  }
-
-  if (readiness) {
-    const readinessCard = lower.createDiv({ cls: 'brain-console__local-app-readiness' });
-    readinessCard.appendChild(renderStatusBadge(readiness.ready ? 'Ready' : 'Not ready', readiness.ready ? 'ok' : 'warn'));
-    readinessCard.createEl('div', { cls: 'brain-console__section-heading', text: 'Action Readiness' });
-    renderCompactStatGrid(readinessCard, [
-      { label: 'Satisfied', value: String(readiness.satisfiedCount) },
-      { label: 'Unsatisfied', value: String(readiness.unsatisfiedCount) },
-    ]);
-    readinessCard.createEl('div', { cls: 'brain-console__safety-note', text: readiness.nextSafeStep });
-  }
-
-  if (onboarding) {
-    const onboardingCard = lower.createDiv({ cls: 'brain-console__local-app-readiness' });
-    onboardingCard.createEl('div', { cls: 'brain-console__section-heading', text: 'Onboarding Standards' });
-    renderCompactStatGrid(onboardingCard, [
-      { label: 'Required fields', value: String(onboarding.requiredFields.length) },
-      { label: 'Steps', value: String(onboarding.onboardingSteps.length) },
-    ]);
-    onboardingCard.createEl('div', { cls: 'brain-console__safety-note', text: onboarding.nextSafeStep });
-  }
-
-  const operationalReadiness = state.localAppsOperationalReadiness;
-  if (operationalReadiness) {
-    const orCard = lower.createDiv({ cls: 'brain-console__local-app-readiness' });
-    orCard.createEl('div', { cls: 'brain-console__section-heading', text: 'Operational Readiness' });
-    const reachableLabel = operationalReadiness.reachableCount > 0 ? 'ok' : 'muted';
-    orCard.appendChild(renderStatusBadge(
-      `${operationalReadiness.reachableCount}/${operationalReadiness.appCount} reachable`,
-      reachableLabel,
-    ));
-    renderCompactStatGrid(orCard, [
-      { label: 'Reachable', value: String(operationalReadiness.reachableCount) },
-      { label: 'Unreachable', value: String(operationalReadiness.unreachableCount) },
-      { label: 'Not configured', value: String(operationalReadiness.notConfiguredCount) },
-      { label: 'Check ms', value: String(operationalReadiness.totalCheckDurationMs) },
-    ]);
-    const reachableItems = operationalReadiness.items.filter((item) => item.status === 'reachable');
-    const unreachableItems = operationalReadiness.items.filter((item) => item.status === 'unreachable');
-    if (reachableItems.length > 0) {
-      const reachableList = orCard.createDiv({ cls: 'brain-console__or-item-list' });
-      reachableList.createEl('div', { cls: 'brain-console__or-item-list-label', text: 'Reachable' });
-      for (const item of reachableItems) {
-        const line = reachableList.createDiv({ cls: 'brain-console__or-item-line brain-console__or-item-line--reachable' });
-        line.createEl('span', { cls: 'brain-console__or-item-name', text: item.appName });
-        if (item.durationMs !== undefined) {
-          line.createEl('span', { cls: 'brain-console__or-item-duration', text: `${item.durationMs}ms` });
-        }
-      }
-    }
-    if (unreachableItems.length > 0) {
-      const unreachableList = orCard.createDiv({ cls: 'brain-console__or-item-list' });
-      unreachableList.createEl('div', { cls: 'brain-console__or-item-list-label', text: 'Unreachable' });
-      for (const item of unreachableItems) {
-        const line = unreachableList.createDiv({ cls: 'brain-console__or-item-line brain-console__or-item-line--unreachable' });
-        line.createEl('span', { cls: 'brain-console__or-item-name', text: item.appName });
-        line.createEl('span', { cls: 'brain-console__or-item-message', text: item.message });
-      }
-    }
-    const checkedAt = operationalReadiness.generatedAt;
-    orCard.createEl('div', { cls: 'brain-console__safety-note', text: `Checked at ${formatIsoTime(checkedAt)} · read-only health probes only.` });
-  }
-
-  const operatorSummary = state.localAppsOperatorSummary;
-  if (operatorSummary) {
-    const osCard = lower.createDiv({ cls: 'brain-console__local-app-readiness' });
-    osCard.createEl('div', { cls: 'brain-console__section-heading', text: 'Operator Summary' });
-    const attentionLabel = operatorSummary.attentionCount > 0 ? 'warn' : 'ok';
-    osCard.appendChild(renderStatusBadge(
-      operatorSummary.attentionCount > 0
-        ? `${operatorSummary.attentionCount} apps need attention`
-        : 'All apps nominal',
-      attentionLabel,
-    ));
-    renderCompactStatGrid(osCard, [
-      { label: 'Apps', value: String(operatorSummary.appCount) },
-      { label: 'Executable actions', value: String(operatorSummary.executableActionCount) },
-      { label: 'Disabled actions', value: String(operatorSummary.disabledActionCount) },
-      { label: 'Reachable', value: String(operatorSummary.reachableCount) },
-      { label: 'Unreachable', value: String(operatorSummary.unreachableCount) },
-      { label: 'Not configured', value: String(operatorSummary.notConfiguredCount) },
-    ]);
-    if (operatorSummary.topAttentionItems.length > 0) {
-      const attentionList = osCard.createDiv({ cls: 'brain-console__or-item-list' });
-      attentionList.createEl('div', { cls: 'brain-console__or-item-list-label', text: 'Needs attention' });
-      for (const item of operatorSummary.topAttentionItems) {
-        const line = attentionList.createDiv({ cls: 'brain-console__or-item-line brain-console__or-item-line--unreachable' });
-        line.createEl('span', { cls: 'brain-console__or-item-name', text: item.appName });
-        line.createEl('span', { cls: 'brain-console__or-item-message', text: item.nextRecommendedAction });
-      }
-    }
-    osCard.createEl('div', { cls: 'brain-console__safety-note', text: 'Read-only operator summary · no lifecycle actions triggered.' });
-  }
-
   return container;
 }
 
@@ -4604,6 +4543,8 @@ function renderOfflineState(
   brainCoreUrl: string,
   statusError?: string,
   endpointErrors?: import('./client.js').EndpointError[],
+  onRefresh?: () => void,
+  onBrainCoreRestart?: () => Promise<void>,
 ): void {
   const offline = shell.createDiv({ cls: 'brain-console__offline-panel' });
 
@@ -4638,10 +4579,23 @@ function renderOfflineState(
   steps.createEl('li', { text: 'Verify Brain Core terminal is still running' });
   steps.createEl('li', { text: 'Test: curl http://localhost:4877/status' });
   steps.createEl('li', { text: 'If still offline, try: Settings → Brain Core URL → http://127.0.0.1:4877' });
-  steps.createEl('li', { text: 'Click Refresh' });
+  steps.createEl('li', { text: 'If Brain Core still responds, use the top-right ↻ control to request a verified restart' });
 
   const refreshBtn = offline.createEl('button', { text: 'Refresh' });
   refreshBtn.addClass('brain-console__btn-main');
+  refreshBtn.setAttribute('type', 'button');
+  if (onRefresh) {
+    refreshBtn.addEventListener('click', () => onRefresh());
+  }
+
+  if (onBrainCoreRestart) {
+    const restartBtn = offline.createEl('button', { text: 'Restart Brain Core' });
+    restartBtn.addClass('brain-console__btn-main');
+    restartBtn.setAttribute('type', 'button');
+    restartBtn.addEventListener('click', () => {
+      void onBrainCoreRestart();
+    });
+  }
 }
 
 function renderActivityPanel(shell: HTMLElement, state: BrainConsoleViewState): void {

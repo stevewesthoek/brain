@@ -1,10 +1,10 @@
 import { ItemView, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type WorkspaceLeaf } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSectionId, type BrainConsoleViewState } from './view.js';
-import { setRequestUrl } from './client.js';
+import { requestBrainCoreRestart, setRequestUrl, waitForBrainCoreStatus } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'v2.15';
+export const BRAIN_CONSOLE_BUILD_ID = 'v2.17';
 
 declare global {
   interface Window {
@@ -75,7 +75,7 @@ export default class BrainConsolePlugin extends Plugin {
     }
   }
 
-  private async reopenConsoleFresh(): Promise<void> {
+  async reopenConsoleFresh(): Promise<void> {
     try {
       const leaves = [...this.app.workspace.getLeavesOfType(VIEW_TYPE)];
       for (const leaf of leaves) {
@@ -98,6 +98,9 @@ export default class BrainConsolePlugin extends Plugin {
     }
   }
 }
+
+const REPO_ROOT = '/Users/Office/Repos/stevewesthoek/brain';
+const BRAIN_CORE_RESTART_HELPER = '/Users/Office/Repos/stevewesthoek/brain/projects/brain-core/scripts/dev/restart-brain-core.mjs';
 
 class BrainConsoleSettingTab extends PluginSettingTab {
   constructor(app: Plugin['app'], private readonly plugin: BrainConsolePlugin) {
@@ -133,7 +136,6 @@ class BrainConsoleView extends ItemView {
   private activeSection: BrainConsoleSectionId = 'overview';
   private cachedState: BrainConsoleViewState | null = null;
   private isRefreshing = false;
-  private heartbeatInterval: number | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: BrainConsolePlugin) {
     super(leaf);
@@ -157,7 +159,7 @@ class BrainConsoleView extends ItemView {
     header.createEl('h2', { text: 'Brain Console' });
     header.createEl('span', { cls: 'brain-console__build-marker', text: `build ${BRAIN_CONSOLE_BUILD_ID}` });
 
-    state.createDiv({ cls: 'brain-console__status-line', text: 'Manual refresh + Brain Core allowlisted local app actions · plugin never executes shell' });
+    state.createDiv({ cls: 'brain-console__status-line', text: 'Manual refresh + Brain Core restart verification + allowlisted local app actions · plugin never executes shell' });
     state.createDiv({ cls: 'brain-console__install-check', text: 'If build marker above is not visible, the installed plugin bundle may be stale.' });
 
     const actions = state.createDiv({ cls: 'brain-console__actions' });
@@ -207,26 +209,23 @@ class BrainConsoleView extends ItemView {
   }
 
   private startHeartbeat(): void {
-    if (this.heartbeatInterval !== null) return;
-    this.heartbeatInterval = this.registerInterval(
-      window.setInterval(async () => {
-        if (this.isRefreshing) return;
-        // Skip DOM re-render on interactive tabs — fetch still updates cachedState
-        if (this.activeSection === 'accounts') {
-          const settings = await this.plugin.getSettings();
-          this.cachedState = await loadBrainConsoleViewState(settings);
-          return;
-        }
-        await this.fullRefresh();
-      }, 3000),
-    );
+    // Disabled for now: the auto-refresh loop was causing repeated transient reconnect churn.
+    // Manual refresh still reloads the full snapshot and restart button still reopens after verification.
   }
 
   /** Full refresh: reload all Brain Core data and re-render */
   private async fullRefresh(): Promise<void> {
     const settings = await this.plugin.getSettings();
-    this.cachedState = await loadBrainConsoleViewState(settings);
-    this.rerenderWithCachedState();
+    try {
+      this.cachedState = await loadBrainConsoleViewState(settings);
+      this.rerenderWithCachedState();
+    } catch (error) {
+      console.error('Brain Console refresh failed', error);
+      if (!this.cachedState) {
+        throw error;
+      }
+      // Preserve the last known good dashboard instead of flipping to offline on transient failures.
+    }
   }
 
   /** Re-render using cached state (instant tab switch) */
@@ -234,9 +233,23 @@ class BrainConsoleView extends ItemView {
     if (!this.cachedState) return;
     const settings = this.plugin.settings;
     this.cachedState.activeSection = this.activeSection;
-    renderBrainConsoleView(this.contentEl, this.cachedState, settings, () => {
-      void this.fullRefresh();
-    });
+    // Save scroll position before re-render to prevent jumping to top
+    const scrollArea = this.contentEl.querySelector('.brain-console__scroll-area') as HTMLElement | null;
+    const savedScrollTop = scrollArea?.scrollTop ?? 0;
+    renderBrainConsoleView(
+      this.contentEl,
+      this.cachedState,
+      settings,
+      () => {
+        void this.fullRefresh();
+      },
+      () => this.restartBrainCore(),
+    );
+    // Restore scroll position after re-render
+    if (savedScrollTop > 0) {
+      const newScrollArea = this.contentEl.querySelector('.brain-console__scroll-area') as HTMLElement | null;
+      if (newScrollArea) newScrollArea.scrollTop = savedScrollTop;
+    }
   }
 
   async refresh(): Promise<void> {
@@ -244,6 +257,94 @@ class BrainConsoleView extends ItemView {
       await this.fullRefresh();
     } catch (error) {
       this.renderOpenFallback(error);
+    }
+  }
+
+  private async restartBrainCore(): Promise<void> {
+    if (this.isRefreshing) return;
+
+    this.isRefreshing = true;
+    try {
+      const settings = await this.plugin.getSettings();
+      const normalizedBaseUrl = normalizeBrainCoreUrl(settings.brainCoreUrl).value;
+      new Notice('Brain Core restart requested. Waiting for stop, port-free, and restart verification...');
+
+      const request = await requestBrainCoreRestart(normalizedBaseUrl);
+      if (request.error || !request.value) {
+        const fallback = await this.restartBrainCoreLocally(normalizedBaseUrl, request.detail ?? request.error);
+        if (!fallback.ok) {
+          new Notice(`Brain Core restart failed: ${fallback.error}`);
+          return;
+        }
+        await this.plugin.reopenConsoleFresh();
+        await this.fullRefresh();
+        new Notice('Brain Core restart verified: service is back online.');
+        return;
+      }
+
+      if (!request.value.accepted) {
+        new Notice(`Brain Core restart was not accepted: ${request.value.message}`);
+        return;
+      }
+
+      const verified = await waitForBrainCoreStatus(normalizedBaseUrl);
+      if (verified.error || !verified.value?.ok) {
+        const message = verified.error ?? verified.detail ?? 'Brain Core did not return an ok status.';
+        new Notice(`Brain Core restart did not verify: ${message}`);
+        return;
+      }
+
+      new Notice('Brain Core restart verified: service is back online.');
+      await this.recoverConsoleAfterRestart(normalizedBaseUrl);
+    } catch (error) {
+      console.error('Brain Core restart failed', error);
+      new Notice(`Brain Core restart failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+
+  private async recoverConsoleAfterRestart(baseUrl: string): Promise<void> {
+    const recoveryAttempts = 3;
+    for (let attempt = 1; attempt <= recoveryAttempts; attempt += 1) {
+      await this.plugin.reopenConsoleFresh();
+      try {
+        await this.fullRefresh();
+        const currentStatus = await waitForBrainCoreStatus(baseUrl, 15_000, 1_000);
+        if (!currentStatus.error && currentStatus.value?.ok) {
+          return;
+        }
+      } catch (error) {
+        console.error(`Brain Console recovery refresh attempt ${attempt} failed`, error);
+      }
+    }
+
+    throw new Error('Brain Console did not recover after verified Brain Core restart.');
+  }
+
+  private async restartBrainCoreLocally(baseUrl: string, reason?: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      const requireFn = (globalThis as { require?: (id: string) => unknown }).require ?? ((0, eval)('require') as (id: string) => unknown);
+      const { execFile } = requireFn('child_process') as { execFile: (...args: any[]) => any };
+      const { promisify } = requireFn('util') as { promisify: (...args: any[]) => any };
+      const execFileAsync = promisify(execFile);
+      const processEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
+      const result = await execFileAsync('/opt/homebrew/bin/node', [BRAIN_CORE_RESTART_HELPER, 'restart'], {
+        cwd: REPO_ROOT,
+        env: {
+          ...processEnv,
+          BRAIN_CORE_HOST: normalizeBrainCoreUrl(baseUrl).value.replace(/^https?:\/\//, '').split(':')[0] ?? '127.0.0.1',
+          BRAIN_CORE_PORT: '4877',
+        },
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 180_000,
+      });
+      console.log('Brain Core local restart output', result.stdout);
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Brain Core local restart failed', reason, error);
+      return { ok: false, error: message };
     }
   }
 
@@ -266,10 +367,6 @@ class BrainConsoleView extends ItemView {
   }
 
   async onClose(): Promise<void> {
-    if (this.heartbeatInterval !== null) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
   }
 }
 

@@ -497,7 +497,7 @@
 .brain-console__apps-page {
   display: flex;
   flex-direction: column;
-  gap: var(--bc-gap);
+  gap: 12px;
   width: 100%;
   min-width: 0;
 }
@@ -509,15 +509,15 @@
 
 .brain-console__apps-summary-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
-  gap: var(--bc-gap);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
   width: 100%;
   min-width: 0;
 }
 
 .brain-console__apps-summary-stat {
   min-width: 0;
-  padding: var(--bc-pad);
+  padding: 12px 14px;
   border: 1px solid var(--bc-border);
   border-radius: var(--bc-radius);
   background: var(--bc-card);
@@ -525,18 +525,9 @@
 
 .brain-console__apps-operations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
-  gap: var(--bc-gap);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
   align-items: stretch;
-  width: 100%;
-  min-width: 0;
-}
-
-.brain-console__apps-detail-row,
-.brain-console__apps-lower {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--bc-gap);
   width: 100%;
   min-width: 0;
 }
@@ -558,9 +549,9 @@
 .brain-console__local-app-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  padding: var(--bc-pad);
+  padding: 14px 14px 12px;
   border: 1px solid var(--bc-border);
   border-radius: var(--bc-radius);
   background: var(--bc-card);
@@ -573,8 +564,8 @@
 }
 
 .brain-console__local-app-card--micro {
-  min-height: 130px;
-  padding: var(--bc-pad);
+  min-height: 150px;
+  padding: 14px 14px 12px;
   gap: 7px;
 }
 
@@ -582,14 +573,14 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .brain-console__app-card-title {
   min-width: 0;
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.25;
   font-weight: 700;
   color: var(--text-normal);
@@ -606,10 +597,10 @@
 .brain-console__app-card-meta {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.25;
 }
 
@@ -641,24 +632,24 @@
 .brain-console__local-app-card--micro .brain-console__local-app-actions {
   display: flex;
   flex-wrap: nowrap;
-  gap: 4px;
+  gap: 6px;
 }
 
 .brain-console__local-app-action {
   min-width: 0;
-  padding: 4px 5px;
+  padding: 5px 8px;
   border: 1px solid var(--bc-border);
   border-radius: var(--bc-radius);
   background: var(--interactive-normal);
   color: var(--text-normal);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .brain-console__local-app-action.is-enabled {
   border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--bc-border));
-  background: color-mix(in srgb, var(--interactive-accent) 22%, var(--interactive-normal));
+  background: color-mix(in srgb, var(--interactive-accent) 18%, var(--interactive-normal));
   color: var(--text-normal);
   opacity: 1;
 }
@@ -674,8 +665,18 @@
 
 .brain-console__local-app-action--open {
   border-color: color-mix(in srgb, var(--text-accent) 50%, var(--bc-border));
-  background: color-mix(in srgb, var(--text-accent) 15%, var(--interactive-normal));
+  background: color-mix(in srgb, var(--text-accent) 20%, var(--interactive-normal));
   cursor: pointer;
+}
+
+.brain-console__local-app-action--start.is-enabled {
+  border-color: color-mix(in srgb, var(--interactive-accent-hover) 55%, var(--bc-border));
+  background: color-mix(in srgb, var(--interactive-accent-hover) 18%, var(--interactive-normal));
+}
+
+.brain-console__local-app-action--stop.is-enabled {
+  border-color: color-mix(in srgb, var(--text-error) 55%, var(--bc-border));
+  background: color-mix(in srgb, var(--text-error) 18%, var(--interactive-normal));
 }
 
 .brain-console__local-app-action:disabled {
@@ -701,6 +702,19 @@
   color: var(--text-muted);
   font-size: 9px;
   line-height: 1.25;
+}
+
+@media (max-width: 1700px) {
+  .brain-console__apps-operations-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1380px) {
+  .brain-console__apps-summary-strip,
+  .brain-console__apps-operations-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .brain-console__local-app-result-line {
