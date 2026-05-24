@@ -366,7 +366,7 @@ import {
   type DashboardSnapshot,
 } from './dashboard.js';
 
-export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'video-orchestrator' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts';
+export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'orchestrators' | 'pipelines' | 'video-orchestrator' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts';
 
 const localAppPendingActions = new Map<string, string>();
 
@@ -984,6 +984,8 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'analytics', label: 'Analytics', icon: '▣' },
   { id: 'stripe', label: 'Stripe', icon: '$' },
   { id: 'monitoring', label: 'Monitoring', icon: '◎' },
+  { id: 'orchestrators', label: 'Orchestrators', icon: '◫' },
+  { id: 'pipelines', label: 'Pipelines', icon: '▤' },
   { id: 'video-orchestrator', label: 'Video Orchestrator', icon: '◈' },
   { id: 'projects', label: 'Projects', icon: '◉' },
   { id: 'reports', label: 'Reports', icon: '📋' },
@@ -1270,6 +1272,12 @@ function renderActiveSectionContent(
         break;
       case 'monitoring':
         renderMonitoringSection(content, state);
+        break;
+      case 'orchestrators':
+        renderOrchestratorsSection(content, state, snapshot);
+        break;
+      case 'pipelines':
+        renderPipelinesSection(content, state, snapshot);
         break;
       case 'video-orchestrator':
         renderVideoOrchestratorSection(content, state);
@@ -2595,6 +2603,7 @@ function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleVie
 
   // ── Derive Video Orchestrator status ─────────────────────────────────────────
   const vol = state.pipelinesLiveStatus?.videoOrchestrator;
+  const biblePipelines = getBiblePipelineSummaries(state);
   type OrchStatus = 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERROR';
 
   function voStatus(): OrchStatus {
@@ -2624,7 +2633,7 @@ function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleVie
     id: 'research',
     title: 'RESEARCH ORCHESTRATOR',
     status: 'IDLE',
-    stats: ['Last: —', 'Quota: —'],
+    stats: ['YouTube transcript: ready', 'Video analysis: local Brain Core'],
     healthDots: [null, null, null, null, null],
     onOpen: () => openDrawer('research'),
   });
@@ -2635,7 +2644,7 @@ function renderOrchestratorsSection(content: HTMLElement, state: BrainConsoleVie
     id: 'bible',
     title: 'BIBLE RESEARCH',
     status: 'IDLE',
-    stats: ['Pipelines: 0', 'Pending: —'],
+    stats: [`Pipelines: ${biblePipelines.length}`, `Primary: ${biblePipelines[0]?.name ?? '—'}`],
     healthDots: [null, null, null, null, null],
     onOpen: () => openDrawer('bible'),
   });
@@ -2723,6 +2732,21 @@ function bcOrchHealthDots(status: 'IDLE' | 'RUNNING' | 'PARTIAL' | 'DONE' | 'ERR
   if (status === 'ERROR') return ['DONE', 'ERROR', null, null, null];
   if (status === 'PARTIAL') return ['DONE', 'PARTIAL', null, null, null];
   return [null, null, null, null, null]; // IDLE / DONE
+}
+
+function getBiblePipelineSummaries(state: BrainConsoleViewState): BrainCorePipelineSummary[] {
+  return (state.pipelines ?? []).filter((pipeline) => {
+    const searchable = [
+      pipeline.id,
+      pipeline.name,
+      pipeline.description,
+      ...(pipeline.stages ?? []),
+      pipeline.migration?.sourcePipelineId,
+      pipeline.migration?.targetPipelineId,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    return searchable.includes('bible') || searchable.includes('says the bible') || searchable.includes('stb');
+  });
 }
 
 // ── Helper: build a drawer with standard header ───────────────────────────────
@@ -3199,16 +3223,19 @@ function bcOrchBuildBibleDrawer(
   const left = split.createDiv({ cls: 'bc-orch-split-left' });
   left.style.width = '40%';
 
-  const bibleOrch = state.orchestrators?.find(o => o.id === 'bible-research');
-  const pipelines = (bibleOrch as any)?.pipelines as { id: string; name: string }[] | undefined;
+  const pipelines = getBiblePipelineSummaries(state);
 
   left.createEl('div', { cls: 'bc-orch-section-header' }).createEl('span', { text: 'PIPELINES' });
 
-  if (!pipelines || pipelines.length === 0) {
+  if (pipelines.length === 0) {
     left.createEl('div', { cls: 'bc-orch-output-empty', text: 'No pipelines configured' });
   } else {
     pipelines.forEach(p => {
-      left.createEl('div', { cls: 'bc-orch-card-stat', text: `▶ ${p.name ?? p.id}` });
+      const row = left.createDiv({ cls: 'bc-orch-card-stat' });
+      row.textContent = `▶ ${p.name ?? p.id}`;
+      if (p.health || p.status) {
+        row.title = [p.status, p.health].filter(Boolean).join(' · ');
+      }
     });
   }
 
@@ -3229,12 +3256,10 @@ function bcOrchBuildBibleDrawer(
   right.createEl('div', { cls: 'bc-orch-label', text: 'Pipeline' });
   const pipelineSelect = right.createEl('select', { cls: 'bc-orch-input' }) as HTMLSelectElement;
   pipelineSelect.createEl('option', { text: '— select pipeline —' });
-  if (pipelines) {
-    pipelines.forEach(p => {
-      const opt = pipelineSelect.createEl('option', { text: p.name ?? p.id });
-      (opt as HTMLOptionElement).value = p.id;
-    });
-  }
+  pipelines.forEach(p => {
+    const opt = pipelineSelect.createEl('option', { text: p.name ?? p.id });
+    (opt as HTMLOptionElement).value = p.id;
+  });
 
   right.createEl('div', { cls: 'bc-orch-label', text: 'Prompt' });
   const promptArea = right.createEl('textarea', { cls: 'bc-orch-input' }) as HTMLTextAreaElement;
