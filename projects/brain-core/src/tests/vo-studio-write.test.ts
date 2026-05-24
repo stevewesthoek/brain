@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createContentItemRequest, updateContentItemRequest } from '../adapters/vo-studio-write.js';
+import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest } from '../adapters/vo-studio-write.js';
 
 test('createContentItemRequest accepts valid input and returns approval preview', () => {
   const result = createContentItemRequest({
@@ -216,4 +216,67 @@ test('updateContentItemRequest allows undefined fields', () => {
 
   assert.equal(result.ok, true);
   assert.ok(result.preview);
+});
+
+test('generateThumbnailRequest accepts valid thumbnail request', () => {
+  const result = generateThumbnailRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.ok(result.preview);
+  assert.ok(result.preview!.job);
+  assert.equal(result.preview!.job!.type, 'thumbnail');
+  assert.equal(result.preview!.job!.status, 'pending_approval');
+});
+
+test('generateThumbnailRequest accepts optional template and boldText', () => {
+  const result = generateThumbnailRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+    templateId: 'bold-text',
+    boldText: 'Custom Headline',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.preview);
+});
+
+test('generateThumbnailRequest rejects missing projectId', () => {
+  const result = generateThumbnailRequest({
+    projectId: '',
+    contentItemId: 'content-abc123',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /projectId is required/);
+});
+
+test('generateThumbnailRequest rejects missing contentItemId', () => {
+  const result = generateThumbnailRequest({
+    projectId: 'project-123',
+    contentItemId: '',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /contentItemId is required/);
+});
+
+test('generateThumbnailRequest job has unique IDs', () => {
+  const result1 = generateThumbnailRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+  });
+
+  const result2 = generateThumbnailRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-abc123',
+  });
+
+  assert.notEqual(
+    result1.preview!.job!.id,
+    result2.preview!.job!.id,
+  );
 });

@@ -99,7 +99,7 @@ import {
   readVOStudioPipelineProfiles,
   readVOStudioProjects,
 } from '../adapters/video-orchestrator-studio-model.js';
-import { createContentItemRequest, updateContentItemRequest } from '../adapters/vo-studio-write.js';
+import { createContentItemRequest, updateContentItemRequest, generateThumbnailRequest } from '../adapters/vo-studio-write.js';
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
@@ -2160,6 +2160,30 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     }
 
     const result = updateContentItemRequest(updateReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  if (url.pathname === '/api/video-orchestrator/thumbnails/generate') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const thumbReq: {
+      projectId: string;
+      contentItemId: string;
+      templateId?: string;
+      boldText?: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+    };
+
+    if (body?.templateId !== undefined) {
+      thumbReq.templateId = body.templateId as string;
+    }
+    if (body?.boldText !== undefined) {
+      thumbReq.boldText = body.boldText as string;
+    }
+
+    const result = generateThumbnailRequest(thumbReq);
     sendJson(response, result.ok ? 202 : 400, result);
     return;
   }

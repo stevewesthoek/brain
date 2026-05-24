@@ -174,3 +174,76 @@ export function updateContentItemRequest(
     },
   };
 }
+
+export interface GenerateThumbnailRequest {
+  projectId: string;
+  contentItemId: string;
+  templateId?: string;
+  boldText?: string;
+}
+
+export interface GenerateThumbnailResponse {
+  ok: boolean;
+  approval?: {
+    id: string;
+    status: string;
+  };
+  preview?: {
+    job: {
+      id: string;
+      type: string;
+      contentItemId: string;
+      status: string;
+    };
+  };
+  error?: string;
+}
+
+export function generateThumbnailRequest(
+  request: GenerateThumbnailRequest,
+): GenerateThumbnailResponse {
+  const errors: string[] = [];
+
+  if (!request.projectId?.trim()) {
+    errors.push('projectId is required');
+  }
+  if (!request.contentItemId?.trim()) {
+    errors.push('contentItemId is required');
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: errors.join('; '),
+    };
+  }
+
+  const jobId = `job-thumbnail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result = requestAction('custom-thumbnail-generate');
+
+  if (!result.accepted) {
+    return {
+      ok: false,
+      error: result.message,
+    };
+  }
+
+  return {
+    ok: true,
+    ...(result.approval && {
+      approval: {
+        id: result.approval.id,
+        status: result.approval.status,
+      },
+    }),
+    preview: {
+      job: {
+        id: jobId,
+        type: 'thumbnail',
+        contentItemId: request.contentItemId,
+        status: 'pending_approval',
+      },
+    },
+  };
+}
