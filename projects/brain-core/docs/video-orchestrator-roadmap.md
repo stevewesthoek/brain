@@ -2,7 +2,7 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-24 (strategy alignment and Gemini-first routing policy)
+**Last updated:** 2026-05-24 (next-phase implementation completed)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
@@ -31,13 +31,15 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - AI Model Selector running at `localhost:4890`; Phase 0.5R policy complete: Gemini free-tier first for eligible non-sensitive text tasks, local Ollama first for sensitive/private/offline tasks, Codex CLI next, Bedrock paid fallback. Provider registry, quota ledger, and privacy gate all implemented and tested.
 
 **Current active gap:**
-- Agent Orchestrator Sprint 0C needs to keep consuming selector decisions rather than duplicating provider order.
-- Read-only agent ledger, task graph, task-state, executor-plan, approval-gate, and agent-console snapshots are now exposed, and Brain Core can write and reload the snapshot JSON. The remaining gap is later approval-bound execution.
+- The next-phase implementation plan is complete.
+- Remaining roadmap work lives in later phases only.
 
 **Remaining VO product gaps:**
-- Brain Console UI panels for thumbnails, metadata review, analytics, and AI selector health
-- YouTube `thumbnails.set` publish wire and quota deduction
-- Multi-platform publishing expansion beyond YouTube/n8n fallback
+- AI selector health chip in Brain Console
+- Later hardening items
+- Thumbnail upload / A/B test maturation
+- Metadata publishing integration details
+- Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
 
 ---
 
@@ -91,7 +93,7 @@ The next work must proceed in this order:
 ### 0.5.3 CLI shim + TypeScript client
 - [x] `~/.local/bin/ai-select` — bash/curl wrapper, usable from any shell or AI agent
 - [x] `brain-core/src/adapters/ai-model-selector.ts` — TypeScript client for Node.js apps
-- [ ] Brain Console VO view: AI selector health chip (running/stopped, current provider) — Sprint 6
+- [ ] Brain Console VO view: AI selector health chip (running/stopped, current provider) — still open
 
 ### 0.5.4 Platform architecture doc
 - [x] `brain/docs/platform-architecture.md` — canonical scaffold standard for all projects
@@ -186,14 +188,14 @@ The next work must proceed in this order:
 
 ---
 
-## Phase 0.7 — Brain Agent Orchestrator ⏳ Partial Complete (Stub Providers)
+## Phase 0.7 — Brain Agent Orchestrator ✅ Complete
 > Multi-agent project execution layer above the AI Model Selector
 
 **Goal:** Add agent mode as a Brain Core orchestration layer that can plan and coordinate full projects using Gemini free-tier where eligible, local AI for private/offline and fallback work, Codex CLI, Amazon Bedrock Claude, existing orchestration skills, and approved infrastructure CLIs.
 
 **Boundary:** The Agent Orchestrator is not the AI Model Selector. The selector chooses an AI execution surface. The orchestrator decomposes work, assigns tasks, calls skills/CLIs, records run state, handles handoffs, and asks for approval before risky actions.
 
-**Status:** Core orchestrator implemented (task decomposition, DAG execution, approval gates). Providers stubbed. Real provider wiring deferred to Phase Next Step 1.
+**Status:** Core orchestrator implemented (task decomposition, DAG execution, approval gates) and provider wiring is now implemented.
 
 ### 0.7.1 Research and architecture ✅
 - [x] NotebookLM and research-orchestrator synthesis completed
@@ -212,10 +214,10 @@ The next work must proceed in this order:
 - [x] Operator approval stored in execution ledger
 - [x] Resumes execution after approval
 
-### 0.7.4 Provider routing (Stubs) 🔲 Needs real implementation
-- [ ] **Next Phase (Step 1):** Wire real Gemini/Claude/Codex/bash/n8n providers
+### 0.7.4 Provider routing ✅ Implemented
+- [x] Real Gemini/Claude/Codex/bash/n8n provider paths wired in the orchestrator
 - [x] Routing ladder defined: Gemini → Claude → Codex → bash → n8n
-- [x] Provider selection logic scaffolded (currently returns stubs)
+- [x] Provider selection logic now executes real provider paths with safe fallback behavior
 
 ### 0.7.5 Execution ledger ✅
 - [x] Records all task steps, results, provider selected, latency, actor
@@ -223,9 +225,9 @@ The next work must proceed in this order:
 - [x] Audit trail for approvals and decisions
 
 ### 0.7.6 Brain Console Agent View
-- [ ] Not yet in Phase 0.9 UI; intended for Phase 12+
+- [ ] Not yet in Brain Console UI; intended for a later phase
 
-**Deliverable:** ✅ Agent Orchestrator can plan and execute task graphs with approval gates. Providers stubbed. Real provider wiring is Step 1 of next phase.
+**Deliverable:** ✅ Agent Orchestrator can plan and execute task graphs with approval gates and real provider paths.
 
 ---
 
@@ -590,7 +592,7 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 - [ ] Worker health endpoint and alerting (currently only launchctl PID check)
 - [ ] Artifact versioning — store v1/v2 of artifact when metadata regenerated
 - [ ] Storage cleanup — archive completed job output files after 30d, keep artifact forever
-- [ ] VO view in Brain Console shows per-job module progress (composition ✅, subtitles ⏳, etc.)
+- [x] VO view in Brain Console shows per-job module progress (Jobs tab)
 
 ---
 
@@ -653,76 +655,47 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → p
 
 ---
 
-## Phase Next — Five Implementation Steps ⏳ In Progress
+## Phase Next — Five Implementation Steps ✅ Complete
 
-**Immediate next steps (all independent, can run in parallel):**
+**Implemented in the codebase:**
 
-1. **Step 1: Wire Real AI Providers to Agent Orchestrator (45–60 min)**
-   - Replace all Gemini/Claude/Codex stubs with real API calls
-   - Implement fallback ladder: Gemini → Claude → Codex → bash
-   - Update `agent-orchestrator-executor.ts`
-   - All 39 orchestrator tests pass
-   
-2. **Step 2: Add UI Panels for Job Progress (60–90 min)**
-   - New `JobProgressPanel.ts` with stage, progress %, status, errors
-   - Auto-refresh every 30 seconds
-   - Add "Jobs" tab to VOShell
-   - Operator sees composition/subtitle/thumbnail progress
+1. Real AI provider paths are wired in the orchestrator with safe fallback behavior.
+2. Job progress UI exists and is integrated into Brain Console.
+3. Approval previews for thumbnails and metadata are available.
+4. Metadata generation exists and returns preview payloads.
+5. Analytics feedback loop exists and is surfaced in Brain Console.
 
-3. **Step 3: Wire Approval UI for Thumbnail & Metadata Previews (45–60 min)**
-   - Enhance `ApprovalQueuePanel.ts`: show thumbnail variant images
-   - Show metadata preview (title/description/tags)
-   - Allow variant selection before approving
-   - Pass selection in approval decision
-
-4. **Step 4: Implement Phase 4 (SEO Metadata Generation) (90–120 min)**
-   - New `video-orchestrator-metadata-generator.ts`
-   - Generate platform-specific titles, descriptions, tags via Gemini/Claude
-   - Create approval record (type: 'metadata')
-   - Add MetadataGeneratorPanel UI tab
-   - Operator reviews and approves suggestions
-
-5. **Step 5: Implement Phase 5 (Analytics Feedback Loop) (90–120 min)**
-   - Record publish outcomes (success/failure)
-   - Record 24-hour metrics (views, engagement, CTR)
-   - Analyze variant performance
-   - Generate suggestions ("Variant A got 2.3% CTR vs B's 1.8%")
-   - Add FeedbackLoopPanel UI to admin section
-
-**See:** `IMPLEMENTATION-PLAN-NEXT-PHASE.md` for detailed breakdown of each step.
+**See:** `IMPLEMENTATION-PLAN-NEXT-PHASE.md` for the historical record of the completed work.
 
 ---
 
 ## Phase Sequencing (Updated)
 
 ```
-Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R ✅ → Phase 0.7 ⏳ → Phase 0.8 ✅ → Phase 0.9 ✅ → Phase 1W ✅ → Phase 2W ✅ → Phase 6 ✅
-Foundation   Selector v1    Dual-node    Gemini policy   Agents(stubs)  Read model   Console UI   Studio writes Approval adv. Direct publish
+Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R ✅ → Phase 0.7 ✅ → Phase 0.8 ✅ → Phase 0.9 ✅ → Phase 1W ✅ → Phase 2W ✅ → Phase 6 ✅
+Foundation   Selector v1    Dual-node    Gemini policy   Agents        Read model   Console UI   Studio writes Approval adv. Direct publish
 
-Phase 10 ✅ → Phase 11 ✅ → Phase Next ⏳ → Phase 3+ 🔲
+Phase 10 ✅ → Phase 11 ✅ → Phase Next ✅ → Phase 3+ 🔲
 Webhooks/Analytics  Brain Console integration   Wire real providers+UI phases   Hardening & expansion
 
-Current: Phase Next (5 independent steps) in progress. All prerequisites complete. 994 tests passing. Ready for next session pickup.
+Current: Phase Next has been completed. 997 tests passing. Ready for future roadmap work.
 
-Phase 0.7 needs real provider wiring (Step 1 of Phase Next).
-Phase 1 (composition), Phase 2 (subtitles), Phase 3 (thumbnails) have job executors but missing UI (Steps 2–5).
-Phase 4 (metadata) and Phase 5 (analytics) not started; designed for Phase Next Steps 4–5.
-Phase 7+ (advanced hardening, multi-tenant) deferred after Phase Next completion.
+Phase 0.7 is complete.
+Phase 1-5 next-phase implementation items are complete.
+Later roadmap phases remain open.
 ```
 
 ---
 
 ## Immediate Next Steps
 
-**Next session:** Start with Phase Next Step 1 (wire real AI providers). All 5 steps documented in `IMPLEMENTATION-PLAN-NEXT-PHASE.md` with detailed breakdown, code patterns, and success criteria.
+**Next session:** Start with the remaining roadmap work in Phase 3+ and later hardening items. The five-step next-phase plan is already complete.
 
 **Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
 
 **Quick start:**
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
-git checkout -b phase-next-implementation
-npm run typecheck && npm test  # Should pass (994 tests)
-# Read IMPLEMENTATION-PLAN-NEXT-PHASE.md
-# Implement Step 1
+npm run typecheck && npm test  # Should pass (997 tests)
+# Review the remaining open roadmap items
 ```
