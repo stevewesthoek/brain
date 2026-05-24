@@ -32,10 +32,49 @@ if [[ "${ALLOW_UNAVAILABLE_OPUS_47:-0}" != "1" && "${ANTHROPIC_DEFAULT_OPUS_MODE
   export ANTHROPIC_DEFAULT_OPUS_MODEL="us.anthropic.claude-opus-4-6-v1"
 fi
 
+claude_bedrock_model_label() {
+  local model_id="$1"
+  local fallback="$2"
+  local parsed=""
+  local family=""
+  local major=""
+  local minor=""
+
+  parsed="$(printf '%s\n' "$model_id" | sed -nE 's/.*claude-(haiku|sonnet|opus)-([0-9]+)-([0-9]+).*/\1 \2 \3/p')"
+  if [[ -n "$parsed" ]]; then
+    read -r family major minor <<< "$parsed"
+    case "$family" in
+      haiku) family="Haiku" ;;
+      sonnet) family="Sonnet" ;;
+      opus) family="Opus" ;;
+      *) family="$fallback" ;;
+    esac
+    printf '%s %s.%s\n' "$family" "$major" "$minor"
+    return
+  fi
+
+  printf '%s\n' "$fallback"
+}
+
+export ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME="${ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME:-$(claude_bedrock_model_label "${ANTHROPIC_DEFAULT_HAIKU_MODEL:-haiku}" "Haiku")}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL_NAME="${ANTHROPIC_DEFAULT_SONNET_MODEL_NAME:-$(claude_bedrock_model_label "${ANTHROPIC_DEFAULT_SONNET_MODEL:-sonnet}" "Sonnet")}"
+export ANTHROPIC_DEFAULT_OPUS_MODEL_NAME="${ANTHROPIC_DEFAULT_OPUS_MODEL_NAME:-$(claude_bedrock_model_label "${ANTHROPIC_DEFAULT_OPUS_MODEL:-opus}" "Opus")}"
+
+export ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION="${ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION:-Custom Haiku model}"
+export ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION="${ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION:-Custom Sonnet model}"
+export ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION="${ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION:-Custom Opus model}"
+
 export ANTHROPIC_DEFAULT_OPUS_MODEL
 export ANTHROPIC_DEFAULT_SONNET_MODEL
 export ANTHROPIC_DEFAULT_HAIKU_MODEL
+export ANTHROPIC_DEFAULT_OPUS_MODEL_NAME
+export ANTHROPIC_DEFAULT_SONNET_MODEL_NAME
+export ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME
+export ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION
+export ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION
+export ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION
 
 unset _CLAUDE_BEDROCK_ENV_PATH
 unset _CLAUDE_BEDROCK_SCRIPT_DIR
 unset _CLAUDE_BEDROCK_MODELS_ENV
+unset -f claude_bedrock_model_label
