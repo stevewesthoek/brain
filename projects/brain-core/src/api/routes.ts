@@ -126,6 +126,7 @@ import { saveVideoOrchestratorSeoPackage } from '../adapters/video-orchestrator-
 import { readVideoOrchestratorThumbnailPackage, type BrainCoreVideoThumbnailPackage } from '../adapters/video-orchestrator-thumbnail-package.js';
 import { saveVideoOrchestratorThumbnailPackage } from '../adapters/video-orchestrator-thumbnail-package-store.js';
 import { readVideoThumbnailDesignPlans, readVideoThumbnailDesignPlan } from '../adapters/video-orchestrator-thumbnail-design-plan.js';
+import { thumbnailQueue, type ThumbnailQueueRequest, type ThumbnailQueueResponse } from '../adapters/thumbnail-queue.js';
 import { readVideoArchiveLoggingPlans, readVideoArchiveLoggingPlan } from '../adapters/video-orchestrator-archive-logging-plan.js';
 import { readVideoDesignProviderBoundaryPlans, readVideoDesignProviderBoundaryPlan } from '../adapters/video-orchestrator-design-provider-boundary-plan.js';
 import { readVideoDesignProviderCredentialIsolationPlans, readVideoDesignProviderCredentialIsolationPlan } from '../adapters/video-orchestrator-design-provider-credential-isolation-plan.js';
@@ -2548,6 +2549,39 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
     const result = updateContentItemRequest(updateReq);
     sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
+  // ── Phase 3: Thumbnail Engine API (brain-core rendering) ─────────────────────
+  if (url.pathname === '/api/video-orchestrator/queue/thumbnail') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+
+    const req: ThumbnailQueueRequest = {
+      episode_id: (body?.episode_id as string) ?? '',
+      title: (body?.title as string) ?? '',
+      template_definition: (body?.template_definition as Record<string, any>) ?? {},
+      color_scheme: (body?.color_scheme as Record<string, any>) ?? {},
+      background_image_url: (body?.background_image_url as string) ?? '',
+      platform: (body?.platform as string) ?? 'youtube',
+    };
+
+    // Validate required fields
+    if (!req.episode_id || !req.title || !req.template_definition || !req.color_scheme) {
+      sendJson(response, 400, {
+        error: {
+          code: 'missing_required_fields',
+          message: 'episode_id, title, template_definition, and color_scheme are required',
+        },
+      } satisfies BrainCoreErrorResponse);
+      return;
+    }
+
+    // Queue the thumbnail generation
+    const result: ThumbnailQueueResponse = await thumbnailQueue.queueThumbnail(req);
+
+    // Return 202 (Accepted) for pending, 200 for completed, 500 for errors
+    const statusCode = result.status === 'failed' ? 500 : result.status === 'completed' ? 200 : 202;
+    sendJson(response, statusCode, result);
     return;
   }
 
