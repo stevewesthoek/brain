@@ -1,5 +1,7 @@
 # VO Studio — Complete Implementation Snapshot
 
+> Historical archive. This document captures the older Studio-heavy Brain Console implementation snapshot. It is superseded by the shared-only Brain Console boundary and should not be treated as the active console contract.
+
 **Date:** 2026-05-24 (Session End)  
 **Status:** Production-ready framework complete  
 **Test Coverage:** 997 tests passing  

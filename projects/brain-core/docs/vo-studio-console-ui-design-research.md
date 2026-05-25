@@ -1,5 +1,7 @@
 # VO Studio Console UI Design — Research Findings
 
+> Historical research artifact. This research informed the old VO Studio layout. The current Brain Console design has since been narrowed to shared health/usage and orchestration visibility only.
+
 **Date:** 2026-05-24  
 **Status:** Research complete, findings synthesized  
 **Research scope:** Nested dashboard UI patterns from Airflow, Dagster, n8n; dark UI best practices; TypeScript state management; Obsidian plugin constraints  

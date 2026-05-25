@@ -1,5 +1,7 @@
 # Phase 10 & 11 Summary — VO Studio Dashboard & Brain Console Integration
 
+> Historical archive. This summary reflects the older VO Studio dashboard integration state. The current Brain Console boundary is shared-only and does not expose project-specific authoring surfaces.
+
 **Prepared:** 2026-05-24  
 **Status:** Complete  
 **Research basis:** `/Users/Office/Repos/stevewesthoek/brain/projects/brain-core/docs/vo-studio-console-ui-design-research.md`

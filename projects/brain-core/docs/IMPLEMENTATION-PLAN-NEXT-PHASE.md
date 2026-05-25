@@ -1,5 +1,7 @@
 # Implementation Plan - Next Phase (Steps 1-5)
 
+> Historical archive. This plan records the older five-step VO Studio implementation that has since been superseded by the shared-only Brain Console boundary.
+
 **Date:** 2026-05-24  
 **Status:** Implemented  
 **Scope:** Historical plan for the next-phase VO Studio work that has now been completed  
@@ -8,7 +10,7 @@
 
 ## Overview
 
-This document remains as an implementation record for the five-step next-phase work. All five steps were completed in the codebase during the 2026-05-24 session.
+This document remains as an implementation record for the five-step next-phase work. All five steps were completed in the codebase during the 2026-05-24 session, but the console surfaces described here are historical and no longer define the active Brain Console shape.
 
 The completed steps were:
 1. Wire real AI providers to the Agent Orchestrator.

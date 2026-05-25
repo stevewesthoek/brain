@@ -1,8 +1,8 @@
 # Video Orchestrator
 
-Centralized video generation and distribution pipeline for multi-platform content production.
+Shared video orchestration and processing engine for multi-project content production.
 
-**All projects delegate to brain-core via REST API.** Brain-core owns generation quality, scaling, and consistency across all platforms (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, Pinterest).
+**Project repos own the admin UI and project-specific content decisions.** Brain Core owns orchestration, job state, shared artifact generation, approvals, health, and observability through REST API contracts.
 
 ---
 
@@ -25,8 +25,8 @@ vo queue pipeline \
 2. Subtitles generate (AI transcription + timecode)
 3. Video composes (audio + subtitles + background)
 4. Thumbnail designs (3 A/B variants + scoring)
-5. Metadata generates (platform-specific captions for all requested platforms)
-6. Posts dispatch (n8n webhooks → YouTube, Facebook, Pinterest APIs)
+5. Metadata generates for the shared multi-platform pipeline
+6. Posts dispatch through shared adapters or project-owned downstream tools
 
 ### Poll for Completion
 
@@ -43,7 +43,7 @@ Start here based on your role:
 ### Users / Project Managers
 **→ Read `FEATURES.md`**
 
-- What features exist (normalize, subtitle, compose, thumbnail, metadata, multi-post)
+- What shared pipeline features exist (normalize, subtitle, compose, thumbnail, metadata, multi-post)
 - How to use the system (job queueing API, polling, status)
 - Supported platforms and their capabilities
 - Configuration files and environment variables
@@ -51,27 +51,27 @@ Start here based on your role:
 ### Developers / Engineers
 **→ Read `DEVELOPER.md`**
 
-- How metadata generation works (8 platforms, prompt templates, character limits)
-- How to add new platforms (4 steps: config, prompt, function, handler)
-- AI Model Selector routing (LLM calls via localhost:4890)
-- Testing metadata generation (unit + integration tests)
+- How shared metadata generation works
+- How jobs are queued and observed
+- AI Model Selector routing where applicable
+- Testing shared pipeline modules
 - Troubleshooting guide
 
 ### Architects / Decision Makers
 **→ Read `ARCHITECTURE.md`**
 
-- Why centralized pipeline (code consistency, quality, scaling, team ownership)
-- Why Says the Bible delegates to brain-core (industry standard pattern)
-- Data flow diagram (project repos → API → brain-core → artifact storage)
+- Why the shared pipeline lives in Brain
+- How project repos delegate work to Brain Core API
+- Data flow diagram (project admin UI → API → brain-core → artifact storage)
 - Migration path (parallel run → cut over → decommission)
-- When this pattern works / when it breaks
+- Where project-specific logic must stay out of Brain
 
 ---
 
 ## System Architecture
 
 ```
-Project Repos (Says the Bible, future projects)
+Project Repos (current project repo, future projects)
     ↓
     │ REST API POST /api/video-orchestrator/queue/*
     │
@@ -236,7 +236,7 @@ VO_DB_PASS=postgres
 
 ⏳ **Planned:**
 - Phase 3: A/B testing for YouTube thumbnails
-- Phase 4: Says the Bible migration (parallel run → cut over)
+- Phase 4: Project migration (parallel run → cut over)
 - Thumbnail Studio research & rebuild (use NotebookLM first)
 
 ---
@@ -271,4 +271,4 @@ VO_DB_PASS=postgres
 1. Complete Phase 6 (n8n stubs, CLI command, tests)
 2. Implement Phase 3 (A/B testing)
 3. Research & rebuild Thumbnail Studio
-4. Migrate Says the Bible to brain-core API
+4. Migrate the current project repo to brain-core API

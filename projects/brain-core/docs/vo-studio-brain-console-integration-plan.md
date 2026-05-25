@@ -1,5 +1,7 @@
 # VO Studio — Brain Console Integration Plan
 
+> Historical plan. This document reflects the older VO Studio integration approach. The active Brain Console boundary is now shared-only and project-specific authoring belongs in project repos.
+
 **Date:** 2026-05-24  
 **Status:** Ready for implementation  
 **Scope:** Remove VO concepts from top-level Brain Console tabs; create single unified "Video Orchestrator" entry point  

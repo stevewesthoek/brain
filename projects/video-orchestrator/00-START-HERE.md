@@ -18,7 +18,7 @@ A **centralized video generation and distribution pipeline** that:
 - Generates metadata for 8 platforms (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, Pinterest)
 - Posts to all 8 platforms via n8n webhooks
 
-**Architecture:** All projects (Says the Bible, future projects) call brain-core API. No code duplication.
+**Architecture:** All project repos call the Brain Core API. No code duplication.
 
 ### Why Centralized?
 
@@ -44,7 +44,7 @@ A **centralized video generation and distribution pipeline** that:
 ⏳ **Planned:**
 - Phase 3: Core implementation (ThumbnailDesigner, TemplateLibrary, etc.)
 - Phase 3B: A/B testing (YouTube CTR optimization)
-- Phase 4: Says the Bible migration
+- Phase 4: Project migration
 
 ---
 
@@ -120,7 +120,7 @@ A **centralized video generation and distribution pipeline** that:
 
 ### Thumbnail Design (Research & Implementation)
 
-**Question:** "How does thumbnail generation work? Why rebuild vs. adapt Says the Bible?"
+**Question:** "How does thumbnail generation work? Why rebuild vs. adapt project-local code?"
 
 → Read [`PHASE_1_RESEARCH_FINDINGS.md`](PHASE_1_RESEARCH_FINDINGS.md) → [`PHASE_2_ARCHITECTURE_DESIGN.md`](PHASE_2_ARCHITECTURE_DESIGN.md)
 
@@ -194,7 +194,7 @@ A **centralized video generation and distribution pipeline** that:
 
 🔧 **Next steps:**
 1. **Integration testing** with video_worker.py job processor
-2. **Says the Bible API calls** (test metadata job endpoint)
+2. **Project API calls** (test metadata job endpoint)
 3. **n8n webhook configuration** (test multi_post dispatch)
 
 ### How to Test Locally
@@ -220,11 +220,11 @@ curl -X POST http://localhost:5000/api/video-orchestrator/queue/normalize \
 
 ### What's Being Built
 
-The Thumbnail Studio module — 6 core components for multi-platform thumbnail generation:
+The shared thumbnail processing module — 6 core components for multi-platform thumbnail generation:
 
 1. **ThumbnailDesigner** (orchestrator)
 2. **TemplateLibrary** (YAML-based templates)
-3. **ColorPalette** (Yeshua Academy brand colors)
+3. **ColorPalette** (project-configured brand colors)
 4. **FontManager** (font resolution)
 5. **ImageComposer** (Pillow rendering)
 6. **VariantGenerator** (A/B variant creation + scoring)
@@ -249,7 +249,7 @@ The Thumbnail Studio module — 6 core components for multi-platform thumbnail g
 4. **Minimal Text** — White space, elegant typography
 5. **Accent Bar** — Horizontal color bar with text
 6. **Badges & Icons** — Stickers, emojis, trendy
-7. **Faith Specific** — Cross, scripture references
+7. **Project-specific template content** — stays in the calling repo
 
 ### Performance Targets
 
@@ -324,7 +324,7 @@ The Thumbnail Studio module — 6 core components for multi-platform thumbnail g
 
 ### This Week
 
-- [ ] Test Phase 6 API with Says the Bible metadata job
+- [ ] Test Phase 6 API with project metadata job
 - [ ] Configure n8n workflows for multi_post dispatch
 - [ ] Decision: Priority between Phase 3 implementation vs. Phase 3B A/B testing
 
@@ -332,7 +332,7 @@ The Thumbnail Studio module — 6 core components for multi-platform thumbnail g
 
 - [ ] Phase 3: Core ThumbnailDesigner implementation + tests
 - [ ] Phase 3B: A/B testing framework (optional, depends on priority)
-- [ ] Phase 4: Says the Bible migration (parallel run → cutover)
+- [ ] Phase 4: Project migrations and cutover planning
 
 ---
 
@@ -344,8 +344,8 @@ A: See `API_REFERENCE.md` → "Complete Example Workflow"
 **Q: What platforms are supported?**  
 A: All 8: YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, Pinterest
 
-**Q: Why rebuild Thumbnail Studio instead of using Says the Bible code?**  
-A: See `PHASE_1_RESEARCH_FINDINGS.md` → "Decision Matrix" (requires 8-platform support, design system, production quality)
+**Q: Why rebuild shared thumbnail processing instead of using project-local code directly?**  
+A: See `PHASE_1_RESEARCH_FINDINGS.md` → "Decision Matrix" (the shared engine needs consistent multi-project support, not project-local assumptions)
 
 **Q: How long does thumbnail generation take?**  
 A: Target: <2 seconds per variant (2-3 variants typically = <6 seconds total)
@@ -356,7 +356,7 @@ A: Yes. See `PHASE_2_ARCHITECTURE_DESIGN.md` → "YAML Configuration Schema"
 **Q: What's the performance target?**  
 A: 1000 thumbnails/hour on a single machine
 
-**Q: When will Says the Bible be migrated?**  
+**Q: When will the current project repo be migrated?**  
 A: Phase 4 (planned for 2026-06-07 onwards, after Phase 3 implementation)
 
 ---
@@ -367,7 +367,7 @@ A: Phase 4 (planned for 2026-06-07 onwards, after Phase 3 implementation)
 
 - **API usage** → See `API_REFERENCE.md`
 - **Architecture decisions** → See `ARCHITECTURE.md`
-- **Thumbnail research** → See `PHASE_1_RESEARCH_FINDINGS.md`
+- **Shared thumbnail processing** → See `PHASE_1_RESEARCH_FINDINGS.md`
 - **Component design** → See `PHASE_2_ARCHITECTURE_DESIGN.md`
 - **Complete roadmap** → See `ROADMAP.md`
 - **Session details** → See `SESSION_COMPLETION_SUMMARY.md`
@@ -385,11 +385,11 @@ A: Phase 4 (planned for 2026-06-07 onwards, after Phase 3 implementation)
 - **Scaling:** Add capacity once, all projects scale together
 - **Ownership:** Clear accountability for video quality
 
-### Why Rebuild Thumbnail Studio
+### Why Shared Thumbnail Processing
 
-- **Scope:** Need 8 platforms, not just YouTube
-- **Architecture:** Token-based design system, not hardcoded templates
-- **Quality:** Production-ready code from scratch beats adapting legacy
+- **Scope:** Need shared support across multiple project repos
+- **Architecture:** Shared render plan and template system, not project-local rendering logic
+- **Quality:** Production-ready code from scratch beats copying legacy into Brain
 
 ### Why Pillow + Jinja2 + YAML
 
@@ -403,7 +403,7 @@ A: Phase 4 (planned for 2026-06-07 onwards, after Phase 3 implementation)
 ## ✅ Project Status
 
 **Current:** Phase 6 API complete + Phase 1-2 research/design complete  
-**Next:** Phase 3 implementation (ThumbnailDesigner core module)  
+**Next:** Phase 3 implementation (shared thumbnail processing core module)  
 **Overall:** On track for full system ready Q2 2026  
 
 **Work Quality:** Production-ready code, comprehensive documentation, clean git history
@@ -420,4 +420,4 @@ git log --oneline | grep -i "keyword"
 ```
 
 **Last Updated:** 2026-05-25  
-**Status:** ✅ Ready for Phase 3 implementation or Says the Bible integration testing
+**Status:** ✅ Ready for Phase 3 implementation or project integration testing

@@ -1,7 +1,9 @@
 # Thumbnail Studio Research & Rebuild — Comprehensive Plan
 
+> Historical research artifact. This document records the investigation that led to the shared Video Orchestrator boundary. It is not the canonical workflow spec; use `project-onboarding-split.md` and the current strategy/roadmap for the active split.
+
 **Timeline:** 2026-05-25 onwards
-**Goal:** Rebuild Thumbnail Studio as modular, scalable component for brain-core (not copy from Says the Bible)
+**Goal:** Rebuild shared thumbnail processing as a modular, scalable component for Brain Core using project-repo inputs as reference only
 **Approach:** Research first, understand best practices, design clean architecture, then implement
 
 ## Phase 1: Research (Week 1)
@@ -304,4 +306,3 @@ After approval:
 2. Create NotebookLM research notebook
 3. Synthesize findings into architecture recommendations
 4. Present decision: rebuild vs. adapt
-

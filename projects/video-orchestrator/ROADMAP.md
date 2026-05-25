@@ -1,7 +1,7 @@
 # Video Orchestrator — Complete Roadmap
 
 **Project:** Centralized video generation and distribution pipeline for multi-platform content  
-**Vision:** Single source of truth for video quality, consistency, and scaling across all projects (Says the Bible, future theology/ministry projects)  
+**Vision:** Single source of truth for shared video processing, orchestration, and artifact generation across all project repos  
 **Start Date:** 2026-05-25  
 **Last Updated:** 2026-05-25  
 
@@ -39,18 +39,17 @@
 - H.264 MP4 rendering
 - YouTube-optimized output
 
-#### Phase 4: Thumbnail Design
+#### Phase 4: Shared Thumbnail Processing
 **Status:** ✅ Complete (prior session)
 - 3 A/B variants per thumbnail
-- Template system
-- AI hook generation (via AI Model Selector)
+- Shared template system
 - Variant scoring (0-1 confidence)
 
-#### Phase 5: Metadata Generation
+#### Phase 5: Shared Metadata Generation
 **Status:** ✅ Complete (prior session)
 - All 8 platforms supported (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, Pinterest)
 - Character limit enforcement per platform
-- Platform-specific prompts (Yeshua Academy voice)
+- Platform-specific prompts driven by the calling repo
 - Title variants for YouTube
 - Hashtag generation
 

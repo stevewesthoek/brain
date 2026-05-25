@@ -1,6 +1,6 @@
 # Brain Console Obsidian Plugin
 
-Standalone Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays ProBot dashboard parity, system health, execution readiness, scheduler status, and controlled Local Apps operations using native Obsidian UI with responsive layout.
+Standalone Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays shared system health, execution readiness, scheduler status, AI selector health, approvals, and controlled Local Apps operations using native Obsidian UI with responsive layout.
 
 **Build:** `brain-console-local-apps-action-stability-2026-05-19-01`
 
@@ -142,7 +142,7 @@ Overview tab now includes **ProBot Migration** section with 7 dedicated cards an
 3. **Scheduler** — Visible and working in Brain Console Apps section  
 
 ### Partial (Ready/Pending)
-4. **Studio (Video/Viral Flow)** — Video Orchestrator ready, Viral Flow marked for redesign to use Brain Post Orchestrator
+4. **Video Orchestrator** — shared orchestration visibility, health, approvals, job status, and read-only artifacts only; project-specific editing lives in project repos
 
 ### Legacy/Admin-only (Intentional, No Safe Data)
 5. **External Integrations** — Dokploy, New Relic, Analytics, Google Ads, Stripe, Domains, Tunnels (all intentionally admin-only, no safe metadata endpoints available)

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Video Orchestrator is a centralized video generation and distribution pipeline that takes raw video content (audio, background) and produces platform-specific metadata, thumbnails, and delivery artifacts for YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, and Pinterest.
+Video Orchestrator is the shared video generation and distribution engine for multiple project repos. It produces shared artifacts and orchestrates jobs for content that project-specific admin panels send to Brain Core API.
 
-**Architecture:** All video projects (Says the Bible, future theology/ministry projects) delegate to brain-core via API. Brain-core owns generation quality, scaling, and consistency.
+**Architecture:** Project repos own the admin UI and project-specific content decisions. Brain Core owns the shared processing engine, job state, approvals, and observability.
 
 ---
 
@@ -79,14 +79,14 @@ Combines audio + subtitle frames + background → final video.
 ### Phase 4: Thumbnail Design
 **Status:** ✅ Complete (Phase 5.2)
 
-AI-designed thumbnails with 3 A/B variants.
+Shared thumbnail generation with 3 A/B variants.
 
 **Process:**
-1. Load thumbnail template (e.g., "gradient-dark", "image-overlay")
-2. Route theological hooks through AI Model Selector
+1. Load shared thumbnail template
+2. Resolve project-provided copy and style inputs
 3. Generate 3 design variants
 4. Score each variant (0–1 confidence)
-5. Store artifacts in S3 + metadata in PostgreSQL
+5. Store artifacts in shared artifact storage + metadata in PostgreSQL
 
 **A/B testing:** Manual winner selection via API → winner stored for future reference
 
@@ -112,8 +112,8 @@ Platform-specific metadata with AI-generated captions, tags, and titles.
 
 **Process:**
 - AI Model Selector routes all LLM calls (Gemini → Claude → Codex → bash fallback)
-- Prompt templates read from `~/.config/video-orchestrator/metadata-prompts.json`
-- All prompts use Yeshua Academy faith-based voice and tone
+- Prompt templates read from shared metadata prompt configuration
+- Project-specific voice and tone come from the calling repo
 - Character limits enforced per platform with automatic truncation
 - Top-performing titles fetched from analytics for style reference
 
@@ -191,16 +191,16 @@ Time-slice CTR comparison for YouTube thumbnails.
 
 ---
 
-## Phase 4: Says the Bible Migration (Queued)
+## Phase 4: Project Migration (Queued)
 **Status:** ⏳ Research → Build
 
-Migrate Says the Bible thumbnail pipeline to brain-core API.
+Migrate project thumbnail pipelines to Brain Core API.
 
 **Phases:**
 1. **Parallel run:** Local generator + API generator, compare results
 2. **Cut over:** Switch to API-only
 3. **Decommission:** Delete local pipeline
-4. **Rebuild Thumbnail Studio:** As modular, scalable tool for brain-core
+4. **Rebuild shared thumbnail processing:** As modular, scalable tool for Brain Core
 
 ---
 
@@ -296,4 +296,4 @@ Response: {
 1. Complete Phase 6 (multi-platform publishing)
 2. Implement Phase 3 (A/B testing)
 3. Research & rebuild Thumbnail Studio for brain-core
-4. Migrate Says the Bible to brain-core API
+4. Migrate the current project repo to brain-core API

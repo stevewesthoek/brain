@@ -1,5 +1,7 @@
 # Codex Prompt - VO Studio Completed Checkpoint
 
+> Historical archive. This prompt reflects the older VO Studio-heavy checkpoint and is superseded by the shared-only Brain Console boundary. Use the current strategy, roadmap, and project onboarding split for active work.
+
 **Session:** VO Studio next-phase implementation  
 **Date:** 2026-05-24  
 **Status:** Completed checkpoint  
@@ -8,7 +10,7 @@
 
 ## Quick Context
 
-The five-step next-phase VO Studio implementation has been completed and committed. The remaining roadmap work is later-phase work, not part of the completed five-step plan.
+The five-step next-phase VO Studio implementation had been completed in the older state. The remaining roadmap work is later-phase work, but the active console boundary is now shared-only rather than Studio-heavy.
 
 Completed:
 - Real agent orchestrator provider wiring
@@ -18,7 +20,7 @@ Completed:
 - Analytics feedback loop
 - Brain Console AI selector health chip
 - YouTube post-upload captions / metadata / thumbnail attachment flow
-- Brain Console Thumbnail Studio UI
+- Brain Console Thumbnail Studio UI (historical; no longer the active console shape)
 - Brain Console analytics cards in the Feedback tab
 - Winner-driven thumbnail replacement after A/B declaration
 - Brain Console dead-letter review UI

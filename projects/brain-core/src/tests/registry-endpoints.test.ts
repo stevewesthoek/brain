@@ -227,6 +227,44 @@ test('GET /video-orchestrator/content-items returns canonical content with packa
   assert.equal(body.items[0]?.platformTargets.length, 4);
 });
 
+test('GET /video-orchestrator/seo-package returns SEO package by slug', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/seo-package?slug=story-052-genesis-creation' });
+  const body = JSON.parse(response.body) as { slug: string; seo: { selectedTitle: string; primaryKeyword: string } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.slug, 'story-052-genesis-creation');
+  assert.equal(body.seo.selectedTitle, 'The Story of Creation for Deep Sleep | Bible Bedtime Story');
+  assert.equal(body.seo.primaryKeyword, 'Genesis creation story');
+});
+
+test('GET /video-orchestrator/seo-package rejects missing slug', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/seo-package' });
+  const body = JSON.parse(response.body) as { error: { code: string; message: string } };
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(body.error.code, 'invalid_request');
+  assert.match(body.error.message, /slug/);
+});
+
+test('GET /video-orchestrator/thumbnail-package returns thumbnail package by slug', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/thumbnail-package?slug=story-052-genesis-creation' });
+  const body = JSON.parse(response.body) as { slug: string; thumbnail: { episodeTitle: string; selectedOverlayPlatform: string } };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.slug, 'story-052-genesis-creation');
+  assert.equal(body.thumbnail.episodeTitle, 'The Story of Creation');
+  assert.equal(body.thumbnail.selectedOverlayPlatform, 'youtube');
+});
+
+test('GET /video-orchestrator/thumbnail-package rejects missing slug', async () => {
+  const response = await exercise({ method: 'GET', url: '/video-orchestrator/thumbnail-package' });
+  const body = JSON.parse(response.body) as { error: { code: string; message: string } };
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(body.error.code, 'invalid_request');
+  assert.match(body.error.message, /slug/);
+});
+
 test('GET /video-orchestrator/packages/:id returns manual fallback package', async () => {
   const response = await exercise({ method: 'GET', url: '/video-orchestrator/packages/pkg-stb-story-052' });
   const body = JSON.parse(response.body) as { id: string; packageType: string; approvals: Array<{ status: string }> };

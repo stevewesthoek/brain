@@ -1,6 +1,6 @@
 # Brain Core
 
-Brain Core is the small local API boundary for the Obsidian-first operating cockpit.
+Brain Core is the small local API boundary for the Obsidian-first operating cockpit and the shared execution layer for delegated project pipelines.
 
 ## Status
 
@@ -36,6 +36,8 @@ Phase 3h: Video Orchestrator Assembly Plan (Active). The service exposes determi
 - Avoid broad shell execution.
 - Avoid secrets in responses.
 - Provide a stable API for future Obsidian integration.
+- Expose shared orchestration, job state, artifacts, approvals, health, and observability.
+- Do not host project-specific admin UI, project SEO strategy, or project-local scripting surfaces.
 
 ## Current endpoints
 
@@ -100,6 +102,7 @@ GET /video-orchestrator/research
 GET /video-orchestrator/research/:id
 GET /video-orchestrator/script
 GET /video-orchestrator/script/:id
+GET /video-orchestrator/seo-package
 GET /video-orchestrator/asset-plan
 GET /video-orchestrator/asset-plan/:id
 GET /stb-video-migration/status
@@ -225,7 +228,7 @@ operations/runbooks/brain-core.md
 
 ## Brain Console integration contract
 
-`src/obsidian.ts` exposes a read-only widget snapshot contract for a future Obsidian `brain-console` plugin or integration layer.
+`src/obsidian.ts` exposes a read-only widget snapshot contract for the Obsidian `brain-console` plugin or integration layer. The console is intentionally a shared observability surface: health, usage, approvals, queue state, and shared artifacts only. Project-specific authoring, scripting, SEO, and thumbnail design live in project repos.
 
 Current widget IDs:
 
@@ -238,6 +241,7 @@ brain-scheduler
 brain-local-apps
 brain-video-queue
 brain-approvals
+brain-video-orchestrator
 ```
 
 This is not an Obsidian plugin yet. It is the audited data shape that a plugin can render without importing the legacy ProBot dashboard.

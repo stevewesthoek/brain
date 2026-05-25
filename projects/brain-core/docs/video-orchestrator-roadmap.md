@@ -47,8 +47,8 @@ The next work must proceed in this order:
 
 1. ✅ **Policy lock & Selector policy implementation:** Phase 0.5R complete. Gemini free-tier as eligible provider, quota ledger, privacy gate, fallback behavior, all tested.
 2. **Normalized read model:** Expose VO Project, Account, Pipeline Profile, Content Item, Package, and Analytics Summary read APIs with fixtures (Phase 0.8).
-3. **Brain Console read-first shell:** Build Overview, Studio, Pipelines, Accounts, and History/Analytics panels from read APIs (Phase 0.9).
-4. **Approval-gated Studio writes:** Add content item creation, thumbnail generation, metadata approval, package queueing, and posting target queueing in separate slices (Phase 1W).
+3. **Brain Console read-first shell:** Build shared health, usage, approvals, and pipeline visibility from read APIs (Phase 0.9).
+4. **Approval-gated project workflows:** Add content item creation, thumbnail generation, metadata approval, package queueing, and posting target queueing in project repos, with shared processing handled by Brain Core (Phase 1W).
 5. **Adapter expansion:** Enable direct publishing per platform only after account capability checks and manual fallback parity exist (Phase 6).
 
 ---
@@ -623,6 +623,7 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → m
 - [x] Add single "Video Orchestrator" root tab
 - [x] Create renderVideoOrchestratorSection() to host VOShell
 - [x] CSS styling for scoped VO container
+- [x] Keep the shared console read-only for project-specific workflows
 
 **Deliverable:** ✅ Backend: event routing, webhook security, analytics read paths. UI: Dashboard panel + EventLogPanel. Phase 10: VO internal dashboard. Phase 11: Brain Console integration and scoped "Video Orchestrator" section.
 
@@ -631,7 +632,7 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → m
 ## Phase 11 — Brain Console VO Studio Integration ✅ Complete
 > Scoped VO section with unified internal tabs
 
-**Goal:** Video Orchestrator is a unified scoped section within Brain Console with internal tabs (Overview, Studio, Pipelines, Accounts, History, Dashboard), not competing top-level tabs.
+**Goal:** Video Orchestrator is a unified scoped section within Brain Console with shared health, usage, approvals, and orchestrator visibility, not competing top-level tabs or project-specific authoring surfaces.
 
 **Boundary:** UI restructuring and integration. No backend changes.
 
@@ -654,7 +655,7 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → m
 
 **Exit criterion:** User clicks "Video Orchestrator" root tab and sees unified internal tabs. No Studio/Orchestrators/Pipelines as separate entries in top navigation. Information is readable and responsive.
 
-**Deliverable:** ✅ Brain Console top navigation is organized and clear. VO Studio is scoped within unified "Video Orchestrator" section. All 6 internal VO tabs (Overview, Studio, Pipelines, Accounts, History, Dashboard) accessible and functional.
+**Deliverable:** ✅ Brain Console top navigation is organized and clear. VO is scoped within unified "Video Orchestrator" section. Shared read-only visibility is available without project-specific authoring tabs.
 
 ---
 
@@ -681,7 +682,7 @@ Foundation   Selector v1    Dual-node    Gemini policy   Agents        Read mode
 Phase 10 ✅ → Phase 11 ✅ → Phase Next ✅ → Phase 3+ 🔲
 Webhooks/Analytics  Brain Console integration   Wire real providers+UI phases   Hardening & expansion
 
-Current: Phase Next, the Brain Console AI selector health chip, the dedicated Thumbnail Studio UI, and winner-driven thumbnail replacement have been completed. Ready for future roadmap work.
+Current: Phase Next and the Brain Console AI selector health chip have been completed. The Brain Console now stays focused on shared health/usage and shared orchestration visibility. Ready for future roadmap work.
 
 Phase 0.7 is complete.
 Phase 1-5 next-phase implementation items are complete.

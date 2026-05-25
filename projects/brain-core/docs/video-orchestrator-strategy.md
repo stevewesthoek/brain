@@ -10,9 +10,9 @@
 
 ## Purpose
 
-The Video Orchestrator (VO) is the production system that takes source content (audio + script) and produces fully-packaged, platform-ready video posts — with thumbnails, descriptions, captions, and all metadata. It publishes directly only when a platform adapter, credentials, quota, scopes, idempotency key, and approval policy all pass. Otherwise it produces a complete manual upload package.
+The Video Orchestrator (VO) is the shared production system that takes source content from a project repo and produces fully packaged, platform-ready outputs with thumbnails, descriptions, captions, and metadata. It publishes directly only when a platform adapter, credentials, quota, scopes, idempotency key, and approval policy all pass. Otherwise it produces a complete manual upload package.
 
-It is not a port of the STB pipeline. It is a platform-agnostic, format-agnostic, modular production engine. The STB pipeline is a **feature reference** — it shows what the VO needs to *do*, not how to build it.
+It is not a project admin UI and it is not a project-specific content system. VO is platform-agnostic, format-agnostic, and modular. Project repos are the source of truth for editorial decisions and operator workflows; VO is the shared processing layer.
 
 ---
 
@@ -77,25 +77,27 @@ These are non-negotiable. Any implementation decision that violates a guardrail 
 
 10. **Gemini free-tier first, privacy-gated** — All AI generation tasks (metadata, thumbnails, summaries) route through the AI Model Selector. Eligible non-sensitive, high-volume text tasks try Gemini free-tier first and must be tracked against RPM/TPM/RPD budgets. When Gemini is exhausted, rate-limited, unhealthy, or fails quality checks, the selector falls back to local Ollama on the Mac Mini M4 Pro and MacBook M1. Local Ollama is mandatory first for sensitive, private, offline, or external-provider-disallowed payloads. Codex CLI is the next quality/escalation tier because it uses the ChatGPT subscription surface rather than a direct API bill. Amazon Bedrock Claude is the paid fallback. Direct OpenAI API and direct Anthropic API calls are forbidden.
 
-11. **Read-first Console** — Brain Console surfaces are read-only until the underlying package, approval, quota, and idempotency records exist. Mutation buttons can be added only after the matching read model, audit event, approval policy, and tests exist.
+11. **Read-first Console** — Brain Console surfaces are read-only shared-control surfaces until the underlying package, approval, quota, and idempotency records exist. Mutation buttons can be added only after the matching read model, audit event, approval policy, and tests exist. Project-specific scripting, SEO strategy, and thumbnail design belong in the project repo, not in VO Console pages.
 
 12. **Adapter capability gating** — Direct publishing is never assumed. Each posting target resolves `adapter_mode`: `direct`, `manual_package`, or `disabled`. A target may use `direct` only when credentials, scopes, platform limits, app review/access status, quota, idempotency, and approval checks pass.
+
+13. **Thumbnail engine in brain-core, definitions in projects** — The ThumbnailDesigner rendering engine (Python code, Pillow rendering, variant generation, confidence scoring, A/B testing infrastructure) lives in brain-core as shared processing. Template definitions (YAML layer structures, positions, fonts) and color schemes (JSON brand colors) are project-specific assets and stay in project repos. Brain-core provides a REST API that accepts {template_definition, color_scheme, title} from the project and returns {variants} to the project. No project templates or colors are ever committed to brain-core. No rendering logic ever duplicates in projects. See `thumbnail-architecture-split.md` for the detailed boundary.
 
 ---
 
 ## Product Shape
 
-The VO product has five Console surfaces. These are the canonical surfaces; do not create duplicate project-specific pages.
+The VO product has five shared console surfaces. These are observability and control surfaces for shared pipeline state; do not create duplicate project-specific authoring pages in Brain.
 
 | Surface | Purpose | Primary records | First build mode |
 |---------|---------|-----------------|------------------|
 | Overview | One-screen operator status: worker health, active jobs, blockers, quota/credential warnings, scheduled/published/failed counts | Project, PlatformAccount, PostingJob, PerformanceSnapshot, AuditEvent | Read-only |
-| Studio | Create and review one content item or batch: brief, script, media, captions, thumbnails, SEO, preview, approval | ContentItem, ProductionPackage, ArtifactVariant, Approval | Read-first, then approval-gated writes |
+| Studio | Review shared content item state, artifact status, preview, and approval | ContentItem, ProductionPackage, ArtifactVariant, Approval | Read-only shared review |
 | Pipelines | Execution view: stage map, retries, logs, dead-letter jobs, run history, manual fallback state | PipelineProfile, ProductionPackage, Run, AuditEvent | Read-only |
 | Accounts | Registry for brands, platform accounts, credentials, quotas, scheduler rules, adapter status | Project, BrandProfile, PlatformAccount, PlatformSpec, PipelineProfile | Read-only with credential status only |
 | History/Analytics | Published, scheduled, failed, draft, and manual-fallback content with account/platform/status filters | ContentItem, PostingTarget, PostingJob, PerformanceSnapshot | Read-only |
 
-Studio uses compact tabs: `Brief`, `Script`, `Media`, `Captions`, `Thumbnails`, `SEO`, `Preview`, `Approval`. The Thumbnails tab is one Thumbnail Studio with platform preview frames; there must not be separate thumbnail generators per project or platform.
+Studio is a shared review surface only. It may show read-only artifacts, approvals, and pipeline status, but it must not become the project authoring surface. Project-specific scripting, thumbnail editing, and SEO strategy stay in the project repo's admin UI.
 
 ---
 
@@ -105,7 +107,7 @@ These normalized entities are the shared VO vocabulary. STB-specific names must 
 
 | Entity | Meaning |
 |--------|---------|
-| Project | A production context such as Says the Bible, Yeshua Academy, or another brand/channel family |
+| Project | A production context such as a project repo, brand/channel family, or another deployment unit |
 | BrandProfile | Visual, voice, typography, color, logo, disclosure, and editorial rules for a project |
 | PlatformAccount | A connected or manual platform account, including credential state and adapter capability |
 | PlatformSpec | Platform-level rules: upload constraints, metadata limits, scopes, quotas, scheduling capabilities |

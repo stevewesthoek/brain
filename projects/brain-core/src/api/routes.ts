@@ -121,6 +121,10 @@ import { readVideoVisualsPlans, readVideoVisualsPlan } from '../adapters/video-o
 import { readVideoAssemblyPlans, readVideoAssemblyPlan } from '../adapters/video-orchestrator-assembly-plan.js';
 import { readVideoMetadataPlans, readVideoMetadataPlan } from '../adapters/video-orchestrator-metadata-plan.js';
 import { readVideoPublishingPrepPlans, readVideoPublishingPrepPlan } from '../adapters/video-orchestrator-publishing-prep.js';
+import { readVideoOrchestratorSeoPackage, type BrainCoreVideoSeoPackage } from '../adapters/video-orchestrator-seo-package.js';
+import { saveVideoOrchestratorSeoPackage } from '../adapters/video-orchestrator-seo-package-store.js';
+import { readVideoOrchestratorThumbnailPackage, type BrainCoreVideoThumbnailPackage } from '../adapters/video-orchestrator-thumbnail-package.js';
+import { saveVideoOrchestratorThumbnailPackage } from '../adapters/video-orchestrator-thumbnail-package-store.js';
 import { readVideoThumbnailDesignPlans, readVideoThumbnailDesignPlan } from '../adapters/video-orchestrator-thumbnail-design-plan.js';
 import { readVideoArchiveLoggingPlans, readVideoArchiveLoggingPlan } from '../adapters/video-orchestrator-archive-logging-plan.js';
 import { readVideoDesignProviderBoundaryPlans, readVideoDesignProviderBoundaryPlan } from '../adapters/video-orchestrator-design-provider-boundary-plan.js';
@@ -1306,6 +1310,140 @@ export async function routeRequest(
 
         if (url.pathname === '/video-orchestrator/metadata-plan') {
           sendJson(response, 200, readVideoMetadataPlans());
+          return;
+        }
+
+        if (url.pathname === '/video-orchestrator/seo-package') {
+          if (request.method === 'POST') {
+            const body = await readJsonBody(request) as { slug?: unknown; projectId?: unknown; seo?: unknown } | null;
+            if (!body) {
+              sendJson(response, 400, {
+                error: {
+                  code: 'invalid_request',
+                  message: 'Request body must be valid JSON.',
+                },
+              } satisfies BrainCoreErrorResponse);
+              return;
+            }
+
+            const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
+            const projectId = typeof body.projectId === 'string' ? body.projectId.trim() : '';
+            const seo = body.seo && typeof body.seo === 'object' && !Array.isArray(body.seo)
+              ? body.seo as BrainCoreVideoSeoPackage
+              : null;
+            if (!slug || !projectId || !seo) {
+              sendJson(response, 400, {
+                error: {
+                  code: 'invalid_request',
+                  message: 'slug, projectId, and seo are required.',
+                },
+              } satisfies BrainCoreErrorResponse);
+              return;
+            }
+
+            const existing = readVideoOrchestratorSeoPackage(slug);
+            const record = await saveVideoOrchestratorSeoPackage({
+              slug,
+              projectId,
+              generatedAt: existing?.generatedAt ?? new Date().toISOString(),
+              source: existing?.source ?? 'fixture',
+              seo,
+            });
+
+            sendJson(response, 200, record);
+            return;
+          }
+
+          const slug = url.searchParams.get('slug')?.trim();
+          if (!slug) {
+            sendJson(response, 400, {
+              error: {
+                code: 'invalid_request',
+                message: 'Missing required query parameter: slug.',
+              },
+            } satisfies BrainCoreErrorResponse);
+            return;
+          }
+
+          const seoPackage = readVideoOrchestratorSeoPackage(slug);
+          if (seoPackage) {
+            sendJson(response, 200, seoPackage);
+            return;
+          }
+
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator SEO package not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
+          return;
+        }
+
+        if (url.pathname === '/video-orchestrator/thumbnail-package') {
+          if (request.method === 'POST') {
+            const body = await readJsonBody(request) as { slug?: unknown; projectId?: unknown; thumbnail?: unknown } | null;
+            if (!body) {
+              sendJson(response, 400, {
+                error: {
+                  code: 'invalid_request',
+                  message: 'Request body must be valid JSON.',
+                },
+              } satisfies BrainCoreErrorResponse);
+              return;
+            }
+
+            const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
+            const projectId = typeof body.projectId === 'string' ? body.projectId.trim() : '';
+            const thumbnail = body.thumbnail && typeof body.thumbnail === 'object' && !Array.isArray(body.thumbnail)
+              ? body.thumbnail as BrainCoreVideoThumbnailPackage
+              : null;
+            if (!slug || !projectId || !thumbnail) {
+              sendJson(response, 400, {
+                error: {
+                  code: 'invalid_request',
+                  message: 'slug, projectId, and thumbnail are required.',
+                },
+              } satisfies BrainCoreErrorResponse);
+              return;
+            }
+
+            const existing = readVideoOrchestratorThumbnailPackage(slug);
+            const record = await saveVideoOrchestratorThumbnailPackage({
+              slug,
+              projectId,
+              generatedAt: existing?.generatedAt ?? new Date().toISOString(),
+              source: existing?.source ?? 'fixture',
+              thumbnail,
+            });
+
+            sendJson(response, 200, record);
+            return;
+          }
+
+          const slug = url.searchParams.get('slug')?.trim();
+          if (!slug) {
+            sendJson(response, 400, {
+              error: {
+                code: 'invalid_request',
+                message: 'Missing required query parameter: slug.',
+              },
+            } satisfies BrainCoreErrorResponse);
+            return;
+          }
+
+          const thumbnailPackage = readVideoOrchestratorThumbnailPackage(slug);
+          if (thumbnailPackage) {
+            sendJson(response, 200, thumbnailPackage);
+            return;
+          }
+
+          sendJson(response, 404, {
+            error: {
+              code: 'not_found',
+              message: 'Video Orchestrator thumbnail package not found.',
+            },
+          } satisfies BrainCoreErrorResponse);
           return;
         }
 

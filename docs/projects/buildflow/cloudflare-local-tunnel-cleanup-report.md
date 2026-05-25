@@ -9,10 +9,9 @@
 
 ## Summary
 
-Removed three ingress entries from ~/.cloudflared/config.yml that were incorrectly routing to localhost:3054:
+Removed two ingress entries from ~/.cloudflared/config.yml that were incorrectly routing to localhost:3054:
 - `buildflow-staging.prochat.tools` — Was incorrectly added to local tunnel; should route to Dokploy only
 - `plankit.prochat.tools` — Removed per architecture cleanup
-- `brainbridge.prochat.tools` — Not found in config; not removed
 
 Preserved production domains:
 - `buildflow.prochat.tools` — Continues to route to localhost:3054 (local BuildFlow web)
@@ -54,7 +53,6 @@ ingress:
 |----------|--------|--------|
 | buildflow-staging.prochat.tools | Should not route to localhost; belongs on Dokploy routing | ✓ Removed |
 | plankit.prochat.tools | Cleanup per architecture review | ✓ Removed |
-| brainbridge.prochat.tools | Not found in original config | — Not present |
 
 ### Entries Preserved
 

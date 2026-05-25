@@ -283,7 +283,7 @@ Atomic tasks:
 Done when:
 - `npm run typecheck && npm run build` passes.
 - The UI can render fixture/read API data for all five canonical surfaces.
-- No UI card duplicates a project-specific thumbnail generator or project-specific pipeline.
+- No UI card duplicates a project-specific thumbnail generator, SEO editor, or project-specific pipeline.
 
 ---
 
@@ -1130,7 +1130,7 @@ brain-core/src/api/
   routes.ts                    ✅ Task 1.5 (approve/reject routes)
 
 brain-console-obsidian/src/
-  view.ts                      🔲 Tasks 21–24 (thumbnail studio, metadata review, analytics, AI chip)
+  view.ts                      🔲 Tasks 21–24 (shared artifact review, analytics, AI chip)
 ```
 
 ---
@@ -1142,7 +1142,7 @@ brain-console-obsidian/src/
 Analytics nightly sync fetches Reporting API CSV, top-performing titles feed next metadata generation.
 
 **Sprint 6 done when:**  
-Brain Console shows thumbnail preview (A/B side by side), editable metadata card, analytics dashboard, and AI selector health chip. Thumbnail set on YouTube automatically after publish. `thumbnails.set` quota tracked.
+Brain Console shows shared artifact preview, approval status, analytics dashboard, and AI selector health chip. Project-specific thumbnail editing and SEO authoring happen in the project repo admin UI. `thumbnails.set` quota tracked where the project workflow triggers the upload.
 
 **Sprint 7 done when:**  
 `vo queue pipeline --platforms youtube,facebook,pinterest` queues full multi-platform job chain and publishes to all three platforms from a single command.

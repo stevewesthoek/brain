@@ -4,15 +4,12 @@ import type {
 } from '../../client.js';
 import { getVOContextManager } from './VOContext.js';
 
-type StudioTab = 'brief' | 'script' | 'media' | 'captions' | 'thumbnails' | 'seo' | 'preview';
+type StudioTab = 'brief' | 'media' | 'captions' | 'preview';
 
 const STUDIO_TABS: Array<{ id: StudioTab; label: string }> = [
   { id: 'brief', label: 'Brief' },
-  { id: 'script', label: 'Script' },
   { id: 'media', label: 'Media' },
   { id: 'captions', label: 'Captions' },
-  { id: 'thumbnails', label: 'Thumbnails' },
-  { id: 'seo', label: 'SEO' },
   { id: 'preview', label: 'Preview' },
 ];
 
@@ -131,16 +128,10 @@ export class StudioPanel {
     switch (this.activeTab) {
       case 'brief':
         return this.renderBriefTab(item);
-      case 'script':
-        return this.renderScriptTab(item);
       case 'media':
         return this.renderMediaTab(item);
       case 'captions':
         return this.renderCaptionsTab(item);
-      case 'thumbnails':
-        return this.renderThumbnailsTab(item);
-      case 'seo':
-        return this.renderSeoTab(item);
       case 'preview':
         return this.renderPreviewTab(item);
       default:
@@ -181,28 +172,6 @@ export class StudioPanel {
                 <span class="vo-studio-meta-value">${item.artifactVariants.length} variant(s)</span>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private renderScriptTab(item: BrainCoreVOStudioContentItem): string {
-    const scriptArtifact = item.artifactVariants.find((v) => v.kind === 'video');
-    const scriptContent = scriptArtifact
-      ? `[Script artifact found — formatId: ${scriptArtifact.formatId}]\n\nStatus: ${scriptArtifact.status}\nPlatform: ${scriptArtifact.platform}\n\n[Script content would appear here when fully generated]`
-      : `No script artifact found for this content item.\n\nThis content item has ${item.artifactVariants.length} artifact variant(s) of kinds: ${[...new Set(item.artifactVariants.map((v) => v.kind))].join(', ') || 'none'}`;
-
-    return `
-      <div class="vo-studio-tab-content">
-        <div class="vo-studio-card">
-          <div class="vo-studio-card-header">
-            Script
-            ${scriptArtifact ? `<span class="vo-studio-badge vo-studio-badge--${scriptArtifact.status}">${scriptArtifact.status}</span>` : ''}
-          </div>
-          <div class="vo-studio-card-body">
-            <div class="vo-studio-readonly-label">Script Text (read-only)</div>
-            <textarea class="vo-studio-textarea vo-studio-textarea--tall" readonly>${scriptContent}</textarea>
           </div>
         </div>
       </div>
@@ -288,85 +257,6 @@ export class StudioPanel {
     `;
   }
 
-  private renderThumbnailsTab(item: BrainCoreVOStudioContentItem): string {
-    const thumbVariants = item.artifactVariants.filter((v) => v.kind === 'thumbnail');
-
-    return `
-      <div class="vo-studio-tab-content">
-        <div class="vo-studio-card">
-          <div class="vo-studio-card-header">Thumbnails</div>
-          <div class="vo-studio-card-body">
-            ${thumbVariants.length === 0 ? `
-              <div class="vo-studio-thumb-empty">
-                <span class="vo-studio-media-icon">◻</span>
-                <span class="vo-studio-media-label">No thumbnails generated yet</span>
-              </div>
-            ` : `
-              <div class="vo-studio-thumb-carousel">
-                ${thumbVariants.map((v, idx) => `
-                  <div class="vo-studio-thumb-card">
-                    <div class="vo-studio-thumb-preview">
-                      <span class="vo-studio-thumb-index">#${idx + 1}</span>
-                    </div>
-                    <div class="vo-studio-thumb-label">${v.formatId}</div>
-                    <div class="vo-studio-thumb-meta">${v.platform}</div>
-                    <span class="vo-studio-badge vo-studio-badge--${v.status}">${v.status}</span>
-                  </div>
-                `).join('')}
-              </div>
-            `}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private renderSeoTab(item: BrainCoreVOStudioContentItem): string {
-    const metadataVariants = item.artifactVariants.filter((v) => v.kind === 'metadata');
-    const targets = item.platformTargets;
-
-    return `
-      <div class="vo-studio-tab-content">
-        <div class="vo-studio-card">
-          <div class="vo-studio-card-header">SEO Metadata</div>
-          <div class="vo-studio-card-body">
-            <div class="vo-studio-seo-form">
-              <div class="vo-studio-seo-field">
-                <label class="vo-studio-seo-label">Title</label>
-                <div class="vo-studio-seo-value">${item.title}</div>
-              </div>
-              <div class="vo-studio-seo-field">
-                <label class="vo-studio-seo-label">Canonical Source</label>
-                <div class="vo-studio-seo-value vo-monospace">${item.canonicalSource}</div>
-              </div>
-              <div class="vo-studio-seo-field">
-                <label class="vo-studio-seo-label">Platform Targets</label>
-                <div class="vo-studio-seo-value">
-                  ${targets.length > 0 ? targets.map((t) => `
-                    <span class="vo-studio-badge vo-studio-badge--${t.status}">${t.platform}</span>
-                  `).join(' ') : '<span class="vo-muted">None</span>'}
-                </div>
-              </div>
-              ${metadataVariants.length > 0 ? `
-                <div class="vo-studio-seo-field">
-                  <label class="vo-studio-seo-label">Metadata Artifacts</label>
-                  <div class="vo-studio-seo-value">
-                    ${metadataVariants.map((v) => `
-                      <div class="vo-studio-meta-item">
-                        <span class="vo-studio-meta-key">${v.platform}</span>
-                        <span class="vo-studio-meta-value">${v.formatId} · <span class="vo-studio-badge vo-studio-badge--${v.status}">${v.status}</span></span>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
   private renderPreviewTab(item: BrainCoreVOStudioContentItem): string {
     const videoArtifact = item.artifactVariants.find((v) => v.kind === 'video');
     const captionArtifact = item.artifactVariants.find((v) => v.kind === 'captions');
@@ -413,6 +303,22 @@ export class StudioPanel {
                 <span class="vo-studio-badge ${thumbArtifact ? `vo-studio-badge--${thumbArtifact.status}` : 'vo-studio-badge--missing'}">${thumbArtifact ? thumbArtifact.status : 'not generated'}</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderSharedBoundaryNotice(): string {
+    return `
+      <div class="vo-studio-tab-content">
+        <div class="vo-studio-card">
+          <div class="vo-studio-card-header">Shared Boundary</div>
+          <div class="vo-studio-card-body">
+            <p class="vo-muted">
+              Brain Console shows shared orchestration state, shared artifacts, approvals, and health.
+              Project-specific scripting, thumbnail design, and SEO strategy live in the project repo that calls Brain Core API.
+            </p>
           </div>
         </div>
       </div>

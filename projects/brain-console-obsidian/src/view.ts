@@ -1854,6 +1854,42 @@ function renderVOStudioOverviewCard(state: BrainConsoleViewState): HTMLElement {
   return card;
 }
 
+function renderVOHealthAndUsageCard(state: BrainConsoleViewState): HTMLElement {
+  const card = document.createElement('div');
+  card.addClass('brain-console__card-content');
+
+  const projectCount = state.voStudioProjects?.items?.length ?? 0;
+  const accountCount = state.voStudioAccounts?.items?.length ?? 0;
+  const profileCount = state.voStudioPipelineProfiles?.items?.length ?? 0;
+  const contentCount = state.voStudioContentItems?.items?.length ?? 0;
+  const selector = state.aiModelSelectorStatus;
+  const selectorState = !selector
+    ? 'unavailable'
+    : selector.running && selector.healthy
+      ? 'healthy'
+      : selector.running
+        ? 'degraded'
+        : 'stopped';
+
+  renderCompactStatGrid(card, [
+    { label: 'Projects', value: String(projectCount) },
+    { label: 'Accounts', value: String(accountCount) },
+    { label: 'Profiles', value: String(profileCount) },
+    { label: 'Content items', value: String(contentCount) },
+    { label: 'AI selector', value: selectorState },
+  ]);
+
+  const list = card.createDiv({ cls: 'brain-console__list' });
+  const row = list.createDiv({ cls: 'brain-console__list-row' });
+  row.createEl('span', { cls: 'brain-console__list-label', text: 'Usage' });
+  row.createEl('span', {
+    cls: 'brain-console__list-value',
+    text: `${contentCount} item${contentCount === 1 ? '' : 's'} in view · read-only shared orchestration`,
+  });
+
+  return card;
+}
+
 function renderVOStudioWorkspaceCard(state: BrainConsoleViewState): HTMLElement {
   const card = document.createElement('div');
   card.addClass('brain-console__card-content');
@@ -2022,382 +2058,16 @@ function renderStudioSection(content: HTMLElement, state: BrainConsoleViewState)
   renderVOContextBar(content, state);
   const grid = content.createDiv({ cls: 'brain-console__dashboard-grid' });
 
-  renderCard(grid, 'VO Studio Overview', renderVOStudioOverviewCard(state));
-  renderCard(grid, 'Creation Workspace', renderVOStudioWorkspaceCard(state), { wide: true });
-  renderCard(grid, 'Thumbnail Studio', renderVOThumbnailStudioCard(state));
-
-  const studio = state.infraStudio;
-
-  if (!studio || studio.status === 'not-configured') {
-    const card = document.createElement('div');
-    card.addClass('brain-console__card-content');
-    card.createEl('p', { text: studio?.error ?? 'Studio data not configured.' });
-    card.createEl('p', { cls: 'brain-console__detail', text: 'Viral Flow config expected at ~/.config/viralflow/. Video Orchestrator runtime at runtime/local/video-orchestrator/latest.json.' });
-    renderCard(grid, 'Studio', card);
-    renderVOLiveStatusCards(grid, state);
-    return;
-  }
-
-  if (studio.status === 'error') {
-    const card = document.createElement('div');
-    card.addClass('brain-console__card-content');
-    card.createEl('p', { cls: 'brain-console__error-detail', text: studio.error ?? 'Studio error.' });
-    renderCard(grid, 'Studio', card);
-    renderVOLiveStatusCards(grid, state);
-    return;
-  }
-
-  // ── Viral Flow ──────────────────────────────────────────────────────────────
-  const vf = studio.viralFlow;
-  if (vf) {
-    const vfCard = document.createElement('div');
-    vfCard.addClass('brain-console__card-content');
-    renderCompactStatGrid(vfCard, [
-      { label: 'Accounts', value: String(vf.accountCount) },
-      { label: 'Active topics', value: String(vf.activeTopicCount) },
-      { label: 'Scripts', value: String(vf.recentScripts.length) },
-      { label: 'Total videos', value: String(vf.performance.totalVideos) },
-      { label: 'Total views', value: vf.performance.totalViews.toLocaleString() },
-      { label: 'Avg engagement', value: `${(vf.performance.avgEngagementRate * 100).toFixed(1)}%` },
-    ]);
-
-    // Active batch
-    if (vf.activeBatch) {
-      const b = vf.activeBatch;
-      const batchDiv = vfCard.createDiv({ cls: 'brain-console__list' });
-      batchDiv.createEl('div', { cls: 'brain-console__list-label', text: `Active batch: ${b.topic} — stage: ${b.stage}` });
-      for (const [stageName, stageData] of Object.entries(b.stages)) {
-        const row = batchDiv.createDiv({ cls: 'brain-console__list-row' });
-        const icon = stageData.completed ? '✓' : stageData.inProgress ? '●' : '○';
-        row.createEl('span', { cls: 'brain-console__list-label', text: `${icon} ${stageName}` });
-      }
-      if (b.errors.length > 0) {
-        vfCard.createEl('p', { cls: 'brain-console__error-detail', text: `Batch errors: ${b.errors.slice(0, 2).join(', ')}` });
-      }
-    }
-    renderCard(grid, 'Viral Flow', vfCard);
-
-    // Accounts
-    if (vf.accounts.length > 0) {
-      const accCard = document.createElement('div');
-      accCard.addClass('brain-console__card-content');
-      const accList = accCard.createDiv({ cls: 'brain-console__list' });
-      for (const a of vf.accounts) {
-        const row = accList.createDiv({ cls: 'brain-console__list-row' });
-        row.createEl('span', { cls: 'brain-console__list-label', text: `${a.platform}: ${a.name}` });
-        row.createEl('span', { cls: 'brain-console__list-value', text: a.status });
-        if (a.lastPost) {
-          row.createEl('span', { cls: 'brain-console__detail', text: formatRelativeTime(a.lastPost) });
-        }
-      }
-      renderCard(grid, `Accounts (${vf.accounts.length})`, accCard);
-    }
-
-    // Recent topics
-    if (vf.recentTopics.length > 0) {
-      const topicsCard = document.createElement('div');
-      topicsCard.addClass('brain-console__card-content');
-      const tList = topicsCard.createDiv({ cls: 'brain-console__list' });
-      for (const t of vf.recentTopics.slice(0, 10)) {
-        const row = tList.createDiv({ cls: 'brain-console__list-row' });
-        row.createEl('span', { cls: 'brain-console__list-label', text: t.title.slice(0, 50) });
-        row.createEl('span', { cls: 'brain-console__list-value', text: `${t.trendScore}% trend` });
-      }
-      renderCard(grid, `Recent Topics (${vf.recentTopics.length})`, topicsCard);
-    }
-
-    // Top videos
-    if (vf.performance.topVideos.length > 0) {
-      const tvCard = document.createElement('div');
-      tvCard.addClass('brain-console__card-content');
-      const tvList = tvCard.createDiv({ cls: 'brain-console__list' });
-      for (const v of vf.performance.topVideos.slice(0, 10)) {
-        const row = tvList.createDiv({ cls: 'brain-console__list-row' });
-        row.createEl('span', { cls: 'brain-console__list-label', text: v.title.slice(0, 40) });
-        row.createEl('span', { cls: 'brain-console__list-value', text: `${v.views.toLocaleString()} views` });
-        row.createEl('span', { cls: 'brain-console__detail', text: v.platform });
-      }
-      renderCard(grid, 'Top Videos', tvCard);
-    }
-  }
-
-  // ── Video Orchestrator (static runtime summary) ─────────────────────────────
-  const vo = studio.videoOrchestrator;
-  if (vo) {
-    const voCard = document.createElement('div');
-    voCard.addClass('brain-console__card-content');
-    if (vo.error) {
-      voCard.createEl('p', { cls: 'brain-console__error-detail', text: vo.error });
-    }
-    renderCompactStatGrid(voCard, [
-      { label: 'Database', value: vo.databaseStatus },
-      { label: 'Total videos', value: String(vo.totalVideos) },
-      { label: 'Completed packages', value: String(vo.completedPackages) },
-      { label: 'Completion rate', value: `${vo.completionRate}%` },
-      { label: 'Running jobs', value: String(vo.runningJobs) },
-      { label: 'Pending jobs', value: String(vo.pendingJobs) },
-      { label: 'Failed (7d)', value: String(vo.failedJobs7d) },
-      { label: 'Accounts', value: String(vo.totalAccounts) },
-    ]);
-    renderCard(grid, 'Video Orchestrator Pipeline', voCard);
-
-    // Multi-account breakdown card
-    if (vo.accountSummary && vo.accountSummary.length > 0) {
-      const acctCard = document.createElement('div');
-      acctCard.addClass('brain-console__card-content');
-      const table = acctCard.createEl('table', { cls: 'brain-console__compact-table' });
-      const thead = table.createEl('thead');
-      const hrow = thead.createEl('tr');
-      hrow.createEl('th', { text: 'Platform' });
-      hrow.createEl('th', { text: 'Accounts' });
-      hrow.createEl('th', { text: 'Posted today' });
-      const tbody = table.createEl('tbody');
-      for (const entry of vo.accountSummary) {
-        const row = tbody.createEl('tr');
-        row.createEl('td', { text: entry.platform });
-        row.createEl('td', { text: String(entry.count) });
-        row.createEl('td', { text: String(entry.postedToday) });
-      }
-      renderCard(grid, `Accounts by Platform (${vo.accountSummary.length})`, acctCard);
-    }
-  }
-
-  // ── VO System Readiness ─────────────────────────────────────────────────────
-  const rd = state.voReadiness;
-  if (rd?.ok) {
-    const rdCard = document.createElement('div');
-    rdCard.addClass('brain-console__card-content');
-    const statusEmoji = rd.status === 'ready' ? '🟢' : rd.status === 'partial' ? '🟡' : '🔴';
-    renderCompactStatGrid(rdCard, [
-      { label: 'Status', value: `${statusEmoji} ${rd.status}` },
-      { label: 'Readiness', value: `${rd.readinessScore}%` },
-      { label: 'Checks passed', value: `${rd.passCount}/${rd.checks.length}` },
-      { label: 'Failed', value: String(rd.failCount) },
-      { label: 'Warnings', value: String(rd.warnCount) },
-    ]);
-    const checkList = rdCard.createDiv({ cls: 'brain-console__list' });
-    for (const check of rd.checks) {
-      const row = checkList.createDiv({ cls: 'brain-console__list-row' });
-      const icon = check.status === 'pass' ? '✓' : check.status === 'fail' ? '✗' : check.status === 'warn' ? '⚠' : '?';
-      row.createEl('span', { cls: 'brain-console__list-label', text: `${icon} ${check.label}` });
-      const badge = row.createEl('span', { cls: 'brain-console__badge', text: check.status });
-      badge.addClass(
-        check.status === 'pass' ? 'brain-console__badge--ok' :
-        check.status === 'fail' ? 'brain-console__badge--danger' :
-        check.status === 'warn' ? 'brain-console__badge--warn' :
-        'brain-console__badge--muted',
-      );
-      if (check.status !== 'pass') {
-        rdCard.createEl('p', { cls: 'brain-console__detail', text: `${check.label}: ${check.detail}` });
-      }
-    }
-    const rdTitle = `VO System Readiness — ${rd.readinessScore}% (${rd.status})`;
-    renderCard(grid, rdTitle, rdCard);
-  }
-
-  // ── Video Orchestrator Live DB Status ───────────────────────────────────────
+  renderCard(grid, 'Shared Orchestration', renderVOStudioOverviewCard(state), {
+    wide: true,
+    subtitle: 'Shared processing visibility only. Project-specific editing, scripting, SEO, and thumbnail design live in the project repo.',
+  });
+  renderCard(grid, 'Health & Usage', renderVOHealthAndUsageCard(state), {
+    wide: true,
+    subtitle: 'Read-only health, quota, account coverage, and artifact usage.',
+  });
   renderVOLiveStatusCards(grid, state);
-
-  // ── VO Recent Jobs ──────────────────────────────────────────────────────────
-  const jobs = state.voJobs;
-  if (jobs?.ok && jobs.jobs.length > 0) {
-    const jobsContent = document.createElement('div');
-    jobsContent.addClass('brain-console__card-content');
-    const table = jobsContent.createEl('table', { cls: 'brain-console__compact-table' });
-    const thead = table.createEl('thead');
-    const hrow = thead.createEl('tr');
-    hrow.createEl('th', { text: 'Type' });
-    hrow.createEl('th', { text: 'Platform' });
-    hrow.createEl('th', { text: 'Account' });
-    hrow.createEl('th', { text: 'Status' });
-    hrow.createEl('th', { text: 'Created' });
-    hrow.createEl('th', { text: '' });
-    const tbody = table.createEl('tbody');
-    const instructionsPanel = jobsContent.createDiv({ cls: 'brain-console__detail' });
-    for (const job of jobs.jobs.slice(0, 10)) {
-      const row = tbody.createEl('tr');
-      row.createEl('td', { text: job.jobType });
-      row.createEl('td', { text: job.platform ?? '—' });
-      const handleText = job.accountHandle ? job.accountHandle.slice(0, 20) : '—';
-      row.createEl('td', { text: handleText });
-      const statusCell = row.createEl('td');
-      const statusBadge = statusCell.createEl('span', { cls: 'brain-console__badge', text: job.jobStatus });
-      if (job.jobStatus === 'succeeded') statusBadge.addClass('brain-console__badge--ok');
-      else if (job.jobStatus === 'failed' || job.jobStatus === 'dead') statusBadge.addClass('brain-console__badge--danger');
-      else if (job.jobStatus === 'running') statusBadge.addClass('brain-console__badge--warn');
-      else statusBadge.addClass('brain-console__badge--muted');
-      row.createEl('td', { text: formatRelativeTime(job.createdAt) });
-      const actionCell = row.createEl('td');
-      const isManualPosted = job.pipelineState === 'posted' && (job.adapterMode === null || job.adapterMode === 'manual');
-      if (isManualPosted) {
-        const link = actionCell.createEl('button', { cls: 'brain-console__link-button', text: 'View instructions' });
-        link.addEventListener('click', async () => {
-          instructionsPanel.empty();
-          instructionsPanel.setText('Loading posting instructions...');
-          const result = await readBrainCoreVOPostingInstructions(state.brainCoreUrl ?? '', job.jobId);
-          instructionsPanel.empty();
-          if (!result.value?.exists) {
-            instructionsPanel.setText(result.value?.error ?? 'Posting instructions are not available for this job.');
-            return;
-          }
-          instructionsPanel.createEl('div', { text: `${result.value.account ?? 'Unknown account'} · ${result.value.platform ?? 'unknown platform'}` });
-          instructionsPanel.createEl('pre', { text: result.value.content });
-        });
-      } else {
-        actionCell.createEl('span', { text: '—' });
-      }
-    }
-    renderCard(grid, `VO Recent Jobs (${Math.min(jobs.jobs.length, 10)} of ${jobs.totalCount})`, jobsContent);
-  }
-
-  // ── VO Worker Config ────────────────────────────────────────────────────────
-  const wc = state.voWorkerConfig;
-  if (wc) {
-    const wcCard = document.createElement('div');
-    wcCard.addClass('brain-console__card-content');
-    if (!wc.ok || !wc.config) {
-      wcCard.createEl('p', { cls: 'brain-console__error-detail', text: wc.error ?? 'Worker config unavailable.' });
-    } else {
-      const cfg = wc.config;
-      const statusRows: { label: string; value: string; ok: boolean }[] = [
-        { label: 'n8n webhook', value: cfg.n8nWebhookConfigured ? (cfg.n8nReachable === true ? 'reachable' : cfg.n8nReachable === false ? 'unreachable' : 'configured (untested)') : 'not configured', ok: cfg.n8nWebhookConfigured && cfg.n8nReachable !== false },
-        { label: 'CF Access', value: cfg.cfAccessConfigured ? 'configured' : 'missing', ok: cfg.cfAccessConfigured },
-        { label: 'YouTube OAuth', value: cfg.youtubeOauthConfigured ? `${cfg.youtubeOauthAccounts.join(', ')}` : 'not configured', ok: cfg.youtubeOauthConfigured },
-      ];
-      const statusList = wcCard.createDiv({ cls: 'brain-console__list' });
-      for (const s of statusRows) {
-        const row = statusList.createDiv({ cls: 'brain-console__list-row' });
-        row.createEl('span', { cls: 'brain-console__list-label', text: s.label });
-        const badge = row.createEl('span', { cls: 'brain-console__badge', text: s.value });
-        badge.addClass(s.ok ? 'brain-console__badge--ok' : 'brain-console__badge--danger');
-      }
-      if (wc.manualActionsRequired.length > 0) {
-        wcCard.createEl('p', { cls: 'brain-console__detail', text: `${wc.manualActionsRequired.length} manual action${wc.manualActionsRequired.length !== 1 ? 's' : ''} required:` });
-        const actionList = wcCard.createDiv({ cls: 'brain-console__list' });
-        for (const action of wc.manualActionsRequired) {
-          actionList.createEl('p', { cls: 'brain-console__warning', text: action });
-        }
-      }
-    }
-    const wcTitle = wc.config && wc.manualActionsRequired.length > 0
-      ? `VO Worker Config (${wc.manualActionsRequired.length} action${wc.manualActionsRequired.length !== 1 ? 's' : ''} needed)`
-      : 'VO Worker Config';
-    renderCard(grid, wcTitle, wcCard);
-  }
-
-  // ── VO Account Stats ────────────────────────────────────────────────────────
-  const as = state.voAccountStats;
-  if (as?.ok && as.stats.length > 0) {
-    const asCard = document.createElement('div');
-    asCard.addClass('brain-console__card-content');
-    const asTable = asCard.createEl('table', { cls: 'brain-console__compact-table' });
-    const asHead = asTable.createEl('thead').createEl('tr');
-    asHead.createEl('th', { text: 'Platform' });
-    asHead.createEl('th', { text: 'Account' });
-    asHead.createEl('th', { text: 'Posts (30d)' });
-    asHead.createEl('th', { text: 'Success' });
-    asHead.createEl('th', { text: 'Mode' });
-    asHead.createEl('th', { text: 'Last post' });
-    const asBody = asTable.createEl('tbody');
-    for (const stat of as.stats) {
-      const row = asBody.createEl('tr');
-      row.createEl('td', { text: stat.platform });
-      row.createEl('td', { text: stat.accountHandle.slice(0, 22) });
-      row.createEl('td', { text: String(stat.totalJobs30d) });
-      const rateCell = row.createEl('td');
-      if (stat.successRate30d !== null) {
-        const badge = rateCell.createEl('span', { cls: 'brain-console__badge', text: `${stat.successRate30d}%` });
-        badge.addClass(stat.successRate30d >= 80 ? 'brain-console__badge--ok' : stat.successRate30d >= 50 ? 'brain-console__badge--warn' : 'brain-console__badge--danger');
-      } else {
-        rateCell.createEl('span', { cls: 'brain-console__badge brain-console__badge--muted', text: '—' });
-      }
-      const modeCell = row.createEl('td');
-      if (stat.lastAdapterMode) {
-        const modeBadge = modeCell.createEl('span', { cls: 'brain-console__badge', text: stat.lastAdapterMode });
-        modeBadge.addClass(stat.lastAdapterMode === 'auto' ? 'brain-console__badge--ok' : 'brain-console__badge--warn');
-      } else {
-        modeCell.createEl('span', { cls: 'brain-console__badge brain-console__badge--muted', text: 'no posts' });
-      }
-      row.createEl('td', { text: stat.lastSucceededAt ? formatRelativeTime(stat.lastSucceededAt) : '—' });
-    }
-    renderCard(grid, `VO Account Stats (30d) — ${as.stats.length} accounts`, asCard);
-  }
-
-  // ── VO Normalize History ────────────────────────────────────────────────────
-  const nh = state.voNormalizeHistory;
-  if (nh?.ok && nh.jobs.length > 0) {
-    const nhCard = document.createElement('div');
-    nhCard.addClass('brain-console__card-content');
-    const nhTable = nhCard.createEl('table', { cls: 'brain-console__compact-table' });
-    const nhHead = nhTable.createEl('thead').createEl('tr');
-    nhHead.createEl('th', { text: 'Job' });
-    nhHead.createEl('th', { text: 'Status' });
-    nhHead.createEl('th', { text: 'Formats' });
-    nhHead.createEl('th', { text: 'Files' });
-    nhHead.createEl('th', { text: 'Created' });
-    const nhBody = nhTable.createEl('tbody');
-    for (const job of nh.jobs.slice(0, 8)) {
-      const row = nhBody.createEl('tr');
-      row.createEl('td', { text: job.jobId.slice(0, 8) });
-      const sc = row.createEl('td');
-      const sb = sc.createEl('span', { cls: 'brain-console__badge', text: job.status });
-      if (job.status === 'succeeded') sb.addClass('brain-console__badge--ok');
-      else if (job.status === 'failed') sb.addClass('brain-console__badge--danger');
-      else if (job.status === 'running') sb.addClass('brain-console__badge--warn');
-      else sb.addClass('brain-console__badge--muted');
-      row.createEl('td', { text: job.formats.length > 0 ? job.formats.join(', ') : '—' });
-      row.createEl('td', { text: String(job.outputFiles.length) });
-      row.createEl('td', { text: formatRelativeTime(job.createdAt) });
-    }
-    renderCard(grid, `VO Normalize History (${Math.min(nh.jobs.length, 8)} of ${nh.totalCount})`, nhCard);
-  } else if (nh && !nh.ok) {
-    const nhErrCard = document.createElement('div');
-    nhErrCard.addClass('brain-console__card-content');
-    nhErrCard.createEl('p', { cls: 'brain-console__error-detail', text: nh.error ?? 'Normalize history unavailable.' });
-    renderCard(grid, 'VO Normalize History', nhErrCard);
-  }
-
-  // ── VO Manual Posting Queue ─────────────────────────────────────────────────
-  const mq = state.voManualQueue;
-  if (mq?.ok && mq.jobs.length > 0) {
-    const mqCard = document.createElement('div');
-    mqCard.addClass('brain-console__card-content');
-    const mqTable = mqCard.createEl('table', { cls: 'brain-console__compact-table' });
-    const mqHead = mqTable.createEl('thead').createEl('tr');
-    mqHead.createEl('th', { text: 'Platform' });
-    mqHead.createEl('th', { text: 'Account' });
-    mqHead.createEl('th', { text: 'Title' });
-    mqHead.createEl('th', { text: 'Instructions' });
-    mqHead.createEl('th', { text: 'Created' });
-    const mqBody = mqTable.createEl('tbody');
-    const mqInstructionsPanel = mqCard.createDiv({ cls: 'brain-console__detail' });
-    for (const job of mq.jobs.slice(0, 10)) {
-      const row = mqBody.createEl('tr');
-      row.createEl('td', { text: job.platform });
-      row.createEl('td', { text: job.accountHandle.slice(0, 20) });
-      row.createEl('td', { text: job.title.slice(0, 35) });
-      const instrCell = row.createEl('td');
-      if (job.hasInstructions) {
-        const btn = instrCell.createEl('button', { cls: 'brain-console__link-button', text: 'View' });
-        btn.addEventListener('click', async () => {
-          mqInstructionsPanel.empty();
-          mqInstructionsPanel.setText('Loading posting instructions...');
-          const result = await readBrainCoreVOPostingInstructions(state.brainCoreUrl ?? '', job.jobId);
-          mqInstructionsPanel.empty();
-          if (!result.value?.exists) {
-            mqInstructionsPanel.setText(result.value?.error ?? 'Posting instructions not available.');
-            return;
-          }
-          mqInstructionsPanel.createEl('div', { text: `${result.value.account ?? 'Unknown'} · ${result.value.platform ?? 'unknown'}` });
-          mqInstructionsPanel.createEl('pre', { text: result.value.content });
-        });
-      } else {
-        instrCell.createEl('span', { cls: 'brain-console__badge brain-console__badge--muted', text: 'missing' });
-      }
-      row.createEl('td', { text: formatRelativeTime(job.createdAt) });
-    }
-    renderCard(grid, `VO Manual Posting Queue (${Math.min(mq.jobs.length, 10)} of ${mq.totalCount})`, mqCard);
-  }
+  return;
 }
 
 function renderLocalAppActionAuditCard(state: BrainConsoleViewState): HTMLElement {

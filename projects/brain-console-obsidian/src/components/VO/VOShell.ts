@@ -3,10 +3,7 @@ import { OverviewPanel } from './OverviewPanel.js';
 import { PipelinesPanel } from './PipelinesPanel.js';
 import { AccountsPanel } from './AccountsPanel.js';
 import { HistoryPanel } from './HistoryPanel.js';
-import { ContentCreationPanel } from './ContentCreationPanel.js';
-import { StudioPanel } from './StudioPanel.js';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
-import { ThumbnailStudioPanel } from './ThumbnailStudioPanel.js';
 import { DeadLetterReviewPanel } from './DeadLetterReviewPanel.js';
 import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
@@ -15,8 +12,6 @@ import { StudioDashboardPanel } from './StudioDashboardPanel.js';
 import { AuditLogPanel } from './AuditLogPanel.js';
 import { OperatorDashboardPanel } from './OperatorDashboardPanel.js';
 import { JobProgressPanel } from './JobProgressPanel.js';
-import { MetadataGeneratorPanel } from './MetadataGeneratorPanel.js';
-import { FeedbackLoopPanel } from './FeedbackLoopPanel.js';
 import { AgentConsolePanel } from './AgentConsolePanel.js';
 import { getVOContextManager } from './VOContext.js';
 import type {
@@ -35,15 +30,10 @@ export class VOShell {
   private overviewPanel: OverviewPanel | null = null;
   private pipelinesPanel: PipelinesPanel | null = null;
   private accountsPanel: AccountsPanel | null = null;
-  private contentCreationPanel: ContentCreationPanel | null = null;
-  private studioPanel: StudioPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
-  private thumbnailStudioPanel: ThumbnailStudioPanel | null = null;
   private deadLetterReviewPanel: DeadLetterReviewPanel | null = null;
   private jobProgressPanel: JobProgressPanel | null = null;
-  private metadataGeneratorPanel: MetadataGeneratorPanel | null = null;
-  private feedbackLoopPanel: FeedbackLoopPanel | null = null;
   private agentConsolePanel: AgentConsolePanel | null = null;
   private packageStatusPanel: PackageStatusPanel | null = null;
   private publishingDashboardPanel: PublishingDashboardPanel | null = null;
@@ -91,13 +81,9 @@ export class VOShell {
         <button class="vo-tab vo-tab--active" data-tab="overview">Overview</button>
         <button class="vo-tab" data-tab="pipelines">Pipelines</button>
         <button class="vo-tab" data-tab="accounts">Accounts</button>
-        <button class="vo-tab" data-tab="content">Content</button>
         <button class="vo-tab" data-tab="approvals">Approvals</button>
-        <button class="vo-tab" data-tab="thumbnails">Thumbnails</button>
         <button class="vo-tab" data-tab="jobs">Jobs</button>
         <button class="vo-tab" data-tab="dead-letter">Dead Letter</button>
-        <button class="vo-tab" data-tab="metadata">Metadata</button>
-        <button class="vo-tab" data-tab="feedback">Feedback</button>
         <button class="vo-tab" data-tab="agents">Agents</button>
         <button class="vo-tab" data-tab="packages">Packages</button>
         <button class="vo-tab" data-tab="publishing">Publishing</button>
@@ -156,21 +142,9 @@ export class VOShell {
       this.accountsPanel.destroy();
       this.accountsPanel = null;
     }
-    if (this.contentCreationPanel) {
-      this.contentCreationPanel.destroy();
-      this.contentCreationPanel = null;
-    }
-    if (this.studioPanel) {
-      this.studioPanel.destroy();
-      this.studioPanel = null;
-    }
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
       this.approvalQueuePanel = null;
-    }
-    if (this.thumbnailStudioPanel) {
-      this.thumbnailStudioPanel.destroy();
-      this.thumbnailStudioPanel = null;
     }
     if (this.deadLetterReviewPanel) {
       this.deadLetterReviewPanel.destroy();
@@ -179,14 +153,6 @@ export class VOShell {
     if (this.jobProgressPanel) {
       this.jobProgressPanel.destroy();
       this.jobProgressPanel = null;
-    }
-    if (this.metadataGeneratorPanel) {
-      this.metadataGeneratorPanel.destroy();
-      this.metadataGeneratorPanel = null;
-    }
-    if (this.feedbackLoopPanel) {
-      this.feedbackLoopPanel.destroy();
-      this.feedbackLoopPanel = null;
     }
     if (this.agentConsolePanel) {
       this.agentConsolePanel.destroy();
@@ -273,20 +239,6 @@ export class VOShell {
         }
         break;
 
-      case 'content':
-        if (state.projectId) {
-          this.studioPanel = new StudioPanel(this.contentContainer, {
-            contentItems: this.data.contentItems,
-          });
-        } else {
-          this.contentContainer.innerHTML = `
-            <div class="vo-empty-state">
-              <p>Select a project to view Studio content</p>
-            </div>
-          `;
-        }
-        break;
-
       case 'approvals':
         if (state.projectId) {
           this.approvalQueuePanel = new ApprovalQueuePanel(this.contentContainer, state.projectId);
@@ -295,19 +247,6 @@ export class VOShell {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">
               <p>Select a project to view approval queue</p>
-            </div>
-          `;
-        }
-        break;
-
-      case 'thumbnails':
-        if (state.projectId) {
-          this.thumbnailStudioPanel = new ThumbnailStudioPanel(this.contentContainer, state.projectId);
-          this.thumbnailStudioPanel.initialize();
-        } else {
-          this.contentContainer.innerHTML = `
-            <div class="vo-empty-state">
-              <p>Select a project to view thumbnail studio</p>
             </div>
           `;
         }
@@ -334,32 +273,6 @@ export class VOShell {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">
               <p>Select a project to review dead jobs</p>
-            </div>
-          `;
-        }
-        break;
-
-      case 'metadata':
-        if (state.projectId) {
-          this.metadataGeneratorPanel = new MetadataGeneratorPanel(this.contentContainer, state.projectId);
-          this.metadataGeneratorPanel.initialize();
-        } else {
-          this.contentContainer.innerHTML = `
-            <div class="vo-empty-state">
-              <p>Select a project to generate metadata</p>
-            </div>
-          `;
-        }
-        break;
-
-      case 'feedback':
-        if (state.projectId) {
-          this.feedbackLoopPanel = new FeedbackLoopPanel(this.contentContainer, state.projectId);
-          this.feedbackLoopPanel.initialize();
-        } else {
-          this.contentContainer.innerHTML = `
-            <div class="vo-empty-state">
-              <p>Select a project to view feedback loop</p>
             </div>
           `;
         }
@@ -480,29 +393,14 @@ export class VOShell {
     if (this.accountsPanel) {
       this.accountsPanel.destroy();
     }
-    if (this.contentCreationPanel) {
-      this.contentCreationPanel.destroy();
-    }
-    if (this.studioPanel) {
-      this.studioPanel.destroy();
-    }
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
-    }
-    if (this.thumbnailStudioPanel) {
-      this.thumbnailStudioPanel.destroy();
     }
     if (this.deadLetterReviewPanel) {
       this.deadLetterReviewPanel.destroy();
     }
     if (this.jobProgressPanel) {
       this.jobProgressPanel.destroy();
-    }
-    if (this.metadataGeneratorPanel) {
-      this.metadataGeneratorPanel.destroy();
-    }
-    if (this.feedbackLoopPanel) {
-      this.feedbackLoopPanel.destroy();
     }
     if (this.agentConsolePanel) {
       this.agentConsolePanel.destroy();

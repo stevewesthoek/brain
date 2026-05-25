@@ -1,7 +1,9 @@
 # Session Handoff — VO Studio Implementation Status
 
+> Historical archive. This document records the now-superseded VO Studio-heavy state from 2026-05-24. It is not the canonical current boundary. Use `video-orchestrator-strategy.md`, `video-orchestrator-roadmap.md`, and `project-onboarding-split.md` for the current shared-only console split.
+
 **Date:** 2026-05-24 (End of Session)  
-**Status:** Next-phase implementation plus recent hardening slices complete: Thumbnail Studio UI, analytics cards, winner-driven thumbnail replacement, dead-letter review UI, worker health, and artifact versioning  
+**Status:** Next-phase implementation plus recent hardening slices complete at the time; later docs supersede the Studio-heavy console model with a shared health/usage console boundary  
 **Git State:** Implementation commits are on `main`; later review edits may be uncommitted until checkpointed  
 **Test Coverage:** 997 tests passing, 0 failures
 
@@ -20,7 +22,7 @@
 - Production hardening: circuit breakers, retry, error recovery, metrics, alerts, health checks
 - Admin features: analytics, audit logs, operator dashboard
 
-**Next-phase implementation completed in this session**:
+**Next-phase implementation completed in this session (historical record)**:
 - Agent Orchestrator now uses real provider paths with safe fallback behavior
 - Brain Console now includes `Jobs`, `Metadata`, and `Feedback` tabs
 - Approval queue now opens thumbnail and metadata previews
@@ -30,14 +32,14 @@
 - Brain Console VO context bar now shows AI selector running/stopped state and current healthy provider
 - Agent Orchestrator Claude-labelled execution no longer calls Anthropic directly; it routes through the AI Model Selector / approved fallback surfaces
 - YouTube direct posting now performs captions upload, metadata update, and thumbnail attachment explicitly after upload, with matching quota accounting
-- Brain Console now includes a dedicated `Thumbnails` tab with template library, preview surface, variant selector, and manual headline edit
+- Brain Console once included a dedicated `Thumbnails` tab with template library, preview surface, variant selector, and manual headline edit
 - Analytics winner declaration now re-applies the winning thumbnail via `thumbnails.set` and persists the winner state in the artifact
 - Test & Compare automation is now explicitly treated as manual YouTube Studio only until an official developer API is confirmed
-- Brain Console now includes a dedicated `Dead Letter` tab for operator review of exhausted jobs
+- Brain Console once included a dedicated `Dead Letter` tab for operator review of exhausted jobs
 - Brain Core now exposes a worker health endpoint and the VO dashboard shows live worker health
 - Worker artifact writes now preserve prior versions in `task_config.artifact_versions`
 - Phase 6 multi-platform metadata now includes Pinterest, n8n workflow stubs now include success/error branches, and the full `vo queue pipeline --audio --background ...` chain now resolves real per-platform account IDs for the `multi_post` step
-- Brain Console VO shell now includes a read-only `Agents` tab backed by the existing agent console summaries, task graph, approval gates, and cost snapshot endpoints
+- Brain Console VO shell once included a read-only `Agents` tab backed by the existing agent console summaries, task graph, approval gates, and cost snapshot endpoints
 
 **Testing:**
 - 997 tests passing, 0 failures
@@ -50,7 +52,7 @@
 - Instagram Graph API v18
 
 **UI:**
-- Brain Console VO tabs now include Overview, Studio, Pipelines, Accounts, History, Dashboard, Approvals, Thumbnails, Jobs, Dead Letter, Metadata, Feedback
+- Brain Console VO tabs at the time included Overview, Studio, Pipelines, Accounts, History, Dashboard, Approvals, Thumbnails, Jobs, Dead Letter, Metadata, Feedback
 
 ---
 
@@ -115,7 +117,7 @@
 - `projects/brain-console-obsidian/src/components/VO/FeedbackLoopPanel.ts`
 - `projects/brain-console-obsidian/src/components/VO/VOShell.ts`
 - `projects/brain-console-obsidian/styles.css`
-- Added a dedicated Thumbnail Studio UI with approval queue, template library, preview, variant selection, and headline editing
+- Added a dedicated Thumbnail Studio UI with approval queue, template library, preview, variant selection, and headline editing (historical only)
 - Expanded the Feedback tab with per-video analytics cards, 7d/30d channel summaries, and thumbnail A/B status
 - Brain Console build verification passed
 
@@ -219,4 +221,4 @@ If resuming later:
 
 ## Resume Prompt
 
-Resume from the completed VO Studio next-phase checkpoint in `brain/main`. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, dedicated Thumbnail Studio UI, analytics cards, YouTube post-upload attachment flow, winner-driven thumbnail replacement, dead-letter review UI, worker health endpoint/dashboard card, and artifact versioning are implemented and tested. If you are continuing roadmap work, start by reviewing the remaining open items in `video-orchestrator-roadmap.md`.
+Resume from the completed VO Studio next-phase checkpoint in `brain/main` only as historical reference. The orchestrator, job progress UI, approval previews, metadata generator, analytics feedback loop, Brain Console AI selector health chip, dedicated Thumbnail Studio UI, analytics cards, YouTube post-upload attachment flow, winner-driven thumbnail replacement, dead-letter review UI, worker health endpoint/dashboard card, and artifact versioning were implemented in that older state. If you are continuing roadmap work, start by reviewing the current shared-only boundary docs instead of treating this as the active console spec.
