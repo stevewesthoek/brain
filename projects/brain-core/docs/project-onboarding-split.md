@@ -222,6 +222,60 @@ POST /jobs/{job_id}/cancel
 
 ---
 
+## Says the Bible (First Project Integration) — Phase 4B
+
+**Status:** ✅ Complete — template definitions and API integration in place (2026-05-25)
+
+### What Says the Bible Implemented
+
+1. **Template definitions** (`src/config/thumbnail-templates/`)
+   - `default.yaml` — centered text, dark scrim overlay
+   - `image-focus.yaml` — background-focused, corner text
+   - Both follow the YAML schema: layers array, safe zones, positioning
+
+2. **Color schemes** (`src/config/color-schemes/`)
+   - `default.json` — neutral black/white
+   - `old_testament.json` — warm earth tones (brown, gold)
+   - `new_testament.json` — calm blues/silvers
+
+3. **API route** (`src/app/api/admin/thumbnails/generate-brain-core/route.ts`)
+   - POST endpoint requiring admin auth
+   - Loads templates from `src/config/thumbnail-templates/`
+   - Loads colors from `src/config/color-schemes/`
+   - Calls brain-core API: `POST http://localhost:4877/api/video-orchestrator/queue/thumbnail`
+   - Returns 3 variants with URLs and confidence scores
+
+4. **Integration tests** (`tests/integration/thumbnail-brain-core.test.ts`)
+   - Validates template file structure and YAML validity
+   - Validates color scheme JSON and hex format
+   - Tests request/response format against brain-core API contract
+   - 7 test cases all passing
+
+### How Other Projects Will Replicate
+
+1. Copy template structure from Says the Bible `src/config/thumbnail-templates/` and `src/config/color-schemes/`
+2. Customize YAML and JSON for your brand identity
+3. Create API route similar to `/api/admin/thumbnails/generate-brain-core/route.ts`
+4. Load templates/colors from your own `src/config/` directories
+5. Call brain-core API (same endpoint, all projects share the same rendering engine)
+6. Integration tests follow the same pattern in `tests/integration/`
+
+### Verification
+
+- ✅ Template and color files exist and are valid
+- ✅ API route compiles and loads files correctly
+- ✅ Integration tests pass
+- ✅ API calls brain-core endpoint with correct request format
+- ✅ Response handling parses variants and confidence scores correctly
+
+### Next Steps for Says the Bible
+
+- Phase 4B-5: Refactor `scripts/pipeline/00d-generate-thumbnail-overlay.mjs` to use brain-core API
+- Phase 4C: Update pipeline script to load templates from config and call API endpoint
+- Phase 5: Monitor brain-core job queue for performance and errors
+
+---
+
 ## Reference
 
 - **Detailed thumbnail architecture:** `thumbnail-architecture-split.md`
@@ -229,6 +283,7 @@ POST /jobs/{job_id}/cancel
 - **Strategy guardrails:** `video-orchestrator-strategy.md`
 - **Roadmap:** `video-orchestrator-roadmap.md`
 - **API reference:** `~/.local/video-orchestrator/API_REFERENCE.md`
+- **Says the Bible Phase 4B:** `docs/features/thumbnail-system-roadmap.md` (in project repo)
 
 ---
 
@@ -236,4 +291,5 @@ POST /jobs/{job_id}/cancel
 
 **Questions about the split?** See `thumbnail-architecture-split.md` for detailed explanation.  
 **Questions about Phase 3 implementation?** See `video-orchestrator-implementation-plan.md`.  
-**Questions about the full roadmap?** See `video-orchestrator-roadmap.md`.
+**Questions about the full roadmap?** See `video-orchestrator-roadmap.md`.  
+**Questions about Says the Bible integration?** See `project-onboarding-split.md` section "Says the Bible (First Project Integration)".

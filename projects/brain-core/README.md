@@ -4,9 +4,18 @@ Brain Core is the small local API boundary for the Obsidian-first operating cock
 
 ## Status
 
-Phase 3h: Video Orchestrator Assembly Plan (Active). The service exposes deterministic read-only assembly planning modules for the video intake → research → script → asset-plan → design-plan → voiceover-plan → visuals-plan → assembly-plan progression. Phase 4G (Agent View Foundation) endpoints remain operational.
+Phase 4B: Says the Bible Project Integration (✅ Complete). Brain Core thumbnail rendering API now integrated with first project repo. Shared rendering engine (brain-core) and project-specific templates/colors (Says the Bible) in unison. Phase 3h: Video Orchestrator Assembly Plan (Stable). Phase 4G (Agent View Foundation) endpoints remain operational.
 
-**2026-05-18 Latest:**
+**2026-05-25 Latest:**
+- ✅ Phase 4B: Says the Bible project integration complete
+  - ✅ Template definitions in project repo (`src/config/thumbnail-templates/`)
+  - ✅ Color schemes in project repo (`src/config/color-schemes/`)
+  - ✅ API route loads project config and calls brain-core rendering API
+  - ✅ Integration tests validate template structure, color validity, API contract
+  - ✅ Architecture split fully documented: brain-core owns rendering, projects own definitions
+  - ✅ First project integration verified; pattern ready for replication in other projects
+
+**2026-05-18 Previous:**
 - ✅ Phase 3h: Video Orchestrator Assembly Plan module (Timing/sync planning, not video rendering)
   - ✅ Assembly plan fixtures: 5 stories with 5 timeline items each (intro, main-segment, passage-card, overlay, outro)
   - ✅ Timeline items include: voiceoverSegmentId, visualSequenceItemId, assetRequirementId, designSpecId references
