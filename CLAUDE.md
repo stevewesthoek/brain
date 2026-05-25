@@ -44,11 +44,29 @@ All CLIs (notebooklm, spark-cli, aws-cli, cloud CLIs, media tools, etc.) are ava
 - **Codex:** Via Computer Use shell access (all CLIs in PATH)
 - **Gemini CLI:** Via context-mode shell execution
 
+**Automated CLI Installation** (you don't need to remember this):
+
+When you need to install a new CLI, just run:
+```bash
+install-cli --name "command-name" --path "/path/to/binary" --description "what it does"
+```
+
+This automatically:
+1. Creates the symlink to `~/.local/bin/`
+2. Updates `operations/CLI-MANIFEST.md`
+3. Syncs to all three AI agents
+4. Verifies access
+
+Then verify it worked:
+```bash
+verify-cli-access "command-name"
+```
+
 Key rule: **All three AIs must have access to all CLIs.** If a CLI is missing from any AI, it's a bug in the manifest or configuration. See the manifest for:
 - Complete registry with paths and installation methods
 - AI access matrix and verification commands
 - How to verify notebooklm access specifically in Codex
-- Installation reference and maintenance procedures
+- Automated installation and maintenance procedures
 
 ## Code, understand, improve, fix, review, build, document, ship
 

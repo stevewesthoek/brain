@@ -8,6 +8,42 @@ This document lists every CLI tool installed on this machine, its location, acce
 
 ---
 
+## ⚡ QUICK START: Installing a New CLI
+
+**Don't install CLIs manually.** Use the automated installation script:
+
+```bash
+# Install a CLI and automatically update everything
+install-cli --name "command-name" --path "/path/to/binary" --description "optional description"
+```
+
+This automatically:
+1. ✅ Creates symlink to `~/.local/bin/`
+2. ✅ Updates this manifest
+3. ✅ Syncs to all AI agents
+4. ✅ Verifies access in Claude Code
+
+**To verify a CLI is accessible:**
+```bash
+verify-cli-access "command-name"   # Check one CLI
+verify-cli-access                  # Check all critical CLIs
+```
+
+**Example:**
+```bash
+# Install notebooklm
+install-cli --name notebooklm --path /usr/local/bin/notebooklm
+
+# Verify it worked
+verify-cli-access notebooklm
+```
+
+See: `tools/scripts/install-cli.sh` and `tools/scripts/verify-cli-access.sh`
+
+---
+
+---
+
 ## Quick Access
 
 - **For Claude Code:** Use Bash tool directly (`bash command-name`)
@@ -91,6 +127,8 @@ All CLIs in this manifest are symlinked to `~/.local/bin/` or exist in Homebrew/
 
 | CLI | Location | Symlink Target | Type | Purpose |
 |-----|----------|----------------|------|---------|
+| **`install-cli`** | `~/.local/bin/install-cli` | `brain/tools/scripts/install-cli.sh` | **management** | **Install new CLI + auto-update manifest + sync AIs** |
+| **`verify-cli-access`** | `~/.local/bin/verify-cli-access` | `brain/tools/scripts/verify-cli-access.sh` | **management** | **Verify CLI access across all AIs** |
 | `sync-credentials` | `~/.local/bin/sync-credentials` | `brain/tools/scripts/sync-credentials.sh` | system | Scan for `.env` files and sync credentials |
 | `mem-search` | `~/.local/bin/mem-search` | `brain/tools/scripts/mem-search.sh` | memory | Search memory by keyword/ID |
 | `mem-write` | `~/.local/bin/mem-write` | `brain/tools/scripts/mem-write.sh` | memory | Create/update memory entries |

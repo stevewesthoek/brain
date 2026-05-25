@@ -24,6 +24,32 @@ It is meant to be:
 - `tools/` — utility and workflow scripts for this machine (`tools/scripts/`, tool-specific docs)
 - `runtime/` — ProBot runtime workspace material and local working state
 
+## ⚡ Quick Reference: Installing & Managing CLIs
+
+**You install a CLI? It goes here automatically.**
+
+See: `operations/CLI-MANIFEST.md` — Single source of truth for all 70+ tools.
+
+**To install a new CLI:**
+```bash
+./tools/scripts/install-cli.sh --name "command-name" --path "/real/path/to/command" [--description "what it does"]
+```
+
+This automatically:
+1. Creates symlink to `~/.local/bin/`
+2. Updates `operations/CLI-MANIFEST.md`
+3. Syncs to all AIs (Claude Code, Codex, Gemini)
+4. Verifies access in all three
+
+**To verify a CLI works in all AIs:**
+```bash
+./tools/scripts/verify-cli-access.sh "command-name"
+```
+
+See: `operations/AI-CONFIG-INDEX.md` for AI configuration central directory.
+
+---
+
 ## Reading Order
 
 For AI agents, start here:
@@ -34,6 +60,7 @@ For AI agents, start here:
 4. `00-memory-map.md`
 5. `README.md`
 6. `CLAUDE.md` when detailed repo-specific Claude behavior is needed
+7. `operations/CLI-MANIFEST.md` when working with CLI tools
 
 For humans or repo browsing, start here:
 
