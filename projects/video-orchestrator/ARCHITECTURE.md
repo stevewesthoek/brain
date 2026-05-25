@@ -301,12 +301,48 @@ This pattern **does not** work when:
 
 ---
 
+## Phase 6: Multi-Platform Direct Publishing
+
+**Current Status (2026-05-25):** Platform loop implementation verified ✅
+
+All 8 platforms already integrated into `metadata_generator.py`:
+
+1. **YouTube** — Description (4800 char), tags (15), title variants (5), chapters (3–8)
+2. **TikTok** — Caption (2200 char), energetic tone
+3. **Instagram** — Caption (2200 char), visual + emotional
+4. **Facebook** — Post (500 char), conversational
+5. **LinkedIn** — Post (3000 char), faith-and-work angle
+6. **Bluesky** — Post (300 char), intellectual + thread-friendly
+7. **X** — Post (280 char), bold + punchy
+8. **Pinterest** — Pin (500 char), evergreen search intent
+
+**Infrastructure in place:**
+- Platform specs: `~/.config/video-orchestrator/platform-specs.json` (all 8 platforms defined)
+- Metadata prompts: `~/.config/video-orchestrator/metadata-prompts.json` (all 8 platform templates with Yeshua Academy voice)
+- Character limits: `PLATFORM_CHAR_LIMITS` dict in `metadata_generator.py` (accurate per platform)
+- Platform functions: `_generate_tiktok_caption()`, `_generate_instagram_caption()`, etc. (all 8 implemented)
+- Truncation: `_truncate_to_limit()` enforces max length per platform
+
+**Remaining Phase 6 tasks:**
+1. Create n8n workflow JSON stubs (Facebook, TikTok, Instagram, Pinterest)
+2. Extend `vo queue pipeline` CLI command to validate platform list + queue jobs
+3. Add Python tests for multi-platform output + character limit enforcement
+4. Verify `multi_post` job dispatcher queues 1 job per platform via n8n webhooks
+
+**Documentation:**
+- `FEATURES.md` — User-facing feature reference (what works, how to use)
+- `DEVELOPER.md` — Developer guide (how metadata generation works, how to add platforms, API contract, testing)
+
+---
+
 ## Next Steps
 
 1. ✅ This architecture is documented
-2. ⏳ Phase 6 implementation: Extend brain-core to handle multi-platform (YouTube → Pinterest → Facebook → all 8)
-3. ⏳ Phase 6.5 (after Phase 6): Rebuild Thumbnail Studio as a real design tool in Brain Console, wire it into the pipeline
-4. ⏳ Phase 4: Says the Bible migration (extract its thumbnail logic, rebuild in brain-core, migrate)
+2. ✅ Platform loop verified (all 8 platforms callable)
+3. ⏳ Phase 6 remaining: n8n stubs, CLI command, tests
+4. ⏳ Phase 3 implementation: A/B testing for YouTube thumbnails (time-slice CTR comparison, winner override API)
+5. ⏳ Thumbnail Studio research → rebuild for brain-core (use NotebookLM + research orchestrator before implementation)
+6. ⏳ Phase 4: Says the Bible migration (parallel run → cut over → decommission)
 
 ---
 
