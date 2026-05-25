@@ -434,20 +434,36 @@ This pattern **does not** work when:
 - Winner determination algorithm
 - Dashboard integration
 
-### Phase 1 → Phase 2 (2026-06)
-⏳ **Thumbnail Studio Phase 2: Architecture Design**
-1. Finalize component APIs
-2. Design YAML template format with examples
-3. Create platform-specific cropping rules
-4. Database schema for variant results
-5. Error handling strategy
+### Phase 1 → Phase 2 (2026-05-25)
+✅ **Thumbnail Studio Phase 2: Architecture Design — Complete**
+1. ✅ Finalize component APIs (6 core components)
+2. ✅ Design YAML template format with 7 core templates
+3. ✅ Create platform-specific cropping rules
+4. ✅ Database schema for A/B test results
+5. ✅ Error handling strategy (validation + graceful degradation)
 
-### Phase 1 → Phase 4 (2026-06)
+**Deliverable:** `PHASE_2_ARCHITECTURE_DESIGN.md` (1157 lines)
+- Component API specs (ThumbnailDesigner, TemplateLibrary, ColorPalette, FontManager, ImageComposer, VariantGenerator)
+- YAML configuration format (templates, colors, platform specs)
+- Database schema (thumbnail_a_b_test_results table)
+- Integration points (video_worker.py, CLI, error handling)
+- Performance targets (<2 sec/variant, 1000 thumbnails/hour)
+
+### Phase 3 Implementation (2026-06)
+⏳ **Thumbnail Studio Phase 3: Code Review & Core Implementation**
+1. Implement ThumbnailDesigner orchestrator
+2. Implement TemplateLibrary YAML loader
+3. Implement ImageComposer (Pillow rendering)
+4. Implement FontManager and ColorPalette
+5. Unit tests (40+ test cases)
+6. Integration tests with video_worker.py
+
+### Phase 1 → Phase 4 (2026-06-07 onwards)
 ⏳ **Says the Bible Migration:**
 1. Parallel run (both systems generate)
-2. Compare results (quality, speed)
+2. Compare results (quality, speed, CTR)
 3. Gradual cutover (metadata job uses brain-core thumbnail API)
-4. Decommission old pipeline
+4. Decommission old pipeline (if brain-core performance is better)
 
 ---
 
