@@ -45,7 +45,9 @@
     "databaseUser": "saysthebible",
     "startupTimeoutMs": 120000,
     "runtime": {
-      "pathPrepend": ["/Users/Office/.nvm/versions/node/v20.20.2/bin"],
+      "pathPrepend": [
+        "/Users/Office/.nvm/versions/node/v20.20.2/bin"
+      ],
       "notes": "Says the Bible uses Next.js 14 and must run locally with Node 20. This runtime override is app-specific and does not change ProBot or other local apps."
     },
     "notes": "ProBot runs this from repoPath and injects PORT=3058 at launch. Local dev opens directly to /admin. The start and stop scripts both operate on the 3058 listener so the app can be restarted cleanly from ProBot. The production Dockerfile still uses PORT=3000. Local runtime is pinned per-app to Node 20 through the runtime.pathPrepend override."
@@ -191,6 +193,28 @@
     "notes": "ProBot start now brings up the dedicated postgres container before launching the app. The compose file maps host 5445 to the container."
   },
   {
+    "name": "vault-legal",
+    "repoPath": "/Users/Office/Repos/prochattools/demo/vault-legal",
+    "port": 3051,
+    "appPort": 3051,
+    "url": "http://localhost:3051",
+    "appUrl": "http://localhost:3051",
+    "check": "http://localhost:3051",
+    "healthCheck": "http://localhost:3051",
+    "start": "bash scripts/dev/start-local.sh",
+    "startCommand": "bash scripts/dev/start-local.sh",
+    "stop": "bash scripts/dev/stop-local.sh",
+    "stopCommand": "bash scripts/dev/stop-local.sh",
+    "description": "vault-legal: MikeOSS legal document assistant with Amazon Bedrock",
+    "databaseEngine": "PostgreSQL",
+    "databaseServiceName": "vault-legal",
+    "databasePort": 5451,
+    "databaseName": "vault_legal",
+    "databaseUser": "postgres",
+    "startupTimeoutMs": 120000,
+    "notes": "MikeOSS legal document assistant. Frontend runs on 3051, backend on 3001 (internal). Uses Supabase for auth/DB, Cloudflare R2 for document storage, Amazon Bedrock (Claude 3.5 Sonnet) for AI."
+  },
+  {
     "name": "Google Ads API",
     "repoPath": "/Users/Office/Repos/stevewesthoek/brain",
     "port": 8001,
@@ -301,7 +325,11 @@
     "restartCommand": "bash ~/Repos/stevewesthoek/buildflow/buildflow-orchestrator.sh restart",
     "description": "BuildFlow: unified lifecycle for agent (3052), web (3054), and relay (3053)",
     "startupTimeoutMs": 90000,
-    "servicePorts": [3052, 3053, 3054],
+    "servicePorts": [
+      3052,
+      3053,
+      3054
+    ],
     "databaseEngine": null,
     "databaseServiceName": null,
     "dockerContainerName": null,
