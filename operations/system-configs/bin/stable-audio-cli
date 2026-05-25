@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for Stable Audio 3 across Claude Code, Codex, Gemini CLI, Kiro, Cursor, and Antigravity.
+# The repo lives at ~/ai-models/stable-audio-3 on this machine; override only for debugging.
+
+stable_audio_repo="${STABLE_AUDIO_3_REPO:-$HOME/ai-models/stable-audio-3}"
+
+exec uv run --directory "${stable_audio_repo}" stable-audio "$@"

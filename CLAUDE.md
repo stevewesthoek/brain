@@ -35,6 +35,21 @@ node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-sk
 
 This syncs active skills to Claude Code, Codex, Gemini CLI, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
 
+## CLI Manifest — Unified Tool Access
+
+**See:** `operations/CLI-MANIFEST.md` — canonical single-source-of-truth registry of all CLIs.
+
+All CLIs (notebooklm, spark-cli, aws-cli, cloud CLIs, media tools, etc.) are available to all three AI agents:
+- **Claude Code:** Via Bash tool directly (`bash command-name`)
+- **Codex:** Via Computer Use shell access (all CLIs in PATH)
+- **Gemini CLI:** Via context-mode shell execution
+
+Key rule: **All three AIs must have access to all CLIs.** If a CLI is missing from any AI, it's a bug in the manifest or configuration. See the manifest for:
+- Complete registry with paths and installation methods
+- AI access matrix and verification commands
+- How to verify notebooklm access specifically in Codex
+- Installation reference and maintenance procedures
+
 ## Code, understand, improve, fix, review, build, document, ship
 
 For ALL coding work — understanding your codebase, improving code quality, fixing bugs, reviewing code, building features, documenting modules, or shipping code — use `/code`. The master orchestrator accepts any natural language, classifies your intent (understand/improve/fix/review/build/document/ship/template), and routes automatically through the right toolchain. No skill names, no commands, no tool knowledge required — just describe what you need.

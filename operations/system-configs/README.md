@@ -76,6 +76,8 @@ The `bin/` directory contains stable wrapper scripts for CLIs that need to be ac
 | `aws-cli` | `/usr/local/bin/aws` | AWS CLI with unified entry point | Claude Code, Codex, Gemini CLI, etc. |
 | `azure-cli` | `/opt/homebrew/bin/az` | Azure CLI wrapper | all consumers |
 | `cloudflare-cli` | Cloudflare CLI binary | multi-account Cloudflare management | all consumers |
+| `stable-audio-cli` | `uv run --directory ~/ai-models/stable-audio-3 stable-audio` | Stable Audio 3 local generation CLI | all consumers |
+| `stable-audio-warmup` | `~/ai-models/stable-audio-3` + `stable-audio` CLI | warms `small-music`, `small-sfx`, and `medium` model caches | all consumers |
 | `spark-cli` | `/usr/local/bin/spark` | Spark email client CLI | all consumers + skills |
 | Other cloud wrappers | various | GCP, Hetzner, Tailscale, etc. | all consumers |
 
@@ -91,3 +93,4 @@ The `bin/` directory contains stable wrapper scripts for CLIs that need to be ac
 - Consistent with other CLI patterns in the system
 
 See `operations/runbooks/spark-cli.md` for the Spark CLI universal installation walkthrough.
+See `operations/runbooks/stable-audio-3.md` for Stable Audio 3 install, usage, and model warm-up commands.

@@ -9,3 +9,4 @@ Short, repeatable procedures for operational tasks.
 - mcp-centralization.md
 - n8n.md
 - codex-starship-config.md
+- stable-audio-3.md
