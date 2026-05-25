@@ -28,11 +28,11 @@ It is meant to be:
 
 **You install a CLI? It goes here automatically.**
 
-See: `operations/CLI-MANIFEST.md` — Single source of truth for all 70+ tools.
+See: `operations/CLI-INSTALLATION-GUIDE.md` — Complete procedural guide for all AIs.
 
 **To install a new CLI:**
 ```bash
-./tools/scripts/install-cli.sh --name "command-name" --path "/real/path/to/command" [--description "what it does"]
+install-cli --name "command-name" --path "/real/path/to/command" --description "what it does"
 ```
 
 This automatically:
@@ -43,10 +43,15 @@ This automatically:
 
 **To verify a CLI works in all AIs:**
 ```bash
-./tools/scripts/verify-cli-access.sh "command-name"
+verify-cli-access "command-name"
 ```
 
-See: `operations/AI-CONFIG-INDEX.md` for AI configuration central directory.
+**Files:**
+- `operations/CLI-MANIFEST.md` — Complete registry (70+ CLIs)
+- `operations/CLI-INSTALLATION-GUIDE.md` — Full procedural guide
+- `operations/AI-CONFIG-INDEX.md` — AI configuration central directory
+- `tools/scripts/install-cli.sh` — Installation automation
+- `tools/scripts/verify-cli-access.sh` — Access verification
 
 ---
 
