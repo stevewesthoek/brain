@@ -151,5 +151,7 @@
     }
   },
   "autoDreamEnabled": true,
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "autoCompactEnabled": true,
+  "autoCompactWindow": 200000
 }
