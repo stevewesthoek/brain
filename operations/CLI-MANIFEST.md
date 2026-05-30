@@ -1,6 +1,6 @@
 # CLI Manifest — Canonical Tool Inventory
 
-**Last Updated:** 2026-05-25  
+**Last Updated:** 2026-05-30  
 **Scope:** All CLIs available to Claude Code, Codex, and Gemini CLI  
 **Purpose:** Single source of truth for CLI availability across all AI agents
 
@@ -152,6 +152,7 @@ All CLIs in this manifest are symlinked to `~/.local/bin/` or exist in Homebrew/
 | `ai-select` | `~/.local/bin/ai-select` | ai-routing | custom | AI model selector CLI |
 | `uvicorn` | `~/.local/bin/uvicorn` | runtime | pipx | ASGI web server |
 | `fastapi` | `~/.local/bin/fastapi` | framework | pipx | FastAPI CLI |
+| `omp` | `~/.local/bin/omp` | ai-agent | Bun global | Oh My Pi optional standalone terminal AI coding agent; separate IDE/agent surface only, not a replacement for AI Model Selector, Brain skills, shared memory, or routing policy |
 
 ### Backup & Archive Tools
 

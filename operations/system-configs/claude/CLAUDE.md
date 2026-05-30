@@ -164,6 +164,7 @@ Global skills are available in every session — only note the ones relevant to 
 - Gemini: [yes/no] — use `/gemini` for large-context preprocessing and free-tier Flash analysis
 - Handoff: [yes/no] — use `/handoff` for session start/end compressed handoffs and `.ai/` memory system setup
 - RTK: [yes] — use `/rtk` for token-optimized shell output. Bash commands are routed through `~/.claude/hooks/rtk-safe-bash-hook.sh`, which preserves the risky-command guard before rewriting safe commands to `rtk ...`. Runbook: `brain/operations/runbooks/rtk.md`
+- omp / Oh My Pi: [yes] — optional standalone terminal AI coding agent, comparable to Cursor, Kiro, Antigravity, Codex, and Gemini. Use only as a manually selected external coding surface or evaluation harness. Do not use it to replace AI Model Selector, Brain skills, shared memory, or routing policy. Runbook: `brain/operations/runbooks/omp-optional-agent.md`
 
 ## Memory
 Use this file for repo-specific decisions, commands, and constraints.

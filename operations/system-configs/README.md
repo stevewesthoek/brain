@@ -94,3 +94,4 @@ The `bin/` directory contains stable wrapper scripts for CLIs that need to be ac
 
 See `operations/runbooks/spark-cli.md` for the Spark CLI universal installation walkthrough.
 See `operations/runbooks/stable-audio-3.md` for Stable Audio 3 install, usage, and model warm-up commands.
+See `operations/runbooks/omp-optional-agent.md` for the Oh My Pi (`omp`) optional standalone agent surface. `omp` is registered as a CLI/IDE-style surface only and is not a Brain architecture component.

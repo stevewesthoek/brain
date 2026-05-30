@@ -53,6 +53,9 @@ verify-cli-access "command-name"
 - `tools/scripts/install-cli.sh` — Installation automation
 - `tools/scripts/verify-cli-access.sh` — Access verification
 
+**Optional standalone agent surfaces:**
+- `omp` / Oh My Pi is installed as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, or Gemini. It is not part of the Brain platform architecture and must not replace AI Model Selector, Brain skills, shared memory, or routing policy. See `operations/runbooks/omp-optional-agent.md`.
+
 ---
 
 ## Reading Order

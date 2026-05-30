@@ -68,6 +68,12 @@ Key rule: **All three AIs must have access to all CLIs.** If a CLI is missing fr
 - How to verify notebooklm access specifically in Codex
 - Automated installation and maintenance procedures
 
+### Optional standalone agent surfaces
+
+`omp` / Oh My Pi is installed as an optional separate terminal AI coding agent, comparable to Cursor, Kiro, Antigravity, Codex, and Gemini. Use it only as a manually selected external coding surface or evaluation harness.
+
+Do not use `omp` as the Brain provider/model router. Do not migrate Brain skills, shared memory, or routing policy into `omp`. The AI Model Selector at `localhost:4890`, `brain/ai/skills/`, `~/.brain/memory/`, and `brain/ai/policy/routing.md` remain canonical. Runbook: `operations/runbooks/omp-optional-agent.md`.
+
 ## Code, understand, improve, fix, review, build, document, ship
 
 For ALL coding work — understanding your codebase, improving code quality, fixing bugs, reviewing code, building features, documenting modules, or shipping code — use `/code`. The master orchestrator accepts any natural language, classifies your intent (understand/improve/fix/review/build/document/ship/template), and routes automatically through the right toolchain. No skill names, no commands, no tool knowledge required — just describe what you need.
