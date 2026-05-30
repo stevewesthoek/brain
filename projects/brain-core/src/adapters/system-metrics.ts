@@ -12,6 +12,32 @@ export interface SystemMetricsCodexWindow {
   resetsAt: string | null;
 }
 
+export interface SystemMetricsGemini {
+  usedPercent: number;
+  remainingPercent: number;
+  callsToday: number;
+  callsUsed: number;
+  callsRemaining: number;
+  resetsAt: string;
+  hoursUntilReset: number;
+}
+
+export interface ClaudeModelUsage {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  callCount: number;
+}
+
+export interface ClaudeApiMetrics {
+  haiku: ClaudeModelUsage;
+  sonnet: ClaudeModelUsage;
+  opus: ClaudeModelUsage;
+  totalCostUsd: number;
+  resetAt: string;
+  daysUntilReset: number;
+}
+
 export interface SystemMetrics {
   loadAvg1: number;
   cpuCount: number;
@@ -26,6 +52,8 @@ export interface SystemMetrics {
     sevenDay: SystemMetricsCodexWindow;
     asOf: string | null;
   };
+  gemini?: SystemMetricsGemini;
+  claudeApi?: ClaudeApiMetrics;
 }
 
 const FALLBACK_WINDOW: SystemMetricsCodexWindow = {
@@ -145,6 +173,91 @@ function readCodexUsage(): { fiveHour: SystemMetricsCodexWindow; sevenDay: Syste
   return { fiveHour: bestFiveHour, sevenDay: bestSevenDay, asOf: bestAsOf };
 }
 
+const GEMINI_FREE_TIER_DAILY_LIMIT = 1500;
+
+interface GeminiRateLimitsFile {
+  calls_today: number[];
+  video_seconds_today?: number;
+  day?: string;
+}
+
+function readGeminiUsage(): SystemMetricsGemini | undefined {
+  try {
+    const filePath = path.join(os.homedir(), '.local', 'video-orchestrator', 'state', 'gemini-rate-limits.json');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw) as GeminiRateLimitsFile;
+
+    const callsUsed = Array.isArray(data.calls_today) ? data.calls_today.length : 0;
+    const callsRemaining = Math.max(0, GEMINI_FREE_TIER_DAILY_LIMIT - callsUsed);
+    const usedPercent = Math.min(100, Math.round((callsUsed / GEMINI_FREE_TIER_DAILY_LIMIT) * 100));
+    const remainingPercent = Math.max(0, 100 - usedPercent);
+
+    // Reset is at 00:00 UTC the next day.
+    const now = new Date();
+    const resetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
+    const msUntilReset = resetDate.getTime() - now.getTime();
+    const hoursUntilReset = Math.max(0, Math.round(msUntilReset / 3600000 * 10) / 10);
+
+    return {
+      usedPercent,
+      remainingPercent,
+      callsToday: GEMINI_FREE_TIER_DAILY_LIMIT,
+      callsUsed,
+      callsRemaining,
+      resetsAt: resetDate.toISOString(),
+      hoursUntilReset,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+interface ClaudeUsageFile {
+  generatedAt: string;
+  resetAt: string;
+  months: Record<string, { models: Record<string, ClaudeModelUsage>; totalCostUsd: number }>;
+  totalCostUsdAllTime: number;
+}
+
+function readClaudeApiUsage(): ClaudeApiMetrics | undefined {
+  try {
+    const filePath = path.join(os.homedir(), '.local', 'claude-api', 'monthly-usage.json');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(raw) as ClaudeUsageFile;
+
+    // Get current month
+    const now = new Date();
+    const currentMonth = now.toLocaleString('en-CA', { year: 'numeric', month: '2-digit' }).replace('/', '-');
+    const monthData = data.months[currentMonth];
+
+    if (!monthData) {
+      return undefined;
+    }
+
+    // Ensure all models exist (default to 0 if not present)
+    const models = monthData.models;
+    const haiku = models.haiku || { inputTokens: 0, outputTokens: 0, costUsd: 0, callCount: 0 };
+    const sonnet = models.sonnet || { inputTokens: 0, outputTokens: 0, costUsd: 0, callCount: 0 };
+    const opus = models.opus || { inputTokens: 0, outputTokens: 0, costUsd: 0, callCount: 0 };
+
+    // Calculate days until reset (1st of next month at 12:00 Lisbon time)
+    const resetDate = new Date(data.resetAt);
+    const msUntilReset = resetDate.getTime() - now.getTime();
+    const daysUntilReset = Math.max(0, Math.ceil(msUntilReset / 86400000));
+
+    return {
+      haiku,
+      sonnet,
+      opus,
+      totalCostUsd: monthData.totalCostUsd,
+      resetAt: data.resetAt,
+      daysUntilReset,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getSystemMetrics(): Promise<SystemMetrics> {
   const [memFreePercent, gpuUtilizationPercent, gpuCoreCount] = await Promise.all([
     getMemoryFreePercent(),
@@ -155,6 +268,8 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
   const load = os.loadavg();
   const { usedGb, totalGb } = getMemoryStats(memFreePercent);
   const codex = readCodexUsage();
+  const gemini = readGeminiUsage();
+  const claudeApi = readClaudeApiUsage();
 
   return {
     loadAvg1: Math.round((load[0] ?? 0) * 100) / 100,
@@ -166,5 +281,7 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
     gpuCoreCount,
     uptimeSeconds: Math.floor(process.uptime()),
     codex,
+    ...(gemini !== undefined ? { gemini } : {}),
+    ...(claudeApi !== undefined ? { claudeApi } : {}),
   };
 }

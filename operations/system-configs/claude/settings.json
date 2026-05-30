@@ -150,8 +150,8 @@
       }
     }
   },
+  "autoCompactWindow": 200000,
   "autoDreamEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "autoCompactEnabled": true,
-  "autoCompactWindow": 200000
+  "autoCompactEnabled": true
 }

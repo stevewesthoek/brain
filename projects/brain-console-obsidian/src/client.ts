@@ -8213,6 +8213,32 @@ export interface BrainCoreSystemMetricsCodexWindow {
   resetsAt: string | null;
 }
 
+export interface BrainCoreSystemMetricsGemini {
+  usedPercent: number;
+  remainingPercent: number;
+  callsToday: number;
+  callsUsed: number;
+  callsRemaining: number;
+  resetsAt: string;
+  hoursUntilReset: number;
+}
+
+export interface BrainCoreClaudeModelUsage {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+  callCount: number;
+}
+
+export interface BrainCoreClaudeApiMetrics {
+  haiku: BrainCoreClaudeModelUsage;
+  sonnet: BrainCoreClaudeModelUsage;
+  opus: BrainCoreClaudeModelUsage;
+  totalCostUsd: number;
+  resetAt: string;
+  daysUntilReset: number;
+}
+
 export interface BrainCoreSystemMetrics {
   loadAvg1: number;
   cpuCount: number;
@@ -8227,6 +8253,8 @@ export interface BrainCoreSystemMetrics {
     sevenDay: BrainCoreSystemMetricsCodexWindow;
     asOf: string | null;
   };
+  gemini?: BrainCoreSystemMetricsGemini;
+  claudeApi?: BrainCoreClaudeApiMetrics;
 }
 
 export function readBrainCoreSystemMetrics(baseUrl: string): Promise<HttpResult<BrainCoreSystemMetrics>> {

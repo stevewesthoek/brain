@@ -1053,6 +1053,13 @@ function renderSystemMetricsBanner(state: BrainConsoleViewState): string {
 
   const c5 = m.codex.fiveHour;
   const c7 = m.codex.sevenDay;
+  const gm = m.gemini;
+  const ca = m.claudeApi;
+
+  // Helper function to format Claude API cost percentage
+  const claudeCostPercent = (cost: number, maxMonthCost: number = 1000): number => {
+    return Math.min(100, Math.round((cost / maxMonthCost) * 100));
+  };
 
   const cpuCard = `<div class="bc-mc">
     <div class="bc-mc-label">CPU LOAD</div>
@@ -1125,7 +1132,71 @@ function renderSystemMetricsBanner(state: BrainConsoleViewState): string {
         <div class="bc-mc-sub">No data yet</div>
       </div>`;
 
-  return `<div class="bc-metrics-banner">${cpuCard}${memCard}${gpuCard}${uptimeCard}${codex5Card}${codex7Card}</div>`;
+  const geminiCard = gm
+    ? `<div class="bc-mc">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="bc-mc-label">GEMINI · FREE</div>
+          <div class="bc-mc-badge">RESETS IN ${formatMetricsCountdown(gm.resetsAt)}</div>
+        </div>
+        <div class="bc-mc-value" style="color:${metricsCodexColor(gm.remainingPercent)}">${gm.remainingPercent}%</div>
+        <div class="bc-mc-sub">${gm.callsRemaining}/${gm.callsToday} calls · ${formatMetricsResetExact(gm.resetsAt)}</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${gm.remainingPercent}%;background:${metricsCodexColor(gm.remainingPercent)}"></div></div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">GEMINI · FREE</div>
+        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
+        <div class="bc-mc-sub">No data yet</div>
+      </div>`;
+
+  const claudeHaikuCard = ca
+    ? `<div class="bc-mc">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="bc-mc-label">CLAUDE · HAIKU</div>
+          <div class="bc-mc-badge">RESETS IN ${ca.daysUntilReset}d</div>
+        </div>
+        <div class="bc-mc-value" style="color:${metricsCodexColor(claudeCostPercent(ca.haiku.costUsd))}">\$${ca.haiku.costUsd.toFixed(2)}</div>
+        <div class="bc-mc-sub">${ca.haiku.inputTokens.toLocaleString()} in · ${ca.haiku.outputTokens.toLocaleString()} out · ${ca.haiku.callCount} calls</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${claudeCostPercent(ca.haiku.costUsd)}%;background:${metricsCodexColor(claudeCostPercent(ca.haiku.costUsd))}"></div></div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">CLAUDE · HAIKU</div>
+        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
+        <div class="bc-mc-sub">No data yet</div>
+      </div>`;
+
+  const claudeSonnetCard = ca
+    ? `<div class="bc-mc">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="bc-mc-label">CLAUDE · SONNET</div>
+          <div class="bc-mc-badge">RESETS IN ${ca.daysUntilReset}d</div>
+        </div>
+        <div class="bc-mc-value" style="color:${metricsCodexColor(claudeCostPercent(ca.sonnet.costUsd))}">\$${ca.sonnet.costUsd.toFixed(2)}</div>
+        <div class="bc-mc-sub">${ca.sonnet.inputTokens.toLocaleString()} in · ${ca.sonnet.outputTokens.toLocaleString()} out · ${ca.sonnet.callCount} calls</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${claudeCostPercent(ca.sonnet.costUsd)}%;background:${metricsCodexColor(claudeCostPercent(ca.sonnet.costUsd))}"></div></div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">CLAUDE · SONNET</div>
+        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
+        <div class="bc-mc-sub">No data yet</div>
+      </div>`;
+
+  const claudeOpusCard = ca
+    ? `<div class="bc-mc">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+          <div class="bc-mc-label">CLAUDE · OPUS</div>
+          <div class="bc-mc-badge">RESETS IN ${ca.daysUntilReset}d</div>
+        </div>
+        <div class="bc-mc-value" style="color:${metricsCodexColor(claudeCostPercent(ca.opus.costUsd))}">\$${ca.opus.costUsd.toFixed(2)}</div>
+        <div class="bc-mc-sub">${ca.opus.inputTokens.toLocaleString()} in · ${ca.opus.outputTokens.toLocaleString()} out · ${ca.opus.callCount} calls</div>
+        <div class="bc-bar"><div class="bc-bar-fill" style="width:${claudeCostPercent(ca.opus.costUsd)}%;background:${metricsCodexColor(claudeCostPercent(ca.opus.costUsd))}"></div></div>
+      </div>`
+    : `<div class="bc-mc">
+        <div class="bc-mc-label">CLAUDE · OPUS</div>
+        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
+        <div class="bc-mc-sub">No data yet</div>
+      </div>`;
+
+  return `<div class="bc-metrics-banner">${cpuCard}${memCard}${gpuCard}${uptimeCard}${codex5Card}${codex7Card}${geminiCard}${claudeHaikuCard}${claudeSonnetCard}${claudeOpusCard}</div>`;
 }
 
 export function renderBrainConsoleView(

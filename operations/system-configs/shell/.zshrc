@@ -105,3 +105,6 @@ if [[ -n "$NVM_BIN" && -d "$NVM_BIN" ]]; then
 fi
 
 hash -r
+
+# opencode
+export PATH=/Users/Office/.opencode/bin:$PATH
