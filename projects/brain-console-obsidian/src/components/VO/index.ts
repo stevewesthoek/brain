@@ -20,6 +20,7 @@ export { EventLogPanel } from './EventLogPanel.js';
 export { StudioDashboardPanel } from './StudioDashboardPanel.js';
 export { AuditLogPanel } from './AuditLogPanel.js';
 export { OperatorDashboardPanel } from './OperatorDashboardPanel.js';
+export { AwsVideoPipelinePanel } from './AwsVideoPipelinePanel.js';
 export type { VOContextState, DateRange } from './types.js';
 export type { PipelineRun } from './PipelinesPanel.js';
 export type { ApprovalQueueItem } from './ApprovalQueuePanel.js';

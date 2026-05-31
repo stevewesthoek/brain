@@ -1,6 +1,7 @@
 import { ItemView, Notice } from 'obsidian';
 import { DEFAULT_BRAIN_CONSOLE_SETTINGS, normalizeBrainCoreUrl, type BrainConsoleSettings } from './settings.js';
 import { VOShell } from './components/VO/VOShell.js';
+import { AwsVideoPipelinePanel } from './components/VO/AwsVideoPipelinePanel.js';
 import {
   diagnoseBrainCoreConnection,
   type BrainCoreConnectionDiagnostic,
@@ -366,7 +367,7 @@ import {
   type DashboardSnapshot,
 } from './dashboard.js';
 
-export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'orchestrators' | 'pipelines' | 'video-orchestrator' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts';
+export type BrainConsoleSectionId = 'overview' | 'apps' | 'sessions' | 'infra' | 'analytics' | 'stripe' | 'monitoring' | 'orchestrators' | 'pipelines' | 'video-orchestrator' | 'projects' | 'reports' | 'posts' | 'agents' | 'recovery' | 'accounts' | 'aws-video';
 
 const localAppPendingActions = new Map<string, string>();
 
@@ -992,6 +993,7 @@ const SECTION_TABS: SectionTabConfig[] = [
   { id: 'posts', label: 'Posts', icon: '✦' },
   { id: 'agents', label: 'Agents', icon: '◈' },
   { id: 'accounts', label: 'Accounts', icon: '🔑' },
+  { id: 'aws-video', label: 'AWS Video', icon: '🎬' },
 ];
 
 function metricsSeverityColor(pct: number): string {
@@ -1367,6 +1369,9 @@ function renderActiveSectionContent(
         break;
       case 'accounts':
         renderAccountsSection(content, state, settings);
+        break;
+      case 'aws-video':
+        renderAwsVideoPipelineSection(content, settings);
         break;
     }
   } catch (error) {
@@ -8995,4 +9000,23 @@ function renderProjectPlatformCard(
       if (e.key === 'Enter') saveBtn.click();
     });
   }
+}
+
+function renderAwsVideoPipelineSection(
+  content: HTMLElement,
+  settings: BrainConsoleSettings,
+): void {
+  const brainCoreUrl = settings.brainCoreUrl ?? 'http://localhost:4877';
+
+  // Header
+  const header = content.createDiv({ cls: 'bc-aws-video-header' });
+  header.createEl('h2', { cls: 'bc-aws-video-title', text: 'AWS Video Pipeline' });
+  header.createEl('p', { cls: 'bc-aws-video-subtitle', text: 'Topic Intelligence & Channel Status' });
+
+  // Panel container
+  const panelContainer = content.createDiv({ cls: 'bc-aws-video-panel-container' });
+  const panel = new AwsVideoPipelinePanel(panelContainer, brainCoreUrl);
+
+  // Cleanup on section change
+  content.addEventListener('beforeunload', () => panel.destroy());
 }

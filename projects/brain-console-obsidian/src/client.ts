@@ -8651,3 +8651,60 @@ export async function analyzeYouTubeVideo(
     return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' };
   }
 }
+
+// ── Topic Intelligence: AWS Video Pipeline ────────────────────────────────────
+
+export interface BrainCoreTopicCandidate {
+  topicId: string;
+  title: string;
+  score: number;
+  status: 'candidate' | 'in-progress' | 'completed' | 'rejected';
+  reasoning: string[];
+  createdAt?: string;
+}
+
+export interface BrainCoreChannelStatus {
+  channelId: string;
+  displayName: string;
+  youtubeEnabled: boolean;
+  publishingStatus: 'ready' | 'auth-pending' | 'config-ready';
+  topCandidates: BrainCoreTopicCandidate[];
+  totalTopics: number;
+}
+
+export interface BrainCoreVideoOrchestratorStatusResponse {
+  ok: boolean;
+  data: {
+    channels: BrainCoreChannelStatus[];
+    pipelineReady: boolean;
+    generationStatus: 'ready' | 'in-progress' | 'stalled';
+    publishingStatus: 'ready' | 'in-progress' | 'stalled';
+    lastUpdated?: string;
+  };
+  error?: string;
+}
+
+export interface BrainCoreChannelTopicsResponse {
+  ok: boolean;
+  data: BrainCoreChannelStatus;
+  error?: string;
+}
+
+export async function readBrainCoreAwsVideoPipelineStatus(
+  baseUrl: string,
+): Promise<HttpResult<BrainCoreVideoOrchestratorStatusResponse>> {
+  return fetchJson<BrainCoreVideoOrchestratorStatusResponse>(
+    normalizeBaseUrl(baseUrl),
+    '/api/video-orchestrator/topic-intelligence/status',
+  );
+}
+
+export async function readBrainCoreAwsVideoPipelineChannelTopics(
+  baseUrl: string,
+  channelId: string,
+): Promise<HttpResult<BrainCoreChannelTopicsResponse>> {
+  return fetchJson<BrainCoreChannelTopicsResponse>(
+    normalizeBaseUrl(baseUrl),
+    `/api/video-orchestrator/topic-intelligence/channels/${encodeURIComponent(channelId)}`,
+  );
+}
