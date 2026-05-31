@@ -1,0 +1,25 @@
+{
+  "channelId": "prochat",
+  "displayName": "ProChat",
+  "platforms": {
+    "youtube": {
+      "enabled": true,
+      "secretName": "prochat/youtube/prochat/oauth-token",
+      "defaultPrivacyStatus": "private",
+      "allowedPrivacyStatuses": ["private", "unlisted"],
+      "categoryId": "22",
+      "defaultTags": ["ProChat", "Conversation", "AI"],
+      "titlePrefix": "",
+      "titleSuffix": "",
+      "descriptionTemplate": "",
+      "madeForKids": false
+    }
+  },
+  "publishing": {
+    "requireManualApproval": true,
+    "allowPublic": false,
+    "defaultPlatform": "youtube"
+  },
+  "createdAt": "2026-06-01T00:00:00Z",
+  "updatedAt": "2026-06-01T00:00:00Z"
+}

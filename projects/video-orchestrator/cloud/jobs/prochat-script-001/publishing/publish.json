@@ -1,16 +1,24 @@
 {
   "jobId": "prochat-script-001",
   "channelId": "prochat",
-  "publishStatus": "ready_for_channel_auth",
-  "reason": "ProChat YouTube OAuth token not yet configured in AWS Secrets Manager",
+  "publishStatus": "uploaded",
+  "privacyStatus": "private",
+  "privacyEnforced": true,
   "assets": {
     "videoPath": "jobs/prochat-script-001/video/final-video.mp4",
     "thumbnailPath": "jobs/prochat-script-001/video/thumbnail.png",
     "scriptPath": "jobs/prochat-script-001/scripts/script.md"
   },
-  "privacyStatus": "private",
-  "privacyEnforced": true,
-  "expectedSecretName": "prochat/youtube/prochat/oauth-token",
-  "createdAt": "2026-05-31T22:16:03Z",
-  "nextStep": "Configure ProChat YouTube OAuth in AWS Secrets Manager, then publish.json status will update to ready_to_upload"
+  "createdAt": "2026-05-31T23:18:07Z",
+  "platforms": {
+    "youtube": {
+      "status": "uploaded",
+      "videoId": "015d46fd517",
+      "url": "https://youtu.be/015d46fd517",
+      "privacyStatus": "private",
+      "uploadedAt": "2026-05-31T23:18:30.902020Z",
+      "error": null,
+      "alreadyPublished": true
+    }
+  }
 }
