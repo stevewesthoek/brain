@@ -1,0 +1,26 @@
+{
+  "channelId": "says-the-bible",
+  "displayName": "Says the Bible",
+  "description": "Biblical theology, Scripture analysis, theological education",
+  "targetDurationSeconds": 60,
+  "tone": "reverent",
+  "style": {
+    "scriptFormat": "narrative",
+    "scriptureIntegration": "primary",
+    "sensationalism": "forbidden",
+    "academicLevel": "accessible-scholarly"
+  },
+  "scriptRequirements": {
+    "theologicalReviewRequired": true,
+    "approvalRequired": true,
+    "minWordCount": 150,
+    "maxWordCount": 200,
+    "scriptureQuoteMinimum": 1
+  },
+  "allowPublicPublishing": false,
+  "audioProfile": {
+    "voiceGender": "neutral",
+    "voiceTone": "calm-authoritative",
+    "pacing": "measured"
+  }
+}

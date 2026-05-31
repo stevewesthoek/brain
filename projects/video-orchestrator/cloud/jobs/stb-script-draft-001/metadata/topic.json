@@ -1,0 +1,19 @@
+{
+  "jobId": "stb-script-draft-001",
+  "channelId": "says-the-bible",
+  "topicId": "stb-baptism-001",
+  "topic": {
+    "topicId": "stb-baptism-001",
+    "title": "Does Baptism Save?",
+    "score": 92,
+    "status": "candidate",
+    "reasoning": [
+      "High theological relevance",
+      "Common misconception",
+      "Scriptural foundation available",
+      "Audience engagement potential"
+    ],
+    "createdAt": "2026-05-31T21:00:00Z"
+  },
+  "selectedAt": "2026-05-31T22:04:05Z"
+}

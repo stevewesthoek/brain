@@ -1,0 +1,21 @@
+{
+  "jobId": "stb-script-draft-001",
+  "channelId": "says-the-bible",
+  "topicId": "stb-baptism-001",
+  "status": "draft",
+  "title": "Does Baptism Save?",
+  "targetDurationSeconds": 60,
+  "wordCount": 79,
+  "scriptKey": "jobs/stb-script-draft-001/scripts/script.md",
+  "generatedBy": "manual-template-v1",
+  "createdAt": "2026-05-31T22:04:05Z",
+  "updatedAt": "2026-05-31T22:04:05Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": true,
+    "approvedAt": null,
+    "approvedBy": null,
+    "notes": null
+  }
+}

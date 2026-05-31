@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics } from '../providers/video-orchestrator-provider.js';
+import { getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2171,6 +2171,41 @@ export async function routeRequest(
           sendJson(response, 500, {
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch channel topics',
+          });
+        }
+        return;
+      }
+
+      // ── Scripts: Generated Content & Approval Status ──────────────────────────
+      if (url.pathname.startsWith('/api/video-orchestrator/scripts/')) {
+        try {
+          const parts = url.pathname.split('/').filter(Boolean);
+          if (parts.length < 4) {
+            sendJson(response, 400, { ok: false, error: 'Invalid script path' });
+            return;
+          }
+
+          if (parts[3] === 'channels' && parts[4]) {
+            // GET /api/video-orchestrator/scripts/channels/{channelId}
+            const channelId = parts[4];
+            const scripts = await getScriptsByChannel(channelId);
+            sendJson(response, 200, { ok: true, data: scripts });
+          } else if (parts[3]) {
+            // GET /api/video-orchestrator/scripts/{jobId}
+            const jobId = parts[3];
+            const script = await getScript(jobId);
+            if (!script) {
+              sendJson(response, 404, { ok: false, error: `Script not found: ${jobId}` });
+              return;
+            }
+            sendJson(response, 200, { ok: true, data: script });
+          } else {
+            sendJson(response, 400, { ok: false, error: 'jobId is required' });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch script',
           });
         }
         return;

@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-script-draft-001",
+  "channelId": "prochat",
+  "topicId": "prochat-ai-code-001",
+  "topic": {
+    "topicId": "prochat-ai-code-001",
+    "title": "AI Writes Code But Not Businesses",
+    "score": 91,
+    "status": "candidate",
+    "reasoning": [
+      "High founder relevance",
+      "Emerging concern",
+      "Actionable insights",
+      "Differentiates ProChat positioning"
+    ],
+    "createdAt": "2026-05-31T21:00:00Z"
+  },
+  "selectedAt": "2026-05-31T22:04:12Z"
+}

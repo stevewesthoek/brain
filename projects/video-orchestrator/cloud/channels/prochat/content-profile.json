@@ -1,0 +1,26 @@
+{
+  "channelId": "prochat",
+  "displayName": "ProChat",
+  "description": "SaaS for founders, business strategy, technical insights",
+  "targetDurationSeconds": 60,
+  "tone": "direct",
+  "style": {
+    "scriptFormat": "narrative",
+    "frameworkIntegration": "pain-insight-solution",
+    "sensationalism": "minimal",
+    "academicLevel": "practitioner"
+  },
+  "scriptRequirements": {
+    "theologicalReviewRequired": false,
+    "approvalRequired": true,
+    "minWordCount": 150,
+    "maxWordCount": 200,
+    "callToActionRequired": true
+  },
+  "allowPublicPublishing": false,
+  "audioProfile": {
+    "voiceGender": "neutral",
+    "voiceTone": "conversational-expert",
+    "pacing": "brisk"
+  }
+}

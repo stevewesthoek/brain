@@ -1,0 +1,14 @@
+{
+  "jobId": "prochat-script-001",
+  "channelId": "prochat",
+  "status": "complete",
+  "stage": "video-assembly-complete",
+  "generatedAt": "2026-05-31T22:15:41Z",
+  "completedAt": "2026-05-31T22:15:41Z",
+  "artifacts": {
+    "scriptPath": "jobs/prochat-script-001/scripts/script.md",
+    "narrationPath": "jobs/prochat-script-001/audio/narration.mp3",
+    "videoPath": "jobs/prochat-script-001/video/final-video.mp4",
+    "thumbnailPath": "jobs/prochat-script-001/video/thumbnail.png"
+  }
+}

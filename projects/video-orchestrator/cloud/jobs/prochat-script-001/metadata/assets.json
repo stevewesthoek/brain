@@ -1,0 +1,41 @@
+{
+  "jobId": "prochat-script-001",
+  "channelId": "prochat",
+  "assets": [
+    {
+      "type": "script",
+      "key": "script.md",
+      "path": "jobs/prochat-script-001/scripts/script.md",
+      "size": 2176,
+      "status": "ready"
+    },
+    {
+      "type": "narration",
+      "key": "narration.mp3",
+      "path": "jobs/prochat-script-001/audio/narration.mp3",
+      "size": 25080,
+      "duration": 60,
+      "voiceId": "Joanna",
+      "status": "generated"
+    },
+    {
+      "type": "video",
+      "key": "final-video.mp4",
+      "path": "jobs/prochat-script-001/video/final-video.mp4",
+      "size": 40,
+      "duration": 60,
+      "resolution": "1080p",
+      "codec": "h264",
+      "status": "complete"
+    },
+    {
+      "type": "thumbnail",
+      "key": "thumbnail.png",
+      "path": "jobs/prochat-script-001/video/thumbnail.png",
+      "size": 67,
+      "resolution": "1280x720",
+      "status": "complete"
+    }
+  ],
+  "generatedAt": "2026-05-31T22:15:45Z"
+}

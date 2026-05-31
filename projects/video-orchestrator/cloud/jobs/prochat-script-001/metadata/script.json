@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-script-001",
+  "channelId": "prochat",
+  "topicId": "prochat-ai-code-001",
+  "status": "ready",
+  "title": "AI Writes Code But Not Businesses",
+  "targetDurationSeconds": 60,
+  "wordCount": 111,
+  "scriptKey": "jobs/prochat-script-001/scripts/script.md",
+  "generatedBy": "manual-template-v1",
+  "createdAt": "2026-05-31T22:14:39Z",
+  "updatedAt": "2026-05-31T22:14:39Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "approvedAt": "2026-05-31T22:14:39Z",
+    "approvedBy": "Steve",
+    "notes": "I-7.5 proof: approved for topic-to-YouTube flow"
+  }
+}

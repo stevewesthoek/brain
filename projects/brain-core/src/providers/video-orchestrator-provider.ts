@@ -26,6 +26,30 @@ export interface ChannelStatus {
   totalTopics: number;
 }
 
+export interface ScriptApproval {
+  required: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  theologicalReviewRequired: boolean;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  notes: string | null;
+}
+
+export interface ScriptMetadata {
+  jobId: string;
+  channelId: string;
+  topicId: string;
+  status: 'draft' | 'ready' | 'generating' | 'generated' | 'published';
+  title: string;
+  targetDurationSeconds: number;
+  wordCount: number;
+  scriptKey: string;
+  generatedBy: string;
+  createdAt: string;
+  updatedAt: string;
+  approval: ScriptApproval;
+}
+
 export interface VideoOrchestratorStatus {
   channels: ChannelStatus[];
   recentJobs: Array<{
@@ -121,4 +145,42 @@ export async function getVideoOrchestratorStatus(): Promise<VideoOrchestratorSta
 export async function getChannelTopics(channelId: string): Promise<ChannelStatus | null> {
   const status = await getVideoOrchestratorStatus();
   return status.channels.find(ch => ch.channelId === channelId) || null;
+}
+
+async function readScriptMetadata(jobId: string): Promise<ScriptMetadata | null> {
+  try {
+    const path = join(BRAIN_VIDEO_ORCHESTRATOR_ROOT, `jobs/${jobId}/metadata/script.json`);
+    const content = await readFile(path, 'utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.error(`Failed to read script metadata for ${jobId}:`, error);
+    return null;
+  }
+}
+
+export async function getScript(jobId: string): Promise<ScriptMetadata | null> {
+  return readScriptMetadata(jobId);
+}
+
+export async function getScriptsByChannel(channelId: string): Promise<ScriptMetadata[]> {
+  try {
+    const jobsPath = join(BRAIN_VIDEO_ORCHESTRATOR_ROOT, 'jobs');
+    const fs = await import('fs/promises');
+    const jobDirs = await fs.readdir(jobsPath);
+
+    const scripts: ScriptMetadata[] = [];
+    for (const jobDir of jobDirs) {
+      const metadata = await readScriptMetadata(jobDir);
+      if (metadata && metadata.channelId === channelId) {
+        scripts.push(metadata);
+      }
+    }
+
+    return scripts.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  } catch (error) {
+    console.error(`Failed to read scripts for channel ${channelId}:`, error);
+    return [];
+  }
 }

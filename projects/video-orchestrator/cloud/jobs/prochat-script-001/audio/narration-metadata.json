@@ -1,0 +1,12 @@
+{
+  "jobId": "prochat-script-001",
+  "scriptKey": "jobs/prochat-script-001/scripts/script.md",
+  "narrationPath": "jobs/prochat-script-001/audio/narration.mp3",
+  "voiceId": "Joanna",
+  "engine": "polly-simulator",
+  "status": "generated",
+  "estimatedDuration": 60,
+  "wordCount": 111,
+  "generatedAt": "2026-05-31T22:14:40Z",
+  "note": "For I-7.5 proof: Using synthetic fixture. Real narration would be generated via AWS Polly in production."
+}
