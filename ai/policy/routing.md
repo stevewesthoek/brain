@@ -51,6 +51,8 @@ Four AI engines now work together. Claude always orchestrates — route sub-task
 
 **Manual terminal entrypoint:** `repos` offers `Auto`, `Claude`, `Codex`, and `Gemini`. `Auto` chooses the interactive runtime only: Claude for repo-wide/multi-step work, Codex for isolated review/small execution, and Gemini for large-context preprocessing. Raw Bedrock models stay behind the AI Model Selector and are not exposed as manual top-level choices.
 
+**External IDE/workbench surfaces:** Cursor, Kiro, Antigravity, Oh My Pi, and the Open Design bridge pattern are operating surfaces only. They may auto-detect installed CLIs and drive agents, but provider/model choice remains behind the AI Model Selector (`ai-select` or `POST /select`) whenever Brain-owned automation makes an AI call.
+
 **Shell-output discipline:** Use RTK for noisy shell commands before spending model context on raw terminal output. RTK complements routing; it does not replace Gemini preprocessing, Firecrawl, handoffs, or model escalation rules.
 
 ---

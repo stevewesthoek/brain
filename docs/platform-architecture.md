@@ -255,6 +255,9 @@ Task types define what capability a task requires. The selector maps task types 
 | `subtitle_generation` | audio/transcribe | Yes (faster-whisper) | Local only |
 | `background_image` | image/generate | Yes (LM Studio) | Local preferred |
 | `description_quality_review` | text/review | No | Requires high-quality model |
+| `design_visual_workbench` | text/medium | Yes (8B+) | Optional Open Design visual workbench ideation and prototype commentary |
+| `design_spec_generation` | text/medium | Yes (8B+) | Design spec generation or revision for `/design` and `/web-design` bridge flows |
+| `design_review` | text/review | No | Visual/design critique requiring higher quality review |
 
 **Adding a task type:** Add one record to `~/.config/video-orchestrator/ai-task-types.json`. No code changes in any app.
 

@@ -73,6 +73,7 @@ Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
 
 **Optional standalone agent surfaces:**
 - `omp` / Oh My Pi is available as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, and Gemini. It is an optional manual runtime/evaluation harness only. Do not use it to replace AI Model Selector, Brain skills, shared memory, or routing policy. Canonical boundaries are documented in `brain/operations/runbooks/omp-optional-agent.md`.
+- Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench pattern for `/design`, like an IDE surface beside Cursor, Kiro, Antigravity, and Oh My Pi. It must not replace `/design`, `/web-design`, AI Model Selector, Brain skills, shared memory, or routing policy. Auto-detect available CLIs (`open-design`, validated non-system `od`, `claude`, `codex`, `gemini`, `omp`) and route generation through `ai-select`. Canonical boundaries are documented in `brain/operations/runbooks/open-design-optional-design-surface.md`.
 
 ### Gemini-Specific Constraints & Usage
 

@@ -419,6 +419,76 @@ When the user's message matches these patterns, route directly without asking th
 
 ---
 
+## Optional Visual Workbench Bridge
+
+Open Design (`nexu-io/open-design`) may be used as an **external visual design workbench** when the user wants a dashboard-style environment for exploration, prototypes, previews, or exports.
+
+Treat Open Design like Cursor, Kiro, Antigravity, Oh My Pi, Claude Code, Codex, or Gemini: an optional IDE-like surface beside Brain, not a replacement for Brain.
+
+### Hard Boundaries
+
+- Do not vendor Open Design into `brain`.
+- Do not migrate Brain skills into Open Design's `skills/` directory.
+- Do not migrate `PRODUCT.md`, `DESIGN.md`, `brand-spec.md`, or shared memory into Open Design as the canonical source.
+- Do not let Open Design choose providers directly when Brain routing is available.
+- Do not replace `/design`, `/web-design`, `/design-review`, shared memory, or `brain/ai/policy/routing.md`.
+- Use the registered `open-design` wrapper when Open Design is needed.
+- Prefer the stable wrapper name `open-design`; do not treat macOS `/usr/bin/od` as Open Design.
+
+### Bridge Pattern
+
+When the user asks for a more visual design loop:
+
+1. Keep Brain-owned artifacts canonical: read/write `PRODUCT.md`, `DESIGN.md`, `brand-spec.md`, visual specs, and audit notes in the target project.
+2. Launch or point Open Design at the target project as a visual workbench only.
+3. Let Open Design read the existing project files and preview/export artifacts.
+4. Route all model choice through AI Model Selector when calling external generation from scripts or adapters:
+
+```bash
+ai-select --task design_visual_workbench
+TOKENS=12000 ai-select --task design_spec_generation
+TOKENS=6000 ai-select --task design_review
+```
+
+If one of these task types is not yet registered, use the closest existing text/review task type and document the gap before adding a new selector task type.
+
+### CLI / Agent Auto-Detection
+
+Before delegating from `/design` to any external surface, detect what is actually installed:
+
+```bash
+for cmd in open-design claude codex gemini omp cursor code; do
+  command -v "$cmd" >/dev/null 2>&1 && printf "%s\n" "$cmd"
+done
+
+if command -v od >/dev/null 2>&1 && [ "$(command -v od)" != "/usr/bin/od" ]; then
+  od --help 2>&1 | grep -qi "open design" && printf "%s\n" "od"
+fi
+```
+
+Use the available surfaces by role:
+
+| Surface | Role in design bridge |
+|---------|-----------------------|
+| `open-design` or validated `od` | Open Design visual workbench, if installed |
+| `claude` | Long-context design orchestration and implementation |
+| `codex` | Isolated critique, code review, or alternate implementation pass |
+| `gemini` | Large-context preprocessing of references, screenshots, exports, or full-site crawls |
+| `omp` | Optional standalone coding-agent experiment only |
+| Cursor / Kiro / Antigravity | Human-facing IDE surfaces with synced Brain skills |
+
+Drive agents with compact prompts that point to the canonical project artifacts. Do not copy the whole Brain skill tree into external tools.
+
+### When to Use Open Design
+
+Use Open Design only when it adds clear value:
+
+- The user wants visual dashboard iteration instead of terminal-only design.
+- A prototype, export, preview, or side-by-side visual comparison is needed.
+- The design loop benefits from seeing project state in a local visual workbench.
+
+Skip Open Design when a normal `/design` or `/web-design` markdown spec is enough.
+
 ## AI-Agnostic Operation
 
 This orchestrator is plain markdown. All chained skills are plain markdown. All persistent outputs are markdown (`PRODUCT.md`, `DESIGN.md`, design specs, audit reports) or HTML (prototypes, preview pages). Nothing requires MCP, specific IDE plugins, or proprietary tooling.
@@ -428,6 +498,7 @@ This orchestrator is plain markdown. All chained skills are plain markdown. All 
 - **Codex CLI** — invoke `/design`; reads `.ai/current.md` for session continuity
 - **Gemini CLI** — invoke `/design`; 1M context window handles large reference analysis (B1), full codebase audits (C2), and multi-file design specs
 - **Cursor, Kiro, any IDE** — all skills synced via `brain/ai/skills/active/`
+- **Open Design** — optional external visual workbench when installed; reads Brain/project artifacts but does not own routing, memory, or skills
 
 **Persistent source-of-truth files (AI-agnostic):**
 - `PRODUCT.md` — brand identity, users, tone, anti-references. Any AI reads it, any AI updates it.

@@ -1,5 +1,5 @@
-model = "gpt-5.4-mini"
-model_reasoning_effort = "low"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 personality = "pragmatic"
 # Full-access mode removes harness approval prompts for normal work.
 # Judgment is still constrained by the shared policy in `brain/ai/policy/guardrails.md`.

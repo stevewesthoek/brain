@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stable local entrypoint for Open Design across Claude Code, Codex, Gemini CLI,
+# Cursor, Kiro, and Antigravity. Open Design itself lives outside Brain.
+# Keep this wrapper thin: Brain owns the entrypoint, not the upstream app.
+
+repo="${OPEN_DESIGN_REPO:-/Users/Office/Repos/nexu-io/open-design}"
+node_bin="${OPEN_DESIGN_NODE_BIN:-/Users/Office/.nvm/versions/node/v24.12.0/bin/node}"
+pnpm_bin="${OPEN_DESIGN_PNPM_BIN:-/opt/homebrew/bin/pnpm}"
+cli_js="${repo}/apps/daemon/dist/cli.js"
+
+if [[ ! -d "${repo}" ]]; then
+  echo "Open Design repo not found: ${repo}" >&2
+  exit 1
+fi
+
+if [[ ! -x "${node_bin}" ]]; then
+  echo "Node 24 binary not found: ${node_bin}" >&2
+  exit 1
+fi
+
+if [[ ! -x "${pnpm_bin}" ]]; then
+  echo "pnpm binary not found: ${pnpm_bin}" >&2
+  exit 1
+fi
+
+export PATH="$(dirname "${node_bin}"):${PATH}"
+
+case "${1:-}" in
+  --version|-v)
+    "${node_bin}" -e "const p=require('${repo}/package.json'); console.log('open-design/' + p.version)"
+    ;;
+  tools-dev)
+    shift
+    exec "${pnpm_bin}" --dir "${repo}" tools-dev "$@"
+    ;;
+  start|run|status|stop|restart|logs|inspect|check)
+    exec "${pnpm_bin}" --dir "${repo}" tools-dev "$@"
+    ;;
+  *)
+    if [[ ! -f "${cli_js}" ]]; then
+      echo "Open Design daemon CLI missing: ${cli_js}" >&2
+      echo "Run: OPEN_DESIGN_REPO=${repo} ${pnpm_bin} --dir ${repo} --filter @open-design/daemon build" >&2
+      exit 1
+    fi
+    exec "${node_bin}" "${cli_js}" "$@"
+    ;;
+esac

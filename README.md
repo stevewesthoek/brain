@@ -55,6 +55,7 @@ verify-cli-access "command-name"
 
 **Optional standalone agent surfaces:**
 - `omp` / Oh My Pi is installed as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, or Gemini. It is not part of the Brain platform architecture and must not replace AI Model Selector, Brain skills, shared memory, or routing policy. See `operations/runbooks/omp-optional-agent.md`.
+- Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench for `/design`. It must not replace the design orchestrator, AI Model Selector, Brain skills, shared memory, or routing policy. See `operations/runbooks/open-design-optional-design-surface.md`.
 
 ---
 

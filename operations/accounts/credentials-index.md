@@ -724,3 +724,12 @@ All detected credentials have been categorized. Run `sync-credentials` to check 
 | `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-15 |
 | `DOKPLOY_API_HEADER` | `~/.config/dokploy/.env` | 2026-04-15 |
 | `BRAIN_BRIDGE_ACTION_TOKEN` | `~/.config/brain-bridge/.env` | 2026-04-24 |
+| `YOUTUBE_CLIENT_ID` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_CLIENT_SECRET` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_REDIRECT_URI` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_TOKEN_FILE` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_API_URL` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_OAUTH_URL` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_UPLOAD_API_URL` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_CLIENT_SECRET_JSON` | `~/.config/youtube/.env` | 2026-05-31 |
+| `YOUTUBE_SCOPES` | `~/.config/youtube/.env` | 2026-05-31 |

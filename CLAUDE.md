@@ -74,6 +74,8 @@ Key rule: **All three AIs must have access to all CLIs.** If a CLI is missing fr
 
 Do not use `omp` as the Brain provider/model router. Do not migrate Brain skills, shared memory, or routing policy into `omp`. The AI Model Selector at `localhost:4890`, `brain/ai/skills/`, `~/.brain/memory/`, and `brain/ai/policy/routing.md` remain canonical. Runbook: `operations/runbooks/omp-optional-agent.md`.
 
+Open Design (`open-design`) is installed outside Brain at `/Users/Office/Repos/nexu-io/open-design` as an optional external visual design workbench for `/design`, comparable to Cursor, Kiro, Antigravity, and other IDE-like surfaces. It must not replace `/design`, `/web-design`, Brain skills, shared memory, or the AI Model Selector. Runbook: `operations/runbooks/open-design-optional-design-surface.md`.
+
 ## Code, understand, improve, fix, review, build, document, ship
 
 For ALL coding work — understanding your codebase, improving code quality, fixing bugs, reviewing code, building features, documenting modules, or shipping code — use `/code`. The master orchestrator accepts any natural language, classifies your intent (understand/improve/fix/review/build/document/ship/template), and routes automatically through the right toolchain. No skill names, no commands, no tool knowledge required — just describe what you need.

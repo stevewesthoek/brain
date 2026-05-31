@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getVideoOrchestratorStatus, getChannelTopics } from '../providers/video-orchestrator-provider.js';
+import { getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2140,6 +2140,42 @@ export async function routeRequest(
         return;
       }
 
+      // ── Topic Intelligence: AWS Video Pipeline Status ────────────────────────
+      if (url.pathname === '/api/video-orchestrator/topic-intelligence/status') {
+        try {
+          const status = await getTopicIntelligence();
+          sendJson(response, 200, { ok: true, data: status });
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch video orchestrator status',
+          });
+        }
+        return;
+      }
+
+      if (url.pathname.startsWith('/api/video-orchestrator/topic-intelligence/channels/')) {
+        try {
+          const channelId = url.pathname.split('/').pop() ?? '';
+          if (!channelId) {
+            sendJson(response, 400, { ok: false, error: 'channelId is required' });
+            return;
+          }
+          const channel = await getChannelTopics(channelId);
+          if (!channel) {
+            sendJson(response, 404, { ok: false, error: `Channel not found: ${channelId}` });
+            return;
+          }
+          sendJson(response, 200, { ok: true, data: channel });
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch channel topics',
+          });
+        }
+        return;
+      }
+
       if (url.pathname === '/credentials/catalog') {
         sendJson(response, 200, getCredentialCatalog());
         return;
@@ -3340,42 +3376,6 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     if (body?.metadataVariant !== undefined) metricsReq.metadataVariant = body.metadataVariant as string;
     const result = recordVideoMetrics(metricsReq);
     sendJson(response, 202, result);
-    return;
-  }
-
-  // ── Topic Intelligence: AWS Video Pipeline Status ────────────────────────
-  if (url.pathname === '/api/video-orchestrator/topic-intelligence/status') {
-    try {
-      const status = await getVideoOrchestratorStatus();
-      sendJson(response, 200, { ok: true, data: status });
-    } catch (error) {
-      sendJson(response, 500, {
-        ok: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch video orchestrator status',
-      });
-    }
-    return;
-  }
-
-  if (url.pathname.startsWith('/api/video-orchestrator/topic-intelligence/channels/')) {
-    try {
-      const channelId = url.pathname.split('/').pop() ?? '';
-      if (!channelId) {
-        sendJson(response, 400, { ok: false, error: 'channelId is required' });
-        return;
-      }
-      const channel = await getChannelTopics(channelId);
-      if (!channel) {
-        sendJson(response, 404, { ok: false, error: `Channel not found: ${channelId}` });
-        return;
-      }
-      sendJson(response, 200, { ok: true, data: channel });
-    } catch (error) {
-      sendJson(response, 500, {
-        ok: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch channel topics',
-      });
-    }
     return;
   }
 

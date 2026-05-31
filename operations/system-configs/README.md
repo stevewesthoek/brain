@@ -95,3 +95,4 @@ The `bin/` directory contains stable wrapper scripts for CLIs that need to be ac
 See `operations/runbooks/spark-cli.md` for the Spark CLI universal installation walkthrough.
 See `operations/runbooks/stable-audio-3.md` for Stable Audio 3 install, usage, and model warm-up commands.
 See `operations/runbooks/omp-optional-agent.md` for the Oh My Pi (`omp`) optional standalone agent surface. `omp` is registered as a CLI/IDE-style surface only and is not a Brain architecture component.
+See `operations/runbooks/open-design-optional-design-surface.md` for the Open Design bridge pattern. Open Design is installed outside Brain and exposed through the `open-design` wrapper. Prefer the `open-design` wrapper name because macOS already has `/usr/bin/od`.

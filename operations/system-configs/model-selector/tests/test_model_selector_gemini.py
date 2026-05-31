@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import UTC, datetime
 from pathlib import Path
 
 RUNTIME_DIR = Path(__file__).resolve().parents[1] / "runtime"
@@ -142,9 +143,10 @@ class TestGeminiProviderPolicy(unittest.TestCase):
         return selector
 
     def _seed_gemini_quota(self, *, rpm_used=0, tpm_used=0, rpd_used=0, rpm_limit=60, tpm_limit=1000000, rpd_limit=1000000):
+        date = datetime.now(UTC).date().isoformat()
         payload = {
-            "gemini-free:2026-05-24:UTC": {
-                "date": "2026-05-24",
+            f"gemini-free:{date}:UTC": {
+                "date": date,
                 "rpm_used": rpm_used,
                 "tpm_used": tpm_used,
                 "rpd_used": rpd_used,
@@ -155,6 +157,9 @@ class TestGeminiProviderPolicy(unittest.TestCase):
             }
         }
         core.GEMINI_QUOTA_PATH.write_text(json.dumps(payload, indent=2))
+
+    def _gemini_quota_key(self):
+        return f"gemini-free:{datetime.now(UTC).date().isoformat()}:UTC"
 
     def test_gemini_selected_first_when_key_present(self):
         os.environ["GEMINI_API_KEY"] = "test-secret"
@@ -208,7 +213,7 @@ class TestGeminiProviderPolicy(unittest.TestCase):
 
         self.assertEqual(result.provider_id, "gemini-free")
         quota = json.loads(core.GEMINI_QUOTA_PATH.read_text())
-        entry = quota["gemini-free:2026-05-24:UTC"]
+        entry = quota[self._gemini_quota_key()]
         self.assertEqual(entry["rpm_used"], 2)
         self.assertEqual(entry["tpm_used"], 1500)
         self.assertEqual(entry["rpd_used"], 4500)

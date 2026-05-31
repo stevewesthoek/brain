@@ -1,6 +1,6 @@
 # CLI Manifest — Canonical Tool Inventory
 
-**Last Updated:** 2026-05-30  
+**Last Updated:** 2026-05-31  
 **Scope:** All CLIs available to Claude Code, Codex, and Gemini CLI  
 **Purpose:** Single source of truth for CLI availability across all AI agents
 
@@ -153,6 +153,7 @@ All CLIs in this manifest are symlinked to `~/.local/bin/` or exist in Homebrew/
 | `uvicorn` | `~/.local/bin/uvicorn` | runtime | pipx | ASGI web server |
 | `fastapi` | `~/.local/bin/fastapi` | framework | pipx | FastAPI CLI |
 | `omp` | `~/.local/bin/omp` | ai-agent | Bun global | Oh My Pi optional standalone terminal AI coding agent; separate IDE/agent surface only, not a replacement for AI Model Selector, Brain skills, shared memory, or routing policy |
+| `open-design` | `~/.local/bin/open-design` | design-workbench | source wrapper | Open Design optional external visual design workbench; wrapper points to `/Users/Office/Repos/nexu-io/open-design` and uses Node 24; separate IDE-like surface only, not Brain router, memory, or skill source |
 
 ### Backup & Archive Tools
 
