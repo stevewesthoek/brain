@@ -1,0 +1,73 @@
+{
+  "channelId": "says-the-bible",
+  "displayName": "Says the Bible",
+  "topicBacklog": [
+    {
+      "topicId": "stb-baptism-001",
+      "title": "Does Baptism Save?",
+      "score": 92,
+      "status": "candidate",
+      "reasoning": [
+        "High theological relevance",
+        "Common misconception",
+        "Scriptural foundation available",
+        "Audience engagement potential"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "stb-repentance-001",
+      "title": "What is Repentance?",
+      "score": 88,
+      "status": "candidate",
+      "reasoning": [
+        "Fundamental doctrine",
+        "Often misunderstood",
+        "Rich biblical examples",
+        "Practical application"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "stb-faith-works-001",
+      "title": "Faith vs Works: What Does Scripture Say?",
+      "score": 85,
+      "status": "candidate",
+      "reasoning": [
+        "Core theological debate",
+        "James vs Paul discussion",
+        "High viewer interest",
+        "Multiple perspectives to explore"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "stb-osas-001",
+      "title": "Once Saved Always Saved: True or False?",
+      "score": 82,
+      "status": "candidate",
+      "reasoning": [
+        "Divisive theological question",
+        "Multiple denominations represented",
+        "Scriptural evidence abundant",
+        "Pastoral relevance"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "stb-crucifixion-001",
+      "title": "Why Did Jesus Die? Understanding the Atonement",
+      "score": 95,
+      "status": "candidate",
+      "reasoning": [
+        "Core gospel message",
+        "Multiple theological frameworks",
+        "Highest audience relevance",
+        "Scriptural depth"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    }
+  ],
+  "createdAt": "2026-05-31T21:00:00Z",
+  "updatedAt": "2026-05-31T21:00:00Z"
+}

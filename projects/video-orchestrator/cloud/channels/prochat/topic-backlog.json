@@ -1,0 +1,73 @@
+{
+  "channelId": "prochat",
+  "displayName": "ProChat",
+  "topicBacklog": [
+    {
+      "topicId": "prochat-ai-code-001",
+      "title": "AI Writes Code But Not Businesses",
+      "score": 91,
+      "status": "candidate",
+      "reasoning": [
+        "High founder relevance",
+        "Emerging concern",
+        "Actionable insights",
+        "Differentiates ProChat positioning"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "prochat-saas-fail-001",
+      "title": "Why SaaS Launches Fail: The Top 5 Reasons",
+      "score": 88,
+      "status": "candidate",
+      "reasoning": [
+        "High pain point for audience",
+        "Practical lessons",
+        "Case study potential",
+        "SMB founder interest"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "prochat-auth-first-001",
+      "title": "Auth Before Features: Why This Matters",
+      "score": 85,
+      "status": "candidate",
+      "reasoning": [
+        "Common founder mistake",
+        "Technical foundation importance",
+        "Cost implications",
+        "Best practices guidance"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "prochat-validation-001",
+      "title": "Validation Before Coding: How to Avoid Building the Wrong Thing",
+      "score": 87,
+      "status": "candidate",
+      "reasoning": [
+        "Prevents wasted effort",
+        "Lean startup methodology",
+        "Founder education focus",
+        "High ROI topic"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    },
+    {
+      "topicId": "prochat-systems-001",
+      "title": "Why Founders Need Systems: Before You Hire",
+      "score": 83,
+      "status": "candidate",
+      "reasoning": [
+        "Scaling pain point",
+        "Automation angle",
+        "ProChat positioning fit",
+        "Early-stage relevance"
+      ],
+      "createdAt": "2026-05-31T21:00:00Z"
+    }
+  ],
+  "createdAt": "2026-05-31T21:00:00Z",
+  "updatedAt": "2026-05-31T21:00:00Z"
+}
