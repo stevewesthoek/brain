@@ -18,6 +18,8 @@ A **centralized video generation and distribution pipeline** that:
 - Generates metadata for 8 platforms (YouTube, TikTok, Instagram, Facebook, LinkedIn, Bluesky, X, Pinterest)
 - Posts to all 8 platforms via n8n webhooks
 
+The repo copy now stores cloud execution assets under `cloud/` and project documentation under `docs/`. Local runtime stays external in `~/.local/video-orchestrator/`.
+
 **Architecture:** All project repos call the Brain Core API. No code duplication.
 
 ### Why Centralized?

@@ -1,0 +1,49 @@
+{
+  "jobId": "test-001",
+  "assets": {
+    "generated-clip": {
+      "path": "jobs/test-001/video-generated/generated-001.mp4",
+      "type": "video-generated",
+      "source": "AWS Bedrock Nova Reel (us-east-1)",
+      "prompt": "Clean modern abstract motion background, soft blue and indigo gradients, subtle flowing lines, calm professional SaaS technology atmosphere, no text, no people, no logos.",
+      "generatedAt": "2026-05-31T00:00:00Z",
+      "status": "available"
+    },
+    "final-assembly": {
+      "path": "jobs/test-001/exports/generated-001-final.mp4",
+      "type": "video-assembled",
+      "source": "MediaConvert assembly (I-2/I-3)",
+      "inputVideo": "jobs/test-001/video-generated/generated-001.mp4",
+      "inputAudio": "jobs/test-001/audio/narration.mp3",
+      "mediaConvertJobId": "1780237282541-8af0jq",
+      "assembledAt": "2026-05-31T14:21:28.071Z",
+      "duration": 64,
+      "status": "available",
+      "caveat": "Output naming uses input-based MediaConvert strategy (generated-001-final.mp4). Canonical naming (test-001-final.mp4) deferred to cleanup phase."
+    },
+    "thumbnail": {
+      "path": "jobs/test-001/thumbnails/thumbnail-001.png",
+      "type": "thumbnail-preview",
+      "source": "Frame extraction (I-4)",
+      "sourceVideo": "jobs/test-001/exports/generated-001-final.mp4",
+      "extractedAt": 3,
+      "resolution": "1280x720",
+      "format": "PNG",
+      "size": 360267,
+      "generatedAt": "2026-05-31T14:22:00Z",
+      "status": "available"
+    },
+    "narration": {
+      "path": "jobs/test-001/audio/narration.mp3",
+      "type": "audio",
+      "source": "Polly text-to-speech",
+      "duration": 64,
+      "status": "available"
+    },
+    "transcript": {
+      "path": "jobs/test-001/captions/transcript.json",
+      "type": "captions",
+      "status": "available"
+    }
+  }
+}

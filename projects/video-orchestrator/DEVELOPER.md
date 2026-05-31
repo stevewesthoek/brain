@@ -1,5 +1,7 @@
 # Video Orchestrator — Developer Guide
 
+Cloud execution assets live under `cloud/`. Local runtime remains external at `~/.local/video-orchestrator/`.
+
 ## Architecture Overview
 
 **Video Orchestrator** is a distributed job-queueing system for video generation. Jobs flow through sequential stages:

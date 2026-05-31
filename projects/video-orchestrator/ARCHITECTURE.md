@@ -4,6 +4,8 @@
 **Status:** Approved  
 **Context:** Multi-project video content generation (Says the Bible, future projects)
 
+Cloud execution assets live under `cloud/`; documentation lives under `docs/`.
+
 ---
 
 ## Strategic Question

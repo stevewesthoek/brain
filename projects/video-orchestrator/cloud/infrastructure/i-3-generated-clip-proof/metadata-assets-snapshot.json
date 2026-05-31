@@ -1,0 +1,35 @@
+{
+  "jobId": "test-001",
+  "assets": {
+    "generated-clip": {
+      "path": "jobs/test-001/video-generated/generated-001.mp4",
+      "source": "AWS Bedrock Nova Reel (us-east-1)",
+      "prompt": "Clean modern abstract motion background, soft blue and indigo gradients, subtle flowing lines, calm professional SaaS technology atmosphere, no text, no people, no logos.",
+      "generatedAt": "2026-05-31T00:00:00Z",
+      "bedrock-source": "s3://bedrock-video-generation-us-east-1-rix1i5/39xbaiwu5i3c/output.mp4",
+      "duration": null,
+      "status": "available"
+    },
+    "narration": {
+      "path": "jobs/test-001/audio/narration.mp3",
+      "type": "audio",
+      "duration": 64,
+      "status": "available"
+    },
+    "transcript": {
+      "path": "jobs/test-001/captions/transcript.json",
+      "type": "captions",
+      "status": "available"
+    },
+    "final-export": {
+      "path": "jobs/test-001/exports/sample-transcoded-final.mp4",
+      "source": "MediaConvert assembly (I-2)",
+      "inputs": [
+        "jobs/test-001/video-generated/generated-001.mp4",
+        "jobs/test-001/audio/narration.mp3"
+      ],
+      "status": "pending",
+      "caveat": "Output naming uses input-based MediaConvert strategy (sample-transcoded-final.mp4). Canonical naming (test-001-final.mp4) deferred to I-3+ cleanup phase."
+    }
+  }
+}

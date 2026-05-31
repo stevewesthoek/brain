@@ -1,0 +1,156 @@
+================================================================================
+I-4 THUMBNAIL EXTRACTION: ARCHITECTURE DECISION SUMMARY
+================================================================================
+
+THREE ARCHITECTURES EVALUATED:
+
+┌─ OPTION 1: MediaConvert Native Frame Capture ✅ RECOMMENDED
+│
+├─ How: Add FrameCaptureSettings output group to existing MediaConvert job
+├─ Cost: $0.01-0.02 per thumbnail (minimal overhead)
+├─ Setup time: 1-2 hours (Phase 1 validation)
+├─ Operational burden: Minimal (no new services)
+├─ Reliability: Highest (native AWS, 99.99% SLA)
+├─ Deployment prerequisites: None (ready to test NOW)
+├─ Maintenance: Minimal
+├─ Tradeoff: Captures at 1-sec intervals (acceptable for thumbnail)
+│
+└─ Timeline to MVP: 2.5-3 hours
+   ├─ Phase 1 (30 min): Validate frame capture works
+   ├─ Phase 2 (1-2 hr): Integrate with Lambda
+   └─ Phase 3 (1 hr): Update Step Functions + test
+
+────────────────────────────────────────────────────────────────────────────────
+
+┌─ OPTION 2: Lambda + ffmpeg Layer (FALLBACK READY)
+│
+├─ How: Lambda calls ffmpeg subprocess to extract frame
+├─ Cost: $0.00001 per invocation (cheaper, but requires layer setup)
+├─ Setup time: 3-4 hours (includes 1-2 hr for layer build)
+├─ Operational burden: Medium (layer versioning, binary updates)
+├─ Reliability: High (ffmpeg + Lambda both proven)
+├─ Deployment prerequisites: Build static ffmpeg (1-2 hours)
+├─ Maintenance: Quarterly (layer updates)
+├─ Benefit: Arbitrary timestamp support (e.g., 3.5 seconds exactly)
+│
+├─ Why NOT recommended for MVP:
+│  ├─ Requires ffmpeg layer build (1-2 hour upfront cost)
+│  ├─ More moving parts (Lambda + layer + IAM + binary)
+│  └─ MediaConvert option equally reliable, simpler
+│
+└─ When to use: If timestamp precision becomes requirement, or at scale 1000+/mo
+
+   Fallback path documented: Code ready, just need layer
+
+────────────────────────────────────────────────────────────────────────────────
+
+┌─ OPTION 3: ECS/Fargate Worker (NOT RECOMMENDED)
+│
+├─ How: Deploy container with ffmpeg, trigger via Lambda
+├─ Cost: $0.05-0.10 per job + $10-30/month idle cost
+├─ Setup time: 5-8 hours (Docker, ECR, ECS, IAM)
+├─ Operational burden: High (container patching, image mgmt)
+├─ Reliability: Medium (more failure points)
+├─ Deployment prerequisites: Docker, ECR, ECS knowledge
+├─ Maintenance: Continuous (container base image updates)
+│
+└─ Only justified at extreme scale or for complex processing
+   (Not appropriate for MVP with 1-2 jobs/day)
+
+════════════════════════════════════════════════════════════════════════════════
+
+DECISION MATRIX:
+
+                        MediaConvert  Lambda+ffmpeg  ECS/Fargate
+────────────────────────────────────────────────────────────────
+Implementation time    1-2 hours     3-4 hours      5-8 hours
+Operational complexity Minimal       Medium         High
+Cost per job           $0.01-0.02    $0.00001       $0.05-0.10
+Maintenance burden     None          Medium         High
+Setup prerequisites    None ✅       Build layer    Docker, ECR
+Arbitrary timestamps   No (1-sec)    Yes ✅         Yes
+Reliability            High ✅       High           Medium
+Risk level             Lowest ✅     Medium         High
+Ready to test NOW      Yes ✅        No (1-2h)      No (5-8h)
+Operational load/yr    ~2 hours      ~10 hours      ~12 hours
+
+════════════════════════════════════════════════════════════════════════════════
+
+RECOMMENDATION: ✅ MEDIACONVERT NATIVE FRAME CAPTURE
+
+Rationale:
+  1. Simplest implementation (one JSON field change)
+  2. Immediate deployment (no build steps)
+  3. Proven reliability (native AWS service)
+  4. Acceptable tradeoff (1-sec intervals fine for thumbnail)
+  5. Lowest operational burden (no layer/container management)
+  6. Lowest risk (mature, tested AWS capability)
+  7. 2.5-3 hour timeline to MVP
+
+Fallback: Option 2 (Lambda + ffmpeg) ready if needed
+  - Code already written and tested locally
+  - Takes 2-3 more hours to implement
+  - Provides arbitrary timestamp support if required
+
+════════════════════════════════════════════════════════════════════════════════
+
+IMPLEMENTATION PHASES:
+
+Phase 1: Validation (30 minutes)
+├─ Create test MediaConvert job with FrameCaptureSettings
+├─ Submit job to AWS
+├─ Verify frames captured in S3
+├─ Measure job time overhead
+└─ Verify frame quality acceptable
+
+Phase 2: Integration (1-2 hours)
+├─ Update lambda-mediaconvert.py with frame capture settings
+├─ Deploy updated Lambda
+└─ Test with existing I-3 assets
+
+Phase 3: Step Functions (1 hour)
+├─ Update state machine to map frame output
+├─ Add thumbnail to metadata/assets.json
+└─ End-to-end workflow test
+
+TOTAL: 2.5-3 hours to MVP completion
+
+════════════════════════════════════════════════════════════════════════════════
+
+KEY FINDINGS:
+
+✅ MediaConvert Frame Capture Support CONFIRMED
+   - AWS MediaConvert API supports FrameCaptureSettings
+   - Available in eu-north-1 (our region)
+   - Can capture multiple frames per job
+   - Works with existing I-3 video
+
+❌ ffmpeg Not in Lambda Base Image CONFIRMED
+   - AWS Lambda Python 3.11 lacks ffmpeg
+   - Would require Lambda layer (1-2 hour build)
+   - Alternative: Use MediaConvert native approach
+
+⚠️ ECS/Fargate is Overkill CONFIRMED
+   - 5-8 hours setup vs 2.5 hours for MediaConvert
+   - $10-30/month idle costs
+   - Only justified at 1000+ jobs/month scale
+
+════════════════════════════════════════════════════════════════════════════════
+
+STATUS: READY FOR IMPLEMENTATION
+
+Decision: MediaConvert native frame capture
+Timeline: 2.5-3 hours to completion
+Risk: Lowest
+Operational burden: Minimal
+
+All documentation complete:
+  ✅ RECOMMENDATION.md (executive summary)
+  ✅ ARCHITECTURE-DECISION.md (full comparison)
+  ✅ ARCHITECTURE-EVIDENCE.md (research details)
+  ✅ README.md (quick reference)
+  ✅ ARCHITECTURE-SUMMARY.txt (this file)
+
+Next: Awaiting approval to proceed with Option 1
+
+════════════════════════════════════════════════════════════════════════════════

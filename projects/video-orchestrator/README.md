@@ -4,6 +4,8 @@ Shared video orchestration and processing engine for multi-project content produ
 
 **Project repos own the admin UI and project-specific content decisions.** Brain Core owns orchestration, job state, shared artifact generation, approvals, health, and observability through REST API contracts.
 
+The cloud implementation now lives under `cloud/`. Project documentation lives under `docs/`. Local runtime remains external at `~/.local/video-orchestrator/`.
+
 ---
 
 ## Quick Start
@@ -65,6 +67,13 @@ Start here based on your role:
 - Data flow diagram (project admin UI → API → brain-core → artifact storage)
 - Migration path (parallel run → cut over → decommission)
 - Where project-specific logic must stay out of Brain
+
+## Folder Layout
+
+```text
+docs/        Project documentation, release notes, credentials guidance
+cloud/       Cloud execution assets: infrastructure, lambdas, scripts, jobs, step functions, console data
+```
 
 ---
 

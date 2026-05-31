@@ -1,0 +1,115 @@
+{
+  "pipeline": "aws-video-pipeline",
+  "displayName": "AWS Video Pipeline",
+  "description": "Channel-aware video generation and publishing orchestration",
+  "status": "active",
+  "s3Bucket": "prochat-video-dev-909439522876-eu-north-1-an",
+  "awsRegion": "eu-north-1",
+  "channels": [
+    {
+      "channelId": "says-the-bible",
+      "displayName": "Says the Bible",
+      "configPath": "channels/says-the-bible/channel.json",
+      "contentProfilePath": "channels/says-the-bible/content-profile.json",
+      "youtubeSecretName": "prochat/youtube/says-the-bible/oauth-token",
+      "youtubeEnabled": true,
+      "publishingStatus": "ready",
+      "lastVideoId": "O8-HEhG8IlE",
+      "lastJobId": "prochat-os-040",
+      "videoCount": 2
+    },
+    {
+      "channelId": "prochat",
+      "displayName": "ProChat",
+      "configPath": "channels/prochat/channel.json",
+      "contentProfilePath": "channels/prochat/content-profile.json",
+      "youtubeSecretName": "prochat/youtube/prochat/oauth-token",
+      "youtubeEnabled": false,
+      "publishingStatus": "auth-pending",
+      "lastVideoId": null,
+      "lastJobId": "prochat-topic-001",
+      "videoCount": 0
+    }
+  ],
+  "stateMachines": [
+    {
+      "name": "video-publisher-youtube",
+      "arn": "arn:aws:states:eu-north-1:909439522876:stateMachine:video-publisher-youtube",
+      "description": "Orchestrates YouTube video publishing with idempotency",
+      "states": [
+        "UploadVideo",
+        "UploadThumbnail",
+        "UpdateMetadata",
+        "Success"
+      ]
+    }
+  ],
+  "lambdas": [
+    {
+      "name": "publish-youtube",
+      "description": "Upload video with channel-aware config",
+      "runtime": "python3.11"
+    },
+    {
+      "name": "publish-thumbnail",
+      "description": "Upload thumbnail with channel-aware config",
+      "runtime": "python3.11"
+    },
+    {
+      "name": "update-publish-metadata",
+      "description": "Update canonical publish.json metadata",
+      "runtime": "python3.11"
+    }
+  ],
+  "schemas": {
+    "contentProfile": {
+      "location": "channels/{channelId}/content-profile.json",
+      "fields": [
+        "channelId",
+        "displayName",
+        "contentStyle",
+        "audience",
+        "defaultTopicTypes",
+        "scriptTemplate",
+        "thumbnailStyle",
+        "guardrails"
+      ]
+    },
+    "topic": {
+      "location": "jobs/{jobId}/metadata/topic.json",
+      "fields": [
+        "jobId",
+        "channelId",
+        "topicId",
+        "title",
+        "angle",
+        "audience",
+        "status",
+        "approval"
+      ]
+    },
+    "publish": {
+      "location": "jobs/{jobId}/metadata/publish.json",
+      "fields": [
+        "jobId",
+        "channelId",
+        "videoKey",
+        "thumbnailKey",
+        "platforms",
+        "publishStatus"
+      ]
+    }
+  },
+  "privacyPolicy": {
+    "enforcement": "channel-aware",
+    "defaultPrivacy": "private",
+    "allowedStatuses": [
+      "private",
+      "unlisted"
+    ],
+    "publicVideosAllowed": false,
+    "description": "All videos are private by default. Public publishing is disabled at channel config level."
+  },
+  "createdAt": "2026-05-31T20:30:00Z",
+  "lastUpdated": "2026-05-31T20:30:00Z"
+}

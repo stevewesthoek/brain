@@ -1,0 +1,48 @@
+{
+  "description": "Working proof of MediaConvert native frame capture (2026-05-31)",
+  "note": "This payload successfully generated 4 JPEG frames from test-001-final.mp4",
+  "Inputs": [
+    {
+      "FileInput": "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/test-001/exports/test-001-final.mp4",
+      "AudioSelectors": {
+        "Audio Selector 1": {
+          "DefaultSelection": "DEFAULT"
+        }
+      }
+    }
+  ],
+  "OutputGroups": [
+    {
+      "Name": "Frame Captures",
+      "OutputGroupSettings": {
+        "Type": "FILE_GROUP_SETTINGS",
+        "FileGroupSettings": {
+          "Destination": "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/test-001/thumbnails/"
+        }
+      },
+      "Outputs": [
+        {
+          "NameModifier": "-frame",
+          "ContainerSettings": {
+            "Container": "RAW"
+          },
+          "VideoDescription": {
+            "CodecSettings": {
+              "Codec": "FRAME_CAPTURE",
+              "FrameCaptureSettings": {
+                "FramerateNumerator": 1,
+                "FramerateDenominator": 1,
+                "MaxCaptures": 4
+              }
+            },
+            "Width": 1280,
+            "Height": 720
+          }
+        }
+      ]
+    }
+  ],
+  "TimecodeConfig": {
+    "Source": "ZEROBASED"
+  }
+}

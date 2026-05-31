@@ -1,0 +1,16 @@
+{
+  "modelId": "amazon.nova-reel-v1:0",
+  "contentType": "application/json",
+  "accept": "application/json",
+  "body": {
+    "taskType": "TEXT_VIDEO",
+    "textToVideoParams": {
+      "text": "Clean modern abstract motion background, soft blue and indigo gradients, subtle flowing lines, calm professional SaaS technology atmosphere, no text, no people, no logos.",
+      "durationSeconds": 6,
+      "fps": 30,
+      "quality": "MEDIUM",
+      "cfgScale": 7.5,
+      "seed": 42
+    }
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "Comment": "YouTube Video Publisher Workflow - Validates, uploads, and publishes videos with idempotency",
+  "StartAt": "ValidatePublishContract",
+  "States": {
+    "ValidatePublishContract": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::s3:getObject",
+      "Parameters": {
+        "Bucket.$": "$.bucket",
+        "Key.$": "States.Format('jobs/{}/metadata/publish.json', $.jobId)"
+      },
+      "ResultPath": "$.publishJson",
+      "Next": "CheckIdempotency",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ContractValidationFailure"
+        }
+      ]
+    },
+
+    "CheckIdempotency": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.publishJson.Body | base64d | @json | .platforms.youtube.videoId",
+          "IsString": true,
+          "Next": "CheckPublishedStatus"
+        }
+      ],
+      "Default": "ValidateYouTubeAuth"
+    },
+
+    "CheckPublishedStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.publishJson.Body | base64d | @json | .platforms.youtube.status",
+          "StringEquals": "uploaded",
+          "Next": "AlreadyPublished"
+        }
+      ],
+      "Default": "ValidateYouTubeAuth"
+    },
+
+    "AlreadyPublished": {
+      "Type": "Pass",
+      "Result": {
+        "alreadyPublished": true,
+        "idempotencyTriggered": true
+      },
+      "ResultPath": "$.idempotencyCheck",
+      "Next": "Success"
+    },
+
+    "ValidateYouTubeAuth": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-youtube-auth-check",
+      "ResultPath": "$.authValidation",
+      "Next": "CheckAuthValidation",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "AuthFailure"
+        }
+      ],
+      "TimeoutSeconds": 60
+    },
+
+    "CheckAuthValidation": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.authValidation.ok",
+          "BooleanEquals": true,
+          "Next": "UploadVideo"
+        }
+      ],
+      "Default": "AuthFailure"
+    },
+
+    "UploadVideo": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-publisher-youtube",
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "privacyStatus.$": "$.privacyStatus"
+      },
+      "ResultPath": "$.videoUpload",
+      "Next": "CheckVideoUpload",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "UploadFailure"
+        }
+      ],
+      "TimeoutSeconds": 300
+    },
+
+    "CheckVideoUpload": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.videoUpload.ok",
+          "BooleanEquals": true,
+          "Next": "UploadThumbnail"
+        }
+      ],
+      "Default": "UploadFailure"
+    },
+
+    "UploadThumbnail": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-publisher-thumbnail",
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "videoId.$": "$.videoUpload.videoId"
+      },
+      "ResultPath": "$.thumbnailUpload",
+      "Next": "CheckThumbnailUpload",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ThumbnailFailure"
+        }
+      ],
+      "TimeoutSeconds": 60
+    },
+
+    "CheckThumbnailUpload": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.thumbnailUpload.ok",
+          "BooleanEquals": true,
+          "Next": "UpdateMetadata"
+        }
+      ],
+      "Default": "ThumbnailFailure"
+    },
+
+    "UpdateMetadata": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:update-publish-metadata",
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "videoId.$": "$.videoUpload.videoId",
+        "videoUrl.$": "$.videoUpload.url",
+        "thumbnailUrl.$": "$.thumbnailUpload.thumbnailUrl",
+        "publishedAt.$": "$.videoUpload.uploadedAt"
+      },
+      "ResultPath": "$.metadataUpdate",
+      "Next": "CheckMetadataUpdate",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "MetadataFailure"
+        }
+      ],
+      "TimeoutSeconds": 30
+    },
+
+    "CheckMetadataUpdate": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.metadataUpdate.ok",
+          "BooleanEquals": true,
+          "Next": "Success"
+        }
+      ],
+      "Default": "MetadataFailure"
+    },
+
+    "Success": {
+      "Type": "Succeed"
+    },
+
+    "AuthFailure": {
+      "Type": "Fail",
+      "Error": "AuthValidationFailed",
+      "Cause": "YouTube OAuth token validation failed"
+    },
+
+    "UploadFailure": {
+      "Type": "Fail",
+      "Error": "VideoUploadFailed",
+      "Cause": "YouTube video upload failed or already published"
+    },
+
+    "ThumbnailFailure": {
+      "Type": "Fail",
+      "Error": "ThumbnailUploadFailed",
+      "Cause": "Thumbnail upload failed - video was uploaded but thumbnail retry needed"
+    },
+
+    "MetadataFailure": {
+      "Type": "Fail",
+      "Error": "MetadataUpdateFailed",
+      "Cause": "Failed to update publish.json metadata"
+    },
+
+    "ContractValidationFailure": {
+      "Type": "Fail",
+      "Error": "ContractValidationFailed",
+      "Cause": "publish.json not found or invalid"
+    }
+  }
+}

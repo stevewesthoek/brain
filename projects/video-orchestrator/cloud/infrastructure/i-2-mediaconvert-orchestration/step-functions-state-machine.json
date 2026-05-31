@@ -1,0 +1,277 @@
+{
+  "Comment": "Video Orchestrator I-2: MediaConvert Final Assembly Orchestration",
+  "StartAt": "CheckApprovalState",
+  "States": {
+    "CheckApprovalState": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-check-approval",
+      "ResultPath": "$.approvalResult",
+      "Next": "ApprovalDecision",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ApprovalCheckFailed"
+        }
+      ]
+    },
+    "ApprovalDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.approvalResult.approved",
+          "BooleanEquals": true,
+          "Next": "UpdateStatusAssembling"
+        }
+      ],
+      "Default": "WaitingForApproval"
+    },
+    "WaitingForApproval": {
+      "Type": "Pass",
+      "Result": {
+        "status": "awaiting_script_approval",
+        "message": "Script approval required before proceeding to assembly"
+      },
+      "End": true
+    },
+    "UpdateStatusAssembling": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-update-status",
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "status": "assembling",
+        "assemblyStartedAt.$": "$$.State.EnteredTime"
+      },
+      "ResultPath": "$.statusUpdate",
+      "Next": "TriggerMediaConvertJob",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "StatusUpdateFailed"
+        }
+      ]
+    },
+    "TriggerMediaConvertJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-mediaconvert",
+      "TimeoutSeconds": 60,
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "videoInput.$": "States.Format('s3://prochat-video-dev-909439522876-eu-north-1-an/{}', $.videoKey)",
+        "audioInput.$": "States.Format('s3://prochat-video-dev-909439522876-eu-north-1-an/{}', $.audioKey)",
+        "outputPath.$": "States.Format('s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/{}/exports/', $.jobId)",
+        "outputFilename.$": "States.Format('{}-final.mp4', $.jobId)"
+      },
+      "Next": "WaitForMediaConvertCompletion",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "MediaConvertJobFailed"
+        }
+      ]
+    },
+    "WaitForMediaConvertCompletion": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-wait-mediaconvert",
+      "TimeoutSeconds": 720,
+      "Parameters": {
+        "mediaConvertJobId.$": "$.mediaConvertJobId",
+        "jobId.$": "$.jobId",
+        "maxAttempts": 120,
+        "delaySeconds": 5
+      },
+      "Next": "MediaConvertCompleted",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "MediaConvertWaitFailed"
+        }
+      ]
+    },
+    "MediaConvertCompleted": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-update-status",
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "status": "complete",
+        "assemblyCompletedAt.$": "$$.State.EnteredTime",
+        "mediaConvertJobId.$": "$.mediaConvertJobId"
+      },
+      "ResultPath": "$.statusUpdate",
+      "Next": "VerifyOutput",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "FinalStatusUpdateFailed"
+        }
+      ]
+    },
+    "VerifyOutput": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:video-orchestrator-verify-output",
+      "TimeoutSeconds": 60,
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "outputPath.$": "States.Format('s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/{}/exports/', $.jobId)",
+        "actualOutputKey.$": "$.actualOutputKey",
+        "mediaConvertJobId.$": "$.mediaConvertJobId"
+      },
+      "ResultPath": "$.verifyOutput",
+      "Next": "GenerateThumbnail",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "OutputVerificationFailed"
+        }
+      ]
+    },
+    "GenerateThumbnail": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:i4-frame-capture-thumbnail-mediaconvert",
+      "TimeoutSeconds": 120,
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "videoKey.$": "$.verifyOutput.mediaconvertOutput",
+        "bucket": "prochat-video-dev-909439522876-eu-north-1-an",
+        "roleArn": "arn:aws:iam::909439522876:role/service-role/MediaConvert_Default_Role"
+      },
+      "ResultPath": "$.thumbnailJob",
+      "Next": "WaitForThumbnail",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ThumbnailGenerationFailed"
+        }
+      ]
+    },
+    "WaitForThumbnail": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "CheckThumbnailProgress"
+    },
+    "CheckThumbnailProgress": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:i4-frame-capture-wait-thumbnail-mediaconvert",
+      "TimeoutSeconds": 60,
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "thumbnailJobId.$": "$.thumbnailJob.thumbnailJobId",
+        "thumbnailOutputPrefix.$": "$.thumbnailJob.thumbnailOutputPrefix",
+        "normalizedThumbnailKey.$": "$.thumbnailJob.normalizedThumbnailKey",
+        "bucket": "prochat-video-dev-909439522876-eu-north-1-an"
+      },
+      "ResultPath": "$.waitThumbnail",
+      "Next": "CheckThumbnailStatus",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ThumbnailWaitFailed"
+        }
+      ]
+    },
+    "CheckThumbnailStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.waitThumbnail.completed",
+          "BooleanEquals": true,
+          "Next": "SelectThumbnailFrame"
+        }
+      ],
+      "Default": "WaitForThumbnail"
+    },
+    "SelectThumbnailFrame": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:i4-frame-capture-select-thumbnail",
+      "TimeoutSeconds": 60,
+      "Parameters": {
+        "jobId.$": "$.jobId",
+        "bucket": "prochat-video-dev-909439522876-eu-north-1-an",
+        "thumbnailOutputPrefix.$": "$.thumbnailJob.thumbnailOutputPrefix",
+        "normalizedThumbnailKey.$": "$.thumbnailJob.normalizedThumbnailKey"
+      },
+      "ResultPath": "$.selectedThumbnail",
+      "Next": "CreatePublishContract",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ThumbnailSelectionFailed"
+        }
+      ]
+    },
+    "CreatePublishContract": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:i6-create-publish-contract",
+      "TimeoutSeconds": 60,
+      "Parameters": {
+        "jobId.$": "$.jobId"
+      },
+      "ResultPath": "$.publishContract",
+      "Next": "AssemblySuccess",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "PublishContractCreationFailed"
+        }
+      ]
+    },
+    "AssemblySuccess": {
+      "Type": "Pass",
+      "Result": {
+        "status": "complete",
+        "phase": "i-2",
+        "message": "Final assembly completed successfully"
+      },
+      "End": true
+    },
+    "ApprovalCheckFailed": {
+      "Type": "Fail",
+      "Error": "ApprovalCheckError",
+      "Cause": "Failed to check approval status"
+    },
+    "StatusUpdateFailed": {
+      "Type": "Fail",
+      "Error": "StatusUpdateError",
+      "Cause": "Failed to update status to assembling"
+    },
+    "MediaConvertJobFailed": {
+      "Type": "Fail",
+      "Error": "MediaConvertJobError",
+      "Cause": "Failed to trigger MediaConvert job"
+    },
+    "MediaConvertWaitFailed": {
+      "Type": "Fail",
+      "Error": "MediaConvertWaitError",
+      "Cause": "MediaConvert job did not complete successfully"
+    },
+    "FinalStatusUpdateFailed": {
+      "Type": "Fail",
+      "Error": "FinalStatusUpdateError",
+      "Cause": "Failed to update final status to complete"
+    },
+    "OutputVerificationFailed": {
+      "Type": "Fail",
+      "Error": "OutputVerificationError",
+      "Cause": "Output file verification failed"
+    },
+    "ThumbnailGenerationFailed": {
+      "Type": "Fail",
+      "Error": "ThumbnailGenerationError",
+      "Cause": "Failed to create thumbnail frame capture job"
+    },
+    "ThumbnailWaitFailed": {
+      "Type": "Fail",
+      "Error": "ThumbnailWaitError",
+      "Cause": "Thumbnail frame capture job did not complete successfully"
+    },
+    "ThumbnailSelectionFailed": {
+      "Type": "Fail",
+      "Error": "ThumbnailSelectionError",
+      "Cause": "Failed to select and normalize thumbnail frame"
+    },
+    "PublishContractCreationFailed": {
+      "Type": "Fail",
+      "Error": "PublishContractCreationError",
+      "Cause": "Failed to create publishing contract (publish.json)"
+    }
+  }
+}
