@@ -5,6 +5,10 @@ import type {
   BrainCoreVOStudioPlatformAccount,
   BrainCoreInfraVOStatusResponse,
 } from '../../client.js';
+import {
+  readBrainCoreAwsVideoPipelineStatus,
+  readBrainCoreVOStudioAnalyticsSummary,
+} from '../../client.js';
 import { getVOContextManager } from './VOContext.js';
 import { StatusPill, Badge } from '../Design/shadcn-components.js';
 
@@ -18,22 +22,28 @@ export class OverviewPanel {
   private accountStats: BrainCoreVOAccountStatsResponse | undefined;
   private accounts: BrainCoreVOStudioPlatformAccount[] = [];
   private voStatus: BrainCoreInfraVOStatusResponse | undefined;
+  private brainCoreUrl: string;
   private ctx = getVOContextManager();
   private unsubscribe: (() => void) | null = null;
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
   private loading = false;
 
-  constructor(container: HTMLElement, data: {
-    selector?: BrainCoreAiModelSelectorStatus;
-    analytics?: BrainCoreVOStudioAnalyticsSummary;
-    accountStats?: BrainCoreVOAccountStatsResponse;
-    accounts?: BrainCoreVOStudioPlatformAccount[];
-  }) {
+  constructor(
+    container: HTMLElement,
+    data: {
+      selector?: BrainCoreAiModelSelectorStatus;
+      analytics?: BrainCoreVOStudioAnalyticsSummary;
+      accountStats?: BrainCoreVOAccountStatsResponse;
+      accounts?: BrainCoreVOStudioPlatformAccount[];
+    },
+    brainCoreUrl: string = 'http://localhost:4877',
+  ) {
     this.container = container;
     this.selector = data.selector;
     this.analytics = data.analytics;
     this.accountStats = data.accountStats;
     this.accounts = data.accounts || [];
+    this.brainCoreUrl = brainCoreUrl;
 
     this.unsubscribe = this.ctx.subscribe(() => this.render());
     this.render();
@@ -46,15 +56,15 @@ export class OverviewPanel {
     this.loading = true;
     try {
       const [statusRes, analyticsRes] = await Promise.allSettled([
-        fetch(`${BASE_URL}/api/infra/video-orchestrator/status`).then((r) => r.json() as Promise<BrainCoreInfraVOStatusResponse>),
-        fetch(`${BASE_URL}/api/video-orchestrator/analytics/summary`).then((r) => r.json() as Promise<BrainCoreVOStudioAnalyticsSummary>),
+        readBrainCoreAwsVideoPipelineStatus(this.brainCoreUrl),
+        readBrainCoreVOStudioAnalyticsSummary(this.brainCoreUrl),
       ]);
 
-      if (statusRes.status === 'fulfilled') {
-        this.voStatus = statusRes.value;
+      if (statusRes.status === 'fulfilled' && statusRes.value && 'ok' in statusRes.value && statusRes.value.ok) {
+        this.voStatus = statusRes.value.data as BrainCoreInfraVOStatusResponse;
       }
-      if (analyticsRes.status === 'fulfilled') {
-        this.analytics = analyticsRes.value;
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value && 'ok' in analyticsRes.value && analyticsRes.value.ok) {
+        this.analytics = analyticsRes.value.data as BrainCoreVOStudioAnalyticsSummary;
       }
     } catch {
       // Silently continue with existing data

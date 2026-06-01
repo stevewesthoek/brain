@@ -45,6 +45,7 @@ export class VOShell {
   private unsubscribe: (() => void) | null = null;
   private contentContainer: HTMLElement | null = null;
   private currentTab: string = 'overview';
+  private brainCoreUrl: string;
   private data: {
     projects?: BrainCoreVOStudioProject[];
     accounts?: BrainCoreVOStudioPlatformAccount[];
@@ -55,18 +56,23 @@ export class VOShell {
     accountStats?: BrainCoreVOAccountStatsResponse;
   };
 
-  constructor(container: HTMLElement, data: {
-    projects?: BrainCoreVOStudioProject[];
-    accounts?: BrainCoreVOStudioPlatformAccount[];
-    pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
-    contentItems?: BrainCoreVOStudioContentItem[];
-    selector?: BrainCoreAiModelSelectorStatus;
-    analytics?: BrainCoreVOStudioAnalyticsSummary;
-    accountStats?: BrainCoreVOAccountStatsResponse;
-  }) {
+  constructor(
+    container: HTMLElement,
+    data: {
+      projects?: BrainCoreVOStudioProject[];
+      accounts?: BrainCoreVOStudioPlatformAccount[];
+      pipelineProfiles?: BrainCoreVOStudioPipelineProfile[];
+      contentItems?: BrainCoreVOStudioContentItem[];
+      selector?: BrainCoreAiModelSelectorStatus;
+      analytics?: BrainCoreVOStudioAnalyticsSummary;
+      accountStats?: BrainCoreVOAccountStatsResponse;
+    },
+    brainCoreUrl: string = 'http://localhost:4877',
+  ) {
     this.container = container;
     this.container.classList.add('vo-shell');
     this.data = data;
+    this.brainCoreUrl = brainCoreUrl;
 
     // Create and mount context bar
     const barContainer = document.createElement('div');
@@ -193,12 +199,16 @@ export class VOShell {
     switch (this.currentTab) {
       case 'overview':
         if (state.projectId && state.accountId) {
-          this.overviewPanel = new OverviewPanel(this.contentContainer, {
-            selector: this.data.selector,
-            analytics: this.data.analytics,
-            accountStats: this.data.accountStats,
-            accounts: this.data.accounts,
-          });
+          this.overviewPanel = new OverviewPanel(
+            this.contentContainer,
+            {
+              selector: this.data.selector,
+              analytics: this.data.analytics,
+              accountStats: this.data.accountStats,
+              accounts: this.data.accounts,
+            },
+            this.brainCoreUrl,
+          );
         } else {
           this.contentContainer.innerHTML = `
             <div class="vo-empty-state">

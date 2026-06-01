@@ -1336,7 +1336,7 @@ function renderActiveSectionContent(
         renderPipelinesSection(content, state, snapshot);
         break;
       case 'video-orchestrator':
-        renderVideoOrchestratorSection(content, state);
+        renderVideoOrchestratorSection(content, state, settings);
         break;
       case 'projects':
         renderProjectsSection(content, state, snapshot);
@@ -1865,18 +1865,23 @@ function renderMonitoringSection(content: HTMLElement, state: BrainConsoleViewSt
   renderCard(grid, `Synthetic Monitors (${synthetics.length})`, syntheticsCard);
 }
 
-function renderVideoOrchestratorSection(content: HTMLElement, state: BrainConsoleViewState): void {
+function renderVideoOrchestratorSection(content: HTMLElement, state: BrainConsoleViewState, settings: BrainConsoleSettings): void {
   const container = content.createDiv({ cls: 'vo-studio-container' });
+  const brainCoreUrl = settings?.brainCoreUrl ?? 'http://localhost:4877';
 
-  const voShell = new VOShell(container, {
-    projects: state.voStudioProjects?.items,
-    accounts: state.voStudioAccounts?.items,
-    pipelineProfiles: state.voStudioPipelineProfiles?.items,
-    contentItems: state.voStudioContentItems?.items,
-    selector: state.aiModelSelectorStatus,
-    analytics: state.voStudioAnalytics,
-    accountStats: state.voAccountStats,
-  });
+  const voShell = new VOShell(
+    container,
+    {
+      projects: state.voStudioProjects?.items,
+      accounts: state.voStudioAccounts?.items,
+      pipelineProfiles: state.voStudioPipelineProfiles?.items,
+      contentItems: state.voStudioContentItems?.items,
+      selector: state.aiModelSelectorStatus,
+      analytics: state.voStudioAnalytics,
+      accountStats: state.voAccountStats,
+    },
+    brainCoreUrl,
+  );
 }
 
 function renderVOContextBar(parent: HTMLElement, state: BrainConsoleViewState): void {
