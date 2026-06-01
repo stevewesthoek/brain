@@ -2583,32 +2583,6 @@ function bcOrchBuildResearchDrawer(container: HTMLElement, onClose: () => void):
   focusInput.value = _orchResearchState.focus;  // restore after re-render
   focusInput.addEventListener('input', () => { _orchResearchState.focus = focusInput.value; });
 
-  // Mode toggle: Video & Transcript vs Transcript only
-  const modeRow = left.createDiv();
-  modeRow.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-  left.createEl('div', { cls: 'bc-orch-label', text: 'Mode' });
-
-  const modeVideoRow = modeRow.createDiv();
-  modeVideoRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#ccc;cursor:pointer;';
-  const modeVideoCb = modeVideoRow.createEl('input') as HTMLInputElement;
-  modeVideoCb.type = 'radio';
-  modeVideoCb.name = 'bc-orch-mode';
-  modeVideoCb.value = 'full';
-  modeVideoCb.checked = true;
-  modeVideoRow.createEl('span', { text: '🎬 Video & Transcript' });
-  modeVideoRow.addEventListener('click', () => { modeVideoCb.checked = true; });
-
-  const modeTranscriptRow = modeRow.createDiv();
-  modeTranscriptRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:#888;cursor:pointer;';
-  const modeTranscriptCb = modeTranscriptRow.createEl('input') as HTMLInputElement;
-  modeTranscriptCb.type = 'radio';
-  modeTranscriptCb.name = 'bc-orch-mode';
-  modeTranscriptCb.value = 'transcript';
-  modeTranscriptRow.createEl('span', { text: '📝 Transcript only' });
-  modeTranscriptRow.addEventListener('click', () => { modeTranscriptCb.checked = true; });
-
-  left.appendChild(modeRow);
-
   const processBtn = left.createEl('button', { cls: 'bc-orch-btn bc-orch-btn--primary', text: '▶ Process' }) as HTMLButtonElement;
   processBtn.disabled = _orchResearchState.running;
 
@@ -2924,10 +2898,10 @@ function bcOrchRenderResult(outputArea: HTMLElement, data: Record<string, unknow
     });
   }
 
-  // 3. Transcription — collapsed by default
+  // 3. Transcription — open by default
   const transcript = (data.transcript_excerpt ?? data.transcript) as string | undefined;
   if (transcript) {
-    bcOrchFoldableSection(outputArea, 'TRANSCRIPTION', false, (body) => {
+    bcOrchFoldableSection(outputArea, 'TRANSCRIPTION', true, (body) => {
       const pre = body.createEl('pre', { cls: 'bc-orch-pre' });
       pre.style.maxHeight = 'none';
       pre.textContent = transcript;

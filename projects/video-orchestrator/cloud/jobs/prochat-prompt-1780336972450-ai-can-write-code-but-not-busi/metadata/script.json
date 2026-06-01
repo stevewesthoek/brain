@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780336972450-ai-can-write-code-but-not-busi",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780336972450",
+  "status": "draft",
+  "title": "AI can write code but not businesses",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780336972450-ai-can-write-code-but-not-busi/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-01T18:02:52.450Z",
+  "updatedAt": "2026-06-01T18:02:52.450Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by Steve"
+  }
+}

@@ -631,6 +631,38 @@ npm run dev  # Web app loads token from env var
 
 ---
 
+## NotebookLM CLI — Google OAuth
+
+Google NotebookLM authentication for video transcript extraction and document processing.
+
+| Credential | File | Purpose | Type | Rotation | Regenerate |
+|------------|------|---------|------|----------|-----------|
+| Browser profile | `~/.notebooklm/browser_profile/` | Persistent Chromium browser session for Google login flow | Directory | Persistent (refreshed at each login) | Run `notebooklm login` to re-authenticate |
+| Storage state (cookies/tokens) | `~/.notebooklm/storage_state.json` | Serialized authentication state including Google session cookies and SID tokens | JSON | Auto-refresh as needed by NotebookLM CLI; expires when Google session expires (~30 days typical) | Run `notebooklm login` if auth fails |
+| CLI access token | In-memory only | Access token fetched from storage_state on each CLI command (not persisted) | Ephemeral | Auto-refreshed per command | Automatic (via storage_state) |
+
+**Account Details:**
+- Identity: `stevewesthoek` (personal Google account)
+- Storage: `~/.notebooklm/` (directory created by NotebookLM CLI)
+- Scope: Full NotebookLM access (document upload, processing, API access)
+- Status: ✅ **ACTIVE** (authenticated 2026-06-01 at 19:28)
+- Auth method: Interactive browser login (`notebooklm login`)
+
+**Persistence guarantee:**
+- Browser profile and cookies are persisted to disk at `~/.notebooklm/`
+- Storage state includes 18 Google domain cookies (SID, APISID, secure tokens, etc.)
+- Token fetch check passed (2026-06-01 at 19:28 via `notebooklm auth check --test`)
+- No re-authentication required between CLI invocations or system restarts
+
+**When re-authentication is needed:**
+- Google session expires (~30 days): `notebooklm login` will prompt for browser re-auth
+- Storage file corrupted: delete `~/.notebooklm/` and run `notebooklm login` to recreate
+- CLI moved to different machine: storage state is machine-specific; run `notebooklm login` on new machine
+
+**Runbook:** `operations/runbooks/notebooklm-cli.md` (see for full troubleshooting and recovery)
+
+---
+
 ## Says the Bible — YouTube
 
 | Credential | File | Purpose | Rotation | Regenerate |

@@ -1,0 +1,19 @@
+{
+  "jobId": "says-the-bible-prompt-1780336991017-why-is-grace-more-powerful-tha",
+  "channelId": "says-the-bible",
+  "topicId": "says-the-bible-prompt-1780336991017",
+  "status": "draft",
+  "title": "Why is grace more powerful than judgment",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/says-the-bible-prompt-1780336991017-why-is-grace-more-powerful-tha/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-01T18:03:11.017Z",
+  "updatedAt": "2026-06-01T18:03:11.017Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": true,
+    "notes": "Draft created from prompt by Steve"
+  }
+}

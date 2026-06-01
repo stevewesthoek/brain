@@ -5,6 +5,7 @@ import type {
 } from '../../client.js';
 import { readBrainCoreAwsVideoPipelineStatus } from '../../client.js';
 import { StatusPill, Badge } from '../Design/shadcn-components.js';
+import { PromptDraftForm } from './PromptDraftForm.js';
 
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -15,6 +16,7 @@ export class AwsVideoPipelinePanel {
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
   private loading = false;
   private error: string | undefined;
+  private promptDraftForm: PromptDraftForm | null = null;
 
   constructor(container: HTMLElement, baseUrl: string = 'http://localhost:4877') {
     this.container = container;
@@ -49,6 +51,10 @@ export class AwsVideoPipelinePanel {
       clearInterval(this.refreshTimer);
       this.refreshTimer = null;
     }
+    if (this.promptDraftForm) {
+      this.promptDraftForm.destroy();
+      this.promptDraftForm = null;
+    }
   }
 
   private render(): void {
@@ -57,11 +63,13 @@ export class AwsVideoPipelinePanel {
         ${this.renderRefreshIndicator()}
         ${this.renderConnectionStatus()}
         ${this.renderPipelineHealth()}
+        ${this.renderPromptDraftFormSection()}
         ${this.renderChannelCards()}
         ${this.renderTopicBacklog()}
         ${this.renderErrors()}
       </div>
     `;
+    this.attachPromptDraftForm();
   }
 
   private renderRefreshIndicator(): string {
@@ -240,6 +248,40 @@ export class AwsVideoPipelinePanel {
         </div>
       </div>
     `;
+  }
+
+  private renderPromptDraftFormSection(): string {
+    if (!this.data?.channels || this.data.channels.length === 0) {
+      return '';
+    }
+
+    return `
+      <div class="aws-video-prompt-draft-section" style="
+        margin-top: 24px;
+        padding: 16px;
+        background: var(--background-secondary);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      ">
+        <div id="aws-video-prompt-draft-form" style="width: 100%;"></div>
+      </div>
+    `;
+  }
+
+  private attachPromptDraftForm(): void {
+    const formContainer = this.container.querySelector('#aws-video-prompt-draft-form') as HTMLElement | null;
+    if (!formContainer || !this.data?.channels) {
+      return;
+    }
+
+    if (this.promptDraftForm) {
+      this.promptDraftForm.destroy();
+    }
+
+    this.promptDraftForm = new PromptDraftForm(formContainer, this.data.channels, this.baseUrl);
+    this.promptDraftForm.setRefreshCallback(() => {
+      void this.fetchLiveData();
+    });
   }
 
   private renderErrors(): string {

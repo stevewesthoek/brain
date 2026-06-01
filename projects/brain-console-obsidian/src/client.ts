@@ -8602,23 +8602,18 @@ export async function readBrainCoreVOReadiness(baseUrl: string): Promise<HttpRes
 
 export interface BrainCoreVideoAnalysisResult {
   ok: boolean;
-  video_id?: string;
   title?: string;
-  duration_seconds?: number;
+  channel?: string;
   transcript?: string;
-  frame_count?: number;
-  frames_analyzed?: number;
-  frames_escalated?: number;
   human_summary?: string;
-  ai_summary?: string;
-  chapters?: Array<{ title: string; start_time: number; end_time?: number }>;
-  frame_analyses?: Array<{
-    timestamp: number;
-    frame_type: string;
-    description: string;
-    escalated: boolean;
-    error?: string;
-  }>;
+  ai_summary?: {
+    topic?: string;
+    speaker?: string | null;
+    key_claims?: string[];
+    evidence_type?: string;
+    confidence?: string;
+    research_hooks?: string[];
+  };
   error?: string;
   step?: string;
 }
@@ -8695,5 +8690,42 @@ export async function readBrainCoreAwsVideoPipelineChannelTopics(
   return fetchJson<BrainCoreChannelTopicsResponse>(
     normalizeBaseUrl(baseUrl),
     `/api/video-orchestrator/topic-intelligence/channels/${encodeURIComponent(channelId)}`,
+  );
+}
+
+export interface CreateJobFromPromptRequest {
+  channelId: string;
+  prompt: string;
+  requestedBy?: string;
+}
+
+export interface CreateJobFromPromptResponse {
+  ok: true;
+  jobId: string;
+  channelId: string;
+  topicId: string;
+  scriptStatus: 'draft';
+  approvalStatus: 'pending';
+  nextStep: 'approve_script';
+  createdAt: string;
+}
+
+export interface CreateJobFromPromptError {
+  ok: false;
+  code: 'invalid_channel' | 'invalid_prompt' | 'invalid_request' | 'write_failed' | 'config_missing';
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export type CreateJobFromPromptResult = CreateJobFromPromptResponse | CreateJobFromPromptError;
+
+export async function createBrainCoreVideoJobFromPrompt(
+  baseUrl: string,
+  input: CreateJobFromPromptRequest,
+): Promise<HttpResult<CreateJobFromPromptResult>> {
+  return fetchJson<CreateJobFromPromptResult>(
+    normalizeBaseUrl(baseUrl),
+    '/api/video-orchestrator/jobs/create-from-prompt',
+    { method: 'POST', body: JSON.stringify(input) },
   );
 }
