@@ -176,25 +176,19 @@ export async function getVideoOrchestratorStatus(): Promise<VideoOrchestratorSta
     totalTopics: prochatTopics.length,
   });
 
+  const recentOperationalJobs = await getRecentVideoJobs(10);
+
   return {
     channels,
-    recentJobs: [
-      {
-        jobId: 'prochat-os-040',
-        channelId: 'says-the-bible',
-        status: 'published',
-        videoId: 'O8-HEhG8IlE',
-      },
-      {
-        jobId: 'prochat-os-030',
-        channelId: 'says-the-bible',
-        status: 'published',
-        videoId: 'R2rq58QmfV0',
-      },
-    ],
+    recentJobs: recentOperationalJobs.map(job => ({
+      jobId: job.jobId,
+      channelId: job.channelId,
+      status: job.status,
+      ...(job.publishing.videoId ? { videoId: job.publishing.videoId } : {}),
+    })),
     pipelineReady: true,
-    generationStatus: 'ready',
-    publishingStatus: 'ready',
+    generationStatus: recentOperationalJobs.some(job => job.status === 'generating') ? 'in-progress' : 'ready',
+    publishingStatus: recentOperationalJobs.some(job => job.status === 'publishing') ? 'in-progress' : 'ready',
   };
 }
 
