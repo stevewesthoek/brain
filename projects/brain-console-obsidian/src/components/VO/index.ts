@@ -7,6 +7,7 @@ export { AccountsPanel } from './AccountsPanel.js';
 export { ContentCreationPanel } from './ContentCreationPanel.js';
 export { StudioPanel } from './StudioPanel.js';
 export { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
+export { ScriptApprovalPanel } from './ScriptApprovalPanel.js';
 export { ThumbnailStudioPanel } from './ThumbnailStudioPanel.js';
 export { DeadLetterReviewPanel } from './DeadLetterReviewPanel.js';
 export { JobProgressPanel } from './JobProgressPanel.js';

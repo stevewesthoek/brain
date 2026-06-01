@@ -4,6 +4,7 @@ import { PipelinesPanel } from './PipelinesPanel.js';
 import { AccountsPanel } from './AccountsPanel.js';
 import { HistoryPanel } from './HistoryPanel.js';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel.js';
+import { ScriptApprovalPanel } from './ScriptApprovalPanel.js';
 import { DeadLetterReviewPanel } from './DeadLetterReviewPanel.js';
 import { PackageStatusPanel } from './PackageStatusPanel.js';
 import { PublishingDashboardPanel } from './PublishingDashboardPanel.js';
@@ -32,6 +33,7 @@ export class VOShell {
   private accountsPanel: AccountsPanel | null = null;
   private historyPanel: HistoryPanel | null = null;
   private approvalQueuePanel: ApprovalQueuePanel | null = null;
+  private scriptApprovalPanel: ScriptApprovalPanel | null = null;
   private deadLetterReviewPanel: DeadLetterReviewPanel | null = null;
   private jobProgressPanel: JobProgressPanel | null = null;
   private agentConsolePanel: AgentConsolePanel | null = null;
@@ -87,6 +89,7 @@ export class VOShell {
         <button class="vo-tab vo-tab--active" data-tab="overview">Overview</button>
         <button class="vo-tab" data-tab="pipelines">Pipelines</button>
         <button class="vo-tab" data-tab="accounts">Accounts</button>
+        <button class="vo-tab" data-tab="scripts">Scripts</button>
         <button class="vo-tab" data-tab="approvals">Approvals</button>
         <button class="vo-tab" data-tab="jobs">Jobs</button>
         <button class="vo-tab" data-tab="dead-letter">Dead Letter</button>
@@ -151,6 +154,10 @@ export class VOShell {
     if (this.approvalQueuePanel) {
       this.approvalQueuePanel.destroy();
       this.approvalQueuePanel = null;
+    }
+    if (this.scriptApprovalPanel) {
+      this.scriptApprovalPanel.destroy();
+      this.scriptApprovalPanel = null;
     }
     if (this.deadLetterReviewPanel) {
       this.deadLetterReviewPanel.destroy();
@@ -247,6 +254,11 @@ export class VOShell {
             </div>
           `;
         }
+        break;
+
+      case 'scripts':
+        this.scriptApprovalPanel = new ScriptApprovalPanel(this.contentContainer, 'prochat');
+        this.scriptApprovalPanel.initialize();
         break;
 
       case 'approvals':
