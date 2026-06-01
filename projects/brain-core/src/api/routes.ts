@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel } from '../providers/video-orchestrator-provider.js';
+import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2193,6 +2193,10 @@ export async function routeRequest(
           } else if (parts[3]) {
             // GET /api/video-orchestrator/scripts/{jobId}
             const jobId = parts[3];
+            if (!isValidJobId(jobId)) {
+              sendJson(response, 400, { ok: false, error: 'Invalid jobId' });
+              return;
+            }
             const script = await getScript(jobId);
             if (!script) {
               sendJson(response, 404, { ok: false, error: `Script not found: ${jobId}` });
@@ -2233,6 +2237,34 @@ export async function routeRequest(
 }
 
 async function routePostRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  const scriptApproveMatch = /^\/api\/video-orchestrator\/scripts\/([^/]+)\/approve$/.exec(url.pathname);
+  if (scriptApproveMatch) {
+    const jobId = decodeURIComponent(scriptApproveMatch[1] ?? '');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', message: 'Request body must be valid JSON.', jobId });
+      return;
+    }
+
+    const result = await approveScript(jobId, body);
+    sendJson(response, scriptApprovalStatusCode(result), result);
+    return;
+  }
+
+  const scriptRequestChangesMatch = /^\/api\/video-orchestrator\/scripts\/([^/]+)\/request-changes$/.exec(url.pathname);
+  if (scriptRequestChangesMatch) {
+    const jobId = decodeURIComponent(scriptRequestChangesMatch[1] ?? '');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', message: 'Request body must be valid JSON.', jobId });
+      return;
+    }
+
+    const result = await requestScriptChanges(jobId, body);
+    sendJson(response, scriptApprovalStatusCode(result), result);
+    return;
+  }
+
   // ── Agent Orchestrator routes ─────────────────────────────────────────────
   if (url.pathname === '/api/agent/plan') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
@@ -3462,6 +3494,21 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
           message: 'POST route not found. Available POST routes: /actions/request, /ops/brain-core/restart, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject, /research/video-analyze.',
     },
   } satisfies BrainCoreErrorResponse);
+}
+
+function scriptApprovalStatusCode(result: { ok: boolean; code?: string }): number {
+  if (result.ok) return 200;
+  switch (result.code) {
+    case 'invalid_job_id':
+    case 'invalid_body':
+      return 400;
+    case 'script_missing':
+      return 404;
+    case 'already_published_or_uploaded':
+      return 409;
+    default:
+      return 500;
+  }
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<Record<string, unknown> | null> {
