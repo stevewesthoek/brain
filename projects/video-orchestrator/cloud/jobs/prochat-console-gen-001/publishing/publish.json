@@ -1,0 +1,13 @@
+{
+  "jobId": "prochat-console-gen-001",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Generated from approved draft — awaiting explicit publish approval",
+  "createdAt": "2026-06-01T18:38:22.120Z",
+  "generatedBy": "interactive-prompt",
+  "platforms": {
+    "youtube": {
+      "status": "pending"
+    }
+  }
+}

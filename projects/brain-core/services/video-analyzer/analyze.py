@@ -35,6 +35,8 @@ from datetime import datetime
 
 STATE_FILE = Path.home() / '.local' / 'brain' / 'state' / 'notebooklm-video-analyzer.json'
 AI_SELECTOR_URL = os.environ.get('AI_SELECTOR_URL', 'http://127.0.0.1:4890')
+NOTEBOOKLM_BIN = '/Users/Office/.local/bin/notebooklm'  # Full path to avoid PATH issues
+MIND_INBOX = Path.home() / 'Repos' / 'stevewesthoek' / 'mind' / 'capture' / 'inbox'
 
 def log(msg: str):
     """Log to stderr."""
@@ -45,9 +47,39 @@ def run_cmd(cmd, check=True):
     result = subprocess.run(cmd, capture_output=True, text=True, shell=False)
     return result.returncode, result.stdout, result.stderr
 
+def save_transcript_to_mind(youtube_url: str, title: str, transcript: str):
+    """Save transcript to mind/capture/inbox as markdown file. Return file path or None."""
+    try:
+        MIND_INBOX.mkdir(parents=True, exist_ok=True)
+
+        # Create filename from title + timestamp
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        safe_title = re.sub(r'[^a-z0-9]+', '-', title.lower())[:50].strip('-')
+        filename = f"{timestamp}-{safe_title}.md"
+        filepath = MIND_INBOX / filename
+
+        # Build markdown content
+        content = f"""# {title}
+
+**Source:** {youtube_url}
+**Extracted:** {datetime.now().isoformat()}
+**Tool:** Brain Console → Research Orchestrator → NotebookLM
+
+## Transcript
+
+{transcript}
+"""
+
+        filepath.write_text(content, encoding='utf-8')
+        log(f"Saved transcript to {filepath}")
+        return str(filepath)
+    except Exception as e:
+        log(f"Failed to save transcript to mind: {e}")
+        return None
+
 def check_notebooklm_auth():
     """Verify NotebookLM auth is valid. Return (ok, error_message)."""
-    code, out, err = run_cmd(['notebooklm', 'auth', 'check', '--test'])
+    code, out, err = run_cmd([NOTEBOOKLM_BIN, 'auth', 'check', '--test'])
     if code == 0:
         return True, None
     return False, "NotebookLM auth expired — run: notebooklm login"
@@ -278,7 +310,11 @@ def main():
     # Step 4: Structure transcript (optional — if fails, still return raw transcript)
     structured = structure_transcript(transcript, args.focus or None)
 
-    # Step 5: Return result
+    # Step 5: Save transcript to mind/capture/inbox
+    title = (structured.get("title") if structured else None) or "Untitled Video"
+    mind_path = save_transcript_to_mind(args.url, title, transcript)
+
+    # Step 6: Return result
     result = {
         "ok": True,
         "transcript": transcript,
@@ -286,6 +322,7 @@ def main():
         "channel": structured.get("channel") if structured else None,
         "human_summary": structured.get("human_summary") if structured else None,
         "ai_summary": structured.get("ai_summary") if structured else None,
+        "mind_path": mind_path,  # Path to transcript in mind/capture/inbox
     }
 
     print(json.dumps(result, ensure_ascii=False))

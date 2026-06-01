@@ -1,0 +1,8 @@
+{
+  "jobId": "test-pending-1780339096",
+  "channelId": "prochat",
+  "approval": {
+    "required": true,
+    "status": "pending"
+  }
+}

@@ -8614,6 +8614,7 @@ export interface BrainCoreVideoAnalysisResult {
     confidence?: string;
     research_hooks?: string[];
   };
+  mind_path?: string;
   error?: string;
   step?: string;
 }

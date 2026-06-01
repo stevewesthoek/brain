@@ -2909,6 +2909,16 @@ function bcOrchRenderResult(outputArea: HTMLElement, data: Record<string, unknow
     });
   }
 
+  // 4. Mind path indicator (where transcript was saved)
+  const mindPath = data.mind_path as string | undefined;
+  if (mindPath) {
+    const pathEl = outputArea.createEl('div', { cls: 'bc-orch-result-meta' });
+    pathEl.style.marginTop = '6px';
+    pathEl.style.fontSize = '11px';
+    pathEl.style.color = '#666';
+    pathEl.textContent = `📁 Saved: ${mindPath.split('/').slice(-1)[0]}`;
+  }
+
   // Rate limit usage (compact footer, no section)
   const usage = data.rate_limit_usage as Record<string, unknown> | undefined;
   if (usage) {
