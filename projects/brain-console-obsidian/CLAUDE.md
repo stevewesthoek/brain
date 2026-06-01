@@ -59,13 +59,55 @@ At some point `/Users/Office/mind/.obsidian/plugins/brain-console` was created a
 
 **Fix applied:** The ghost was deleted. The install script now hardcodes the single correct vault path. No scanning, no discovery.
 
-## Architecture
+## Architecture: brain vs mind split
+
+**Brain Console is a read-only UI.** All execution, configuration, and pipeline state lives in the brain repo. The console only displays it.
+
+```
+brain repo (stevewesthoek/brain)           mind repo (stevewesthoek/mind)
+────────────────────────────────           ────────────────────────────
+projects/brain-core/           ←──API──→  .obsidian/plugins/brain-console/
+  src/api/routes.ts (port 4877)              main.js  (compiled plugin)
+  src/providers/                             styles.css
+projects/video-orchestrator/
+  cloud/channels/               Brain Console is UI only. It does NOT:
+  cloud/jobs/                   - execute AWS pipelines
+  cloud/scripts/                - store channel config
+  cloud/channels/               - manage credentials
+operations/runbooks/            - hold job state
+docs/releases/                  All of that lives in brain/projects/
+```
+
+**Rule: Never write execution logic, config, or state in the mind repo.**
+The mind repo only holds: `CLAUDE.md`, plugin source in `brain-console-obsidian/` (brain repo), and the compiled plugin installed at `.obsidian/plugins/brain-console/`.
+
+**Correct flow for AWS Video Pipeline work:**
+1. Pipeline config → `brain/projects/video-orchestrator/cloud/channels/`
+2. Jobs / executions → `brain/projects/video-orchestrator/cloud/jobs/`
+3. API endpoint → `brain/projects/brain-core/src/api/routes.ts`
+4. UI panel → `brain/projects/brain-console-obsidian/src/components/VO/`
+5. Deploy UI → `npm run build && npm run package && npm run install:active-vault` (in brain repo)
+
+**Never put docs, scripts, or config in mind repo root.** Releases docs → `brain/docs/releases/`. Validation scripts → `brain/projects/video-orchestrator/cloud/scripts/`.
+
+## Architecture: plugin internals
 
 - Obsidian plugin (TypeScript, esbuild)
 - Connects to Brain Core HTTP API at `http://localhost:4877`
 - `src/main.ts` — plugin entry point, registers the view, sets `window.BRAIN_CONSOLE_BUILD_ID`
-- `src/view.ts` — all UI rendering. Contains `loadBrainConsoleViewState()` which fires 131 parallel endpoint fetches
+- `src/view.ts` — all UI rendering. Contains `loadBrainConsoleViewState()` which fires 135 parallel endpoint fetches
 - `src/client.ts` — all HTTP fetch functions and TypeScript interfaces
+
+**Critical: `fetchJson()` return shape.** All client functions return `HttpResult<T>`:
+```typescript
+interface HttpResult<T> {
+  value?: T;    // parsed JSON body — present on HTTP 2xx
+  error?: string; // error message — present on failure
+  status?: number;
+  url?: string;
+}
+```
+Always check `result.error` first, then `result.value?.ok`. **Never** check `result.ok` directly — that field does not exist on HttpResult.
 
 ## Critical: Promise.allSettled alignment
 
