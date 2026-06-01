@@ -8730,3 +8730,76 @@ export async function createBrainCoreVideoJobFromPrompt(
     { method: 'POST', body: JSON.stringify(input) },
   );
 }
+
+
+
+// I-8.3c AWS Video Operational Console contracts
+export type BrainCoreNormalizedVideoJobStatus =
+  | 'draft'
+  | 'awaiting_approval'
+  | 'approved'
+  | 'generating'
+  | 'generated'
+  | 'ready_to_publish'
+  | 'publishing'
+  | 'published'
+  | 'failed';
+
+export interface BrainCoreVideoJobSummary {
+  jobId: string;
+  channelId: string;
+  title: string;
+  status: BrainCoreNormalizedVideoJobStatus;
+  currentStep: string | null;
+  progress: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  approval: { status: string; required: boolean };
+  generation: { status: string; executionArn: string | null; startedAt: string | null; completedAt: string | null };
+  publishing: { status: string; videoId: string | null; url: string | null };
+  error: { step: string | null; message: string | null };
+  artifacts: { script: string | null; narration: string | null; finalVideo: string | null; thumbnail: string | null };
+}
+
+export interface BrainCoreVideoJobTimelineEvent {
+  step: string;
+  status: 'complete' | 'in_progress' | 'pending' | 'failed';
+  timestamp: string | null;
+  message: string;
+}
+
+export interface BrainCoreVideoJobTimeline {
+  jobId: string;
+  events: BrainCoreVideoJobTimelineEvent[];
+}
+
+export interface HttpResult<T> {
+  value?: T;
+  error?: string;
+  status?: number;
+}
+
+async function readBrainCoreJson<T>(baseUrl: string, path: string): Promise<HttpResult<T>> {
+  try {
+    const response = await fetch(`${baseUrl}${path}`);
+    const value = await response.json() as T;
+    if (!response.ok) {
+      return { value, status: response.status, error: `Brain Core returned ${response.status}` };
+    }
+    return { value, status: response.status };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function getBrainCoreRecentVideoJobs(baseUrl: string): Promise<HttpResult<{ jobs: BrainCoreVideoJobSummary[] }>> {
+  return readBrainCoreJson<{ jobs: BrainCoreVideoJobSummary[] }>(baseUrl, '/api/video-orchestrator/jobs/recent');
+}
+
+export async function getBrainCoreVideoJob(baseUrl: string, jobId: string): Promise<HttpResult<BrainCoreVideoJobSummary>> {
+  return readBrainCoreJson<BrainCoreVideoJobSummary>(baseUrl, `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`);
+}
+
+export async function getBrainCoreVideoJobTimeline(baseUrl: string, jobId: string): Promise<HttpResult<BrainCoreVideoJobTimeline>> {
+  return readBrainCoreJson<BrainCoreVideoJobTimeline>(baseUrl, `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`);
+}

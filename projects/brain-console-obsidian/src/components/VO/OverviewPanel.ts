@@ -61,9 +61,9 @@ export class OverviewPanel {
       ]);
 
       if (statusRes.status === 'fulfilled' && statusRes.value?.value?.ok) {
-        this.voStatus = statusRes.value.value.data as BrainCoreInfraVOStatusResponse;
+        this.voStatus = statusRes.value.value.data as unknown as BrainCoreInfraVOStatusResponse;
       }
-      if (analyticsRes.status === 'fulfilled' && analyticsRes.value?.value?.ok) {
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value?.value) {
         this.analytics = analyticsRes.value.value as BrainCoreVOStudioAnalyticsSummary;
       }
     } catch {
