@@ -30,6 +30,7 @@ import sys
 import re
 import subprocess
 import requests
+import tempfile
 from pathlib import Path
 from datetime import datetime
 
@@ -157,16 +158,26 @@ def extract_transcript(youtube_url):
 
     log("Processing complete. Extracting fulltext...")
 
-    # Extract fulltext
-    code, out, err = run_cmd([NOTEBOOKLM_BIN, 'source', 'fulltext', source_id])
-    if code != 0:
-        return None, f"Failed to get fulltext: {err}"
+    # Extract fulltext to temp file (avoids truncation from stdout)
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as tmp:
+        tmpfile = tmp.name
 
-    transcript = out.strip()
-    if not transcript:
-        return None, "Fulltext returned empty"
+    try:
+        code, _, err = run_cmd([NOTEBOOKLM_BIN, 'source', 'fulltext', source_id, '-o', tmpfile])
+        if code != 0:
+            return None, f"Failed to get fulltext: {err}"
 
-    log(f"Transcript extracted ({len(transcript)} chars)")
+        transcript = Path(tmpfile).read_text(encoding='utf-8').strip()
+        if not transcript:
+            return None, "Fulltext returned empty"
+
+        log(f"Transcript extracted ({len(transcript)} chars)")
+    finally:
+        # Cleanup temp file
+        try:
+            Path(tmpfile).unlink()
+        except:
+            pass
 
     # Cleanup source (non-fatal if fails)
     subprocess.run([NOTEBOOKLM_BIN, 'source', 'remove', source_id], capture_output=True)
