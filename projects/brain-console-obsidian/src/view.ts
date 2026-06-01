@@ -8989,6 +8989,12 @@ function renderAwsVideoPipelineSection(
   const panelContainer = content.createDiv({ cls: 'bc-aws-video-panel-container' });
   const panel = new AwsVideoPipelinePanel(panelContainer, brainCoreUrl);
 
+  // Store panel instance on container to keep it alive
+  (panelContainer as any).__awsVideoPanel = panel;
+
   // Cleanup on section change
-  content.addEventListener('beforeunload', () => panel.destroy());
+  content.addEventListener('beforeunload', () => {
+    const storedPanel = (panelContainer as any).__awsVideoPanel as AwsVideoPipelinePanel | undefined;
+    if (storedPanel) storedPanel.destroy();
+  });
 }
