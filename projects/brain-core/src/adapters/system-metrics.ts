@@ -12,16 +12,6 @@ export interface SystemMetricsCodexWindow {
   resetsAt: string | null;
 }
 
-export interface SystemMetricsGemini {
-  usedPercent: number;
-  remainingPercent: number;
-  callsToday: number;
-  callsUsed: number;
-  callsRemaining: number;
-  resetsAt: string;
-  hoursUntilReset: number;
-}
-
 export interface ClaudeModelUsage {
   inputTokens: number;
   outputTokens: number;
@@ -52,7 +42,6 @@ export interface SystemMetrics {
     sevenDay: SystemMetricsCodexWindow;
     asOf: string | null;
   };
-  gemini?: SystemMetricsGemini;
   claudeApi?: ClaudeApiMetrics;
 }
 
@@ -173,45 +162,6 @@ function readCodexUsage(): { fiveHour: SystemMetricsCodexWindow; sevenDay: Syste
   return { fiveHour: bestFiveHour, sevenDay: bestSevenDay, asOf: bestAsOf };
 }
 
-const GEMINI_FREE_TIER_DAILY_LIMIT = 1500;
-
-interface GeminiRateLimitsFile {
-  calls_today: number[];
-  video_seconds_today?: number;
-  day?: string;
-}
-
-function readGeminiUsage(): SystemMetricsGemini | undefined {
-  try {
-    const filePath = path.join(os.homedir(), '.local', 'video-orchestrator', 'state', 'gemini-rate-limits.json');
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(raw) as GeminiRateLimitsFile;
-
-    const callsUsed = Array.isArray(data.calls_today) ? data.calls_today.length : 0;
-    const callsRemaining = Math.max(0, GEMINI_FREE_TIER_DAILY_LIMIT - callsUsed);
-    const usedPercent = Math.min(100, Math.round((callsUsed / GEMINI_FREE_TIER_DAILY_LIMIT) * 100));
-    const remainingPercent = Math.max(0, 100 - usedPercent);
-
-    // Reset is at 00:00 UTC the next day.
-    const now = new Date();
-    const resetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0));
-    const msUntilReset = resetDate.getTime() - now.getTime();
-    const hoursUntilReset = Math.max(0, Math.round(msUntilReset / 3600000 * 10) / 10);
-
-    return {
-      usedPercent,
-      remainingPercent,
-      callsToday: GEMINI_FREE_TIER_DAILY_LIMIT,
-      callsUsed,
-      callsRemaining,
-      resetsAt: resetDate.toISOString(),
-      hoursUntilReset,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
 interface ClaudeUsageFile {
   generatedAt: string;
   resetAt: string;
@@ -268,7 +218,6 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
   const load = os.loadavg();
   const { usedGb, totalGb } = getMemoryStats(memFreePercent);
   const codex = readCodexUsage();
-  const gemini = readGeminiUsage();
   const claudeApi = readClaudeApiUsage();
 
   return {
@@ -281,7 +230,6 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
     gpuCoreCount,
     uptimeSeconds: Math.floor(process.uptime()),
     codex,
-    ...(gemini !== undefined ? { gemini } : {}),
     ...(claudeApi !== undefined ? { claudeApi } : {}),
   };
 }

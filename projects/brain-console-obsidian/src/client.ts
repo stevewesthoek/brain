@@ -179,7 +179,7 @@ export interface BrainCoreSchedulerJobSummary {
 
 export interface BrainCoreSessionSummary {
   id: string;
-  tool: 'claude' | 'codex' | 'gemini' | 'unknown';
+  tool: 'claude' | 'codex' | 'unknown';
   repo?: string;
   title: string;
   updatedAt?: string;
@@ -8213,16 +8213,6 @@ export interface BrainCoreSystemMetricsCodexWindow {
   resetsAt: string | null;
 }
 
-export interface BrainCoreSystemMetricsGemini {
-  usedPercent: number;
-  remainingPercent: number;
-  callsToday: number;
-  callsUsed: number;
-  callsRemaining: number;
-  resetsAt: string;
-  hoursUntilReset: number;
-}
-
 export interface BrainCoreClaudeModelUsage {
   inputTokens: number;
   outputTokens: number;
@@ -8253,7 +8243,6 @@ export interface BrainCoreSystemMetrics {
     sevenDay: BrainCoreSystemMetricsCodexWindow;
     asOf: string | null;
   };
-  gemini?: BrainCoreSystemMetricsGemini;
   claudeApi?: BrainCoreClaudeApiMetrics;
 }
 

@@ -1055,7 +1055,6 @@ function renderSystemMetricsBanner(state: BrainConsoleViewState): string {
 
   const c5 = m.codex.fiveHour;
   const c7 = m.codex.sevenDay;
-  const gm = m.gemini;
   const ca = m.claudeApi;
 
   // Helper function to format Claude API cost percentage
@@ -1134,22 +1133,6 @@ function renderSystemMetricsBanner(state: BrainConsoleViewState): string {
         <div class="bc-mc-sub">No data yet</div>
       </div>`;
 
-  const geminiCard = gm
-    ? `<div class="bc-mc">
-        <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-          <div class="bc-mc-label">GEMINI · FREE</div>
-          <div class="bc-mc-badge">RESETS IN ${formatMetricsCountdown(gm.resetsAt)}</div>
-        </div>
-        <div class="bc-mc-value" style="color:${metricsCodexColor(gm.remainingPercent)}">${gm.remainingPercent}%</div>
-        <div class="bc-mc-sub">${gm.callsRemaining}/${gm.callsToday} calls · ${formatMetricsResetExact(gm.resetsAt)}</div>
-        <div class="bc-bar"><div class="bc-bar-fill" style="width:${gm.remainingPercent}%;background:${metricsCodexColor(gm.remainingPercent)}"></div></div>
-      </div>`
-    : `<div class="bc-mc">
-        <div class="bc-mc-label">GEMINI · FREE</div>
-        <div class="bc-mc-value" style="color:var(--text-muted);font-size:14px">–</div>
-        <div class="bc-mc-sub">No data yet</div>
-      </div>`;
-
   const claudeHaikuCard = ca
     ? `<div class="bc-mc">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
@@ -1198,7 +1181,7 @@ function renderSystemMetricsBanner(state: BrainConsoleViewState): string {
         <div class="bc-mc-sub">No data yet</div>
       </div>`;
 
-  return `<div class="bc-metrics-banner">${cpuCard}${memCard}${gpuCard}${uptimeCard}${codex5Card}${codex7Card}${geminiCard}${claudeHaikuCard}${claudeSonnetCard}${claudeOpusCard}</div>`;
+  return `<div class="bc-metrics-banner">${cpuCard}${memCard}${gpuCard}${uptimeCard}${codex5Card}${codex7Card}${claudeHaikuCard}${claudeSonnetCard}${claudeOpusCard}</div>`;
 }
 
 export function renderBrainConsoleView(

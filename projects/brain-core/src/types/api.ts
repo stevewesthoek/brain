@@ -10719,7 +10719,7 @@ export interface InfraVOStorageCleanupResponse {
 
 // ─── Agent Orchestrator ───────────────────────────────────────────────────────
 
-export type AgentOrchestratorExecutorType = 'gemini' | 'claude' | 'codex' | 'bash' | 'n8n';
+export type AgentOrchestratorExecutorType = 'claude' | 'codex' | 'bash' | 'n8n';
 export type AgentOrchestratorTaskType =
   | 'ai_analysis'
   | 'ai_generation'
