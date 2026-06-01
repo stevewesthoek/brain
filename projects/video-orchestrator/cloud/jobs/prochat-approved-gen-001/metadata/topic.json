@@ -1,0 +1,8 @@
+{
+  "jobId": "prochat-approved-gen-001",
+  "channelId": "prochat",
+  "topicId": "prochat-code-generation-001",
+  "title": "Code Generation Flow",
+  "description": "Proof job for I-7.9 approved script generation trigger",
+  "createdAt": "2026-06-01T00:00:00Z"
+}
