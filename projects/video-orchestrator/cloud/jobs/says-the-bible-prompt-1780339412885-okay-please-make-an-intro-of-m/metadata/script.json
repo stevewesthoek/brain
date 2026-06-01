@@ -1,0 +1,19 @@
+{
+  "jobId": "says-the-bible-prompt-1780339412885-okay-please-make-an-intro-of-m",
+  "channelId": "says-the-bible",
+  "topicId": "says-the-bible-prompt-1780339412885",
+  "status": "draft",
+  "title": "Okay, please make an intro of my business called ProChat that builds servers for",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/says-the-bible-prompt-1780339412885-okay-please-make-an-intro-of-m/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-01T18:43:32.885Z",
+  "updatedAt": "2026-06-01T18:43:32.885Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": true,
+    "notes": "Draft created from prompt by brain-console"
+  }
+}

@@ -1,203 +1,270 @@
-# I-8.3 Plan: Generate Approved Draft Video Artifacts
+# I-8.3c Plan: AWS Video Operational Console
 
 ## Context
 
-I-8.1 (prompt-to-draft API) is complete. I-8.3 extends the existing `generateApprovedScript` function — which currently only validates readiness and returns a stub — into a real generation trigger that: copies narration, starts the AWS Step Functions workflow, writes status/publish metadata, and returns a proper response. Phase B then surfaces a Generate Video button in Brain Console.
+The AWS Video tab is currently a static topic/channel dashboard (AwsVideoPipelinePanel). I-8.3c upgrades it into an operational control tower: real job list, job detail, generate trigger, and status polling. Brain Core gets 4 new read endpoints. Brain Console gets a redesigned panel.
 
 ---
 
-## Phase A — Brain repo generation endpoint
+## Phase A — Brain Core: Operational Job API
 
-### Files to change
+### File: `projects/brain-core/src/providers/video-orchestrator-provider.ts`
 
-1. **`projects/brain-core/src/providers/video-orchestrator-provider.ts`**
+**New interfaces to add** (after existing interfaces, before `generateApprovedScript`):
 
-   **Interface updates** (expand `GenerationTriggerResponse`):
-   ```typescript
-   export interface GenerationTriggerResponse {
-     ok: true;
-     jobId: string;
-     generationStatus: 'complete' | 'started';
-     generationStarted: boolean;         // keep for backwards compat
-     executionArn?: string;
-     finalVideoKey?: string;
-     thumbnailKey?: string;
-     publishStatus: 'pending';
-     publishBlocked: true;
-   }
-   ```
+```typescript
+export interface NormalizedJobStatus =
+  'draft' | 'awaiting_approval' | 'approved' | 'generating' |
+  'generated' | 'ready_to_publish' | 'publishing' | 'published' | 'failed';
 
-   **New imports** at top of file:
-   ```typescript
-   import { mkdir, writeFile, readFile, access } from 'fs/promises';
-   import { execFile } from 'node:child_process';
-   import { promisify } from 'node:util';
-   ```
-   (Note: `writeFile`/`readFile`/`access` are already imported — only `mkdir` and `execFile`/`promisify` are new)
+export interface VideoJobSummary {
+  jobId: string;
+  channelId: string;
+  title: string;
+  status: NormalizedJobStatus;
+  currentStep: string | null;
+  progress: number; // 0-100
+  createdAt: string | null;
+  updatedAt: string | null;
+  approval: { status: string; required: boolean };
+  generation: { status: string; executionArn: string | null; startedAt: string | null; completedAt: string | null };
+  publishing: { status: string; videoId: string | null; url: string | null };
+  error: { step: string | null; message: string | null };
+  artifacts: { script: string | null; narration: string | null; finalVideo: string | null; thumbnail: string | null };
+}
 
-   **New private helpers** (added near getVideoOrchestratorRoot):
-   ```typescript
-   const execFileAsync = promisify(execFile);
+export interface VideoJobTimelineEvent {
+  step: string;
+  status: 'complete' | 'in_progress' | 'pending' | 'failed';
+  timestamp: string | null;
+  message: string;
+}
 
-   const AWS_REGION = 'eu-north-1';
-   const S3_BUCKET = 'prochat-video-dev-909439522876-eu-north-1-an';
-   const STATE_MACHINE_ARN = 'arn:aws:states:eu-north-1:909439522876:stateMachine:prochat-video-skeleton-dev';
-   const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
-   ```
+export interface VideoJobTimeline {
+  jobId: string;
+  events: VideoJobTimelineEvent[];
+}
+```
 
-   **Upgrade `generateApprovedScript`** — after validations pass (line 561, current stub return), add:
+**Status normalization logic** (private helper `normalizeJobStatus`):
+```
+publishStatus = "uploaded"              → "published"
+publishStatus = "publishing"            → "publishing"
+statusJson.status = "complete" OR
+  completedSteps has "thumbnail_generated" → "ready_to_publish"
+statusJson.status = "generating"        → "generating"
+approval.status = "approved" (no gen)   → "approved"
+approval.status = "pending" + source = interactive-prompt + wordCount=0 → "draft"
+approval.status = "pending"             → "awaiting_approval"
+statusJson.failedStep exists            → "failed"
+default                                 → "draft"
+```
 
-   a. Write `metadata/status.json` with `{ status: "generating", currentStep: "narration_started", startedAt: new Date().toISOString() }`  
-      — use `mkdir` with `{ recursive: true }` to create `metadata/` dir, then `writeFile`
+**Progress mapping** (private helper `statusToProgress`):
+```
+draft:0 | awaiting_approval:20 | approved:30 | generating:50 |
+generated:70 | ready_to_publish:80 | publishing:90 | published:100 | failed:0
+```
 
-   b. Copy narration from S3 fixture:
-      ```typescript
-      const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
-      await execFileAsync('aws', [
-        's3', 'cp',
-        `s3://${S3_BUCKET}/${NARRATION_FIXTURE_KEY}`,
-        `s3://${S3_BUCKET}/${narrationKey}`,
-        '--region', AWS_REGION, '--no-cli-pager'
-      ]);
-      ```
-      On failure: return `{ ok: false, code: 'narration_failed', message: ..., jobId }`
+**New exported functions** (add after `getScriptsByChannel`):
 
-   c. Start Step Functions execution:
-      ```typescript
-      const executionName = `console-gen-${jobId}-${Date.now()}`;
-      const sfInput = JSON.stringify({
-        jobId,
-        videoKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
-        audioKey: narrationKey,
-      });
-      const { stdout } = await execFileAsync('aws', [
-        'stepfunctions', 'start-execution',
-        '--state-machine-arn', STATE_MACHINE_ARN,
-        '--name', executionName,
-        '--input', sfInput,
-        '--region', AWS_REGION,
-        '--query', 'executionArn',
-        '--output', 'text',
-        '--no-cli-pager',
-      ]);
-      const executionArn = stdout.trim();
-      ```
-      On failure: return `{ ok: false, code: 'workflow_start_failed', message: ..., jobId }`
+1. **`getRecentVideoJobs(limit?: number): Promise<VideoJobSummary[]>`**
+   - `readdir(jobsPath)` (same dynamic import pattern as `getScriptsByChannel`)
+   - For each dir: `Promise.all([readOptionalJson(script), readOptionalJson(topic), readOptionalJson(status), readOptionalJson(publish)])` — all use `getJobMetadataPath` or `getJobPublishingPath`
+   - Skip dirs where script.json not readable (test fixtures, non-job dirs)
+   - Build `VideoJobSummary` via `normalizeJobStatus` 
+   - Sort by `updatedAt ?? createdAt` descending
+   - Return top `limit` (default 20)
 
-   d. Update `status.json` with `{ status: "generating", executionArn, currentStep: "workflow_started" }`
+2. **`getVideoJob(jobId: string): Promise<VideoJobSummary | null>`**
+   - Same pattern as `getRecentVideoJobs` but for single job
+   - Returns null if script.json missing or jobId invalid
 
-   e. Write `publish.json` to both `metadata/` and `publishing/`:
-      ```json
-      {
-        "jobId": "<jobId>",
-        "publishStatus": "pending",
-        "publishBlocked": true,
-        "reason": "Generated from approved draft — awaiting explicit publish approval",
-        "createdAt": "<iso>",
-        "generatedBy": "interactive-prompt",
-        "platforms": { "youtube": { "status": "pending" } }
-      }
-      ```
-      — `mkdir` recursive for `publishing/` then `writeFile` both locations
+3. **`getVideoJobTimeline(jobId: string): Promise<VideoJobTimeline | null>`**
+   - Load all metadata files for the job
+   - Infer timeline events from metadata existence/fields:
+     - topic.json exists → `draft_created` at `topic.createdAt`
+     - script.approval.status = "approved" → `script_approved` at `approval.approvedAt`
+     - completedSteps includes "narration_generated" OR assets.narration → `narration_created`
+     - completedSteps includes "video_assembled" OR assets.finalVideo → `video_generated`
+     - completedSteps includes "thumbnail_generated" OR assets.thumbnail → `thumbnail_generated`
+     - publish.publishStatus = "pending" + status.status = "complete" → `ready_to_publish`
+     - publish.platforms.youtube.status = "uploaded" → `published`
+   - Each event: `{ step, status: "complete"|"in_progress"|"pending"|"failed", timestamp, message }`
 
-   f. Return:
-      ```typescript
-      return {
-        ok: true,
-        jobId,
-        generationStatus: 'started',
-        generationStarted: true,
-        executionArn,
-        publishStatus: 'pending',
-        publishBlocked: true,
-      };
-      ```
+4. **`getVideoJobArtifacts(jobId: string): Promise<Record<string, unknown> | null>`**
+   - Read `metadata/assets.json` via `readOptionalJson`
+   - Fall back to inferring from `status.json` `finalVideoKey`/`thumbnailKey` if assets.json missing
+   - Returns parsed JSON or null
 
-2. **Create fixture job: `projects/video-orchestrator/cloud/jobs/prochat-console-gen-001/`**
-   - `metadata/script.json` — approval.status: "approved", approvedBy: "Steve", channelId: "prochat", wordCount: 150
-   - `metadata/topic.json` — topicId: "prochat-console-gen-001-topic", title: "Why AI Won't Replace Founders"
-   - `scripts/script.md` — brief placeholder content
+### File: `projects/brain-core/src/api/routes.ts`
 
-3. **New validation script: `projects/video-orchestrator/cloud/scripts/validate-generate-approved-draft.sh`**
+Add imports for new functions. Add 4 route blocks using regex pattern:
 
-   Tests (calls `http://localhost:4877`):
-   - Pending script rejected → `code: script_not_approved`
-   - POST generate on prochat-console-gen-001 → `ok: true`
-   - Check `metadata/status.json` exists with `status: "generating"` or `status: "complete"`
-   - Check `publishing/publish.json` with `publishStatus: "pending"`
-   - Check `metadata/publish.json` with `publishStatus: "pending"`
-   - Verify no `videoId` or `url` in publish.json (no YouTube upload)
+```
+GET /api/video-orchestrator/jobs/recent          → exact match
+GET /api/video-orchestrator/jobs/{jobId}         → regex
+GET /api/video-orchestrator/jobs/{jobId}/timeline → regex  
+GET /api/video-orchestrator/jobs/{jobId}/artifacts → regex
+```
 
-4. **Docs: `docs/releases/i-8.3-generate-approved-draft.md`**
+**Critical ordering**: Place `recent` exact match BEFORE the `{jobId}` regex, otherwise "recent" is treated as a jobId.
 
-5. **TypeScript build** — `npm run build` in brain-core, verify no errors
+Import additions to `routes.ts`:
+```typescript
+import { ..., getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts } from '../providers/video-orchestrator-provider.js';
+```
 
-6. **Commit:** `feat: generate approved draft video artifacts`
+### New file: `projects/video-orchestrator/cloud/scripts/validate-operational-job-api.sh`
+
+Tests:
+1. `GET /api/video-orchestrator/jobs/recent` returns array
+2. `prochat-console-gen-001` appears in recent jobs
+3. `prochat-real-001` appears with status "published" (has youtube videoId)
+4. `GET /api/video-orchestrator/jobs/prochat-real-001` returns full normalized job
+5. Timeline endpoint returns events array with at least draft_created
+6. Artifacts endpoint returns non-null for prochat-real-001
+7. Missing job returns null/404 without crash
+8. No secrets (tokens/credentials) in any response
+
+### New doc: `docs/releases/i-8.3c-operational-job-api.md`
 
 ---
 
-## Phase B — Brain Console: Generate Video button
+## Phase B — Brain Console: Operational Dashboard Redesign
 
-Plugin source lives at: `/Users/Office/Repos/stevewesthoek/brain/projects/brain-console-obsidian/`
+### File: `projects/brain-console-obsidian/src/components/VO/AwsVideoPipelinePanel.ts`
 
-### Files to change
+Complete redesign of the render loop. Keep class structure, constructor, `initialize()`/`destroy()` patterns. Replace all `render...()` methods with operational layout.
 
-1. **New: `src/components/VO/ScriptApprovalPanel.ts`**
+**New state added to class:**
+```typescript
+private selectedJobId: string | null = null;
+private selectedJob: NormalizedJobSummary | null = null;
+private recentJobs: NormalizedJobSummary[] = [];
+private pollingInterval: ReturnType<typeof setInterval> | null = null;
+```
 
-   Follows `ApprovalQueuePanel.ts` pattern. Shows all scripts for the selected channel (calls `GET /api/video-orchestrator/scripts/channels/{channelId}`), renders per-script rows with:
-   - Title, script status badge, approval status badge
-   - Generate Video button: enabled only if `approval.status === 'approved'`, disabled for pending/changes_requested
-   - Click: confirmation modal ("Generate video artifacts only. This will not publish to YouTube.") → POST `/api/video-orchestrator/scripts/{jobId}/generate` → show `generationStatus`, `executionArn`
+**New layout order** (inside `render()` → `innerHTML` replacement):
+1. Refresh bar (keep existing)
+2. Pipeline health + counters (compact, keep existing data)
+3. **[NEW] Recent Jobs panel** — job list from `/api/video-orchestrator/jobs/recent`
+4. **[NEW] Selected Job Detail panel** — full detail + actions for selectedJobId
+5. **[NEW] Create Draft compact card** — single "Create Draft Video" button, opens modal on click
+6. Topic Candidates section (moved below, keep existing)
+7. Channel cards (keep existing, compact)
 
-   Uses direct `fetch()` with `BASE_URL = 'http://localhost:4877'` (same pattern as all VO panels — not `client.ts`)
+**New fetch calls added:**
+```typescript
+const recentJobsRes = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/recent`);
+// after job selected:
+const jobDetailRes = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/${jobId}`);
+const timelineRes = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/${jobId}/timeline`);
+```
 
-   No AWS imports. No S3 imports. Brain Core API only.
+**Recent Jobs panel** (`renderRecentJobs()`):
+- Table/list with columns: status badge, jobId (truncated), channel, title, step, age, nextAction
+- Click row → set `selectedJobId`, call `loadJobDetail(jobId)`, re-render
+- Empty state: "No jobs yet. Create a draft to get started."
 
-2. **`src/components/VO/VOShell.ts`** — add `scripts` tab button + `case 'scripts': return new ScriptApprovalPanel(...).render(container)`
+**Selected Job Detail** (`renderSelectedJobDetail()`):
+- Show all normalized fields
+- Approval section: status badge + "Approve" / "Request Changes" buttons (if pending)
+- Generation section: status, executionArn (if any), step
+- Publishing section: status, videoId/url (if any)
+- Artifacts section: script, narration, finalVideo, thumbnail (key paths)
+- Timeline: event list with status icons
+- Error box: red, shows `error.step` + `error.message`, persists
+- **Generate button**: visible only if `approval.status === 'approved'` AND status NOT in ['generating','generated','ready_to_publish','publishing','published']
+  - On click: `confirm("Generate video artifacts only. This will not publish to YouTube.")` → POST `/api/video-orchestrator/scripts/${jobId}/generate` → reload selected job + set polling
 
-3. **`src/components/VO/index.ts`** — export `ScriptApprovalPanel`
+**Create Draft modal** (`renderCreateDraftCard()`):
+- Single "Create Draft Video" button in compact card
+- On click: renders modal overlay with channel dropdown + prompt textarea + Create/Cancel
+- On success: add job to recentJobs, auto-select the new job, show "next: Approve Script"
+- Uses same `createBrainCoreVideoJobFromPrompt` call as PromptDraftForm
 
-4. **Build + package + install:**
-   ```bash
-   cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console-obsidian
-   npm run build && npm run package && npm run install:active-vault
-   ```
+**Status polling** (`startPolling()` / `stopPolling()`):
+- Condition: `selectedJob.status === 'generating' || selectedJob.status === 'publishing'`
+- `setInterval(10000)` → calls `loadJobDetail(selectedJobId)`
+- Always `stopPolling()` before `startPolling()` to avoid stacking intervals
+- Stop polling when status changes to terminal state (generated/ready_to_publish/published/failed)
+- Show "ETA: usually 1–5 minutes" when polling
 
-5. **New validation: `projects/video-orchestrator/cloud/scripts/validate-brain-console-generate-button.sh`**
+**PromptDraftForm.ts**: Keep the file, no changes needed. The create draft modal reuses the same POST endpoint directly without needing the full PromptDraftForm class.
 
-   Static checks (no live Obsidian needed):
-   - `grep -r "GenerateVideo\|generate-video\|generateVideo\|Generate Video" src/` → must find button
-   - `grep -r "POST.*generate\|generate.*POST" src/` → must find API call
-   - `grep -r "aws\|s3\|stepfunctions" src/components/VO/ScriptApprovalPanel.ts` → must return NOTHING
-   - `grep -r "publish-button\|PublishButton\|publishVideo" src/` → must return NOTHING (no publish button added)
-   - `npm run typecheck` passes
+### File: `projects/brain-console-obsidian/src/client.ts`
 
-6. **Commit:** `feat: add brain console generate video action`
+Add TypeScript interfaces and API functions matching Brain Core's new response shapes:
+```typescript
+interface BrainCoreVideoJobSummary { jobId, channelId, title, status, ... }
+interface BrainCoreVideoJobTimeline { jobId, events: [...] }
+async function getBrainCoreRecentVideoJobs(baseUrl): Promise<HttpResult<{jobs: BrainCoreVideoJobSummary[]}>>
+async function getBrainCoreVideoJob(baseUrl, jobId): Promise<HttpResult<BrainCoreVideoJobSummary>>
+async function getBrainCoreVideoJobTimeline(baseUrl, jobId): Promise<HttpResult<BrainCoreVideoJobTimeline>>
+```
+
+**Note**: `AwsVideoPipelinePanel` currently uses direct `fetch()` + `res.json()` pattern, NOT `client.ts`. For consistency with that panel's pattern, new API calls can be raw fetch too. Client.ts interfaces can be added for type safety without being required.
+
+### New validation: `projects/video-orchestrator/cloud/scripts/validate-brain-console-operational-dashboard.sh`
+
+Static checks only (in brain repo scripts dir, per CLAUDE.md convention):
+- `AwsVideoPipelinePanel.ts` contains `recentJobs`/`selectedJobId` state fields
+- `renderRecentJobs` function exists
+- `renderSelectedJobDetail` function exists
+- Create Draft modal pattern exists (confirm/create)
+- Generate button found
+- No `aws` imports in AwsVideoPipelinePanel.ts
+- No S3 direct reads
+- `npm run typecheck` passes (or build passes)
+
+### Build + deploy (always in this order):
+```bash
+cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console-obsidian
+npm run build && npm run package && npm run install:active-vault
+```
+
+---
+
+## Phase C — Proof
+
+Create `docs/releases/i-8.3c-operational-console-proof.md` in brain repo showing:
+- Screenshot-equivalent textual proof of each Phase C step
+- API responses from curl commands
+- No YouTube publishing occurred
 
 ---
 
 ## Key reuse
 
-- `getVideoOrchestratorRoot()` — exists at line 4, reused for all path construction
-- `getJobMetadataPath(jobId, file)` — exists at line 244, reused
-- `getJobPublishingPath(jobId)` — exists at line 248, returns `publishing/publish.json` path
-- `isValidJobId(jobId)` — exists at line 240, already called first in `generateApprovedScript`
-- `fs/promises` `writeFile`, `readFile`, `access` — already imported
-- `mkdir` from `fs/promises` — add import (used in `createJobFromPrompt` via dynamic sync import — standardize to static async)
-- `execFile` from `node:child_process` — new import, pattern follows `local-app-action-executor.ts`
+- `getVideoOrchestratorRoot()` — existing, line 6
+- `getJobMetadataPath(jobId, file)` — existing, line 253
+- `getJobPublishingPath(jobId)` — existing, line 257
+- `readOptionalJson(path)` — existing, line 261
+- `isValidJobId(jobId)` — existing, line 249
+- Dynamic `fs.readdir` pattern — from `getScriptsByChannel`, line 224
+- `BASE_URL` / `baseUrl` pattern — existing in all VO panels
+- POST `/api/video-orchestrator/scripts/{jobId}/generate` — existing from I-8.3A
 
 ---
 
 ## Verification
 
 Phase A:
-1. Create prochat-console-gen-001 fixture
-2. POST `/api/video-orchestrator/scripts/prochat-console-gen-001/generate` → `{ ok: true, generationStatus: "started", executionArn: "...", publishStatus: "pending" }`
-3. POST `/api/video-orchestrator/scripts/<pending-job>/generate` → `{ ok: false, code: "script_not_approved" }`
-4. Run `validate-generate-approved-draft.sh` — all tests pass
+1. `curl /api/video-orchestrator/jobs/recent` → array with all jobs
+2. `curl /api/video-orchestrator/jobs/prochat-real-001` → normalized full detail
+3. `curl /api/video-orchestrator/jobs/prochat-real-001/timeline` → event list
+4. `bash validate-operational-job-api.sh` — all tests pass
 
 Phase B:
-1. `npm run typecheck` passes
-2. Run `validate-brain-console-generate-button.sh` — all checks pass
-3. Open Obsidian → Brain Console → Scripts tab → see script list
-4. Generate button visible; enabled only for approved script; disabled for pending
+1. `npm run build` succeeds
+2. `bash validate-brain-console-operational-dashboard.sh` — all checks pass
+3. Open Brain Console → AWS Video tab
+4. See Recent Jobs list with jobs visible
+5. Click a job → see detail panel
+6. Create Draft → appears in list → auto-selected
+7. Generate button visible only for approved jobs
+8. Polling visible when generating
+
+Phase C:
+1. Full proof run via curl + console walkthrough

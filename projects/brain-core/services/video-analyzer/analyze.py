@@ -53,10 +53,10 @@ def save_transcript_to_mind(youtube_url: str, title: str, transcript: str):
     try:
         MIND_INBOX.mkdir(parents=True, exist_ok=True)
 
-        # Create filename from title + timestamp
+        # Create filename: VA-{timestamp}-{title}.md (VA = Video Analyzer identifier)
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         safe_title = re.sub(r'[^a-z0-9]+', '-', title.lower())[:50].strip('-')
-        filename = f"{timestamp}-{safe_title}.md"
+        filename = f"VA-{timestamp}-{safe_title}.md"
         filepath = MIND_INBOX / filename
 
         # Build markdown content
