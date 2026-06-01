@@ -246,6 +246,268 @@ export async function getScriptsByChannel(channelId: string): Promise<ScriptMeta
   }
 }
 
+function normalizeJobStatus(
+  script: ScriptMetadata | null,
+  statusJson: unknown,
+  publish: unknown,
+): NormalizedJobStatus {
+  if (!script) return 'draft';
+
+  const status = statusJson as Record<string, unknown> | null;
+  const pubData = publish as Record<string, unknown> | null;
+
+  // Check publish status first (terminal state)
+  if (pubData?.publishStatus === 'uploaded') return 'published';
+  if (pubData?.publishStatus === 'publishing') return 'publishing';
+
+  // Check if generation completed
+  const statusVal = status?.status as string | null;
+  const completedSteps = status?.completedSteps as string[] | null;
+  if (statusVal === 'complete' || completedSteps?.includes('thumbnail_generated')) return 'ready_to_publish';
+
+  // Check if generating
+  if (statusVal === 'generating') return 'generating';
+
+  // Check approval status
+  const approval = script.approval as unknown as Record<string, unknown> | undefined;
+  if (approval?.status === 'approved') {
+    // If approved but no generation, return approved
+    if (!statusVal || statusVal === 'draft') return 'approved';
+    if (statusVal === 'complete') return 'generated';
+  }
+
+  // Check for failed
+  if (status?.failedStep) return 'failed';
+
+  // Pending/awaiting approval
+  if (approval?.status === 'pending') return 'awaiting_approval';
+
+  return 'draft';
+}
+
+function statusToProgress(status: NormalizedJobStatus): number {
+  const map: Record<NormalizedJobStatus, number> = {
+    draft: 0,
+    awaiting_approval: 20,
+    approved: 30,
+    generating: 50,
+    generated: 70,
+    ready_to_publish: 80,
+    publishing: 90,
+    published: 100,
+    failed: 0,
+  };
+  return map[status] ?? 0;
+}
+
+async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | null> {
+  if (!isValidJobId(jobId)) return null;
+
+  const [script, topic, status, publish, assets] = await Promise.all([
+    readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
+    readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
+    readOptionalJson(getJobMetadataPath(jobId, 'status.json')),
+    readOptionalJson(getJobMetadataPath(jobId, 'publish.json')),
+    readOptionalJson(getJobMetadataPath(jobId, 'assets.json')),
+  ]);
+
+  if (!script) return null;
+
+  const normalizedStatus = normalizeJobStatus(script, status, publish);
+  const pubData = publish as Record<string, unknown> | null;
+  const yt = (pubData?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
+  const statusJson = status as Record<string, unknown> | null;
+  const assetsData = assets as Record<string, unknown> | null;
+  const narration = assetsData?.narration as Record<string, unknown> | undefined;
+  const finalVideo = assetsData?.finalVideo as Record<string, unknown> | undefined;
+  const thumbnail = assetsData?.thumbnail as Record<string, unknown> | undefined;
+
+  return {
+    jobId,
+    channelId: script.channelId,
+    title: script.title,
+    status: normalizedStatus,
+    currentStep: (statusJson?.currentStep as string) || null,
+    progress: statusToProgress(normalizedStatus),
+    createdAt: script.createdAt || null,
+    updatedAt: script.updatedAt || (statusJson?.updatedAt as string) || null,
+    approval: {
+      status: (script.approval?.status as string) || 'pending',
+      required: ((script.approval as unknown as Record<string, unknown>)?.required ?? true) !== false,
+    },
+    generation: {
+      status: (statusJson?.status as string) || 'pending',
+      executionArn: (statusJson?.executionArn as string) || null,
+      startedAt: (statusJson?.startedAt as string) || null,
+      completedAt: (statusJson?.completedAt as string) || null,
+    },
+    publishing: {
+      status: (pubData?.publishStatus as string) || 'pending',
+      videoId: (yt?.videoId as string) || null,
+      url: (yt?.url as string) || null,
+    },
+    error: {
+      step: (statusJson?.failedStep as string) || null,
+      message: (statusJson?.lastError as string) || null,
+    },
+    artifacts: {
+      script: (script.scriptKey as string) || null,
+      narration: (narration?.path as string) || null,
+      finalVideo: (finalVideo?.path as string) || (statusJson?.finalVideoKey as string) || null,
+      thumbnail: (thumbnail?.path as string) || (statusJson?.thumbnailKey as string) || null,
+    },
+  };
+}
+
+export async function getRecentVideoJobs(limit: number = 20): Promise<VideoJobSummary[]> {
+  try {
+    const jobsPath = join(getVideoOrchestratorRoot(), 'jobs');
+    const fs = await import('fs/promises');
+    const jobDirs = await fs.readdir(jobsPath);
+
+    const jobs: VideoJobSummary[] = [];
+    for (const jobDir of jobDirs) {
+      const job = await buildVideoJobSummary(jobDir);
+      if (job) jobs.push(job);
+    }
+
+    return jobs
+      .sort((a, b) => {
+        const bTime = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
+        const aTime = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
+        return bTime - aTime;
+      })
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Failed to read recent video jobs:', error);
+    return [];
+  }
+}
+
+export async function getVideoJob(jobId: string): Promise<VideoJobSummary | null> {
+  return buildVideoJobSummary(jobId);
+}
+
+export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeline | null> {
+  if (!isValidJobId(jobId)) return null;
+
+  const [script, topic, status, assets] = await Promise.all([
+    readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
+    readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
+    readOptionalJson(getJobMetadataPath(jobId, 'status.json')),
+    readOptionalJson(getJobMetadataPath(jobId, 'assets.json')),
+  ]);
+
+  if (!script) return null;
+
+  const events: VideoJobTimelineEvent[] = [];
+  const statusJson = status as Record<string, unknown> | null;
+  const assetsData = assets as Record<string, unknown> | null;
+  const topicData = topic as Record<string, unknown> | null;
+  const completedSteps = statusJson?.completedSteps as string[] | null;
+
+  // draft_created
+  if (topicData) {
+    events.push({
+      step: 'draft_created',
+      status: 'complete',
+      timestamp: (topicData.createdAt as string) || null,
+      message: 'Draft created from prompt',
+    });
+  }
+
+  // script_approved
+  if (script.approval?.status === 'approved') {
+    events.push({
+      step: 'script_approved',
+      status: 'complete',
+      timestamp: (script.approval.approvedAt as string) || null,
+      message: `Approved by ${script.approval.approvedBy || 'user'}`,
+    });
+  }
+
+  // narration_created
+  if (completedSteps?.includes('narration_generated') || assetsData?.narration) {
+    events.push({
+      step: 'narration_created',
+      status: 'complete',
+      timestamp: null,
+      message: 'Narration audio generated',
+    });
+  }
+
+  // video_generated
+  if (completedSteps?.includes('video_assembled') || assetsData?.finalVideo) {
+    events.push({
+      step: 'video_generated',
+      status: 'complete',
+      timestamp: null,
+      message: 'Video assembled',
+    });
+  }
+
+  // thumbnail_generated
+  if (completedSteps?.includes('thumbnail_generated') || assetsData?.thumbnail) {
+    events.push({
+      step: 'thumbnail_generated',
+      status: 'complete',
+      timestamp: null,
+      message: 'Thumbnail generated',
+    });
+  }
+
+  // ready_to_publish
+  if (statusJson?.status === 'complete' && completedSteps?.includes('thumbnail_generated')) {
+    events.push({
+      step: 'ready_to_publish',
+      status: 'complete',
+      timestamp: (statusJson.completedAt as string) || null,
+      message: 'Ready for publishing',
+    });
+  }
+
+  // published (if YouTube has it)
+  const publish = await readOptionalJson(getJobMetadataPath(jobId, 'publish.json'));
+  const pubData = publish as Record<string, unknown> | null;
+  if (pubData) {
+    const yt = (pubData.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
+    if (pubData.publishStatus === 'uploaded' || yt?.status === 'uploaded') {
+      events.push({
+        step: 'published',
+        status: 'complete',
+        timestamp: (pubData.updatedAt as string) || null,
+        message: 'Published to YouTube',
+      });
+    }
+  }
+
+  return { jobId, events };
+}
+
+export async function getVideoJobArtifacts(jobId: string): Promise<Record<string, unknown> | null> {
+  if (!isValidJobId(jobId)) return null;
+
+  const assets = await readOptionalJson(getJobMetadataPath(jobId, 'assets.json'));
+  if (assets) return assets as Record<string, unknown>;
+
+  // Fall back to inferring from status and script
+  const [status, script] = await Promise.all([
+    readOptionalJson(getJobMetadataPath(jobId, 'status.json')),
+    readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
+  ]);
+
+  if (!script && !status) return null;
+
+  const statusJson = status as Record<string, unknown> | null;
+  return {
+    jobId,
+    script: (script?.scriptKey as string) || null,
+    finalVideo: (statusJson?.finalVideoKey as string) || null,
+    thumbnail: (statusJson?.thumbnailKey as string) || null,
+    narration: null,
+  };
+}
+
 export function isValidJobId(jobId: string): boolean {
   return /^[A-Za-z0-9._-]+$/.test(jobId) && !jobId.includes('..');
 }
@@ -487,6 +749,45 @@ export interface GenerationTriggerError {
 }
 
 export type GenerationTriggerResult = GenerationTriggerResponse | GenerationTriggerError;
+
+export type NormalizedJobStatus =
+  | 'draft'
+  | 'awaiting_approval'
+  | 'approved'
+  | 'generating'
+  | 'generated'
+  | 'ready_to_publish'
+  | 'publishing'
+  | 'published'
+  | 'failed';
+
+export interface VideoJobSummary {
+  jobId: string;
+  channelId: string;
+  title: string;
+  status: NormalizedJobStatus;
+  currentStep: string | null;
+  progress: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  approval: { status: string; required: boolean };
+  generation: { status: string; executionArn: string | null; startedAt: string | null; completedAt: string | null };
+  publishing: { status: string; videoId: string | null; url: string | null };
+  error: { step: string | null; message: string | null };
+  artifacts: { script: string | null; narration: string | null; finalVideo: string | null; thumbnail: string | null };
+}
+
+export interface VideoJobTimelineEvent {
+  step: string;
+  status: 'complete' | 'in_progress' | 'pending' | 'failed';
+  timestamp: string | null;
+  message: string;
+}
+
+export interface VideoJobTimeline {
+  jobId: string;
+  events: VideoJobTimelineEvent[];
+}
 
 export async function generateApprovedScript(
   jobId: string,

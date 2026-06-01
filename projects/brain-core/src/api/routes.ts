@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt } from '../providers/video-orchestrator-provider.js';
+import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2210,6 +2210,77 @@ export async function routeRequest(
           sendJson(response, 500, {
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch script',
+          });
+        }
+        return;
+      }
+
+      // ── Video Orchestrator: Operational Job API ──────────────────────────
+      if (url.pathname === '/api/video-orchestrator/jobs/recent') {
+        try {
+          const jobs = await getRecentVideoJobs();
+          sendJson(response, 200, { ok: true, jobs });
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch recent jobs',
+          });
+        }
+        return;
+      }
+
+      const jobTimelineMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/timeline$/.exec(url.pathname);
+      if (jobTimelineMatch) {
+        try {
+          const jobId = decodeURIComponent(jobTimelineMatch[1] ?? '');
+          const timeline = await getVideoJobTimeline(jobId);
+          if (!timeline) {
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+          } else {
+            sendJson(response, 200, { ok: true, data: timeline });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job timeline',
+          });
+        }
+        return;
+      }
+
+      const jobArtifactsMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/artifacts$/.exec(url.pathname);
+      if (jobArtifactsMatch) {
+        try {
+          const jobId = decodeURIComponent(jobArtifactsMatch[1] ?? '');
+          const artifacts = await getVideoJobArtifacts(jobId);
+          if (!artifacts) {
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+          } else {
+            sendJson(response, 200, { ok: true, data: artifacts });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job artifacts',
+          });
+        }
+        return;
+      }
+
+      const jobDetailMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)$/.exec(url.pathname);
+      if (jobDetailMatch) {
+        try {
+          const jobId = decodeURIComponent(jobDetailMatch[1] ?? '');
+          const job = await getVideoJob(jobId);
+          if (!job) {
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+          } else {
+            sendJson(response, 200, { ok: true, data: job });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job',
           });
         }
         return;
