@@ -179,15 +179,14 @@ Transcribe the spoken words in this YouTube video verbatim. Output only the tran
 
 
 def analyze_video(youtube_url: str, focus: str = "") -> dict:
-    """Two Gemini calls: structured JSON first, transcript second."""
-    try:
-        from google import genai
-        from google.genai import types
-    except ImportError:
-        raise RuntimeError("google-genai not installed. Run: python3 -m pip install google-genai")
-
-    api_key = load_api_key()
-    client = genai.Client(api_key=api_key)
+    """Video analysis is disabled — Gemini API no longer available."""
+    raise RuntimeError(
+        "Video analysis is disabled: Gemini API is no longer available (free trial expired on 10 Apr 2026).\n"
+        "To re-enable video transcription:\n"
+        "  1. Set up a paid Gemini API key and configure it in ~/.config/google-ai/.env\n"
+        "  2. Or implement a local pipeline using yt-dlp (download) + Whisper (transcription)\n"
+        "       (Note: prior local pipeline took 14 min for 8-min videos; consider paid APIs if speed is critical)"
+    )
 
     video_part = types.Part(file_data=types.FileData(file_uri=youtube_url, mime_type="video/*"))
 

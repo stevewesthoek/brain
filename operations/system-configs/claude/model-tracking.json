@@ -1,4 +1,17 @@
 {
   "mode": "default",
-  "agents": []
+  "agents": [
+    {
+      "id": "Explore-1780331189-23393",
+      "type": "Explore",
+      "model": "sonnet",
+      "status": "done"
+    },
+    {
+      "id": "Explore-1780331258-1280",
+      "type": "Explore",
+      "model": "sonnet",
+      "status": "done"
+    }
+  ]
 }

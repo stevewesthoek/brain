@@ -81,7 +81,7 @@ launch_claude() {
 }
 
 # Step 1: pick AI tool
-tool=$(printf "Claude\nCodex\nGemini" | fzf \
+tool=$(printf "Claude\nCodex" | fzf \
   --prompt="  open with: " \
   --height=10 \
   --layout=reverse \
@@ -123,6 +123,4 @@ if [[ "$tool" == "Claude" ]]; then
   launch_claude
 elif [[ "$tool" == "Codex" ]]; then
   exec codex
-elif [[ "$tool" == "Gemini" ]]; then
-  exec gemini
 fi

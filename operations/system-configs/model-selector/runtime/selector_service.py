@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlparse
 
 # Ensure this package is importable when run directly
 sys.path.insert(0, str(Path(__file__).parent))
-from core import ModelSelector, NoProviderAvailable
+from core import ModelSelector, NoProviderAvailable, TaskMetadata
 
 LOG_DIR = Path.home() / ".local/video-orchestrator/logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -95,10 +95,17 @@ class SelectorHandler(BaseHTTPRequestHandler):
             input_tokens = int(body.get("input_token_count", 0))
             urgent = bool(body.get("urgent", False))
             previous_failures = body.get("previous_failures", [])
+            local_only = bool(body.get("local_only", False))
 
             if not task_type:
                 _json_response(self, 400, {"error": "task_type is required"})
                 return
+
+            # Build task_metadata based on local_only flag
+            if local_only:
+                task_metadata = TaskMetadata(external_provider_disallowed=True, offline=True)
+            else:
+                task_metadata = TaskMetadata()
 
             try:
                 result = _selector.select(
@@ -106,6 +113,7 @@ class SelectorHandler(BaseHTTPRequestHandler):
                     input_token_count=input_tokens,
                     urgent=urgent,
                     previous_failures=previous_failures,
+                    task_metadata=task_metadata,
                 )
                 if isinstance(result, dict):
                     _json_response(self, 200, result)
