@@ -57,6 +57,12 @@ export class AwsVideoPipelinePanel {
   private listenersAttached = false;
   private refreshSequence = 0;
   private refreshPending: { status: boolean; jobs: boolean } | null = null;
+  private activityLog: Array<{
+    at: string;
+    level: 'info' | 'success' | 'warning' | 'error';
+    message: string;
+    jobId?: string;
+  }> = [];
 
   constructor(container: HTMLElement, baseUrl: string = 'http://localhost:4877') {
     this.container = container;
@@ -65,6 +71,15 @@ export class AwsVideoPipelinePanel {
     this.render();
     void this.fetchLiveData();
     this.refreshTimer = setInterval(() => void this.fetchLiveData(), REFRESH_INTERVAL_MS);
+  }
+
+  private addActivity(level: 'info' | 'success' | 'warning' | 'error', message: string, jobId?: string): void {
+    const now = new Date().toLocaleTimeString();
+    this.activityLog.push({ at: now, level, message, jobId });
+    // Keep only the latest 10 events
+    if (this.activityLog.length > 10) {
+      this.activityLog = this.activityLog.slice(-10);
+    }
   }
 
   private async fetchLiveData(): Promise<void> {
@@ -77,7 +92,7 @@ export class AwsVideoPipelinePanel {
     this.refreshPending = { status: true, jobs: true };
     this.loading = true;
     this.error = undefined;
-    this.actionMessage = undefined;
+    this.addActivity('info', 'Refresh started');
     this.render();
 
     void this.fetchStatusForRefresh(refreshId);
@@ -103,11 +118,10 @@ export class AwsVideoPipelinePanel {
         if (!this.draftChannelId && this.data.channels.length > 0) {
           this.draftChannelId = this.data.channels[0]?.channelId ?? '';
         }
-        if (this.hydrateRecentJobsFromPipelineStatus(this.data)) {
-          this.markRefreshPartDone(refreshId, 'jobs');
-        } else {
-          void this.fetchJobsForRefresh(refreshId);
-        }
+        // Operational jobs are the source of truth for this panel.
+        // Do not hydrate rows from pipeline status: that endpoint is a compact health surface
+        // and can contain historical/static summaries that are not loadable job records.
+        void this.fetchJobsForRefresh(refreshId);
       } else {
         this.statusFetchStatus = 'error';
         this.lastStatusEndpointError = this.describeStatusError(statusResult.value);
@@ -146,6 +160,11 @@ export class AwsVideoPipelinePanel {
       } else {
         this.jobsFetchStatus = 'ok';
         this.recentJobs = jobsResult.value ?? [];
+        if (this.selectedJobId && !this.recentJobs.some(job => job.jobId === this.selectedJobId)) {
+          this.selectedJobId = null;
+          this.selectedJob = null;
+          this.selectedTimeline = null;
+        }
         if (!this.selectedJobId && this.recentJobs.length > 0) {
           this.selectedJobId = this.recentJobs[0]?.jobId ?? null;
         }
@@ -310,6 +329,7 @@ export class AwsVideoPipelinePanel {
     this.container.innerHTML = `
       <div class="aws-video-pipeline-panel">
         ${this.renderDiagnostics()}
+        ${this.renderActivityLog()}
         ${this.renderRefreshIndicator()}
         ${this.renderPipelineHealth()}
         ${this.renderRecentJobs()}
@@ -357,6 +377,29 @@ export class AwsVideoPipelinePanel {
         </span>
         <button type="button" class="aws-video-refresh-button" data-action="refresh-now">Refresh now</button>
         <span class="aws-video-refresh-dot ${this.loading ? 'aws-refresh-dot--active' : ''}"></span>
+      </div>
+    `;
+  }
+
+  private renderActivityLog(): string {
+    if (this.activityLog.length === 0) return '';
+
+    const logs = this.activityLog.map(entry => {
+      const icon = entry.level === 'success' ? '✓' : entry.level === 'error' ? '✕' : entry.level === 'warning' ? '⚠' : 'ℹ';
+      const color = entry.level === 'success' ? '#060' : entry.level === 'error' ? '#c00' : entry.level === 'warning' ? '#a60' : '#00a';
+      return `
+        <div style="display: flex; gap: 8px; padding: 6px 8px; font-size: 11px; color: ${color};">
+          <span style="flex: 0 0 12px; text-align: center; font-weight: bold;">${icon}</span>
+          <span style="flex: 1;">${this.escapeHtml(entry.message)}</span>
+          <span style="flex: 0 0 auto; color: var(--text-muted);">${this.escapeHtml(entry.at)}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div style="margin-bottom: 12px; padding: 8px 0; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-secondary);">
+        <div style="padding: 6px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Activity Log</div>
+        <div>${logs}</div>
       </div>
     `;
   }
@@ -748,7 +791,9 @@ export class AwsVideoPipelinePanel {
   private async createDraftFromModal(): Promise<void> {
     if (!this.draftChannelId || this.draftPrompt.trim().length < 10) return;
     this.draftSubmitting = true;
+    this.addActivity('info', 'Creating draft...');
     this.render();
+
     const response = await createBrainCoreVideoJobFromPrompt(this.baseUrl, {
       channelId: this.draftChannelId,
       prompt: this.draftPrompt.trim(),
@@ -756,36 +801,55 @@ export class AwsVideoPipelinePanel {
     });
     this.draftSubmitting = false;
 
-    if (response.value?.ok) {
-      this.actionMessage = `Draft created · next: Approve Script · ${response.value.jobId}`;
+    if (response.value && 'jobId' in response.value && response.value.jobId) {
+      const jobId = response.value.jobId;
+      this.addActivity('success', `Draft created: ${jobId}. Next: approve script.`, jobId);
       this.showCreateDraftModal = false;
       this.draftPrompt = '';
-      await this.fetchLiveData();
-      await this.loadJobDetail(response.value.jobId);
+      this.selectedJobId = jobId;
+      this.render();
+
+      // Load the new job details
+      await this.loadJobDetail(jobId, true);
     } else {
-      this.error = response.error ?? response.value?.message ?? 'Draft creation failed';
+      let errMsg = response.error ?? 'Draft creation failed';
+      if (response.value && 'message' in response.value) {
+        errMsg = response.value.message;
+      }
+      this.addActivity('error', errMsg);
+      this.error = errMsg;
       this.render();
     }
   }
 
   private async generateJob(jobId: string): Promise<void> {
     if (!confirm('Generate video artifacts only. This will not publish to YouTube.')) return;
+    this.addActivity('info', 'Generating artifacts...', jobId);
+    this.render();
+
     const response = await requestBrainCoreOperationalGenerateVideoJob(this.baseUrl, jobId);
     if (response.error) {
-      this.error = `Generate request failed for ${jobId}: ${this.describeHttpError(response)}`;
+      const errMsg = `Generate failed: ${this.describeHttpError(response)}`;
+      this.addActivity('error', errMsg, jobId);
+      this.error = errMsg;
     } else {
-      this.actionMessage = `Generation requested for ${jobId}`;
+      this.addActivity('success', 'Generation request accepted', jobId);
       this.error = undefined;
     }
     await this.loadJobDetail(jobId);
   }
 
   private async approveJob(jobId: string): Promise<void> {
+    this.addActivity('info', 'Approving script...', jobId);
+    this.render();
+
     const response = await requestBrainCoreOperationalApproveVideoJob(this.baseUrl, jobId);
     if (response.error) {
-      this.error = `Approve failed for ${jobId}: ${this.describeHttpError(response)}`;
+      const errMsg = `Approval failed: ${this.describeHttpError(response)}`;
+      this.addActivity('error', errMsg, jobId);
+      this.error = errMsg;
     } else {
-      this.actionMessage = `Approved ${jobId}`;
+      this.addActivity('success', 'Script approved', jobId);
       this.error = undefined;
     }
     await this.loadJobDetail(jobId);
@@ -794,11 +858,17 @@ export class AwsVideoPipelinePanel {
   private async requestChanges(jobId: string): Promise<void> {
     const notes = prompt('Request changes notes:') ?? '';
     if (!notes.trim()) return;
+
+    this.addActivity('info', 'Requesting changes...', jobId);
+    this.render();
+
     const response = await requestBrainCoreOperationalRequestVideoJobChanges(this.baseUrl, jobId, notes.trim());
     if (response.error) {
-      this.error = `Request changes failed for ${jobId}: ${this.describeHttpError(response)}`;
+      const errMsg = `Request changes failed: ${this.describeHttpError(response)}`;
+      this.addActivity('error', errMsg, jobId);
+      this.error = errMsg;
     } else {
-      this.actionMessage = `Changes requested for ${jobId}`;
+      this.addActivity('success', `Changes requested: ${notes}`, jobId);
       this.error = undefined;
     }
     await this.loadJobDetail(jobId);
