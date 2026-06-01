@@ -1,9 +1,12 @@
 # ProChat OS Trademark Research
 
-**Status:** preliminary research, not legal clearance  
+**Status:** preliminary legal/productization support research, not legal clearance  
 **Date:** 2026-05-23  
 **Owner:** Steve Westhoek  
-**Mark researched:** ProChat OS, ProChat
+**Mark researched:** ProChat OS, ProChat  
+**Strategy source:** from the `brain` repo root, `../mind/wiki/organisations/prochat/brand/prochat-os-strategy.md`
+
+This is an execution-facing trademark research document. It must support the canonical ProChat OS strategy in `mind`; it must not redefine product strategy, category, positioning, or business direction.
 
 ## Summary
 
@@ -50,10 +53,10 @@ Use the full mark consistently:
 ProChat OS
 ```
 
-Do not position the product as a generic chat app. Position it as:
+Do not position the product as a generic chat app. Position it according to the canonical Mind strategy as:
 
 ```text
-The source-available AI builder operating layer for memory, agents, automations, runtimes, and managed workflows.
+An Agentic Workflow OS for agentic workflows, modular automation, private workflow runtimes, and managed ProChat OS installations.
 ```
 
 Avoid primary category labels such as:
@@ -65,11 +68,13 @@ Avoid primary category labels such as:
 
 Prefer category labels such as:
 
-- AI builder operating system
-- AI workflow operating layer
-- structured AI operations platform
-- local-first AI control plane
-- managed AI builder infrastructure
+- Agentic Workflow OS
+- agentic workflow layer
+- private workflow runtime
+- modular automation platform
+- managed workflow runtime
+
+Do not introduce alternate public category labels in Brain-side legal docs without first updating the canonical Mind strategy.
 
 ## Recommended trademark classes to review with counsel
 

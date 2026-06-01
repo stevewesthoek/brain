@@ -1,117 +1,239 @@
-# ProChat OS — Product Definition
+# ProChat OS — Brain Implementation Context
 
-**Status:** active product direction  
+**Status:** execution-facing implementation context  
 **Owner:** Steve Westhoek  
-**Scope:** public product positioning for the larger brain + mind + runtime ecosystem
+**Last updated:** 2026-06-01  
+**Scope:** `brain` repo implementation, Brain Core, Brain Console, CLI, managed-service, and runtime documentation
 
-## One-line description
+## Canonical strategy pointer
 
-ProChat OS is a source-available operating system for AI builders who need one structured place to manage memory, agents, automations, local runtimes, SaaS operations, and managed workflows.
+This file is not the canonical ProChat OS business strategy.
 
-## Public description
-
-ProChat OS is the structured operating layer for AI-powered software builders.
-
-It combines a private knowledge system, an AI operations brain, local-first runtime services, workflow automation, CLI tooling, and optional managed hosting into one coherent system. It is designed for founders and operators who use AI to build software but need structure, memory, safety boundaries, repeatable workflows, and production visibility.
-
-ProChat OS is not a literal computer operating system. It is an application and workflow operating system: the layer that connects human intent, AI agents, project memory, local machines, cloud deployments, automations, and operational dashboards.
-
-## Product promise
-
-AI can generate code quickly. ProChat OS gives that work an operating structure.
-
-## Core philosophy
+There is one canonical ProChat OS strategy, and it lives in the `mind` repo. From the `brain` repo root, the sibling-repo path is:
 
 ```text
-AI builds code.
-Structure ships SaaS.
-ProChat OS operates the structure.
+../mind/wiki/organisations/prochat/brand/prochat-os-strategy.md
 ```
 
-## What belongs inside ProChat OS
-
-ProChat OS is the umbrella for these system layers:
-
-| Layer | Role | Current source |
-|---|---|---|
-| Mind | Human memory, strategy, tasks, projects, research, decisions | `mind` repo |
-| Brain | AI system rules, skills, configs, runbooks, automations, runtime docs | `brain` repo |
-| Brain Core | Local API and safety boundary for machine/session/workflow state | `brain/projects/brain-core` target |
-| ProBot | Slack/Telegram fallback client and reusable remote-control adapters | `brain/projects/probot` |
-| Brain Console | Obsidian cockpit/plugin for human operation | planned |
-| CLI tools | Install, update, inspect, route, deploy, and operate ProChat OS parts | planned |
-| Managed service | Hosted or single-tenant managed ProChat OS instances | planned |
-
-## Repository model
-
-The current `mind` and `brain` repos are paired parts of ProChat OS, but they should not be merged.
+That document defines ProChat OS as an:
 
 ```text
-mind  = private human/business memory
+Agentic Workflow OS
+```
+
+The cross-repo constitution lives in the `mind` repo. From the `brain` repo root, the sibling-repo path is:
+
+```text
+../mind/wiki/system/repo-boundaries.md
+```
+
+Brain-side ProChat OS documentation must be execution-facing. It may describe what needs to be implemented, exposed, packaged, deployed, monitored, or operated. It must not redefine ProChat OS strategy, category, public positioning, or business direction.
+
+## Working implementation summary
+
+For implementation purposes, ProChat OS is treated in this repo as:
+
+```text
+an installable private Agentic Workflow OS runtime with memory, connectors, model routing, workflows, approvals, logs, CLI, Brain Core API surfaces, and Brain Console visibility.
+```
+
+This wording is only an implementation summary of the Mind strategy. If this file conflicts with `mind/wiki/organisations/prochat/brand/prochat-os-strategy.md`, the Mind strategy wins.
+
+## Repo model
+
+The private development pattern is:
+
+```text
+mind  = private Steve/business memory
 brain = AI/system/runtime operating layer
 ```
 
-For a public product release, extract a new sanitized repo rather than publishing the private repos directly:
+The current private repos are paired parts of the internal operating system, but they should not be merged and should not be published as-is.
+
+For a public or customer-facing product release, extract sanitized product code and templates. Do not publish Steve's private `mind` or `brain` repos directly.
+
+## What belongs in `mind`
+
+`mind` owns:
+
+- private human memory
+- business memory
+- organization context
+- ProChat OS business strategy
+- brand direction
+- public positioning
+- go-to-market direction
+- high-level roadmaps and phase intent
+- project context and decisions
+- canonical prose strategy
+
+`mind` is also the prototype pattern for customer memory/context. That means ProChat OS learns from its structure, not that customers install Steve's private `mind` repo.
+
+## What belongs in `brain`
+
+`brain` owns implementation-facing and runtime-facing work:
+
+- system rules, skills, configs, and runbooks
+- Brain Core API implementation and contracts
+- Brain Console implementation
+- local app orchestration
+- capability registries
+- execution readiness surfaces
+- feature implementations
+- machine-readable implementation records
+- operational safety boundaries
+- local and cloud runtime documentation
+
+## Brain Core implementation role
+
+Brain Core is the local API boundary and operational source of truth for machine/session/workflow state.
+
+Brain Core exposes JSON surfaces for:
+
+- status
+- capabilities
+- sessions
+- skills
+- repos
+- approvals
+- audit surfaces
+- local apps
+- orchestrators
+- runtime reports
+- execution readiness
+- safe controlled actions
+
+Brain Core must not become a strategy document, dashboard renderer, broad shell executor, or secret exposure surface.
+
+## Brain Console implementation role
+
+Brain Console is the human control plane. It consumes Brain Core and visualizes/control surfaces through approved API endpoints.
+
+Brain Console may show:
+
+- system health
+- readiness
+- approvals
+- local apps
+- agents
+- memory/status surfaces
+- Video Orchestrator local lane
+- Video Orchestrator cloud lane
+- controlled actions where Brain Core explicitly permits them
+
+Brain Console must not be treated as the product itself, and it must not duplicate canonical strategy from `mind`.
+
+## Productization target
+
+A sanitized public/customer product may eventually be extracted into a structure like:
 
 ```text
 prochat-os/
-  core/
-  cli/
-  api/
-  adapters/
-  templates/
-  docs/
-  examples/
+  core/              workflow runtime and API
+  memory/            customer memory/context store
+  connectors/        input/output integrations
+  router/            model selector and provider routing
+  console/           command center and approvals
+  cli/               install, configure, update, support commands
+  modules/           optional workflow blocks
+  docs/              public customer documentation
+  examples/          sanitized examples
 ```
 
-The public repo must not include personal notes, secrets, machine-local state, private strategy, customer data, session logs, or repo-specific credentials.
+The public/customer product must not include:
 
-## Primary audiences
+- personal notes
+- private business strategy not intended for customers
+- secrets
+- machine-local state
+- private session logs
+- customer data
+- repo-specific credentials
 
-1. Independent SaaS builders using AI heavily.
-2. Founder-operators managing multiple small products.
-3. Agencies or technical operators who want a structured local AI control plane.
-4. Teams that want managed AI workflow infrastructure without building it from scratch.
+## Brain-side documentation allowed here
 
-## Product boundaries
+Allowed Brain documentation:
 
-ProChat OS is:
+- implementation plans
+- API contracts
+- CLI plans
+- managed-service plans
+- deployment plans
+- operational runbooks
+- Brain Console surface specs
+- Brain Core endpoint docs
+- local/cloud runtime state docs
+- historical implementation records clearly marked as archived
 
-- a source-available AI operations layer
-- a memory and workflow operating system
-- a local-first control plane
-- a CLI-driven toolkit
-- a managed service opportunity
-- an Obsidian-first human cockpit
+Not allowed Brain documentation:
 
-ProChat OS is not:
+- competing ProChat OS strategy definitions
+- alternate product categories
+- duplicate public positioning canon
+- copied long-form Mind strategy
+- outdated strategy without archive labels or pointers
 
-- a bootable desktop/server OS
-- a generic team chat app
-- a public unrestricted agent marketplace
-- a broad shell-execution bot
-- a place to store secrets in Git
-- an open-source project if commercial use is restricted
+## Video Orchestrator implementation split
 
-## Commercial model
+Video Orchestrator is a ProChat OS module with two separate execution lanes:
 
-The recommended model is source-available dual licensing:
+```text
+Local Video Orchestrator
+Cloud Video Orchestrator
+```
 
-- free non-commercial use, study, modification, and forks
-- commercial use only under a paid ProChat commercial license
-- paid managed single-tenant hosting
-- paid implementation and support packages
-- future SaaS control plane and API products
+Both lanes may be available in Brain Console, but they must be labeled and documented separately.
 
-## Suggested public tagline options
+### Local Video Orchestrator
 
-- The operating system for structured AI builders.
-- The AI builder OS for memory, agents, automations, and managed workflows.
-- Local-first infrastructure for builders who ship with AI.
-- The structured operating layer for AI-powered SaaS builders.
+The local lane is for:
 
-## Canonical naming
+- local development
+- local fixtures
+- local readiness checks
+- operator visibility
+- safe dry-runs
+- local workflow validation
+- local runtime reports exposed through Brain Core
 
-Use `ProChat OS` for the umbrella product. Use `ProChat` for the company/ecosystem.
+Local tooling may be used to validate concepts, but local shortcuts are not automatically the production media execution path.
 
-Avoid describing ProChat OS as a replacement for macOS, Linux, or Windows. Use "operating system" in the product/category sense: a coordinated system for operating AI-assisted work.
+### Cloud Video Orchestrator
+
+The cloud lane is the AWS-backed media execution path for:
+
+- generation
+- rendering
+- storage
+- transcoding
+- long-running orchestration
+- cloud job state
+- exported media assets
+
+Cloud execution may involve Bedrock, Polly, Transcribe, Nova, MediaConvert, S3, Step Functions, Lambda, and related AWS infrastructure.
+
+### Shared concepts
+
+The two lanes may share:
+
+- ProChat OS workflow concepts
+- metadata contracts where explicitly shared
+- approval gates
+- template concepts
+- status visibility in Brain Console
+- implementation links
+
+They must not share ambiguous documentation that hides whether a feature belongs to the local lane or the cloud lane.
+
+## Drift rule
+
+When documents conflict:
+
+```text
+Strategy → mind
+Execution → brain
+API truth → Brain Core
+UI truth → Brain Console
+```
+
+Do not move, delete, or rename files for cleanup unless all references are updated and validated. Prefer pointers and archive labels over destructive restructuring.

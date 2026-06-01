@@ -1,8 +1,11 @@
 # Managed ProChat OS Plan
 
-**Status:** commercial rollout plan  
+**Status:** execution-facing commercial rollout plan  
 **Owner:** Steve Westhoek  
-**Product:** ProChat OS Managed
+**Product:** ProChat OS Managed  
+**Strategy source:** `mind/wiki/organisations/prochat/brand/prochat-os-strategy.md`
+
+This is not a standalone product strategy. It is a managed-service implementation and rollout plan that must defer ProChat OS business strategy, category, positioning, and non-goals to the canonical Mind strategy.
 
 ## Goal
 

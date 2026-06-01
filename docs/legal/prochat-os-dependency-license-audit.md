@@ -1,8 +1,11 @@
 # ProChat OS Dependency License Audit
 
-**Status:** preliminary audit from current manifests and available package metadata  
+**Status:** preliminary legal/productization support audit from current manifests and available package metadata  
 **Date:** 2026-05-23  
-**Scope:** `brain/package.json`, `projects/probot/package.json`, `projects/probot/package-lock.json`
+**Scope:** `brain/package.json`, `projects/probot/package.json`, `projects/probot/package-lock.json`  
+**Strategy source:** from the `brain` repo root, `../mind/wiki/organisations/prochat/brand/prochat-os-strategy.md`
+
+This is an execution-facing dependency/license audit. It must support the canonical ProChat OS strategy in `mind`; it must not redefine product strategy, category, positioning, or business direction.
 
 ## Summary
 

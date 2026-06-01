@@ -1,8 +1,11 @@
 # ProChat OS Licensing Strategy
 
-**Status:** recommended direction, legal review required before public launch  
+**Status:** legal/productization support document, legal review required before public launch  
 **Owner:** Steve Westhoek  
-**Product:** ProChat OS
+**Product:** ProChat OS  
+**Strategy source:** from the `brain` repo root, `../mind/wiki/organisations/prochat/brand/prochat-os-strategy.md`
+
+This is an execution-facing licensing document. It must support the canonical ProChat OS strategy in `mind`; it must not redefine product strategy, category, positioning, or business direction.
 
 ## Objective
 

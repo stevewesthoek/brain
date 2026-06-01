@@ -2,7 +2,10 @@
 
 **Status:** productization plan  
 **Owner:** Steve Westhoek  
-**Goal:** prepare multiple focused CLIs that make ProChat OS installable, operable, and sellable quickly
+**Goal:** prepare multiple focused CLIs that make ProChat OS installable, operable, and sellable quickly  
+**Strategy source:** `mind/wiki/organisations/prochat/brand/prochat-os-strategy.md`
+
+This is an execution-facing CLI plan. It must defer ProChat OS business strategy, category, positioning, and non-goals to the canonical Mind strategy.
 
 ## Product principle
 
