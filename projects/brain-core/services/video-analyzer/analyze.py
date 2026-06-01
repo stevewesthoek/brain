@@ -78,7 +78,8 @@ def get_or_create_notebook():
 
     try:
         data = json.loads(out)
-        notebook_id = data.get('id')
+        # Try nested structure first (notebook.id), then top-level (id)
+        notebook_id = data.get('notebook', {}).get('id') or data.get('id')
         if not notebook_id:
             return None, f"No notebook ID in response: {out}"
     except:
@@ -104,7 +105,8 @@ def extract_transcript(youtube_url):
 
     try:
         data = json.loads(out)
-        source_id = data.get('id')
+        # Try nested structure first (source.id), then top-level (id)
+        source_id = data.get('source', {}).get('id') or data.get('id')
         if not source_id:
             return None, f"No source ID in response: {out}"
     except:
@@ -169,7 +171,7 @@ def structure_transcript(transcript, focus=None):
         sel_resp = requests.post(
             f"{AI_SELECTOR_URL}/select",
             json={
-                "task_type": "text/medium",
+                "task_type": "transcript_summarization",
                 "local_only": True,
                 "input_token_count": len(prompt) // 4,
             },
