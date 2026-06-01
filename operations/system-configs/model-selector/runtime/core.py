@@ -31,7 +31,6 @@ SELECTOR_CONFIG_PATH = CONFIG_DIR / "ai-selector-config.json"
 BEDROCK_MODELS_PATH = CONFIG_DIR / "ai-bedrock-models.json"
 RATE_LIMITS_PATH = STATE_DIR / "rate-limits.json"
 CB_STATE_PATH = STATE_DIR / "circuit-breakers.json"
-GEMINI_QUOTA_PATH = STATE_DIR / "gemini-quota.json"
 BEDROCK_ACCESS_PATH = STATE_DIR / "bedrock-model-access.json"
 BEDROCK_OUTCOMES_PATH = STATE_DIR / "bedrock-model-outcomes.json"
 AUDIT_LOG_PATH = LOG_DIR / "ai-selections.jsonl"
@@ -39,7 +38,6 @@ AUDIT_LOG_PATH = LOG_DIR / "ai-selections.jsonl"
 ALLOWED_PROVIDER_TYPES = {
     "bedrock",
     "cli",
-    "gemini",
     "openai-compatible",
     "whisper",
     "whisper-remote",
@@ -213,7 +211,6 @@ class ModelSelector:
         self._bedrock_access: dict[str, dict] = {}
         self._bedrock_outcomes: dict[str, dict] = {}
         self._rate_limits: dict[str, dict] = {}
-        self._gemini_quota: dict[str, Any] = {}
         self._provider_models: dict[str, list[str]] = {}
         self._provider_last_check: dict[str, float] = {}
         self._rate_limits_dirty = False
@@ -221,7 +218,6 @@ class ModelSelector:
         self._load_config()
         self._circuit_breaker = CircuitBreaker(state_path=CB_STATE_PATH, config=self._config)
         self._load_rate_limits()
-        self._load_gemini_quota()
         self._load_bedrock_access()
         self._load_bedrock_outcomes()
 
@@ -266,21 +262,6 @@ class ModelSelector:
         else:
             self._rate_limits = {}
 
-    def _load_gemini_quota(self) -> None:
-        if not GEMINI_QUOTA_PATH.exists():
-            self._gemini_quota = {}
-            return
-        try:
-            with open(GEMINI_QUOTA_PATH) as f:
-                self._gemini_quota = json.load(f)
-        except Exception:
-            self._gemini_quota = {}
-
-    def _save_gemini_quota(self) -> None:
-        STATE_DIR.mkdir(parents=True, exist_ok=True)
-        with open(GEMINI_QUOTA_PATH, "w") as f:
-            json.dump(self._gemini_quota, f, indent=2)
-
     def _load_bedrock_access(self) -> None:
         if not BEDROCK_ACCESS_PATH.exists():
             self._bedrock_access = {}
@@ -324,7 +305,6 @@ class ModelSelector:
         interval = self._config.get("rate_limit_state_persist_interval_sec", 60)
         if time.monotonic() - self._last_persist > interval:
             self.persist_rate_limits()
-            self._save_gemini_quota()
 
     def _is_rate_limited(self, provider_id: str) -> bool:
         state = self._rate_limits.get(provider_id, {})
@@ -387,17 +367,6 @@ class ModelSelector:
         except Exception:
             return False
 
-    def _check_gemini_health(self, provider: dict) -> bool:
-        """Gemini health is credential presence only.
-
-        The selector must not burn free-tier quota just to prove health.
-        Quota and API errors are handled by the execution/report-failure path.
-        """
-        env_name = provider.get("health_check", {}).get("env_exists") or provider.get("api_key_env")
-        if not env_name:
-            return False
-        return bool(os.environ.get(str(env_name)))
-
     def _check_cli_health(self, provider: dict) -> bool:
         health_check = provider.get("health_check", {})
         binary = health_check.get("binary_exists") or provider.get("binary")
@@ -405,56 +374,6 @@ class ModelSelector:
             models = provider.get("models", [])
             return bool(models)
         return shutil.which(str(binary)) is not None
-
-    def _quota_policy(self, provider: dict) -> dict:
-        return provider.get("quota_policy", {}) or {}
-
-    def _gemini_quota_reset_key(self, provider: dict) -> str:
-        tz_name = self._config.get("quota_timezone", "UTC")
-        return f"{provider['id']}:{datetime.now(UTC).date().isoformat()}:{tz_name}"
-
-    def _load_gemini_quota_entry(self, provider: dict) -> dict:
-        key = self._gemini_quota_reset_key(provider)
-        entry = self._gemini_quota.get(key)
-        if entry:
-            return entry
-        policy = self._quota_policy(provider)
-        entry = {
-            "date": datetime.now(UTC).date().isoformat(),
-            "rpm_used": 0,
-            "tpm_used": 0,
-            "rpd_used": 0,
-            "rpm_limit": int(policy.get("rpm_limit", 0)),
-            "tpm_limit": int(policy.get("tpm_limit", 0)),
-            "rpd_limit": int(policy.get("rpd_limit", 0)),
-            "reservations": [],
-        }
-        self._gemini_quota[key] = entry
-        return entry
-
-    def _gemini_quota_exhausted(self, provider: dict, input_tokens: int, task_spec: dict) -> tuple[bool, str]:
-        entry = self._load_gemini_quota_entry(provider)
-        reserve_in = int(input_tokens)
-        reserve_out = int(task_spec.get("typical_output_tokens", 0))
-        if entry["rpm_limit"] and entry["rpm_used"] >= entry["rpm_limit"]:
-            return True, "rpm"
-        if entry["tpm_limit"] and entry["tpm_used"] + reserve_in > entry["tpm_limit"]:
-            return True, "tpm"
-        if entry["rpd_limit"] and entry["rpd_used"] + reserve_in + reserve_out > entry["rpd_limit"]:
-            return True, "rpd"
-        return False, ""
-
-    def _reserve_gemini_quota(self, provider: dict, task_spec: dict, input_tokens: int) -> None:
-        entry = self._load_gemini_quota_entry(provider)
-        entry["rpm_used"] = int(entry.get("rpm_used", 0)) + 1
-        entry["tpm_used"] = int(entry.get("tpm_used", 0)) + int(input_tokens)
-        entry["rpd_used"] = int(entry.get("rpd_used", 0)) + int(input_tokens) + int(task_spec.get("typical_output_tokens", 0))
-        entry.setdefault("reservations", []).append({
-            "at": time.time(),
-            "task_type": task_spec.get("capability"),
-            "input_tokens": int(input_tokens),
-        })
-        self._save_gemini_quota()
 
     def _get_local_gpu_load(self) -> float:
         """Estimate local GPU/CPU load from active Ollama inference.
@@ -483,8 +402,6 @@ class ModelSelector:
             return self._check_whisper_health(provider)
         if ptype == "whisper-remote":
             return self._check_whisper_remote_health(provider)
-        if ptype == "gemini":
-            return self._check_gemini_health(provider)
         if ptype == "cli":
             return self._check_cli_health(provider)
         return True
@@ -624,8 +541,6 @@ class ModelSelector:
                 models = preferred_loaded + other_loaded
             else:
                 models = loaded_models or preferred_models
-        elif ptype == "gemini":
-            models = provider.get("models", [])
         if not models:
             return ""
         viable = [m for m in models if self._model_meets_min_params(m, task_spec)]
@@ -721,22 +636,9 @@ class ModelSelector:
                 continue
 
             ptype = provider.get("type", "")
-            if ptype == "gemini":
-                if (task_metadata.sensitive or task_metadata.private or
-                    task_metadata.offline or task_metadata.external_provider_disallowed):
-                    log.debug("selector  skip gemini_privacy_gate  provider=%s  sensitive=%s private=%s offline=%s external_disallowed=%s",
-                              provider["id"], task_metadata.sensitive, task_metadata.private,
-                              task_metadata.offline, task_metadata.external_provider_disallowed)
-                    continue
-            if ptype == "gemini":
-                exhausted, exhausted_reason = self._gemini_quota_exhausted(provider, input_token_count, task_spec)
-                if exhausted:
-                    log.debug("selector  skip gemini_quota_exhausted  reason=%s provider=%s", exhausted_reason, provider["id"])
-                    continue
-            if ptype in ("openai-compatible", "whisper", "whisper-remote", "gemini", "cli"):
+            if ptype in ("openai-compatible", "whisper", "whisper-remote", "cli"):
                 if not self._check_health(provider):
-                    if ptype != "gemini":
-                        self._circuit_breaker.register_failure(provider["id"])
+                    self._circuit_breaker.register_failure(provider["id"])
                     log.debug("selector  skip unhealthy  provider=%s", provider["id"])
                     continue
 
@@ -766,7 +668,7 @@ class ModelSelector:
                     task_preferred = task_spec.get("preferred_local_model")
                     if task_preferred:
                         model = task_preferred
-            if not model and ptype in ("openai-compatible", "gemini"):
+            if not model and ptype in ("openai-compatible",):
                 continue
             result = SelectionResult(
                 provider_id=provider["id"],
@@ -780,8 +682,6 @@ class ModelSelector:
                 timeout_inference_sec=int(provider.get("timeout_inference_sec", 30)),
                 task_metadata=task_metadata,
             )
-            if provider.get("type") == "gemini":
-                self._reserve_gemini_quota(provider, task_spec, input_token_count)
             self._audit_log(result, "selected")
             return result
 
@@ -844,7 +744,7 @@ class ModelSelector:
         for p in self._providers:
             entry = dict(p)
             ptype = p.get("type", "")
-            if ptype in ("openai-compatible", "whisper", "whisper-remote", "gemini", "cli"):
+            if ptype in ("openai-compatible", "whisper", "whisper-remote", "cli"):
                 entry["healthy"] = self._check_health(p)
                 if ptype == "openai-compatible":
                     entry["loaded_models"] = list(self._provider_models.get(p["id"], []))
