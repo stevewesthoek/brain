@@ -67,6 +67,15 @@ export type {
 export {
   createMindMaintenancePreviewQueueFromFindings,
 } from './maintenance-preview.js';
+export {
+  classifyMindCaptureInbox,
+} from './classifier.js';
+export type {
+  MindCaptureClassification,
+  MindCaptureClassificationResult,
+  MindCaptureClassificationRun,
+  MindCaptureParaType,
+} from './classifier.js';
 export type {
   MindMaintenancePreviewAction,
   MindMaintenancePreviewActionKind,

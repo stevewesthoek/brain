@@ -24,6 +24,110 @@ Do not load the whole brain repo. Use `00-memory-map.md`, then search/read only 
 
 `.ai/current.md` is the recovery point (auto-written by Stop hook). `decision-log.md` is durable — commit before switching devices.
 
+## Skill Installation & Profile Management
+
+**Critical rule:** When installing a new skill, you MUST decide whether it's always-active or domain-specific. This prevents context bloat in Codex and Claude Code.
+
+### Always-Active Skills (Context Budget: 7 Skills Max)
+
+These skills load in every session and should be minimal:
+
+1. **code** — Master coding orchestrator (understand/improve/fix/review/build/document/ship)
+2. **research** — Master research orchestrator
+3. **memory** — Memory operations (recall/capture/facts/review)
+4. **review** — Pre-landing code review
+5. **qa** — QA and testing workflows
+6. **handoff** — Session pause/resume with compressed state
+7. **careful** — Safety guardrails for destructive commands
+
+**Context usage:** ~1,800 lines total. If this grows beyond 15 skills, Codex will warn about context budget.
+
+### Domain-Specific Skills (Load on Demand)
+
+These load automatically when you invoke domain orchestrators:
+
+- **Video domain** (`/video`): ffmpeg, stb-pipeline, n8n, notebooklm, video (11 skills active when invoked)
+- **Design domain** (`/design`): design-system, design-motion-principles, design-review (8 skills active when invoked)
+- **Deploy domain** (`/deploy` or `/land-and-deploy`): freeze, canary, dokploy, gh, forge (9 skills active when invoked)
+- **Research domain** (`/research`): firecrawl, web, browse, autoresearch, investigate, graphify (9 skills active when invoked)
+
+### Dormant Skills (Never Active)
+
+These live in `ai/skills/custom/` or `ai/skills/vendors/` and are invoked explicitly when needed:
+
+- Specialized vendor skills: agents-sdk, cloudflare, cloudflare-email-service, durable-objects, sandbox-sdk, web-perf, workers-best-practices, wrangler
+- Single-use skills: individual project tasks, one-off integrations
+- Reference skills: documentation, API references, runbooks
+
+### Installation Checklist
+
+When installing a new skill:
+
+1. **Decide category** — Use the decision tree above (always-active, domain-specific, or dormant)
+2. **Create skill folder:**
+   - First-party → `ai/skills/custom/{skill-name}/SKILL.md`
+   - Third-party → `ai/skills/vendors/{vendor}/{skill-name}/SKILL.md`
+   - **Never** put a skill directly in `ai/skills/active/` (should only contain symlinks)
+3. **Create symlink if always-active:**
+   ```bash
+   ln -s ../custom/{skill-name} ai/skills/active/{skill-name}
+   # OR for vendor skills:
+   ln -s ../vendors/{vendor}/{skill-name} ai/skills/active/{skill-name}
+   ```
+4. **If domain-specific:** Update the domain profile, then update the domain orchestrator's SKILL.md to reference it
+5. **Verify the profile:**
+   ```bash
+   node tools/scripts/switch-skill-profile.mjs default --dry-run --verbose
+   ```
+6. **Sync to all AI consumers:**
+   ```bash
+   node tools/scripts/sync-ai-skills.mjs --check
+   ```
+
+### Profile Management
+
+Switch between predefined skill profiles:
+
+```bash
+# Show available profiles
+node tools/scripts/switch-skill-profile.mjs --list
+
+# Preview a profile change
+node tools/scripts/switch-skill-profile.mjs video --dry-run --verbose
+
+# Apply a profile
+node tools/scripts/switch-skill-profile.mjs video --apply --verbose
+
+# Verify all consumers are synced
+node tools/scripts/sync-ai-skills.mjs --check
+
+# Restore original active set (if something breaks)
+node tools/scripts/switch-skill-profile.mjs full-current --apply --verbose
+```
+
+Available profiles:
+
+| Profile | Skills | Use case |
+|---------|--------|----------|
+| `default` | 7 | Minimal always-on (code, research, memory, review, qa, handoff, careful) |
+| `video` | 11 | Add video orchestrator + ffmpeg, stb-pipeline, n8n, notebooklm |
+| `design` | 8 | Add design orchestrator + design-system, design-motion-principles, design-review |
+| `deploy` | 9 | Add deploy tools: freeze, canary, dokploy, gh, forge, land-and-deploy |
+| `research` | 9 | Add research tools: firecrawl, web, browse, autoresearch, investigate, graphify |
+| `power` | 17 | Most orchestrators + domain tools (for power users) |
+| `productivity` | 5 | Minimal + memory + handoff (for focused work) |
+| `full-current` | 119 | RECOVERY: all original active entries (pre-May-8-2026) |
+
+**See:** `docs/skills/profile-activation-runbook.md` for full procedures and troubleshooting.
+
+### Why This Matters
+
+**Before:** 16 active skills = 5,943 lines → Codex warns about context budget  
+**After (default):** 7 active skills = 1,800 lines → 69% context saved  
+**Result:** ~4,100 lines freed for actual work in Codex and Claude Code
+
+---
+
 ## Universal capability install
 
 Before installing ANY skill, CLI, or MCP server: run `/brain-universal-capability-install`. All three engines (Claude, Codex, Gemini) must be configured simultaneously.

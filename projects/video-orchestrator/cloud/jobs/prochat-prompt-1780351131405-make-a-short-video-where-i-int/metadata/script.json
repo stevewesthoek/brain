@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780351131405-make-a-short-video-where-i-int",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780351131405",
+  "status": "approved",
+  "title": "Make a short video where I introduce my GitHub project called BuildFlow.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780351131405-make-a-short-video-where-i-int/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-01T21:58:51.405Z",
+  "updatedAt": "2026-06-01T21:59:16.582Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": "Approved from AWS Video operational console",
+    "approvedBy": "brain-console",
+    "approvedAt": "2026-06-01T21:59:16.582Z"
+  }
+}

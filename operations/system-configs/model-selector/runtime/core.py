@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -576,6 +577,25 @@ class ModelSelector:
         parts.append(f"priority={provider['priority']}")
         return "; ".join(parts)
 
+    def _provider_allowed_for_metadata(self, provider: dict, task_metadata: TaskMetadata) -> bool:
+        if not task_metadata.external_provider_disallowed and not task_metadata.offline:
+            return True
+
+        provider_type = provider.get("type", "")
+        if provider_type != "openai-compatible":
+            return False
+
+        hostname = urllib.parse.urlparse(str(provider.get("base_url", ""))).hostname or ""
+        if hostname in {"localhost", "127.0.0.1", "::1"}:
+            return True
+        if hostname.startswith("10.") or hostname.startswith("192.168."):
+            return True
+        if hostname.startswith("172."):
+            parts = hostname.split(".")
+            if len(parts) >= 2 and parts[1].isdigit():
+                return 16 <= int(parts[1]) <= 31
+        return False
+
     def select_provider(
         self,
         task_type: str,
@@ -603,6 +623,7 @@ class ModelSelector:
             p for p in self._providers
             if required_capability in p.get("capabilities", [])
             and p["id"] not in previous_failures
+            and self._provider_allowed_for_metadata(p, task_metadata)
         ]
 
         # Load-aware sorting: when local GPU is busy, prefer remote workers
