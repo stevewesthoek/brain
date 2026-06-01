@@ -8974,27 +8974,38 @@ function renderProjectPlatformCard(
   }
 }
 
+// Module-level singleton to keep AWS Video panel alive across re-renders
+let awsVideoPanel: AwsVideoPipelinePanel | null = null;
+
 function renderAwsVideoPipelineSection(
   content: HTMLElement,
   settings: BrainConsoleSettings,
 ): void {
   const brainCoreUrl = settings.brainCoreUrl ?? 'http://localhost:4877';
 
-  // Header
+  // Header (recreated each render)
   const header = content.createDiv({ cls: 'bc-aws-video-header' });
   header.createEl('h2', { cls: 'bc-aws-video-title', text: 'AWS Video Pipeline' });
   header.createEl('p', { cls: 'bc-aws-video-subtitle', text: 'Topic Intelligence & Channel Status' });
 
-  // Panel container
+  // Panel container (always recreated by parent.empty(), but panel instance persists)
   const panelContainer = content.createDiv({ cls: 'bc-aws-video-panel-container' });
-  const panel = new AwsVideoPipelinePanel(panelContainer, brainCoreUrl);
 
-  // Store panel instance on container to keep it alive
-  (panelContainer as any).__awsVideoPanel = panel;
+  // Destroy old panel if URL changed
+  if (awsVideoPanel && (awsVideoPanel as any)['baseUrl'] !== brainCoreUrl) {
+    awsVideoPanel.destroy();
+    awsVideoPanel = null;
+  }
 
-  // Cleanup on section change
-  content.addEventListener('beforeunload', () => {
-    const storedPanel = (panelContainer as any).__awsVideoPanel as AwsVideoPipelinePanel | undefined;
-    if (storedPanel) storedPanel.destroy();
-  });
+  // Reuse existing panel or create new one
+  if (!awsVideoPanel) {
+    awsVideoPanel = new AwsVideoPipelinePanel(panelContainer, brainCoreUrl);
+  } else {
+    // Panel exists but container was recreated by parent - update container reference and re-render into it
+    (awsVideoPanel as any)['container'] = panelContainer;
+    (awsVideoPanel as any)['render']();
+  }
+
+  // Store reference for cleanup if needed
+  (panelContainer as any).__awsVideoPanel = awsVideoPanel;
 }

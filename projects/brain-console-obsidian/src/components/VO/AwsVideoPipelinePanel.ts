@@ -44,11 +44,11 @@ export class AwsVideoPipelinePanel {
   private async fetchLiveData(): Promise<void> {
     this.loading = true;
     this.error = undefined;
+    this.actionMessage = undefined;
     try {
-      const [statusResult, recentJobs] = await Promise.all([
-        readBrainCoreAwsVideoPipelineStatus(this.baseUrl),
-        this.fetchRecentJobs(),
-      ]);
+      // Fetch status and recent jobs independently to avoid hanging if one fails
+      const statusResult = await readBrainCoreAwsVideoPipelineStatus(this.baseUrl);
+      const recentJobs = await this.fetchRecentJobs();
 
       if (statusResult.error) {
         this.error = statusResult.error;
@@ -57,8 +57,11 @@ export class AwsVideoPipelinePanel {
         if (!this.draftChannelId && this.data.channels.length > 0) {
           this.draftChannelId = this.data.channels[0]?.channelId ?? '';
         }
-      } else {
-        this.error = 'Failed to fetch pipeline status';
+      } else if (!statusResult.error) {
+        // Only set generic error if no specific error was already set
+        if (!this.data) {
+          this.error = 'Failed to fetch pipeline status';
+        }
       }
 
       this.recentJobs = recentJobs;
@@ -69,7 +72,7 @@ export class AwsVideoPipelinePanel {
         await this.loadJobDetail(this.selectedJobId, false);
       }
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Fetch failed';
+      this.error = `Failed to fetch data: ${err instanceof Error ? err.message : 'Unknown error'}`;
     } finally {
       this.loading = false;
       this.render();
@@ -77,32 +80,48 @@ export class AwsVideoPipelinePanel {
   }
 
   private async fetchRecentJobs(): Promise<BrainCoreVideoJobSummary[]> {
-    const response = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/recent`);
-    if (!response.ok) return [];
-    const payload = await response.json() as { jobs?: BrainCoreVideoJobSummary[] };
-    return Array.isArray(payload.jobs) ? payload.jobs : [];
+    try {
+      const response = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/recent`);
+      if (!response.ok) {
+        this.error = `Failed to fetch recent jobs: HTTP ${response.status}`;
+        return [];
+      }
+      const payload = await response.json() as { jobs?: BrainCoreVideoJobSummary[] };
+      return Array.isArray(payload.jobs) ? payload.jobs : [];
+    } catch (err) {
+      this.error = `Failed to fetch recent jobs: ${err instanceof Error ? err.message : String(err)}`;
+      return [];
+    }
   }
 
   private async loadJobDetail(jobId: string, rerender = true): Promise<void> {
     this.jobLoading = true;
     try {
-      const [jobDetailRes, timelineRes] = await Promise.all([
-        fetch(`${this.baseUrl}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`),
-        fetch(`${this.baseUrl}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`),
-      ]);
+      const jobDetailRes = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`);
+      const timelineRes = await fetch(`${this.baseUrl}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`);
 
       if (jobDetailRes.ok) {
-        this.selectedJob = await jobDetailRes.json() as BrainCoreVideoJobSummary;
-        this.selectedJobId = this.selectedJob.jobId;
+        const detail = await jobDetailRes.json() as { data?: BrainCoreVideoJobSummary };
+        this.selectedJob = detail.data ?? null;
+        this.selectedJobId = this.selectedJob?.jobId ?? null;
       } else {
         this.selectedJob = null;
-        this.error = `Failed to load job ${jobId}`;
+        this.selectedJobId = null;
+        this.error = `Failed to load job ${jobId}: HTTP ${jobDetailRes.status}`;
       }
 
-      this.selectedTimeline = timelineRes.ok ? await timelineRes.json() as BrainCoreVideoJobTimeline : null;
+      if (timelineRes.ok) {
+        const tl = await timelineRes.json() as { data?: BrainCoreVideoJobTimeline };
+        this.selectedTimeline = tl.data ?? null;
+      } else {
+        this.selectedTimeline = null;
+      }
+
       this.syncPollingState();
     } catch (err) {
-      this.error = err instanceof Error ? err.message : 'Failed to load job detail';
+      this.error = `Failed to load job detail: ${err instanceof Error ? err.message : String(err)}`;
+      this.selectedJob = null;
+      this.selectedTimeline = null;
     } finally {
       this.jobLoading = false;
       if (rerender) this.render();
@@ -430,8 +449,20 @@ export class AwsVideoPipelinePanel {
   }
 
   private renderErrors(): string {
-    if (!this.error) return '';
-    return `<div class="aws-video-error-banner" style="margin-top: 16px;"><strong>Error:</strong> ${this.escapeHtml(this.error)}</div>`;
+    if (!this.error && !this.actionMessage) return '';
+    const content: string[] = [];
+    if (this.error) {
+      content.push(`<div class="aws-video-error-banner" style="margin-top: 16px; padding: 12px; background: #fee; border: 1px solid #fcc; border-radius: 4px; font-size: 12px; color: #c00;">
+        <strong>Error:</strong> ${this.escapeHtml(this.error)}<br/>
+        <code style="font-size: 11px; display: block; margin-top: 4px;">Brain Core: ${this.escapeHtml(this.baseUrl)}</code>
+      </div>`);
+    }
+    if (this.actionMessage) {
+      content.push(`<div class="aws-video-action-message" style="margin-top: 16px; padding: 12px; background: #efe; border: 1px solid #cfc; border-radius: 4px; font-size: 12px; color: #060;">
+        ✓ ${this.escapeHtml(this.actionMessage)}
+      </div>`);
+    }
+    return content.join('');
   }
 
   private attachEventListeners(): void {
@@ -496,38 +527,61 @@ export class AwsVideoPipelinePanel {
 
   private async generateJob(jobId: string): Promise<void> {
     if (!confirm('Generate video artifacts only. This will not publish to YouTube.')) return;
-    const response = await fetch(`${this.baseUrl}/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/generate`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ requestedBy: 'brain-console' }),
-    });
-    if (!response.ok) {
-      this.error = `Generate request failed for ${jobId}`;
-    } else {
-      this.actionMessage = `Generation requested for ${jobId}`;
+    try {
+      const response = await fetch(`${this.baseUrl}/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/generate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ requestedBy: 'brain-console' }),
+      });
+      if (!response.ok) {
+        this.error = `Generate request failed for ${jobId}: HTTP ${response.status}`;
+      } else {
+        this.actionMessage = `Generation requested for ${jobId}`;
+        this.error = undefined;
+      }
+    } catch (err) {
+      this.error = `Generate request failed: ${err instanceof Error ? err.message : String(err)}`;
     }
     await this.loadJobDetail(jobId);
   }
 
   private async approveJob(jobId: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/approve`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ approvedBy: 'brain-console', notes: 'Approved from AWS Video operational console' }),
-    });
-    this.actionMessage = response.ok ? `Approved ${jobId}` : `Approve failed for ${jobId}`;
+    try {
+      const response = await fetch(`${this.baseUrl}/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/approve`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 'brain-console', notes: 'Approved from AWS Video operational console' }),
+      });
+      if (response.ok) {
+        this.actionMessage = `Approved ${jobId}`;
+        this.error = undefined;
+      } else {
+        this.error = `Approve failed for ${jobId}: HTTP ${response.status}`;
+      }
+    } catch (err) {
+      this.error = `Approve failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
     await this.loadJobDetail(jobId);
   }
 
   private async requestChanges(jobId: string): Promise<void> {
     const notes = prompt('Request changes notes:') ?? '';
     if (!notes.trim()) return;
-    const response = await fetch(`${this.baseUrl}/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/changes`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ requestedBy: 'brain-console', notes: notes.trim() }),
-    });
-    this.actionMessage = response.ok ? `Changes requested for ${jobId}` : `Request changes failed for ${jobId}`;
+    try {
+      const response = await fetch(`${this.baseUrl}/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/request-changes`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ requestedBy: 'brain-console', notes: notes.trim() }),
+      });
+      if (response.ok) {
+        this.actionMessage = `Changes requested for ${jobId}`;
+        this.error = undefined;
+      } else {
+        this.error = `Request changes failed for ${jobId}: HTTP ${response.status}`;
+      }
+    } catch (err) {
+      this.error = `Request changes failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
     await this.loadJobDetail(jobId);
   }
 
