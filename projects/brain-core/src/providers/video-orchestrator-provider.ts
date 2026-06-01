@@ -453,3 +453,116 @@ export async function requestScriptChanges(
 
   return buildApprovalResponse(script, context.topicLoaded, context.contentProfile);
 }
+
+export interface GenerationTriggerRequest {
+  requestedBy?: unknown;
+}
+
+export interface GenerationTriggerResponse {
+  ok: true;
+  jobId: string;
+  generationStarted: boolean;
+  executionArn?: string;
+  publishBlocked: true;
+}
+
+export interface GenerationTriggerError {
+  ok: false;
+  code: string;
+  message: string;
+  jobId?: string;
+}
+
+export type GenerationTriggerResult = GenerationTriggerResponse | GenerationTriggerError;
+
+export async function generateApprovedScript(
+  jobId: string,
+  input: GenerationTriggerRequest,
+): Promise<GenerationTriggerResult> {
+  // Validate jobId
+  if (!isValidJobId(jobId)) {
+    return {
+      ok: false,
+      code: 'invalid_job_id',
+      message: 'jobId may contain only letters, numbers, dots, underscores, and hyphens.',
+      jobId,
+    };
+  }
+
+  // Load script metadata
+  const scriptPath = getJobMetadataPath(jobId, 'script.json');
+  let script: ScriptMetadata;
+  try {
+    const content = await readFile(scriptPath, 'utf-8');
+    script = JSON.parse(content) as ScriptMetadata;
+  } catch {
+    return {
+      ok: false,
+      code: 'script_missing',
+      message: `Script metadata not found for job: ${jobId}`,
+      jobId,
+    };
+  }
+
+  // Load topic metadata
+  const topicPath = getJobMetadataPath(jobId, 'topic.json');
+  let topic: unknown;
+  try {
+    const content = await readFile(topicPath, 'utf-8');
+    topic = JSON.parse(content);
+  } catch {
+    return {
+      ok: false,
+      code: 'topic_missing',
+      message: `Topic metadata not found for job: ${jobId}`,
+      jobId,
+    };
+  }
+
+  // Load content profile for channel
+  const contentProfilePath = join(
+    getVideoOrchestratorRoot(),
+    'channels',
+    script.channelId,
+    'content-profile.json',
+  );
+  let contentProfile: ContentProfile = {};
+  try {
+    const content = await readFile(contentProfilePath, 'utf-8');
+    contentProfile = JSON.parse(content) as ContentProfile;
+  } catch {
+    contentProfile = {};
+  }
+
+  // Validate script is approved
+  const approval = script.approval ?? { required: true, status: 'pending', theologicalReviewRequired: false, notes: null };
+  if (approval.status !== 'approved') {
+    return {
+      ok: false,
+      code: 'script_not_approved',
+      message: `Script approval status is '${approval.status}', not 'approved'. Cannot generate.`,
+      jobId,
+    };
+  }
+
+  // For says-the-bible, verify theology review requirement
+  if (script.channelId === 'says-the-bible') {
+    const theologyRequired = resolveTheologyReviewRequired(script, contentProfile);
+    if (theologyRequired && !approval.theologicalReviewRequired) {
+      return {
+        ok: false,
+        code: 'theology_review_required',
+        message: 'Theological review is required for this script but has not been completed.',
+        jobId,
+      };
+    }
+  }
+
+  // All validations passed, generation can proceed
+  return {
+    ok: true,
+    jobId,
+    generationStarted: true,
+    publishBlocked: true,
+  };
+}
