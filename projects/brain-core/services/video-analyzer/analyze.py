@@ -95,7 +95,7 @@ def get_or_create_notebook():
             notebook_id = state.get('notebook_id')
             if notebook_id:
                 # Verify it's still valid by trying to use it
-                code, _, _ = run_cmd(['notebooklm', 'use', notebook_id])
+                code, _, _ = run_cmd([NOTEBOOKLM_BIN, 'use', notebook_id])
                 if code == 0:
                     log(f"Using existing notebook: {notebook_id}")
                     return notebook_id, None
@@ -104,7 +104,7 @@ def get_or_create_notebook():
 
     # Create new notebook
     log("Creating new NotebookLM notebook...")
-    code, out, err = run_cmd(['notebooklm', 'create', 'Brain Video Analyzer', '--json'])
+    code, out, err = run_cmd([NOTEBOOKLM_BIN, 'create', 'Brain Video Analyzer', '--json'])
     if code != 0:
         return None, f"Failed to create notebook: {err}"
 
@@ -118,7 +118,7 @@ def get_or_create_notebook():
         return None, f"Failed to parse notebook creation response: {out}"
 
     # Use it
-    code, _, err = run_cmd(['notebooklm', 'use', notebook_id])
+    code, _, err = run_cmd([NOTEBOOKLM_BIN, 'use', notebook_id])
     if code != 0:
         return None, f"Failed to use notebook {notebook_id}: {err}"
 
@@ -131,7 +131,7 @@ def extract_transcript(youtube_url):
     """Extract transcript via NotebookLM. Return transcript_text or error."""
     # Add source
     log(f"Adding YouTube source: {youtube_url}")
-    code, out, err = run_cmd(['notebooklm', 'source', 'add', youtube_url, '--json'])
+    code, out, err = run_cmd([NOTEBOOKLM_BIN, 'source', 'add', youtube_url, '--json'])
     if code != 0:
         return None, f"Failed to add source: {err}"
 
@@ -147,7 +147,7 @@ def extract_transcript(youtube_url):
     log(f"Source added: {source_id}. Waiting for processing...")
 
     # Wait for processing (timeout 300s = 5 min for most videos)
-    code, out, err = run_cmd(['notebooklm', 'source', 'wait', source_id, '--timeout', '300'])
+    code, out, err = run_cmd([NOTEBOOKLM_BIN, 'source', 'wait', source_id, '--timeout', '300'])
     if code == 1:
         return None, f"Source processing failed or not found: {err}"
     if code == 2:
@@ -158,7 +158,7 @@ def extract_transcript(youtube_url):
     log("Processing complete. Extracting fulltext...")
 
     # Extract fulltext
-    code, out, err = run_cmd(['notebooklm', 'source', 'fulltext', source_id])
+    code, out, err = run_cmd([NOTEBOOKLM_BIN, 'source', 'fulltext', source_id])
     if code != 0:
         return None, f"Failed to get fulltext: {err}"
 
@@ -169,7 +169,7 @@ def extract_transcript(youtube_url):
     log(f"Transcript extracted ({len(transcript)} chars)")
 
     # Cleanup source (non-fatal if fails)
-    subprocess.run(['notebooklm', 'source', 'remove', source_id], capture_output=True)
+    subprocess.run([NOTEBOOKLM_BIN, 'source', 'remove', source_id], capture_output=True)
 
     return transcript, None
 
