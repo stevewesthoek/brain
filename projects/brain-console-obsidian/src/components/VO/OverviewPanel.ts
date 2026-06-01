@@ -60,11 +60,11 @@ export class OverviewPanel {
         readBrainCoreVOStudioAnalyticsSummary(this.brainCoreUrl),
       ]);
 
-      if (statusRes.status === 'fulfilled' && statusRes.value && 'ok' in statusRes.value && statusRes.value.ok) {
-        this.voStatus = statusRes.value.data as BrainCoreInfraVOStatusResponse;
+      if (statusRes.status === 'fulfilled' && statusRes.value?.value?.ok) {
+        this.voStatus = statusRes.value.value.data as BrainCoreInfraVOStatusResponse;
       }
-      if (analyticsRes.status === 'fulfilled' && analyticsRes.value && 'ok' in analyticsRes.value && analyticsRes.value.ok) {
-        this.analytics = analyticsRes.value.data as BrainCoreVOStudioAnalyticsSummary;
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value?.value?.ok) {
+        this.analytics = analyticsRes.value.value as BrainCoreVOStudioAnalyticsSummary;
       }
     } catch {
       // Silently continue with existing data

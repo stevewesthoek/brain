@@ -29,10 +29,12 @@ export class AwsVideoPipelinePanel {
     this.error = undefined;
     try {
       const result = await readBrainCoreAwsVideoPipelineStatus(this.baseUrl);
-      if (result.ok && result.data) {
-        this.data = result.data;
+      if (result.error) {
+        this.error = result.error;
+      } else if (result.value?.ok && result.value.data) {
+        this.data = result.value.data;
       } else {
-        this.error = result.error || 'Failed to fetch pipeline status';
+        this.error = 'Failed to fetch pipeline status';
       }
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Fetch failed';
