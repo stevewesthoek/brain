@@ -566,3 +566,208 @@ export async function generateApprovedScript(
     publishBlocked: true,
   };
 }
+
+export interface CreateJobFromPromptRequest {
+  channelId: string;
+  prompt: string;
+  requestedBy: string;
+}
+
+export interface CreateJobFromPromptResponse {
+  ok: true;
+  jobId: string;
+  channelId: string;
+  topicId: string;
+  scriptStatus: 'draft';
+  approvalStatus: 'pending';
+  nextStep: 'approve_script';
+  createdAt: string;
+}
+
+export interface CreateJobFromPromptError {
+  ok: false;
+  code: 'invalid_channel' | 'invalid_prompt' | 'invalid_request' | 'write_failed' | 'config_missing';
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export async function createJobFromPrompt(
+  input: CreateJobFromPromptRequest,
+): Promise<CreateJobFromPromptResponse | CreateJobFromPromptError> {
+  // Validate input
+  if (!input.channelId || typeof input.channelId !== 'string') {
+    return {
+      ok: false,
+      code: 'invalid_request',
+      message: 'channelId is required and must be a string',
+    };
+  }
+
+  if (!input.prompt || typeof input.prompt !== 'string') {
+    return {
+      ok: false,
+      code: 'invalid_request',
+      message: 'prompt is required and must be a string',
+    };
+  }
+
+  const promptLength = input.prompt.trim().length;
+  if (promptLength < 10 || promptLength > 500) {
+    return {
+      ok: false,
+      code: 'invalid_prompt',
+      message: 'prompt must be between 10 and 500 characters',
+      details: { promptLength },
+    };
+  }
+
+  if (!input.requestedBy || typeof input.requestedBy !== 'string') {
+    return {
+      ok: false,
+      code: 'invalid_request',
+      message: 'requestedBy is required and must be a string',
+    };
+  }
+
+  const root = getVideoOrchestratorRoot();
+
+  // Validate channel exists and load config
+  try {
+    const channelDir = join(root, 'channels', input.channelId);
+    await access(channelDir);
+
+    // Load channel config
+    const channelConfigPath = join(channelDir, 'channel.json');
+    const contentProfilePath = join(channelDir, 'content-profile.json');
+
+    const configData = await readFile(channelConfigPath, 'utf-8');
+    const contentData = await readFile(contentProfilePath, 'utf-8');
+
+    const config = JSON.parse(configData);
+    const contentProfile = JSON.parse(contentData);
+
+    // Verify channel allows public publishing is NOT allowed (security check)
+    if (contentProfile.allowPublicPublishing === true) {
+      return {
+        ok: false,
+        code: 'invalid_channel',
+        message: 'Channel configuration does not support draft job creation',
+      };
+    }
+
+    // Generate safe jobId using timestamp-based slug
+    const now = new Date();
+    const timestamp = now.getTime();
+    const promtSlug = input.prompt
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 30);
+    const jobId = `${input.channelId}-prompt-${timestamp}-${promtSlug}`;
+
+    // Create job folder structure
+    const jobDir = join(root, 'jobs', jobId);
+    const metadataDir = join(jobDir, 'metadata');
+    const scriptsDir = join(jobDir, 'scripts');
+
+    // Create directories
+    await Promise.all([
+      access(jobDir).catch(() => null), // Check if exists first
+    ]);
+
+    // Generate topicId from prompt
+    const topicId = `${input.channelId}-prompt-${timestamp}`;
+
+    // Create metadata files
+    const now_iso = now.toISOString();
+
+    const topicMetadata = {
+      jobId,
+      channelId: input.channelId,
+      topicId,
+      title: input.prompt.slice(0, 80),
+      description: input.prompt,
+      source: 'interactive-prompt',
+      createdAt: now_iso,
+    };
+
+    const scriptMetadata: ScriptMetadata = {
+      jobId,
+      channelId: input.channelId,
+      topicId,
+      status: 'draft',
+      title: input.prompt.slice(0, 80),
+      targetDurationSeconds: contentProfile.targetDurationSeconds || 60,
+      wordCount: 0, // Will be updated after script generation
+      scriptKey: `jobs/${jobId}/scripts/script.md`,
+      generatedBy: 'interactive-prompt',
+      createdAt: now_iso,
+      updatedAt: now_iso,
+      approval: {
+        required: contentProfile.scriptRequirements?.approvalRequired ?? true,
+        status: 'pending',
+        theologicalReviewRequired: contentProfile.scriptRequirements?.theologicalReviewRequired ?? false,
+        notes: `Draft created from prompt by ${input.requestedBy}`,
+      },
+    };
+
+    const scriptContent = `# ${input.prompt}\n\n## Prompt\n${input.prompt}\n\n## Status\nThis is a draft script created from an interactive prompt.\n\n`;
+
+    // Write files using writeFile (creates dirs as needed via Node.js fs)
+    const fs = await import('fs');
+    const path = await import('path');
+
+    // Create all directories synchronously first
+    const createDirsSync = (dir: string) => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    };
+
+    createDirsSync(metadataDir);
+    createDirsSync(scriptsDir);
+
+    // Write files
+    await Promise.all([
+      writeFile(path.join(metadataDir, 'topic.json'), JSON.stringify(topicMetadata, null, 2)),
+      writeFile(path.join(metadataDir, 'script.json'), JSON.stringify(scriptMetadata, null, 2)),
+      writeFile(path.join(scriptsDir, 'script.md'), scriptContent),
+    ]);
+
+    return {
+      ok: true,
+      jobId,
+      channelId: input.channelId,
+      topicId,
+      scriptStatus: 'draft',
+      approvalStatus: 'pending',
+      nextStep: 'approve_script',
+      createdAt: now_iso,
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+    // Check if it's a channel not found error
+    if (errorMsg.includes('ENOENT') || errorMsg.includes('not found')) {
+      return {
+        ok: false,
+        code: 'invalid_channel',
+        message: `Channel '${input.channelId}' not found or missing configuration`,
+      };
+    }
+
+    if (errorMsg.includes('config') || errorMsg.includes('profile')) {
+      return {
+        ok: false,
+        code: 'config_missing',
+        message: `Channel configuration or content profile not found for '${input.channelId}'`,
+      };
+    }
+
+    return {
+      ok: false,
+      code: 'write_failed',
+      message: `Failed to create job: ${errorMsg}`,
+    };
+  }
+}

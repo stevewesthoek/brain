@@ -1,0 +1,25 @@
+{
+  "channelId": "says-the-bible",
+  "displayName": "Says the Bible",
+  "platforms": {
+    "youtube": {
+      "enabled": true,
+      "secretName": "says-the-bible/youtube/oauth-token",
+      "defaultPrivacyStatus": "private",
+      "allowedPrivacyStatuses": ["private", "unlisted"],
+      "categoryId": "27",
+      "defaultTags": ["Bible", "Scripture", "Theology"],
+      "titlePrefix": "",
+      "titleSuffix": "",
+      "descriptionTemplate": "",
+      "madeForKids": false
+    }
+  },
+  "publishing": {
+    "requireManualApproval": true,
+    "allowPublic": false,
+    "defaultPlatform": "youtube"
+  },
+  "createdAt": "2026-06-01T00:00:00Z",
+  "updatedAt": "2026-06-01T00:00:00Z"
+}

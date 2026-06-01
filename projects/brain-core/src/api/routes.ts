@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript } from '../providers/video-orchestrator-provider.js';
+import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2275,6 +2275,28 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     }
 
     const result = await generateApprovedScript(jobId, body);
+    if (result.ok) {
+      sendJson(response, 200, result);
+    } else {
+      sendJson(response, 400, result);
+    }
+    return;
+  }
+
+  // ── Video Orchestrator: Create job from prompt ────────────────────────────
+  if (url.pathname === '/api/video-orchestrator/jobs/create-from-prompt') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', message: 'Request body must be valid JSON.' });
+      return;
+    }
+
+    const result = await createJobFromPrompt({
+      channelId: (body.channelId as string) ?? '',
+      prompt: (body.prompt as string) ?? '',
+      requestedBy: (body.requestedBy as string) ?? '',
+    });
+
     if (result.ok) {
       sendJson(response, 200, result);
     } else {
