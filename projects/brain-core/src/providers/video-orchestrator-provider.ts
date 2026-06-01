@@ -1,10 +1,19 @@
-import { access, readFile, writeFile } from 'fs/promises';
+import { access, readFile, writeFile, mkdir } from 'fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { join } from 'path';
 
 function getVideoOrchestratorRoot(): string {
   return process.env.BRAIN_VIDEO_ORCHESTRATOR_ROOT
     || '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud';
 }
+
+const execFileAsync = promisify(execFile);
+
+const AWS_REGION = 'eu-north-1';
+const S3_BUCKET = 'prochat-video-dev-909439522876-eu-north-1-an';
+const STATE_MACHINE_ARN = 'arn:aws:states:eu-north-1:909439522876:stateMachine:prochat-video-skeleton-dev';
+const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
 
 export interface TopicCandidate {
   topicId: string;
@@ -461,8 +470,12 @@ export interface GenerationTriggerRequest {
 export interface GenerationTriggerResponse {
   ok: true;
   jobId: string;
+  generationStatus: 'complete' | 'started';
   generationStarted: boolean;
   executionArn?: string;
+  finalVideoKey?: string;
+  thumbnailKey?: string;
+  publishStatus: 'pending';
   publishBlocked: true;
 }
 
@@ -559,10 +572,142 @@ export async function generateApprovedScript(
   }
 
   // All validations passed, generation can proceed
+  // Create job directory structure
+  const jobRoot = join(getVideoOrchestratorRoot(), 'jobs', jobId);
+  const metadataDir = join(jobRoot, 'metadata');
+  const audioDir = join(jobRoot, 'audio');
+  const publishingDir = join(jobRoot, 'publishing');
+
+  try {
+    await mkdir(metadataDir, { recursive: true });
+    await mkdir(audioDir, { recursive: true });
+    await mkdir(publishingDir, { recursive: true });
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'dir_creation_failed',
+      message: `Failed to create job directories: ${err instanceof Error ? err.message : String(err)}`,
+      jobId,
+    };
+  }
+
+  // Step 1: Write initial status.json
+  const statusPath = join(metadataDir, 'status.json');
+  const initialStatus = {
+    status: 'generating',
+    currentStep: 'narration_started',
+    startedAt: new Date().toISOString(),
+    executionArn: null as string | null,
+  };
+  try {
+    await writeFile(statusPath, JSON.stringify(initialStatus, null, 2) + '\n', 'utf-8');
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'status_write_failed',
+      message: `Failed to write status.json: ${err instanceof Error ? err.message : String(err)}`,
+      jobId,
+    };
+  }
+
+  // Step 2: Copy narration from S3 fixture
+  const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
+  try {
+    await execFileAsync('aws', [
+      's3', 'cp',
+      `s3://${S3_BUCKET}/${NARRATION_FIXTURE_KEY}`,
+      `s3://${S3_BUCKET}/${narrationKey}`,
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ]);
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'narration_failed',
+      message: `Failed to copy narration from S3: ${err instanceof Error ? err.message : String(err)}`,
+      jobId,
+    };
+  }
+
+  // Step 3: Start Step Functions execution
+  const executionName = `console-gen-${jobId}-${Date.now()}`;
+  const sfInput = JSON.stringify({
+    jobId,
+    videoKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
+    audioKey: narrationKey,
+  });
+
+  let executionArn: string;
+  try {
+    const { stdout } = await execFileAsync('aws', [
+      'stepfunctions', 'start-execution',
+      '--state-machine-arn', STATE_MACHINE_ARN,
+      '--name', executionName,
+      '--input', sfInput,
+      '--region', AWS_REGION,
+      '--query', 'executionArn',
+      '--output', 'text',
+      '--no-cli-pager',
+    ]);
+    executionArn = stdout.trim();
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'workflow_start_failed',
+      message: `Failed to start Step Functions execution: ${err instanceof Error ? err.message : String(err)}`,
+      jobId,
+    };
+  }
+
+  // Step 4: Update status.json with execution ARN
+  initialStatus.executionArn = executionArn;
+  initialStatus.currentStep = 'workflow_started';
+  try {
+    await writeFile(statusPath, JSON.stringify(initialStatus, null, 2) + '\n', 'utf-8');
+  } catch (err) {
+    // Log but don't fail — status is non-critical at this point
+    console.error(`Warning: Failed to update status.json with executionArn: ${err}`);
+  }
+
+  // Step 5: Write publish.json to both metadata/ and publishing/
+  const publishJson = {
+    jobId,
+    publishStatus: 'pending',
+    publishBlocked: true,
+    reason: 'Generated from approved draft — awaiting explicit publish approval',
+    createdAt: new Date().toISOString(),
+    generatedBy: 'interactive-prompt',
+    platforms: {
+      youtube: {
+        status: 'pending',
+      },
+    },
+  };
+
+  const publishJsonContent = JSON.stringify(publishJson, null, 2) + '\n';
+
+  try {
+    const metadataPublishPath = join(metadataDir, 'publish.json');
+    const publishingPublishPath = join(publishingDir, 'publish.json');
+    await writeFile(metadataPublishPath, publishJsonContent, 'utf-8');
+    await writeFile(publishingPublishPath, publishJsonContent, 'utf-8');
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'publish_write_failed',
+      message: `Failed to write publish.json: ${err instanceof Error ? err.message : String(err)}`,
+      jobId,
+    };
+  }
+
+  // Generation triggered successfully
   return {
     ok: true,
     jobId,
+    generationStatus: 'started',
     generationStarted: true,
+    executionArn,
+    publishStatus: 'pending',
     publishBlocked: true,
   };
 }

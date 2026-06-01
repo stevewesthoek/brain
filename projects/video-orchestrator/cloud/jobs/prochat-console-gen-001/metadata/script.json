@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-console-gen-001",
+  "channelId": "prochat",
+  "topicId": "prochat-console-gen-001-topic",
+  "status": "approved",
+  "title": "Why AI Won't Replace Founders",
+  "targetDurationSeconds": 60,
+  "wordCount": 150,
+  "scriptKey": "jobs/prochat-console-gen-001/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-01T00:00:00Z",
+  "updatedAt": "2026-06-01T00:00:00Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "approvedBy": "Steve",
+    "approvedAt": "2026-06-01T00:00:00Z",
+    "notes": "I-8.3 proof: approved for generation trigger testing"
+  }
+}
