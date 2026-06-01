@@ -8661,6 +8661,12 @@ export interface BrainCoreVideoOrchestratorStatusResponse {
   ok: boolean;
   data: {
     channels: BrainCoreChannelStatus[];
+    recentJobs?: Array<{
+      jobId: string;
+      channelId: string;
+      status: string;
+      videoId?: string | null;
+    }>;
     pipelineReady: boolean;
     generationStatus: 'ready' | 'in-progress' | 'stalled';
     publishingStatus: 'ready' | 'in-progress' | 'stalled';
@@ -8678,8 +8684,9 @@ export interface BrainCoreChannelTopicsResponse {
 export async function readBrainCoreAwsVideoPipelineStatus(
   baseUrl: string,
 ): Promise<HttpResult<BrainCoreVideoOrchestratorStatusResponse>> {
-  return fetchJson<BrainCoreVideoOrchestratorStatusResponse>(
-    normalizeBaseUrl(baseUrl),
+  return requestBrainCoreOperationalJson<BrainCoreVideoOrchestratorStatusResponse>(
+    baseUrl,
+    'GET',
     '/api/video-orchestrator/topic-intelligence/status',
   );
 }
@@ -8724,10 +8731,11 @@ export async function createBrainCoreVideoJobFromPrompt(
   baseUrl: string,
   input: CreateJobFromPromptRequest,
 ): Promise<HttpResult<CreateJobFromPromptResult>> {
-  return fetchJson<CreateJobFromPromptResult>(
-    normalizeBaseUrl(baseUrl),
+  return requestBrainCoreOperationalJson<CreateJobFromPromptResult>(
+    baseUrl,
+    'POST',
     '/api/video-orchestrator/jobs/create-from-prompt',
-    { method: 'POST', body: JSON.stringify(input) },
+    input,
   );
 }
 
@@ -8773,33 +8781,170 @@ export interface BrainCoreVideoJobTimeline {
   events: BrainCoreVideoJobTimelineEvent[];
 }
 
-export interface HttpResult<T> {
-  value?: T;
-  error?: string;
-  status?: number;
+const AWS_VIDEO_REQUEST_TIMEOUT_MS = 5000;
+
+type WrappedBrainCorePayload<T> = T | { ok?: boolean; data?: T; error?: string; message?: string };
+type RecentJobsPayload = { jobs?: BrainCoreVideoJobSummary[] } | { data?: { jobs?: BrainCoreVideoJobSummary[] } };
+
+function unwrapBrainCorePayload<T>(payload: WrappedBrainCorePayload<T> | undefined): T | undefined {
+  if (!payload || typeof payload !== 'object') return payload as T | undefined;
+  if ('data' in payload && (payload as { data?: T }).data !== undefined) {
+    return (payload as { data?: T }).data;
+  }
+  return payload as T;
 }
 
-async function readBrainCoreJson<T>(baseUrl: string, path: string): Promise<HttpResult<T>> {
+function normalizeRecentVideoJobsPayload(payload: RecentJobsPayload | undefined): BrainCoreVideoJobSummary[] {
+  if (!payload || typeof payload !== 'object') return [];
+  if (Array.isArray((payload as { jobs?: BrainCoreVideoJobSummary[] }).jobs)) {
+    return (payload as { jobs: BrainCoreVideoJobSummary[] }).jobs;
+  }
+  const wrappedJobs = (payload as { data?: { jobs?: BrainCoreVideoJobSummary[] } }).data?.jobs;
+  return Array.isArray(wrappedJobs) ? wrappedJobs : [];
+}
+
+async function requestBrainCoreOperationalJson<T>(
+  baseUrl: string,
+  method: 'GET' | 'POST',
+  path: string,
+  body?: unknown,
+): Promise<HttpResult<T>> {
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+  const requestBaseUrl = normalizedBaseUrl.replace('://localhost:', '://127.0.0.1:');
+  const url = `${requestBaseUrl}${path}`;
+  const startTime = performance.now();
+
+  if (!requestUrlFn) {
+    return {
+      error: 'Obsidian requestUrl not initialized',
+      url,
+    };
+  }
+
   try {
-    const response = await fetch(`${baseUrl}${path}`);
-    const value = await response.json() as T;
-    if (!response.ok) {
-      return { value, status: response.status, error: `Brain Core returned ${response.status}` };
+    const timeoutMessage = `Brain Core request timed out after 5000ms: ${method} ${path}`;
+    const response = await Promise.race([
+      requestUrlFn({
+        url,
+        method,
+        ...(body !== undefined ? { contentType: 'application/json' } : {}),
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(timeoutMessage)),
+          AWS_VIDEO_REQUEST_TIMEOUT_MS,
+        )
+      ),
+    ]);
+
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    const parsed = safeParseJson<WrappedBrainCorePayload<T>>(response.text ?? '{}');
+
+    if (response.status < 200 || response.status >= 300) {
+      return {
+        error: parsed && typeof parsed === 'object' && 'message' in parsed && parsed.message
+          ? String(parsed.message)
+          : `HTTP ${response.status}`,
+        status: response.status,
+        detail: parsed && typeof parsed === 'object' && 'error' in parsed && parsed.error
+          ? String(parsed.error)
+          : response.text?.slice(0, 240),
+        value: unwrapBrainCorePayload(parsed),
+        url,
+        responseTimeMs,
+      };
     }
-    return { value, status: response.status };
+
+    if (!parsed) {
+      return {
+        error: 'invalid JSON response',
+        detail: response.text?.slice(0, 240),
+        status: response.status,
+        url,
+        responseTimeMs,
+      };
+    }
+
+    return {
+      value: unwrapBrainCorePayload(parsed),
+      status: response.status,
+      url,
+      responseTimeMs,
+    };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) };
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    return {
+      error: error instanceof Error ? error.message : String(error),
+      url,
+      responseTimeMs,
+    };
   }
 }
 
+export async function readBrainCoreOperationalRecentVideoJobs(baseUrl: string): Promise<HttpResult<BrainCoreVideoJobSummary[]>> {
+  const result = await requestBrainCoreOperationalJson<RecentJobsPayload>(
+    baseUrl,
+    'GET',
+    '/api/video-orchestrator/jobs/recent',
+  );
+  if (result.error) return { ...result, value: normalizeRecentVideoJobsPayload(result.value) };
+  return { ...result, value: normalizeRecentVideoJobsPayload(result.value) };
+}
+
+export async function readBrainCoreOperationalVideoJob(baseUrl: string, jobId: string): Promise<HttpResult<BrainCoreVideoJobSummary>> {
+  return requestBrainCoreOperationalJson<BrainCoreVideoJobSummary>(
+    baseUrl,
+    'GET',
+    `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`,
+  );
+}
+
+export async function readBrainCoreOperationalVideoJobTimeline(baseUrl: string, jobId: string): Promise<HttpResult<BrainCoreVideoJobTimeline>> {
+  return requestBrainCoreOperationalJson<BrainCoreVideoJobTimeline>(
+    baseUrl,
+    'GET',
+    `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`,
+  );
+}
+
+export async function requestBrainCoreOperationalGenerateVideoJob(baseUrl: string, jobId: string): Promise<HttpResult<unknown>> {
+  return requestBrainCoreOperationalJson<unknown>(
+    baseUrl,
+    'POST',
+    `/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/generate`,
+    { requestedBy: 'brain-console' },
+  );
+}
+
+export async function requestBrainCoreOperationalApproveVideoJob(baseUrl: string, jobId: string): Promise<HttpResult<unknown>> {
+  return requestBrainCoreOperationalJson<unknown>(
+    baseUrl,
+    'POST',
+    `/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/approve`,
+    { approvedBy: 'brain-console', notes: 'Approved from AWS Video operational console' },
+  );
+}
+
+export async function requestBrainCoreOperationalRequestVideoJobChanges(baseUrl: string, jobId: string, notes: string): Promise<HttpResult<unknown>> {
+  return requestBrainCoreOperationalJson<unknown>(
+    baseUrl,
+    'POST',
+    `/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/changes`,
+    { requestedBy: 'brain-console', notes },
+  );
+}
+
+// Backward-compatible aliases for older panel imports. These must stay requestUrl-based.
 export async function getBrainCoreRecentVideoJobs(baseUrl: string): Promise<HttpResult<{ jobs: BrainCoreVideoJobSummary[] }>> {
-  return readBrainCoreJson<{ jobs: BrainCoreVideoJobSummary[] }>(baseUrl, '/api/video-orchestrator/jobs/recent');
+  const result = await readBrainCoreOperationalRecentVideoJobs(baseUrl);
+  return { ...result, value: { jobs: result.value ?? [] } };
 }
 
 export async function getBrainCoreVideoJob(baseUrl: string, jobId: string): Promise<HttpResult<BrainCoreVideoJobSummary>> {
-  return readBrainCoreJson<BrainCoreVideoJobSummary>(baseUrl, `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`);
+  return readBrainCoreOperationalVideoJob(baseUrl, jobId);
 }
 
 export async function getBrainCoreVideoJobTimeline(baseUrl: string, jobId: string): Promise<HttpResult<BrainCoreVideoJobTimeline>> {
-  return readBrainCoreJson<BrainCoreVideoJobTimeline>(baseUrl, `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`);
+  return readBrainCoreOperationalVideoJobTimeline(baseUrl, jobId);
 }
