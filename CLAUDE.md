@@ -33,7 +33,7 @@ After activating or installing a skill, export it to all configured AI/IDE consu
 node tools/scripts/sync-ai-skills.mjs --dry-run && node tools/scripts/sync-ai-skills.mjs && node tools/scripts/sync-ai-skills.mjs --check
 ```
 
-This syncs active skills to Claude Code, Codex, Gemini CLI, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
+This syncs active skills to Claude Code, Codex, Cursor, Kiro, and Antigravity. The check should pass before continuing with other work.
 
 ## CLI Manifest — Unified Tool Access
 
@@ -154,7 +154,7 @@ mind/                    ← Personal Obsidian vault (iOS + Mac)
   .git/                  Independent repo: stevewesthoek/mind
 
 brain/ (machine-brain)   ← AI infrastructure, system config, skills
-  ai/skills/             Claude/Codex/Gemini skills
+  ai/skills/             Claude/Codex skills
   tools/                 Utility scripts and tools
   operations/system-configs/  ← symlinked to home (~)
   mind/ → symlink to ../mind/ (AI agents read vault)
@@ -303,7 +303,6 @@ spark-cli team "Team Name"            # team info
 |-----------|--------|
 | `~/.claude` | `operations/system-configs/claude/` |
 | `~/.codex` | `operations/system-configs/codex/` |
-| `~/.gemini` | `operations/system-configs/gemini/` |
 | `~/.kiro` | `operations/system-configs/kiro/` |
 | `~/.config/starship.toml` | `operations/system-configs/starship/starship.toml` |
 | `~/.config/ghostty/config` | `operations/system-configs/ghostty/config` |
@@ -337,7 +336,7 @@ This system runs automatically via hooks in `~/.claude/settings.json`. No user a
 **What goes on the machine kanban (in mind/04-tasks/):**
 
 Tasks for machine-brain infrastructure work (AI infrastructure, system config, skills):
-- Skill development (new Claude/Codex/Gemini skills)
+- Skill development (new Claude/Codex skills)
 - System configuration updates
 - Automation scripts and hooks
 - Model routing and cost optimization
@@ -376,7 +375,6 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 **Symlinks map (home → machine-brain):**
 - `~/.claude` → `machine-brain/operations/system-configs/claude`
 - `~/.codex` → `machine-brain/operations/system-configs/codex`
-- `~/.gemini` → `machine-brain/operations/system-configs/gemini`
 - `~/.kiro` → `machine-brain/operations/system-configs/kiro`
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → machine-brain
 - `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into machine-brain
