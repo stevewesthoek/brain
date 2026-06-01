@@ -14,7 +14,7 @@ echo ""
 # Test 1: Recent jobs endpoint
 echo "[Test 1/8] GET /api/video-orchestrator/jobs/recent"
 RECENT=$(curl -s "$BASE_URL/api/video-orchestrator/jobs/recent")
-if echo "$RECENT" | grep -q '"ok":true'; then
+if echo "$RECENT" | grep -qE '"ok"\s*:\s*true'; then
   JOBS_COUNT=$(echo "$RECENT" | grep -o '"jobId"' | wc -l)
   echo "✓ PASS: Recent jobs endpoint returns OK, found $JOBS_COUNT jobs"
 else
@@ -30,7 +30,6 @@ if echo "$RECENT" | grep -q 'prochat-console-gen-001'; then
   echo "✓ PASS: prochat-console-gen-001 found in recent jobs"
 else
   echo "❌ FAIL: prochat-console-gen-001 not found in recent jobs"
-  echo "Response: $RECENT"
   exit 1
 fi
 echo ""
@@ -38,18 +37,17 @@ echo ""
 # Test 3: prochat-real-001 shows published status
 echo "[Test 3/8] Checking prochat-real-001 status"
 REAL_JOB=$(curl -s "$BASE_URL/api/video-orchestrator/jobs/prochat-real-001")
-if echo "$REAL_JOB" | grep -q '"status":"published"'; then
+if echo "$REAL_JOB" | grep -qE '"status"\s*:\s*"published"'; then
   echo "✓ PASS: prochat-real-001 shows published status"
 else
   echo "⚠ WARNING: prochat-real-001 status is not published"
-  echo "Response: $REAL_JOB"
 fi
 echo ""
 
 # Test 4: Individual job endpoint
 echo "[Test 4/8] GET /api/video-orchestrator/jobs/prochat-real-001"
-if echo "$REAL_JOB" | grep -q '"ok":true'; then
-  if echo "$REAL_JOB" | grep -q '"jobId":"prochat-real-001"'; then
+if echo "$REAL_JOB" | grep -qE '"ok"\s*:\s*true'; then
+  if echo "$REAL_JOB" | grep -q '"jobId":"prochat-real-001"' || echo "$REAL_JOB" | grep -q '"jobId": "prochat-real-001"'; then
     echo "✓ PASS: Job detail endpoint returns normalized summary for prochat-real-001"
   else
     echo "❌ FAIL: Job detail response missing jobId"
@@ -57,7 +55,6 @@ if echo "$REAL_JOB" | grep -q '"ok":true'; then
   fi
 else
   echo "❌ FAIL: Job detail endpoint did not return ok:true"
-  echo "Response: $REAL_JOB"
   exit 1
 fi
 echo ""
@@ -65,7 +62,7 @@ echo ""
 # Test 5: Timeline endpoint
 echo "[Test 5/8] GET /api/video-orchestrator/jobs/prochat-real-001/timeline"
 TIMELINE=$(curl -s "$BASE_URL/api/video-orchestrator/jobs/prochat-real-001/timeline")
-if echo "$TIMELINE" | grep -q '"ok":true'; then
+if echo "$TIMELINE" | grep -qE '"ok"\s*:\s*true'; then
   if echo "$TIMELINE" | grep -q '"events"'; then
     EVENTS_COUNT=$(echo "$TIMELINE" | grep -o '"step"' | wc -l)
     echo "✓ PASS: Timeline endpoint returns $EVENTS_COUNT events for prochat-real-001"
@@ -75,7 +72,6 @@ if echo "$TIMELINE" | grep -q '"ok":true'; then
   fi
 else
   echo "❌ FAIL: Timeline endpoint did not return ok:true"
-  echo "Response: $TIMELINE"
   exit 1
 fi
 echo ""
@@ -83,11 +79,10 @@ echo ""
 # Test 6: Artifacts endpoint
 echo "[Test 6/8] GET /api/video-orchestrator/jobs/prochat-real-001/artifacts"
 ARTIFACTS=$(curl -s "$BASE_URL/api/video-orchestrator/jobs/prochat-real-001/artifacts")
-if echo "$ARTIFACTS" | grep -q '"ok":true'; then
+if echo "$ARTIFACTS" | grep -qE '"ok"\s*:\s*true'; then
   echo "✓ PASS: Artifacts endpoint returns data for prochat-real-001"
 else
   echo "❌ FAIL: Artifacts endpoint did not return ok:true"
-  echo "Response: $ARTIFACTS"
   exit 1
 fi
 echo ""
@@ -95,11 +90,10 @@ echo ""
 # Test 7: Missing job returns 404
 echo "[Test 7/8] GET /api/video-orchestrator/jobs/nonexistent-job-xyz"
 MISSING=$(curl -s "$BASE_URL/api/video-orchestrator/jobs/nonexistent-job-xyz")
-if echo "$MISSING" | grep -q '"ok":false'; then
+if echo "$MISSING" | grep -qE '"ok"\s*:\s*false'; then
   echo "✓ PASS: Missing job returns error (not a crash)"
 else
   echo "⚠ WARNING: Missing job did not return expected error format"
-  echo "Response: $MISSING"
 fi
 echo ""
 
