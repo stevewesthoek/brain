@@ -1,0 +1,34 @@
+{
+  "jobId": "prochat-real-001",
+  "channelId": "prochat",
+  "publishStatus": "uploaded",
+  "createdAt": "2026-06-01T11:28:31.154702Z",
+  "updatedAt": "2026-06-01T11:31:30Z",
+  "publishedAt": null,
+  "title": "AI Writes Code But Not Businesses",
+  "description": "ProChat private proof upload for I-7.5b. Generated from approved ProChat topic prochat-ai-code-001.",
+  "tags": [
+    "ProChat",
+    "AI",
+    "SaaS",
+    "Founders"
+  ],
+  "privacyStatus": "private",
+  "privacyEnforced": true,
+  "videoKey": "jobs/prochat-real-001/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-real-001/exports/thumbnail-001.jpg",
+  "platforms": {
+    "youtube": {
+      "status": "uploaded",
+      "videoId": "2ByNTun47XU",
+      "publishedAt": "2026-06-01T11:30:38Z",
+      "url": "https://www.youtube.com/watch?v=2ByNTun47XU",
+      "privacyStatus": "private",
+      "alreadyPublished": true,
+      "idempotencyVerifiedAt": "2026-06-01T11:31:30Z",
+      "idempotencyExecutionArn": "arn:aws:states:eu-north-1:909439522876:execution:video-publisher-youtube:prochat-real-001-youtube-idempotency-1780313486",
+      "error": null,
+      "thumbnailUrl": "https://i9.ytimg.com/vi/2ByNTun47XU/default.jpg?sqp=CLja9dAG&rs=AOn4CLBM7IRwx33ZfnqnFNfsKuKUgRJuvg"
+    }
+  }
+}

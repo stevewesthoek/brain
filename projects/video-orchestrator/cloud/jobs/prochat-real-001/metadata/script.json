@@ -1,0 +1,18 @@
+{
+  "jobId": "prochat-real-001",
+  "channelId": "prochat",
+  "topicId": "prochat-ai-code-001",
+  "title": "AI Writes Code But Not Businesses",
+  "scriptPath": "jobs/prochat-real-001/scripts/script.md",
+  "template": "cloud/templates/prochat-script-template.md",
+  "wordCount": 177,
+  "generatedAt": "2026-06-01T11:25:32Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "approvedBy": "Steve",
+    "approvedAt": "2026-06-01T11:25:32Z",
+    "notes": "I-7.5b real ProChat topic-to-private-YouTube proof."
+  }
+}

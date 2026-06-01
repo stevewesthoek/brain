@@ -1,0 +1,26 @@
+{
+  "jobId": "prochat-real-001",
+  "channelId": "prochat",
+  "status": "complete",
+  "currentStep": "thumbnail_generated",
+  "completedSteps": [
+    "topic_selected",
+    "script_created",
+    "script_approved",
+    "narration_generated",
+    "reused_visual_prepared",
+    "video_assembled",
+    "thumbnail_generated"
+  ],
+  "failedStep": null,
+  "lastError": null,
+  "startedAt": "2026-06-01T11:25:32Z",
+  "updatedAt": "2026-06-01T11:28:04.828373Z",
+  "assemblyStartedAt": "2026-06-01T11:27:35.870Z",
+  "assemblyCompletedAt": "2026-06-01T11:28:04.579Z",
+  "thumbnailCompletedAt": "2026-06-01T11:28:31.281Z",
+  "mediaConvertJobId": "1780313258083-0fhpt5",
+  "thumbnailMediaConvertJobId": "1780313287127-p3pz6b",
+  "finalVideoKey": "jobs/prochat-real-001/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-real-001/exports/thumbnail-001.jpg"
+}

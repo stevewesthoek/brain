@@ -1,0 +1,10 @@
+{
+  "jobId": "prochat-real-001",
+  "channelId": "prochat",
+  "topicId": "prochat-ai-code-001",
+  "title": "AI Writes Code But Not Businesses",
+  "score": 91,
+  "status": "selected",
+  "source": "cloud/channels/prochat/topic-backlog.json",
+  "selectedAt": "2026-06-01T11:25:32Z"
+}

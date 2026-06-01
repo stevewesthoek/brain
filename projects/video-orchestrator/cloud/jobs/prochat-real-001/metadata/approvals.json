@@ -1,0 +1,23 @@
+{
+  "jobId": "prochat-real-001",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "Steve",
+      "approvedAt": "2026-06-01T11:25:32Z",
+      "notes": "I-7.5b real ProChat topic-to-private-YouTube proof."
+    },
+    "scenes": {
+      "status": "not_required",
+      "approvedBy": null,
+      "approvedAt": null,
+      "notes": "Nova generation is not wired for this job; existing Nova-generated background is reused as an input asset."
+    },
+    "final": {
+      "status": "not_required",
+      "approvedBy": null,
+      "approvedAt": null,
+      "notes": null
+    }
+  }
+}

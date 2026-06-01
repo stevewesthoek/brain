@@ -1,0 +1,61 @@
+{
+  "jobId": "prochat-real-001",
+  "channelId": "prochat",
+  "pipelineVersion": "I-7.5b",
+  "generatedAt": "2026-06-01T11:27:00Z",
+  "assets": {
+    "script": {
+      "path": "jobs/prochat-real-001/scripts/script.md",
+      "type": "script-markdown",
+      "size": 1281,
+      "status": "available"
+    },
+    "narration": {
+      "path": "jobs/prochat-real-001/audio/narration.mp3",
+      "type": "audio-narration",
+      "source": "aws-polly",
+      "size": 436796,
+      "durationSeconds": 72.792,
+      "status": "available"
+    },
+    "reusedNovaSource": {
+      "path": "jobs/prochat-real-001/video-generated/reused-nova-source-generated-001.mp4",
+      "sourcePath": "jobs/test-001/video-generated/generated-001.mp4",
+      "type": "video-generated-source",
+      "source": "reused-existing-nova-generated-clip",
+      "size": 1652803,
+      "durationSeconds": 6.041667,
+      "status": "available"
+    },
+    "generatedVideo": {
+      "path": "jobs/prochat-real-001/video-generated/generated-001.mp4",
+      "type": "video-prepared-from-reused-nova-source",
+      "source": "looped derivative of reused existing Nova-generated clip",
+      "size": 20029334,
+      "durationSeconds": 73.083333,
+      "status": "available"
+    },
+    "finalVideo": {
+      "path": "jobs/prochat-real-001/exports/generated-001-final.mp4",
+      "type": "video-assembled",
+      "source": "aws-mediaconvert",
+      "mediaConvertJobId": "1780313258083-0fhpt5",
+      "size": 5453822,
+      "durationSeconds": 73.208333,
+      "resolution": "1280x720",
+      "videoCodec": "h264",
+      "audioCodec": "aac",
+      "status": "available"
+    },
+    "thumbnail": {
+      "path": "jobs/prochat-real-001/exports/thumbnail-001.jpg",
+      "type": "thumbnail-preview",
+      "source": "aws-mediaconvert-frame-capture",
+      "mediaConvertJobId": "1780313287127-p3pz6b",
+      "size": 37960,
+      "resolution": "1280x720",
+      "selectedFrameSeconds": 3,
+      "status": "available"
+    }
+  }
+}
