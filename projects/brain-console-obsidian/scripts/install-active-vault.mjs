@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
-const expectedMarker = 'v2.18';
+const expectedMarker = 'v2.19-aws-video-fix';
 const pluginDir = '/Users/Office/Repos/stevewesthoek/mind/.obsidian/plugins/brain-console';
 const managedFiles = ['main.js', 'styles.css', 'manifest.json'];
 

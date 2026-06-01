@@ -3,8 +3,9 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'v2.18';
+const currentMarker = 'v2.19-aws-video-fix';
 const staleMarkers = [
+  'v2.18',
   'v2.16',
   'v2.15',
   'v2.14',

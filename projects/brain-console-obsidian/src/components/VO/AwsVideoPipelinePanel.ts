@@ -8,6 +8,12 @@ import type {
 import { createBrainCoreVideoJobFromPrompt, readBrainCoreAwsVideoPipelineStatus } from '../../client.js';
 import { StatusPill } from '../Design/shadcn-components.js';
 
+declare global {
+  interface Window {
+    BRAIN_CONSOLE_BUILD_ID: string;
+  }
+}
+
 const REFRESH_INTERVAL_MS = 30_000;
 const JOB_POLL_INTERVAL_MS = 10_000;
 const TERMINAL_JOB_STATES = new Set(['generated', 'ready_to_publish', 'published', 'failed']);
@@ -32,6 +38,9 @@ export class AwsVideoPipelinePanel {
   private draftSubmitting = false;
   private error: string | undefined;
   private actionMessage: string | undefined;
+  private lastRefreshTime: Date | null = null;
+  private statusFetchStatus: 'ok' | 'error' | null = null;
+  private jobsFetchStatus: 'ok' | 'error' | null = null;
 
   constructor(container: HTMLElement, baseUrl: string = 'http://localhost:4877') {
     this.container = container;
@@ -45,10 +54,14 @@ export class AwsVideoPipelinePanel {
     this.loading = true;
     this.error = undefined;
     this.actionMessage = undefined;
+    this.lastRefreshTime = new Date();
     try {
       // Fetch status and recent jobs independently to avoid hanging if one fails
       const statusResult = await readBrainCoreAwsVideoPipelineStatus(this.baseUrl);
+      this.statusFetchStatus = statusResult.error ? 'error' : 'ok';
+
       const recentJobs = await this.fetchRecentJobs();
+      this.jobsFetchStatus = this.recentJobs.length > 0 || !this.error ? 'ok' : 'error';
 
       if (statusResult.error) {
         this.error = statusResult.error;
@@ -73,6 +86,8 @@ export class AwsVideoPipelinePanel {
       }
     } catch (err) {
       this.error = `Failed to fetch data: ${err instanceof Error ? err.message : 'Unknown error'}`;
+      this.statusFetchStatus = 'error';
+      this.jobsFetchStatus = 'error';
     } finally {
       this.loading = false;
       this.render();
@@ -139,6 +154,7 @@ export class AwsVideoPipelinePanel {
   private render(): void {
     this.container.innerHTML = `
       <div class="aws-video-pipeline-panel">
+        ${this.renderDiagnostics()}
         ${this.renderRefreshIndicator()}
         ${this.renderPipelineHealth()}
         ${this.renderRecentJobs()}
@@ -151,6 +167,28 @@ export class AwsVideoPipelinePanel {
       </div>
     `;
     this.attachEventListeners();
+  }
+
+  private renderDiagnostics(): string {
+    const buildId = (typeof window !== 'undefined' && window.BRAIN_CONSOLE_BUILD_ID) ? window.BRAIN_CONSOLE_BUILD_ID : 'unknown';
+    const lastRefresh = this.lastRefreshTime ? this.lastRefreshTime.toLocaleTimeString() : 'never';
+    const statusIcon = this.statusFetchStatus === 'ok' ? '✓' : this.statusFetchStatus === 'error' ? '✕' : '○';
+    const jobsIcon = this.jobsFetchStatus === 'ok' ? '✓' : this.jobsFetchStatus === 'error' ? '✕' : '○';
+
+    return `
+      <div style="padding: 10px 12px; margin-bottom: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-muted);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 6px;">
+          <div><strong>Build:</strong> <code>${this.escapeHtml(buildId)}</code></div>
+          <div><strong>Brain Core:</strong> <code>${this.escapeHtml(this.baseUrl)}</code></div>
+          <div><strong>Last Refresh:</strong> ${this.escapeHtml(lastRefresh)}</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+          <div>${statusIcon} Status fetch: ${this.statusFetchStatus ?? 'pending'}</div>
+          <div>${jobsIcon} Jobs fetch: ${this.jobsFetchStatus ?? 'pending'}</div>
+          <div>Loaded jobs: ${this.recentJobs.length}</div>
+        </div>
+      </div>
+    `;
   }
 
   private renderRefreshIndicator(): string {
@@ -466,40 +504,83 @@ export class AwsVideoPipelinePanel {
   }
 
   private attachEventListeners(): void {
-    this.container.querySelectorAll<HTMLElement>('[data-job-id]').forEach(row => {
-      row.addEventListener('click', () => {
-        const jobId = row.dataset.jobId;
+    // Use event delegation instead of querySelectorAll to handle re-renders
+    this.container.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+
+      // Job row selection
+      const jobRow = target.closest('[data-job-id]') as HTMLElement | null;
+      if (jobRow) {
+        const jobId = jobRow.dataset.jobId;
         if (jobId) void this.loadJobDetail(jobId);
-      });
+        return;
+      }
+
+      // Refresh button
+      if (target.closest('[data-action="refresh-now"]')) {
+        void this.fetchLiveData();
+        return;
+      }
+
+      // Create draft modal open
+      if (target.closest('[data-action="open-create-draft"]')) {
+        this.showCreateDraftModal = true;
+        this.render();
+        return;
+      }
+
+      // Create draft modal close
+      if (target.closest('[data-action="close-create-draft"]')) {
+        this.showCreateDraftModal = false;
+        this.render();
+        return;
+      }
+
+      // Create draft modal submit
+      if (target.closest('[data-action="submit-create-draft"]')) {
+        void this.createDraftFromModal();
+        return;
+      }
+
+      // Generate job
+      const generateBtn = target.closest('[data-action="generate-job"]') as HTMLElement | null;
+      if (generateBtn) {
+        const jobId = generateBtn.dataset.jobId;
+        if (jobId) void this.generateJob(jobId);
+        return;
+      }
+
+      // Approve job
+      const approveBtn = target.closest('[data-action="approve-job"]') as HTMLElement | null;
+      if (approveBtn) {
+        const jobId = approveBtn.dataset.jobId;
+        if (jobId) void this.approveJob(jobId);
+        return;
+      }
+
+      // Request changes
+      const changesBtn = target.closest('[data-action="request-changes"]') as HTMLElement | null;
+      if (changesBtn) {
+        const jobId = changesBtn.dataset.jobId;
+        if (jobId) void this.requestChanges(jobId);
+        return;
+      }
     });
 
-    this.container.querySelector('[data-action="refresh-now"]')?.addEventListener('click', () => void this.fetchLiveData());
-    this.container.querySelector('[data-action="open-create-draft"]')?.addEventListener('click', () => {
-      this.showCreateDraftModal = true;
-      this.render();
-    });
-    this.container.querySelector('[data-action="close-create-draft"]')?.addEventListener('click', () => {
-      this.showCreateDraftModal = false;
-      this.render();
-    });
-    this.container.querySelector('[data-action="submit-create-draft"]')?.addEventListener('click', () => void this.createDraftFromModal());
-    this.container.querySelector('[data-action="generate-job"]')?.addEventListener('click', (event) => {
-      const jobId = (event.currentTarget as HTMLElement).dataset.jobId;
-      if (jobId) void this.generateJob(jobId);
-    });
-    this.container.querySelector('[data-action="approve-job"]')?.addEventListener('click', (event) => {
-      const jobId = (event.currentTarget as HTMLElement).dataset.jobId;
-      if (jobId) void this.approveJob(jobId);
-    });
-    this.container.querySelector('[data-action="request-changes"]')?.addEventListener('click', (event) => {
-      const jobId = (event.currentTarget as HTMLElement).dataset.jobId;
-      if (jobId) void this.requestChanges(jobId);
+    // Handle change/input events with delegation
+    this.container.addEventListener('change', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.id === 'aws-video-draft-channel') {
+        this.draftChannelId = (target as HTMLSelectElement).value;
+      }
     });
 
-    const channelSelect = this.container.querySelector('#aws-video-draft-channel') as HTMLSelectElement | null;
-    channelSelect?.addEventListener('change', () => { this.draftChannelId = channelSelect.value; });
-    const promptInput = this.container.querySelector('#aws-video-draft-prompt') as HTMLTextAreaElement | null;
-    promptInput?.addEventListener('input', () => { this.draftPrompt = promptInput.value; });
+    this.container.addEventListener('input', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.id === 'aws-video-draft-prompt') {
+        this.draftPrompt = (target as HTMLTextAreaElement).value;
+      }
+    });
   }
 
   private async createDraftFromModal(): Promise<void> {
