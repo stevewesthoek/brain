@@ -241,7 +241,19 @@ async function postJobAction(jobId, action, body) {
     await loadJob(jobId);
   } catch (error) {
     state.error = errorMessage(error);
-    addActivity('error', state.error);
+    if (action === 'generate' && state.error.includes('timed out')) {
+      addActivity('warning', `Generation request timed out locally; checking job status for ${jobId}`);
+      await refresh('generation timeout follow-up');
+      await loadJob(jobId);
+      if (state.selectedJob && ACTIVE_STATES.has(state.selectedJob.status)) {
+        state.error = null;
+        addActivity('success', `Generation is running for ${jobId}`);
+      } else {
+        addActivity('error', `Generation timeout and job is not active: ${state.selectedJob?.status || 'unknown'}`);
+      }
+    } else {
+      addActivity('error', state.error);
+    }
     render();
   }
 }

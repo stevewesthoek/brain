@@ -115,9 +115,9 @@ nav { display: grid; gap: 7px; }
 .detailGrid strong { color: #f4f4f5; display: block; margin-top: 2px; }
 .buttonRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .buttonRow.right { justify-content: flex-end; }
-.detailSplit { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr); gap: 12px; margin-top: 8px; align-items: start; }
+.detailSplit { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 8px; align-items: start; }
 .detailSplit > div { min-width: 0; }
-.timeline { display: grid; grid-template-columns: minmax(130px, 0.9fr) 92px minmax(160px, 1.2fr); gap: 10px; padding: 7px 0; border-top: 1px solid #303036; font-size: 12px; align-items: start; }
+.timeline { display: grid; grid-template-columns: minmax(120px, 160px) minmax(96px, 120px) minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid #303036; font-size: 12px; align-items: start; }
 .timeline code, .timeline span, .timeline p { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
 .timeline p { color: #d4d4d8; }
 
