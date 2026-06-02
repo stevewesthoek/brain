@@ -66,7 +66,7 @@ const server = createServer(async (request, response) => {
       return;
     }
 
-    if (path.startsWith('api/')) {
+    if (path.startsWith('api/') || path.startsWith('video-orchestrator/')) {
       await proxyBrainCore(request, response);
       return;
     }

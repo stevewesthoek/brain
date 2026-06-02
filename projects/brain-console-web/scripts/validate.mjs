@@ -24,6 +24,7 @@ const checks = [
   ['AWS Video title present', js.includes('AWS Video Pipeline')],
   ['Uses same-origin API by default', js.includes("window.BRAIN_CORE_URL || ''")],
   ['Recent jobs endpoint present', js.includes('/api/video-orchestrator/jobs/recent')],
+  ['Status endpoint uses existing Brain Core route', js.includes('/video-orchestrator/status') && !js.includes('/api/video-orchestrator/status')],
   ['Create prompt endpoint present', js.includes('/api/video-orchestrator/jobs/create-from-prompt')],
   ['Approve endpoint present', js.includes('/approve')],
   ['Generate endpoint present', js.includes('/generate')],
@@ -34,6 +35,7 @@ const checks = [
   ['Jobs-derived status fallback present', js.includes('Pipeline status unavailable; using jobs-derived summary')],
   ['Server root points at web project, not projects parent', server.includes("const rootDir = fileURLToPath(new URL('..', import.meta.url));")],
   ['Server proxies API to Brain Core', server.includes("path.startsWith('api/')") && server.includes('Proxying /api/*')],
+  ['Server proxies video status route to Brain Core', server.includes("path.startsWith('video-orchestrator/')")],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);

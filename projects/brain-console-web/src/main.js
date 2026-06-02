@@ -160,7 +160,7 @@ async function refresh(reason = 'manual refresh') {
   try {
     addActivity('info', 'Pipeline status request started');
     render();
-    state.pipeline = unwrapStatus(await requestJson('/api/video-orchestrator/status'));
+    state.pipeline = unwrapStatus(await requestJson('/video-orchestrator/status'));
     state.statusFetch = 'ok';
     if (!state.draftChannelId) state.draftChannelId = effectiveChannels()[0]?.channelId || '';
     addActivity('success', 'Pipeline status request ok');
