@@ -2,8 +2,17 @@ const BRAIN_CORE_URL = (window.BRAIN_CORE_URL || '').replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 7000;
 const ACTIVE_STATES = new Set(['generating', 'publishing']);
 const TERMINAL_GENERATION_STATES = new Set(['generating', 'generated', 'ready_to_publish', 'publishing', 'published']);
+const MENU_ITEMS = [
+  ['overview', 'Overview'],
+  ['jobs', 'Jobs'],
+  ['detail', 'Selected Job'],
+  ['create', 'Create Draft'],
+  ['activity', 'Activity'],
+  ['channels', 'Channels'],
+];
 
 const state = {
+  activeView: 'jobs',
   statusFetch: 'idle',
   jobsFetch: 'idle',
   pipeline: null,
@@ -24,7 +33,7 @@ const root = document.querySelector('#root');
 if (!root) throw new Error('Missing #root element');
 
 function addActivity(level, message) {
-  state.activity = [{ at: new Date().toLocaleTimeString(), level, message }, ...state.activity].slice(0, 12);
+  state.activity = [{ at: new Date().toLocaleTimeString(), level, message }, ...state.activity].slice(0, 18);
 }
 
 async function requestJson(path, init = {}) {
@@ -95,6 +104,31 @@ function extractJobId(payload) {
   return [rootValue.jobId, data.jobId, job.jobId].find(value => typeof value === 'string') || null;
 }
 
+function channelsFromJobs() {
+  const map = new Map();
+  for (const job of state.jobs) {
+    if (!job.channelId) continue;
+    if (!map.has(job.channelId)) {
+      map.set(job.channelId, { channelId: job.channelId, displayName: titleCase(job.channelId), totalTopics: 0, youtubeEnabled: false });
+    }
+  }
+  return [...map.values()];
+}
+
+function effectiveChannels() {
+  return state.pipeline?.channels?.length ? state.pipeline.channels : channelsFromJobs();
+}
+
+function derivedPipeline() {
+  const active = state.jobs.some(job => ACTIVE_STATES.has(job.status));
+  return {
+    channels: effectiveChannels(),
+    pipelineReady: state.jobsFetch === 'ok',
+    generationStatus: active ? 'active' : 'ready',
+    publishingStatus: state.jobs.some(job => job.status === 'publishing') ? 'active' : 'ready',
+  };
+}
+
 async function refresh(reason = 'manual refresh') {
   state.error = null;
   state.lastRefresh = new Date().toLocaleTimeString();
@@ -102,19 +136,6 @@ async function refresh(reason = 'manual refresh') {
   state.jobsFetch = 'pending';
   addActivity('info', `Refresh started: ${reason}`);
   render();
-
-  try {
-    addActivity('info', 'Status request started');
-    render();
-    state.pipeline = unwrapStatus(await requestJson('/api/video-orchestrator/status'));
-    state.statusFetch = 'ok';
-    if (!state.draftChannelId) state.draftChannelId = state.pipeline.channels[0]?.channelId || '';
-    addActivity('success', 'Status request ok');
-  } catch (error) {
-    state.statusFetch = 'error';
-    state.error = errorMessage(error);
-    addActivity('error', state.error);
-  }
 
   try {
     addActivity('info', 'Jobs request started');
@@ -130,6 +151,20 @@ async function refresh(reason = 'manual refresh') {
     state.jobsFetch = 'error';
     state.error = errorMessage(error);
     addActivity('error', state.error);
+  }
+
+  try {
+    addActivity('info', 'Pipeline status request started');
+    render();
+    state.pipeline = unwrapStatus(await requestJson('/api/video-orchestrator/status'));
+    state.statusFetch = 'ok';
+    if (!state.draftChannelId) state.draftChannelId = effectiveChannels()[0]?.channelId || '';
+    addActivity('success', 'Pipeline status request ok');
+  } catch (error) {
+    state.statusFetch = 'ok';
+    state.pipeline = derivedPipeline();
+    if (!state.draftChannelId) state.draftChannelId = effectiveChannels()[0]?.channelId || '';
+    addActivity('warning', `Pipeline status unavailable; using jobs-derived summary (${errorMessage(error)})`);
   } finally {
     render();
   }
@@ -147,6 +182,7 @@ async function loadJob(jobId, rerender = true) {
     ]);
     state.selectedJob = unwrapJob(jobPayload);
     state.timeline = unwrapTimeline(timelinePayload, jobId);
+    state.activeView = 'detail';
     addActivity('success', `Loaded job ${jobId}`);
   } catch (error) {
     state.selectedJob = null;
@@ -173,6 +209,7 @@ async function createDraft() {
     state.showDraftModal = false;
     state.draftPrompt = '';
     state.selectedJobId = jobId;
+    state.activeView = 'detail';
     addActivity('success', `Draft created: ${jobId}. Next: approve script.`);
     await refresh('draft created');
     await loadJob(jobId);
@@ -206,48 +243,92 @@ async function postJobAction(jobId, action, body) {
 }
 
 function render() {
-  const activeCount = state.jobs.filter(job => ACTIVE_STATES.has(job.status)).length;
-  const pendingCount = state.jobs.filter(job => job.status === 'draft' || job.status === 'awaiting_approval').length;
-  const publishedCount = state.jobs.filter(job => job.status === 'published').length;
+  const pipeline = state.pipeline || derivedPipeline();
+  const counts = getCounts();
   root.innerHTML = `
-    <main class="shell">
-      <header class="topbar"><div><strong>Brain Console Web</strong><span class="dot"></span></div><code>aws-video-only · Brain Core ${escapeHtml(BRAIN_CORE_URL)}</code></header>
-      <section class="hero"><div><h1>AWS Video Pipeline</h1><p>Standalone Brain Console Web dashboard. Obsidian can view this page, but does not host the runtime.</p></div><button data-action="refresh">Refresh now</button></section>
-      <section class="card diagnostics"><span>Status fetch: <strong class="${state.statusFetch}">${state.statusFetch}</strong></span><span>Jobs fetch: <strong class="${state.jobsFetch}">${state.jobsFetch}</strong></span><span>Loaded jobs: <strong>${state.jobs.length}</strong></span><span>Last refresh: <strong>${escapeHtml(state.lastRefresh)}</strong></span><span>Generation: <strong>${escapeHtml(state.pipeline?.generationStatus || 'unknown')}</strong></span><span>Publishing: <strong>${escapeHtml(state.pipeline?.publishingStatus || 'unknown')}</strong></span><span>Active: <strong>${activeCount}</strong></span><span>Pending: <strong>${pendingCount}</strong></span><span>Published: <strong>${publishedCount}</strong></span></section>
-      ${state.error ? `<section class="error">${escapeHtml(state.error)}</section>` : ''}
-      ${renderActivity()}
-      <section class="card actions"><div><h2>Create Draft</h2><p>Create a draft only. Approval remains required before generation.</p></div><button data-action="open-draft">Create Draft Video</button></section>
-      <section class="grid"><div class="card jobs"><h2>Recent Jobs</h2>${renderJobs()}</div><div class="card detail"><h2>Selected Job</h2>${renderSelectedJob()}</div></section>
-      <section class="card"><h2>Channels</h2><div class="channels">${renderChannels()}</div></section>
+    <main class="appShell">
+      <aside class="sidebar">
+        <div class="brand"><span>Brain Console Web</span><span class="dot"></span></div>
+        <div class="scope">AWS Video only</div>
+        <nav>${MENU_ITEMS.map(([id, label]) => `<button class="navItem ${state.activeView === id ? 'active' : ''}" data-action="nav" data-view="${id}">${label}</button>`).join('')}</nav>
+        <div class="sideStats">
+          <div><span>Jobs</span><strong>${state.jobs.length}</strong></div>
+          <div><span>Pending</span><strong>${counts.pending}</strong></div>
+          <div><span>Active</span><strong>${counts.active}</strong></div>
+          <div><span>Published</span><strong>${counts.published}</strong></div>
+        </div>
+      </aside>
+      <section class="mainPane">
+        <header class="pageHeader">
+          <div><h1>AWS Video Pipeline</h1><p>Standalone Brain Console Web dashboard. Obsidian can view this page, but does not host the runtime.</p></div>
+          <button data-action="refresh">Refresh now</button>
+        </header>
+        <section class="diagnostics compactCard">
+          <span>Status <strong class="${state.statusFetch}">${state.statusFetch}</strong></span>
+          <span>Jobs <strong class="${state.jobsFetch}">${state.jobsFetch}</strong></span>
+          <span>Loaded <strong>${state.jobs.length}</strong></span>
+          <span>Last <strong>${escapeHtml(state.lastRefresh)}</strong></span>
+          <span>Generation <strong>${escapeHtml(pipeline.generationStatus)}</strong></span>
+          <span>Publishing <strong>${escapeHtml(pipeline.publishingStatus)}</strong></span>
+        </section>
+        ${state.error ? `<section class="errorBanner">${escapeHtml(state.error)}</section>` : ''}
+        <section class="contentPane">${renderActiveView()}</section>
+      </section>
       ${state.showDraftModal ? renderDraftModal() : ''}
     </main>`;
 }
 
-function renderActivity() {
-  return `<section class="card"><h2>Activity Log</h2>${state.activity.length === 0 ? '<p>No activity yet.</p>' : state.activity.map(entry => `<div class="activity ${entry.level}"><span>${entry.level}</span><p>${escapeHtml(entry.message)}</p><time>${escapeHtml(entry.at)}</time></div>`).join('')}</section>`;
+function renderActiveView() {
+  if (state.activeView === 'overview') return renderOverview();
+  if (state.activeView === 'detail') return renderSelectedJob();
+  if (state.activeView === 'create') return renderCreatePanel();
+  if (state.activeView === 'activity') return renderActivity(true);
+  if (state.activeView === 'channels') return renderChannelsPanel();
+  return renderJobsPanel();
+}
+
+function renderOverview() {
+  const counts = getCounts();
+  return `<div class="dashboardGrid"><section class="compactCard"><h2>Pipeline summary</h2><div class="metricGrid"><div><span>Total jobs</span><strong>${state.jobs.length}</strong></div><div><span>Pending</span><strong>${counts.pending}</strong></div><div><span>Active</span><strong>${counts.active}</strong></div><div><span>Published</span><strong>${counts.published}</strong></div></div></section>${renderActivity(false)}</div>`;
+}
+
+function renderJobsPanel() {
+  return `<div class="twoColumn"><section class="compactCard"><div class="sectionHeader"><h2>Recent Jobs</h2><button data-action="open-draft">Create Draft</button></div><div class="jobList">${renderJobs()}</div></section><section class="compactCard detailPreview"><h2>Selected Job</h2>${renderSelectedJobBody()}</section></div>`;
+}
+
+function renderActivity(full = true) {
+  const entries = full ? state.activity : state.activity.slice(0, 7);
+  return `<section class="compactCard activityCard"><h2>Activity Log</h2>${entries.length === 0 ? '<p>No activity yet.</p>' : entries.map(entry => `<div class="activity ${entry.level}"><span>${entry.level}</span><p>${escapeHtml(entry.message)}</p><time>${escapeHtml(entry.at)}</time></div>`).join('')}</section>`;
 }
 
 function renderJobs() {
   if (state.jobs.length === 0) return '<p>No operational jobs returned yet.</p>';
-  return state.jobs.map(job => `<button class="job ${job.jobId === state.selectedJobId ? 'selected' : ''}" data-action="select-job" data-job-id="${escapeHtml(job.jobId)}"><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span><code>${escapeHtml(job.jobId)}</code><span>${escapeHtml(job.channelId)}</span><span>${escapeHtml(job.title)}</span><strong>${escapeHtml(nextAction(job))}</strong></button>`).join('');
+  return state.jobs.map(job => `<button class="job ${job.jobId === state.selectedJobId ? 'selected' : ''}" data-action="select-job" data-job-id="${escapeHtml(job.jobId)}"><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span><code>${escapeHtml(shortJobId(job.jobId))}</code><span>${escapeHtml(job.channelId)}</span><span class="jobTitle">${escapeHtml(job.title)}</span><strong>${escapeHtml(nextAction(job))}</strong></button>`).join('');
 }
 
 function renderSelectedJob() {
+  return `<section class="compactCard detailFull"><h2>Selected Job</h2>${renderSelectedJobBody()}</section>`;
+}
+
+function renderSelectedJobBody() {
   const job = state.selectedJob;
   if (!job) return '<p>Select a job.</p>';
   const canApprove = job.approval.status === 'pending';
   const canGenerate = job.approval.status === 'approved' && !TERMINAL_GENERATION_STATES.has(job.status);
-  return `<h3>${escapeHtml(job.title)}</h3><code>${escapeHtml(job.jobId)}</code><div class="detailGrid"><span>Status <strong>${escapeHtml(job.status)}</strong></span><span>Progress <strong>${job.progress}%</strong></span><span>Approval <strong>${escapeHtml(job.approval.status)}</strong></span><span>Generation <strong>${escapeHtml(job.generation.status)}</strong></span><span>Publishing <strong>${escapeHtml(job.publishing.status)}</strong></span><span>Step <strong>${escapeHtml(job.currentStep || '—')}</strong></span></div><div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${job.status === 'ready_to_publish' ? '<span class="muted">Ready to publish — publishing intentionally disabled in this console.</span>' : ''}</div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(job.artifacts, null, 2))}</pre><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}`;
+  return `<div class="detailHeader"><div><h3>${escapeHtml(job.title)}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(job.status)}</strong></span><span>Progress <strong>${job.progress}%</strong></span><span>Approval <strong>${escapeHtml(job.approval.status)}</strong></span><span>Generation <strong>${escapeHtml(job.generation.status)}</strong></span><span>Publishing <strong>${escapeHtml(job.publishing.status)}</strong></span><span>Step <strong>${escapeHtml(job.currentStep || '—')}</strong></span></div><div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${job.status === 'ready_to_publish' ? '<span class="muted">Ready to publish — publishing intentionally disabled in this console.</span>' : ''}</div><div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(job.artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
 }
 
-function renderChannels() {
-  const channels = state.pipeline?.channels || [];
-  if (channels.length === 0) return '<p>No channels configured.</p>';
-  return channels.map(channel => `<div class="channel"><strong>${escapeHtml(channel.displayName || channel.channelId)}</strong><span>${escapeHtml(channel.channelId)} · ${channel.totalTopics || 0} topics · YouTube ${channel.youtubeEnabled ? 'enabled' : 'disabled'}</span></div>`).join('');
+function renderCreatePanel() {
+  return `<section class="compactCard createPanel"><h2>Create Draft</h2><p>Create a draft only. Approval remains required before generation.</p><button data-action="open-draft">Create Draft Video</button></section>`;
+}
+
+function renderChannelsPanel() {
+  const channels = effectiveChannels();
+  return `<section class="compactCard"><h2>Channels</h2><div class="channels">${channels.length === 0 ? '<p>No channels configured.</p>' : channels.map(channel => `<div class="channel"><strong>${escapeHtml(channel.displayName || channel.channelId)}</strong><span>${escapeHtml(channel.channelId)} · ${channel.totalTopics || 0} topics · YouTube ${channel.youtubeEnabled ? 'enabled' : 'disabled'}</span></div>`).join('')}</div></section>`;
 }
 
 function renderDraftModal() {
-  const channels = state.pipeline?.channels || [];
+  const channels = effectiveChannels();
   return `<div class="modalBackdrop"><div class="modal"><h2>Create Draft Video</h2><label>Channel<select id="draft-channel" ${state.draftSubmitting ? 'disabled' : ''}>${channels.map(channel => `<option value="${escapeHtml(channel.channelId)}" ${channel.channelId === state.draftChannelId ? 'selected' : ''}>${escapeHtml(channel.displayName || channel.channelId)}</option>`).join('')}</select></label><label>Prompt<textarea id="draft-prompt" ${state.draftSubmitting ? 'disabled' : ''} placeholder="Describe the video...">${escapeHtml(state.draftPrompt)}</textarea></label><div class="buttonRow right"><button data-action="close-draft" ${state.draftSubmitting ? 'disabled' : ''}>Cancel</button><button data-action="create-draft" ${state.draftSubmitting || state.draftPrompt.trim().length < 10 ? 'disabled' : ''}>${state.draftSubmitting ? 'Creating...' : 'Create'}</button></div></div></div>`;
 }
 
@@ -258,8 +339,9 @@ function bindEvents() {
     if (!actionEl) return;
     const action = actionEl.dataset.action;
     const jobId = actionEl.dataset.jobId;
+    if (action === 'nav') { state.activeView = actionEl.dataset.view || 'jobs'; render(); }
     if (action === 'refresh') void refresh('manual refresh');
-    if (action === 'open-draft') { state.showDraftModal = true; render(); }
+    if (action === 'open-draft') { state.activeView = 'create'; state.showDraftModal = true; render(); }
     if (action === 'close-draft') { state.showDraftModal = false; render(); }
     if (action === 'create-draft') void createDraft();
     if (action === 'select-job' && jobId) void loadJob(jobId);
@@ -278,6 +360,14 @@ function bindEvents() {
   };
 }
 
+function getCounts() {
+  return {
+    active: state.jobs.filter(job => ACTIVE_STATES.has(job.status)).length,
+    pending: state.jobs.filter(job => job.status === 'draft' || job.status === 'awaiting_approval').length,
+    published: state.jobs.filter(job => job.status === 'published').length,
+  };
+}
+
 function nextAction(job) {
   if (job.status === 'draft' || job.status === 'awaiting_approval') return 'Approve';
   if (job.status === 'approved') return 'Generate';
@@ -285,6 +375,14 @@ function nextAction(job) {
   if (job.status === 'published') return 'Done';
   if (job.status === 'failed') return 'Investigate';
   return 'Monitor';
+}
+
+function shortJobId(jobId) {
+  return jobId.length > 34 ? `${jobId.slice(0, 18)}…${jobId.slice(-10)}` : jobId;
+}
+
+function titleCase(value) {
+  return String(value).split('-').map(part => part ? `${part[0].toUpperCase()}${part.slice(1)}` : part).join(' ');
 }
 
 function errorMessage(error) {

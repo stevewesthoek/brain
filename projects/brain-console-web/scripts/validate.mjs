@@ -29,6 +29,8 @@ const checks = [
   ['Generate endpoint present', js.includes('/generate')],
   ['Publish action intentionally absent', !js.includes('publish-job') && !js.includes('Publish to YouTube')],
   ['Styles present', css.includes('.modalBackdrop') && css.includes('.job.selected')],
+  ['Left navigation layout present', js.includes('MENU_ITEMS') && css.includes('.sidebar') && css.includes('.mainPane')],
+  ['Jobs-derived status fallback present', js.includes('Pipeline status unavailable; using jobs-derived summary')],
   ['Server root points at web project, not projects parent', server.includes("const rootDir = fileURLToPath(new URL('..', import.meta.url));")],
   ['Server proxies API to Brain Core', server.includes("path.startsWith('api/')") && server.includes('Proxying /api/*')],
 ];
