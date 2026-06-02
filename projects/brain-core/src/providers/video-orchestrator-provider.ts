@@ -14,6 +14,7 @@ const AWS_REGION = 'eu-north-1';
 const S3_BUCKET = 'prochat-video-dev-909439522876-eu-north-1-an';
 const STATE_MACHINE_ARN = 'arn:aws:states:eu-north-1:909439522876:stateMachine:prochat-video-skeleton-dev';
 const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
+const VIDEO_FIXTURE_KEY = 'jobs/test-001/exports/sample-transcoded.mp4';
 
 export interface TopicCandidate {
   topicId: string;
@@ -1058,9 +1059,32 @@ export async function generateApprovedScript(
     };
   }
 
-  // Step 4: Preflight required S3 inputs before starting MediaConvert orchestration.
+  // Step 4: Copy skeleton base video fixture until real base-video generation is implemented.
   // The deployed state machine is final assembly: it requires a base video clip plus narration.
   const videoKey = `jobs/${jobId}/video-generated/generated-001.mp4`;
+  try {
+    await execFileAsync('aws', [
+      's3', 'cp',
+      `s3://${S3_BUCKET}/${VIDEO_FIXTURE_KEY}`,
+      `s3://${S3_BUCKET}/${videoKey}`,
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ]);
+  } catch (err) {
+    const message = `Failed to copy skeleton video fixture: ${err instanceof Error ? err.message : String(err)}`;
+    await writeFailedStatus('video_fixture_copy_failed', message, {
+      videoFixtureKey: VIDEO_FIXTURE_KEY,
+      videoKey,
+    });
+    return {
+      ok: false,
+      code: 'video_fixture_failed',
+      message,
+      jobId,
+    };
+  }
+
+  // Step 5: Preflight required S3 inputs before starting MediaConvert orchestration.
   const [videoExists, audioExists] = await Promise.all([
     s3ObjectExists(videoKey),
     s3ObjectExists(narrationKey),

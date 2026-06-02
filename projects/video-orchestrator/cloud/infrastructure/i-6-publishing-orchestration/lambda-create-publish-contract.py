@@ -46,15 +46,30 @@ def lambda_handler(event, context):
 
         print(f'[CreatePublishContract] Generation complete, status={status}')
 
-        # Read assets.json to get video and thumbnail references
+        # Read assets.json to get video and thumbnail references.
+        # If it is missing, infer the canonical assets from the generated exports.
         print(f'[CreatePublishContract] Reading assets.json for {job_id}')
-        assets_response = s3_client.get_object(
-            Bucket=BUCKET,
-            Key=f'jobs/{job_id}/metadata/assets.json'
-        )
-        assets_data = json.loads(assets_response['Body'].read().decode('utf-8'))
-
-        assets = assets_data.get('assets', {})
+        assets = {}
+        try:
+            assets_response = s3_client.get_object(
+                Bucket=BUCKET,
+                Key=f'jobs/{job_id}/metadata/assets.json'
+            )
+            assets_data = json.loads(assets_response['Body'].read().decode('utf-8'))
+            assets = assets_data.get('assets', {})
+        except s3_client.exceptions.NoSuchKey:
+            print(f'[CreatePublishContract] assets.json missing; inferring from exports')
+            exports_prefix = f'jobs/{job_id}/exports/'
+            listed = s3_client.list_objects_v2(Bucket=BUCKET, Prefix=exports_prefix, MaxKeys=1000)
+            objects = listed.get('Contents', [])
+            video_candidates = [obj for obj in objects if obj['Key'].endswith('.mp4') and '-dummy' not in obj['Key']]
+            thumbnail_candidates = [obj for obj in objects if obj['Key'].endswith('thumbnail-001.jpg') or obj['Key'].endswith('.jpg')]
+            if video_candidates:
+                video_candidates.sort(key=lambda obj: obj['LastModified'], reverse=True)
+                assets['finalVideo'] = {'path': video_candidates[0]['Key']}
+            if thumbnail_candidates:
+                thumbnail_candidates.sort(key=lambda obj: obj['LastModified'], reverse=True)
+                assets['thumbnail'] = {'path': thumbnail_candidates[0]['Key']}
 
         # Validate required assets
         if 'finalVideo' not in assets:
@@ -68,7 +83,7 @@ def lambda_handler(event, context):
         video_key = final_video.get('path')
         thumbnail_key = thumbnail.get('path')
 
-        if not video_key or not thumbnail_key:
+        if not video_key or not thumbnail_key or video_key.startswith('REPLACE_') or thumbnail_key.startswith('REPLACE_'):
             raise ValueError('Invalid asset paths')
 
         print(f'[CreatePublishContract] Found assets: video={video_key}, thumbnail={thumbnail_key}')
