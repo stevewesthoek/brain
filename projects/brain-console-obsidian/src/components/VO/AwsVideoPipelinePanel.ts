@@ -1,528 +1,488 @@
-import type {
-  BrainCoreVideoOrchestratorStatusResponse,
-  BrainCoreChannelStatus,
-  BrainCoreTopicCandidate,
-  BrainCoreVideoJobSummary,
-  BrainCoreVideoJobTimeline,
-} from '../../client.js';
-import {
-  createBrainCoreVideoJobFromPrompt,
-  readBrainCoreAwsVideoPipelineStatus,
-  readBrainCoreOperationalRecentVideoJobs,
-  readBrainCoreOperationalVideoJob,
-  readBrainCoreOperationalVideoJobTimeline,
-  requestBrainCoreOperationalApproveVideoJob,
-  requestBrainCoreOperationalGenerateVideoJob,
-  requestBrainCoreOperationalRequestVideoJobChanges,
-  type HttpResult,
-} from '../../client.js';
+import { requestUrl } from 'obsidian';
 import { StatusPill } from '../Design/shadcn-components.js';
 
-declare global {
-  interface Window {
-    BRAIN_CONSOLE_BUILD_ID: string;
-  }
+type FetchState = 'idle' | 'pending' | 'ok' | 'error';
+type JobStatus = 'draft' | 'awaiting_approval' | 'approved' | 'generating' | 'generated' | 'ready_to_publish' | 'publishing' | 'published' | 'failed' | string;
+type ActivityLevel = 'info' | 'success' | 'warning' | 'error';
+
+interface ActivityEntry {
+  at: string;
+  level: ActivityLevel;
+  message: string;
+  jobId?: string;
 }
 
+interface ChannelStatus {
+  channelId: string;
+  displayName?: string;
+  publishingStatus?: string;
+  totalTopics?: number;
+  youtubeEnabled?: boolean;
+  topCandidates?: Array<{ title: string; score?: number; status?: string }>;
+}
+
+interface PipelineStatusData {
+  channels?: ChannelStatus[];
+  pipelineReady?: boolean;
+  generationStatus?: string;
+  publishingStatus?: string;
+}
+
+interface VideoJobSummary {
+  jobId: string;
+  channelId: string;
+  title: string;
+  status: JobStatus;
+  currentStep: string | null;
+  progress: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  approval: { status: string; required: boolean };
+  generation: { status: string; executionArn: string | null; startedAt: string | null; completedAt: string | null };
+  publishing: { status: string; videoId: string | null; url: string | null };
+  error: { step: string | null; message: string | null };
+  artifacts: { script: string | null; narration: string | null; finalVideo: string | null; thumbnail: string | null };
+}
+
+interface VideoTimeline {
+  jobId: string;
+  events: Array<{ step: string; status: string; timestamp: string | null; message: string }>;
+}
+
+const BUILD_MARKER = 'v2.23-aws-video-minimal-panel';
 const REFRESH_INTERVAL_MS = 30_000;
-const JOB_POLL_INTERVAL_MS = 10_000;
-const PANEL_REQUEST_TIMEOUT_MS = 5_000;
-const TERMINAL_JOB_STATES = new Set(['generated', 'ready_to_publish', 'published', 'failed']);
-const GENERATING_JOB_STATES = new Set(['generating', 'publishing']);
-const GENERATED_JOB_STATES = new Set(['generating', 'generated', 'ready_to_publish', 'publishing', 'published']);
+const REQUEST_TIMEOUT_MS = 5_000;
+const TERMINAL_STATES = new Set(['generated', 'ready_to_publish', 'published', 'failed']);
+const ACTIVE_STATES = new Set(['generating', 'publishing']);
 
 export class AwsVideoPipelinePanel {
   private container: HTMLElement;
   private baseUrl: string;
-  private data: BrainCoreVideoOrchestratorStatusResponse['data'] | undefined;
-  private selectedJobId: string | null = null;
-  private selectedJob: BrainCoreVideoJobSummary | null = null;
-  private selectedTimeline: BrainCoreVideoJobTimeline | null = null;
-  private recentJobs: BrainCoreVideoJobSummary[] = [];
+  private instanceId = Math.random().toString(36).slice(2, 10);
+  private mountedAt = new Date();
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
-  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  private pollingTimer: ReturnType<typeof setInterval> | null = null;
+  private refreshSequence = 0;
+
+  private statusFetch: FetchState = 'idle';
+  private jobsFetch: FetchState = 'idle';
+  private lastRefresh: Date | null = null;
+  private lastStatusError = 'none';
+  private lastJobsError = 'none';
   private loading = false;
-  private jobLoading = false;
+  private error: string | null = null;
+  private data: PipelineStatusData | null = null;
+  private recentJobs: VideoJobSummary[] = [];
+  private selectedJobId: string | null = null;
+  private selectedJob: VideoJobSummary | null = null;
+  private selectedTimeline: VideoTimeline | null = null;
+  private activityLog: ActivityEntry[] = [];
+
   private showCreateDraftModal = false;
   private draftChannelId = '';
   private draftPrompt = '';
   private draftSubmitting = false;
-  private error: string | undefined;
-  private actionMessage: string | undefined;
-  private lastRefreshTime: Date | null = null;
-  private statusFetchStatus: 'ok' | 'error' | null = null;
-  private jobsFetchStatus: 'ok' | 'error' | null = null;
-  private lastStatusEndpointError: string | null = null;
-  private lastJobsEndpointError: string | null = null;
-  private refreshSequence = 0;
-  private activityLog: Array<{
-    at: string;
-    level: 'info' | 'success' | 'warning' | 'error';
-    message: string;
-    jobId?: string;
-  }> = [];
-  private instanceId: string;
-  private mountedAt: Date;
 
   constructor(container: HTMLElement, baseUrl: string = 'http://localhost:4877') {
     this.container = container;
-    this.baseUrl = baseUrl;
-    this.instanceId = Math.random().toString(36).slice(2, 9);
-    this.mountedAt = new Date();
-    this.attachEventListeners();
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.addActivity('info', `Panel mounted (${this.instanceId})`);
     this.render();
-    void this.fetchLiveData();
-    this.refreshTimer = setInterval(() => void this.fetchLiveData(), REFRESH_INTERVAL_MS);
+    void this.fetchLiveData('initial load');
+    this.refreshTimer = setInterval(() => void this.fetchLiveData('auto refresh'), REFRESH_INTERVAL_MS);
   }
 
-  private addActivity(level: 'info' | 'success' | 'warning' | 'error', message: string, jobId?: string): void {
-    const now = new Date().toLocaleTimeString();
-    this.activityLog.push({ at: now, level, message, jobId });
-    // Keep only the latest 10 events
-    if (this.activityLog.length > 10) {
-      this.activityLog = this.activityLog.slice(-10);
-    }
+  destroy(): void {
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
+    if (this.pollingTimer) clearInterval(this.pollingTimer);
+    this.refreshTimer = null;
+    this.pollingTimer = null;
+    this.container.onclick = null;
+    this.container.oninput = null;
+    this.container.onchange = null;
   }
 
-  private async fetchLiveData(): Promise<void> {
+  private async fetchLiveData(reason = 'refresh'): Promise<void> {
     const refreshId = ++this.refreshSequence;
-    this.lastRefreshTime = new Date();
-    this.statusFetchStatus = null;
-    this.jobsFetchStatus = null;
-    this.lastStatusEndpointError = null;
-    this.lastJobsEndpointError = null;
     this.loading = true;
-    this.error = undefined;
-    this.addActivity('info', 'Refresh started');
+    this.error = null;
+    this.lastRefresh = new Date();
+    this.statusFetch = 'pending';
+    this.jobsFetch = 'pending';
+    this.lastStatusError = 'none';
+    this.lastJobsError = 'none';
+    this.addActivity('info', `Refresh started: ${reason}`);
     this.render();
 
     try {
       this.addActivity('info', 'Status request started');
-      const statusResult = await this.withPanelTimeout(
-        () => readBrainCoreAwsVideoPipelineStatus(this.baseUrl),
-        'GET',
-        '/api/video-orchestrator/status',
-      );
+      this.render();
+      const statusPayload = await this.getJson('/api/video-orchestrator/status');
       if (!this.isCurrentRefresh(refreshId)) return;
-
-      const statusData = this.normalizePipelineStatusData(statusResult.value);
-      if (statusResult.error || !statusData) {
-        this.statusFetchStatus = 'error';
-        this.lastStatusEndpointError = statusResult.error ? this.describeHttpError(statusResult) : this.describeStatusError(statusResult.value);
-        this.addActivity('error', `Status request error: ${this.lastStatusEndpointError}`);
-      } else {
-        this.statusFetchStatus = 'ok';
-        this.data = statusData;
-        this.addActivity('success', 'Status request ok');
-        if (!this.draftChannelId && statusData.channels.length > 0) {
-          this.draftChannelId = statusData.channels[0]?.channelId ?? '';
-        }
-      }
-
-      this.addActivity('info', 'Jobs request started');
-      const jobsResult = await this.withPanelTimeout(
-        () => readBrainCoreOperationalRecentVideoJobs(this.baseUrl),
-        'GET',
-        '/api/video-orchestrator/jobs/recent',
-      );
-      if (!this.isCurrentRefresh(refreshId)) return;
-
-      if (jobsResult.error) {
-        this.jobsFetchStatus = 'error';
-        this.lastJobsEndpointError = this.describeHttpError(jobsResult);
-        this.error = this.lastJobsEndpointError;
-        this.addActivity('error', `Jobs request error: ${this.lastJobsEndpointError}`);
-      } else {
-        this.jobsFetchStatus = 'ok';
-        this.recentJobs = jobsResult.value ?? [];
-        this.addActivity('success', `Loaded ${this.recentJobs.length} operational jobs`);
-
-        if (!this.selectedJobId && this.recentJobs.length > 0) {
-          this.selectedJobId = this.recentJobs[0]?.jobId ?? null;
-        }
-        if (this.selectedJobId) {
-          await this.loadJobDetail(this.selectedJobId, false);
-        }
+      this.data = this.unwrapStatus(statusPayload);
+      this.statusFetch = 'ok';
+      this.addActivity('success', 'Status request ok');
+      if (!this.draftChannelId) {
+        this.draftChannelId = this.data.channels?.[0]?.channelId ?? '';
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      this.error = message;
-      this.statusFetchStatus ??= 'error';
-      this.jobsFetchStatus ??= 'error';
-      this.addActivity('error', message);
+      if (!this.isCurrentRefresh(refreshId)) return;
+      this.statusFetch = 'error';
+      this.lastStatusError = this.errorMessage(err);
+      this.addActivity('error', `Status request failed: ${this.lastStatusError}`);
+    }
+
+    try {
+      this.addActivity('info', 'Jobs request started');
+      this.render();
+      const jobsPayload = await this.getJson('/api/video-orchestrator/jobs/recent');
+      if (!this.isCurrentRefresh(refreshId)) return;
+      this.recentJobs = this.unwrapRecentJobs(jobsPayload);
+      this.jobsFetch = 'ok';
+      this.addActivity('success', `Loaded ${this.recentJobs.length} operational jobs`);
+      if (!this.selectedJobId && this.recentJobs.length > 0) {
+        this.selectedJobId = this.recentJobs[0]?.jobId ?? null;
+      }
+      if (this.selectedJobId) {
+        await this.loadJobDetail(this.selectedJobId, false);
+      }
+    } catch (err) {
+      if (!this.isCurrentRefresh(refreshId)) return;
+      this.jobsFetch = 'error';
+      this.lastJobsError = this.errorMessage(err);
+      this.error = this.lastJobsError;
+      this.addActivity('error', `Jobs request failed: ${this.lastJobsError}`);
     } finally {
       if (this.isCurrentRefresh(refreshId)) {
         this.loading = false;
+        this.syncPolling();
         this.render();
       }
     }
   }
 
-
-  private async withPanelTimeout<T>(
-    requestFactory: () => Promise<HttpResult<T>>,
-    method: 'GET' | 'POST',
-    path: string,
-  ): Promise<HttpResult<T>> {
-    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-    const timeoutResult = new Promise<HttpResult<T>>((resolve) => {
-      timeoutHandle = setTimeout(() => {
-        resolve({ error: `Brain Core request timed out after 5000ms: ${method} ${path}` });
-      }, PANEL_REQUEST_TIMEOUT_MS);
-    });
-
-    try {
-      return await Promise.race([Promise.resolve().then(requestFactory), timeoutResult]);
-    } finally {
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-    }
-  }
-
-  private isCurrentRefresh(refreshId: number): boolean {
-    return refreshId === this.refreshSequence;
-  }
-
-  private normalizePipelineStatusData(
-    value: BrainCoreVideoOrchestratorStatusResponse | BrainCoreVideoOrchestratorStatusResponse['data'] | undefined,
-  ): BrainCoreVideoOrchestratorStatusResponse['data'] | null {
-    if (!value || typeof value !== 'object') return null;
-    if ('channels' in value && Array.isArray(value.channels)) {
-      return value as BrainCoreVideoOrchestratorStatusResponse['data'];
-    }
-    const wrappedData = (value as BrainCoreVideoOrchestratorStatusResponse).data;
-    if (wrappedData && Array.isArray(wrappedData.channels)) {
-      return wrappedData;
-    }
-    return null;
-  }
-
   private async loadJobDetail(jobId: string, rerender = true): Promise<void> {
-    this.jobLoading = true;
+    this.selectedJobId = jobId;
+    this.addActivity('info', `Loading job detail`, jobId);
     if (rerender) this.render();
     try {
-      const jobDetailRes = await readBrainCoreOperationalVideoJob(this.baseUrl, jobId);
-      if (jobDetailRes.value) {
-        this.selectedJob = jobDetailRes.value;
-        this.selectedJobId = jobDetailRes.value.jobId;
-        this.error = undefined;
-      } else {
-        this.selectedJob = null;
-        this.selectedJobId = null;
-        this.error = `Failed to load job ${jobId}: ${this.describeHttpError(jobDetailRes)}`;
-      }
-
-      const timelineRes = await readBrainCoreOperationalVideoJobTimeline(this.baseUrl, jobId);
-      if (timelineRes.value) {
-        this.selectedTimeline = timelineRes.value;
-      } else {
-        this.selectedTimeline = null;
-        if (timelineRes.error && !this.error) {
-          this.error = `Failed to load timeline for ${jobId}: ${this.describeHttpError(timelineRes)}`;
-        }
-      }
-
-      this.syncPollingState();
+      const [jobPayload, timelinePayload] = await Promise.all([
+        this.getJson(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`),
+        this.getJson(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`),
+      ]);
+      this.selectedJob = this.unwrapJob(jobPayload);
+      this.selectedTimeline = this.unwrapTimeline(timelinePayload);
+      this.addActivity('success', `Loaded job detail`, jobId);
     } catch (err) {
-      this.error = `Failed to load job detail: ${err instanceof Error ? err.message : String(err)}`;
       this.selectedJob = null;
       this.selectedTimeline = null;
+      this.error = this.errorMessage(err);
+      this.addActivity('error', `Failed to load job detail: ${this.error}`, jobId);
     } finally {
-      this.jobLoading = false;
+      this.syncPolling();
       if (rerender) this.render();
     }
   }
 
-  destroy(): void {
-    if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
-      this.refreshTimer = null;
+  private async createDraftFromModal(): Promise<void> {
+    if (!this.draftChannelId || this.draftPrompt.trim().length < 10 || this.draftSubmitting) return;
+    this.draftSubmitting = true;
+    this.addActivity('info', 'Creating draft...');
+    this.render();
+    try {
+      const payload = await this.postJson('/api/video-orchestrator/jobs/create-from-prompt', {
+        channelId: this.draftChannelId,
+        prompt: this.draftPrompt.trim(),
+        requestedBy: 'brain-console-webview',
+      });
+      const jobId = this.extractJobId(payload);
+      if (!jobId) throw new Error(`Create draft returned no jobId. Keys: ${this.objectKeys(payload)}`);
+      this.showCreateDraftModal = false;
+      this.draftPrompt = '';
+      this.selectedJobId = jobId;
+      this.addActivity('success', `Draft created. Next: approve script.`, jobId);
+      await this.fetchLiveData('draft created');
+      await this.loadJobDetail(jobId);
+    } catch (err) {
+      this.error = this.errorMessage(err);
+      this.addActivity('error', `Draft creation failed: ${this.error}`);
+      this.render();
+    } finally {
+      this.draftSubmitting = false;
+      this.render();
     }
-    this.stopPolling();
+  }
+
+  private async approveJob(jobId: string): Promise<void> {
+    this.addActivity('info', 'Approving script...', jobId);
+    this.render();
+    try {
+      await this.postJson(`/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/approve`, {
+        approvedBy: 'brain-console-webview',
+        notes: 'Approved from AWS Video operational console',
+      });
+      this.addActivity('success', 'Script approved', jobId);
+      await this.fetchLiveData('script approved');
+      await this.loadJobDetail(jobId);
+    } catch (err) {
+      this.error = this.errorMessage(err);
+      this.addActivity('error', `Approve failed: ${this.error}`, jobId);
+      this.render();
+    }
+  }
+
+  private async generateJob(jobId: string): Promise<void> {
+    if (!confirm('Generate video artifacts only. This will not publish to YouTube.')) return;
+    this.addActivity('info', 'Generation request started...', jobId);
+    this.render();
+    try {
+      await this.postJson(`/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/generate`, {
+        requestedBy: 'brain-console-webview',
+      });
+      this.addActivity('success', 'Generation request accepted', jobId);
+      await this.fetchLiveData('generation requested');
+      await this.loadJobDetail(jobId);
+    } catch (err) {
+      this.error = this.errorMessage(err);
+      this.addActivity('error', `Generation failed: ${this.error}`, jobId);
+      this.render();
+    }
+  }
+
+  private async requestChanges(jobId: string): Promise<void> {
+    const notes = prompt('Request changes notes:')?.trim();
+    if (!notes) return;
+    this.addActivity('info', 'Requesting changes...', jobId);
+    this.render();
+    try {
+      await this.postJson(`/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/changes`, {
+        requestedBy: 'brain-console-webview',
+        notes,
+      });
+      this.addActivity('success', 'Changes requested', jobId);
+      await this.fetchLiveData('changes requested');
+      await this.loadJobDetail(jobId);
+    } catch (err) {
+      this.error = this.errorMessage(err);
+      this.addActivity('error', `Request changes failed: ${this.error}`, jobId);
+      this.render();
+    }
+  }
+
+  private async getJson(path: string): Promise<unknown> {
+    const url = `${this.baseUrl}${path}`;
+    const response = await this.withTimeout(requestUrl({ url, method: 'GET' }), `GET ${url}`);
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`GET ${path} failed with HTTP ${response.status}`);
+    }
+    return response.json;
+  }
+
+  private async postJson(path: string, body: Record<string, unknown>): Promise<unknown> {
+    const url = `${this.baseUrl}${path}`;
+    const response = await this.withTimeout(requestUrl({
+      url,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }), `POST ${url}`);
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`POST ${path} failed with HTTP ${response.status}: ${response.text}`);
+    }
+    return response.json;
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${REQUEST_TIMEOUT_MS}ms`)), REQUEST_TIMEOUT_MS);
+    });
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
   }
 
   private render(): void {
     this.container.innerHTML = `
       <div class="aws-video-pipeline-panel">
+        <h2>AWS Video Pipeline</h2>
+        <p>Topic Intelligence & Channel Status</p>
         ${this.renderDiagnostics()}
         ${this.renderActivityLog()}
-        ${this.renderRefreshIndicator()}
-        ${this.renderPipelineHealth()}
+        ${this.renderControls()}
+        ${this.renderHealth()}
         ${this.renderRecentJobs()}
-        ${this.renderSelectedJobDetail()}
+        ${this.renderSelectedJob()}
         ${this.renderCreateDraftCard()}
-        ${this.renderTopicBacklog()}
-        ${this.renderChannelCards()}
-        ${this.renderErrors()}
+        ${this.renderTopics()}
+        ${this.renderChannels()}
+        ${this.renderError()}
         ${this.showCreateDraftModal ? this.renderCreateDraftModal() : ''}
       </div>
     `;
     this.attachEventListeners();
   }
 
-  private renderDiagnostics(): string {
-    const buildId = (typeof window !== 'undefined' && window.BRAIN_CONSOLE_BUILD_ID) ? window.BRAIN_CONSOLE_BUILD_ID : 'unknown';
-    const lastRefresh = this.lastRefreshTime ? this.lastRefreshTime.toLocaleTimeString() : 'never';
-    const statusIcon = this.statusFetchStatus === 'ok' ? '✓' : this.statusFetchStatus === 'error' ? '✕' : '○';
-    const jobsIcon = this.jobsFetchStatus === 'ok' ? '✓' : this.jobsFetchStatus === 'error' ? '✕' : '○';
-    const containerConnected = this.container.isConnected ? 'yes' : 'no';
-    const mountTime = this.mountedAt.toLocaleTimeString();
+  private attachEventListeners(): void {
+    this.container.onclick = event => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const actionEl = target.closest<HTMLElement>('[data-action]');
+      const jobRow = target.closest<HTMLElement>('[data-job-id]');
+      const action = actionEl?.dataset.action;
+      const jobId = actionEl?.dataset.jobId ?? jobRow?.dataset.jobId;
 
-    return `
-      <div style="padding: 10px 12px; margin-bottom: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-muted);">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 6px;">
-          <div><strong>Build:</strong> <code>${this.escapeHtml(buildId)}</code></div>
-          <div><strong>Panel instance:</strong> <code>${this.escapeHtml(this.instanceId)}</code></div>
-          <div><strong>Mounted at:</strong> ${this.escapeHtml(mountTime)}</div>
-          <div><strong>Brain Core:</strong> <code>${this.escapeHtml(this.baseUrl)}</code></div>
-          <div><strong>Container connected:</strong> ${containerConnected}</div>
-          <div><strong>Last Refresh:</strong> ${this.escapeHtml(lastRefresh)}</div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
-          <div>${statusIcon} Status fetch: ${this.statusFetchStatus ?? 'pending'}</div>
-          <div>${jobsIcon} Jobs fetch: ${this.jobsFetchStatus ?? 'pending'}</div>
-          <div>Loaded jobs: ${this.recentJobs.length}</div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; margin-top: 6px;">
-          <div><strong>Last status endpoint error:</strong> ${this.escapeHtml(this.lastStatusEndpointError ?? 'none')}</div>
-          <div><strong>Last jobs endpoint error:</strong> ${this.escapeHtml(this.lastJobsEndpointError ?? 'none')}</div>
-        </div>
-      </div>
-    `;
+      if (action === 'refresh-now') void this.fetchLiveData('manual refresh');
+      else if (action === 'open-create-draft') { this.showCreateDraftModal = true; this.addActivity('info', 'Create draft modal opened'); this.render(); }
+      else if (action === 'close-create-draft') { this.showCreateDraftModal = false; this.render(); }
+      else if (action === 'submit-create-draft') void this.createDraftFromModal();
+      else if (action === 'select-job' && jobId) void this.loadJobDetail(jobId);
+      else if (action === 'approve-job' && jobId) void this.approveJob(jobId);
+      else if (action === 'request-changes' && jobId) void this.requestChanges(jobId);
+      else if (action === 'generate-job' && jobId) void this.generateJob(jobId);
+      else if (jobRow?.dataset.jobId) void this.loadJobDetail(jobRow.dataset.jobId);
+    };
+
+    this.container.oninput = event => {
+      const target = event.target as HTMLTextAreaElement | null;
+      if (target?.id === 'aws-video-draft-prompt') this.draftPrompt = target.value;
+    };
+
+    this.container.onchange = event => {
+      const target = event.target as HTMLSelectElement | null;
+      if (target?.id === 'aws-video-draft-channel') this.draftChannelId = target.value;
+    };
   }
 
-  private renderRefreshIndicator(): string {
+  private renderDiagnostics(): string {
     return `
-      <div class="aws-video-refresh-bar">
-        <span class="aws-video-refresh-label">
-          ${this.loading ? 'Refreshing operational dashboard...' : 'AWS Video control tower · auto-refreshes every 30s'}
-        </span>
-        <button type="button" class="aws-video-refresh-button" data-action="refresh-now">Refresh now</button>
-        <span class="aws-video-refresh-dot ${this.loading ? 'aws-refresh-dot--active' : ''}"></span>
+      <div class="aws-video-health-card" style="margin: 16px 0;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; font-size: 12px; color: var(--text-muted);">
+          <div><strong>Build:</strong> ${BUILD_MARKER}</div>
+          <div><strong>Panel instance:</strong> ${this.escape(this.instanceId)}</div>
+          <div><strong>Mounted at:</strong> ${this.mountedAt.toLocaleTimeString()}</div>
+          <div><strong>Brain Core:</strong> ${this.escape(this.baseUrl)}</div>
+          <div><strong>Container connected:</strong> ${this.container.isConnected ? 'yes' : 'no'}</div>
+          <div><strong>Last Refresh:</strong> ${this.lastRefresh ? this.lastRefresh.toLocaleTimeString() : 'never'}</div>
+          <div>${this.fetchIcon(this.statusFetch)} Status fetch: ${this.statusFetch}</div>
+          <div>${this.fetchIcon(this.jobsFetch)} Jobs fetch: ${this.jobsFetch}</div>
+          <div><strong>Loaded jobs:</strong> ${this.recentJobs.length}</div>
+          <div><strong>Last status endpoint error:</strong> ${this.escape(this.lastStatusError)}</div>
+          <div><strong>Last jobs endpoint error:</strong> ${this.escape(this.lastJobsError)}</div>
+        </div>
       </div>
     `;
   }
 
   private renderActivityLog(): string {
-    if (this.activityLog.length === 0) return '';
-
-    const logs = this.activityLog.map(entry => {
-      const icon = entry.level === 'success' ? '✓' : entry.level === 'error' ? '✕' : entry.level === 'warning' ? '⚠' : 'ℹ';
-      const color = entry.level === 'success' ? '#060' : entry.level === 'error' ? '#c00' : entry.level === 'warning' ? '#a60' : '#00a';
-      return `
-        <div style="display: flex; gap: 8px; padding: 6px 8px; font-size: 11px; color: ${color};">
-          <span style="flex: 0 0 12px; text-align: center; font-weight: bold;">${icon}</span>
-          <span style="flex: 1;">${this.escapeHtml(entry.message)}</span>
-          <span style="flex: 0 0 auto; color: var(--text-muted);">${this.escapeHtml(entry.at)}</span>
-        </div>
-      `;
-    }).join('');
-
     return `
-      <div style="margin-bottom: 12px; padding: 8px 0; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-secondary);">
-        <div style="padding: 6px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Activity Log</div>
-        <div>${logs}</div>
+      <div class="aws-video-health-card" style="margin-bottom: 16px;">
+        <h3 style="margin: 0 0 10px 0; font-size: 13px;">Activity Log</h3>
+        ${this.activityLog.length === 0 ? '<div style="font-size: 12px; color: var(--text-muted);">No activity yet.</div>' : this.activityLog.map(entry => `
+          <div style="display: grid; grid-template-columns: 22px 1fr 90px; gap: 8px; align-items: center; font-size: 12px; margin: 6px 0; color: ${this.activityColor(entry.level)};">
+            <span>${this.activityIcon(entry.level)}</span>
+            <span>${this.escape(entry.message)}${entry.jobId ? ` <code>${this.escape(entry.jobId)}</code>` : ''}</span>
+            <span style="color: var(--text-muted);">${this.escape(entry.at)}</span>
+          </div>
+        `).join('')}
       </div>
     `;
   }
 
-  private renderPipelineHealth(): string {
-    if (!this.data) return '<div class="aws-video-connection-warning">Loading pipeline data...</div>';
-
-    const genStatus = this.data.generationStatus ?? 'ready';
-    const pubStatus = this.data.publishingStatus ?? 'ready';
-    const genPill = genStatus === 'ready' ? 'ok' : genStatus === 'in-progress' ? 'warning' : 'error';
-    const pubPill = pubStatus === 'ready' ? 'ok' : pubStatus === 'in-progress' ? 'warning' : 'error';
-    const publishedCount = this.recentJobs.filter(job => job.status === 'published').length;
-    const activeCount = this.recentJobs.filter(job => GENERATING_JOB_STATES.has(job.status)).length;
-    const pendingCount = this.recentJobs.filter(job => job.status === 'awaiting_approval' || job.status === 'draft').length;
-
+  private renderControls(): string {
     return `
-      <div class="aws-video-health-card">
-        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px;">
-          <h3 style="margin: 0; font-size: 14px; font-weight: 600;">Pipeline Health</h3>
-          ${StatusPill({ status: this.data.pipelineReady ? 'ok' : 'warning', label: this.data.pipelineReady ? 'Ready' : 'Check Health' })}
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
-          <div class="aws-video-status-item"><span>Generation</span>${StatusPill({ status: genPill, label: genStatus })}</div>
-          <div class="aws-video-status-item"><span>Publishing</span>${StatusPill({ status: pubPill, label: pubStatus })}</div>
-          <div class="aws-video-status-item"><span>Recent Jobs</span><strong>${this.recentJobs.length}</strong></div>
-          <div class="aws-video-status-item"><span>Active</span><strong>${activeCount}</strong></div>
-          <div class="aws-video-status-item"><span>Pending</span><strong>${pendingCount}</strong></div>
-          <div class="aws-video-status-item"><span>Published</span><strong>${publishedCount}</strong></div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <span>${this.loading ? 'Refreshing operational dashboard...' : 'AWS Video control tower · auto-refreshes every 30s'}</span>
+        <button type="button" data-action="refresh-now">Refresh now</button>
+      </div>
+    `;
+  }
+
+  private renderHealth(): string {
+    if (!this.data) return '<div style="margin-bottom: 12px;">Loading pipeline data...</div>';
+    const generation = this.data.generationStatus ?? 'unknown';
+    const publishing = this.data.publishingStatus ?? 'unknown';
+    return `
+      <div style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><strong>Pipeline Health</strong>${StatusPill({ status: this.data.pipelineReady ? 'ok' : 'warning', label: this.data.pipelineReady ? 'Ready' : 'Check' })}</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+          <div>Generation ${StatusPill({ status: generation === 'ready' ? 'ok' : 'warning', label: generation })}</div>
+          <div>Publishing ${StatusPill({ status: publishing === 'ready' ? 'ok' : 'warning', label: publishing })}</div>
+          <div>Recent Jobs <strong>${this.recentJobs.length}</strong></div>
+          <div>Active <strong>${this.recentJobs.filter(j => ACTIVE_STATES.has(j.status)).length}</strong></div>
+          <div>Pending <strong>${this.recentJobs.filter(j => j.status === 'draft' || j.status === 'awaiting_approval').length}</strong></div>
+          <div>Published <strong>${this.recentJobs.filter(j => j.status === 'published').length}</strong></div>
         </div>
       </div>
     `;
   }
 
   private renderRecentJobs(): string {
-    if (this.recentJobs.length === 0) {
-      return `
-        <div class="aws-video-health-card" style="margin-top: 16px;">
-          <h3 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Recent Jobs</h3>
-          <div style="font-size: 12px; color: var(--text-muted);">No jobs yet. Create a draft to get started.</div>
-        </div>
-      `;
-    }
-
     return `
-      <div class="aws-video-health-card" style="margin-top: 16px;">
-        <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600;">Recent Jobs</h3>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          ${this.recentJobs.map(job => this.renderRecentJobRow(job)).join('')}
-        </div>
+      <div style="margin-bottom: 18px;">
+        <h3 style="font-size: 15px; margin: 0 0 8px 0;">Recent Jobs</h3>
+        ${this.recentJobs.length === 0 ? '<div style="font-size: 12px; color: var(--text-muted);">No jobs yet. Create a draft to get started.</div>' : this.recentJobs.map(job => `
+          <button type="button" data-action="select-job" data-job-id="${this.escape(job.jobId)}" style="display: grid; grid-template-columns: 120px 240px 120px 1fr 120px; gap: 8px; width: 100%; margin: 4px 0; padding: 8px; text-align: left; border: 1px solid ${job.jobId === this.selectedJobId ? 'var(--interactive-accent)' : 'transparent'}; border-radius: 6px; background: var(--background-secondary); cursor: pointer;">
+            <span>${StatusPill({ status: this.statusPill(job.status), label: job.status.replace(/_/g, ' ') })}</span>
+            <code>${this.escape(this.truncate(job.jobId, 34))}</code>
+            <span>${this.escape(job.channelId)}</span>
+            <span>${this.escape(this.truncate(job.title, 60))}</span>
+            <span>${this.escape(this.nextAction(job))}</span>
+          </button>
+        `).join('')}
       </div>
     `;
   }
 
-  private renderRecentJobRow(job: BrainCoreVideoJobSummary): string {
-    const selected = job.jobId === this.selectedJobId;
-    return `
-      <button type="button" class="aws-video-job-row" data-job-id="${this.escapeHtml(job.jobId)}" style="
-        width: 100%; text-align: left; padding: 10px; border-radius: 6px;
-        border: 1px solid ${selected ? 'var(--interactive-accent)' : 'var(--border-color)'};
-        background: ${selected ? 'var(--background-modifier-hover)' : 'var(--background-secondary)'};
-        cursor: pointer;
-      ">
-        <div style="display: grid; grid-template-columns: 110px 150px 110px 1fr 120px 110px; gap: 8px; align-items: center; font-size: 12px;">
-          ${StatusPill({ status: this.statusPillType(job.status), label: job.status.replace(/_/g, ' ') })}
-          <code title="${this.escapeHtml(job.jobId)}">${this.escapeHtml(this.truncate(job.jobId, 18))}</code>
-          <span>${this.escapeHtml(job.channelId)}</span>
-          <span>${this.escapeHtml(this.truncate(job.title, 52))}</span>
-          <span>${this.escapeHtml(job.currentStep ?? '—')}</span>
-          <span>${this.escapeHtml(this.nextAction(job))}</span>
-        </div>
-      </button>
-    `;
-  }
-
-  private renderSelectedJobDetail(): string {
-    if (this.jobLoading) {
-      return '<div class="aws-video-health-card" style="margin-top: 16px;">Loading selected job...</div>';
-    }
-    if (!this.selectedJob) {
-      return '<div class="aws-video-health-card" style="margin-top: 16px;">Select a job to inspect operational detail.</div>';
-    }
-
+  private renderSelectedJob(): string {
+    if (!this.selectedJobId) return '<div style="margin-bottom: 18px;">Select a job to inspect operational detail.</div>';
+    if (!this.selectedJob) return `<div style="margin-bottom: 18px; color: var(--text-error);">Selected job ${this.escape(this.selectedJobId)} is loading or unavailable.</div>`;
     const job = this.selectedJob;
-    const canGenerate = job.approval.status === 'approved' && !GENERATED_JOB_STATES.has(job.status);
     const canApprove = job.approval.status === 'pending';
-    const isPolling = GENERATING_JOB_STATES.has(job.status);
-
+    const canGenerate = job.approval.status === 'approved' && !TERMINAL_STATES.has(job.status) && !ACTIVE_STATES.has(job.status);
     return `
-      <div class="aws-video-health-card" style="margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
-          <div>
-            <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Selected Job Detail</h3>
-            <code style="font-size: 11px; color: var(--text-muted);">${this.escapeHtml(job.jobId)}</code>
-          </div>
-          ${StatusPill({ status: this.statusPillType(job.status), label: `${job.status.replace(/_/g, ' ')} · ${job.progress}%` })}
+      <div class="aws-video-health-card" style="margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: start;">
+          <div><h3 style="margin: 0 0 4px 0;">Selected Job Detail</h3><code>${this.escape(job.jobId)}</code></div>
+          ${StatusPill({ status: this.statusPill(job.status), label: `${job.status.replace(/_/g, ' ')} · ${job.progress}%` })}
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-          ${this.renderDetailCard('Title', job.title)}
-          ${this.renderDetailCard('Channel', job.channelId)}
-          ${this.renderDetailCard('Current Step', job.currentStep ?? '—')}
-          ${this.renderDetailCard('Updated', this.formatDate(job.updatedAt ?? job.createdAt))}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 12px; font-size: 12px;">
+          <div><strong>Title:</strong> ${this.escape(job.title)}</div>
+          <div><strong>Channel:</strong> ${this.escape(job.channelId)}</div>
+          <div><strong>Approval:</strong> ${this.escape(job.approval.status)}</div>
+          <div><strong>Generation:</strong> ${this.escape(job.generation.status)}</div>
+          <div><strong>Publishing:</strong> ${this.escape(job.publishing.status)}</div>
+          <div><strong>Current step:</strong> ${this.escape(job.currentStep ?? '—')}</div>
         </div>
-
-        <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-          <div class="aws-video-job-detail-card">
-            <h4>Approval</h4>
-            ${StatusPill({ status: this.statusPillType(job.approval.status), label: job.approval.status })}
-            <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Required: ${job.approval.required ? 'yes' : 'no'}</div>
-            ${canApprove ? `
-              <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-                <button type="button" data-action="approve-job" data-job-id="${this.escapeHtml(job.jobId)}">Approve</button>
-                <button type="button" data-action="request-changes" data-job-id="${this.escapeHtml(job.jobId)}">Request Changes</button>
-              </div>
-            ` : ''}
-          </div>
-          <div class="aws-video-job-detail-card">
-            <h4>Generation</h4>
-            <div>Status: ${this.escapeHtml(job.generation.status)}</div>
-            <div>Execution: ${job.generation.executionArn ? `<code>${this.escapeHtml(this.truncate(job.generation.executionArn, 34))}</code>` : '—'}</div>
-            ${canGenerate ? `<button type="button" data-action="generate-job" data-job-id="${this.escapeHtml(job.jobId)}" style="margin-top: 10px;">Generate artifacts</button>` : ''}
-            ${isPolling ? '<div style="margin-top: 8px; font-size: 12px; color: var(--text-muted);">Polling active · ETA: usually 1–5 minutes</div>' : ''}
-          </div>
-          <div class="aws-video-job-detail-card">
-            <h4>Publishing</h4>
-            <div>Status: ${this.escapeHtml(job.publishing.status)}</div>
-            <div>Video ID: ${job.publishing.videoId ? `<code>${this.escapeHtml(job.publishing.videoId)}</code>` : '—'}</div>
-            <div>URL: ${job.publishing.url ? `<a href="${this.escapeHtml(job.publishing.url)}">open</a>` : '—'}</div>
-          </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+          ${canApprove ? `<button type="button" data-action="approve-job" data-job-id="${this.escape(job.jobId)}">Approve</button><button type="button" data-action="request-changes" data-job-id="${this.escape(job.jobId)}">Request Changes</button>` : ''}
+          ${canGenerate ? `<button type="button" data-action="generate-job" data-job-id="${this.escape(job.jobId)}">Generate artifacts</button>` : ''}
+          ${job.status === 'ready_to_publish' ? '<span style="color: var(--text-muted);">Ready to publish — publishing intentionally disabled in this console.</span>' : ''}
+          ${ACTIVE_STATES.has(job.status) ? '<span style="color: var(--text-muted);">Polling active · ETA usually 1–5 minutes.</span>' : ''}
         </div>
-
         ${this.renderArtifacts(job)}
         ${this.renderTimeline()}
-        ${job.error.step || job.error.message ? this.renderErrorBox(job) : ''}
       </div>
     `;
   }
 
-  private renderDetailCard(label: string, value: string): string {
-    return `<div class="aws-video-job-detail-card"><h4>${this.escapeHtml(label)}</h4><div>${this.escapeHtml(value)}</div></div>`;
-  }
-
-  private renderArtifacts(job: BrainCoreVideoJobSummary): string {
-    const artifacts = job.artifacts;
-    return `
-      <div class="aws-video-job-detail-card" style="margin-top: 12px;">
-        <h4>Artifacts</h4>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; font-size: 12px;">
-          ${this.renderArtifact('Script', artifacts.script)}
-          ${this.renderArtifact('Narration', artifacts.narration)}
-          ${this.renderArtifact('Final Video', artifacts.finalVideo)}
-          ${this.renderArtifact('Thumbnail', artifacts.thumbnail)}
-        </div>
-      </div>
-    `;
-  }
-
-  private renderArtifact(label: string, value: string | null): string {
-    return `<div><strong>${this.escapeHtml(label)}:</strong> ${value ? `<code>${this.escapeHtml(value)}</code>` : '—'}</div>`;
+  private renderArtifacts(job: VideoJobSummary): string {
+    const artifactLines = Object.entries(job.artifacts).map(([key, value]) => `<div><strong>${this.escape(key)}:</strong> ${value ? `<code>${this.escape(value)}</code>` : '—'}</div>`).join('');
+    return `<div style="margin-top: 12px;"><strong>Artifacts</strong><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px; font-size: 12px; margin-top: 6px;">${artifactLines}</div></div>`;
   }
 
   private renderTimeline(): string {
     const events = this.selectedTimeline?.events ?? [];
-    if (events.length === 0) {
-      return '<div class="aws-video-job-detail-card" style="margin-top: 12px;"><h4>Timeline</h4><div style="font-size: 12px; color: var(--text-muted);">No timeline events yet.</div></div>';
-    }
-    return `
-      <div class="aws-video-job-detail-card" style="margin-top: 12px;">
-        <h4>Timeline</h4>
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${events.map(event => `
-            <div style="display: grid; grid-template-columns: 24px 170px 1fr 150px; gap: 8px; align-items: center; font-size: 12px;">
-              <span>${this.timelineIcon(event.status)}</span>
-              <code>${this.escapeHtml(event.step)}</code>
-              <span>${this.escapeHtml(event.message)}</span>
-              <span style="color: var(--text-muted);">${this.escapeHtml(this.formatDate(event.timestamp))}</span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  private renderErrorBox(job: BrainCoreVideoJobSummary): string {
-    return `
-      <div class="aws-video-error-banner" style="margin-top: 12px;">
-        <strong>Error:</strong> ${this.escapeHtml(job.error.step ?? 'unknown step')} · ${this.escapeHtml(job.error.message ?? 'No error message')}
-      </div>
-    `;
+    return `<div style="margin-top: 12px;"><strong>Timeline</strong>${events.length === 0 ? '<div style="font-size: 12px; color: var(--text-muted);">No timeline events yet.</div>' : events.map(event => `<div style="font-size: 12px; margin-top: 4px;">${this.escape(event.status)} · <code>${this.escape(event.step)}</code> · ${this.escape(event.message)}</div>`).join('')}</div>`;
   }
 
   private renderCreateDraftCard(): string {
     return `
-      <div class="aws-video-health-card" style="margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; gap: 12px; align-items: center;">
-          <div>
-            <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600;">Create Draft</h3>
-            <div style="font-size: 12px; color: var(--text-muted);">Create a draft only. Approval remains required before generation.</div>
-          </div>
-          <button type="button" data-action="open-create-draft">Create Draft Video</button>
-        </div>
-        ${this.actionMessage ? `<div style="margin-top: 8px; font-size: 12px; color: var(--text-accent);">${this.escapeHtml(this.actionMessage)}</div>` : ''}
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px;">
+        <div><h3 style="margin: 0 0 4px 0;">Create Draft</h3><div style="font-size: 12px; color: var(--text-muted);">Create a draft only. Approval remains required before generation.</div></div>
+        <button type="button" data-action="open-create-draft">Create Draft Video</button>
       </div>
     `;
   }
@@ -530,349 +490,166 @@ export class AwsVideoPipelinePanel {
   private renderCreateDraftModal(): string {
     const channels = this.data?.channels ?? [];
     return `
-      <div class="aws-video-modal-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-        <div class="aws-video-modal" style="width: min(640px, 92vw); background: var(--background-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.35);">
-          <h3 style="margin: 0 0 12px 0;">Create Draft Video</h3>
-          <label style="display: block; margin-bottom: 12px; font-size: 12px;">Channel
+      <div style="position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+        <div style="background: var(--background-primary); border: 1px solid var(--border-color); border-radius: 10px; padding: 18px; width: min(680px, 92vw);">
+          <h3 style="margin-top: 0;">Create Draft Video</h3>
+          <label style="display:block; margin-bottom: 10px;">Channel
             <select id="aws-video-draft-channel" style="width: 100%; margin-top: 4px;" ${this.draftSubmitting ? 'disabled' : ''}>
-              ${channels.map(ch => `<option value="${this.escapeHtml(ch.channelId)}" ${ch.channelId === this.draftChannelId ? 'selected' : ''}>${this.escapeHtml(ch.displayName)}</option>`).join('')}
+              ${channels.map(channel => `<option value="${this.escape(channel.channelId)}" ${channel.channelId === this.draftChannelId ? 'selected' : ''}>${this.escape(channel.displayName ?? channel.channelId)}</option>`).join('')}
             </select>
           </label>
-          <label style="display: block; margin-bottom: 12px; font-size: 12px;">Prompt
-            <textarea id="aws-video-draft-prompt" style="width: 100%; min-height: 120px; margin-top: 4px;" placeholder="Describe the video content..." ${this.draftSubmitting ? 'disabled' : ''}>${this.escapeHtml(this.draftPrompt)}</textarea>
+          <label style="display:block; margin-bottom: 10px;">Prompt
+            <textarea id="aws-video-draft-prompt" style="width: 100%; min-height: 130px; margin-top: 4px;" ${this.draftSubmitting ? 'disabled' : ''}>${this.escape(this.draftPrompt)}</textarea>
           </label>
           <div style="display: flex; justify-content: flex-end; gap: 8px;">
             <button type="button" data-action="close-create-draft" ${this.draftSubmitting ? 'disabled' : ''}>Cancel</button>
-            <button type="button" data-action="submit-create-draft" ${this.draftSubmitting || this.draftPrompt.trim().length < 10 ? 'disabled' : ''}>${this.draftSubmitting ? 'Creating...' : 'Create'}</button>
+            <button type="button" data-action="submit-create-draft" ${this.draftSubmitting ? 'disabled' : ''}>${this.draftSubmitting ? 'Creating...' : 'Create'}</button>
           </div>
         </div>
       </div>
     `;
   }
 
-  private renderChannelCards(): string {
-    if (!this.data?.channels || this.data.channels.length === 0) return '<div class="aws-video-no-channels">No channels configured</div>';
-    return `
-      <div class="aws-video-channels-section" style="margin-top: 24px;">
-        <h3 style="margin: 16px 0 12px 0; font-size: 14px; font-weight: 600;">Channels</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-          ${this.data.channels.map(ch => this.renderChannelCard(ch)).join('')}
-        </div>
-      </div>
-    `;
+  private renderTopics(): string {
+    const channels = this.data?.channels ?? [];
+    if (channels.length === 0) return '';
+    return `<div style="margin-bottom: 18px;"><h3>Topic Candidates</h3>${channels.map(channel => `<div style="margin-bottom: 12px;"><strong>${this.escape(channel.displayName ?? channel.channelId)}</strong>${(channel.topCandidates ?? []).slice(0, 5).map((topic, index) => `<div style="display: flex; justify-content: space-between; background: var(--background-secondary); padding: 8px; margin-top: 4px; border-radius: 6px;"><span>#${index + 1} ${this.escape(topic.title)}</span><span>${topic.score ?? '—'} · ${this.escape(topic.status ?? 'candidate')}</span></div>`).join('')}</div>`).join('')}</div>`;
   }
 
-  private renderChannelCard(channel: BrainCoreChannelStatus): string {
-    return `
-      <div class="aws-video-channel-card" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--background-elevated);">
-        <div style="display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; margin-bottom: 8px;">
-          <div>
-            <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">${this.escapeHtml(channel.displayName)}</div>
-            <div style="font-size: 11px; color: var(--text-muted);">${this.escapeHtml(channel.channelId)}</div>
-          </div>
-          ${StatusPill({ status: channel.publishingStatus === 'ready' ? 'ok' : 'warning', label: channel.publishingStatus })}
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted);">${channel.totalTopics} topic${channel.totalTopics !== 1 ? 's' : ''} · YouTube ${channel.youtubeEnabled ? 'enabled' : 'disabled'}</div>
-      </div>
-    `;
+  private renderChannels(): string {
+    const channels = this.data?.channels ?? [];
+    if (channels.length === 0) return '<div>No channels configured</div>';
+    return `<div><h3>Channels</h3><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">${channels.map(channel => `<div style="background: var(--background-secondary); padding: 12px; border-radius: 6px;"><strong>${this.escape(channel.displayName ?? channel.channelId)}</strong><div style="font-size: 12px; color: var(--text-muted);">${this.escape(channel.channelId)} · ${channel.totalTopics ?? 0} topics · YouTube ${channel.youtubeEnabled ? 'enabled' : 'disabled'}</div></div>`).join('')}</div></div>`;
   }
 
-  private renderTopicBacklog(): string {
-    if (!this.data?.channels || this.data.channels.length === 0) return '';
-    return `
-      <div class="aws-video-topics-section" style="margin-top: 24px;">
-        <h3 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 600;">Topic Candidates</h3>
-        ${this.data.channels.map(ch => this.renderChannelTopics(ch)).join('')}
-      </div>
-    `;
+  private renderError(): string {
+    return this.error ? `<div style="margin-top: 14px; padding: 12px; border-radius: 6px; background: #ffe5e5; color: #b00020;"><strong>Error:</strong> ${this.escape(this.error)}<br><code>Brain Core: ${this.escape(this.baseUrl)}</code></div>` : '';
   }
 
-  private renderChannelTopics(channel: BrainCoreChannelStatus): string {
-    if (!channel.topCandidates || channel.topCandidates.length === 0) {
-      return `<div style="margin-bottom: 12px; padding: 12px; background: var(--background-secondary); border-radius: 6px;"><strong>${this.escapeHtml(channel.displayName)}</strong><br><span style="font-size: 12px; color: var(--text-muted);">No candidate topics yet</span></div>`;
+  private addActivity(level: ActivityLevel, message: string, jobId?: string): void {
+    this.activityLog = [{ at: new Date().toLocaleTimeString(), level, message, jobId }, ...this.activityLog].slice(0, 10);
+  }
+
+  private syncPolling(): void {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
     }
-    return `
-      <div style="margin-bottom: 16px;">
-        <div style="font-weight: 500; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">${this.escapeHtml(channel.displayName)}</div>
-        <div style="display: flex; flex-direction: column; gap: 8px;">${channel.topCandidates.slice(0, 5).map((topic, idx) => this.renderTopicItem(topic, idx + 1)).join('')}</div>
-      </div>
-    `;
-  }
-
-  private renderTopicItem(topic: BrainCoreTopicCandidate, rank: number): string {
-    return `
-      <div style="padding: 10px 12px; background: var(--background-secondary); border-radius: 6px; display: flex; justify-content: space-between; gap: 12px; font-size: 12px;">
-        <span><strong>#${rank}</strong> ${this.escapeHtml(topic.title)}</span>
-        <span>${topic.score} · ${this.escapeHtml(topic.status)}</span>
-      </div>
-    `;
-  }
-
-  private renderErrors(): string {
-    if (!this.error && !this.actionMessage) return '';
-    const content: string[] = [];
-    if (this.error) {
-      content.push(`<div class="aws-video-error-banner" style="margin-top: 16px; padding: 12px; background: #fee; border: 1px solid #fcc; border-radius: 4px; font-size: 12px; color: #c00;">
-        <strong>Error:</strong> ${this.escapeHtml(this.error)}<br/>
-        <code style="font-size: 11px; display: block; margin-top: 4px;">Brain Core: ${this.escapeHtml(this.baseUrl)}</code>
-      </div>`);
+    if (this.selectedJob && ACTIVE_STATES.has(this.selectedJob.status)) {
+      this.pollingTimer = setInterval(() => {
+        if (this.selectedJobId) void this.loadJobDetail(this.selectedJobId);
+      }, 10_000);
     }
-    if (this.actionMessage) {
-      content.push(`<div class="aws-video-action-message" style="margin-top: 16px; padding: 12px; background: #efe; border: 1px solid #cfc; border-radius: 4px; font-size: 12px; color: #060;">
-        ✓ ${this.escapeHtml(this.actionMessage)}
-      </div>`);
-    }
-    return content.join('');
   }
 
-  private attachEventListeners(): void {
-    // Use event delegation instead of querySelectorAll to handle re-renders
-    this.container.onclick = (event) => {
-      const target = event.target as HTMLElement;
+  private isCurrentRefresh(refreshId: number): boolean {
+    return refreshId === this.refreshSequence;
+  }
 
-      // Refresh button
-      if (target.closest('[data-action="refresh-now"]')) {
-        void this.fetchLiveData();
-        return;
-      }
-
-      // Create draft modal open
-      if (target.closest('[data-action="open-create-draft"]')) {
-        this.showCreateDraftModal = true;
-        this.render();
-        return;
-      }
-
-      // Create draft modal close
-      if (target.closest('[data-action="close-create-draft"]')) {
-        this.showCreateDraftModal = false;
-        this.draftSubmitting = false;
-        this.render();
-        return;
-      }
-
-      // Create draft modal submit
-      if (target.closest('[data-action="submit-create-draft"]')) {
-        void this.createDraftFromModal();
-        return;
-      }
-
-      // Generate job
-      const generateBtn = target.closest('[data-action="generate-job"]') as HTMLElement | null;
-      if (generateBtn) {
-        const jobId = generateBtn.dataset.jobId;
-        if (jobId) void this.generateJob(jobId);
-        return;
-      }
-
-      // Approve job
-      const approveBtn = target.closest('[data-action="approve-job"]') as HTMLElement | null;
-      if (approveBtn) {
-        const jobId = approveBtn.dataset.jobId;
-        if (jobId) void this.approveJob(jobId);
-        return;
-      }
-
-      // Request changes
-      const changesBtn = target.closest('[data-action="request-changes"]') as HTMLElement | null;
-      if (changesBtn) {
-        const jobId = changesBtn.dataset.jobId;
-        if (jobId) void this.requestChanges(jobId);
-        return;
-      }
-
-      // Job row selection. Keep this last so action buttons with data-job-id
-      // do not get interpreted as row navigation.
-      const jobRow = target.closest('.aws-video-job-row[data-job-id]') as HTMLElement | null;
-      if (jobRow) {
-        const jobId = jobRow.dataset.jobId;
-        if (jobId) void this.loadJobDetail(jobId);
-      }
-    };
-
-    // Handle change/input events with delegation
-    this.container.onchange = (event) => {
-      const target = event.target as HTMLElement;
-      if (target.id === 'aws-video-draft-channel') {
-        this.draftChannelId = (target as HTMLSelectElement).value;
-      }
-    };
-
-    this.container.oninput = (event) => {
-      const target = event.target as HTMLElement;
-      if (target.id === 'aws-video-draft-prompt') {
-        this.draftPrompt = (target as HTMLTextAreaElement).value;
-        this.render();
-      }
+  private unwrapStatus(payload: unknown): PipelineStatusData {
+    const root = this.asRecord(payload);
+    const data = this.asRecord(root?.data) ?? root;
+    return {
+      channels: Array.isArray(data?.channels) ? data.channels as ChannelStatus[] : [],
+      pipelineReady: Boolean(data?.pipelineReady),
+      generationStatus: typeof data?.generationStatus === 'string' ? data.generationStatus : 'unknown',
+      publishingStatus: typeof data?.publishingStatus === 'string' ? data.publishingStatus : 'unknown',
     };
   }
 
-  private async createDraftFromModal(): Promise<void> {
-    if (!this.draftChannelId || this.draftPrompt.trim().length < 10) return;
-    this.draftSubmitting = true;
-    this.addActivity('info', 'Creating draft...');
-    this.render();
-
-    const response = await createBrainCoreVideoJobFromPrompt(this.baseUrl, {
-      channelId: this.draftChannelId,
-      prompt: this.draftPrompt.trim(),
-      requestedBy: 'brain-console',
-    });
-    this.draftSubmitting = false;
-
-    if (response.value && 'jobId' in response.value && response.value.jobId) {
-      const jobId = response.value.jobId;
-      this.addActivity('success', `Draft created: ${jobId}. Next: approve script.`, jobId);
-      this.showCreateDraftModal = false;
-      this.draftPrompt = '';
-      this.selectedJobId = jobId;
-      this.render();
-
-      // Load the new job details
-      await this.loadJobDetail(jobId, true);
-    } else {
-      let errMsg = response.error ?? 'Draft creation failed';
-      if (response.value && 'message' in response.value) {
-        errMsg = response.value.message;
-      }
-      this.addActivity('error', errMsg);
-      this.error = errMsg;
-      this.render();
-    }
+  private unwrapRecentJobs(payload: unknown): VideoJobSummary[] {
+    const root = this.asRecord(payload);
+    const data = this.asRecord(root?.data);
+    const jobs = Array.isArray(payload) ? payload : Array.isArray(root?.jobs) ? root.jobs : Array.isArray(data?.jobs) ? data.jobs : [];
+    return jobs.filter((job): job is VideoJobSummary => Boolean(this.asRecord(job)?.jobId));
   }
 
-  private async generateJob(jobId: string): Promise<void> {
-    if (!confirm('Generate video artifacts only. This will not publish to YouTube.')) return;
-    this.addActivity('info', 'Generating artifacts...', jobId);
-    this.render();
-
-    const response = await requestBrainCoreOperationalGenerateVideoJob(this.baseUrl, jobId);
-    if (response.error) {
-      const errMsg = `Generate failed: ${this.describeHttpError(response)}`;
-      this.addActivity('error', errMsg, jobId);
-      this.error = errMsg;
-    } else {
-      this.addActivity('success', 'Generation request accepted', jobId);
-      this.error = undefined;
-    }
-    await this.loadJobDetail(jobId);
+  private unwrapJob(payload: unknown): VideoJobSummary {
+    const root = this.asRecord(payload);
+    const job = this.asRecord(root?.data) ?? root;
+    if (!job?.jobId) throw new Error(`Unexpected job response shape: ${this.objectKeys(payload)}`);
+    return job as unknown as VideoJobSummary;
   }
 
-  private async approveJob(jobId: string): Promise<void> {
-    this.addActivity('info', 'Approving script...', jobId);
-    this.render();
-
-    const response = await requestBrainCoreOperationalApproveVideoJob(this.baseUrl, jobId);
-    if (response.error) {
-      const errMsg = `Approval failed: ${this.describeHttpError(response)}`;
-      this.addActivity('error', errMsg, jobId);
-      this.error = errMsg;
-    } else {
-      this.addActivity('success', 'Script approved', jobId);
-      this.error = undefined;
-    }
-    await this.loadJobDetail(jobId);
+  private unwrapTimeline(payload: unknown): VideoTimeline {
+    const root = this.asRecord(payload);
+    const timeline = this.asRecord(root?.data) ?? root;
+    if (!timeline?.jobId || !Array.isArray(timeline.events)) return { jobId: this.selectedJobId ?? 'unknown', events: [] };
+    return timeline as unknown as VideoTimeline;
   }
 
-  private async requestChanges(jobId: string): Promise<void> {
-    const notes = prompt('Request changes notes:') ?? '';
-    if (!notes.trim()) return;
-
-    this.addActivity('info', 'Requesting changes...', jobId);
-    this.render();
-
-    const response = await requestBrainCoreOperationalRequestVideoJobChanges(this.baseUrl, jobId, notes.trim());
-    if (response.error) {
-      const errMsg = `Request changes failed: ${this.describeHttpError(response)}`;
-      this.addActivity('error', errMsg, jobId);
-      this.error = errMsg;
-    } else {
-      this.addActivity('success', `Changes requested: ${notes}`, jobId);
-      this.error = undefined;
-    }
-    await this.loadJobDetail(jobId);
+  private extractJobId(payload: unknown): string | null {
+    const root = this.asRecord(payload);
+    const data = this.asRecord(root?.data);
+    const job = this.asRecord(root?.job) ?? this.asRecord(data?.job);
+    return this.stringValue(root?.jobId) ?? this.stringValue(data?.jobId) ?? this.stringValue(job?.jobId);
   }
 
-  private describeHttpError(result: HttpResult<unknown>): string {
-    const base = result.error ?? `HTTP ${result.status ?? 'unknown'}`;
-    const detail = result.detail ? ` · ${result.detail}` : '';
-    return `${base}${detail}`;
+  private asRecord(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
   }
 
-  private describeStatusError(
-    value: BrainCoreVideoOrchestratorStatusResponse | BrainCoreVideoOrchestratorStatusResponse['data'] | undefined,
-  ): string {
-    if (value && typeof value === 'object' && 'error' in value && value.error) {
-      return String(value.error);
-    }
-    return 'Failed to fetch pipeline status';
+  private stringValue(value: unknown): string | null {
+    return typeof value === 'string' && value.length > 0 ? value : null;
   }
 
-  private syncPollingState(): void {
-    if (this.selectedJob && GENERATING_JOB_STATES.has(this.selectedJob.status)) {
-      this.startPolling();
-      return;
-    }
-    if (!this.selectedJob || TERMINAL_JOB_STATES.has(this.selectedJob.status)) {
-      this.stopPolling();
-    }
+  private objectKeys(value: unknown): string {
+    const record = this.asRecord(value);
+    return record ? Object.keys(record).join(', ') : typeof value;
   }
 
-  private startPolling(): void {
-    this.stopPolling();
-    this.pollingInterval = setInterval(() => {
-      if (this.selectedJobId) void this.loadJobDetail(this.selectedJobId);
-    }, JOB_POLL_INTERVAL_MS);
+  private errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
-  private stopPolling(): void {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
-    }
-  }
-
-  private statusPillType(status: string): 'ok' | 'warning' | 'error' | 'preview' {
+  private statusPill(status: string): 'ok' | 'warning' | 'error' | 'preview' {
     if (status === 'published' || status === 'ready_to_publish' || status === 'approved') return 'ok';
     if (status === 'failed' || status === 'rejected') return 'error';
     if (status === 'generating' || status === 'publishing' || status === 'awaiting_approval') return 'warning';
     return 'preview';
   }
 
-  private nextAction(job: BrainCoreVideoJobSummary): string {
+  private nextAction(job: VideoJobSummary): string {
     if (job.status === 'draft' || job.status === 'awaiting_approval') return 'Approve script';
     if (job.status === 'approved') return 'Generate';
-    if (job.status === 'ready_to_publish') return 'Publish review';
+    if (job.status === 'ready_to_publish') return 'Publish disabled';
     if (job.status === 'published') return 'Done';
     if (job.status === 'failed') return 'Investigate';
     return 'Monitor';
   }
 
-  private timelineIcon(status: string): string {
-    if (status === 'complete') return '✓';
-    if (status === 'in_progress') return '…';
-    if (status === 'failed') return '✕';
-    return '○';
+  private fetchIcon(state: FetchState): string {
+    if (state === 'ok') return '✓';
+    if (state === 'error') return '✕';
+    if (state === 'pending') return '○';
+    return '—';
   }
 
-  private formatDate(value: string | null): string {
-    if (!value) return '—';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  private activityIcon(level: ActivityLevel): string {
+    if (level === 'success') return '✓';
+    if (level === 'warning') return '⚠';
+    if (level === 'error') return '✕';
+    return 'ℹ';
   }
 
-  private truncate(text: string, max: number): string {
-    return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
+  private activityColor(level: ActivityLevel): string {
+    if (level === 'success') return 'var(--text-success, #22c55e)';
+    if (level === 'warning') return 'var(--text-warning, #f59e0b)';
+    if (level === 'error') return 'var(--text-error, #ef4444)';
+    return 'var(--text-accent)';
   }
 
-  private escapeHtml(text: string): string {
-    const map: { [key: string]: string } = {
+  private truncate(value: string, max: number): string {
+    return value.length <= max ? value : `${value.slice(0, max - 1)}…`;
+  }
+
+  private escape(value: string): string {
+    return value.replace(/[&<>"']/g, char => ({
       '&': '&amp;',
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
       "'": '&#039;',
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    }[char] ?? char));
   }
 }

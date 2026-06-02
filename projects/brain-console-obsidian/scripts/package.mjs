@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'v2.22-aws-video-panel-reset';
+const currentMarker = 'v2.23-aws-video-minimal-panel';
 const staleMarkers = [
   'v2.19-aws-video-fix',
   'v2.18',

@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { requestBrainCoreRestart, setRequestUrl, waitForBrainCoreStatus } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'v2.22-aws-video-panel-reset';
+export const BRAIN_CONSOLE_BUILD_ID = 'v2.23-aws-video-minimal-panel';
 
 declare global {
   interface Window {
