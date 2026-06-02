@@ -4,7 +4,7 @@ import { loadBrainConsoleViewState, renderBrainConsoleView, type BrainConsoleSec
 import { requestBrainCoreRestart, setRequestUrl, waitForBrainCoreStatus } from './client.js';
 
 const VIEW_TYPE = 'brain-console-view';
-export const BRAIN_CONSOLE_BUILD_ID = 'v2.20-aws-video-operational-jobs';
+export const BRAIN_CONSOLE_BUILD_ID = 'v2.21-aws-video-jobs-hardening';
 
 declare global {
   interface Window {

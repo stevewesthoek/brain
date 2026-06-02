@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const distDir = new URL('../dist/', import.meta.url);
 const releaseDir = new URL('../release/', import.meta.url);
-const currentMarker = 'v2.20-aws-video-operational-jobs';
+const currentMarker = 'v2.21-aws-video-jobs-hardening';
 const staleMarkers = [
   'v2.19-aws-video-fix',
   'v2.18',

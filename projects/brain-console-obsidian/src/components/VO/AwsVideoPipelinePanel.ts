@@ -54,9 +54,7 @@ export class AwsVideoPipelinePanel {
   private jobsFetchStatus: 'ok' | 'error' | null = null;
   private lastStatusEndpointError: string | null = null;
   private lastJobsEndpointError: string | null = null;
-  private listenersAttached = false;
   private refreshSequence = 0;
-  private refreshPending: { status: boolean; jobs: boolean } | null = null;
   private activityLog: Array<{
     at: string;
     level: 'info' | 'success' | 'warning' | 'error';
@@ -89,65 +87,34 @@ export class AwsVideoPipelinePanel {
     this.jobsFetchStatus = null;
     this.lastStatusEndpointError = null;
     this.lastJobsEndpointError = null;
-    this.refreshPending = { status: true, jobs: true };
     this.loading = true;
     this.error = undefined;
     this.addActivity('info', 'Refresh started');
     this.render();
 
-    void this.fetchStatusForRefresh(refreshId);
-  }
-
-  private async fetchStatusForRefresh(refreshId: number): Promise<void> {
     try {
       const statusResult = await this.withPanelTimeout(
         () => readBrainCoreAwsVideoPipelineStatus(this.baseUrl),
         'GET',
-        '/api/video-orchestrator/topic-intelligence/status',
+        '/api/video-orchestrator/status',
       );
       if (!this.isCurrentRefresh(refreshId)) return;
 
       const statusData = this.normalizePipelineStatusData(statusResult.value);
-      if (statusResult.error) {
+      if (statusResult.error || !statusData) {
         this.statusFetchStatus = 'error';
-        this.lastStatusEndpointError = this.describeHttpError(statusResult);
-        this.error = this.lastStatusEndpointError;
-      } else if (statusData) {
+        this.lastStatusEndpointError = statusResult.error ? this.describeHttpError(statusResult) : this.describeStatusError(statusResult.value);
+        this.addActivity('warning', `Pipeline status failed: ${this.lastStatusEndpointError}`);
+      } else {
         this.statusFetchStatus = 'ok';
         this.data = statusData;
-        if (!this.draftChannelId && this.data.channels.length > 0) {
-          this.draftChannelId = this.data.channels[0]?.channelId ?? '';
+        if (!this.draftChannelId && statusData.channels.length > 0) {
+          this.draftChannelId = statusData.channels[0]?.channelId ?? '';
         }
-        // Operational jobs are the source of truth for this panel.
-        // Do not hydrate rows from pipeline status: that endpoint is a compact health surface
-        // and can contain historical/static summaries that are not loadable job records.
-        void this.fetchJobsForRefresh(refreshId);
-      } else {
-        this.statusFetchStatus = 'error';
-        this.lastStatusEndpointError = this.describeStatusError(statusResult.value);
-        if (!this.error) this.error = this.lastStatusEndpointError;
-        this.jobsFetchStatus = 'error';
-        this.lastJobsEndpointError = 'Recent jobs unavailable because pipeline status did not return a usable payload';
-        this.markRefreshPartDone(refreshId, 'jobs');
       }
-    } catch (err) {
-      if (!this.isCurrentRefresh(refreshId)) return;
-      const message = err instanceof Error ? err.message : String(err);
-      this.statusFetchStatus = 'error';
-      this.lastStatusEndpointError = message;
-      this.jobsFetchStatus = 'error';
-      this.lastJobsEndpointError = `Recent jobs unavailable because pipeline status failed: ${message}`;
-      this.error = message;
-      this.markRefreshPartDone(refreshId, 'jobs');
-    } finally {
-      this.markRefreshPartDone(refreshId, 'status');
-    }
-  }
 
-  private async fetchJobsForRefresh(refreshId: number): Promise<void> {
-    try {
       const jobsResult = await this.withPanelTimeout(
-        () => this.fetchRecentJobs(),
+        () => readBrainCoreOperationalRecentVideoJobs(this.baseUrl),
         'GET',
         '/api/video-orchestrator/jobs/recent',
       );
@@ -156,82 +123,34 @@ export class AwsVideoPipelinePanel {
       if (jobsResult.error) {
         this.jobsFetchStatus = 'error';
         this.lastJobsEndpointError = this.describeHttpError(jobsResult);
-        if (!this.error) this.error = this.lastJobsEndpointError;
+        this.error = this.lastJobsEndpointError;
+        this.addActivity('error', `Jobs fetch failed: ${this.lastJobsEndpointError}`);
       } else {
         this.jobsFetchStatus = 'ok';
         this.recentJobs = jobsResult.value ?? [];
-        if (this.selectedJobId && !this.recentJobs.some(job => job.jobId === this.selectedJobId)) {
-          this.selectedJobId = null;
-          this.selectedJob = null;
-          this.selectedTimeline = null;
-        }
+        this.addActivity('success', `Loaded ${this.recentJobs.length} operational jobs`);
+
         if (!this.selectedJobId && this.recentJobs.length > 0) {
           this.selectedJobId = this.recentJobs[0]?.jobId ?? null;
         }
         if (this.selectedJobId) {
-          void this.loadJobDetail(this.selectedJobId, false);
+          await this.loadJobDetail(this.selectedJobId, false);
         }
       }
     } catch (err) {
-      if (!this.isCurrentRefresh(refreshId)) return;
       const message = err instanceof Error ? err.message : String(err);
-      this.jobsFetchStatus = 'error';
-      this.lastJobsEndpointError = message;
       this.error = message;
+      this.statusFetchStatus ??= 'error';
+      this.jobsFetchStatus ??= 'error';
+      this.addActivity('error', message);
     } finally {
-      this.markRefreshPartDone(refreshId, 'jobs');
+      if (this.isCurrentRefresh(refreshId)) {
+        this.loading = false;
+        this.render();
+      }
     }
   }
 
-  private async fetchRecentJobs(): Promise<HttpResult<BrainCoreVideoJobSummary[]>> {
-    return readBrainCoreOperationalRecentVideoJobs(this.baseUrl);
-  }
-
-  private hydrateRecentJobsFromPipelineStatus(data: BrainCoreVideoOrchestratorStatusResponse['data']): boolean {
-    if (!Array.isArray(data.recentJobs) || data.recentJobs.length === 0) return false;
-
-    this.recentJobs = data.recentJobs.map((job) => ({
-      jobId: job.jobId,
-      channelId: job.channelId,
-      title: job.videoId ? `Published video ${job.videoId}` : job.jobId,
-      status: job.status as BrainCoreVideoJobSummary['status'],
-      currentStep: null,
-      progress: job.status === 'published' ? 100 : 0,
-      createdAt: null,
-      updatedAt: null,
-      approval: {
-        status: job.status === 'published' ? 'approved' : 'pending',
-        required: true,
-      },
-      generation: {
-        status: job.status === 'published' ? 'complete' : 'pending',
-        executionArn: null,
-        startedAt: null,
-        completedAt: null,
-      },
-      publishing: {
-        status: job.status === 'published' ? 'uploaded' : 'pending',
-        videoId: job.videoId ?? null,
-        url: job.videoId ? `https://www.youtube.com/watch?v=${job.videoId}` : null,
-      },
-      error: {
-        step: null,
-        message: null,
-      },
-      artifacts: {
-        script: null,
-        narration: null,
-        finalVideo: null,
-        thumbnail: null,
-      },
-    }));
-    this.selectedJobId = this.recentJobs[0]?.jobId ?? null;
-    this.selectedJob = null;
-    this.selectedTimeline = null;
-    this.jobsFetchStatus = 'ok';
-    this.lastJobsEndpointError = null;
-    return true;
-  }
 
   private async withPanelTimeout<T>(
     requestFactory: () => Promise<HttpResult<T>>,
@@ -254,17 +173,6 @@ export class AwsVideoPipelinePanel {
 
   private isCurrentRefresh(refreshId: number): boolean {
     return refreshId === this.refreshSequence;
-  }
-
-  private markRefreshPartDone(refreshId: number, part: 'status' | 'jobs'): void {
-    if (!this.isCurrentRefresh(refreshId) || !this.refreshPending) return;
-    this.refreshPending[part] = false;
-    if (!this.refreshPending.status && !this.refreshPending.jobs) {
-      this.loading = false;
-      this.refreshPending = null;
-      if (this.selectedJobId) this.syncPollingState();
-    }
-    this.render();
   }
 
   private normalizePipelineStatusData(
@@ -341,6 +249,7 @@ export class AwsVideoPipelinePanel {
         ${this.showCreateDraftModal ? this.renderCreateDraftModal() : ''}
       </div>
     `;
+    this.attachEventListeners();
   }
 
   private renderDiagnostics(): string {
@@ -705,8 +614,6 @@ export class AwsVideoPipelinePanel {
   }
 
   private attachEventListeners(): void {
-    if (this.listenersAttached) return;
-    this.listenersAttached = true;
     // Use event delegation instead of querySelectorAll to handle re-renders
     this.container.onclick = (event) => {
       const target = event.target as HTMLElement;
