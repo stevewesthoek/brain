@@ -28,6 +28,8 @@ const checks = [
   ['Create prompt endpoint present', js.includes('/api/video-orchestrator/jobs/create-from-prompt')],
   ['Approve endpoint present', js.includes('/approve')],
   ['Generate endpoint present', js.includes('/generate')],
+  ['Execution status endpoint present', js.includes('/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/execution')],
+  ['Execution status UI present', js.includes('renderExecutionStatus') && css.includes('.executionCard')],
   ['Generate timeout is long enough for AWS workflow start', js.includes('GENERATE_TIMEOUT_MS = 120000')],
   ['Publish action intentionally absent', !js.includes('publish-job') && !js.includes('Publish to YouTube')],
   ['Styles present', css.includes('.modalBackdrop') && css.includes('.job.selected')],

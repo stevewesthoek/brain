@@ -113,8 +113,16 @@ nav { display: grid; gap: 7px; }
 .detailGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; font-size: 13px; }
 .detailGrid span { color: #a1a1aa; }
 .detailGrid strong { color: #f4f4f5; display: block; margin-top: 2px; }
-.buttonRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.buttonRow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
 .buttonRow.right { justify-content: flex-end; }
+.executionCard { margin: 12px 0; padding: 12px; border: 1px solid #3f3f46; border-radius: 10px; background: #18181b; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.executionCard div { min-width: 0; }
+.executionCard span { display: block; color: #a1a1aa; font-size: 12px; margin-bottom: 3px; }
+.executionCard strong, .executionCard code { overflow-wrap: anywhere; color: inherit; }
+.executionCard.error { border-color: #7f1d1d; background: #2b1111; color: #fecaca; }
+.executionCard.success { border-color: #14532d; background: #102117; color: #86efac; }
+.executionCard.pending { border-color: #713f12; background: #261a08; color: #fde68a; }
+.executionCause { grid-column: 1 / -1; }
 .detailSplit { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 8px; align-items: start; }
 .detailSplit > div { min-width: 0; }
 .timeline { display: grid; grid-template-columns: minmax(120px, 160px) minmax(96px, 120px) minmax(0, 1fr); gap: 10px; padding: 7px 0; border-top: 1px solid #303036; font-size: 12px; align-items: start; }

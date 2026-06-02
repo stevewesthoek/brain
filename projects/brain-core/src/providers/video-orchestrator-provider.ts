@@ -505,6 +505,57 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   };
 }
 
+export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJobExecutionStatus | null> {
+  if (!isValidJobId(jobId)) return null;
+
+  const status = await readOptionalJson(getJobMetadataPath(jobId, 'status.json')) as Record<string, unknown> | null;
+  if (!status) return null;
+
+  const executionArn = typeof status.executionArn === 'string' ? status.executionArn : null;
+  const base: VideoJobExecutionStatus = {
+    jobId,
+    executionArn,
+    awsStatus: null,
+    startDate: null,
+    stopDate: null,
+    error: null,
+    cause: null,
+    redriveStatus: null,
+    localStatus: typeof status.status === 'string' ? status.status : null,
+    localStep: typeof status.currentStep === 'string' ? status.currentStep : null,
+    checkedAt: new Date().toISOString(),
+  };
+
+  if (!executionArn) return base;
+
+  try {
+    const { stdout } = await execFileAsync('aws', [
+      'stepfunctions', 'describe-execution',
+      '--execution-arn', executionArn,
+      '--region', AWS_REGION,
+      '--output', 'json',
+      '--no-cli-pager',
+    ], { timeout: 15000 });
+    const parsed = JSON.parse(stdout) as Record<string, unknown>;
+    return {
+      ...base,
+      awsStatus: typeof parsed.status === 'string' ? parsed.status as VideoJobExecutionStatus['awsStatus'] : 'UNKNOWN',
+      startDate: typeof parsed.startDate === 'string' ? parsed.startDate : null,
+      stopDate: typeof parsed.stopDate === 'string' ? parsed.stopDate : null,
+      error: typeof parsed.error === 'string' ? parsed.error : null,
+      cause: typeof parsed.cause === 'string' ? parsed.cause : null,
+      redriveStatus: typeof parsed.redriveStatus === 'string' ? parsed.redriveStatus : null,
+    };
+  } catch (error) {
+    return {
+      ...base,
+      awsStatus: 'UNKNOWN',
+      error: 'describe_execution_failed',
+      cause: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export function isValidJobId(jobId: string): boolean {
   return /^[A-Za-z0-9._-]+$/.test(jobId) && !jobId.includes('..');
 }
@@ -784,6 +835,20 @@ export interface VideoJobTimelineEvent {
 export interface VideoJobTimeline {
   jobId: string;
   events: VideoJobTimelineEvent[];
+}
+
+export interface VideoJobExecutionStatus {
+  jobId: string;
+  executionArn: string | null;
+  awsStatus: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'TIMED_OUT' | 'ABORTED' | 'UNKNOWN' | null;
+  startDate: string | null;
+  stopDate: string | null;
+  error: string | null;
+  cause: string | null;
+  redriveStatus: string | null;
+  localStatus: string | null;
+  localStep: string | null;
+  checkedAt: string;
 }
 
 export async function generateApprovedScript(

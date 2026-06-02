@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts } from '../providers/video-orchestrator-provider.js';
+import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2262,6 +2262,25 @@ export async function routeRequest(
           sendJson(response, 500, {
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch job artifacts',
+          });
+        }
+        return;
+      }
+
+      const jobExecutionMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/execution$/.exec(url.pathname);
+      if (jobExecutionMatch) {
+        try {
+          const jobId = decodeURIComponent(jobExecutionMatch[1] ?? '');
+          const execution = await getVideoJobExecutionStatus(jobId);
+          if (!execution) {
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+          } else {
+            sendJson(response, 200, { ok: true, data: execution });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job execution status',
           });
         }
         return;

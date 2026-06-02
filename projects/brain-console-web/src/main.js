@@ -21,6 +21,7 @@ const state = {
   selectedJobId: null,
   selectedJob: null,
   timeline: null,
+  execution: null,
   error: null,
   activity: [],
   lastRefresh: 'never',
@@ -99,6 +100,10 @@ function unwrapTimeline(payload, fallbackJobId) {
   const data = unwrapData(payload);
   if (!data?.jobId || !Array.isArray(data.events)) return { jobId: fallbackJobId, events: [] };
   return data;
+}
+
+function unwrapExecution(payload) {
+  return unwrapData(payload) || null;
 }
 
 function extractJobId(payload) {
@@ -180,17 +185,25 @@ async function loadJob(jobId, rerender = true) {
   addActivity('info', `Loading job ${jobId}`);
   if (rerender) render();
   try {
-    const [jobPayload, timelinePayload] = await Promise.all([
+    const [jobPayload, timelinePayload, executionPayload] = await Promise.all([
       requestJson(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}`),
       requestJson(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/timeline`),
+      requestJson(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/execution`),
     ]);
     state.selectedJob = unwrapJob(jobPayload);
     state.timeline = unwrapTimeline(timelinePayload, jobId);
+    state.execution = unwrapExecution(executionPayload);
     state.activeView = 'detail';
+    if (state.execution?.awsStatus === 'FAILED') {
+      addActivity('error', `AWS execution failed: ${state.execution.error || 'unknown'} — ${state.execution.cause || 'no cause provided'}`);
+    } else if (state.execution?.awsStatus) {
+      addActivity('success', `AWS execution status: ${state.execution.awsStatus}`);
+    }
     addActivity('success', `Loaded job ${jobId}`);
   } catch (error) {
     state.selectedJob = null;
     state.timeline = null;
+    state.execution = null;
     state.error = errorMessage(error);
     addActivity('error', state.error);
   } finally {
@@ -331,7 +344,20 @@ function renderSelectedJobBody() {
   if (!job) return '<p>Select a job.</p>';
   const canApprove = job.approval.status === 'pending';
   const canGenerate = job.approval.status === 'approved' && !TERMINAL_GENERATION_STATES.has(job.status);
-  return `<div class="detailHeader"><div><h3>${escapeHtml(job.title)}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(job.status)}</strong></span><span>Progress <strong>${job.progress}%</strong></span><span>Approval <strong>${escapeHtml(job.approval.status)}</strong></span><span>Generation <strong>${escapeHtml(job.generation.status)}</strong></span><span>Publishing <strong>${escapeHtml(job.publishing.status)}</strong></span><span>Step <strong>${escapeHtml(job.currentStep || '—')}</strong></span></div><div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${job.status === 'ready_to_publish' ? '<span class="muted">Ready to publish — publishing intentionally disabled in this console.</span>' : ''}</div><div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(job.artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
+  return `<div class="detailHeader"><div><h3>${escapeHtml(job.title)}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(job.status)}</strong></span><span>Progress <strong>${job.progress}%</strong></span><span>Approval <strong>${escapeHtml(job.approval.status)}</strong></span><span>Generation <strong>${escapeHtml(job.generation.status)}</strong></span><span>Publishing <strong>${escapeHtml(job.publishing.status)}</strong></span><span>Step <strong>${escapeHtml(job.currentStep || '—')}</strong></span></div>${renderExecutionStatus()}<div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${job.status === 'ready_to_publish' ? '<span class="muted">Ready to publish — publishing intentionally disabled in this console.</span>' : ''}</div><div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(job.artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
+}
+
+function renderExecutionStatus() {
+  const execution = state.execution;
+  if (!execution) return '<section class="executionCard muted">AWS execution status: not available yet</section>';
+  const statusClass = execution.awsStatus === 'FAILED' || execution.awsStatus === 'TIMED_OUT' || execution.awsStatus === 'ABORTED'
+    ? 'error'
+    : execution.awsStatus === 'SUCCEEDED'
+      ? 'success'
+      : execution.awsStatus === 'RUNNING'
+        ? 'pending'
+        : 'muted';
+  return `<section class="executionCard ${statusClass}"><div><span>AWS Step Functions</span><strong>${escapeHtml(execution.awsStatus || 'unknown')}</strong></div><div><span>Execution</span><code>${escapeHtml(execution.executionArn || '—')}</code></div><div><span>Started</span><strong>${escapeHtml(execution.startDate || '—')}</strong></div><div><span>Stopped</span><strong>${escapeHtml(execution.stopDate || '—')}</strong></div>${execution.error ? `<div><span>Error</span><strong>${escapeHtml(execution.error)}</strong></div>` : ''}${execution.cause ? `<div class="executionCause"><span>Cause</span><strong>${escapeHtml(execution.cause)}</strong></div>` : ''}</section>`;
 }
 
 function renderCreatePanel() {
