@@ -1,6 +1,4 @@
-import './styles.css';
-
-const BRAIN_CORE_URL = (window.BRAIN_CORE_URL || 'http://localhost:4877').replace(/\/$/, '');
+const BRAIN_CORE_URL = (window.BRAIN_CORE_URL || '').replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 7000;
 const ACTIVE_STATES = new Set(['generating', 'publishing']);
 const TERMINAL_GENERATION_STATES = new Set(['generating', 'generated', 'ready_to_publish', 'publishing', 'published']);

@@ -5,6 +5,7 @@ const requiredFiles = [
   'src/main.js',
   'src/styles.css',
   'README.md',
+  'scripts/dev-server.mjs',
 ];
 
 for (const path of requiredFiles) {
@@ -14,17 +15,22 @@ for (const path of requiredFiles) {
 const html = await readFile('index.html', 'utf8');
 const js = await readFile('src/main.js', 'utf8');
 const css = await readFile('src/styles.css', 'utf8');
+const server = await readFile('scripts/dev-server.mjs', 'utf8');
 
 const checks = [
   ['HTML loads src/main.js', html.includes('/src/main.js')],
+  ['HTML links stylesheet', html.includes('/src/styles.css')],
+  ['JS does not import CSS as a module', !js.includes("import './styles.css'")],
   ['AWS Video title present', js.includes('AWS Video Pipeline')],
-  ['Brain Core URL default present', js.includes('http://localhost:4877')],
+  ['Uses same-origin API by default', js.includes("window.BRAIN_CORE_URL || ''")],
   ['Recent jobs endpoint present', js.includes('/api/video-orchestrator/jobs/recent')],
   ['Create prompt endpoint present', js.includes('/api/video-orchestrator/jobs/create-from-prompt')],
   ['Approve endpoint present', js.includes('/approve')],
   ['Generate endpoint present', js.includes('/generate')],
   ['Publish action intentionally absent', !js.includes('publish-job') && !js.includes('Publish to YouTube')],
   ['Styles present', css.includes('.modalBackdrop') && css.includes('.job.selected')],
+  ['Server root points at web project, not projects parent', server.includes("const rootDir = fileURLToPath(new URL('..', import.meta.url));")],
+  ['Server proxies API to Brain Core', server.includes("path.startsWith('api/')") && server.includes('Proxying /api/*')],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
