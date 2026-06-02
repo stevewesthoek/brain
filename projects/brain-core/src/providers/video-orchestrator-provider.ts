@@ -956,11 +956,43 @@ export async function generateApprovedScript(
 
   // Step 1: Write initial status.json
   const statusPath = join(metadataDir, 'status.json');
+  const startedAt = new Date().toISOString();
   const initialStatus = {
     status: 'generating',
     currentStep: 'narration_started',
-    startedAt: new Date().toISOString(),
+    startedAt,
+    updatedAt: startedAt,
     executionArn: null as string | null,
+  };
+  const writeFailedStatus = async (failedStep: string, message: string, extra: Record<string, unknown> = {}) => {
+    const failedStatus = {
+      ...initialStatus,
+      ...extra,
+      status: 'failed',
+      currentStep: failedStep,
+      failedStep,
+      lastError: message,
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      await writeFile(statusPath, JSON.stringify(failedStatus, null, 2) + '\n', 'utf-8');
+    } catch (err) {
+      console.error(`Warning: Failed to write failed status for ${jobId}: ${err}`);
+    }
+  };
+  const s3ObjectExists = async (key: string): Promise<boolean> => {
+    try {
+      await execFileAsync('aws', [
+        's3api', 'head-object',
+        '--bucket', S3_BUCKET,
+        '--key', key,
+        '--region', AWS_REGION,
+        '--no-cli-pager',
+      ], { timeout: 15000 });
+      return true;
+    } catch {
+      return false;
+    }
   };
   try {
     await writeFile(statusPath, JSON.stringify(initialStatus, null, 2) + '\n', 'utf-8');
@@ -1026,11 +1058,37 @@ export async function generateApprovedScript(
     };
   }
 
-  // Step 4: Start Step Functions execution
+  // Step 4: Preflight required S3 inputs before starting MediaConvert orchestration.
+  // The deployed state machine is final assembly: it requires a base video clip plus narration.
+  const videoKey = `jobs/${jobId}/video-generated/generated-001.mp4`;
+  const [videoExists, audioExists] = await Promise.all([
+    s3ObjectExists(videoKey),
+    s3ObjectExists(narrationKey),
+  ]);
+  if (!videoExists || !audioExists) {
+    const missingInputs = [
+      !videoExists ? `s3://${S3_BUCKET}/${videoKey}` : null,
+      !audioExists ? `s3://${S3_BUCKET}/${narrationKey}` : null,
+    ].filter(Boolean);
+    const message = `Cannot start MediaConvert assembly; missing required S3 input(s): ${missingInputs.join(', ')}`;
+    await writeFailedStatus('preflight_missing_s3_inputs', message, {
+      missingInputs,
+      videoKey,
+      audioKey: narrationKey,
+    });
+    return {
+      ok: false,
+      code: 'missing_s3_inputs',
+      message,
+      jobId,
+    };
+  }
+
+  // Step 5: Start Step Functions execution
   const executionName = `console-gen-${jobId}-${Date.now()}`;
   const sfInput = JSON.stringify({
     jobId,
-    videoKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
+    videoKey,
     audioKey: narrationKey,
   });
 
