@@ -107,9 +107,17 @@ Brain Core must not become a strategy document, dashboard renderer, broad shell 
 
 ## Brain Console implementation role
 
-Brain Console is the human control plane. It consumes Brain Core and visualizes/control surfaces through approved API endpoints.
+Brain Console is the human control plane. The canonical implementation path is now Brain Console Web, a standalone local web app owned entirely by the `brain` repo.
 
-Brain Console may show:
+```text
+Brain Console Web = primary operational dashboard.
+Brain Console Obsidian Plugin = frozen legacy/native plugin path.
+Obsidian = optional web-viewer surface for Brain Console Web.
+```
+
+Brain Console consumes Brain Core and visualizes/control surfaces through approved API endpoints. It should not read or mutate repo files directly from the browser. Brain Core remains the API boundary for operational truth, approvals, auditability, safety checks, and controlled actions.
+
+Brain Console Web may show:
 
 - system health
 - readiness
@@ -120,6 +128,8 @@ Brain Console may show:
 - Video Orchestrator local lane
 - Video Orchestrator cloud lane
 - controlled actions where Brain Core explicitly permits them
+
+The first Brain Console Web migration target is the AWS Video operational dashboard only. Do not migrate every Obsidian-plugin tab before the video workflow is proven.
 
 Brain Console must not be treated as the product itself, and it must not duplicate canonical strategy from `mind`.
 

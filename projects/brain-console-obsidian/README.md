@@ -1,10 +1,24 @@
 # Brain Console Obsidian Plugin
 
-Standalone Brain Core console for Obsidian. Opens as a main-workspace dashboard tab and displays shared system health, execution readiness, scheduler status, AI selector health, approvals, and controlled Local Apps operations using native Obsidian UI with responsive layout.
+**Status:** frozen legacy/native plugin path  
+**Superseded by:** `projects/brain-console-web`  
+**Decision date:** 2026-06-02  
 
-**Build:** `brain-console-local-apps-action-stability-2026-05-19-01`
+The Brain Console Obsidian Plugin is no longer the canonical Brain Console runtime. It is preserved as a historical/native Obsidian implementation and reference source only.
 
-**Status:** Active, gap-closure phase 2026-05-19 with ProBot decommission readiness tracking (10 cards: 7 parity + 3 gap-closure: external admin safe metadata, feature parity matrix, phase-out checklist).
+The active direction is:
+
+```text
+Brain Console Web = primary control-plane UI in the brain repo.
+Brain Console Obsidian Plugin = frozen legacy/native plugin path.
+Obsidian = optional viewer of the local Brain Console Web URL.
+```
+
+Do not add new operational dashboard features here unless explicitly requested for legacy maintenance. New execution-facing UI work should go into `projects/brain-console-web` and consume Brain Core API surfaces.
+
+Historical description: this plugin opened as a main-workspace dashboard tab and displayed shared system health, execution readiness, scheduler status, AI selector health, approvals, and controlled Local Apps operations using native Obsidian UI.
+
+**Frozen build lineage:** `brain-console-local-apps-action-stability-2026-05-19-01` through AWS Video native-plugin experiments ending in `v2.22-aws-video-panel-reset`.
 
 ### Validation Status
 
