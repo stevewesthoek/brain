@@ -1,5 +1,6 @@
 const BRAIN_CORE_URL = (window.BRAIN_CORE_URL || '').replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 7000;
+const GENERATE_TIMEOUT_MS = 120000;
 const ACTIVE_STATES = new Set(['generating', 'publishing']);
 const TERMINAL_GENERATION_STATES = new Set(['generating', 'generated', 'ready_to_publish', 'publishing', 'published']);
 const MENU_ITEMS = [
@@ -37,22 +38,25 @@ function addActivity(level, message) {
 }
 
 async function requestJson(path, init = {}) {
+  const timeoutMs = init.timeoutMs || REQUEST_TIMEOUT_MS;
+  const requestInit = { ...init };
+  delete requestInit.timeoutMs;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(`${BRAIN_CORE_URL}${path}`, {
-      ...init,
+      ...requestInit,
       signal: controller.signal,
-      headers: { 'content-type': 'application/json', ...(init.headers || {}) },
+      headers: { 'content-type': 'application/json', ...(requestInit.headers || {}) },
     });
     const text = await response.text();
     const payload = text ? JSON.parse(text) : null;
     if (!response.ok) {
-      throw new Error(`${init.method || 'GET'} ${path} failed with HTTP ${response.status}: ${text.slice(0, 240)}`);
+      throw new Error(`${requestInit.method || 'GET'} ${path} failed with HTTP ${response.status}: ${text.slice(0, 240)}`);
     }
     return payload;
   } catch (error) {
-    if (error && error.name === 'AbortError') throw new Error(`${init.method || 'GET'} ${path} timed out after ${REQUEST_TIMEOUT_MS}ms`);
+    if (error && error.name === 'AbortError') throw new Error(`${requestInit.method || 'GET'} ${path} timed out after ${timeoutMs}ms`);
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -228,11 +232,11 @@ async function postJobAction(jobId, action, body) {
     : action === 'approve'
       ? `/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/approve`
       : `/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/changes`;
-  addActivity('info', `${action} started for ${jobId}`);
+  addActivity('info', action === 'generate' ? `Generation started for ${jobId}. Starting AWS workflow can take up to 2 minutes...` : `${action} started for ${jobId}`);
   render();
   try {
-    await requestJson(path, { method: 'POST', body: JSON.stringify(body) });
-    addActivity('success', `${action} accepted for ${jobId}`);
+    await requestJson(path, { method: 'POST', body: JSON.stringify(body), timeoutMs: action === 'generate' ? GENERATE_TIMEOUT_MS : REQUEST_TIMEOUT_MS });
+    addActivity('success', action === 'generate' ? `Generation workflow accepted for ${jobId}` : `${action} accepted for ${jobId}`);
     await refresh(`${action} accepted`);
     await loadJob(jobId);
   } catch (error) {
