@@ -259,6 +259,9 @@ function normalizeJobStatus(
   const completedSteps = status?.completedSteps as string[] | null;
   if (statusVal === 'complete' || completedSteps?.includes('thumbnail_generated')) return 'ready_to_publish';
 
+  // Check for failed before active states
+  if (status?.failedStep || status?.lastError || statusVal === 'failed') return 'failed';
+
   // Check if generating
   if (statusVal === 'generating') return 'generating';
 
@@ -905,7 +908,41 @@ export async function generateApprovedScript(
     };
   }
 
-  // Step 2: Copy narration from S3 fixture
+  // Step 2: Write/upload approvals.json for the deployed Step Functions contract.
+  // The local Brain Console approval source of truth is metadata/script.json,
+  // while the deployed AWS check-approval Lambda reads metadata/approvals.json from S3.
+  // Keep both contracts bridged until the cloud workflow is updated to read script.json directly.
+  const approvalsJson = {
+    jobId,
+    approvals: {
+      script: {
+        status: 'approved',
+        approvedBy: approval.approvedBy || input.requestedBy || 'brain-console-web',
+        approvedAt: approval.approvedAt || new Date().toISOString(),
+        notes: approval.notes || null,
+      },
+    },
+  };
+  const approvalsPath = join(metadataDir, 'approvals.json');
+  try {
+    await writeFile(approvalsPath, JSON.stringify(approvalsJson, null, 2) + '\n', 'utf-8');
+    await execFileAsync('aws', [
+      's3', 'cp',
+      approvalsPath,
+      `s3://${S3_BUCKET}/jobs/${jobId}/metadata/approvals.json`,
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ]);
+  } catch (err) {
+    return {
+      ok: false,
+      code: 'approval_contract_upload_failed',
+      message: `Failed to upload approvals.json for Step Functions approval check: ${err instanceof Error ? err.message : String(err)}`,
+      jobId,
+    };
+  }
+
+  // Step 3: Copy narration from S3 fixture
   const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
   try {
     await execFileAsync('aws', [
@@ -924,7 +961,7 @@ export async function generateApprovedScript(
     };
   }
 
-  // Step 3: Start Step Functions execution
+  // Step 4: Start Step Functions execution
   const executionName = `console-gen-${jobId}-${Date.now()}`;
   const sfInput = JSON.stringify({
     jobId,
