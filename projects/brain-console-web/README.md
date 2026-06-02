@@ -51,15 +51,23 @@ npm run dev
 Open:
 
 ```text
-http://localhost:4880/aws-video
+http://127.0.0.1:4880/aws-video
 ```
 
 The app is dependency-free and uses a local Node static server. No `npm install` is required for the current implementation.
 
-Optional Brain Core URL override can be set through the page-level `window.BRAIN_CORE_URL` before loading `src/main.js`; the default is:
+The local server also proxies same-origin API requests:
 
 ```text
-http://localhost:4877
+Brain Console Web /api/* → Brain Core http://127.0.0.1:4877/api/*
+```
+
+This avoids browser CORS issues. If Brain Core is already running on port `4877`, do not start a second Brain Core process; `EADDRINUSE` means the port is already occupied.
+
+Override the upstream Brain Core URL for the web server with:
+
+```bash
+BRAIN_CORE_URL=http://127.0.0.1:4877 npm run dev
 ```
 
 ## Build
