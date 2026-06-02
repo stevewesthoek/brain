@@ -61,10 +61,14 @@ export class AwsVideoPipelinePanel {
     message: string;
     jobId?: string;
   }> = [];
+  private instanceId: string;
+  private mountedAt: Date;
 
   constructor(container: HTMLElement, baseUrl: string = 'http://localhost:4877') {
     this.container = container;
     this.baseUrl = baseUrl;
+    this.instanceId = Math.random().toString(36).slice(2, 9);
+    this.mountedAt = new Date();
     this.attachEventListeners();
     this.render();
     void this.fetchLiveData();
@@ -93,6 +97,7 @@ export class AwsVideoPipelinePanel {
     this.render();
 
     try {
+      this.addActivity('info', 'Status request started');
       const statusResult = await this.withPanelTimeout(
         () => readBrainCoreAwsVideoPipelineStatus(this.baseUrl),
         'GET',
@@ -104,15 +109,17 @@ export class AwsVideoPipelinePanel {
       if (statusResult.error || !statusData) {
         this.statusFetchStatus = 'error';
         this.lastStatusEndpointError = statusResult.error ? this.describeHttpError(statusResult) : this.describeStatusError(statusResult.value);
-        this.addActivity('warning', `Pipeline status failed: ${this.lastStatusEndpointError}`);
+        this.addActivity('error', `Status request error: ${this.lastStatusEndpointError}`);
       } else {
         this.statusFetchStatus = 'ok';
         this.data = statusData;
+        this.addActivity('success', 'Status request ok');
         if (!this.draftChannelId && statusData.channels.length > 0) {
           this.draftChannelId = statusData.channels[0]?.channelId ?? '';
         }
       }
 
+      this.addActivity('info', 'Jobs request started');
       const jobsResult = await this.withPanelTimeout(
         () => readBrainCoreOperationalRecentVideoJobs(this.baseUrl),
         'GET',
@@ -124,7 +131,7 @@ export class AwsVideoPipelinePanel {
         this.jobsFetchStatus = 'error';
         this.lastJobsEndpointError = this.describeHttpError(jobsResult);
         this.error = this.lastJobsEndpointError;
-        this.addActivity('error', `Jobs fetch failed: ${this.lastJobsEndpointError}`);
+        this.addActivity('error', `Jobs request error: ${this.lastJobsEndpointError}`);
       } else {
         this.jobsFetchStatus = 'ok';
         this.recentJobs = jobsResult.value ?? [];
@@ -257,12 +264,17 @@ export class AwsVideoPipelinePanel {
     const lastRefresh = this.lastRefreshTime ? this.lastRefreshTime.toLocaleTimeString() : 'never';
     const statusIcon = this.statusFetchStatus === 'ok' ? '✓' : this.statusFetchStatus === 'error' ? '✕' : '○';
     const jobsIcon = this.jobsFetchStatus === 'ok' ? '✓' : this.jobsFetchStatus === 'error' ? '✕' : '○';
+    const containerConnected = this.container.isConnected ? 'yes' : 'no';
+    const mountTime = this.mountedAt.toLocaleTimeString();
 
     return `
       <div style="padding: 10px 12px; margin-bottom: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-muted);">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 6px;">
           <div><strong>Build:</strong> <code>${this.escapeHtml(buildId)}</code></div>
+          <div><strong>Panel instance:</strong> <code>${this.escapeHtml(this.instanceId)}</code></div>
+          <div><strong>Mounted at:</strong> ${this.escapeHtml(mountTime)}</div>
           <div><strong>Brain Core:</strong> <code>${this.escapeHtml(this.baseUrl)}</code></div>
+          <div><strong>Container connected:</strong> ${containerConnected}</div>
           <div><strong>Last Refresh:</strong> ${this.escapeHtml(lastRefresh)}</div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
