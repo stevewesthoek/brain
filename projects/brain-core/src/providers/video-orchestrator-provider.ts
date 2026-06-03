@@ -566,13 +566,17 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     if (publishStatus) result.publishStatus = publishStatus;
     return result;
   } catch (error) {
-    return {
+    const outputError = error as Error & { stdout?: string; stderr?: string };
+    const result: ControlledYouTubePublishResult = {
       ok: false,
       jobId,
       dryRun: options.dryRun,
       code: 'youtube_upload_script_failed',
-      error: error instanceof Error ? error.message.slice(-2000) : String(error),
+      error: outputError.message.slice(-2000),
     };
+    if (typeof outputError.stdout === 'string') result.stdout = outputError.stdout.slice(-4000);
+    if (typeof outputError.stderr === 'string') result.stderr = outputError.stderr.slice(-4000);
+    return result;
   }
 }
 
