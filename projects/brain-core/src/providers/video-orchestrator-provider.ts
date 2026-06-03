@@ -506,6 +506,76 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   };
 }
 
+export async function runControlledYouTubePublish(jobId: string, options: { dryRun: boolean; confirmation?: string }): Promise<ControlledYouTubePublishResult> {
+  if (!isValidJobId(jobId)) return { ok: false, jobId, dryRun: options.dryRun, code: 'invalid_job_id', error: 'Invalid jobId' };
+
+  let publishJson = await readOptionalJson(getJobMetadataPath(jobId, 'publish.json')) as Record<string, unknown> | null;
+  if (!publishJson) {
+    try {
+      const { stdout } = await execFileAsync('aws', [
+        's3', 'cp',
+        `s3://${S3_BUCKET}/jobs/${jobId}/metadata/publish.json`,
+        '-',
+        '--region', AWS_REGION,
+        '--no-cli-pager',
+      ], { timeout: 15000 });
+      publishJson = JSON.parse(stdout) as Record<string, unknown>;
+    } catch {
+      return { ok: false, jobId, dryRun: options.dryRun, code: 'publish_contract_missing', error: 'publish.json is required before YouTube publishing' };
+    }
+  }
+
+  const platforms = publishJson.platforms as Record<string, unknown> | undefined;
+  const youtube = platforms?.youtube as Record<string, unknown> | undefined;
+  const existingVideoId = typeof youtube?.videoId === 'string' ? youtube.videoId : null;
+  const youtubeStatus = typeof youtube?.status === 'string' ? youtube.status : null;
+  if (existingVideoId || youtubeStatus === 'uploaded' || youtubeStatus === 'published') {
+    return { ok: false, jobId, dryRun: options.dryRun, code: 'already_uploaded', error: 'YouTube upload already exists for this job', videoId: existingVideoId, url: typeof youtube?.url === 'string' ? youtube.url : null };
+  }
+
+  const videoKey = typeof publishJson.videoKey === 'string' ? publishJson.videoKey : '';
+  const thumbnailKey = typeof publishJson.thumbnailKey === 'string' ? publishJson.thumbnailKey : '';
+  if (!videoKey || !thumbnailKey) return { ok: false, jobId, dryRun: options.dryRun, code: 'publish_assets_missing', error: 'publish.json must include videoKey and thumbnailKey' };
+
+  if (!options.dryRun && options.confirmation !== 'PUBLISH PRIVATE TO YOUTUBE') {
+    return { ok: false, jobId, dryRun: false, code: 'confirmation_required', error: 'Real upload requires confirmation: PUBLISH PRIVATE TO YOUTUBE' };
+  }
+
+  const scriptPath = join(getVideoOrchestratorRoot(), 'scripts', 'youtube-upload-local.sh');
+  const args = [scriptPath, jobId];
+  if (options.dryRun) args.push('--dry-run');
+
+  try {
+    const { stdout, stderr } = await execFileAsync('bash', args, { timeout: options.dryRun ? 120000 : 1800000 });
+    const updatedPublishJson = await readOptionalJson(getJobMetadataPath(jobId, 'publish.json')) as Record<string, unknown> | null;
+    const updatedYoutube = ((updatedPublishJson?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined) ?? youtube;
+    const result: ControlledYouTubePublishResult = {
+      ok: true,
+      jobId,
+      dryRun: options.dryRun,
+      videoId: typeof updatedYoutube?.videoId === 'string' ? updatedYoutube.videoId : null,
+      url: typeof updatedYoutube?.url === 'string' ? updatedYoutube.url : null,
+      stdout: stdout.slice(-4000),
+      stderr: stderr.slice(-2000),
+    };
+    const publishStatus = typeof updatedPublishJson?.publishStatus === 'string'
+      ? updatedPublishJson.publishStatus
+      : typeof publishJson.publishStatus === 'string'
+        ? publishJson.publishStatus
+        : null;
+    if (publishStatus) result.publishStatus = publishStatus;
+    return result;
+  } catch (error) {
+    return {
+      ok: false,
+      jobId,
+      dryRun: options.dryRun,
+      code: 'youtube_upload_script_failed',
+      error: error instanceof Error ? error.message.slice(-2000) : String(error),
+    };
+  }
+}
+
 export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJobExecutionStatus | null> {
   if (!isValidJobId(jobId)) return null;
 
@@ -850,6 +920,19 @@ export interface VideoJobExecutionStatus {
   localStatus: string | null;
   localStep: string | null;
   checkedAt: string;
+}
+
+export interface ControlledYouTubePublishResult {
+  ok: boolean;
+  jobId: string;
+  dryRun: boolean;
+  publishStatus?: string;
+  videoId?: string | null;
+  url?: string | null;
+  stdout?: string;
+  stderr?: string;
+  error?: string;
+  code?: string;
 }
 
 export async function generateApprovedScript(

@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus } from '../providers/video-orchestrator-provider.js';
+import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, runControlledYouTubePublish } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2370,6 +2370,30 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     } else {
       sendJson(response, 400, result);
     }
+    return;
+  }
+
+  const youtubePublishDryRunMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/publish\/youtube\/dry-run$/.exec(url.pathname);
+  if (youtubePublishDryRunMatch) {
+    const jobId = decodeURIComponent(youtubePublishDryRunMatch[1] ?? '');
+    const result = await runControlledYouTubePublish(jobId, { dryRun: true });
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  const youtubePublishMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/publish\/youtube$/.exec(url.pathname);
+  if (youtubePublishMatch) {
+    const jobId = decodeURIComponent(youtubePublishMatch[1] ?? '');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', message: 'Request body must be valid JSON.', jobId });
+      return;
+    }
+    const result = await runControlledYouTubePublish(jobId, {
+      dryRun: body.dryRun === true,
+      confirmation: (body.confirmation as string) ?? '',
+    });
+    sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
 

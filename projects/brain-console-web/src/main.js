@@ -29,6 +29,9 @@ const state = {
   draftChannelId: '',
   draftPrompt: '',
   draftSubmitting: false,
+  publishDryRun: null,
+  publishConfirmation: '',
+  publishSubmitting: false,
 };
 
 const root = document.querySelector('#root');
@@ -285,6 +288,35 @@ async function createDraft() {
   }
 }
 
+async function runYouTubePublish(jobId, dryRun) {
+  const path = dryRun
+    ? `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/publish/youtube/dry-run`
+    : `/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/publish/youtube`;
+  const body = dryRun ? {} : { confirmation: state.publishConfirmation };
+  state.publishSubmitting = true;
+  addActivity('info', dryRun ? `YouTube dry-run started for ${jobId}` : `Private YouTube publish started for ${jobId}`);
+  render();
+  try {
+    const result = await requestJson(path, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      timeoutMs: dryRun ? 120000 : 1800000,
+    });
+    state.publishDryRun = result;
+    addActivity(result.ok === false ? 'error' : 'success', dryRun ? `YouTube dry-run completed for ${jobId}` : `Private YouTube publish completed for ${jobId}`);
+    await refresh(dryRun ? 'youtube dry-run completed' : 'youtube publish completed');
+    await loadJob(jobId);
+  } catch (error) {
+    state.error = errorMessage(error);
+    state.publishDryRun = { ok: false, error: state.error };
+    addActivity('error', state.error);
+    render();
+  } finally {
+    state.publishSubmitting = false;
+    render();
+  }
+}
+
 async function postJobAction(jobId, action, body) {
   const path = action === 'generate'
     ? `/api/video-orchestrator/scripts/${encodeURIComponent(jobId)}/generate`
@@ -405,7 +437,17 @@ function renderSelectedJobBody() {
   const errorMessage = job.error?.message
     ? `<section class="errorBanner compact">${escapeHtml(displayValue(job.error.step))}: ${escapeHtml(job.error.message)}</section>`
     : '';
-  return `<div class="detailHeader"><div><h3>${escapeHtml(displayValue(job.title))}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(displayValue(job.status))}</strong></span><span>Progress <strong>${Number.isFinite(job.progress) ? `${job.progress}%` : 'not available'}</strong></span><span>Approval <strong>${escapeHtml(approvalStatus)}</strong></span><span>Generation <strong>${escapeHtml(generationStatus)}</strong></span><span>Publishing <strong>${escapeHtml(publishingStatus)}</strong></span><span>Step <strong>${escapeHtml(step)}</strong></span></div>${renderExecutionStatus()}${errorMessage}<div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${readyMessage}</div><div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
+  return `<div class="detailHeader"><div><h3>${escapeHtml(displayValue(job.title))}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(displayValue(job.status))}</strong></span><span>Progress <strong>${Number.isFinite(job.progress) ? `${job.progress}%` : 'not available'}</strong></span><span>Approval <strong>${escapeHtml(approvalStatus)}</strong></span><span>Generation <strong>${escapeHtml(generationStatus)}</strong></span><span>Publishing <strong>${escapeHtml(publishingStatus)}</strong></span><span>Step <strong>${escapeHtml(step)}</strong></span></div>${renderExecutionStatus()}${errorMessage}<div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${readyMessage}</div>${renderPublishControls(job, artifacts)}<div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
+}
+
+function renderPublishControls(job, artifacts) {
+  if (job.status !== 'ready_to_publish' && job.publishing?.status !== 'pending') return '';
+  const canPrivatePublish = state.publishDryRun?.ok === true && state.publishConfirmation === 'PUBLISH PRIVATE TO YOUTUBE' && !state.publishSubmitting;
+  const uploaded = job.publishing?.videoId || job.publishing?.url || job.publishing?.status === 'uploaded' || job.publishing?.status === 'published';
+  if (uploaded) {
+    return `<section class="publishPanel success"><h3>YouTube Publish</h3><p>Already uploaded.</p><p>${escapeHtml(displayValue(job.publishing?.url || job.publishing?.videoId))}</p></section>`;
+  }
+  return `<section class="publishPanel"><h3>Controlled YouTube Publish</h3><p>Private upload only. Dry-run must pass before the publish button is enabled.</p><div class="detailGrid"><span>Video <strong>${escapeHtml(displayValue(artifacts.finalVideo))}</strong></span><span>Thumbnail <strong>${escapeHtml(displayValue(artifacts.thumbnail))}</strong></span><span>Mode <strong>private</strong></span><span>Status <strong>${escapeHtml(displayValue(job.publishing?.status))}</strong></span></div><div class="buttonRow"><button data-action="youtube-dry-run" data-job-id="${escapeHtml(job.jobId)}" ${state.publishSubmitting ? 'disabled' : ''}>Dry-run YouTube publish</button></div>${state.publishDryRun ? `<pre>${escapeHtml(JSON.stringify(state.publishDryRun, null, 2))}</pre>` : ''}<label class="confirmLabel">Confirmation text<input id="publish-confirmation" value="${escapeHtml(state.publishConfirmation)}" placeholder="PUBLISH PRIVATE TO YOUTUBE" ${state.publishSubmitting ? 'disabled' : ''}/></label><div class="buttonRow"><button data-action="youtube-publish" data-job-id="${escapeHtml(job.jobId)}" ${canPrivatePublish ? '' : 'disabled'}>Publish privately to YouTube</button></div></section>`;
 }
 
 function renderExecutionStatus() {
@@ -454,9 +496,12 @@ function bindEvents() {
       if (notes) void postJobAction(jobId, 'changes', { requestedBy: 'brain-console-web', notes });
     }
     if (action === 'generate-job' && jobId && window.confirm('Generate video artifacts only. This will not publish to YouTube.')) void postJobAction(jobId, 'generate', { requestedBy: 'brain-console-web' });
+    if (action === 'youtube-dry-run' && jobId) void runYouTubePublish(jobId, true);
+    if (action === 'youtube-publish' && jobId && window.confirm('Publish this video privately to YouTube now?')) void runYouTubePublish(jobId, false);
   };
   root.oninput = event => {
     if (event.target?.id === 'draft-prompt') state.draftPrompt = event.target.value;
+    if (event.target?.id === 'publish-confirmation') { state.publishConfirmation = event.target.value; render(); }
   };
   root.onchange = event => {
     if (event.target?.id === 'draft-channel') state.draftChannelId = event.target.value;
