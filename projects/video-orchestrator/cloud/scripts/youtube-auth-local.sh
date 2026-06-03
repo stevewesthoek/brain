@@ -57,11 +57,27 @@ echo ""
 SCOPES="https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload"
 
 # Step 1: Generate authorization URL
-AUTH_URL="https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=$(echo -n "$SCOPES" | jq -sRr @uri)"
+AUTH_URL=$(CLIENT_ID="$CLIENT_ID" REDIRECT_URI="$REDIRECT_URI" SCOPES="$SCOPES" python3 - <<'PY'
+import os
+from urllib.parse import urlencode
+
+params = {
+    "client_id": os.environ["CLIENT_ID"],
+    "redirect_uri": os.environ["REDIRECT_URI"],
+    "response_type": "code",
+    "scope": os.environ["SCOPES"],
+    "access_type": "offline",
+    "prompt": "consent",
+    "include_granted_scopes": "true",
+}
+print("https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(params))
+PY
+)
 
 echo -e "${CYAN}Step 1: Opening browser for authorization...${NC}"
 echo ""
-echo "Opening: https://accounts.google.com/o/oauth2/v2/auth"
+echo "Opening full OAuth URL:"
+echo "$AUTH_URL"
 echo ""
 
 # Open in browser (macOS)
