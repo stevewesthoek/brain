@@ -171,12 +171,16 @@ function effectiveChannels() {
 }
 
 function derivedPipeline() {
-  const active = state.jobs.some(job => ACTIVE_STATES.has(job.status));
+  const effectiveJobs = state.jobs.map(job => job.jobId === state.selectedJobId ? effectiveJob(job, state.execution) : job);
+  const selectedEffectiveJob = state.selectedJob ? effectiveJob(state.selectedJob, state.execution) : null;
+  const active = effectiveJobs.some(job => ACTIVE_STATES.has(job.status));
+  const readyToPublish = effectiveJobs.some(job => job.status === 'ready_to_publish') || selectedEffectiveJob?.status === 'ready_to_publish';
+  const publishing = effectiveJobs.some(job => job.status === 'publishing') || selectedEffectiveJob?.status === 'publishing';
   return {
     channels: effectiveChannels(),
     pipelineReady: state.jobsFetch === 'ok',
-    generationStatus: active ? 'active' : 'ready',
-    publishingStatus: state.jobs.some(job => job.status === 'publishing') ? 'active' : 'ready',
+    generationStatus: selectedEffectiveJob?.generation?.status || (active ? 'active' : state.jobs.length ? 'ready' : 'not available'),
+    publishingStatus: selectedEffectiveJob?.publishing?.status || (publishing ? 'active' : readyToPublish ? 'pending' : state.jobs.length ? 'ready' : 'not available'),
   };
 }
 
