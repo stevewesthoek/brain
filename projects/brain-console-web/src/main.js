@@ -106,6 +106,47 @@ function unwrapExecution(payload) {
   return unwrapData(payload) || null;
 }
 
+function effectiveJob(job, execution) {
+  const publishReady = execution?.awsStatus === 'SUCCEEDED';
+  const awsFailed = ['FAILED', 'TIMED_OUT', 'ABORTED'].includes(execution?.awsStatus);
+  if (awsFailed) {
+    return {
+      ...job,
+      status: 'failed',
+      progress: 0,
+      currentStep: execution.error || execution.awsStatus,
+      generation: { ...(job.generation || {}), status: 'failed' },
+      error: { step: execution.error || 'aws_execution_failed', message: execution.cause || 'AWS execution failed' },
+    };
+  }
+  if (publishReady && job.status !== 'published') {
+    return {
+      ...job,
+      status: 'ready_to_publish',
+      progress: 80,
+      currentStep: 'publish_contract_created',
+      generation: { ...(job.generation || {}), status: 'complete', completedAt: execution.stopDate || job.generation?.completedAt || null },
+      publishing: { ...(job.publishing || {}), status: job.publishing?.status && job.publishing.status !== 'pending' ? job.publishing.status : 'pending' },
+    };
+  }
+  return job;
+}
+
+function effectiveArtifacts(job) {
+  const artifacts = asRecord(job.artifacts) || {};
+  const publishing = asRecord(job.publishing) || {};
+  return {
+    script: artifacts.script || null,
+    narration: artifacts.narration || null,
+    finalVideo: artifacts.finalVideo || publishing.videoKey || null,
+    thumbnail: artifacts.thumbnail || publishing.thumbnailKey || null,
+  };
+}
+
+function displayValue(value) {
+  return value === null || value === undefined || value === '' ? 'not available' : String(value);
+}
+
 function extractJobId(payload) {
   const rootValue = asRecord(payload) || {};
   const data = asRecord(rootValue.data) || {};
@@ -332,7 +373,10 @@ function renderActivity(full = true) {
 
 function renderJobs() {
   if (state.jobs.length === 0) return '<p>No operational jobs returned yet.</p>';
-  return state.jobs.map(job => `<button class="job ${job.jobId === state.selectedJobId ? 'selected' : ''}" data-action="select-job" data-job-id="${escapeHtml(job.jobId)}"><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span><code>${escapeHtml(shortJobId(job.jobId))}</code><span>${escapeHtml(job.channelId)}</span><span class="jobTitle">${escapeHtml(job.title)}</span><strong>${escapeHtml(nextAction(job))}</strong></button>`).join('');
+  return state.jobs.map(rawJob => {
+    const job = rawJob.jobId === state.selectedJobId && state.selectedJob ? effectiveJob(state.selectedJob, state.execution) : rawJob;
+    return `<button class="job ${rawJob.jobId === state.selectedJobId ? 'selected' : ''}" data-action="select-job" data-job-id="${escapeHtml(rawJob.jobId)}"><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span><code>${escapeHtml(shortJobId(rawJob.jobId))}</code><span>${escapeHtml(displayValue(rawJob.channelId))}</span><span class="jobTitle">${escapeHtml(displayValue(rawJob.title))}</span><strong>${escapeHtml(nextAction(rawJob))}</strong></button>`;
+  }).join('');
 }
 
 function renderSelectedJob() {
@@ -340,11 +384,23 @@ function renderSelectedJob() {
 }
 
 function renderSelectedJobBody() {
-  const job = state.selectedJob;
-  if (!job) return '<p>Select a job.</p>';
-  const canApprove = job.approval.status === 'pending';
-  const canGenerate = job.approval.status === 'approved' && !TERMINAL_GENERATION_STATES.has(job.status);
-  return `<div class="detailHeader"><div><h3>${escapeHtml(job.title)}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(job.status)}</strong></span><span>Progress <strong>${job.progress}%</strong></span><span>Approval <strong>${escapeHtml(job.approval.status)}</strong></span><span>Generation <strong>${escapeHtml(job.generation.status)}</strong></span><span>Publishing <strong>${escapeHtml(job.publishing.status)}</strong></span><span>Step <strong>${escapeHtml(job.currentStep || '—')}</strong></span></div>${renderExecutionStatus()}<div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${job.status === 'ready_to_publish' ? '<span class="muted">Ready to publish — publishing intentionally disabled in this console.</span>' : ''}</div><div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(job.artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
+  const rawJob = state.selectedJob;
+  if (!rawJob) return '<p>Select a job.</p>';
+  const job = effectiveJob(rawJob, state.execution);
+  const artifacts = effectiveArtifacts(job);
+  const approvalStatus = displayValue(job.approval?.status);
+  const generationStatus = displayValue(job.generation?.status);
+  const publishingStatus = displayValue(job.publishing?.status);
+  const step = displayValue(job.currentStep);
+  const canApprove = job.approval?.status === 'pending';
+  const canGenerate = job.approval?.status === 'approved' && !TERMINAL_GENERATION_STATES.has(job.status);
+  const readyMessage = job.status === 'ready_to_publish'
+    ? '<span class="successText">Ready to publish — publish contract exists. YouTube publishing is intentionally disabled in this console.</span>'
+    : '';
+  const errorMessage = job.error?.message
+    ? `<section class="errorBanner compact">${escapeHtml(displayValue(job.error.step))}: ${escapeHtml(job.error.message)}</section>`
+    : '';
+  return `<div class="detailHeader"><div><h3>${escapeHtml(displayValue(job.title))}</h3><code>${escapeHtml(job.jobId)}</code></div><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span></div><div class="detailGrid"><span>Status <strong>${escapeHtml(displayValue(job.status))}</strong></span><span>Progress <strong>${Number.isFinite(job.progress) ? `${job.progress}%` : 'not available'}</strong></span><span>Approval <strong>${escapeHtml(approvalStatus)}</strong></span><span>Generation <strong>${escapeHtml(generationStatus)}</strong></span><span>Publishing <strong>${escapeHtml(publishingStatus)}</strong></span><span>Step <strong>${escapeHtml(step)}</strong></span></div>${renderExecutionStatus()}${errorMessage}<div class="buttonRow">${canApprove ? `<button data-action="approve-job" data-job-id="${escapeHtml(job.jobId)}">Approve script</button><button data-action="request-changes" data-job-id="${escapeHtml(job.jobId)}">Request changes</button>` : ''}${canGenerate ? `<button data-action="generate-job" data-job-id="${escapeHtml(job.jobId)}">Generate artifacts</button>` : ''}${readyMessage}</div><div class="detailSplit"><div><h3>Artifacts</h3><pre>${escapeHtml(JSON.stringify(artifacts, null, 2))}</pre></div><div><h3>Timeline</h3>${(state.timeline?.events || []).length === 0 ? '<p>No timeline events yet.</p>' : (state.timeline?.events || []).map(event => `<div class="timeline"><code>${escapeHtml(event.step)}</code><span>${escapeHtml(event.status)}</span><p>${escapeHtml(event.message)}</p></div>`).join('')}</div></div>`;
 }
 
 function renderExecutionStatus() {
@@ -403,19 +459,22 @@ function bindEvents() {
 }
 
 function getCounts() {
+  const selectedEffectiveStatus = state.selectedJob ? effectiveJob(state.selectedJob, state.execution).status : null;
+  const jobs = state.jobs.map(job => job.jobId === state.selectedJobId && selectedEffectiveStatus ? { ...job, status: selectedEffectiveStatus } : job);
   return {
-    active: state.jobs.filter(job => ACTIVE_STATES.has(job.status)).length,
-    pending: state.jobs.filter(job => job.status === 'draft' || job.status === 'awaiting_approval').length,
-    published: state.jobs.filter(job => job.status === 'published').length,
+    active: jobs.filter(job => ACTIVE_STATES.has(job.status)).length,
+    pending: jobs.filter(job => job.status === 'draft' || job.status === 'awaiting_approval').length,
+    published: jobs.filter(job => job.status === 'published').length,
   };
 }
 
 function nextAction(job) {
-  if (job.status === 'draft' || job.status === 'awaiting_approval') return 'Approve';
-  if (job.status === 'approved') return 'Generate';
-  if (job.status === 'ready_to_publish') return 'Publish disabled';
-  if (job.status === 'published') return 'Done';
-  if (job.status === 'failed') return 'Investigate';
+  const effective = job.jobId === state.selectedJobId && state.selectedJob ? effectiveJob(state.selectedJob, state.execution) : job;
+  if (effective.status === 'draft' || effective.status === 'awaiting_approval') return 'Approve';
+  if (effective.status === 'approved') return 'Generate';
+  if (effective.status === 'ready_to_publish') return 'Ready';
+  if (effective.status === 'published') return 'Done';
+  if (effective.status === 'failed') return 'Investigate';
   return 'Monitor';
 }
 
