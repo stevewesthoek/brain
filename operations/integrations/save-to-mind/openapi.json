@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Mind Inbox API",
+    "title": "Save to Mind API",
     "version": "1.0.0",
-    "description": "Save conversations and ideas to personal knowledge base"
+    "description": "Save conversations and ideas to the Mind capture inbox. Classification is handled later by local Mind Steward automation."
   },
   "servers": [
     {
@@ -14,8 +14,8 @@
     "/webhook/mind-inbox": {
       "post": {
         "operationId": "saveToMind",
-        "summary": "Save a conversation or idea to the personal mind inbox",
-        "description": "Capture and classify a conversation, idea, or note into your personal knowledge management system. Content is automatically classified using PARA method (Projects, Areas, Resources, Inbox) and saved to mind/01-inbox/.",
+        "summary": "Save a conversation or idea to Mind",
+        "description": "Creates a Markdown capture in mind/capture/inbox and queues it for nightly local Mind Steward classification.",
         "requestBody": {
           "required": true,
           "content": {
@@ -29,26 +29,29 @@
                 "properties": {
                   "source": {
                     "type": "string",
-                    "description": "Source of the capture (e.g., 'chatgpt', 'shortcut')",
+                    "description": "Source of the capture.",
                     "default": "chatgpt"
                   },
                   "title": {
                     "type": "string",
-                    "description": "Short descriptive title for this note (max 8 words)"
+                    "description": "Short descriptive title for the capture."
                   },
                   "content": {
                     "type": "string",
-                    "description": "The full conversation content or key ideas to save"
+                    "description": "Full capture content."
                   },
                   "type_hint": {
                     "type": "string",
+                    "description": "Optional hint stored with the capture for later Mind Steward classification.",
                     "enum": [
                       "project",
                       "area",
                       "resource",
+                      "task",
+                      "decision",
+                      "research",
                       "inbox"
-                    ],
-                    "description": "Optional hint about what type of content this is. Helps AI classification."
+                    ]
                   }
                 }
               }
@@ -57,7 +60,7 @@
         },
         "responses": {
           "200": {
-            "description": "Saved successfully",
+            "description": "Capture saved and queued for classification.",
             "content": {
               "application/json": {
                 "schema": {
@@ -65,37 +68,19 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "description": "Status of the save operation"
+                      "description": "Save status."
                     },
                     "result": {
                       "type": "string",
-                      "description": "Result of the operation (e.g., 'file_committed')"
+                      "description": "Save result."
                     },
-                    "file": {
+                    "queued_for_classification": {
+                      "type": "boolean",
+                      "description": "Whether Mind Steward should classify the capture during the nightly local run."
+                    },
+                    "classifier": {
                       "type": "string",
-                      "description": "Path to the saved file in the vault"
-                    },
-                    "title": {
-                      "type": "string",
-                      "description": "Final title of the saved note"
-                    },
-                    "para_type": {
-                      "type": "string",
-                      "enum": [
-                        "project",
-                        "area",
-                        "resource",
-                        "inbox"
-                      ],
-                      "description": "Classified PARA type"
-                    },
-                    "confidence": {
-                      "type": "number",
-                      "description": "Confidence score for classification (0-1)"
-                    },
-                    "signal_quality": {
-                      "type": "number",
-                      "description": "Quality score of the captured content (0-1)"
+                      "description": "Classifier responsible for later processing."
                     }
                   }
                 }
@@ -103,10 +88,10 @@
             }
           },
           "400": {
-            "description": "Bad request - missing or invalid parameters"
+            "description": "Bad request."
           },
           "500": {
-            "description": "Server error during processing"
+            "description": "Server error during save."
           }
         }
       }

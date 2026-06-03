@@ -1,89 +1,70 @@
 # Mind Steward
 
-Mind Steward is the AI steward for the `mind` vault and related Brain Core workflows.
-
-## Status
-
-Initial scaffold only. No live scheduler job or destructive migration logic is implemented yet.
+Mind Steward maintains the `mind` vault through local capture classification, review suggestions, and maintenance reports.
 
 ## Responsibilities
 
-- Read the `mind/router/` contract.
-- Classify captures from `mind/capture/inbox/`.
-- Route useful work into `mind/live/`.
-- Compile durable knowledge into `mind/wiki/`.
-- Preserve raw evidence in `mind/sources/`.
-- Report failed or unsafe captures through `mind/capture/failed/`.
-- Run dry checks before any migration or archive operation.
+- Read and enforce the `mind/router/` contract.
+- Classify new captures in `mind/capture/inbox/`.
+- Use the AI Model Selector with `local_only: true` for automatic capture classification.
+- Append review suggestions through the compile loop.
+- Write runtime reports under `brain/runtime/local/mind-steward/`.
+- Keep raw captures and source material intact.
 
-## Non-responsibilities
+## Save-to-Mind Flow
 
-- Do not store secrets.
-- Do not execute arbitrary shell commands from Obsidian notes.
-- Do not move/delete legacy numbered folders until validation and explicit archive phase.
-- Do not become a dashboard; Obsidian and Brain Core own the operating surfaces.
+```text
+Save to Mind
+-> n8n writes Markdown to GitHub capture/inbox/
+-> nightly local scheduler syncs missing inbox captures to this computer
+-> Mind Steward classifies captures with local AI
+-> Mind Steward appends review suggestions to wiki/log.md
+```
 
-## Initial jobs
+Save to Mind does not trigger immediate classification. Classification runs during the nightly local scheduler.
 
-- `mind-compile-loop`
-- `mind-memory-loop`
-- `mind-hygiene-loop`
-- `mind-drift-error-loop`
+## Local Classification
 
-## Current dry-run capability
+Mind Steward requests a local model route from:
 
-The first implemented helpers are:
+```text
+http://127.0.0.1:4890/select
+```
 
-- a read-only contract checker for `mind-drift-error-loop`
-- a read-only loop planner for `mind-compile-loop`, `mind-memory-loop`, `mind-hygiene-loop`, and `mind-drift-error-loop`
-- a stat-only Mind path snapshot collector for trusted roots
-- an optional report-only CLI path used by the nightly scheduler helper
+with:
 
-The mind-steward package now has its own `package.json`, `tsconfig.json`, and dependency-free tests.
+```json
+{
+  "task_type": "mind_capture_classification",
+  "local_only": true,
+  "urgent": true
+}
+```
 
-It accepts a snapshot of known `mind` paths and reports:
+The selected provider must be a local OpenAI-compatible endpoint such as Ollama.
 
-- missing required Mind OS folders and root files
-- missing `router/` contract files
-- missing `live/` cockpit files
-- missing capture/wiki/source/archive index files
-- legacy numbered folders that remain present and read-only
-- whether Save-to-Mind is still unverified for `capture/inbox/`
-- whether live n8n deployment has been verified
-- whether the failure buffer is unconfigured, folder-only, test-verified, or real-error-verified
-- whether the archive phase remains blocked by incomplete failure-buffer verification
+## Scripts
 
-This is intentionally not a filesystem walker yet. The caller must provide observed path status from a trusted adapter, Brain Core, scheduler job, or BuildFlow validation step.
-The snapshot helper rejects unsafe roots containing `.env`, `.git`, `node_modules`, `dist`, or `build`.
+```text
+tools/scripts/mind-steward-sync-inbox.sh
+tools/scripts/mind-steward-classify-captures.sh
+tools/scripts/mind-steward-dry-run-report.sh
+tools/scripts/mind-compile-loop.sh
+```
 
-The loop planner also accepts an observed path snapshot and creates dry-run actions only. Current planned action kinds include:
+`mind-steward-sync-inbox.sh` fetches `origin/main` and copies missing `capture/inbox/*.md` files into the local vault without overwriting local files.
 
-- `compile-capture`
-- `promote-memory`
-- `summarize-file`
-- `split-file`
-- `archive-stale-capture`
-- `review-failed-capture`
-- `verify-contract`
+`mind-steward-classify-captures.sh` classifies inbox captures through the AI Model Selector local-only route.
 
-Planner output is blocked from execution by design. It reports `plannedWrites` as intended targets, but the scheduler dry-run path never mutates Mind. A narrow approved-preview apply helper exists for `mind-steward-update-current-context`; broad automated write/apply execution remains disabled.
+## Safety
 
-The legacy task migration was performed manually and approved by the user. The mind-steward only consumes the resulting dry-run context; it does not execute that migration.
-
-## Safety posture
-
-The first implementation is read-only/dry-run. Writes should be explicit, small, logged, and reversible. Legacy numbered folders must not be moved, archived, deleted, or rewritten until validation and explicit archive approval.
+- No hosted, CLI-backed, or paid/API-backed provider for automatic capture classification.
+- No arbitrary shell execution from Mind notes.
+- No secrets or runtime logs in Mind.
+- Broad move/delete/archive/rewrite behavior requires an explicit approved apply path.
 
 ## Validation
 
 ```bash
 npm run ci
 ```
-
-Current CI covers:
-
-- TypeScript typecheck
-- compile loop planning
-- memory loop planning
-- hygiene loop anti-clutter planning
-- drift/error contract verification planning
