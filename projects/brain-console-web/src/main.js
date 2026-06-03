@@ -394,7 +394,7 @@ function renderSelectedJobBody() {
   const publishingStatus = displayValue(job.publishing?.status);
   const step = displayValue(job.currentStep);
   const canApprove = job.approval?.status === 'pending';
-  const canGenerate = job.approval?.status === 'approved' && !TERMINAL_GENERATION_STATES.has(job.status);
+  const canGenerate = job.approval?.status === 'approved' && !TERMINAL_GENERATION_STATES.has(job.status) && state.execution?.awsStatus !== 'SUCCEEDED';
   const readyMessage = job.status === 'ready_to_publish'
     ? '<span class="successText">Ready to publish — publish contract exists. YouTube publishing is intentionally disabled in this console.</span>'
     : '';
