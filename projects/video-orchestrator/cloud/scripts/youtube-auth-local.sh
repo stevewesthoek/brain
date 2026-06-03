@@ -1,26 +1,40 @@
 #!/bin/bash
 # YouTube OAuth Local Authentication Setup
 # Generates local token file for YouTube Data API v3
-# Usage: scripts/youtube-auth-local.sh
+# Usage: scripts/youtube-auth-local.sh <channel>
+# Example: scripts/youtube-auth-local.sh prochat
+#          scripts/youtube-auth-local.sh says-the-bible
 #
-# Credentials location: ~/.config/youtube/.env (central credentials store)
-# Token output: ~/.youtube_tokens.json (auto-generated, gitignored)
+# Credentials location: ~/.config/youtube/<channel>.env (channel-specific credentials store)
+# Token output: configured by YOUTUBE_TOKEN_FILE in that channel env file
 
 set -e
 
-# Load central YouTube credentials config
-CONFIG_FILE="${HOME}/.config/youtube/.env"
+CHANNEL_ID="${1:-${YOUTUBE_CHANNEL_ID:-}}"
+if [ -z "$CHANNEL_ID" ]; then
+    echo "ERROR: channel argument is required"
+    echo "Usage: scripts/youtube-auth-local.sh <channel>"
+    echo "Examples:"
+    echo "  scripts/youtube-auth-local.sh prochat"
+    echo "  scripts/youtube-auth-local.sh says-the-bible"
+    exit 1
+fi
+
+CONFIG_FILE="${YOUTUBE_CONFIG_FILE:-${HOME}/.config/youtube/${CHANNEL_ID}.env}"
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "ERROR: Central credentials config not found: $CONFIG_FILE"
+    echo "ERROR: Channel-specific credentials config not found: $CONFIG_FILE"
     echo ""
     echo "Setup required:"
     echo "  mkdir -p ~/.config/youtube"
     echo "  # Download OAuth 2.0 Desktop Client JSON from Google Cloud Console"
-    echo "  # Save as: ~/.config/youtube/client_secret.json"
+    echo "  # Save one config per channel, for example:"
+    echo "  #   ~/.config/youtube/prochat.env"
+    echo "  #   ~/.config/youtube/says-the-bible.env"
     echo ""
     exit 1
 fi
 
+# shellcheck source=/dev/null
 source "$CONFIG_FILE"
 
 # Validate client_secret.json exists
@@ -38,7 +52,7 @@ if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ]; then
     exit 1
 fi
 
-TOKEN_FILE="${YOUTUBE_TOKEN_FILE:-${HOME}/.youtube_tokens.json}"
+TOKEN_FILE="${YOUTUBE_TOKEN_FILE:-${HOME}/.youtube_tokens-${CHANNEL_ID}.json}"
 REDIRECT_URI="http://localhost"
 
 # Color output
@@ -51,6 +65,17 @@ NC='\033[0m'
 echo "==========================================="
 echo "YouTube OAuth Local Authentication Setup"
 echo "==========================================="
+echo ""
+echo "Channel config: $CHANNEL_ID"
+echo "Config file: $CONFIG_FILE"
+echo "Client secret JSON: $YOUTUBE_CLIENT_SECRET_JSON"
+echo "Token file: ${YOUTUBE_TOKEN_FILE:-${HOME}/.youtube_tokens-${CHANNEL_ID}.json}"
+if [ -n "${YOUTUBE_ACCOUNT_LABEL:-}" ]; then
+    echo "Expected Google account: $YOUTUBE_ACCOUNT_LABEL"
+fi
+if [ -n "${YOUTUBE_CHANNEL_TITLE:-}" ]; then
+    echo "Expected YouTube channel: $YOUTUBE_CHANNEL_TITLE"
+fi
 echo ""
 
 # Define scopes
