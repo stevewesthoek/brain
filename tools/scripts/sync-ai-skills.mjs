@@ -75,6 +75,7 @@ let stats = {
   targetsChanged: 0,
   targetsBlocked: 0,
   reachabilityFailures: [],
+  codexRootViolations: [],
   warnings: [],
 };
 
@@ -327,20 +328,36 @@ function syncEntrySymlinks(targetPath, toolName, activeSkills) {
     allOk = false;
   }
 
-  // Detect stale entries (symlinks that don't correspond to active skills)
-  if (!checkMode && !dryRun) {
-    try {
-      const entries = fs.readdirSync(absTarget, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!activeSkills.includes(entry.name)) {
-          warn(
-            `${toolName}: stale entry '${entry.name}' does not correspond to any active skill (not auto-removed)`,
-          );
+  // Remove or report stale entries that no longer correspond to active skills.
+  try {
+    const entries = fs.readdirSync(absTarget, { withFileTypes: true });
+    for (const entry of entries) {
+      if (activeSkills.includes(entry.name) || entry.name === '.DS_Store') continue;
+
+      const stalePath = path.join(absTarget, entry.name);
+      const staleRes = resolvePath(stalePath);
+      const message = `${toolName}: stale entry '${entry.name}' does not correspond to any active skill`;
+
+      if (staleRes.type === 'symlink' || staleRes.type === 'broken') {
+        if (!dryRun && !checkMode) {
+          fs.rmSync(stalePath);
+          success(`${message}; removed stale symlink`);
+        } else if (dryRun) {
+          log(`  [DRY-RUN] Would remove stale symlink: ${toolName}/${entry.name}`);
+        } else {
+          error(`${message}; run sync-ai-skills.mjs to remove it`);
         }
+        stats.targetsChanged++;
+        if (checkMode) allOk = false;
+        continue;
       }
-    } catch {
-      // Ignore if dir doesn't exist yet
+
+      error(`${message}; non-symlink entries must be inspected manually`);
+      stats.targetsBlocked++;
+      allOk = false;
     }
+  } catch {
+    // Ignore if dir doesn't exist yet.
   }
 
   return allOk;
@@ -375,6 +392,36 @@ function validateActiveSkillReachability(activeSkills) {
   }
 
   return failures;
+}
+
+/**
+ * Codex scans operations/system-configs/codex/skills as a skill root. The only
+ * allowed top-level entries there are Codex system skills and the profile-
+ * controlled user symlink to ai/skills/active. Any other top-level skill bypasses
+ * the shared profile architecture and becomes default-active in every Codex
+ * session.
+ */
+function validateCodexSkillsRoot() {
+  const codexSkillsRoot = path.join(repoRoot, 'operations/system-configs/codex/skills');
+  const allowedEntries = new Set(['.system', 'user']);
+  const ignoredEntries = new Set(['.DS_Store']);
+
+  if (!fs.existsSync(codexSkillsRoot)) {
+    return [`Codex skills root missing: ${path.relative(repoRoot, codexSkillsRoot)}`];
+  }
+
+  const violations = [];
+  const entries = fs.readdirSync(codexSkillsRoot, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (allowedEntries.has(entry.name) || ignoredEntries.has(entry.name)) continue;
+
+    violations.push(
+      `Codex root skill bypasses default profile: operations/system-configs/codex/skills/${entry.name}`,
+    );
+  }
+
+  return violations;
 }
 
 /**
@@ -438,6 +485,18 @@ function main() {
     success(`All ${activeSkills.length} active skills reachable at all targets`);
   }
 
+  // Validate Codex root does not contain profile-bypassing default skills.
+  log('\n--- Codex Root Validation ---');
+  const codexRootViolations = validateCodexSkillsRoot();
+  if (codexRootViolations.length > 0) {
+    for (const violation of codexRootViolations) {
+      error(violation);
+      stats.codexRootViolations.push(violation);
+    }
+  } else {
+    success('Codex skills root contains only .system and profile-controlled user skills');
+  }
+
   // Summary
   log('\n--- Summary ---');
   log(`Active skills:        ${stats.activeSkills}`);
@@ -445,11 +504,15 @@ function main() {
   log(`Targets changed:      ${stats.targetsChanged}`);
   log(`Targets blocked:      ${stats.targetsBlocked}`);
   log(`Reachability failures: ${stats.reachabilityFailures.length}`);
+  log(`Codex root violations: ${stats.codexRootViolations.length}`);
   if (stats.warnings.length > 0) {
     log(`Warnings:             ${stats.warnings.length}`);
   }
 
-  const syncOk = stats.targetsBlocked === 0 && stats.reachabilityFailures.length === 0;
+  const syncOk =
+    stats.targetsBlocked === 0 &&
+    stats.reachabilityFailures.length === 0 &&
+    stats.codexRootViolations.length === 0;
 
   if (checkMode) {
     if (!syncOk || stats.targetsChanged > 0) {

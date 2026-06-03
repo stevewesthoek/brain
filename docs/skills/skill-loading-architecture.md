@@ -21,6 +21,11 @@ Domain profiles activate larger sets when needed
 A skill index tells agents where dormant skills live
 ```
 
+New skills are not default-active by default. Installing a skill means adding or
+updating its source under `ai/skills/custom`, `ai/skills/vendors`, or another
+documented dormant source location, then adding it only to the relevant
+non-default profile unless Steve explicitly approves always-on activation.
+
 ---
 
 ## Why this exists
@@ -42,6 +47,24 @@ The repository previously had 119 active skill entries. This architecture keeps 
 - `docs/skills/skill-index.md` — human-readable index of orchestrators, profiles, and dormant skills
 - `tools/scripts/switch-skill-profile.mjs` — conservative profile switcher
 - `tools/scripts/sync-ai-skills.mjs` — existing exporter to Claude Code, Codex, Gemini, Cursor, Kiro, and Antigravity
+
+Codex has one extra sharp edge: it scans
+`operations/system-configs/codex/skills/` directly. That directory must contain
+only:
+
+```text
+.system/  # Codex-owned system skills
+user -> ../../../../ai/skills/active
+```
+
+Do not install user, vendor, or curated skills as top-level directories under
+`operations/system-configs/codex/skills/`. Doing that bypasses the default
+profile and makes the skill default-active in every Codex session. Codex-only
+dormant skills belong outside the scanned root, currently under:
+
+```text
+operations/system-configs/codex/skills-dormant/
+```
 
 ---
 
@@ -176,7 +199,7 @@ node tools/scripts/sync-ai-skills.mjs --check
 
 ## Recommended Default Policy
 
-Keep the default profile small, approximately 20 skills:
+Keep the default profile small, currently about 7 skills:
 
 - high-level orchestrators
 - core review/QA/safety skills
@@ -184,6 +207,10 @@ Keep the default profile small, approximately 20 skills:
 - profile/index management skills
 
 Move learned incident skills, vendor-specific tools, and domain-specific subskills into domain profiles unless they are used constantly.
+
+For routine installs, the default answer is "source installed, dormant by
+default, available through a domain profile." Add a skill to
+`docs/skills/profiles/default.txt` only after an explicit always-on decision.
 
 ---
 

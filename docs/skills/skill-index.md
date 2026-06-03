@@ -50,11 +50,31 @@ Includes:
 code, research, memory, review, qa, handoff, careful
 ```
 
+Newly installed skills do not belong here by default. Add them to the most
+specific domain profile first. Promote a skill into `default.txt` only after an
+explicit always-on decision, because every default skill consumes context in
+Claude, Codex, Gemini, and IDE sessions.
+
 When a user requests design, video, research-acquisition, or DevOps work, natural-language routing should either:
 1. Recommend switching to the relevant domain profile (design, video, research, deploy), or
 2. Use the dormant source documentation directly if available.
 
 If a listed skill source does not exist yet, the switcher will fail rather than silently skipping it.
+
+## Codex Root Skills
+
+Codex scans `operations/system-configs/codex/skills/` directly. That root is not
+a profile. To keep the default profile effective, it must contain only:
+
+```text
+.system
+user
+```
+
+Top-level skill directories in that path bypass `docs/skills/profiles/default.txt`
+and become active in every Codex session. Codex-only dormant skills are archived
+under `operations/system-configs/codex/skills-dormant/` until they are explicitly
+promoted or moved into the shared `ai/skills/` profile system.
 
 ---
 

@@ -9,7 +9,8 @@ It is the canonical home for Codex global config and shared local Codex assets.
 - `AGENTS.md` — global Codex instructions
 - `config.toml` — Codex runtime config, model selection, trusted projects, MCP/plugin setup
 - `rules/default.rules` — curated reusable approval rules that should survive machine rebuilds
-- `skills/` — installed Codex skills that are intentionally shared through this repo
+- `skills/` — Codex-scanned skills root; keep only `.system/` and `user -> ai/skills/active`
+- `skills-dormant/` — archived Codex-only skills that must not load in every default session
 
 ## What's machine state (not canonical)
 
@@ -25,3 +26,10 @@ Keep only durable Codex config in Git.
 - `rules/default.rules` should contain reusable approvals, not one-off commands from ad hoc sessions
 - Do not commit auth files, histories, logs, caches, or transient plugin/runtime state
 - If a file is mostly machine-generated, ignore it unless there is a documented reason to version it
+
+## Skill loading rule
+
+Do not install user, vendor, or curated skills as top-level directories under
+`skills/`. Codex treats that root as default-active. Shared skills should enter
+through `ai/skills/` and `docs/skills/profiles/`; Codex-only dormant skills stay
+under `skills-dormant/` until explicitly promoted.
