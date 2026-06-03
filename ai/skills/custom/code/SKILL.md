@@ -47,7 +47,7 @@ Output complete, working code. Never truncate files with "// ... rest of file" o
 Before adding a new pattern, search the codebase for existing ones using `/graphify query "how is [similar thing] implemented?"`. Consistency beats novelty. Use what's already there.
 
 ### Law 6: Extract Non-Obvious Fixes
-After any FIX workflow that required real investigation and problem-solving (not just a typo), offer `/learner` to extract the pattern. The hard-won insight should be saved so it's never rediscovered from scratch.
+After any FIX workflow that required real investigation and problem-solving (not just a typo), run `brain-learn-failures --repo . --write-report` when session logs may contain repeated failed paths, command forms, or local runtime gotchas. Then offer `/learner` only for patterns that pass the quality gate. The hard-won insight should be saved so it's never rediscovered from scratch.
 
 ### Law 7: Scope Discipline
 Do exactly what was asked. An IMPROVE request on one module doesn't mean touching other modules. A FIX request doesn't mean cleaning up unrelated code. Scope creep introduces regressions and wastes time.
@@ -230,6 +230,8 @@ Add a test or assertion for the fix if one doesn't exist. Prevent this from brea
 If the fix required non-obvious investigation or problem-solving, offer `/learner`:
 
 > "This required real debugging. Want me to extract the pattern so we never have to rediscover this from scratch?"
+
+Before promotion, run `brain-learn-failures --repo . --write-report` if repeated local failures occurred during the session. Use the report as evidence; do not promote generic command failures.
 
 Save it to `brain/ai/skills/custom/learned/` for reuse in future projects.
 

@@ -1,6 +1,6 @@
 # CLI Manifest — Canonical Tool Inventory
 
-**Last Updated:** 2026-05-31  
+**Last Updated:** 2026-06-03
 **Scope:** All CLIs available to Claude Code, Codex, and Gemini CLI  
 **Purpose:** Single source of truth for CLI availability across all AI agents
 
@@ -133,6 +133,8 @@ All CLIs in this manifest are symlinked to `~/.local/bin/` or exist in Homebrew/
 | `mem-search` | `~/.local/bin/mem-search` | `brain/tools/scripts/mem-search.sh` | memory | Search memory by keyword/ID |
 | `mem-write` | `~/.local/bin/mem-write` | `brain/tools/scripts/mem-write.sh` | memory | Create/update memory entries |
 | `mem-facts` | `~/.local/bin/mem-facts` | `brain/tools/scripts/mem-facts.sh` | memory | Manage structured facts |
+| `brain-compress` | `~/.local/bin/brain-compress` | `brain/tools/scripts/brain-compress.mjs` | context | Explicit reversible compression for large JSON, logs, and text; stores originals under `~/.brain/cache/compression/` |
+| `brain-learn-failures` | `~/.local/bin/brain-learn-failures` | `brain/tools/scripts/brain-learn-failures.mjs` | learning | Dry-run failure-pattern reports from Claude/Codex/Gemini session logs; never edits agent config |
 | `n8n-api` | `~/.local/bin/n8n-api` | `brain/tools/n8n-api.sh` | automation | n8n API wrapper |
 | `jump` | `~/.local/bin/jump` | `brain/tools/scripts/jump.sh` | navigation | Jump to project directories |
 | `orchestrate` | `~/.local/bin/orchestrate` | `brain/tools/scripts/orchestrate.sh` | orchestration | Orchestration tool |
@@ -275,7 +277,7 @@ aws-cli --help
 - Email: `spark-cli`
 
 **Brain tool scripts (brain/tools/scripts/):**
-- Memory: `mem-search`, `mem-write`, `mem-facts`
+- Memory/context: `mem-search`, `mem-write`, `mem-facts`, `brain-compress`, `brain-learn-failures`
 - Infrastructure: `sync-credentials`, `n8n-api`, `jump`, `orchestrate`
 - Finance: `ledger-*` commands
 

@@ -10,3 +10,4 @@ Short, repeatable procedures for operational tasks.
 - n8n.md
 - codex-starship-config.md
 - stable-audio-3.md
+- context-compression.md

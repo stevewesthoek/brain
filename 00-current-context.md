@@ -101,6 +101,18 @@ operations/system-configs/gemini/
 
 These are high-impact because they affect every AI session.
 
+## Current Context Efficiency Tools
+
+Large local context is handled by explicit Brain-native helpers:
+
+```text
+rtk                  shell-output optimization
+brain-compress       reversible compression for large JSON/log/text
+brain-learn-failures advisory failure-pattern reports before learner promotion
+```
+
+These are available by default through `~/.local/bin` and are referenced in Claude, Codex, Gemini, and Brain repo instructions. They do not proxy model calls or replace the AI Model Selector.
+
 ## Current Writing Defaults
 
 When the user says:

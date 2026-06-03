@@ -122,6 +122,16 @@ A good session:
 6. Updates docs when changing architecture.
 7. Does not commit or expose secrets.
 
+## Context Efficiency
+
+Agents should reduce context cost automatically when it is clearly useful:
+
+- Use `rtk` for noisy shell commands.
+- Use `brain-compress` for large local JSON, logs, or text when exact retrieval may be needed.
+- Use `brain-learn-failures` before promoting recurring debugging patterns through `/learner`.
+
+These tools are explicit helpers. They do not proxy model calls, replace the AI Model Selector, or create another memory system.
+
 ## Related Files
 
 - `00-start-here.md` — concise orientation.

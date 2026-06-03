@@ -53,7 +53,7 @@ Four AI engines now work together. Claude always orchestrates — route sub-task
 
 **External IDE/workbench surfaces:** Cursor, Kiro, Antigravity, Oh My Pi, and the Open Design bridge pattern are operating surfaces only. They may auto-detect installed CLIs and drive agents, but provider/model choice remains behind the AI Model Selector (`ai-select` or `POST /select`) whenever Brain-owned automation makes an AI call.
 
-**Shell-output discipline:** Use RTK for noisy shell commands before spending model context on raw terminal output. RTK complements routing; it does not replace Gemini preprocessing, Firecrawl, handoffs, or model escalation rules.
+**Shell-output discipline:** Use RTK for noisy shell commands before spending model context on raw terminal output. Use `brain-compress` explicitly for large JSON, logs, or text that may need exact retrieval. These tools complement routing; they do not replace Gemini preprocessing, Firecrawl, handoffs, or model escalation rules.
 
 ---
 
@@ -194,7 +194,7 @@ Common task types and the skills that compose well together.
 
 Don't chain skills speculatively. Add a step only if it has clear value for that task.
 
-Use `/rtk` or explicit `rtk` prefixes for shell-heavy loops before escalating models due to noisy output. If RTK output is too compressed for the task, rerun the specific command raw or through `rtk proxy`.
+Use `/rtk` or explicit `rtk` prefixes for shell-heavy loops before escalating models due to noisy output. Use `brain-compress compress <file|->` for large local JSON, logs, or text when a reversible hash is useful. If compressed output is too narrow for the task, retrieve the original hash or rerun the specific command raw.
 
 ---
 

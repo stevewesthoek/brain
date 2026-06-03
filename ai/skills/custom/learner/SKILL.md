@@ -59,6 +59,14 @@ Reconstruct from the session:
 - **Why it works**: The underlying reason, not just the symptom/fix pair.
 - **Triggers**: What phrases or symptoms would make this skill relevant in a future session?
 
+For recurring local failures, first run:
+
+```bash
+brain-learn-failures --repo . --write-report
+```
+
+Use the report as input only. It never writes skills or agent instructions. Promote a finding only if it passes the quality gate above.
+
 ### Step 2 — Classify and name
 
 - Is this Expertise (a mental model) or Workflow (a procedure)?

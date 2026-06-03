@@ -13,6 +13,8 @@ Utility scripts and wrappers for local workflows on this machine.
 - `scripts/office-nightly-scheduler.sh` — serialized nightly batch runner for the Office Mac (`stb` batch -> `n8n` backup -> Claude cleanup)
 - `scripts/render-office-scheduler-report.sh` — renders a markdown snapshot of the latest nightly scheduler state and durations to `runtime/local/office-scheduler/latest-run.md`
 - `scripts/probot-continue.sh` — deterministic SSH + tmux continuation helper used by ProBot resume guidance
+- `scripts/brain-compress.mjs` — explicit reversible compression for large JSON, logs, and text; stores originals under `~/.brain/cache/compression/`
+- `scripts/brain-learn-failures.mjs` — dry-run report generator for recurring session failures; supports `/learner` promotion without writing agent config
 - `scripts/azure-inventory.sh` — exports a machine-readable inventory of Azure subscriptions, resource groups, and resources for all logged-in Azure accounts
 - `scripts/sync-ai-skills.mjs` — syncs active shared skills from `ai/skills/active/` to all configured AI/IDE tool consumers (Claude Code, Codex, Gemini, Cursor, Kiro, Antigravity); run after installing or activating any skill
 

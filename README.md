@@ -46,10 +46,20 @@ This automatically:
 verify-cli-access "command-name"
 ```
 
+**For large local context:**
+```bash
+brain-compress compress logs/build.log --type log
+brain-compress retrieve <hash>
+brain-learn-failures --repo . --write-report
+```
+
+These tools are explicit and Brain-native. They do not proxy Claude, Codex, Gemini, or application AI calls.
+
 **Files:**
 - `operations/CLI-MANIFEST.md` — Complete registry (70+ CLIs)
 - `operations/CLI-INSTALLATION-GUIDE.md` — Full procedural guide
 - `operations/AI-CONFIG-INDEX.md` — AI configuration central directory
+- `operations/runbooks/context-compression.md` — Reversible context compression and failure-learning workflow
 - `tools/scripts/install-cli.sh` — Installation automation
 - `tools/scripts/verify-cli-access.sh` — Access verification
 

@@ -300,6 +300,10 @@ RTK is installed globally (`rtk 0.39.0`) to reduce shell-command token output in
 - Codex and Gemini: prefer explicit `rtk` prefixes for noisy shell commands unless a native hook has already rewritten them.
 - Use raw commands or `rtk proxy <command>` when exact full output is required.
 
+For large non-command context, use `brain-compress` explicitly. It compresses JSON, logs, and text, stores the original under `~/.brain/cache/compression/`, and retrieves exact content by hash. It is not a model proxy and does not affect Claude, Codex, Gemini, or the AI Model Selector. Runbook: `operations/runbooks/context-compression.md`.
+
+For recurring failed paths, command forms, or local runtime gotchas, use `brain-learn-failures --repo . --write-report` to generate an advisory report before promoting only high-signal items through `/learner`.
+
 ## Memory system
 
 **Single entry point:** Use `/memory` orchestrator for all memory operations (recall, capture, facts, review, maintain). Works with Claude Code, Codex, Gemini CLI, and all IDEs. Automatic intent detection via natural language — no commands to remember.
