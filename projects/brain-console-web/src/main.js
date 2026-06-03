@@ -376,7 +376,7 @@ function renderJobs() {
   if (state.jobs.length === 0) return '<p>No operational jobs returned yet.</p>';
   return state.jobs.map(rawJob => {
     const job = rawJob.jobId === state.selectedJobId && state.selectedJob ? effectiveJob(state.selectedJob, state.execution) : rawJob;
-    return `<button class="job ${rawJob.jobId === state.selectedJobId ? 'selected' : ''}" data-action="select-job" data-job-id="${escapeHtml(rawJob.jobId)}"><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span><code>${escapeHtml(shortJobId(rawJob.jobId))}</code><span>${escapeHtml(displayValue(rawJob.channelId))}</span><span class="jobTitle">${escapeHtml(displayValue(rawJob.title))}</span><strong>${escapeHtml(nextAction(rawJob))}</strong></button>`;
+    return `<button class="job ${rawJob.jobId === state.selectedJobId ? 'selected' : ''}" data-action="select-job" data-job-id="${escapeHtml(rawJob.jobId)}"><span class="badge ${escapeHtml(job.status)}">${escapeHtml(job.status.replaceAll('_', ' '))}</span><code>${escapeHtml(shortJobId(rawJob.jobId))}</code><span>${escapeHtml(displayValue(rawJob.channelId))}</span><span class="jobTitle">${escapeHtml(displayValue(rawJob.title))}</span><strong>${escapeHtml(nextAction(job))}</strong></button>`;
   }).join('');
 }
 
