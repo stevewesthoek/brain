@@ -167,11 +167,13 @@ if [ $SECONDS_REMAINING -lt 300 ]; then
 
     # Refresh token
     if [ -z "${YOUTUBE_CLIENT_ID}" ] || [ -z "${YOUTUBE_CLIENT_SECRET}" ]; then
-        # Try to read from client_secret file
-        CLIENT_SECRET_FILE="${HOME}/.youtube_client_secret.json"
-        if [ ! -f "$CLIENT_SECRET_FILE" ]; then
-            echo -e "${RED}❌ ERROR: Cannot refresh token (missing credentials)${NC}"
-            echo "Run: scripts/youtube-auth-local.sh"
+        # Try to read from this channel's configured client_secret file
+        CLIENT_SECRET_FILE="${YOUTUBE_CLIENT_SECRET_JSON:-}"
+        if [ -z "$CLIENT_SECRET_FILE" ] || [ ! -f "$CLIENT_SECRET_FILE" ]; then
+            echo -e "${RED}❌ ERROR: Cannot refresh token (missing channel credentials)${NC}"
+            echo "Config file: $CONFIG_FILE"
+            echo "Expected YOUTUBE_CLIENT_SECRET_JSON to point to a valid OAuth client JSON."
+            echo "Run: scripts/youtube-auth-local.sh $CHANNEL_ID"
             exit 1
         fi
         CLIENT_ID=$(jq -r '.installed.client_id' "$CLIENT_SECRET_FILE")
@@ -206,6 +208,28 @@ if [ $SECONDS_REMAINING -lt 300 ]; then
 fi
 
 echo -e "${GREEN}✓ Token valid (${SECONDS_REMAINING}s remaining)${NC}"
+
+CHANNEL_INFO=$(curl -s "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true" \
+    -H "Authorization: Bearer $ACCESS_TOKEN")
+AUTHORIZED_CHANNEL_NAME=$(echo "$CHANNEL_INFO" | jq -r '.items[0].snippet.title // empty')
+AUTHORIZED_CHANNEL_ID=$(echo "$CHANNEL_INFO" | jq -r '.items[0].id // empty')
+if [ -z "$AUTHORIZED_CHANNEL_NAME" ] || [ -z "$AUTHORIZED_CHANNEL_ID" ]; then
+    echo -e "${RED}❌ ERROR: Could not verify authorized YouTube channel${NC}"
+    echo "Response: $CHANNEL_INFO"
+    exit 1
+fi
+if [ -n "${YOUTUBE_CHANNEL_TITLE:-}" ] && [ "$AUTHORIZED_CHANNEL_NAME" != "$YOUTUBE_CHANNEL_TITLE" ]; then
+    echo -e "${RED}❌ ERROR: Authorized YouTube channel does not match this job config${NC}"
+    echo "  Config file: $CONFIG_FILE"
+    echo "  Expected channel: $YOUTUBE_CHANNEL_TITLE"
+    echo "  Authorized channel: $AUTHORIZED_CHANNEL_NAME"
+    echo "  Authorized channel ID: $AUTHORIZED_CHANNEL_ID"
+    echo "Delete the wrong token and rerun auth with the correct Google/brand account:"
+    echo "  rm -f \"$TOKEN_FILE\""
+    echo "  scripts/youtube-auth-local.sh $CHANNEL_ID"
+    exit 1
+fi
+echo "✓ Authorized channel verified: $AUTHORIZED_CHANNEL_NAME ($AUTHORIZED_CHANNEL_ID)"
 echo ""
 
 # Step 2: Read publish.json from S3

@@ -198,12 +198,23 @@ CHANNEL_NAME=$(echo "$CHANNEL_INFO" | jq -r '.items[0].snippet.title // empty')
 CHANNEL_ID=$(echo "$CHANNEL_INFO" | jq -r '.items[0].id // empty')
 
 if [ -z "$CHANNEL_NAME" ] || [ -z "$CHANNEL_ID" ]; then
-    echo -e "${YELLOW}⚠ Warning: Could not retrieve channel info${NC}"
-else
-    echo -e "${GREEN}✓ Token valid!${NC}"
-    echo "  Channel: $CHANNEL_NAME"
-    echo "  Channel ID: $CHANNEL_ID"
+    echo -e "${RED}❌ ERROR: Could not retrieve channel info${NC}"
+    exit 1
 fi
+
+if [ -n "${YOUTUBE_CHANNEL_TITLE:-}" ] && [ "$CHANNEL_NAME" != "$YOUTUBE_CHANNEL_TITLE" ]; then
+    echo -e "${RED}❌ ERROR: Authorized YouTube channel does not match this config${NC}"
+    echo "  Config channel: $YOUTUBE_CHANNEL_TITLE"
+    echo "  Authorized channel: $CHANNEL_NAME"
+    echo "  Token file: $TOKEN_FILE"
+    echo "Delete the token and rerun auth with the correct Google/brand account:"
+    echo "  rm -f \"$TOKEN_FILE\""
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Token valid!${NC}"
+ echo "  Channel: $CHANNEL_NAME"
+ echo "  Channel ID: $CHANNEL_ID"
 
 echo ""
 echo "==========================================="
