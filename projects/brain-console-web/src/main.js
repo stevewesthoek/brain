@@ -318,7 +318,7 @@ async function postJobAction(jobId, action, body) {
 }
 
 function render() {
-  const pipeline = state.pipeline || derivedPipeline();
+  const pipeline = derivedPipeline();
   const counts = getCounts();
   root.innerHTML = `
     <main class="appShell">
