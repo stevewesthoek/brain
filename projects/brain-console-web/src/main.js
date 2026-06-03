@@ -135,11 +135,12 @@ function effectiveJob(job, execution) {
 function effectiveArtifacts(job) {
   const artifacts = asRecord(job.artifacts) || {};
   const publishing = asRecord(job.publishing) || {};
+  const executionSucceeded = state.execution?.awsStatus === 'SUCCEEDED' && job.jobId === state.selectedJobId;
   return {
     script: artifacts.script || null,
     narration: artifacts.narration || null,
-    finalVideo: artifacts.finalVideo || publishing.videoKey || null,
-    thumbnail: artifacts.thumbnail || publishing.thumbnailKey || null,
+    finalVideo: artifacts.finalVideo || publishing.videoKey || (executionSucceeded ? `jobs/${job.jobId}/exports/generated-001-final.mp4` : null),
+    thumbnail: artifacts.thumbnail || publishing.thumbnailKey || (executionSucceeded ? `jobs/${job.jobId}/exports/thumbnail-001.jpg` : null),
   };
 }
 
