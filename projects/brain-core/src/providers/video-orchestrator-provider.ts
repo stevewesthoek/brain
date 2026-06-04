@@ -15,6 +15,25 @@ const S3_BUCKET = 'prochat-video-dev-909439522876-eu-north-1-an';
 const STATE_MACHINE_ARN = 'arn:aws:states:eu-north-1:909439522876:stateMachine:prochat-video-skeleton-dev';
 const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
 const VIDEO_FIXTURE_KEY = 'jobs/test-001/exports/sample-transcoded.mp4';
+const STEP_FUNCTIONS_EXECUTION_NAME_MAX = 80;
+
+function shortHash(input: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function buildStepFunctionsExecutionName(jobId: string, timestamp = Date.now()): string {
+  const suffix = `${timestamp}-${shortHash(jobId)}`;
+  const prefix = 'console-gen-';
+  const safeJobId = jobId.replace(/[^A-Za-z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const availableJobLength = STEP_FUNCTIONS_EXECUTION_NAME_MAX - prefix.length - suffix.length - 1;
+  const compactJobId = safeJobId.slice(0, Math.max(8, availableJobLength)).replace(/-$/g, '');
+  return `${prefix}${compactJobId}-${suffix}`.slice(0, STEP_FUNCTIONS_EXECUTION_NAME_MAX);
+}
 
 export interface TopicCandidate {
   topicId: string;
@@ -1195,7 +1214,7 @@ export async function generateApprovedScript(
   }
 
   // Step 5: Start Step Functions execution
-  const executionName = `console-gen-${jobId}-${Date.now()}`;
+  const executionName = buildStepFunctionsExecutionName(jobId);
   const sfInput = JSON.stringify({
     jobId,
     videoKey,
