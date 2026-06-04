@@ -8,6 +8,7 @@ export function createStatusAdapter(input: {
   return () => {
     const now = Date.now();
     const startedAtMs = input.startedAt.getTime();
+    const generationModeRuntime = process.env.AWS_VIDEO_GENERATION_MODE || 'fixture';
 
     return {
       service: 'brain-core',
@@ -17,6 +18,7 @@ export function createStatusAdapter(input: {
       uptimeSeconds: Math.max(0, Math.floor((now - startedAtMs) / 1000)),
       version: input.version,
       host: os.hostname(),
+      generationModeRuntime,
     };
   };
 }

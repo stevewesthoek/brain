@@ -1909,8 +1909,24 @@ export async function generateApprovedScript(
     };
     try {
       await writeFile(statusPath, JSON.stringify(failedStatus, null, 2) + '\n', 'utf-8');
+      // Also write to S3 to ensure status is persisted (not just local)
+      await writeS3MetadataJson(jobId, 'status.json', failedStatus);
     } catch (err) {
       console.error(`Warning: Failed to write failed status for ${jobId}: ${err}`);
+    }
+  };
+  const updateProgressStatus = async (currentStep: string, extra: Record<string, unknown> = {}) => {
+    const progressStatus = {
+      ...initialStatus,
+      ...extra,
+      currentStep,
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      await writeFile(statusPath, JSON.stringify(progressStatus, null, 2) + '\n', 'utf-8');
+      await writeS3MetadataJson(jobId, 'status.json', progressStatus);
+    } catch (err) {
+      console.error(`Warning: Failed to update progress status to ${currentStep} for ${jobId}: ${err}`);
     }
   };
   const s3ObjectExists = async (key: string): Promise<boolean> => {
@@ -1973,10 +1989,11 @@ export async function generateApprovedScript(
     };
   }
 
-  // Step 2.5 (Hybrid only): Generate scene plan and narration script from prompt
+  // Step 2.5 (Hybrid and Hybrid TTS): Generate scene plan and narration script from prompt
   let scenePlanKey: string | undefined;
   let narrationScriptKey: string | undefined;
-  if (isHybridMode) {
+  const usesPromptDerivedPlanning = isHybridMode || isHybridTTSMode;
+  if (usesPromptDerivedPlanning) {
     const scenePlanner = new DeterministicScenePlanningProvider();
     try {
       // Read script content from script.md
@@ -2023,11 +2040,29 @@ export async function generateApprovedScript(
   let voiceId: string | undefined;
 
   if (isHybridTTSMode) {
+    // Update status: TTS synthesis starting
+    await updateProgressStatus('tts_started', { audioProvider: 'aws-polly' });
+
     // Read narration script and synthesize audio
     try {
-      // Read the narration script that was generated in step 2.5
+      // Verify narration script was created in step 2.5
       const narrationScriptPath = join(audioDir, 'narration-script.txt');
-      const narrationText = await readFile(narrationScriptPath, 'utf-8');
+      let narrationText: string;
+      try {
+        narrationText = await readFile(narrationScriptPath, 'utf-8');
+      } catch (err) {
+        const message = `Narration script missing before TTS synthesis: ${err instanceof Error ? err.message : String(err)}`;
+        await writeFailedStatus('narration_script_missing', message, {
+          narrationScriptKey,
+          expectedPath: narrationScriptPath,
+        });
+        return {
+          ok: false,
+          code: 'narration_script_missing',
+          message,
+          jobId,
+        };
+      }
 
       // Extract clean narration text (remove "Scene N" headers)
       const cleanedNarration = narrationText
@@ -2038,32 +2073,82 @@ export async function generateApprovedScript(
         .trim();
 
       if (!cleanedNarration || cleanedNarration.length === 0) {
+        const message = 'Failed to extract narration text from narration script';
+        await writeFailedStatus('narration_text_empty', message, {
+          narrationScriptKey,
+          rawText: narrationText.slice(0, 200),
+        });
         return {
           ok: false,
           code: 'narration_text_empty',
-          message: 'Failed to extract narration text from narration script',
+          message,
           jobId,
         };
       }
 
       // Synthesize using Polly TTS
       const ttsProvider = new PollyTTSProvider();
-      const ttsResult = await ttsProvider.synthesizeNarration({
-        jobId,
-        text: cleanedNarration,
-        voiceId: 'Joanna',
-        bucket: S3_BUCKET,
-        region: AWS_REGION,
-        outputKey: narrationKey,
-      });
+      let ttsResult;
+      try {
+        ttsResult = await ttsProvider.synthesizeNarration({
+          jobId,
+          text: cleanedNarration,
+          voiceId: 'Joanna',
+          bucket: S3_BUCKET,
+          region: AWS_REGION,
+          outputKey: narrationKey,
+        });
+      } catch (ttsErr) {
+        const message = `Failed to synthesize narration audio with AWS Polly: ${ttsErr instanceof Error ? ttsErr.message : String(ttsErr)}`;
+        await writeFailedStatus('tts_synthesis_failed', message, {
+          audioProvider: 'aws-polly',
+          voiceId: 'Joanna',
+          narrationScriptKey,
+          expectedAudioKey: narrationKey,
+          textLength: cleanedNarration.length,
+        });
+        return {
+          ok: false,
+          code: 'tts_synthesis_failed',
+          message,
+          jobId,
+        };
+      }
 
       audioProvider = ttsResult.provider;
       voiceId = ttsResult.voiceId;
+
+      // Update status: TTS synthesis complete, verifying audio
+      await updateProgressStatus('tts_complete', {
+        audioProvider: ttsResult.provider,
+        voiceId: ttsResult.voiceId,
+      });
+
+      // Verify TTS audio object exists in S3
+      const audioExistsInS3 = await s3ObjectExists(narrationKey);
+      if (!audioExistsInS3) {
+        const message = `TTS audio object not found in S3 after synthesis: ${narrationKey}`;
+        await writeFailedStatus('tts_audio_missing_after_synthesis', message, {
+          audioProvider: 'aws-polly',
+          voiceId: 'Joanna',
+          expectedAudioKey: narrationKey,
+        });
+        return {
+          ok: false,
+          code: 'tts_audio_missing_after_synthesis',
+          message,
+          jobId,
+        };
+      }
     } catch (err) {
+      const message = `Unexpected error during TTS synthesis: ${err instanceof Error ? err.message : String(err)}`;
+      await writeFailedStatus('tts_unexpected_error', message, {
+        error: err instanceof Error ? err.stack : String(err),
+      });
       return {
         ok: false,
-        code: 'tts_synthesis_failed',
-        message: `Failed to synthesize narration audio: ${err instanceof Error ? err.message : String(err)}`,
+        code: 'tts_unexpected_error',
+        message,
         jobId,
       };
     }
@@ -2090,6 +2175,8 @@ export async function generateApprovedScript(
   // Step 4: Copy skeleton base video fixture until real base-video generation is implemented.
   // The deployed state machine is final assembly: it requires a base video clip plus narration.
   const videoKey = `jobs/${jobId}/video-generated/generated-001.mp4`;
+  await updateProgressStatus('video_fixture_copy_started', { videoKey });
+
   try {
     await execFileAsync('aws', [
       's3', 'cp',
@@ -2197,6 +2284,11 @@ export async function generateApprovedScript(
   }
 
   // Step 5: Start Step Functions execution
+  await updateProgressStatus('workflow_starting', {
+    audioKey: narrationKey,
+    videoKey
+  });
+
   const executionName = buildStepFunctionsExecutionName(jobId);
   const sfInput = JSON.stringify({
     jobId,
