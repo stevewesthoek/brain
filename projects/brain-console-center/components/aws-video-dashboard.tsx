@@ -138,7 +138,7 @@ export function AwsVideoDashboard() {
         <div>
           <div className="eyebrow">AWS Video Pipeline</div>
           <h1>Video operations</h1>
-          <p>Migrated from Brain Console Web, backed by current Brain Core routes. YouTube publishing is intentionally absent from Phase 1.</p>
+          <p>Brain Console Center is the active dashboard. Brain Console Web is legacy. Controlled YouTube publishing uses dry-run first, then confirmed private upload.</p>
         </div>
         <div className="row">
           <StatusBadge status={status.isError || jobs.isError ? 'error' : 'fresh'} label={status.isError || jobs.isError ? 'partial error' : 'auto refresh'} />
