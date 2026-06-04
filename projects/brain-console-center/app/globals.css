@@ -1455,3 +1455,78 @@ body { min-height: 100dvh; }
   .local-apps-screen .page-controls { flex-wrap: wrap; }
   .local-apps-screen .app-actions { grid-template-columns: 1fr; }
 }
+
+
+
+/* Local Apps pager hardening: explicit visible navigation */
+.local-apps-screen .local-apps-pager {
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 0 0;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px;
+  overflow: visible !important;
+}
+.local-apps-screen .local-apps-page-status {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.local-apps-screen .local-apps-page-controls {
+  flex: 0 0 auto;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow: visible !important;
+}
+.local-apps-screen .pager-button,
+.local-apps-screen .pager-number {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(255,255,255,.025);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.local-apps-screen .pager-number {
+  width: 30px;
+  padding: 0;
+  font-family: var(--mono);
+}
+.local-apps-screen .pager-number.active {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+.local-apps-screen .pager-button:disabled,
+.local-apps-screen .pager-number:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+}
+@media (max-width: 900px) {
+  .local-apps-screen .local-apps-pager {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+  .local-apps-screen .local-apps-page-controls {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+  }
+}
