@@ -40,6 +40,27 @@ Cloud Video Orchestrator = AWS-backed media execution lane.
 
 Brain Core may expose both lanes to Brain Console, but endpoint payloads, dashboard labels, implementation plans, and runbooks must identify whether they describe local readiness/control, cloud execution, or shared metadata/status.
 
+## AWS Video job storage
+
+Brain Core is the API runtime. It does not own AWS Video job storage.
+
+Canonical local AWS Video job folders live in the Video Orchestrator project:
+
+```text
+/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs
+projects/video-orchestrator/cloud/jobs
+```
+
+Canonical remote AWS Video storage is:
+
+```text
+s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/
+```
+
+Brain Console Center calls Brain Core for AWS Video status and recent jobs. Brain Console Web is legacy. Never use `process.cwd()` to infer the jobs folder, never create jobs under `projects/brain-core/jobs`, and never create jobs under `projects/brain-console-center/jobs`.
+
+If the dashboard shows 0 jobs, first check `/api/video-orchestrator/jobs/recent` diagnostics. See [aws-video-paths.md](aws-video-paths.md).
+
 ## Historical archive docs
 
 The following docs are implementation records or historical snapshots. They may contain useful details, but they are not the active global Brain Console contract when they conflict with the shared-only boundary:

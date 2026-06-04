@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobs, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, runControlledYouTubePublish } from '../providers/video-orchestrator-provider.js';
+import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, runControlledYouTubePublish } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2183,10 +2183,26 @@ export async function routeRequest(
       }
 
       // ── Topic Intelligence: AWS Video Pipeline Status ────────────────────────
+      if (url.pathname === '/api/video-orchestrator/status') {
+        try {
+          const status = await getTopicIntelligence();
+          sendJson(response, 200, { ok: true, data: status, diagnostics: status.diagnostics });
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: {
+              code: 'video_orchestrator_status_failed',
+              message: error instanceof Error ? error.message : 'Failed to fetch video orchestrator status',
+            },
+          });
+        }
+        return;
+      }
+
       if (url.pathname === '/api/video-orchestrator/topic-intelligence/status') {
         try {
           const status = await getTopicIntelligence();
-          sendJson(response, 200, { ok: true, data: status });
+          sendJson(response, 200, { ok: true, data: status, diagnostics: status.diagnostics });
         } catch (error) {
           sendJson(response, 500, {
             ok: false,
@@ -2260,12 +2276,27 @@ export async function routeRequest(
       // ── Video Orchestrator: Operational Job API ──────────────────────────
       if (url.pathname === '/api/video-orchestrator/jobs/recent') {
         try {
-          const jobs = await getRecentVideoJobs();
-          sendJson(response, 200, { ok: true, jobs });
+          const result = await getRecentVideoJobsResult();
+          if (!result.ok) {
+            sendJson(response, 500, {
+              ok: false,
+              error: {
+                code: 'video_jobs_discovery_failed',
+                message: result.diagnostics.error ?? 'Failed to discover video orchestrator jobs.',
+              },
+              jobs: result.jobs,
+              diagnostics: result.diagnostics,
+            });
+            return;
+          }
+          sendJson(response, 200, result);
         } catch (error) {
           sendJson(response, 500, {
             ok: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch recent jobs',
+            error: {
+              code: 'video_jobs_recent_unhandled_error',
+              message: error instanceof Error ? error.message : 'Failed to fetch recent jobs',
+            },
           });
         }
         return;

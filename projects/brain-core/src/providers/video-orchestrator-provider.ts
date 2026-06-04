@@ -1,21 +1,43 @@
-import { access, readFile, writeFile, mkdir } from 'fs/promises';
+import { access, readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { join } from 'path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-function getVideoOrchestratorRoot(): string {
-  return process.env.BRAIN_VIDEO_ORCHESTRATOR_ROOT
-    || '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud';
-}
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
 
 const execFileAsync = promisify(execFile);
 
 const AWS_REGION = 'eu-north-1';
 const S3_BUCKET = 'prochat-video-dev-909439522876-eu-north-1-an';
+const S3_JOBS_PREFIX = 'jobs/';
 const STATE_MACHINE_ARN = 'arn:aws:states:eu-north-1:909439522876:stateMachine:prochat-video-skeleton-dev';
 const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
 const VIDEO_FIXTURE_KEY = 'jobs/test-001/exports/sample-transcoded.mp4';
 const STEP_FUNCTIONS_EXECUTION_NAME_MAX = 80;
+const S3_DISCOVERY_LIMIT = 100;
+
+export function getBrainRepoRoot(moduleDir: string = MODULE_DIR): string {
+  const marker = `${join('projects', 'brain-core')}`;
+  const markerIndex = moduleDir.lastIndexOf(marker);
+  if (markerIndex === -1) {
+    throw new Error(`Cannot resolve Brain repo root from module path: ${moduleDir}`);
+  }
+  return moduleDir.slice(0, markerIndex).replace(/[\\/]$/, '');
+}
+
+export function getVideoOrchestratorCloudRoot(moduleDir: string = MODULE_DIR): string {
+  return join(getBrainRepoRoot(moduleDir), 'projects', 'video-orchestrator', 'cloud');
+}
+
+export function getVideoOrchestratorJobsRoot(moduleDir: string = MODULE_DIR): string {
+  return join(getVideoOrchestratorCloudRoot(moduleDir), 'jobs');
+}
+
+function getVideoOrchestratorRoot(): string {
+  return getVideoOrchestratorCloudRoot();
+}
 
 function shortHash(input: string): string {
   let hash = 2166136261;
@@ -137,6 +159,84 @@ export interface VideoOrchestratorStatus {
   pipelineReady: boolean;
   generationStatus: 'ready' | 'in-progress' | 'stalled';
   publishingStatus: 'ready' | 'in-progress' | 'stalled';
+  diagnostics?: VideoJobsDiagnostics;
+}
+
+export interface VideoJobsDiagnostics {
+  repoRoot: string;
+  jobsRoot: string;
+  jobDirectoryExists: boolean;
+  jobDirectoryReadable: boolean;
+  localJobFolderCount: number;
+  cwd: string;
+  modulePath: string;
+  expectedCanonicalPath: string;
+  s3Bucket: string;
+  s3Prefix: string;
+  s3DiscoveryAttempted: boolean;
+  s3DiscoveredJobCount: number;
+  warnings: string[];
+  error: string | null;
+}
+
+export interface RecentVideoJobsResult {
+  ok: boolean;
+  jobs: VideoJobSummary[];
+  diagnostics: VideoJobsDiagnostics;
+}
+
+async function buildVideoJobsDiagnostics(moduleDir: string = MODULE_DIR): Promise<VideoJobsDiagnostics> {
+  let repoRoot = '';
+  let jobsRoot = '';
+  const warnings: string[] = [];
+  let error: string | null = null;
+
+  try {
+    repoRoot = getBrainRepoRoot(moduleDir);
+    jobsRoot = getVideoOrchestratorJobsRoot(moduleDir);
+  } catch (resolveError) {
+    error = resolveError instanceof Error ? resolveError.message : String(resolveError);
+  }
+
+  let jobDirectoryExists = false;
+  let jobDirectoryReadable = false;
+  let localJobFolderCount = 0;
+
+  if (jobsRoot) {
+    try {
+      const entries = await readdir(jobsRoot, { withFileTypes: true });
+      jobDirectoryExists = true;
+      jobDirectoryReadable = true;
+      localJobFolderCount = entries.filter(entry => entry.isDirectory()).length;
+    } catch (readError) {
+      const nodeError = readError as NodeJS.ErrnoException;
+      jobDirectoryExists = nodeError.code !== 'ENOENT';
+      error = nodeError.code === 'ENOTDIR'
+        ? `Resolved jobs root is not a directory: ${jobsRoot}`
+        : `Resolved jobs root does not exist or is not readable: ${readError instanceof Error ? readError.message : String(readError)}`;
+    }
+  }
+
+  return {
+    repoRoot,
+    jobsRoot,
+    jobDirectoryExists,
+    jobDirectoryReadable,
+    localJobFolderCount,
+    cwd: process.cwd(),
+    modulePath: moduleDir,
+    expectedCanonicalPath: EXPECTED_CANONICAL_JOBS_PATH,
+    s3Bucket: S3_BUCKET,
+    s3Prefix: S3_JOBS_PREFIX,
+    s3DiscoveryAttempted: false,
+    s3DiscoveredJobCount: 0,
+    warnings,
+    error,
+  };
+}
+
+export async function getVideoJobsDiagnostics(moduleDir: string = MODULE_DIR): Promise<VideoJobsDiagnostics> {
+  return buildVideoJobsDiagnostics(moduleDir);
 }
 
 async function readTopicBacklog(channelId: string): Promise<TopicCandidate[]> {
@@ -196,7 +296,8 @@ export async function getVideoOrchestratorStatus(): Promise<VideoOrchestratorSta
     totalTopics: prochatTopics.length,
   });
 
-  const recentOperationalJobs = await getRecentVideoJobs(10);
+  const recentOperationalJobsResult = await getRecentVideoJobsResult(10);
+  const recentOperationalJobs = recentOperationalJobsResult.jobs;
 
   return {
     channels,
@@ -209,6 +310,7 @@ export async function getVideoOrchestratorStatus(): Promise<VideoOrchestratorSta
     pipelineReady: true,
     generationStatus: recentOperationalJobs.some(job => job.status === 'generating') ? 'in-progress' : 'ready',
     publishingStatus: recentOperationalJobs.some(job => job.status === 'publishing') ? 'in-progress' : 'ready',
+    ...(isDevelopmentMode() ? { diagnostics: recentOperationalJobsResult.diagnostics } : {}),
   };
 }
 
@@ -290,9 +392,8 @@ export async function getScript(jobId: string): Promise<ScriptMetadata | null> {
 
 export async function getScriptsByChannel(channelId: string): Promise<ScriptMetadata[]> {
   try {
-    const jobsPath = join(getVideoOrchestratorRoot(), 'jobs');
-    const fs = await import('fs/promises');
-    const jobDirs = await fs.readdir(jobsPath);
+    const jobsPath = getVideoOrchestratorJobsRoot();
+    const jobDirs = await readdir(jobsPath);
 
     const scripts: ScriptMetadata[] = [];
     for (const jobDir of jobDirs) {
@@ -311,6 +412,10 @@ export async function getScriptsByChannel(channelId: string): Promise<ScriptMeta
     console.error(`Failed to read scripts for channel ${channelId}:`, error);
     return [];
   }
+}
+
+function isDevelopmentMode(): boolean {
+  return process.env.NODE_ENV !== 'production';
 }
 
 function normalizeJobStatus(
@@ -374,7 +479,7 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
   if (!isValidJobId(jobId)) return null;
 
   const [script, topic, status, publish, assets, inferredArtifacts] = await Promise.all([
-    readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
+    readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
     readJobMetadataJson(jobId, 'status.json'),
     readJobMetadataJson(jobId, 'publish.json'),
@@ -433,29 +538,85 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
   };
 }
 
-export async function getRecentVideoJobs(limit: number = 20): Promise<VideoJobSummary[]> {
+async function listS3JobIds(limit: number = S3_DISCOVERY_LIMIT): Promise<string[]> {
   try {
-    const jobsPath = join(getVideoOrchestratorRoot(), 'jobs');
-    const fs = await import('fs/promises');
-    const jobDirs = await fs.readdir(jobsPath);
+    const { stdout } = await execFileAsync('aws', [
+      's3api', 'list-objects-v2',
+      '--bucket', S3_BUCKET,
+      '--prefix', S3_JOBS_PREFIX,
+      '--delimiter', '/',
+      '--max-keys', String(limit),
+      '--region', AWS_REGION,
+      '--output', 'json',
+      '--no-cli-pager',
+    ], { timeout: 15000 });
 
-    const jobs: VideoJobSummary[] = [];
-    for (const jobDir of jobDirs) {
-      const job = await buildVideoJobSummary(jobDir);
-      if (job) jobs.push(job);
-    }
-
-    return jobs
-      .sort((a, b) => {
-        const bTime = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
-        const aTime = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
-        return bTime - aTime;
-      })
+    const parsed = JSON.parse(stdout) as { CommonPrefixes?: Array<{ Prefix?: string }> };
+    return (parsed.CommonPrefixes ?? [])
+      .map(prefix => prefix.Prefix ?? '')
+      .map(prefix => /^jobs\/([^/]+)\/$/.exec(prefix)?.[1] ?? '')
+      .filter((jobId): jobId is string => Boolean(jobId) && isValidJobId(jobId))
       .slice(0, limit);
   } catch (error) {
-    console.error('Failed to read recent video jobs:', error);
+    console.error('Failed to discover video jobs from S3:', error);
     return [];
   }
+}
+
+export async function getRecentVideoJobsResult(limit: number = 20): Promise<RecentVideoJobsResult> {
+  const diagnostics = await buildVideoJobsDiagnostics();
+  const localJobIds: string[] = [];
+
+  if (diagnostics.jobDirectoryReadable) {
+    try {
+      const entries = await readdir(diagnostics.jobsRoot, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && isValidJobId(entry.name)) {
+          localJobIds.push(entry.name);
+        }
+      }
+    } catch (error) {
+      diagnostics.jobDirectoryReadable = false;
+      diagnostics.error = `Resolved jobs root became unreadable while listing jobs: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+
+  let s3JobIds: string[] = [];
+  if (!diagnostics.jobDirectoryReadable || localJobIds.length === 0) {
+    diagnostics.s3DiscoveryAttempted = true;
+    s3JobIds = await listS3JobIds(S3_DISCOVERY_LIMIT);
+    diagnostics.s3DiscoveredJobCount = s3JobIds.length;
+    if (localJobIds.length === 0 && diagnostics.jobDirectoryReadable) {
+      diagnostics.warnings.push('Local jobs directory is readable but contained zero valid job folders; S3 discovery fallback was used.');
+    }
+  }
+
+  const jobIds = Array.from(new Set([...localJobIds, ...s3JobIds])).slice(0, S3_DISCOVERY_LIMIT);
+  const jobs: VideoJobSummary[] = [];
+  for (const jobId of jobIds) {
+    const job = await buildVideoJobSummary(jobId);
+    if (job) jobs.push(job);
+  }
+
+  const sortedJobs = jobs
+    .sort((a, b) => {
+      const bTime = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
+      const aTime = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
+      return bTime - aTime;
+    })
+    .slice(0, limit);
+
+  const ok = diagnostics.error === null || sortedJobs.length > 0;
+  if (!ok) {
+    console.error('Video orchestrator job discovery failed:', diagnostics);
+  }
+
+  return { ok, jobs: sortedJobs, diagnostics };
+}
+
+export async function getRecentVideoJobs(limit: number = 20): Promise<VideoJobSummary[]> {
+  const result = await getRecentVideoJobsResult(limit);
+  return result.jobs;
 }
 
 export async function getVideoJob(jobId: string): Promise<VideoJobSummary | null> {
