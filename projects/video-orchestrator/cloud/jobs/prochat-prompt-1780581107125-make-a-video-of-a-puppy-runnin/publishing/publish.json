@@ -1,0 +1,13 @@
+{
+  "jobId": "prochat-prompt-1780581107125-make-a-video-of-a-puppy-runnin",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Generated from approved draft — awaiting explicit publish approval",
+  "createdAt": "2026-06-04T13:52:02.744Z",
+  "generatedBy": "interactive-prompt",
+  "platforms": {
+    "youtube": {
+      "status": "pending"
+    }
+  }
+}

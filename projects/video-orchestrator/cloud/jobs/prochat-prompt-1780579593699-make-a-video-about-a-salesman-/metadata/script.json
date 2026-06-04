@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780579593699-make-a-video-about-a-salesman-",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780579593699",
+  "status": "approved",
+  "title": "make a video about a salesman selling ProChat OS",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780579593699-make-a-video-about-a-salesman-/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-04T13:26:33.699Z",
+  "updatedAt": "2026-06-04T13:26:44.328Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-04T13:26:44.328Z"
+  }
+}

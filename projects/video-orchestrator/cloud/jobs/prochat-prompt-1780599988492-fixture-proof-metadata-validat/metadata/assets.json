@@ -1,0 +1,18 @@
+{
+  "jobId": "prochat-prompt-1780599988492-fixture-proof-metadata-validat",
+  "mediaSource": "fixture",
+  "generationMode": "fixture_assembly",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "aiGenerated": false,
+  "narration": {
+    "path": "jobs/prochat-prompt-1780599988492-fixture-proof-metadata-validat/audio/narration.mp3",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/audio/narration.mp3"
+  },
+  "sourceVideo": {
+    "path": "jobs/prochat-prompt-1780599988492-fixture-proof-metadata-validat/video-generated/generated-001.mp4",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/exports/sample-transcoded.mp4"
+  }
+}

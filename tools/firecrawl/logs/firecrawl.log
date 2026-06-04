@@ -263,3 +263,4 @@
 [2026-05-22 21:02:40] [DAEMON] Idle timeout reached (15 min) - shutting down containers
 [2026-05-22 21:02:43] [DAEMON] Containers shut down
 [2026-05-27 19:29:44] [DAEMON] Firecrawl Idle Daemon started (checking every 30s, timeout: 15min)
+[2026-06-04 00:37:26] [DAEMON] Firecrawl Idle Daemon started (checking every 30s, timeout: 15min)

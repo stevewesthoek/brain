@@ -1,0 +1,25 @@
+{
+  "jobId": "prochat-prompt-1780599988492-fixture-proof-metadata-validat",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Pipeline proof fixture assembly — awaiting explicit publish approval",
+  "createdAt": "2026-06-04T19:06:45.494Z",
+  "generatedBy": "interactive-prompt",
+  "title": "[PIPELINE PROOF] fixture proof metadata validation",
+  "description": "Pipeline proof upload. This video used fixture media, not prompt-generated AI video.",
+  "tags": [
+    "pipeline-proof",
+    "fixture-media"
+  ],
+  "mediaSource": "fixture",
+  "generationMode": "fixture_assembly",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "fixture-assembly",
+  "aiGenerated": false,
+  "platforms": {
+    "youtube": {
+      "status": "pending"
+    }
+  }
+}

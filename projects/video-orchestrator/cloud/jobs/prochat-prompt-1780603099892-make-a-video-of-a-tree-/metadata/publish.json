@@ -1,0 +1,26 @@
+{
+  "jobId": "prochat-prompt-1780603099892-make-a-video-of-a-tree-",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Hybrid pipeline proof — prompt-derived scene plan and narration script; video/audio media uses fixtures",
+  "createdAt": "2026-06-04T20:06:19.730Z",
+  "generatedBy": "interactive-prompt",
+  "title": "[PIPELINE PROOF] Make a video of a tree. ",
+  "description": "Hybrid mode: scene plan and narration script are prompt-derived from the input prompt. Final audio and video media use fixtures.",
+  "tags": [
+    "hybrid-proof",
+    "fixture-media",
+    "scene-plan-generated"
+  ],
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "hybrid-scene-planner",
+  "aiGenerated": false,
+  "platforms": {
+    "youtube": {
+      "status": "pending"
+    }
+  }
+}

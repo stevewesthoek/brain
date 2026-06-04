@@ -1,0 +1,7 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-04T18:02:46.341Z",
+  "updatedAt": "2026-06-04T18:02:46.341Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780593828811-make-a-video-of-a-1780596172402-9letxd"
+}

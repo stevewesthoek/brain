@@ -1,0 +1,18 @@
+{
+  "status": "failed",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-04T20:06:12.406Z",
+  "updatedAt": "2026-06-04T20:06:38.825254Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780603099892-make-a-video-of-a-1780603578326-122ohb5",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "hybrid-scene-planner",
+  "aiGenerated": false,
+  "assemblyStartedAt": "2026-06-04T20:06:20.276Z",
+  "assemblyCompletedAt": "2026-06-04T20:06:38.591Z",
+  "mediaConvertJobId": "1780603582188-y0hcwd",
+  "failedStep": "PublishContractCreationError",
+  "lastError": "Failed to create publishing contract (publish.json)"
+}

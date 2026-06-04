@@ -413,7 +413,7 @@ export function AwsVideoDashboard() {
       </section>
 
       <section className="aws-metrics">
-        <div><span>Runtime mode</span><strong>{stringField(status.data?.data, 'generationModeRuntime') ?? 'loading'}</strong></div>
+        <div><span>Runtime mode</span><strong>{stringField(status.data?.data, 'generationModeRuntime') ?? (status.isLoading && !status.data ? 'loading' : stringField(asRecord(selectedJob), 'mediaSource') === 'hybrid' ? 'hybrid' : stringField(asRecord(selectedJob), 'mediaSource') === 'fixture' ? 'fixture' : 'unknown')}</strong></div>
         <div><span>Jobs</span><strong>{counts.total}</strong></div>
         <div><span>Pending</span><strong>{counts.pending}</strong></div>
         <div><span>Active</span><strong>{counts.active}</strong></div>

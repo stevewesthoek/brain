@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780593828811-make-a-video-of-a-puppy",
+  "publishStatus": "uploaded",
+  "publishBlocked": true,
+  "reason": "Generated from approved draft — awaiting explicit publish approval",
+  "createdAt": "2026-06-04T18:02:53.161Z",
+  "generatedBy": "interactive-prompt",
+  "platforms": {
+    "youtube": {
+      "status": "uploaded",
+      "videoId": "Jid1N5g4adA",
+      "publishedAt": "2026-06-04T18:29:34Z",
+      "url": "https://www.youtube.com/watch?v=Jid1N5g4adA",
+      "error": null
+    }
+  },
+  "updatedAt": "2026-06-04T19:06:17.076Z",
+  "publishedAt": null,
+  "title": "make a video of a puppy",
+  "description": "",
+  "tags": [],
+  "videoKey": "jobs/prochat-prompt-1780593828811-make-a-video-of-a-puppy/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780593828811-make-a-video-of-a-puppy/exports/thumbnail-001.jpg",
+  "mediaSource": null,
+  "generationMode": null,
+  "videoSourceKey": null,
+  "audioSourceKey": null
+}

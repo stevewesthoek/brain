@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780599988492-fixture-proof-metadata-validat",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780599988492",
+  "status": "approved",
+  "title": "fixture proof metadata validation",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780599988492-fixture-proof-metadata-validat/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-04T19:06:28.492Z",
+  "updatedAt": "2026-06-04T19:06:34.157Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": "Validate fixture metadata labeling.",
+    "approvedBy": "codex-validation",
+    "approvedAt": "2026-06-04T19:06:34.157Z"
+  }
+}

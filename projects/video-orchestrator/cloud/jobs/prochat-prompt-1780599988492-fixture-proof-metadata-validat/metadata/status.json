@@ -1,0 +1,18 @@
+{
+  "status": "failed",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-04T19:06:39.144Z",
+  "updatedAt": "2026-06-04T19:07:03.868192Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780599988492-fixture-proof-met-1780600003993-1pxvy6m",
+  "mediaSource": "fixture",
+  "generationMode": "fixture_assembly",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "fixture-assembly",
+  "aiGenerated": false,
+  "assemblyStartedAt": "2026-06-04T19:06:45.572Z",
+  "assemblyCompletedAt": "2026-06-04T19:07:03.629Z",
+  "mediaConvertJobId": "1780600007354-yzh2kg",
+  "failedStep": "PublishContractCreationError",
+  "lastError": "Failed to create publishing contract (publish.json)"
+}

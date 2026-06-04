@@ -1,6 +1,8 @@
 {
-  "status": "generating",
+  "status": "failed",
   "currentStep": "workflow_started",
   "startedAt": "2026-06-01T18:38:16.274Z",
-  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-console-gen-001-1780339099478"
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-console-gen-001-1780339099478",
+  "failedStep": "ApprovalCheckError",
+  "lastError": "Failed to check approval status"
 }

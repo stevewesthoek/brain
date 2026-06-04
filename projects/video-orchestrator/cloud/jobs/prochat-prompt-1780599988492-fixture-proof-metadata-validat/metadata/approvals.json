@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780599988492-fixture-proof-metadata-validat",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "codex-validation",
+      "approvedAt": "2026-06-04T19:06:34.157Z",
+      "notes": "Validate fixture metadata labeling."
+    }
+  }
+}

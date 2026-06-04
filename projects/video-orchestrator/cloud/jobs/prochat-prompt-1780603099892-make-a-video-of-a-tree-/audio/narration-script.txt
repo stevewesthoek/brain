@@ -1,0 +1,19 @@
+# Narration Script for "Make a video of a tree. "
+Generated: 2026-06-04T20:06:13.738Z
+Provider: deterministic-local
+Total Duration: 60s
+
+## Scene 1 (20s)
+Visual: Make a video of a tree.  — scene 1 of 3
+Narration: Make a video of a tree.
+On-screen text: Scene 1
+
+## Scene 2 (20s)
+Visual: Make a video of a tree.  — scene 2 of 3
+Narration: Scene 2
+On-screen text: Scene 2
+
+## Scene 3 (20s)
+Visual: Make a video of a tree.  — scene 3 of 3
+Narration: Scene 3
+On-screen text: Scene 3

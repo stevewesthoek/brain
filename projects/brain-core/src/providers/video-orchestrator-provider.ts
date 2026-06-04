@@ -655,6 +655,47 @@ function statusToProgress(status: NormalizedJobStatus): number {
   return map[status] ?? 0;
 }
 
+async function reconcileJobWithAwsExecution(jobId: string, statusJson: Record<string, unknown> | null): Promise<Record<string, unknown> | null> {
+  // If status is already marked failed, don't need reconciliation
+  if ((statusJson?.status === 'failed' && statusJson?.failedStep) || statusJson?.lastError) {
+    return statusJson;
+  }
+
+  const executionArn = statusJson?.executionArn as string | null | undefined;
+  if (!executionArn) return statusJson;
+
+  try {
+    const { stdout } = await execFileAsync('aws', [
+      'stepfunctions', 'describe-execution',
+      '--execution-arn', executionArn,
+      '--region', AWS_REGION,
+      '--output', 'json',
+      '--no-cli-pager',
+    ], { timeout: 15000 });
+    const parsed = JSON.parse(stdout) as Record<string, unknown>;
+    if (parsed.status === 'FAILED') {
+      const awsError = typeof parsed.error === 'string' ? parsed.error : 'StepFunctionsFailed';
+      const awsCause = typeof parsed.cause === 'string' ? parsed.cause : 'Unknown AWS error';
+      const reconciledStatus = {
+        ...statusJson,
+        status: 'failed',
+        failedStep: awsError,
+        lastError: awsCause,
+      };
+      // Write reconciled status back to file
+      try {
+        await writeFile(getJobMetadataPath(jobId, 'status.json'), JSON.stringify(reconciledStatus, null, 2) + '\n', 'utf-8');
+      } catch (err) {
+        console.warn(`Could not write reconciled status for ${jobId}:`, err);
+      }
+      return reconciledStatus;
+    }
+  } catch (err) {
+    console.warn(`Could not reconcile AWS execution for ${jobId}:`, err);
+  }
+  return statusJson;
+}
+
 async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?: boolean }): Promise<VideoJobSummary | null> {
   if (!isValidJobId(jobId)) return null;
 
@@ -674,14 +715,17 @@ async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?:
 
   if (!script) return null;
 
+  // Reconcile with AWS execution status (silent reconciliation to update status.json)
+  const statusJsonRaw = status as Record<string, unknown> | null;
+  const statusJson = await reconcileJobWithAwsExecution(jobId, statusJsonRaw);
+
   const inferredArts = shouldInferS3Artifacts && inferredArtifacts ? inferredArtifacts : { narration: null, finalVideo: null, thumbnail: null };
   const hasInferredPublishAssets = Boolean(inferredArts.finalVideo && inferredArts.thumbnail);
-  const normalizedStatus = hasInferredPublishAssets && (status as Record<string, unknown> | null)?.status !== 'failed'
-    ? normalizeJobStatus(script, { ...(status as Record<string, unknown> | null ?? {}), status: 'complete', completedSteps: ['video_assembled', 'thumbnail_generated'] }, publish)
-    : normalizeJobStatus(script, status, publish);
+  const normalizedStatus = hasInferredPublishAssets && statusJson?.status !== 'failed'
+    ? normalizeJobStatus(script, { ...statusJson ?? {}, status: 'complete', completedSteps: ['video_assembled', 'thumbnail_generated'] }, publish)
+    : normalizeJobStatus(script, statusJson, publish);
   const pubData = publish as Record<string, unknown> | null;
   const yt = (pubData?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
-  const statusJson = status as Record<string, unknown> | null;
   const assetsData = assets as Record<string, unknown> | null;
   const narration = assetsData?.narration as Record<string, unknown> | undefined;
   const finalVideo = assetsData?.finalVideo as Record<string, unknown> | undefined;
@@ -1256,6 +1300,25 @@ export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJo
     ], { timeout: 15000 });
     const parsed = JSON.parse(stdout) as Record<string, unknown>;
     const awsStatus = typeof parsed.status === 'string' ? parsed.status as VideoJobExecutionStatus['awsStatus'] : 'UNKNOWN';
+    const awsError = typeof parsed.error === 'string' ? parsed.error : null;
+    const awsCause = typeof parsed.cause === 'string' ? parsed.cause : null;
+
+    // If AWS execution failed, update local status to reflect that
+    if (awsStatus === 'FAILED') {
+      return {
+        ...base,
+        awsStatus,
+        startDate: typeof parsed.startDate === 'string' ? parsed.startDate : null,
+        stopDate: typeof parsed.stopDate === 'string' ? parsed.stopDate : null,
+        error: awsError,
+        cause: awsCause,
+        redriveStatus: typeof parsed.redriveStatus === 'string' ? parsed.redriveStatus : null,
+        localStatus: 'failed',
+        localStep: awsError && awsCause ? `${awsError}: ${awsCause}` : 'aws_execution_failed',
+      };
+    }
+
+    // If AWS execution succeeded, check for generated assets
     const inferred = awsStatus === 'SUCCEEDED' ? await inferGeneratedS3Artifacts(jobId) : null;
     const hasPublishAssets = Boolean(inferred?.finalVideo && inferred?.thumbnail);
     return {
@@ -1263,8 +1326,8 @@ export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJo
       awsStatus,
       startDate: typeof parsed.startDate === 'string' ? parsed.startDate : null,
       stopDate: typeof parsed.stopDate === 'string' ? parsed.stopDate : null,
-      error: typeof parsed.error === 'string' ? parsed.error : null,
-      cause: typeof parsed.cause === 'string' ? parsed.cause : null,
+      error: awsError,
+      cause: awsCause,
       redriveStatus: typeof parsed.redriveStatus === 'string' ? parsed.redriveStatus : null,
       localStatus: hasPublishAssets ? 'complete' : base.localStatus,
       localStep: hasPublishAssets ? 'ready_to_publish' : base.localStep,

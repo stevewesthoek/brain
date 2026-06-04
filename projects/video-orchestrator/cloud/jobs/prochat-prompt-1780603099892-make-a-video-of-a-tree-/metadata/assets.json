@@ -1,0 +1,29 @@
+{
+  "jobId": "prochat-prompt-1780603099892-make-a-video-of-a-tree-",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "aiGenerated": false,
+  "narration": {
+    "path": "jobs/prochat-prompt-1780603099892-make-a-video-of-a-tree-/audio/narration.mp3",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/audio/narration.mp3"
+  },
+  "sourceVideo": {
+    "path": "jobs/prochat-prompt-1780603099892-make-a-video-of-a-tree-/video-generated/generated-001.mp4",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/exports/sample-transcoded.mp4"
+  },
+  "scenePlanKey": "jobs/prochat-prompt-1780603099892-make-a-video-of-a-tree-/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780603099892-make-a-video-of-a-tree-/audio/narration-script.txt",
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "fixture",
+    "video": "fixture"
+  },
+  "warnings": [
+    "Final video/audio media still uses fixture assets; scene plan and narration script are prompt-derived."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780579593699-make-a-video-about-a-salesman-",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "brain-console-center",
+      "approvedAt": "2026-06-04T13:26:44.328Z",
+      "notes": null
+    }
+  }
+}
