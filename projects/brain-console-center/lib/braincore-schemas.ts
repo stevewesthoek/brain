@@ -198,6 +198,19 @@ export const videoStatusSchema = z.object({
 
 export const videoActionResultSchema = z.record(z.unknown());
 
+export const youtubePublishResultSchema = z.object({
+  ok: z.boolean(),
+  jobId: z.string().optional(),
+  dryRun: z.boolean().optional(),
+  publishStatus: z.string().optional(),
+  videoId: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
+  error: z.string().optional(),
+  code: z.string().optional(),
+}).passthrough();
+
 export type OpsMetric = z.infer<typeof opsMetricSchema>;
 export type OpsSystemMetrics = z.infer<typeof opsSystemMetricsSchema>;
 export type OpsAiUsageWindows = z.infer<typeof opsAiUsageWindowsSchema>;

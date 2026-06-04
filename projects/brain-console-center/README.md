@@ -1,0 +1,101 @@
+# Brain Console Center
+
+**Status:** Phase 1 implemented and build-validated  
+**Role:** single leading local operations dashboard for Brain  
+**Port:** `4881`  
+**Data source:** Brain Core API only
+
+Brain Console Center is the fourth and final dashboard direction for the `brain` repo.
+
+```text
+Brain Console Center → Brain Core API → runtime/job/config sources
+```
+
+Legacy dashboards are reference-only:
+
+- `projects/probot` — legacy dashboard and thin Slack/Telegram fallback client
+- `projects/brain-console-obsidian` — frozen legacy native Obsidian dashboard
+- `projects/brain-console-web` — legacy AWS Video reference dashboard
+
+## Run
+
+```bash
+cd projects/brain-console-center
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:4881
+```
+
+Brain Core must be available at:
+
+```text
+http://localhost:4877
+```
+
+Override in the browser build with:
+
+```bash
+NEXT_PUBLIC_BRAIN_CORE_URL=http://localhost:4877 npm run dev
+```
+
+## Phase 1 surfaces
+
+- Overview cards from `/ops/system-metrics`, `/ops/ai-usage-windows`, and `/ops/ai-costs`
+- Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
+- AWS Video Pipeline from the current Brain Core AWS Video endpoints
+
+## Safety
+
+- The browser never executes shell commands.
+- Start/stop/restart buttons call Brain Core only.
+- Unsupported actions remain disabled and explain why.
+- YouTube publishing routes exist in Brain Core but are intentionally absent from Phase 1.
+
+
+
+## Validate
+
+```bash
+npm run typecheck
+npm run build
+```
+
+Current Phase 1 validation:
+
+```text
+✓ typecheck passes
+✓ production build passes
+```
+
+## Current AWS Video contract
+
+Use the current Brain Core route for requesting script changes:
+
+```text
+POST /api/video-orchestrator/scripts/:jobId/request-changes
+```
+
+Do not use the older `/changes` path.
+
+## Phase 1 parity
+
+See:
+
+```text
+docs/system/brain-console-center-phase-1-parity-checklist.md
+```
+
+
+
+## Manual QA
+
+Before importing the next legacy-dashboard feature slice, run:
+
+```text
+operations/runbooks/brain-console-center-manual-qa.md
+```
