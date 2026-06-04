@@ -2328,6 +2328,33 @@ export async function routeRequest(
         return;
       }
 
+      const jobYouTubePublishMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/publish\/youtube(?:\/(dry-run))?$/.exec(url.pathname);
+      if (jobYouTubePublishMatch && request.method === 'POST') {
+        try {
+          const jobId = decodeURIComponent(jobYouTubePublishMatch[1] ?? '');
+          let rawBody = '';
+          await new Promise<void>((resolve, reject) => {
+            const req = request as IncomingMessage;
+            req.on('data', chunk => { rawBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); });
+            req.on('end', () => resolve());
+            req.on('error', reject);
+          });
+          const body = rawBody ? JSON.parse(rawBody) as Record<string, unknown> : {};
+          const dryRun = jobYouTubePublishMatch[2] === 'dry-run' ? true : body.dryRun !== false;
+          const confirmation = typeof body.confirmation === 'string' ? body.confirmation : undefined;
+          const publishOptions: { dryRun: boolean; confirmation?: string } = { dryRun };
+          if (confirmation) publishOptions.confirmation = confirmation;
+          const result = await runControlledYouTubePublish(jobId, publishOptions);
+          sendJson(response, result.ok ? 200 : 400, result);
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to run controlled YouTube publish',
+          });
+        }
+        return;
+      }
+
       const jobDetailMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)$/.exec(url.pathname);
       if (jobDetailMatch) {
         try {
