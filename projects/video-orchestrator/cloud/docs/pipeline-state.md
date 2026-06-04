@@ -108,6 +108,30 @@ aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/metada
 aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/narration-script.txt" - --region eu-north-1
 ```
 
+## Step Functions State Machine Role (Critical)
+
+The state machine **must** be deployed with the correct IAM role to invoke Lambda functions.
+
+**Correct role:** `arn:aws:iam::909439522876:role/ProChatVideoStepFunctionsRole`
+
+**Deployment:**
+```bash
+cd infrastructure/i-2-mediaconvert-orchestration
+./deploy-state-machine.sh          # Deploy with correct role and verification
+./verify-state-machine-role.sh     # Verify role is correct
+```
+
+**Why this matters:**
+- The step functions role must have a trust policy for `states.amazonaws.com` to invoke Lambda functions
+- `StepFunctionsDefaultRole` does not have this permission
+- If deployed with wrong role, jobs fail at `CheckApprovalState` with: `ApprovalCheckError: The principal states.amazonaws.com is not authorized`
+
+**Verification (CI/CD):**
+```bash
+./verify-state-machine-role.sh
+# Exits 0 if correct, nonzero if wrong
+```
+
 ## Not Yet Implemented
 
 The current flow does not implement:

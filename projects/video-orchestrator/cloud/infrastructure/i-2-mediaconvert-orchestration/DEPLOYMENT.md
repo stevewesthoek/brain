@@ -364,31 +364,52 @@ echo "Step Functions Role ARN: $STEPFUNCTIONS_ROLE"
 
 ## Step 6: Create or Update Step Functions State Machine
 
+**IMPORTANT:** Use the deploy script to ensure the state machine is always deployed with the correct IAM role (`ProChatVideoStepFunctionsRole`). This prevents regression to `StepFunctionsDefaultRole`, which will fail at runtime.
+
+### Deploy State Machine (Recommended Approach)
+
+```bash
+# Deploy state machine with correct role and verification
+./deploy-state-machine.sh
+
+# Verify deployment was successful
+./verify-state-machine-role.sh
+```
+
+The deploy script:
+- Validates the state machine definition JSON
+- Updates the state machine with the **correct** IAM role: `arn:aws:iam::909439522876:role/ProChatVideoStepFunctionsRole`
+- Verifies the deployed role matches expectations
+- Prevents regression to `StepFunctionsDefaultRole`
+
+### Manual Deployment (Not Recommended)
+
+If you need manual control, use the AWS CLI directly, but **always** use the correct role:
+
 ```bash
 # Get state machine definition
 STATE_MACHINE_DEF=$(cat ./step-functions-state-machine.json)
 
+# CORRECT role (must be this exact ARN)
+STEPFUNCTIONS_ROLE="arn:aws:iam::909439522876:role/ProChatVideoStepFunctionsRole"
+
 # Check if state machine already exists
 EXISTING_SM=$(aws stepfunctions list-state-machines \
   --region eu-north-1 \
-  --query "stateMachines[?name=='video-orchestrator-i2-assembly'].stateMachineArn" \
+  --query "stateMachines[?name=='prochat-video-skeleton-dev'].stateMachineArn" \
   --output text)
 
 if [ -z "$EXISTING_SM" ]; then
   # Create new state machine
   aws stepfunctions create-state-machine \
-    --name video-orchestrator-i2-assembly \
+    --name prochat-video-skeleton-dev \
     --definition "$STATE_MACHINE_DEF" \
-    --role-arn $STEPFUNCTIONS_ROLE \
+    --role-arn "$STEPFUNCTIONS_ROLE" \
     --region eu-north-1
   
-  STATE_MACHINE_ARN=$(aws stepfunctions describe-state-machine \
-    --state-machine-arn $(aws stepfunctions list-state-machines \
-      --region eu-north-1 \
-      --query "stateMachines[?name=='video-orchestrator-i2-assembly'].stateMachineArn" \
-      --output text) \
+  STATE_MACHINE_ARN=$(aws stepfunctions list-state-machines \
     --region eu-north-1 \
-    --query 'stateMachineArn' \
+    --query "stateMachines[?name=='prochat-video-skeleton-dev'].stateMachineArn" \
     --output text)
   
   echo "✅ State machine created: $STATE_MACHINE_ARN"
@@ -397,16 +418,34 @@ else
   STATE_MACHINE_ARN=$EXISTING_SM
   
   aws stepfunctions update-state-machine \
-    --state-machine-arn $STATE_MACHINE_ARN \
+    --state-machine-arn "$STATE_MACHINE_ARN" \
     --definition "$STATE_MACHINE_DEF" \
-    --role-arn $STEPFUNCTIONS_ROLE \
+    --role-arn "$STEPFUNCTIONS_ROLE" \
     --region eu-north-1
   
   echo "✅ State machine updated: $STATE_MACHINE_ARN"
 fi
 
-# Store for later
-echo $STATE_MACHINE_ARN > /tmp/state-machine-arn.txt
+# Always verify after deployment
+./verify-state-machine-role.sh
+```
+
+### Guardrails and Verification
+
+**Why `ProChatVideoStepFunctionsRole` is required:**
+
+The state machine role must have a trust policy that explicitly allows `states.amazonaws.com` to invoke Lambda functions in this account. The `StepFunctionsDefaultRole` does not have these permissions.
+
+**Symptom of wrong role** (`StepFunctionsDefaultRole`):
+- Jobs fail at `CheckApprovalState` with:
+  ```
+  ApprovalCheckError: The principal states.amazonaws.com is not authorized to assume the provided role
+  ```
+
+**Verification command (for CI/CD):**
+```bash
+./verify-state-machine-role.sh
+# Exits 0 if role is correct, nonzero if wrong
 ```
 
 ## Step 7: Prepare Test Data

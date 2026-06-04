@@ -145,3 +145,34 @@ Brain Core defines provider interfaces for real generation (next layer):
 - `ai` → delegate to real provider (not yet configured)
 
 Default is `fixture`. Fixture output must never be labeled as AI-generated video.
+
+## Step Functions State Machine Role (Critical)
+
+The AWS Step Functions state machine orchestrates the media assembly pipeline. It **must** be deployed with the correct IAM role.
+
+**Correct role:** `arn:aws:iam::909439522876:role/ProChatVideoStepFunctionsRole`
+
+**Why this matters:**
+- The state machine invokes Lambda functions via `states.amazonaws.com` service principal
+- This requires an explicit trust policy in the IAM role
+- `StepFunctionsDefaultRole` does not have this trust policy
+- If deployed with the wrong role, jobs fail at `CheckApprovalState` with:
+  ```
+  ApprovalCheckError: The principal states.amazonaws.com is not authorized to assume the provided role
+  ```
+
+**Deployment (from video-orchestrator/cloud/infrastructure/i-2-mediaconvert-orchestration/):**
+```bash
+./deploy-state-machine.sh          # Deploy with correct role and verification
+./verify-state-machine-role.sh     # Verify role is correct (CI/CD compatible)
+```
+
+**Manual role check:**
+```bash
+aws stepfunctions describe-state-machine \
+  --state-machine-arn "arn:aws:states:eu-north-1:909439522876:stateMachine:prochat-video-skeleton-dev" \
+  --region eu-north-1 \
+  --query 'roleArn' \
+  --output text
+# Must return: arn:aws:iam::909439522876:role/ProChatVideoStepFunctionsRole
+```
