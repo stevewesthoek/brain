@@ -81,6 +81,33 @@ Metadata:
 - Does not generate video (source video is fixture)
 - Does not call external AI models
 
+## Dev Environment Reset
+
+To restart Brain Core and Brain Console Center with hybrid mode enabled:
+
+```bash
+bash tools/scripts/brain-console-center-dev-reset.sh
+```
+
+This script:
+1. Kills stale processes on ports 4877 (Brain Core) and 4881 (Brain Console Center)
+2. Ensures ports are free
+3. Starts Brain Core with `AWS_VIDEO_GENERATION_MODE=hybrid`
+4. Starts Brain Console Center
+5. Health-checks both endpoints
+6. Prints log file paths and test commands
+
+**Logs:**
+- Brain Core: `/tmp/brain-core-hybrid.log`
+- Brain Console Center: `/tmp/brain-console-center.log`
+
+**Test hybrid output:**
+```bash
+export JOB_ID=<new-job-from-console>
+aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/metadata/scene-plan.json" - --region eu-north-1 | jq
+aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/narration-script.txt" - --region eu-north-1
+```
+
 ## Not Yet Implemented
 
 The current flow does not implement:

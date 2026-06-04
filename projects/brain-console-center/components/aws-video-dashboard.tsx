@@ -166,6 +166,53 @@ function ScenePlanCard({
   );
 }
 
+function GenerationArtifactsCard({
+  jobId,
+  artifactData,
+  generationMode,
+}: {
+  jobId: string | null;
+  artifactData: Record<string, unknown> | null | undefined;
+  generationMode: string | null;
+}) {
+  const scenePlanKey = stringField(artifactData, 'scenePlanKey');
+  const narrationScriptKey = stringField(artifactData, 'narrationScriptKey');
+
+  if (!scenePlanKey && !narrationScriptKey) return null;
+  if (!jobId) return null;
+
+  const bucket = 'prochat-video-dev-909439522876-eu-north-1-an';
+  const region = 'eu-north-1';
+
+  const scenePlanCmd = scenePlanKey
+    ? `aws s3 cp "s3://${bucket}/${scenePlanKey}" - --region ${region} | jq`
+    : null;
+  const narrationScriptCmd = narrationScriptKey
+    ? `aws s3 cp "s3://${bucket}/${narrationScriptKey}" - --region ${region}`
+    : null;
+
+  return (
+    <article className="card">
+      <div className="card-title">Generation artifacts</div>
+      <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '1rem' }}>
+        Copy commands to inspect hybrid-mode generated content:
+      </p>
+      {scenePlanCmd ? (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>Scene plan:</div>
+          <code style={{ display: 'block', overflow: 'auto', color: '#0a0a0a' }}>{scenePlanCmd}</code>
+        </div>
+      ) : null}
+      {narrationScriptCmd ? (
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>Narration script:</div>
+          <code style={{ display: 'block', overflow: 'auto', color: '#0a0a0a' }}>{narrationScriptCmd}</code>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
@@ -365,6 +412,7 @@ export function AwsVideoDashboard() {
       </section>
 
       <section className="aws-metrics">
+        <div><span>Runtime mode</span><strong>{stringField(status.data?.data, 'generationModeRuntime') ?? 'loading'}</strong></div>
         <div><span>Jobs</span><strong>{counts.total}</strong></div>
         <div><span>Pending</span><strong>{counts.pending}</strong></div>
         <div><span>Active</span><strong>{counts.active}</strong></div>
@@ -456,6 +504,7 @@ export function AwsVideoDashboard() {
               </article>
 
               {hasScenePlan ? <ScenePlanCard artifactData={artifactData} /> : null}
+              {isHybridMode ? <GenerationArtifactsCard jobId={jobId} artifactData={artifactData} generationMode={generationMode} /> : null}
             </div>
           ) : null}
 

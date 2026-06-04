@@ -4,6 +4,11 @@ export interface BrainCoreVideoOrchestratorStatus {
   pipelineId: 'video-upload-pipeline';
   status: 'operational' | 'partial' | 'planned' | 'blocked' | 'unknown';
   health: 'ok' | 'warning' | 'error' | 'unknown';
+  generationModeRuntime: 'fixture' | 'hybrid' | 'ai';
+  expectedHybridArtifacts: {
+    scenePlan: string;
+    narrationScript: string;
+  };
   moduleProgress: {
     total: number;
     implemented: number;
@@ -31,7 +36,15 @@ export interface BrainCoreVideoOrchestratorStatus {
   };
 }
 
+function getGenerationMode(): 'fixture' | 'hybrid' | 'ai' {
+  const mode = process.env.AWS_VIDEO_GENERATION_MODE;
+  if (mode === 'ai') return 'ai';
+  if (mode === 'hybrid') return 'hybrid';
+  return 'fixture';
+}
+
 export function getVideoOrchestratorStatus(): BrainCoreVideoOrchestratorStatus {
+  const generationMode = getGenerationMode();
   const modules: BrainCoreVideoOrchestratorStatus['modules'] = [
     {
       id: 'intake-stage',
@@ -114,6 +127,11 @@ export function getVideoOrchestratorStatus(): BrainCoreVideoOrchestratorStatus {
     pipelineId: 'video-upload-pipeline',
     status: 'partial',
     health: 'warning',
+    generationModeRuntime: generationMode,
+    expectedHybridArtifacts: {
+      scenePlan: 'jobs/<jobId>/metadata/scene-plan.json',
+      narrationScript: 'jobs/<jobId>/audio/narration-script.txt',
+    },
     moduleProgress: {
       total,
       implemented,
@@ -125,7 +143,7 @@ export function getVideoOrchestratorStatus(): BrainCoreVideoOrchestratorStatus {
     modules,
     supportedProjects: ['says-the-bible', 'video-content-production'],
     supportedPlatforms: ['youtube', 'pinterest', 'facebook', 'tiktok', 'instagram', 'bluesky'],
-    summary: `Video orchestrator ${percent}% complete. ${partial} modules designed; 0 modules live. ${blocked} module(s) blocked. Migration from STB planned for Stage 3.`,
+    summary: `Video orchestrator ${percent}% complete. ${partial} modules designed; 0 modules live. ${blocked} module(s) blocked. Generation mode: ${generationMode}. Migration from STB planned for Stage 3.`,
     limitations: [
       'Design phase only (no live execution yet)',
       'No module can run independently (design orchestrator blocks thumbnail module)',
