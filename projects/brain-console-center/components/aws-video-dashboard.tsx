@@ -62,7 +62,7 @@ function payloadDetails(error: unknown): Record<string, unknown> | null {
   return details && typeof details === 'object' ? details as Record<string, unknown> : null;
 }
 
-function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
+function pipelineSteps(job: Partial<VideoJob> | null | undefined, selectedReady: boolean, selectedUploaded: boolean) {
   const status = job?.status ?? 'not_available';
   const approval = nestedStatus(job?.approval);
   const generation = nestedStatus(job?.generation);
@@ -70,9 +70,9 @@ function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
   return [
     { key: 'draft', label: 'Draft', state: job ? 'complete' : 'not available' },
     { key: 'approval', label: 'Approve', state: approval === 'approved' ? 'complete' : approval },
-    { key: 'generation', label: 'Generate', state: generation },
-    { key: 'contract', label: 'Publish contract', state: isReadyToPublish(job) || status === 'published' ? 'complete' : 'waiting' },
-    { key: 'youtube', label: 'Private YouTube', state: status === 'published' ? 'uploaded' : publishing },
+    { key: 'generation', label: 'Generate', state: selectedReady ? 'complete' : generation },
+    { key: 'contract', label: 'Publish contract', state: selectedReady || status === 'published' ? 'complete' : 'waiting' },
+    { key: 'youtube', label: 'Private YouTube', state: selectedUploaded ? 'uploaded' : publishing },
   ];
 }
 
@@ -250,6 +250,11 @@ export function AwsVideoDashboard() {
   const artifactData = artifacts.data?.data ?? null;
   const executionData = execution.data?.data ?? null;
   const publishableAssets = asRecord(artifactData?.publishableAssets);
+  const mediaSource = stringField(selectedJob, 'mediaSource') ?? stringField(artifactData, 'mediaSource') ?? 'unknown';
+  const generationMode = stringField(selectedJob, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
+  const videoSourceKey = stringField(selectedJob, 'videoSourceKey') ?? stringField(artifactData, 'videoSourceKey');
+  const audioSourceKey = stringField(selectedJob, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
+  const isFixtureMedia = mediaSource === 'fixture' || generationMode === 'fixture_assembly';
   const finalVideoKey = stringField(artifactData, 'finalVideo') ?? stringField(publishableAssets, 'videoKey');
   const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
   const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
@@ -257,7 +262,7 @@ export function AwsVideoDashboard() {
   const localGenerationComplete = nestedStatus(selectedJob?.generation) === 'complete';
   const publishStatus = nestedStatus(selectedJob?.publishing);
   const selectedReady = isReadyToPublish(selectedJob) || ((awsSucceeded || localGenerationComplete || hasGeneratedAssets) && hasGeneratedAssets);
-  const selectedPublished = selectedJob?.status === 'published';
+  const selectedPublished = selectedJob?.status === 'published' || ['uploaded', 'published'].includes(publishStatus);
   const selectedUploaded = selectedPublished || ['uploaded', 'published'].includes(publishStatus);
   const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
   const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
@@ -277,8 +282,8 @@ export function AwsVideoDashboard() {
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
     { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
     { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
-    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForJobId === jobId, active: selectedReady && dryRunPassedForJobId !== jobId },
-    { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedPublished, active: canPublish },
+    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForJobId === jobId || selectedUploaded, active: selectedReady && dryRunPassedForJobId !== jobId && !selectedUploaded },
+    { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish },
   ];
   const nextStep = guideSteps.find((step) => !step.done);
   const queryError = jobs.error ?? status.error;
@@ -326,7 +331,7 @@ export function AwsVideoDashboard() {
         <div><span>Pending</span><strong>{counts.pending}</strong></div>
         <div><span>Active</span><strong>{counts.active}</strong></div>
         <div><span>Published</span><strong>{counts.published}</strong></div>
-        <div><span>Selected</span><strong>{selectedJob?.status?.replaceAll('_', ' ') ?? 'none'}</strong></div>
+        <div><span>Selected</span><strong>{selectedUploaded ? 'uploaded' : selectedJob?.status?.replaceAll('_', ' ') ?? 'none'}</strong></div>
       </section>
 
       <section className="pipeline-guide" aria-label="AWS Video pipeline guide">
@@ -372,6 +377,7 @@ export function AwsVideoDashboard() {
                 </div>
                 {selectedJob ? (
                   <>
+                    {isFixtureMedia ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div> : null}
                     <h2 className="aws-job-title">{selectedJob.title}</h2>
                     <div className="progress"><span style={{ width: `${pct(selectedJob.progress)}%` }} /></div>
                     <div className="aws-facts">
@@ -379,6 +385,8 @@ export function AwsVideoDashboard() {
                       <div><span>Progress</span><strong>{pct(selectedJob.progress)}%</strong></div>
                       <div><span>Approval</span><strong>{nestedStatus(selectedJob.approval)}</strong></div>
                       <div><span>Step</span><strong>{selectedJob.currentStep ?? 'not available'}</strong></div>
+                      <div><span>Media source</span><strong>{mediaSource}</strong></div>
+                      <div><span>Generation mode</span><strong>{generationMode}</strong></div>
                     </div>
                   </>
                 ) : <p>Select or create a job to start.</p>}
@@ -387,7 +395,7 @@ export function AwsVideoDashboard() {
               <article className="card">
                 <div className="card-title">Pipeline flow</div>
                 <div className="pipeline-flow">
-                  {pipelineSteps(selectedJob).map((step, index) => (
+                  {pipelineSteps(selectedJob, selectedReady, selectedUploaded).map((step, index) => (
                     <div className="pipeline-step" key={step.key}>
                       <div className="pipeline-index">{index + 1}</div>
                       <div className="min-w-0">
@@ -449,7 +457,14 @@ export function AwsVideoDashboard() {
               <div className="publish-guard">
                 <div><span>Selected job</span><strong>{shortJobId(jobId ?? undefined)}</strong></div>
                 <div><span>Required state</span><strong>{publishReadinessLabel}</strong></div>
+                <div><span>Media source</span><strong>{mediaSource}</strong></div>
                 <div><span>Dry-run</span><strong>{dryRunPassedForJobId === jobId ? 'passed' : 'required'}</strong></div>
+              </div>
+              {isFixtureMedia ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div> : null}
+              <div className="publish-guard">
+                <div><span>generationMode</span><strong>{generationMode}</strong></div>
+                <div><span>videoSourceKey</span><strong>{videoSourceKey ?? 'unknown'}</strong></div>
+                <div><span>audioSourceKey</span><strong>{audioSourceKey ?? 'unknown'}</strong></div>
               </div>
               <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} />
               {!selectedReady ? <div className="compact-error">This job is not ready to publish. Complete approval and generation first.</div> : null}

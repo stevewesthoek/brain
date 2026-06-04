@@ -22,6 +22,49 @@ const S3_METADATA_TIMEOUT_MS = 1_200;
 const S3_HEAD_TIMEOUT_MS = 800;
 const S3_PUBLISH_ASSET_TIMEOUT_MS = 10_000;
 const RECENT_JOB_HYDRATION_CONCURRENCY = 3;
+const GENERATION_MODE = 'fixture_assembly';
+const MEDIA_SOURCE = 'fixture';
+const FIXTURE_TITLE_PREFIX = '[PIPELINE PROOF] ';
+
+export interface VideoGenerationProviderInput {
+  jobId: string;
+  prompt: string;
+  script: ScriptMetadata;
+  channelId: string;
+  outputVideoKey: string;
+}
+
+export interface NarrationGenerationProviderInput {
+  jobId: string;
+  script: ScriptMetadata;
+  channelId: string;
+  outputNarrationKey: string;
+}
+
+export interface GenerationProviderOutput {
+  providerName: string;
+  outputS3Key: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface VideoGenerationProvider {
+  name: string;
+  generateVideo(input: VideoGenerationProviderInput): Promise<GenerationProviderOutput>;
+}
+
+export interface NarrationGenerationProvider {
+  name: string;
+  generateNarration(input: NarrationGenerationProviderInput): Promise<GenerationProviderOutput>;
+}
+
+function getAwsVideoGenerationMode(): 'fixture' | 'ai' {
+  return process.env.AWS_VIDEO_GENERATION_MODE === 'ai' ? 'ai' : 'fixture';
+}
+
+function fixtureTitle(title: string): string {
+  if (process.env.AWS_VIDEO_DISABLE_FIXTURE_TITLE_PREFIX === '1') return title;
+  return title.startsWith(FIXTURE_TITLE_PREFIX) ? title : `${FIXTURE_TITLE_PREFIX}${title}`;
+}
 
 export function getBrainRepoRoot(moduleDir: string = MODULE_DIR): string {
   const marker = `${join('projects', 'brain-core')}`;
@@ -560,6 +603,8 @@ function normalizeJobStatus(
 
   // Check publish status first (terminal state)
   if (pubData?.publishStatus === 'uploaded') return 'published';
+  const youtube = (pubData?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
+  if (youtube?.status === 'uploaded' || youtube?.status === 'published' || typeof youtube?.videoId === 'string') return 'published';
   if (pubData?.publishStatus === 'publishing') return 'publishing';
 
   // Check if generation completed
@@ -630,6 +675,8 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
   const narration = assetsData?.narration as Record<string, unknown> | undefined;
   const finalVideo = assetsData?.finalVideo as Record<string, unknown> | undefined;
   const thumbnail = assetsData?.thumbnail as Record<string, unknown> | undefined;
+  const mediaSource = stringValue(statusJson?.mediaSource) ?? stringValue(assetsData?.mediaSource) ?? stringValue(pubData?.mediaSource);
+  const generationMode = stringValue(statusJson?.generationMode) ?? stringValue(assetsData?.generationMode) ?? stringValue(pubData?.generationMode);
 
   return {
     jobId,
@@ -651,7 +698,7 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
       completedAt: (statusJson?.completedAt as string) || null,
     },
     publishing: {
-      status: (pubData?.publishStatus as string) || 'pending',
+      status: (yt?.status as string) || (pubData?.publishStatus as string) || 'pending',
       videoId: (yt?.videoId as string) || null,
       url: (yt?.url as string) || null,
     },
@@ -665,6 +712,10 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
       finalVideo: (finalVideo?.path as string) || (statusJson?.finalVideoKey as string) || inferredArtifacts.finalVideo,
       thumbnail: (thumbnail?.path as string) || (statusJson?.thumbnailKey as string) || inferredArtifacts.thumbnail,
     },
+    mediaSource,
+    generationMode,
+    videoSourceKey: stringValue(statusJson?.videoSourceKey) ?? stringValue(assetsData?.videoSourceKey) ?? stringValue(pubData?.videoSourceKey),
+    audioSourceKey: stringValue(statusJson?.audioSourceKey) ?? stringValue(assetsData?.audioSourceKey) ?? stringValue(pubData?.audioSourceKey),
   };
 }
 
@@ -984,7 +1035,15 @@ async function writeS3MetadataJson(jobId: string, fileName: string, value: Recor
 
 async function repairPublishJson(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): Promise<Record<string, unknown>> {
   const now = new Date().toISOString();
-  const script = await readJobMetadataJson(jobId, 'script.json') as ScriptMetadata | null;
+  const [script, statusJson, assetsJson] = await Promise.all([
+    readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
+    readJobMetadataJson(jobId, 'status.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'assets.json') as Promise<Record<string, unknown> | null>,
+  ]);
+  const mediaSource = stringValue(publishJson?.mediaSource) ?? stringValue(statusJson?.mediaSource) ?? stringValue(assetsJson?.mediaSource);
+  const generationMode = stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode) ?? stringValue(assetsJson?.generationMode);
+  const videoSourceKey = stringValue(publishJson?.videoSourceKey) ?? stringValue(statusJson?.videoSourceKey) ?? stringValue(assetsJson?.videoSourceKey);
+  const audioSourceKey = stringValue(publishJson?.audioSourceKey) ?? stringValue(statusJson?.audioSourceKey) ?? stringValue(assetsJson?.audioSourceKey);
   const platforms = publishJson?.platforms && typeof publishJson.platforms === 'object'
     ? publishJson.platforms as Record<string, unknown>
     : {};
@@ -998,11 +1057,17 @@ async function repairPublishJson(jobId: string, publishJson: Record<string, unkn
     createdAt: stringValue(publishJson?.createdAt) ?? now,
     updatedAt: now,
     publishedAt: publishJson?.publishedAt ?? null,
-    title: stringValue(publishJson?.title) ?? script?.title ?? '',
+    title: mediaSource === MEDIA_SOURCE
+      ? fixtureTitle(stringValue(publishJson?.title) ?? script?.title ?? '')
+      : stringValue(publishJson?.title) ?? script?.title ?? '',
     description: stringValue(publishJson?.description) ?? '',
     tags: stringArray(publishJson?.tags),
     videoKey: resolved.videoKey,
     thumbnailKey: resolved.thumbnailKey,
+    mediaSource,
+    generationMode,
+    videoSourceKey,
+    audioSourceKey,
     platforms: {
       ...platforms,
       youtube: {
@@ -1395,6 +1460,8 @@ export interface GenerationTriggerResponse {
   thumbnailKey?: string;
   publishStatus: 'pending';
   publishBlocked: true;
+  mediaSource?: string;
+  generationMode?: string;
 }
 
 export interface GenerationTriggerError {
@@ -1431,6 +1498,10 @@ export interface VideoJobSummary {
   publishing: { status: string; videoId: string | null; url: string | null };
   error: { step: string | null; message: string | null };
   artifacts: { script: string | null; narration: string | null; finalVideo: string | null; thumbnail: string | null };
+  mediaSource?: string | null;
+  generationMode?: string | null;
+  videoSourceKey?: string | null;
+  audioSourceKey?: string | null;
 }
 
 export interface VideoJobTimelineEvent {
@@ -1556,6 +1627,15 @@ export async function generateApprovedScript(
     }
   }
 
+  if (getAwsVideoGenerationMode() === 'ai') {
+    return {
+      ok: false,
+      code: 'ai_generation_provider_not_configured',
+      message: 'AI video generation provider is not configured',
+      jobId,
+    };
+  }
+
   // All validations passed, generation can proceed
   // Create job directory structure
   const jobRoot = join(getVideoOrchestratorRoot(), 'jobs', jobId);
@@ -1579,12 +1659,21 @@ export async function generateApprovedScript(
   // Step 1: Write initial status.json
   const statusPath = join(metadataDir, 'status.json');
   const startedAt = new Date().toISOString();
+  const fixtureMetadata = {
+    mediaSource: MEDIA_SOURCE,
+    generationMode: GENERATION_MODE,
+    videoSourceKey: VIDEO_FIXTURE_KEY,
+    audioSourceKey: NARRATION_FIXTURE_KEY,
+    providerName: 'fixture-assembly',
+    aiGenerated: false,
+  };
   const initialStatus = {
     status: 'generating',
     currentStep: 'narration_started',
     startedAt,
     updatedAt: startedAt,
     executionArn: null as string | null,
+    ...fixtureMetadata,
   };
   const writeFailedStatus = async (failedStep: string, message: string, extra: Record<string, unknown> = {}) => {
     const failedStatus = {
@@ -1618,6 +1707,7 @@ export async function generateApprovedScript(
   };
   try {
     await writeFile(statusPath, JSON.stringify(initialStatus, null, 2) + '\n', 'utf-8');
+    await writeS3MetadataJson(jobId, 'status.json', initialStatus);
   } catch (err) {
     return {
       ok: false,
@@ -1729,6 +1819,31 @@ export async function generateApprovedScript(
     };
   }
 
+  const assetsJson = {
+    jobId,
+    mediaSource: MEDIA_SOURCE,
+    generationMode: GENERATION_MODE,
+    videoSourceKey: VIDEO_FIXTURE_KEY,
+    audioSourceKey: NARRATION_FIXTURE_KEY,
+    aiGenerated: false,
+    narration: {
+      path: narrationKey,
+      source: MEDIA_SOURCE,
+      sourceKey: NARRATION_FIXTURE_KEY,
+    },
+    sourceVideo: {
+      path: videoKey,
+      source: MEDIA_SOURCE,
+      sourceKey: VIDEO_FIXTURE_KEY,
+    },
+  };
+  try {
+    await writeFile(join(metadataDir, 'assets.json'), `${JSON.stringify(assetsJson, null, 2)}\n`, 'utf-8');
+    await writeS3MetadataJson(jobId, 'assets.json', assetsJson);
+  } catch (err) {
+    console.error(`Warning: Failed to write fixture assets metadata for ${jobId}: ${err}`);
+  }
+
   // Step 5: Start Step Functions execution
   const executionName = buildStepFunctionsExecutionName(jobId);
   const sfInput = JSON.stringify({
@@ -1762,8 +1877,10 @@ export async function generateApprovedScript(
   // Step 4: Update status.json with execution ARN
   initialStatus.executionArn = executionArn;
   initialStatus.currentStep = 'workflow_started';
+  initialStatus.updatedAt = new Date().toISOString();
   try {
     await writeFile(statusPath, JSON.stringify(initialStatus, null, 2) + '\n', 'utf-8');
+    await writeS3MetadataJson(jobId, 'status.json', initialStatus);
   } catch (err) {
     // Log but don't fail — status is non-critical at this point
     console.error(`Warning: Failed to update status.json with executionArn: ${err}`);
@@ -1774,9 +1891,13 @@ export async function generateApprovedScript(
     jobId,
     publishStatus: 'pending',
     publishBlocked: true,
-    reason: 'Generated from approved draft — awaiting explicit publish approval',
+    reason: 'Pipeline proof fixture assembly — awaiting explicit publish approval',
     createdAt: new Date().toISOString(),
     generatedBy: 'interactive-prompt',
+    title: fixtureTitle(script.title),
+    description: 'Pipeline proof upload. This video used fixture media, not prompt-generated AI video.',
+    tags: ['pipeline-proof', 'fixture-media'],
+    ...fixtureMetadata,
     platforms: {
       youtube: {
         status: 'pending',
@@ -1791,6 +1912,7 @@ export async function generateApprovedScript(
     const publishingPublishPath = join(publishingDir, 'publish.json');
     await writeFile(metadataPublishPath, publishJsonContent, 'utf-8');
     await writeFile(publishingPublishPath, publishJsonContent, 'utf-8');
+    await writeS3MetadataJson(jobId, 'publish.json', publishJson);
   } catch (err) {
     return {
       ok: false,
@@ -1809,6 +1931,8 @@ export async function generateApprovedScript(
     executionArn,
     publishStatus: 'pending',
     publishBlocked: true,
+    mediaSource: MEDIA_SOURCE,
+    generationMode: GENERATION_MODE,
   };
 }
 
