@@ -153,6 +153,7 @@ A UI-only change may skip Brain Core typecheck only when it does not touch Brain
 Related docs:
 
 - `docs/system/brain-console-center-roadmap.md`
+- `docs/system/brain-console-center-design-system.md`
 - `docs/system/brain-console-center-implementation-plan.md`
 - `docs/system/brain-console-center-phase-1-parity-checklist.md`
 - `docs/system/brain-console-center-local-apps-hardening.md`
