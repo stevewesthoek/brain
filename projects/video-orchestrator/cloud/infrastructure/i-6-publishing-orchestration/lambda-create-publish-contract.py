@@ -50,7 +50,7 @@ def lambda_handler(event, context):
 
     Reads: metadata/status.json and metadata/assets.json
     Validates: status == complete, required assets exist
-    Writes: metadata/publish.json
+    Writes: metadata/publish.json with generation metadata preserved
     """
     print(f'[CreatePublishContract] Starting for event: {event}')
 
@@ -60,6 +60,10 @@ def lambda_handler(event, context):
 
     final_video_uri = event.get('finalVideoUri')
     thumbnail_key_param = event.get('thumbnailKey')
+
+    # Initialize metadata containers (will be populated from assets.json/status.json)
+    metadata = {}
+    assets_data_full = {}
 
     try:
         # Read status.json to verify generation is complete
@@ -75,6 +79,14 @@ def lambda_handler(event, context):
             raise ValueError(f'Generation not complete: status={status}')
 
         print(f'[CreatePublishContract] Generation complete, status={status}')
+
+        # Extract generation metadata from status.json for preservation
+        if 'mediaSource' in status_data:
+            metadata['mediaSource'] = status_data['mediaSource']
+        if 'generationMode' in status_data:
+            metadata['generationMode'] = status_data['generationMode']
+        if 'aiGenerated' in status_data:
+            metadata['aiGenerated'] = status_data['aiGenerated']
 
         # Priority 1: Use parameters passed from Step Functions (fast path)
         video_key = None
@@ -97,8 +109,8 @@ def lambda_handler(event, context):
                     Bucket=BUCKET,
                     Key=f'jobs/{job_id}/metadata/assets.json'
                 )
-                assets_data = json.loads(assets_response['Body'].read().decode('utf-8'))
-                assets = assets_data.get('assets', {})
+                assets_data_full = json.loads(assets_response['Body'].read().decode('utf-8'))
+                assets = assets_data_full.get('assets', {})
 
                 if not video_key and 'finalVideo' in assets:
                     video_key = assets['finalVideo'].get('path')
@@ -107,6 +119,18 @@ def lambda_handler(event, context):
                 if not thumbnail_key and 'thumbnail' in assets:
                     thumbnail_key = assets['thumbnail'].get('path')
                     print(f'[CreatePublishContract] Got thumbnail from assets.json: {thumbnail_key}')
+
+                # Preserve generation metadata from assets.json (overrides status.json)
+                metadata_fields = [
+                    'mediaSource', 'generationMode', 'aiGenerated',
+                    'scenePlanKey', 'narrationScriptKey', 'videoSourceKey',
+                    'audioSourceKey', 'providers', 'warnings'
+                ]
+                for field in metadata_fields:
+                    if field in assets_data_full:
+                        metadata[field] = assets_data_full[field]
+                        print(f'[CreatePublishContract] Preserved from assets.json: {field}')
+
             except s3_client.exceptions.NoSuchKey:
                 print(f'[CreatePublishContract] assets.json missing')
 
@@ -190,6 +214,15 @@ def lambda_handler(event, context):
             }
         }
 
+        # Merge preserved generation metadata into publish_contract
+        publish_contract.update(metadata)
+
+        # Log which metadata fields are included
+        if metadata:
+            print(f'[CreatePublishContract] Preserved metadata fields: {list(metadata.keys())}')
+        else:
+            print(f'[CreatePublishContract] No generation metadata found; using fixture defaults')
+
         # Write publish.json to S3
         publish_key = f'jobs/{job_id}/metadata/publish.json'
         print(f'[CreatePublishContract] Writing publish.json to {publish_key}')
@@ -199,14 +232,15 @@ def lambda_handler(event, context):
             Body=json.dumps(publish_contract, indent=2),
             ContentType='application/json'
         )
-        print(f'[CreatePublishContract] ✓ publish.json written')
+        print(f'[CreatePublishContract] ✓ publish.json written to {publish_key}')
 
         result = {
             'jobId': job_id,
             'publishContractCreated': True,
             'videoKey': video_key,
             'thumbnailKey': thumbnail_key,
-            'publishStatus': 'pending'
+            'publishStatus': 'pending',
+            'metadataPreserved': len(metadata) > 0
         }
         print(f'[CreatePublishContract] Success: {result}')
         return result

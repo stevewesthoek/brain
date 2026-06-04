@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780604681158-make-a-video-of-a-happy-tree",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780604681158",
+  "status": "draft",
+  "title": "Make a video of a happy tree.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780604681158-make-a-video-of-a-happy-tree/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-04T20:24:41.158Z",
+  "updatedAt": "2026-06-04T20:24:41.158Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by testing-hybrid"
+  }
+}

@@ -682,11 +682,16 @@ async function reconcileJobWithAwsExecution(jobId: string, statusJson: Record<st
         failedStep: awsError,
         lastError: awsCause,
       };
-      // Write reconciled status back to file
+      // Write reconciled status to both local file and S3 for consistency
       try {
         await writeFile(getJobMetadataPath(jobId, 'status.json'), JSON.stringify(reconciledStatus, null, 2) + '\n', 'utf-8');
       } catch (err) {
-        console.warn(`Could not write reconciled status for ${jobId}:`, err);
+        console.warn(`Could not write reconciled status locally for ${jobId}:`, err);
+      }
+      try {
+        await writeS3JobFile(`jobs/${jobId}/metadata/status.json`, JSON.stringify(reconciledStatus, null, 2));
+      } catch (err) {
+        console.warn(`Could not write reconciled status to S3 for ${jobId}:`, err);
       }
       return reconciledStatus;
     }
