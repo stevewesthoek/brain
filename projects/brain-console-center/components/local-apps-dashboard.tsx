@@ -265,18 +265,29 @@ export function LocalAppsDashboard() {
             {!dashboard.isLoading && apps.length === 0 ? <div className="compact-error">No local applications returned by Brain Core.</div> : null}
           </div>
 
-          <div className="pager local-apps-pager">
-            <span>{apps.length === 0 ? '0 apps' : `Page ${safePage}/${pageCount} · showing ${(safePage - 1) * APPS_PER_PAGE + 1}-${Math.min(safePage * APPS_PER_PAGE, apps.length)} of ${apps.length}`}</span>
-            <div className="row page-controls">
-              <button className="button compact secondary" disabled={safePage <= 1} onClick={() => setPage(1)}>First</button>
-              <button className="button compact secondary" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Prev</button>
-              {pageItems.map((item) => (
-                <button key={item} className={`page-dot ${item === safePage ? 'active' : ''}`} onClick={() => setPage(item)} aria-label={`Go to Local Apps page ${item}`}>{item}</button>
-              ))}
-              <button className="button compact secondary" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>Next</button>
-              <button className="button compact secondary" disabled={safePage >= pageCount} onClick={() => setPage(pageCount)}>Last</button>
+          <nav className="local-apps-pager" aria-label="Local Apps pages">
+            <div className="local-apps-page-status">
+              {apps.length === 0 ? '0 apps' : `Page ${safePage} of ${pageCount} · showing ${(safePage - 1) * APPS_PER_PAGE + 1}-${Math.min(safePage * APPS_PER_PAGE, apps.length)} of ${apps.length}`}
             </div>
-          </div>
+            <div className="local-apps-page-controls">
+              <button type="button" className="pager-button" disabled={safePage <= 1} onClick={() => setPage(1)}>First</button>
+              <button type="button" className="pager-button" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Previous</button>
+              {pageItems.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`pager-number ${item === safePage ? 'active' : ''}`}
+                  onClick={() => setPage(item)}
+                  aria-current={item === safePage ? 'page' : undefined}
+                  aria-label={`Go to Local Apps page ${item}`}
+                >
+                  {item}
+                </button>
+              ))}
+              <button type="button" className="pager-button" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>Next</button>
+              <button type="button" className="pager-button" disabled={safePage >= pageCount} onClick={() => setPage(pageCount)}>Last</button>
+            </div>
+          </nav>
         </section>
       ) : null}
 
