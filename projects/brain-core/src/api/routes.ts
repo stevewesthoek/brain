@@ -2334,8 +2334,12 @@ export async function routeRequest(
           const jobId = decodeURIComponent(jobYouTubePublishMatch[1] ?? '');
           let rawBody = '';
           await new Promise<void>((resolve, reject) => {
-            const req = request as IncomingMessage;
-            req.on('data', chunk => { rawBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); });
+            const req = request as unknown as {
+              on(event: 'data', listener: (chunk: Buffer | string) => void): void;
+              on(event: 'end', listener: () => void): void;
+              on(event: 'error', listener: (error: Error) => void): void;
+            };
+            req.on('data', (chunk) => { rawBody += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk); });
             req.on('end', () => resolve());
             req.on('error', reject);
           });

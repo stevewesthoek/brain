@@ -118,6 +118,9 @@ export const localAppSchema = z.object({
   notes: z.string().optional(),
   url: z.string().optional(),
   port: z.number().nullable().optional(),
+  servicePorts: z.array(z.number()).optional(),
+  databasePort: z.number().nullable().optional(),
+  containerName: z.string().optional(),
 });
 
 export const localAppsDashboardSchema = z.object({
