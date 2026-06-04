@@ -160,10 +160,30 @@ export const videoJobSchema = z.object({
   artifacts: z.record(z.unknown()).optional(),
 }).passthrough();
 
+export const videoJobsDiagnosticsSchema = z.object({
+  repoRoot: z.string().optional().default(''),
+  jobsRoot: z.string().optional().default(''),
+  jobDirectoryExists: z.boolean().optional().default(false),
+  jobDirectoryReadable: z.boolean().optional().default(false),
+  localJobFolderCount: z.number().optional().default(0),
+  localDiscoveredJobCount: z.number().optional().default(0),
+  s3DiscoveryAttempted: z.boolean().optional().default(false),
+  s3DiscoveredJobCount: z.number().optional().default(0),
+  hydratedJobCount: z.number().optional().default(0),
+  skippedJobCount: z.number().optional().default(0),
+  skippedJobs: z.array(z.object({
+    jobId: z.string(),
+    reason: z.string(),
+  }).passthrough()).optional().default([]),
+  warnings: z.array(z.string()).optional().default([]),
+  error: z.string().nullable().optional().default(null),
+}).passthrough();
+
 export const recentVideoJobsSchema = z.object({
   ok: z.boolean().optional(),
   jobs: z.array(videoJobSchema).default([]),
-});
+  diagnostics: videoJobsDiagnosticsSchema.optional(),
+}).passthrough();
 
 export const videoJobResponseSchema = z.object({
   ok: z.boolean().optional(),
@@ -224,4 +244,5 @@ export type AiModelSelectorHealthMatrixModel = AiModelSelectorHealthMatrix['mode
 export type LocalApp = z.infer<typeof localAppSchema>;
 export type LocalAppsDashboard = z.infer<typeof localAppsDashboardSchema>;
 export type VideoJob = z.output<typeof videoJobSchema>;
+export type VideoJobsDiagnostics = z.output<typeof videoJobsDiagnosticsSchema>;
 export type VideoTimeline = z.output<typeof videoTimelineSchema>;

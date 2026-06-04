@@ -40,7 +40,14 @@ export async function brainCoreRequest<T>(path: string, schema: z.ZodType<T>, in
       const detail = typeof backendMessage === 'string' ? `: ${backendMessage}` : '';
       throw new BrainCoreError(`${requestInit.method ?? 'GET'} ${path} failed with HTTP ${response.status}${detail}`, response.status, payload);
     }
-    return schema.parse(payload);
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      throw new BrainCoreError(`${requestInit.method ?? 'GET'} ${path} returned an unexpected response shape`, response.status, {
+        issues: parsed.error.issues,
+        payload,
+      });
+    }
+    return parsed.data;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new BrainCoreError(`${requestInit.method ?? 'GET'} ${path} timed out`);

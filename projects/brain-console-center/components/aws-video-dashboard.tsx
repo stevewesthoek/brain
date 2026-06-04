@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
-import { brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
-import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob } from '@/lib/braincore-schemas';
+import { BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
+import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob, type VideoJobsDiagnostics } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 
@@ -31,6 +31,20 @@ function isReadyToPublish(job: Partial<VideoJob> | null | undefined): boolean {
   return job?.status === 'ready_to_publish' || job?.status === 'published';
 }
 
+function errorMessage(error: unknown): string | null {
+  if (!error) return null;
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+function payloadDiagnostics(error: unknown): VideoJobsDiagnostics | null {
+  if (!(error instanceof BrainCoreError) || !error.payload || typeof error.payload !== 'object') return null;
+  const payload = error.payload as { diagnostics?: unknown; payload?: { diagnostics?: unknown } };
+  const diagnostics = payload.diagnostics ?? payload.payload?.diagnostics;
+  if (!diagnostics || typeof diagnostics !== 'object') return null;
+  return diagnostics as VideoJobsDiagnostics;
+}
+
 function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
   const status = job?.status ?? 'not_available';
   const approval = nestedStatus(job?.approval);
@@ -43,6 +57,36 @@ function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
     { key: 'contract', label: 'Publish contract', state: isReadyToPublish(job) || status === 'published' ? 'complete' : 'waiting' },
     { key: 'youtube', label: 'Private YouTube', state: status === 'published' ? 'uploaded' : publishing },
   ];
+}
+
+function JobsDiagnosticsCard({
+  diagnostics,
+  error,
+}: {
+  diagnostics: Partial<VideoJobsDiagnostics> | null | undefined;
+  error?: string | null;
+}) {
+  if (!diagnostics && !error) return null;
+
+  return (
+    <div className="compact-error">
+      <strong>AWS Video job diagnostics</strong>
+      {error ? <p>{error}</p> : null}
+      {diagnostics ? (
+        <div className="aws-facts">
+          <div><span>jobsRoot</span><strong>{diagnostics.jobsRoot || 'not available'}</strong></div>
+          <div><span>local folders</span><strong>{diagnostics.localJobFolderCount ?? 0}</strong></div>
+          <div><span>local IDs</span><strong>{diagnostics.localDiscoveredJobCount ?? 0}</strong></div>
+          <div><span>hydrated</span><strong>{diagnostics.hydratedJobCount ?? 0}</strong></div>
+          <div><span>skipped</span><strong>{diagnostics.skippedJobCount ?? 0}</strong></div>
+          <div><span>S3 fallback</span><strong>{diagnostics.s3DiscoveryAttempted ? `yes (${diagnostics.s3DiscoveredJobCount ?? 0})` : 'no'}</strong></div>
+        </div>
+      ) : null}
+      {diagnostics?.error ? <p>Error: {diagnostics.error}</p> : null}
+      {diagnostics?.warnings?.length ? <pre className="compact-pre">{diagnostics.warnings.join('\n')}</pre> : null}
+      {diagnostics?.skippedJobs?.length ? <pre className="compact-pre">{JSON.stringify(diagnostics.skippedJobs.slice(0, 8), null, 2)}</pre> : null}
+    </div>
+  );
 }
 
 export function AwsVideoDashboard() {
@@ -71,6 +115,7 @@ export function AwsVideoDashboard() {
   });
 
   const jobList = jobs.data?.jobs ?? [];
+  const jobsDiagnostics = jobs.data?.diagnostics ?? payloadDiagnostics(jobs.error);
   const selected = useMemo(() => jobList.find((job) => job.jobId === selectedJobId) ?? jobList[0] ?? null, [jobList, selectedJobId]);
   const jobId = selected?.jobId ?? null;
 
@@ -175,9 +220,12 @@ export function AwsVideoDashboard() {
     { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedPublished, active: canPublish },
   ];
   const nextStep = guideSteps.find((step) => !step.done);
+  const queryError = jobs.error ?? status.error;
+  const queryErrorMessage = errorMessage(queryError);
   const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
-  const actionErrorMessage = actionError instanceof Error ? actionError.message : actionError ? String(actionError) : null;
-  const showErrorToast = Boolean(actionErrorMessage && actionErrorMessage !== dismissedError);
+  const actionErrorMessage = errorMessage(actionError);
+  const visibleErrorMessage = queryErrorMessage ?? actionErrorMessage;
+  const showErrorToast = Boolean(visibleErrorMessage && visibleErrorMessage !== dismissedError);
 
   const counts = {
     total: jobList.length,
@@ -188,14 +236,14 @@ export function AwsVideoDashboard() {
 
   return (
     <div className="aws-video-screen">
-      {showErrorToast && actionErrorMessage ? (
+      {showErrorToast && visibleErrorMessage ? (
         <div className="toast-stack" role="alert" aria-live="assertive">
           <div className="toast error-toast">
             <div>
-              <strong>Action failed</strong>
-              <p>{actionErrorMessage}</p>
+              <strong>{queryErrorMessage ? 'Brain Core request failed' : 'Action failed'}</strong>
+              <p>{visibleErrorMessage}</p>
             </div>
-            <button aria-label="Dismiss error" onClick={() => setDismissedError(actionErrorMessage)}>×</button>
+            <button aria-label="Dismiss error" onClick={() => setDismissedError(visibleErrorMessage)}>×</button>
           </div>
         </div>
       ) : null}
@@ -300,6 +348,10 @@ export function AwsVideoDashboard() {
           {activeView === 'jobs' ? (
             <article className="card">
               <div className="card-header"><div><div className="card-title">Recent jobs</div><div className="card-description">Select one job. Long IDs wrap; no horizontal scrolling.</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
+              <JobsDiagnosticsCard
+                diagnostics={jobList.length === 0 || (jobsDiagnostics?.skippedJobCount ?? 0) > 0 || jobs.isError ? jobsDiagnostics : null}
+                error={queryErrorMessage}
+              />
               <div className="job-list">
                 {jobList.map((item) => (
                   <button key={item.jobId} className={`job-list-item ${item.jobId === selectedJob?.jobId ? 'active' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setActiveView('overview'); }}>
@@ -309,7 +361,7 @@ export function AwsVideoDashboard() {
                     <span className="meta no-margin">{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</span>
                   </button>
                 ))}
-                {jobList.length === 0 ? <p>No video jobs returned by Brain Core.</p> : null}
+                {jobList.length === 0 && !jobsDiagnostics?.localJobFolderCount && !jobsDiagnostics?.s3DiscoveredJobCount && !queryErrorMessage ? <p>No video jobs returned by Brain Core.</p> : null}
               </div>
             </article>
           ) : null}

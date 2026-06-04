@@ -17,6 +17,9 @@ const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
 const VIDEO_FIXTURE_KEY = 'jobs/test-001/exports/sample-transcoded.mp4';
 const STEP_FUNCTIONS_EXECUTION_NAME_MAX = 80;
 const S3_DISCOVERY_LIMIT = 100;
+const S3_METADATA_TIMEOUT_MS = 1_200;
+const S3_HEAD_TIMEOUT_MS = 800;
+const RECENT_JOB_HYDRATION_CONCURRENCY = 3;
 
 export function getBrainRepoRoot(moduleDir: string = MODULE_DIR): string {
   const marker = `${join('projects', 'brain-core')}`;
@@ -168,6 +171,7 @@ export interface VideoJobsDiagnostics {
   jobDirectoryExists: boolean;
   jobDirectoryReadable: boolean;
   localJobFolderCount: number;
+  localDiscoveredJobCount: number;
   cwd: string;
   modulePath: string;
   expectedCanonicalPath: string;
@@ -175,6 +179,9 @@ export interface VideoJobsDiagnostics {
   s3Prefix: string;
   s3DiscoveryAttempted: boolean;
   s3DiscoveredJobCount: number;
+  hydratedJobCount: number;
+  skippedJobCount: number;
+  skippedJobs: Array<{ jobId: string; reason: string }>;
   warnings: string[];
   error: string | null;
 }
@@ -223,6 +230,7 @@ async function buildVideoJobsDiagnostics(moduleDir: string = MODULE_DIR): Promis
     jobDirectoryExists,
     jobDirectoryReadable,
     localJobFolderCount,
+    localDiscoveredJobCount: 0,
     cwd: process.cwd(),
     modulePath: moduleDir,
     expectedCanonicalPath: EXPECTED_CANONICAL_JOBS_PATH,
@@ -230,6 +238,9 @@ async function buildVideoJobsDiagnostics(moduleDir: string = MODULE_DIR): Promis
     s3Prefix: S3_JOBS_PREFIX,
     s3DiscoveryAttempted: false,
     s3DiscoveredJobCount: 0,
+    hydratedJobCount: 0,
+    skippedJobCount: 0,
+    skippedJobs: [],
     warnings,
     error,
   };
@@ -342,7 +353,7 @@ async function readS3JobMetadataJson(jobId: string, fileName: string): Promise<u
       '-',
       '--region', AWS_REGION,
       '--no-cli-pager',
-    ], { timeout: 15000 });
+    ], { timeout: S3_METADATA_TIMEOUT_MS });
     return JSON.parse(stdout);
   } catch {
     return null;
@@ -363,7 +374,7 @@ async function s3ObjectExists(key: string): Promise<boolean> {
       '--key', key,
       '--region', AWS_REGION,
       '--no-cli-pager',
-    ], { timeout: 10000 });
+    ], { timeout: S3_HEAD_TIMEOUT_MS });
     return true;
   } catch {
     return false;
@@ -538,6 +549,71 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
   };
 }
 
+async function getJobSkipReason(jobId: string): Promise<string> {
+  if (!isValidJobId(jobId)) return 'invalid job id';
+
+  const scriptPath = getJobMetadataPath(jobId, 'script.json');
+  try {
+    const content = await readFile(scriptPath, 'utf-8');
+    const parsed = JSON.parse(content) as Partial<ScriptMetadata>;
+    if (!parsed || typeof parsed !== 'object') return 'script.json schema/parse problem';
+    if (typeof parsed.jobId !== 'string') return 'script.json schema/parse problem: missing jobId';
+    if (typeof parsed.channelId !== 'string') return 'script.json schema/parse problem: missing channelId';
+    if (typeof parsed.title !== 'string') return 'script.json schema/parse problem: missing title';
+    return 'S3 timeout or unreadable remote/local metadata';
+  } catch (error) {
+    const nodeError = error as NodeJS.ErrnoException;
+    if (nodeError.code === 'ENOENT') return 'missing script.json';
+    if (error instanceof SyntaxError) return 'script.json schema/parse problem';
+    return `unreadable metadata: ${error instanceof Error ? error.message : String(error)}`;
+  }
+}
+
+async function buildVideoJobSummaryWithDiagnostics(jobId: string): Promise<
+  | { job: VideoJobSummary; skipped: null }
+  | { job: null; skipped: { jobId: string; reason: string } }
+> {
+  if (!isValidJobId(jobId)) {
+    return { job: null, skipped: { jobId, reason: 'invalid job id' } };
+  }
+
+  try {
+    const job = await buildVideoJobSummary(jobId);
+    if (job) return { job, skipped: null };
+    return { job: null, skipped: { jobId, reason: await getJobSkipReason(jobId) } };
+  } catch (error) {
+    return {
+      job: null,
+      skipped: {
+        jobId,
+        reason: `hydration failed: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    };
+  }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, items.length);
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const item = items[nextIndex];
+      nextIndex += 1;
+      if (item !== undefined) {
+        results.push(await mapper(item));
+      }
+    }
+  }));
+
+  return results;
+}
+
 async function listS3JobIds(limit: number = S3_DISCOVERY_LIMIT): Promise<string[]> {
   try {
     const { stdout } = await execFileAsync('aws', [
@@ -573,6 +649,8 @@ export async function getRecentVideoJobsResult(limit: number = 20): Promise<Rece
       for (const entry of entries) {
         if (entry.isDirectory() && isValidJobId(entry.name)) {
           localJobIds.push(entry.name);
+        } else if (entry.isDirectory()) {
+          diagnostics.skippedJobs.push({ jobId: entry.name, reason: 'invalid job id' });
         }
       }
     } catch (error) {
@@ -591,12 +669,17 @@ export async function getRecentVideoJobsResult(limit: number = 20): Promise<Rece
     }
   }
 
+  diagnostics.localDiscoveredJobCount = localJobIds.length;
   const jobIds = Array.from(new Set([...localJobIds, ...s3JobIds])).slice(0, S3_DISCOVERY_LIMIT);
-  const jobs: VideoJobSummary[] = [];
-  for (const jobId of jobIds) {
-    const job = await buildVideoJobSummary(jobId);
-    if (job) jobs.push(job);
-  }
+  const results = await mapWithConcurrency(
+    jobIds,
+    RECENT_JOB_HYDRATION_CONCURRENCY,
+    buildVideoJobSummaryWithDiagnostics,
+  );
+  const jobs = results.flatMap(result => result.job ? [result.job] : []);
+  diagnostics.skippedJobs.push(...results.flatMap(result => result.skipped ? [result.skipped] : []));
+  diagnostics.hydratedJobCount = jobs.length;
+  diagnostics.skippedJobCount = diagnostics.skippedJobs.length;
 
   const sortedJobs = jobs
     .sort((a, b) => {
@@ -605,6 +688,13 @@ export async function getRecentVideoJobsResult(limit: number = 20): Promise<Rece
       return bTime - aTime;
     })
     .slice(0, limit);
+
+  if (jobIds.length > 0 && sortedJobs.length === 0) {
+    diagnostics.error = diagnostics.error ?? 'Discovered video job folders but no jobs hydrated successfully.';
+    diagnostics.warnings.push('Local or S3 job IDs were discovered, but every job was skipped during metadata hydration.');
+  } else if (diagnostics.skippedJobCount > 0) {
+    diagnostics.warnings.push(`${diagnostics.skippedJobCount} discovered video job(s) were skipped during metadata hydration.`);
+  }
 
   const ok = diagnostics.error === null || sortedJobs.length > 0;
   if (!ok) {
