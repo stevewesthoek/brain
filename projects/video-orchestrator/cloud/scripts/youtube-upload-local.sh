@@ -17,7 +17,7 @@ set -e
 
 JOB_ID="${1}"
 BUCKET="prochat-video-dev-909439522876-eu-north-1-an"
-TMP_DIR="/tmp/youtube-upload-$"
+TMP_DIR="/tmp/youtube-upload-${RANDOM}-$(date +%s)"
 
 infer_channel_from_job_id() {
     case "$1" in
