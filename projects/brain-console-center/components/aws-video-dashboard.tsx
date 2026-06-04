@@ -235,7 +235,8 @@ export function AwsVideoDashboard() {
   const jobs = useQuery({
     queryKey: ['aws-video-jobs'],
     queryFn: () => brainCoreRequest('/api/video-orchestrator/jobs/recent', recentVideoJobsSchema),
-    refetchInterval: 10_000,
+    refetchInterval: 15_000,
+    retry: 1,
   });
 
   const jobList = jobs.data?.jobs ?? [];

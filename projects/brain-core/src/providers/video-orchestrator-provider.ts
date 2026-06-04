@@ -655,21 +655,27 @@ function statusToProgress(status: NormalizedJobStatus): number {
   return map[status] ?? 0;
 }
 
-async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | null> {
+async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?: boolean }): Promise<VideoJobSummary | null> {
   if (!isValidJobId(jobId)) return null;
 
-  const [script, topic, status, publish, assets, inferredArtifacts] = await Promise.all([
+  const shouldInferS3Artifacts = !options?.skipS3Inference;
+  const readOps: Promise<unknown>[] = [
     readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
     readJobMetadataJson(jobId, 'status.json'),
     readJobMetadataJson(jobId, 'publish.json'),
     readJobMetadataJson(jobId, 'assets.json'),
-    inferGeneratedS3Artifacts(jobId),
-  ]);
+  ];
+  if (shouldInferS3Artifacts) {
+    readOps.push(inferGeneratedS3Artifacts(jobId));
+  }
+
+  const [script, topic, status, publish, assets, inferredArtifacts] = await Promise.all(readOps) as [ScriptMetadata | null, unknown, unknown, unknown, unknown, typeof shouldInferS3Artifacts extends true ? Record<string, string | null> : undefined];
 
   if (!script) return null;
 
-  const hasInferredPublishAssets = Boolean(inferredArtifacts.finalVideo && inferredArtifacts.thumbnail);
+  const inferredArts = shouldInferS3Artifacts && inferredArtifacts ? inferredArtifacts : { narration: null, finalVideo: null, thumbnail: null };
+  const hasInferredPublishAssets = Boolean(inferredArts.finalVideo && inferredArts.thumbnail);
   const normalizedStatus = hasInferredPublishAssets && (status as Record<string, unknown> | null)?.status !== 'failed'
     ? normalizeJobStatus(script, { ...(status as Record<string, unknown> | null ?? {}), status: 'complete', completedSteps: ['video_assembled', 'thumbnail_generated'] }, publish)
     : normalizeJobStatus(script, status, publish);
@@ -713,9 +719,9 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
     },
     artifacts: {
       script: (script.scriptKey as string) || null,
-      narration: (narration?.path as string) || inferredArtifacts.narration,
-      finalVideo: (finalVideo?.path as string) || (statusJson?.finalVideoKey as string) || inferredArtifacts.finalVideo,
-      thumbnail: (thumbnail?.path as string) || (statusJson?.thumbnailKey as string) || inferredArtifacts.thumbnail,
+      narration: (narration?.path as string) || inferredArts.narration,
+      finalVideo: (finalVideo?.path as string) || (statusJson?.finalVideoKey as string) || inferredArts.finalVideo,
+      thumbnail: (thumbnail?.path as string) || (statusJson?.thumbnailKey as string) || inferredArts.thumbnail,
     },
     mediaSource,
     generationMode,
@@ -744,7 +750,7 @@ async function getJobSkipReason(jobId: string): Promise<string> {
   }
 }
 
-async function buildVideoJobSummaryWithDiagnostics(jobId: string): Promise<
+async function buildVideoJobSummaryWithDiagnostics(jobId: string, options?: { skipS3Inference?: boolean }): Promise<
   | { job: VideoJobSummary; skipped: null }
   | { job: null; skipped: { jobId: string; reason: string } }
 > {
@@ -753,7 +759,7 @@ async function buildVideoJobSummaryWithDiagnostics(jobId: string): Promise<
   }
 
   try {
-    const job = await buildVideoJobSummary(jobId);
+    const job = await buildVideoJobSummary(jobId, options);
     if (job) return { job, skipped: null };
     return { job: null, skipped: { jobId, reason: await getJobSkipReason(jobId) } };
   } catch (error) {
@@ -770,7 +776,7 @@ async function buildVideoJobSummaryWithDiagnostics(jobId: string): Promise<
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
-  mapper: (item: T) => Promise<R>,
+  mapper: (item: T, index?: number) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = [];
   let nextIndex = 0;
@@ -779,9 +785,10 @@ async function mapWithConcurrency<T, R>(
   await Promise.all(Array.from({ length: workerCount }, async () => {
     while (nextIndex < items.length) {
       const item = items[nextIndex];
+      const index = nextIndex;
       nextIndex += 1;
       if (item !== undefined) {
-        results.push(await mapper(item));
+        results.push(await mapper(item, index));
       }
     }
   }));
@@ -846,15 +853,19 @@ export async function getRecentVideoJobsResult(limit: number = 20): Promise<Rece
 
   diagnostics.localDiscoveredJobCount = localJobIds.length;
   const jobIds = Array.from(new Set([...localJobIds, ...s3JobIds])).slice(0, S3_DISCOVERY_LIMIT);
+  const startTime = Date.now();
   const results = await mapWithConcurrency(
     jobIds,
     RECENT_JOB_HYDRATION_CONCURRENCY,
-    buildVideoJobSummaryWithDiagnostics,
+    (jobId) => buildVideoJobSummaryWithDiagnostics(jobId, { skipS3Inference: true }),
   );
+  const durationMs = Date.now() - startTime;
   const jobs = results.flatMap(result => result.job ? [result.job] : []);
   diagnostics.skippedJobs.push(...results.flatMap(result => result.skipped ? [result.skipped] : []));
   diagnostics.hydratedJobCount = jobs.length;
   diagnostics.skippedJobCount = diagnostics.skippedJobs.length;
+  (diagnostics as unknown as Record<string, unknown>).durationMs = durationMs;
+  (diagnostics as unknown as Record<string, unknown>).hydrationMode = 'fast';
 
   const sortedJobs = jobs
     .sort((a, b) => {
