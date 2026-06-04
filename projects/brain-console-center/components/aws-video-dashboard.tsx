@@ -166,6 +166,14 @@ export function AwsVideoDashboard() {
   const selectedPublished = selectedJob?.status === 'published';
   const canDryRun = Boolean(jobId && selectedReady && !selectedPublished);
   const canPublish = canDryRun && dryRunPassedForJobId === jobId && publishConfirmation === PUBLISH_CONFIRMATION;
+  const guideSteps = [
+    { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
+    { label: 'Approve', help: 'Approve the script.', done: selectedJob ? !['draft', 'awaiting_approval'].includes(selectedJob.status ?? '') : false, active: selectedJob?.status === 'awaiting_approval' },
+    { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: selectedJob?.status === 'generating' },
+    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForJobId === jobId, active: selectedReady && dryRunPassedForJobId !== jobId },
+    { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedPublished, active: canPublish },
+  ];
+  const nextStep = guideSteps.find((step) => !step.done);
   const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
 
   const counts = {
@@ -195,6 +203,23 @@ export function AwsVideoDashboard() {
         <div><span>Active</span><strong>{counts.active}</strong></div>
         <div><span>Published</span><strong>{counts.published}</strong></div>
         <div><span>Selected</span><strong>{selectedJob?.status?.replaceAll('_', ' ') ?? 'none'}</strong></div>
+      </section>
+
+      <section className="pipeline-guide" aria-label="AWS Video pipeline guide">
+        <div className="pipeline-next">
+          <span>Next action</span>
+          <strong>{nextStep ? nextStep.label : 'Complete'}</strong>
+          <p>{nextStep ? nextStep.help : 'This job has completed the visible pipeline.'}</p>
+        </div>
+        <div className="pipeline-steps">
+          {guideSteps.map((step, index) => (
+            <div key={step.label} className={step.done ? 'done' : step.active ? 'active' : ''}>
+              <span>{index + 1}</span>
+              <strong>{step.label}</strong>
+              <p>{step.help}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="aws-workspace">
