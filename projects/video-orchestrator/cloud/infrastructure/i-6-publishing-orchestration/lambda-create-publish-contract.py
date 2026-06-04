@@ -12,24 +12,54 @@ s3_client = boto3.client('s3')
 BUCKET = 'prochat-video-dev-909439522876-eu-north-1-an'
 
 
+def normalize_s3_key(value, bucket):
+    """
+    Normalize S3 reference to object key (without bucket or s3://).
+    Handles:
+    - Full S3 URI: s3://bucket/jobs/id/...  -> jobs/id/...
+    - Partial URI: /jobs/id/...             -> jobs/id/...
+    - Object key: jobs/id/...               -> jobs/id/...
+    """
+    if not value:
+        return None
+    value = value.strip()
+    # Remove s3://bucket/ prefix if present
+    if value.startswith(f's3://{bucket}/'):
+        value = value[len(f's3://{bucket}/'):]
+    elif value.startswith('s3://'):
+        # Different bucket or format - extract after bucket name
+        parts = value.replace('s3://', '').split('/', 1)
+        if len(parts) == 2:
+            value = parts[1]
+    # Remove leading slash
+    if value.startswith('/'):
+        value = value[1:]
+    return value if value else None
+
+
 def lambda_handler(event, context):
     """
     Create canonical publish.json after video generation is complete.
 
     Expected input:
     {
-      "jobId": "prochat-os-001"
+      "jobId": "prochat-os-001",
+      "finalVideoUri": "s3://bucket/jobs/.../exports/generated-001-final.mp4" (optional, from VerifyOutput),
+      "thumbnailKey": "jobs/.../exports/thumbnail-001.jpg" (optional, from SelectThumbnailFrame)
     }
 
     Reads: metadata/status.json and metadata/assets.json
     Validates: status == complete, required assets exist
     Writes: metadata/publish.json
     """
-    print(f'[CreatePublishContract] Starting for jobId: {event}')
+    print(f'[CreatePublishContract] Starting for event: {event}')
 
     job_id = event.get('jobId')
     if not job_id:
         raise ValueError('jobId is required')
+
+    final_video_uri = event.get('finalVideoUri')
+    thumbnail_key_param = event.get('thumbnailKey')
 
     try:
         # Read status.json to verify generation is complete
@@ -46,47 +76,81 @@ def lambda_handler(event, context):
 
         print(f'[CreatePublishContract] Generation complete, status={status}')
 
-        # Read assets.json to get video and thumbnail references.
-        # If it is missing, infer the canonical assets from the generated exports.
-        print(f'[CreatePublishContract] Reading assets.json for {job_id}')
-        assets = {}
-        try:
-            assets_response = s3_client.get_object(
-                Bucket=BUCKET,
-                Key=f'jobs/{job_id}/metadata/assets.json'
-            )
-            assets_data = json.loads(assets_response['Body'].read().decode('utf-8'))
-            assets = assets_data.get('assets', {})
-        except s3_client.exceptions.NoSuchKey:
-            print(f'[CreatePublishContract] assets.json missing; inferring from exports')
+        # Priority 1: Use parameters passed from Step Functions (fast path)
+        video_key = None
+        thumbnail_key = None
+
+        if final_video_uri:
+            video_key = normalize_s3_key(final_video_uri, BUCKET)
+            print(f'[CreatePublishContract] Using video from finalVideoUri parameter: {video_key}')
+
+        if thumbnail_key_param:
+            thumbnail_key = normalize_s3_key(thumbnail_key_param, BUCKET)
+            print(f'[CreatePublishContract] Using thumbnail from thumbnailKey parameter: {thumbnail_key}')
+
+        # Priority 2: Read assets.json to get video and thumbnail references if not yet resolved
+        if not video_key or not thumbnail_key:
+            print(f'[CreatePublishContract] Reading assets.json for {job_id}')
+            assets = {}
+            try:
+                assets_response = s3_client.get_object(
+                    Bucket=BUCKET,
+                    Key=f'jobs/{job_id}/metadata/assets.json'
+                )
+                assets_data = json.loads(assets_response['Body'].read().decode('utf-8'))
+                assets = assets_data.get('assets', {})
+
+                if not video_key and 'finalVideo' in assets:
+                    video_key = assets['finalVideo'].get('path')
+                    print(f'[CreatePublishContract] Got video from assets.json: {video_key}')
+
+                if not thumbnail_key and 'thumbnail' in assets:
+                    thumbnail_key = assets['thumbnail'].get('path')
+                    print(f'[CreatePublishContract] Got thumbnail from assets.json: {thumbnail_key}')
+            except s3_client.exceptions.NoSuchKey:
+                print(f'[CreatePublishContract] assets.json missing')
+
+        # Priority 3: Infer from S3 exports directory (fallback)
+        if not video_key or not thumbnail_key:
+            print(f'[CreatePublishContract] Inferring assets from S3 exports directory')
             exports_prefix = f'jobs/{job_id}/exports/'
-            listed = s3_client.list_objects_v2(Bucket=BUCKET, Prefix=exports_prefix, MaxKeys=1000)
-            objects = listed.get('Contents', [])
-            video_candidates = [obj for obj in objects if obj['Key'].endswith('.mp4') and '-dummy' not in obj['Key']]
-            thumbnail_candidates = [obj for obj in objects if obj['Key'].endswith('thumbnail-001.jpg') or obj['Key'].endswith('.jpg')]
-            if video_candidates:
-                video_candidates.sort(key=lambda obj: obj['LastModified'], reverse=True)
-                assets['finalVideo'] = {'path': video_candidates[0]['Key']}
-            if thumbnail_candidates:
-                thumbnail_candidates.sort(key=lambda obj: obj['LastModified'], reverse=True)
-                assets['thumbnail'] = {'path': thumbnail_candidates[0]['Key']}
+            try:
+                listed = s3_client.list_objects_v2(Bucket=BUCKET, Prefix=exports_prefix, MaxKeys=1000)
+                objects = listed.get('Contents', [])
 
-        # Validate required assets
-        if 'finalVideo' not in assets:
-            raise ValueError('Required asset missing: finalVideo')
-        if 'thumbnail' not in assets:
-            raise ValueError('Required asset missing: thumbnail')
+                if not video_key:
+                    video_candidates = [obj for obj in objects if obj['Key'].endswith('.mp4') and '-dummy' not in obj['Key']]
+                    if video_candidates:
+                        video_candidates.sort(key=lambda obj: obj['LastModified'], reverse=True)
+                        video_key = video_candidates[0]['Key']
+                        print(f'[CreatePublishContract] Inferred video from S3 listing: {video_key}')
 
-        final_video = assets['finalVideo']
-        thumbnail = assets['thumbnail']
+                if not thumbnail_key:
+                    thumbnail_candidates = [obj for obj in objects if obj['Key'].endswith('thumbnail-001.jpg') or obj['Key'].endswith('.jpg')]
+                    if thumbnail_candidates:
+                        thumbnail_candidates.sort(key=lambda obj: obj['LastModified'], reverse=True)
+                        thumbnail_key = thumbnail_candidates[0]['Key']
+                        print(f'[CreatePublishContract] Inferred thumbnail from S3 listing: {thumbnail_key}')
+            except Exception as e:
+                print(f'[CreatePublishContract] Warning: S3 listing failed: {str(e)}')
 
-        video_key = final_video.get('path')
-        thumbnail_key = thumbnail.get('path')
+        # Priority 4: Use canonical standard paths
+        if not video_key:
+            video_key = f'jobs/{job_id}/exports/generated-001-final.mp4'
+            print(f'[CreatePublishContract] Using canonical video path: {video_key}')
 
-        if not video_key or not thumbnail_key or video_key.startswith('REPLACE_') or thumbnail_key.startswith('REPLACE_'):
-            raise ValueError('Invalid asset paths')
+        if not thumbnail_key:
+            thumbnail_key = f'jobs/{job_id}/exports/thumbnail-001.jpg'
+            print(f'[CreatePublishContract] Using canonical thumbnail path: {thumbnail_key}')
 
-        print(f'[CreatePublishContract] Found assets: video={video_key}, thumbnail={thumbnail_key}')
+        # Validate resolved assets
+        if not video_key or not thumbnail_key:
+            raise ValueError('Could not resolve video and thumbnail keys')
+
+        if video_key.startswith('REPLACE_') or thumbnail_key.startswith('REPLACE_'):
+            raise ValueError('Invalid asset paths (placeholder values)')
+
+        print(f'[CreatePublishContract] Resolved assets: video={video_key}, thumbnail={thumbnail_key}')
 
         # Verify assets exist in S3
         print(f'[CreatePublishContract] Verifying assets exist in S3')

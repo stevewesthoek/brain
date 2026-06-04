@@ -203,7 +203,9 @@
       "Resource": "arn:aws:lambda:eu-north-1:909439522876:function:i6-create-publish-contract",
       "TimeoutSeconds": 60,
       "Parameters": {
-        "jobId.$": "$.jobId"
+        "jobId.$": "$.jobId",
+        "finalVideoUri.$": "$.verifyOutput.mediaconvertOutput",
+        "thumbnailKey.$": "$.selectedThumbnail.normalizedThumbnailKey"
       },
       "ResultPath": "$.publishContract",
       "Next": "AssemblySuccess",
