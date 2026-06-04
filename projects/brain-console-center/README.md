@@ -45,10 +45,11 @@ NEXT_PUBLIC_BRAIN_CORE_URL=http://localhost:4877 npm run dev
 
 ## Architecture and design rules
 
-Read this before changing Brain Console Center UI or API contracts:
+Read these before changing Brain Console Center UI or API contracts:
 
 ```text
 docs/system/brain-console-center-architecture.md
+docs/system/brain-console-center-design-system.md
 ```
 
 ## Phase 1 surfaces
@@ -59,9 +60,10 @@ docs/system/brain-console-center-architecture.md
 
 ## Design system
 
-Before changing the UI, read:
+Before changing the UI or operational contracts, read:
 
 ```text
+docs/system/brain-console-center-architecture.md
 docs/system/brain-console-center-design-system.md
 ```
 

@@ -231,6 +231,59 @@ async function readScriptMetadata(jobId: string): Promise<ScriptMetadata | null>
   }
 }
 
+async function readS3JobMetadataJson(jobId: string, fileName: string): Promise<unknown | null> {
+  if (!isValidJobId(jobId) || !/^[A-Za-z0-9._-]+\.json$/.test(fileName)) return null;
+  try {
+    const { stdout } = await execFileAsync('aws', [
+      's3', 'cp',
+      `s3://${S3_BUCKET}/jobs/${jobId}/metadata/${fileName}`,
+      '-',
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ], { timeout: 15000 });
+    return JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+}
+
+async function readJobMetadataJson(jobId: string, fileName: string): Promise<unknown | null> {
+  const remote = await readS3JobMetadataJson(jobId, fileName);
+  if (remote) return remote;
+  return readOptionalJson(getJobMetadataPath(jobId, fileName));
+}
+
+async function s3ObjectExists(key: string): Promise<boolean> {
+  try {
+    await execFileAsync('aws', [
+      's3api', 'head-object',
+      '--bucket', S3_BUCKET,
+      '--key', key,
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ], { timeout: 10000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function inferGeneratedS3Artifacts(jobId: string): Promise<{ narration: string | null; finalVideo: string | null; thumbnail: string | null }> {
+  const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
+  const finalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  const [narrationExists, finalVideoExists, thumbnailExists] = await Promise.all([
+    s3ObjectExists(narrationKey),
+    s3ObjectExists(finalVideoKey),
+    s3ObjectExists(thumbnailKey),
+  ]);
+  return {
+    narration: narrationExists ? narrationKey : null,
+    finalVideo: finalVideoExists ? finalVideoKey : null,
+    thumbnail: thumbnailExists ? thumbnailKey : null,
+  };
+}
+
 export async function getScript(jobId: string): Promise<ScriptMetadata | null> {
   return readScriptMetadata(jobId);
 }
@@ -320,17 +373,21 @@ function statusToProgress(status: NormalizedJobStatus): number {
 async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | null> {
   if (!isValidJobId(jobId)) return null;
 
-  const [script, topic, status, publish, assets] = await Promise.all([
+  const [script, topic, status, publish, assets, inferredArtifacts] = await Promise.all([
     readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
-    readOptionalJson(getJobMetadataPath(jobId, 'status.json')),
-    readOptionalJson(getJobMetadataPath(jobId, 'publish.json')),
-    readOptionalJson(getJobMetadataPath(jobId, 'assets.json')),
+    readJobMetadataJson(jobId, 'status.json'),
+    readJobMetadataJson(jobId, 'publish.json'),
+    readJobMetadataJson(jobId, 'assets.json'),
+    inferGeneratedS3Artifacts(jobId),
   ]);
 
   if (!script) return null;
 
-  const normalizedStatus = normalizeJobStatus(script, status, publish);
+  const hasInferredPublishAssets = Boolean(inferredArtifacts.finalVideo && inferredArtifacts.thumbnail);
+  const normalizedStatus = hasInferredPublishAssets && (status as Record<string, unknown> | null)?.status !== 'failed'
+    ? normalizeJobStatus(script, { ...(status as Record<string, unknown> | null ?? {}), status: 'complete', completedSteps: ['video_assembled', 'thumbnail_generated'] }, publish)
+    : normalizeJobStatus(script, status, publish);
   const pubData = publish as Record<string, unknown> | null;
   const yt = (pubData?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
   const statusJson = status as Record<string, unknown> | null;
@@ -369,9 +426,9 @@ async function buildVideoJobSummary(jobId: string): Promise<VideoJobSummary | nu
     },
     artifacts: {
       script: (script.scriptKey as string) || null,
-      narration: (narration?.path as string) || null,
-      finalVideo: (finalVideo?.path as string) || (statusJson?.finalVideoKey as string) || null,
-      thumbnail: (thumbnail?.path as string) || (statusJson?.thumbnailKey as string) || null,
+      narration: (narration?.path as string) || inferredArtifacts.narration,
+      finalVideo: (finalVideo?.path as string) || (statusJson?.finalVideoKey as string) || inferredArtifacts.finalVideo,
+      thumbnail: (thumbnail?.path as string) || (statusJson?.thumbnailKey as string) || inferredArtifacts.thumbnail,
     },
   };
 }
@@ -411,8 +468,8 @@ export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeli
   const [script, topic, status, assets] = await Promise.all([
     readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
-    readOptionalJson(getJobMetadataPath(jobId, 'status.json')),
-    readOptionalJson(getJobMetadataPath(jobId, 'assets.json')),
+    readJobMetadataJson(jobId, 'status.json'),
+    readJobMetadataJson(jobId, 'assets.json'),
   ]);
 
   if (!script) return null;
@@ -484,7 +541,7 @@ export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeli
   }
 
   // published (if YouTube has it)
-  const publish = await readOptionalJson(getJobMetadataPath(jobId, 'publish.json'));
+  const publish = await readJobMetadataJson(jobId, 'publish.json');
   const pubData = publish as Record<string, unknown> | null;
   if (pubData) {
     const yt = (pubData.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
@@ -504,31 +561,32 @@ export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeli
 export async function getVideoJobArtifacts(jobId: string): Promise<Record<string, unknown> | null> {
   if (!isValidJobId(jobId)) return null;
 
-  const assets = await readOptionalJson(getJobMetadataPath(jobId, 'assets.json'));
+  const assets = await readJobMetadataJson(jobId, 'assets.json');
   if (assets) return assets as Record<string, unknown>;
 
   // Fall back to inferring from status and script
   const [status, script] = await Promise.all([
-    readOptionalJson(getJobMetadataPath(jobId, 'status.json')),
+    readJobMetadataJson(jobId, 'status.json'),
     readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
   ]);
 
   if (!script && !status) return null;
 
   const statusJson = status as Record<string, unknown> | null;
+  const inferred = await inferGeneratedS3Artifacts(jobId);
   return {
     jobId,
     script: (script?.scriptKey as string) || null,
-    finalVideo: (statusJson?.finalVideoKey as string) || null,
-    thumbnail: (statusJson?.thumbnailKey as string) || null,
-    narration: null,
+    finalVideo: (statusJson?.finalVideoKey as string) || inferred.finalVideo,
+    thumbnail: (statusJson?.thumbnailKey as string) || inferred.thumbnail,
+    narration: inferred.narration,
   };
 }
 
 export async function runControlledYouTubePublish(jobId: string, options: { dryRun: boolean; confirmation?: string }): Promise<ControlledYouTubePublishResult> {
   if (!isValidJobId(jobId)) return { ok: false, jobId, dryRun: options.dryRun, code: 'invalid_job_id', error: 'Invalid jobId' };
 
-  let publishJson = await readOptionalJson(getJobMetadataPath(jobId, 'publish.json')) as Record<string, unknown> | null;
+  let publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
   if (!publishJson) {
     try {
       const { stdout } = await execFileAsync('aws', [
@@ -565,7 +623,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
   try {
     const { stdout, stderr } = await execFileAsync('bash', args, { timeout: options.dryRun ? 120000 : 1800000 });
-    const updatedPublishJson = await readOptionalJson(getJobMetadataPath(jobId, 'publish.json')) as Record<string, unknown> | null;
+    const updatedPublishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
     const updatedYoutube = ((updatedPublishJson?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined) ?? youtube;
     const result: ControlledYouTubePublishResult = {
       ok: true,
@@ -601,7 +659,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJobExecutionStatus | null> {
   if (!isValidJobId(jobId)) return null;
 
-  const status = await readOptionalJson(getJobMetadataPath(jobId, 'status.json')) as Record<string, unknown> | null;
+  const status = await readJobMetadataJson(jobId, 'status.json') as Record<string, unknown> | null;
   if (!status) return null;
 
   const executionArn = typeof status.executionArn === 'string' ? status.executionArn : null;
@@ -630,14 +688,19 @@ export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJo
       '--no-cli-pager',
     ], { timeout: 15000 });
     const parsed = JSON.parse(stdout) as Record<string, unknown>;
+    const awsStatus = typeof parsed.status === 'string' ? parsed.status as VideoJobExecutionStatus['awsStatus'] : 'UNKNOWN';
+    const inferred = awsStatus === 'SUCCEEDED' ? await inferGeneratedS3Artifacts(jobId) : null;
+    const hasPublishAssets = Boolean(inferred?.finalVideo && inferred?.thumbnail);
     return {
       ...base,
-      awsStatus: typeof parsed.status === 'string' ? parsed.status as VideoJobExecutionStatus['awsStatus'] : 'UNKNOWN',
+      awsStatus,
       startDate: typeof parsed.startDate === 'string' ? parsed.startDate : null,
       stopDate: typeof parsed.stopDate === 'string' ? parsed.stopDate : null,
       error: typeof parsed.error === 'string' ? parsed.error : null,
       cause: typeof parsed.cause === 'string' ? parsed.cause : null,
       redriveStatus: typeof parsed.redriveStatus === 'string' ? parsed.redriveStatus : null,
+      localStatus: hasPublishAssets ? 'complete' : base.localStatus,
+      localStep: hasPublishAssets ? 'ready_to_publish' : base.localStep,
     };
   } catch (error) {
     return {
@@ -773,7 +836,7 @@ async function loadApprovalContext(jobId: string, script: ScriptMetadata): Promi
   const [topic, contentProfile, metadataPublish, publishingPublishExists] = await Promise.all([
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
     readOptionalJson(join(getVideoOrchestratorRoot(), 'channels', script.channelId, 'content-profile.json')) as Promise<ContentProfile | null>,
-    readOptionalJson(getJobMetadataPath(jobId, 'publish.json')),
+    readJobMetadataJson(jobId, 'publish.json'),
     fileExists(getJobPublishingPath(jobId)),
   ]);
 
