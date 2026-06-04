@@ -92,7 +92,7 @@ import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 import { getVideoStatus, listVideoQueue } from '../adapters/video.js';
 import { getStbPipelineStatus } from '../adapters/stb-status.js';
-import { getVideoOrchestratorStatus } from '../adapters/video-orchestrator-status.js';
+import { getVideoOrchestratorStatus as getVideoOrchestrationStatus } from '../adapters/video-orchestrator-status.js';
 import {
   readVOStudioAccounts,
   readVOStudioAnalyticsSummary,
@@ -457,7 +457,7 @@ export async function routeRequest(
       sendJson(response, 200, getStbPipelineStatus());
       return;
     case '/video-orchestrator/status':
-      sendJson(response, 200, getVideoOrchestratorStatus());
+      sendJson(response, 200, getVideoOrchestrationStatus());
       return;
     case '/video-orchestrator/projects':
       sendJson(response, 200, readVOStudioProjects());
@@ -2185,8 +2185,8 @@ export async function routeRequest(
       // ── Topic Intelligence: AWS Video Pipeline Status ────────────────────────
       if (url.pathname === '/api/video-orchestrator/status') {
         try {
-          const status = await getTopicIntelligence();
-          sendJson(response, 200, { ok: true, data: status, diagnostics: status.diagnostics });
+          const status = getVideoOrchestrationStatus();
+          sendJson(response, 200, { ok: true, data: status });
         } catch (error) {
           sendJson(response, 500, {
             ok: false,
