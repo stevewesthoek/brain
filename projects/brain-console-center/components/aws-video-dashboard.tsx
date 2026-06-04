@@ -460,14 +460,21 @@ export function AwsVideoDashboard() {
   const publishStatus = nestedStatus(selectedJob?.publishing);
 
   // PART 2: Canonical selected job state: local action state wins for upload
-  // PART 1: Hydrate dry-run from backend publish.json if it exists
+  // PART 1: Hydrate dry-run from backend (persistent) with local optimistic override
   const backendYoutube = asRecord(asRecord(selectedJob?.artifacts)?.youtube ?? asRecord(artifactData)?.youtube);
   const backendPublishJson = asRecord(asRecord(selectedJob?.artifacts)?.publishJson ?? asRecord(artifactData)?.publishJson);
-  const backendDryRunPassed = backendPublishJson?.dryRunPassed === true;
+  const backendPublishCheck = asRecord(asRecord(selectedJob?.artifacts)?.publishCheck ?? asRecord(artifactData)?.publishCheck);
+  const backendYoutubeDryRun = asRecord(backendPublishCheck?.youtubeDryRun);
+
+  // Dry-run proof from backend: either in publish-check.json or publish.json
+  const backendDryRunPassed =
+    backendYoutubeDryRun?.status === 'passed' ||
+    backendPublishJson?.dryRunPassed === true;
 
   const actionState = jobId ? actionStateByJobId[jobId] : undefined;
 
-  // PART 1: Dry-run state: local action state OR backend proof
+  // PART 1: Dry-run state: local optimistic > backend persistent
+  // Backend is canonical across refresh; local state is optimistic immediate UI
   const dryRunPassedForThisJob = (actionState?.dryRunPassed ?? backendDryRunPassed) && !actionState?.uploadStartedAt;
 
   // PART 2: Upload state: local optimistic > backend > list status

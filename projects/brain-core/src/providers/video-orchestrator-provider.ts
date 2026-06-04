@@ -1069,20 +1069,29 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
       }
     }
 
+    // Load publish-check.json for dry-run proof persistence
+    try {
+      const publishCheck = await readJobMetadataJson(jobId, 'publish-check.json');
+      if (publishCheck) result.publishCheck = publishCheck;
+    } catch {
+      // Silently fail if publish-check.json doesn't exist
+    }
+
     return result;
   }
 
   // Fall back to inferring from status and script
-  const [status, script] = await Promise.all([
+  const [status, script, publishCheck] = await Promise.all([
     readJobMetadataJson(jobId, 'status.json'),
     readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Promise<ScriptMetadata | null>,
+    readJobMetadataJson(jobId, 'publish-check.json').catch(() => null),
   ]);
 
   if (!script && !status) return null;
 
   const statusJson = status as Record<string, unknown> | null;
   const inferred = await inferGeneratedS3Artifacts(jobId);
-  return {
+  const result: Record<string, unknown> = {
     jobId,
     script: (script?.scriptKey as string) || null,
     finalVideo: resolved.videoKey || (statusJson?.finalVideoKey as string) || inferred.finalVideo,
@@ -1090,6 +1099,10 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
     narration: resolved.narrationKey || inferred.narration,
     publishableAssets: resolved,
   };
+
+  if (publishCheck) result.publishCheck = publishCheck;
+
+  return result;
 }
 
 function stringArray(value: unknown): string[] {
@@ -1256,6 +1269,69 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
         ? publishJson.publishStatus
         : null;
     if (publishStatus) result.publishStatus = publishStatus;
+
+    // PERSISTENCE: On successful dry-run, write publish-check.json and update publish.json
+    if (options.dryRun && result.ok) {
+      const now = new Date().toISOString();
+
+      // Write publish-check.json with dry-run proof
+      const publishCheck = {
+        jobId,
+        youtubeDryRun: {
+          status: 'passed',
+          checkedAt: now,
+          checkedBy: 'brain-console-center',
+          privacy: 'private',
+          videoKey: resolved.videoKey,
+          thumbnailKey: resolved.thumbnailKey,
+        },
+      };
+
+      try {
+        // Write locally
+        const publishCheckPath = getJobMetadataPath(jobId, 'publish-check.json');
+        await writeFile(publishCheckPath, JSON.stringify(publishCheck, null, 2));
+
+        // Write to S3
+        await execFileAsync('aws', [
+          's3', 'cp', publishCheckPath,
+          `s3://${S3_BUCKET}/${S3_JOBS_PREFIX}${jobId}/metadata/publish-check.json`,
+          '--region', AWS_REGION,
+        ], { timeout: S3_METADATA_TIMEOUT_MS });
+      } catch (writeError) {
+        // Log but don't fail the dry-run if write fails
+        console.warn(`[runControlledYouTubePublish] Warning: Failed to persist publish-check.json for ${jobId}:`, writeError);
+      }
+
+      // Mirror dryRunPassed into publish.json if it exists
+      if (updatedPublishJson) {
+        try {
+          const updatedPublish = {
+            ...updatedPublishJson,
+            dryRunPassed: true,
+            dryRunCheckedAt: now,
+            dryRunCheckedBy: 'brain-console-center',
+          };
+
+          const publishJsonPath = getJobMetadataPath(jobId, 'publish.json');
+          await writeFile(publishJsonPath, JSON.stringify(updatedPublish, null, 2));
+
+          // Write to S3
+          await execFileAsync('aws', [
+            's3', 'cp', publishJsonPath,
+            `s3://${S3_BUCKET}/${S3_JOBS_PREFIX}${jobId}/metadata/publish.json`,
+            '--region', AWS_REGION,
+          ], { timeout: S3_METADATA_TIMEOUT_MS });
+        } catch (publishUpdateError) {
+          console.warn(`[runControlledYouTubePublish] Warning: Failed to update publish.json with dryRunPassed for ${jobId}:`, publishUpdateError);
+        }
+      }
+
+      // Include dryRunPassed in response for frontend
+      result.dryRunPassed = true;
+      result.dryRunCheckedAt = now;
+    }
+
     return result;
   } catch (error) {
     const outputError = error as Error & { stdout?: string; stderr?: string };
@@ -1660,6 +1736,8 @@ export interface ControlledYouTubePublishResult {
   error?: string;
   code?: string;
   details?: Record<string, unknown>;
+  dryRunPassed?: boolean;
+  dryRunCheckedAt?: string;
 }
 
 export async function generateApprovedScript(
