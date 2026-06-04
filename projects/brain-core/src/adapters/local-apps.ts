@@ -370,7 +370,7 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     const actionEnabled = executableActions.length > 0;
     const actionDisabledReasons = buildActionDisabledReasons(app);
     const disabledReason = formatActionDisabledReasons(actionDisabledReasons);
-    const containerStatus = containerStatusByName.get(app.name);
+    const containerStatus = containerStatusByName.get(app.name) ?? null;
     return {
       id: app.id,
       name: app.name,
