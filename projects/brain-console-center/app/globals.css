@@ -796,4 +796,37 @@ body { min-height: 100dvh; }
 .button.danger-button:hover:not(:disabled) { background: #b91c1c; border-color: #f87171; }
 .button:disabled { cursor: not-allowed; opacity: .46; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
-@media (max-width: 1280px) { .pipeline-guide { grid-template-columns: 1fr; } .pipeline-steps { grid-template-columns: repeat(5, minmax(110px, 1fr)); overflow-x: auto; } }
+@media (max-width: 1280px) { .pipeline-guide { grid-template-columns: 1fr; } .pipeline-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); overflow-x: hidden; } }
+
+
+
+/* AWS Video Center v3: compact above-the-fold panes */
+.aws-hero { align-items: center; }
+.aws-hero h1 { font-size: clamp(20px, 2vw, 28px); }
+.aws-hero p { max-width: 920px; }
+.aws-metrics { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.aws-metrics > div { min-height: 42px; }
+.pipeline-guide { grid-template-columns: 170px minmax(0, 1fr); }
+.pipeline-next, .pipeline-steps > div { min-height: 48px; padding: 8px 10px; }
+.pipeline-next strong { font-size: 14px; }
+.pipeline-next p, .pipeline-steps > div p { font-size: 10px; }
+.pipeline-steps > div { grid-template-columns: 20px minmax(0, 1fr); column-gap: 7px; }
+.pipeline-steps > div span { width: 20px; height: 20px; font-size: 10px; }
+.pipeline-steps > div strong { font-size: 11px; font-weight: 600; }
+.aws-workspace { grid-template-columns: 106px minmax(0, 1fr) minmax(235px, 315px); }
+.aws-subnav button { padding: 6px 8px; }
+.aws-main-panel, .aws-side-panel { overscroll-behavior: contain; }
+.aws-publish-card .pipeline-actions { margin-top: 8px; }
+.aws-publish-card .button { min-height: 36px; }
+.compact-error { padding: 8px 10px; font-size: 11px; }
+.publish-guard > div { min-height: 48px; }
+.publish-guard strong { font-size: 11px; }
+.card { padding: 12px; }
+.card-header { margin-bottom: 8px; }
+.compact-pre { max-height: 118px; }
+@media (max-width: 1280px) {
+  .pipeline-next, .pipeline-steps > div { padding: 7px 8px; }
+  .pipeline-steps > div p { display: none; }
+  .aws-workspace { grid-template-columns: 96px minmax(0, 1fr); }
+  .aws-side-panel { grid-column: 2; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
