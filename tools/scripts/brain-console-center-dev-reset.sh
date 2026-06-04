@@ -6,7 +6,7 @@ CONSOLE_CENTER_PORT=4881
 BRAIN_CORE_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-core"
 CONSOLE_CENTER_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center"
 
-echo "🔧 Brain Console Center + Core Dev Reset (Hybrid Mode)"
+echo "🔧 Brain Console Center + Core Dev Reset (Hybrid TTS Mode)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Step 1: Kill listeners on ports 4877 and 4881
@@ -55,12 +55,12 @@ for PORT in $BRAIN_CORE_PORT $CONSOLE_CENTER_PORT; do
   fi
 done
 
-# Step 4: Start Brain Core with hybrid mode
+# Step 4: Start Brain Core with hybrid TTS mode
 echo ""
-echo "Step 4: Starting Brain Core (hybrid mode) on port $BRAIN_CORE_PORT..."
+echo "Step 4: Starting Brain Core (hybrid TTS mode) on port $BRAIN_CORE_PORT..."
 cd "$BRAIN_CORE_DIR"
 mkdir -p /tmp
-export AWS_VIDEO_GENERATION_MODE=hybrid
+export AWS_VIDEO_GENERATION_MODE=hybrid_tts
 npm run dev > /tmp/brain-core-hybrid.log 2>&1 &
 BRAIN_CORE_PID=$!
 echo "  Brain Core PID: $BRAIN_CORE_PID"
@@ -125,8 +125,10 @@ echo "🔍 Logs:"
 echo "   Brain Core: tail -f /tmp/brain-core-hybrid.log"
 echo "   Brain Console Center: tail -f /tmp/brain-console-center.log"
 echo ""
-echo "🧪 Test hybrid mode:"
+echo "🧪 Test hybrid TTS mode:"
 echo "   export JOB_ID=<new-job-from-console>"
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/scene-plan.json' - --region eu-north-1 | jq"
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/audio/narration-script.txt' - --region eu-north-1"
+echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/audio/narration.mp3' - --region eu-north-1 | file -"
+echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/assets.json' - --region eu-north-1 | jq '.audioProvider, .voiceId'"
 echo ""
