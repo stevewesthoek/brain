@@ -18,7 +18,7 @@ interface ActionState {
   uploaded?: boolean;
   videoId?: string;
   url?: string;
-  lastAction?: string;
+  lastAction?: 'dry-run-passed' | 'uploaded' | 'already-uploaded' | 'duplicate-blocked';
   lastActionAt?: string;
 }
 
@@ -177,6 +177,69 @@ function ScenePlanCard({
   );
 }
 
+function stripAnsiCodes(text: string): string {
+  // Remove ANSI escape codes like \x1b[32m, [1m, etc.
+  return text.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[0-9;]*m/g, '');
+}
+
+function CompactPublishResultCard({
+  dryRunResult,
+  uploadResult,
+  actionState,
+  isPublishing,
+}: {
+  dryRunResult?: Record<string, unknown> | null;
+  uploadResult?: Record<string, unknown> | null;
+  actionState?: ActionState;
+  isPublishing?: boolean;
+}) {
+  if (!dryRunResult && !uploadResult && !actionState?.uploaded) return null;
+
+  const dryRunOk = dryRunResult?.ok === true;
+  const uploadOk = uploadResult?.ok === true;
+  const videoId = stringField(uploadResult, 'videoId') ?? actionState?.videoId;
+  const url = stringField(uploadResult, 'url') ?? actionState?.url;
+  const dryRunStdout = stringField(dryRunResult, 'stdout');
+  const uploadStdout = stringField(uploadResult, 'stdout');
+  const hasLogs = dryRunStdout || uploadStdout;
+
+  return (
+    <details style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', border: '1px solid #ddd', borderRadius: '4px' }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 'bold', color: '#333', marginBottom: '0.5rem' }}>
+        {isPublishing ? '⏳ Uploading...' : uploadOk ? '✅ Upload success' : dryRunOk ? '✅ Dry-run passed' : '⚠️ Publish details'}
+      </summary>
+      <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#555' }}>
+        {dryRunOk ? <div style={{ marginBottom: '0.5rem' }}><strong>Dry-run:</strong> passed</div> : null}
+        {uploadOk || actionState?.uploaded ? (
+          <>
+            <div style={{ marginBottom: '0.5rem' }}><strong>Upload:</strong> {actionState?.lastAction === 'already-uploaded' ? 'already uploaded' : 'uploaded'}</div>
+            {videoId ? <div style={{ marginBottom: '0.5rem', wordBreak: 'break-all' }}><strong>Video ID:</strong> {videoId}</div> : null}
+            {url ? <div style={{ marginBottom: '0.5rem' }}><a href={url} target="_blank" rel="noopener noreferrer">{url}</a></div> : null}
+          </>
+        ) : null}
+        {isPublishing ? <div style={{ marginBottom: '0.5rem', color: '#0066cc' }}><strong>Status:</strong> Publishing privately...</div> : null}
+      </div>
+      {hasLogs ? (
+        <details style={{ marginTop: '0.5rem' }}>
+          <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#666' }}>Show logs</summary>
+          <pre style={{
+            marginTop: '0.5rem',
+            padding: '0.5rem',
+            backgroundColor: '#f0f0f0',
+            borderRadius: '2px',
+            fontSize: '0.75rem',
+            overflow: 'auto',
+            maxHeight: '200px',
+            color: '#333',
+          }}>
+            {stripAnsiCodes(uploadStdout ?? dryRunStdout ?? 'No logs')}
+          </pre>
+        </details>
+      ) : null}
+    </details>
+  );
+}
+
 function GenerationArtifactsCard({
   jobId,
   artifactData,
@@ -233,7 +296,6 @@ export function AwsVideoDashboard() {
   const [changeRequest, setChangeRequest] = useState('');
   const [dismissedError, setDismissedError] = useState<string | null>(null);
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
-  const [mutatingJobId, setMutatingJobId] = useState<string | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
@@ -345,19 +407,33 @@ export function AwsVideoDashboard() {
       requestedBy: 'brain-console-center',
     }, 1_900_000),
     onSuccess: async (result, { jobIdArg }) => {
-      if (result.ok && result.videoId) {
-        updateActionState(jobIdArg, {
-          uploaded: true,
-          videoId: result.videoId,
-          url: result.url ?? undefined,
-          dryRunPassed: true,
-          uploadStartedAt: undefined,
-        });
+      if (result.ok) {
+        // PART 2: Terminal upload states — treat all these as uploaded
+        const isTerminalUpload = result.videoId || result.publishStatus === 'uploaded';
+        const isAlreadyUploaded = result.code === 'already_uploaded';
+        const isDuplicateBlocked = result.code === 'already_uploaded';
+
+        if (isTerminalUpload || isAlreadyUploaded || isDuplicateBlocked) {
+          updateActionState(jobIdArg, {
+            uploaded: true,
+            videoId: result.videoId ?? undefined,
+            url: result.url ?? undefined,
+            dryRunPassed: true,
+            uploadStartedAt: undefined,
+            lastAction: isAlreadyUploaded || isDuplicateBlocked ? 'already-uploaded' : 'uploaded',
+          });
+          addActivity(`Private YouTube upload completed for ${jobIdArg}${result.videoId ? ` (${result.videoId})` : ''} — ${isAlreadyUploaded ? 'already uploaded' : 'new upload'}`);
+        }
       }
-      addActivity(result.ok ? `Private YouTube upload completed for ${jobIdArg}${result.videoId ? ` (${result.videoId})` : ''}` : `Private YouTube upload failed for ${jobIdArg}`);
+      if (!result.ok) {
+        // On failure, keep dryRunPassed if it was true, but don't mark uploaded
+        updateActionState(jobIdArg, { uploadStartedAt: undefined });
+        addActivity(`Private YouTube upload failed for ${jobIdArg}: ${result.error || 'unknown error'}`);
+      }
       await invalidateVideo();
     },
     onMutate: ({ jobIdArg }) => {
+      // PART 3: Mark upload in-flight
       updateActionState(jobIdArg, { uploadStartedAt: new Date().toISOString() });
     },
   });
@@ -384,27 +460,41 @@ export function AwsVideoDashboard() {
   const publishStatus = nestedStatus(selectedJob?.publishing);
 
   // PART 2: Canonical selected job state: local action state wins for upload
+  // PART 1: Hydrate dry-run from backend publish.json if it exists
+  const backendYoutube = asRecord(asRecord(selectedJob?.artifacts)?.youtube ?? asRecord(artifactData)?.youtube);
+  const backendPublishJson = asRecord(asRecord(selectedJob?.artifacts)?.publishJson ?? asRecord(artifactData)?.publishJson);
+  const backendDryRunPassed = backendPublishJson?.dryRunPassed === true;
+
   const actionState = jobId ? actionStateByJobId[jobId] : undefined;
 
-  // Upload state: optimistic local > backend > list status
+  // PART 1: Dry-run state: local action state OR backend proof
+  const dryRunPassedForThisJob = (actionState?.dryRunPassed ?? backendDryRunPassed) && !actionState?.uploadStartedAt;
+
+  // PART 2: Upload state: local optimistic > backend > list status
+  // Don't downgrade uploaded status during background polling
+  const backendUploaded = backendYoutube?.videoId || backendPublishJson?.videoId || backendPublishJson?.uploadedAt;
   const selectedPublished = actionState?.uploaded
     ? true
-    : selectedJob?.status === 'published'
+    : backendUploaded
       ? true
-      : ['uploaded', 'published'].includes(publishStatus)
+      : selectedJob?.status === 'published'
         ? true
-        : false;
+        : ['uploaded', 'published'].includes(publishStatus)
+          ? true
+          : false;
 
   const selectedReady = isReadyToPublish(selectedJob) || ((awsSucceeded || localGenerationComplete || hasGeneratedAssets) && hasGeneratedAssets);
   const selectedUploaded = selectedPublished;
+
+  // PART 3: In-flight state: upload mutation is pending OR uploadStartedAt is recent
+  const isPublishingThisJob = youtubePublish.isPending || (actionState?.uploadStartedAt ? (Date.now() - new Date(actionState.uploadStartedAt).getTime()) < 60000 : false);
+
   const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
   const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
   const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
   const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets);
 
-  // PART 3: Stable publish button logic: use actionState for dry-run, not stale closure
-  const dryRunPassedForThisJob = actionState?.dryRunPassed ?? false;
-  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && ['pending', 'not_available'].includes(publishStatus));
+  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && ['pending', 'not_available'].includes(publishStatus));
   const canPublish = canDryRun && dryRunPassedForThisJob;
 
   const publishNeedsRepair = hasGeneratedAssets && selectedJob?.status === 'generating' && !stringField(publishableAssets, 'videoKey');
@@ -419,8 +509,8 @@ export function AwsVideoDashboard() {
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
     { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
     { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
-    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: selectedReady && !dryRunPassedForThisJob && !selectedUploaded },
-    { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish },
+    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
+    { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
   ];
   const nextStep = guideSteps.find((step) => !step.done);
   const queryError = jobs.error ?? status.error;
@@ -597,7 +687,7 @@ export function AwsVideoDashboard() {
             <article className="card publish-panel aws-publish-card">
               <div className="card-header compact-header">
                 <div className="min-w-0"><div className="card-title">Controlled YouTube publish</div><div className="card-description">Private upload only. Dry-run must pass before upload is enabled.</div></div>
-                <StatusBadge status={selectedPublished ? 'fresh' : selectedReady ? 'ready' : 'pending'} label={selectedPublished ? 'uploaded' : selectedReady ? 'ready' : 'not ready'} />
+                <StatusBadge status={isPublishingThisJob ? 'pending' : selectedPublished ? 'fresh' : selectedReady ? 'ready' : 'pending'} label={isPublishingThisJob ? 'publishing' : selectedPublished ? 'uploaded' : selectedReady ? 'ready' : 'not ready'} />
               </div>
               <div className="publish-guard">
                 <div><span>Selected job</span><strong>{shortJobId(jobId ?? undefined)}</strong></div>
@@ -618,19 +708,18 @@ export function AwsVideoDashboard() {
               <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} />
               {!selectedReady ? <div className="compact-error">This job is not ready to publish. Complete approval and generation first.</div> : null}
               {publishNeedsRepair ? <div className="compact-error">Generated assets available — publish contract repair needed.</div> : null}
-              {selectedPublished ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
+              {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
-                <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
-                <button className="button danger-button" disabled={!canPublish || youtubePublish.isPending} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}</button>
+                <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
+                <button className="button danger-button" disabled={!canPublish || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
               </div>
               <p className="meta no-margin">Private upload unlocks automatically after a successful dry-run for this selected job.</p>
-              {actionState?.uploaded ? (
-                <div className="success-panel">
-                  <strong>Upload successful</strong>
-                  {actionState.videoId ? <p>Video ID: {actionState.videoId}</p> : null}
-                  {actionState.url ? <p><a href={actionState.url} target="_blank" rel="noopener noreferrer">View on YouTube</a></p> : null}
-                </div>
-              ) : null}
+              <CompactPublishResultCard
+                dryRunResult={youtubeDryRun.data}
+                uploadResult={youtubePublish.data}
+                actionState={actionState}
+                isPublishing={isPublishingThisJob}
+              />
             </article>
           ) : null}
 
