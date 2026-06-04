@@ -423,6 +423,21 @@ run_mind_compile_loop() {
   run_job "mind-compile-loop" "$timeout_seconds" "$command" "$compile_log"
 }
 
+run_graphify_nightly() {
+  local timeout_seconds="${GRAPHIFY_NIGHTLY_TIMEOUT_SECONDS:-21600}"  # 6 hours
+  local graphify_script="${GRAPHIFY_NIGHTLY_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/graphify-nightly.sh}"
+  local graphify_log="$LOG_DIR/graphify-nightly.log"
+  local command
+
+  if [[ ! -x "$graphify_script" ]]; then
+    log "skipping job=graphify-nightly reason=missing_script path=$graphify_script"
+    return 0
+  fi
+
+  command="$(printf '%q >> %q 2>&1' "$graphify_script" "$graphify_log")"
+  run_job "graphify-nightly" "$timeout_seconds" "$command" "$graphify_log"
+}
+
 render_runtime_report() {
   if [[ -x "$REPORT_SCRIPT" ]]; then
     OFFICE_SCHEDULER_STATE_DIR="$STATE_DIR" \
@@ -559,6 +574,9 @@ main() {
 
   # Mind compile loop — suggest-only inbox classifier; appends proposed moves to wiki/log.md, no file moves
   run_mind_compile_loop || log "warning mind-compile-loop failed but chain continues"
+
+  # Graphify nightly — local-only codebase graph maintenance; selector resource guard may skip heavy builds
+  run_graphify_nightly || log "warning graphify-nightly failed but chain continues"
 
   # ING Bank Statement download — runs on the 1st of each month, never stops chain
   run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"

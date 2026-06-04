@@ -1150,6 +1150,7 @@ const SCHEDULER_JOB_ORDER: Array<{ key: string; label: string }> = [
   { key: "dance-of-life-sync",      label: "Dance of Life (1) Download" },
   { key: "bible-studies-pipeline",  label: "Dance of Life (2) Transcribe" },
   { key: "gemini-cleanup",          label: "Gemini Cleanup" },
+  { key: "graphify-nightly",        label: "Graphify Nightly" },
   { key: "skill-prune",             label: "Skill Prune" },
 ];
 

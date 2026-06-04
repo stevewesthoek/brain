@@ -79,6 +79,7 @@ $(render_job_row "ing-bank-statement-download")
 $(render_job_row "dance-of-life-sync")
 $(render_job_row "bible-studies-pipeline")
 $(render_job_row "gemini-cleanup")
+$(render_job_row "graphify-nightly")
 $(render_job_row "skill-prune")
 
 ## Latest Nightly Log Tail
@@ -87,4 +88,3 @@ $(render_job_row "skill-prune")
 $last_log_lines
 \`\`\`
 EOF
-

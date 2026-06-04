@@ -1,8 +1,7 @@
 # Graphify Quick Reference
 
-**Last updated:** 2026-05-07  
+**Last updated:** 2026-06-04  
 **Status:** Live  
-**Commit:** 9e8b02a3
 
 ---
 
@@ -104,6 +103,46 @@ graphify-out/
 ```
 
 **Persistent:** All outputs in `graphify-out/` survive between runs. Cache is checked automatically on re-runs.
+
+---
+
+## Nightly Automation
+
+The Office nightly scheduler runs Graphify through:
+
+```text
+tools/scripts/graphify-nightly.sh
+```
+
+The scheduler job name is:
+
+```text
+graphify-nightly
+```
+
+The job discovers Git repositories under:
+
+```text
+/Users/Office/Repos
+```
+
+Per repository behavior:
+
+| Repo state | Action |
+|---|---|
+| `graphify-out/graph.json` exists | Run `graphify update <repo>` |
+| No graph exists | Ask AI Model Selector for `codebase_semantic_graph` with `local_only=true`; run `graphify extract <repo> --backend ollama --model <selected-model> --out <repo>` only when a safe local model is selected |
+
+Default safety limits:
+
+| Setting | Default |
+|---|---|
+| First-time semantic builds per night | `1` |
+| Existing graph updates per night | `12` |
+| Per-repo timeout | `7200` seconds |
+| Whole scheduler job timeout | `21600` seconds |
+
+The AI Model Selector owns local model admission. Graphify does not choose `qwen2.5:32b` directly. The selector only returns 32B when local load, macOS memory pressure, loaded Ollama models, model availability, circuit state, and rate-limit state pass the `codebase_semantic_graph` burst policy. If no safe local model is available, the repo is skipped for that night. After a first-time extraction attempt, the runner calls `ollama stop <model>` so the selected model does not remain loaded for the rest of the day.
 
 ---
 
