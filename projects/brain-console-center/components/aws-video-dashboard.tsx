@@ -132,6 +132,40 @@ function PublishDiagnosticsCard({
   );
 }
 
+function ScenePlanCard({
+  artifactData,
+}: {
+  artifactData: Record<string, unknown> | null | undefined;
+}) {
+  const scenePlan = asRecord(artifactData?.scenePlan);
+  const scenePlanKey = stringField(artifactData, 'scenePlanKey');
+  const narrationScriptKey = stringField(artifactData, 'narrationScriptKey');
+  const scenes = Array.isArray(scenePlan?.scenes) ? (scenePlan.scenes as unknown[]) : [];
+
+  if (!scenePlanKey && !scenePlan) return null;
+
+  return (
+    <article className="card">
+      <div className="card-title">Scene plan</div>
+      <div className="aws-facts">
+        <div><span>Scenes</span><strong>{scenes.length || '—'}</strong></div>
+        <div><span>Provider</span><strong>{stringField(scenePlan, 'providerName') ?? 'deterministic-local'}</strong></div>
+        <div><span>Scene plan</span><strong>{scenePlanKey ?? 'pending'}</strong></div>
+        <div><span>Narration script</span><strong>{narrationScriptKey ?? 'not set'}</strong></div>
+      </div>
+      {scenes.slice(0, 2).map((scene, i) => {
+        const s = asRecord(scene);
+        return (
+          <div key={i} className="compact-error">
+            <strong>Scene {i + 1}</strong>
+            <p>{stringField(s, 'visualPrompt') ?? '—'}</p>
+          </div>
+        );
+      })}
+    </article>
+  );
+}
+
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
@@ -254,7 +288,11 @@ export function AwsVideoDashboard() {
   const generationMode = stringField(selectedJob, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
   const videoSourceKey = stringField(selectedJob, 'videoSourceKey') ?? stringField(artifactData, 'videoSourceKey');
   const audioSourceKey = stringField(selectedJob, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
-  const isFixtureMedia = mediaSource === 'fixture' || generationMode === 'fixture_assembly';
+  const isHybridMode = generationMode === 'hybrid_scene_plan_fixture_media';
+  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media';
+  const scenePlanKey = stringField(artifactData, 'scenePlanKey');
+  const narrationScriptKey = stringField(artifactData, 'narrationScriptKey');
+  const hasScenePlan = Boolean(scenePlanKey || asRecord(artifactData?.scenePlan));
   const finalVideoKey = stringField(artifactData, 'finalVideo') ?? stringField(publishableAssets, 'videoKey');
   const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
   const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
@@ -377,7 +415,11 @@ export function AwsVideoDashboard() {
                 </div>
                 {selectedJob ? (
                   <>
-                    {isFixtureMedia ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div> : null}
+                    {isHybridMode
+                      ? <div className="compact-error">Hybrid mode: scene plan and narration script are prompt-derived; final audio/video media still uses fixtures.</div>
+                      : isFixtureMedia
+                        ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
+                        : null}
                     <h2 className="aws-job-title">{selectedJob.title}</h2>
                     <div className="progress"><span style={{ width: `${pct(selectedJob.progress)}%` }} /></div>
                     <div className="aws-facts">
@@ -412,6 +454,8 @@ export function AwsVideoDashboard() {
                   <button className="button secondary" onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
                 </div>
               </article>
+
+              {hasScenePlan ? <ScenePlanCard artifactData={artifactData} /> : null}
             </div>
           ) : null}
 
@@ -460,7 +504,11 @@ export function AwsVideoDashboard() {
                 <div><span>Media source</span><strong>{mediaSource}</strong></div>
                 <div><span>Dry-run</span><strong>{dryRunPassedForJobId === jobId ? 'passed' : 'required'}</strong></div>
               </div>
-              {isFixtureMedia ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div> : null}
+              {isHybridMode
+                ? <div className="compact-error">Hybrid mode: prompt-derived scene plan exists, but final media still uses fixture audio/video.</div>
+                : isFixtureMedia
+                  ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
+                  : null}
               <div className="publish-guard">
                 <div><span>generationMode</span><strong>{generationMode}</strong></div>
                 <div><span>videoSourceKey</span><strong>{videoSourceKey ?? 'unknown'}</strong></div>

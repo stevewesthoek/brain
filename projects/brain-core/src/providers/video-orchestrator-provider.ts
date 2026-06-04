@@ -4,6 +4,8 @@ import { promisify } from 'node:util';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import type { GenerationMode, MediaSource, ScenePlan } from './aws-video-generation-types.js';
+import { DeterministicScenePlanningProvider } from './aws-video-scene-planner.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -57,8 +59,11 @@ export interface NarrationGenerationProvider {
   generateNarration(input: NarrationGenerationProviderInput): Promise<GenerationProviderOutput>;
 }
 
-function getAwsVideoGenerationMode(): 'fixture' | 'ai' {
-  return process.env.AWS_VIDEO_GENERATION_MODE === 'ai' ? 'ai' : 'fixture';
+function getAwsVideoGenerationMode(): GenerationMode {
+  const mode = process.env.AWS_VIDEO_GENERATION_MODE;
+  if (mode === 'ai') return 'ai';
+  if (mode === 'hybrid') return 'hybrid';
+  return 'fixture';
 }
 
 function fixtureTitle(title: string): string {
@@ -982,13 +987,29 @@ export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeli
 export async function getVideoJobArtifacts(jobId: string): Promise<Record<string, unknown> | null> {
   if (!isValidJobId(jobId)) return null;
 
-  const assets = await readJobMetadataJson(jobId, 'assets.json');
-  const resolved = await resolvePublishableAssets(jobId);
+  const [assets, resolved] = await Promise.all([
+    readJobMetadataJson(jobId, 'assets.json'),
+    resolvePublishableAssets(jobId),
+  ]);
+
   if (assets) {
-    return {
+    const result: Record<string, unknown> = {
       ...(assets as Record<string, unknown>),
       publishableAssets: resolved,
     };
+
+    // Try to load and embed scene plan if scenePlanKey is present
+    const scenePlanKey = (assets as Record<string, unknown>)?.scenePlanKey;
+    if (typeof scenePlanKey === 'string') {
+      try {
+        const scenePlan = await readJobMetadataJson(jobId, 'scene-plan.json');
+        if (scenePlan) result.scenePlan = scenePlan;
+      } catch {
+        // Silently fail if scene-plan.json doesn't exist
+      }
+    }
+
+    return result;
   }
 
   // Fall back to inferring from status and script
@@ -1033,6 +1054,24 @@ async function writeS3MetadataJson(jobId: string, fileName: string, value: Recor
   }
 }
 
+async function writeS3JobFile(s3Key: string, content: string): Promise<void> {
+  const tempDir = await mkdtemp(join(tmpdir(), 'brain-core-job-file-'));
+  const fileName = s3Key.split('/').pop() || 'file';
+  const tempPath = join(tempDir, fileName);
+  try {
+    await writeFile(tempPath, content, 'utf-8');
+    await execFileAsync('aws', [
+      's3', 'cp',
+      tempPath,
+      `s3://${S3_BUCKET}/${s3Key}`,
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ], { timeout: 15000 });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
 async function repairPublishJson(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): Promise<Record<string, unknown>> {
   const now = new Date().toISOString();
   const [script, statusJson, assetsJson] = await Promise.all([
@@ -1057,7 +1096,7 @@ async function repairPublishJson(jobId: string, publishJson: Record<string, unkn
     createdAt: stringValue(publishJson?.createdAt) ?? now,
     updatedAt: now,
     publishedAt: publishJson?.publishedAt ?? null,
-    title: mediaSource === MEDIA_SOURCE
+    title: (mediaSource === 'fixture' || mediaSource === 'hybrid')
       ? fixtureTitle(stringValue(publishJson?.title) ?? script?.title ?? '')
       : stringValue(publishJson?.title) ?? script?.title ?? '',
     description: stringValue(publishJson?.description) ?? '',
@@ -1627,11 +1666,12 @@ export async function generateApprovedScript(
     }
   }
 
-  if (getAwsVideoGenerationMode() === 'ai') {
+  const generationMode = getAwsVideoGenerationMode();
+  if (generationMode === 'ai') {
     return {
       ok: false,
       code: 'ai_generation_provider_not_configured',
-      message: 'AI video generation provider is not configured',
+      message: 'AI video generation provider is not configured. Use AWS_VIDEO_GENERATION_MODE=hybrid for prompt-derived scene planning with fixture media, or configure a real provider.',
       jobId,
     };
   }
@@ -1656,24 +1696,36 @@ export async function generateApprovedScript(
     };
   }
 
+  // Determine generation metadata based on mode
+  const startedAt = new Date().toISOString();
+  const isHybridMode = generationMode === 'hybrid';
+  const modeMetadata = isHybridMode
+    ? {
+        mediaSource: 'hybrid' as const,
+        generationMode: 'hybrid_scene_plan_fixture_media' as const,
+        videoSourceKey: VIDEO_FIXTURE_KEY,
+        audioSourceKey: NARRATION_FIXTURE_KEY,
+        providerName: 'hybrid-scene-planner',
+        aiGenerated: false,
+      }
+    : {
+        mediaSource: MEDIA_SOURCE,
+        generationMode: GENERATION_MODE,
+        videoSourceKey: VIDEO_FIXTURE_KEY,
+        audioSourceKey: NARRATION_FIXTURE_KEY,
+        providerName: 'fixture-assembly',
+        aiGenerated: false,
+      };
+
   // Step 1: Write initial status.json
   const statusPath = join(metadataDir, 'status.json');
-  const startedAt = new Date().toISOString();
-  const fixtureMetadata = {
-    mediaSource: MEDIA_SOURCE,
-    generationMode: GENERATION_MODE,
-    videoSourceKey: VIDEO_FIXTURE_KEY,
-    audioSourceKey: NARRATION_FIXTURE_KEY,
-    providerName: 'fixture-assembly',
-    aiGenerated: false,
-  };
   const initialStatus = {
     status: 'generating',
     currentStep: 'narration_started',
     startedAt,
     updatedAt: startedAt,
     executionArn: null as string | null,
-    ...fixtureMetadata,
+    ...modeMetadata,
   };
   const writeFailedStatus = async (failedStep: string, message: string, extra: Record<string, unknown> = {}) => {
     const failedStatus = {
@@ -1751,6 +1803,48 @@ export async function generateApprovedScript(
     };
   }
 
+  // Step 2.5 (Hybrid only): Generate scene plan and narration script from prompt
+  let scenePlanKey: string | undefined;
+  let narrationScriptKey: string | undefined;
+  if (isHybridMode) {
+    const scenePlanner = new DeterministicScenePlanningProvider();
+    try {
+      // Read script content from script.md
+      let scriptContent = '';
+      try {
+        const scriptPath = script.scriptPath || `jobs/${jobId}/scripts/script.md`;
+        const scriptFullPath = join(getVideoOrchestratorRoot(), scriptPath.replace('jobs/', 'jobs/'));
+        scriptContent = await readFile(scriptFullPath, 'utf-8');
+      } catch {
+        // Fall back to minimal content if script.md is not readable
+        scriptContent = script.title || '';
+      }
+
+      // Generate scene plan
+      const scenePlan = scenePlanner.generateScenePlan(jobId, script, scriptContent);
+      scenePlanKey = `jobs/${jobId}/metadata/scene-plan.json`;
+
+      // Write scene plan locally and to S3
+      await writeFile(join(metadataDir, 'scene-plan.json'), JSON.stringify(scenePlan, null, 2) + '\n', 'utf-8');
+      await writeS3MetadataJson(jobId, 'scene-plan.json', scenePlan as unknown as Record<string, unknown>);
+
+      // Generate narration script
+      const narrationScript = scenePlanner.generateNarrationScript(scenePlan);
+      narrationScriptKey = `jobs/${jobId}/audio/narration-script.txt`;
+
+      // Write narration script locally and to S3
+      await writeFile(join(audioDir, 'narration-script.txt'), narrationScript, 'utf-8');
+      await writeS3JobFile(narrationScriptKey, narrationScript);
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'scene_plan_generation_failed',
+        message: `Failed to generate scene plan: ${err instanceof Error ? err.message : String(err)}`,
+        jobId,
+      };
+    }
+  }
+
   // Step 3: Copy narration from S3 fixture
   const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
   try {
@@ -1819,29 +1913,43 @@ export async function generateApprovedScript(
     };
   }
 
-  const assetsJson = {
+  const assetsJson: Record<string, unknown> = {
     jobId,
-    mediaSource: MEDIA_SOURCE,
-    generationMode: GENERATION_MODE,
+    mediaSource: modeMetadata.mediaSource,
+    generationMode: modeMetadata.generationMode,
     videoSourceKey: VIDEO_FIXTURE_KEY,
     audioSourceKey: NARRATION_FIXTURE_KEY,
     aiGenerated: false,
     narration: {
       path: narrationKey,
-      source: MEDIA_SOURCE,
+      source: 'fixture',
       sourceKey: NARRATION_FIXTURE_KEY,
     },
     sourceVideo: {
       path: videoKey,
-      source: MEDIA_SOURCE,
+      source: 'fixture',
       sourceKey: VIDEO_FIXTURE_KEY,
     },
   };
+
+  // Add hybrid-specific fields
+  if (isHybridMode && scenePlanKey) {
+    assetsJson.scenePlanKey = scenePlanKey;
+    assetsJson.narrationScriptKey = narrationScriptKey;
+    assetsJson.providers = {
+      scenePlan: 'deterministic-local',
+      narrationScript: 'deterministic-local',
+      narrationAudio: 'fixture',
+      video: 'fixture',
+    };
+    assetsJson.warnings = ['Final video/audio media still uses fixture assets; scene plan and narration script are prompt-derived.'];
+  }
+
   try {
     await writeFile(join(metadataDir, 'assets.json'), `${JSON.stringify(assetsJson, null, 2)}\n`, 'utf-8');
     await writeS3MetadataJson(jobId, 'assets.json', assetsJson);
   } catch (err) {
-    console.error(`Warning: Failed to write fixture assets metadata for ${jobId}: ${err}`);
+    console.error(`Warning: Failed to write assets metadata for ${jobId}: ${err}`);
   }
 
   // Step 5: Start Step Functions execution
@@ -1887,17 +1995,24 @@ export async function generateApprovedScript(
   }
 
   // Step 5: Write publish.json to both metadata/ and publishing/
+  const publishReason = isHybridMode
+    ? 'Hybrid pipeline proof — prompt-derived scene plan and narration script; video/audio media uses fixtures'
+    : 'Pipeline proof fixture assembly — awaiting explicit publish approval';
+  const publishDescription = isHybridMode
+    ? 'Hybrid mode: scene plan and narration script are prompt-derived from the input prompt. Final audio and video media use fixtures.'
+    : 'Pipeline proof upload. This video used fixture media, not prompt-generated AI video.';
+
   const publishJson = {
     jobId,
     publishStatus: 'pending',
     publishBlocked: true,
-    reason: 'Pipeline proof fixture assembly — awaiting explicit publish approval',
+    reason: publishReason,
     createdAt: new Date().toISOString(),
     generatedBy: 'interactive-prompt',
     title: fixtureTitle(script.title),
-    description: 'Pipeline proof upload. This video used fixture media, not prompt-generated AI video.',
-    tags: ['pipeline-proof', 'fixture-media'],
-    ...fixtureMetadata,
+    description: publishDescription,
+    tags: isHybridMode ? ['hybrid-proof', 'fixture-media', 'scene-plan-generated'] : ['pipeline-proof', 'fixture-media'],
+    ...modeMetadata,
     platforms: {
       youtube: {
         status: 'pending',
@@ -1931,8 +2046,8 @@ export async function generateApprovedScript(
     executionArn,
     publishStatus: 'pending',
     publishBlocked: true,
-    mediaSource: MEDIA_SOURCE,
-    generationMode: GENERATION_MODE,
+    mediaSource: modeMetadata.mediaSource,
+    generationMode: modeMetadata.generationMode,
   };
 }
 

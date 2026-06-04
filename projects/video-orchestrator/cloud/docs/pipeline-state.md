@@ -4,7 +4,7 @@
 
 ## Working Today
 
-The AWS Video control plane works end to end in pipeline proof mode:
+The AWS Video control plane works end to end:
 
 - Brain Console Center can trigger the pipeline.
 - Brain Core can start AWS Step Functions.
@@ -13,9 +13,14 @@ The AWS Video control plane works end to end in pipeline proof mode:
 - YouTube dry-run succeeds.
 - Private YouTube upload succeeds.
 
-## Pipeline Proof Mode
+Two modes are fully operational:
 
-Pipeline proof mode means the media assembly pipeline uses known fixture media. The title and metadata may come from a prompt/job, but the video and narration content are not generated from that prompt.
+1. **Fixture mode** (default): fixture assembly proof
+2. **Hybrid mode**: prompt-derived scene plan + narration script + fixture media
+
+## Fixture Mode
+
+Fixture mode uses known fixture S3 media. The title comes from a prompt/job, but the video and narration are not generated from that prompt.
 
 Fixture inputs:
 
@@ -24,7 +29,7 @@ jobs/test-001/audio/narration.mp3
 jobs/test-001/exports/sample-transcoded.mp4
 ```
 
-Jobs created through this mode must be marked:
+Metadata:
 
 ```json
 {
@@ -36,28 +41,68 @@ Jobs created through this mode must be marked:
 }
 ```
 
-Fixture uploads should use a `[PIPELINE PROOF]` title prefix unless an explicit local config disables it.
+Fixture uploads use `[PIPELINE PROOF]` title prefix unless explicitly disabled.
 
-## Not Implemented Yet
+## Hybrid Mode
 
-The current Brain Core generate flow does not implement:
+Hybrid mode generates prompt-derived metadata (scene plan + narration script) while still using fixture audio/video.
 
-- prompt-to-video AI generation
-- script-to-narration AI generation
-- prompt-based scene planning
-- real image/video model integration
+Metadata:
 
-Historical proof artifacts exist for Bedrock Nova Reel/Polly-style outputs, but they are not wired as the active runtime generation provider.
+```json
+{
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "aiGenerated": false,
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "fixture",
+    "video": "fixture"
+  },
+  "warnings": ["Final video/audio media still uses fixture assets; scene plan and narration script are prompt-derived."]
+}
+```
 
-## Real Generation Boundary
+**Behavior:**
+- Reads script title and script.md content
+- Generates 2–5 scenes (deterministic, no external calls)
+- Each scene has duration, visual prompt, narration text
+- Writes `metadata/scene-plan.json` and `audio/narration-script.txt`
+- Still copies fixture audio/video for assembly
+- Title gets `[PIPELINE PROOF]` prefix (since final media is fixture)
 
-The next architecture is provider-based:
+**What hybrid does NOT do:**
+- Does not synthesize audio (narration is fixture)
+- Does not generate video (source video is fixture)
+- Does not call external AI models
 
-- `VideoGenerationProvider` accepts job, prompt/script, channel/profile input, and an output S3 key.
-- `NarrationGenerationProvider` accepts script/channel input and an output narration S3 key.
-- Provider output must include provider name, S3 output key, and generation metadata.
-- `AWS_VIDEO_GENERATION_MODE=fixture|ai` controls the mode.
+## Not Yet Implemented
+
+The current flow does not implement:
+
+- prompt-to-video AI generation (Bedrock Nova Reel, etc.)
+- script-to-narration AI generation (AWS Polly, etc.)
+- real image/video provider integration
+- provider selection based on channel config
+
+Historical proof artifacts exist for these, but are not wired as active runtime.
+
+## Architecture: Provider Boundary
+
+The framework is provider-based:
+
+- `VideoGenerationProvider` accepts job, prompt/script, channel/profile input, and outputs to S3 key.
+- `NarrationGenerationProvider` accepts script/channel input and outputs to S3 narration key.
+- Provider output includes provider name, S3 output key, and generation metadata.
+- `AWS_VIDEO_GENERATION_MODE` controls the flow:
+  - `fixture` → fixture assembly
+  - `hybrid` → deterministic scene plan + narration script + fixture media
+  - `ai` → delegate to provider (fails loudly if not configured)
 - Default is `fixture`.
-- If mode is `ai` and no provider is configured, Brain Core must fail loudly with `AI video generation provider is not configured`.
 
-Do not label fixture output as AI-generated video.
+**Do not label fixture output as AI-generated video.** The `aiGenerated` flag must be `false` for fixture and hybrid modes.
