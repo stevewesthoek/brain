@@ -1,8 +1,9 @@
-import { access, readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { access, readFile, writeFile, mkdir, readdir, mkdtemp, rm } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -19,6 +20,7 @@ const STEP_FUNCTIONS_EXECUTION_NAME_MAX = 80;
 const S3_DISCOVERY_LIMIT = 100;
 const S3_METADATA_TIMEOUT_MS = 1_200;
 const S3_HEAD_TIMEOUT_MS = 800;
+const S3_PUBLISH_ASSET_TIMEOUT_MS = 10_000;
 const RECENT_JOB_HYDRATION_CONCURRENCY = 3;
 
 export function getBrainRepoRoot(moduleDir: string = MODULE_DIR): string {
@@ -366,7 +368,7 @@ async function readJobMetadataJson(jobId: string, fileName: string): Promise<unk
   return readOptionalJson(getJobMetadataPath(jobId, fileName));
 }
 
-async function s3ObjectExists(key: string): Promise<boolean> {
+async function s3ObjectExists(key: string, timeoutMs: number = S3_HEAD_TIMEOUT_MS): Promise<boolean> {
   try {
     await execFileAsync('aws', [
       's3api', 'head-object',
@@ -374,26 +376,143 @@ async function s3ObjectExists(key: string): Promise<boolean> {
       '--key', key,
       '--region', AWS_REGION,
       '--no-cli-pager',
-    ], { timeout: S3_HEAD_TIMEOUT_MS });
+    ], { timeout: timeoutMs });
     return true;
   } catch {
     return false;
   }
 }
 
-async function inferGeneratedS3Artifacts(jobId: string): Promise<{ narration: string | null; finalVideo: string | null; thumbnail: string | null }> {
+async function inferGeneratedS3Artifacts(jobId: string, timeoutMs: number = S3_HEAD_TIMEOUT_MS): Promise<{ narration: string | null; finalVideo: string | null; thumbnail: string | null }> {
   const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
   const finalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
   const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
   const [narrationExists, finalVideoExists, thumbnailExists] = await Promise.all([
-    s3ObjectExists(narrationKey),
-    s3ObjectExists(finalVideoKey),
-    s3ObjectExists(thumbnailKey),
+    s3ObjectExists(narrationKey, timeoutMs),
+    s3ObjectExists(finalVideoKey, timeoutMs),
+    s3ObjectExists(thumbnailKey, timeoutMs),
   ]);
   return {
     narration: narrationExists ? narrationKey : null,
     finalVideo: finalVideoExists ? finalVideoKey : null,
     thumbnail: thumbnailExists ? thumbnailKey : null,
+  };
+}
+
+export interface PublishableAssetsResolution {
+  videoKey: string | null;
+  thumbnailKey: string | null;
+  narrationKey: string | null;
+  source: {
+    publishJson: boolean;
+    assetsJson: boolean;
+    statusJson: boolean;
+    inferredS3: boolean;
+  };
+  selectedSource: {
+    videoKey: string | null;
+    thumbnailKey: string | null;
+    narrationKey: string | null;
+  };
+  missing: string[];
+  checked: {
+    publishJson: boolean;
+    assetsJson: boolean;
+    statusJson: boolean;
+    inferredS3: boolean;
+  };
+  expectedKeys: {
+    videoKey: string;
+    thumbnailKey: string;
+    narrationKey: string;
+  };
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function nestedPath(record: Record<string, unknown> | null, key: string): string | null {
+  if (!record) return null;
+  const value = record[key];
+  if (!value || typeof value !== 'object') return null;
+  return stringValue((value as Record<string, unknown>).path);
+}
+
+async function firstExistingS3Key(candidates: Array<{ key: string | null; source: keyof PublishableAssetsResolution['source'] }>): Promise<{ key: string | null; source: keyof PublishableAssetsResolution['source'] | null }> {
+  for (const candidate of candidates) {
+    if (!candidate.key) continue;
+    if (await s3ObjectExists(candidate.key, S3_PUBLISH_ASSET_TIMEOUT_MS)) {
+      return candidate;
+    }
+  }
+  return { key: null, source: null };
+}
+
+export async function resolvePublishableAssets(jobId: string): Promise<PublishableAssetsResolution> {
+  const expectedKeys = {
+    videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+    thumbnailKey: `jobs/${jobId}/exports/thumbnail-001.jpg`,
+    narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+  };
+
+  const [publishJson, assetsJson, statusJson, inferred] = await Promise.all([
+    readJobMetadataJson(jobId, 'publish.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'assets.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'status.json') as Promise<Record<string, unknown> | null>,
+    inferGeneratedS3Artifacts(jobId, S3_PUBLISH_ASSET_TIMEOUT_MS),
+  ]);
+
+  const checked = {
+    publishJson: publishJson !== null,
+    assetsJson: assetsJson !== null,
+    statusJson: statusJson !== null,
+    inferredS3: Boolean(inferred.finalVideo || inferred.thumbnail || inferred.narration),
+  };
+
+  const video = await firstExistingS3Key([
+    { key: stringValue(publishJson?.videoKey), source: 'publishJson' },
+    { key: nestedPath(assetsJson, 'finalVideo'), source: 'assetsJson' },
+    { key: stringValue(statusJson?.finalVideoKey), source: 'statusJson' },
+    { key: inferred.finalVideo ?? expectedKeys.videoKey, source: 'inferredS3' },
+  ]);
+  const thumbnail = await firstExistingS3Key([
+    { key: stringValue(publishJson?.thumbnailKey), source: 'publishJson' },
+    { key: nestedPath(assetsJson, 'thumbnail'), source: 'assetsJson' },
+    { key: stringValue(statusJson?.thumbnailKey), source: 'statusJson' },
+    { key: inferred.thumbnail ?? expectedKeys.thumbnailKey, source: 'inferredS3' },
+  ]);
+  const narration = await firstExistingS3Key([
+    { key: stringValue(publishJson?.narrationKey), source: 'publishJson' },
+    { key: nestedPath(assetsJson, 'narration'), source: 'assetsJson' },
+    { key: stringValue(statusJson?.narrationKey), source: 'statusJson' },
+    { key: inferred.narration ?? expectedKeys.narrationKey, source: 'inferredS3' },
+  ]);
+
+  const selectedSources = [video.source, thumbnail.source, narration.source].filter((source): source is keyof PublishableAssetsResolution['source'] => source !== null);
+  const missing = [
+    video.key ? null : 'videoKey',
+    thumbnail.key ? null : 'thumbnailKey',
+  ].filter((item): item is string => item !== null);
+
+  return {
+    videoKey: video.key,
+    thumbnailKey: thumbnail.key,
+    narrationKey: narration.key,
+    source: {
+      publishJson: selectedSources.includes('publishJson'),
+      assetsJson: selectedSources.includes('assetsJson'),
+      statusJson: selectedSources.includes('statusJson'),
+      inferredS3: selectedSources.includes('inferredS3'),
+    },
+    selectedSource: {
+      videoKey: video.source,
+      thumbnailKey: thumbnail.source,
+      narrationKey: narration.source,
+    },
+    missing,
+    checked,
+    expectedKeys,
   };
 }
 
@@ -813,7 +932,13 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   if (!isValidJobId(jobId)) return null;
 
   const assets = await readJobMetadataJson(jobId, 'assets.json');
-  if (assets) return assets as Record<string, unknown>;
+  const resolved = await resolvePublishableAssets(jobId);
+  if (assets) {
+    return {
+      ...(assets as Record<string, unknown>),
+      publishableAssets: resolved,
+    };
+  }
 
   // Fall back to inferring from status and script
   const [status, script] = await Promise.all([
@@ -828,30 +953,110 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   return {
     jobId,
     script: (script?.scriptKey as string) || null,
-    finalVideo: (statusJson?.finalVideoKey as string) || inferred.finalVideo,
-    thumbnail: (statusJson?.thumbnailKey as string) || inferred.thumbnail,
-    narration: inferred.narration,
+    finalVideo: resolved.videoKey || (statusJson?.finalVideoKey as string) || inferred.finalVideo,
+    thumbnail: resolved.thumbnailKey || (statusJson?.thumbnailKey as string) || inferred.thumbnail,
+    narration: resolved.narrationKey || inferred.narration,
+    publishableAssets: resolved,
   };
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+async function writeS3MetadataJson(jobId: string, fileName: string, value: Record<string, unknown>): Promise<void> {
+  const content = `${JSON.stringify(value, null, 2)}\n`;
+  const tempDir = await mkdtemp(join(tmpdir(), 'brain-core-publish-json-'));
+  const tempPath = join(tempDir, fileName);
+  try {
+    await writeFile(tempPath, content, 'utf-8');
+    await execFileAsync('aws', [
+      's3', 'cp',
+      tempPath,
+      `s3://${S3_BUCKET}/jobs/${jobId}/metadata/${fileName}`,
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ], { timeout: 15000 });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function repairPublishJson(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): Promise<Record<string, unknown>> {
+  const now = new Date().toISOString();
+  const script = await readJobMetadataJson(jobId, 'script.json') as ScriptMetadata | null;
+  const platforms = publishJson?.platforms && typeof publishJson.platforms === 'object'
+    ? publishJson.platforms as Record<string, unknown>
+    : {};
+  const existingYoutube = platforms.youtube && typeof platforms.youtube === 'object'
+    ? platforms.youtube as Record<string, unknown>
+    : {};
+  const repaired = {
+    ...(publishJson ?? {}),
+    jobId,
+    publishStatus: stringValue(publishJson?.publishStatus) ?? 'pending',
+    createdAt: stringValue(publishJson?.createdAt) ?? now,
+    updatedAt: now,
+    publishedAt: publishJson?.publishedAt ?? null,
+    title: stringValue(publishJson?.title) ?? script?.title ?? '',
+    description: stringValue(publishJson?.description) ?? '',
+    tags: stringArray(publishJson?.tags),
+    videoKey: resolved.videoKey,
+    thumbnailKey: resolved.thumbnailKey,
+    platforms: {
+      ...platforms,
+      youtube: {
+        ...existingYoutube,
+        status: stringValue(existingYoutube.status) ?? 'pending',
+        videoId: existingYoutube.videoId ?? null,
+        publishedAt: existingYoutube.publishedAt ?? null,
+        url: existingYoutube.url ?? null,
+        error: null,
+      },
+    },
+  };
+
+  const content = `${JSON.stringify(repaired, null, 2)}\n`;
+  const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+  const publishingDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'publishing');
+  await mkdir(metadataDir, { recursive: true });
+  await mkdir(publishingDir, { recursive: true });
+  await Promise.all([
+    writeFile(join(metadataDir, 'publish.json'), content, 'utf-8'),
+    writeFile(join(publishingDir, 'publish.json'), content, 'utf-8'),
+    writeS3MetadataJson(jobId, 'publish.json', repaired),
+  ]);
+
+  return repaired;
 }
 
 export async function runControlledYouTubePublish(jobId: string, options: { dryRun: boolean; confirmation?: string }): Promise<ControlledYouTubePublishResult> {
   if (!isValidJobId(jobId)) return { ok: false, jobId, dryRun: options.dryRun, code: 'invalid_job_id', error: 'Invalid jobId' };
 
   let publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
-  if (!publishJson) {
-    try {
-      const { stdout } = await execFileAsync('aws', [
-        's3', 'cp',
-        `s3://${S3_BUCKET}/jobs/${jobId}/metadata/publish.json`,
-        '-',
-        '--region', AWS_REGION,
-        '--no-cli-pager',
-      ], { timeout: 15000 });
-      publishJson = JSON.parse(stdout) as Record<string, unknown>;
-    } catch {
-      return { ok: false, jobId, dryRun: options.dryRun, code: 'publish_contract_missing', error: 'publish.json is required before YouTube publishing' };
-    }
+  const resolved = await resolvePublishableAssets(jobId);
+  if (resolved.missing.length > 0 || !resolved.videoKey || !resolved.thumbnailKey) {
+    return {
+      ok: false,
+      jobId,
+      dryRun: options.dryRun,
+      code: 'publish_assets_missing',
+      error: 'Publish assets are missing',
+      details: {
+        jobId,
+        missing: resolved.missing,
+        checked: resolved.checked,
+        source: resolved.source,
+        selectedSource: resolved.selectedSource,
+        expectedKeys: {
+          videoKey: resolved.expectedKeys.videoKey,
+          thumbnailKey: resolved.expectedKeys.thumbnailKey,
+        },
+      },
+    };
   }
+
+  publishJson = await repairPublishJson(jobId, publishJson, resolved);
 
   const platforms = publishJson.platforms as Record<string, unknown> | undefined;
   const youtube = platforms?.youtube as Record<string, unknown> | undefined;
@@ -860,10 +1065,6 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   if (existingVideoId || youtubeStatus === 'uploaded' || youtubeStatus === 'published') {
     return { ok: false, jobId, dryRun: options.dryRun, code: 'already_uploaded', error: 'YouTube upload already exists for this job', videoId: existingVideoId, url: typeof youtube?.url === 'string' ? youtube.url : null };
   }
-
-  const videoKey = typeof publishJson.videoKey === 'string' ? publishJson.videoKey : '';
-  const thumbnailKey = typeof publishJson.thumbnailKey === 'string' ? publishJson.thumbnailKey : '';
-  if (!videoKey || !thumbnailKey) return { ok: false, jobId, dryRun: options.dryRun, code: 'publish_assets_missing', error: 'publish.json must include videoKey and thumbnailKey' };
 
   // Real uploads are still gated by UI flow: selected ready-to-publish job, successful dry-run,
   // duplicate-upload check above, OAuth channel verification, and private-only upload script defaults.
@@ -1269,6 +1470,7 @@ export interface ControlledYouTubePublishResult {
   stderr?: string;
   error?: string;
   code?: string;
+  details?: Record<string, unknown>;
 }
 
 export async function generateApprovedScript(

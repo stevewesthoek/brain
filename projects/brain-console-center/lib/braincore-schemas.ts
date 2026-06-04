@@ -233,6 +233,7 @@ export const youtubePublishResultSchema = z.object({
   stderr: z.string().optional(),
   error: z.string().optional(),
   code: z.string().optional(),
+  details: z.record(z.unknown()).optional(),
 }).passthrough();
 
 export type OpsMetric = z.infer<typeof opsMetricSchema>;

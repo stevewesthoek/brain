@@ -27,6 +27,16 @@ function nestedStatus(value: unknown): string {
   return typeof status === 'string' ? status : 'not_available';
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+}
+
+function stringField(value: unknown, key: string): string | null {
+  const record = asRecord(value);
+  const field = record?.[key];
+  return typeof field === 'string' && field.length > 0 ? field : null;
+}
+
 function isReadyToPublish(job: Partial<VideoJob> | null | undefined): boolean {
   return job?.status === 'ready_to_publish' || job?.status === 'published';
 }
@@ -43,6 +53,13 @@ function payloadDiagnostics(error: unknown): VideoJobsDiagnostics | null {
   const diagnostics = payload.diagnostics ?? payload.payload?.diagnostics;
   if (!diagnostics || typeof diagnostics !== 'object') return null;
   return diagnostics as VideoJobsDiagnostics;
+}
+
+function payloadDetails(error: unknown): Record<string, unknown> | null {
+  if (!(error instanceof BrainCoreError) || !error.payload || typeof error.payload !== 'object') return null;
+  const payload = error.payload as { details?: unknown; payload?: { details?: unknown } };
+  const details = payload.details ?? payload.payload?.details;
+  return details && typeof details === 'object' ? details as Record<string, unknown> : null;
 }
 
 function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
@@ -85,6 +102,32 @@ function JobsDiagnosticsCard({
       {diagnostics?.error ? <p>Error: {diagnostics.error}</p> : null}
       {diagnostics?.warnings?.length ? <pre className="compact-pre">{diagnostics.warnings.join('\n')}</pre> : null}
       {diagnostics?.skippedJobs?.length ? <pre className="compact-pre">{JSON.stringify(diagnostics.skippedJobs.slice(0, 8), null, 2)}</pre> : null}
+    </div>
+  );
+}
+
+function PublishDiagnosticsCard({
+  artifactData,
+  errorDetails,
+}: {
+  artifactData: Record<string, unknown> | null | undefined;
+  errorDetails?: Record<string, unknown> | null;
+}) {
+  const publishable = asRecord(artifactData?.publishableAssets);
+  const checked = asRecord(publishable?.checked) ?? asRecord(errorDetails?.checked);
+  const selectedSource = asRecord(publishable?.selectedSource) ?? asRecord(errorDetails?.selectedSource);
+  const missing = Array.isArray(publishable?.missing)
+    ? publishable.missing
+    : Array.isArray(errorDetails?.missing)
+      ? errorDetails.missing
+      : [];
+
+  return (
+    <div className="publish-guard">
+      <div><span>publish.json</span><strong>{checked?.publishJson ? 'present' : 'missing'}</strong></div>
+      <div><span>videoKey</span><strong>{stringField(selectedSource, 'videoKey') ?? 'not resolved'}</strong></div>
+      <div><span>thumbnailKey</span><strong>{stringField(selectedSource, 'thumbnailKey') ?? 'not resolved'}</strong></div>
+      <div><span>missing</span><strong>{missing.length ? missing.join(', ') : 'none'}</strong></div>
     </div>
   );
 }
@@ -204,14 +247,32 @@ export function AwsVideoDashboard() {
 
   const selectedJob = job.data?.data ?? selected;
   const timelineEvents = timeline.data?.data.events ?? [];
-  const selectedReady = isReadyToPublish(selectedJob);
+  const artifactData = artifacts.data?.data ?? null;
+  const executionData = execution.data?.data ?? null;
+  const publishableAssets = asRecord(artifactData?.publishableAssets);
+  const finalVideoKey = stringField(artifactData, 'finalVideo') ?? stringField(publishableAssets, 'videoKey');
+  const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
+  const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
+  const awsSucceeded = stringField(executionData, 'awsStatus') === 'SUCCEEDED';
+  const localGenerationComplete = nestedStatus(selectedJob?.generation) === 'complete';
+  const publishStatus = nestedStatus(selectedJob?.publishing);
+  const selectedReady = isReadyToPublish(selectedJob) || ((awsSucceeded || localGenerationComplete || hasGeneratedAssets) && hasGeneratedAssets);
   const selectedPublished = selectedJob?.status === 'published';
+  const selectedUploaded = selectedPublished || ['uploaded', 'published'].includes(publishStatus);
   const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
   const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
   const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
-  const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete');
-  const canDryRun = Boolean(jobId && selectedReady && !selectedPublished);
+  const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets);
+  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && ['pending', 'not_available'].includes(publishStatus));
   const canPublish = canDryRun && dryRunPassedForJobId === jobId;
+  const publishNeedsRepair = hasGeneratedAssets && selectedJob?.status === 'generating' && !stringField(publishableAssets, 'videoKey');
+  const publishReadinessLabel = selectedUploaded
+    ? 'Already uploaded'
+    : canDryRun
+      ? 'Ready for dry-run'
+      : hasGeneratedAssets
+        ? 'Generated assets available — publish contract repair needed'
+        : 'Waiting for generated assets';
   const guideSteps = [
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
     { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
@@ -224,6 +285,7 @@ export function AwsVideoDashboard() {
   const queryErrorMessage = errorMessage(queryError);
   const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
   const actionErrorMessage = errorMessage(actionError);
+  const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const visibleErrorMessage = queryErrorMessage ?? actionErrorMessage;
   const showErrorToast = Boolean(visibleErrorMessage && visibleErrorMessage !== dismissedError);
 
@@ -386,10 +448,12 @@ export function AwsVideoDashboard() {
               </div>
               <div className="publish-guard">
                 <div><span>Selected job</span><strong>{shortJobId(jobId ?? undefined)}</strong></div>
-                <div><span>Required state</span><strong>{selectedReady ? 'ready to publish' : 'not ready yet'}</strong></div>
+                <div><span>Required state</span><strong>{publishReadinessLabel}</strong></div>
                 <div><span>Dry-run</span><strong>{dryRunPassedForJobId === jobId ? 'passed' : 'required'}</strong></div>
               </div>
+              <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} />
               {!selectedReady ? <div className="compact-error">This job is not ready to publish. Complete approval and generation first.</div> : null}
+              {publishNeedsRepair ? <div className="compact-error">Generated assets available — publish contract repair needed.</div> : null}
               {selectedPublished ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
                 <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => youtubeDryRun.mutate()}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
