@@ -222,5 +222,5 @@ export type AiModelSelectorHealthMatrix = z.output<typeof aiModelSelectorHealthM
 export type AiModelSelectorHealthMatrixModel = AiModelSelectorHealthMatrix['models'][number];
 export type LocalApp = z.infer<typeof localAppSchema>;
 export type LocalAppsDashboard = z.infer<typeof localAppsDashboardSchema>;
-export type VideoJob = z.infer<typeof videoJobSchema>;
-export type VideoTimeline = z.infer<typeof videoTimelineSchema>;
+export type VideoJob = z.output<typeof videoJobSchema>;
+export type VideoTimeline = z.output<typeof videoTimelineSchema>;

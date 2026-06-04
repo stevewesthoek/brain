@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, AppWindow, BrainCircuit, Gauge, Settings, Video } from 'lucide-react';
+import { Activity, AppWindow, BrainCircuit, Gauge, ListVideo, PlayCircle, Settings, UploadCloud, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
 import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
@@ -13,7 +13,16 @@ const nav = [
   { href: '/', label: 'Overview', icon: Gauge },
   { href: '/ai-models', label: 'AI Models', icon: BrainCircuit },
   { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
-  { href: '/aws-video', label: 'AWS Video', icon: Video },
+  {
+    href: '/aws-video',
+    label: 'AWS Video',
+    icon: Video,
+    children: [
+      { href: '/aws-video', label: 'Pipeline', icon: PlayCircle },
+      { href: '/aws-video#jobs', label: 'Jobs', icon: ListVideo },
+      { href: '/aws-video#publish', label: 'Publish', icon: UploadCloud },
+    ],
+  },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -40,10 +49,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href} className={cn('nav-link', active && 'active')}>
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </Link>
+              <div key={item.href} className="nav-group">
+                <Link href={item.href} className={cn('nav-link', active && 'active')}>
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
+                {'children' in item && item.children ? (
+                  <div className="nav-children">
+                    {item.children.map((child) => {
+                      const ChildIcon = child.icon;
+                      return (
+                        <Link key={child.href} href={child.href} className="nav-child-link">
+                          <ChildIcon size={14} />
+                          <span>{child.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
             );
           })}
         </nav>

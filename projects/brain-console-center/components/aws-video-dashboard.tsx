@@ -2,30 +2,63 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, FilePlus2, RefreshCw, Wand2 } from 'lucide-react';
+import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
 import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 
 const GENERATE_TIMEOUT_MS = 120_000;
+const PUBLISH_CONFIRMATION = 'PUBLISH PRIVATE TO YOUTUBE';
+
+type AwsVideoView = 'overview' | 'jobs' | 'create' | 'publish' | 'activity';
 
 function pct(value: number | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function shortJobId(jobId: string | undefined): string {
+  if (!jobId) return 'No job selected';
+  return jobId.length > 48 ? `${jobId.slice(0, 30)}…${jobId.slice(-12)}` : jobId;
+}
+
+function nestedStatus(value: unknown): string {
+  if (!value || typeof value !== 'object') return 'not_available';
+  const status = (value as { status?: unknown }).status;
+  return typeof status === 'string' ? status : 'not_available';
+}
+
+function isReadyToPublish(job: Partial<VideoJob> | null | undefined): boolean {
+  return job?.status === 'ready_to_publish' || nestedStatus(job?.publishing) === 'pending';
+}
+
+function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
+  const status = job?.status ?? 'not_available';
+  const approval = nestedStatus(job?.approval);
+  const generation = nestedStatus(job?.generation);
+  const publishing = nestedStatus(job?.publishing);
+  return [
+    { key: 'draft', label: 'Draft', state: job ? 'complete' : 'not available' },
+    { key: 'approval', label: 'Approve', state: approval === 'approved' ? 'complete' : approval },
+    { key: 'generation', label: 'Generate', state: generation },
+    { key: 'contract', label: 'Publish contract', state: isReadyToPublish(job) || status === 'published' ? 'complete' : 'waiting' },
+    { key: 'youtube', label: 'Private YouTube', state: status === 'published' ? 'uploaded' : publishing },
+  ];
+}
+
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
+  const [activeView, setActiveView] = useState<AwsVideoView>('overview');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [channelId, setChannelId] = useState('');
+  const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
   const [publishConfirmation, setPublishConfirmation] = useState('');
   const [dryRunPassedForJobId, setDryRunPassedForJobId] = useState<string | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
 
-  const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 12));
+  const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
 
   const status = useQuery({
     queryKey: ['aws-video-status'],
@@ -38,11 +71,8 @@ export function AwsVideoDashboard() {
     refetchInterval: 10_000,
   });
 
-  const selected = useMemo(() => {
-    const list = jobs.data?.jobs ?? [];
-    return list.find((job) => job.jobId === selectedJobId) ?? list[0] ?? null;
-  }, [jobs.data?.jobs, selectedJobId]);
-
+  const jobList = jobs.data?.jobs ?? [];
+  const selected = useMemo(() => jobList.find((job) => job.jobId === selectedJobId) ?? jobList[0] ?? null, [jobList, selectedJobId]);
   const jobId = selected?.jobId ?? null;
 
   const job = useQuery({
@@ -87,6 +117,7 @@ export function AwsVideoDashboard() {
       const possibleJobId = typeof result.jobId === 'string' ? result.jobId : typeof (result.job as { jobId?: unknown } | undefined)?.jobId === 'string' ? (result.job as { jobId: string }).jobId : null;
       if (possibleJobId) setSelectedJobId(possibleJobId);
       setPrompt('');
+      setActiveView('overview');
       addActivity(`Draft created${possibleJobId ? `: ${possibleJobId}` : ''}`);
       await invalidateVideo();
     },
@@ -131,144 +162,170 @@ export function AwsVideoDashboard() {
 
   const selectedJob = job.data?.data ?? selected;
   const timelineEvents = timeline.data?.data.events ?? [];
+  const selectedReady = isReadyToPublish(selectedJob);
+  const selectedPublished = selectedJob?.status === 'published';
+  const canDryRun = Boolean(jobId && selectedReady && !selectedPublished);
+  const canPublish = canDryRun && dryRunPassedForJobId === jobId && publishConfirmation === PUBLISH_CONFIRMATION;
+  const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
+
+  const counts = {
+    total: jobList.length,
+    pending: jobList.filter((item) => ['awaiting_approval', 'approved', 'ready_to_publish'].includes(item.status ?? '')).length,
+    active: jobList.filter((item) => ['generating', 'publishing'].includes(item.status ?? '')).length,
+    published: jobList.filter((item) => item.status === 'published').length,
+  };
 
   return (
-    <div className="stack">
-      <section className="page-heading">
-        <div>
+    <div className="aws-video-screen">
+      <section className="aws-hero">
+        <div className="min-w-0">
           <div className="eyebrow">AWS Video Pipeline</div>
           <h1>Video operations</h1>
-          <p>Brain Console Center is the active dashboard. Brain Console Web is legacy. Controlled YouTube publishing uses dry-run first, then confirmed private upload.</p>
+          <p>Brain Console Center is the active dashboard. Follow the pipeline left to right: draft, approve, generate, dry-run, then private YouTube upload.</p>
         </div>
-        <div className="row">
-          <StatusBadge status={status.isError || jobs.isError ? 'error' : 'fresh'} label={status.isError || jobs.isError ? 'partial error' : 'auto refresh'} />
+        <div className="aws-hero-actions">
+          <StatusBadge status={status.isError || jobs.isError ? 'error' : 'fresh'} label={status.isError || jobs.isError ? 'partial error' : 'online'} />
           <button className="button secondary" onClick={() => void invalidateVideo()}><RefreshCw size={16} /> Refresh</button>
         </div>
       </section>
 
-      <section className="grid two">
-        <div className="stack">
-          <article className="card">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Recent jobs</div>
-                <div className="card-description">{jobs.data?.jobs?.length ?? 0} jobs returned by Brain Core</div>
-              </div>
-              <StatusBadge status={jobs.isError ? 'error' : 'fresh'} />
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Job</th><th>Status</th><th>Progress</th><th>Updated</th></tr></thead>
-                <tbody>
-                  {(jobs.data?.jobs ?? []).map((item) => (
-                    <tr key={item.jobId} onClick={() => setSelectedJobId(item.jobId)} style={{ cursor: 'pointer' }}>
-                      <td><strong>{item.title}</strong><div className="meta">{item.jobId} · {item.channelId}</div></td>
-                      <td><StatusBadge status={item.status} /></td>
-                      <td><div className="progress"><span style={{ width: `${pct(item.progress)}%` }} /></div><div className="meta">{pct(item.progress)}%</div></td>
-                      <td>{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</td>
-                    </tr>
-                  ))}
-                  {(jobs.data?.jobs ?? []).length === 0 ? <tr><td colSpan={4}>No video jobs returned by Brain Core.</td></tr> : null}
-                </tbody>
-              </table>
-            </div>
-          </article>
+      <section className="aws-metrics">
+        <div><span>Jobs</span><strong>{counts.total}</strong></div>
+        <div><span>Pending</span><strong>{counts.pending}</strong></div>
+        <div><span>Active</span><strong>{counts.active}</strong></div>
+        <div><span>Published</span><strong>{counts.published}</strong></div>
+        <div><span>Selected</span><strong>{selectedJob?.status?.replaceAll('_', ' ') ?? 'none'}</strong></div>
+      </section>
 
-          <article className="card">
-            <div className="card-title">Create draft</div>
-            <p>Creates a new AWS Video draft through Brain Core.</p>
+      <section className="aws-workspace">
+        <nav className="aws-subnav" aria-label="AWS Video subviews">
+          {[
+            ['overview', '1. Pipeline'],
+            ['jobs', '2. Jobs'],
+            ['create', '3. Create draft'],
+            ['publish', '4. Publish'],
+            ['activity', '5. Activity'],
+          ].map(([view, label]) => (
+            <button key={view} className={activeView === view ? 'active' : ''} onClick={() => setActiveView(view as AwsVideoView)}>{label}</button>
+          ))}
+        </nav>
+
+        <main className="aws-main-panel">
+          {activeView === 'overview' ? (
             <div className="stack">
-              <input className="input" placeholder="Channel id" value={channelId} onChange={(event) => setChannelId(event.target.value)} />
-              <textarea className="textarea" placeholder="Draft prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-              <button className="button" disabled={channelId.trim().length === 0 || prompt.trim().length < 10 || createDraft.isPending} onClick={() => createDraft.mutate()}><FilePlus2 size={16} /> Create draft</button>
-            </div>
-          </article>
-        </div>
-
-        <aside className="stack">
-          <article className="card">
-            <div className="card-header">
-              <div>
-                <div className="card-title">Selected job</div>
-                <div className="card-description">{selectedJob?.jobId ?? 'No job selected'}</div>
-              </div>
-              <StatusBadge status={selectedJob?.status} />
-            </div>
-            {selectedJob ? (
-              <div className="stack">
-                <h2 style={{ margin: 0 }}>{selectedJob.title}</h2>
-                <div className="progress"><span style={{ width: `${pct(selectedJob.progress)}%` }} /></div>
-                <div className="meta">Current step: {selectedJob.currentStep ?? 'unknown'}</div>
-                <div className="row">
-                  <button className="button" disabled={!jobId || approve.isPending} onClick={() => approve.mutate()}><CheckCircle2 size={16} /> Approve script</button>
-                  <button className="button" disabled={!jobId || generate.isPending} onClick={() => generate.mutate()}><Wand2 size={16} /> Generate</button>
+              <article className="card aws-selected-card">
+                <div className="card-header compact-header">
+                  <div className="min-w-0">
+                    <div className="card-title">Selected job</div>
+                    <div className="card-description truncate">{shortJobId(selectedJob?.jobId)}</div>
+                  </div>
+                  <StatusBadge status={selectedJob?.status} />
                 </div>
-                <div className="publish-panel">
-                  <div className="split">
-                    <div>
-                      <strong>Controlled YouTube publish</strong>
-                      <div className="meta">Private upload only. Dry-run must pass before the publish button is enabled.</div>
+                {selectedJob ? (
+                  <>
+                    <h2 className="aws-job-title">{selectedJob.title}</h2>
+                    <div className="progress"><span style={{ width: `${pct(selectedJob.progress)}%` }} /></div>
+                    <div className="aws-facts">
+                      <div><span>Status</span><strong>{selectedJob.status ?? 'not available'}</strong></div>
+                      <div><span>Progress</span><strong>{pct(selectedJob.progress)}%</strong></div>
+                      <div><span>Approval</span><strong>{nestedStatus(selectedJob.approval)}</strong></div>
+                      <div><span>Step</span><strong>{selectedJob.currentStep ?? 'not available'}</strong></div>
                     </div>
-                    <StatusBadge status={selectedJob.status === 'published' ? 'fresh' : selectedJob.status === 'ready_to_publish' ? 'ready' : 'pending'} label={selectedJob.status === 'published' ? 'uploaded' : selectedJob.status === 'ready_to_publish' ? 'ready' : 'not ready'} />
-                  </div>
-                  <div className="row">
-                    <button className="button secondary" disabled={!jobId || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => youtubeDryRun.mutate()}>
-                      {youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}
-                    </button>
-                    <button className="button" disabled={!jobId || dryRunPassedForJobId !== jobId || publishConfirmation !== 'PUBLISH PRIVATE TO YOUTUBE' || youtubePublish.isPending} onClick={() => youtubePublish.mutate()}>
-                      {youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}
-                    </button>
-                  </div>
-                  <label className="meta" style={{ display: 'grid', gap: 8 }}>
-                    Type <code>PUBLISH PRIVATE TO YOUTUBE</code> after a successful dry-run.
-                    <input className="input" value={publishConfirmation} onChange={(event) => setPublishConfirmation(event.target.value)} placeholder="PUBLISH PRIVATE TO YOUTUBE" />
-                  </label>
-                  {youtubeDryRun.data ? <pre className="meta">{JSON.stringify(youtubeDryRun.data, null, 2).slice(0, 1600)}</pre> : null}
-                  {youtubePublish.data ? <pre className="meta">{JSON.stringify(youtubePublish.data, null, 2).slice(0, 1600)}</pre> : null}
+                  </>
+                ) : <p>Select or create a job to start.</p>}
+              </article>
+
+              <article className="card">
+                <div className="card-title">Pipeline flow</div>
+                <div className="pipeline-flow">
+                  {pipelineSteps(selectedJob).map((step, index) => (
+                    <div className="pipeline-step" key={step.key}>
+                      <div className="pipeline-index">{index + 1}</div>
+                      <div className="min-w-0">
+                        <strong>{step.label}</strong>
+                        <span>{step.state}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <textarea className="textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} />
-                <button className="button secondary" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending} onClick={() => requestChanges.mutate()}>Request changes</button>
+                <div className="pipeline-actions">
+                  <button className="button secondary" onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
+                  <button className="button" disabled={!jobId || approve.isPending || selectedJob?.approval?.status === 'approved'} onClick={() => approve.mutate()}><CheckCircle2 size={16} /> Approve</button>
+                  <button className="button" disabled={!jobId || generate.isPending || selectedJob?.approval?.status !== 'approved' || selectedJob?.generation?.status === 'complete'} onClick={() => generate.mutate()}><Wand2 size={16} /> Generate</button>
+                  <button className="button secondary" onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
+                </div>
+              </article>
+            </div>
+          ) : null}
+
+          {activeView === 'jobs' ? (
+            <article className="card">
+              <div className="card-header"><div><div className="card-title">Recent jobs</div><div className="card-description">Select one job. Long IDs wrap; no horizontal scrolling.</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
+              <div className="job-list">
+                {jobList.map((item) => (
+                  <button key={item.jobId} className={`job-list-item ${item.jobId === selectedJob?.jobId ? 'active' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setActiveView('overview'); }}>
+                    <div className="min-w-0"><strong>{item.title || item.jobId}</strong><span>{item.jobId} · {item.channelId}</span></div>
+                    <StatusBadge status={item.status} />
+                    <div className="job-progress"><div className="progress"><span style={{ width: `${pct(item.progress)}%` }} /></div><span>{pct(item.progress)}%</span></div>
+                    <span className="meta no-margin">{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</span>
+                  </button>
+                ))}
+                {jobList.length === 0 ? <p>No video jobs returned by Brain Core.</p> : null}
               </div>
-            ) : <p>Select a job to inspect details.</p>}
-          </article>
+            </article>
+          ) : null}
 
-          <article className="card">
-            <div className="card-title">AWS execution</div>
-            <pre className="meta">{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1800)}</pre>
-          </article>
+          {activeView === 'create' ? (
+            <article className="card aws-form-card">
+              <div className="card-title">Create draft</div>
+              <p>Start here when you want a new video. Draft creation does not publish or generate anything.</p>
+              <div className="stack">
+                <input className="input" placeholder="Channel id, for example prochat" value={channelId} onChange={(event) => setChannelId(event.target.value)} />
+                <textarea className="textarea" placeholder="Draft prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} />
+                <button className="button" disabled={channelId.trim().length === 0 || prompt.trim().length < 10 || createDraft.isPending} onClick={() => createDraft.mutate()}><FilePlus2 size={16} /> {createDraft.isPending ? 'Creating…' : 'Create draft'}</button>
+              </div>
+            </article>
+          ) : null}
 
-          <article className="card">
-            <div className="card-title">Artifacts</div>
-            <pre className="meta">{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1800)}</pre>
-          </article>
+          {activeView === 'publish' ? (
+            <article className="card publish-panel aws-publish-card">
+              <div className="card-header compact-header">
+                <div className="min-w-0"><div className="card-title">Controlled YouTube publish</div><div className="card-description">Private upload only. Dry-run must pass before upload is enabled.</div></div>
+                <StatusBadge status={selectedPublished ? 'fresh' : selectedReady ? 'ready' : 'pending'} label={selectedPublished ? 'uploaded' : selectedReady ? 'ready' : 'not ready'} />
+              </div>
+              <div className="publish-guard">
+                <div><span>Selected job</span><strong>{shortJobId(jobId ?? undefined)}</strong></div>
+                <div><span>Required state</span><strong>{selectedReady ? 'ready to publish' : 'not ready yet'}</strong></div>
+                <div><span>Dry-run</span><strong>{dryRunPassedForJobId === jobId ? 'passed' : 'required'}</strong></div>
+              </div>
+              {!selectedReady ? <div className="compact-error">This job is not ready to publish. Complete approval and generation first.</div> : null}
+              {selectedPublished ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
+              <div className="pipeline-actions">
+                <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => youtubeDryRun.mutate()}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
+                <button className="button" disabled={!canPublish || youtubePublish.isPending} onClick={() => youtubePublish.mutate()}>{youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}</button>
+              </div>
+              <label className="meta confirm-label">Type <code>{PUBLISH_CONFIRMATION}</code> after a successful dry-run.<input className="input" value={publishConfirmation} onChange={(event) => setPublishConfirmation(event.target.value)} placeholder={PUBLISH_CONFIRMATION} /></label>
+              {youtubeDryRun.data ? <pre className="compact-pre">{JSON.stringify(youtubeDryRun.data, null, 2).slice(0, 1800)}</pre> : null}
+              {youtubePublish.data ? <pre className="compact-pre">{JSON.stringify(youtubePublish.data, null, 2).slice(0, 1800)}</pre> : null}
+            </article>
+          ) : null}
+
+          {activeView === 'activity' ? (
+            <div className="grid split-panels">
+              <article className="card"><div className="card-title">Timeline</div><div className="timeline">{timelineEvents.map((event, index) => <div className="timeline-item" key={`${event.step}-${index}`}><div className="split"><strong>{event.step}</strong><StatusBadge status={event.status} /></div><div className="meta">{event.timestamp ? timeAgo(event.timestamp) : 'unknown time'}</div><p>{event.message}</p></div>)}{timelineEvents.length === 0 ? <p>No timeline events.</p> : null}</div></article>
+              <article className="card"><div className="card-title">Activity</div><div className="stack">{activity.map((item) => <div className="meta no-margin" key={item}>{item}</div>)}{activity.length === 0 ? <p>No local dashboard activity yet.</p> : null}</div></article>
+            </div>
+          ) : null}
+        </main>
+
+        <aside className="aws-side-panel">
+          <article className="card"><div className="card-title">Execution</div><pre className="compact-pre">{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
+          <article className="card"><div className="card-title">Artifacts</div><pre className="compact-pre">{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
+          <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending} onClick={() => requestChanges.mutate()}>Request changes</button></article>
         </aside>
       </section>
 
-      <section className="grid two">
-        <article className="card">
-          <div className="card-title">Timeline</div>
-          <div className="timeline">
-            {timelineEvents.map((event, index) => (
-              <div className="timeline-item" key={`${event.step}-${index}`}>
-                <div className="split"><strong>{event.step}</strong><StatusBadge status={event.status} /></div>
-                <div className="meta">{event.timestamp ? timeAgo(event.timestamp) : 'unknown time'}</div>
-                <p>{event.message}</p>
-              </div>
-            ))}
-            {timelineEvents.length === 0 ? <p>No timeline events for the selected job.</p> : null}
-          </div>
-        </article>
-        <article className="card">
-          <div className="card-title">Activity</div>
-          <div className="stack">
-            {[...(activity.length ? activity : ['No activity yet.'])].map((item) => <div className="meta" key={item}>{item}</div>)}
-          </div>
-        </article>
-      </section>
-
-      {[createDraft.error, approve.error, requestChanges.error, generate.error, youtubeDryRun.error, youtubePublish.error].filter(Boolean).map((error, index) => (
-        <div className="card" key={index}><div className="card-title">Action error</div><p>{error instanceof Error ? error.message : String(error)}</p></div>
-      ))}
+      {actionError ? <section className="card error-panel"><div className="card-title">Action error</div><p>{actionError instanceof Error ? actionError.message : String(actionError)}</p></section> : null}
     </div>
   );
 }
