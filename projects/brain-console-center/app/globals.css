@@ -830,3 +830,41 @@ body { min-height: 100dvh; }
   .aws-workspace { grid-template-columns: 96px minmax(0, 1fr); }
   .aws-side-panel { grid-column: 2; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+
+
+
+/* Center toast and viewport final hardening */
+.toast-stack {
+  position: fixed !important;
+  top: 14px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  width: min(760px, calc(100vw - 32px)) !important;
+  z-index: 2147483647 !important;
+  pointer-events: none;
+}
+.toast-stack .toast,
+.toast-stack .toast-error,
+.toast-stack .error-toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid #ef4444 !important;
+  background: #450a0a !important;
+  color: #fee2e2 !important;
+  box-shadow: 0 24px 90px rgba(0,0,0,.78), 0 0 0 1px rgba(255,255,255,.08) inset !important;
+  border-radius: 16px;
+  padding: 13px 14px;
+  animation: toast-in .18s ease-out;
+}
+.toast-stack strong { color: #fff !important; font-size: 13px; }
+.toast-stack p { margin: 3px 0 0; color: #fee2e2 !important; font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+.toast-stack button { border: 0; background: rgba(255,255,255,.18); color: #fff; border-radius: 999px; width: 28px; height: 28px; cursor: pointer; font-size: 20px; line-height: 1; }
+.toast-stack button:hover { background: rgba(255,255,255,.28); }
+.aws-video-screen { max-width: 100%; }
+.aws-main-panel, .aws-side-panel { overscroll-behavior: contain; }
+@media (max-width: 1280px) { .pipeline-steps { overflow-x: hidden !important; grid-template-columns: repeat(5, minmax(0, 1fr)) !important; } }

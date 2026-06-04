@@ -32,7 +32,13 @@ export async function brainCoreRequest<T>(path: string, schema: z.ZodType<T>, in
     const text = await response.text();
     const payload = text ? JSON.parse(text) : null;
     if (!response.ok) {
-      throw new BrainCoreError(`${requestInit.method ?? 'GET'} ${path} failed with HTTP ${response.status}`, response.status, payload);
+      const backendPayload = payload && typeof payload === 'object' ? payload as { error?: unknown; message?: unknown; code?: unknown } : null;
+      const nestedError = backendPayload?.error && typeof backendPayload.error === 'object'
+        ? backendPayload.error as { message?: unknown; code?: unknown }
+        : null;
+      const backendMessage = nestedError?.message ?? backendPayload?.message ?? nestedError?.code ?? backendPayload?.code ?? backendPayload?.error;
+      const detail = typeof backendMessage === 'string' ? `: ${backendMessage}` : '';
+      throw new BrainCoreError(`${requestInit.method ?? 'GET'} ${path} failed with HTTP ${response.status}${detail}`, response.status, payload);
     }
     return schema.parse(payload);
   } catch (error) {

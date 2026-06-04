@@ -57,6 +57,7 @@ export function AwsVideoDashboard() {
   const [activity, setActivity] = useState<string[]>([]);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
+  const beginAction = () => setDismissedError(null);
 
   const status = useQuery({
     queryKey: ['aws-video-status'],
@@ -160,12 +161,16 @@ export function AwsVideoDashboard() {
   const timelineEvents = timeline.data?.data.events ?? [];
   const selectedReady = isReadyToPublish(selectedJob);
   const selectedPublished = selectedJob?.status === 'published';
+  const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
+  const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
+  const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
+  const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete');
   const canDryRun = Boolean(jobId && selectedReady && !selectedPublished);
   const canPublish = canDryRun && dryRunPassedForJobId === jobId;
   const guideSteps = [
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
-    { label: 'Approve', help: 'Approve the script.', done: selectedJob ? !['draft', 'awaiting_approval'].includes(selectedJob.status ?? '') : false, active: selectedJob?.status === 'awaiting_approval' },
-    { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: selectedJob?.status === 'generating' },
+    { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
+    { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
     { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForJobId === jobId, active: selectedReady && dryRunPassedForJobId !== jobId },
     { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedPublished, active: canPublish },
   ];
@@ -183,17 +188,6 @@ export function AwsVideoDashboard() {
 
   return (
     <div className="aws-video-screen">
-      {actionError && dismissedError !== String(actionError instanceof Error ? actionError.message : actionError) ? (
-        <div className="toast-stack" role="alert" aria-live="assertive">
-          <div className="toast-error">
-            <div>
-              <strong>Action failed</strong>
-              <p>{actionError instanceof Error ? actionError.message : String(actionError)}</p>
-            </div>
-            <button aria-label="Dismiss error" onClick={() => setDismissedError(String(actionError instanceof Error ? actionError.message : actionError))}>×</button>
-          </div>
-        </div>
-      ) : null}
       {showErrorToast && actionErrorMessage ? (
         <div className="toast-stack" role="alert" aria-live="assertive">
           <div className="toast error-toast">
@@ -295,8 +289,8 @@ export function AwsVideoDashboard() {
                 </div>
                 <div className="pipeline-actions">
                   <button className="button secondary" onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
-                  <button className="button" disabled={!jobId || approve.isPending || selectedJob?.approval?.status === 'approved'} onClick={() => approve.mutate()}><CheckCircle2 size={16} /> Approve</button>
-                  <button className="button" disabled={!jobId || generate.isPending || selectedJob?.approval?.status !== 'approved' || selectedJob?.generation?.status === 'complete'} onClick={() => generate.mutate()}><Wand2 size={16} /> Generate</button>
+                  <button className="button" disabled={!canApprove || approve.isPending} onClick={() => { beginAction(); approve.mutate(); }}><CheckCircle2 size={16} /> Approve</button>
+                  <button className="button" disabled={!canGenerate || generate.isPending} onClick={() => { beginAction(); generate.mutate(); }}><Wand2 size={16} /> Generate</button>
                   <button className="button secondary" onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
                 </div>
               </article>
@@ -327,7 +321,7 @@ export function AwsVideoDashboard() {
               <div className="stack">
                 <input className="input" placeholder="Channel id, for example prochat" value={channelId} onChange={(event) => setChannelId(event.target.value)} />
                 <textarea className="textarea" placeholder="Draft prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-                <button className="button" disabled={channelId.trim().length === 0 || prompt.trim().length < 10 || createDraft.isPending} onClick={() => createDraft.mutate()}><FilePlus2 size={16} /> {createDraft.isPending ? 'Creating…' : 'Create draft'}</button>
+                <button className="button" disabled={channelId.trim().length === 0 || prompt.trim().length < 10 || createDraft.isPending} onClick={() => { beginAction(); createDraft.mutate(); }}><FilePlus2 size={16} /> {createDraft.isPending ? 'Creating…' : 'Create draft'}</button>
               </div>
             </article>
           ) : null}
