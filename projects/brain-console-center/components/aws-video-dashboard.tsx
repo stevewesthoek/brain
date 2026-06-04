@@ -11,6 +11,17 @@ import { StatusBadge } from '@/components/status-badge';
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'publish' | 'activity';
 
+// Action state per job: tracks dry-run pass, upload status, mutation in-flight
+interface ActionState {
+  dryRunPassed?: boolean;
+  uploadStartedAt?: string;
+  uploaded?: boolean;
+  videoId?: string;
+  url?: string;
+  lastAction?: string;
+  lastActionAt?: string;
+}
+
 function pct(value: number | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -221,11 +232,20 @@ export function AwsVideoDashboard() {
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
   const [dismissedError, setDismissedError] = useState<string | null>(null);
-  const [dryRunPassedForJobId, setDryRunPassedForJobId] = useState<string | null>(null);
+  const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
+  const [mutatingJobId, setMutatingJobId] = useState<string | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
   const beginAction = () => setDismissedError(null);
+
+  // Update action state for a specific job
+  const updateActionState = (jobId: string, update: Partial<ActionState>) => {
+    setActionStateByJobId((prev) => ({
+      ...prev,
+      [jobId]: { ...prev[jobId], ...update, lastActionAt: new Date().toISOString() },
+    }));
+  };
 
   const status = useQuery({
     queryKey: ['aws-video-status'],
@@ -292,38 +312,53 @@ export function AwsVideoDashboard() {
     },
   });
 
+  // PART 1: Fix approve mutation to take explicit jobId argument
   const approve = useMutation({
-    mutationFn: () => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobId ?? '')}/approve`, videoActionResultSchema, { approvedBy: 'brain-console-center' }),
-    onSuccess: async () => { addActivity(`Approved script for ${jobId}`); await invalidateVideo(); },
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/approve`, videoActionResultSchema, { approvedBy: 'brain-console-center' }),
+    onSuccess: async (_, { jobIdArg }) => { addActivity(`Approved script for ${jobIdArg}`); await invalidateVideo(); },
   });
 
   const requestChanges = useMutation({
-    mutationFn: () => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobId ?? '')}/request-changes`, videoActionResultSchema, { requestedBy: 'brain-console-center', changes: changeRequest }),
-    onSuccess: async () => { setChangeRequest(''); addActivity(`Requested changes for ${jobId}`); await invalidateVideo(); },
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/request-changes`, videoActionResultSchema, { requestedBy: 'brain-console-center', changes: changeRequest }),
+    onSuccess: async (_, { jobIdArg }) => { setChangeRequest(''); addActivity(`Requested changes for ${jobIdArg}`); await invalidateVideo(); },
   });
 
   const generate = useMutation({
-    mutationFn: () => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobId ?? '')}/generate`, videoActionResultSchema, { requestedBy: 'brain-console-center' }, GENERATE_TIMEOUT_MS),
-    onSuccess: async () => { addActivity(`Generation accepted for ${jobId}`); await invalidateVideo(); },
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/generate`, videoActionResultSchema, { requestedBy: 'brain-console-center' }, GENERATE_TIMEOUT_MS),
+    onSuccess: async (_, { jobIdArg }) => { addActivity(`Generation accepted for ${jobIdArg}`); await invalidateVideo(); },
   });
 
   const youtubeDryRun = useMutation({
-    mutationFn: () => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/publish/youtube/dry-run`, youtubePublishResultSchema, {}, 180_000),
-    onSuccess: async (result) => {
-      if (result.ok && jobId) setDryRunPassedForJobId(jobId);
-      addActivity(result.ok ? `YouTube dry-run passed for ${jobId}` : `YouTube dry-run failed for ${jobId}`);
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/publish/youtube/dry-run`, youtubePublishResultSchema, {}, 180_000),
+    onSuccess: async (result, { jobIdArg }) => {
+      if (result.ok) {
+        updateActionState(jobIdArg, { dryRunPassed: true });
+      }
+      addActivity(result.ok ? `YouTube dry-run passed for ${jobIdArg}` : `YouTube dry-run failed for ${jobIdArg}`);
       await invalidateVideo();
     },
   });
 
   const youtubePublish = useMutation({
-    mutationFn: () => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/publish/youtube`, youtubePublishResultSchema, {
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/publish/youtube`, youtubePublishResultSchema, {
       dryRun: false,
       requestedBy: 'brain-console-center',
     }, 1_900_000),
-    onSuccess: async (result) => {
-      addActivity(result.ok ? `Private YouTube upload completed for ${jobId}${result.videoId ? ` (${result.videoId})` : ''}` : `Private YouTube upload failed for ${jobId}`);
+    onSuccess: async (result, { jobIdArg }) => {
+      if (result.ok && result.videoId) {
+        updateActionState(jobIdArg, {
+          uploaded: true,
+          videoId: result.videoId,
+          url: result.url ?? undefined,
+          dryRunPassed: true,
+          uploadStartedAt: undefined,
+        });
+      }
+      addActivity(result.ok ? `Private YouTube upload completed for ${jobIdArg}${result.videoId ? ` (${result.videoId})` : ''}` : `Private YouTube upload failed for ${jobIdArg}`);
       await invalidateVideo();
+    },
+    onMutate: ({ jobIdArg }) => {
+      updateActionState(jobIdArg, { uploadStartedAt: new Date().toISOString() });
     },
   });
 
@@ -347,15 +382,31 @@ export function AwsVideoDashboard() {
   const awsSucceeded = stringField(executionData, 'awsStatus') === 'SUCCEEDED';
   const localGenerationComplete = nestedStatus(selectedJob?.generation) === 'complete';
   const publishStatus = nestedStatus(selectedJob?.publishing);
+
+  // PART 2: Canonical selected job state: local action state wins for upload
+  const actionState = jobId ? actionStateByJobId[jobId] : undefined;
+
+  // Upload state: optimistic local > backend > list status
+  const selectedPublished = actionState?.uploaded
+    ? true
+    : selectedJob?.status === 'published'
+      ? true
+      : ['uploaded', 'published'].includes(publishStatus)
+        ? true
+        : false;
+
   const selectedReady = isReadyToPublish(selectedJob) || ((awsSucceeded || localGenerationComplete || hasGeneratedAssets) && hasGeneratedAssets);
-  const selectedPublished = selectedJob?.status === 'published' || ['uploaded', 'published'].includes(publishStatus);
-  const selectedUploaded = selectedPublished || ['uploaded', 'published'].includes(publishStatus);
+  const selectedUploaded = selectedPublished;
   const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
   const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
   const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
   const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets);
+
+  // PART 3: Stable publish button logic: use actionState for dry-run, not stale closure
+  const dryRunPassedForThisJob = actionState?.dryRunPassed ?? false;
   const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && ['pending', 'not_available'].includes(publishStatus));
-  const canPublish = canDryRun && dryRunPassedForJobId === jobId;
+  const canPublish = canDryRun && dryRunPassedForThisJob;
+
   const publishNeedsRepair = hasGeneratedAssets && selectedJob?.status === 'generating' && !stringField(publishableAssets, 'videoKey');
   const publishReadinessLabel = selectedUploaded
     ? 'Already uploaded'
@@ -368,7 +419,7 @@ export function AwsVideoDashboard() {
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
     { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
     { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
-    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForJobId === jobId || selectedUploaded, active: selectedReady && dryRunPassedForJobId !== jobId && !selectedUploaded },
+    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: selectedReady && !dryRunPassedForThisJob && !selectedUploaded },
     { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish },
   ];
   const nextStep = guideSteps.find((step) => !step.done);
@@ -498,8 +549,8 @@ export function AwsVideoDashboard() {
                 </div>
                 <div className="pipeline-actions">
                   <button className="button secondary" onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
-                  <button className="button" disabled={!canApprove || approve.isPending} onClick={() => { beginAction(); approve.mutate(); }}><CheckCircle2 size={16} /> Approve</button>
-                  <button className="button" disabled={!canGenerate || generate.isPending} onClick={() => { beginAction(); generate.mutate(); }}><Wand2 size={16} /> Generate</button>
+                  <button className="button" disabled={!canApprove || approve.isPending} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve</button>
+                  <button className="button" disabled={!canGenerate || generate.isPending} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
                   <button className="button secondary" onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
                 </div>
               </article>
@@ -552,7 +603,7 @@ export function AwsVideoDashboard() {
                 <div><span>Selected job</span><strong>{shortJobId(jobId ?? undefined)}</strong></div>
                 <div><span>Required state</span><strong>{publishReadinessLabel}</strong></div>
                 <div><span>Media source</span><strong>{mediaSource}</strong></div>
-                <div><span>Dry-run</span><strong>{dryRunPassedForJobId === jobId ? 'passed' : 'required'}</strong></div>
+                <div><span>Dry-run</span><strong>{dryRunPassedForThisJob ? 'passed' : 'required'}</strong></div>
               </div>
               {isHybridMode
                 ? <div className="compact-error">Hybrid mode: prompt-derived scene plan exists, but final media still uses fixture audio/video.</div>
@@ -569,12 +620,17 @@ export function AwsVideoDashboard() {
               {publishNeedsRepair ? <div className="compact-error">Generated assets available — publish contract repair needed.</div> : null}
               {selectedPublished ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
-                <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => youtubeDryRun.mutate()}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
-                <button className="button danger-button" disabled={!canPublish || youtubePublish.isPending} onClick={() => youtubePublish.mutate()}>{youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}</button>
+                <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
+                <button className="button danger-button" disabled={!canPublish || youtubePublish.isPending} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}</button>
               </div>
               <p className="meta no-margin">Private upload unlocks automatically after a successful dry-run for this selected job.</p>
-              {youtubeDryRun.data ? <pre className="compact-pre">{JSON.stringify(youtubeDryRun.data, null, 2).slice(0, 1800)}</pre> : null}
-              {youtubePublish.data ? <pre className="compact-pre">{JSON.stringify(youtubePublish.data, null, 2).slice(0, 1800)}</pre> : null}
+              {actionState?.uploaded ? (
+                <div className="success-panel">
+                  <strong>Upload successful</strong>
+                  {actionState.videoId ? <p>Video ID: {actionState.videoId}</p> : null}
+                  {actionState.url ? <p><a href={actionState.url} target="_blank" rel="noopener noreferrer">View on YouTube</a></p> : null}
+                </div>
+              ) : null}
             </article>
           ) : null}
 
@@ -589,7 +645,7 @@ export function AwsVideoDashboard() {
         <aside className="aws-side-panel">
           <article className="card"><div className="card-title">Execution</div><pre className="compact-pre">{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
           <article className="card"><div className="card-title">Artifacts</div><pre className="compact-pre">{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
-          <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending} onClick={() => requestChanges.mutate()}>Request changes</button></article>
+          <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
         </aside>
       </section>
 
