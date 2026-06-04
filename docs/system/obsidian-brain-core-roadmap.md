@@ -1,8 +1,11 @@
 # Obsidian-First Brain Core Roadmap
 
 **Date:** 2026-05-16
-**Status:** accepted direction for execution planning
+**Status:** superseded dashboard direction; retained for historical Brain Core/Obsidian architecture context
+**Superseded by:** `docs/system/brain-console-center-roadmap.md`
 **Scope:** brain, mind, ProBot dashboard, Video Orchestrator, Claude Code skills, local machine control
+
+> 2026-06-03 update: Brain Console Center is now the single leading operational dashboard. Obsidian, Brain Console Web, and ProBot dashboard are legacy/reference dashboard surfaces. Brain Core remains the operational API and safety boundary.
 
 ## Decision
 

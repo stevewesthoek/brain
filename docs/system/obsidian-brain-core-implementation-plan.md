@@ -1,8 +1,11 @@
 # Obsidian-First Brain Core Implementation Plan
 
 **Date:** 2026-05-16
-**Status:** ready for execution
+**Status:** superseded dashboard implementation direction; retained for historical Brain Core/Obsidian migration context
 **Related roadmap:** `docs/system/obsidian-brain-core-roadmap.md`
+**Superseded by:** `docs/system/brain-console-center-implementation-plan.md`
+
+> 2026-06-03 update: Brain Console Center is now the single leading operational dashboard. This plan remains useful for Brain Core safety/API principles and legacy migration history, but new dashboard implementation work belongs in Brain Console Center.
 
 ## Objective
 

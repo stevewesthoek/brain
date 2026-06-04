@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
@@ -32,6 +33,8 @@ const LOCAL_APPS_CONFIG_PATH = path.join(
   'local-apps.json',
 );
 const LOCAL_APP_HEALTH_REQUEST_TIMEOUT_MS = 5_000;
+
+type LocalAppContainerStatus = 'running' | 'stopped' | 'unknown';
 
 type LocalAppRuntime = {
   pathPrepend: string[];
@@ -290,6 +293,9 @@ function readLocalAppsDashboardSync(): BrainCoreLocalAppsDashboardResponse {
       notes: app.description,
       ...(app.appUrl ? { url: app.appUrl } : {}),
       ...(app.appPort ? { port: app.appPort } : {}),
+      servicePorts: app.services.map((service) => service.port).filter((port): port is number => typeof port === 'number' && Number.isFinite(port)),
+      ...(app.database?.hostPort ? { databasePort: app.database.hostPort } : {}),
+      ...(app.database?.containerName ? { containerName: app.database.containerName } : {}),
     };
   });
 
@@ -345,6 +351,16 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
   const timestamp = new Date().toISOString();
   const statusByName = portStatusByName;
 
+  const containerStatusByName = new Map(
+    await Promise.all(
+      inventory.map(async (app) => {
+        const containerName = app.database?.containerName;
+        if (!containerName) return [app.name, null] as const;
+        return [app.name, await dockerContainerState(containerName)] as const;
+      }),
+    ),
+  );
+
   const apps: BrainCoreLocalAppDashboardItem[] = inventory.map((app) => {
     const portStatus = statusByName.get(app.name);
     const lifecycleStatus = normalizeDashboardStatus(portStatus ?? (app.appUrl || app.healthUrl ? 'unknown' : 'unavailable'));
@@ -354,6 +370,7 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
     const actionEnabled = executableActions.length > 0;
     const actionDisabledReasons = buildActionDisabledReasons(app);
     const disabledReason = formatActionDisabledReasons(actionDisabledReasons);
+    const containerStatus = containerStatusByName.get(app.name);
     return {
       id: app.id,
       name: app.name,
@@ -373,6 +390,12 @@ export async function readLocalAppsDashboard(fetchImpl: typeof fetch = fetch): P
       notes: app.description,
       ...(app.appUrl ? { url: app.appUrl } : {}),
       ...(app.appPort ? { port: app.appPort } : {}),
+      servicePorts: app.services
+        .map((service) => service.port)
+        .filter((port): port is number => typeof port === 'number' && Number.isFinite(port)),
+      ...(app.database?.hostPort ? { databasePort: app.database.hostPort } : {}),
+      ...(app.database?.containerName ? { containerName: app.database.containerName } : {}),
+      ...(containerStatus ? { containerStatus } : {}),
     };
   });
 
@@ -818,6 +841,27 @@ function normalizeStatus(status: LocalAppsRuntimeReport['apps'][number]['status'
   return status === 'running' || status === 'stopped' || status === 'disabled' ? status : 'unknown';
 }
 
+function dockerContainerState(containerName: string): Promise<'running' | 'stopped' | 'unknown'> {
+  return new Promise((resolve) => {
+    execFile('docker', ['inspect', '--format', '{{.State.Status}}', containerName], { timeout: 5_000 }, (error, stdout) => {
+      if (error) {
+        resolve('unknown');
+        return;
+      }
+      const state = stdout.trim().toLowerCase();
+      if (state === 'running') {
+        resolve('running');
+        return;
+      }
+      if (state === 'exited' || state === 'created' || state === 'paused' || state === 'restarting' || state === 'dead') {
+        resolve('stopped');
+        return;
+      }
+      resolve('unknown');
+    });
+  });
+}
+
 function isPortListening(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = new net.Socket();
@@ -827,6 +871,21 @@ function isPortListening(port: number): Promise<boolean> {
       .on('error', () => { socket.destroy(); resolve(false); })
       .on('timeout', () => { socket.destroy(); resolve(false); })
       .connect(port, '127.0.0.1');
+  });
+}
+
+function readDockerContainerStatus(containerName: string): Promise<'running' | 'stopped' | 'unknown'> {
+  return new Promise((resolve) => {
+    execFile('docker', ['inspect', '--format', '{{.State.Status}}', containerName], { timeout: 5_000 }, (error, stdout) => {
+      if (error) {
+        resolve('unknown');
+        return;
+      }
+      const state = stdout.trim().toLowerCase();
+      if (state === 'running') resolve('running');
+      else if (state === 'exited' || state === 'created' || state === 'paused' || state === 'dead') resolve('stopped');
+      else resolve('unknown');
+    });
   });
 }
 

@@ -1,17 +1,18 @@
 # Brain Console Obsidian Plugin
 
 **Status:** frozen legacy/native plugin path  
-**Superseded by:** `projects/brain-console-web`  
-**Decision date:** 2026-06-02  
+**Superseded by:** `projects/brain-console-center` / Brain Console Center  
+**Decision date:** 2026-06-03  
 
 The Brain Console Obsidian Plugin is no longer the canonical Brain Console runtime. It is preserved as a historical/native Obsidian implementation and reference source only.
 
 The active direction is:
 
 ```text
-Brain Console Web = primary control-plane UI in the brain repo.
+Brain Console Center = single leading operational dashboard in the brain repo.
+Brain Console Web = legacy AWS Video reference dashboard.
 Brain Console Obsidian Plugin = frozen legacy/native plugin path.
-Obsidian = optional viewer of the local Brain Console Web URL.
+Obsidian = optional viewer of the local Brain Console Center URL after implementation.
 ```
 
 Do not add new operational dashboard features here unless explicitly requested for legacy maintenance. New execution-facing UI work should go into `projects/brain-console-web` and consume Brain Core API surfaces.

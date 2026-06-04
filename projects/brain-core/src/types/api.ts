@@ -128,6 +128,10 @@ export interface BrainCoreLocalAppDashboardItem {
   health: BrainCoreLocalAppHealth;
   url?: string;
   port?: number;
+  servicePorts?: number[];
+  databasePort?: number;
+  containerName?: string;
+  containerStatus?: 'running' | 'stopped' | 'unknown';
   source: BrainCoreLocalAppSource;
   managed: boolean;
   startSupported: boolean;
@@ -296,6 +300,14 @@ export interface BrainCoreLocalAppActionResultStep {
   message: string;
 }
 
+export interface BrainCoreLocalAppPortCheck {
+  port: number;
+  kind: 'app' | 'service' | 'database';
+  status: 'free' | 'occupied_known' | 'occupied_unknown' | 'healthy' | 'unhealthy' | 'unknown';
+  label?: string;
+  message?: string;
+}
+
 export interface BrainCoreLocalAppActionSafety {
   pluginExecutesShell: false;
   arbitraryCommandAllowed: false;
@@ -334,6 +346,7 @@ export interface BrainCoreLocalAppActionResult {
   durationMs: number;
   nextPollMs: number;
   steps: BrainCoreLocalAppActionResultStep[];
+  portChecks?: BrainCoreLocalAppPortCheck[];
   safety: BrainCoreLocalAppActionSafety;
   nextState: 'running' | 'stopped' | 'unknown';
 }

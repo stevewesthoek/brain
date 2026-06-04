@@ -6,6 +6,7 @@ import type {
   BrainCoreLocalAppManagedProcessRecord,
   BrainCoreLocalAppActionResult,
   BrainCoreLocalAppActionResultStep,
+  BrainCoreLocalAppPortCheck,
 } from '../types/api.js';
 import type { BrainCoreLocalAppDefinition } from '../types/api.js';
 import { listLocalAppDefinitions } from './local-app-orchestrator.js';
@@ -932,6 +933,24 @@ function summarizeCwd(cwd: string): string {
   return `[external-safe-runtime-path]/${path.basename(cwd)}`;
 }
 
+function derivePortChecks(steps: BrainCoreLocalAppActionResultStep[]): BrainCoreLocalAppPortCheck[] {
+  const checks = new Map<number, BrainCoreLocalAppPortCheck>();
+  for (const step of steps) {
+    const match = step.message.match(/\b[Pp]ort\s+(\d{2,5})\b/) ?? step.label.match(/\b[Pp]ort\s+(\d{2,5})\b/);
+    if (!match) continue;
+    const port = Number(match[1]);
+    if (!Number.isFinite(port)) continue;
+    const kind: BrainCoreLocalAppPortCheck['kind'] = step.type === 'database' ? 'database' : step.id.includes('service') ? 'service' : 'app';
+    const status: BrainCoreLocalAppPortCheck['status'] = step.status === 'success'
+      ? 'healthy'
+      : step.status === 'failed'
+        ? 'unhealthy'
+        : 'unknown';
+    checks.set(port, { port, kind, status, label: step.label, message: step.message });
+  }
+  return Array.from(checks.values());
+}
+
 function createResult(input: {
   id: string;
   appId: string;
@@ -965,6 +984,7 @@ function createResult(input: {
     durationMs: Math.max(0, endedAtMs - input.startedAtMs),
     nextPollMs: input.nextPollMs ?? 1500,
     steps: input.steps,
+    portChecks: derivePortChecks(input.steps),
     safety: {
       pluginExecutesShell: false,
       arbitraryCommandAllowed: false,

@@ -1,9 +1,10 @@
 # Brain Console Web Migration
 
-**Status:** active direction  
+**Status:** legacy migration record, superseded by Brain Console Center  
 **Owner:** Steve Westhoek  
 **Decision date:** 2026-06-02  
-**Supersedes:** Brain Console Obsidian Plugin as the primary operational dashboard runtime
+**Superseded by:** `docs/system/brain-console-center-roadmap.md` and `docs/system/brain-console-center-implementation-plan.md`  
+**Legacy value:** AWS Video feature reference for Brain Console Center
 
 ## Decision
 

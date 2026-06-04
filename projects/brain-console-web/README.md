@@ -1,10 +1,11 @@
 # Brain Console Web
 
-**Status:** active primary Brain Console direction  
+**Status:** legacy AWS Video reference dashboard  
 **Initial scope:** AWS Video operational dashboard only  
-**Supersedes:** `projects/brain-console-obsidian` for new operational dashboard work
+**Superseded by:** `projects/brain-console-center` / Brain Console Center  
+**Legacy policy:** no new dashboard feature work; migrate useful features into Brain Console Center through Brain Core API
 
-Brain Console Web is a standalone local web dashboard owned entirely by the `brain` repo.
+Brain Console Web is a standalone local web dashboard owned entirely by the `brain` repo. It is now preserved as the direct AWS Video reference implementation for Brain Console Center.
 
 ```text
 Brain Console Web → Brain Core API → runtime/job/config sources
@@ -39,7 +40,7 @@ The first dashboard intentionally contains only AWS Video operations:
 - request changes
 - generate artifacts
 
-There is intentionally no YouTube publish button yet.
+Latest legacy code includes controlled YouTube dry-run/private publish controls, but Brain Console Center Phase 1 must not migrate publishing controls. Publishing remains out of scope until separately approved.
 
 ## Run
 

@@ -121,6 +121,7 @@ export const localAppSchema = z.object({
   servicePorts: z.array(z.number()).optional(),
   databasePort: z.number().nullable().optional(),
   containerName: z.string().optional(),
+  containerStatus: z.enum(['running', 'stopped', 'unknown']).optional(),
 });
 
 export const localAppsDashboardSchema = z.object({

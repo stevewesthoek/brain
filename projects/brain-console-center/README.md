@@ -43,11 +43,29 @@ Override in the browser build with:
 NEXT_PUBLIC_BRAIN_CORE_URL=http://localhost:4877 npm run dev
 ```
 
+## Architecture and design rules
+
+Read this before changing Brain Console Center UI or API contracts:
+
+```text
+docs/system/brain-console-center-architecture.md
+```
+
 ## Phase 1 surfaces
 
 - Overview cards from `/ops/system-metrics`, `/ops/ai-usage-windows`, and `/ops/ai-costs`
 - Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints
+
+## Design system
+
+Before changing the UI, read:
+
+```text
+docs/system/brain-console-center-design-system.md
+```
+
+The dashboard follows a shadcnblocks admin-dashboard style: compact shell, left navigation, page tabs, bounded cards, clear status states, and no overlapping controls.
 
 ## Safety
 

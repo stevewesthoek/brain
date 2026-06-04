@@ -1,6 +1,6 @@
 # ProBot
 
-> Migration note: ProBot is being reduced to an optional thin client over Brain Core. Do not add new dashboard product features here. New machine/session/scheduler surfaces should be implemented in `projects/brain-core` first, then consumed by Slack/Telegram only as fallback/mobile clients.
+> Migration note: ProBot is a legacy dashboard and optional thin client over Brain Core. Do not add new dashboard product features here. New dashboard surfaces should be implemented in `projects/brain-console-center` and backed by `projects/brain-core` first, then consumed by Slack/Telegram only as fallback/mobile clients.
 
 ProBot is a lightweight, always-on local Slack and Telegram control plane for the Brain repo and the existing Claude/Codex workflow on this Mac.
 
@@ -12,12 +12,12 @@ It is intentionally not a general-purpose agent platform. The goal is fast remot
 
 As of 2026-05-16, the ProBot dashboard is deprecated as a primary product UI.
 
-The accepted direction is documented in:
+The accepted dashboard direction is documented in:
 
-- `../../docs/system/obsidian-brain-core-roadmap.md`
-- `../../docs/system/obsidian-brain-core-implementation-plan.md`
+- `../../docs/system/brain-console-center-roadmap.md`
+- `../../docs/system/brain-console-center-implementation-plan.md`
 
-Obsidian is the target primary human cockpit. ProBot should not receive new dashboard product features. Reusable ProBot backend capabilities may be migrated into the future Brain Core local API, including Slack/Telegram adapters, session ranking, local app lifecycle logic, approval handling, and selected status adapters.
+Brain Console Center is the target primary dashboard. ProBot should not receive new dashboard product features. Reusable ProBot backend capabilities may be migrated into Brain Core, including Slack/Telegram adapters, session ranking, local app lifecycle logic, approval handling, and selected status adapters.
 
 Dashboard changes are allowed only when they support diagnostics, migration, or safe decommissioning.
 
@@ -49,12 +49,12 @@ ProBot status also includes the read-only execution readiness view from `/execut
 
 The ProBot dashboard is deprecated as a primary UI. Obsidian is the target primary human cockpit, backed by a small local Brain Core API.
 
-Canonical roadmap:
+Canonical dashboard roadmap:
 
-- `../../docs/system/obsidian-brain-core-roadmap.md`
-- `../../docs/system/obsidian-brain-core-implementation-plan.md`
+- `../../docs/system/brain-console-center-roadmap.md`
+- `../../docs/system/brain-console-center-implementation-plan.md`
 
-Do not add new product dashboard features here. During migration, ProBot may provide reusable backend capabilities such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and selected status adapters. New dashboard or machine-control work should target Brain Core and Obsidian.
+Do not add new product dashboard features here. During migration, ProBot may provide reusable backend capabilities such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and selected status adapters. New dashboard work should target Brain Console Center, backed by Brain Core.
 
 ## Goals
 

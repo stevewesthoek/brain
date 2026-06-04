@@ -18,7 +18,7 @@ type LocalAppsTab = 'apps' | 'actions' | 'policy';
 type LocalActionName = 'start' | 'stop' | 'restart';
 type InFlightLocalAction = { appId?: unknown; action?: unknown; startedAt?: unknown };
 
-const APPS_PER_PAGE = 12;
+const APPS_PER_PAGE = 4;
 const STATUS_PRIORITY: Record<string, number> = {
   running: 0,
   starting: 1,
@@ -33,6 +33,20 @@ function localUrl(app: LocalApp): string | null {
   if (typeof app.port === 'number') return `http://localhost:${app.port}`;
   if (app.url?.startsWith('http')) return app.url;
   return null;
+}
+
+function portSummary(app: LocalApp): string {
+  const ports = [typeof app.port === 'number' ? app.port : null, ...(app.servicePorts ?? [])]
+    .filter((port): port is number => typeof port === 'number' && Number.isFinite(port));
+  return Array.from(new Set(ports)).join(', ') || '—';
+}
+
+function infrastructureSummary(app: LocalApp): string {
+  const parts = [
+    typeof app.databasePort === 'number' ? `db:${app.databasePort}` : null,
+    app.containerName ? `ctr:${app.containerName}${app.containerStatus ? `/${app.containerStatus}` : ''}` : null,
+  ].filter((part): part is string => Boolean(part));
+  return parts.join(' · ') || 'none';
 }
 
 function disabledReason(app: LocalApp): string {
@@ -61,8 +75,32 @@ function activeActionForApp(app: LocalApp, localPending?: { app: LocalApp; actio
   return typeof remote?.action === 'string' ? remote.action : null;
 }
 
+function dedupeAppsById(apps: LocalApp[]): LocalApp[] {
+  const seen = new Map<string, LocalApp>();
+  for (const app of apps) {
+    const existing = seen.get(app.id);
+    if (!existing) {
+      seen.set(app.id, app);
+      continue;
+    }
+    const existingScore = existing.status === 'running' ? 2 : existing.port ? 1 : 0;
+    const nextScore = app.status === 'running' ? 2 : app.port ? 1 : 0;
+    if (nextScore > existingScore) seen.set(app.id, app);
+  }
+  return Array.from(seen.values());
+}
+
+function uniqueApps(apps: LocalApp[]): LocalApp[] {
+  const seen = new Set<string>();
+  return apps.filter((app) => {
+    if (seen.has(app.id)) return false;
+    seen.add(app.id);
+    return true;
+  });
+}
+
 function sortApps(apps: LocalApp[]): LocalApp[] {
-  return [...apps].sort((a, b) => {
+  return uniqueApps(apps).sort((a, b) => {
     const statusA = STATUS_PRIORITY[String(a.status ?? 'unknown')] ?? 50;
     const statusB = STATUS_PRIORITY[String(b.status ?? 'unknown')] ?? 50;
     if (statusA !== statusB) return statusA - statusB;
@@ -77,7 +115,8 @@ function AppCard({ app, pending, activeAction, onAction }: { app: LocalApp; pend
   const url = localUrl(app);
   const startOrRestart: LocalActionName = app.restartSupported ? 'restart' : 'start';
   const reason = disabledReason(app);
-  const ports = typeof app.port === 'number' ? String(app.port) : '—';
+  const servicePorts = portSummary(app);
+  const infrastructure = infrastructureSummary(app);
   const busy = Boolean(activeAction);
   const visibleStatus = busy ? 'starting' : app.status;
   const statusLabel = busy ? `${activeAction}…` : undefined;
@@ -94,16 +133,16 @@ function AppCard({ app, pending, activeAction, onAction }: { app: LocalApp; pend
 
       <div className="app-meta-grid">
         <div>
-          <span>Port</span>
-          <strong>{ports}</strong>
+          <span>Ports</span>
+          <strong>{servicePorts}</strong>
+        </div>
+        <div>
+          <span>Infra</span>
+          <strong title={infrastructure}>{infrastructure}</strong>
         </div>
         <div>
           <span>Health</span>
           <strong>{app.health ?? 'unknown'}</strong>
-        </div>
-        <div>
-          <span>Updated</span>
-          <strong>{app.lastCheckedAt ? timeAgo(app.lastCheckedAt) : 'unknown'}</strong>
         </div>
       </div>
 
@@ -165,12 +204,13 @@ export function LocalAppsDashboard() {
     },
   });
 
-  const apps = useMemo(() => sortApps(dashboard.data?.apps ?? []), [dashboard.data?.apps]);
+  const apps = useMemo(() => sortApps(dedupeAppsById(dashboard.data?.apps ?? [])), [dashboard.data?.apps]);
   const inFlightActions = useMemo(() => readInFlightActions(actionStatus.data), [actionStatus.data]);
   const localPending = action.isPending ? action.variables : undefined;
   const pageCount = Math.max(1, Math.ceil(apps.length / APPS_PER_PAGE));
   const safePage = Math.min(page, pageCount);
   const visibleApps = apps.slice((safePage - 1) * APPS_PER_PAGE, safePage * APPS_PER_PAGE);
+  const pageItems = Array.from({ length: pageCount }, (_, index) => index + 1);
 
   const runAction = (app: LocalApp, actionName: 'start' | 'stop' | 'restart') => action.mutate({ app, actionName });
 
@@ -209,11 +249,11 @@ export function LocalAppsDashboard() {
           ) : null}
 
           <div className="app-grid">
-            {visibleApps.map((app) => {
+            {visibleApps.map((app, index) => {
               const activeAction = activeActionForApp(app, localPending, inFlightActions);
               return (
                 <AppCard
-                  key={app.id}
+                  key={`${safePage}-${index}-${app.id}-${app.port ?? 'no-port'}-${app.label ?? app.name}`}
                   app={app}
                   pending={Boolean(activeAction)}
                   activeAction={activeAction}
@@ -225,14 +265,16 @@ export function LocalAppsDashboard() {
             {!dashboard.isLoading && apps.length === 0 ? <div className="compact-error">No local applications returned by Brain Core.</div> : null}
           </div>
 
-          <div className="pager">
-            <span>{apps.length === 0 ? '0 apps' : `Showing ${(safePage - 1) * APPS_PER_PAGE + 1}-${Math.min(safePage * APPS_PER_PAGE, apps.length)} of ${apps.length}`}</span>
-            <div className="row">
+          <div className="pager local-apps-pager">
+            <span>{apps.length === 0 ? '0 apps' : `Page ${safePage}/${pageCount} · showing ${(safePage - 1) * APPS_PER_PAGE + 1}-${Math.min(safePage * APPS_PER_PAGE, apps.length)} of ${apps.length}`}</span>
+            <div className="row page-controls">
+              <button className="button compact secondary" disabled={safePage <= 1} onClick={() => setPage(1)}>First</button>
               <button className="button compact secondary" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Prev</button>
-              {Array.from({ length: pageCount }, (_, index) => index + 1).map((item) => (
-                <button key={item} className={`page-dot ${item === safePage ? 'active' : ''}`} onClick={() => setPage(item)}>{item}</button>
+              {pageItems.map((item) => (
+                <button key={item} className={`page-dot ${item === safePage ? 'active' : ''}`} onClick={() => setPage(item)} aria-label={`Go to Local Apps page ${item}`}>{item}</button>
               ))}
               <button className="button compact secondary" disabled={safePage >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))}>Next</button>
+              <button className="button compact secondary" disabled={safePage >= pageCount} onClick={() => setPage(pageCount)}>Last</button>
             </div>
           </div>
         </section>

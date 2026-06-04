@@ -58,3 +58,15 @@ Crash cause found during the Local Apps actions pass:
 - `restart`: controlled stop sequence followed by controlled start sequence.
 - OrbStack database metadata is modeled, but apps without a safe DB/service execution strategy return `not_executable`.
 - Long-running foreground commands are not launched from the current runner. Future safe runners must detach/background or return `accepted` quickly and rely on status polling.
+
+
+
+## Brain Console Center Local Apps pass — 2026-06-04
+
+Brain Console Center now uses a compact tabbed Local Apps layout. Apps are shown as dense cards, sorted with running apps first, paginated to reduce scrolling, and labels/ids wrap instead of being clipped. Data-like fields use the configured monospace font.
+
+Per-card status badges now combine local mutation state and Brain Core in-flight action state, so Start, Restart, and Stop show immediate working feedback while the action is running.
+
+The canonical registry now includes Brain Core API on port `4877` and Brain Console Center on port `4881`.
+
+Full hands-off restart of Brain Console Center plus Brain Core still requires a supervisor/orchestrator outside the browser and outside the process being restarted. Until that exists, unsupported lifecycle actions must remain disabled or return structured `not_executable` results.

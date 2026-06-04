@@ -174,6 +174,18 @@ export async function stopDatabasePhase(app: BrainCoreLocalAppDefinition): Promi
   return { ok: true, steps };
 }
 
+function modeledServicePorts(app: BrainCoreLocalAppDefinition): number[] {
+  const ports = [
+    app.appPort,
+    ...app.services.map((service) => service.port),
+  ].filter((port): port is number => typeof port === 'number' && Number.isFinite(port));
+  return Array.from(new Set(ports));
+}
+
+function extraServicePorts(app: BrainCoreLocalAppDefinition): number[] {
+  return modeledServicePorts(app).filter((port) => port !== app.appPort);
+}
+
 // ─── App phase: verify started ───────────────────────────────────────────────
 
 export async function verifyAppStarted(app: BrainCoreLocalAppDefinition): Promise<StackPhaseResult> {
@@ -214,6 +226,17 @@ export async function verifyAppStarted(app: BrainCoreLocalAppDefinition): Promis
       `Health endpoint ${healthUrl} returned ok.`));
   }
 
+  for (const servicePort of extraServicePorts(app)) {
+    const serviceUp = await waitForPort(servicePort, true, APP_START_VERIFY_TIMEOUT_MS);
+    if (!serviceUp) {
+      steps.push(step(`service-port-${servicePort}-verify`, `Verify service port ${servicePort}`, 'health-check', 'failed',
+        `Service port ${servicePort} did not come up within ${APP_START_VERIFY_TIMEOUT_MS / 1000}s.`));
+      return { ok: false, steps, reason: `Service port ${servicePort} did not open after app start.` };
+    }
+    steps.push(step(`service-port-${servicePort}-verify`, `Verify service port ${servicePort}`, 'health-check', 'success',
+      `Service port ${servicePort} is accepting connections.`));
+  }
+
   return { ok: true, steps };
 }
 
@@ -231,58 +254,65 @@ export async function isAppAlreadyRunning(app: BrainCoreLocalAppDefinition): Pro
     steps.push(step('app-health-verify', `Verify app health ${healthUrl}`, 'health-check', 'failed', `Health endpoint ${healthUrl} did not return ok.`));
   }
 
-  if (!port) {
-    return { ok: false, steps, reason: 'No app port registered; cannot determine running state.' };
+  const servicePorts = modeledServicePorts(app);
+  if (servicePorts.length === 0) {
+    return { ok: false, steps, reason: 'No app or service ports registered; cannot determine running state.' };
   }
 
-  const listening = await isPortListening(port);
-  if (listening) {
-    steps.push(step('app-port-verify', `Verify app port ${port}`, 'health-check', 'success', `App port ${port} is accepting connections.`));
+  const occupiedPorts: number[] = [];
+  for (const servicePort of servicePorts) {
+    const listening = await isPortListening(servicePort);
+    steps.push(step(
+      `app-port-preflight-${servicePort}`,
+      `Preflight service port ${servicePort}`,
+      'health-check',
+      listening ? 'success' : 'failed',
+      listening ? `Service port ${servicePort} is accepting connections.` : `Service port ${servicePort} is free.`,
+    ));
+    if (listening) occupiedPorts.push(servicePort);
+  }
+
+  if (occupiedPorts.length > 0) {
     if (healthUrl) {
-      return { ok: false, steps, reason: `App port ${port} is open but ${healthUrl} is not healthy.` };
+      return { ok: false, steps, reason: `One or more service ports are occupied (${occupiedPorts.join(', ')}) but ${healthUrl} is not healthy.` };
     }
     return { ok: true, steps };
   }
 
-  steps.push(step('app-port-verify', `Verify app port ${port}`, 'health-check', 'failed', `App port ${port} is not accepting connections.`));
-  return { ok: false, steps, reason: `App port ${port} is not open.` };
+  return { ok: false, steps, reason: `No service ports are open (${servicePorts.join(', ')}).` };
 }
 
 // ─── App phase: verify stopped ───────────────────────────────────────────────
 
 export async function verifyAppStopped(app: BrainCoreLocalAppDefinition): Promise<StackPhaseResult> {
-  const port = app.appPort;
-  if (!port) {
-    return { ok: true, steps: [step('app-port-verify', 'Verify app stopped', 'health-check', 'skipped', 'No app port registered; cannot verify.')] };
+  const ports = modeledServicePorts(app);
+  if (ports.length === 0) {
+    return { ok: true, steps: [step('app-port-verify', 'Verify app stopped', 'health-check', 'skipped', 'No app/service ports registered; cannot verify.')] };
   }
 
   // Give graceful shutdown a moment
   await sleep(APP_STOP_GRACE_MS);
 
-  const down = await waitForPort(port, false, APP_STOP_VERIFY_TIMEOUT_MS);
-  if (!down) {
-    // Port still up — kill whatever is on it
-    const killResult = await forceKillPort(port);
-    const forceDown = await waitForPort(port, false, 5_000);
-    if (!forceDown) {
-      return {
-        ok: false,
-        steps: [step('app-port-verify', `Verify app port ${port} closed`, 'health-check', 'failed',
-          `Port ${port} still listening after graceful stop and force kill. ${killResult}`)],
-        reason: `App did not stop: port ${port} still open after force kill.`,
-      };
+  const steps: StackStep[] = [];
+  for (const port of ports) {
+    const down = await waitForPort(port, false, APP_STOP_VERIFY_TIMEOUT_MS);
+    if (!down) {
+      const killResult = await forceKillPort(port);
+      const forceDown = await waitForPort(port, false, 5_000);
+      if (!forceDown) {
+        steps.push(step(`port-${port}-verify-closed`, `Verify port ${port} closed`, 'health-check', 'failed',
+          `Port ${port} still listening after graceful stop and force kill. ${killResult}`));
+        return { ok: false, steps, reason: `App did not stop: port ${port} still open after force kill.` };
+      }
+      steps.push(step(`port-${port}-verify-closed`, `Verify port ${port} closed`, 'health-check', 'success',
+        `Port ${port} closed after force kill. ${killResult}`));
+    } else {
+      steps.push(step(`port-${port}-verify-closed`, `Verify port ${port} closed`, 'health-check', 'success',
+        `Port ${port} is no longer accepting connections.`));
     }
-    return {
-      ok: true,
-      steps: [step('app-port-verify', `Verify app port ${port} closed`, 'health-check', 'success',
-        `Port ${port} closed after force kill. ${killResult}`)],
-    };
   }
-  return {
-    ok: true,
-    steps: [step('app-port-verify', `Verify app port ${port} closed`, 'health-check', 'success',
-      `App port ${port} is no longer accepting connections.`)],
-  };
+
+  return { ok: true, steps };
 }
 
 // ─── Force-kill any process holding a port ───────────────────────────────────
