@@ -14,6 +14,15 @@ Runtime configuration is copied to:
 ~/.config/video-orchestrator/
 ```
 
+Committed runtime config source:
+
+```text
+operations/system-configs/model-selector/config/ai-providers.json
+operations/system-configs/model-selector/config/ai-bedrock-models.json
+operations/system-configs/model-selector/config/ai-task-types.json
+operations/system-configs/model-selector/config/ai-selector-config.json
+```
+
 State and audit files stay local-only:
 
 ```text
@@ -24,6 +33,8 @@ State and audit files stay local-only:
 ## Runtime Contract
 
 The selector owns provider discovery, model availability, fallback order, circuit breakers, Bedrock access checks, and model outcome learning.
+
+The selector also owns local resource admission for local LLM tasks. Local OpenAI-compatible providers on `localhost` are checked for macOS memory pressure, load average per CPU, loaded Ollama models, model availability, circuit state, and rate-limit state before selection. Consumers do not choose a local model directly.
 
 Consumers use one routing endpoint:
 
@@ -56,6 +67,20 @@ GET http://127.0.0.1:4877/ai-model-selector/health-matrix
 
 Brain Console Center consumes Brain Core. It does not probe providers directly.
 
+## Local Resource Guard
+
+`codebase_semantic_graph` is the Graphify semantic extraction task. It is local-only and requires `local_only=true` on `/select`.
+
+The task prefers `qwen2.5:32b` and falls back to `qwen2.5:14b`. The 32B model is selectable only when the local burst policy passes:
+
+```text
+max_load_per_cpu <= 0.75
+macOS memory_pressure free percentage >= 60
+no other Ollama model is already loaded
+```
+
+The 14B fallback requires `memory_pressure` free percentage >= 30 and the same load policy. If no local model passes the guard, `/select` returns no provider and the consumer must skip or retry later.
+
 ## Bedrock Portfolio
 
 `config/ai-bedrock-models.json` is the canonical model roster for the Bedrock value portfolio. The live copy is `~/.config/video-orchestrator/ai-bedrock-models.json`.
@@ -83,6 +108,8 @@ Claude launches from `repos`, `sessions`, and the shell `claude` wrapper source 
 ```bash
 cp operations/system-configs/model-selector/config/ai-providers.json ~/.config/video-orchestrator/ai-providers.json
 cp operations/system-configs/model-selector/config/ai-bedrock-models.json ~/.config/video-orchestrator/ai-bedrock-models.json
+cp operations/system-configs/model-selector/config/ai-task-types.json ~/.config/video-orchestrator/ai-task-types.json
+cp operations/system-configs/model-selector/config/ai-selector-config.json ~/.config/video-orchestrator/ai-selector-config.json
 cp operations/system-configs/launchagents/com.office.ai-model-selector.plist ~/Library/LaunchAgents/com.office.ai-model-selector.plist
 launchctl stop com.office.ai-model-selector 2>/dev/null || true
 launchctl unload ~/Library/LaunchAgents/com.office.ai-model-selector.plist 2>/dev/null || true
@@ -98,4 +125,7 @@ curl -sS http://127.0.0.1:4890/health/matrix
 curl -sS -X POST http://127.0.0.1:4890/select \
   -H 'Content-Type: application/json' \
   -d '{"task_type":"description_quality_review","input_token_count":30000,"urgent":true,"previous_failures":["ollama-m4pro","ollama-m1"]}'
+curl -sS -X POST http://127.0.0.1:4890/select \
+  -H 'Content-Type: application/json' \
+  -d '{"task_type":"codebase_semantic_graph","input_token_count":50000,"urgent":true,"local_only":true}'
 ```

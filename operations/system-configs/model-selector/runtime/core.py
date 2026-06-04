@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import random
+import re
 import shutil
 import subprocess
 import time
@@ -450,6 +451,86 @@ class ModelSelector:
         except Exception:
             return 0.0
 
+    def _local_resource_status(self) -> dict:
+        """Return conservative local resource headroom for local LLM selection.
+
+        macOS unified memory is shared by CPU and GPU. The selector treats low
+        available memory, high load, or already-loaded Ollama models as reasons
+        to avoid large local models. This is intentionally conservative because
+        callers can always retry later.
+        """
+        status: dict[str, Any] = {
+            "host": "localhost",
+            "available_memory_gb": None,
+            "total_memory_gb": None,
+            "memory_pressure_free_percent": None,
+            "load_1m": None,
+            "cpu_count": os.cpu_count() or 1,
+            "load_per_cpu": None,
+            "ollama_loaded_models": [],
+        }
+
+        try:
+            total_raw = subprocess.check_output(["sysctl", "-n", "hw.memsize"], text=True, timeout=2).strip()
+            total_bytes = int(total_raw)
+            status["total_memory_gb"] = round(total_bytes / (1024 ** 3), 2)
+        except Exception:
+            pass
+
+        try:
+            pressure = subprocess.check_output(["memory_pressure"], text=True, timeout=5, stderr=subprocess.DEVNULL)
+            free_match = re.search(r"System-wide memory free percentage:\s*(\d+)%", pressure)
+            if free_match:
+                status["memory_pressure_free_percent"] = int(free_match.group(1))
+        except Exception:
+            pass
+
+        try:
+            vm_stat = subprocess.check_output(["vm_stat"], text=True, timeout=2)
+            page_size_match = re.search(r"page size of (\d+) bytes", vm_stat)
+            page_size = int(page_size_match.group(1)) if page_size_match else 4096
+            pages: dict[str, int] = {}
+            for line in vm_stat.splitlines():
+                if ":" not in line:
+                    continue
+                key, value = line.split(":", 1)
+                number = re.sub(r"[^0-9]", "", value)
+                if number:
+                    pages[key.strip()] = int(number)
+            available_pages = (
+                pages.get("Pages free", 0)
+                + pages.get("Pages inactive", 0)
+                + pages.get("Pages speculative", 0)
+            )
+            status["available_memory_gb"] = round((available_pages * page_size) / (1024 ** 3), 2)
+        except Exception:
+            pass
+
+        try:
+            load_1m = os.getloadavg()[0]
+            cpu_count = int(status["cpu_count"] or 1)
+            status["load_1m"] = round(load_1m, 2)
+            status["load_per_cpu"] = round(load_1m / max(cpu_count, 1), 3)
+        except Exception:
+            pass
+
+        try:
+            req = urllib.request.Request(
+                "http://localhost:11434/api/ps",
+                headers={"Accept": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                data = json.loads(resp.read())
+                status["ollama_loaded_models"] = [
+                    m.get("name") or m.get("model")
+                    for m in data.get("models", [])
+                    if isinstance(m, dict) and (m.get("name") or m.get("model"))
+                ]
+        except Exception:
+            status["ollama_loaded_models"] = []
+
+        return status
+
     def _check_health(self, provider: dict) -> bool:
         ptype = provider.get("type", "")
         if ptype == "openai-compatible":
@@ -475,6 +556,73 @@ class ModelSelector:
             if f"{size}b" in model_lower:
                 return float(size) >= min_b
         return True
+
+    def _model_size_b(self, model_id: str) -> float | None:
+        match = re.search(r"(?<!\d)(\d+(?:\.\d+)?)b(?![a-z])", model_id.lower())
+        if not match:
+            return None
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+
+    def _local_model_resource_ok(self, provider: dict, model_id: str, task_spec: dict) -> tuple[bool, str]:
+        if provider.get("type") != "openai-compatible":
+            return True, "not-local-openai-compatible"
+
+        hostname = urllib.parse.urlparse(str(provider.get("base_url", ""))).hostname or ""
+        if hostname not in {"localhost", "127.0.0.1", "::1"}:
+            return True, "remote-local-network-provider"
+
+        policy = task_spec.get("local_resource_policy") or {}
+        if not policy:
+            return True, "no-resource-policy"
+
+        resources = self._local_resource_status()
+        size_b = self._model_size_b(model_id)
+        load_per_cpu = resources.get("load_per_cpu")
+        available_memory_gb = resources.get("available_memory_gb")
+        memory_pressure_free_percent = resources.get("memory_pressure_free_percent")
+        loaded_models = [str(m) for m in resources.get("ollama_loaded_models", [])]
+
+        max_load_per_cpu = policy.get("max_load_per_cpu")
+        if max_load_per_cpu is not None and load_per_cpu is not None and float(load_per_cpu) > float(max_load_per_cpu):
+            return False, f"resource_guard: load_per_cpu={load_per_cpu} > {max_load_per_cpu}"
+
+        memory_by_size = policy.get("min_available_memory_gb_by_model_size", {})
+        if size_b is not None and memory_by_size:
+            threshold = None
+            for key, value in sorted(memory_by_size.items(), key=lambda item: float(item[0]), reverse=True):
+                if size_b >= float(key):
+                    threshold = float(value)
+                    break
+            if threshold is not None and available_memory_gb is not None and float(available_memory_gb) < threshold:
+                return False, f"resource_guard: available_memory_gb={available_memory_gb} < {threshold}"
+
+        pressure_by_size = policy.get("min_memory_pressure_free_percent_by_model_size", {})
+        if size_b is not None and pressure_by_size:
+            threshold = None
+            for key, value in sorted(pressure_by_size.items(), key=lambda item: float(item[0]), reverse=True):
+                if size_b >= float(key):
+                    threshold = float(value)
+                    break
+            if (
+                threshold is not None
+                and memory_pressure_free_percent is not None
+                and float(memory_pressure_free_percent) < threshold
+            ):
+                return False, f"resource_guard: memory_pressure_free_percent={memory_pressure_free_percent} < {threshold}"
+
+        large_model_threshold = float(policy.get("large_model_threshold_b", 32))
+        if (
+            size_b is not None
+            and size_b >= large_model_threshold
+            and policy.get("disallow_large_model_when_other_ollama_model_loaded", True)
+            and any(loaded != model_id for loaded in loaded_models)
+        ):
+            return False, f"resource_guard: ollama_loaded_models={','.join(loaded_models[:3])}"
+
+        return True, "resource_guard: ok"
 
     def _bedrock_cache_key(self, model: dict) -> str:
         return f"{model.get('region', self._bedrock_config.get('default_region', 'us-east-1'))}:{model.get('model_id', '')}"
@@ -620,17 +768,29 @@ class ModelSelector:
         ptype = provider.get("type", "")
         if ptype == "openai-compatible":
             loaded_models = self._provider_models.get(provider["id"], [])
-            preferred_models = provider.get("preferred_models", [])
+            task_preferred_models = task_spec.get("preferred_local_models")
+            preferred_models = task_preferred_models or provider.get("preferred_models", [])
             if loaded_models and preferred_models:
                 preferred_loaded = [m for m in preferred_models if m in loaded_models]
-                other_loaded = [m for m in loaded_models if m not in preferred_loaded]
-                models = preferred_loaded + other_loaded
+                if task_preferred_models:
+                    models = preferred_loaded
+                else:
+                    other_loaded = [m for m in loaded_models if m not in preferred_loaded]
+                    models = preferred_loaded + other_loaded
             else:
                 models = loaded_models or preferred_models
         if not models:
             return ""
-        viable = [m for m in models if self._model_meets_min_params(m, task_spec)]
-        return viable[0] if viable else models[0]
+        viable = []
+        for model in models:
+            if not self._model_meets_min_params(model, task_spec):
+                continue
+            resource_ok, reason = self._local_model_resource_ok(provider, str(model), task_spec)
+            if not resource_ok:
+                log.info("selector  skip local_model_resource_guard  provider=%s  model=%s  reason=%s", provider.get("id"), model, reason)
+                continue
+            viable.append(model)
+        return viable[0] if viable else ""
 
     def _resolve_key(self, provider: dict) -> str | None:
         if provider.get("expose_api_key") is False:

@@ -123,6 +123,87 @@ class TestLocalOnlySelection(unittest.TestCase):
         self.assertEqual(result.provider_id, "ollama-local")
         self.assertEqual(result.model, "qwen2.5:14b")
 
+    def test_graphify_prefers_32b_only_when_resource_guard_allows_it(self):
+        selector = core.ModelSelector()
+        provider = {
+            "id": "ollama-local",
+            "type": "openai-compatible",
+            "base_url": "http://127.0.0.1:11434/v1",
+            "preferred_models": ["qwen2.5:14b"],
+        }
+        task_spec = {
+            "min_local_model_params": "14B",
+            "preferred_local_models": ["qwen2.5:32b", "qwen2.5:14b"],
+            "local_resource_policy": {
+                "max_load_per_cpu": 0.75,
+                "large_model_threshold_b": 32,
+                "disallow_large_model_when_other_ollama_model_loaded": True,
+                "min_memory_pressure_free_percent_by_model_size": {"32": 60, "14": 30},
+            },
+        }
+        selector._provider_models["ollama-local"] = ["qwen2.5:32b", "qwen2.5:14b"]
+        selector._local_resource_status = lambda: {
+            "memory_pressure_free_percent": 72,
+            "load_per_cpu": 0.2,
+            "ollama_loaded_models": [],
+        }
+
+        self.assertEqual(selector._pick_model(provider, task_spec), "qwen2.5:32b")
+
+    def test_graphify_falls_back_to_14b_when_32b_resource_guard_blocks_it(self):
+        selector = core.ModelSelector()
+        provider = {
+            "id": "ollama-local",
+            "type": "openai-compatible",
+            "base_url": "http://127.0.0.1:11434/v1",
+            "preferred_models": ["qwen2.5:14b"],
+        }
+        task_spec = {
+            "min_local_model_params": "14B",
+            "preferred_local_models": ["qwen2.5:32b", "qwen2.5:14b"],
+            "local_resource_policy": {
+                "max_load_per_cpu": 0.75,
+                "large_model_threshold_b": 32,
+                "disallow_large_model_when_other_ollama_model_loaded": True,
+                "min_memory_pressure_free_percent_by_model_size": {"32": 60, "14": 30},
+            },
+        }
+        selector._provider_models["ollama-local"] = ["qwen2.5:32b", "qwen2.5:14b"]
+        selector._local_resource_status = lambda: {
+            "memory_pressure_free_percent": 45,
+            "load_per_cpu": 0.2,
+            "ollama_loaded_models": [],
+        }
+
+        self.assertEqual(selector._pick_model(provider, task_spec), "qwen2.5:14b")
+
+    def test_graphify_does_not_fall_through_to_unapproved_loaded_model(self):
+        selector = core.ModelSelector()
+        provider = {
+            "id": "ollama-local",
+            "type": "openai-compatible",
+            "base_url": "http://127.0.0.1:11434/v1",
+            "preferred_models": ["qwen2.5:14b"],
+        }
+        task_spec = {
+            "min_local_model_params": "14B",
+            "preferred_local_models": ["qwen2.5:32b", "qwen2.5:14b"],
+            "local_resource_policy": {
+                "max_load_per_cpu": 0.75,
+                "large_model_threshold_b": 32,
+                "disallow_large_model_when_other_ollama_model_loaded": True,
+                "min_memory_pressure_free_percent_by_model_size": {"32": 60, "14": 30},
+            },
+        }
+        selector._provider_models["ollama-local"] = ["qwen2.5:32b", "bakllava:latest"]
+        selector._local_resource_status = lambda: {
+            "memory_pressure_free_percent": 45,
+            "load_per_cpu": 0.2,
+            "ollama_loaded_models": [],
+        }
+
+        self.assertEqual(selector._pick_model(provider, task_spec), "")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,8 @@
+{
+  "batch_window": { "start_hour": 1, "end_hour": 7 },
+  "prefer_defer_over_paid": true,
+  "max_defer_hours": 18,
+  "urgent_tasks_use_paid": true,
+  "lmstudio_health_check_interval_sec": 30,
+  "rate_limit_state_persist_interval_sec": 60
+}
