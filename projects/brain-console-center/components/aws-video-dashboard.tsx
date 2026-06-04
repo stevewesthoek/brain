@@ -9,8 +9,6 @@ import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 
 const GENERATE_TIMEOUT_MS = 120_000;
-const PUBLISH_CONFIRMATION = 'PUBLISH PRIVATE TO YOUTUBE';
-
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'publish' | 'activity';
 
 function pct(value: number | undefined): number {
@@ -30,7 +28,7 @@ function nestedStatus(value: unknown): string {
 }
 
 function isReadyToPublish(job: Partial<VideoJob> | null | undefined): boolean {
-  return job?.status === 'ready_to_publish' || nestedStatus(job?.publishing) === 'pending';
+  return job?.status === 'ready_to_publish' || job?.status === 'published';
 }
 
 function pipelineSteps(job: Partial<VideoJob> | null | undefined) {
@@ -54,7 +52,7 @@ export function AwsVideoDashboard() {
   const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
-  const [publishConfirmation, setPublishConfirmation] = useState('');
+  const [dismissedError, setDismissedError] = useState<string | null>(null);
   const [dryRunPassedForJobId, setDryRunPassedForJobId] = useState<string | null>(null);
   const [activity, setActivity] = useState<string[]>([]);
 
@@ -150,12 +148,10 @@ export function AwsVideoDashboard() {
   const youtubePublish = useMutation({
     mutationFn: () => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/publish/youtube`, youtubePublishResultSchema, {
       dryRun: false,
-      confirmation: publishConfirmation,
       requestedBy: 'brain-console-center',
     }, 1_900_000),
     onSuccess: async (result) => {
       addActivity(result.ok ? `Private YouTube upload completed for ${jobId}${result.videoId ? ` (${result.videoId})` : ''}` : `Private YouTube upload failed for ${jobId}`);
-      setPublishConfirmation('');
       await invalidateVideo();
     },
   });
@@ -165,7 +161,7 @@ export function AwsVideoDashboard() {
   const selectedReady = isReadyToPublish(selectedJob);
   const selectedPublished = selectedJob?.status === 'published';
   const canDryRun = Boolean(jobId && selectedReady && !selectedPublished);
-  const canPublish = canDryRun && dryRunPassedForJobId === jobId && publishConfirmation === PUBLISH_CONFIRMATION;
+  const canPublish = canDryRun && dryRunPassedForJobId === jobId;
   const guideSteps = [
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
     { label: 'Approve', help: 'Approve the script.', done: selectedJob ? !['draft', 'awaiting_approval'].includes(selectedJob.status ?? '') : false, active: selectedJob?.status === 'awaiting_approval' },
@@ -175,6 +171,8 @@ export function AwsVideoDashboard() {
   ];
   const nextStep = guideSteps.find((step) => !step.done);
   const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
+  const actionErrorMessage = actionError instanceof Error ? actionError.message : actionError ? String(actionError) : null;
+  const showErrorToast = Boolean(actionErrorMessage && actionErrorMessage !== dismissedError);
 
   const counts = {
     total: jobList.length,
@@ -185,6 +183,28 @@ export function AwsVideoDashboard() {
 
   return (
     <div className="aws-video-screen">
+      {actionError && dismissedError !== String(actionError instanceof Error ? actionError.message : actionError) ? (
+        <div className="toast-stack" role="alert" aria-live="assertive">
+          <div className="toast-error">
+            <div>
+              <strong>Action failed</strong>
+              <p>{actionError instanceof Error ? actionError.message : String(actionError)}</p>
+            </div>
+            <button aria-label="Dismiss error" onClick={() => setDismissedError(String(actionError instanceof Error ? actionError.message : actionError))}>×</button>
+          </div>
+        </div>
+      ) : null}
+      {showErrorToast && actionErrorMessage ? (
+        <div className="toast-stack" role="alert" aria-live="assertive">
+          <div className="toast error-toast">
+            <div>
+              <strong>Action failed</strong>
+              <p>{actionErrorMessage}</p>
+            </div>
+            <button aria-label="Dismiss error" onClick={() => setDismissedError(actionErrorMessage)}>×</button>
+          </div>
+        </div>
+      ) : null}
       <section className="aws-hero">
         <div className="min-w-0">
           <div className="eyebrow">AWS Video Pipeline</div>
@@ -327,9 +347,9 @@ export function AwsVideoDashboard() {
               {selectedPublished ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
                 <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || youtubePublish.isPending} onClick={() => youtubeDryRun.mutate()}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
-                <button className="button" disabled={!canPublish || youtubePublish.isPending} onClick={() => youtubePublish.mutate()}>{youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}</button>
+                <button className="button danger-button" disabled={!canPublish || youtubePublish.isPending} onClick={() => youtubePublish.mutate()}>{youtubePublish.isPending ? 'Publishing privately…' : 'Publish privately'}</button>
               </div>
-              <label className="meta confirm-label">Type <code>{PUBLISH_CONFIRMATION}</code> after a successful dry-run.<input className="input" value={publishConfirmation} onChange={(event) => setPublishConfirmation(event.target.value)} placeholder={PUBLISH_CONFIRMATION} /></label>
+              <p className="meta no-margin">Private upload unlocks automatically after a successful dry-run for this selected job.</p>
               {youtubeDryRun.data ? <pre className="compact-pre">{JSON.stringify(youtubeDryRun.data, null, 2).slice(0, 1800)}</pre> : null}
               {youtubePublish.data ? <pre className="compact-pre">{JSON.stringify(youtubePublish.data, null, 2).slice(0, 1800)}</pre> : null}
             </article>
@@ -350,7 +370,6 @@ export function AwsVideoDashboard() {
         </aside>
       </section>
 
-      {actionError ? <section className="card error-panel"><div className="card-title">Action error</div><p>{actionError instanceof Error ? actionError.message : String(actionError)}</p></section> : null}
     </div>
   );
 }

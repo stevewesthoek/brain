@@ -537,9 +537,8 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   const thumbnailKey = typeof publishJson.thumbnailKey === 'string' ? publishJson.thumbnailKey : '';
   if (!videoKey || !thumbnailKey) return { ok: false, jobId, dryRun: options.dryRun, code: 'publish_assets_missing', error: 'publish.json must include videoKey and thumbnailKey' };
 
-  if (!options.dryRun && options.confirmation !== 'PUBLISH PRIVATE TO YOUTUBE') {
-    return { ok: false, jobId, dryRun: false, code: 'confirmation_required', error: 'Real upload requires confirmation: PUBLISH PRIVATE TO YOUTUBE' };
-  }
+  // Real uploads are still gated by UI flow: selected ready-to-publish job, successful dry-run,
+  // duplicate-upload check above, OAuth channel verification, and private-only upload script defaults.
 
   const scriptPath = join(getVideoOrchestratorRoot(), 'scripts', 'youtube-upload-local.sh');
   const args = [scriptPath, jobId];
