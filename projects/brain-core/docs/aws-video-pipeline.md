@@ -69,6 +69,54 @@ Prompt-derived metadata with fixture media. Brain Core generates a deterministic
 - Does not call external AI/ML models
 - Does not require additional configuration
 
+### 2.5. Hybrid TTS (`AWS_VIDEO_GENERATION_MODE=hybrid_tts`)
+
+Prompt-derived metadata with TTS narration and fixture video. Brain Core generates a deterministic scene plan and narration script from the user's input, synthesizes narration audio using AWS Polly TTS, then uses fixture video for assembly.
+
+```json
+{
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_tts_fixture_video",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+  "audioKey": "jobs/<jobId>/audio/narration.mp3",
+  "audioProvider": "aws-polly",
+  "voiceId": "Joanna",
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "video": "fixture"
+  },
+  "warnings": ["Video media still uses fixture assets; narration audio is generated from the prompt-derived script."]
+}
+```
+
+**Behavior:**
+- Generates scene plan and narration script (same as hybrid mode)
+- Extracts clean narration text from narration-script.txt
+- Synthesizes MP3 audio using AWS Polly (voice: Joanna)
+- Writes generated audio to `jobs/<jobId>/audio/narration.mp3` (replaces fixture)
+- Writes audio to both local and S3
+- Still uses fixture video for assembly
+- Title gets `[PIPELINE PROOF]` prefix (final video is still fixture)
+- Brain Console Center shows TTS provider and voice info
+- Shows scene plan, narration script, and generated audio artifacts
+
+**What it does:**
+- Generates prompt-derived scene plan
+- Generates prompt-derived narration script from scene descriptions
+- **NEW:** Synthesizes narration MP3 from script using AWS Polly
+- Assembles with fixture video
+- Requires AWS Polly access (via AWS CLI)
+
+**What it does NOT do:**
+- Does not generate video (source.mp4 is fixture)
+- Does not call external AI/ML models for content generation
+- Does not require additional provider accounts
+
 ### 3. AI (`AWS_VIDEO_GENERATION_MODE=ai`)
 
 Not yet implemented. If set without a real provider configured, Brain Core returns:
@@ -83,15 +131,21 @@ Not yet implemented. If set without a real provider configured, Brain Core retur
 
 ## Recommended Build-Out Mode
 
-**For now: use hybrid mode.**
+**Current:** Use `hybrid_tts` mode for full end-to-end proof with real narration audio.
 
-Hybrid mode lets you:
+Hybrid TTS mode lets you:
 - Verify the end-to-end pipeline with real prompts
 - Show prompt-derived metadata (scene plans, narration scripts)
-- Keep final media predictable (fixture)
-- Build toward real media generation without breaking the flow
+- Demonstrate real TTS narration synthesis (AWS Polly)
+- Keep final video predictable (fixture)
+- Build toward real video generation without breaking the flow
 
-Next chunk will add TTS narration and visual media generation.
+**Progression:**
+1. `fixture` — pure proof, no generation (default)
+2. `hybrid` — prompt-derived metadata + fixture media
+3. `hybrid_tts` — prompt-derived metadata + TTS audio + fixture video (current)
+4. (future) `hybrid_video` — prompt-derived metadata + TTS audio + generated video
+5. (future) `ai` — full AI generation (all components real)
 
 ## Dev Environment Reset
 
@@ -122,15 +176,21 @@ aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/
 
 ## Artifact Paths (Canonical)
 
-| Asset | Path |
-|-------|------|
-| Script markdown | `jobs/<jobId>/scripts/script.md` |
-| Scene plan | `jobs/<jobId>/metadata/scene-plan.json` |
-| Narration script text | `jobs/<jobId>/audio/narration-script.txt` |
-| Narration audio (fixture) | `jobs/<jobId>/audio/narration.mp3` |
-| Raw generated video | `jobs/<jobId>/video-generated/generated-001.mp4` |
-| Final assembled video | `jobs/<jobId>/exports/generated-001-final.mp4` |
-| Thumbnail | `jobs/<jobId>/exports/thumbnail-001.jpg` |
+| Asset | Path | Notes |
+|-------|------|-------|
+| Script markdown | `jobs/<jobId>/scripts/script.md` | User input |
+| Scene plan | `jobs/<jobId>/metadata/scene-plan.json` | Deterministic generation (hybrid/hybrid_tts) |
+| Narration script text | `jobs/<jobId>/audio/narration-script.txt` | Deterministic generation (hybrid/hybrid_tts) |
+| Narration audio | `jobs/<jobId>/audio/narration.mp3` | Fixture (fixture/hybrid) or TTS-generated (hybrid_tts) |
+| Raw generated video | `jobs/<jobId>/video-generated/generated-001.mp4` | Fixture (all current modes) |
+| Final assembled video | `jobs/<jobId>/exports/generated-001-final.mp4` | Step Functions output (all modes) |
+| Thumbnail | `jobs/<jobId>/exports/thumbnail-001.jpg` | Step Functions output (all modes) |
+
+**Generation mode determines which assets are real:**
+- `fixture`: All assets are fixture copies
+- `hybrid`: Scene plan + narration script are real; audio/video are fixture
+- `hybrid_tts`: Scene plan + narration script + narration audio are real; video is fixture
+- `ai` (future): All assets real (requires AI providers)
 
 ## Provider Boundary
 

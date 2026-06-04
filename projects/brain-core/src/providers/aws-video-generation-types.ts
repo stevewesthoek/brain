@@ -1,4 +1,4 @@
-export type GenerationMode = 'fixture' | 'hybrid' | 'ai';
+export type GenerationMode = 'fixture' | 'hybrid' | 'hybrid_tts' | 'ai';
 export type MediaSource = 'fixture' | 'hybrid' | 'ai';
 
 export interface ScenePlanScene {
@@ -22,13 +22,19 @@ export interface ScenePlan {
 
 export interface GenerationManifest {
   jobId: string;
-  generationMode: 'fixture_assembly' | 'hybrid_scene_plan_fixture_media' | 'ai_generation';
+  generationMode: 'fixture_assembly' | 'hybrid_scene_plan_fixture_media' | 'hybrid_tts_fixture_video' | 'ai_generation';
   mediaSource: 'fixture' | 'hybrid' | 'ai';
   aiGenerated: boolean;
+  ttsGenerated?: boolean;
   scenePlanKey?: string;
   narrationScriptKey?: string;
   narrationAudioKey?: string;
+  audioKey?: string;
+  audioSourceKey?: string;
+  audioProvider?: string;
+  voiceId?: string;
   sourceVideoKey?: string;
+  videoSourceKey?: string;
   finalVideoKey?: string;
   thumbnailKey?: string;
   providers: {

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import type { GenerationMode, MediaSource, ScenePlan } from './aws-video-generation-types.js';
 import { DeterministicScenePlanningProvider } from './aws-video-scene-planner.js';
+import { PollyTTSProvider } from './aws-video-polly-provider.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -62,6 +63,7 @@ export interface NarrationGenerationProvider {
 function getAwsVideoGenerationMode(): GenerationMode {
   const mode = process.env.AWS_VIDEO_GENERATION_MODE;
   if (mode === 'ai') return 'ai';
+  if (mode === 'hybrid_tts') return 'hybrid_tts';
   if (mode === 'hybrid') return 'hybrid';
   return 'fixture';
 }
@@ -1169,7 +1171,7 @@ async function repairPublishJson(jobId: string, publishJson: Record<string, unkn
     createdAt: stringValue(publishJson?.createdAt) ?? now,
     updatedAt: now,
     publishedAt: publishJson?.publishedAt ?? null,
-    title: (mediaSource === 'fixture' || mediaSource === 'hybrid')
+    title: (mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'hybrid_tts_fixture_video')
       ? fixtureTitle(stringValue(publishJson?.title) ?? script?.title ?? '')
       : stringValue(publishJson?.title) ?? script?.title ?? '',
     description: stringValue(publishJson?.description) ?? '',
@@ -1856,23 +1858,34 @@ export async function generateApprovedScript(
   // Determine generation metadata based on mode
   const startedAt = new Date().toISOString();
   const isHybridMode = generationMode === 'hybrid';
-  const modeMetadata = isHybridMode
+  const isHybridTTSMode = generationMode === 'hybrid_tts';
+  const modeMetadata = isHybridTTSMode
     ? {
         mediaSource: 'hybrid' as const,
-        generationMode: 'hybrid_scene_plan_fixture_media' as const,
+        generationMode: 'hybrid_tts_fixture_video' as const,
         videoSourceKey: VIDEO_FIXTURE_KEY,
-        audioSourceKey: NARRATION_FIXTURE_KEY,
-        providerName: 'hybrid-scene-planner',
+        audioSourceKey: `jobs/${jobId}/audio/narration.mp3`,
+        providerName: 'hybrid-tts-fixture',
         aiGenerated: false,
+        ttsGenerated: true,
       }
-    : {
-        mediaSource: MEDIA_SOURCE,
-        generationMode: GENERATION_MODE,
-        videoSourceKey: VIDEO_FIXTURE_KEY,
-        audioSourceKey: NARRATION_FIXTURE_KEY,
-        providerName: 'fixture-assembly',
-        aiGenerated: false,
-      };
+    : isHybridMode
+      ? {
+          mediaSource: 'hybrid' as const,
+          generationMode: 'hybrid_scene_plan_fixture_media' as const,
+          videoSourceKey: VIDEO_FIXTURE_KEY,
+          audioSourceKey: NARRATION_FIXTURE_KEY,
+          providerName: 'hybrid-scene-planner',
+          aiGenerated: false,
+        }
+      : {
+          mediaSource: MEDIA_SOURCE,
+          generationMode: GENERATION_MODE,
+          videoSourceKey: VIDEO_FIXTURE_KEY,
+          audioSourceKey: NARRATION_FIXTURE_KEY,
+          providerName: 'fixture-assembly',
+          aiGenerated: false,
+        };
 
   // Step 1: Write initial status.json
   const statusPath = join(metadataDir, 'status.json');
@@ -2002,23 +2015,76 @@ export async function generateApprovedScript(
     }
   }
 
-  // Step 3: Copy narration from S3 fixture
+  // Step 3: Generate or copy narration
+  // For hybrid_tts mode: synthesize narration from script using TTS
+  // For other modes: copy fixture narration
   const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
-  try {
-    await execFileAsync('aws', [
-      's3', 'cp',
-      `s3://${S3_BUCKET}/${NARRATION_FIXTURE_KEY}`,
-      `s3://${S3_BUCKET}/${narrationKey}`,
-      '--region', AWS_REGION,
-      '--no-cli-pager',
-    ]);
-  } catch (err) {
-    return {
-      ok: false,
-      code: 'narration_failed',
-      message: `Failed to copy narration from S3: ${err instanceof Error ? err.message : String(err)}`,
-      jobId,
-    };
+  let audioProvider: string | undefined;
+  let voiceId: string | undefined;
+
+  if (isHybridTTSMode) {
+    // Read narration script and synthesize audio
+    try {
+      // Read the narration script that was generated in step 2.5
+      const narrationScriptPath = join(audioDir, 'narration-script.txt');
+      const narrationText = await readFile(narrationScriptPath, 'utf-8');
+
+      // Extract clean narration text (remove "Scene N" headers)
+      const cleanedNarration = narrationText
+        .split('\n')
+        .filter(line => !line.match(/^Scene \d+/) && !line.match(/^Visual:/) && line.trim().length > 0)
+        .join(' ')
+        .replace(/Narration:\s*/g, '')
+        .trim();
+
+      if (!cleanedNarration || cleanedNarration.length === 0) {
+        return {
+          ok: false,
+          code: 'narration_text_empty',
+          message: 'Failed to extract narration text from narration script',
+          jobId,
+        };
+      }
+
+      // Synthesize using Polly TTS
+      const ttsProvider = new PollyTTSProvider();
+      const ttsResult = await ttsProvider.synthesizeNarration({
+        jobId,
+        text: cleanedNarration,
+        voiceId: 'Joanna',
+        bucket: S3_BUCKET,
+        region: AWS_REGION,
+        outputKey: narrationKey,
+      });
+
+      audioProvider = ttsResult.provider;
+      voiceId = ttsResult.voiceId;
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'tts_synthesis_failed',
+        message: `Failed to synthesize narration audio: ${err instanceof Error ? err.message : String(err)}`,
+        jobId,
+      };
+    }
+  } else {
+    // Copy fixture narration for non-TTS modes
+    try {
+      await execFileAsync('aws', [
+        's3', 'cp',
+        `s3://${S3_BUCKET}/${NARRATION_FIXTURE_KEY}`,
+        `s3://${S3_BUCKET}/${narrationKey}`,
+        '--region', AWS_REGION,
+        '--no-cli-pager',
+      ]);
+    } catch (err) {
+      return {
+        ok: false,
+        code: 'narration_failed',
+        message: `Failed to copy narration from S3: ${err instanceof Error ? err.message : String(err)}`,
+        jobId,
+      };
+    }
   }
 
   // Step 4: Copy skeleton base video fixture until real base-video generation is implemented.
@@ -2090,7 +2156,28 @@ export async function generateApprovedScript(
   };
 
   // Add hybrid-specific fields
-  if (isHybridMode && scenePlanKey) {
+  if (isHybridTTSMode && narrationScriptKey) {
+    assetsJson.scenePlanKey = scenePlanKey;
+    assetsJson.narrationScriptKey = narrationScriptKey;
+    assetsJson.audioKey = narrationKey;
+    assetsJson.audioSourceKey = narrationKey;
+    assetsJson.audioProvider = audioProvider;
+    assetsJson.voiceId = voiceId;
+    assetsJson.ttsGenerated = true;
+    assetsJson.narration = {
+      path: narrationKey,
+      source: 'tts',
+      provider: audioProvider,
+      voiceId,
+    };
+    assetsJson.providers = {
+      scenePlan: 'deterministic-local',
+      narrationScript: 'deterministic-local',
+      narrationAudio: 'aws-polly',
+      video: 'fixture',
+    };
+    assetsJson.warnings = ['Video media still uses fixture assets; narration audio is generated from the prompt-derived script.'];
+  } else if (isHybridMode && scenePlanKey) {
     assetsJson.scenePlanKey = scenePlanKey;
     assetsJson.narrationScriptKey = narrationScriptKey;
     assetsJson.providers = {
@@ -2152,12 +2239,22 @@ export async function generateApprovedScript(
   }
 
   // Step 5: Write publish.json to both metadata/ and publishing/
-  const publishReason = isHybridMode
-    ? 'Hybrid pipeline proof — prompt-derived scene plan and narration script; video/audio media uses fixtures'
-    : 'Pipeline proof fixture assembly — awaiting explicit publish approval';
-  const publishDescription = isHybridMode
-    ? 'Hybrid mode: scene plan and narration script are prompt-derived from the input prompt. Final audio and video media use fixtures.'
-    : 'Pipeline proof upload. This video used fixture media, not prompt-generated AI video.';
+  const publishReason = isHybridTTSMode
+    ? 'Hybrid TTS pipeline proof — prompt-derived scene plan, narration script, and TTS audio; video media uses fixtures'
+    : isHybridMode
+      ? 'Hybrid pipeline proof — prompt-derived scene plan and narration script; video/audio media uses fixtures'
+      : 'Pipeline proof fixture assembly — awaiting explicit publish approval';
+  const publishDescription = isHybridTTSMode
+    ? 'Hybrid TTS mode: scene plan and narration script are prompt-derived from the input prompt. Narration audio is generated via AWS Polly TTS. Final video media uses fixtures.'
+    : isHybridMode
+      ? 'Hybrid mode: scene plan and narration script are prompt-derived from the input prompt. Final audio and video media use fixtures.'
+      : 'Pipeline proof upload. This video used fixture media, not prompt-generated AI video.';
+
+  const publishTags = isHybridTTSMode
+    ? ['hybrid-tts-proof', 'tts-narration', 'fixture-video', 'scene-plan-generated']
+    : isHybridMode
+      ? ['hybrid-proof', 'fixture-media', 'scene-plan-generated']
+      : ['pipeline-proof', 'fixture-media'];
 
   const publishJson = {
     jobId,
@@ -2168,7 +2265,7 @@ export async function generateApprovedScript(
     generatedBy: 'interactive-prompt',
     title: fixtureTitle(script.title),
     description: publishDescription,
-    tags: isHybridMode ? ['hybrid-proof', 'fixture-media', 'scene-plan-generated'] : ['pipeline-proof', 'fixture-media'],
+    tags: publishTags,
     ...modeMetadata,
     platforms: {
       youtube: {

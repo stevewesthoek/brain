@@ -132,14 +132,23 @@ cd infrastructure/i-2-mediaconvert-orchestration
 # Exits 0 if correct, nonzero if wrong
 ```
 
+## Generation Mode Status
+
+| Mode | Status | Scene Plan | Narration Script | Narration Audio | Video |
+|------|--------|-----------|------------------|-----------------|-------|
+| `fixture` | ✅ Working | — | — | Fixture | Fixture |
+| `hybrid` | ✅ Working | Generated | Generated | Fixture | Fixture |
+| `hybrid_tts` | ✅ Working | Generated | Generated | **TTS (Polly)** | Fixture |
+| `ai` | ❌ Not configured | — | — | — | — |
+
 ## Not Yet Implemented
 
 The current flow does not implement:
 
 - prompt-to-video AI generation (Bedrock Nova Reel, etc.)
-- script-to-narration AI generation (AWS Polly, etc.)
 - real image/video provider integration
 - provider selection based on channel config
+- full AI mode with all components generated
 
 Historical proof artifacts exist for these, but are not wired as active runtime.
 
