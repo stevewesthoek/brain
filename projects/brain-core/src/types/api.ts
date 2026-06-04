@@ -52,6 +52,58 @@ export interface BrainCoreSchedulerJobSummary {
   mutationRequired: boolean;
 }
 
+export interface BrainCoreAiModelSelectorHealthMatrixModel {
+  provider_id: string;
+  provider_type: string;
+  model_id: string;
+  model_key: string;
+  label: string;
+  enabled: boolean;
+  selectable: boolean;
+  status: string;
+  capabilities: string[];
+  roles: string[];
+  region?: string | null;
+  last_checked_at?: number | null;
+  probe: {
+    status: string;
+    checked_at?: number | null;
+    error?: unknown;
+    response_preview?: string;
+  };
+  outcome: Record<string, unknown>;
+  cost: {
+    input_per_1m?: number | null;
+    output_per_1m?: number | null;
+  };
+  provider_healthy?: boolean;
+  rate_limited?: boolean;
+  loaded?: boolean;
+}
+
+export interface BrainCoreAiModelSelectorHealthMatrix {
+  id: 'ai-model-selector-health-matrix';
+  generated_at: string;
+  status: string;
+  probe_mode: string;
+  selector: {
+    service: string;
+    port: number;
+    provider_count: number;
+    model_count: number;
+    selectable_model_count: number;
+  };
+  policy: {
+    selection_endpoint: string;
+    health_matrix_endpoint: string;
+    consumers_use_selector: boolean;
+    consumer_provider_probes_allowed: boolean;
+  };
+  providers: unknown[];
+  models: BrainCoreAiModelSelectorHealthMatrixModel[];
+  error?: string;
+}
+
 export interface BrainCoreLocalAppSummary {
   id: string;
   name: string;
@@ -5557,6 +5609,7 @@ export interface BrainCoreRoutes {
   '/scheduler/jobs': {
     jobs: BrainCoreSchedulerJobSummary[];
   };
+  '/ai-model-selector/health-matrix': BrainCoreAiModelSelectorHealthMatrix;
   '/local-apps': {
     apps: BrainCoreLocalAppSummary[];
   };
@@ -10719,7 +10772,7 @@ export interface InfraVOStorageCleanupResponse {
 
 // ─── Agent Orchestrator ───────────────────────────────────────────────────────
 
-export type AgentOrchestratorExecutorType = 'claude' | 'codex' | 'bash' | 'n8n';
+export type AgentOrchestratorExecutorType = 'gemini' | 'claude' | 'codex' | 'bash' | 'n8n';
 export type AgentOrchestratorTaskType =
   | 'ai_analysis'
   | 'ai_generation'

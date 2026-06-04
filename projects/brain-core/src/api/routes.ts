@@ -16,6 +16,7 @@ import { readAgentExecutorPlan } from '../adapters/agent-executor-plan.js';
 import { readAgentApprovalGates } from '../adapters/agent-approval-gates.js';
 import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
+import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -84,7 +85,7 @@ import {
   readMaintenancePreviewDetailById,
 } from '../adapters/maintenance-previews.js';
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
-import { getAiModelSelectorStatus, controlAiModelSelector } from '../adapters/ai-model-selector-service.js';
+import { getAiModelSelectorStatus, getAiModelSelectorHealthMatrix, controlAiModelSelector } from '../adapters/ai-model-selector-service.js';
 import { listRepos } from '../adapters/repos.js';
 import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
@@ -333,6 +334,15 @@ export async function routeRequest(
       return;
     case '/status':
       sendJson(response, 200, getStatus());
+      return;
+    case '/ops/system-metrics':
+      sendJson(response, 200, readOpsSystemMetrics());
+      return;
+    case '/ops/ai-usage-windows':
+      sendJson(response, 200, readOpsAiUsageWindows());
+      return;
+    case '/ops/ai-costs':
+      sendJson(response, 200, readOpsAiCosts());
       return;
     case '/sessions':
       sendJson(response, 200, { sessions: listSessions() });
@@ -795,6 +805,38 @@ export async function routeRequest(
       {
         const selectorStatus = await getAiModelSelectorStatus();
         sendJson(response, 200, { selector: selectorStatus });
+        return;
+      }
+    case '/ai-model-selector/health-matrix':
+      {
+        const runProbe = url.searchParams.get('probe') === '1';
+        try {
+          const matrix = await getAiModelSelectorHealthMatrix(runProbe);
+          sendJson(response, 200, matrix);
+        } catch (error) {
+          sendJson(response, 502, {
+            id: 'ai-model-selector-health-matrix',
+            generated_at: new Date().toISOString(),
+            status: 'unavailable',
+            probe_mode: runProbe ? 'live' : 'cached',
+            selector: {
+              service: 'ai-model-selector',
+              port: 4890,
+              provider_count: 0,
+              model_count: 0,
+              selectable_model_count: 0,
+            },
+            policy: {
+              selection_endpoint: 'POST /select',
+              health_matrix_endpoint: 'GET /health/matrix',
+              consumers_use_selector: true,
+              consumer_provider_probes_allowed: false,
+            },
+            providers: [],
+            models: [],
+            error: error instanceof Error ? error.message : 'AI Model Selector health matrix unavailable.',
+          });
+        }
         return;
       }
     default:

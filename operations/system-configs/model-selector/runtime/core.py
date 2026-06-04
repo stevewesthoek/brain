@@ -348,6 +348,61 @@ class ModelSelector:
             self._provider_models[provider_id] = []
             return False
 
+    def _probe_openai_compatible_model(self, provider: dict, model_id: str) -> dict:
+        now = time.time()
+        if not model_id:
+            return {"status": "unavailable", "checked_at": now, "error": "missing model_id"}
+        base_url = str(provider.get("base_url", "")).rstrip("/")
+        timeout = min(int(provider.get("timeout_inference_sec", 30)), 10)
+        host = urllib.parse.urlparse(base_url).hostname or ""
+        is_ollama = provider.get("health_check", {}).get("endpoint", "").endswith("/api/tags") or ":11434" in base_url
+        try:
+            if is_ollama:
+                scheme = urllib.parse.urlparse(base_url).scheme or "http"
+                netloc = urllib.parse.urlparse(base_url).netloc
+                root = f"{scheme}://{netloc}"
+                url = f"{root}/api/generate"
+                payload = {
+                    "model": model_id,
+                    "prompt": "Reply OK only.",
+                    "stream": False,
+                    "options": {"temperature": 0, "num_predict": 4},
+                }
+            else:
+                url = f"{base_url}/chat/completions"
+                payload = {
+                    "model": model_id,
+                    "messages": [{"role": "user", "content": "Reply OK only."}],
+                    "temperature": 0,
+                    "max_tokens": 4,
+                }
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Accept": "application/json", "Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw = resp.read()
+                if resp.status < 200 or resp.status >= 300:
+                    return {"status": "failed", "checked_at": now, "error": f"http {resp.status}"}
+                data = json.loads(raw) if raw else {}
+                text = ""
+                if is_ollama:
+                    text = str(data.get("response", ""))
+                else:
+                    choices = data.get("choices", [])
+                    if choices and isinstance(choices[0], dict):
+                        text = str(choices[0].get("message", {}).get("content", ""))
+                return {
+                    "status": "ok" if text.strip() else "failed",
+                    "checked_at": now,
+                    "host": host,
+                    "response_preview": text.strip()[:24],
+                }
+        except Exception as err:
+            return {"status": "failed", "checked_at": now, "host": host, "error": str(err)[:240]}
+
     def _check_whisper_health(self, provider: dict) -> bool:
         binary = provider.get("binary", "faster-whisper")
         return shutil.which(binary) is not None
@@ -458,6 +513,36 @@ class ModelSelector:
         self._bedrock_access[key] = status
         self._save_bedrock_access()
         return status
+
+    def _bedrock_matrix_status(self, model: dict, run_probe: bool) -> dict:
+        access = self._bedrock_access_status(model) if run_probe else self._bedrock_access.get(self._bedrock_cache_key(model), {})
+        available = bool(access.get("available"))
+        enabled = bool(model.get("enabled", True))
+        selectable = self._bedrock_model_selectable(model, access) and available
+        return {
+            "provider_id": "claude-bedrock",
+            "provider_type": "bedrock",
+            "model_id": model.get("model_id", ""),
+            "model_key": model.get("id", ""),
+            "label": model.get("label") or model.get("model_id", ""),
+            "enabled": enabled,
+            "selectable": selectable,
+            "status": "ok" if selectable else ("disabled" if not enabled and not model.get("upgrade_candidate") else "unavailable"),
+            "capabilities": model.get("capabilities", []),
+            "roles": model.get("roles", []),
+            "region": model.get("region") or self._bedrock_config.get("default_region"),
+            "last_checked_at": access.get("checked_at"),
+            "probe": {
+                "status": "ok" if available else ("not_run" if not access else "failed"),
+                "checked_at": access.get("checked_at"),
+                "error": access.get("error"),
+            },
+            "outcome": self._bedrock_outcomes.get(str(model.get("model_id", "")), {}),
+            "cost": {
+                "input_per_1m": model.get("price_input_per_1m"),
+                "output_per_1m": model.get("price_output_per_1m"),
+            },
+        }
 
     def _bedrock_model_selectable(self, model: dict, access: dict) -> bool:
         if model.get("enabled", True):
@@ -804,6 +889,83 @@ class ModelSelector:
                 if e["id"] == "ollama-m4pro":
                     e["gpu_load"] = local_load
         return out
+
+    def health_matrix(self, run_probe: bool = False) -> dict:
+        generated_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        providers = self.providers_with_health()
+        models = []
+        for provider in providers:
+            provider_id = provider.get("id", "")
+            provider_type = provider.get("type", "")
+            circuit_state = provider.get("circuit_state", {})
+            rate_limited = bool(provider.get("rate_limited"))
+            provider_healthy = bool(provider.get("healthy"))
+            if provider_type == "bedrock":
+                for model in self._bedrock_models:
+                    entry = self._bedrock_matrix_status(model, run_probe)
+                    entry["provider_healthy"] = provider_healthy
+                    entry["circuit_state"] = circuit_state
+                    entry["rate_limited"] = rate_limited
+                    models.append(entry)
+                continue
+
+            configured_models = provider.get("models") or provider.get("preferred_models") or []
+            loaded_models = provider.get("loaded_models") or []
+            model_ids = list(dict.fromkeys(list(configured_models) + list(loaded_models)))
+            if not model_ids:
+                model_ids = [""]
+            for model_id in model_ids:
+                loaded = not loaded_models or model_id in loaded_models
+                selectable = provider_healthy and loaded and not rate_limited and not circuit_state.get("open")
+                probe = {"status": "not_run", "checked_at": None}
+                if run_probe and provider_type == "openai-compatible" and loaded and model_id:
+                    probe = self._probe_openai_compatible_model(provider, str(model_id))
+                    selectable = selectable and probe.get("status") == "ok"
+                models.append({
+                    "provider_id": provider_id,
+                    "provider_type": provider_type,
+                    "model_id": model_id,
+                    "model_key": model_id,
+                    "label": model_id or provider.get("label") or provider_id,
+                    "enabled": True,
+                    "selectable": bool(selectable),
+                    "status": "ok" if selectable else ("unavailable" if not provider_healthy else "not_loaded"),
+                    "capabilities": provider.get("capabilities", []),
+                    "roles": provider.get("roles", []),
+                    "region": None,
+                    "last_checked_at": None,
+                    "probe": probe,
+                    "outcome": {},
+                    "cost": {"input_per_1m": None, "output_per_1m": None},
+                    "provider_healthy": provider_healthy,
+                    "circuit_state": circuit_state,
+                    "rate_limited": rate_limited,
+                    "loaded": loaded,
+                })
+
+        selectable_count = sum(1 for model in models if model.get("selectable"))
+        status = "ok" if selectable_count else "unavailable"
+        return {
+            "id": "ai-model-selector-health-matrix",
+            "generated_at": generated_at,
+            "status": status,
+            "probe_mode": "live" if run_probe else "cached",
+            "selector": {
+                "service": "ai-model-selector",
+                "port": int(os.environ.get("AI_SELECTOR_PORT", "4890")),
+                "provider_count": len(providers),
+                "model_count": len(models),
+                "selectable_model_count": selectable_count,
+            },
+            "policy": {
+                "selection_endpoint": "POST /select",
+                "health_matrix_endpoint": "GET /health/matrix",
+                "consumers_use_selector": True,
+                "consumer_provider_probes_allowed": False,
+            },
+            "providers": providers,
+            "models": models,
+        }
 
     def _audit_log(self, result: SelectionResult, event: str, **extra: Any) -> None:
         LOG_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for Bedrock premium fallback and upgrade-candidate routing."""
+"""Tests for the AI Model Selector health matrix contract."""
 import json
 import sys
 import tempfile
@@ -12,7 +12,7 @@ sys.path.insert(0, str(RUNTIME_DIR))
 import core  # noqa: E402
 
 
-class TestBedrockUpgradeCandidates(unittest.TestCase):
+class TestHealthMatrix(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
@@ -60,20 +60,31 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
         providers = {
             "providers": [
                 {
+                    "id": "ollama-local",
+                    "label": "Local Ollama",
+                    "type": "openai-compatible",
+                    "base_url": "http://127.0.0.1:11434/v1",
+                    "cost_per_1k_tokens": 0.0,
+                    "priority": 1,
+                    "capabilities": ["text/medium"],
+                    "preferred_models": ["qwen2.5:14b"],
+                    "health_check": {"endpoint": "http://127.0.0.1:11434/api/tags"},
+                },
+                {
                     "id": "claude-bedrock",
                     "label": "Amazon Bedrock model portfolio",
                     "type": "bedrock",
                     "cost_per_1k_tokens": 0.0,
-                    "priority": 1,
-                    "capabilities": ["text/large", "text/review"],
+                    "priority": 2,
+                    "capabilities": ["text/medium"],
                     "models": ["bedrock-model-portfolio"],
-                }
+                },
             ]
         }
         task_types = {
             "task_types": {
-                "orchestration": {
-                    "capability": "text/review",
+                "semantic_graph": {
+                    "capability": "text/medium",
                     "typical_input_tokens": 2000,
                     "typical_output_tokens": 1000,
                 }
@@ -85,60 +96,51 @@ class TestBedrockUpgradeCandidates(unittest.TestCase):
         }
         bedrock_models = {
             "default_region": "us-east-1",
-            "access_probe_ttl_hours": 24,
             "models": [
                 {
-                    "id": "claude-opus-4-6",
-                    "model_id": "us.anthropic.claude-opus-4-6-v1",
+                    "id": "qwen3-coder-next",
+                    "label": "Qwen3 Coder Next",
+                    "model_id": "qwen.qwen3-coder-next",
                     "region": "us-east-1",
                     "enabled": True,
-                    "priority": 95,
-                    "capabilities": ["text/review"],
-                    "price_input_per_1m": 15.0,
-                    "price_output_per_1m": 75.0,
-                    "quality_score": 0.95,
-                    "task_affinity": {"orchestration": 1.18},
-                },
-                {
-                    "id": "claude-opus-4-7",
-                    "model_id": "us.anthropic.claude-opus-4-7",
-                    "region": "us-east-1",
-                    "enabled": False,
-                    "upgrade_candidate": True,
-                    "access_probe_ttl_hours": 48,
-                    "priority": 100,
-                    "capabilities": ["text/review"],
-                    "price_input_per_1m": 15.0,
-                    "price_output_per_1m": 75.0,
-                    "quality_score": 0.96,
-                    "task_affinity": {"orchestration": 1.2},
-                },
+                    "capabilities": ["text/medium"],
+                    "roles": ["coding"],
+                    "price_input_per_1m": 0.5,
+                    "price_output_per_1m": 1.2,
+                }
             ],
+        }
+        access = {
+            "us-east-1:qwen.qwen3-coder-next": {
+                "available": True,
+                "checked_at": 123.0,
+                "region": "us-east-1",
+                "model_id": "qwen.qwen3-coder-next",
+            }
         }
         core.PROVIDERS_PATH.write_text(json.dumps(providers, indent=2))
         core.TASK_TYPES_PATH.write_text(json.dumps(task_types, indent=2))
         core.SELECTOR_CONFIG_PATH.write_text(json.dumps(selector_config, indent=2))
         core.BEDROCK_MODELS_PATH.write_text(json.dumps(bedrock_models, indent=2))
+        core.BEDROCK_ACCESS_PATH.write_text(json.dumps(access, indent=2))
 
-    def test_opus_46_selected_when_47_upgrade_candidate_unavailable(self):
+    def test_health_matrix_is_canonical_consumer_contract(self):
         selector = core.ModelSelector()
+        selector._check_health = lambda provider: True
+        selector._provider_models["ollama-local"] = ["qwen2.5:14b"]
 
-        def access(model):
-            return {"available": model["id"] == "claude-opus-4-6", "checked_at": 1}
+        matrix = selector.health_matrix()
 
-        selector._bedrock_access_status = access
+        self.assertEqual(matrix["id"], "ai-model-selector-health-matrix")
+        self.assertEqual(matrix["probe_mode"], "cached")
+        self.assertEqual(matrix["policy"]["selection_endpoint"], "POST /select")
+        self.assertEqual(matrix["policy"]["consumer_provider_probes_allowed"], False)
+        self.assertEqual(matrix["selector"]["provider_count"], 2)
+        self.assertGreaterEqual(matrix["selector"]["selectable_model_count"], 2)
 
-        result = selector.select("orchestration", input_token_count=1000, urgent=True)
-
-        self.assertEqual(result.model, "us.anthropic.claude-opus-4-6-v1")
-
-    def test_opus_47_upgrade_candidate_selected_when_access_available(self):
-        selector = core.ModelSelector()
-        selector._bedrock_access_status = lambda model: {"available": True, "checked_at": 1}
-
-        result = selector.select("orchestration", input_token_count=1000, urgent=True)
-
-        self.assertEqual(result.model, "us.anthropic.claude-opus-4-7")
+        model_ids = {entry["model_id"] for entry in matrix["models"]}
+        self.assertIn("qwen2.5:14b", model_ids)
+        self.assertIn("qwen.qwen3-coder-next", model_ids)
 
 
 if __name__ == "__main__":

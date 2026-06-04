@@ -56,6 +56,57 @@ export interface AiModelSelectorControlResult {
   message: string;
 }
 
+export interface AiModelSelectorHealthMatrixModel {
+  provider_id: string;
+  provider_type: string;
+  model_id: string;
+  model_key: string;
+  label: string;
+  enabled: boolean;
+  selectable: boolean;
+  status: 'ok' | 'unavailable' | 'disabled' | 'not_loaded' | string;
+  capabilities: string[];
+  roles: string[];
+  region?: string | null | undefined;
+  last_checked_at?: number | null | undefined;
+  probe: {
+    status: 'ok' | 'failed' | 'not_run' | string;
+    checked_at?: number | null | undefined;
+    error?: unknown;
+    response_preview?: string | undefined;
+  };
+  outcome: Record<string, unknown>;
+  cost: {
+    input_per_1m?: number | null | undefined;
+    output_per_1m?: number | null | undefined;
+  };
+  provider_healthy?: boolean | undefined;
+  rate_limited?: boolean | undefined;
+  loaded?: boolean | undefined;
+}
+
+export interface AiModelSelectorHealthMatrix {
+  id: 'ai-model-selector-health-matrix';
+  generated_at: string;
+  status: 'ok' | 'unavailable' | string;
+  probe_mode: 'cached' | 'live' | string;
+  selector: {
+    service: 'ai-model-selector' | string;
+    port: number;
+    provider_count: number;
+    model_count: number;
+    selectable_model_count: number;
+  };
+  policy: {
+    selection_endpoint: 'POST /select' | string;
+    health_matrix_endpoint: 'GET /health/matrix' | string;
+    consumers_use_selector: boolean;
+    consumer_provider_probes_allowed: boolean;
+  };
+  providers: unknown[];
+  models: AiModelSelectorHealthMatrixModel[];
+}
+
 export interface AiModelSelectorBedrockClaudeCode {
   enabled: boolean;
   region: string;
@@ -190,6 +241,21 @@ export async function getAiModelSelectorStatus(): Promise<AiModelSelectorStatus>
       bedrockClaudeCode,
       lastChecked: now,
     };
+  }
+}
+
+export async function getAiModelSelectorHealthMatrix(runProbe = false): Promise<AiModelSelectorHealthMatrix> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), runProbe ? 30000 : HEALTH_TIMEOUT_MS);
+  const url = `${SELECTOR_URL}/health/matrix${runProbe ? '?probe=1' : ''}`;
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Health matrix endpoint returned ${response.status}`);
+    }
+    return await response.json() as AiModelSelectorHealthMatrix;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

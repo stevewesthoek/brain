@@ -1,79 +1,118 @@
-# AI Selector Consumer Onboarding
+# AI Selector Consumer Contract
 
-**Purpose**
+The AI Model Selector is the single routing authority for Brain-owned AI generation calls.
 
-This is the standard onboarding procedure for any new repo, service, or workflow that wants to consume the AI Model Selector.
+Consumers do not probe providers, rank models, read provider config files, or maintain fallback order. Consumers ask the selector for a route, execute that route, and report the outcome.
 
-## Required rule order
+## Runtime Endpoints
 
-Consumers must use the selector in this order:
+Selector service:
 
-1. Gemini free-tier for eligible non-sensitive text tasks
-2. Local AI for sensitive/private/offline tasks and Gemini quota/health/quality fallback
-3. Codex CLI
-4. Claude via Amazon Bedrock
+```text
+POST http://127.0.0.1:4890/select
+GET  http://127.0.0.1:4890/health/matrix
+POST http://127.0.0.1:4890/report-success
+POST http://127.0.0.1:4890/report-failure
+```
 
-Consumers must not call OpenAI API or direct Anthropic API providers.
+Brain Core read-only surface:
 
-## What a consumer must provide
+```text
+GET http://127.0.0.1:4877/ai-model-selector/health-matrix
+```
 
-1. A `task_type` name that already exists in `~/.config/video-orchestrator/ai-task-types.json`, or a new task type entry that is added before use.
-2. `input_token_count`
-3. `urgent` flag
-4. Optional `previous_failures` list when retrying after a failure
-5. Optional `task_metadata` with privacy/sensitivity flags:
-   - `sensitive`: true if the task involves sensitive business logic or customer data
-   - `private`: true if the task is for offline or internal use only
-   - `offline`: true if the task must work without external network calls
-   - `external_provider_disallowed`: true if policy forbids sending data to external providers (Gemini, etc.)
-   - When any flag is true, the selector skips Gemini and prefers local Ollama first
-6. An execution adapter for the selected provider type
-7. A failure-reporting path that calls `report_ai_failure()`
-8. A success-reporting path that calls `report_ai_success()` when the job finishes successfully
+Brain Console Center reads the Brain Core endpoint. Automation and services that need a route call the selector directly.
 
-## Consumer onboarding flow
+## Selection Request
 
-1. Define the task.
-2. Add or confirm the task type in `ai-task-types.json`.
-3. Map the task to one of the provider capabilities.
-4. Confirm the consumer can execute all provider types it may receive:
-   - `gemini` or `google-ai` for Gemini free-tier text generation
-   - `openai-compatible` for local Ollama
-   - `cli` for Codex CLI
-   - `bedrock` for Claude via Bedrock
-5. Implement timeout handling using `timeout_inference_sec`.
-6. Implement deferred-job handling if `select_ai()` returns `{"deferred": true, "scheduled_after": ...}`.
-7. Route all AI calls through the selector client or `/select`.
-8. Report failures and successes back to the selector.
-9. Verify `ai-select --providers`, `ai-select --task <task_type>`, and `/health`.
+```json
+{
+  "task_type": "description_quality_review",
+  "input_token_count": 30000,
+  "urgent": true,
+  "previous_failures": [],
+  "local_only": false
+}
+```
 
-## Minimum consumer contract
+`task_type` must exist in `~/.config/video-orchestrator/ai-task-types.json`.
 
-Every consumer must be able to:
+`local_only: true` sets offline and external-provider-disallowed metadata. The selector returns only local network providers.
 
-- accept a provider id
-- accept a model name
-- accept a base URL or equivalent execution target
-- accept a timeout
-- handle defer results without marking the job failed
-- log the provider and model actually used
+## Selection Response
 
-## New repo checklist
+```json
+{
+  "provider_id": "ollama-m4pro",
+  "model": "qwen2.5:14b",
+  "base_url": "http://localhost:11434/v1",
+  "reason": "free; priority=2",
+  "cost_estimate": 0,
+  "timeout_inference_sec": 120
+}
+```
 
-- [ ] Add or confirm the task type in `ai-task-types.json`
-- [ ] Add the execution adapter for `gemini`, `ollama`, `codex-cli`, and `claude-bedrock`
-- [ ] Identify which tasks are sensitive/private/offline and set task_metadata flags accordingly
-- [ ] Wire `select_ai(task_type, input_tokens, urgent, task_metadata=metadata)` into the job path
-- [ ] Wire `report_ai_failure()` on error
-- [ ] Wire `report_ai_success()` on success
-- [ ] Handle deferred results
-- [ ] Verify the selector health endpoint
-- [ ] Verify the provider registry contains only the providers this repo is allowed to use
+Consumers must use the returned provider, model, base URL, and timeout. Consumers must not substitute a different provider or model.
 
-## Notes
+## Outcome Reporting
 
-- The selector is the routing contract.
-- The consumer owns provider execution.
-- The selector does not embed repo-specific business logic.
-- A new repo should not hardcode provider order. It should ask the selector and execute what comes back.
-- Consumers must pass privacy/sensitivity requirements into task metadata so the selector can bypass Gemini and choose local first when external execution is not allowed.
+On successful completion:
+
+```json
+{
+  "provider_id": "ollama-m4pro",
+  "model": "qwen2.5:14b"
+}
+```
+
+On failure:
+
+```json
+{
+  "provider_id": "ollama-m4pro",
+  "model": "qwen2.5:14b",
+  "error_type": "timeout",
+  "error_message": "request timed out"
+}
+```
+
+Allowed `error_type` values are `rate_limit`, `timeout`, and `error`.
+
+## Health Matrix
+
+`GET /health/matrix` returns the selector-owned provider and model state:
+
+- provider id and type
+- model id and label
+- enabled status
+- selectable status
+- loaded status for local providers
+- cached Bedrock access status
+- circuit breaker state
+- rate-limit state
+- model outcome counters
+- cost fields for priced providers
+
+`GET /health/matrix?probe=1` runs live probes where supported. Dashboard refreshes use the cached matrix.
+
+Consumers use the matrix for observability only. Routing still goes through `POST /select`.
+
+## Consumer Requirements
+
+- Pass a valid `task_type`.
+- Pass `input_token_count`.
+- Set `urgent` according to job latency requirements.
+- Set `local_only` when external provider use is not allowed.
+- Pass `previous_failures` on retry.
+- Execute the selected route exactly.
+- Respect `timeout_inference_sec`.
+- Handle deferred responses without marking the job failed.
+- Call `/report-success` after a completed job.
+- Call `/report-failure` after a failed job.
+- Log `provider_id`, `model`, `reason`, and `cost_estimate`.
+
+## Boundary
+
+The selector owns provider health, model availability, fallback order, circuit breakers, Bedrock access cache, and outcome learning.
+
+Brain Core exposes read-only selector state for dashboards. Brain Console Center visualizes Brain Core data. Neither Brain Core nor Brain Console Center performs provider probes or provider ranking.

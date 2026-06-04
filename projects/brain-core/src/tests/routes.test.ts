@@ -2228,10 +2228,21 @@ test('exact ten still-disabled actions are in backlog', async () => {
   };
   assert.equal(body.disabledActionCount, body.items.length, 'disabledActionCount should match the actual backlog items');
   const disabledKeys = new Set(body.items.map((item) => `${item.appId}:${item.action}`));
-  for (const key of ['prochat:stop', 'prochat:restart', 'jpv-bootcamp:stop', 'jpv-bootcamp:restart', 'mind-steward:start', 'mind-steward:stop', 'mind-steward:restart']) {
+  for (const key of [
+    'prochat:stop',
+    'prochat:restart',
+    'jpv-bootcamp:stop',
+    'jpv-bootcamp:restart',
+    'mind-steward:start',
+    'mind-steward:stop',
+    'mind-steward:restart',
+    'vault-legal:start',
+    'vault-legal:stop',
+    'vault-legal:restart',
+  ]) {
     assert.ok(disabledKeys.has(key), `${key} should be in disabled backlog`);
   }
-  assert.equal(body.disabledActionCount, 7, 'current backlog should contain seven disabled actions');
+  assert.equal(body.disabledActionCount, 10, 'current backlog should contain ten disabled actions');
 });
 
 test('family-finance stop script is safe: no pkill/killall/lsof/port-killing', async () => {

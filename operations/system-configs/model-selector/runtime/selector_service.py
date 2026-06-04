@@ -73,6 +73,10 @@ class SelectorHandler(BaseHTTPRequestHandler):
         elif path == "/providers":
             _json_response(self, 200, {"providers": _selector.providers_with_health()})
 
+        elif path == "/health/matrix":
+            run_probe = qs.get("probe", ["0"])[0] in {"1", "true", "yes"}
+            _json_response(self, 200, _selector.health_matrix(run_probe=run_probe))
+
         elif path == "/audit":
             limit = int(qs.get("limit", ["20"])[0])
             task_type = qs.get("task_type", [None])[0]
