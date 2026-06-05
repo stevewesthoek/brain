@@ -7,7 +7,7 @@ import {
   isReviewApproved,
   publishGateDecision,
   type ReviewStatus,
-} from './helpers-publish-gate.js';
+} from '../providers/video-orchestrator-publish-gate.js';
 
 /**
  * Test A: Generated-media with pending review

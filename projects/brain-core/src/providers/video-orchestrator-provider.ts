@@ -16,6 +16,13 @@ import {
   ImageProviderError,
 } from './aws-video-image-provider.js';
 import type { AwsVideoImageProviderName } from './aws-video-storyboard-types.js';
+import {
+  inferGenerationModeForPublishGate,
+  isGeneratedMediaGenerationMode,
+  shouldRequireReviewGate,
+  isReviewApproved,
+  type ReviewStatus,
+} from './video-orchestrator-publish-gate.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -1232,12 +1239,14 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   ]);
 
   // Infer generation mode early for early review gate
-  const generationMode_early = stringValue(publishJson_initial?.generationMode)
-    ?? stringValue(statusJson_initial?.generationMode)
-    ?? stringValue(assetsJson_initial?.generationMode);
+  const generationMode_early = inferGenerationModeForPublishGate({
+    publishJson: publishJson_initial,
+    statusJson: statusJson_initial,
+    assetsJson: assetsJson_initial,
+  });
 
   // For generated-media jobs: check review gate BEFORE expensive asset resolution
-  if (requiresReviewApproval(generationMode_early)) {
+  if (shouldRequireReviewGate(generationMode_early)) {
     const review = await getOrCreateReview(jobId);
     if (!review || review.reviewStatus !== 'approved') {
       const reviewStatus = review?.reviewStatus ?? 'pending';
@@ -1284,7 +1293,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
   // For non-generated-media jobs (or if generation mode couldn't be determined earlier),
   // check review gate now (this is a safety net, but for generated-media already checked above)
-  if (requiresReviewApproval(generationMode) && generationMode !== generationMode_early) {
+  if (shouldRequireReviewGate(generationMode) && generationMode !== generationMode_early) {
     const review = await getOrCreateReview(jobId);
     if (!review || review.reviewStatus !== 'approved') {
       const reviewStatus = review?.reviewStatus ?? 'pending';
@@ -1515,11 +1524,12 @@ async function readOptionalJson(path: string): Promise<unknown | null> {
   }
 }
 
-function isGeneratedMediaGenerationMode(generationMode: string | null | undefined): boolean {
-  return generationMode === 'hybrid_storyboard_fixture_video'
-    || generationMode === 'hybrid_slideshow_video'
-    || generationMode === 'hybrid_image_slideshow_video';
-}
+// Delegated to imported helper video-orchestrator-publish-gate.ts
+// function isGeneratedMediaGenerationMode(generationMode: string | null | undefined): boolean {
+//   return generationMode === 'hybrid_storyboard_fixture_video'
+//     || generationMode === 'hybrid_slideshow_video'
+//     || generationMode === 'hybrid_image_slideshow_video';
+// }
 
 function buildReviewMedia(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): VideoReviewMedia {
   const publishRecord = publishJson ?? {};
@@ -1617,12 +1627,13 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
   return created;
 }
 
-function requiresReviewApproval(generationMode: string | null | undefined): boolean {
-  return isGeneratedMediaGenerationMode(generationMode);
-}
+// Delegated to imported helper video-orchestrator-publish-gate.ts
+// function requiresReviewApproval(generationMode: string | null | undefined): boolean {
+//   return isGeneratedMediaGenerationMode(generationMode);
+// }
 
 async function requireApprovedReviewForPublish(jobId: string, generationMode: string | null | undefined): Promise<VideoReviewMetadata | null> {
-  if (!requiresReviewApproval(generationMode)) return null;
+  if (!shouldRequireReviewGate(generationMode)) return null;
   const review = await getOrCreateReview(jobId);
   if (!review || review.reviewStatus !== 'approved') return review ?? null;
   return review;
@@ -2008,7 +2019,8 @@ export interface ControlledYouTubePublishResult {
   dryRunCheckedAt?: string;
 }
 
-export type ReviewStatus = 'pending' | 'approved' | 'changes_requested';
+// Re-export ReviewStatus from video-orchestrator-publish-gate.ts
+export type { ReviewStatus } from './video-orchestrator-publish-gate.js';
 
 export interface VideoReviewMedia {
   scenePlanKey: string | null;
