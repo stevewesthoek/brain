@@ -66,6 +66,25 @@ echo "Step 4: Starting Brain Core ($MODE_LABEL mode) on port $BRAIN_CORE_PORT...
 cd "$BRAIN_CORE_DIR"
 mkdir -p /tmp
 export AWS_VIDEO_GENERATION_MODE="$GENERATION_MODE"
+
+# Configure image provider defaults for hybrid_image_slideshow mode
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+  export AWS_VIDEO_IMAGE_PROVIDER="${AWS_VIDEO_IMAGE_PROVIDER:-aws-bedrock-nova-canvas}"
+  export AWS_VIDEO_IMAGE_MODEL_ID="${AWS_VIDEO_IMAGE_MODEL_ID:-amazon.nova-canvas-v1:0}"
+  export AWS_VIDEO_IMAGE_REGION="${AWS_VIDEO_IMAGE_REGION:-us-east-1}"
+  export AWS_VIDEO_IMAGE_WIDTH="${AWS_VIDEO_IMAGE_WIDTH:-1280}"
+  export AWS_VIDEO_IMAGE_HEIGHT="${AWS_VIDEO_IMAGE_HEIGHT:-720}"
+  export AWS_VIDEO_IMAGE_CFG_SCALE="${AWS_VIDEO_IMAGE_CFG_SCALE:-6.5}"
+  export AWS_VIDEO_IMAGE_SEED="${AWS_VIDEO_IMAGE_SEED:-42}"
+  export AWS_VIDEO_IMAGE_QUALITY="${AWS_VIDEO_IMAGE_QUALITY:-standard}"
+
+  # Preflight check: ensure required vars are set
+  if [ -z "$AWS_VIDEO_IMAGE_PROVIDER" ] || [ -z "$AWS_VIDEO_IMAGE_MODEL_ID" ] || [ -z "$AWS_VIDEO_IMAGE_REGION" ]; then
+    echo "  ❌ Error: hybrid_image_slideshow requires AWS_VIDEO_IMAGE_PROVIDER, AWS_VIDEO_IMAGE_MODEL_ID, and AWS_VIDEO_IMAGE_REGION"
+    exit 1
+  fi
+fi
+
 npm run dev > /tmp/brain-core-hybrid.log 2>&1 &
 BRAIN_CORE_PID=$!
 echo "  Brain Core PID: $BRAIN_CORE_PID"
@@ -126,6 +145,15 @@ echo ""
 echo "📍 Brain Core URL: http://127.0.0.1:$BRAIN_CORE_PORT"
 echo "📍 Brain Console Center URL: http://localhost:$CONSOLE_CENTER_PORT/aws-video"
 echo ""
+echo "⚙️  Configuration:"
+echo "   Generation Mode: $GENERATION_MODE"
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+  echo "   Image Provider: $AWS_VIDEO_IMAGE_PROVIDER"
+  echo "   Image Model: $AWS_VIDEO_IMAGE_MODEL_ID"
+  echo "   Image Region: $AWS_VIDEO_IMAGE_REGION"
+  echo "   Image Size: ${AWS_VIDEO_IMAGE_WIDTH}x${AWS_VIDEO_IMAGE_HEIGHT}"
+fi
+echo ""
 echo "🔍 Logs:"
 echo "   Brain Core: tail -f /tmp/brain-core-hybrid.log"
 echo "   Brain Console Center: tail -f /tmp/brain-console-center.log"
@@ -138,6 +166,10 @@ echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB
 if [ "$GENERATION_MODE" = "hybrid_storyboard" ]; then
   echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/storyboard.json' - --region eu-north-1 | jq"
   echo "   aws s3 ls 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/images/' --region eu-north-1"
+fi
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+  echo "   aws s3 ls 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/exports/' --region eu-north-1"
+  echo "   (Look for scene PNGs and final MP4)"
 fi
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/audio/narration.mp3' - --region eu-north-1 | file -"
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/assets.json' - --region eu-north-1 | jq '.audioProvider, .voiceId, .imageProvider'"
