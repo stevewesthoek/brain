@@ -1,4 +1,4 @@
-export type GenerationMode = 'fixture' | 'hybrid' | 'hybrid_tts' | 'hybrid_storyboard' | 'ai';
+export type GenerationMode = 'fixture' | 'hybrid' | 'hybrid_tts' | 'hybrid_storyboard' | 'hybrid_slideshow' | 'ai';
 export type MediaSource = 'fixture' | 'hybrid' | 'ai';
 
 export interface ScenePlanScene {
@@ -36,11 +36,12 @@ export interface Storyboard {
 
 export interface GenerationManifest {
   jobId: string;
-  generationMode: 'fixture_assembly' | 'hybrid_scene_plan_fixture_media' | 'hybrid_tts_fixture_video' | 'hybrid_storyboard_fixture_video' | 'ai_generation';
+  generationMode: 'fixture_assembly' | 'hybrid_scene_plan_fixture_media' | 'hybrid_tts_fixture_video' | 'hybrid_storyboard_fixture_video' | 'hybrid_slideshow_video' | 'ai_generation';
   mediaSource: 'fixture' | 'hybrid' | 'ai';
   aiGenerated: boolean;
   ttsGenerated?: boolean;
   storyboardGenerated?: boolean;
+  slideshowGenerated?: boolean;
   scenePlanKey?: string;
   narrationScriptKey?: string;
   narrationAudioKey?: string;

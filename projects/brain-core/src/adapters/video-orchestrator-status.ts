@@ -4,7 +4,7 @@ export interface BrainCoreVideoOrchestratorStatus {
   pipelineId: 'video-upload-pipeline';
   status: 'operational' | 'partial' | 'planned' | 'blocked' | 'unknown';
   health: 'ok' | 'warning' | 'error' | 'unknown';
-  generationModeRuntime: 'fixture' | 'hybrid' | 'ai';
+  generationModeRuntime: 'fixture' | 'hybrid' | 'hybrid_tts' | 'hybrid_storyboard' | 'hybrid_slideshow' | 'ai';
   expectedHybridArtifacts: {
     scenePlan: string;
     narrationScript: string;
@@ -36,10 +36,11 @@ export interface BrainCoreVideoOrchestratorStatus {
   };
 }
 
-function getGenerationMode(): 'fixture' | 'hybrid' | 'ai' {
+function getGenerationMode(): 'fixture' | 'hybrid' | 'hybrid_tts' | 'hybrid_storyboard' | 'hybrid_slideshow' | 'ai' {
   const mode = process.env.AWS_VIDEO_GENERATION_MODE;
   if (mode === 'ai') return 'ai';
   if (mode === 'hybrid') return 'hybrid';
+  if (mode === 'hybrid_tts' || mode === 'hybrid_storyboard' || mode === 'hybrid_slideshow') return mode;
   return 'fixture';
 }
 

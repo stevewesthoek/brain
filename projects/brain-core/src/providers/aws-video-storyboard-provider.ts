@@ -1,5 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { deflateSync } from 'node:zlib';
 import type { StoryboardProviderInput, StoryboardProviderOutput } from './aws-video-storyboard-types.js';
 
 export class DeterministicStoryboardProvider {
@@ -54,12 +55,12 @@ export class DeterministicStoryboardProvider {
     <!-- Main content (offset from color bar) -->
     <g transform="translate(24, 0)">
       <!-- Scene number and duration -->
-      <text x="0" y="40" font-size="36" font-weight="bold" fill="${accentColor}" font-family="Arial, sans-serif">
+      <text x="0" y="40" font-size="36" font-weight="bold" fill="${accentColor}">
         Scene ${input.index} · ${input.durationSeconds}s
       </text>
 
       <!-- Visual prompt heading -->
-      <text x="0" y="90" font-size="16" font-weight="bold" fill="#333" font-family="Arial, sans-serif">
+      <text x="0" y="90" font-size="16" font-weight="bold" fill="#333">
         Visual
       </text>
 
@@ -69,7 +70,7 @@ export class DeterministicStoryboardProvider {
       </g>
 
       <!-- Narration heading -->
-      <text x="0" y="340" font-size="16" font-weight="bold" fill="#333" font-family="Arial, sans-serif">
+      <text x="0" y="340" font-size="16" font-weight="bold" fill="#333">
         Narration
       </text>
 
@@ -81,7 +82,7 @@ export class DeterministicStoryboardProvider {
       <!-- On-screen text if provided -->
       ${onScreenText ? `
         <!-- On-screen text heading -->
-        <text x="0" y="600" font-size="16" font-weight="bold" fill="#333" font-family="Arial, sans-serif">
+        <text x="0" y="600" font-size="16" font-weight="bold" fill="#333">
           On-Screen
         </text>
         <!-- On-screen text -->
@@ -89,7 +90,7 @@ export class DeterministicStoryboardProvider {
       ` : ''}
 
       <!-- Footer -->
-      <text x="0" y="${contentHeight - 10}" font-size="12" fill="#999" font-family="Arial, sans-serif">
+      <text x="0" y="${contentHeight - 10}" font-size="12" fill="#999">
         Deterministic placeholder • ${new Date().toISOString().split('T')[0]}
       </text>
     </g>
@@ -107,7 +108,7 @@ export class DeterministicStoryboardProvider {
       .slice(0, 4) // Max 4 lines
       .map(
         (line, i) =>
-          `<text x="0" y="${startY + i * lineHeight}" font-size="${fontSize}" fill="${fillColor}" font-family="Arial, sans-serif">${this.escapeXml(line)}</text>`,
+          `<text x="0" y="${startY + i * lineHeight}" font-size="${fontSize}" fill="${fillColor}">${this.escapeXml(line)}</text>`,
       )
       .join('\n        ');
   }
@@ -150,5 +151,76 @@ export class DeterministicStoryboardProvider {
     await writeFile(tempSvgPath, svgContent, 'utf-8');
 
     return tempSvgPath;
+  }
+
+  async generateStoryboardPng(input: StoryboardProviderInput, tempDir: string): Promise<string> {
+    const width = 1280;
+    const height = 720;
+    const indexPadded = String(input.index).padStart(3, '0');
+    const tempPngPath = resolve(tempDir, `storyboard-scene-${indexPadded}.png`);
+    const colors = [
+      [255, 107, 107],
+      [78, 205, 196],
+      [69, 183, 209],
+      [255, 160, 122],
+      [152, 216, 200],
+      [247, 220, 111],
+    ] as const;
+    const base = colors[(input.index * 7) % colors.length]!;
+    const raw = Buffer.alloc((width * 3 + 1) * height);
+
+    for (let y = 0; y < height; y += 1) {
+      const rowStart = y * (width * 3 + 1);
+      raw[rowStart] = 0;
+      for (let x = 0; x < width; x += 1) {
+        const offset = rowStart + 1 + x * 3;
+        const vignette = Math.round((x / width) * 28 + (y / height) * 20);
+        const band = x < 34 || y < 24 || y > height - 25 ? 0 : 42;
+        raw[offset] = Math.max(0, Math.min(255, base[0] - vignette + band));
+        raw[offset + 1] = Math.max(0, Math.min(255, base[1] - vignette + band));
+        raw[offset + 2] = Math.max(0, Math.min(255, base[2] - vignette + band));
+      }
+    }
+
+    await writeFile(tempPngPath, this.encodePng(width, height, raw));
+    return tempPngPath;
+  }
+
+  private encodePng(width: number, height: number, raw: Buffer): Buffer {
+    const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+    const ihdr = Buffer.alloc(13);
+    ihdr.writeUInt32BE(width, 0);
+    ihdr.writeUInt32BE(height, 4);
+    ihdr[8] = 8;
+    ihdr[9] = 2;
+    ihdr[10] = 0;
+    ihdr[11] = 0;
+    ihdr[12] = 0;
+    return Buffer.concat([
+      signature,
+      this.pngChunk('IHDR', ihdr),
+      this.pngChunk('IDAT', deflateSync(raw)),
+      this.pngChunk('IEND', Buffer.alloc(0)),
+    ]);
+  }
+
+  private pngChunk(type: string, data: Buffer): Buffer {
+    const typeBuffer = Buffer.from(type, 'ascii');
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length, 0);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(this.crc32(Buffer.concat([typeBuffer, data])), 0);
+    return Buffer.concat([length, typeBuffer, data, crc]);
+  }
+
+  private crc32(buffer: Buffer): number {
+    let crc = 0xffffffff;
+    for (const byte of buffer) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) {
+        crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+      }
+    }
+    return (crc ^ 0xffffffff) >>> 0;
   }
 }

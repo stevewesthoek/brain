@@ -176,6 +176,57 @@ Prompt-derived metadata with TTS narration, generated storyboard images, and fix
 - Does not generate full motion video or animations
 - Scene images are deterministic visual reference cards, not AI-generated imagery
 
+### 2.7. Hybrid Slideshow (`AWS_VIDEO_GENERATION_MODE=hybrid_slideshow`)
+
+Prompt-derived metadata with TTS narration, generated storyboard images, and a locally assembled slideshow MP4. Brain Core generates a deterministic scene plan and narration script from the user's input, synthesizes narration audio using AWS Polly TTS, generates deterministic storyboard SVG cards plus PNG slideshow frames for each scene, then assembles the PNG frames into the final MP4 using local FFmpeg.
+
+```json
+{
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_slideshow_video",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "slideshowGenerated": true,
+  "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+  "audioKey": "jobs/<jobId>/audio/narration.mp3",
+  "storyboardKey": "jobs/<jobId>/metadata/storyboard.json",
+  "sceneImageKeys": [
+    "jobs/<jobId>/images/scene-001.svg",
+    "jobs/<jobId>/images/scene-002.svg"
+  ],
+  "imageProvider": "deterministic-placeholder",
+  "audioProvider": "aws-polly",
+  "videoProvider": "local-ffmpeg-slideshow",
+  "voiceId": "Joanna",
+  "videoKey": "jobs/<jobId>/video-generated/generated-001.mp4",
+  "videoSourceKey": "jobs/<jobId>/video-generated/generated-001.mp4",
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "sceneImages": "deterministic-placeholder",
+    "video": "local-ffmpeg-slideshow"
+  },
+  "warnings": ["Slideshow mode: final video is assembled from deterministic storyboard images and generated narration audio, not AI motion video."]
+}
+```
+
+**What it does:**
+- Generates prompt-derived scene plan
+- Generates prompt-derived narration script from scene descriptions
+- Synthesizes narration MP3 using AWS Polly
+- Generates deterministic storyboard cards as SVG images
+- Emits deterministic PNG companion frames for slideshow assembly
+- Assembles `generated-001.mp4` locally with FFmpeg from those scene images and narration audio
+- Uploads the assembled MP4 back to S3
+
+**What it does NOT do:**
+- Does not generate full AI motion video
+- Does not call external AI/image/video providers
+- Does not break the YouTube dry-run/private publish flow
+
 ### 3. AI (`AWS_VIDEO_GENERATION_MODE=ai`)
 
 Not yet implemented. If set without a real provider configured, Brain Core returns:
@@ -204,7 +255,7 @@ Hybrid TTS mode lets you:
 2. `hybrid` — prompt-derived metadata + fixture media
 3. `hybrid_tts` — prompt-derived metadata + TTS audio + fixture video
 4. `hybrid_storyboard` — prompt-derived metadata + TTS audio + storyboard images + fixture video (current)
-5. (future) `hybrid_video` — prompt-derived metadata + TTS audio + generated video frames
+5. `hybrid_slideshow` — prompt-derived metadata + TTS audio + deterministic storyboard images + local FFmpeg slideshow video
 6. (future) `ai` — full AI generation (all components real)
 
 ## Dev Environment Reset

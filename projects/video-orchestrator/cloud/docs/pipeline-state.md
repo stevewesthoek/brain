@@ -13,10 +13,12 @@ The AWS Video control plane works end to end:
 - YouTube dry-run succeeds.
 - Private YouTube upload succeeds.
 
-Two modes are fully operational:
+Four modes are fully operational:
 
 1. **Fixture mode** (default): fixture assembly proof
 2. **Hybrid mode**: prompt-derived scene plan + narration script + fixture media
+3. **Hybrid Storyboard mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + fixture video
+4. **Hybrid Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + local FFmpeg slideshow MP4
 
 ## Fixture Mode
 
@@ -81,6 +83,93 @@ Metadata:
 - Does not generate video (source video is fixture)
 - Does not call external AI models
 
+## Hybrid Storyboard Mode
+
+Hybrid storyboard generates prompt-derived metadata, TTS narration, and deterministic storyboard images, but still uses the fixture MP4 for final video assembly.
+
+Metadata:
+
+```json
+{
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_storyboard_fixture_video",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+  "audioKey": "jobs/<jobId>/audio/narration.mp3",
+  "storyboardKey": "jobs/<jobId>/metadata/storyboard.json",
+  "sceneImageKeys": ["jobs/<jobId>/images/scene-001.svg"],
+  "imageProvider": "deterministic-placeholder",
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "sceneImages": "deterministic-placeholder",
+    "video": "fixture"
+  },
+  "warnings": ["Scene images are generated, but final video still uses fixture video."]
+}
+```
+
+**What it does:**
+- Generates prompt-derived scene plan
+- Generates prompt-derived narration script from scene descriptions
+- Synthesizes narration MP3 using AWS Polly
+- Generates deterministic storyboard cards as SVG images
+- Writes storyboard manifest and uploads all artifacts
+- Still assembles with fixture video
+
+## Hybrid Slideshow Mode
+
+Hybrid slideshow generates the same prompt-derived scene plan, narration script, TTS audio, and deterministic storyboard images, but assembles a real slideshow MP4 from those images and narration audio using local FFmpeg.
+
+Metadata:
+
+```json
+{
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_slideshow_video",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "slideshowGenerated": true,
+  "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+  "audioKey": "jobs/<jobId>/audio/narration.mp3",
+  "storyboardKey": "jobs/<jobId>/metadata/storyboard.json",
+  "sceneImageKeys": ["jobs/<jobId>/images/scene-001.svg"],
+  "imageProvider": "deterministic-placeholder",
+  "audioProvider": "aws-polly",
+  "videoProvider": "local-ffmpeg-slideshow",
+  "voiceId": "Joanna",
+  "videoKey": "jobs/<jobId>/video-generated/generated-001.mp4",
+  "videoSourceKey": "jobs/<jobId>/video-generated/generated-001.mp4",
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "sceneImages": "deterministic-placeholder",
+    "video": "local-ffmpeg-slideshow"
+  },
+  "warnings": ["Slideshow mode: final video is assembled from deterministic storyboard images and generated narration audio, not AI motion video."]
+}
+```
+
+**What it does:**
+- Generates prompt-derived scene plan
+- Generates prompt-derived narration script from scene descriptions
+- Synthesizes narration MP3 using AWS Polly
+- Generates deterministic storyboard cards as SVG and PNG images
+- Assembles `generated-001.mp4` locally with FFmpeg from those images and narration audio
+- Uploads the assembled MP4 back to S3
+
+**What it does NOT do:**
+- Does not generate full AI motion video
+- Does not call external AI image or video providers
+- Does not replace the controlled publish flow
+
 ## Dev Environment Reset
 
 To restart Brain Core and Brain Console Center with hybrid mode enabled:
@@ -140,6 +229,7 @@ cd infrastructure/i-2-mediaconvert-orchestration
 | `hybrid` | ✅ Working | Generated | Generated | — | Fixture | Fixture |
 | `hybrid_tts` | ✅ Working | Generated | Generated | — | **TTS (Polly)** | Fixture |
 | `hybrid_storyboard` | ✅ Working | Generated | Generated | **Deterministic** | **TTS (Polly)** | Fixture |
+| `hybrid_slideshow` | ✅ Working | Generated | Generated | **Deterministic** | **TTS (Polly)** | **Local FFmpeg slideshow** |
 | `ai` | ❌ Not configured | — | — | — | — | — |
 
 ## Not Yet Implemented
@@ -161,9 +251,11 @@ The framework is provider-based:
 - `NarrationGenerationProvider` accepts script/channel input and outputs to S3 narration key.
 - Provider output includes provider name, S3 output key, and generation metadata.
 - `AWS_VIDEO_GENERATION_MODE` controls the flow:
-  - `fixture` → fixture assembly
-  - `hybrid` → deterministic scene plan + narration script + fixture media
-  - `ai` → delegate to provider (fails loudly if not configured)
+- `fixture` → fixture assembly
+- `hybrid` → deterministic scene plan + narration script + fixture media
+- `hybrid_storyboard` → deterministic scene plan + narration script + TTS + storyboard images + fixture media
+- `hybrid_slideshow` → deterministic scene plan + narration script + TTS + storyboard images + local FFmpeg slideshow MP4
+- `ai` → delegate to provider (fails loudly if not configured)
 - Default is `fixture`.
 
 **Do not label fixture output as AI-generated video.** The `aiGenerated` flag must be `false` for fixture and hybrid modes.

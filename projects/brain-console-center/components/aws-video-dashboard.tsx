@@ -509,15 +509,19 @@ export function AwsVideoDashboard() {
   const isHybridMode = generationMode === 'hybrid_scene_plan_fixture_media';
   const isHybridTTSMode = generationMode === 'hybrid_tts_fixture_video';
   const isHybridStoryboardMode = generationMode === 'hybrid_storyboard_fixture_video';
-  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video';
+  const isHybridSlideshowMode = generationMode === 'hybrid_slideshow_video';
+  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video' || generationMode === 'hybrid_slideshow_video';
   const scenePlanKey = stringField(artifactData, 'scenePlanKey');
   const narrationScriptKey = stringField(artifactData, 'narrationScriptKey');
   const storyboardKey = stringField(artifactData, 'storyboardKey');
   const sceneImageKeys = Array.isArray(artifactData?.sceneImageKeys) ? (artifactData?.sceneImageKeys as string[]) : [];
   const imageProvider = stringField(artifactData, 'imageProvider');
+  const slideshowGenerated = artifactData?.slideshowGenerated === true;
+  const videoProvider = stringField(artifactData, 'videoProvider');
   const hasScenePlan = Boolean(scenePlanKey || asRecord(artifactData?.scenePlan));
   const hasStoryboard = Boolean(storyboardKey || (Array.isArray(sceneImageKeys) && sceneImageKeys.length > 0));
   const finalVideoKey = stringField(artifactData, 'finalVideo') ?? stringField(publishableAssets, 'videoKey');
+  const generatedVideoKey = stringField(artifactData, 'videoKey') ?? videoSourceKey ?? finalVideoKey;
   const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
   const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
   const awsSucceeded = stringField(executionData, 'awsStatus') === 'SUCCEEDED';
@@ -677,7 +681,9 @@ export function AwsVideoDashboard() {
                 </div>
                 {selectedJob ? (
                   <>
-                    {isHybridStoryboardMode
+                    {isHybridSlideshowMode
+                      ? <div className="compact-error">Slideshow mode: final video is assembled from generated storyboard images and generated narration audio.</div>
+                      : isHybridStoryboardMode
                       ? <div className="compact-error">Hybrid Storyboard mode: scene plan, narration script, and scene images are prompt-derived; narration audio is generated via AWS Polly; final video still uses fixtures.</div>
                       : isHybridTTSMode
                         ? <div className="compact-error">Hybrid TTS mode: scene plan and narration script are prompt-derived; narration audio is generated via AWS Polly; final video still uses fixtures.</div>
@@ -722,9 +728,22 @@ export function AwsVideoDashboard() {
               </article>
 
               {hasScenePlan ? <ScenePlanCard artifactData={artifactData} /> : null}
+              {isHybridSlideshowMode ? <StoryboardCard artifactData={artifactData} /> : null}
               {isHybridStoryboardMode ? <StoryboardCard artifactData={artifactData} /> : null}
               {isHybridTTSMode ? <TTSAudioCard artifactData={artifactData} /> : null}
-              {isHybridMode || isHybridTTSMode || isHybridStoryboardMode ? <GenerationArtifactsCard jobId={jobId} artifactData={artifactData} generationMode={generationMode} /> : null}
+              {isHybridMode || isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode ? <GenerationArtifactsCard jobId={jobId} artifactData={artifactData} generationMode={generationMode} /> : null}
+              {isHybridSlideshowMode ? (
+                <article className="card">
+                  <div className="card-title">Slideshow assembly</div>
+                  <div className="aws-facts">
+                    <div><span>Storyboard provider</span><strong>{imageProvider ?? 'unknown'}</strong></div>
+                    <div><span>Video provider</span><strong>{videoProvider ?? 'local-ffmpeg-slideshow'}</strong></div>
+                    <div><span>slideshowGenerated</span><strong>{slideshowGenerated ? 'true' : 'false'}</strong></div>
+                    <div><span>Video key</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{generatedVideoKey ?? 'pending'}</strong></div>
+                    <div><span>Scene image count</span><strong>{sceneImageKeys.length}</strong></div>
+                  </div>
+                </article>
+              ) : null}
             </div>
           ) : null}
 
@@ -773,15 +792,17 @@ export function AwsVideoDashboard() {
                 <div><span>Media source</span><strong>{mediaSource}</strong></div>
                 <div><span>Dry-run</span><strong>{dryRunPassedForThisJob ? 'passed' : 'required'}</strong></div>
               </div>
-              {isHybridStoryboardMode
-                ? <div className="compact-error">Hybrid Storyboard mode: prompt-derived scene plan, narration script, and scene images exist; narration audio is TTS-generated; video still uses fixtures.</div>
-                : isHybridTTSMode
-                  ? <div className="compact-error">Hybrid TTS mode: prompt-derived scene plan and narration script exist; narration audio is TTS-generated; video still uses fixtures.</div>
-                  : isHybridMode
-                    ? <div className="compact-error">Hybrid mode: prompt-derived scene plan exists, but final media still uses fixture audio/video.</div>
-                    : isFixtureMedia
-                      ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
-                      : null}
+              {isHybridSlideshowMode
+                ? <div className="compact-error">Slideshow mode: prompt-derived storyboard images and narration audio are assembled into the final MP4.</div>
+                : isHybridStoryboardMode
+                  ? <div className="compact-error">Hybrid Storyboard mode: prompt-derived scene plan, narration script, and scene images exist; narration audio is TTS-generated; video still uses fixtures.</div>
+                  : isHybridTTSMode
+                    ? <div className="compact-error">Hybrid TTS mode: prompt-derived scene plan and narration script exist; narration audio is TTS-generated; video still uses fixtures.</div>
+                    : isHybridMode
+                      ? <div className="compact-error">Hybrid mode: prompt-derived scene plan exists, but final media still uses fixture audio/video.</div>
+                      : isFixtureMedia
+                        ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
+                        : null}
               <div className="publish-guard">
                 <div><span>generationMode</span><strong>{generationMode}</strong></div>
                 <div><span>videoSourceKey</span><strong>{videoSourceKey ?? 'unknown'}</strong></div>
