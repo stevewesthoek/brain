@@ -15,11 +15,12 @@ skills/
 ## Rules
 
 1. `active/` contains **only symlinks** — never raw skill folders.
-2. Every skill in `vendors/` or `custom/` must have a symlink in `active/` to be visible to Claude.
-3. Symlinks in `active/` point to `../vendors/<vendor>/<skill>` or `../custom/<skill>`.
-4. New vendor skills: add source to `vendors/<vendor>/`, then symlink from `active/`.
-5. New custom skills: add source to `custom/`, then symlink from `active/`.
-6. Do not store tool-internal config, caches, or runtime state here.
+2. `active/` is the default exported surface that Claude, Codex, Gemini, Cursor, Kiro, and Antigravity read directly.
+3. Skills in `vendors/` or `custom/` may remain dormant when they are too specialized or are meant to be routed by a higher-level orchestrator.
+4. Symlinks in `active/` point to `../vendors/<vendor>/<skill>` or `../custom/<skill>`.
+5. New vendor/custom skills should be registered in `docs/skills/skill-index.md`; add a symlink in `active/` only when the skill is intentionally default-active.
+6. Orchestrators such as `code` may use dormant source skills automatically from the registry and source docs. Example: `custom/greploop` remains dormant but is part of `/code`'s automatic review-fix-review workflow.
+7. Do not store tool-internal config, caches, or runtime state here.
 
 ## Design Skill Routing
 

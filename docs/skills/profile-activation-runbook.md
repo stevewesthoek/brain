@@ -16,7 +16,7 @@ The new profile system adds:
 - skill index
 - conservative switcher script
 
-No source skills were deleted, renamed, or merged.
+No source skills were deleted, renamed, or merged. Some source skills intentionally remain dormant and are still usable through orchestrator routing; for example, `ai/skills/custom/greploop` is not part of `active/` but `/code` uses it automatically for bounded review-fix-review loops when appropriate.
 
 ---
 
