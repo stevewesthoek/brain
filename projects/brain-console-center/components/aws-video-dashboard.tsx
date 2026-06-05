@@ -496,6 +496,9 @@ function ReviewCard({
         <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{reviewData?.media.publishKey ? reviewData.media.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
       </div>
       <div className="compact-error">Generated media must be reviewed before YouTube dry-run or private publish.</div>
+      <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+        Review media hydrated from canonical artifacts{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
+      </div>
       {missingReviewMediaFields.length > 0 && (
         <div style={{ fontSize: '0.85rem', color: '#d32f2f', padding: '0.75rem', backgroundColor: '#ffebee', borderRadius: '4px', marginBottom: '0.75rem' }}>
           <strong>Cannot approve: Missing fields</strong>

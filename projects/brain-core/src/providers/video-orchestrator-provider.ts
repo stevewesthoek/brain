@@ -1627,37 +1627,79 @@ async function readOptionalJson(path: string): Promise<unknown | null> {
 //     || generationMode === 'hybrid_image_slideshow_video';
 // }
 
-function buildReviewMedia(
+async function hydrateVideoReviewMedia(
   jobId: string,
-  publishJson: Record<string, unknown> | null,
-  assetsJson: Record<string, unknown> | null,
-  resolved: PublishableAssetsResolution,
+  assetsJson?: Record<string, unknown> | null,
+  publishJson?: Record<string, unknown> | null,
   thumbnailJson?: Record<string, unknown> | null,
   youtubePackageJson?: Record<string, unknown> | null,
-): VideoReviewMedia {
-  const publishRecord = publishJson ?? {};
-  const assetsRecord = assetsJson ?? {};
-  const thumbRecord = thumbnailJson ?? {};
+): Promise<VideoReviewMedia> {
+  // Load sources if not provided
+  const assets = assetsJson ?? (await readJobMetadataJson(jobId, 'assets.json')) as Record<string, unknown> | null;
+  const publish = publishJson ?? (await readJobMetadataJson(jobId, 'publish.json')) as Record<string, unknown> | null;
+  const thumbnail = thumbnailJson ?? (await readJobMetadataJson(jobId, 'thumbnail.json')) as Record<string, unknown> | null;
+  const youtubePackage = youtubePackageJson ?? (await readJobMetadataJson(jobId, 'youtube-package.json')) as Record<string, unknown> | null;
+  const resolved = await resolvePublishableAssets(jobId);
 
-  // Merge sceneImageKeys: prefer publishJson, fall back to assetsJson
-  let sceneImageKeys = Array.isArray(publishRecord.sceneImageKeys)
-    ? publishRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string')
-    : [];
-  if (sceneImageKeys.length === 0 && Array.isArray(assetsRecord.sceneImageKeys)) {
-    sceneImageKeys = assetsRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string');
+  // Canonical resolution: prefer explicit values, verify canonical paths exist before using
+  let scenePlanKey = stringValue(publish?.scenePlanKey) ?? stringValue(assets?.scenePlanKey) ?? null;
+  if (!scenePlanKey) {
+    const canonical = `jobs/${jobId}/metadata/scene-plan.json`;
+    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+      scenePlanKey = canonical;
+    }
   }
 
-  // Merge field resolution: prefer publishJson, then assetsJson, then resolved
-  const scenePlanKey = stringValue(publishRecord.scenePlanKey) ?? stringValue(assetsRecord.scenePlanKey) ?? null;
-  const narrationScriptKey = stringValue(publishRecord.narrationScriptKey) ?? stringValue(assetsRecord.narrationScriptKey) ?? null;
-  const audioKey = stringValue(publishRecord.audioKey) ?? stringValue(assetsRecord.audioKey) ?? null;
-  const videoKey = stringValue(publishRecord.videoKey) ?? stringValue(assetsRecord.videoKey) ?? resolved.videoKey ?? null;
-  const thumbnailKey = stringValue(thumbRecord.thumbnailKey)
-    ?? stringValue(publishRecord.thumbnailKey)
-    ?? stringValue(assetsRecord.thumbnailKey)
-    ?? resolved.thumbnailKey
-    ?? null;
-  const youtubePackageKey = stringValue(youtubePackageJson?.youtubePackageKey) ?? `jobs/${jobId}/metadata/youtube-package.json`;
+  let narrationScriptKey = stringValue(publish?.narrationScriptKey) ?? stringValue(assets?.narrationScriptKey) ?? null;
+  if (!narrationScriptKey) {
+    const canonical = `jobs/${jobId}/audio/narration-script.txt`;
+    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+      narrationScriptKey = canonical;
+    }
+  }
+
+  let audioKey = stringValue(publish?.audioKey) ?? stringValue(assets?.audioKey) ?? stringValue((assets?.narration as Record<string, unknown> | undefined)?.path) ?? stringValue(assets?.narrationKey) ?? null;
+  if (!audioKey) {
+    const canonical = `jobs/${jobId}/audio/narration.mp3`;
+    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+      audioKey = canonical;
+    }
+  }
+
+  // Scene images: prefer assetsJson, else storyboard, must be non-empty for generated modes
+  let sceneImageKeys = Array.isArray(assets?.sceneImageKeys)
+    ? (assets.sceneImageKeys as unknown[]).filter((item): item is string => typeof item === 'string')
+    : [];
+
+  // Video: prefer explicit, then resolved, then generated paths
+  let videoKey = stringValue(publish?.videoKey) ?? resolved.videoKey ?? stringValue(assets?.videoKey) ?? stringValue(assets?.videoSourceKey) ?? null;
+  if (!videoKey) {
+    const canonical = `jobs/${jobId}/exports/generated-001-final.mp4`;
+    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+      videoKey = canonical;
+    }
+  }
+
+  // Thumbnail: prefer explicit, then resolved paths
+  let thumbnailKey = stringValue(thumbnail?.thumbnailKey) ?? stringValue(publish?.thumbnailKey) ?? resolved.thumbnailKey ?? null;
+  if (!thumbnailKey) {
+    const canonical = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+      thumbnailKey = canonical;
+    }
+  }
+
+  // Publish JSON: only if it exists
+  let publishKey = null;
+  if (publish || await checkS3ObjectExists(S3_BUCKET, `jobs/${jobId}/metadata/publish.json`, AWS_REGION)) {
+    publishKey = `jobs/${jobId}/metadata/publish.json`;
+  }
+
+  // YouTube package: only if it exists
+  let youtubePackageKey = null;
+  if (youtubePackage || await checkS3ObjectExists(S3_BUCKET, `jobs/${jobId}/metadata/youtube-package.json`, AWS_REGION)) {
+    youtubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
+  }
 
   return {
     scenePlanKey,
@@ -1666,32 +1708,20 @@ function buildReviewMedia(
     sceneImageKeys,
     videoKey,
     thumbnailKey,
-    publishKey: `jobs/${jobId}/metadata/publish.json`,
+    publishKey,
     youtubePackageKey,
   };
 }
 
-function createPendingReview(
-  jobId: string,
-  publishJson: Record<string, unknown> | null,
-  assetsJson: Record<string, unknown> | null,
-  resolved: PublishableAssetsResolution,
-  thumbnailJson?: Record<string, unknown> | null,
-  youtubePackageJson?: Record<string, unknown> | null,
-  existing?: VideoReviewMetadata | null,
-): VideoReviewMetadata {
-  const now = new Date().toISOString();
-  const createdAt = existing?.createdAt ?? now;
-  return {
-    jobId,
-    reviewStatus: existing?.reviewStatus ?? 'pending',
-    createdAt,
-    updatedAt: now,
-    reviewedAt: existing?.reviewedAt ?? null,
-    reviewedBy: existing?.reviewedBy ?? null,
-    notes: existing?.notes ?? null,
-    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson),
-  };
+async function checkS3ObjectExists(bucket: string, key: string, region: string): Promise<boolean> {
+  try {
+    await execFileAsync('aws', ['s3api', 'head-object', '--bucket', bucket, '--key', key, '--region', region], {
+      timeout: S3_HEAD_TIMEOUT_MS,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function writeReviewJson(jobId: string, review: VideoReviewMetadata): Promise<void> {
@@ -1759,9 +1789,18 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
 
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
+
+  // ALWAYS hydrate fresh media from canonical sources
+  const hydratedMedia = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
+
   const existing = await readReviewJson(jobId);
   if (existing) {
-    const updated = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson, existing);
+    // Preserve approval state and metadata, but always use freshly hydrated media
+    const updated: VideoReviewMetadata = {
+      ...existing,
+      updatedAt: new Date().toISOString(),
+      media: hydratedMedia,
+    };
     const same = updated.reviewStatus === existing.reviewStatus
       && updated.createdAt === existing.createdAt
       && updated.notes === existing.notes
@@ -1776,8 +1815,20 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
     }
     return updated;
   }
-  if (!publishJson && !resolved.videoKey && !resolved.thumbnailKey) return null;
-  const created = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson);
+
+  // No existing review - check if we have enough media to create one
+  if (!hydratedMedia.videoKey && !hydratedMedia.thumbnailKey && !publishJson) return null;
+
+  const created: VideoReviewMetadata = {
+    jobId,
+    reviewStatus: 'pending',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    reviewedAt: null,
+    reviewedBy: null,
+    notes: null,
+    media: hydratedMedia,
+  };
   try {
     await writeReviewJson(jobId, created);
   } catch (err) {
@@ -2118,29 +2169,24 @@ export async function approveVideoReview(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
+  // Always hydrate fresh media from canonical sources
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
   const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
-  const resolved = await resolvePublishableAssets(jobId);
-  const current = await getOrCreateReview(jobId);
-  if (!current) {
-    return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
-  }
 
-  // Build fresh media to validate completeness
-  const media = buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson);
+  const hydratedMedia = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
 
   // Validate all mandatory media fields are present
   const missing: string[] = [];
-  if (!media.scenePlanKey) missing.push('scenePlanKey');
-  if (!media.narrationScriptKey) missing.push('narrationScriptKey');
-  if (!media.audioKey) missing.push('audioKey');
-  if (media.sceneImageKeys.length === 0) missing.push('sceneImageKeys');
-  if (!media.videoKey) missing.push('videoKey');
-  if (!media.thumbnailKey) missing.push('thumbnailKey');
-  if (!media.publishKey) missing.push('publishKey');
-  if (!media.youtubePackageKey) missing.push('youtubePackageKey');
+  if (!hydratedMedia.scenePlanKey) missing.push('scenePlanKey');
+  if (!hydratedMedia.narrationScriptKey) missing.push('narrationScriptKey');
+  if (!hydratedMedia.audioKey) missing.push('audioKey');
+  if (hydratedMedia.sceneImageKeys.length === 0) missing.push('sceneImageKeys');
+  if (!hydratedMedia.videoKey) missing.push('videoKey');
+  if (!hydratedMedia.thumbnailKey) missing.push('thumbnailKey');
+  if (!hydratedMedia.publishKey) missing.push('publishKey');
+  if (!hydratedMedia.youtubePackageKey) missing.push('youtubePackageKey');
 
   if (missing.length > 0) {
     return {
@@ -2152,15 +2198,21 @@ export async function approveVideoReview(
     } as unknown as VideoReviewError;
   }
 
+  const current = await getOrCreateReview(jobId);
+  if (!current) {
+    return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
+  }
+
   const now = new Date().toISOString();
   const approved: VideoReviewMetadata = {
-    ...current,
+    jobId,
     reviewStatus: 'approved',
+    createdAt: current.createdAt,
     updatedAt: now,
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes,
-    media,
+    media: hydratedMedia,
   };
   try {
     await writeReviewJson(jobId, approved);
@@ -2181,11 +2233,14 @@ export async function requestVideoReviewChanges(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
+  // Always hydrate fresh media from canonical sources
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
   const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
-  const resolved = await resolvePublishableAssets(jobId);
+
+  const hydratedMedia = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
+
   const current = await getOrCreateReview(jobId);
   if (!current) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
@@ -2193,13 +2248,14 @@ export async function requestVideoReviewChanges(
 
   const now = new Date().toISOString();
   const requested: VideoReviewMetadata = {
-    ...current,
+    jobId,
     reviewStatus: 'changes_requested',
+    createdAt: current.createdAt,
     updatedAt: now,
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes ?? 'Changes requested',
-    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson),
+    media: hydratedMedia,
   };
   try {
     await writeReviewJson(jobId, requested);
