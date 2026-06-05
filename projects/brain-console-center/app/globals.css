@@ -1530,3 +1530,36 @@ body { min-height: 100dvh; }
     justify-content: flex-start !important;
   }
 }
+
+
+
+/* AWS Video pipeline recommended step & next-action button styling */
+.pipeline-steps > div.recommended {
+  border-color: rgba(34, 197, 94, .5);
+  background: rgba(34, 197, 94, .12);
+}
+
+.pipeline-steps > div.recommended span {
+  background: var(--success);
+  color: var(--background);
+}
+
+.button.next-action,
+.button.next-action.danger-button {
+  background: var(--success);
+  color: var(--background);
+  border-color: var(--success);
+  font-weight: 700;
+}
+
+.button.next-action:hover:not(:disabled),
+.button.next-action.danger-button:hover:not(:disabled) {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.button.next-action:disabled,
+.button.next-action.danger-button:disabled {
+  opacity: .46;
+  cursor: not-allowed;
+}

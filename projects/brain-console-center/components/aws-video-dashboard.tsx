@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
@@ -400,6 +400,7 @@ function ReviewCard({
   onRequestChanges,
   notes,
   setNotes,
+  isRecommended,
 }: {
   jobId: string | null;
   reviewData: VideoReview | null;
@@ -410,6 +411,7 @@ function ReviewCard({
   onRequestChanges: () => void;
   notes: string;
   setNotes: (value: string) => void;
+  isRecommended?: boolean;
 }) {
   if (!jobId) return null;
   const media = reviewData?.media;
@@ -435,7 +437,7 @@ function ReviewCard({
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
-          <button className="button" disabled={!jobId || approvePending} onClick={onApprove}>Approve review</button>
+          <button className={isRecommended ? 'button next-action' : 'button'} disabled={!jobId || approvePending} onClick={onApprove}>Approve review</button>
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>Request changes</button>
         </div>
       </div>
@@ -647,6 +649,13 @@ export function AwsVideoDashboard() {
     },
   });
 
+  // Clear error toast when any mutation succeeds
+  useEffect(() => {
+    if (approve.isSuccess || generate.isSuccess || approveReview.isSuccess || youtubeDryRun.isSuccess || youtubePublish.isSuccess) {
+      setDismissedError(null);
+    }
+  }, [approve.isSuccess, generate.isSuccess, approveReview.isSuccess, youtubeDryRun.isSuccess, youtubePublish.isSuccess]);
+
   const selectedJob = job.data?.data ?? selected;
   const timelineEvents = timeline.data?.data.events ?? [];
   const artifactData = artifacts.data?.data ?? null;
@@ -742,14 +751,15 @@ export function AwsVideoDashboard() {
         ? 'Generated assets available — publish contract repair needed'
         : 'Waiting for generated assets';
   const guideSteps = [
-    { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
-    { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
-    { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
-    { label: 'Review', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved },
-    { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
-    { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
+    { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
+    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
+    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate', help: 'Run image generation and assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
+    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved && selectedReady },
+    { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
+    { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
   ];
-  const nextStep = guideSteps.find((step) => !step.done);
+  const recommendedStep = guideSteps.find((step) => step.active && !step.done) ?? guideSteps.find((step) => !step.done);
+  const nextStep = recommendedStep;
   const queryError = jobs.error ?? status.error;
   const queryErrorMessage = errorMessage(queryError);
   const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
@@ -782,7 +792,7 @@ export function AwsVideoDashboard() {
         <div className="min-w-0">
           <div className="eyebrow">AWS Video Pipeline</div>
           <h1>Video operations</h1>
-          <p>Brain Console Center is the active dashboard. Follow the pipeline left to right: draft, approve, generate, dry-run, then private YouTube upload.</p>
+          <p>Brain Console Center is the active dashboard. Follow the pipeline left to right: draft, approve, generate, review, dry-run, then private YouTube upload.</p>
         </div>
         <div className="aws-hero-actions">
           <StatusBadge status={status.isError || jobs.isError ? 'error' : 'fresh'} label={status.isError || jobs.isError ? 'partial error' : 'online'} />
@@ -803,11 +813,11 @@ export function AwsVideoDashboard() {
         <div className="pipeline-next">
           <span>Next action</span>
           <strong>{nextStep ? nextStep.label : 'Complete'}</strong>
-          <p>{nextStep ? nextStep.help : 'This job has completed the visible pipeline.'}</p>
+          <p>{nextStep ? `${nextStep.help} Press “${nextStep.action}”.` : 'This job has completed the visible pipeline.'}</p>
         </div>
         <div className="pipeline-steps">
           {guideSteps.map((step, index) => (
-            <div key={step.label} className={step.done ? 'done' : step.active ? 'active' : ''}>
+            <div key={step.label} className={step.done ? 'done' : step === recommendedStep ? 'recommended' : step.active ? 'active' : ''}>
               <span>{index + 1}</span>
               <strong>{step.label}</strong>
               <p>{step.help}</p>
@@ -884,10 +894,10 @@ export function AwsVideoDashboard() {
                   ))}
                 </div>
                 <div className="pipeline-actions">
-                  <button className="button secondary" onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
-                  <button className="button" disabled={!canApprove || approve.isPending} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve</button>
-                  <button className="button" disabled={!canGenerate || generate.isPending} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
-                  <button className="button secondary" onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
+                  <button className={recommendedStep?.key === 'draft' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
+                  <button className={recommendedStep?.key === 'approve' ? 'button next-action' : 'button'} disabled={!canApprove || approve.isPending} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve</button>
+                  <button className={recommendedStep?.key === 'generate' ? 'button next-action' : 'button'} disabled={!canGenerate || generate.isPending} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
+                  <button className={recommendedStep?.view === 'publish' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
                 </div>
               </article>
 
@@ -926,6 +936,7 @@ export function AwsVideoDashboard() {
               onRequestChanges={() => { if (jobId) requestReviewChanges.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); }}
               notes={reviewNotes}
               setNotes={setReviewNotes}
+              isRecommended={recommendedStep?.key === 'review'}
             />
           ) : null}
 
@@ -999,8 +1010,8 @@ export function AwsVideoDashboard() {
               {publishNeedsRepair ? <div className="compact-error">Generated assets available — publish contract repair needed.</div> : null}
               {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
-                <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
-                <button className="button danger-button" disabled={!canPublish || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
+                <button className={recommendedStep?.key === 'dry-run' ? 'button next-action' : 'button secondary'} disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
+                <button className={recommendedStep?.key === 'publish' ? 'button next-action' : 'button danger-button'} disabled={!canPublish || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
               </div>
               <p className="meta no-margin">{requiresReviewGate ? 'Review approval is required before dry-run or private upload.' : 'Private upload unlocks automatically after a successful dry-run for this selected job.'}</p>
               <CompactPublishResultCard
