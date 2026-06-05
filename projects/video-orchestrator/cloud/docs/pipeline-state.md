@@ -206,6 +206,11 @@ AWS_VIDEO_GENERATION_MODE=hybrid_image_slideshow
 AWS_VIDEO_IMAGE_PROVIDER=deterministic-placeholder|aws-bedrock-nova-canvas|aws-bedrock-titan-image
 AWS_VIDEO_IMAGE_MODEL_ID=amazon.nova-canvas-v1:0
 AWS_VIDEO_IMAGE_REGION=us-east-1
+AWS_VIDEO_IMAGE_WIDTH=1280
+AWS_VIDEO_IMAGE_HEIGHT=720
+AWS_VIDEO_IMAGE_CFG_SCALE=6.5
+AWS_VIDEO_IMAGE_SEED=42
+AWS_VIDEO_IMAGE_QUALITY=standard
 ```
 
 `hybrid_image_slideshow` does not silently fall back to placeholders. If `AWS_VIDEO_IMAGE_PROVIDER` is missing, the job fails with `currentStep=image_provider_not_configured`. `deterministic-placeholder` is allowed only when explicitly selected for development proof mode.
@@ -218,6 +223,7 @@ Verified provider contract:
 - API: `aws bedrock-runtime invoke-model`
 - Request body: `taskType=TEXT_IMAGE`, `textToImageParams.text`, and `imageGenerationConfig`
 - Proof command: `projects/video-orchestrator/cloud/scripts/bedrock-image-proof.sh nova "A peaceful tree in a sunny meadow" /tmp/tree.png`
+- Effective defaults: `1280x720`, `cfgScale=6.5`, `seed=42`, `quality=standard`
 
 Titan Image is not the selected provider. It is visible in some regions, but is marked legacy and produced legacy-access blocking outside `us-east-1`.
 
@@ -280,7 +286,7 @@ Accepted modes:
 | `hybrid_tts` | `hybrid_tts_fixture_video` | Scene plan, narration script, MP3 download validation, `ttsGenerated=true`, `audioProvider=aws-polly` |
 | `hybrid_storyboard` | `hybrid_storyboard_fixture_video` | Scene plan, narration script, narration MP3, storyboard JSON, `scene-001.svg`, storyboard metadata, documented video source |
 | `hybrid_slideshow` | `hybrid_slideshow_video` | Scene plan, narration script, narration MP3, storyboard JSON, `scene-001.svg`, `scene-001.png`, valid downloaded MP4, `videoProvider=local-ffmpeg-slideshow` |
-| `hybrid_image_slideshow` | `hybrid_image_slideshow_video` | Scene plan, narration script, MP3 download validation, storyboard JSON, PNG/JPEG scene image, valid downloaded MP4, `imageGenerated=true`, non-placeholder image provider unless explicit verifier override, `videoProvider=local-ffmpeg-slideshow` |
+| `hybrid_image_slideshow` | `hybrid_image_slideshow_video` | Scene plan, narration script, MP3 download validation, image-generation summary, storyboard JSON with prompt audit, PNG/JPEG scene image, valid downloaded MP4, `imageGenerated=true`, `partialAiGenerated=true`, `videoProvider=local-ffmpeg-slideshow` |
 
 The verifier prints optional publish contract details when `metadata/publish.json` exists and optional dry-run status when `metadata/publish-check.json` exists. It is read-only and exits nonzero on failed required checks.
 

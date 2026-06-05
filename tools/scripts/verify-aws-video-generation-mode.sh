@@ -135,6 +135,23 @@ require_json_nonempty() {
   fi
 }
 
+require_json_number_equals() {
+  local file="$1"
+  local expr="$2"
+  local expected="$3"
+  local actual
+  if [[ ! -f "$file" ]]; then
+    fail "cannot check $expr because JSON file is missing: $file"
+    return
+  fi
+  actual="$(jq -r "$expr // empty" "$file")"
+  if [[ "$actual" == "$expected" ]]; then
+    pass "$expr == $expected"
+  else
+    fail "$expr expected '$expected' but got '${actual:-<empty>}'"
+  fi
+}
+
 require_not_s3_uri() {
   local label="$1"
   local value="$2"
@@ -384,8 +401,42 @@ case "$MODE" in
     require_object "$(object_key "audio/narration-script.txt")"
     require_mp3 "$(object_key "audio/narration.mp3")"
     require_object "$(object_key "metadata/storyboard.json")"
+    require_object "$(object_key "metadata/image-generation.json")"
     require_first_existing_image "images/scene-001"
     require_video_file "$(object_key "video-generated/generated-001.mp4")"
+    require_json_nonempty "$assets_json" '.imageGenerationKey'
+    require_json_equals "$assets_json" '.imageProvider' 'aws-bedrock-nova-canvas'
+    require_json_equals "$assets_json" '.imageModelId' 'amazon.nova-canvas-v1:0'
+    require_json_equals "$assets_json" '.imageGeneration.provider' 'aws-bedrock-nova-canvas'
+    require_json_equals "$assets_json" '.imageGeneration.modelId' 'amazon.nova-canvas-v1:0'
+    require_json_equals "$assets_json" '.imageGeneration.region' 'us-east-1'
+    require_json_true "$assets_json" '.imageGenerated'
+    require_json_true "$assets_json" '.partialAiGenerated'
+    require_json_equals "$assets_json" '.imageGeneration.settings.width' '1280'
+    require_json_equals "$assets_json" '.imageGeneration.settings.height' '720'
+    require_json_equals "$assets_json" '.imageGeneration.settings.cfgScale' '6.5'
+    require_json_equals "$assets_json" '.imageGeneration.settings.quality' 'standard'
+    require_json_equals "$assets_json" '.imageGeneration.settings.seed' '42'
+    require_json_nonempty "$assets_json" '.imageGeneration.promptHashes[0]'
+    require_json_nonempty "$assets_json" '.imageGeneration.generatedImageKeys[0]'
+    require_json_nonempty "$assets_json" '.imageGenerationKey'
+    storyboard_json="$(object_key "metadata/storyboard.json")"
+    image_generation_json="$(object_key "metadata/image-generation.json")"
+    download_object "$storyboard_json" "$tmp_dir/storyboard.json"
+    download_object "$image_generation_json" "$tmp_dir/image-generation.json"
+    require_json_nonempty "$tmp_dir/storyboard.json" '.scenes[0].finalImagePrompt'
+    require_json_nonempty "$tmp_dir/storyboard.json" '.scenes[0].promptHash'
+    require_json_equals "$tmp_dir/storyboard.json" '.scenes[0].imageModelId' 'amazon.nova-canvas-v1:0'
+    require_json_equals "$tmp_dir/storyboard.json" '.scenes[0].imageRegion' 'us-east-1'
+    require_json_number_equals "$tmp_dir/storyboard.json" '.scenes[0].width' '1280'
+    require_json_number_equals "$tmp_dir/storyboard.json" '.scenes[0].height' '720'
+    require_json_nonempty "$tmp_dir/storyboard.json" '.scenes[0].generatedAt'
+    require_json_nonempty "$tmp_dir/image-generation.json" '.provider'
+    require_json_equals "$tmp_dir/image-generation.json" '.modelId' 'amazon.nova-canvas-v1:0'
+    require_json_equals "$tmp_dir/image-generation.json" '.region' 'us-east-1'
+    require_json_number_equals "$tmp_dir/image-generation.json" '.settings.width' '1280'
+    require_json_number_equals "$tmp_dir/image-generation.json" '.settings.height' '720'
+    require_json_equals "$tmp_dir/image-generation.json" '.settings.quality' 'standard'
     require_json_true "$assets_json" '.imageGenerated'
     require_json_true "$assets_json" '.slideshowGenerated'
     require_json_equals "$assets_json" '.videoProvider' 'local-ffmpeg-slideshow'
@@ -410,8 +461,16 @@ if optional_object "$publish_key"; then
   info "publishStatus: ${publish_status:-<empty>}"
   publish_video_key="$(json_value "$publish_json" '.videoKey')"
   publish_thumbnail_key="$(json_value "$publish_json" '.thumbnailKey')"
-  require_not_s3_uri "publish.json videoKey" "$publish_video_key"
-  require_not_s3_uri "publish.json thumbnailKey" "$publish_thumbnail_key"
+  if [[ -n "$publish_video_key" ]]; then
+    require_not_s3_uri "publish.json videoKey" "$publish_video_key"
+  else
+    info "publish.json videoKey not populated yet"
+  fi
+  if [[ -n "$publish_thumbnail_key" ]]; then
+    require_not_s3_uri "publish.json thumbnailKey" "$publish_thumbnail_key"
+  else
+    info "publish.json thumbnailKey not populated yet"
+  fi
 else
   info "metadata/publish.json not present; publish contract check skipped"
 fi

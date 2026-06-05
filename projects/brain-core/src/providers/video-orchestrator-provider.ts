@@ -14,7 +14,6 @@ import {
   getConfiguredImageProvider,
   getDefaultImageModelId,
   ImageProviderError,
-  promptHash,
 } from './aws-video-image-provider.js';
 import type { AwsVideoImageProviderName } from './aws-video-storyboard-types.js';
 
@@ -2251,10 +2250,33 @@ export async function generateApprovedScript(
 
   // Step 3.5 (Hybrid Storyboard / Hybrid Slideshow): Generate storyboard images
   let storyboardKey: string | undefined;
+  let imageGenerationKey: string | undefined;
   let sceneImageKeys: string[] = [];
   let slideshowImageKeys: string[] = [];
   let imageProvider: string | undefined;
   let imageModelId: string | undefined;
+  let imageRegion: string | undefined;
+  let imageGenerationSettings: {
+    width: number;
+    height: number;
+    cfgScale: number;
+    quality: string;
+    seed: number;
+  } | undefined;
+  let imageGenerationRecords: Array<{
+    index: number;
+    originalVisualPrompt: string;
+    finalImagePrompt?: string;
+    promptHash?: string;
+    imageProvider?: string;
+    imageModelId?: string;
+    imageRegion?: string;
+    imageKey: string;
+    width?: number;
+    height?: number;
+    seed?: number;
+    generatedAt?: string;
+  }> = [];
 
   if ((isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode) && scenePlanKey && narrationScriptKey) {
     const configuredImageProvider: AwsVideoImageProviderName | null = isHybridImageSlideshowMode
@@ -2309,10 +2331,20 @@ export async function generateApprovedScript(
         ? new AwsBedrockImageProvider(configuredImageProvider)
         : null;
       imageModelId = bedrockImageProvider?.modelId ?? getDefaultImageModelId(configuredImageProvider ?? 'deterministic-placeholder');
+      imageRegion = bedrockImageProvider?.bedrockRegion ?? AWS_REGION;
+      imageGenerationSettings = {
+        width: bedrockImageProvider?.width ?? parseInt(process.env.AWS_VIDEO_IMAGE_WIDTH || '1280', 10),
+        height: bedrockImageProvider?.height ?? parseInt(process.env.AWS_VIDEO_IMAGE_HEIGHT || '720', 10),
+        cfgScale: bedrockImageProvider?.cfgScale ?? parseFloat(process.env.AWS_VIDEO_IMAGE_CFG_SCALE || '6.5'),
+        quality: bedrockImageProvider?.quality ?? (process.env.AWS_VIDEO_IMAGE_QUALITY || 'standard'),
+        seed: bedrockImageProvider?.seed ?? parseInt(process.env.AWS_VIDEO_IMAGE_SEED || '42', 10),
+      };
+      const effectiveImageProvider = configuredImageProvider ?? storyboardProvider.name;
       const storyboard: Record<string, unknown> = {
         jobId,
-        provider: configuredImageProvider ?? storyboardProvider.name,
+        provider: effectiveImageProvider,
         ...(imageModelId ? { imageModelId } : {}),
+        ...(imageRegion ? { imageRegion } : {}),
         createdAt: new Date().toISOString(),
         scenes: [],
       };
@@ -2329,7 +2361,7 @@ export async function generateApprovedScript(
 
         try {
           if (bedrockImageProvider) {
-            await bedrockImageProvider.generateSceneImage({
+            const imageResult = await bedrockImageProvider.generateSceneImage({
               jobId,
               sceneIndex,
               visualPrompt: scene.visualPrompt,
@@ -2348,6 +2380,20 @@ export async function generateApprovedScript(
               '--region', AWS_REGION,
               '--no-cli-pager',
             ]);
+            imageGenerationRecords.push({
+              index: sceneIndex,
+              originalVisualPrompt: scene.visualPrompt,
+              ...(imageResult.finalImagePrompt ? { finalImagePrompt: imageResult.finalImagePrompt } : {}),
+              ...(imageResult.promptHash ? { promptHash: imageResult.promptHash } : {}),
+              ...(imageResult.providerName ? { imageProvider: imageResult.providerName } : {}),
+              ...(imageResult.modelId ? { imageModelId: imageResult.modelId } : {}),
+              ...(imageResult.region ? { imageRegion: imageResult.region } : {}),
+              imageKey: imageResult.imageKey,
+              ...(typeof imageResult.width === 'number' ? { width: imageResult.width } : {}),
+              ...(typeof imageResult.height === 'number' ? { height: imageResult.height } : {}),
+              ...(typeof imageResult.seed === 'number' ? { seed: imageResult.seed } : {}),
+              ...(imageResult.generatedAt ? { generatedAt: imageResult.generatedAt } : {}),
+            });
           } else {
             const generatedSvgPath = await storyboardProvider.generateStoryboardImage(
               {
@@ -2397,15 +2443,28 @@ export async function generateApprovedScript(
             ]);
           }
 
+          const sceneAuditRecord = imageGenerationRecords.find(entry => entry.index === sceneIndex);
           imageKeysArray.push(isHybridImageSlideshowMode ? pngS3Key : svgS3Key);
           slideshowImageKeys.push(pngS3Key);
 
           // Add to storyboard data
+          const sceneAuditPayload = isHybridImageSlideshowMode && sceneAuditRecord ? {
+            ...(sceneAuditRecord.finalImagePrompt ? { finalImagePrompt: sceneAuditRecord.finalImagePrompt } : {}),
+            ...(sceneAuditRecord.promptHash ? { promptHash: sceneAuditRecord.promptHash } : {}),
+            ...(sceneAuditRecord.imageProvider ? { imageProvider: sceneAuditRecord.imageProvider } : {}),
+            ...(sceneAuditRecord.imageModelId ? { imageModelId: sceneAuditRecord.imageModelId } : {}),
+            ...(sceneAuditRecord.imageRegion ? { imageRegion: sceneAuditRecord.imageRegion } : {}),
+            ...(typeof sceneAuditRecord.width === 'number' ? { width: sceneAuditRecord.width } : {}),
+            ...(typeof sceneAuditRecord.height === 'number' ? { height: sceneAuditRecord.height } : {}),
+            ...(typeof sceneAuditRecord.seed === 'number' ? { seed: sceneAuditRecord.seed } : {}),
+            ...(sceneAuditRecord.generatedAt ? { generatedAt: sceneAuditRecord.generatedAt } : {}),
+          } : {};
           (storyboard.scenes as unknown[]).push({
             index: sceneIndex,
+            originalVisualPrompt: scene.visualPrompt,
             visualPrompt: scene.visualPrompt,
             imageKey: isHybridImageSlideshowMode ? pngS3Key : svgS3Key,
-            ...(isHybridImageSlideshowMode ? { promptHash: promptHash(scene) } : {}),
+            ...sceneAuditPayload,
             durationSeconds: scene.durationSeconds,
             narrationText: scene.narrationText,
             onScreenText: scene.onScreenText,
@@ -2436,6 +2495,34 @@ export async function generateApprovedScript(
       await writeFile(join(metadataDir, 'storyboard.json'), JSON.stringify(storyboard, null, 2) + '\n', 'utf-8');
       await writeS3MetadataJson(jobId, 'storyboard.json', storyboard as unknown as Record<string, unknown>);
 
+      if (isHybridImageSlideshowMode) {
+        imageGenerationKey = `jobs/${jobId}/metadata/image-generation.json`;
+        const imageGenerationSummary = {
+          jobId,
+          provider: effectiveImageProvider,
+          modelId: imageModelId,
+          region: imageRegion,
+          sceneCount: imageGenerationRecords.length,
+          generatedImageKeys: imageGenerationRecords.map(record => record.imageKey),
+          promptHashes: imageGenerationRecords.map(record => record.promptHash).filter((value): value is string => Boolean(value)),
+          warnings: [
+            effectiveImageProvider === 'deterministic-placeholder'
+              ? 'Development proof mode: deterministic placeholder image generation is enabled.'
+              : 'Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video.',
+          ],
+          settings: {
+            width: imageGenerationSettings?.width ?? 1280,
+            height: imageGenerationSettings?.height ?? 720,
+            cfgScale: imageGenerationSettings?.cfgScale ?? 6.5,
+            quality: imageGenerationSettings?.quality ?? 'standard',
+            seed: imageGenerationSettings?.seed ?? 42,
+          },
+          createdAt: new Date().toISOString(),
+        };
+        await writeFile(join(metadataDir, 'image-generation.json'), JSON.stringify(imageGenerationSummary, null, 2) + '\n', 'utf-8');
+        await writeS3MetadataJson(jobId, 'image-generation.json', imageGenerationSummary as unknown as Record<string, unknown>);
+      }
+
       sceneImageKeys = imageKeysArray;
       imageProvider = storyboardProvider.name;
       if (configuredImageProvider) imageProvider = configuredImageProvider;
@@ -2445,6 +2532,7 @@ export async function generateApprovedScript(
         imageProvider,
         ...(imageModelId ? { imageModelId } : {}),
         storyboardKey,
+        ...(imageGenerationKey ? { imageGenerationKey } : {}),
         sceneImageCount: sceneImageKeys.length,
       });
     } catch (err) {
@@ -2582,6 +2670,7 @@ export async function generateApprovedScript(
   if (isHybridImageSlideshowMode && narrationScriptKey && storyboardKey) {
     assetsJson.scenePlanKey = scenePlanKey;
     assetsJson.narrationScriptKey = narrationScriptKey;
+    assetsJson.imageGenerationKey = imageGenerationKey;
     assetsJson.audioKey = narrationKey;
     assetsJson.audioSourceKey = narrationKey;
     assetsJson.audioProvider = audioProvider;
@@ -2615,6 +2704,27 @@ export async function generateApprovedScript(
       narrationAudio: 'aws-polly',
       sceneImages: imageProvider,
       video: 'local-ffmpeg-slideshow',
+    };
+    assetsJson.imageGeneration = {
+      key: imageGenerationKey,
+      provider: imageProvider,
+      modelId: imageModelId,
+      region: imageRegion,
+      sceneCount: imageGenerationRecords.length,
+      generatedImageKeys: imageGenerationRecords.map(record => record.imageKey),
+      promptHashes: imageGenerationRecords.map(record => record.promptHash).filter((value): value is string => Boolean(value)),
+      settings: {
+        width: imageGenerationSettings?.width ?? 1280,
+        height: imageGenerationSettings?.height ?? 720,
+        cfgScale: imageGenerationSettings?.cfgScale ?? 6.5,
+        quality: imageGenerationSettings?.quality ?? 'standard',
+        seed: imageGenerationSettings?.seed ?? 42,
+      },
+      warnings: [
+        imageProvider === 'deterministic-placeholder'
+          ? 'Development proof mode: deterministic placeholders are enabled.'
+          : 'Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video.',
+      ],
     };
     assetsJson.warnings = [
       imageProvider === 'deterministic-placeholder'

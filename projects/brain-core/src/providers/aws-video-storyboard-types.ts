@@ -35,6 +35,13 @@ export interface SceneImageProviderOutput {
   imageKey: string;
   providerName: AwsVideoImageProviderName;
   modelId?: string;
+  region?: string;
+  width?: number;
+  height?: number;
+  seed?: number;
+  quality?: string;
+  finalImagePrompt?: string;
+  negativePrompt?: string;
   generatedAt: string;
   promptHash?: string;
 }

@@ -260,6 +260,11 @@ Prompt-derived metadata with TTS narration, model-generated scene images, and a 
 AWS_VIDEO_IMAGE_PROVIDER=deterministic-placeholder|aws-bedrock-nova-canvas|aws-bedrock-titan-image
 AWS_VIDEO_IMAGE_MODEL_ID=amazon.nova-canvas-v1:0
 AWS_VIDEO_IMAGE_REGION=us-east-1
+AWS_VIDEO_IMAGE_WIDTH=1280
+AWS_VIDEO_IMAGE_HEIGHT=720
+AWS_VIDEO_IMAGE_CFG_SCALE=6.5
+AWS_VIDEO_IMAGE_SEED=42
+AWS_VIDEO_IMAGE_QUALITY=standard
 ```
 
 Verified provider:
@@ -269,6 +274,7 @@ Verified provider:
 - Region: `us-east-1`
 - Request contract: `aws bedrock-runtime invoke-model` with `taskType=TEXT_IMAGE`, `textToImageParams.text`, and `imageGenerationConfig`
 - Local proof script: `projects/video-orchestrator/cloud/scripts/bedrock-image-proof.sh nova "A peaceful tree in a sunny meadow" /tmp/tree.png`
+- Effective defaults: `1280x720`, `cfgScale=6.5`, `seed=42`, `quality=standard`
 
 `hybrid_image_slideshow` does not silently fall back to placeholders. If `AWS_VIDEO_IMAGE_PROVIDER` is missing, generation fails with `currentStep=image_provider_not_configured`. `deterministic-placeholder` is accepted only as explicit development proof mode. Titan Image remains fail-loud even though it can be listed/invoked in `us-east-1`, because it is already marked legacy and showed legacy-access blocking outside `us-east-1`.
 
@@ -384,6 +390,7 @@ The verifier also checks `metadata/status.json`, `metadata/assets.json`, optiona
 | Narration script text | `jobs/<jobId>/audio/narration-script.txt` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard/hybrid_slideshow/hybrid_image_slideshow) |
 | Narration audio | `jobs/<jobId>/audio/narration.mp3` | Fixture (fixture/hybrid) or TTS-generated (hybrid_tts/hybrid_storyboard/hybrid_slideshow/hybrid_image_slideshow) |
 | Storyboard manifest | `jobs/<jobId>/metadata/storyboard.json` | Deterministic storyboard metadata (hybrid_storyboard/hybrid_slideshow/hybrid_image_slideshow) |
+| Image generation summary | `jobs/<jobId>/metadata/image-generation.json` | Nova Canvas provider/model/region, prompt hashes, settings, warnings |
 | Scene images | `jobs/<jobId>/images/scene-NNN.svg` and/or `scene-NNN.png`/`.jpg` | Deterministic SVG/PNG in storyboard/slideshow; model-generated PNG/JPEG in image slideshow |
 | Raw generated video | `jobs/<jobId>/video-generated/generated-001.mp4` | Fixture copy except slideshow modes, which use local FFmpeg slideshow output |
 | Final assembled video | `jobs/<jobId>/exports/generated-001-final.mp4` | Step Functions output (all modes) |

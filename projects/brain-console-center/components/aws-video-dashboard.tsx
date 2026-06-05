@@ -246,11 +246,19 @@ function StoryboardCard({
   artifactData: Record<string, unknown> | null | undefined;
 }) {
   const storyboardKey = stringField(artifactData, 'storyboardKey');
+  const imageGenerationKey = stringField(artifactData, 'imageGenerationKey');
   const sceneImageKeys = Array.isArray(artifactData?.sceneImageKeys) ? (artifactData?.sceneImageKeys as string[]) : [];
   const imageProvider = stringField(artifactData, 'imageProvider');
   const imageModelId = stringField(artifactData, 'imageModelId');
+  const imageRegion = stringField(artifactData, 'imageRegion');
+  const imageGeneration = asRecord(artifactData?.imageGeneration);
+  const imageGenerationSettings = asRecord(imageGeneration?.settings);
+  const promptHashes = Array.isArray(imageGeneration?.promptHashes) ? (imageGeneration?.promptHashes as string[]) : [];
+  const sceneAuditSummaries = Array.isArray(asRecord(artifactData?.storyboard)?.scenes)
+    ? (asRecord(artifactData?.storyboard)?.scenes as Array<Record<string, unknown>>)
+    : [];
 
-  if (!storyboardKey && sceneImageKeys.length === 0) return null;
+  if (!storyboardKey && sceneImageKeys.length === 0 && !imageGenerationKey) return null;
 
   return (
     <article className="card">
@@ -258,9 +266,43 @@ function StoryboardCard({
       <div className="aws-facts">
         <div><span>Provider</span><strong>{imageProvider ?? 'unknown'}</strong></div>
         {imageModelId ? <div><span>Image model</span><strong>{imageModelId}</strong></div> : null}
+        {imageRegion ? <div><span>Region</span><strong>{imageRegion}</strong></div> : null}
         <div><span>Scene images</span><strong>{sceneImageKeys.length || '0'}</strong></div>
         <div><span>Storyboard manifest</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{storyboardKey ?? 'pending'}</strong></div>
+        {imageGenerationKey ? <div><span>Image generation</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{imageGenerationKey}</strong></div> : null}
       </div>
+      {imageGeneration ? (
+        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
+          <div className="card-title" style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>Image generation</div>
+          <div className="aws-facts">
+            <div><span>Count</span><strong>{String(imageGeneration?.sceneCount ?? sceneImageKeys.length)}</strong></div>
+            <div><span>Prompt hashes</span><strong>{promptHashes.length}</strong></div>
+            <div><span>Width</span><strong>{String(imageGenerationSettings?.width ?? 'unknown')}</strong></div>
+            <div><span>Height</span><strong>{String(imageGenerationSettings?.height ?? 'unknown')}</strong></div>
+          </div>
+          <div className="aws-facts" style={{ marginTop: '0.75rem' }}>
+            <div><span>Model</span><strong>{stringField(imageGeneration, 'modelId') ?? 'unknown'}</strong></div>
+            <div><span>Region</span><strong>{stringField(imageGeneration, 'region') ?? 'unknown'}</strong></div>
+            <div><span>Provider</span><strong>{stringField(imageGeneration, 'provider') ?? 'unknown'}</strong></div>
+          </div>
+          <details style={{ marginTop: '0.75rem' }}>
+            <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#666' }}>Show prompt audit</summary>
+            <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {sceneAuditSummaries.slice(0, 3).map((scene, index) => (
+                <details key={`${index}-${String(scene.index ?? index)}`} style={{ padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                  <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#333' }}>Scene {String(scene.index ?? index + 1)} audit</summary>
+                  <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.4rem', fontSize: '0.8rem' }}>
+                    <div><span>finalImagePrompt</span><strong style={{ display: 'block', wordBreak: 'break-word' }}>{stringField(scene, 'finalImagePrompt') ?? 'unknown'}</strong></div>
+                    <div><span>promptHash</span><strong>{stringField(scene, 'promptHash') ?? 'unknown'}</strong></div>
+                    <div><span>imageKey</span><strong style={{ display: 'block', wordBreak: 'break-all' }}>{stringField(scene, 'imageKey') ?? 'unknown'}</strong></div>
+                    <div><span>generatedAt</span><strong>{stringField(scene, 'generatedAt') ?? 'unknown'}</strong></div>
+                  </div>
+                </details>
+              ))}
+            </div>
+          </details>
+        </div>
+      ) : null}
       {sceneImageKeys.length > 0 ? (
         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
           <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.75rem' }}>Scene images:</div>
