@@ -258,6 +258,26 @@ export const youtubePublishResultSchema = z.object({
   details: z.record(z.unknown()).optional(),
 }).passthrough();
 
+export const youtubePackageSchema = z.object({
+  jobId: z.string(),
+  sourcePrompt: z.string().optional(),
+  generationMode: z.string().optional(),
+  title: z.string(),
+  description: z.string(),
+  shortDescription: z.string().optional(),
+  tags: z.array(z.string()).optional().default([]),
+  searchKeywords: z.array(z.string()).optional().default([]),
+  categoryId: z.string().optional().default('22'),
+  privacyStatus: z.enum(['private', 'unlisted', 'public']).optional().default('private'),
+  thumbnailKey: z.string().nullable().optional(),
+  videoKey: z.string().nullable().optional(),
+  scenePlanKey: z.string().nullable().optional(),
+  narrationScriptKey: z.string().nullable().optional(),
+  youtubePackageKey: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+}).passthrough();
+
 export type OpsMetric = z.infer<typeof opsMetricSchema>;
 export type OpsSystemMetrics = z.infer<typeof opsSystemMetricsSchema>;
 export type OpsAiUsageWindows = z.infer<typeof opsAiUsageWindowsSchema>;
@@ -270,3 +290,4 @@ export type VideoJob = z.output<typeof videoJobSchema>;
 export type VideoJobsDiagnostics = z.output<typeof videoJobsDiagnosticsSchema>;
 export type VideoTimeline = z.output<typeof videoTimelineSchema>;
 export type VideoReview = z.output<typeof videoReviewSchema>['review'];
+export type YouTubePackage = z.infer<typeof youtubePackageSchema>;

@@ -485,6 +485,44 @@ else
   info "metadata/publish.json not present; publish contract check skipped"
 fi
 
+youtube_package_key="$(object_key "metadata/youtube-package.json")"
+if [[ "$MODE" == hybrid_slideshow || "$MODE" == hybrid_image_slideshow ]]; then
+  if optional_object "$youtube_package_key"; then
+    youtube_package_json="$tmp_dir/youtube-package.json"
+    download_object "$youtube_package_key" "$youtube_package_json"
+    pass "exists: $youtube_package_key"
+
+    # Verify youtube-package.json fields
+    pkg_title="$(json_value "$youtube_package_json" '.title')"
+    pkg_description="$(json_value "$youtube_package_json" '.description')"
+    pkg_tags="$(json_value "$youtube_package_json" '.tags')"
+    pkg_video_key="$(json_value "$youtube_package_json" '.videoKey')"
+    pkg_thumbnail_key="$(json_value "$youtube_package_json" '.thumbnailKey')"
+
+    if [[ -z "$pkg_title" ]]; then
+      fail "youtube-package.json must have .title"
+    else
+      pass "youtube-package.json .title present: ${pkg_title:0:50}..."
+    fi
+
+    if [[ -z "$pkg_description" ]]; then
+      fail "youtube-package.json must have .description"
+    else
+      pass "youtube-package.json .description present: ${pkg_description:0:50}..."
+    fi
+
+    if [[ -z "$pkg_tags" ]]; then
+      fail "youtube-package.json must have .tags array"
+    else
+      pass "youtube-package.json .tags present"
+    fi
+  else
+    info "metadata/youtube-package.json not present for $MODE (expected once generation + review complete)"
+  fi
+else
+  info "youtube-package.json check skipped for mode: $MODE"
+fi
+
 publish_check_key="$(object_key "metadata/publish-check.json")"
 if optional_object "$publish_check_key"; then
   publish_check_json="$tmp_dir/publish-check.json"

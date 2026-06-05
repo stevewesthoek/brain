@@ -23,6 +23,7 @@ import {
   isReviewApproved,
   type ReviewStatus,
 } from './video-orchestrator-publish-gate.js';
+import { buildYouTubePackage, type YouTubePackage } from './youtube-package-builder.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -1177,10 +1178,11 @@ async function writeS3JobFile(s3Key: string, content: string): Promise<void> {
 
 async function repairPublishJson(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): Promise<Record<string, unknown>> {
   const now = new Date().toISOString();
-  const [script, statusJson, assetsJson] = await Promise.all([
+  const [script, statusJson, assetsJson, youtubePackageJson] = await Promise.all([
     readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
     readJobMetadataJson(jobId, 'status.json') as Promise<Record<string, unknown> | null>,
     readJobMetadataJson(jobId, 'assets.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'youtube-package.json') as Promise<Record<string, unknown> | null>,
   ]);
   const mediaSource = stringValue(publishJson?.mediaSource) ?? stringValue(statusJson?.mediaSource) ?? stringValue(assetsJson?.mediaSource);
   const generationMode = stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode) ?? stringValue(assetsJson?.generationMode);
@@ -1199,17 +1201,18 @@ async function repairPublishJson(jobId: string, publishJson: Record<string, unkn
     createdAt: stringValue(publishJson?.createdAt) ?? now,
     updatedAt: now,
     publishedAt: publishJson?.publishedAt ?? null,
-    title: (mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'hybrid_tts_fixture_video')
+    title: stringValue(youtubePackageJson?.title) ?? ((mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'hybrid_tts_fixture_video')
       ? fixtureTitle(stringValue(publishJson?.title) ?? script?.title ?? '')
-      : stringValue(publishJson?.title) ?? script?.title ?? '',
-    description: stringValue(publishJson?.description) ?? '',
-    tags: stringArray(publishJson?.tags),
+      : stringValue(publishJson?.title) ?? script?.title ?? ''),
+    description: stringValue(youtubePackageJson?.description) ?? stringValue(publishJson?.description) ?? '',
+    tags: stringArray(youtubePackageJson?.tags) ?? stringArray(publishJson?.tags),
     videoKey: resolved.videoKey,
     thumbnailKey: resolved.thumbnailKey,
     mediaSource,
     generationMode,
     videoSourceKey,
     audioSourceKey,
+    youtubePackageKey: stringValue(publishJson?.youtubePackageKey) ?? `jobs/${jobId}/metadata/youtube-package.json`,
     platforms: {
       ...platforms,
       youtube: {
@@ -2164,6 +2167,9 @@ export async function generateApprovedScript(
   const audioDir = join(jobRoot, 'audio');
   const publishingDir = join(jobRoot, 'publishing');
 
+  // Initialize variables for youtube-package generation
+  let scenePlanContent: ScenePlan | null = null;
+
   try {
     await mkdir(metadataDir, { recursive: true });
     await mkdir(audioDir, { recursive: true });
@@ -2614,7 +2620,6 @@ export async function generateApprovedScript(
     try {
       // Read the scene plan
       const scenePlanPath = join(metadataDir, 'scene-plan.json');
-      let scenePlanContent: ScenePlan;
       try {
         const planData = await readFile(scenePlanPath, 'utf-8');
         scenePlanContent = JSON.parse(planData) as ScenePlan;
@@ -3141,6 +3146,30 @@ export async function generateApprovedScript(
     console.error(`Warning: Failed to write assets metadata for ${jobId}: ${err}`);
   }
 
+  // Write youtube-package.json (canonical metadata for YouTube upload)
+  try {
+    const youtubePackage = buildYouTubePackage({
+      jobId,
+      topicTitle: typeof topic === 'object' && topic !== null && 'title' in topic ? String((topic as Record<string, unknown>).title) : 'Untitled',
+      topicDescription: typeof topic === 'object' && topic !== null && 'description' in topic ? String((topic as Record<string, unknown>).description) : undefined,
+      generationMode: modeMetadata.generationMode,
+      mediaSource: modeMetadata.mediaSource,
+      videoKey: modeMetadata.videoSourceKey ?? null,
+      thumbnailKey: null,
+      scenePlanKey: scenePlanKey ?? null,
+      narrationScriptKey: narrationScriptKey ?? null,
+      scenePlan: scenePlanContent ? (Array.isArray(scenePlanContent.scenes) ? scenePlanContent.scenes : undefined) : undefined,
+    });
+    await writeFile(
+      join(metadataDir, 'youtube-package.json'),
+      `${JSON.stringify(youtubePackage, null, 2)}\n`,
+      'utf-8',
+    );
+    await writeS3MetadataJson(jobId, 'youtube-package.json', youtubePackage as unknown as Record<string, unknown>);
+  } catch (err) {
+    console.error(`Warning: Failed to write youtube-package.json for ${jobId}: ${err}`);
+  }
+
   // Step 5: Start Step Functions execution
   await updateProgressStatus('workflow_starting', {
     audioKey: narrationKey,
@@ -3234,6 +3263,7 @@ export async function generateApprovedScript(
     title: fixtureTitle(script.title),
     description: publishDescription,
     tags: publishTags,
+    youtubePackageKey: `jobs/${jobId}/metadata/youtube-package.json`,
     ...modeMetadata,
     platforms: {
       youtube: {

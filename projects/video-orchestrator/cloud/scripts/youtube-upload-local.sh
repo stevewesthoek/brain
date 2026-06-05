@@ -264,6 +264,28 @@ if [ -n "$EXISTING_VIDEO_ID" ]; then
 fi
 echo ""
 
+# Step 2b: Try to prefer youtube-package.json fields if available
+echo "[2b/8] Checking for youtube-package.json (canonical metadata)..."
+YT_PACKAGE_JSON=$(aws s3 cp "s3://$BUCKET/jobs/$JOB_ID/metadata/youtube-package.json" - --region eu-north-1 2>/dev/null || echo "")
+if [ -n "$YT_PACKAGE_JSON" ]; then
+    PKG_TITLE=$(echo "$YT_PACKAGE_JSON" | jq -r '.title // ""')
+    PKG_DESCRIPTION=$(echo "$YT_PACKAGE_JSON" | jq -r '.description // ""')
+    PKG_TAGS=$(echo "$YT_PACKAGE_JSON" | jq -r '.tags // [] | @csv')
+    if [ -n "$PKG_TITLE" ]; then
+        echo -e "${GREEN}✓ youtube-package.json found — using canonical title${NC}"
+        TITLE="$PKG_TITLE"
+    fi
+    if [ -n "$PKG_DESCRIPTION" ]; then
+        DESCRIPTION="$PKG_DESCRIPTION"
+    fi
+    if [ -n "$PKG_TAGS" ]; then
+        TAGS="$PKG_TAGS"
+    fi
+else
+    echo "ℹ️  youtube-package.json not found — using publish.json metadata"
+fi
+echo ""
+
 # Handle --retry-thumbnail mode (upload to existing video)
 if [ "$RETRY_THUMBNAIL" = true ]; then
     if [ -z "$EXISTING_VIDEO_ID" ]; then
@@ -389,11 +411,19 @@ if [ "$RETRY_THUMBNAIL" != true ]; then
     fi
 
     # Create metadata snippet
+    # Parse TAGS (already @csv format from youtube-package.json or publish.json)
+    # Convert CSV format to JSON array format
+    TAGS_JSON="[]"
+    if [ -n "$TAGS" ] && [ "$TAGS" != "[]" ]; then
+        # Remove quotes from CSV output and convert to JSON array
+        TAGS_JSON=$(echo "$TAGS" | jq -R 'split(",") | map(gsub("^\"|\"$"; ""))')
+    fi
+
     SNIPPET=$(cat <<EOF
 {
   "title": "$TITLE",
   "description": "$DESCRIPTION",
-  "tags": [],
+  "tags": $TAGS_JSON,
   "categoryId": "22"
 }
 EOF
