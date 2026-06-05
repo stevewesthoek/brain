@@ -240,6 +240,42 @@ function CompactPublishResultCard({
   );
 }
 
+function StoryboardCard({
+  artifactData,
+}: {
+  artifactData: Record<string, unknown> | null | undefined;
+}) {
+  const storyboardKey = stringField(artifactData, 'storyboardKey');
+  const sceneImageKeys = Array.isArray(artifactData?.sceneImageKeys) ? (artifactData?.sceneImageKeys as string[]) : [];
+  const imageProvider = stringField(artifactData, 'imageProvider');
+
+  if (!storyboardKey && sceneImageKeys.length === 0) return null;
+
+  return (
+    <article className="card">
+      <div className="card-title">Storyboard</div>
+      <div className="aws-facts">
+        <div><span>Provider</span><strong>{imageProvider ?? 'unknown'}</strong></div>
+        <div><span>Scene images</span><strong>{sceneImageKeys.length || '0'}</strong></div>
+        <div><span>Storyboard manifest</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{storyboardKey ?? 'pending'}</strong></div>
+      </div>
+      {sceneImageKeys.length > 0 ? (
+        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
+          <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.75rem' }}>Scene images:</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {sceneImageKeys.slice(0, 3).map((key, i) => (
+              <code key={i} style={{ fontSize: '0.8rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: '#f5f5f5', borderRadius: '3px', color: '#0a0a0a' }}>
+                {key}
+              </code>
+            ))}
+            {sceneImageKeys.length > 3 ? <p style={{ fontSize: '0.875rem', color: '#999' }}>… and {sceneImageKeys.length - 3} more</p> : null}
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function TTSAudioCard({
   artifactData,
 }: {
@@ -472,10 +508,15 @@ export function AwsVideoDashboard() {
   const audioSourceKey = stringField(selectedJob, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
   const isHybridMode = generationMode === 'hybrid_scene_plan_fixture_media';
   const isHybridTTSMode = generationMode === 'hybrid_tts_fixture_video';
-  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video';
+  const isHybridStoryboardMode = generationMode === 'hybrid_storyboard_fixture_video';
+  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video';
   const scenePlanKey = stringField(artifactData, 'scenePlanKey');
   const narrationScriptKey = stringField(artifactData, 'narrationScriptKey');
+  const storyboardKey = stringField(artifactData, 'storyboardKey');
+  const sceneImageKeys = Array.isArray(artifactData?.sceneImageKeys) ? (artifactData?.sceneImageKeys as string[]) : [];
+  const imageProvider = stringField(artifactData, 'imageProvider');
   const hasScenePlan = Boolean(scenePlanKey || asRecord(artifactData?.scenePlan));
+  const hasStoryboard = Boolean(storyboardKey || (Array.isArray(sceneImageKeys) && sceneImageKeys.length > 0));
   const finalVideoKey = stringField(artifactData, 'finalVideo') ?? stringField(publishableAssets, 'videoKey');
   const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
   const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
@@ -636,13 +677,15 @@ export function AwsVideoDashboard() {
                 </div>
                 {selectedJob ? (
                   <>
-                    {isHybridTTSMode
-                      ? <div className="compact-error">Hybrid TTS mode: scene plan and narration script are prompt-derived; narration audio is generated via AWS Polly; final video still uses fixtures.</div>
-                      : isHybridMode
-                        ? <div className="compact-error">Hybrid mode: scene plan and narration script are prompt-derived; final audio/video media still uses fixtures.</div>
-                        : isFixtureMedia
-                          ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
-                          : null}
+                    {isHybridStoryboardMode
+                      ? <div className="compact-error">Hybrid Storyboard mode: scene plan, narration script, and scene images are prompt-derived; narration audio is generated via AWS Polly; final video still uses fixtures.</div>
+                      : isHybridTTSMode
+                        ? <div className="compact-error">Hybrid TTS mode: scene plan and narration script are prompt-derived; narration audio is generated via AWS Polly; final video still uses fixtures.</div>
+                        : isHybridMode
+                          ? <div className="compact-error">Hybrid mode: scene plan and narration script are prompt-derived; final audio/video media still uses fixtures.</div>
+                          : isFixtureMedia
+                            ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
+                            : null}
                     <h2 className="aws-job-title">{selectedJob.title}</h2>
                     <div className="progress"><span style={{ width: `${pct(selectedJob.progress)}%` }} /></div>
                     <div className="aws-facts">
@@ -679,8 +722,9 @@ export function AwsVideoDashboard() {
               </article>
 
               {hasScenePlan ? <ScenePlanCard artifactData={artifactData} /> : null}
+              {isHybridStoryboardMode ? <StoryboardCard artifactData={artifactData} /> : null}
               {isHybridTTSMode ? <TTSAudioCard artifactData={artifactData} /> : null}
-              {isHybridMode || isHybridTTSMode ? <GenerationArtifactsCard jobId={jobId} artifactData={artifactData} generationMode={generationMode} /> : null}
+              {isHybridMode || isHybridTTSMode || isHybridStoryboardMode ? <GenerationArtifactsCard jobId={jobId} artifactData={artifactData} generationMode={generationMode} /> : null}
             </div>
           ) : null}
 
@@ -729,13 +773,15 @@ export function AwsVideoDashboard() {
                 <div><span>Media source</span><strong>{mediaSource}</strong></div>
                 <div><span>Dry-run</span><strong>{dryRunPassedForThisJob ? 'passed' : 'required'}</strong></div>
               </div>
-              {isHybridTTSMode
-                ? <div className="compact-error">Hybrid TTS mode: prompt-derived scene plan and narration script exist; narration audio is TTS-generated; video still uses fixtures.</div>
-                : isHybridMode
-                  ? <div className="compact-error">Hybrid mode: prompt-derived scene plan exists, but final media still uses fixture audio/video.</div>
-                  : isFixtureMedia
-                    ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
-                    : null}
+              {isHybridStoryboardMode
+                ? <div className="compact-error">Hybrid Storyboard mode: prompt-derived scene plan, narration script, and scene images exist; narration audio is TTS-generated; video still uses fixtures.</div>
+                : isHybridTTSMode
+                  ? <div className="compact-error">Hybrid TTS mode: prompt-derived scene plan and narration script exist; narration audio is TTS-generated; video still uses fixtures.</div>
+                  : isHybridMode
+                    ? <div className="compact-error">Hybrid mode: prompt-derived scene plan exists, but final media still uses fixture audio/video.</div>
+                    : isFixtureMedia
+                      ? <div className="compact-error">Pipeline proof mode: this job used fixture media, not AI-generated video.</div>
+                      : null}
               <div className="publish-guard">
                 <div><span>generationMode</span><strong>{generationMode}</strong></div>
                 <div><span>videoSourceKey</span><strong>{videoSourceKey ?? 'unknown'}</strong></div>

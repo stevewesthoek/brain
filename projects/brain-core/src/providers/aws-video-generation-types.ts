@@ -1,4 +1,4 @@
-export type GenerationMode = 'fixture' | 'hybrid' | 'hybrid_tts' | 'ai';
+export type GenerationMode = 'fixture' | 'hybrid' | 'hybrid_tts' | 'hybrid_storyboard' | 'ai';
 export type MediaSource = 'fixture' | 'hybrid' | 'ai';
 
 export interface ScenePlanScene {
@@ -20,12 +20,27 @@ export interface ScenePlan {
   deterministic: boolean;
 }
 
+export interface Storyboard {
+  jobId: string;
+  provider: string;
+  createdAt: string;
+  scenes: Array<{
+    index: number;
+    visualPrompt: string;
+    imageKey: string;
+    durationSeconds: number;
+    narrationText: string;
+    onScreenText?: string;
+  }>;
+}
+
 export interface GenerationManifest {
   jobId: string;
-  generationMode: 'fixture_assembly' | 'hybrid_scene_plan_fixture_media' | 'hybrid_tts_fixture_video' | 'ai_generation';
+  generationMode: 'fixture_assembly' | 'hybrid_scene_plan_fixture_media' | 'hybrid_tts_fixture_video' | 'hybrid_storyboard_fixture_video' | 'ai_generation';
   mediaSource: 'fixture' | 'hybrid' | 'ai';
   aiGenerated: boolean;
   ttsGenerated?: boolean;
+  storyboardGenerated?: boolean;
   scenePlanKey?: string;
   narrationScriptKey?: string;
   narrationAudioKey?: string;
@@ -33,6 +48,9 @@ export interface GenerationManifest {
   audioSourceKey?: string;
   audioProvider?: string;
   voiceId?: string;
+  storyboardKey?: string;
+  sceneImageKeys?: string[];
+  imageProvider?: string;
   sourceVideoKey?: string;
   videoSourceKey?: string;
   finalVideoKey?: string;
@@ -41,6 +59,7 @@ export interface GenerationManifest {
     scenePlan?: string;
     narrationScript?: string;
     narrationAudio?: string;
+    sceneImages?: string;
     video?: string;
   };
   warnings: string[];

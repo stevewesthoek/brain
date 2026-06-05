@@ -6,7 +6,11 @@ CONSOLE_CENTER_PORT=4881
 BRAIN_CORE_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-core"
 CONSOLE_CENTER_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center"
 
-echo "🔧 Brain Console Center + Core Dev Reset (Hybrid TTS Mode)"
+# Allow mode override: ./script.sh hybrid_storyboard
+GENERATION_MODE="${1:-hybrid_tts}"
+
+MODE_UPPER=$(echo "$GENERATION_MODE" | sed 's/_/ /g' | sed 's/^./\U&/g')
+echo "🔧 Brain Console Center + Core Dev Reset ($MODE_UPPER Mode)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Step 1: Kill listeners on ports 4877 and 4881
@@ -55,12 +59,13 @@ for PORT in $BRAIN_CORE_PORT $CONSOLE_CENTER_PORT; do
   fi
 done
 
-# Step 4: Start Brain Core with hybrid TTS mode
+# Step 4: Start Brain Core with specified generation mode
 echo ""
-echo "Step 4: Starting Brain Core (hybrid TTS mode) on port $BRAIN_CORE_PORT..."
+MODE_LABEL=$(echo "$GENERATION_MODE" | tr '_' ' ')
+echo "Step 4: Starting Brain Core ($MODE_LABEL mode) on port $BRAIN_CORE_PORT..."
 cd "$BRAIN_CORE_DIR"
 mkdir -p /tmp
-export AWS_VIDEO_GENERATION_MODE=hybrid_tts
+export AWS_VIDEO_GENERATION_MODE="$GENERATION_MODE"
 npm run dev > /tmp/brain-core-hybrid.log 2>&1 &
 BRAIN_CORE_PID=$!
 echo "  Brain Core PID: $BRAIN_CORE_PID"
@@ -125,10 +130,15 @@ echo "🔍 Logs:"
 echo "   Brain Core: tail -f /tmp/brain-core-hybrid.log"
 echo "   Brain Console Center: tail -f /tmp/brain-console-center.log"
 echo ""
-echo "🧪 Test hybrid TTS mode:"
+TEST_LABEL=$(echo "$GENERATION_MODE" | tr '_' ' ')
+echo "🧪 Test $TEST_LABEL mode:"
 echo "   export JOB_ID=<new-job-from-console>"
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/scene-plan.json' - --region eu-north-1 | jq"
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/audio/narration-script.txt' - --region eu-north-1"
+if [ "$GENERATION_MODE" = "hybrid_storyboard" ]; then
+  echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/storyboard.json' - --region eu-north-1 | jq"
+  echo "   aws s3 ls 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/images/' --region eu-north-1"
+fi
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/audio/narration.mp3' - --region eu-north-1 | file -"
-echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/assets.json' - --region eu-north-1 | jq '.audioProvider, .voiceId'"
+echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/assets.json' - --region eu-north-1 | jq '.audioProvider, .voiceId, .imageProvider'"
 echo ""

@@ -117,6 +117,65 @@ Prompt-derived metadata with TTS narration and fixture video. Brain Core generat
 - Does not call external AI/ML models for content generation
 - Does not require additional provider accounts
 
+### 2.6. Hybrid Storyboard (`AWS_VIDEO_GENERATION_MODE=hybrid_storyboard`)
+
+Prompt-derived metadata with TTS narration, generated storyboard images, and fixture video. Brain Core generates a deterministic scene plan and narration script from the user's input, synthesizes narration audio using AWS Polly TTS, generates storyboard card images for each scene, then uses fixture video for assembly.
+
+```json
+{
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_storyboard_fixture_video",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+  "audioKey": "jobs/<jobId>/audio/narration.mp3",
+  "audioProvider": "aws-polly",
+  "voiceId": "Joanna",
+  "storyboardKey": "jobs/<jobId>/metadata/storyboard.json",
+  "sceneImageKeys": [
+    "jobs/<jobId>/images/scene-001.svg",
+    "jobs/<jobId>/images/scene-002.svg"
+  ],
+  "imageProvider": "deterministic-placeholder",
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "sceneImages": "deterministic-placeholder",
+    "video": "fixture"
+  },
+  "warnings": ["Scene images are generated, but final video still uses fixture video."]
+}
+```
+
+**Behavior:**
+- Generates scene plan and narration script (same as hybrid_tts)
+- Synthesizes narration audio using AWS Polly (voice: Joanna)
+- Generates deterministic storyboard card images (SVG) for each scene
+- Visual prompt and narration text embedded in each card
+- Writes storyboard manifest to `jobs/<jobId>/metadata/storyboard.json`
+- Writes scene images to `jobs/<jobId>/images/scene-NNN.svg`
+- Still uses fixture video for final assembly
+- Title gets `[PIPELINE PROOF]` prefix
+- Brain Console Center shows storyboard provider, image count, and scene cards
+
+**What it does:**
+- Generates prompt-derived scene plan
+- Generates prompt-derived narration script from scene descriptions
+- Synthesizes narration MP3 using AWS Polly
+- **NEW:** Generates deterministic storyboard cards as SVG images
+- Each card contains visual prompt and narration text
+- Writes all artifacts locally and to S3
+- Assembles with fixture video
+
+**What it does NOT do:**
+- Does not generate video (source.mp4 is fixture)
+- Does not call external AI/ML models for image generation
+- Does not generate full motion video or animations
+- Scene images are deterministic visual reference cards, not AI-generated imagery
+
 ### 3. AI (`AWS_VIDEO_GENERATION_MODE=ai`)
 
 Not yet implemented. If set without a real provider configured, Brain Core returns:
@@ -143,22 +202,27 @@ Hybrid TTS mode lets you:
 **Progression:**
 1. `fixture` — pure proof, no generation (default)
 2. `hybrid` — prompt-derived metadata + fixture media
-3. `hybrid_tts` — prompt-derived metadata + TTS audio + fixture video (current)
-4. (future) `hybrid_video` — prompt-derived metadata + TTS audio + generated video
-5. (future) `ai` — full AI generation (all components real)
+3. `hybrid_tts` — prompt-derived metadata + TTS audio + fixture video
+4. `hybrid_storyboard` — prompt-derived metadata + TTS audio + storyboard images + fixture video (current)
+5. (future) `hybrid_video` — prompt-derived metadata + TTS audio + generated video frames
+6. (future) `ai` — full AI generation (all components real)
 
 ## Dev Environment Reset
 
-To restart Brain Core and Brain Console Center with hybrid mode enabled:
+To restart Brain Core and Brain Console Center with a specific generation mode:
 
 ```bash
+# Default: hybrid_tts mode
 bash tools/scripts/brain-console-center-dev-reset.sh
+
+# Or specify a different mode
+bash tools/scripts/brain-console-center-dev-reset.sh hybrid_storyboard
 ```
 
 This script:
 1. Kills stale processes on ports 4877 (Brain Core) and 4881 (Brain Console Center)
 2. Ensures ports are free
-3. Starts Brain Core with `AWS_VIDEO_GENERATION_MODE=hybrid`
+3. Starts Brain Core with specified `AWS_VIDEO_GENERATION_MODE` (default: hybrid_tts)
 4. Starts Brain Console Center
 5. Health-checks both endpoints
 6. Prints log file paths and test commands
@@ -167,11 +231,15 @@ This script:
 - Brain Core: `/tmp/brain-core-hybrid.log`
 - Brain Console Center: `/tmp/brain-console-center.log`
 
-**Test hybrid output:**
+**Test generation mode output:**
 ```bash
 export JOB_ID=<new-job-from-console>
 aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/metadata/scene-plan.json" - --region eu-north-1 | jq
 aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/narration-script.txt" - --region eu-north-1
+
+# For hybrid_storyboard mode only:
+aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/metadata/storyboard.json" - --region eu-north-1 | jq
+aws s3 ls "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/images/" --region eu-north-1
 ```
 
 ## Artifact Paths (Canonical)
@@ -179,9 +247,11 @@ aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/
 | Asset | Path | Notes |
 |-------|------|-------|
 | Script markdown | `jobs/<jobId>/scripts/script.md` | User input |
-| Scene plan | `jobs/<jobId>/metadata/scene-plan.json` | Deterministic generation (hybrid/hybrid_tts) |
-| Narration script text | `jobs/<jobId>/audio/narration-script.txt` | Deterministic generation (hybrid/hybrid_tts) |
-| Narration audio | `jobs/<jobId>/audio/narration.mp3` | Fixture (fixture/hybrid) or TTS-generated (hybrid_tts) |
+| Scene plan | `jobs/<jobId>/metadata/scene-plan.json` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard) |
+| Narration script text | `jobs/<jobId>/audio/narration-script.txt` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard) |
+| Narration audio | `jobs/<jobId>/audio/narration.mp3` | Fixture (fixture/hybrid) or TTS-generated (hybrid_tts/hybrid_storyboard) |
+| Storyboard manifest | `jobs/<jobId>/metadata/storyboard.json` | Deterministic generation (hybrid_storyboard) |
+| Scene images | `jobs/<jobId>/images/scene-NNN.svg` | Deterministic storyboard cards (hybrid_storyboard) |
 | Raw generated video | `jobs/<jobId>/video-generated/generated-001.mp4` | Fixture (all current modes) |
 | Final assembled video | `jobs/<jobId>/exports/generated-001-final.mp4` | Step Functions output (all modes) |
 | Thumbnail | `jobs/<jobId>/exports/thumbnail-001.jpg` | Step Functions output (all modes) |
@@ -190,6 +260,7 @@ aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/
 - `fixture`: All assets are fixture copies
 - `hybrid`: Scene plan + narration script are real; audio/video are fixture
 - `hybrid_tts`: Scene plan + narration script + narration audio are real; video is fixture
+- `hybrid_storyboard`: Scene plan + narration script + narration audio + storyboard images are real; video is fixture
 - `ai` (future): All assets real (requires AI providers)
 
 ## Provider Boundary

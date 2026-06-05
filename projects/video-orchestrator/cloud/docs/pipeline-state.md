@@ -134,12 +134,13 @@ cd infrastructure/i-2-mediaconvert-orchestration
 
 ## Generation Mode Status
 
-| Mode | Status | Scene Plan | Narration Script | Narration Audio | Video |
-|------|--------|-----------|------------------|-----------------|-------|
-| `fixture` | ✅ Working | — | — | Fixture | Fixture |
-| `hybrid` | ✅ Working | Generated | Generated | Fixture | Fixture |
-| `hybrid_tts` | ✅ Working | Generated | Generated | **TTS (Polly)** | Fixture |
-| `ai` | ❌ Not configured | — | — | — | — |
+| Mode | Status | Scene Plan | Narration Script | Scene Images | Narration Audio | Video |
+|------|--------|-----------|------------------|--------------|-----------------|-------|
+| `fixture` | ✅ Working | — | — | — | Fixture | Fixture |
+| `hybrid` | ✅ Working | Generated | Generated | — | Fixture | Fixture |
+| `hybrid_tts` | ✅ Working | Generated | Generated | — | **TTS (Polly)** | Fixture |
+| `hybrid_storyboard` | ✅ Working | Generated | Generated | **Deterministic** | **TTS (Polly)** | Fixture |
+| `ai` | ❌ Not configured | — | — | — | — | — |
 
 ## Not Yet Implemented
 
