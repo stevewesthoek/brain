@@ -431,10 +431,14 @@ async function readS3JobMetadataJson(jobId: string, fileName: string): Promise<u
   }
 }
 
+async function readLocalJobMetadataJson(jobId: string, fileName: string): Promise<unknown | null> {
+  return readOptionalJson(getJobMetadataPath(jobId, fileName));
+}
+
 async function readJobMetadataJson(jobId: string, fileName: string): Promise<unknown | null> {
   const remote = await readS3JobMetadataJson(jobId, fileName);
   if (remote) return remote;
-  return readOptionalJson(getJobMetadataPath(jobId, fileName));
+  return readLocalJobMetadataJson(jobId, fileName);
 }
 
 async function s3ObjectExists(key: string, timeoutMs: number = S3_HEAD_TIMEOUT_MS): Promise<boolean> {
@@ -727,12 +731,13 @@ async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?:
 
   const shouldInferS3Artifacts = !options?.skipS3Inference;
   const shouldReconcileAwsExecution = !options?.skipAwsReconciliation;
+  const readMetadata = options?.skipS3Inference ? readLocalJobMetadataJson : readJobMetadataJson;
   const readOps: Promise<unknown>[] = [
-    readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
+    readMetadata(jobId, 'script.json') as Promise<ScriptMetadata | null>,
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
-    readJobMetadataJson(jobId, 'status.json'),
-    readJobMetadataJson(jobId, 'publish.json'),
-    readJobMetadataJson(jobId, 'assets.json'),
+    readMetadata(jobId, 'status.json'),
+    readMetadata(jobId, 'publish.json'),
+    readMetadata(jobId, 'assets.json'),
   ];
   if (shouldInferS3Artifacts) {
     readOps.push(inferGeneratedS3Artifacts(jobId));
