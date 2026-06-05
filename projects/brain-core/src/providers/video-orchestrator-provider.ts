@@ -2243,6 +2243,7 @@ export async function generateApprovedScript(
           const svgPath = await storyboardProvider.generateStoryboardImage(
             {
               jobId,
+              index: sceneIndex,
               visualPrompt: scene.visualPrompt,
               narrationText: scene.narrationText,
               onScreenText: scene.onScreenText,

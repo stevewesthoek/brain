@@ -1,5 +1,6 @@
 export interface StoryboardProviderInput {
   jobId: string;
+  index: number;
   visualPrompt: string;
   narrationText: string;
   onScreenText: string | undefined;

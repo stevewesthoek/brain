@@ -26,7 +26,7 @@ export class DeterministicStoryboardProvider {
       '#98D8C8', // mint
       '#F7DC6F', // yellow
     ];
-    const gradientColor = colors[(Math.abs(input.durationSeconds ?? 1) * 7) % colors.length]!;
+    const gradientColor = colors[(input.index * 7) % colors.length]!;
     const accentColor = this.adjustBrightness(gradientColor, -20);
 
     // Build SVG
@@ -55,7 +55,7 @@ export class DeterministicStoryboardProvider {
     <g transform="translate(24, 0)">
       <!-- Scene number and duration -->
       <text x="0" y="40" font-size="36" font-weight="bold" fill="${accentColor}" font-family="Arial, sans-serif">
-        Scene ${input.durationSeconds}s
+        Scene ${input.index} · ${input.durationSeconds}s
       </text>
 
       <!-- Visual prompt heading -->
@@ -144,8 +144,9 @@ export class DeterministicStoryboardProvider {
     // Generate SVG content
     const svgContent = this.generateSvgStoryboardCard(input);
 
-    // Write SVG to temp file
-    const tempSvgPath = resolve(tempDir, `storyboard-scene-${input.durationSeconds}.svg`);
+    // Write SVG to temp file with zero-padded index
+    const indexPadded = String(input.index).padStart(3, '0');
+    const tempSvgPath = resolve(tempDir, `storyboard-scene-${indexPadded}.svg`);
     await writeFile(tempSvgPath, svgContent, 'utf-8');
 
     return tempSvgPath;
