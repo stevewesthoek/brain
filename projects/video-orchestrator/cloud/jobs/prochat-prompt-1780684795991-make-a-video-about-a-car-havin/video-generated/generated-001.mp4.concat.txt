@@ -1,0 +1,7 @@
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/images/scene-001.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/images/scene-002.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/images/scene-003.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/images/scene-003.png'

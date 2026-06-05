@@ -1,0 +1,23 @@
+{
+  "jobId": "prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs",
+  "reviewStatus": "approved",
+  "createdAt": "2026-06-05T15:55:31.607Z",
+  "updatedAt": "2026-06-05T22:40:23.840Z",
+  "reviewedAt": "2026-06-05T15:57:02.577Z",
+  "reviewedBy": "brain-console-center",
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/audio/narration.mp3",
+    "sceneImageKeys": [
+      "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/images/scene-001.png",
+      "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/images/scene-002.png",
+      "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/images/scene-003.png"
+    ],
+    "videoKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/metadata/publish.json",
+    "youtubePackageKey": null
+  }
+}

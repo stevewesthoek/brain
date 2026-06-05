@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780676696789-make-a-short-video-about-a-coz",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-05T16:25:15.916Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 1 of 3",
+      "visualPrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/images/scene-001.png",
+      "finalImagePrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "8646aba8b04f3a41",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-05T16:25:21.695Z",
+      "durationSeconds": 20,
+      "narrationText": "Make a short video about a cozy nursery with soft toys and warm sunlight.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 2 of 3",
+      "visualPrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/images/scene-002.png",
+      "finalImagePrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "801d996953729ccd",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-05T16:25:28.397Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 3 of 3",
+      "visualPrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/images/scene-003.png",
+      "finalImagePrompt": "Make a short video about a cozy nursery with soft toys and warm sunlight. — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "6e9f0619fd82b189",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-05T16:25:35.809Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

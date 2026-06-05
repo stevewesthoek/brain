@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780676696789-make-a-short-video-about-a-coz",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-05T16:57:34.171Z",
+  "updatedAt": "2026-06-05T16:57:34.171Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

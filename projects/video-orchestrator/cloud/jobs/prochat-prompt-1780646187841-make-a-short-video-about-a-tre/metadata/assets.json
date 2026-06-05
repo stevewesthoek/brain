@@ -1,0 +1,34 @@
+{
+  "jobId": "prochat-prompt-1780646187841-make-a-short-video-about-a-tre",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_tts_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "aiGenerated": false,
+  "narration": {
+    "path": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/audio/narration.mp3",
+    "source": "tts",
+    "provider": "aws-polly",
+    "voiceId": "Joanna"
+  },
+  "sourceVideo": {
+    "path": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/video-generated/generated-001.mp4",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/exports/sample-transcoded.mp4"
+  },
+  "scenePlanKey": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/audio/narration-script.txt",
+  "audioKey": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "audioProvider": "aws-polly",
+  "voiceId": "Joanna",
+  "ttsGenerated": true,
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "video": "fixture"
+  },
+  "warnings": [
+    "Video media still uses fixture assets; narration audio is generated from the prompt-derived script."
+  ]
+}

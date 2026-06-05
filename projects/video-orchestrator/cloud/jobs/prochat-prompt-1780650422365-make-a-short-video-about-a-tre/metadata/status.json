@@ -1,0 +1,13 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-05T09:07:14.628Z",
+  "updatedAt": "2026-06-05T09:07:21.349Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780650422365-make-a-short-vide-1780650440662-12hyo0j",
+  "mediaSource": "fixture",
+  "generationMode": "fixture_assembly",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "fixture-assembly",
+  "aiGenerated": false
+}

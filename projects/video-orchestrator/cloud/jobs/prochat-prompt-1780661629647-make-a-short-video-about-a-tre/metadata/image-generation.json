@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780661629647-make-a-short-video-about-a-tre",
+  "provider": "aws-bedrock-nova-canvas",
+  "modelId": "amazon.nova-canvas-v1:0",
+  "region": "us-east-1",
+  "sceneCount": 3,
+  "generatedImageKeys": [
+    "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/images/scene-001.png",
+    "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/images/scene-002.png",
+    "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/images/scene-003.png"
+  ],
+  "promptHashes": [
+    "db84ae232e5b328a",
+    "33b8663b0d56cf97",
+    "07e060197e007a92"
+  ],
+  "warnings": [
+    "Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video."
+  ],
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "cfgScale": 6.5,
+    "quality": "standard",
+    "seed": 42
+  },
+  "createdAt": "2026-06-05T12:15:04.105Z"
+}

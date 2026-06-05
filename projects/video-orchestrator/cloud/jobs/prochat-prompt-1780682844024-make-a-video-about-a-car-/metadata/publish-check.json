@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780682844024-make-a-video-about-a-car-",
+  "youtubeDryRun": {
+    "status": "passed",
+    "checkedAt": "2026-06-05T18:08:52.144Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/exports/thumbnail-001.jpg"
+  }
+}

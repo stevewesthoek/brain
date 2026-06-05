@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780659549751-make-a-short-video-about-a-tre",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-05T11:39:22.375Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "Make a short video about a tree. — scene 1 of 3",
+      "visualPrompt": "Make a short video about a tree. — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-001.png",
+      "finalImagePrompt": "Make a short video about a tree. — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "db84ae232e5b328a",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-05T11:39:28.604Z",
+      "durationSeconds": 20,
+      "narrationText": "Make a short video about a tree.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "Make a short video about a tree. — scene 2 of 3",
+      "visualPrompt": "Make a short video about a tree. — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-002.png",
+      "finalImagePrompt": "Make a short video about a tree. — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "33b8663b0d56cf97",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-05T11:39:36.116Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "Make a short video about a tree. — scene 3 of 3",
+      "visualPrompt": "Make a short video about a tree. — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-003.png",
+      "finalImagePrompt": "Make a short video about a tree. — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "07e060197e007a92",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-05T11:39:43.611Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

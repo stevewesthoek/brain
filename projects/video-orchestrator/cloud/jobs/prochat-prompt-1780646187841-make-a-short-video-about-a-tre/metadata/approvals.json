@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780646187841-make-a-short-video-about-a-tre",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "test-acceptance",
+      "approvedAt": "2026-06-05T07:57:15.501Z",
+      "notes": null
+    }
+  }
+}

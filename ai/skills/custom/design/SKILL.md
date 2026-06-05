@@ -1,15 +1,17 @@
 ---
 name: design
-description: Master design orchestrator. The single entry point for ALL design work across every scenario, project type, and design skill. Accepts any natural language. Classifies scenario (new project / screenshot mimic / existing upgrade), project type (SaaS / website / funnel / landing page), and sequences the full design pipeline automatically — brand foundation, UX brief, spec, prototype, quality gates, build guardrails, motion audit, visual QA, polish, and production hardening. Uses all 14 design skills at the exact right stage in the exact right order. No commands, no skill names, no hooks to remember. Just describe what you want.
+description: Master design orchestrator. The single entry point for design work across scenarios and project types. Classifies the task and sequences design subskills for brand foundation, UX brief, spec, prototype, quality gates, build guardrails, motion audit, visual QA, polish, and production hardening.
 ---
 
 # Design — Master Orchestrator
 
-You are the **single, unified entry point** for all design work. When the user says anything design-related, this skill runs. No other design skill needs to be named by the user — ever.
+You are the **single, unified entry point** for all design work. Design work enters through this orchestrator.
 
-The user does not know (and should not need to know) that `/taste-skill`, `/impeccable`, `/soft-skill`, `/redesign-skill`, `/design-review`, `/web-design`, `/design-motion-principles`, `/huashu-design`, `/design-consultation`, `/design-system`, `/plan-design-review`, `/output-skill`, `/ui-ux-pro-max`, or any other skill exists. Your job is to know when to invoke each one, in what order, and why.
+The design skill classifies the task, selects the workflow, and applies the relevant design subskills.
 
-**Dormant subskill rule:** Some referenced design subskills may not be active in the default skill profile. Do not treat that as absence. Use `docs/skills/skill-index.md` and `docs/skills/profiles/design.txt` to locate or activate the needed design sub-capabilities. Preserve natural-language routing: the user should not need to remember subskill names.
+**Design architecture:** `/design` is the orchestrator. The other design skills are subskills with specific functions. `/web-design` is the subskill for implementation-ready web, SaaS, dashboard, landing page, funnel, and marketing-site specs.
+
+**Subskill resolution:** Some design subskills may be dormant in the default profile. Use `docs/skills/skill-index.md` and `docs/skills/profiles/design.txt` to locate the needed source.
 
 **Natural language triggers (non-exhaustive):**
 - "design a landing page for my SaaS"
@@ -161,6 +163,9 @@ Execute in order. Each phase completes before the next begins.
 - **STOP:** User approves DESIGN.md before continuing
 
 ### A2. Research (if needed)
+**Automatic reference library check → `/awesome-design-md`**
+Consult dormant `/awesome-design-md` when DESIGN.md is missing or weak and the task would benefit from public-brand inspiration, style candidates, or token cues. Select at most 1-3 references and feed only extracted principles into `/design-consultation`, `/design-system`, and `/web-design`. Skip it when the project already has approved brand truth or the user provides a specific URL/screenshot that should be analyzed directly.
+
 Apply `/ui-ux-pro-max` for supplementary research only when:
 - DESIGN.md is missing a clear style direction
 - Extra palette/typography/UX lookup is genuinely needed
@@ -234,6 +239,7 @@ Do not invoke if DESIGN.md is complete and clear. This is background research, n
 **Trigger:** Scenario = MIMIC
 
 ### B1. Reference Analysis
+- **If the user names a public brand or vibe represented in Awesome DESIGN.md, and no exact URL/screenshot is required:** consult dormant `/awesome-design-md` first to extract principles and token cues. Do not copy the brand wholesale; use it as inspiration and apply Brain design laws before writing project tokens.
 - **If URL provided:**
   1. Extract design tokens: `npx dembrandt <url> --design-md` → produces `DESIGN.md` with computed colors (hex), typography stack, spacing, border-radius, shadows, and component patterns
      - JS-heavy or slow site: add `--slow`
@@ -355,39 +361,40 @@ Route to the specialist sub-skill that matches the finding:
 
 | Skill | Role | When Used |
 |-------|------|-----------|
-| `/design-consultation` | Creates DESIGN.md + HTML preview from scratch | A1b — new project brand foundation |
-| `/dembrandt` | Extracts computed CSS design tokens from live URL → DESIGN.md (Google Stitch format) | B1 (when URL provided) |
-| `/design-system` | Brand tokens → DESIGN.md + brand-spec.md | B2b — mimic brand capture |
-| `/web-design` | Section-by-section implementation-ready spec | A3, B3 |
-| `/ui-ux-pro-max` | Supplementary research, stack rules, palette lookup | A2 (if needed) |
-| `/plan-design-review` | Pre-build 7-dimension audit, must reach 10/10 | A5 |
-| `/impeccable teach` | Creates PRODUCT.md (brand identity, users, anti-refs) | A1a, B2a, C1a |
-| `/impeccable document` | Extracts DESIGN.md from existing code | C1b |
-| `/impeccable shape` | UX brief — flows, states, edge cases, confirmed before build | A4 |
-| `/impeccable craft` | shape + build combined (shortcut for scoped tasks) | Optional shortcut for A4+A6 |
-| `/taste-skill` | Build guardrails — dials, bans, interaction states, performance | A6 (active throughout), C8 |
-| `/output-skill` | Prevents truncation — complete code always | A6, B5 (always active) |
-| `/soft-skill` | Agency-tier $150k+ Awwwards-level cinematic uplift | A6 (if requested), C7 (optional) |
-| `/huashu-design` | HTML prototypes, demos, decks, visual variants | A6 (if artifact), B4 |
-| `/design-motion-principles` | Motion audit — Emil / Jakub / Jhey, gap analysis, a11y | A7, B6, C3 |
-| `/design-review` | 80-item visual QA + fix loop, Design Score A-F | A8, B7, C2a |
-| `/impeccable critique` | UX heuristic scoring 0-10 per dimension | A8, B7, C2b |
-| `/impeccable audit` | Technical: a11y, performance, responsive | A8, B7, C2c |
-| `/impeccable harden` | Production-hardening: edge cases, i18n, validation | A9, B7 |
-| `/impeccable clarify` | UX copy, labels, error messages, empty state copy | A9, B7, C6 |
-| `/impeccable onboard` | First-run flows, empty states, activation | A9, C6 |
-| `/impeccable polish` | Final quality pass across whole interface | A10, B7, C8 |
-| `/impeccable bolder` | Amplifies safe or bland designs | A10 (if bland), C6 (if bland) |
-| `/impeccable quieter` | Tones down loud or aggressive designs | A10 (if loud), C6 (if loud) |
-| `/impeccable distill` | Strips to essence, removes complexity | A10 (if too complex), C6 |
-| `/impeccable typeset` | Typography hierarchy and font improvements | A10, C6 |
-| `/impeccable colorize` | Strategic color addition to monochromatic UIs | A10, C6 |
-| `/impeccable layout` | Spacing, rhythm, visual hierarchy fixes | A10, C6 |
-| `/impeccable adapt` | Responsive/cross-device adaptation | A10, C6 |
-| `/impeccable optimize` | UI performance diagnosis and fixes | A10, C6 |
-| `/impeccable overdrive` | Push past conventional limits | A10 (if requested), C6 |
-| `/impeccable live` | Real-time browser-based visual variant iteration | A10, B7, C6 — on demand |
-| `/redesign-skill` | Targeted code fixes from audit findings | C5 |
+| `/awesome-design-md` | Public-brand DESIGN.md reference library | A2, B1, web-design style candidate selection |
+| `/design-consultation` | DESIGN.md and HTML preview creation | A1b |
+| `/dembrandt` | Live URL design token extraction to DESIGN.md | B1 |
+| `/design-system` | Persistent brand tokens, DESIGN.md, and brand-spec.md | B2b |
+| `/web-design` | Implementation-ready web/SaaS/dashboard/landing/funnel spec | A3, B3 |
+| `/ui-ux-pro-max` | Supplementary UI/UX research, stack rules, palette lookup | A2 |
+| `/plan-design-review` | Pre-build design plan review | A5 |
+| `/impeccable teach` | PRODUCT.md creation | A1a, B2a, C1a |
+| `/impeccable document` | DESIGN.md extraction from existing code | C1b |
+| `/impeccable shape` | UX flows, states, and edge cases | A4 |
+| `/impeccable craft` | Combined shape and build workflow | A4, A6 |
+| `/taste-skill` | Build guardrails and anti-slop checks | A6, C8 |
+| `/output-skill` | Complete-code output guardrail | A6, B5 |
+| `/soft-skill` | Agency-tier cinematic visual uplift | A6, C7 |
+| `/huashu-design` | HTML prototypes, demos, decks, and visual variants | A6, B4 |
+| `/design-motion-principles` | Motion audit and animation guidance | A7, B6, C3 |
+| `/design-review` | Visual QA and design critique | A8, B7, C2a |
+| `/impeccable critique` | UX heuristic scoring | A8, B7, C2b |
+| `/impeccable audit` | Accessibility, performance, and responsive audit | A8, B7, C2c |
+| `/impeccable harden` | Production hardening and edge cases | A9, B7 |
+| `/impeccable clarify` | UX copy, labels, errors, and empty states | A9, B7, C6 |
+| `/impeccable onboard` | Onboarding and first-run flows | A9, C6 |
+| `/impeccable polish` | Final interface polish | A10, B7, C8 |
+| `/impeccable bolder` | Stronger visual direction | A10, C6 |
+| `/impeccable quieter` | Reduced visual intensity | A10, C6 |
+| `/impeccable distill` | Simplification and reduction | A10, C6 |
+| `/impeccable typeset` | Typography hierarchy | A10, C6 |
+| `/impeccable colorize` | Strategic color work | A10, C6 |
+| `/impeccable layout` | Spacing, rhythm, and layout | A10, C6 |
+| `/impeccable adapt` | Responsive adaptation | A10, C6 |
+| `/impeccable optimize` | UI performance optimization | A10, C6 |
+| `/impeccable overdrive` | Higher-ambition visual exploration | A10, C6 |
+| `/impeccable live` | Browser-based visual variant iteration | A10, B7, C6 |
+| `/redesign-skill` | Targeted existing-code redesign fixes | C5 |
 
 ---
 
@@ -398,6 +405,7 @@ When the user's message matches these patterns, route directly without asking th
 | User says | Route to |
 |-----------|----------|
 | "make a website based on this URL / extract tokens from / mimic this site [URL]" | Run dembrandt B1 URL path → continue Workflow B |
+| "make it feel like Linear / Claude / Stripe / Apple / Airbnb / another covered public brand" | Consult `/awesome-design-md` for principles → continue Workflow B |
 | "add motion / animations feel off" | Skip to motion audit → `/design-motion-principles` |
 | "too bland / make it bolder" | `/impeccable bolder` |
 | "too busy / tone it down" | `/impeccable quieter` |

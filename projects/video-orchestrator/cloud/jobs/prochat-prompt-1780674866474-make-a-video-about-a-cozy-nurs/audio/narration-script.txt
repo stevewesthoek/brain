@@ -1,0 +1,19 @@
+# Narration Script for "Make a video about a cozy nursery with soft toys and warm sunlight."
+Generated: 2026-06-05T15:54:38.993Z
+Provider: deterministic-local
+Total Duration: 60s
+
+## Scene 1 (20s)
+Visual: Make a video about a cozy nursery with soft toys and warm sunlight. — scene 1 of 3
+Narration: Make a video about a cozy nursery with soft toys and warm sunlight.
+On-screen text: Scene 1
+
+## Scene 2 (20s)
+Visual: Make a video about a cozy nursery with soft toys and warm sunlight. — scene 2 of 3
+Narration: Scene 2
+On-screen text: Scene 2
+
+## Scene 3 (20s)
+Visual: Make a video about a cozy nursery with soft toys and warm sunlight. — scene 3 of 3
+Narration: Scene 3
+On-screen text: Scene 3

@@ -1,0 +1,39 @@
+{
+  "jobId": "prochat-prompt-1780682844024-make-a-video-about-a-car-",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-05T18:08:24.446827Z",
+  "updatedAt": "2026-06-05T18:09:14.964Z",
+  "publishedAt": null,
+  "title": "[PIPELINE PROOF] A Car. ",
+  "description": "A make a video about a car.  video. Make a video about a car.",
+  "tags": [
+    "about",
+    "about car.",
+    "car.",
+    "make",
+    "make video",
+    "video",
+    "video about",
+    "educational"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/exports/thumbnail-001.jpg",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_tts_fixture_video",
+  "aiGenerated": false,
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/audio/narration.mp3",
+  "youtubePackageKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/metadata/youtube-package.json",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-05T18:08:52.144Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

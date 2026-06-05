@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/Assets.car</key>
 		<data>
-		MLMBIwjtoHuzAH166Pgk1U/ErwM=
+		R+ivymv+D60JbuAImnYq4nTCDaE=
 		</data>
 		<key>Resources/CUAAppIcon.icns</key>
 		<data>
@@ -14,11 +14,11 @@
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/Info.plist</key>
 		<data>
-		QHb/cPfUB/kHmM9nqlVbau9JsEU=
+		A6iit14jvvoPpw0NCQ3R5FlAlBw=
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/MacOS/CodexComputerUseAuthorizationPlugin</key>
 		<data>
-		pWiY17L6oKnUHwPqWLKaOi7+dkc=
+		07WNvZKH01XfZ3INoCmEMOGnCsU=
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/_CodeSignature/CodeResources</key>
 		<data>
@@ -26,7 +26,7 @@
 		</data>
 		<key>Resources/CodexComputerUseAuthorizationPluginInstallerTool</key>
 		<data>
-		FEap/pX+tI9FZfNKgSeR8oqBw90=
+		gTCAlfcaz0b6TKwlLpoIlmQSw90=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -35,7 +35,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			3TYdkBQh2O5mptGwf/viKCAi5d9HdO56tkyg9OPx/FQ=
+			mkJY0xUHL9MqwdPpAwha8yXl5OMOVDaL3DPHQiivweg=
 			</data>
 		</dict>
 		<key>Resources/CUAAppIcon.icns</key>
@@ -49,14 +49,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Qv3kaWou0Uz8qk87Xl1X2dW3KvX59XMGbWIKUo/Vd30=
+			6gamZGB7xNcQkBqUfNonWF9Ri+jZgUYuGCNWuIuEkTg=
 			</data>
 		</dict>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/MacOS/CodexComputerUseAuthorizationPlugin</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			u8Tlr+LNYay70OEzltIdLhajz6OQPIbtWlumAJMq8R4=
+			THIL083ihnyVmJv/+A6oqaFCAKb210f7J3SEW9S3RIc=
 			</data>
 		</dict>
 		<key>Resources/CodexComputerUseAuthorizationPlugin.bundle/Contents/_CodeSignature/CodeResources</key>
@@ -70,7 +70,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ovf9qTNaVsSlRDg0KWNyptwpkFtAHiHT4mqXuOiwhmE=
+			lyPQ9tvm70S0Polo6XtYw9WCvRuJ/Ee+RclXygbeH+Y=
 			</data>
 		</dict>
 	</dict>

@@ -1,0 +1,21 @@
+{
+  "jobId": "says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre",
+  "channelId": "says-the-bible",
+  "topicId": "says-the-bible-prompt-1780648624879",
+  "status": "approved",
+  "title": "Make a short video about a tree.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-05T08:37:04.879Z",
+  "updatedAt": "2026-06-05T08:37:14.861Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": true,
+    "notes": null,
+    "approvedBy": "test-user",
+    "approvedAt": "2026-06-05T08:37:14.861Z"
+  }
+}

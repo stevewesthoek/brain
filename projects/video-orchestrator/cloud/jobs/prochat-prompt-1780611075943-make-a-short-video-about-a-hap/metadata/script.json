@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780611075943-make-a-short-video-about-a-hap",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780611075943",
+  "status": "approved",
+  "title": "Make a short video about a happy tree.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780611075943-make-a-short-video-about-a-hap/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-04T22:11:15.943Z",
+  "updatedAt": "2026-06-04T22:11:43.835Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-04T22:11:43.835Z"
+  }
+}

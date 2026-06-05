@@ -1,0 +1,29 @@
+{
+  "jobId": "prochat-prompt-1780659549751-make-a-short-video-about-a-tre",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-05T11:40:11.549654Z",
+  "updatedAt": "2026-06-05T11:40:29.923Z",
+  "publishedAt": null,
+  "title": "[PIPELINE PROOF] Make a short video about a tree.",
+  "description": "",
+  "tags": [],
+  "videoKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/exports/thumbnail-001.jpg",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "aiGenerated": false,
+  "videoSourceKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-05T11:40:37.471Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

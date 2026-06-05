@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780614389631-make-a-video-of-a-bird",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780614389631",
+  "status": "approved",
+  "title": "make a video of a bird",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780614389631-make-a-video-of-a-bird/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-04T23:06:29.631Z",
+  "updatedAt": "2026-06-05T14:20:19.580Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-05T14:20:19.580Z"
+  }
+}

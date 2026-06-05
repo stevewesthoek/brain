@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs",
+  "provider": "aws-bedrock-nova-canvas",
+  "modelId": "amazon.nova-canvas-v1:0",
+  "region": "us-east-1",
+  "sceneCount": 3,
+  "generatedImageKeys": [
+    "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/images/scene-001.png",
+    "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/images/scene-002.png",
+    "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/images/scene-003.png"
+  ],
+  "promptHashes": [
+    "0ae38613fab8bc79",
+    "784bd55d291b432f",
+    "3dba3fc25c0bfd55"
+  ],
+  "warnings": [
+    "Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video."
+  ],
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "cfgScale": 6.5,
+    "quality": "standard",
+    "seed": 42
+  },
+  "createdAt": "2026-06-05T15:55:08.577Z"
+}

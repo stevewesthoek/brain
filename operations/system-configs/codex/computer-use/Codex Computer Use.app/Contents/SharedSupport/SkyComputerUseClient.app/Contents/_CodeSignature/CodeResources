@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Info.plist</key>
 		<data>
-		gaZzxVcHlcDDYTGuu9swmsMbBTk=
+		MXata72Fd5wWAOV8B9BZLW8xhRQ=
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
 		<data>
@@ -32,17 +32,25 @@
 		<data>
 		IAu884c4StZrj8omWcycgF7pk+w=
 		</data>
+		<key>Resources/Package_ComputerUseClient.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		0uH43RjCunILXgm1QaZXe+am0ss=
+		</data>
 		<key>Resources/SkyComputerUseClient_Parent.coderequirement</key>
 		<data>
 		3fz81WIQYHqKkj/FkJ7RCVq9spI=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<data>
-		5XTWq0dYZ+U6RadPvxORr6IbWYI=
+		rgbYnO/2v70mRXlExZYapZT8774=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
 		<data>
 		F6mYXr6EQZyLKcQNM0vmTGcGMns=
+		</data>
+		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		2kFyiwKrCNpeTlT6vBPuNcaCP5s=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -51,7 +59,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			cLgo7DOble0ayvWPTv9emBqd6JzuCXlCB1FWnwBSz1c=
+			ItdpF6OZHfUgupXBWdhOcgV5XX9/U4ARcATiTV5M168=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -96,6 +104,13 @@
 			pPObSapkANGvFlfVPeHXz2sPCTVjcEE2cw2E8H5FirA=
 			</data>
 		</dict>
+		<key>Resources/Package_ComputerUseClient.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			/ElW1VFygMBUkiwuLTCDzdRHNWCKtqFbTdoXG7/cd+4=
+			</data>
+		</dict>
 		<key>Resources/SkyComputerUseClient_Parent.coderequirement</key>
 		<dict>
 			<key>hash2</key>
@@ -107,7 +122,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			0/GU66F02NrYE2vO5DAoH1JueVv3qfzZo9lbxF4YFVA=
+			T2RFyc0rYSPRigGCUbjpatzQyLmZkwbbXDE++OBpOXE=
 			</data>
 		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
@@ -115,6 +130,20 @@
 			<key>hash2</key>
 			<data>
 			oHQY5f4SjiJM03lkvCHFA7eqL1dee0knRoR4rYcyFP4=
+			</data>
+		</dict>
+		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			sf/TlDvpQpsSWHNwTTJiRSzL17a/jL7nj9PvIV9GulE=
+			</data>
+		</dict>
+		<key>embedded.provisionprofile</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			uMc3+9FjXbJlUHE6mz9iUcAU2gpe0hMP4gtuJVIK2F8=
 			</data>
 		</dict>
 	</dict>

@@ -1,0 +1,18 @@
+{
+  "jobId": "prochat-prompt-1780679598949-make-a-video-about-a-tree-",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-05T17:14:14.069Z",
+  "updatedAt": "2026-06-05T17:14:14.069Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": null,
+    "narrationScriptKey": null,
+    "audioKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": null,
+    "thumbnailKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/metadata/publish.json"
+  }
+}

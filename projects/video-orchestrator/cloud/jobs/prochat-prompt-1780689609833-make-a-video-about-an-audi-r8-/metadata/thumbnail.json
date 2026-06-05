@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-05T20:01:04.679Z",
+  "updatedAt": "2026-06-05T20:01:04.679Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

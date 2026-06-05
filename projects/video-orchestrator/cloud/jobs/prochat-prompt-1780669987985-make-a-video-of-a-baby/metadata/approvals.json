@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780669987985-make-a-video-of-a-baby",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "brain-console-center",
+      "approvedAt": "2026-06-05T14:33:11.725Z",
+      "notes": null
+    }
+  }
+}

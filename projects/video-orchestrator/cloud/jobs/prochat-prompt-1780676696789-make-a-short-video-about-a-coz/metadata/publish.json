@@ -1,0 +1,29 @@
+{
+  "jobId": "prochat-prompt-1780676696789-make-a-short-video-about-a-coz",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-05T16:26:14.809407Z",
+  "updatedAt": "2026-06-05T16:26:53.650Z",
+  "publishedAt": null,
+  "title": "[PIPELINE PROOF] Make a short video about a cozy nursery with soft toys and warm sunlight.",
+  "description": "",
+  "tags": [],
+  "videoKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/exports/thumbnail-001.jpg",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "aiGenerated": false,
+  "videoSourceKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/audio/narration.mp3",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-05T16:26:42.364Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

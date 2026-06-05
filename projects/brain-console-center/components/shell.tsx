@@ -8,6 +8,7 @@ import { brainCoreRequest, BRAIN_CORE_URL } from '@/lib/braincore-client';
 import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
 import { cn, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const nav = [
   { href: '/', label: 'Overview', icon: Gauge },
@@ -38,10 +39,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">B</div>
+          <div className="brand-mark" aria-hidden="true" />
           <div>
             <div className="brand-title">Brain Console Center</div>
-            <div className="brand-subtitle">Leading local operations dashboard</div>
+            <div className="brand-subtitle">Local operations command surface</div>
           </div>
         </div>
         <nav className="nav" aria-label="Primary navigation">
@@ -76,11 +77,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <div className="row">
             <Activity size={18} />
-            <span className="meta">Brain Core: {BRAIN_CORE_URL}</span>
+            <span className="meta">Brain Core</span>
+            <code className="topbar-endpoint">{BRAIN_CORE_URL}</code>
           </div>
           <div className="row">
             {status.isError ? <StatusBadge status="error" label="offline" /> : <StatusBadge status={status.isSuccess ? 'fresh' : 'stale'} label={status.isSuccess ? 'online' : 'checking'} />}
             <span className="meta">updated {status.dataUpdatedAt ? timeAgo(new Date(status.dataUpdatedAt).toISOString()) : 'never'}</span>
+            <ThemeToggle />
           </div>
         </header>
         <div className="content">{children}</div>

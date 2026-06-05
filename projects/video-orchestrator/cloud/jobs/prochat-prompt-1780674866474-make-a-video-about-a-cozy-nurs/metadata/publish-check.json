@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs",
+  "youtubeDryRun": {
+    "status": "passed",
+    "checkedAt": "2026-06-05T15:57:36.194Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/exports/thumbnail-001.jpg"
+  }
+}

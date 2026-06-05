@@ -4,6 +4,7 @@
 design
 design-system
 web-design
+awesome-design-md
 design-review
 design-motion-principles
 taste-skill

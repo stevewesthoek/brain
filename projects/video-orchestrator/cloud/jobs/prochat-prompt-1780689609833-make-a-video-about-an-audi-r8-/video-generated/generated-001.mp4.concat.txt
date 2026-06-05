@@ -1,0 +1,7 @@
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-001.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-002.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-003.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-003.png'

@@ -1,0 +1,30 @@
+{
+  "jobId": "says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Hybrid Storyboard pipeline proof — prompt-derived scene plan, narration script, TTS audio, and scene images; video media uses fixtures",
+  "createdAt": "2026-06-05T08:37:29.512Z",
+  "generatedBy": "interactive-prompt",
+  "title": "[PIPELINE PROOF] Make a short video about a tree.",
+  "description": "Hybrid Storyboard mode: scene plan, narration script, and scene images are prompt-derived from the input prompt. Narration audio is generated via AWS Polly TTS. Final video media uses fixtures.",
+  "tags": [
+    "hybrid-storyboard-proof",
+    "scene-images-generated",
+    "tts-narration",
+    "fixture-video",
+    "scene-plan-generated"
+  ],
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_storyboard_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "providerName": "hybrid-storyboard-fixture",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "platforms": {
+    "youtube": {
+      "status": "pending"
+    }
+  }
+}

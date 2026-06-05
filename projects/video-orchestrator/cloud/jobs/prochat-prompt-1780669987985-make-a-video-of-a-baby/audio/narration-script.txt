@@ -1,0 +1,19 @@
+# Narration Script for "make a video of a baby"
+Generated: 2026-06-05T14:33:16.204Z
+Provider: deterministic-local
+Total Duration: 60s
+
+## Scene 1 (20s)
+Visual: make a video of a baby — scene 1 of 3
+Narration: make a video of a baby
+On-screen text: Scene 1
+
+## Scene 2 (20s)
+Visual: make a video of a baby — scene 2 of 3
+Narration: Scene 2
+On-screen text: Scene 2
+
+## Scene 3 (20s)
+Visual: make a video of a baby — scene 3 of 3
+Narration: Scene 3
+On-screen text: Scene 3

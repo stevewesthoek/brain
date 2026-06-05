@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780684795991-make-a-video-about-a-car-havin",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780684795991",
+  "status": "approved",
+  "title": "Make a video about a car having an accident. ",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-05T18:39:55.991Z",
+  "updatedAt": "2026-06-05T18:40:01.331Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-05T18:40:01.331Z"
+  }
+}

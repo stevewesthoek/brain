@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780679598949-make-a-video-about-a-tree-",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-05T17:14:11.679Z",
+  "updatedAt": "2026-06-05T17:14:11.679Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

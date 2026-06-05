@@ -1,0 +1,39 @@
+{
+  "jobId": "says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_storyboard_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "aiGenerated": false,
+  "narration": {
+    "path": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/audio/narration.mp3",
+    "source": "tts"
+  },
+  "sourceVideo": {
+    "path": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/video-generated/generated-001.mp4",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/exports/sample-transcoded.mp4"
+  },
+  "scenePlanKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/audio/narration-script.txt",
+  "audioKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "storyboardKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/metadata/storyboard.json",
+  "sceneImageKeys": [
+    "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/images/scene-001.svg",
+    "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/images/scene-002.svg",
+    "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/images/scene-003.svg"
+  ],
+  "imageProvider": "deterministic-placeholder",
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "providers": {
+    "scenePlan": "deterministic-local",
+    "narrationScript": "deterministic-local",
+    "narrationAudio": "aws-polly",
+    "sceneImages": "deterministic-placeholder",
+    "video": "fixture"
+  },
+  "warnings": [
+    "Scene images are generated, but final video still uses fixture video."
+  ]
+}

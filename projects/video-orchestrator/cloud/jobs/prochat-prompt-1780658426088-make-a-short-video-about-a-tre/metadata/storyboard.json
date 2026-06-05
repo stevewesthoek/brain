@@ -1,0 +1,35 @@
+{
+  "jobId": "prochat-prompt-1780658426088-make-a-short-video-about-a-tre",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "createdAt": "2026-06-05T11:20:43.004Z",
+  "scenes": [
+    {
+      "index": 1,
+      "visualPrompt": "Make a short video about a tree. — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780658426088-make-a-short-video-about-a-tre/images/scene-001.png",
+      "promptHash": "db84ae232e5b328a",
+      "durationSeconds": 20,
+      "narrationText": "Make a short video about a tree.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "visualPrompt": "Make a short video about a tree. — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780658426088-make-a-short-video-about-a-tre/images/scene-002.png",
+      "promptHash": "33b8663b0d56cf97",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "visualPrompt": "Make a short video about a tree. — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780658426088-make-a-short-video-about-a-tre/images/scene-003.png",
+      "promptHash": "07e060197e007a92",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

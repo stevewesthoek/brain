@@ -196,9 +196,11 @@ Underlying tools remain independent and directly callable: power users can still
 
 ## Design system
 
-For ALL design work, use `/design` — the master orchestrator. It accepts any natural language, classifies the scenario (new project / reference mimic / existing upgrade) and project type (SaaS / landing / funnel / website), and sequences all 14 design skills automatically in the right order for that scenario. No commands, no skill names, no hooks to remember — just describe the goal.
+For ALL design work, use `/design` — the master orchestrator. It classifies the scenario (new project / reference mimic / existing upgrade) and project type (SaaS / landing / funnel / website), then sequences the relevant design subskills.
 
-Skills coordinated by the orchestrator: `/impeccable` (teach, shape, craft, document, critique, audit, polish, bolder, quieter, distill, harden, onboard, clarify, typeset, colorize, layout, adapt, optimize, overdrive, live), `/taste-skill`, `/soft-skill`, `/redesign-skill`, `/design-motion-principles`, `/web-design`, `/huashu-design`, `/design-consultation`, `/design-system`, `/plan-design-review`, `/design-review`, `/output-skill`, `/ui-ux-pro-max`.
+Skills coordinated by the orchestrator: `/impeccable` (teach, shape, craft, document, critique, audit, polish, bolder, quieter, distill, harden, onboard, clarify, typeset, colorize, layout, adapt, optimize, overdrive, live), `/taste-skill`, `/soft-skill`, `/redesign-skill`, `/design-motion-principles`, `/web-design`, `/huashu-design`, `/design-consultation`, `/design-system`, `/plan-design-review`, `/design-review`, `/output-skill`, `/ui-ux-pro-max`, `/awesome-design-md`.
+
+`/awesome-design-md` is a public-brand DESIGN.md reference at `brain/ai/skills/custom/awesome-design-md/SKILL.md`. It provides style direction, reference-brand patterns, and token cues when no approved project `DESIGN.md` exists.
 
 ## Web, browser & automation
 

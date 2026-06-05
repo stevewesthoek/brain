@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs",
+  "prompt": "Make a video about a cozy nursery with soft toys and warm sunlight.",
+  "title": "Make a video about a cozy nursery with soft toys and warm sunlight.",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about a cozy nursery with soft toys and warm sunlight. — scene 1 of 3",
+      "narrationText": "Make a video about a cozy nursery with soft toys and warm sunlight.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about a cozy nursery with soft toys and warm sunlight. — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about a cozy nursery with soft toys and warm sunlight. — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-05T15:54:38.993Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

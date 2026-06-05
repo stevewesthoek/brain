@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-",
+  "provider": "aws-bedrock-nova-canvas",
+  "modelId": "amazon.nova-canvas-v1:0",
+  "region": "us-east-1",
+  "sceneCount": 3,
+  "generatedImageKeys": [
+    "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-001.png",
+    "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-002.png",
+    "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/images/scene-003.png"
+  ],
+  "promptHashes": [
+    "cbf73b367138bc98",
+    "d479a59bf2afbe47",
+    "002a42d9ecb34a90"
+  ],
+  "warnings": [
+    "Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video."
+  ],
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "cfgScale": 6.5,
+    "quality": "standard",
+    "seed": 42
+  },
+  "createdAt": "2026-06-05T20:00:51.698Z"
+}

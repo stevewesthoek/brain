@@ -1,0 +1,29 @@
+{
+  "jobId": "prochat-prompt-1780613255270-make-a-short-video-about-a-hap",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-04T22:48:30.328911Z",
+  "updatedAt": "2026-06-04T22:49:05.104Z",
+  "publishedAt": null,
+  "title": "[PIPELINE PROOF] Make a short video about a happy tree.\n",
+  "description": "",
+  "tags": [],
+  "videoKey": "jobs/prochat-prompt-1780613255270-make-a-short-video-about-a-hap/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780613255270-make-a-short-video-about-a-hap/exports/thumbnail-001.jpg",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "aiGenerated": false,
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-04T22:48:55.562Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

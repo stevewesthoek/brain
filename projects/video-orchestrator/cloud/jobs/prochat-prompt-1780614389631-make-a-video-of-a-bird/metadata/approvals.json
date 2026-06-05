@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780614389631-make-a-video-of-a-bird",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "brain-console-center",
+      "approvedAt": "2026-06-05T14:20:19.580Z",
+      "notes": null
+    }
+  }
+}

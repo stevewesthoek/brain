@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780689609833",
+  "status": "approved",
+  "title": "Make a video about an Audi R8. ",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-05T20:00:09.833Z",
+  "updatedAt": "2026-06-05T20:00:15.257Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-05T20:00:15.257Z"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780613255270-make-a-short-video-about-a-hap",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "brain-console-center",
+      "approvedAt": "2026-06-04T22:47:47.693Z",
+      "notes": null
+    }
+  }
+}

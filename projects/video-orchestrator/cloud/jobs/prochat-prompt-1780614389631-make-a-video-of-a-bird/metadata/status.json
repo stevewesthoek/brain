@@ -1,0 +1,30 @@
+{
+  "status": "failed",
+  "currentStep": "image_provider_not_configured",
+  "startedAt": "2026-06-05T14:21:22.287Z",
+  "updatedAt": "2026-06-05T14:21:29.904Z",
+  "executionArn": null,
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780614389631-make-a-video-of-a-bird/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780614389631-make-a-video-of-a-bird/audio/narration.mp3",
+  "providerName": "hybrid-image-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "partialAiGenerated": true,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "imageGenerated": true,
+  "slideshowGenerated": true,
+  "acceptedProviders": [
+    "deterministic-placeholder",
+    "aws-bedrock-nova-canvas",
+    "aws-bedrock-titan-image"
+  ],
+  "requiredEnv": [
+    "AWS_VIDEO_IMAGE_PROVIDER",
+    "AWS_VIDEO_IMAGE_MODEL_ID",
+    "AWS_VIDEO_IMAGE_REGION"
+  ],
+  "failedStep": "image_provider_not_configured",
+  "lastError": "hybrid_image_slideshow requires AWS_VIDEO_IMAGE_PROVIDER=aws-bedrock-nova-canvas or aws-bedrock-titan-image. Use AWS_VIDEO_IMAGE_PROVIDER=deterministic-placeholder only for explicit development proof mode."
+}

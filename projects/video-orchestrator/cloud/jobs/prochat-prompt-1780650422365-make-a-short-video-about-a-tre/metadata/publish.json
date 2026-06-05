@@ -1,0 +1,25 @@
+{
+  "jobId": "prochat-prompt-1780650422365-make-a-short-video-about-a-tre",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Pipeline proof fixture assembly — awaiting explicit publish approval",
+  "createdAt": "2026-06-05T09:07:22.008Z",
+  "generatedBy": "interactive-prompt",
+  "title": "[PIPELINE PROOF] Make a short video about a tree.",
+  "description": "Pipeline proof upload. This video used fixture media, not prompt-generated AI video.",
+  "tags": [
+    "pipeline-proof",
+    "fixture-media"
+  ],
+  "mediaSource": "fixture",
+  "generationMode": "fixture_assembly",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "fixture-assembly",
+  "aiGenerated": false,
+  "platforms": {
+    "youtube": {
+      "status": "pending"
+    }
+  }
+}

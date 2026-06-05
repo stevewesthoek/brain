@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-",
+  "prompt": "Make a video about an Audi R8. ",
+  "title": "Make a video about an Audi R8. ",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about an Audi R8.  — scene 1 of 3",
+      "narrationText": "Make a video about an Audi R8.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about an Audi R8.  — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about an Audi R8.  — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-05T20:00:22.344Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780604681158-make-a-video-of-a-happy-tree",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "brain-console-center",
+      "approvedAt": "2026-06-04T21:15:46.626Z",
+      "notes": null
+    }
+  }
+}

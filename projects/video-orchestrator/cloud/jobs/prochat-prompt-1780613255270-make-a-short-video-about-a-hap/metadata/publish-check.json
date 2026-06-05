@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780613255270-make-a-short-video-about-a-hap",
+  "youtubeDryRun": {
+    "status": "passed",
+    "checkedAt": "2026-06-04T22:48:55.562Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780613255270-make-a-short-video-about-a-hap/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780613255270-make-a-short-video-about-a-hap/exports/thumbnail-001.jpg"
+  }
+}

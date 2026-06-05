@@ -1,0 +1,16 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-05T09:18:03.015Z",
+  "updatedAt": "2026-06-05T09:18:22.232Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780650988281-make-a-short-video-1780651101535-urqk9n",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780650988281-make-a-short-video-about-a-tre/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780650988281-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "providerName": "hybrid-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "slideshowGenerated": true
+}

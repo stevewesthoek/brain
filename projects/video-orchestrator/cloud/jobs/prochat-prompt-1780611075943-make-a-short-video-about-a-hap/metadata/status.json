@@ -1,0 +1,13 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-04T22:11:51.624Z",
+  "updatedAt": "2026-06-04T22:11:58.399Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780611075943-make-a-short-vide-1780611117710-1c4aj9c",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "hybrid-scene-planner",
+  "aiGenerated": false
+}

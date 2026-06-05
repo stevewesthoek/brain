@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780669987985-make-a-video-of-a-baby",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780669987985",
+  "status": "approved",
+  "title": "make a video of a baby",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780669987985-make-a-video-of-a-baby/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-05T14:33:07.985Z",
+  "updatedAt": "2026-06-05T14:33:11.725Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-05T14:33:11.725Z"
+  }
+}

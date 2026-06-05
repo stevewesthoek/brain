@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780684795991-make-a-video-about-a-car-havin",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-05T18:40:50.222Z",
+  "updatedAt": "2026-06-05T18:40:50.222Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780684795991-make-a-video-about-a-car-havin/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

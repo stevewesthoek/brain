@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780676696789-make-a-short-video-about-a-coz",
+  "youtubeDryRun": {
+    "status": "passed",
+    "checkedAt": "2026-06-05T16:26:42.364Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780676696789-make-a-short-video-about-a-coz/exports/thumbnail-001.jpg"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "status": "failed",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-04T21:15:50.638Z",
+  "updatedAt": "2026-06-04T21:15:57.605Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780604681158-make-a-video-of-a-1780607756953-1nxlvao",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_scene_plan_fixture_media",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "providerName": "hybrid-scene-planner",
+  "aiGenerated": false,
+  "failedStep": "ApprovalCheckError",
+  "lastError": "Failed to check approval status"
+}

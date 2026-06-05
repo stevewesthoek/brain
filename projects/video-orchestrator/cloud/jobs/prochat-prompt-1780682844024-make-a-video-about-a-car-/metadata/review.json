@@ -1,0 +1,18 @@
+{
+  "jobId": "prochat-prompt-1780682844024-make-a-video-about-a-car-",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-05T18:07:55.680Z",
+  "updatedAt": "2026-06-05T18:08:41.072Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/metadata/publish.json"
+  }
+}

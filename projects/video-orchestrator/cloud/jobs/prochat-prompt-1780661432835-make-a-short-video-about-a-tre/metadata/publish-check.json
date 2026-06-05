@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780661432835-make-a-short-video-about-a-tre",
+  "youtubeDryRun": {
+    "status": "passed",
+    "checkedAt": "2026-06-05T12:12:30.817Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780661432835-make-a-short-video-about-a-tre/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780661432835-make-a-short-video-about-a-tre/exports/thumbnail-001.jpg"
+  }
+}

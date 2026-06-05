@@ -1,0 +1,7 @@
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-001.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-002.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-003.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780659549751-make-a-short-video-about-a-tre/images/scene-003.png'

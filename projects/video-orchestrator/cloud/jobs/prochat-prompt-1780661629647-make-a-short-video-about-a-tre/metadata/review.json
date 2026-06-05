@@ -1,0 +1,18 @@
+{
+  "jobId": "prochat-prompt-1780661629647-make-a-short-video-about-a-tre",
+  "reviewStatus": "approved",
+  "createdAt": "2026-06-05T12:15:18.553Z",
+  "updatedAt": "2026-06-05T12:15:47.642Z",
+  "reviewedAt": "2026-06-05T12:15:47.642Z",
+  "reviewedBy": "brain-console-center",
+  "notes": "approved after review",
+  "media": {
+    "scenePlanKey": null,
+    "narrationScriptKey": null,
+    "audioKey": "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780661629647-make-a-short-video-about-a-tre/metadata/publish.json"
+  }
+}

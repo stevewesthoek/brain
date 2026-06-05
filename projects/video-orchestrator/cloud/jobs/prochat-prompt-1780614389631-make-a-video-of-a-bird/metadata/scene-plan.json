@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780614389631-make-a-video-of-a-bird",
+  "prompt": "make a video of a bird",
+  "title": "make a video of a bird",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "make a video of a bird — scene 1 of 3",
+      "narrationText": "make a video of a bird",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "make a video of a bird — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "make a video of a bird — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-05T14:21:23.670Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

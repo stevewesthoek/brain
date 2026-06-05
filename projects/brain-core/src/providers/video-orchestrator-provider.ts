@@ -1634,18 +1634,42 @@ async function hydrateVideoReviewMedia(
   thumbnailJson?: Record<string, unknown> | null,
   youtubePackageJson?: Record<string, unknown> | null,
 ): Promise<VideoReviewMedia> {
-  // Load sources if not provided
-  const assets = assetsJson ?? (await readJobMetadataJson(jobId, 'assets.json')) as Record<string, unknown> | null;
-  const publish = publishJson ?? (await readJobMetadataJson(jobId, 'publish.json')) as Record<string, unknown> | null;
-  const thumbnail = thumbnailJson ?? (await readJobMetadataJson(jobId, 'thumbnail.json')) as Record<string, unknown> | null;
-  const youtubePackage = youtubePackageJson ?? (await readJobMetadataJson(jobId, 'youtube-package.json')) as Record<string, unknown> | null;
+  // Load sources if not provided. Prefer the normal S3-first reader, but also
+  // fall back to local metadata explicitly so review hydration still works
+  // while local Brain Core has fresher artifacts than S3 or S3 checks are slow.
+  const readMetadata = async (
+    fileName: string,
+    provided?: Record<string, unknown> | null,
+  ): Promise<Record<string, unknown> | null> => {
+    const remoteOrProvided = provided ?? await readJobMetadataJson(jobId, fileName) as Record<string, unknown> | null;
+    const local = await readLocalJobMetadataJson(jobId, fileName) as Record<string, unknown> | null;
+
+    // Local Brain Core is the source of truth during active dev runs. S3 can lag
+    // or retain an early placeholder review/assets object, so merge local over
+    // the provided/S3 value instead of treating any non-null S3 object as final.
+    if (remoteOrProvided && local) return { ...remoteOrProvided, ...local };
+    return local ?? remoteOrProvided;
+  };
+  const assets = await readMetadata('assets.json', assetsJson);
+  const publish = await readMetadata('publish.json', publishJson);
+  const thumbnail = await readMetadata('thumbnail.json', thumbnailJson);
+  const youtubePackage = await readMetadata('youtube-package.json', youtubePackageJson);
   const resolved = await resolvePublishableAssets(jobId);
+
+  const localObjectExists = async (key: string): Promise<boolean> => {
+    const prefix = `jobs/${jobId}/`;
+    if (!key.startsWith(prefix)) return false;
+    return fileExists(join(getVideoOrchestratorRoot(), key));
+  };
+  const objectExists = async (key: string): Promise<boolean> => {
+    return await localObjectExists(key) || await checkS3ObjectExists(S3_BUCKET, key, AWS_REGION);
+  };
 
   // Canonical resolution: prefer explicit values, verify canonical paths exist before using
   let scenePlanKey = stringValue(publish?.scenePlanKey) ?? stringValue(assets?.scenePlanKey) ?? null;
   if (!scenePlanKey) {
     const canonical = `jobs/${jobId}/metadata/scene-plan.json`;
-    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+    if (await objectExists(canonical)) {
       scenePlanKey = canonical;
     }
   }
@@ -1653,7 +1677,7 @@ async function hydrateVideoReviewMedia(
   let narrationScriptKey = stringValue(publish?.narrationScriptKey) ?? stringValue(assets?.narrationScriptKey) ?? null;
   if (!narrationScriptKey) {
     const canonical = `jobs/${jobId}/audio/narration-script.txt`;
-    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+    if (await objectExists(canonical)) {
       narrationScriptKey = canonical;
     }
   }
@@ -1661,21 +1685,32 @@ async function hydrateVideoReviewMedia(
   let audioKey = stringValue(publish?.audioKey) ?? stringValue(assets?.audioKey) ?? stringValue((assets?.narration as Record<string, unknown> | undefined)?.path) ?? stringValue(assets?.narrationKey) ?? null;
   if (!audioKey) {
     const canonical = `jobs/${jobId}/audio/narration.mp3`;
-    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+    if (await objectExists(canonical)) {
       audioKey = canonical;
     }
   }
 
-  // Scene images: prefer assetsJson, else storyboard, must be non-empty for generated modes
+  // Scene images: prefer assetsJson, then storyboard manifest, then local/S3 canonical scene image.
   let sceneImageKeys = Array.isArray(assets?.sceneImageKeys)
     ? (assets.sceneImageKeys as unknown[]).filter((item): item is string => typeof item === 'string')
     : [];
+  if (sceneImageKeys.length === 0) {
+    const storyboard = await readMetadata('storyboard.json');
+    const scenes = Array.isArray(storyboard?.scenes) ? storyboard.scenes as Record<string, unknown>[] : [];
+    sceneImageKeys = scenes.map((scene) => stringValue(scene.imageKey)).filter((key): key is string => Boolean(key));
+  }
+  if (sceneImageKeys.length === 0) {
+    const png = `jobs/${jobId}/images/scene-001.png`;
+    const jpg = `jobs/${jobId}/images/scene-001.jpg`;
+    if (await objectExists(png)) sceneImageKeys = [png];
+    else if (await objectExists(jpg)) sceneImageKeys = [jpg];
+  }
 
   // Video: prefer explicit, then resolved, then generated paths
   let videoKey = stringValue(publish?.videoKey) ?? resolved.videoKey ?? stringValue(assets?.videoKey) ?? stringValue(assets?.videoSourceKey) ?? null;
   if (!videoKey) {
     const canonical = `jobs/${jobId}/exports/generated-001-final.mp4`;
-    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+    if (await objectExists(canonical)) {
       videoKey = canonical;
     }
   }
@@ -1684,21 +1719,23 @@ async function hydrateVideoReviewMedia(
   let thumbnailKey = stringValue(thumbnail?.thumbnailKey) ?? stringValue(publish?.thumbnailKey) ?? resolved.thumbnailKey ?? null;
   if (!thumbnailKey) {
     const canonical = `jobs/${jobId}/exports/thumbnail-001.jpg`;
-    if (await checkS3ObjectExists(S3_BUCKET, canonical, AWS_REGION)) {
+    if (await objectExists(canonical)) {
       thumbnailKey = canonical;
     }
   }
 
   // Publish JSON: only if it exists
   let publishKey = null;
-  if (publish || await checkS3ObjectExists(S3_BUCKET, `jobs/${jobId}/metadata/publish.json`, AWS_REGION)) {
-    publishKey = `jobs/${jobId}/metadata/publish.json`;
+  const canonicalPublishKey = `jobs/${jobId}/metadata/publish.json`;
+  if (publish || await objectExists(canonicalPublishKey)) {
+    publishKey = canonicalPublishKey;
   }
 
   // YouTube package: only if it exists
   let youtubePackageKey = null;
-  if (youtubePackage || await checkS3ObjectExists(S3_BUCKET, `jobs/${jobId}/metadata/youtube-package.json`, AWS_REGION)) {
-    youtubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
+  const canonicalYoutubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
+  if (youtubePackage || await objectExists(canonicalYoutubePackageKey)) {
+    youtubePackageKey = canonicalYoutubePackageKey;
   }
 
   return {

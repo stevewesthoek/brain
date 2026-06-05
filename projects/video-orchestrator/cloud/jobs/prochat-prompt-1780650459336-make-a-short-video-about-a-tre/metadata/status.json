@@ -1,0 +1,21 @@
+{
+  "status": "failed",
+  "currentStep": "storyboard_image_generation_failed",
+  "startedAt": "2026-06-05T09:14:52.721Z",
+  "updatedAt": "2026-06-05T09:14:57.786Z",
+  "executionArn": null,
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780650459336-make-a-short-video-about-a-tre/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780650459336-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "providerName": "hybrid-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "slideshowGenerated": true,
+  "sceneIndex": 1,
+  "visualPrompt": "Make a short video about a tree. — scene 1 of 3",
+  "error": "Command failed: magick /Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780650459336-make-a-short-video-about-a-tre/images/scene-001.svg -background white -alpha remove -alpha off -resize 1280x720 /Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780650459336-make-a-short-video-about-a-tre/images/scene-001.png\nmagick: unable to read font `' @ error/annotate.c/RenderFreetype/1660.\n",
+  "failedStep": "storyboard_image_generation_failed",
+  "lastError": "Failed to generate storyboard image for scene 1: Command failed: magick /Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780650459336-make-a-short-video-about-a-tre/images/scene-001.svg -background white -alpha remove -alpha off -resize 1280x720 /Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780650459336-make-a-short-video-about-a-tre/images/scene-001.png\nmagick: unable to read font `' @ error/annotate.c/RenderFreetype/1660.\n"
+}

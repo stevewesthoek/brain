@@ -1,6 +1,6 @@
 ---
 name: web-design
-description: "Use when the user asks for web design work (landing pages, SaaS apps, dashboards, funnels, marketing sites, UX/UI direction, visual systems). Provide a style choice, layout plan, and implementation-ready design spec aligned to the Next.js + Tailwind + shadcn/ui stack. Triggers on requests such as: design a landing page, web design for my SaaS, create a funnel page, dashboard UI, redesign this website, choose a visual style."
+description: "Design subskill for implementation-ready web, SaaS, dashboard, landing page, funnel, and marketing-site specs. Produces style direction, layout plan, visual tokens, component plan, motion plan, accessibility checks, and stack-specific build notes."
 ---
 
 # Web Design
@@ -8,6 +8,7 @@ description: "Use when the user asks for web design work (landing pages, SaaS ap
 ## References to load when needed
 - Style catalog: `references/styles.md`
 - Component map: `references/components.md`
+- Public-brand DESIGN.md inspiration: `../awesome-design-md/SKILL.md` and `../awesome-design-md/references.md`
 - Stack + constraints: mind/06-resources/personal-references/style.md, mind/05-areas/personal-identity/profile.md, mind/02-strategy/organisations/prochat/playbooks/saas-reference.md
 - Existing prompt (AI analytics landing): `ai/prompts/webdesign.md`
 - UI-UX Pro Max overview: `../ui-ux-pro-max/references/overview.md`
@@ -17,9 +18,12 @@ description: "Use when the user asks for web design work (landing pages, SaaS ap
 - Align output to the fixed stack: Next.js, TypeScript, TailwindCSS, shadcn/ui.
 - Avoid dark patterns or manipulative UX.
 
-## Skill Routing
+## Subskill Context
+
+`/web-design` is a specialist subskill of `/design`. It converts product context, brand direction, and design-system inputs into an implementation-ready web spec.
 
 - **Use `/design-system`** to establish persistent design tokens if missing
+- **Use dormant `/awesome-design-md`** when a broad style direction, public-brand vibe, or concrete `DESIGN.md` inspiration would help, especially before proposing 2-3 style candidates
 - **Use `/ui-ux-pro-max`** only for supplementary research (palette, type, UX rules)
 - **Apply `/taste-skill` guardrails** to avoid generic patterns and maintain quality
 - **Use `/redesign-skill`** instead for existing codebase improvements
@@ -30,9 +34,10 @@ description: "Use when the user asks for web design work (landing pages, SaaS ap
 1. **Check for `DESIGN.md`** — read existing tokens if present
 2. **Check for `brand-spec.md`** — use brand-token truth if present
 3. **Call `/design-system`** if brand consistency needed but no tokens exist
-4. **Use `/ui-ux-pro-max`** only for supplementary research
-5. **Apply `/taste-skill`** quality guardrails to output
-6. **Route to `/huashu-design`** if user wants artifact (prototype, deck, animation, export, critique)
+4. **Consult `/awesome-design-md` automatically** if no approved design truth exists and public-brand inspiration would sharpen the direction
+5. **Use `/ui-ux-pro-max`** only for supplementary research
+6. **Apply `/taste-skill`** quality guardrails to output
+7. **Route to `/huashu-design`** if user wants artifact (prototype, deck, animation, export, critique)
 
 ## Intake (ask only what is missing)
 Ask for:
@@ -45,6 +50,7 @@ Ask for:
 
 ## Style selection
 - Use the catalog in `references/styles.md`.
+- When the user asks for a brand-like feel or has no clear style preference, use `/awesome-design-md` to choose 1 primary public-brand reference and optionally 1 contrast reference. Extract principles only; do not copy a full brand system.
 - Default for SaaS/enterprise: Minimalism + Swiss (clarity).
 - If user wants "modern" and "premium": suggest Glassmorphism or Liquid Glass.
 - If user wants "playful": suggest Claymorphism or Vibrant + Block-Based.

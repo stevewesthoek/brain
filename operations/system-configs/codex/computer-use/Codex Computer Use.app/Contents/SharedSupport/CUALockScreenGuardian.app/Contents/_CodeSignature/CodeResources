@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/Assets.car</key>
 		<data>
-		20i2MYtCpeNYCWrZuv8LCXypT5Y=
+		JLL5qbmn2WAIJydTVuCSYX9kfKE=
 		</data>
 		<key>Resources/CUAAppIcon.icns</key>
 		<data>
@@ -18,15 +18,19 @@
 		</data>
 		<key>Resources/Package_Appshot.bundle/Contents/Info.plist</key>
 		<data>
-		OYZUTKCa0kDRnDQ7qfdFezirF6U=
+		s5yZvEyZRS8ft43ytFkoBzKPoRQ=
 		</data>
 		<key>Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
 		<data>
 		+xo2R7MtmojLox6YCAuxPCdpgbo=
 		</data>
+		<key>Resources/Package_Appshot.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		INnzSTJVnxsrrpKAWHilG0ykyj8=
+		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Info.plist</key>
 		<data>
-		eFjOGZoR3Wyg3IjDsSrV1hBUN3s=
+		HM4XreCRWKZ3OADPAWYfX90qkmE=
 		</data>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
 		<data>
@@ -212,9 +216,21 @@
 		<data>
 		LFX1x/ITz50BMkT3cUo9HZgfbK8=
 		</data>
+		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/SkysightMemoryInstructions.md</key>
+		<data>
+		+diofqpOZIxd6oOXw4h+ISiGf1Q=
+		</data>
+		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/SkysightSummarizer.md</key>
+		<data>
+		3MBQ27GXtbKE7tT/78qIQ1YEymk=
+		</data>
+		<key>Resources/Package_ComputerUse.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		K0BfwJsdx26CLeZRsufno7H7QTs=
+		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Info.plist</key>
 		<data>
-		gaZzxVcHlcDDYTGuu9swmsMbBTk=
+		MXata72Fd5wWAOV8B9BZLW8xhRQ=
 		</data>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
 		<data>
@@ -240,21 +256,33 @@
 		<data>
 		IAu884c4StZrj8omWcycgF7pk+w=
 		</data>
+		<key>Resources/Package_ComputerUseClient.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		0uH43RjCunILXgm1QaZXe+am0ss=
+		</data>
 		<key>Resources/Package_SlimCore.bundle/Contents/Info.plist</key>
 		<data>
-		F90LVRvYp16MkeyCMK9g9ngN1vw=
+		9ARCVksKYk0Tn2lPP9KN2a398ak=
 		</data>
 		<key>Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
 		<data>
 		5lBSE8fUrkeLGt8mlgIC/4BOazA=
 		</data>
+		<key>Resources/Package_SlimCore.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		lesRKW/mmcyURIL/6d0BWBefirg=
+		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<data>
-		5XTWq0dYZ+U6RadPvxORr6IbWYI=
+		rgbYnO/2v70mRXlExZYapZT8774=
 		</data>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
 		<data>
 		F6mYXr6EQZyLKcQNM0vmTGcGMns=
+		</data>
+		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/_CodeSignature/CodeResources</key>
+		<data>
+		2kFyiwKrCNpeTlT6vBPuNcaCP5s=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -263,7 +291,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			AuDm9qDggvbDm1ro0lk5UV8B5BMarajIViKyzeB6KuI=
+			TdHknFXIqtC66QAeR39coo8bYnrQ79HndqQWxWlRoYE=
 			</data>
 		</dict>
 		<key>Resources/CUAAppIcon.icns</key>
@@ -284,7 +312,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ThEiGPfCmW30LJYmdQsQHQ/1wcSJ3utmy5dN4eKNb0g=
+			xMPztbLclt5smM68tjOkMW8ZH5UDmKOGm3nPCAiA3tE=
 			</data>
 		</dict>
 		<key>Resources/Package_Appshot.bundle/Contents/Resources/Appshot.wav</key>
@@ -294,11 +322,18 @@
 			9EqNdIwbxEx4CnjU5RiLNlLPCI7VrtwQwXC16Qrz+cE=
 			</data>
 		</dict>
+		<key>Resources/Package_Appshot.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			z1TDX6iWFUMdj+BwG/Ln58Xp3HhBc/xrhlqnMfHhBjg=
+			</data>
+		</dict>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			z2DIGqE7LHZKQPbUY2QlGRwpcML33IxpQtWmA4MtQjM=
+			KRJ9uJZvyMqc2QAkepeGt1/mpd5kVRlfso3+Xi5xK8w=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/Assets.car</key>
@@ -623,11 +658,32 @@
 			FFjG7CFuDWtKJmre9XpH+S1gKzgKxYKExkBKX4nEcJI=
 			</data>
 		</dict>
+		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/SkysightMemoryInstructions.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			MdAq1cZGnMArj6CUHExTRUhxjmFtV++cC7i3caAFfys=
+			</data>
+		</dict>
+		<key>Resources/Package_ComputerUse.bundle/Contents/Resources/SkysightSummarizer.md</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			xqPTcmp+6XFJGHdlsnMrM2Xa8LQkwba0ZyDWyQythY8=
+			</data>
+		</dict>
+		<key>Resources/Package_ComputerUse.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			q2k8oOPLCJOWN2J9vzoBdHX8SVJy6tbjg3uNIJNGSB0=
+			</data>
+		</dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			cLgo7DOble0ayvWPTv9emBqd6JzuCXlCB1FWnwBSz1c=
+			ItdpF6OZHfUgupXBWdhOcgV5XX9/U4ARcATiTV5M168=
 			</data>
 		</dict>
 		<key>Resources/Package_ComputerUseClient.bundle/Contents/Resources/AppInstructions/AppleMusic.md</key>
@@ -672,11 +728,18 @@
 			pPObSapkANGvFlfVPeHXz2sPCTVjcEE2cw2E8H5FirA=
 			</data>
 		</dict>
+		<key>Resources/Package_ComputerUseClient.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			/ElW1VFygMBUkiwuLTCDzdRHNWCKtqFbTdoXG7/cd+4=
+			</data>
+		</dict>
 		<key>Resources/Package_SlimCore.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			ixwQCiJfqmQ2lyJIiqpvevgeFEstJCyu7ORTIBZtpGo=
+			QWcxXVno3x5ErzxHgoJswVmvwArJDr26b3QRs2E11aM=
 			</data>
 		</dict>
 		<key>Resources/Package_SlimCore.bundle/Contents/Resources/Assets.car</key>
@@ -686,11 +749,18 @@
 			8g2quzfbnhqS8a+NEIxVaDYDssE2M7O8nR2IUktBzLs=
 			</data>
 		</dict>
+		<key>Resources/Package_SlimCore.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			ziAHVD6Ap0ov/KdsWZVkpACe1pUrDNcTBMjRRd2gaTo=
+			</data>
+		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Info.plist</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			0/GU66F02NrYE2vO5DAoH1JueVv3qfzZo9lbxF4YFVA=
+			T2RFyc0rYSPRigGCUbjpatzQyLmZkwbbXDE++OBpOXE=
 			</data>
 		</dict>
 		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/Resources/PrivacyInfo.xcprivacy</key>
@@ -698,6 +768,13 @@
 			<key>hash2</key>
 			<data>
 			oHQY5f4SjiJM03lkvCHFA7eqL1dee0knRoR4rYcyFP4=
+			</data>
+		</dict>
+		<key>Resources/SwiftProtobuf_SwiftProtobuf.bundle/Contents/_CodeSignature/CodeResources</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			sf/TlDvpQpsSWHNwTTJiRSzL17a/jL7nj9PvIV9GulE=
 			</data>
 		</dict>
 	</dict>

@@ -1,0 +1,14 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-05T18:07:36.205Z",
+  "updatedAt": "2026-06-05T18:07:48.826Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780682844024-make-a-video-abou-1780682867989-1a0ymzr",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_tts_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780682844024-make-a-video-about-a-car-/audio/narration.mp3",
+  "providerName": "hybrid-tts-fixture",
+  "aiGenerated": false,
+  "ttsGenerated": true
+}

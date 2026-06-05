@@ -1,0 +1,11 @@
+{
+  "jobId": "prochat-prompt-1780682844024-make-a-video-about-a-car-",
+  "approvals": {
+    "script": {
+      "status": "approved",
+      "approvedBy": "brain-console-center",
+      "approvedAt": "2026-06-05T18:07:27.908Z",
+      "notes": null
+    }
+  }
+}

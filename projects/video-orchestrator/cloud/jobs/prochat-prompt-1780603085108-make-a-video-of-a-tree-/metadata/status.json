@@ -1,0 +1,14 @@
+{
+  "status": "generating",
+  "currentStep": "narration_started",
+  "startedAt": "2026-06-04T23:05:57.925Z",
+  "updatedAt": "2026-06-04T23:05:57.925Z",
+  "executionArn": null,
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_tts_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780603085108-make-a-video-of-a-tree-/audio/narration.mp3",
+  "providerName": "hybrid-tts-fixture",
+  "aiGenerated": false,
+  "ttsGenerated": true
+}

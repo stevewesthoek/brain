@@ -174,6 +174,7 @@ Key skills:
 | `design` | Main design orchestrator |
 | `design-system` | Persistent design systems and brand specs |
 | `web-design` | Web/SaaS implementation-ready design specs |
+| `awesome-design-md` | Public-brand DESIGN.md reference library for style candidates, token cues, and reference-brand inspiration |
 | `design-review` | Design critique |
 | `design-motion-principles` | Motion/animation review |
 | `taste-skill` | Premium taste and anti-slop checks |
@@ -184,6 +185,8 @@ Key skills:
 | `dembrandt` | Visual/brand support |
 | `media-acquisition` | Dormant yt-dlp capability for permitted video/motion reference acquisition, thumbnails, subtitles, and metadata |
 | `graphify` | Visual graphing/diagram support |
+
+Design architecture: `design` is the orchestrator. The other design-profile skills are subskills with specific functions. `web-design` produces implementation-ready web, SaaS, dashboard, landing page, funnel, and marketing-site specs.
 
 ---
 

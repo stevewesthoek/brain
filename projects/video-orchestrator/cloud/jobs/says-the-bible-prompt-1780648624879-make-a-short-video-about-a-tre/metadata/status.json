@@ -1,0 +1,15 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-05T08:37:16.884Z",
+  "updatedAt": "2026-06-05T08:37:28.864Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-says-the-bible-prompt-1780648624879-make-a-sho-1780648648173-1bz765e",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_storyboard_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "providerName": "hybrid-storyboard-fixture",
+  "aiGenerated": false,
+  "ttsGenerated": true,
+  "storyboardGenerated": true
+}

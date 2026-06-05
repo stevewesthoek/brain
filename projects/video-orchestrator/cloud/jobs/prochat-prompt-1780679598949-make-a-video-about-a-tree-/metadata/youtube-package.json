@@ -1,0 +1,39 @@
+{
+  "jobId": "prochat-prompt-1780679598949-make-a-video-about-a-tree-",
+  "sourcePrompt": "Make a video about a tree. ",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "A Tree. ",
+  "description": "A make a video about a tree.  video. Make a video about a tree. Make a video about a tree. Scene 2. Scene 3.",
+  "shortDescription": "A make a video about a tree.  video. Make a video about a tree. Make a video about a tree. Scene 2. Scene 3.",
+  "tags": [
+    "about",
+    "about tree.",
+    "make",
+    "make video",
+    "scene",
+    "tree.",
+    "video",
+    "video about"
+  ],
+  "searchKeywords": [
+    "about",
+    "about tree.",
+    "make",
+    "make video",
+    "scene",
+    "tree.",
+    "video",
+    "video about",
+    "a",
+    ""
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/video-generated/generated-001.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780679598949-make-a-video-about-a-tree-/metadata/youtube-package.json",
+  "createdAt": "2026-06-05T17:14:03.980Z",
+  "updatedAt": "2026-06-05T17:14:03.980Z"
+}

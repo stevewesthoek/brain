@@ -1,0 +1,14 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-05T07:57:16.533Z",
+  "updatedAt": "2026-06-05T07:57:27.094Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780646187841-make-a-short-vide-1780646246378-1j4fvp1",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_tts_fixture_video",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780646187841-make-a-short-video-about-a-tre/audio/narration.mp3",
+  "providerName": "hybrid-tts-fixture",
+  "aiGenerated": false,
+  "ttsGenerated": true
+}

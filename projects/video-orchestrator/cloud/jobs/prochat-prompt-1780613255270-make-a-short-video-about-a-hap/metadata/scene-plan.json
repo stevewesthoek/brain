@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780613255270-make-a-short-video-about-a-hap",
+  "prompt": "Make a short video about a happy tree.\n",
+  "title": "Make a short video about a happy tree.\n",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about a happy tree.\n — scene 1 of 3",
+      "narrationText": "Make a short video about a happy tree.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about a happy tree.\n — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about a happy tree.\n — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-04T22:47:59.190Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

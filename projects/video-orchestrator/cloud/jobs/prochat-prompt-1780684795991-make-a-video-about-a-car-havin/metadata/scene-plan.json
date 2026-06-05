@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780684795991-make-a-video-about-a-car-havin",
+  "prompt": "Make a video about a car having an accident. ",
+  "title": "Make a video about a car having an accident. ",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about a car having an accident.  — scene 1 of 3",
+      "narrationText": "Make a video about a car having an accident.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about a car having an accident.  — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video about a car having an accident.  — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-05T18:40:08.783Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

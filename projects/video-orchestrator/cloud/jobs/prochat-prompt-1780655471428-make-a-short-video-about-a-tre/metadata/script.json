@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780655471428-make-a-short-video-about-a-tre",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780655471428",
+  "status": "approved",
+  "title": "Make a short video about a tree.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780655471428-make-a-short-video-about-a-tre/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-05T10:31:11.428Z",
+  "updatedAt": "2026-06-05T10:31:19.178Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "codex-fail-loud-proof",
+    "approvedAt": "2026-06-05T10:31:19.178Z"
+  }
+}

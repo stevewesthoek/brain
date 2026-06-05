@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780674866474",
+  "status": "approved",
+  "title": "Make a video about a cozy nursery with soft toys and warm sunlight.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780674866474-make-a-video-about-a-cozy-nurs/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-05T15:54:26.474Z",
+  "updatedAt": "2026-06-05T15:54:32.692Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-05T15:54:32.692Z"
+  }
+}

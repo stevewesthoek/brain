@@ -1,0 +1,31 @@
+{
+  "jobId": "says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre",
+  "provider": "deterministic-placeholder",
+  "createdAt": "2026-06-05T08:37:21.410Z",
+  "scenes": [
+    {
+      "index": 1,
+      "visualPrompt": "Make a short video about a tree. — scene 1 of 3",
+      "imageKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/images/scene-001.svg",
+      "durationSeconds": 20,
+      "narrationText": "Make a short video about a tree.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "visualPrompt": "Make a short video about a tree. — scene 2 of 3",
+      "imageKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/images/scene-002.svg",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "visualPrompt": "Make a short video about a tree. — scene 3 of 3",
+      "imageKey": "jobs/says-the-bible-prompt-1780648624879-make-a-short-video-about-a-tre/images/scene-003.svg",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

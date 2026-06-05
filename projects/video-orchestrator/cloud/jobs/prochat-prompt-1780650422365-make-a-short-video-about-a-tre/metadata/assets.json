@@ -1,0 +1,18 @@
+{
+  "jobId": "prochat-prompt-1780650422365-make-a-short-video-about-a-tre",
+  "mediaSource": "fixture",
+  "generationMode": "fixture_assembly",
+  "videoSourceKey": "jobs/test-001/exports/sample-transcoded.mp4",
+  "audioSourceKey": "jobs/test-001/audio/narration.mp3",
+  "aiGenerated": false,
+  "narration": {
+    "path": "jobs/prochat-prompt-1780650422365-make-a-short-video-about-a-tre/audio/narration.mp3",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/audio/narration.mp3"
+  },
+  "sourceVideo": {
+    "path": "jobs/prochat-prompt-1780650422365-make-a-short-video-about-a-tre/video-generated/generated-001.mp4",
+    "source": "fixture",
+    "sourceKey": "jobs/test-001/exports/sample-transcoded.mp4"
+  }
+}
