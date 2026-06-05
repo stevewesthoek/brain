@@ -609,9 +609,15 @@ fi
 
 if [[ "$REQUIRE_REVIEW_APPROVED" -eq 1 ]]; then
   if [[ "${review_status:-}" != "approved" ]]; then
-    fail "--require-review-approved set but reviewStatus is not approved"
+    fail "--require-review-approved set but reviewStatus is not approved (got: ${review_status:-<empty>})"
   else
     pass "reviewStatus approved"
+  fi
+fi
+
+if [[ "${review_status:-pending}" != "approved" && "$REQUIRE_REVIEW_APPROVED" -ne 1 ]]; then
+  if [[ "$MODE" == hybrid_slideshow || "$MODE" == hybrid_image_slideshow ]]; then
+    info "reviewStatus is ${review_status:-pending} (not approved yet); consider running with --require-review-approved once generation completes"
   fi
 fi
 

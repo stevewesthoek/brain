@@ -1633,6 +1633,7 @@ function buildReviewMedia(
   assetsJson: Record<string, unknown> | null,
   resolved: PublishableAssetsResolution,
   thumbnailJson?: Record<string, unknown> | null,
+  youtubePackageJson?: Record<string, unknown> | null,
 ): VideoReviewMedia {
   const publishRecord = publishJson ?? {};
   const assetsRecord = assetsJson ?? {};
@@ -1646,16 +1647,17 @@ function buildReviewMedia(
     sceneImageKeys = assetsRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string');
   }
 
-  // Merge field resolution: prefer publishJson, then assetsJson, then resolved/defaults
+  // Merge field resolution: prefer publishJson, then assetsJson, then resolved
   const scenePlanKey = stringValue(publishRecord.scenePlanKey) ?? stringValue(assetsRecord.scenePlanKey) ?? null;
   const narrationScriptKey = stringValue(publishRecord.narrationScriptKey) ?? stringValue(assetsRecord.narrationScriptKey) ?? null;
-  const audioKey = stringValue(publishRecord.audioKey) ?? stringValue(assetsRecord.audioKey) ?? `jobs/${jobId}/audio/narration.mp3`;
+  const audioKey = stringValue(publishRecord.audioKey) ?? stringValue(assetsRecord.audioKey) ?? null;
   const videoKey = stringValue(publishRecord.videoKey) ?? stringValue(assetsRecord.videoKey) ?? resolved.videoKey ?? null;
   const thumbnailKey = stringValue(thumbRecord.thumbnailKey)
     ?? stringValue(publishRecord.thumbnailKey)
     ?? stringValue(assetsRecord.thumbnailKey)
     ?? resolved.thumbnailKey
     ?? null;
+  const youtubePackageKey = stringValue(youtubePackageJson?.youtubePackageKey) ?? `jobs/${jobId}/metadata/youtube-package.json`;
 
   return {
     scenePlanKey,
@@ -1665,6 +1667,7 @@ function buildReviewMedia(
     videoKey,
     thumbnailKey,
     publishKey: `jobs/${jobId}/metadata/publish.json`,
+    youtubePackageKey,
   };
 }
 
@@ -1674,6 +1677,7 @@ function createPendingReview(
   assetsJson: Record<string, unknown> | null,
   resolved: PublishableAssetsResolution,
   thumbnailJson?: Record<string, unknown> | null,
+  youtubePackageJson?: Record<string, unknown> | null,
   existing?: VideoReviewMetadata | null,
 ): VideoReviewMetadata {
   const now = new Date().toISOString();
@@ -1686,7 +1690,7 @@ function createPendingReview(
     reviewedAt: existing?.reviewedAt ?? null,
     reviewedBy: existing?.reviewedBy ?? null,
     notes: existing?.notes ?? null,
-    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson),
+    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson),
   };
 }
 
@@ -1721,6 +1725,7 @@ async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null
       videoKey: stringValue(media.videoKey),
       thumbnailKey: stringValue(media.thumbnailKey),
       publishKey: stringValue(media.publishKey),
+      youtubePackageKey: stringValue(media.youtubePackageKey),
     },
   };
 }
@@ -1753,9 +1758,10 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
   }
 
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
+  const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
   const existing = await readReviewJson(jobId);
   if (existing) {
-    const updated = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson, existing);
+    const updated = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson, existing);
     const same = updated.reviewStatus === existing.reviewStatus
       && updated.createdAt === existing.createdAt
       && updated.notes === existing.notes
@@ -1771,7 +1777,7 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
     return updated;
   }
   if (!publishJson && !resolved.videoKey && !resolved.thumbnailKey) return null;
-  const created = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson);
+  const created = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson);
   try {
     await writeReviewJson(jobId, created);
   } catch (err) {
@@ -2115,10 +2121,35 @@ export async function approveVideoReview(
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
   const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
+  const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
   const resolved = await resolvePublishableAssets(jobId);
   const current = await getOrCreateReview(jobId);
   if (!current) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
+  }
+
+  // Build fresh media to validate completeness
+  const media = buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson);
+
+  // Validate all mandatory media fields are present
+  const missing: string[] = [];
+  if (!media.scenePlanKey) missing.push('scenePlanKey');
+  if (!media.narrationScriptKey) missing.push('narrationScriptKey');
+  if (!media.audioKey) missing.push('audioKey');
+  if (media.sceneImageKeys.length === 0) missing.push('sceneImageKeys');
+  if (!media.videoKey) missing.push('videoKey');
+  if (!media.thumbnailKey) missing.push('thumbnailKey');
+  if (!media.publishKey) missing.push('publishKey');
+  if (!media.youtubePackageKey) missing.push('youtubePackageKey');
+
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      code: 'review_media_incomplete',
+      error: `Cannot approve review: missing required media fields: ${missing.join(', ')}`,
+      jobId,
+      details: { missing },
+    } as unknown as VideoReviewError;
   }
 
   const now = new Date().toISOString();
@@ -2129,7 +2160,7 @@ export async function approveVideoReview(
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes,
-    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson),
+    media,
   };
   try {
     await writeReviewJson(jobId, approved);
@@ -2153,6 +2184,7 @@ export async function requestVideoReviewChanges(
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
   const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
+  const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
   const resolved = await resolvePublishableAssets(jobId);
   const current = await getOrCreateReview(jobId);
   if (!current) {
@@ -2167,7 +2199,7 @@ export async function requestVideoReviewChanges(
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes ?? 'Changes requested',
-    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson),
+    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson, youtubePackageJson),
   };
   try {
     await writeReviewJson(jobId, requested);
@@ -2289,6 +2321,7 @@ export interface VideoReviewMedia {
   videoKey: string | null;
   thumbnailKey: string | null;
   publishKey: string | null;
+  youtubePackageKey: string | null;
 }
 
 export interface VideoReviewMetadata {
@@ -2309,9 +2342,10 @@ export interface VideoReviewResponse {
 
 export interface VideoReviewError {
   ok: false;
-  code: 'invalid_job_id' | 'review_not_found' | 'review_write_failed' | 'invalid_body';
+  code: 'invalid_job_id' | 'review_not_found' | 'review_write_failed' | 'invalid_body' | 'review_media_incomplete';
   error: string;
   jobId?: string;
+  details?: Record<string, unknown>;
 }
 
 export async function generateApprovedScript(
