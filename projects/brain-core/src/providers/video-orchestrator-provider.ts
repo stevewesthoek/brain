@@ -2341,6 +2341,13 @@ export async function generateApprovedScript(
               bucket: S3_BUCKET,
               region: AWS_REGION,
             });
+            await execFileAsync('aws', [
+              's3', 'cp',
+              `s3://${S3_BUCKET}/${pngS3Key}`,
+              pngPath,
+              '--region', AWS_REGION,
+              '--no-cli-pager',
+            ]);
           } else {
             const generatedSvgPath = await storyboardProvider.generateStoryboardImage(
               {

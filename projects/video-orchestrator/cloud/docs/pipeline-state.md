@@ -210,6 +210,17 @@ AWS_VIDEO_IMAGE_REGION=us-east-1
 
 `hybrid_image_slideshow` does not silently fall back to placeholders. If `AWS_VIDEO_IMAGE_PROVIDER` is missing, the job fails with `currentStep=image_provider_not_configured`. `deterministic-placeholder` is allowed only when explicitly selected for development proof mode.
 
+Verified provider contract:
+
+- Provider: `aws-bedrock-nova-canvas`
+- Model ID: `amazon.nova-canvas-v1:0`
+- Region: `us-east-1`
+- API: `aws bedrock-runtime invoke-model`
+- Request body: `taskType=TEXT_IMAGE`, `textToImageParams.text`, and `imageGenerationConfig`
+- Proof command: `projects/video-orchestrator/cloud/scripts/bedrock-image-proof.sh nova "A peaceful tree in a sunny meadow" /tmp/tree.png`
+
+Titan Image is not the selected provider. It is visible in some regions, but is marked legacy and produced legacy-access blocking outside `us-east-1`.
+
 **What it does:**
 - Generates prompt-derived scene plan
 - Generates prompt-derived narration script from scene descriptions

@@ -521,6 +521,7 @@ export function AwsVideoDashboard() {
   const imageProvider = stringField(artifactData, 'imageProvider');
   const imageModelId = stringField(artifactData, 'imageModelId');
   const imageGenerated = artifactData?.imageGenerated === true;
+  const partialAiGenerated = artifactData?.partialAiGenerated === true;
   const slideshowGenerated = artifactData?.slideshowGenerated === true;
   const videoProvider = stringField(artifactData, 'videoProvider');
   const hasScenePlan = Boolean(scenePlanKey || asRecord(artifactData?.scenePlan));
@@ -748,6 +749,7 @@ export function AwsVideoDashboard() {
                     {imageModelId ? <div><span>Image model</span><strong>{imageModelId}</strong></div> : null}
                     <div><span>Video provider</span><strong>{videoProvider ?? 'local-ffmpeg-slideshow'}</strong></div>
                     {isHybridImageSlideshowMode ? <div><span>imageGenerated</span><strong>{imageGenerated ? 'true' : 'false'}</strong></div> : null}
+                    {isHybridImageSlideshowMode ? <div><span>partialAiGenerated</span><strong>{partialAiGenerated ? 'true' : 'false'}</strong></div> : null}
                     <div><span>slideshowGenerated</span><strong>{slideshowGenerated ? 'true' : 'false'}</strong></div>
                     <div><span>Video key</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{generatedVideoKey ?? 'pending'}</strong></div>
                     <div><span>Scene image count</span><strong>{sceneImageKeys.length}</strong></div>
