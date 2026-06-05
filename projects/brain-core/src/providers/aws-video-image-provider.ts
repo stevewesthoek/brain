@@ -114,7 +114,10 @@ function validateNovaCanvasDimensions(width: number, height: number): void {
 }
 
 function buildFinalImagePrompt(input: SceneImageProviderInput): { finalImagePrompt: string; negativePrompt: string } {
-  const base = input.visualPrompt.trim();
+  const rawBase = input.visualPrompt.trim();
+  const base = /\b(bab(?:y|ies)|infant|toddler|child(?:ren)?|k(?:id|ids))\b/i.test(rawBase)
+    ? `${rawBase}. Show a warm symbolic nursery or family-friendly environment with soft toys, blankets, sunlight, and gentle details. Do not show identifiable people, faces, or minors.`
+    : rawBase;
   const onScreenText = input.onScreenText?.trim();
   const promptParts = [
     base,
@@ -123,7 +126,7 @@ function buildFinalImagePrompt(input: SceneImageProviderInput): { finalImageProm
   ].filter((part): part is string => Boolean(part));
   return {
     finalImagePrompt: promptParts.join('. ').replace(/\s+/g, ' ').trim(),
-    negativePrompt: 'text, watermark, logo, distorted faces, extra limbs',
+    negativePrompt: 'text, watermark, logo, distorted faces, extra limbs, identifiable faces, identifiable minors',
   };
 }
 
