@@ -722,10 +722,11 @@ async function reconcileJobWithAwsExecution(jobId: string, statusJson: Record<st
   return statusJson;
 }
 
-async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?: boolean }): Promise<VideoJobSummary | null> {
+async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?: boolean; skipAwsReconciliation?: boolean }): Promise<VideoJobSummary | null> {
   if (!isValidJobId(jobId)) return null;
 
   const shouldInferS3Artifacts = !options?.skipS3Inference;
+  const shouldReconcileAwsExecution = !options?.skipAwsReconciliation;
   const readOps: Promise<unknown>[] = [
     readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
     readOptionalJson(getJobMetadataPath(jobId, 'topic.json')),
@@ -741,9 +742,12 @@ async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?:
 
   if (!script) return null;
 
-  // Reconcile with AWS execution status (silent reconciliation to update status.json)
+  // Reconcile with AWS execution status only for detail views.
+  // Recent-job/status list hydration must stay fast and avoid per-job AWS CLI calls.
   const statusJsonRaw = status as Record<string, unknown> | null;
-  const statusJson = await reconcileJobWithAwsExecution(jobId, statusJsonRaw);
+  const statusJson = shouldReconcileAwsExecution
+    ? await reconcileJobWithAwsExecution(jobId, statusJsonRaw)
+    : statusJsonRaw;
 
   const inferredArts = shouldInferS3Artifacts && inferredArtifacts ? inferredArtifacts : { narration: null, finalVideo: null, thumbnail: null };
   const hasInferredPublishAssets = Boolean(inferredArts.finalVideo && inferredArts.thumbnail);
@@ -820,7 +824,7 @@ async function getJobSkipReason(jobId: string): Promise<string> {
   }
 }
 
-async function buildVideoJobSummaryWithDiagnostics(jobId: string, options?: { skipS3Inference?: boolean }): Promise<
+async function buildVideoJobSummaryWithDiagnostics(jobId: string, options?: { skipS3Inference?: boolean; skipAwsReconciliation?: boolean }): Promise<
   | { job: VideoJobSummary; skipped: null }
   | { job: null; skipped: { jobId: string; reason: string } }
 > {
@@ -927,7 +931,7 @@ export async function getRecentVideoJobsResult(limit: number = 20): Promise<Rece
   const results = await mapWithConcurrency(
     jobIds,
     RECENT_JOB_HYDRATION_CONCURRENCY,
-    (jobId) => buildVideoJobSummaryWithDiagnostics(jobId, { skipS3Inference: true }),
+    (jobId) => buildVideoJobSummaryWithDiagnostics(jobId, { skipS3Inference: true, skipAwsReconciliation: true }),
   );
   const durationMs = Date.now() - startTime;
   const jobs = results.flatMap(result => result.job ? [result.job] : []);
