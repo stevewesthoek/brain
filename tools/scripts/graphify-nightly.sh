@@ -5,10 +5,9 @@ REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 STATE_DIR="${GRAPHIFY_STATE_DIR:-$HOME/.local/state/office-scheduler/graphify-nightly}"
 SELECTOR_URL="${AI_SELECTOR_URL:-http://127.0.0.1:4890}"
 TASK_TYPE="${GRAPHIFY_SELECTOR_TASK_TYPE:-codebase_semantic_graph}"
-MAX_FIRST_BUILDS="${GRAPHIFY_MAX_FIRST_BUILDS:-1}"
-MAX_UPDATES="${GRAPHIFY_MAX_UPDATES:-12}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-7200}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
+SCHEDULER_CUTOFF_HOUR="${GRAPHIFY_SCHEDULER_CUTOFF_HOUR:-7}"
 
 mkdir -p "$STATE_DIR"
 chmod 700 "$STATE_DIR"
@@ -159,6 +158,16 @@ raise SystemExit(result.returncode)
 PY
 }
 
+check_scheduler_cutoff() {
+  local hour_lisbon
+  hour_lisbon="$(TZ=Europe/Lisbon date +%H)"
+  if (( 10#$hour_lisbon >= SCHEDULER_CUTOFF_HOUR )); then
+    log "reached $SCHEDULER_CUTOFF_HOUR:00 cutoff, not starting new repos"
+    return 1
+  fi
+  return 0
+}
+
 discover_repos() {
   local root
   for root in $REPO_ROOTS; do
@@ -181,14 +190,17 @@ safe_model_unavailable=0
 
 while IFS= read -r repo; do
   [[ -n "$repo" ]] || continue
+
+  # Time boundary check: stop starting new repos after cutoff hour, but finish in-progress tasks
+  if ! check_scheduler_cutoff; then
+    log "skipping repo=$repo reason=scheduler_cutoff"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
   graph_json="$repo/graphify-out/graph.json"
 
   if [[ -f "$graph_json" ]]; then
-    if (( updates >= MAX_UPDATES )); then
-      log "skipping repo=$repo reason=update_limit max=$MAX_UPDATES"
-      skipped=$((skipped + 1))
-      continue
-    fi
     log "updating repo=$repo"
     if run_repo_command "$repo" "$GRAPHIFY_BIN" update "$repo"; then
       updates=$((updates + 1))
@@ -197,12 +209,6 @@ while IFS= read -r repo; do
       failed=$((failed + 1))
       log "failed repo=$repo phase=update"
     fi
-    continue
-  fi
-
-  if (( first_builds >= MAX_FIRST_BUILDS )); then
-    log "skipping repo=$repo reason=first_build_limit max=$MAX_FIRST_BUILDS"
-    skipped=$((skipped + 1))
     continue
   fi
 
