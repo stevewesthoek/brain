@@ -429,10 +429,6 @@ function ReviewCard({
   setNotes: (value: string) => void;
   isRecommended?: boolean;
 }) {
-  const [thumbnailLoading, setThumbnailLoading] = useState(false);
-  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
-  const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
-
   if (!jobId) return null;
   const media = reviewData?.media;
   const imageKeys = media?.sceneImageKeys ?? [];
@@ -442,22 +438,21 @@ function ReviewCard({
     ? `aws s3 cp "s3://${bucket}/${key}" - --region ${region}`
     : `# ${label} not available`;
 
-  const loadThumbnail = async () => {
-    if (!jobId || !media?.thumbnailKey) return;
-    setThumbnailLoading(true);
-    setThumbnailError(null);
-    try {
-      const response = await fetch(`/api/video-orchestrator/jobs/${jobId}/thumbnail`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setThumbnailDataUrl(url);
-    } catch (error) {
-      setThumbnailError(error instanceof Error ? error.message : 'Failed to load thumbnail');
-    } finally {
-      setThumbnailLoading(false);
-    }
-  };
+  // Compute missing media fields for validation
+  const requiredMediaFields = [
+    { key: 'scenePlanKey', label: 'Scene plan' },
+    { key: 'narrationScriptKey', label: 'Narration script' },
+    { key: 'audioKey', label: 'Narration audio' },
+    { key: 'videoKey', label: 'Final MP4' },
+    { key: 'thumbnailKey', label: 'Thumbnail' },
+    { key: 'publishKey', label: 'Publish JSON' },
+    { key: 'youtubePackageKey', label: 'YouTube package' },
+  ];
+  const missingReviewMediaFields = requiredMediaFields.filter(field => {
+    if (field.key === 'sceneImageKeys') return (media?.sceneImageKeys?.length ?? 0) === 0;
+    return !media?.[field.key as keyof typeof media];
+  });
+  const mediaComplete = missingReviewMediaFields.length === 0 && (media?.sceneImageKeys?.length ?? 0) > 0;
 
   return (
     <article className="card">
@@ -469,31 +464,13 @@ function ReviewCard({
             <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.5rem' }}>
               <code style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>{media.thumbnailKey}</code>
             </div>
-            {!thumbnailDataUrl && !thumbnailError && (
-              <button
-                className="button small"
-                disabled={thumbnailLoading}
-                onClick={loadThumbnail}
-                style={{ marginRight: '0.5rem' }}
-              >
-                {thumbnailLoading ? 'Loading...' : 'Load thumbnail'}
-              </button>
-            )}
-            {thumbnailDataUrl && (
-              <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
-                <img
-                  src={thumbnailDataUrl}
-                  alt="Generated thumbnail"
-                  style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid #d0d0d0' }}
-                  onLoad={() => setThumbnailError(null)}
-                />
-              </div>
-            )}
-            {thumbnailError && (
-              <div style={{ fontSize: '0.85rem', color: '#d32f2f', marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: '#ffebee', borderRadius: '3px' }}>
-                Failed to load: {thumbnailError}
-              </div>
-            )}
+            <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+              <img
+                src={`/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?ts=${encodeURIComponent(reviewData?.updatedAt ?? '')}`}
+                alt="Generated thumbnail"
+                style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid #d0d0d0' }}
+              />
+            </div>
             <button
               className="button small"
               onClick={() => {
@@ -519,11 +496,25 @@ function ReviewCard({
         <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{reviewData?.media.publishKey ? reviewData.media.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
       </div>
       <div className="compact-error">Generated media must be reviewed before YouTube dry-run or private publish.</div>
+      {missingReviewMediaFields.length > 0 && (
+        <div style={{ fontSize: '0.85rem', color: '#d32f2f', padding: '0.75rem', backgroundColor: '#ffebee', borderRadius: '4px', marginBottom: '0.75rem' }}>
+          <strong>Cannot approve: Missing fields</strong>
+          <div style={{ marginTop: '0.25rem' }}>
+            {missingReviewMediaFields.map(field => field.label).join(', ')}
+          </div>
+        </div>
+      )}
       <div className="stack">
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
-          <button className={isRecommended ? 'button next-action' : 'button'} disabled={!jobId || approvePending} onClick={onApprove}>Approve review</button>
+          <button
+            className={mediaComplete && reviewData?.reviewStatus !== 'approved' && isRecommended ? 'button next-action' : 'button'}
+            disabled={!jobId || approvePending || !mediaComplete}
+            onClick={onApprove}
+          >
+            Approve review
+          </button>
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>Request changes</button>
         </div>
       </div>
@@ -536,6 +527,7 @@ function ReviewCard({
           <div><span>Final MP4</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.videoKey ?? 'missing'}</strong></div>
           <div><span>Thumbnail</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.thumbnailKey ?? 'missing'}</strong></div>
           <div><span>Publish JSON</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.publishKey ?? 'missing'}</strong></div>
+          <div><span>YouTube package</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.youtubePackageKey ?? 'missing'}</strong></div>
         </div>
         {imageKeys.length > 0 ? (
           <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
@@ -556,6 +548,7 @@ function ReviewCard({
           <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.videoKey ?? null, 'final MP4')}</code>
           <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.thumbnailKey ?? null, 'thumbnail')}</code>
           <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.publishKey ?? null, 'publish JSON')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.youtubePackageKey ?? null, 'youtube package')}</code>
         </div>
       </details>
       {artifactData ? (
@@ -675,11 +668,29 @@ export function AwsVideoDashboard() {
   });
   const approveReview = useMutation({
     mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/approve`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }),
-    onSuccess: async (_, { jobIdArg }) => { addActivity(`Approved review for ${jobIdArg}`); await invalidateVideo(); },
+    onSuccess: async (result, { jobIdArg }) => {
+      addActivity(`Approved review for ${jobIdArg}`);
+      // Focused invalidation for immediate unlock
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['aws-video-review', jobIdArg] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
+      ]);
+    },
   });
   const requestReviewChanges = useMutation({
     mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/request-changes`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }),
-    onSuccess: async (_, { jobIdArg }) => { addActivity(`Requested review changes for ${jobIdArg}`); await invalidateVideo(); },
+    onSuccess: async (result, { jobIdArg }) => {
+      addActivity(`Requested review changes for ${jobIdArg}`);
+      // Focused invalidation
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['aws-video-review', jobIdArg] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
+      ]);
+    },
   });
 
   const generate = useMutation({
