@@ -70,3 +70,66 @@ export function publishGateDecision(input: {
   // No review gate, or review already approved: proceed to asset resolution
   return 'asset_check_needed';
 }
+
+/**
+ * Validate generated-media mode publish assets.
+ * For hybrid_slideshow_video and hybrid_image_slideshow_video, ensure:
+ * - videoKey does not point to fixture (jobs/test-001)
+ * - thumbnailKey exists and points to generated location
+ * - videoKey must point to jobs/<jobId>/exports/ or jobs/<jobId>/video-generated/
+ *
+ * Returns { valid: true } or { valid: false, reason: "..." }
+ */
+export function validateGeneratedMediaPublishAssets(input: {
+  generationMode: string | null | undefined;
+  videoKey: string | null | undefined;
+  thumbnailKey: string | null | undefined;
+  jobId: string;
+}): { valid: true } | { valid: false; reason: string } {
+  const mode = input.generationMode;
+  const jobId = input.jobId;
+  const videoKey = input.videoKey;
+  const thumbnailKey = input.thumbnailKey;
+
+  // Only validate hybrid_slideshow_video and hybrid_image_slideshow_video
+  if (mode !== 'hybrid_slideshow_video' && mode !== 'hybrid_image_slideshow_video') {
+    // Other modes (fixture/hybrid_tts, etc.) can use any key
+    return { valid: true };
+  }
+
+  // Validate videoKey
+  if (!videoKey || typeof videoKey !== 'string' || videoKey.length === 0) {
+    return { valid: false, reason: 'videoKey is missing for generated-media mode' };
+  }
+  if (videoKey.includes('jobs/test-001')) {
+    return { valid: false, reason: `videoKey must not point to fixture (test-001): ${videoKey}` };
+  }
+  if (!videoKey.includes(`jobs/${jobId}`)) {
+    return { valid: false, reason: `videoKey must belong to this job (${jobId}): ${videoKey}` };
+  }
+  if (!videoKey.includes('/exports/') && !videoKey.includes('/video-generated/')) {
+    return {
+      valid: false,
+      reason: `videoKey must be in exports/ or video-generated/ subdirectory: ${videoKey}`,
+    };
+  }
+
+  // Validate thumbnailKey
+  if (!thumbnailKey || typeof thumbnailKey !== 'string' || thumbnailKey.length === 0) {
+    return { valid: false, reason: 'thumbnailKey is missing for generated-media mode' };
+  }
+  if (thumbnailKey.includes('jobs/test-001')) {
+    return { valid: false, reason: `thumbnailKey must not point to fixture (test-001): ${thumbnailKey}` };
+  }
+  if (!thumbnailKey.includes(`jobs/${jobId}`)) {
+    return { valid: false, reason: `thumbnailKey must belong to this job (${jobId}): ${thumbnailKey}` };
+  }
+  if (!thumbnailKey.includes('/exports/')) {
+    return {
+      valid: false,
+      reason: `thumbnailKey must be in exports/ subdirectory: ${thumbnailKey}`,
+    };
+  }
+
+  return { valid: true };
+}

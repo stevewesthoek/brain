@@ -6,6 +6,7 @@ import {
   shouldRequireReviewGate,
   isReviewApproved,
   publishGateDecision,
+  validateGeneratedMediaPublishAssets,
   type ReviewStatus,
 } from '../providers/video-orchestrator-publish-gate.js';
 
@@ -296,4 +297,190 @@ test('O: gate decision matrix - all combinations', (t) => {
       `${tc.name}: expected ${tc.expected}, got ${decision}`
     );
   }
+});
+
+/**
+ * TEST SUITE: validateGeneratedMediaPublishAssets
+ *
+ * Validates that generated-media modes (hybrid_slideshow_video, hybrid_image_slideshow_video)
+ * have strict asset validation: no fixture fallback, videoKey/thumbnailKey must belong to jobId,
+ * and paths must be in /exports/ or /video-generated/ subdirectories.
+ */
+
+/**
+ * Test P: validateGeneratedMediaPublishAssets - fixture mode skips validation
+ *
+ * Non-generated-media modes (fixture, hybrid_tts_fixture_video, etc.) should
+ * always return { valid: true } regardless of asset keys.
+ */
+test('P: validateGeneratedMediaPublishAssets skips fixture modes', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_tts_fixture_video',
+    videoKey: 'jobs/test-001/exports/video.mp4',
+    thumbnailKey: 'jobs/test-001/exports/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.deepStrictEqual(result, { valid: true }, 'fixture mode should skip validation');
+});
+
+/**
+ * Test Q: validateGeneratedMediaPublishAssets - missing videoKey rejects
+ */
+test('Q: validateGeneratedMediaPublishAssets rejects missing videoKey', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_slideshow_video',
+    videoKey: null,
+    thumbnailKey: 'jobs/xyz-123/exports/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'missing videoKey should fail');
+  assert(result.valid === false && result.reason.includes('videoKey is missing'), 'should mention videoKey missing');
+});
+
+/**
+ * Test R: validateGeneratedMediaPublishAssets - missing thumbnailKey rejects
+ */
+test('R: validateGeneratedMediaPublishAssets rejects missing thumbnailKey', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/xyz-123/exports/video.mp4',
+    thumbnailKey: null,
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'missing thumbnailKey should fail');
+  assert(result.valid === false && result.reason.includes('thumbnailKey is missing'), 'should mention thumbnailKey missing');
+});
+
+/**
+ * Test S: validateGeneratedMediaPublishAssets - fixture videoKey rejects
+ *
+ * This is the critical production incident: hybrid_image_slideshow must not
+ * allow videoKey pointing to jobs/test-001.
+ */
+test('S: validateGeneratedMediaPublishAssets rejects fixture videoKey (test-001)', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/test-001/exports/video.mp4',
+    thumbnailKey: 'jobs/xyz-123/exports/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'fixture videoKey should fail');
+  assert(result.valid === false && result.reason.includes('test-001'), 'should mention test-001 fixture');
+});
+
+/**
+ * Test T: validateGeneratedMediaPublishAssets - fixture thumbnailKey rejects
+ */
+test('T: validateGeneratedMediaPublishAssets rejects fixture thumbnailKey (test-001)', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_slideshow_video',
+    videoKey: 'jobs/xyz-123/exports/video.mp4',
+    thumbnailKey: 'jobs/test-001/exports/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'fixture thumbnailKey should fail');
+  assert(result.valid === false && result.reason.includes('test-001'), 'should mention test-001 fixture');
+});
+
+/**
+ * Test U: validateGeneratedMediaPublishAssets - mismatched jobId rejects
+ */
+test('U: validateGeneratedMediaPublishAssets rejects mismatched jobId in videoKey', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/different-123/exports/video.mp4',
+    thumbnailKey: 'jobs/xyz-123/exports/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'mismatched jobId should fail');
+  assert(result.valid === false && result.reason.includes('must belong to this job'), 'should mention jobId mismatch');
+});
+
+/**
+ * Test V: validateGeneratedMediaPublishAssets - videoKey not in exports/video-generated rejects
+ */
+test('V: validateGeneratedMediaPublishAssets rejects videoKey not in exports/ or video-generated/', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_slideshow_video',
+    videoKey: 'jobs/xyz-123/metadata/video.mp4',
+    thumbnailKey: 'jobs/xyz-123/exports/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'videoKey not in exports/video-generated should fail');
+  assert(result.valid === false && result.reason.includes('exports/ or video-generated/'), 'should mention subdirectory requirement');
+});
+
+/**
+ * Test W: validateGeneratedMediaPublishAssets - thumbnailKey not in exports/ rejects
+ */
+test('W: validateGeneratedMediaPublishAssets rejects thumbnailKey not in exports/', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/xyz-123/exports/video.mp4',
+    thumbnailKey: 'jobs/xyz-123/metadata/thumb.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.strictEqual(result.valid, false, 'thumbnailKey not in exports/ should fail');
+  assert(result.valid === false && result.reason.includes('exports/'), 'should mention exports/ requirement');
+});
+
+/**
+ * Test X: validateGeneratedMediaPublishAssets - valid with exports paths
+ */
+test('X: validateGeneratedMediaPublishAssets accepts valid exports paths', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_slideshow_video',
+    videoKey: 'jobs/xyz-123/exports/slideshow.mp4',
+    thumbnailKey: 'jobs/xyz-123/exports/thumbnail-001.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.deepStrictEqual(result, { valid: true }, 'valid exports paths should pass');
+});
+
+/**
+ * Test Y: validateGeneratedMediaPublishAssets - valid with video-generated path for videoKey
+ */
+test('Y: validateGeneratedMediaPublishAssets accepts video-generated/ path for videoKey', (t) => {
+  const result = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/xyz-123/video-generated/slideshow-final.mp4',
+    thumbnailKey: 'jobs/xyz-123/exports/thumbnail-001.jpg',
+    jobId: 'xyz-123',
+  });
+
+  assert.deepStrictEqual(result, { valid: true }, 'valid video-generated/ videoKey should pass');
+});
+
+/**
+ * Test Z: validateGeneratedMediaPublishAssets - hybrid_image_slideshow_video specifically
+ *
+ * Ensures the mode that had the production incident is properly validated.
+ */
+test('Z: validateGeneratedMediaPublishAssets validates hybrid_image_slideshow_video', (t) => {
+  // Valid case
+  const validResult = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/abc-999/exports/image-slideshow.mp4',
+    thumbnailKey: 'jobs/abc-999/exports/thumb.jpg',
+    jobId: 'abc-999',
+  });
+  assert.deepStrictEqual(validResult, { valid: true }, 'valid hybrid_image_slideshow should pass');
+
+  // Invalid: fixture videoKey
+  const invalidResult = validateGeneratedMediaPublishAssets({
+    generationMode: 'hybrid_image_slideshow_video',
+    videoKey: 'jobs/test-001/exports/proof-video.mp4',
+    thumbnailKey: 'jobs/abc-999/exports/thumb.jpg',
+    jobId: 'abc-999',
+  });
+  assert.strictEqual(invalidResult.valid, false, 'fixture videoKey should fail');
 });

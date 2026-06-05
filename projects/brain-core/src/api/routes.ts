@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish } from '../providers/video-orchestrator-provider.js';
+import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish, getVideoJobThumbnail } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2336,6 +2336,32 @@ export async function routeRequest(
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch job artifacts',
           });
+        }
+        return;
+      }
+
+      const jobThumbnailMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/thumbnail$/.exec(url.pathname);
+      if (jobThumbnailMatch) {
+        try {
+          const jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
+          const result = await getVideoJobThumbnail(jobId);
+          if (!result.success) {
+            response.writeHead(404, { 'Content-Type': 'application/json' });
+            response.end(JSON.stringify({ ok: false, error: `Thumbnail not found for job: ${jobId}` }));
+          } else {
+            response.writeHead(200, {
+              'Content-Type': result.mimeType,
+              'Content-Length': String(result.data.length),
+              'Cache-Control': 'public, max-age=3600',
+            });
+            response.end(result.data as unknown as string);
+          }
+        } catch (error) {
+          response.writeHead(500, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job thumbnail',
+          }));
         }
         return;
       }

@@ -523,6 +523,55 @@ else
   info "youtube-package.json check skipped for mode: $MODE"
 fi
 
+# Check canonical thumbnail metadata and file
+thumbnail_metadata_key="$(object_key "metadata/thumbnail.json")"
+if [[ "$MODE" == hybrid_image_slideshow ]]; then
+  if optional_object "$thumbnail_metadata_key"; then
+    thumbnail_metadata_json="$tmp_dir/thumbnail.json"
+    download_object "$thumbnail_metadata_key" "$thumbnail_metadata_json"
+    pass "exists: $thumbnail_metadata_key"
+
+    thumb_key="$(json_value "$thumbnail_metadata_json" '.thumbnailKey')"
+    thumb_provider="$(json_value "$thumbnail_metadata_json" '.provider')"
+    thumb_status="$(json_value "$thumbnail_metadata_json" '.thumbnailStatus')"
+    thumb_width="$(json_value "$thumbnail_metadata_json" '.width')"
+    thumb_height="$(json_value "$thumbnail_metadata_json" '.height')"
+
+    if [[ -z "$thumb_status" ]]; then
+      fail "thumbnail.json must have .thumbnailStatus"
+    else
+      pass "thumbnail.json .thumbnailStatus: $thumb_status"
+    fi
+
+    if [[ "$thumb_status" == "generated" ]]; then
+      if [[ -z "$thumb_key" ]]; then
+        fail "thumbnail.json .thumbnailKey missing (status=generated)"
+      else
+        pass "thumbnail.json .thumbnailKey: $thumb_key"
+        if optional_object "$thumb_key"; then
+          pass "canonical thumbnail file exists at: $thumb_key"
+        else
+          fail "canonical thumbnail file not found in S3: $thumb_key"
+        fi
+      fi
+      if [[ -z "$thumb_provider" ]]; then
+        fail "thumbnail.json .provider missing"
+      else
+        pass "thumbnail.json .provider: $thumb_provider"
+      fi
+      if [[ -z "$thumb_width" || -z "$thumb_height" ]]; then
+        fail "thumbnail.json dimensions missing"
+      else
+        pass "thumbnail.json dimensions: ${thumb_width}x${thumb_height}"
+      fi
+    fi
+  else
+    info "metadata/thumbnail.json not present; thumbnail generation may still be pending"
+  fi
+else
+  info "canonical thumbnail check skipped for mode: $MODE"
+fi
+
 publish_check_key="$(object_key "metadata/publish-check.json")"
 if optional_object "$publish_check_key"; then
   publish_check_json="$tmp_dir/publish-check.json"
@@ -563,6 +612,53 @@ if [[ "$REQUIRE_REVIEW_APPROVED" -eq 1 ]]; then
     fail "--require-review-approved set but reviewStatus is not approved"
   else
     pass "reviewStatus approved"
+  fi
+fi
+
+# Check generated-media publish safety: ensure videoKey/thumbnailKey don't point to fixture
+if [[ "$MODE" == hybrid_slideshow || "$MODE" == hybrid_image_slideshow ]]; then
+  if [[ -f "$tmp_dir/publish.json" ]]; then
+    pub_title="$(json_value "$tmp_dir/publish.json" '.title')"
+    pub_video_key="$(json_value "$tmp_dir/publish.json" '.videoKey')"
+    pub_thumbnail_key="$(json_value "$tmp_dir/publish.json" '.thumbnailKey')"
+    pub_generation_mode="$(json_value "$tmp_dir/publish.json" '.generationMode')"
+
+    # For hybrid_image_slideshow, title must NOT have [PIPELINE PROOF]
+    if [[ "$MODE" == "hybrid_image_slideshow" ]]; then
+      if [[ "$pub_title" == *"[PIPELINE PROOF]"* ]]; then
+        fail "publish.json title must not have [PIPELINE PROOF] for generated-media mode: $pub_title"
+      else
+        pass "publish.json title does not have [PIPELINE PROOF]"
+      fi
+    fi
+
+    # Check videoKey is not test-001 fixture
+    if [[ -n "$pub_video_key" ]]; then
+      if [[ "$pub_video_key" == *"jobs/test-001"* ]]; then
+        fail "publish.json videoKey must not point to fixture test-001: $pub_video_key"
+      elif [[ "$pub_video_key" != *"jobs/$JOB_ID"* ]]; then
+        fail "publish.json videoKey must belong to this job ($JOB_ID): $pub_video_key"
+      else
+        pass "publish.json videoKey valid: $pub_video_key"
+      fi
+    else
+      info "publish.json videoKey not set yet"
+    fi
+
+    # Check thumbnailKey is not test-001 fixture
+    if [[ -n "$pub_thumbnail_key" ]]; then
+      if [[ "$pub_thumbnail_key" == *"jobs/test-001"* ]]; then
+        fail "publish.json thumbnailKey must not point to fixture test-001: $pub_thumbnail_key"
+      elif [[ "$pub_thumbnail_key" != *"jobs/$JOB_ID"* ]]; then
+        fail "publish.json thumbnailKey must belong to this job ($JOB_ID): $pub_thumbnail_key"
+      elif [[ "$pub_thumbnail_key" != *"/exports/"* ]]; then
+        fail "publish.json thumbnailKey must be in exports/ subdirectory: $pub_thumbnail_key"
+      else
+        pass "publish.json thumbnailKey valid: $pub_thumbnail_key"
+      fi
+    else
+      info "publish.json thumbnailKey not set yet"
+    fi
   fi
 fi
 

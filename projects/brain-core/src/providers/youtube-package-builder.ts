@@ -213,6 +213,8 @@ export function buildYouTubePackage(input: YouTubePackageInput): YouTubePackage 
   const cleanedTitle = cleanTitle(input.topicTitle);
 
   // Determine if this is a fixture-video mode (needs [PIPELINE PROOF])
+  // Note: hybrid_slideshow_video and hybrid_image_slideshow_video are generated-media modes
+  // and must NOT get the [PIPELINE PROOF] prefix even if they use fixture storyboard/images
   const isFixtureVideo =
     input.generationMode === 'hybrid_tts_fixture_video' ||
     input.generationMode === 'hybrid_storyboard_fixture_video' ||
@@ -235,6 +237,9 @@ export function buildYouTubePackage(input: YouTubePackageInput): YouTubePackage 
   const tags = extractTags(input.topicTitle, input.topicDescription, input.scenePlan);
   const searchKeywords = Array.from(new Set([...tags, ...input.topicTitle.toLowerCase().split(/\s+/)]));
 
+  // Use canonical thumbnail path if not explicitly provided
+  const canonicalThumbnailKey = input.thumbnailKey ?? `jobs/${input.jobId}/exports/thumbnail-001.jpg`;
+
   return {
     jobId: input.jobId,
     sourcePrompt: input.topicTitle,
@@ -246,7 +251,7 @@ export function buildYouTubePackage(input: YouTubePackageInput): YouTubePackage 
     searchKeywords,
     categoryId: '22',
     privacyStatus: 'private',
-    thumbnailKey: input.thumbnailKey ?? null,
+    thumbnailKey: canonicalThumbnailKey,
     videoKey: input.videoKey ?? null,
     scenePlanKey: input.scenePlanKey ?? null,
     narrationScriptKey: input.narrationScriptKey ?? null,

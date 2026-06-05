@@ -73,6 +73,22 @@ function payloadDetails(error: unknown): Record<string, unknown> | null {
   return details && typeof details === 'object' ? details as Record<string, unknown> : null;
 }
 
+// Monotonic status derivation: prevents status from downgrading backwards through list refresh cycles
+function getMonotonicJobStatus(
+  detail: Partial<VideoJob> | null | undefined,
+  listJob: Partial<VideoJob> | null | undefined,
+  hasGeneratedAssets: boolean,
+): string {
+  // Detail view is canonical when it exists (fresh fetch with reconciliation)
+  const canonical = detail?.status ?? listJob?.status ?? 'unknown';
+
+  // If detail says ready_to_publish or published, never downgrade to generating
+  if (['ready_to_publish', 'published'].includes(canonical)) return canonical;
+  if (hasGeneratedAssets && canonical === 'generating') return 'ready_to_publish';
+
+  return canonical;
+}
+
 function pipelineSteps(job: Partial<VideoJob> | null | undefined, selectedReady: boolean, selectedUploaded: boolean) {
   const status = job?.status ?? 'not_available';
   const approval = nestedStatus(job?.approval);
@@ -413,6 +429,10 @@ function ReviewCard({
   setNotes: (value: string) => void;
   isRecommended?: boolean;
 }) {
+  const [thumbnailLoading, setThumbnailLoading] = useState(false);
+  const [thumbnailError, setThumbnailError] = useState<string | null>(null);
+  const [thumbnailDataUrl, setThumbnailDataUrl] = useState<string | null>(null);
+
   if (!jobId) return null;
   const media = reviewData?.media;
   const imageKeys = media?.sceneImageKeys ?? [];
@@ -422,9 +442,75 @@ function ReviewCard({
     ? `aws s3 cp "s3://${bucket}/${key}" - --region ${region}`
     : `# ${label} not available`;
 
+  const loadThumbnail = async () => {
+    if (!jobId || !media?.thumbnailKey) return;
+    setThumbnailLoading(true);
+    setThumbnailError(null);
+    try {
+      const response = await fetch(`/api/video-orchestrator/jobs/${jobId}/thumbnail`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setThumbnailDataUrl(url);
+    } catch (error) {
+      setThumbnailError(error instanceof Error ? error.message : 'Failed to load thumbnail');
+    } finally {
+      setThumbnailLoading(false);
+    }
+  };
+
   return (
     <article className="card">
       <div className="card-title">Review</div>
+      {media?.thumbnailKey && (
+        <details open style={{ marginBottom: '1rem' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>Thumbnail preview</summary>
+          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '4px', border: '1px solid #e0e0e0' }}>
+            <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.5rem' }}>
+              <code style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>{media.thumbnailKey}</code>
+            </div>
+            {!thumbnailDataUrl && !thumbnailError && (
+              <button
+                className="button small"
+                disabled={thumbnailLoading}
+                onClick={loadThumbnail}
+                style={{ marginRight: '0.5rem' }}
+              >
+                {thumbnailLoading ? 'Loading...' : 'Load thumbnail'}
+              </button>
+            )}
+            {thumbnailDataUrl && (
+              <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                <img
+                  src={thumbnailDataUrl}
+                  alt="Generated thumbnail"
+                  style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid #d0d0d0' }}
+                  onLoad={() => setThumbnailError(null)}
+                />
+              </div>
+            )}
+            {thumbnailError && (
+              <div style={{ fontSize: '0.85rem', color: '#d32f2f', marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: '#ffebee', borderRadius: '3px' }}>
+                Failed to load: {thumbnailError}
+              </div>
+            )}
+            <button
+              className="button small"
+              onClick={() => {
+                const cmd = `aws s3 cp "s3://${bucket}/${media.thumbnailKey}" - --region ${region} | open -a Preview -f`;
+                navigator.clipboard.writeText(cmd);
+                alert('Copy command to preview thumbnail:\n' + cmd);
+              }}
+              style={{ marginBottom: '0.5rem' }}
+            >
+              Copy preview command
+            </button>
+            <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.25rem' }}>
+              Use this command in terminal to preview the thumbnail in your Mac Preview app.
+            </div>
+          </div>
+        </details>
+      )}
       <div className="aws-facts">
         <div><span>Status</span><strong>{reviewData?.reviewStatus ?? 'pending'}</strong></div>
         <div><span>Created</span><strong>{reviewData?.createdAt ? timeAgo(reviewData.createdAt) : 'unknown'}</strong></div>
@@ -656,16 +742,17 @@ export function AwsVideoDashboard() {
     }
   }, [approve.isSuccess, generate.isSuccess, approveReview.isSuccess, youtubeDryRun.isSuccess, youtubePublish.isSuccess]);
 
-  const selectedJob = job.data?.data ?? selected;
+  const selectedJobDetail = job.data?.data;
+  const selectedJobList = selected;
   const timelineEvents = timeline.data?.data.events ?? [];
   const artifactData = artifacts.data?.data ?? null;
   const executionData = execution.data?.data ?? null;
   const reviewData = review.data?.review ?? null;
   const publishableAssets = asRecord(artifactData?.publishableAssets);
-  const mediaSource = stringField(selectedJob, 'mediaSource') ?? stringField(artifactData, 'mediaSource') ?? 'unknown';
-  const generationMode = stringField(selectedJob, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
-  const videoSourceKey = stringField(selectedJob, 'videoSourceKey') ?? stringField(artifactData, 'videoSourceKey');
-  const audioSourceKey = stringField(selectedJob, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
+  const mediaSource = stringField(selectedJobDetail, 'mediaSource') ?? stringField(selectedJobList, 'mediaSource') ?? stringField(artifactData, 'mediaSource') ?? 'unknown';
+  const generationMode = stringField(selectedJobDetail, 'generationMode') ?? stringField(selectedJobList, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
+  const videoSourceKey = stringField(selectedJobDetail, 'videoSourceKey') ?? stringField(selectedJobList, 'videoSourceKey') ?? stringField(artifactData, 'videoSourceKey');
+  const audioSourceKey = stringField(selectedJobDetail, 'audioSourceKey') ?? stringField(selectedJobList, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
   const isHybridMode = generationMode === 'hybrid_scene_plan_fixture_media';
   const isHybridTTSMode = generationMode === 'hybrid_tts_fixture_video';
   const isHybridStoryboardMode = generationMode === 'hybrid_storyboard_fixture_video';
@@ -689,8 +776,14 @@ export function AwsVideoDashboard() {
   const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
   const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
   const awsSucceeded = stringField(executionData, 'awsStatus') === 'SUCCEEDED';
-  const localGenerationComplete = nestedStatus(selectedJob?.generation) === 'complete';
-  const publishStatus = nestedStatus(selectedJob?.publishing);
+  const localGenerationComplete = nestedStatus(selectedJobDetail?.generation) === 'complete';
+  const publishStatus = nestedStatus(selectedJobDetail?.publishing);
+
+  // Derive canonical selectedJob with monotonic status
+  const selectedJob = {
+    ...(selectedJobDetail ?? selectedJobList),
+    status: getMonotonicJobStatus(selectedJobDetail, selectedJobList, hasGeneratedAssets),
+  };
 
   // PART 2: Canonical selected job state: local action state wins for upload
   // PART 1: Hydrate dry-run from backend (persistent) with local optimistic override

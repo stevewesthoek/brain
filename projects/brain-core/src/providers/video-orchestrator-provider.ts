@@ -21,6 +21,7 @@ import {
   isGeneratedMediaGenerationMode,
   shouldRequireReviewGate,
   isReviewApproved,
+  validateGeneratedMediaPublishAssets,
   type ReviewStatus,
 } from './video-orchestrator-publish-gate.js';
 import { buildYouTubePackage, type YouTubePackage } from './youtube-package-builder.js';
@@ -457,6 +458,19 @@ async function s3ObjectExists(key: string, timeoutMs: number = S3_HEAD_TIMEOUT_M
   }
 }
 
+async function generateThumbnailFromImage(sourceImagePath: string, destImagePath: string): Promise<void> {
+  const destDir = dirname(destImagePath);
+  await mkdir(destDir, { recursive: true });
+  // Use ffmpeg to convert PNG/JPEG to JPEG thumbnail (no dependencies beyond ffmpeg)
+  await execFileAsync('ffmpeg', [
+    '-i', sourceImagePath,
+    '-q:v', '3', // quality 3 (good quality for thumbnails)
+    '-f', 'image2',
+    '-update', '1', // allow writing a single image
+    destImagePath,
+  ], { timeout: 30000 });
+}
+
 async function inferGeneratedS3Artifacts(jobId: string, timeoutMs: number = S3_HEAD_TIMEOUT_MS): Promise<{ narration: string | null; finalVideo: string | null; thumbnail: string | null }> {
   const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
   const finalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
@@ -638,16 +652,23 @@ function normalizeJobStatus(
   if (youtube?.status === 'uploaded' || youtube?.status === 'published' || typeof youtube?.videoId === 'string') return 'published';
   if (pubData?.publishStatus === 'publishing') return 'publishing';
 
-  // Check if generation completed
+  // Check if generation completed (from status.json fields OR from publish.json/assets.json evidence)
   const statusVal = status?.status as string | null;
   const completedSteps = status?.completedSteps as string[] | null;
+  const hasPublishableAssets = Boolean(
+    (pubData?.videoKey && typeof pubData.videoKey === 'string') ||
+    (pubData?.thumbnailKey && typeof pubData.thumbnailKey === 'string')
+  );
+
+  // Monotonic: if publishable assets exist, mark as ready_to_publish even if statusJson is stale
+  if (hasPublishableAssets && statusVal !== 'failed') return 'ready_to_publish';
   if (statusVal === 'complete' || completedSteps?.includes('thumbnail_generated')) return 'ready_to_publish';
 
   // Check for failed before active states
   if (status?.failedStep || status?.lastError || statusVal === 'failed') return 'failed';
 
-  // Check if generating
-  if (statusVal === 'generating') return 'generating';
+  // Check if generating (only if no asset evidence exists)
+  if (statusVal === 'generating' && !hasPublishableAssets) return 'generating';
 
   // Check approval status
   const approval = script.approval as unknown as Record<string, unknown> | undefined;
@@ -756,16 +777,18 @@ async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?:
     : statusJsonRaw;
 
   const inferredArts = shouldInferS3Artifacts && inferredArtifacts ? inferredArtifacts : { narration: null, finalVideo: null, thumbnail: null };
-  const hasInferredPublishAssets = Boolean(inferredArts.finalVideo && inferredArts.thumbnail);
-  const normalizedStatus = hasInferredPublishAssets && statusJson?.status !== 'failed'
-    ? normalizeJobStatus(script, { ...statusJson ?? {}, status: 'complete', completedSteps: ['video_assembled', 'thumbnail_generated'] }, publish)
-    : normalizeJobStatus(script, statusJson, publish);
   const pubData = publish as Record<string, unknown> | null;
   const yt = (pubData?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
   const assetsData = assets as Record<string, unknown> | null;
   const narration = assetsData?.narration as Record<string, unknown> | undefined;
   const finalVideo = assetsData?.finalVideo as Record<string, unknown> | undefined;
   const thumbnail = assetsData?.thumbnail as Record<string, unknown> | undefined;
+  const publishVideoKey = stringValue(pubData?.videoKey) ?? stringValue(assetsData?.videoKey) ?? stringValue(statusJson?.finalVideoKey) ?? stringValue(finalVideo?.path) ?? inferredArts.finalVideo;
+  const publishThumbnailKey = stringValue(pubData?.thumbnailKey) ?? stringValue(assetsData?.thumbnailKey) ?? stringValue(statusJson?.thumbnailKey) ?? stringValue(thumbnail?.path) ?? inferredArts.thumbnail;
+  const hasPublishAssets = Boolean(publishVideoKey && publishThumbnailKey);
+  const normalizedStatus = hasPublishAssets && statusJson?.status !== 'failed'
+    ? normalizeJobStatus(script, { ...statusJson ?? {}, status: 'complete', completedSteps: ['video_assembled', 'thumbnail_generated'] }, publish)
+    : normalizeJobStatus(script, statusJson, publish);
   const mediaSource = stringValue(statusJson?.mediaSource) ?? stringValue(assetsData?.mediaSource) ?? stringValue(pubData?.mediaSource);
   const generationMode = stringValue(statusJson?.generationMode) ?? stringValue(assetsData?.generationMode) ?? stringValue(pubData?.generationMode);
 
@@ -1136,6 +1159,41 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   return result;
 }
 
+export async function getVideoJobThumbnail(jobId: string): Promise<{ success: false } | { success: true; data: Buffer; mimeType: string }> {
+  if (!isValidJobId(jobId)) return { success: false };
+
+  // Try to resolve thumbnail from artifacts
+  const resolved = await resolvePublishableAssets(jobId);
+  if (!resolved.thumbnailKey) return { success: false };
+
+  // Try local file first
+  const localThumbnailPath = join(getVideoOrchestratorRoot(), resolved.thumbnailKey);
+  try {
+    const data = await readFile(localThumbnailPath);
+    return { success: true, data, mimeType: 'image/jpeg' };
+  } catch {
+    // Local file doesn't exist, try S3
+  }
+
+  // Try S3
+  try {
+    const { stdout } = await execFileAsync('aws', [
+      's3', 'cp',
+      `s3://${S3_BUCKET}/${resolved.thumbnailKey}`,
+      '-',
+      '--region', AWS_REGION,
+      '--no-cli-pager',
+    ], { timeout: S3_PUBLISH_ASSET_TIMEOUT_MS, encoding: 'buffer' as any });
+    if (Buffer.isBuffer(stdout)) {
+      return { success: true, data: stdout, mimeType: 'image/jpeg' };
+    }
+  } catch {
+    // S3 fetch failed
+  }
+
+  return { success: false };
+}
+
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
@@ -1302,6 +1360,32 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   // Repair and get final generation mode
   let publishJson = await repairPublishJson(jobId, publishJson_initial, resolved);
   const generationMode = typeof publishJson.generationMode === 'string' ? publishJson.generationMode : null;
+
+  // Validate generated-media mode assets: ensure video/thumbnail don't point to fixture
+  if (isGeneratedMediaGenerationMode(generationMode)) {
+    const assetValidation = validateGeneratedMediaPublishAssets({
+      generationMode,
+      videoKey: resolved.videoKey,
+      thumbnailKey: resolved.thumbnailKey,
+      jobId,
+    });
+    if (!assetValidation.valid) {
+      return {
+        ok: false,
+        jobId,
+        dryRun: options.dryRun,
+        code: 'generated_media_publish_assets_invalid',
+        error: `Generated-media mode requires valid generated assets: ${assetValidation.reason}`,
+        details: {
+          jobId,
+          generationMode,
+          videoKey: resolved.videoKey,
+          thumbnailKey: resolved.thumbnailKey,
+          reason: assetValidation.reason,
+        },
+      };
+    }
+  }
 
   // For non-generated-media jobs (or if generation mode couldn't be determined earlier),
   // check review gate now (this is a safety net, but for generated-media already checked above)
@@ -1543,23 +1627,55 @@ async function readOptionalJson(path: string): Promise<unknown | null> {
 //     || generationMode === 'hybrid_image_slideshow_video';
 // }
 
-function buildReviewMedia(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): VideoReviewMedia {
+function buildReviewMedia(
+  jobId: string,
+  publishJson: Record<string, unknown> | null,
+  assetsJson: Record<string, unknown> | null,
+  resolved: PublishableAssetsResolution,
+  thumbnailJson?: Record<string, unknown> | null,
+): VideoReviewMedia {
   const publishRecord = publishJson ?? {};
-  const sceneImageKeys = Array.isArray(publishRecord.sceneImageKeys)
+  const assetsRecord = assetsJson ?? {};
+  const thumbRecord = thumbnailJson ?? {};
+
+  // Merge sceneImageKeys: prefer publishJson, fall back to assetsJson
+  let sceneImageKeys = Array.isArray(publishRecord.sceneImageKeys)
     ? publishRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string')
     : [];
+  if (sceneImageKeys.length === 0 && Array.isArray(assetsRecord.sceneImageKeys)) {
+    sceneImageKeys = assetsRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string');
+  }
+
+  // Merge field resolution: prefer publishJson, then assetsJson, then resolved/defaults
+  const scenePlanKey = stringValue(publishRecord.scenePlanKey) ?? stringValue(assetsRecord.scenePlanKey) ?? null;
+  const narrationScriptKey = stringValue(publishRecord.narrationScriptKey) ?? stringValue(assetsRecord.narrationScriptKey) ?? null;
+  const audioKey = stringValue(publishRecord.audioKey) ?? stringValue(assetsRecord.audioKey) ?? `jobs/${jobId}/audio/narration.mp3`;
+  const videoKey = stringValue(publishRecord.videoKey) ?? stringValue(assetsRecord.videoKey) ?? resolved.videoKey ?? null;
+  const thumbnailKey = stringValue(thumbRecord.thumbnailKey)
+    ?? stringValue(publishRecord.thumbnailKey)
+    ?? stringValue(assetsRecord.thumbnailKey)
+    ?? resolved.thumbnailKey
+    ?? null;
+
   return {
-    scenePlanKey: stringValue(publishRecord.scenePlanKey) ?? null,
-    narrationScriptKey: stringValue(publishRecord.narrationScriptKey) ?? null,
-    audioKey: stringValue(publishRecord.audioKey) ?? `jobs/${jobId}/audio/narration.mp3`,
+    scenePlanKey,
+    narrationScriptKey,
+    audioKey,
     sceneImageKeys,
-    videoKey: stringValue(publishRecord.videoKey) ?? resolved.videoKey ?? null,
-    thumbnailKey: stringValue(publishRecord.thumbnailKey) ?? resolved.thumbnailKey ?? null,
+    videoKey,
+    thumbnailKey,
     publishKey: `jobs/${jobId}/metadata/publish.json`,
   };
 }
 
-function createPendingReview(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution, existing?: VideoReviewMetadata | null): VideoReviewMetadata {
+function createPendingReview(
+  jobId: string,
+  publishJson: Record<string, unknown> | null,
+  assetsJson: Record<string, unknown> | null,
+  resolved: PublishableAssetsResolution,
+  thumbnailJson?: Record<string, unknown> | null,
+  existing?: VideoReviewMetadata | null,
+): VideoReviewMetadata {
   const now = new Date().toISOString();
   const createdAt = existing?.createdAt ?? now;
   return {
@@ -1570,7 +1686,7 @@ function createPendingReview(jobId: string, publishJson: Record<string, unknown>
     reviewedAt: existing?.reviewedAt ?? null,
     reviewedBy: existing?.reviewedBy ?? null,
     notes: existing?.notes ?? null,
-    media: buildReviewMedia(jobId, publishJson, resolved),
+    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson),
   };
 }
 
@@ -1611,10 +1727,35 @@ async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null
 
 async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | null> {
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
-  const resolved = await resolvePublishableAssets(jobId);
+  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+  let resolved = await resolvePublishableAssets(jobId);
+
+  // Try to create canonical thumbnail if this is generated media with scene images
+  if (assetsJson) {
+    try {
+      const sceneImageKeys = Array.isArray(assetsJson.sceneImageKeys)
+        ? assetsJson.sceneImageKeys.filter((k): k is string => typeof k === 'string')
+        : [];
+
+      if (sceneImageKeys.length > 0) {
+        // Attempt to generate the thumbnail regardless of whether key is set
+        const thumbnailMeta = await createCanonicalThumbnail(jobId, assetsJson);
+        if (thumbnailMeta) {
+          // Update resolved to use the newly created thumbnail
+          resolved.thumbnailKey = thumbnailMeta.thumbnailKey;
+          await writeThumbnailMetadata(jobId, thumbnailMeta);
+        }
+      }
+    } catch (err) {
+      console.warn(`[getOrCreateReview] Failed to create canonical thumbnail for ${jobId}:`, err);
+      // Continue without thumbnail - not a blocker
+    }
+  }
+
+  const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const existing = await readReviewJson(jobId);
   if (existing) {
-    const updated = createPendingReview(jobId, publishJson, resolved, existing);
+    const updated = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson, existing);
     const same = updated.reviewStatus === existing.reviewStatus
       && updated.createdAt === existing.createdAt
       && updated.notes === existing.notes
@@ -1630,7 +1771,7 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
     return updated;
   }
   if (!publishJson && !resolved.videoKey && !resolved.thumbnailKey) return null;
-  const created = createPendingReview(jobId, publishJson, resolved);
+  const created = createPendingReview(jobId, publishJson, assetsJson, resolved, thumbnailJson);
   try {
     await writeReviewJson(jobId, created);
   } catch (err) {
@@ -1657,6 +1798,108 @@ async function fileExists(path: string): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+interface ThumbnailMetadata {
+  jobId: string;
+  thumbnailStatus: 'generated' | 'pending' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+  provider: 'aws-bedrock-nova-canvas' | 'selected-scene-image' | 'ffmpeg-frame';
+  source: {
+    kind: 'scene-image' | 'generated-image' | 'video-frame';
+    key: string | null;
+  };
+  thumbnailKey: string;
+  previewKey: string | null;
+  width: number;
+  height: number;
+  mimeType: string;
+  titleOverlay: string | null;
+  prompt: string | null;
+  warnings: string[];
+}
+
+async function createCanonicalThumbnail(jobId: string, assetsJson: Record<string, unknown> | null): Promise<ThumbnailMetadata | null> {
+  if (!assetsJson || typeof assetsJson !== 'object') {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  const sceneImageKeys = Array.isArray(assetsJson.sceneImageKeys)
+    ? assetsJson.sceneImageKeys.filter((k): k is string => typeof k === 'string')
+    : [];
+
+  // Try to use the first generated scene image
+  if (sceneImageKeys.length === 0) {
+    return null;
+  }
+
+  const firstSceneKey = sceneImageKeys[0];
+  if (!firstSceneKey) {
+    return null;
+  }
+
+  try {
+    const jobRoot = getVideoOrchestratorRoot();
+    const localScenePath = join(jobRoot, firstSceneKey);
+    const localThumbPath = join(jobRoot, thumbnailKey);
+
+    // Check if local scene image exists
+    if (await fileExists(localScenePath)) {
+      await generateThumbnailFromImage(localScenePath, localThumbPath);
+      // Also try to sync to S3
+      try {
+        await execFileAsync('aws', [
+          's3', 'cp', localThumbPath,
+          `s3://${S3_BUCKET}/${thumbnailKey}`,
+          '--region', AWS_REGION,
+          '--no-cli-pager',
+        ], { timeout: 15000 });
+      } catch (s3Err) {
+        console.warn(`[createCanonicalThumbnail] Failed to sync thumbnail to S3 for ${jobId}:`, s3Err);
+      }
+
+      return {
+        jobId,
+        thumbnailStatus: 'generated',
+        createdAt: now,
+        updatedAt: now,
+        provider: 'aws-bedrock-nova-canvas',
+        source: {
+          kind: 'scene-image',
+          key: firstSceneKey,
+        },
+        thumbnailKey,
+        previewKey: thumbnailKey,
+        width: 1280,
+        height: 720,
+        mimeType: 'image/jpeg',
+        titleOverlay: null,
+        prompt: null,
+        warnings: [],
+      };
+    }
+  } catch (err) {
+    console.warn(`[createCanonicalThumbnail] Failed to generate thumbnail from scene image for ${jobId}:`, err);
+  }
+
+  return null;
+}
+
+async function writeThumbnailMetadata(jobId: string, metadata: ThumbnailMetadata): Promise<void> {
+  const content = `${JSON.stringify(metadata, null, 2)}\n`;
+  const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+  await mkdir(metadataDir, { recursive: true });
+  const thumbnailJsonPath = join(metadataDir, 'thumbnail.json');
+  await writeFile(thumbnailJsonPath, content, 'utf-8');
+  // Also sync to S3
+  try {
+    await writeS3MetadataJson(jobId, 'thumbnail.json', metadata as unknown as Record<string, unknown>);
+  } catch (err) {
+    console.warn(`[writeThumbnailMetadata] Failed to write thumbnail.json to S3 for ${jobId}:`, err);
   }
 }
 
@@ -1870,6 +2113,8 @@ export async function approveVideoReview(
   }
 
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+  const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const resolved = await resolvePublishableAssets(jobId);
   const current = await getOrCreateReview(jobId);
   if (!current) {
@@ -1884,7 +2129,7 @@ export async function approveVideoReview(
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes,
-    media: buildReviewMedia(jobId, publishJson, resolved),
+    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson),
   };
   try {
     await writeReviewJson(jobId, approved);
@@ -1906,6 +2151,8 @@ export async function requestVideoReviewChanges(
   }
 
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+  const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const resolved = await resolvePublishableAssets(jobId);
   const current = await getOrCreateReview(jobId);
   if (!current) {
@@ -1920,7 +2167,7 @@ export async function requestVideoReviewChanges(
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes ?? 'Changes requested',
-    media: buildReviewMedia(jobId, publishJson, resolved),
+    media: buildReviewMedia(jobId, publishJson, assetsJson, resolved, thumbnailJson),
   };
   try {
     await writeReviewJson(jobId, requested);
