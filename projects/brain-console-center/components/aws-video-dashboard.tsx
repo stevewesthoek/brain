@@ -220,11 +220,11 @@ function CompactPublishResultCard({
   const hasLogs = dryRunStdout || uploadStdout;
 
   return (
-    <details style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#f9f9f9', border: '1px solid #ddd', borderRadius: '4px' }}>
-      <summary style={{ cursor: 'pointer', fontWeight: 'bold', color: '#333', marginBottom: '0.5rem' }}>
+    <details style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '4px' }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 'bold', color: 'var(--foreground)', marginBottom: '0.5rem' }}>
         {isPublishing ? '⏳ Uploading...' : uploadOk ? '✅ Upload success' : dryRunOk ? '✅ Dry-run passed' : '⚠️ Publish details'}
       </summary>
-      <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#555' }}>
+      <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: 'var(--body)' }}>
         {dryRunOk ? <div style={{ marginBottom: '0.5rem' }}><strong>Dry-run:</strong> passed</div> : null}
         {uploadOk || actionState?.uploaded ? (
           <>
@@ -233,20 +233,21 @@ function CompactPublishResultCard({
             {url ? <div style={{ marginBottom: '0.5rem' }}><a href={url} target="_blank" rel="noopener noreferrer">{url}</a></div> : null}
           </>
         ) : null}
-        {isPublishing ? <div style={{ marginBottom: '0.5rem', color: '#0066cc' }}><strong>Status:</strong> Publishing privately...</div> : null}
+        {isPublishing ? <div style={{ marginBottom: '0.5rem', color: 'var(--badge-success-text)' }}><strong>Status:</strong> Publishing privately...</div> : null}
       </div>
       {hasLogs ? (
         <details style={{ marginTop: '0.5rem' }}>
-          <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#666' }}>Show logs</summary>
+          <summary style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>Show logs</summary>
           <pre style={{
             marginTop: '0.5rem',
             padding: '0.5rem',
-            backgroundColor: '#f0f0f0',
+            backgroundColor: 'var(--code-bg)',
+            border: '1px solid var(--border)',
             borderRadius: '2px',
             fontSize: '0.75rem',
             overflow: 'auto',
             maxHeight: '200px',
-            color: '#333',
+            color: 'var(--code-fg)',
           }}>
             {stripAnsiCodes(uploadStdout ?? dryRunStdout ?? 'No logs')}
           </pre>
@@ -288,7 +289,7 @@ function StoryboardCard({
         {imageGenerationKey ? <div><span>Image generation</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{imageGenerationKey}</strong></div> : null}
       </div>
       {imageGeneration ? (
-        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
+        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
           <div className="card-title" style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>Image generation</div>
           <div className="aws-facts">
             <div><span>Count</span><strong>{String(imageGeneration?.sceneCount ?? sceneImageKeys.length)}</strong></div>
@@ -302,11 +303,11 @@ function StoryboardCard({
             <div><span>Provider</span><strong>{stringField(imageGeneration, 'provider') ?? 'unknown'}</strong></div>
           </div>
           <details style={{ marginTop: '0.75rem' }}>
-            <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#666' }}>Show prompt audit</summary>
+            <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--muted-foreground)' }}>Show prompt audit</summary>
             <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {sceneAuditSummaries.slice(0, 3).map((scene, index) => (
-                <details key={`${index}-${String(scene.index ?? index)}`} style={{ padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                  <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#333' }}>Scene {String(scene.index ?? index + 1)} audit</summary>
+                <details key={`${index}-${String(scene.index ?? index)}`} style={{ padding: '0.75rem', backgroundColor: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '4px' }}>
+                  <summary style={{ cursor: 'pointer', fontSize: '0.85rem', color: 'var(--foreground)' }}>Scene {String(scene.index ?? index + 1)} audit</summary>
                   <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.4rem', fontSize: '0.8rem' }}>
                     <div><span>finalImagePrompt</span><strong style={{ display: 'block', wordBreak: 'break-word' }}>{stringField(scene, 'finalImagePrompt') ?? 'unknown'}</strong></div>
                     <div><span>promptHash</span><strong>{stringField(scene, 'promptHash') ?? 'unknown'}</strong></div>
@@ -320,15 +321,15 @@ function StoryboardCard({
         </div>
       ) : null}
       {sceneImageKeys.length > 0 ? (
-        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e0e0e0' }}>
-          <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.75rem' }}>Scene images:</div>
+        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginBottom: '0.75rem' }}>Scene images:</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {sceneImageKeys.slice(0, 3).map((key, i) => (
-              <code key={i} style={{ fontSize: '0.8rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: '#f5f5f5', borderRadius: '3px', color: '#0a0a0a' }}>
+              <code key={i} style={{ fontSize: '0.8rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '3px', color: 'var(--code-fg)' }}>
                 {key}
               </code>
             ))}
-            {sceneImageKeys.length > 3 ? <p style={{ fontSize: '0.875rem', color: '#999' }}>… and {sceneImageKeys.length - 3} more</p> : null}
+            {sceneImageKeys.length > 3 ? <p style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>… and {sceneImageKeys.length - 3} more</p> : null}
           </div>
         </div>
       ) : null}
@@ -387,19 +388,19 @@ function GenerationArtifactsCard({
   return (
     <article className="card">
       <div className="card-title">Generation artifacts</div>
-      <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '1rem' }}>
+      <p style={{ fontSize: '0.875rem', color: 'var(--body)', marginBottom: '1rem' }}>
         Copy commands to inspect hybrid-mode generated content:
       </p>
       {scenePlanCmd ? (
-        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
-          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>Scene plan:</div>
-          <code style={{ display: 'block', overflow: 'auto', color: '#0a0a0a' }}>{scenePlanCmd}</code>
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--foreground)' }}>Scene plan:</div>
+          <code style={{ display: 'block', overflow: 'auto', color: 'var(--code-fg)' }}>{scenePlanCmd}</code>
         </div>
       ) : null}
       {narrationScriptCmd ? (
-        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
-          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: '#333' }}>Narration script:</div>
-          <code style={{ display: 'block', overflow: 'auto', color: '#0a0a0a' }}>{narrationScriptCmd}</code>
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--foreground)' }}>Narration script:</div>
+          <code style={{ display: 'block', overflow: 'auto', color: 'var(--code-fg)' }}>{narrationScriptCmd}</code>
         </div>
       ) : null}
     </article>
@@ -495,15 +496,15 @@ function ReviewCard({
       {media?.thumbnailKey && (
         <details open style={{ marginBottom: '1rem' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>Thumbnail preview</summary>
-          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: '#f9f9f9', borderRadius: '4px', border: '1px solid #e0e0e0' }}>
-            <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.5rem' }}>
+          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--card)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
               <code style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>{media.thumbnailKey}</code>
             </div>
             <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
               <img
                 src={`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?ts=${encodeURIComponent(reviewRecord?.updatedAt ?? media.thumbnailKey ?? '')}`}
                 alt={`Generated thumbnail: ${media.thumbnailKey}`}
-                style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid #d0d0d0' }}
+                style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid var(--border)' }}
               />
             </div>
             <button
@@ -517,7 +518,7 @@ function ReviewCard({
             >
               Copy preview command
             </button>
-            <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
               Use this command in terminal to preview the thumbnail in your Mac Preview app.
             </div>
           </div>
@@ -531,11 +532,11 @@ function ReviewCard({
         <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{media.publishKey ? media.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
       </div>
       <div className="compact-error">Generated media must be reviewed before YouTube dry-run or private publish.</div>
-      <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>
+      <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
         Review media hydrated from canonical artifacts{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
-        <div style={{ fontSize: '0.85rem', color: '#d32f2f', padding: '0.75rem', backgroundColor: '#ffebee', borderRadius: '4px', marginBottom: '0.75rem' }}>
+        <div style={{ fontSize: '0.85rem', color: 'var(--badge-error-text)', padding: '0.75rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
           <strong>Cannot approve: Missing fields</strong>
           <div style={{ marginTop: '0.25rem' }}>
             {missingReviewMediaFields.map(field => field.label).join(', ')}
@@ -570,7 +571,7 @@ function ReviewCard({
         {imageKeys.length > 0 ? (
           <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
             {imageKeys.slice(0, 4).map((key) => (
-              <code key={key} style={{ fontSize: '0.78rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: '#f5f5f5', borderRadius: '3px' }}>
+              <code key={key} style={{ fontSize: '0.78rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '3px', color: 'var(--code-fg)' }}>
                 {key}
               </code>
             ))}
@@ -908,7 +909,7 @@ export function AwsVideoDashboard() {
   const nextStep = recommendedStep;
   const queryError = jobs.error ?? status.error;
   const queryErrorMessage = errorMessage(queryError);
-  const actionError = [approve.error, generate.error, requestChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
+  const actionError = [approve.error, generate.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const visibleErrorMessage = queryErrorMessage ?? actionErrorMessage;
