@@ -430,15 +430,52 @@ function ReviewCard({
   isRecommended?: boolean;
 }) {
   if (!jobId) return null;
-  const media = reviewData?.media;
-  const imageKeys = media?.sceneImageKeys ?? [];
+  const reviewMedia = reviewData?.media;
+  const artifactRecord = artifactData ?? {};
+  const publishableAssets = asRecord(artifactRecord.publishableAssets);
+  const artifactNarration = asRecord(artifactRecord.narration);
+  const artifactSourceVideo = asRecord(artifactRecord.sourceVideo);
+  const artifactSceneImageKeys = Array.isArray(artifactRecord.sceneImageKeys)
+    ? artifactRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string')
+    : [];
+  const effectiveMedia = {
+    scenePlanKey: reviewMedia?.scenePlanKey ?? stringField(artifactRecord, 'scenePlanKey') ?? null,
+    narrationScriptKey: reviewMedia?.narrationScriptKey ?? stringField(artifactRecord, 'narrationScriptKey') ?? null,
+    audioKey: reviewMedia?.audioKey
+      ?? stringField(artifactRecord, 'audioKey')
+      ?? stringField(artifactRecord, 'audioSourceKey')
+      ?? stringField(artifactNarration, 'path')
+      ?? null,
+    sceneImageKeys: (reviewMedia?.sceneImageKeys?.length ?? 0) > 0 ? reviewMedia!.sceneImageKeys : artifactSceneImageKeys,
+    videoKey: reviewMedia?.videoKey
+      ?? stringField(artifactRecord, 'videoKey')
+      ?? stringField(artifactRecord, 'videoSourceKey')
+      ?? stringField(artifactSourceVideo, 'path')
+      ?? stringField(artifactRecord, 'finalVideo')
+      ?? stringField(publishableAssets, 'videoKey')
+      ?? null,
+    thumbnailKey: reviewMedia?.thumbnailKey
+      ?? stringField(artifactRecord, 'thumbnailKey')
+      ?? stringField(artifactRecord, 'thumbnail')
+      ?? stringField(publishableAssets, 'thumbnailKey')
+      ?? null,
+    publishKey: reviewMedia?.publishKey
+      ?? (stringField(artifactRecord, 'publishKey') ?? (artifactRecord.publishableAssets || artifactRecord.generationMode ? `jobs/${jobId}/metadata/publish.json` : null)),
+    youtubePackageKey: reviewMedia?.youtubePackageKey
+      ?? stringField(artifactRecord, 'youtubePackageKey')
+      ?? (artifactRecord.generationMode ? `jobs/${jobId}/metadata/youtube-package.json` : null),
+  };
+  const media = effectiveMedia;
+  const imageKeys = media.sceneImageKeys;
   const bucket = 'prochat-video-dev-909439522876-eu-north-1-an';
   const region = 'eu-north-1';
   const s3Command = (key: string | null, label: string) => key
     ? `aws s3 cp "s3://${bucket}/${key}" - --region ${region}`
     : `# ${label} not available`;
 
-  // Compute missing media fields for validation
+  // Compute missing media fields for validation. Use canonical review data first,
+  // but fall back to the artifacts endpoint so stale review.json cannot hide
+  // already-generated media from the operator.
   const requiredMediaFields = [
     { key: 'scenePlanKey', label: 'Scene plan' },
     { key: 'narrationScriptKey', label: 'Narration script' },
@@ -447,12 +484,9 @@ function ReviewCard({
     { key: 'thumbnailKey', label: 'Thumbnail' },
     { key: 'publishKey', label: 'Publish JSON' },
     { key: 'youtubePackageKey', label: 'YouTube package' },
-  ];
-  const missingReviewMediaFields = requiredMediaFields.filter(field => {
-    if (field.key === 'sceneImageKeys') return (media?.sceneImageKeys?.length ?? 0) === 0;
-    return !media?.[field.key as keyof typeof media];
-  });
-  const mediaComplete = missingReviewMediaFields.length === 0 && (media?.sceneImageKeys?.length ?? 0) > 0;
+  ] as const;
+  const missingReviewMediaFields = requiredMediaFields.filter(field => !media[field.key]);
+  const mediaComplete = missingReviewMediaFields.length === 0 && media.sceneImageKeys.length > 0;
 
   return (
     <article className="card">
