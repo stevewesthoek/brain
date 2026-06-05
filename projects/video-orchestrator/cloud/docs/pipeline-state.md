@@ -176,6 +176,7 @@ To restart Brain Core and Brain Console Center with hybrid mode enabled:
 
 ```bash
 bash tools/scripts/brain-console-center-dev-reset.sh
+bash tools/scripts/brain-console-center-dev-reset.sh hybrid_slideshow
 ```
 
 This script:
@@ -196,6 +197,26 @@ export JOB_ID=<new-job-from-console>
 aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/metadata/scene-plan.json" - --region eu-north-1 | jq
 aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/audio/narration-script.txt" - --region eu-north-1
 ```
+
+## Generation Mode Verification
+
+Verify a completed job's artifact contract without YouTube private publishing:
+
+```bash
+tools/scripts/verify-aws-video-generation-mode.sh hybrid_slideshow <jobId>
+```
+
+Accepted modes:
+
+| Mode | Expected generationMode | Required checks |
+|---|---|---|
+| `fixture` | `fixture_assembly` | `metadata/status.json`, `metadata/assets.json`, narration MP3, raw generated MP4 |
+| `hybrid` | `hybrid_scene_plan_fixture_media` | Scene plan, narration script, narration MP3, raw generated MP4, fixture providers |
+| `hybrid_tts` | `hybrid_tts_fixture_video` | Scene plan, narration script, MP3 download validation, `ttsGenerated=true`, `audioProvider=aws-polly` |
+| `hybrid_storyboard` | `hybrid_storyboard_fixture_video` | Scene plan, narration script, narration MP3, storyboard JSON, `scene-001.svg`, storyboard metadata, documented video source |
+| `hybrid_slideshow` | `hybrid_slideshow_video` | Scene plan, narration script, narration MP3, storyboard JSON, `scene-001.svg`, `scene-001.png`, valid downloaded MP4, `videoProvider=local-ffmpeg-slideshow` |
+
+The verifier prints optional publish contract details when `metadata/publish.json` exists and optional dry-run status when `metadata/publish-check.json` exists. It is read-only and exits nonzero on failed required checks.
 
 ## Step Functions State Machine Role (Critical)
 

@@ -268,6 +268,7 @@ bash tools/scripts/brain-console-center-dev-reset.sh
 
 # Or specify a different mode
 bash tools/scripts/brain-console-center-dev-reset.sh hybrid_storyboard
+bash tools/scripts/brain-console-center-dev-reset.sh hybrid_slideshow
 ```
 
 This script:
@@ -293,17 +294,37 @@ aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/metada
 aws s3 ls "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/images/" --region eu-north-1
 ```
 
+## Generation Mode Verification
+
+Use the read-only verifier to check a completed job's S3 artifact contract without performing a YouTube upload:
+
+```bash
+tools/scripts/verify-aws-video-generation-mode.sh hybrid_slideshow <jobId>
+```
+
+Supported modes:
+
+| Mode | Expected generationMode | Key artifacts |
+|---|---|---|
+| `fixture` | `fixture_assembly` | `audio/narration.mp3`, `video-generated/generated-001.mp4` |
+| `hybrid` | `hybrid_scene_plan_fixture_media` | `metadata/scene-plan.json`, `audio/narration-script.txt`, fixture audio/video provider metadata |
+| `hybrid_tts` | `hybrid_tts_fixture_video` | Scene plan, narration script, Polly MP3, fixture video |
+| `hybrid_storyboard` | `hybrid_storyboard_fixture_video` | Scene plan, narration script, Polly MP3, `metadata/storyboard.json`, `images/scene-001.svg`, fixture video source documented |
+| `hybrid_slideshow` | `hybrid_slideshow_video` | Scene plan, narration script, Polly MP3, storyboard JSON, SVG/PNG scene images, `video-generated/generated-001.mp4` from `local-ffmpeg-slideshow` |
+
+The verifier also checks `metadata/status.json`, `metadata/assets.json`, optional `metadata/publish.json` object-key shape, and optional `metadata/publish-check.json` dry-run status. It exits nonzero on failed required checks and does not modify S3 or local job metadata.
+
 ## Artifact Paths (Canonical)
 
 | Asset | Path | Notes |
 |-------|------|-------|
 | Script markdown | `jobs/<jobId>/scripts/script.md` | User input |
-| Scene plan | `jobs/<jobId>/metadata/scene-plan.json` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard) |
-| Narration script text | `jobs/<jobId>/audio/narration-script.txt` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard) |
-| Narration audio | `jobs/<jobId>/audio/narration.mp3` | Fixture (fixture/hybrid) or TTS-generated (hybrid_tts/hybrid_storyboard) |
-| Storyboard manifest | `jobs/<jobId>/metadata/storyboard.json` | Deterministic generation (hybrid_storyboard) |
-| Scene images | `jobs/<jobId>/images/scene-NNN.svg` | Deterministic storyboard cards (hybrid_storyboard) |
-| Raw generated video | `jobs/<jobId>/video-generated/generated-001.mp4` | Fixture (all current modes) |
+| Scene plan | `jobs/<jobId>/metadata/scene-plan.json` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard/hybrid_slideshow) |
+| Narration script text | `jobs/<jobId>/audio/narration-script.txt` | Deterministic generation (hybrid/hybrid_tts/hybrid_storyboard/hybrid_slideshow) |
+| Narration audio | `jobs/<jobId>/audio/narration.mp3` | Fixture (fixture/hybrid) or TTS-generated (hybrid_tts/hybrid_storyboard/hybrid_slideshow) |
+| Storyboard manifest | `jobs/<jobId>/metadata/storyboard.json` | Deterministic generation (hybrid_storyboard/hybrid_slideshow) |
+| Scene images | `jobs/<jobId>/images/scene-NNN.svg` and `scene-NNN.png` | SVG storyboard cards and PNG slideshow frames |
+| Raw generated video | `jobs/<jobId>/video-generated/generated-001.mp4` | Fixture copy except `hybrid_slideshow`, which is local FFmpeg slideshow output |
 | Final assembled video | `jobs/<jobId>/exports/generated-001-final.mp4` | Step Functions output (all modes) |
 | Thumbnail | `jobs/<jobId>/exports/thumbnail-001.jpg` | Step Functions output (all modes) |
 
@@ -312,6 +333,7 @@ aws s3 ls "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/$JOB_ID/images
 - `hybrid`: Scene plan + narration script are real; audio/video are fixture
 - `hybrid_tts`: Scene plan + narration script + narration audio are real; video is fixture
 - `hybrid_storyboard`: Scene plan + narration script + narration audio + storyboard images are real; video is fixture
+- `hybrid_slideshow`: Scene plan + narration script + narration audio + storyboard images + raw generated MP4 are real; final motion is still deterministic slideshow, not AI video
 - `ai` (future): All assets real (requires AI providers)
 
 ## Provider Boundary
