@@ -551,14 +551,14 @@ class ModelSelector:
             min_b = float(min_params_str.rstrip("B"))
         except ValueError:
             return True
-        model_lower = model_id.lower()
-        for size in ["70", "34", "32", "14", "13", "8", "7", "3", "1"]:
-            if f"{size}b" in model_lower:
-                return float(size) >= min_b
+        size_b = self._model_size_b(model_id)
+        if size_b is not None:
+            return size_b >= min_b
         return True
 
     def _model_size_b(self, model_id: str) -> float | None:
-        match = re.search(r"(?<!\d)(\d+(?:\.\d+)?)b(?![a-z])", model_id.lower())
+        model_lower = model_id.lower()
+        match = re.search(r"(?<!\d)e?(\d+(?:\.\d+)?)b(?![a-z])", model_lower)
         if not match:
             return None
         try:

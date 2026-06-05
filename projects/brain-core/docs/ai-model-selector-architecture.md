@@ -48,6 +48,8 @@ The AI Model Selector orchestrates inference across Gemini free-tier, two local 
 | `qwen2.5:32b` | 19.8 GB | Quality primary on M4 Pro when memory pressure is acceptable |
 | `qwen2.5:14b` | 8.5 GB | Fallback quality model, metadata generation |
 | `llama3.1:8b` | 5.0 GB | Fast tasks — headlines, keywords, small text |
+| `gemma4:12b` | ~8.0 GB | Medium tasks, alternative to llama3.1:8b |
+| `gemma4:e4b` | ~4.0 GB | Light fast tasks, expert-style architecture |
 | `bakllava:latest` | 4.7 GB | Existing local vision model, optional/manual use |
 
 ### MacBook M1 — Secondary inference node (always on)
@@ -65,8 +67,10 @@ The AI Model Selector orchestrates inference across Gemini free-tier, two local 
 | `qwen2.5:14b` | 8.5 GB | Primary on M1, batch overnight work |
 | `llama3.1:8b` | 5.0 GB | Fallback for medium tasks |
 | `llama3.2:3b` | 2.0 GB | Fast fallback for small tasks |
+| `gemma4:e4b` | ~4.0 GB | Light fast tasks, expert-style architecture |
+| `gemma4:12b` | ~8.0 GB | Medium tasks (conditional on memory pressure) |
 
-The M1 should generally run one model at a time. It is valuable because it adds parallel overnight throughput, not because it should carry heavy interactive work.
+The M1 should generally run one model at a time. It is valuable because it adds parallel overnight throughput, not because it should carry heavy interactive work. Gemma 4 expert-style models (e4b) are preferred on M1 due to smaller footprint.
 
 ---
 
@@ -177,7 +181,7 @@ Provider order is policy-driven. Gemini free-tier handles eligible non-sensitive
       "timeout_connect_sec": 3,
       "timeout_inference_sec": 120,
       "schedule_preference": "any",
-      "preferred_models": ["qwen2.5:32b", "qwen2.5:14b", "llama3.1:8b"]
+      "preferred_models": ["qwen2.5:32b", "qwen2.5:14b", "llama3.1:8b", "gemma4:12b", "gemma4:e4b"]
     },
     {
       "id": "ollama-m1",
@@ -193,7 +197,7 @@ Provider order is policy-driven. Gemini free-tier handles eligible non-sensitive
       "timeout_connect_sec": 5,
       "timeout_inference_sec": 180,
       "schedule_preference": "batch_window",
-      "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b"],
+      "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b", "gemma4:e4b", "gemma4:12b"],
       "notes": "M1 MacBook on Thunderbolt Bridge. 2-3x slower than M4 Pro. Prefer for batch/overnight tasks."
     },
     {
@@ -607,6 +611,8 @@ esac
 ollama pull qwen2.5:32b          # Quality primary when memory pressure is acceptable
 ollama pull qwen2.5:14b          # Fallback quality model
 ollama pull llama3.1:8b          # Secondary — fastest local
+ollama pull gemma4:12b           # Medium tasks, alternative quality model
+ollama pull gemma4:e4b           # Light tasks, expert-style fast model
 ```
 
 ### MacBook M1
@@ -614,6 +620,15 @@ ollama pull llama3.1:8b          # Secondary — fastest local
 ollama pull qwen2.5:14b          # Same primary model — batch overnight work
 ollama pull llama3.1:8b          # Medium fallback
 ollama pull llama3.2:3b          # Fast fallback
+ollama pull gemma4:e4b           # Light tasks, expert-style (preferred on M1)
+ollama pull gemma4:12b           # Medium tasks (conditional on memory)
+```
+
+### Future M4-Only Candidates (not in default rollout)
+```bash
+# Only after Gemma 4 proves stable in 12B variant:
+ollama pull gemma4:26b           # Large context, M4 Pro only
+ollama pull gemma4:31b           # Maximum quality, M4 Pro only
 ```
 
 ---

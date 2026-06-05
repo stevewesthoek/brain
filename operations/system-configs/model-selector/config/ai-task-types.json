@@ -6,7 +6,8 @@
       "typical_output_tokens": 2000,
       "latency_tolerance": "minutes",
       "local_viable": true,
-      "min_local_model_params": "7B"
+      "min_local_model_params": "7B",
+      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"]
     },
     "thumbnail_headline": {
       "capability": "text/small",
@@ -14,7 +15,8 @@
       "typical_output_tokens": 20,
       "latency_tolerance": "seconds",
       "local_viable": true,
-      "min_local_model_params": "7B"
+      "min_local_model_params": "3B",
+      "preferred_local_models": ["llama3.1:8b", "gemma4:e4b", "llama3.2:3b"]
     },
     "seo_keyword_expansion": {
       "capability": "text/small",
@@ -22,7 +24,8 @@
       "typical_output_tokens": 200,
       "latency_tolerance": "seconds",
       "local_viable": true,
-      "min_local_model_params": "7B"
+      "min_local_model_params": "3B",
+      "preferred_local_models": ["llama3.1:8b", "gemma4:e4b", "llama3.2:3b"]
     },
     "transcript_summarization": {
       "capability": "text/large",
@@ -112,6 +115,7 @@
       "local_viable": true,
       "local_required": false,
       "min_local_model_params": "7B",
+      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
       "notes": "Offline prompt and tutor-quality evaluation. Not used in learner runtime by default."
     },
     "fala_content_analysis": {
@@ -142,6 +146,7 @@
       "local_viable": true,
       "local_required": true,
       "min_local_model_params": "7B",
+      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
       "notes": "Mind Steward capture classification. Must be called with local_only=true and must use local OpenAI-compatible providers only."
     },
     "codebase_semantic_graph": {

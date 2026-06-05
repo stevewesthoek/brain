@@ -2,6 +2,54 @@
 
 Canonical runtime snapshot for the local AI Model Selector service.
 
+## Gemma 4 Local Model Support
+
+Gemma 4 is a model family served through Ollama. Both M4 Pro and M1 nodes support selective Gemma 4 models:
+
+**M4 Pro targets:**
+- `gemma4:e4b` (4B expert-style, fast)
+- `gemma4:12b` (12B, balance of speed and quality)
+
+**M1 targets:**
+- `gemma4:e4b` (4B expert-style, fits within memory constraints)
+- `gemma4:12b` (conditional on available memory)
+
+Future candidates (not in default rollout):
+- `gemma4:26b` (M4 Pro only, requires dedicated headroom)
+- `gemma4:31b` (M4 Pro only, requires dedicated headroom)
+
+Install commands:
+
+On M4 Pro:
+```bash
+ollama pull gemma4:e4b
+ollama pull gemma4:12b
+```
+
+On M1:
+```bash
+ollama pull gemma4:e4b
+ollama pull gemma4:12b
+```
+
+Verification:
+
+```bash
+# Check M4 Pro local models
+curl -sS http://127.0.0.1:11434/api/tags | jq '.models[].name | select(. | contains("gemma4"))'
+
+# Check M1 models from M4 Pro
+curl -sS http://192.168.2.2:11434/api/tags | jq '.models[].name | select(. | contains("gemma4"))'
+
+# Test selector routing with Gemma 4
+curl -sS http://127.0.0.1:4890/health/matrix | jq '.models[] | select(.model_id | contains("gemma4"))'
+
+# Test task-level routing
+curl -sS -X POST http://127.0.0.1:4890/select \
+  -H 'Content-Type: application/json' \
+  -d '{"task_type":"metadata_generation","input_token_count":8000,"urgent":true,"local_only":true}'
+```
+
 The LaunchAgent in `operations/system-configs/launchagents/com.office.ai-model-selector.plist` runs:
 
 ```text
@@ -115,6 +163,9 @@ launchctl stop com.office.ai-model-selector 2>/dev/null || true
 launchctl unload ~/Library/LaunchAgents/com.office.ai-model-selector.plist 2>/dev/null || true
 launchctl load -w ~/Library/LaunchAgents/com.office.ai-model-selector.plist
 launchctl start com.office.ai-model-selector
+
+# After updating config, verify the selector is running
+sleep 2 && curl -sS http://127.0.0.1:4890/health
 ```
 
 ## Verify
