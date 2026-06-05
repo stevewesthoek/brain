@@ -1224,7 +1224,38 @@ async function repairPublishJson(jobId: string, publishJson: Record<string, unkn
 export async function runControlledYouTubePublish(jobId: string, options: { dryRun: boolean; confirmation?: string }): Promise<ControlledYouTubePublishResult> {
   if (!isValidJobId(jobId)) return { ok: false, jobId, dryRun: options.dryRun, code: 'invalid_job_id', error: 'Invalid jobId' };
 
-  let publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  // Read metadata in parallel to infer generation mode early
+  const [publishJson_initial, statusJson_initial, assetsJson_initial] = await Promise.all([
+    readJobMetadataJson(jobId, 'publish.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'status.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'assets.json') as Promise<Record<string, unknown> | null>,
+  ]);
+
+  // Infer generation mode early for early review gate
+  const generationMode_early = stringValue(publishJson_initial?.generationMode)
+    ?? stringValue(statusJson_initial?.generationMode)
+    ?? stringValue(assetsJson_initial?.generationMode);
+
+  // For generated-media jobs: check review gate BEFORE expensive asset resolution
+  if (requiresReviewApproval(generationMode_early)) {
+    const review = await getOrCreateReview(jobId);
+    if (!review || review.reviewStatus !== 'approved') {
+      const reviewStatus = review?.reviewStatus ?? 'pending';
+      return {
+        ok: false,
+        jobId,
+        dryRun: options.dryRun,
+        code: 'publish_review_required',
+        error: 'Generated media must be reviewed before YouTube publish.',
+        reviewStatus,
+        details: {
+          reviewKey: `jobs/${jobId}/metadata/review.json`,
+        },
+      };
+    }
+  }
+
+  // Now resolve assets (expensive operation)
   const resolved = await resolvePublishableAssets(jobId);
   if (resolved.missing.length > 0 || !resolved.videoKey || !resolved.thumbnailKey) {
     return {
@@ -1247,22 +1278,28 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     };
   }
 
-  publishJson = await repairPublishJson(jobId, publishJson, resolved);
+  // Repair and get final generation mode
+  let publishJson = await repairPublishJson(jobId, publishJson_initial, resolved);
   const generationMode = typeof publishJson.generationMode === 'string' ? publishJson.generationMode : null;
-  const review = await getOrCreateReview(jobId);
-  if (requiresReviewApproval(generationMode) && (!review || review.reviewStatus !== 'approved')) {
-    const reviewStatus = review?.reviewStatus ?? 'pending';
-    return {
-      ok: false,
-      jobId,
-      dryRun: options.dryRun,
-      code: 'publish_review_required',
-      error: 'Generated media must be reviewed before YouTube publish.',
-      reviewStatus,
-      details: {
-        reviewKey: `jobs/${jobId}/metadata/review.json`,
-      },
-    };
+
+  // For non-generated-media jobs (or if generation mode couldn't be determined earlier),
+  // check review gate now (this is a safety net, but for generated-media already checked above)
+  if (requiresReviewApproval(generationMode) && generationMode !== generationMode_early) {
+    const review = await getOrCreateReview(jobId);
+    if (!review || review.reviewStatus !== 'approved') {
+      const reviewStatus = review?.reviewStatus ?? 'pending';
+      return {
+        ok: false,
+        jobId,
+        dryRun: options.dryRun,
+        code: 'publish_review_required',
+        error: 'Generated media must be reviewed before YouTube publish.',
+        reviewStatus,
+        details: {
+          reviewKey: `jobs/${jobId}/metadata/review.json`,
+        },
+      };
+    }
   }
 
   const platforms = publishJson.platforms as Record<string, unknown> | undefined;
