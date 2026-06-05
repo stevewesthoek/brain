@@ -9,7 +9,7 @@ JOB_ID="${2:-}"
 
 usage() {
   printf 'Usage: %s <mode> <jobId>\n' "$0"
-  printf 'Modes: fixture, hybrid, hybrid_tts, hybrid_storyboard, hybrid_slideshow\n'
+  printf 'Modes: fixture, hybrid, hybrid_tts, hybrid_storyboard, hybrid_slideshow, hybrid_image_slideshow\n'
 }
 
 failures=0
@@ -192,6 +192,34 @@ require_video_file() {
   fi
 }
 
+require_first_existing_image() {
+  local base="$1"
+  local found=""
+  for ext in png jpg jpeg; do
+    local key
+    key="$(object_key "${base}.${ext}")"
+    if object_exists "$key"; then
+      found="$key"
+      break
+    fi
+  done
+  if [[ -z "$found" ]]; then
+    fail "missing required generated scene image: ${base}.png|jpg|jpeg"
+    return
+  fi
+  pass "exists: $found"
+  local dest="$tmp_dir/scene-001.${found##*.}"
+  download_object "$found" "$dest"
+  local file_output
+  file_output="$(file "$dest")"
+  if [[ "$file_output" == *"PNG image data"* || "$file_output" == *"JPEG image data"* ]]; then
+    pass "downloads as image: $found"
+    info "$file_output"
+  else
+    fail "downloaded scene image is not PNG/JPEG: $file_output"
+  fi
+}
+
 expected_generation_mode() {
   case "$MODE" in
     fixture) printf 'fixture_assembly' ;;
@@ -199,6 +227,7 @@ expected_generation_mode() {
     hybrid_tts) printf 'hybrid_tts_fixture_video' ;;
     hybrid_storyboard) printf 'hybrid_storyboard_fixture_video' ;;
     hybrid_slideshow) printf 'hybrid_slideshow_video' ;;
+    hybrid_image_slideshow) printf 'hybrid_image_slideshow_video' ;;
     *) return 1 ;;
   esac
 }
@@ -240,6 +269,14 @@ print_expected_artifacts() {
       printf '  - images/scene-001.png\n'
       printf '  - video-generated/generated-001.mp4 (video)\n'
       ;;
+    hybrid_image_slideshow)
+      printf '  - metadata/scene-plan.json\n'
+      printf '  - audio/narration-script.txt\n'
+      printf '  - audio/narration.mp3 (MP3)\n'
+      printf '  - metadata/storyboard.json\n'
+      printf '  - images/scene-001.png or .jpg\n'
+      printf '  - video-generated/generated-001.mp4 (video)\n'
+      ;;
   esac
 }
 
@@ -249,7 +286,7 @@ if [[ -z "$MODE" || -z "$JOB_ID" ]]; then
 fi
 
 case "$MODE" in
-  fixture|hybrid|hybrid_tts|hybrid_storyboard|hybrid_slideshow) ;;
+  fixture|hybrid|hybrid_tts|hybrid_storyboard|hybrid_slideshow|hybrid_image_slideshow) ;;
   *)
     usage
     exit 2
@@ -341,6 +378,26 @@ case "$MODE" in
     require_json_true "$assets_json" '.slideshowGenerated'
     require_json_equals "$assets_json" '.videoProvider' 'local-ffmpeg-slideshow'
     require_json_equals "$assets_json" '.videoSourceKey' "$(object_key "video-generated/generated-001.mp4")"
+    ;;
+  hybrid_image_slideshow)
+    require_object "$(object_key "metadata/scene-plan.json")"
+    require_object "$(object_key "audio/narration-script.txt")"
+    require_mp3 "$(object_key "audio/narration.mp3")"
+    require_object "$(object_key "metadata/storyboard.json")"
+    require_first_existing_image "images/scene-001"
+    require_video_file "$(object_key "video-generated/generated-001.mp4")"
+    require_json_true "$assets_json" '.imageGenerated'
+    require_json_true "$assets_json" '.slideshowGenerated'
+    require_json_equals "$assets_json" '.videoProvider' 'local-ffmpeg-slideshow'
+    require_json_equals "$assets_json" '.videoSourceKey' "$(object_key "video-generated/generated-001.mp4")"
+    image_provider="$(json_value "$assets_json" '.imageProvider')"
+    if [[ -z "$image_provider" ]]; then
+      fail '.imageProvider is missing'
+    elif [[ "$image_provider" == 'deterministic-placeholder' && "${AWS_VIDEO_VERIFY_ALLOW_PLACEHOLDER_IMAGE_PROVIDER:-0}" != '1' ]]; then
+      fail '.imageProvider must not be deterministic-placeholder for hybrid_image_slideshow unless AWS_VIDEO_VERIFY_ALLOW_PLACEHOLDER_IMAGE_PROVIDER=1'
+    else
+      pass ".imageProvider accepted: $image_provider"
+    fi
     ;;
 esac
 

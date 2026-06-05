@@ -9,6 +9,14 @@ import { DeterministicScenePlanningProvider } from './aws-video-scene-planner.js
 import { PollyTTSProvider } from './aws-video-polly-provider.js';
 import { DeterministicStoryboardProvider } from './aws-video-storyboard-provider.js';
 import { LocalFfmpegSlideshowProvider } from './aws-video-slideshow-provider.js';
+import {
+  AwsBedrockImageProvider,
+  getConfiguredImageProvider,
+  getDefaultImageModelId,
+  ImageProviderError,
+  promptHash,
+} from './aws-video-image-provider.js';
+import type { AwsVideoImageProviderName } from './aws-video-storyboard-types.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -67,6 +75,7 @@ function getAwsVideoGenerationMode(): GenerationMode {
   if (mode === 'ai') return 'ai';
   if (mode === 'hybrid_storyboard') return 'hybrid_storyboard';
   if (mode === 'hybrid_slideshow') return 'hybrid_slideshow';
+  if (mode === 'hybrid_image_slideshow') return 'hybrid_image_slideshow';
   if (mode === 'hybrid_tts') return 'hybrid_tts';
   if (mode === 'hybrid') return 'hybrid';
   return 'fixture';
@@ -1865,8 +1874,23 @@ export async function generateApprovedScript(
   const isHybridTTSMode = generationMode === 'hybrid_tts';
   const isHybridStoryboardMode = generationMode === 'hybrid_storyboard';
   const isHybridSlideshowMode = generationMode === 'hybrid_slideshow';
-  const usesTtsNarration = isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode;
-  const modeMetadata = isHybridSlideshowMode
+  const isHybridImageSlideshowMode = generationMode === 'hybrid_image_slideshow';
+  const usesTtsNarration = isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode;
+  const modeMetadata = isHybridImageSlideshowMode
+    ? {
+        mediaSource: 'hybrid' as const,
+        generationMode: 'hybrid_image_slideshow_video' as const,
+        videoSourceKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
+        audioSourceKey: `jobs/${jobId}/audio/narration.mp3`,
+        providerName: 'hybrid-image-slideshow-ffmpeg',
+        aiGenerated: false,
+        partialAiGenerated: true,
+        ttsGenerated: true,
+        storyboardGenerated: true,
+        imageGenerated: true,
+        slideshowGenerated: true,
+      }
+    : isHybridSlideshowMode
     ? {
         mediaSource: 'hybrid' as const,
         generationMode: 'hybrid_slideshow_video' as const,
@@ -2022,7 +2046,7 @@ export async function generateApprovedScript(
   // Step 2.5 (Hybrid, Hybrid TTS, and Hybrid Storyboard): Generate scene plan and narration script from prompt
   let scenePlanKey: string | undefined;
   let narrationScriptKey: string | undefined;
-  const usesPromptDerivedPlanning = isHybridMode || isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode;
+  const usesPromptDerivedPlanning = isHybridMode || isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode;
   if (usesPromptDerivedPlanning) {
     const scenePlanner = new DeterministicScenePlanningProvider();
     try {
@@ -2230,10 +2254,29 @@ export async function generateApprovedScript(
   let sceneImageKeys: string[] = [];
   let slideshowImageKeys: string[] = [];
   let imageProvider: string | undefined;
+  let imageModelId: string | undefined;
 
-  if ((isHybridStoryboardMode || isHybridSlideshowMode) && scenePlanKey && narrationScriptKey) {
+  if ((isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode) && scenePlanKey && narrationScriptKey) {
+    const configuredImageProvider: AwsVideoImageProviderName | null = isHybridImageSlideshowMode
+      ? getConfiguredImageProvider()
+      : 'deterministic-placeholder';
+    if (isHybridImageSlideshowMode && !configuredImageProvider) {
+      const message = 'hybrid_image_slideshow requires AWS_VIDEO_IMAGE_PROVIDER=aws-bedrock-nova-canvas or aws-bedrock-titan-image. Use AWS_VIDEO_IMAGE_PROVIDER=deterministic-placeholder only for explicit development proof mode.';
+      await writeFailedStatus('image_provider_not_configured', message, {
+        acceptedProviders: ['deterministic-placeholder', 'aws-bedrock-nova-canvas', 'aws-bedrock-titan-image'],
+        requiredEnv: ['AWS_VIDEO_IMAGE_PROVIDER', 'AWS_VIDEO_IMAGE_MODEL_ID', 'AWS_VIDEO_IMAGE_REGION'],
+      });
+      return {
+        ok: false,
+        code: 'image_provider_not_configured',
+        message,
+        jobId,
+      };
+    }
+
     await updateProgressStatus('storyboard_started', {
-      imageProvider: 'deterministic-placeholder',
+      imageProvider: configuredImageProvider,
+      ...(configuredImageProvider ? { imageModelId: getDefaultImageModelId(configuredImageProvider) } : {}),
     });
 
     try {
@@ -2261,11 +2304,15 @@ export async function generateApprovedScript(
       const imagesDir = join(jobRoot, 'images');
       await mkdir(imagesDir, { recursive: true });
 
-      // Generate storyboard images for each scene
       const storyboardProvider = new DeterministicStoryboardProvider();
+      const bedrockImageProvider = configuredImageProvider && configuredImageProvider !== 'deterministic-placeholder'
+        ? new AwsBedrockImageProvider(configuredImageProvider)
+        : null;
+      imageModelId = bedrockImageProvider?.modelId ?? getDefaultImageModelId(configuredImageProvider ?? 'deterministic-placeholder');
       const storyboard: Record<string, unknown> = {
         jobId,
-        provider: storyboardProvider.name,
+        provider: configuredImageProvider ?? storyboardProvider.name,
+        ...(imageModelId ? { imageModelId } : {}),
         createdAt: new Date().toISOString(),
         scenes: [],
       };
@@ -2281,78 +2328,96 @@ export async function generateApprovedScript(
         const pngS3Key = `jobs/${jobId}/images/${baseFileName}.png`;
 
         try {
-          // Generate SVG storyboard card
-          const generatedSvgPath = await storyboardProvider.generateStoryboardImage(
-            {
+          if (bedrockImageProvider) {
+            await bedrockImageProvider.generateSceneImage({
               jobId,
-              index: sceneIndex,
+              sceneIndex,
               visualPrompt: scene.visualPrompt,
               narrationText: scene.narrationText,
-              onScreenText: scene.onScreenText,
-              durationSeconds: scene.durationSeconds,
-            },
-            imagesDir,
-          );
+              ...(scene.onScreenText ? { onScreenText: scene.onScreenText } : {}),
+              width: 1280,
+              height: 720,
+              outputKey: pngS3Key,
+              bucket: S3_BUCKET,
+              region: AWS_REGION,
+            });
+          } else {
+            const generatedSvgPath = await storyboardProvider.generateStoryboardImage(
+              {
+                jobId,
+                index: sceneIndex,
+                visualPrompt: scene.visualPrompt,
+                narrationText: scene.narrationText,
+                onScreenText: scene.onScreenText,
+                durationSeconds: scene.durationSeconds,
+              },
+              imagesDir,
+            );
 
-          // Normalize path returned by provider into canonical SVG path and rasterize to PNG for slideshow assembly.
-          if (generatedSvgPath !== svgPath) {
-            await writeFile(svgPath, await readFile(generatedSvgPath, 'utf-8'), 'utf-8');
+            if (generatedSvgPath !== svgPath) {
+              await writeFile(svgPath, await readFile(generatedSvgPath, 'utf-8'), 'utf-8');
+            }
+            const generatedPngPath = await storyboardProvider.generateStoryboardPng(
+              {
+                jobId,
+                index: sceneIndex,
+                visualPrompt: scene.visualPrompt,
+                narrationText: scene.narrationText,
+                onScreenText: scene.onScreenText,
+                durationSeconds: scene.durationSeconds,
+              },
+              imagesDir,
+            );
+            if (generatedPngPath !== pngPath) {
+              await writeFile(pngPath, await readFile(generatedPngPath));
+            }
+
+            await execFileAsync('aws', [
+              's3', 'cp',
+              svgPath,
+              `s3://${S3_BUCKET}/${svgS3Key}`,
+              '--region', AWS_REGION,
+              '--no-cli-pager',
+              '--content-type', 'image/svg+xml',
+            ]);
+            await execFileAsync('aws', [
+              's3', 'cp',
+              pngPath,
+              `s3://${S3_BUCKET}/${pngS3Key}`,
+              '--region', AWS_REGION,
+              '--no-cli-pager',
+              '--content-type', 'image/png',
+            ]);
           }
-          const generatedPngPath = await storyboardProvider.generateStoryboardPng(
-            {
-              jobId,
-              index: sceneIndex,
-              visualPrompt: scene.visualPrompt,
-              narrationText: scene.narrationText,
-              onScreenText: scene.onScreenText,
-              durationSeconds: scene.durationSeconds,
-            },
-            imagesDir,
-          );
-          if (generatedPngPath !== pngPath) {
-            await writeFile(pngPath, await readFile(generatedPngPath));
-          }
 
-          // Upload SVG and PNG to S3
-          await execFileAsync('aws', [
-            's3', 'cp',
-            svgPath,
-            `s3://${S3_BUCKET}/${svgS3Key}`,
-            '--region', AWS_REGION,
-            '--no-cli-pager',
-            '--content-type', 'image/svg+xml',
-          ]);
-          await execFileAsync('aws', [
-            's3', 'cp',
-            pngPath,
-            `s3://${S3_BUCKET}/${pngS3Key}`,
-            '--region', AWS_REGION,
-            '--no-cli-pager',
-            '--content-type', 'image/png',
-          ]);
-
-          imageKeysArray.push(svgS3Key);
+          imageKeysArray.push(isHybridImageSlideshowMode ? pngS3Key : svgS3Key);
           slideshowImageKeys.push(pngS3Key);
 
           // Add to storyboard data
           (storyboard.scenes as unknown[]).push({
             index: sceneIndex,
             visualPrompt: scene.visualPrompt,
-            imageKey: svgS3Key,
+            imageKey: isHybridImageSlideshowMode ? pngS3Key : svgS3Key,
+            ...(isHybridImageSlideshowMode ? { promptHash: promptHash(scene) } : {}),
             durationSeconds: scene.durationSeconds,
             narrationText: scene.narrationText,
             onScreenText: scene.onScreenText,
           });
         } catch (err) {
-          const message = `Failed to generate storyboard image for scene ${sceneIndex}: ${err instanceof Error ? err.message : String(err)}`;
-          await writeFailedStatus('storyboard_image_generation_failed', message, {
+          const isImageProviderError = err instanceof ImageProviderError;
+          const failedStep = isImageProviderError ? err.code : 'storyboard_image_generation_failed';
+          const message = `Failed to generate scene image for scene ${sceneIndex}: ${err instanceof Error ? err.message : String(err)}`;
+          await writeFailedStatus(failedStep, message, {
             sceneIndex,
+            imageProvider: configuredImageProvider,
+            imageModelId,
             visualPrompt: scene.visualPrompt,
             error: err instanceof Error ? err.message : String(err),
+            ...(isImageProviderError ? err.details : {}),
           });
           return {
             ok: false,
-            code: 'storyboard_image_generation_failed',
+            code: failedStep,
             message,
             jobId,
           };
@@ -2366,10 +2431,12 @@ export async function generateApprovedScript(
 
       sceneImageKeys = imageKeysArray;
       imageProvider = storyboardProvider.name;
+      if (configuredImageProvider) imageProvider = configuredImageProvider;
 
       // Update status: Storyboard complete
       await updateProgressStatus('storyboard_complete', {
-        imageProvider: storyboardProvider.name,
+        imageProvider,
+        ...(imageModelId ? { imageModelId } : {}),
         storyboardKey,
         sceneImageCount: sceneImageKeys.length,
       });
@@ -2389,7 +2456,7 @@ export async function generateApprovedScript(
 
   // Step 4: Assemble the final video.
   const videoKey = `jobs/${jobId}/video-generated/generated-001.mp4`;
-  if (isHybridSlideshowMode) {
+  if (isHybridSlideshowMode || isHybridImageSlideshowMode) {
     await updateProgressStatus('slideshow_started', { videoKey });
     try {
       const slideshowProvider = new LocalFfmpegSlideshowProvider();
@@ -2505,7 +2572,49 @@ export async function generateApprovedScript(
   };
 
   // Add hybrid-specific fields
-  if (isHybridSlideshowMode && narrationScriptKey && storyboardKey) {
+  if (isHybridImageSlideshowMode && narrationScriptKey && storyboardKey) {
+    assetsJson.scenePlanKey = scenePlanKey;
+    assetsJson.narrationScriptKey = narrationScriptKey;
+    assetsJson.audioKey = narrationKey;
+    assetsJson.audioSourceKey = narrationKey;
+    assetsJson.audioProvider = audioProvider;
+    assetsJson.voiceId = voiceId;
+    assetsJson.storyboardKey = storyboardKey;
+    assetsJson.sceneImageKeys = sceneImageKeys;
+    assetsJson.imageProvider = imageProvider;
+    if (imageModelId) assetsJson.imageModelId = imageModelId;
+    assetsJson.videoProvider = 'local-ffmpeg-slideshow';
+    assetsJson.videoKey = videoKey;
+    assetsJson.aiGenerated = false;
+    assetsJson.partialAiGenerated = imageProvider !== 'deterministic-placeholder';
+    assetsJson.ttsGenerated = true;
+    assetsJson.storyboardGenerated = true;
+    assetsJson.imageGenerated = true;
+    assetsJson.slideshowGenerated = true;
+    assetsJson.narration = {
+      path: narrationKey,
+      source: 'tts',
+      provider: audioProvider,
+      voiceId,
+    };
+    assetsJson.sourceVideo = {
+      path: videoKey,
+      source: 'slideshow',
+      provider: 'local-ffmpeg-slideshow',
+    };
+    assetsJson.providers = {
+      scenePlan: 'deterministic-local',
+      narrationScript: 'deterministic-local',
+      narrationAudio: 'aws-polly',
+      sceneImages: imageProvider,
+      video: 'local-ffmpeg-slideshow',
+    };
+    assetsJson.warnings = [
+      imageProvider === 'deterministic-placeholder'
+        ? 'Development proof mode: scene images use deterministic placeholders; final video is slideshow assembly, not motion-video generation.'
+        : 'Scene images are generated by an image model; final video is slideshow assembly, not motion-video generation.',
+    ];
+  } else if (isHybridSlideshowMode && narrationScriptKey && storyboardKey) {
     assetsJson.scenePlanKey = scenePlanKey;
     assetsJson.narrationScriptKey = narrationScriptKey;
     assetsJson.audioKey = narrationKey;
@@ -2653,8 +2762,10 @@ export async function generateApprovedScript(
   }
 
   // Step 5: Write publish.json to both metadata/ and publishing/
-  const publishReason = isHybridSlideshowMode
-    ? 'Hybrid Slideshow pipeline proof — prompt-derived scene plan, narration script, TTS audio, scene images, and ffmpeg slideshow video'
+  const publishReason = isHybridImageSlideshowMode
+    ? 'Hybrid Image Slideshow pipeline proof — prompt-derived scene plan, TTS audio, generated scene images, and ffmpeg slideshow video'
+    : isHybridSlideshowMode
+    ? 'Hybrid Slideshow pipeline proof — prompt-derived scene plan, narration script, TTS audio, deterministic scene images, and ffmpeg slideshow video'
     : isHybridStoryboardMode
     ? 'Hybrid Storyboard pipeline proof — prompt-derived scene plan, narration script, TTS audio, and scene images; video media uses fixtures'
     : isHybridTTSMode
@@ -2662,8 +2773,10 @@ export async function generateApprovedScript(
       : isHybridMode
         ? 'Hybrid pipeline proof — prompt-derived scene plan and narration script; video/audio media uses fixtures'
         : 'Pipeline proof fixture assembly — awaiting explicit publish approval';
-  const publishDescription = isHybridSlideshowMode
-    ? 'Hybrid Slideshow mode: scene plan, narration script, and scene images are prompt-derived from the input prompt. Narration audio is generated via AWS Polly TTS. Final video is assembled locally from those images and narration.'
+  const publishDescription = isHybridImageSlideshowMode
+    ? 'Hybrid Image Slideshow mode: scene plan and narration script are prompt-derived from the input prompt. Narration audio is generated via AWS Polly TTS. Scene images are generated by the configured image provider. Final video is assembled locally as a slideshow, not generated motion video.'
+    : isHybridSlideshowMode
+    ? 'Hybrid Slideshow mode: scene plan, narration script, and deterministic scene images are prompt-derived from the input prompt. Narration audio is generated via AWS Polly TTS. Final video is assembled locally from those images and narration.'
     : isHybridStoryboardMode
     ? 'Hybrid Storyboard mode: scene plan, narration script, and scene images are prompt-derived from the input prompt. Narration audio is generated via AWS Polly TTS. Final video media uses fixtures.'
     : isHybridTTSMode
@@ -2672,8 +2785,10 @@ export async function generateApprovedScript(
         ? 'Hybrid mode: scene plan and narration script are prompt-derived from the input prompt. Final audio and video media use fixtures.'
         : 'Pipeline proof upload. This video used fixture media, not prompt-generated AI video.';
 
-  const publishTags = isHybridSlideshowMode
-    ? ['hybrid-slideshow-proof', 'scene-images-generated', 'tts-narration', 'ffmpeg-slideshow', 'scene-plan-generated']
+  const publishTags = isHybridImageSlideshowMode
+    ? ['hybrid-image-slideshow-proof', 'image-provider-generated', 'tts-narration', 'ffmpeg-slideshow', 'scene-plan-generated']
+    : isHybridSlideshowMode
+    ? ['hybrid-slideshow-proof', 'deterministic-scene-images', 'tts-narration', 'ffmpeg-slideshow', 'scene-plan-generated']
     : isHybridStoryboardMode
     ? ['hybrid-storyboard-proof', 'scene-images-generated', 'tts-narration', 'fixture-video', 'scene-plan-generated']
     : isHybridTTSMode
