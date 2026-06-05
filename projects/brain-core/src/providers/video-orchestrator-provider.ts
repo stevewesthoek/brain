@@ -1248,6 +1248,22 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   }
 
   publishJson = await repairPublishJson(jobId, publishJson, resolved);
+  const generationMode = typeof publishJson.generationMode === 'string' ? publishJson.generationMode : null;
+  const review = await getOrCreateReview(jobId);
+  if (requiresReviewApproval(generationMode) && (!review || review.reviewStatus !== 'approved')) {
+    const reviewStatus = review?.reviewStatus ?? 'pending';
+    return {
+      ok: false,
+      jobId,
+      dryRun: options.dryRun,
+      code: 'publish_review_required',
+      error: 'Generated media must be reviewed before YouTube publish.',
+      reviewStatus,
+      details: {
+        reviewKey: `jobs/${jobId}/metadata/review.json`,
+      },
+    };
+  }
 
   const platforms = publishJson.platforms as Record<string, unknown> | undefined;
   const youtube = platforms?.youtube as Record<string, unknown> | undefined;
@@ -1449,6 +1465,10 @@ function getJobPublishingPath(jobId: string): string {
   return join(getVideoOrchestratorRoot(), 'jobs', jobId, 'publishing', 'publish.json');
 }
 
+function getJobReviewPath(jobId: string): string {
+  return getJobMetadataPath(jobId, 'review.json');
+}
+
 async function readOptionalJson(path: string): Promise<unknown | null> {
   try {
     const content = await readFile(path, 'utf-8');
@@ -1456,6 +1476,119 @@ async function readOptionalJson(path: string): Promise<unknown | null> {
   } catch {
     return null;
   }
+}
+
+function isGeneratedMediaGenerationMode(generationMode: string | null | undefined): boolean {
+  return generationMode === 'hybrid_storyboard_fixture_video'
+    || generationMode === 'hybrid_slideshow_video'
+    || generationMode === 'hybrid_image_slideshow_video';
+}
+
+function buildReviewMedia(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution): VideoReviewMedia {
+  const publishRecord = publishJson ?? {};
+  const sceneImageKeys = Array.isArray(publishRecord.sceneImageKeys)
+    ? publishRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string')
+    : [];
+  return {
+    scenePlanKey: stringValue(publishRecord.scenePlanKey) ?? null,
+    narrationScriptKey: stringValue(publishRecord.narrationScriptKey) ?? null,
+    audioKey: stringValue(publishRecord.audioKey) ?? `jobs/${jobId}/audio/narration.mp3`,
+    sceneImageKeys,
+    videoKey: stringValue(publishRecord.videoKey) ?? resolved.videoKey ?? null,
+    thumbnailKey: stringValue(publishRecord.thumbnailKey) ?? resolved.thumbnailKey ?? null,
+    publishKey: `jobs/${jobId}/metadata/publish.json`,
+  };
+}
+
+function createPendingReview(jobId: string, publishJson: Record<string, unknown> | null, resolved: PublishableAssetsResolution, existing?: VideoReviewMetadata | null): VideoReviewMetadata {
+  const now = new Date().toISOString();
+  const createdAt = existing?.createdAt ?? now;
+  return {
+    jobId,
+    reviewStatus: existing?.reviewStatus ?? 'pending',
+    createdAt,
+    updatedAt: now,
+    reviewedAt: existing?.reviewedAt ?? null,
+    reviewedBy: existing?.reviewedBy ?? null,
+    notes: existing?.notes ?? null,
+    media: buildReviewMedia(jobId, publishJson, resolved),
+  };
+}
+
+async function writeReviewJson(jobId: string, review: VideoReviewMetadata): Promise<void> {
+  const content = `${JSON.stringify(review, null, 2)}\n`;
+  const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+  await mkdir(metadataDir, { recursive: true });
+  await Promise.all([
+    writeFile(getJobReviewPath(jobId), content, 'utf-8'),
+    writeS3MetadataJson(jobId, 'review.json', review as unknown as Record<string, unknown>),
+  ]);
+}
+
+async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null> {
+  const value = await readJobMetadataJson(jobId, 'review.json');
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  const media = record.media && typeof record.media === 'object' ? record.media as Record<string, unknown> : {};
+  return {
+    jobId,
+    reviewStatus: record.reviewStatus === 'approved' || record.reviewStatus === 'changes_requested' ? record.reviewStatus : 'pending',
+    createdAt: stringValue(record.createdAt) ?? new Date().toISOString(),
+    updatedAt: stringValue(record.updatedAt) ?? new Date().toISOString(),
+    reviewedAt: stringValue(record.reviewedAt),
+    reviewedBy: stringValue(record.reviewedBy),
+    notes: stringValue(record.notes),
+    media: {
+      scenePlanKey: stringValue(media.scenePlanKey),
+      narrationScriptKey: stringValue(media.narrationScriptKey),
+      audioKey: stringValue(media.audioKey),
+      sceneImageKeys: Array.isArray(media.sceneImageKeys) ? media.sceneImageKeys.filter((item): item is string => typeof item === 'string') : [],
+      videoKey: stringValue(media.videoKey),
+      thumbnailKey: stringValue(media.thumbnailKey),
+      publishKey: stringValue(media.publishKey),
+    },
+  };
+}
+
+async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | null> {
+  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  const resolved = await resolvePublishableAssets(jobId);
+  const existing = await readReviewJson(jobId);
+  if (existing) {
+    const updated = createPendingReview(jobId, publishJson, resolved, existing);
+    const same = updated.reviewStatus === existing.reviewStatus
+      && updated.createdAt === existing.createdAt
+      && updated.notes === existing.notes
+      && updated.reviewedAt === existing.reviewedAt
+      && updated.reviewedBy === existing.reviewedBy
+      && JSON.stringify(updated.media) === JSON.stringify(existing.media);
+    if (same) return existing;
+    try {
+      await writeReviewJson(jobId, updated);
+    } catch (err) {
+      console.warn(`[getOrCreateReview] Failed to refresh review.json for ${jobId}:`, err);
+    }
+    return updated;
+  }
+  if (!publishJson && !resolved.videoKey && !resolved.thumbnailKey) return null;
+  const created = createPendingReview(jobId, publishJson, resolved);
+  try {
+    await writeReviewJson(jobId, created);
+  } catch (err) {
+    console.warn(`[getOrCreateReview] Failed to persist review.json for ${jobId}:`, err);
+  }
+  return created;
+}
+
+function requiresReviewApproval(generationMode: string | null | undefined): boolean {
+  return isGeneratedMediaGenerationMode(generationMode);
+}
+
+async function requireApprovedReviewForPublish(jobId: string, generationMode: string | null | undefined): Promise<VideoReviewMetadata | null> {
+  if (!requiresReviewApproval(generationMode)) return null;
+  const review = await getOrCreateReview(jobId);
+  if (!review || review.reviewStatus !== 'approved') return review ?? null;
+  return review;
 }
 
 async function fileExists(path: string): Promise<boolean> {
@@ -1654,6 +1787,89 @@ export async function requestScriptChanges(
   return buildApprovalResponse(script, context.topicLoaded, context.contentProfile);
 }
 
+export async function getVideoReview(jobId: string): Promise<VideoReviewResponse | VideoReviewError> {
+  if (!isValidJobId(jobId)) {
+    return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
+  }
+  const review = await getOrCreateReview(jobId);
+  if (!review) {
+    return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
+  }
+  return { ok: true, review };
+}
+
+export async function approveVideoReview(
+  jobId: string,
+  input: { reviewedBy?: unknown; notes?: unknown },
+): Promise<VideoReviewResponse | VideoReviewError> {
+  if (!isValidJobId(jobId)) {
+    return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
+  }
+  if (typeof input.reviewedBy !== 'string' || input.reviewedBy.trim().length === 0) {
+    return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
+  }
+
+  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  const resolved = await resolvePublishableAssets(jobId);
+  const current = await getOrCreateReview(jobId);
+  if (!current) {
+    return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
+  }
+
+  const now = new Date().toISOString();
+  const approved: VideoReviewMetadata = {
+    ...current,
+    reviewStatus: 'approved',
+    updatedAt: now,
+    reviewedAt: now,
+    reviewedBy: input.reviewedBy.trim(),
+    notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes,
+    media: buildReviewMedia(jobId, publishJson, resolved),
+  };
+  try {
+    await writeReviewJson(jobId, approved);
+  } catch {
+    return { ok: false, code: 'review_write_failed', error: 'Failed to write review metadata.', jobId };
+  }
+  return { ok: true, review: approved };
+}
+
+export async function requestVideoReviewChanges(
+  jobId: string,
+  input: { reviewedBy?: unknown; notes?: unknown },
+): Promise<VideoReviewResponse | VideoReviewError> {
+  if (!isValidJobId(jobId)) {
+    return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
+  }
+  if (typeof input.reviewedBy !== 'string' || input.reviewedBy.trim().length === 0) {
+    return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
+  }
+
+  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  const resolved = await resolvePublishableAssets(jobId);
+  const current = await getOrCreateReview(jobId);
+  if (!current) {
+    return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
+  }
+
+  const now = new Date().toISOString();
+  const requested: VideoReviewMetadata = {
+    ...current,
+    reviewStatus: 'changes_requested',
+    updatedAt: now,
+    reviewedAt: now,
+    reviewedBy: input.reviewedBy.trim(),
+    notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes ?? 'Changes requested',
+    media: buildReviewMedia(jobId, publishJson, resolved),
+  };
+  try {
+    await writeReviewJson(jobId, requested);
+  } catch {
+    return { ok: false, code: 'review_write_failed', error: 'Failed to write review metadata.', jobId };
+  }
+  return { ok: true, review: requested };
+}
+
 export interface GenerationTriggerRequest {
   requestedBy?: unknown;
 }
@@ -1743,6 +1959,7 @@ export interface ControlledYouTubePublishResult {
   jobId: string;
   dryRun: boolean;
   publishStatus?: string;
+  reviewStatus?: string;
   videoId?: string | null;
   url?: string | null;
   stdout?: string;
@@ -1752,6 +1969,41 @@ export interface ControlledYouTubePublishResult {
   details?: Record<string, unknown>;
   dryRunPassed?: boolean;
   dryRunCheckedAt?: string;
+}
+
+export type ReviewStatus = 'pending' | 'approved' | 'changes_requested';
+
+export interface VideoReviewMedia {
+  scenePlanKey: string | null;
+  narrationScriptKey: string | null;
+  audioKey: string | null;
+  sceneImageKeys: string[];
+  videoKey: string | null;
+  thumbnailKey: string | null;
+  publishKey: string | null;
+}
+
+export interface VideoReviewMetadata {
+  jobId: string;
+  reviewStatus: ReviewStatus;
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  notes: string | null;
+  media: VideoReviewMedia;
+}
+
+export interface VideoReviewResponse {
+  ok: true;
+  review: VideoReviewMetadata;
+}
+
+export interface VideoReviewError {
+  ok: false;
+  code: 'invalid_job_id' | 'review_not_found' | 'review_write_failed' | 'invalid_body';
+  error: string;
+  jobId?: string;
 }
 
 export async function generateApprovedScript(
@@ -2940,6 +3192,10 @@ export async function generateApprovedScript(
     await writeFile(metadataPublishPath, publishJsonContent, 'utf-8');
     await writeFile(publishingPublishPath, publishJsonContent, 'utf-8');
     await writeS3MetadataJson(jobId, 'publish.json', publishJson);
+    const generatedReview = await getOrCreateReview(jobId);
+    if (generatedReview) {
+      await writeReviewJson(jobId, generatedReview);
+    }
   } catch (err) {
     return {
       ok: false,

@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, runControlledYouTubePublish } from '../providers/video-orchestrator-provider.js';
+import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2340,6 +2340,25 @@ export async function routeRequest(
         return;
       }
 
+      const jobReviewMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/review$/.exec(url.pathname);
+      if (jobReviewMatch) {
+        try {
+          const jobId = decodeURIComponent(jobReviewMatch[1] ?? '');
+          const review = await getVideoReview(jobId);
+          if (!review.ok) {
+            sendJson(response, 404, review);
+          } else {
+            sendJson(response, 200, review);
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job review',
+          });
+        }
+        return;
+      }
+
       const jobExecutionMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/execution$/.exec(url.pathname);
       if (jobExecutionMatch) {
         try {
@@ -2456,6 +2475,34 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
     const result = await requestScriptChanges(jobId, body);
     sendJson(response, scriptApprovalStatusCode(result), result);
+    return;
+  }
+
+  const reviewApproveMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/review\/approve$/.exec(url.pathname);
+  if (reviewApproveMatch) {
+    const jobId = decodeURIComponent(reviewApproveMatch[1] ?? '');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', error: 'Request body must be valid JSON.', jobId });
+      return;
+    }
+
+    const result = await approveVideoReview(jobId, body);
+    sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  const reviewRequestChangesMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/review\/request-changes$/.exec(url.pathname);
+  if (reviewRequestChangesMatch) {
+    const jobId = decodeURIComponent(reviewRequestChangesMatch[1] ?? '');
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', error: 'Request body must be valid JSON.', jobId });
+      return;
+    }
+
+    const result = await requestVideoReviewChanges(jobId, body);
+    sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
 

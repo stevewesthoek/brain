@@ -22,6 +22,15 @@ Five modes are fully operational, and one image-provider mode is wired with fail
 5. **Hybrid Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + local FFmpeg slideshow MP4
 6. **Hybrid Image Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + configured image-provider scene images + local FFmpeg slideshow MP4; fails loudly when image provider config is missing
 
+Generated-media review gate:
+
+- `hybrid_storyboard`, `hybrid_slideshow`, and `hybrid_image_slideshow` require `metadata/review.json` to reach `reviewStatus=approved` before YouTube dry-run or private publish.
+- Review endpoints:
+  - `GET /api/video-orchestrator/jobs/:jobId/review`
+  - `POST /api/video-orchestrator/jobs/:jobId/review/approve`
+  - `POST /api/video-orchestrator/jobs/:jobId/review/request-changes`
+- If review is missing or pending, publish returns `publish_review_required`.
+
 ## Fixture Mode
 
 Fixture mode uses known fixture S3 media. The title comes from a prompt/job, but the video and narration are not generated from that prompt.
@@ -238,6 +247,8 @@ Titan Image is not the selected provider. It is visible in some regions, but is 
 - Does not generate full AI motion video
 - Does not animate still images into motion footage
 - Does not use fixture video as the final source
+
+The publish contract for generated-media modes includes `jobs/<jobId>/metadata/review.json`. Use the Brain Console Center review tab to approve generated media before dry-run or private upload. The verifier supports `--require-review-approved`.
 
 ## Dev Environment Reset
 

@@ -4,12 +4,12 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
-import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob, type VideoJobsDiagnostics } from '@/lib/braincore-schemas';
+import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 
 const GENERATE_TIMEOUT_MS = 120_000;
-type AwsVideoView = 'overview' | 'jobs' | 'create' | 'publish' | 'activity';
+type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
 
 // Action state per job: tracks dry-run pass, upload status, mutation in-flight
 interface ActionState {
@@ -390,6 +390,96 @@ function GenerationArtifactsCard({
   );
 }
 
+function ReviewCard({
+  jobId,
+  reviewData,
+  artifactData,
+  approvePending,
+  requestChangesPending,
+  onApprove,
+  onRequestChanges,
+  notes,
+  setNotes,
+}: {
+  jobId: string | null;
+  reviewData: VideoReview | null;
+  artifactData: Record<string, unknown> | null | undefined;
+  approvePending: boolean;
+  requestChangesPending: boolean;
+  onApprove: () => void;
+  onRequestChanges: () => void;
+  notes: string;
+  setNotes: (value: string) => void;
+}) {
+  if (!jobId) return null;
+  const media = reviewData?.media;
+  const imageKeys = media?.sceneImageKeys ?? [];
+  const bucket = 'prochat-video-dev-909439522876-eu-north-1-an';
+  const region = 'eu-north-1';
+  const s3Command = (key: string | null, label: string) => key
+    ? `aws s3 cp "s3://${bucket}/${key}" - --region ${region}`
+    : `# ${label} not available`;
+
+  return (
+    <article className="card">
+      <div className="card-title">Review</div>
+      <div className="aws-facts">
+        <div><span>Status</span><strong>{reviewData?.reviewStatus ?? 'pending'}</strong></div>
+        <div><span>Created</span><strong>{reviewData?.createdAt ? timeAgo(reviewData.createdAt) : 'unknown'}</strong></div>
+        <div><span>Updated</span><strong>{reviewData?.updatedAt ? timeAgo(reviewData.updatedAt) : 'unknown'}</strong></div>
+        <div><span>Images</span><strong>{imageKeys.length}</strong></div>
+        <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{reviewData?.media.publishKey ? reviewData.media.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
+      </div>
+      <div className="compact-error">Generated media must be reviewed before YouTube dry-run or private publish.</div>
+      <div className="stack">
+        <label className="meta no-margin">Notes</label>
+        <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
+        <div className="pipeline-actions">
+          <button className="button" disabled={!jobId || approvePending} onClick={onApprove}>Approve review</button>
+          <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>Request changes</button>
+        </div>
+      </div>
+      <details style={{ marginTop: '1rem' }}>
+        <summary style={{ cursor: 'pointer' }}>Media details</summary>
+        <div className="aws-facts" style={{ marginTop: '0.75rem' }}>
+          <div><span>Scene plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.scenePlanKey ?? 'missing'}</strong></div>
+          <div><span>Narration script</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.narrationScriptKey ?? 'missing'}</strong></div>
+          <div><span>Narration audio</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.audioKey ?? 'missing'}</strong></div>
+          <div><span>Final MP4</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.videoKey ?? 'missing'}</strong></div>
+          <div><span>Thumbnail</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.thumbnailKey ?? 'missing'}</strong></div>
+          <div><span>Publish JSON</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.publishKey ?? 'missing'}</strong></div>
+        </div>
+        {imageKeys.length > 0 ? (
+          <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
+            {imageKeys.slice(0, 4).map((key) => (
+              <code key={key} style={{ fontSize: '0.78rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: '#f5f5f5', borderRadius: '3px' }}>
+                {key}
+              </code>
+            ))}
+          </div>
+        ) : null}
+      </details>
+      <details style={{ marginTop: '1rem' }}>
+        <summary style={{ cursor: 'pointer' }}>S3 copy commands</summary>
+        <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.8rem' }}>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.scenePlanKey ?? null, 'scene plan')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.narrationScriptKey ?? null, 'narration script')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.audioKey ?? null, 'narration audio')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.videoKey ?? null, 'final MP4')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.thumbnailKey ?? null, 'thumbnail')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.publishKey ?? null, 'publish JSON')}</code>
+        </div>
+      </details>
+      {artifactData ? (
+        <details style={{ marginTop: '1rem' }}>
+          <summary style={{ cursor: 'pointer' }}>Prompt audit</summary>
+          <pre className="compact-pre">{JSON.stringify(asRecord(artifactData?.imageGeneration) ?? {}, null, 2).slice(0, 1600)}</pre>
+        </details>
+      ) : null}
+    </article>
+  );
+}
+
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
@@ -397,6 +487,7 @@ export function AwsVideoDashboard() {
   const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
+  const [reviewNotes, setReviewNotes] = useState('');
   const [dismissedError, setDismissedError] = useState<string | null>(null);
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
   const [activity, setActivity] = useState<string[]>([]);
@@ -453,6 +544,12 @@ export function AwsVideoDashboard() {
     enabled: Boolean(jobId),
     refetchInterval: 10_000,
   });
+  const review = useQuery({
+    queryKey: ['aws-video-review', jobId],
+    queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/review`, videoReviewSchema),
+    enabled: Boolean(jobId),
+    refetchInterval: 15_000,
+  });
 
   const invalidateVideo = async () => {
     await Promise.all([
@@ -462,6 +559,7 @@ export function AwsVideoDashboard() {
       queryClient.invalidateQueries({ queryKey: ['aws-video-timeline'] }),
       queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts'] }),
       queryClient.invalidateQueries({ queryKey: ['aws-video-execution'] }),
+      queryClient.invalidateQueries({ queryKey: ['aws-video-review'] }),
     ]);
   };
 
@@ -486,6 +584,14 @@ export function AwsVideoDashboard() {
   const requestChanges = useMutation({
     mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/request-changes`, videoActionResultSchema, { requestedBy: 'brain-console-center', changes: changeRequest }),
     onSuccess: async (_, { jobIdArg }) => { setChangeRequest(''); addActivity(`Requested changes for ${jobIdArg}`); await invalidateVideo(); },
+  });
+  const approveReview = useMutation({
+    mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/approve`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }),
+    onSuccess: async (_, { jobIdArg }) => { addActivity(`Approved review for ${jobIdArg}`); await invalidateVideo(); },
+  });
+  const requestReviewChanges = useMutation({
+    mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/request-changes`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }),
+    onSuccess: async (_, { jobIdArg }) => { addActivity(`Requested review changes for ${jobIdArg}`); await invalidateVideo(); },
   });
 
   const generate = useMutation({
@@ -545,6 +651,7 @@ export function AwsVideoDashboard() {
   const timelineEvents = timeline.data?.data.events ?? [];
   const artifactData = artifacts.data?.data ?? null;
   const executionData = execution.data?.data ?? null;
+  const reviewData = review.data?.review ?? null;
   const publishableAssets = asRecord(artifactData?.publishableAssets);
   const mediaSource = stringField(selectedJob, 'mediaSource') ?? stringField(artifactData, 'mediaSource') ?? 'unknown';
   const generationMode = stringField(selectedJob, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
@@ -615,15 +722,20 @@ export function AwsVideoDashboard() {
 
   const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
   const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
+  const reviewStatus = reviewData?.reviewStatus ?? 'pending';
+  const reviewApproved = reviewStatus === 'approved';
+  const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video'].includes(generationMode);
   const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
   const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets);
 
-  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && ['pending', 'not_available'].includes(publishStatus));
-  const canPublish = canDryRun && dryRunPassedForThisJob;
+  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && ['pending', 'not_available'].includes(publishStatus) && (!requiresReviewGate || reviewApproved));
+  const canPublish = canDryRun && dryRunPassedForThisJob && (!requiresReviewGate || reviewApproved);
 
   const publishNeedsRepair = hasGeneratedAssets && selectedJob?.status === 'generating' && !stringField(publishableAssets, 'videoKey');
   const publishReadinessLabel = selectedUploaded
     ? 'Already uploaded'
+    : requiresReviewGate && !reviewApproved
+      ? `Review ${reviewStatus}`
     : canDryRun
       ? 'Ready for dry-run'
       : hasGeneratedAssets
@@ -633,6 +745,7 @@ export function AwsVideoDashboard() {
     { label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: Boolean(selectedJob && ['draft', 'awaiting_approval'].includes(selectedJob.status ?? '')) },
     { label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
     { label: 'Generate', help: 'Run AWS assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
+    { label: 'Review', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved },
     { label: 'Dry-run', help: 'Validate YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
     { label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
   ];
@@ -709,8 +822,9 @@ export function AwsVideoDashboard() {
             ['overview', '1. Pipeline'],
             ['jobs', '2. Jobs'],
             ['create', '3. Create draft'],
-            ['publish', '4. Publish'],
-            ['activity', '5. Activity'],
+            ['review', '4. Review'],
+            ['publish', '5. Publish'],
+            ['activity', '6. Activity'],
           ].map(([view, label]) => (
             <button key={view} className={activeView === view ? 'active' : ''} onClick={() => setActiveView(view as AwsVideoView)}>{label}</button>
           ))}
@@ -801,6 +915,20 @@ export function AwsVideoDashboard() {
             </div>
           ) : null}
 
+          {activeView === 'review' ? (
+            <ReviewCard
+              jobId={jobId}
+              reviewData={reviewData}
+              artifactData={artifactData}
+              approvePending={approveReview.isPending}
+              requestChangesPending={requestReviewChanges.isPending}
+              onApprove={() => { if (jobId) approveReview.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); }}
+              onRequestChanges={() => { if (jobId) requestReviewChanges.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); }}
+              notes={reviewNotes}
+              setNotes={setReviewNotes}
+            />
+          ) : null}
+
           {activeView === 'jobs' ? (
             <article className="card">
               <div className="card-header"><div><div className="card-title">Recent jobs</div><div className="card-description">Select one job. Long IDs wrap; no horizontal scrolling.</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
@@ -845,7 +973,9 @@ export function AwsVideoDashboard() {
                 <div><span>Required state</span><strong>{publishReadinessLabel}</strong></div>
                 <div><span>Media source</span><strong>{mediaSource}</strong></div>
                 <div><span>Dry-run</span><strong>{dryRunPassedForThisJob ? 'passed' : 'required'}</strong></div>
+                <div><span>Review</span><strong>{reviewStatus}</strong></div>
               </div>
+              {requiresReviewGate ? <div className="compact-error">Review gate is enforced for generated media. Dry-run and private publish stay disabled until review is approved.</div> : null}
               {isHybridImageSlideshowMode
                 ? <div className="compact-error">Generated image slideshow: scene images are generated by {imageProvider ?? 'the configured image provider'}; final video is assembled as a slideshow.</div>
                 : isHybridSlideshowMode
@@ -872,7 +1002,7 @@ export function AwsVideoDashboard() {
                 <button className="button secondary" disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
                 <button className="button danger-button" disabled={!canPublish || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
               </div>
-              <p className="meta no-margin">Private upload unlocks automatically after a successful dry-run for this selected job.</p>
+              <p className="meta no-margin">{requiresReviewGate ? 'Review approval is required before dry-run or private upload.' : 'Private upload unlocks automatically after a successful dry-run for this selected job.'}</p>
               <CompactPublishResultCard
                 dryRunResult={youtubeDryRun.data}
                 uploadResult={youtubePublish.data}

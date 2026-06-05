@@ -6,14 +6,24 @@ REGION="eu-north-1"
 
 MODE="${1:-}"
 JOB_ID="${2:-}"
+REQUIRE_REVIEW_APPROVED=0
+
+if [[ "${1:-}" == "--require-review-approved" ]]; then
+  REQUIRE_REVIEW_APPROVED=1
+  MODE="${2:-}"
+  JOB_ID="${3:-}"
+fi
 
 usage() {
   printf 'Usage: %s <mode> <jobId>\n' "$0"
+  printf '       %s --require-review-approved <mode> <jobId>\n' "$0"
   printf 'Modes: fixture, hybrid, hybrid_tts, hybrid_storyboard, hybrid_slideshow, hybrid_image_slideshow\n'
 }
 
 failures=0
 tmp_dir=""
+review_status=""
+publish_check_json=""
 
 cleanup() {
   if [[ -n "$tmp_dir" && -d "$tmp_dir" ]]; then
@@ -484,6 +494,38 @@ if optional_object "$publish_check_key"; then
   info "youtubeDryRun.status: ${dry_run_status:-<empty>}"
 else
   info "metadata/publish-check.json not present; dry-run proof check skipped"
+fi
+
+review_key="$(object_key "metadata/review.json")"
+review_json="$tmp_dir/review.json"
+if optional_object "$review_key"; then
+  download_object "$review_key" "$review_json"
+  pass "exists: $review_key"
+  review_status="$(json_value "$review_json" '.reviewStatus')"
+  info "reviewStatus: ${review_status:-<empty>}"
+  if [[ "$review_status" != "pending" && "$review_status" != "approved" && "$review_status" != "changes_requested" ]]; then
+    fail "reviewStatus must be pending, approved, or changes_requested"
+  fi
+else
+  if [[ "$MODE" == hybrid_storyboard || "$MODE" == hybrid_slideshow || "$MODE" == hybrid_image_slideshow ]]; then
+    fail "missing required review metadata for generated media: $review_key"
+  else
+    info "metadata/review.json not present; review gate not required for this mode"
+  fi
+fi
+
+if [[ -f "$publish_check_json" || -f "$tmp_dir/publish-check.json" ]]; then
+  if [[ "${review_status:-pending}" != "approved" ]]; then
+    fail "dry-run proof exists but reviewStatus is not approved"
+  fi
+fi
+
+if [[ "$REQUIRE_REVIEW_APPROVED" -eq 1 ]]; then
+  if [[ "${review_status:-}" != "approved" ]]; then
+    fail "--require-review-approved set but reviewStatus is not approved"
+  else
+    pass "reviewStatus approved"
+  fi
 fi
 
 printf '\n'

@@ -215,6 +215,28 @@ export const videoExecutionResponseSchema = z.object({
   data: z.record(z.unknown()).nullable().optional(),
 }).passthrough();
 
+export const videoReviewSchema = z.object({
+  ok: z.boolean().optional(),
+  review: z.object({
+    jobId: z.string(),
+    reviewStatus: z.enum(['pending', 'approved', 'changes_requested']),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    reviewedAt: z.string().nullable(),
+    reviewedBy: z.string().nullable(),
+    notes: z.string().nullable(),
+    media: z.object({
+      scenePlanKey: z.string().nullable(),
+      narrationScriptKey: z.string().nullable(),
+      audioKey: z.string().nullable(),
+      sceneImageKeys: z.array(z.string()),
+      videoKey: z.string().nullable(),
+      thumbnailKey: z.string().nullable(),
+      publishKey: z.string().nullable(),
+    }),
+  }),
+}).passthrough();
+
 export const videoStatusSchema = z.object({
   ok: z.boolean().optional(),
   data: z.record(z.unknown()).optional(),
@@ -247,3 +269,4 @@ export type LocalAppsDashboard = z.infer<typeof localAppsDashboardSchema>;
 export type VideoJob = z.output<typeof videoJobSchema>;
 export type VideoJobsDiagnostics = z.output<typeof videoJobsDiagnosticsSchema>;
 export type VideoTimeline = z.output<typeof videoTimelineSchema>;
+export type VideoReview = z.output<typeof videoReviewSchema>['review'];

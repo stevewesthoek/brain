@@ -290,6 +290,56 @@ Verified provider:
 - Does not animate scenes or create motion footage
 - Does not silently use fixture video or placeholder images for real image mode
 
+### 2.9. Review Gate for Generated Media
+
+Generated-media modes require an explicit review before YouTube dry-run or private publish:
+
+- `hybrid_storyboard`
+- `hybrid_slideshow`
+- `hybrid_image_slideshow`
+
+Brain Core writes `jobs/<jobId>/metadata/review.json` when publish metadata exists or when generated publish assets are detected.
+
+```json
+{
+  "jobId": "<jobId>",
+  "reviewStatus": "pending",
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-01-01T00:00:00.000Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/<jobId>/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
+    "audioKey": "jobs/<jobId>/audio/narration.mp3",
+    "sceneImageKeys": ["jobs/<jobId>/images/scene-001.png"],
+    "videoKey": "jobs/<jobId>/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/<jobId>/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/<jobId>/metadata/publish.json"
+  }
+}
+```
+
+Brain Console Center exposes:
+
+- `GET /api/video-orchestrator/jobs/:jobId/review`
+- `POST /api/video-orchestrator/jobs/:jobId/review/approve`
+- `POST /api/video-orchestrator/jobs/:jobId/review/request-changes`
+
+If review is missing or pending, YouTube publish returns:
+
+```json
+{
+  "ok": false,
+  "code": "publish_review_required",
+  "error": "Generated media must be reviewed before YouTube publish.",
+  "reviewStatus": "pending"
+}
+```
+
+The verifier script supports `--require-review-approved` for a strict publish-readiness check.
+
 ### 3. AI (`AWS_VIDEO_GENERATION_MODE=ai`)
 
 Not yet implemented. If set without a real provider configured, Brain Core returns:
