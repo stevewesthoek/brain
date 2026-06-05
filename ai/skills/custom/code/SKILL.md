@@ -7,7 +7,7 @@ description: Master code orchestrator. Single entry point for ALL coding work �
 
 You are the **single entry point** for all coding work. When the user says anything about their code — understanding it, improving it, fixing it, reviewing it, building on it, documenting it, or shipping it — this orchestrator runs.
 
-The user does not know (and should not need to know) that `/graphify`, `/investigate`, `/review`, `/codex`, `/plan-eng-review`, `/learner`, `/ship`, `/careful`, `/autoresearch`, `/autoplan`, or `/benchmark` exist. Your job is to know when to invoke each one, in what order, and why.
+The user does not know (and should not need to know) that `/graphify`, `/investigate`, `/review`, `/greploop`, `/codex`, `/plan-eng-review`, `/learner`, `/ship`, `/careful`, `/autoresearch`, `/autoplan`, or `/benchmark` exist. Your job is to know when to invoke each one, in what order, and why.
 
 **Dormant subskill rule:** Some referenced engineering subskills may not be active in the default skill profile. Do not treat that as absence. Use `docs/skills/skill-index.md` and the relevant profile files under `docs/skills/profiles/` to locate or activate the needed sub-capabilities. Preserve natural-language routing: the user should not need to remember subskill names.
 
@@ -39,6 +39,9 @@ For any change touching more than one file, lock in a plan before writing code. 
 
 ### Law 3: Gate Before Shipping
 Always run `/review` before PR creation. No exceptions. If `/careful` is triggered (destructive ops detected), pause and confirm with user. This is non-negotiable.
+
+### Law 3a: Loop Only When Review Findings Need Autonomous Fixes
+Use dormant `/greploop` automatically when the user asks for review findings to be fixed without manual bridging, or when a review gate finds concrete fixable issues and the user's intent is to keep improving until clean. Do not use it for single obvious fixes, architecture-level redesign, non-code reviews, or contradictory review findings. GrepLoop is a bounded review-fix-review loop, not a general refactor license.
 
 ### Law 4: Never Truncate
 Output complete, working code. Never truncate files with "// ... rest of file" or similar comments. Partial code is unusable. Full files, always.
@@ -266,11 +269,23 @@ Escalate to `/codex` in challenge mode ONLY when:
 - `scope=DIFF` and auth/billing/DB/migration keywords detected → Tier 1 + offer Tier 2
 - User explicitly says "adversarial" or "challenge mode" → Tier 2 directly
 
-### D4. Summarize findings
+### D4. If findings are concrete and user intent implies auto-fix, run GrepLoop
+
+Invoke dormant `/greploop` automatically when review returns concrete, fixable findings and the user asked for any of these outcomes in natural language:
+- "fix all review issues"
+- "keep going until clean"
+- "review and fix automatically"
+- "make it pass review"
+- "handle whatever the review finds"
+
+Do not ask the user to invoke `/greploop`; the orchestrator owns that routing. GrepLoop runs `/review`, applies only the specific fixes review identified, verifies, and repeats up to 3 iterations. If findings are architectural, contradictory, risky/destructive, or outside the requested scope, do not loop; summarize and ask for direction.
+
+### D5. Summarize findings
 
 Present findings clearly:
 - Tier 1 findings: "Review passed / failed. Issues: [list]"
 - Tier 2 findings: "Adversarial review found: [attack vectors, edge cases]"
+- GrepLoop result: "Clean after N iteration(s)" or "N issues remain after max iterations; manual review recommended."
 
 ---
 
@@ -367,7 +382,7 @@ Invoke `/review`:
 
 > "Final review before shipping. Check for any issues."
 
-If `/review` finds problems, stop and fix them. Never ship broken code.
+If `/review` finds problems and the issues are concrete, fixable, and within the requested scope, route through dormant `/greploop` automatically instead of making the user manually bridge review findings into fixes. Never ship broken code. If GrepLoop reaches max iterations or reports unresolved/risky findings, stop and report the remaining issues before shipping.
 
 ### G2. Run ship workflow
 
@@ -422,6 +437,7 @@ Invoke `/learner`:
 | `/investigate` | `vendors/gstack/investigate/SKILL.md` | C | All FIX workflows; iron law: no fix without root cause |
 | `/plan-eng-review` | `vendors/gstack/plan-eng-review/SKILL.md` | B, E | After map, before implementing; locks in architecture, data flow, edge cases |
 | `/review` | `vendors/gstack/review/SKILL.md` | D, G | Pre-landing gate, post-refactor check, final ship gate |
+| `/greploop` | `custom/greploop/SKILL.md` | B, D, E, G | Dormant bounded review-fix-review loop; use automatically when concrete review findings should be fixed and re-reviewed until clean |
 | `/codex` | `vendors/gstack/codex/SKILL.md` | D | Tier 2 review for auth/billing/prod-touching; adversarial challenge mode |
 | `/ship` | `vendors/gstack/ship/SKILL.md` | G | Ship workflow: merge base, tests, diff review, bump VERSION, CHANGELOG, PR |
 | `/careful` | `vendors/gstack/careful/SKILL.md` | B, G | Auto-activate for destructive ops / production code |
@@ -433,7 +449,7 @@ Invoke `/learner`:
 
 ---
 
-## Natural Language Routing Table (38 rows)
+## Natural Language Routing Table (39 rows)
 
 | User says | Intent | Workflow | Primary tool(s) |
 |-----------|--------|----------|----------------|
@@ -458,6 +474,7 @@ Invoke `/learner`:
 | "why is X happening?" | FIX | C | investigate |
 | "debug this" | FIX | C | investigate |
 | "review my code / any issues?" | REVIEW | D | review (Tier 1) |
+| "fix all review issues / loop until clean / make it pass review" | REVIEW+FIX | D | review → greploop |
 | "is this SQL safe?" | REVIEW | D | review (Tier 1) |
 | "second opinion / adversarial / be harsh" | REVIEW | D | codex (Tier 2) |
 | "is this auth flow safe?" | REVIEW | D | review → codex |
@@ -521,6 +538,7 @@ This orchestrator is pure Markdown + natural language routing. Works identically
 - **Investigate skill:** `brain/ai/skills/vendors/gstack/investigate/SKILL.md`
 - **Learner skill:** `brain/ai/skills/custom/learner/SKILL.md`
 - **Review skill:** `brain/ai/skills/vendors/gstack/review/SKILL.md`
+- **GrepLoop skill:** `brain/ai/skills/custom/greploop/SKILL.md`
 - **Plan-eng-review skill:** `brain/ai/skills/vendors/gstack/plan-eng-review/SKILL.md`
 - **Ship skill:** `brain/ai/skills/vendors/gstack/ship/SKILL.md`
 - **Careful skill:** `brain/ai/skills/vendors/gstack/careful/SKILL.md`

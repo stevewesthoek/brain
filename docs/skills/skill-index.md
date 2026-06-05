@@ -26,6 +26,7 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 | `ffmpeg` | Audio/video encoding and composition | No | video, power | Media format conversion and mixing |
 | `n8n` | Workflow automation platform | No | deploy, power | Workflow orchestration and integration |
 | `autoresearch` | Autonomous research workflows | No | research, power | Automated research iteration and optimization |
+| `greploop` | Bounded review-fix-review loop for code quality gates | No | code-orchestrator | Dormant subskill used automatically by `code` when review findings should be fixed until clean; do not add to default active profile |
 | `spark` | Spark email/calendar/contact CLI | No | productivity, power | Mailbox, calendar, contacts, meetings, scheduling; personal-data sensitive, not default-active |
 
 ---

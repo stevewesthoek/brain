@@ -59,21 +59,20 @@
 ---
 
 ### 2. Skills Registry — Orchestrators & Specialized Tools
-**File:** `ai/skills/` with index at `ai/skills/SKILLS-INDEX.md`  
+**File:** `ai/skills/` with active/dormant registry at `docs/skills/skill-index.md`  
 **Structure:**
-- `active/` — Symlinks only (what all AIs read)
-- `vendors/` — Third-party skills (gstack, cloudflare, etc.)
-- `custom/` — First-party skills (memory, apify, spark, firecrawl, etc.)
+- `active/` — Symlinks only (the default exported skill surface all AIs read)
+- `vendors/` — Third-party skill sources (gstack, cloudflare, etc.)
+- `custom/` — First-party skill sources, including dormant subskills such as `greploop`
 
-**Master Skills List (via CLAUDE.md):**
+**Default active skills:**
 ```
-/code, /design, /graphify, /memory, /video, /web, /viral-flow,
-/notebooklm, /firecrawl, /browse, /playwright, /apify, /cloudflare, /n8n,
-/stripe, /ffmpeg, /gh, /dokploy, /supabase, /azure, /hetzner,
-/gws, /tailscale, /investigate, /review, /ship, /handoff, /qa, etc.
+/code, /research, /memory, /review, /qa, /handoff, /careful
 ```
 
-**Access:** All AIs see the same `active/` symlinks, so all AIs have access to all skills.
+**Dormant skills:** Heavy or specialized skills stay outside `active/` and are documented in `docs/skills/skill-index.md`. The `/code` orchestrator may route to dormant engineering subskills automatically from their source docs when appropriate. Example: `custom/greploop` remains dormant but is part of `/code`'s automatic review-fix-review arsenal.
+
+**Access:** All AIs see the same `active/` symlinks by default. Dormant skills are not manually activated for normal users; orchestrators such as `/code` own when/how to apply them from the registry and source documentation.
 
 ---
 
