@@ -74,6 +74,12 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
       readinessEndpoint: '/execution/readiness',
       plansEndpoint: '/execution/plans',
       firstCandidate: 'scheduler-run-mind-steward-dry-run',
+      ...(typeof executionReadiness.mindStewardInboxDryRunExecutionFlagEnabled === 'boolean'
+        ? { mindStewardInboxDryRunExecutionFlagEnabled: executionReadiness.mindStewardInboxDryRunExecutionFlagEnabled }
+        : {}),
+      ...(executionReadiness.mindStewardInboxDryRunExecutionFlagName
+        ? { mindStewardInboxDryRunExecutionFlagName: executionReadiness.mindStewardInboxDryRunExecutionFlagName }
+        : {}),
     },
     notes: [
       'Brain Core is local-only by default.',

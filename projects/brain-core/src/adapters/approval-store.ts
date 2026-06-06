@@ -5,6 +5,7 @@ import type { BrainCoreApprovalRecord, BrainCoreApprovalStoreSummary } from '../
 
 const DEFAULT_RELATIVE_PATH = 'runtime/local/brain-core/approvals.json';
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', 'mind'];
+const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
@@ -98,23 +99,31 @@ export function persistApprovalStore(records: BrainCoreApprovalRecord[]): boolea
 }
 
 function normalizeRecord(record: BrainCoreApprovalRecord): BrainCoreApprovalRecord {
+  const executed = record.execution?.status === 'ok';
+  const executionGate =
+    executed && record.kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+      ? 'enabled-for-mind-steward-inbox-dry-run'
+      : executed
+        ? 'enabled-for-mind-steward-dry-run'
+        : 'disabled-until-explicit-enable';
+
   return {
     ...record,
     status: normalizeStatus(record.status),
     source: record.source === 'json' ? 'json' : 'memory',
-    executed: record.execution?.status === 'ok',
-    ...(record.execution?.status === 'ok' ? { execution: record.execution } : {}),
+    executed,
+    ...(executed ? { execution: record.execution } : {}),
     preview: {
       ...record.preview,
-      wouldExecute: record.execution?.status === 'ok',
+      wouldExecute: executed,
       requiresApproval: true,
       writesToMind: false,
       externalSideEffects: false,
-      commands: record.execution?.status === 'ok' ? ['bash tools/scripts/mind-steward-dry-run-report.sh'] : [],
+      commands: executed && record.execution?.command ? [record.execution.command] : [],
     },
     policy: {
-      executionEnabled: record.execution?.status === 'ok',
-      executionGate: record.execution?.status === 'ok' ? 'enabled-for-mind-steward-dry-run' : 'disabled-until-explicit-enable',
+      executionEnabled: executed,
+      executionGate,
       requiresDurableAudit: true,
       requiresRollbackPlan: true,
     },

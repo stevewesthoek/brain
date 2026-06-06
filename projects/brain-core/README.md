@@ -134,7 +134,7 @@ Current `/orchestrators` returns placeholder summaries for Video Orchestrator, M
 
 Current `/runtime/reports` returns read-only runtime report summaries for the mind-steward dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
 
-Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/mind-steward/latest.json` exists, or when `BRAIN_CORE_MIND_STEWARD_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. They do not inspect logs, run jobs, or mutate scheduler state.
+Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/mind-steward/latest.json` exists, or when `BRAIN_CORE_MIND_STEWARD_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. `/scheduler/jobs` also surfaces the report-only `mind-steward-inbox-dry-run` candidate from `runtime/local/mind-steward/inbox-latest.json` when available. They do not inspect logs, run jobs, or mutate scheduler state.
 
 Current `/local-apps` is a read-only placeholder or report-backed list for local services. When `runtime/local/local-apps/latest.json` exists, or when `BRAIN_CORE_LOCAL_APPS_REPORT_PATH` points to a safe JSON report, the endpoint returns report-backed summaries. It still does not start, stop, or restart apps.
 
@@ -182,7 +182,9 @@ Current `/approvals` reads the in-memory approval request store, or returns pers
 
 Current `/approvals/store` exposes read-only approval-store health and record counts. When `BRAIN_CORE_APPROVAL_STORE_PATH` points to a safe JSON file, Brain Core persists approval records there and reports `status: "available"`; otherwise it falls back to memory and reports `status: "memory"`. Unsafe paths are rejected and reported as `status: "unsafe"`.
 
-Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The first candidate is `scheduler-run-mind-steward-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
+Current `/execution/plans`, `/execution/plans/:kind`, and `/execution/readiness` expose a read-only execution-gate scaffold. The current candidates are `scheduler-run-mind-steward-dry-run` and `scheduler-run-mind-steward-inbox-dry-run`, but Brain Core still reports `executionEnabled: false`, `wouldExecute: false`, and `executed: false`.
+
+Brain Core supports approved, feature-flagged, report-only Mind Steward dry-run and inbox dry-run actions through the scheduler approval path. They remain preflight surfaces for future Phase 8 work and still do not write to Mind.
 
 Current mutation surface is intentionally minimal:
 

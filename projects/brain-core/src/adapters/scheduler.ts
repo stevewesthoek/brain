@@ -13,8 +13,11 @@ interface MindStewardRuntimeReport {
   executableActions?: boolean;
 }
 
+const MIND_STEWARD_RUNTIME_REPORT_PATH = 'latest.json';
+const MIND_STEWARD_INBOX_RUNTIME_REPORT_PATH = 'inbox-latest.json';
+
 export function getSchedulerStatus(): BrainCoreSchedulerStatus {
-  const report = readMindStewardRuntimeReport();
+  const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
 
   if (report) {
     return toRuntimeSchedulerStatus(report, 'Scheduler runtime report is available from the mind-steward dry-run job.');
@@ -30,7 +33,7 @@ export function getSchedulerStatus(): BrainCoreSchedulerStatus {
 }
 
 export function getSchedulerLatestRun(): BrainCoreSchedulerStatus {
-  const report = readMindStewardRuntimeReport();
+  const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
 
   if (report) {
     return toRuntimeSchedulerStatus(report, report.message || 'Latest mind-steward dry-run report loaded.');
@@ -46,8 +49,10 @@ export function getSchedulerLatestRun(): BrainCoreSchedulerStatus {
 }
 
 export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
-  const report = readMindStewardRuntimeReport();
+  const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
   const reportStatus = report ? toJobStatus(report.status) : 'placeholder';
+  const inboxReport = readMindStewardRuntimeReport(MIND_STEWARD_INBOX_RUNTIME_REPORT_PATH);
+  const inboxReportStatus = inboxReport ? toJobStatus(inboxReport.status) : 'placeholder';
 
   return [
     {
@@ -80,18 +85,26 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
       status: reportStatus,
       mutationRequired: false,
     },
+    {
+      id: 'mind-steward-inbox-dry-run',
+      name: 'Mind Steward inbox dry-run report',
+      status: inboxReportStatus,
+      mutationRequired: false,
+    },
   ];
 }
 
-function readMindStewardRuntimeReport(): MindStewardRuntimeReport | undefined {
+function readMindStewardRuntimeReport(reportFileName: string): MindStewardRuntimeReport | undefined {
   const reportPath = getMindStewardReportPath();
 
-  if (!fs.existsSync(reportPath)) {
+  const resolvedReportPath = path.resolve(path.dirname(reportPath), reportFileName);
+
+  if (!fs.existsSync(resolvedReportPath)) {
     return undefined;
   }
 
   try {
-    return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as MindStewardRuntimeReport;
+    return JSON.parse(fs.readFileSync(resolvedReportPath, 'utf8')) as MindStewardRuntimeReport;
   } catch {
     return {
       status: 'failed',

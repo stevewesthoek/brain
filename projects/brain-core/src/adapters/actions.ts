@@ -31,6 +31,14 @@ let nextApprovalNumber = 1;
 let nextAuditNumber = 1;
 
 const APPROVAL_EXPIRATION_MS = 24 * 60 * 60 * 1000;
+const MIND_STEWARD_DRY_RUN_KIND = 'scheduler-run-mind-steward-dry-run';
+const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
+const MIND_STEWARD_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-dry-run-report.sh';
+const MIND_STEWARD_INBOX_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh';
+const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
+const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
+const MIND_STEWARD_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-dry-run-report.sh';
+const MIND_STEWARD_INBOX_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-inbox-dry-run-report.sh';
 
 export function requestAction(kind = 'manual-request'): BrainCoreActionRequestResult {
   syncApprovalStoreFromDisk();
@@ -220,7 +228,7 @@ function createApprovalRecord(input: {
   execution?: BrainCoreApprovalExecutionSummary;
 }): BrainCoreApprovalRecord {
   const preview = createPreview(input.kind, input.execution?.status === 'ok');
-  const policy = createPolicy(input.execution?.status === 'ok');
+  const policy = createPolicy(input.kind, input.execution?.status === 'ok');
   return {
     id: input.id,
     kind: input.kind,
@@ -253,9 +261,9 @@ function normalizeApprovalForRead(record: BrainCoreApprovalRecord): BrainCoreApp
       requiresApproval: true,
       writesToMind: false,
       externalSideEffects: false,
-      commands: executed ? ['bash tools/scripts/mind-steward-dry-run-report.sh'] : [],
+      commands: executed && record.execution?.command ? [record.execution.command] : [],
     },
-    policy: createPolicy(executed),
+    policy: createPolicy(record.kind, executed),
     source: record.source === 'json' ? 'json' : 'memory',
   };
 }
@@ -282,7 +290,7 @@ function toAuditApprovalSummary(record: BrainCoreApprovalRecord): BrainCoreAppro
 }
 
 function createPreview(kind: string, wouldExecute = false): BrainCoreApprovalPreview {
-  const executionPlanPreview = kind === 'scheduler-run-mind-steward-dry-run' ? getExecutionPlanPreview(kind) : undefined;
+  const executionPlanPreview = kind.startsWith('scheduler-run-mind-steward-') ? getExecutionPlanPreview(kind) : undefined;
   const summary =
     executionPlanPreview ??
     (kind.startsWith('scheduler-run-')
@@ -302,14 +310,21 @@ function createPreview(kind: string, wouldExecute = false): BrainCoreApprovalPre
     requiresApproval: true,
     writesToMind: false,
     externalSideEffects: false,
-    commands: wouldExecute ? ['bash tools/scripts/mind-steward-dry-run-report.sh'] : [],
+    commands: wouldExecute ? [getMindStewardExecutionCommand(kind)] : [],
   };
 }
 
-function createPolicy(executionEnabled = false): BrainCoreExecutionGatePolicy {
+function createPolicy(kind: string, executionEnabled = false): BrainCoreExecutionGatePolicy {
+  const executionGate =
+    executionEnabled && kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+      ? 'enabled-for-mind-steward-inbox-dry-run'
+      : executionEnabled
+        ? 'enabled-for-mind-steward-dry-run'
+        : 'disabled-until-explicit-enable';
+
   return {
     executionEnabled,
-    executionGate: executionEnabled ? 'enabled-for-mind-steward-dry-run' : 'disabled-until-explicit-enable',
+    executionGate,
     requiresDurableAudit: true,
     requiresRollbackPlan: true,
   };
@@ -431,36 +446,39 @@ function readPersistedAuditEvents(): BrainCoreApprovalAuditEvent[] {
 }
 
 function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCoreApprovalExecutionSummary | undefined {
-  if (record.kind !== 'scheduler-run-mind-steward-dry-run') {
+  if (record.kind !== MIND_STEWARD_DRY_RUN_KIND && record.kind !== MIND_STEWARD_INBOX_DRY_RUN_KIND) {
     return undefined;
   }
 
-  if (!isMindStewardDryRunExecutionFlagEnabled()) {
-    return createBlockedExecutionSummary(`${getMindStewardDryRunExecutionFlagName()} is not true.`);
+  if (!isMindStewardExecutionFlagEnabled(record.kind)) {
+    return createBlockedExecutionSummary(
+      getMindStewardExecutionCommand(record.kind),
+      `${getMindStewardExecutionFlagName(record.kind)} is not true.`,
+    );
   }
 
   const store = readApprovalStore();
   if (!store.enabled || store.status !== 'available') {
-    return createBlockedExecutionSummary('Durable approval store is not available.');
+    return createBlockedExecutionSummary(getMindStewardExecutionCommand(record.kind), 'Durable approval store is not available.');
   }
 
   if (!getAuditPath()) {
-    return createBlockedExecutionSummary('Durable approval audit path is not available.');
+    return createBlockedExecutionSummary(getMindStewardExecutionCommand(record.kind), 'Durable approval audit path is not available.');
   }
 
   if (record.status !== 'pending' && record.status !== 'approved') {
-    return createBlockedExecutionSummary(`Approval status ${record.status} cannot execute.`);
+    return createBlockedExecutionSummary(getMindStewardExecutionCommand(record.kind), `Approval status ${record.status} cannot execute.`);
   }
 
   const runtimeDir = getSafeMindStewardRuntimeDir();
   if (!runtimeDir) {
-    return createBlockedExecutionSummary('Safe mind-steward runtime output path is not available.');
+    return createBlockedExecutionSummary(getMindStewardExecutionCommand(record.kind), 'Safe mind-steward runtime output path is not available.');
   }
 
   const repoRoot = getBrainRepoRoot();
-  const scriptPath = path.join(repoRoot, 'tools/scripts/mind-steward-dry-run-report.sh');
+  const scriptPath = getMindStewardScriptPath(record.kind, repoRoot);
   if (!fs.existsSync(scriptPath)) {
-    return createBlockedExecutionSummary('Allowlisted mind-steward dry-run script is missing.');
+    return createBlockedExecutionSummary(getMindStewardExecutionCommand(record.kind), 'Allowlisted mind-steward report script is missing.');
   }
 
   const env: Record<string, string | undefined> = { ...process.env };
@@ -468,19 +486,20 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
   env.MIND_STEWARD_REPO_ROOT = repoRoot;
   env.MIND_STEWARD_DIR = path.join(repoRoot, 'projects/mind-steward');
   env.MIND_STEWARD_RUNTIME_DIR = runtimeDir;
+  env.MIND_STEWARD_MIND_ROOT = resolveMindRoot();
 
-  const result = spawnSync('bash', ['tools/scripts/mind-steward-dry-run-report.sh'], {
+  const result = spawnSync('bash', [path.relative(repoRoot, scriptPath)], {
     cwd: repoRoot,
     env,
     encoding: 'utf8',
   });
   const exitCode = typeof result.status === 'number' ? result.status : 1;
-  const outputPath = path.relative(repoRoot, path.join(runtimeDir, 'latest.json'));
+  const outputPath = path.relative(repoRoot, getMindStewardOutputPath(record.kind, runtimeDir));
 
   if (exitCode !== 0) {
     return {
       status: 'error',
-      command: 'bash tools/scripts/mind-steward-dry-run-report.sh',
+      command: getMindStewardExecutionCommand(record.kind),
       outputPath,
       exitCode,
       message: result.stderr || result.error?.message || 'mind-steward dry-run report failed',
@@ -491,19 +510,22 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
 
   return {
     status: 'ok',
-    command: 'bash tools/scripts/mind-steward-dry-run-report.sh',
+    command: getMindStewardExecutionCommand(record.kind),
     outputPath,
     exitCode,
-    message: 'mind-steward dry-run report completed under Brain runtime/local/ without Mind writes',
+    message: 'mind-steward report completed under Brain runtime/local/ without Mind writes',
     writesToMind: false,
     externalSideEffects: false,
   };
 }
 
-function createBlockedExecutionSummary(message: string): BrainCoreApprovalExecutionSummary {
+function createBlockedExecutionSummary(
+  command: BrainCoreApprovalExecutionSummary['command'],
+  message: string,
+): BrainCoreApprovalExecutionSummary {
   return {
     status: 'blocked',
-    command: 'bash tools/scripts/mind-steward-dry-run-report.sh',
+    command,
     message,
     writesToMind: false,
     externalSideEffects: false,
@@ -518,6 +540,63 @@ function getSafeMindStewardRuntimeDir(): string | undefined {
     return undefined;
   }
   return runtimeDir;
+}
+
+function getMindStewardOutputPath(kind: string, runtimeDir: string): string {
+  const outputFileName = kind === MIND_STEWARD_INBOX_DRY_RUN_KIND ? 'inbox-latest.json' : 'latest.json';
+  return path.join(runtimeDir, outputFileName);
+}
+
+function getMindStewardScriptPath(kind: string, repoRoot: string): string {
+  const configuredPath =
+    kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+      ? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT
+      : process.env.BRAIN_CORE_MIND_STEWARD_DRY_RUN_SCRIPT;
+  const defaultRelativePath =
+    kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+      ? MIND_STEWARD_INBOX_DRY_RUN_SCRIPT_RELATIVE
+      : MIND_STEWARD_DRY_RUN_SCRIPT_RELATIVE;
+  if (configuredPath) {
+    return resolveSafeScriptPath(repoRoot, configuredPath) ?? '';
+  }
+
+  return path.resolve(repoRoot, defaultRelativePath);
+}
+
+function resolveSafeScriptPath(repoRoot: string, configuredPath: string): string | undefined {
+  const resolved = path.isAbsolute(configuredPath) ? path.resolve(configuredPath) : path.resolve(repoRoot, configuredPath);
+  const relative = path.relative(path.resolve(repoRoot, 'tools/scripts'), resolved).replace(/\\/g, '/');
+
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
+    return undefined;
+  }
+
+  return resolved;
+}
+
+function getMindStewardExecutionCommand(kind: string): BrainCoreApprovalExecutionSummary['command'] {
+  return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND ? MIND_STEWARD_INBOX_DRY_RUN_COMMAND : MIND_STEWARD_DRY_RUN_COMMAND;
+}
+
+function getMindStewardExecutionFlagName(kind: string): string {
+  return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+    ? MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG
+    : MIND_STEWARD_DRY_RUN_EXECUTION_FLAG;
+}
+
+function isMindStewardExecutionFlagEnabled(kind: string): boolean {
+  return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+    ? process.env[MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true'
+    : isMindStewardDryRunExecutionFlagEnabled();
+}
+
+function resolveMindRoot(): string {
+  const configured = process.env.MIND_STEWARD_MIND_ROOT?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  return path.resolve(process.env.HOME ?? process.cwd(), 'Repos/stevewesthoek/mind');
 }
 
 function getBrainRepoRoot(): string {

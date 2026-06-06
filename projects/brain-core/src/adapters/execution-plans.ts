@@ -4,8 +4,12 @@ import type {
   BrainCoreExecutionReadiness,
 } from '../types/api.js';
 
-const CANDIDATE_KINDS = ['scheduler-run-mind-steward-dry-run'] as const;
+const CANDIDATE_KINDS = [
+  'scheduler-run-mind-steward-dry-run',
+  'scheduler-run-mind-steward-inbox-dry-run',
+] as const;
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
+const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
 
 const MIND_PREVIEW_ALLOWED_TARGETS = [
   'router/current.md',
@@ -56,12 +60,20 @@ export function isMindStewardDryRunExecutionFlagEnabled(): boolean {
   return process.env[MIND_STEWARD_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
 }
 
+export function isMindStewardInboxDryRunExecutionFlagEnabled(): boolean {
+  return process.env[MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+}
+
 export function getMindStewardDryRunExecutionFlagName(): typeof MIND_STEWARD_DRY_RUN_EXECUTION_FLAG {
   return MIND_STEWARD_DRY_RUN_EXECUTION_FLAG;
 }
 
+export function getMindStewardInboxDryRunExecutionFlagName(): typeof MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG {
+  return MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG;
+}
+
 export function listExecutionPlans(): BrainCoreExecutionPlan[] {
-  return [createMindStewardDryRunPlan()];
+  return [createMindStewardDryRunPlan(), createMindStewardInboxDryRunPlan()];
 }
 
 export function getExecutionPlan(kind: string): BrainCoreExecutionPlan | undefined {
@@ -70,6 +82,7 @@ export function getExecutionPlan(kind: string): BrainCoreExecutionPlan | undefin
 
 export function getExecutionReadiness(): BrainCoreExecutionReadiness {
   const mindStewardDryRunExecutionFlagEnabled = isMindStewardDryRunExecutionFlagEnabled();
+  const mindStewardInboxDryRunExecutionFlagEnabled = isMindStewardInboxDryRunExecutionFlagEnabled();
   const blockers = [
     'durable approval store not proven for this request',
     'durable audit not proven for this request',
@@ -86,6 +99,8 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled,
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
+    mindStewardInboxDryRunExecutionFlagEnabled,
+    mindStewardInboxDryRunExecutionFlagName: getMindStewardInboxDryRunExecutionFlagName(),
     candidateCount: listExecutionPlans().length,
     readyCandidateCount: 0,
     blockers,
@@ -167,6 +182,48 @@ function createMindStewardDryRunPlan(): BrainCoreExecutionPlan {
         id: 'write-runtime-report',
         description: 'Run report-only mind-steward dry-run helper',
         commandPreview: 'bash tools/scripts/mind-steward-dry-run-report.sh',
+        willRunNow: false,
+      },
+    ],
+  };
+}
+
+function createMindStewardInboxDryRunPlan(): BrainCoreExecutionPlan {
+  return {
+    kind: 'scheduler-run-mind-steward-inbox-dry-run',
+    candidate: true,
+    executionEnabled: false,
+    mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
+    mindStewardInboxDryRunExecutionFlagEnabled: isMindStewardInboxDryRunExecutionFlagEnabled(),
+    mindStewardInboxDryRunExecutionFlagName: getMindStewardInboxDryRunExecutionFlagName(),
+    wouldExecute: false,
+    executed: false,
+    riskLevel: 'low',
+    writesToMind: false,
+    externalSideEffects: false,
+    requiresApproval: true,
+    requiresDurableApprovalStore: true,
+    requiresDurableAudit: true,
+    requiresRollbackPlan: true,
+    rollbackPlan: 'Remove generated runtime/local/mind-steward inbox report files if needed; no Mind content is changed.',
+    summary: 'Report-only Mind Steward inbox dry-run candidate. Safe preflight surface for capture arrival analysis stays disabled.',
+    mindPreviewPolicy: {
+      status: 'preview-only',
+      firstProposedAction: 'mind-steward-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      writesToMind: false,
+      externalSideEffects: false,
+      applyRouteEnabled: false,
+      allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+      blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+      requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    },
+    steps: [
+      {
+        id: 'inspect-inbox',
+        description: 'Inspect Mind capture inbox safely without writes',
+        commandPreview: 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh',
         willRunNow: false,
       },
     ],
