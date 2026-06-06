@@ -490,6 +490,29 @@ function ReviewCard({
   const missingReviewMediaFields = requiredMediaFields.filter(field => !media[field.key]);
   const mediaComplete = missingReviewMediaFields.length === 0 && media.sceneImageKeys.length > 0;
 
+  // Extract YouTube package metadata from artifacts
+  const youtubePackage = asRecord(artifactRecord.youtubePackage) ?? null;
+  const youtubePackageQuality = youtubePackage ? asRecord(youtubePackage.metadataQuality) : null;
+  const youtubePackageMetadata = youtubePackage
+    ? {
+        title: stringField(youtubePackage, 'title'),
+        description: stringField(youtubePackage, 'description'),
+        tags: Array.isArray(youtubePackage.tags) ? youtubePackage.tags.filter((t): t is string => typeof t === 'string') : [],
+        quality: youtubePackageQuality
+          ? {
+              titleLength: typeof youtubePackageQuality.titleLength === 'number' ? youtubePackageQuality.titleLength : 0,
+              tagCount: typeof youtubePackageQuality.tagCount === 'number' ? youtubePackageQuality.tagCount : 0,
+              descriptionLength: typeof youtubePackageQuality.descriptionLength === 'number' ? youtubePackageQuality.descriptionLength : 0,
+              hasInternalTerms: youtubePackageQuality.hasInternalTerms === true,
+              warnings: Array.isArray(youtubePackageQuality.warnings) ? youtubePackageQuality.warnings : [],
+            }
+          : null,
+      }
+    : null;
+
+  const hasInternalTermsInMetadata = youtubePackageMetadata?.quality?.hasInternalTerms === true;
+  const metadataWarnings = youtubePackageMetadata?.quality?.warnings ?? [];
+
   return (
     <article className="card">
       <div className="card-title">Review</div>
@@ -524,6 +547,45 @@ function ReviewCard({
           </div>
         </details>
       )}
+      {youtubePackageMetadata && (
+        <details open style={{ marginBottom: '1rem' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>YouTube metadata</summary>
+          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--card)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            <div className="aws-facts" style={{ marginBottom: '0.75rem' }}>
+              <div><span>Title</span><strong style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{youtubePackageMetadata.title ?? 'missing'}</strong></div>
+              <div><span>Title length</span><strong>{youtubePackageMetadata.quality ? youtubePackageMetadata.quality.titleLength : 0} chars (target: ≤80)</strong></div>
+              <div><span>Tags</span><strong>{youtubePackageMetadata.quality ? youtubePackageMetadata.quality.tagCount : 0} (target: 8–15)</strong></div>
+              <div><span>Description length</span><strong>{youtubePackageMetadata.quality ? youtubePackageMetadata.quality.descriptionLength : 0} chars (target: ≤1000)</strong></div>
+            </div>
+            {youtubePackageMetadata.description && (
+              <div style={{ marginBottom: '0.75rem', padding: '0.5rem', backgroundColor: 'var(--code-bg)', borderRadius: '3px', border: '1px solid var(--border)', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                <strong>Description:</strong>
+                <p style={{ margin: '0.5rem 0 0 0', color: 'var(--body)' }}>{youtubePackageMetadata.description}</p>
+              </div>
+            )}
+            {youtubePackageMetadata.tags.length > 0 && (
+              <div style={{ marginBottom: '0.75rem' }}>
+                <strong style={{ display: 'block', marginBottom: '0.5rem' }}>Tags:</strong>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {youtubePackageMetadata.tags.map(tag => (
+                    <span key={tag} style={{ padding: '0.25rem 0.5rem', backgroundColor: 'var(--border)', borderRadius: '3px', fontSize: '0.8rem' }}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {metadataWarnings.length > 0 && (
+              <div style={{ fontSize: '0.85rem', color: 'var(--badge-warning-text)', padding: '0.5rem', backgroundColor: 'var(--badge-warning-bg)', border: '1px solid var(--badge-warning-border)', borderRadius: '3px' }}>
+                <strong>Quality warnings:</strong>
+                <ul style={{ margin: '0.25rem 0 0 1rem', paddingLeft: 0 }}>
+                  {metadataWarnings.map(w => <li key={w}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
       <div className="aws-facts">
         <div><span>Status</span><strong>{reviewRecord?.reviewStatus ?? 'pending'}</strong></div>
         <div><span>Created</span><strong>{reviewRecord?.createdAt ? timeAgo(reviewRecord.createdAt) : 'unknown'}</strong></div>
@@ -543,13 +605,21 @@ function ReviewCard({
           </div>
         </div>
       )}
+      {hasInternalTermsInMetadata && (
+        <div style={{ fontSize: '0.85rem', color: 'var(--badge-error-text)', padding: '0.75rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
+          <strong>Cannot approve: YouTube metadata contains internal terms</strong>
+          <div style={{ marginTop: '0.25rem' }}>
+            Title or description contains AWS, Bedrock, Polly, FFmpeg, fixture, or other internal implementation details.
+          </div>
+        </div>
+      )}
       <div className="stack">
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
           <button
-            className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended ? 'button next-action' : 'button'}
-            disabled={!jobId || approvePending || !mediaComplete}
+            className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata ? 'button next-action' : 'button'}
+            disabled={!jobId || approvePending || !mediaComplete || hasInternalTermsInMetadata}
             onClick={onApprove}
           >
             {approvePending ? 'Approving review…' : 'Approve review'}

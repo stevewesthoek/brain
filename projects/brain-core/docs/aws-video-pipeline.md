@@ -83,7 +83,7 @@ Prompt-derived metadata with TTS narration and fixture video. Brain Core generat
   "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
   "audioKey": "jobs/<jobId>/audio/narration.mp3",
   "audioProvider": "aws-polly",
-  "voiceId": "Joanna",
+  "voiceId": "Matthew",
   "providers": {
     "scenePlan": "deterministic-local",
     "narrationScript": "deterministic-local",
@@ -94,10 +94,14 @@ Prompt-derived metadata with TTS narration and fixture video. Brain Core generat
 }
 ```
 
+**Configuration:**
+- Voice ID: Set via `AWS_VIDEO_TTS_VOICE_ID` environment variable (default: Matthew)
+- TTS engine: Set via `AWS_VIDEO_TTS_ENGINE` environment variable (default: neural)
+
 **Behavior:**
 - Generates scene plan and narration script (same as hybrid mode)
 - Extracts clean narration text from narration-script.txt
-- Synthesizes MP3 audio using AWS Polly (voice: Joanna)
+- Synthesizes MP3 audio using AWS Polly with configured voice and engine
 - Writes generated audio to `jobs/<jobId>/audio/narration.mp3` (replaces fixture)
 - Writes audio to both local and S3
 - Still uses fixture video for assembly
@@ -132,7 +136,7 @@ Prompt-derived metadata with TTS narration, generated storyboard images, and fix
   "narrationScriptKey": "jobs/<jobId>/audio/narration-script.txt",
   "audioKey": "jobs/<jobId>/audio/narration.mp3",
   "audioProvider": "aws-polly",
-  "voiceId": "Joanna",
+  "voiceId": "Matthew",
   "storyboardKey": "jobs/<jobId>/metadata/storyboard.json",
   "sceneImageKeys": [
     "jobs/<jobId>/images/scene-001.svg",
@@ -152,7 +156,7 @@ Prompt-derived metadata with TTS narration, generated storyboard images, and fix
 
 **Behavior:**
 - Generates scene plan and narration script (same as hybrid_tts)
-- Synthesizes narration audio using AWS Polly (voice: Joanna)
+- Synthesizes narration audio using AWS Polly
 - Generates deterministic storyboard card images (SVG) for each scene
 - Visual prompt and narration text embedded in each card
 - Writes storyboard manifest to `jobs/<jobId>/metadata/storyboard.json`
@@ -199,7 +203,7 @@ Prompt-derived metadata with TTS narration, generated storyboard images, and a l
   "imageProvider": "deterministic-placeholder",
   "audioProvider": "aws-polly",
   "videoProvider": "local-ffmpeg-slideshow",
-  "voiceId": "Joanna",
+  "voiceId": "Matthew",
   "videoKey": "jobs/<jobId>/video-generated/generated-001.mp4",
   "videoSourceKey": "jobs/<jobId>/video-generated/generated-001.mp4",
   "providers": {

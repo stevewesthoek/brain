@@ -434,6 +434,14 @@ export const youtubePublishResultSchema = z.object({
   details: z.record(z.unknown()).optional(),
 }).passthrough();
 
+const metadataQualitySchema = z.object({
+  warnings: z.array(z.string()).default([]),
+  titleLength: z.number(),
+  tagCount: z.number(),
+  descriptionLength: z.number(),
+  hasInternalTerms: z.boolean(),
+}).optional();
+
 export const youtubePackageSchema = z.object({
   jobId: z.string(),
   sourcePrompt: z.string().optional(),
@@ -452,6 +460,7 @@ export const youtubePackageSchema = z.object({
   youtubePackageKey: z.string().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
+  metadataQuality: metadataQualitySchema,
 }).passthrough();
 
 export const thumbnailMetadataSchema = z.object({

@@ -13,6 +13,14 @@ export interface ScenePlanScene {
   onScreenText?: string;
 }
 
+export interface MetadataQuality {
+  warnings: string[];
+  titleLength: number;
+  tagCount: number;
+  descriptionLength: number;
+  hasInternalTerms: boolean;
+}
+
 export interface YouTubePackage {
   jobId: string;
   sourcePrompt: string;
@@ -31,6 +39,7 @@ export interface YouTubePackage {
   youtubePackageKey: string;
   createdAt: string;
   updatedAt: string;
+  metadataQuality?: MetadataQuality;
 }
 
 export interface YouTubePackageInput {
@@ -59,6 +68,11 @@ const STOP_WORDS = new Set([
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
+}
+
+function hasInternalTerms(value: string): boolean {
+  const internalPattern = /\[PIPELINE PROOF\]|AWS|Amazon|Bedrock|S3|Lambda|Step Functions|Pipeline|Fixture|Brain Core|Nova Canvas|Polly|FFmpeg/i;
+  return internalPattern.test(value);
 }
 
 function stripInternalTerms(value: string): string {
@@ -100,12 +114,17 @@ function cleanTitle(rawTitle: string): string {
   const fallback = subject || 'Short Video';
   let title = titleCase(fallback);
 
-  if (title.length > 96) {
-    title = title.substring(0, 96);
+  // YouTube title limit is 100 chars; we target 80 for safety margin
+  const maxLength = 80;
+  if (title.length > maxLength) {
+    title = title.substring(0, maxLength);
     const lastSpace = title.lastIndexOf(' ');
-    if (lastSpace > 48) title = title.substring(0, lastSpace);
+    if (lastSpace > 40) title = title.substring(0, lastSpace);
     title = title.trim();
   }
+
+  // Remove trailing punctuation junk
+  title = title.replace(/[\s.,:;!?-]+$/, '');
 
   return title;
 }
@@ -241,6 +260,27 @@ export function buildYouTubePackage(input: YouTubePackageInput): YouTubePackage 
 
   const canonicalThumbnailKey = input.thumbnailKey ?? `jobs/${input.jobId}/exports/thumbnail-001.jpg`;
 
+  // Compute metadata quality indicators
+  // Check if source inputs contain internal terms (before cleaning)
+  const sourceHasInternalTerms = hasInternalTerms(input.topicTitle) ||
+    (input.topicDescription ? hasInternalTerms(input.topicDescription) : false);
+
+  const qualityWarnings: string[] = [];
+  if (hasInternalTerms(finalTitle)) qualityWarnings.push('Title contains internal terms');
+  if (hasInternalTerms(description)) qualityWarnings.push('Description contains internal terms');
+  if (finalTitle.length > 80) qualityWarnings.push(`Title is ${finalTitle.length} chars (target: ≤80)`);
+  if (description.length > 1000) qualityWarnings.push(`Description is ${description.length} chars (target: ≤1000)`);
+  if (tags.length < 8) qualityWarnings.push(`Only ${tags.length} tags (recommend: 8–15)`);
+  if (tags.length > 15) qualityWarnings.push(`${tags.length} tags exceed recommended max of 15`);
+
+  const metadataQuality: MetadataQuality = {
+    warnings: qualityWarnings,
+    titleLength: finalTitle.length,
+    tagCount: tags.length,
+    descriptionLength: description.length,
+    hasInternalTerms: sourceHasInternalTerms || hasInternalTerms(finalTitle) || hasInternalTerms(description),
+  };
+
   return {
     jobId: input.jobId,
     sourcePrompt: input.topicTitle,
@@ -259,5 +299,6 @@ export function buildYouTubePackage(input: YouTubePackageInput): YouTubePackage 
     youtubePackageKey: `jobs/${input.jobId}/metadata/youtube-package.json`,
     createdAt: now,
     updatedAt: now,
+    metadataQuality,
   };
 }
