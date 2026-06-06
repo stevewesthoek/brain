@@ -32,8 +32,7 @@
  *
  * SOURCE AVAILABILITY:
  *   If the sync.com link is unreachable, expired, or returns 0 items, the script
- *   exits with a fatal error so the nightly scheduler marks the job as failed
- *   and it surfaces in the ProBot dashboard.
+ *   exits with a fatal error so the nightly scheduler marks the job as failed.
  *
  * Usage:
  *   bun sync_downloader.mjs              # normal run / resume
@@ -346,7 +345,7 @@ async function main() {
   try {
     // ── Verify source availability ──────────────────────────────────────────
     // Do this every run before touching the manifest, so a dead/blocked/expired
-    // sync.com link surfaces as a scheduler failure in the ProBot dashboard.
+    // sync.com link surfaces as a scheduler failure in the nightly dashboard.
     log('');
     log('🔍 Verifying source availability…');
     await goTo(page, C.rootId);

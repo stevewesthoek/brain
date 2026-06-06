@@ -87,8 +87,7 @@ plan-ceo-review
 plan-design-review
 plan-eng-review
 playwright
-probot-app-launcher-diagnostics
-probot-dashboard-scheduler-registration
+brain-nightly-scheduler-new-job
 qa
 qa-only
 redesign-skill

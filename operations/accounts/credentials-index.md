@@ -195,36 +195,36 @@ EU region. Account and runbook: `operations/runbooks/newrelic.md`
 | `NEW_RELIC_USER_API_KEY` | `~/.config/newrelic/.env` | User API key — used for querying NerdGraph and REST API | No automatic expiry; rotate if compromised | [New Relic EU → API keys](https://one.eu.newrelic.com/api-keys) |
 | `NEW_RELIC_REGION` | `~/.config/newrelic/.env` | Region flag: `EU` (config, not secret) | Static | — |
 
-## ProBot
+## Local Telegram Daemon
 
-Local daemon on `Office` Mac mini. Config: `~/.config/probot/.env`
+Local daemon on `Office` Mac mini. Config: `~/.config/brain-console/.env`
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `TELEGRAM_BOT_TOKEN` | `~/.config/probot/.env` | Telegram bot token for ProBot Telegram interface | No automatic expiry; revoke/reissue via BotFather | [Telegram BotFather → /mybots → select bot → API Token](https://t.me/botfather) |
-| `SLACK_BOT_TOKEN` | `~/.config/probot/.env` | Slack bot OAuth token (`xoxb-...`) | No automatic expiry; rotate via Slack app settings | [Slack API → Your Apps → ProBot → OAuth & Permissions](https://api.slack.com/apps) |
-| `SLACK_APP_TOKEN` | `~/.config/probot/.env` | Slack app-level token for Socket Mode (`xapp-...`) | No automatic expiry; rotate via Slack app settings | [Slack API → Your Apps → ProBot → Basic Information → App-Level Tokens](https://api.slack.com/apps) |
+| `TELEGRAM_BOT_TOKEN` | `~/.config/brain-console/.env` | Telegram bot token for the Brain Console Telegram interface | No automatic expiry; revoke/reissue via BotFather | [Telegram BotFather → /mybots → select bot → API Token](https://t.me/botfather) |
+| `SLACK_BOT_TOKEN` | `~/.config/brain-console/.env` | Slack bot OAuth token (`xoxb-...`) | No automatic expiry; rotate via Slack app settings | [Slack API → Your Apps → Slack app → OAuth & Permissions](https://api.slack.com/apps) |
+| `SLACK_APP_TOKEN` | `~/.config/brain-console/.env` | Slack app-level token for Socket Mode (`xapp-...`) | No automatic expiry; rotate via Slack app settings | [Slack API → Your Apps → Slack app → Basic Information → App-Level Tokens](https://api.slack.com/apps) |
 
 Config values in the same file (not secrets — listed so `sync-credentials` does not flag them as untracked):
 
 | Variable | File | Purpose |
 |----------|------|---------|
-| `TELEGRAM_ALLOWED_USER_IDS` | `~/.config/probot/.env` | Comma-separated Telegram user IDs allowed to interact with the bot |
-| `SLACK_ALLOWED_USER_IDS` | `~/.config/probot/.env` | Comma-separated Slack user IDs allowed to interact with the bot |
-| `PROBOT_BRAIN_ROOT` | `~/.config/probot/.env` | Path to brain repo root |
-| `PROBOT_DATA_DIR` | `~/.config/probot/.env` | Path to ProBot SQLite data directory |
-| `PROBOT_NOTES_DIR` | `~/.config/probot/.env` | Path to vault/Obsidian vault |
-| `PROBOT_ALLOWED_ROOTS` | `~/.config/probot/.env` | Colon-separated list of allowed filesystem roots |
-| `PROBOT_MAX_FILE_MB` | `~/.config/probot/.env` | Max file size for ProBot file ops |
-| `PROBOT_DEBUG` | `~/.config/probot/.env` | Debug flag |
-| `PROBOT_DASHBOARD_PORT` | `~/.config/probot/.env` | Dashboard HTTP port |
-| `PROBOT_DASHBOARD_URL` | `~/.config/probot/.env` | Dashboard public URL |
-| `PROBOT_REPO_ALIASES` | `~/.config/probot/.env` | Repo path aliases map |
-| `CLAUDE_PROJECTS_DIR` | `~/.config/probot/.env` | Path to Claude Code projects directory |
-| `CODEX_SESSIONS_DIR` | `~/.config/probot/.env` | Path to Codex sessions directory |
-| `CODEX_SESSION_INDEX` | `~/.config/probot/.env` | Path to Codex session index file |
-| `NEW_RELIC_USER_API_KEY` | `~/.config/probot/.env` | Cross-ref — same key as in New Relic section; canonical file is `~/.config/newrelic/.env` |
-| `NEW_RELIC_ACCOUNT_ID` | `~/.config/probot/.env` | Cross-ref — same value as in New Relic section; canonical file is `~/.config/newrelic/.env` |
+| `TELEGRAM_ALLOWED_USER_IDS` | `~/.config/brain-console/.env` | Comma-separated Telegram user IDs allowed to interact with the bot |
+| `SLACK_ALLOWED_USER_IDS` | `~/.config/brain-console/.env` | Comma-separated Slack user IDs allowed to interact with the bot |
+| `BRAIN_CONSOLE_ROOT` | `~/.config/brain-console/.env` | Path to brain repo root |
+| `BRAIN_CONSOLE_DATA_DIR` | `~/.config/brain-console/.env` | Path to Brain Console SQLite data directory |
+| `BRAIN_CONSOLE_NOTES_DIR` | `~/.config/brain-console/.env` | Path to vault/Obsidian vault |
+| `BRAIN_CONSOLE_ALLOWED_ROOTS` | `~/.config/brain-console/.env` | Colon-separated list of allowed filesystem roots |
+| `BRAIN_CONSOLE_MAX_FILE_MB` | `~/.config/brain-console/.env` | Max file size for Brain Console file ops |
+| `BRAIN_CONSOLE_DEBUG` | `~/.config/brain-console/.env` | Debug flag |
+| `BRAIN_CONSOLE_DASHBOARD_PORT` | `~/.config/brain-console/.env` | Dashboard HTTP port |
+| `BRAIN_CONSOLE_DASHBOARD_URL` | `~/.config/brain-console/.env` | Dashboard public URL |
+| `BRAIN_CONSOLE_REPO_ALIASES` | `~/.config/brain-console/.env` | Repo path aliases map |
+| `CLAUDE_PROJECTS_DIR` | `~/.config/brain-console/.env` | Path to Claude Code projects directory |
+| `CODEX_SESSIONS_DIR` | `~/.config/brain-console/.env` | Path to Codex sessions directory |
+| `CODEX_SESSION_INDEX` | `~/.config/brain-console/.env` | Path to Codex session index file |
+| `NEW_RELIC_USER_API_KEY` | `~/.config/brain-console/.env` | Cross-ref — same key as in New Relic section; canonical file is `~/.config/newrelic/.env` |
+| `NEW_RELIC_ACCOUNT_ID` | `~/.config/brain-console/.env` | Cross-ref — same value as in New Relic section; canonical file is `~/.config/newrelic/.env` |
 
 ## Stripe
 
@@ -510,7 +510,7 @@ Automated bank statement download. Script: `tools/scripts/run-ing-bank-statement
 
 ## Azure Billing
 
-Billing-specific service principals (separate from the AI provisioner/destroyer credentials above). Used by ProBot for cost reporting.
+Billing-specific service principals (separate from the AI provisioner/destroyer credentials above). Used by the local control plane for cost reporting.
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
@@ -671,13 +671,13 @@ Google NotebookLM authentication for video transcript extraction and document pr
 
 ## xGrow (SaaS)
 
-ProBot integration for xGrow status and cron monitoring.
+Brain Console integration for xGrow status and cron monitoring.
 
 | Variable | File | Purpose | Rotation | Regenerate |
 |----------|------|---------|----------|-----------|
-| `XGROW_URL` | `~/.config/probot/.env` | xGrow app URL (config, not secret) | Static | — |
-| `XGROW_API_KEY` | `~/.config/probot/.env` | API key for xGrow programmatic access | No automatic expiry; rotate if compromised | xGrow dashboard → API settings |
-| `XGROW_CRON_SECRET` | `~/.config/probot/.env` | Shared secret for cron webhook auth | No automatic expiry; rotate if compromised | xGrow dashboard |
+| `XGROW_URL` | `~/.config/brain-console/.env` | xGrow app URL (config, not secret) | Static | — |
+| `XGROW_API_KEY` | `~/.config/brain-console/.env` | API key for xGrow programmatic access | No automatic expiry; rotate if compromised | xGrow dashboard → API settings |
+| `XGROW_CRON_SECRET` | `~/.config/brain-console/.env` | Shared secret for cron webhook auth | No automatic expiry; rotate if compromised | xGrow dashboard |
 
 ---
 
@@ -749,10 +749,10 @@ All detected credentials have been categorized. Run `sync-credentials` to check 
 | `GOOGLE_ADS_DEVELOPER_TOKEN` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-15 |
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-15 |
 | `GOOGLE_ADS_CUSTOMER_ID` | `~/.config/google-ads/brain-google-ads.env` | 2026-04-15 |
-| `CLOUDFLARE_API_TOKEN` | `~/.config/probot/.env` | 2026-04-15 |
-| `UMAMI_URL` | `~/.config/probot/.env` | 2026-04-15 |
-| `UMAMI_USERNAME` | `~/.config/probot/.env` | 2026-04-15 |
-| `UMAMI_PASSWORD` | `~/.config/probot/.env` | 2026-04-15 |
+| `CLOUDFLARE_API_TOKEN` | `~/.config/brain-console/.env` | 2026-04-15 |
+| `UMAMI_URL` | `~/.config/brain-console/.env` | 2026-04-15 |
+| `UMAMI_USERNAME` | `~/.config/brain-console/.env` | 2026-04-15 |
+| `UMAMI_PASSWORD` | `~/.config/brain-console/.env` | 2026-04-15 |
 | `WHATSAPP_APP_ID` | `~/.config/whatsapp/.env` | 2026-04-15 |
 | `DOKPLOY_API_HEADER` | `~/.config/dokploy/.env` | 2026-04-15 |
 | `BRAIN_BRIDGE_ACTION_TOKEN` | `~/.config/brain-bridge/.env` | 2026-04-24 |

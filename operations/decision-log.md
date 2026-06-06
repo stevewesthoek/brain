@@ -167,9 +167,9 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Impact: After each real nightly run, the latest job statuses, durations, and log tail are rendered to a gitignored local markdown file that can be reviewed and copied back into the canonical scheduler inventory.
 - Rollback: Remove `tools/scripts/render-office-scheduler-report.sh`, stop calling it from `tools/scripts/office-nightly-scheduler.sh`, and delete `runtime/local/office-scheduler/latest-run.md` if automated local runtime snapshots are no longer wanted.
 - Date: 2026-04-04
-- Decision: Retire the OpenClaw Claude bridge and AWS OpenClaw host, and standardize on the local `ProBot` Telegram daemon running on the `Office` Mac.
+- Decision: Retire the OpenClaw Claude bridge and AWS OpenClaw host, and standardize on the local Telegram daemon running on the `Office` Mac.
 - Context: The OpenClaw VPS and bridge had become redundant after moving to a local-first workflow around Claude, Codex, and Brain. The user wanted Telegram access without ongoing AWS cost or bridge maintenance.
-- Impact: The AWS OpenClaw Lightsail instance and snapshots are deleted, the local bridge LaunchAgent and logs are removed, and `tools.prochat.probot` is now the only always-on Telegram control surface documented in Brain.
+- Impact: The AWS OpenClaw Lightsail instance and snapshots are deleted, the local bridge LaunchAgent and logs are removed, and the local Telegram control surface is now the only always-on control surface documented in Brain.
 - Rollback: Recreate the AWS host and snapshots from scratch or restore the retired bridge code and LaunchAgent if a remote bridge architecture is needed again.
 - Date: 2026-04-06
 - Decision: Change `check-risky-command.sh` sensitive credential file access from manual-confirmation (`ask`) to auto-approve with logging.
@@ -183,9 +183,9 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Rollback: Switch Dokploy buildType back to nixpacks and remove NODE_OPTIONS from the Dokploy env vars for affected apps.
 - Reference: `operations/deploy/dockerfile-standard.md`
 - Date: 2026-04-05
-- Decision: Deploy New Relic Standard (nonprofit) across the full infra stack — 3 servers, 12 apps, PostgreSQL, Docker logs, 11 synthetic monitors, and ProBot dashboard widget.
+- Decision: Deploy New Relic Standard (nonprofit) across the full infra stack — 3 servers, 12 apps, PostgreSQL, Docker logs, 11 synthetic monitors, and a dashboard widget.
 - Context: No observability existed beyond 7 Azure VM-level metric alerts. xGrow was in silent error state, n8n workflow failures were invisible, and there was no APM on any app.
-- Impact: All three Linux servers report via infra agents (EU region, account 7019441). All 12 Dokploy Node.js apps have NR APM via `NODE_OPTIONS=--require newrelic`. Docker container logs forward via fluent-bit. PostgreSQL monitored via `newrelic_monitor` read-only role. Synthetics check all public URLs every 5 min. ProBot dashboard shows live server health and uptime dots.
+- Impact: All three Linux servers report via infra agents (EU region, account 7019441). All 12 Dokploy Node.js apps have NR APM via `NODE_OPTIONS=--require newrelic`. Docker container logs forward via fluent-bit. PostgreSQL monitored via `newrelic_monitor` read-only role. Synthetics check all public URLs every 5 min. The dashboard shows live server health and uptime dots.
 - Rollback: Remove `newrelic-infra` from servers, remove `NODE_OPTIONS`/`NEW_RELIC_*` env vars from Dokploy apps, delete NR entities via NerdGraph, remove `~/.config/newrelic/.env`.
 
 - Date: 2026-04-07
@@ -209,7 +209,7 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Date: 2026-04-08
 - Decision: Add Dance of Life Bible Studies transcription pipeline to the nightly scheduler.
 - Context: The Bible Studies folder in Google Drive (synced nightly by `dance-of-life-sync`) contains ~38 series of video teaching content. To make this content queryable via Obsidian and NotebookLM without burning tokens, the content needs to be transcribed to text first.
-- Impact: New pipeline at `tools/scripts/bible-studies-pipeline.sh` → `tools/scripts/bible-studies/pipeline.mjs`. Runs as chain member #5 (after `dance-of-life-sync`, before `gemini-cleanup`), 4-hour timeout, never stops chain. Uses `mlx-whisper` (model: `mlx-community/whisper-large-v3`) for max-quality transcription on Apple Silicon. Transcripts written to `personal/bible-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md` — immediately visible in Obsidian. One `DOL - [Series]` NotebookLM notebook auto-created per series via `claude --print`. Pipeline is fully idempotent and detects new series/videos/folders dynamically on every run. `mlx-whisper` installed via `pipx` at `~/.local/bin/mlx_whisper`. ProBot dashboard updated with `bible-studies-pipeline` and `skill-prune` (was missing). `render-office-scheduler-report.sh` updated to include all 7 chain members (was only showing 3). Query pattern: Obsidian (Smart Connections) for local browse/search; Claude Code CLI → NotebookLM MCP for deep Q&A (~200–500 tokens per question, not per document).
+- Impact: New pipeline at `tools/scripts/bible-studies-pipeline.sh` → `tools/scripts/bible-studies/pipeline.mjs`. Runs as chain member #5 (after `dance-of-life-sync`, before `gemini-cleanup`), 4-hour timeout, never stops chain. Uses `mlx-whisper` (model: `mlx-community/whisper-large-v3`) for max-quality transcription on Apple Silicon. Transcripts written to `personal/bible-studies/dance-of-life/[Series]/[NN-of-TT] - Title.md` — immediately visible in Obsidian. One `DOL - [Series]` NotebookLM notebook auto-created per series via `claude --print`. Pipeline is fully idempotent and detects new series/videos/folders dynamically on every run. `mlx-whisper` installed via `pipx` at `~/.local/bin/mlx_whisper`. `render-office-scheduler-report.sh` updated to include all 7 chain members (was only showing 3). Query pattern: Obsidian (Smart Connections) for local browse/search; Claude Code CLI → NotebookLM MCP for deep Q&A (~200–500 tokens per question, not per document).
 - Rollback: Remove `run_bible_studies_pipeline` function and call from `office-nightly-scheduler.sh`. Remove `tools/scripts/bible-studies-pipeline.sh` and `tools/scripts/bible-studies/`. Remove `bible-studies-pipeline` and `skill-prune` entries from `SCHEDULER_JOB_ORDER` in `dashboard.ts`. Revert `render-office-scheduler-report.sh`. Remove `personal/bible-studies/dance-of-life/`. State file: `~/.local/state/bible-studies/state.json`.
 - Date: 2026-04-09
 - Decision: Add memory gate, cooldown, and CPU nice-level to bible-studies-pipeline to prevent kernel watchdog panics under sustained transcription load.
@@ -253,7 +253,7 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Date: 2026-04-27
 - Decision: Establish BuildFlow as a managed relay service on Dokploy following the image-based deployment pattern.
 - Context: BuildFlow v1.2.0-beta has a hardened multi-user relay that can be deployed on Dokploy. BuildFlow should remain ONE product to users, but infrastructure-wise it consists of relay (3053) and web (3054) services. Current local BuildFlow works perfectly; production relay should be deployed in parallel as an opt-in surface. Local-to-production migration is phased so local remains primary until production is validated. This follows the same infrastructure discipline as prochattools apps.
-- Implementation: (1) Created `operations/runbooks/buildflow-deployment.md` documenting phase-based migration (Phase 0: local only → Phase 5: production primary). (2) Added BuildFlow to `operations/infrastructure/infra.md` Dokploy project list (Web project) and domain inventory (`buildflow.prochat.tools`). (3) Added BuildFlow to `operations/runbooks/dokploy.md` app inventory table. (4) No Dokploy mutations performed yet (read-only discovery only). (5) BuildFlow remains LOCAL in ProBot; no dashboard changes made yet. (6) Deployment runbook includes rollback plan, verification checklist, troubleshooting, and security constraints (RELAY_ADMIN_TOKEN, token-scoped routing, no device ID exposure).
+- Implementation: (1) Created `operations/runbooks/buildflow-deployment.md` documenting phase-based migration (Phase 0: local only → Phase 5: production primary). (2) Added BuildFlow to `operations/infrastructure/infra.md` Dokploy project list (Web project) and domain inventory (`buildflow.prochat.tools`). (3) Added BuildFlow to `operations/runbooks/dokploy.md` app inventory table. (4) No Dokploy mutations performed yet (read-only discovery only). (5) BuildFlow remains LOCAL; no dashboard changes made yet. (6) Deployment runbook includes rollback plan, verification checklist, troubleshooting, and security constraints (RELAY_ADMIN_TOKEN, token-scoped routing, no device ID exposure).
 - Rationale: BuildFlow is a new service requiring Dokploy integration. The same pattern used for ProChat, Says the Bible, etc. (image-based deployment, GHCR pull, persistent volumes) applies cleanly. Phased migration de-risks the transition by keeping local BuildFlow as fallback. Documentation-first approach allows next prompt to create Dokploy application without discovery work.
 - Next: Provision BuildFlow Dokploy application in Web project, configure GHCR pull credentials, set environment variables, create GitHub Actions workflow, and perform end-to-end verification (Phase 1-2).
 - Rollback: Delete BuildFlow app from Dokploy (preserves volume). Revert Brain docs to remove BuildFlow references. Local BuildFlow continues unchanged. Production domain is freed or parked.
@@ -269,7 +269,7 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 - Date: 2026-04-27 (Dockerfile Blocker Resolved)
 - Decision: BuildFlow Dockerfile topology blocker resolved; Phase 1 Dokploy provisioning may proceed.
 - Context: BuildFlow commit 3473303 implements the full production topology: proxy on 3054 (public), relay on 3053 (internal), web on 3055 (internal). Image was verified locally via docker run -p 4054:3054 with all endpoints returning correct status codes and JSON responses (/ready 200, /health 200, /api/openapi 200, /api/register 201, /api/admin/devices protected). GHCR image ghcr.io/stevewesthoek/buildflow:latest is available and built from this commit.
-- Implementation: (1) Updated `operations/runbooks/buildflow-deployment.md` BLOCKER section from ⚠️ to ✅ with verified components and commit reference. (2) Updated `operations/standards/buildflow-dockerfile-contract.md` status to "IMPLEMENTED AND VERIFIED (commit 3473303)". (3) Marked Phase 1 status as "READY FOR DOKPLOY PROVISIONING". (4) No changes to local BuildFlow or ProBot dashboard. (5) Brain docs ready for Phase 1 provisioning handoff.
+- Implementation: (1) Updated `operations/runbooks/buildflow-deployment.md` BLOCKER section from ⚠️ to ✅ with verified components and commit reference. (2) Updated `operations/standards/buildflow-dockerfile-contract.md` status to "IMPLEMENTED AND VERIFIED (commit 3473303)". (3) Marked Phase 1 status as "READY FOR DOKPLOY PROVISIONING". (4) No changes to local BuildFlow or dashboard. (5) Brain docs ready for Phase 1 provisioning handoff.
 - Rationale: Dockerfile contract was thorough and BuildFlow implementation met all requirements. Local verification confirms topology is production-ready. Phase 1 can now proceed with GHCR image pull and Dokploy application creation.
 - Next: Phase 1 Dokploy provisioning — create BuildFlow app in Web project, configure GHCR pull credentials, set environment variables, deploy, and verify endpoints.
 - Rollback: Not applicable; Dockerfile blocker is resolved and docs are updated. If Phase 1 provisioning fails, address specific Dokploy issue and retry.
@@ -319,11 +319,11 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 ---
 
-## 2026-05-16 — Obsidian-first Brain Core replaces ProBot dashboard as primary machine UI
+## 2026-05-16 — Obsidian-first Brain Core replaces the old dashboard as primary machine UI
 
-**Decision:** Obsidian is the only target primary human dashboard for personal, business, machine, workflow, and orchestrator operation. The ProBot dashboard is deprecated as a primary UI and should not receive new product features.
+**Decision:** Obsidian is the only target primary human dashboard for personal, business, machine, workflow, and orchestrator operation. The old dashboard is deprecated as a primary UI and should not receive new product features.
 
-**Rationale:** The system needs one human cockpit but not one monolith. Obsidian already owns the human operating layer in `mind`; Brain owns machine logic, skills, configs, and automations. The ProBot dashboard duplicated Obsidian's role and accumulated mixed responsibilities: UI, routing, local app controls, Video Orchestrator panels, status rendering, OAuth/account UI, and diagnostics.
+**Rationale:** The system needs one human cockpit but not one monolith. Obsidian already owns the human operating layer in `mind`; Brain owns machine logic, skills, configs, and automations. The old dashboard duplicated Obsidian's role and accumulated mixed responsibilities: UI, routing, local app controls, Video Orchestrator panels, status rendering, OAuth/account UI, and diagnostics.
 
 **Direction:** Build a small local Brain Core API as the machine boundary. Obsidian consumes Brain Core through markdown dashboards first and a small `brain-console` Obsidian plugin later. Video Orchestrator remains the runtime authority for video production. Skills remain execution workflows. Slack and Telegram, if retained, become thin fallback clients over Brain Core.
 
@@ -331,13 +331,13 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 - `docs/system/obsidian-brain-core-roadmap.md`
 - `docs/system/obsidian-brain-core-implementation-plan.md`
-- `projects/probot/README.md` dashboard-freeze notice
+- dashboard-freeze notice
 
 **Guardrails:**
 
-- Do not add new product dashboard features to ProBot.
+- Do not add new product dashboard features to the old dashboard.
 - Do not put secrets, OAuth internals, direct platform uploads, broad shell execution, or runtime database writes into Obsidian.
-- Reuse ProBot code only for clean backend capabilities such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and status adapters.
+- Reuse backend capabilities only for Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and status adapters.
 - Start Brain Core read-only before adding controlled actions.
 - Keep the number of Obsidian dashboard notes small and human-oriented.
 
@@ -345,9 +345,9 @@ Lightweight record of infra/structure decisions that affect the Brain repo.
 
 ## 2026-05-16 — Obsidian-First Brain Core Direction
 
-**Decision:** Obsidian is the only primary human dashboard for personal, business, machine, workflow, and orchestrator operation. The ProBot dashboard is deprecated as a primary UI.
+**Decision:** Obsidian is the only primary human dashboard for personal, business, machine, workflow, and orchestrator operation. The old dashboard is deprecated as a primary UI.
 
-**Rationale:** The ProBot dashboard duplicates the role Obsidian should own and has grown into a mixed-responsibility surface. The long-term foundation should use one human cockpit with a small local machine API underneath it, not multiple parallel dashboards.
+**Rationale:** The old dashboard duplicates the role Obsidian should own and has grown into a mixed-responsibility surface. The long-term foundation should use one human cockpit with a small local machine API underneath it, not multiple parallel dashboards.
 
 **Target architecture:**
 
@@ -362,7 +362,7 @@ skills   = execution workflows
 
 **Implementation direction:** Build a small local Brain Core service that exposes structured, safe APIs for machine status, sessions, repos, skills, local apps, approvals, and orchestrators. Obsidian will consume those APIs through minimal dashboards and later a small Obsidian integration/plugin.
 
-**ProBot rule:** Do not add new product dashboard features to ProBot. Reuse only clean backend capabilities during migration, such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and selected status adapters.
+**Dashboard rule:** Do not add new product dashboard features to the old dashboard. Reuse only clean backend capabilities during migration, such as Slack/Telegram adapters, session ranking, local app lifecycle logic, approvals, and selected status adapters.
 
 **Canonical docs:**
 
@@ -371,11 +371,11 @@ skills   = execution workflows
 
 ---
 
-## 2026-05-21 — ProBot dashboard decommissioned; all tabs ported to Brain Console v2.2
+## 2026-05-21 — Dashboard decommissioned; all tabs ported to Brain Console v2.2
 
-**Decision:** ProBot dashboard is decommissioned as a product surface. All 11 ProBot dashboard tabs are now available in Brain Console (Obsidian plugin) via Brain Core API. Brain Console is the primary operating cockpit.
+**Decision:** The old dashboard is decommissioned as a product surface. All 11 dashboard tabs are now available in Brain Console (Obsidian plugin) via Brain Core API. Brain Console is the primary operating cockpit.
 
-**Rationale:** As planned in `docs/system/obsidian-brain-core-roadmap.md`, Obsidian is the only primary human dashboard. The ProBot dashboard was the last blocker. With all 11 tabs ported and tests covering all new infra routes, there is no remaining reason to maintain the ProBot dashboard.
+**Rationale:** As planned in `docs/system/obsidian-brain-core-roadmap.md`, Obsidian is the only primary human dashboard. The old dashboard was the last blocker. With all 11 tabs ported and tests covering all new infra routes, there is no remaining reason to maintain the old dashboard.
 
 **Tabs migrated (11/11):**
 - Sessions → Brain Console Sessions tab
@@ -393,10 +393,10 @@ skills   = execution workflows
 **Implementation:** Brain Console v2.2 deployed to mind vault. 8 new Brain Core infra adapters. 25 new infra route contract tests (551 total pass, 7 pre-existing failures unrelated to this change). `GET /health` endpoint added. Brain Core runbook updated with rollback path and infra health checks.
 
 **Guardrails:**
-- Do not add new features to ProBot dashboard.
+- Do not add new features to the old dashboard.
 - All data flows through Brain Core — Brain Console never calls external services directly.
 - Infra adapters return `not-configured` gracefully when credentials are absent.
-- Brain Core rollback does not use ProBot as fallback.
+- Brain Core rollback does not use the old dashboard as fallback.
 
 **Rollback:** Brain Core runbook at `operations/runbooks/brain-core.md`.
 

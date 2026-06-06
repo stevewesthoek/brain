@@ -89,7 +89,7 @@ const CLI_CAPABILITIES: AgentCapabilitySummary[] = [
     id: 'cli.stripe',
     kind: 'cli',
     label: 'Stripe CLI',
-    source: 'operations/runbooks/stripe-cli-and-probot.md',
+    source: 'operations/runbooks/stripe-cli.md',
     description: 'Stripe tooling for billing and payment-related operational work.',
     safetyClass: 'financial',
     requiresApprovalFor: ['financial', 'credential_sensitive', 'external_state'],

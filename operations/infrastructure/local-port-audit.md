@@ -23,8 +23,8 @@ Repo-local changes made where needed:
 Compatibility window note:
 
 - `operations/infrastructure/local-apps.json` remains canonical
-- each registry entry keeps both the expanded fields and the legacy aliases during the migration window so ProBot and older readers stay compatible
-- ProBot now normalizes local app entries through one helper instead of relying on scattered fallback logic
+- each registry entry keeps both the expanded fields and the legacy aliases during the migration window so older readers stay compatible
+- the local registry now normalizes local app entries through one helper instead of relying on scattered fallback logic
 
 ## Policy
 

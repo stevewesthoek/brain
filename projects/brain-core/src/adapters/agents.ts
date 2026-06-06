@@ -55,7 +55,7 @@ const AGENTS: BrainCoreAgentSummary[] = [
     status: 'external',
     health: 'warning',
     owner: 'external-tool',
-    description: 'Daily Bible content generation and publication (ProBot local app)',
+    description: 'Daily Bible content generation and publication',
     relatedOrchestratorId: 'stb-pipeline',
     skills: ['research-input', 'script-generation', 'asset-generation', 'platform-publish', 'scheduler-integration'],
     actions: {

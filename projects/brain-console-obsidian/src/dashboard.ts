@@ -129,7 +129,7 @@ export interface DashboardSnapshot {
   videoOrchestratorSummary?: { status?: string; health: string };
   stbToVideoMigrationSummary?: { parityStatus?: string; blocked: boolean };
   saysTheBibleProjectSummary?: { status?: string; health: string; platformCount: number };
-  probotLegacySummary?: { status?: string; health: string };
+  brainConsoleLegacySummary?: { status?: string; health: string };
   stbLiveStatusSummary?: { source: string; status: string; health: string; ageHours?: number };
   videoModuleProgressSummary?: { percent: number; implemented: number; partial: number; planned: number };
   migrationParitySummary?: { percent: number; mappedCount: number; totalCount: number };
@@ -331,11 +331,11 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     platformCount: stbProject.platformIds?.length ?? 0,
   } : undefined;
 
-  // ProBot legacy summary
-  const probotOrchestrator = (state.orchestrators ?? []).find(o => o.id === 'probot-dashboard');
-  const probotLegacySummary = probotOrchestrator ? {
-    status: probotOrchestrator.lifecycle,
-    health: probotOrchestrator.health ?? 'unknown',
+  // BrainConsole legacy summary
+  const brainConsoleOrchestrator = (state.orchestrators ?? []).find(o => o.id === 'brainConsole-dashboard');
+  const brainConsoleLegacySummary = brainConsoleOrchestrator ? {
+    status: brainConsoleOrchestrator.lifecycle,
+    health: brainConsoleOrchestrator.health ?? 'unknown',
   } : undefined;
 
   // Calculate attention score (0-100)
@@ -534,7 +534,7 @@ export function deriveDashboardSnapshot(state: BrainConsoleViewState, brainCoreU
     videoOrchestratorSummary,
     stbToVideoMigrationSummary,
     saysTheBibleProjectSummary,
-    probotLegacySummary,
+    brainConsoleLegacySummary,
     stbLiveStatusSummary,
     videoModuleProgressSummary,
     migrationParitySummary,

@@ -70,7 +70,7 @@ Use the report as input only. It never writes skills or agent instructions. Prom
 ### Step 2 — Classify and name
 
 - Is this Expertise (a mental model) or Workflow (a procedure)?
-- Pick a short, specific name: `{repo}-{problem-area}` or `{tool}-{gotcha}` (e.g., `probot-slack-auth`, `supabase-migration-order`)
+- Pick a short, specific name: `{repo}-{problem-area}` or `{tool}-{gotcha}` (e.g., `brain-console-slack-auth`, `supabase-migration-order`)
 - Avoid generic names like `debugging-tips` or `node-patterns`
 
 ### Step 3 — Write the skill file

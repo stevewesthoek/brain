@@ -1297,7 +1297,7 @@ body.theme-light .brain-console {
 }
 
 .brain-console__pills,
-.brain-console__probot-map,
+.brain-console__brainConsole-map,
 .brain-console__app-list {
   display: grid;
   gap: var(--bc-gap);
@@ -1305,7 +1305,7 @@ body.theme-light .brain-console {
 }
 
 .brain-console__pill,
-.brain-console__probot-tab,
+.brain-console__brainConsole-tab,
 .brain-console__app-item {
   min-width: 0;
   border: 1px solid var(--bc-border);
@@ -1331,7 +1331,7 @@ body.theme-light .brain-console {
   font-weight: 700;
 }
 
-.brain-console__probot-tab {
+.brain-console__brainConsole-tab {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
@@ -1339,7 +1339,7 @@ body.theme-light .brain-console {
   padding: var(--bc-pad);
 }
 
-.brain-console__probot-name,
+.brain-console__brainConsole-name,
 .brain-console__app-name {
   min-width: 0;
   white-space: normal;

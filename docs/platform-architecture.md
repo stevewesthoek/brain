@@ -4,7 +4,7 @@
 **Status:** Active — canonical scaffold for all projects  
 **Last updated:** 2026-05-22 (added responsibility model, external app onboarding contract, FALA integration pattern)  
 **Owner:** Steve Westhoek  
-**Scope:** All projects in the brain/mind ecosystem (brain-core, FALA, video-orchestrator, ProBot, cedula, and all future apps)
+**Scope:** All projects in the brain/mind ecosystem (brain-core, FALA, video-orchestrator, cedula, and all future apps)
 
 ---
 
@@ -267,7 +267,7 @@ Task types define what capability a task requires. The selector maps task types 
 
 This contract applies to every external repository that uses AI — whether it is a new app you are starting today or an existing app that you are migrating off hardcoded models.
 
-The contract is the same for all apps. FALA, ProBot, cedula, and every future app all follow this identical pattern.
+The contract is the same for all apps. FALA, cedula, and every future app all follow this identical pattern.
 
 ### Step 1 — Audit your AI usage
 
@@ -283,7 +283,7 @@ This audit becomes your task type list.
 
 ### Step 2 — Register your task types
 
-For each distinct call pattern, add one record to `~/.config/video-orchestrator/ai-task-types.json`. Use a namespaced key (`fala_`, `probot_`, `cedula_`) to avoid collisions.
+For each distinct call pattern, add one record to `~/.config/video-orchestrator/ai-task-types.json`. Use namespaced keys like `fala_` and `cedula_` to avoid collisions.
 
 ```json
 {

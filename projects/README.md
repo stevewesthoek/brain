@@ -32,7 +32,7 @@ for global behavior, identity, and safety.
 - `brain-core/` — local API and safety boundary for Brain operational data/actions
 - `brain-console-web/` — legacy AWS Video reference dashboard; no new feature work
 - `brain-console-obsidian/` — frozen legacy native Obsidian dashboard; no new feature work
-- `probot/` — legacy dashboard and local-first Slack/Telegram thin-client/fallback control plane
+- `brain-console-obsidian/` — Brain Console Obsidian plugin and local dashboard surface
 - `cedula/` — Paraguay residency / cédula onboarding project with funnel, planning, and meeting notes
 
 ## Naming

@@ -96,13 +96,6 @@ type RawLocalApp = {
 
 const PLACEHOLDER_APPS: BrainCoreLocalAppSummary[] = [
   {
-    id: 'probot',
-    name: 'ProBot legacy dashboard/client service',
-    status: 'placeholder',
-    source: 'placeholder',
-    actionsSupported: false,
-  },
-  {
     id: 'office-scheduler',
     name: 'Office Nightly Scheduler',
     status: 'placeholder',
@@ -949,7 +942,6 @@ function deriveHealth(status: 'running' | 'stopped' | 'unknown' | 'unavailable')
 
 function deriveCategory(name: string, repoPath: string | null): string {
   if (/video/i.test(name)) return 'video';
-  if (/probot/i.test(name)) return 'dashboard';
   if (/scheduler|automation/i.test(name)) return 'operations';
   if (repoPath) return 'local-app';
   return 'unknown';

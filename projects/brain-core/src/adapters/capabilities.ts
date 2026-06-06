@@ -66,11 +66,6 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
       packageStatus: 'buildable',
       manualInstallRequired: true,
     },
-    probot: {
-      thinClientStatus: 'wired',
-      commandAliasesEnabled: true,
-      actionsEnabled: false,
-    },
     executionGate: {
       executionEnabled: false,
       mindStewardDryRunExecutionFlagEnabled: executionReadiness.mindStewardDryRunExecutionFlagEnabled,

@@ -130,11 +130,6 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
       packageStatus?: string;
       manualInstallRequired?: boolean;
     };
-    probot: {
-      thinClientStatus: string;
-      commandAliasesEnabled: boolean;
-      actionsEnabled: boolean;
-    };
     executionGate: {
       executionEnabled: boolean;
       mindStewardDryRunExecutionFlagEnabled: boolean;
@@ -166,9 +161,6 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.brainConsole.projectPath, 'projects/brain-console-obsidian');
   assert.equal(body.brainConsole.packageStatus, 'buildable');
   assert.equal(body.brainConsole.manualInstallRequired, true);
-  assert.equal(body.probot.thinClientStatus, 'wired');
-  assert.equal(body.probot.commandAliasesEnabled, true);
-  assert.equal(body.probot.actionsEnabled, false);
   assert.equal(body.executionGate.executionEnabled, false);
   assert.equal(body.executionGate.mindStewardDryRunExecutionFlagEnabled, false);
   assert.equal(body.executionGate.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION');
@@ -482,7 +474,7 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
     reportPath,
     JSON.stringify({
       status: 'ok',
-      apps: [{ id: 'probot', name: 'ProBot', status: 'running', actionsSupported: false }],
+      apps: [{ id: 'office-scheduler', name: 'Office Nightly Scheduler', status: 'running', actionsSupported: false }],
       writesToMind: false,
       executableActions: false,
     }),
@@ -495,9 +487,9 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
 
     assert.equal(response.statusCode, 200);
     assert.equal(body.apps.length >= 16, true);
-    const probot = body.apps.find((app) => app.id === 'probot');
-    assert.equal(probot?.status, 'running');
-    assert.equal(probot?.source, 'runtime-report');
+    const officeScheduler = body.apps.find((app) => app.id === 'office-scheduler');
+    assert.equal(officeScheduler?.status, 'running');
+    assert.equal(officeScheduler?.source, 'runtime-report');
     assert.equal(body.apps.some((app) => app.id === 'mind-steward'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
@@ -728,9 +720,6 @@ test('GET /local-apps/action-enablement-backlog includes exact disabled reasons'
 
 test('repo-local lifecycle adapters become executable for safe fixed scripts', async () => {
   const expectations: Array<{ appId: string; action: 'start' | 'stop' | 'restart'; commandLabel: string }> = [
-    { appId: 'probot', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
-    { appId: 'probot', action: 'stop', commandLabel: 'bash scripts/dev/stop-local.sh' },
-    { appId: 'probot', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
     { appId: 'via-di-eden', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
     { appId: 'via-di-eden', action: 'restart', commandLabel: 'bash scripts/dev/stop-local.sh && bash scripts/dev/start-local.sh' },
     { appId: 'oliveto-organizing', action: 'start', commandLabel: 'bash scripts/dev/start-local.sh' },
@@ -1097,7 +1086,7 @@ test('GET /local-apps ignores invalid runtime reports and keeps canonical invent
     assert.equal(response.statusCode, 200);
     assert.equal(body.apps.length >= 16, true);
     assert.equal(body.apps.some((app) => app.id === 'local-apps-report'), false);
-    assert.equal(body.apps.some((app) => app.id === 'probot'), true);
+    assert.equal(body.apps.some((app) => app.id === 'office-scheduler'), true);
     assert.equal(body.apps.some((app) => app.id === 'mind-steward'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
@@ -2115,90 +2104,6 @@ test('fala start remains disabled without repo-local script in brain', async () 
     startReadiness.reason?.includes('repo-local') || startReadiness.reason?.includes('allowlisted'),
     'fala reason should reference the repo-local allowlisted script path',
   );
-});
-
-test('ProBot actions are executable in dashboard', async () => {
-  const response = await exercise({ method: 'GET', url: '/local-apps/dashboard' });
-  const body = JSON.parse(response.body) as {
-    apps: Array<{ id: string; startSupported: boolean; stopSupported: boolean; restartSupported: boolean }>;
-  };
-  const probot = body.apps.find((app) => app.id === 'probot');
-  assert.ok(probot, 'probot should be in dashboard');
-  assert.equal(probot.startSupported, true, 'probot start should be executable');
-  assert.equal(probot.stopSupported, true, 'probot stop should be executable');
-  assert.equal(probot.restartSupported, true, 'probot restart should be executable');
-});
-
-test('ProBot actions are absent from action-enablement-backlog', async () => {
-  const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
-  const body = JSON.parse(response.body) as {
-    items: Array<{ appId: string; action: string }>;
-  };
-  const probotDisabled = body.items.filter((item) => item.appId === 'probot');
-  assert.equal(probotDisabled.length, 0, 'probot should have no disabled actions in backlog');
-});
-
-test('ProBot start command is fixed and repo-local', async () => {
-  const app = listLocalAppDefinitions().find((entry) => entry.id === 'probot');
-  assert.ok(app, 'probot should be in inventory');
-  const readiness = evaluateLocalAppActionDefinition(app!, 'start');
-  assert.equal(readiness.executable, true);
-  assert.equal(readiness.commandLabel, 'bash scripts/dev/start-local.sh');
-  assert.ok(!readiness.commandLabel.includes('.env'), 'start command must not reference .env');
-  assert.ok(!readiness.commandLabel.includes('TOKEN'), 'start command must not reference TOKEN');
-});
-
-test('ProBot start uses canonical port 7070', async () => {
-  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'start-local.sh');
-  const content = fs.readFileSync(scriptPath, 'utf8');
-  assert.ok(content.includes('CANONICAL_PORT=7070'), 'start script must set CANONICAL_PORT=7070');
-  assert.ok(content.includes('PROBOT_DASHBOARD_PORT="$CANONICAL_PORT"'), 'start script must export port to PROBOT_DASHBOARD_PORT');
-  assert.ok(!content.includes('source .env'), 'start script must not source .env');
-  assert.ok(!content.includes('cat .env'), 'start script must not cat .env');
-  assert.ok(!content.includes('echo $TOKEN'), 'start script must not print env vars');
-  assert.ok(!content.includes('echo $SECRET'), 'start script must not print env vars');
-});
-
-test('ProBot start script writes a metadata file', async () => {
-  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'start-local.sh');
-  const content = fs.readFileSync(scriptPath, 'utf8');
-  assert.ok(content.includes('META_FILE='), 'start script must define META_FILE');
-  assert.ok(content.includes('probot-process.json'), 'start script must write probot-process.json');
-  assert.ok(content.includes("'appId': 'probot'"), 'metadata must include appId');
-  assert.ok(content.includes('processStartSignature'), 'metadata must include processStartSignature');
-  assert.ok(content.includes('canonicalPort'), 'metadata must include canonicalPort');
-  assert.ok(!content.includes('.env'), 'start script must not reference .env');
-});
-
-test('ProBot stop script checks metadata before killing', async () => {
-  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'stop-local.sh');
-  const content = fs.readFileSync(scriptPath, 'utf8');
-  assert.ok(content.includes('META_FILE='), 'stop script must reference metadata file');
-  assert.ok(content.includes('probot-process.json'), 'stop script must check probot-process.json');
-  assert.ok(content.includes("appId"), 'stop script must validate appId from metadata');
-  assert.ok(content.includes('processStartSignature'), 'stop script must check processStartSignature');
-  assert.ok(content.includes('STORED_LSTART'), 'stop script must compare stored start signature');
-  assert.ok(content.includes('CURRENT_LSTART'), 'stop script must compare current start signature');
-});
-
-test('ProBot stop script does not kill arbitrary PIDs', async () => {
-  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'stop-local.sh');
-  const content = fs.readFileSync(scriptPath, 'utf8');
-  assert.ok(!content.includes('pkill'), 'stop script must not use pkill');
-  assert.ok(!content.includes('killall'), 'stop script must not use killall');
-  assert.ok(!content.includes('lsof'), 'stop script must not use lsof');
-  assert.ok(content.includes('ps -p "$PID"'), 'stop script must validate PID ownership');
-  assert.ok(content.includes('ProBot') || content.includes('probot'), 'stop script must check process matches ProBot');
-  assert.ok(!content.includes('echo "$PROC_CMD"'), 'stop script must not echo raw process command lines');
-});
-
-test('ProBot stop treats stale/wrong PID as harmless and removes PID file', async () => {
-  const scriptPath = path.resolve(process.cwd(), '..', 'probot', 'scripts', 'dev', 'stop-local.sh');
-  const content = fs.readFileSync(scriptPath, 'utf8');
-  assert.ok(content.includes('stale PID'), 'stop script must handle stale PID gracefully');
-  assert.ok(content.includes('did not match ProBot process'), 'stop script must handle wrong PID gracefully');
-  assert.ok(content.includes('PID reuse detected'), 'stop script must detect PID reuse via start signature');
-  assert.ok(content.includes('rm -f "$PID_FILE" "$META_FILE"'), 'stop script must clean up both PID and metadata files');
 });
 
 test('all six latest lifecycle actions are absent from action-enablement-backlog', async () => {

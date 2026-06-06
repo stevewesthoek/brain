@@ -10,7 +10,7 @@ const HANDOFF_CANDIDATES = [
 ] as const;
 
 export function listRepos(): BrainCoreRepoSummary[] {
-  const aliases = parseRepoAliases(process.env.BRAIN_CORE_REPO_ALIASES || process.env.PROBOT_REPO_ALIASES || '');
+  const aliases = parseRepoAliases(process.env.BRAIN_CORE_REPO_ALIASES || '');
 
   if (aliases.length === 0) {
     return [

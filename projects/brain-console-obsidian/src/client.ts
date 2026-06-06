@@ -32,11 +32,6 @@ export interface BrainCoreCapabilitySummary {
     packageStatus?: string;
     manualInstallRequired?: boolean;
   };
-  probot?: {
-    thinClientStatus?: string;
-    commandAliasesEnabled?: boolean;
-    actionsEnabled?: boolean;
-  };
   executionGate?: {
     executionEnabled?: boolean;
     mindStewardDryRunExecutionFlagEnabled?: boolean;
@@ -208,7 +203,7 @@ export interface BrainCoreLocalAppSummary {
 
 export type BrainCoreLocalAppDashboardStatus = 'available' | 'partial' | 'unavailable';
 export type BrainCoreLocalAppHealth = 'healthy' | 'warning' | 'error' | 'unknown';
-export type BrainCoreLocalAppSource = 'probot' | 'brain-core' | 'infrastructure-config' | 'unknown';
+export type BrainCoreLocalAppSource = 'brain-core' | 'infrastructure-config' | 'unknown';
 export type BrainCoreLocalAppActionPolicyStatus = 'disabled' | 'planned' | 'enabled';
 export type BrainCoreLocalAppActionExecutionPath = 'none' | 'brain-core-allowlisted-action';
 export type BrainCoreLocalAppReadinessStatus = 'not-ready' | 'ready';
@@ -5640,235 +5635,6 @@ function normalizeBaseUrl(rawValue: string): string {
 }
 
 
-export type BrainCoreProBotDashboardParityStatus = 'available' | 'partial' | 'planned' | 'legacy-only' | 'blocked';
-export type BrainCoreProBotDashboardParityDecision = 'keep' | 'redesign' | 'drop' | 'later';
-
-export interface BrainCoreProBotDashboardParityTab {
-  id: string;
-  probotLabel: string;
-  brainConsoleSection: string;
-  status: BrainCoreProBotDashboardParityStatus;
-  decision: BrainCoreProBotDashboardParityDecision;
-  priority: 'high' | 'medium' | 'low';
-  brainCoreEndpoints: string[];
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  mutationControlsEnabled: false;
-  sensitiveDataExposed: false;
-  notes: string[];
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotDashboardParityResponse {
-  id: 'probot-dashboard-parity';
-  generatedAt: string;
-  status: 'in-progress' | 'complete' | 'blocked';
-  summary: {
-    totalTabs: number;
-    availableCount: number;
-    partialCount: number;
-    plannedCount: number;
-    legacyOnlyCount: number;
-    visibleInBrainConsoleCount: number;
-    workingInBrainConsoleCount: number;
-    blockerCount: number;
-  };
-  tabs: BrainCoreProBotDashboardParityTab[];
-  safety: {
-    readOnly: true;
-    exposesSecrets: false;
-    exposesFinancialData: false;
-    mutationControlsEnabled: false;
-    directShellExecutionEnabled: false;
-    approvalRequiredForFutureActions: true;
-    writesToMind: false;
-    writesFiles: false;
-  };
-  nextSafeStep: string;
-}
-
-
-export type BrainCoreProBotMigrationDecision = 'keep' | 'redesign' | 'legacy-admin-only' | 'blocked';
-export type BrainCoreProBotMigrationStatus = 'available' | 'partial' | 'missing' | 'legacy-only' | 'blocked';
-
-export interface BrainCoreProBotParityFeature {
-  id: string;
-  label: string;
-  probotTab: string;
-  brainConsoleSection: string | 'none';
-  migrationDecision: BrainCoreProBotMigrationDecision;
-  migrationStatus: BrainCoreProBotMigrationStatus;
-  safeDataAvailable: boolean;
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  relatedBrainCoreEndpoints: string[];
-  blockedReason: string | null;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotParitySafety {
-  readOnly: true;
-  exposesSecrets: false;
-  exposesCredentials: false;
-  exposesOAuth: false;
-  exposesStripeFinancialData: false;
-  exposesRawLogs: false;
-  mutationControlsEnabled: false;
-  shellExecutionEnabled: false;
-  platformWritesEnabled: false;
-  mindWritesEnabled: false;
-  publishingEnabled: false;
-  decommissionEnabled: false;
-}
-
-export interface BrainCoreProBotDetailParityResponse {
-  id: string;
-  source: 'probot';
-  target: 'brain-console';
-  status: BrainCoreProBotMigrationStatus;
-  migrationStatus: BrainCoreProBotMigrationStatus;
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  legacyOnly: boolean;
-  featureCount: number;
-  features: BrainCoreProBotParityFeature[];
-  summary: {
-    availableCount: number;
-    partialCount: number;
-    missingCount: number;
-    legacyOnlyCount: number;
-    blockedCount: number;
-    visibleCount: number;
-    workingCount: number;
-  };
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotSessionsParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-sessions-parity';
-}
-
-export interface BrainCoreProBotLocalAppsParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-local-apps-parity';
-}
-
-export interface BrainCoreProBotSchedulerParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-scheduler-parity';
-}
-
-export interface BrainCoreProBotStudioParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-studio-parity';
-}
-
-export interface BrainCoreProBotExternalAdminParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-external-admin-parity';
-}
-
-export interface BrainCoreProBotDecommissionReadinessCriteria {
-  id: string;
-  label: string;
-  satisfied: boolean;
-  description: string;
-  requiresUserApproval: boolean;
-}
-
-export interface BrainCoreProBotDecommissionReadinessResponse {
-  id: 'probot-decommission-readiness';
-  status: 'not-ready' | 'ready-pending-approval';
-  ready: false;
-  criteria: BrainCoreProBotDecommissionReadinessCriteria[];
-  satisfiedCriteriaCount: number;
-  unsatisfiedCriteriaCount: number;
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotExternalAdminIntegration {
-  id: string;
-  label: string;
-  probotTab: string;
-  brainConsoleSection: string;
-  migrationDecision: 'legacy-admin-only' | 'metadata-only';
-  migrationStatus: 'legacy-only' | 'partial' | 'blocked';
-  safeMetadataAvailable: boolean;
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  safeFields: string[];
-  prohibitedFields: string[];
-  blockedReason: string;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotExternalAdminSafeMetadataResponse {
-  id: 'probot-external-admin-safe-metadata';
-  status: 'partial';
-  source: 'probot';
-  target: 'brain-console';
-  integrationCount: number;
-  safeMetadataAvailableCount: number;
-  metadataOnlyCount: number;
-  legacyOnlyCount: number;
-  integrations: BrainCoreProBotExternalAdminIntegration[];
-  safety: BrainCoreProBotParitySafety;
-  blockers: string[];
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotFeatureParityRow {
-  probotTab: string;
-  brainConsoleCard: string;
-  parityStatus: 'covered' | 'partial' | 'legacy-only' | 'missing' | 'blocked';
-  safeDataStatus: 'available' | 'metadata-only' | 'unavailable' | 'intentionally-hidden';
-  endpointRefs: string[];
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  decommissionBlocker: boolean;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotFeatureParityMatrixResponse {
-  id: 'probot-feature-parity-matrix';
-  status: 'partial';
-  source: 'probot';
-  target: 'brain-console';
-  tabCount: number;
-  coveredCount: number;
-  partialCount: number;
-  legacyOnlyCount: number;
-  missingCount: number;
-  blockedCount: number;
-  decommissionReady: boolean;
-  rows: BrainCoreProBotFeatureParityRow[];
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotPhaseOutChecklistItem {
-  id: string;
-  label: string;
-  satisfied: boolean;
-  description: string;
-  requiresUserApproval: boolean;
-}
-
-export interface BrainCoreProBotPhaseOutChecklistResponse {
-  id: 'probot-phase-out-checklist';
-  status: 'not-ready';
-  ready: false;
-  itemCount: number;
-  satisfiedCount: number;
-  unsatisfiedCount: number;
-  requiresApprovalCount: number;
-  items: BrainCoreProBotPhaseOutChecklistItem[];
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
 export interface BrainCoreVideoThumbnailDesignPlanResponse {
   id: 'video-orchestrator-thumbnail-design-plan';
   status: 'blocked';
@@ -7767,63 +7533,274 @@ export async function readBrainCoreVideoOrchestratorProviderScaffoldingCompletio
   return fetchJson<BrainCoreVideoProviderScaffoldingCompletionCheckpointResponse>(normalizeBaseUrl(baseUrl), '/video-orchestrator/provider-scaffolding-completion-checkpoint');
 }
 
-export async function readBrainCoreProBotSessionsParity(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotSessionsParityResponse>> {
-  return fetchJson<BrainCoreProBotSessionsParityResponse>(normalizeBaseUrl(baseUrl), '/probot/sessions-parity');
-}
-
-export async function readBrainCoreProBotLocalAppsParity(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotLocalAppsParityResponse>> {
-  return fetchJson<BrainCoreProBotLocalAppsParityResponse>(normalizeBaseUrl(baseUrl), '/probot/local-apps-parity');
-}
-
-export async function readBrainCoreProBotSchedulerParity(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotSchedulerParityResponse>> {
-  return fetchJson<BrainCoreProBotSchedulerParityResponse>(normalizeBaseUrl(baseUrl), '/probot/scheduler-parity');
-}
-
-export async function readBrainCoreProBotStudioParity(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotStudioParityResponse>> {
-  return fetchJson<BrainCoreProBotStudioParityResponse>(normalizeBaseUrl(baseUrl), '/probot/studio-parity');
-}
-
-export async function readBrainCoreProBotExternalAdminParity(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotExternalAdminParityResponse>> {
-  return fetchJson<BrainCoreProBotExternalAdminParityResponse>(normalizeBaseUrl(baseUrl), '/probot/external-admin-parity');
-}
-
-export async function readBrainCoreProBotDecommissionReadiness(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotDecommissionReadinessResponse>> {
-  return fetchJson<BrainCoreProBotDecommissionReadinessResponse>(normalizeBaseUrl(baseUrl), '/probot/decommission-readiness');
-}
-
-export async function readBrainCoreProBotExternalAdminSafeMetadata(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotExternalAdminSafeMetadataResponse>> {
-  return fetchJson<BrainCoreProBotExternalAdminSafeMetadataResponse>(normalizeBaseUrl(baseUrl), '/probot/external-admin-safe-metadata');
-}
-
-export async function readBrainCoreProBotFeatureParityMatrix(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotFeatureParityMatrixResponse>> {
-  return fetchJson<BrainCoreProBotFeatureParityMatrixResponse>(normalizeBaseUrl(baseUrl), '/probot/feature-parity-matrix');
-}
-
-export async function readBrainCoreProBotPhaseOutChecklist(
-  baseUrl: string,
-): Promise<HttpResult<BrainCoreProBotPhaseOutChecklistResponse>> {
-  return fetchJson<BrainCoreProBotPhaseOutChecklistResponse>(normalizeBaseUrl(baseUrl), '/probot/phase-out-checklist');
-}
-
-
 export async function readBrainCoreLocalAppsActionsStatus(baseUrl: string) {
   return fetchJson<BrainCoreLocalAppActionStatusResponse>(normalizeBaseUrl(baseUrl), '/local-apps/actions/status');
+}
+
+export type BrainCoreBrainConsoleDashboardParityStatus = 'available' | 'partial' | 'planned' | 'legacy-only' | 'blocked';
+export type BrainCoreBrainConsoleDashboardParityDecision = 'keep' | 'redesign' | 'drop' | 'later';
+
+export interface BrainCoreBrainConsoleDashboardParityTab {
+  id: string;
+  brainConsoleLabel: string;
+  brainConsoleSection: string;
+  status: BrainCoreBrainConsoleDashboardParityStatus;
+  decision: BrainCoreBrainConsoleDashboardParityDecision;
+  priority: 'high' | 'medium' | 'low';
+  brainCoreEndpoints: string[];
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  mutationControlsEnabled: false;
+  sensitiveDataExposed: false;
+  notes: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleDashboardParityResponse {
+  id: 'brain-console-dashboard-parity';
+  generatedAt: string;
+  status: 'in-progress' | 'complete' | 'blocked';
+  summary: {
+    totalTabs: number;
+    availableCount: number;
+    partialCount: number;
+    plannedCount: number;
+    legacyOnlyCount: number;
+    visibleInBrainConsoleCount: number;
+    workingInBrainConsoleCount: number;
+    blockerCount: number;
+  };
+  tabs: BrainCoreBrainConsoleDashboardParityTab[];
+  safety: {
+    readOnly: true;
+    exposesSecrets: false;
+    exposesFinancialData: false;
+    mutationControlsEnabled: false;
+    directShellExecutionEnabled: false;
+    approvalRequiredForFutureActions: true;
+    writesToMind: false;
+    writesFiles: false;
+  };
+  nextSafeStep: string;
+}
+
+export type BrainCoreBrainConsoleMigrationDecision = 'keep' | 'redesign' | 'legacy-admin-only' | 'blocked';
+export type BrainCoreBrainConsoleMigrationStatus = 'available' | 'partial' | 'missing' | 'legacy-only' | 'blocked';
+
+export interface BrainCoreBrainConsoleParityFeature {
+  id: string;
+  label: string;
+  brainConsoleSection: string | 'none';
+  migrationDecision: BrainCoreBrainConsoleMigrationDecision;
+  migrationStatus: BrainCoreBrainConsoleMigrationStatus;
+  safeDataAvailable: boolean;
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  relatedBrainCoreEndpoints: string[];
+  blockedReason: string | null;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleParitySafety {
+  readOnly: true;
+  exposesSecrets: false;
+  exposesCredentials: false;
+  exposesOAuth: false;
+  exposesStripeFinancialData: false;
+  exposesRawLogs: false;
+  mutationControlsEnabled: false;
+  shellExecutionEnabled: false;
+  platformWritesEnabled: false;
+  mindWritesEnabled: false;
+  publishingEnabled: false;
+  decommissionEnabled: false;
+}
+
+export interface BrainCoreBrainConsoleDetailParityResponse {
+  id: string;
+  source: 'brain-console';
+  target: 'brain-console';
+  status: BrainCoreBrainConsoleMigrationStatus;
+  migrationStatus: BrainCoreBrainConsoleMigrationStatus;
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  legacyOnly: boolean;
+  featureCount: number;
+  features: BrainCoreBrainConsoleParityFeature[];
+  summary: {
+    availableCount: number;
+    partialCount: number;
+    missingCount: number;
+    legacyOnlyCount: number;
+    blockedCount: number;
+    visibleCount: number;
+    workingCount: number;
+  };
+  blockers: string[];
+  safety: BrainCoreBrainConsoleParitySafety;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleSessionsParityResponse extends BrainCoreBrainConsoleDetailParityResponse {
+  id: 'brain-console-sessions-parity';
+}
+
+export interface BrainCoreBrainConsoleLocalAppsParityResponse extends BrainCoreBrainConsoleDetailParityResponse {
+  id: 'brain-console-local-apps-parity';
+}
+
+export interface BrainCoreBrainConsoleSchedulerParityResponse extends BrainCoreBrainConsoleDetailParityResponse {
+  id: 'brain-console-scheduler-parity';
+}
+
+export interface BrainCoreBrainConsoleStudioParityResponse extends BrainCoreBrainConsoleDetailParityResponse {
+  id: 'brain-console-studio-parity';
+}
+
+export interface BrainCoreBrainConsoleExternalAdminParityResponse extends BrainCoreBrainConsoleDetailParityResponse {
+  id: 'brain-console-external-admin-parity';
+}
+
+export interface BrainCoreBrainConsoleDecommissionReadinessCriteria {
+  id: string;
+  label: string;
+  satisfied: boolean;
+  description: string;
+  requiresUserApproval: boolean;
+}
+
+export interface BrainCoreBrainConsoleDecommissionReadinessResponse {
+  id: 'brain-console-decommission-readiness';
+  status: 'not-ready' | 'ready-pending-approval';
+  ready: false;
+  criteria: BrainCoreBrainConsoleDecommissionReadinessCriteria[];
+  satisfiedCriteriaCount: number;
+  unsatisfiedCriteriaCount: number;
+  blockers: string[];
+  safety: BrainCoreBrainConsoleParitySafety;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleExternalAdminIntegration {
+  id: string;
+  label: string;
+  brainConsoleSection: string;
+  migrationDecision: 'legacy-admin-only' | 'metadata-only';
+  migrationStatus: 'legacy-only' | 'partial' | 'blocked';
+  safeMetadataAvailable: boolean;
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  safeFields: string[];
+  prohibitedFields: string[];
+  blockedReason: string;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleExternalAdminSafeMetadataResponse {
+  id: 'brain-console-external-admin-safe-metadata';
+  status: 'partial';
+  source: 'brain-console';
+  target: 'brain-console';
+  integrationCount: number;
+  safeMetadataAvailableCount: number;
+  metadataOnlyCount: number;
+  legacyOnlyCount: number;
+  integrations: BrainCoreBrainConsoleExternalAdminIntegration[];
+  safety: BrainCoreBrainConsoleParitySafety;
+  blockers: string[];
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleFeatureParityRow {
+  brainConsoleTab: string;
+  brainConsoleCard: string;
+  parityStatus: 'covered' | 'partial' | 'legacy-only' | 'missing' | 'blocked';
+  safeDataStatus: 'available' | 'metadata-only' | 'unavailable' | 'intentionally-hidden';
+  endpointRefs: string[];
+  visibleInBrainConsole: boolean;
+  workingInBrainConsole: boolean;
+  decommissionBlocker: boolean;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsoleFeatureParityMatrixResponse {
+  id: 'brain-console-feature-parity-matrix';
+  status: 'partial';
+  source: 'brain-console';
+  target: 'brain-console';
+  tabCount: number;
+  coveredCount: number;
+  partialCount: number;
+  legacyOnlyCount: number;
+  missingCount: number;
+  blockedCount: number;
+  decommissionReady: boolean;
+  rows: BrainCoreBrainConsoleFeatureParityRow[];
+  blockers: string[];
+  safety: BrainCoreBrainConsoleParitySafety;
+  nextSafeStep: string;
+}
+
+export interface BrainCoreBrainConsolePhaseOutChecklistItem {
+  id: string;
+  label: string;
+  satisfied: boolean;
+  description: string;
+  requiresUserApproval: boolean;
+}
+
+export interface BrainCoreBrainConsolePhaseOutChecklistResponse {
+  id: 'brain-console-phase-out-checklist';
+  status: 'not-ready';
+  ready: false;
+  itemCount: number;
+  satisfiedCount: number;
+  unsatisfiedCount: number;
+  requiresApprovalCount: number;
+  items: BrainCoreBrainConsolePhaseOutChecklistItem[];
+  blockers: string[];
+  safety: BrainCoreBrainConsoleParitySafety;
+  nextSafeStep: string;
+}
+
+export async function readBrainCoreBrainConsoleDashboardParity(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleDashboardParityResponse>> {
+  return fetchJson<BrainCoreBrainConsoleDashboardParityResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/dashboard-parity');
+}
+
+export async function readBrainCoreBrainConsoleSessionsParity(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleSessionsParityResponse>> {
+  return fetchJson<BrainCoreBrainConsoleSessionsParityResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/sessions-parity');
+}
+
+export async function readBrainCoreBrainConsoleLocalAppsParity(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleLocalAppsParityResponse>> {
+  return fetchJson<BrainCoreBrainConsoleLocalAppsParityResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/local-apps-parity');
+}
+
+export async function readBrainCoreBrainConsoleSchedulerParity(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleSchedulerParityResponse>> {
+  return fetchJson<BrainCoreBrainConsoleSchedulerParityResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/scheduler-parity');
+}
+
+export async function readBrainCoreBrainConsoleStudioParity(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleStudioParityResponse>> {
+  return fetchJson<BrainCoreBrainConsoleStudioParityResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/studio-parity');
+}
+
+export async function readBrainCoreBrainConsoleExternalAdminParity(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleExternalAdminParityResponse>> {
+  return fetchJson<BrainCoreBrainConsoleExternalAdminParityResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/external-admin-parity');
+}
+
+export async function readBrainCoreBrainConsoleDecommissionReadiness(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleDecommissionReadinessResponse>> {
+  return fetchJson<BrainCoreBrainConsoleDecommissionReadinessResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/decommission-readiness');
+}
+
+export async function readBrainCoreBrainConsoleExternalAdminSafeMetadata(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleExternalAdminSafeMetadataResponse>> {
+  return fetchJson<BrainCoreBrainConsoleExternalAdminSafeMetadataResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/external-admin-safe-metadata');
+}
+
+export async function readBrainCoreBrainConsoleFeatureParityMatrix(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsoleFeatureParityMatrixResponse>> {
+  return fetchJson<BrainCoreBrainConsoleFeatureParityMatrixResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/feature-parity-matrix');
+}
+
+export async function readBrainCoreBrainConsolePhaseOutChecklist(baseUrl: string): Promise<HttpResult<BrainCoreBrainConsolePhaseOutChecklistResponse>> {
+  return fetchJson<BrainCoreBrainConsolePhaseOutChecklistResponse>(normalizeBaseUrl(baseUrl), '/brainconsole/phase-out-checklist');
 }
 
 // ─── Infrastructure adapters ──────────────────────────────────────────────────

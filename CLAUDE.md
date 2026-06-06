@@ -324,43 +324,6 @@ For recurring failed paths, command forms, or local runtime gotchas, use `brain-
 
 See `brain/ai/skills/custom/memory/SKILL.md` for full orchestrator documentation and natural language routing table.
 
-## ProBot Updates (Controlled & Safe)
-
-**CRITICAL: All updates are manual and controlled. No automatic silent updates.**
-
-ProBot now features a **safe update system** that:
-- Detects when Node.js version or native modules need updates
-- Shows "Update Available" banner in dashboard (never silent)
-- Captures running services before update
-- Gracefully stops all services in dependency order
-- Runs update subprocess: `npm install` + `npm rebuild`
-- Auto-restarts ProBot
-- Auto-restores services that were running, in startup order
-- Health-checks each service before marking restored
-- Shows final status: success, partial, or error
-
-**User workflow:**
-1. See "Update Available" banner in ProBot dashboard (top-right corner, red background)
-2. Read what's updating (shows Node version, native modules, package updates)
-3. Click "Update Now" button
-4. See "Updating..." spinner
-5. Dashboard auto-reloads after ~30 seconds
-6. See success/failure status
-7. All services auto-restored
-
-**Documentation:**
-- Full runbook: `operations/runbooks/probot-updates.md`
-- Implementation: `projects/probot/src/{services/updates.ts, bot/update-orchestrator.ts}`
-- UI: Update banner + JS in `projects/probot/src/bot/dashboard.ts`
-
-**Reference:**
-- Dependency order for safe shutdown/startup (critical!)
-- Service health-check endpoints and timeouts
-- Pre-update state file (`~/.probot/update-restore-state.json`)
-- Manual recovery steps if update fails
-
-**See:** `operations/runbooks/probot-updates.md` for complete procedure, troubleshooting, and manual recovery steps.
-
 ## Spark CLI (Email/Calendar/Contacts)
 
 **Spark CLI** provides universal access to Spark email client data (emails, calendar, contacts, meetings, teams) across all AI/IDE consumers.

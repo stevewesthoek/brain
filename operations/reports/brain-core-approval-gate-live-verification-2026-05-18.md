@@ -126,7 +126,7 @@ These files are in `.gitignore` and safe to leave for inspection.
 2. **Feature flag design** — See `operations/specs/brain-core-first-action-feature-flag.md`
 3. **Rollback drill** — Validate recovery procedures if needed
 4. **One-action-only enforcement** — Ensure only `scheduler-run-mind-steward-dry-run` is allowed
-5. **Operator UI confirmation** — Brain Console/ProBot must surface the enabled state clearly
+5. **Operator UI confirmation** — Brain Console must surface the enabled state clearly
 
 ## Next Steps
 

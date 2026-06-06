@@ -87,4 +87,4 @@ stripe logs tail
 - In this workspace, treat Stripe CLI as profile-based. One account can have both live and test access in the same profile.
 - Default to `ProChat Studio` unless a repo-specific doc overrides the profile for that repo.
 - Dashboard-visible accounts in Stripe are not guaranteed to be enumerable via one account's API. Separate CLI auth per account may be required.
-- Canonical Stripe operations doc: `operations/runbooks/stripe-cli-and-probot.md`
+- Canonical Stripe operations doc: use the standard Stripe runbook in `operations/runbooks/`

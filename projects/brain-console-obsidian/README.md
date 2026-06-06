@@ -115,7 +115,7 @@ npm run --prefix projects/brain-console-obsidian package
 - Mind Steward is surfaced from Brain Core runtime-report sources even though it is not registered in `operations/infrastructure/local-apps.json`.
 - Fala is registered in `operations/infrastructure/local-apps.json` and appears in the Apps tab via `GET /local-apps/dashboard` with port `3050`, `/api/health`, Start/Stop controls, and the Fala-owned `npm run dashboard:status` metadata contract for LAN phone URLs and Mind Steward/Bedrock policy flags.
 
-## Native UX Features (2026-05-19 with ProBot Functional Parity Polish)
+## Native UX Features (2026-05-19 with BrainConsole Functional Parity Polish)
 
 ### Responsive Layout
 - Opens in the main workspace as a normal tab by default
@@ -123,7 +123,7 @@ npm run --prefix projects/brain-console-obsidian package
 - Responsive full-width layout with wider cards
 - Text wraps, no right-side clipping
 - Native Obsidian theme (light/dark aware)
-- ProBot Migration section with dedicated header and subtitle
+- BrainConsole Migration section with dedicated header and subtitle
 - Apps tab now uses a full-width compact app grid instead of the general three-column dashboard layout
 - Local Apps section reads dedicated dashboard/readiness/orchestrator payloads and wires controls to Brain Core controlled action endpoints
 
@@ -131,7 +131,7 @@ npm run --prefix projects/brain-console-obsidian package
 - **Tab switching:** <50ms (uses cached state, no network call)
 - **Initial load:** All 96+ endpoints load simultaneously (20-30 seconds typical)
 - **Failed endpoints:** Don't crash dashboard; shown in diagnostics
-- **ProBot parity cards:** 7 cards in dedicated Migration section with visual prominence, badge/stat styling, and clear safety labels
+- **BrainConsole parity cards:** 7 cards in dedicated Migration section with visual prominence, badge/stat styling, and clear safety labels
 
 ### Offline Recovery
 - Manual refresh: Always retries all endpoints
@@ -147,9 +147,9 @@ npm run --prefix projects/brain-console-obsidian package
 - No arbitrary command input
 - No secrets, OAuth tokens, or credentials exposed
 
-## ProBot Dashboard Parity (2026-05-19 Functional Parity Polish Phase)
+## BrainConsole Dashboard Parity (2026-05-19 Functional Parity Polish Phase)
 
-Overview tab now includes **ProBot Migration** section with 7 dedicated cards and clear section header:
+Overview tab now includes **BrainConsole Migration** section with 7 dedicated cards and clear section header:
 
 ### Available (Fully Migrated)
 1. **Sessions & Continuations** — Visible and working in Brain Console Overview
@@ -165,10 +165,10 @@ Overview tab now includes **ProBot Migration** section with 7 dedicated cards an
    - No credentials, secrets, OAuth tokens, or Stripe financial data exposed
 
 ### Decommission Status
-6. **ProBot Decommission Readiness** — ✗ NOT READY (6/9 criteria satisfied, 3 require explicit user approval)
+6. **BrainConsole Decommission Readiness** — ✗ NOT READY (6/9 criteria satisfied, 3 require explicit user approval)
 
 ### Command Center
-7. **ProBot → Brain Console Parity: Command Center** — Overall migration status, feature inventory, safety compliance
+7. **BrainConsole → Brain Console Parity: Command Center** — Overall migration status, feature inventory, safety compliance
 
 **Design Notes:**
 - Visually prominent section with dedicated header and subtitle
@@ -217,7 +217,7 @@ npm run --prefix projects/brain-console-obsidian release:install
 ## Documentation
 
 - **Native UX stabilization:** `docs/system/brain-console-obsidian-native-ux-stabilization.md`
-- **ProBot parity handoff:** `docs/system/probot-to-brain-console-dashboard-parity-handoff.md`
+- **BrainConsole parity handoff:** `docs/system/brainConsole-to-brain-console-dashboard-parity-handoff.md`
 - **Manual install/test runbook:** `operations/runbooks/brain-console-manual-install-test.md`
 
 ## Implementation Details

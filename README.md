@@ -1,13 +1,13 @@
 # Brain
 
-Private knowledge base and shared resource repo for Steve across local machines, IDE tools, and the ProBot runtime.
+Private knowledge base and shared resource repo for Steve across local machines and IDE tools.
 
 ## Purpose
 
 This repo holds:
 - reusable AI prompts and shared skills
 - operational docs, scripts, and selected system configs
-- runtime and ProBot workspace notes
+- runtime workspace notes
 - project-specific assets and execution docs
 
 It is meant to be:
@@ -22,7 +22,7 @@ It is meant to be:
 - `ai/` — prompts, provider notes, shared multi-tool skills
 - `operations/` — runbooks, standards, scripts, snippets, automations, infrastructure, deploy docs, system configs
 - `tools/` — utility and workflow scripts for this machine (`tools/scripts/`, tool-specific docs)
-- `runtime/` — ProBot runtime workspace material and local working state
+- `runtime/` — runtime workspace material and local working state
 
 ## ⚡ Quick Reference: Installing & Managing CLIs
 
@@ -132,7 +132,7 @@ This table is the contract. If a tool reads the docs and finds no pointer to a n
 - `operations/system-configs/` for synced tool config and selected machine state — subdirs are the symlink targets for `~/.claude`, `~/.codex`, `~/.kiro`, `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml`. Each subdir is mixed-content: portable config, intentionally versioned state, and gitignored machine noise. See `operations/system-configs/README.md` for details.
 
 ### `runtime/`
-- ProBot-specific workspace and runtime notes.
+- runtime-specific workspace notes.
 - `runtime/cache/` and `runtime/local/` are local-support folders, not canonical truth.
 - runtime bootstrap files should point to canonical docs instead of duplicating them.
 
@@ -147,29 +147,23 @@ Canonical docs:
 - `docs/system/obsidian-mind-steward-roadmap.md` — historical mind vault roadmap; current implementation name is Mind Steward
 - `docs/system/obsidian-mind-steward-implementation-plan.md` — historical implementation plan; current project lives at `projects/mind-steward`
 
-The ProBot dashboard is deprecated as a primary UI. Future machine-control work should target a small local Brain Core API consumed by Obsidian, while retaining only reusable ProBot backend capabilities during migration.
+## Runtime and Brain Core
 
-## Runtime, ProBot, and Obsidian-First Brain Core
-
-As of 2026-05-16, the accepted architecture direction is Obsidian-first:
+The accepted architecture direction is Obsidian-first:
 
 - Obsidian / `mind` is the target primary human cockpit.
-- ProBot dashboard is deprecated as a primary UI and should not receive new product features.
-- A future Brain Core local API should replace the dashboard as the machine boundary.
-- Slack and Telegram, if retained, should become thin fallback clients over Brain Core.
+- Brain Core is the small local machine boundary for structured status and controlled actions.
+- Slack and Telegram, if retained, should remain thin fallback clients over Brain Core.
 
-Read first for the new direction:
+Read first for the current direction:
 
 - `docs/system/obsidian-brain-core-roadmap.md`
 - `docs/system/obsidian-brain-core-implementation-plan.md`
-- `projects/probot/README.md` for the dashboard-freeze notice
 
-
-All runtime glue now lives under `runtime/`. The local ProBot daemon is the current always-on teleport layer for Claude, Codex, and Brain — there is no separate OpenClaw workspace anymore.
+All runtime glue now lives under `runtime/`.
 
 If you need to understand the runtime setup:
-- Read `projects/probot/SPEC.md` for the Telegram command center architecture.
-- Track ongoing decisions in `operations/decision-log.md` (search for "ProBot" or "OpenClaw" to see the decommissioning notes).
+- Track ongoing decisions in `operations/decision-log.md`.
 - Use the `runtime/cache/` and `runtime/local/` folders only for disposable state; keep canonical context in the top-level folders.
 
 Runtime bootstrap pointers, memory notes, and approval checkpoints belong in their canonical document rather than duplicated runtime files.

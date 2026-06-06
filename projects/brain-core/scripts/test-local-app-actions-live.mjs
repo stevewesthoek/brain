@@ -4,7 +4,6 @@ import os from 'node:os';
 import path from 'node:path';
 
 const EXCLUDED_LIVE_ACTION_APPS = new Set(['buildflow']);
-const PROBOT_LIFECYCLE_OPT_IN = process.env.BRAIN_CORE_LIVE_TEST_PROBOT_LIFECYCLE === '1';
 const preferredLiveActions = [
   ['video-orchestrator', 'restart'],
   ['video-orchestrator', 'start'],
@@ -13,8 +12,6 @@ const preferredLiveActions = [
   ['firecrawl', 'stop'],
 ];
 const fixedLifecycleCandidates = [
-  ['probot', 'start'],
-  ['probot', 'restart'],
   ['via-di-eden', 'start'],
   ['via-di-eden', 'restart'],
   ['oliveto-organizing', 'start'],
@@ -148,27 +145,12 @@ try {
     assert((actionStatusAfter.audit?.persistedResultCount ?? 0) >= (actionStatusBefore.audit?.persistedResultCount ?? 0), 'persisted result count should not decrease');
   }
 
-  const compositeRestartCandidate = dashboard.apps.find((app) => app.restartSupported && app.startSupported && app.stopSupported && (app.id !== 'probot' || PROBOT_LIFECYCLE_OPT_IN));
+  const compositeRestartCandidate = dashboard.apps.find((app) => app.restartSupported && app.startSupported && app.stopSupported);
   let compositeRestartResult = null;
   if (compositeRestartCandidate) {
     compositeRestartResult = await post(`/local-apps/${encodeURIComponent(compositeRestartCandidate.id)}/restart`);
     assert(compositeRestartResult.statusCode === 200, `composite restart for ${compositeRestartCandidate.id} did not return 200`);
     assert(compositeRestartResult.body.action === 'restart', 'composite restart action mismatch');
-  }
-
-  let probotLifecycle = { status: 'skipped', reason: 'avoids starting or restarting the ProBot control-plane process during routine verification' };
-  if (PROBOT_LIFECYCLE_OPT_IN) {
-    const probotApp = dashboard.apps.find((app) => app.id === 'probot');
-    if (probotApp && probotApp.restartSupported) {
-      const probotResult = await post('/local-apps/probot/restart');
-      if (probotResult.statusCode === 200 && probotResult.body.ok === true) {
-        probotLifecycle = { status: 'tested', reason: 'BRAIN_CORE_LIVE_TEST_PROBOT_LIFECYCLE=1 opt-in enabled' };
-      } else {
-        probotLifecycle = { status: 'failed', reason: `probot restart returned ${probotResult.statusCode}: ${probotResult.body.message ?? probotResult.body.status}` };
-      }
-    } else {
-      probotLifecycle = { status: 'skipped', reason: 'ProBot not reported as restart-supported in dashboard' };
-    }
   }
 
   const managedNpmCandidate = dashboard.apps.find(
@@ -281,8 +263,6 @@ try {
         }
       : { status: 'skipped', reason: 'No composite restart candidate was available.' },
     managedLifecycle,
-    probotLifecycle,
-    probotPostTestStatus: PROBOT_LIFECYCLE_OPT_IN ? 'enabled' : 'probot lifecycle actions enabled but not POST-tested by default',
     actionStatusAfter: {
       recentResultCount: actionStatusAfter.recentResults?.length ?? 0,
       lockCount: actionStatusAfter.locks?.length ?? 0,
@@ -333,13 +313,12 @@ try {
 
 function selectExecutableAction(apps) {
   for (const [preferredAppId, preferredAction] of preferredLiveActions) {
-    if (preferredAppId === 'probot' && !PROBOT_LIFECYCLE_OPT_IN) continue;
     const app = apps.find((entry) => entry.id === preferredAppId);
     if (app && supports(app, preferredAction)) return [preferredAppId, preferredAction];
   }
 
   const fallback = apps.find((app) =>
-    !EXCLUDED_LIVE_ACTION_APPS.has(app.id) && (app.id !== 'probot' || PROBOT_LIFECYCLE_OPT_IN) && (app.startSupported || app.stopSupported || app.restartSupported),
+    !EXCLUDED_LIVE_ACTION_APPS.has(app.id) && (app.startSupported || app.stopSupported || app.restartSupported),
   );
   if (!fallback) return null;
   if (fallback.restartSupported) return [fallback.id, 'restart'];

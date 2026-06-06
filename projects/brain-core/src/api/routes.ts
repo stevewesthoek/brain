@@ -64,16 +64,6 @@ import {
 import { executeLocalAppActionRequest } from '../adapters/local-app-orchestrator.js';
 import { readLocalAppsOperationalReadiness } from '../adapters/local-app-operational-readiness.js';
 import { readLocalAppsOperatorSummary } from '../adapters/local-app-operator-summary.js';
-import { readProBotDashboardParity } from '../adapters/probot-dashboard-parity.js';
-import { readProBotSessionsParity } from '../adapters/probot-sessions-parity.js';
-import { readProBotLocalAppsParity } from '../adapters/probot-local-apps-parity.js';
-import { readProBotSchedulerParity } from '../adapters/probot-scheduler-parity.js';
-import { readProBotStudioParity } from '../adapters/probot-studio-parity.js';
-import { readProBotExternalAdminParity } from '../adapters/probot-external-admin-parity.js';
-import { readProBotDecommissionReadiness } from '../adapters/probot-decommission-readiness.js';
-import { readProBotExternalAdminSafeMetadata } from '../adapters/probot-external-admin-safe-metadata.js';
-import { readProBotFeatureParityMatrix } from '../adapters/probot-feature-parity-matrix.js';
-import { readProBotPhaseOutChecklist } from '../adapters/probot-phase-out-checklist.js';
 import {
   listMindPreviewSummaries,
   readLatestMindPreviewDetail,
@@ -690,36 +680,6 @@ export async function routeRequest(
       return;
     case '/local-apps/action-plans':
       sendJson(response, 200, readLocalAppsActionPlans());
-      return;
-    case '/probot/dashboard-parity':
-      sendJson(response, 200, readProBotDashboardParity());
-      return;
-    case '/probot/sessions-parity':
-      sendJson(response, 200, readProBotSessionsParity());
-      return;
-    case '/probot/local-apps-parity':
-      sendJson(response, 200, readProBotLocalAppsParity());
-      return;
-    case '/probot/scheduler-parity':
-      sendJson(response, 200, readProBotSchedulerParity());
-      return;
-    case '/probot/studio-parity':
-      sendJson(response, 200, readProBotStudioParity());
-      return;
-    case '/probot/external-admin-parity':
-      sendJson(response, 200, readProBotExternalAdminParity());
-      return;
-    case '/probot/decommission-readiness':
-      sendJson(response, 200, readProBotDecommissionReadiness());
-      return;
-    case '/probot/external-admin-safe-metadata':
-      sendJson(response, 200, readProBotExternalAdminSafeMetadata());
-      return;
-    case '/probot/feature-parity-matrix':
-      sendJson(response, 200, readProBotFeatureParityMatrix());
-      return;
-    case '/probot/phase-out-checklist':
-      sendJson(response, 200, readProBotPhaseOutChecklist());
       return;
     case '/video/status':
       sendJson(response, 200, getVideoStatus());

@@ -30,7 +30,7 @@ export default function SettingsPage() {
 
       <section className="card">
         <div className="card-title">Legacy dashboard policy</div>
-        <p>ProBot dashboard, Brain Console Obsidian, and Brain Console Web are legacy references only. New dashboard work belongs in Brain Console Center and must consume Brain Core API surfaces.</p>
+        <p>Brain Console Obsidian and Brain Console Web are legacy references only. New dashboard work belongs in Brain Console Center and must consume Brain Core API surfaces.</p>
       </section>
     </div>
   );

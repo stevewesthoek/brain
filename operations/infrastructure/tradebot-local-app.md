@@ -32,7 +32,7 @@ Blocked:
 - Freqtrade execution integration
 - LLM trade authority
 
-## ProBot registry entry
+## Brain Console registry entry
 
 TradeBot must be registered in `operations/infrastructure/local-apps.json` with:
 
@@ -59,7 +59,7 @@ TradeBot must be registered in `operations/infrastructure/local-apps.json` with:
   "databaseName": "tradebot",
   "databaseUser": "tradebot",
   "startupTimeoutMs": 120000,
-  "notes": "Phase 1 only: read-only cockpit. Fixed local app port is 3061. Health check is /api/health. ProBot owns lifecycle orchestration and injects/uses the fixed port. Future local Postgres should use reserved host port 5454; TradeBot must not reuse ProChat DB port 5434."
+  "notes": "Phase 1 only: read-only cockpit. Fixed local app port is 3061. Health check is /api/health. Brain Console owns lifecycle orchestration and injects/uses the fixed port. Future local Postgres should use reserved host port 5454; TradeBot must not reuse ProChat DB port 5434."
 }
 ```
 

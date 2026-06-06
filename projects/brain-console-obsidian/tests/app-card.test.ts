@@ -10,7 +10,7 @@ describe('Brain Console App Card Rendering', () => {
   it('renders app list with status badges', () => {
     const mockApps = [
       { id: 'brain-core', name: 'Brain Core API', status: 'running' as const, source: 'runtime-report' as const, actionsSupported: false },
-      { id: 'probot', name: 'ProBot Service', status: 'stopped' as const, source: 'runtime-report' as const, actionsSupported: false },
+      { id: 'brainConsole', name: 'BrainConsole Service', status: 'stopped' as const, source: 'runtime-report' as const, actionsSupported: false },
     ];
 
     // Simulate the app list rendering
@@ -48,7 +48,7 @@ describe('Brain Console App Card Rendering', () => {
     // Check second app (stopped)
     const secondApp = appItems[1];
     const secondName = secondApp.querySelector('.brain-console__app-name');
-    expect(secondName?.textContent).toBe('ProBot Service');
+    expect(secondName?.textContent).toBe('BrainConsole Service');
 
     const secondBadge = secondApp.querySelector('.brain-console__app-status-badge');
     expect(secondBadge?.textContent).toBe('stopped');

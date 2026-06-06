@@ -13,7 +13,6 @@ Brain Console Center is the single leading operations dashboard for the Brain re
 
 Legacy dashboards are reference-only:
 
-- ProBot dashboard
 - Brain Console Obsidian Plugin
 - Brain Console Web
 

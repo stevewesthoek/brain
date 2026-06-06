@@ -13,7 +13,6 @@ Brain Console Center → Brain Core API → runtime/job/config sources
 
 Legacy dashboards are reference-only:
 
-- `projects/probot` — legacy dashboard and thin Slack/Telegram fallback client
 - `projects/brain-console-obsidian` — frozen legacy native Obsidian dashboard
 - `projects/brain-console-web` — legacy AWS Video reference dashboard
 

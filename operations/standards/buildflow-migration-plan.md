@@ -9,8 +9,8 @@
 **IMPORTANT — Right now (Phase 0):**
 - ✅ Local BuildFlow is running and primary
 - ✅ Production relay does NOT exist yet
-- ✅ ProBot shows local BuildFlow only
-- ✅ This document is planning-only; no changes to ProBot, local config, or infrastructure have been made
+- ✅ Brain Console shows local BuildFlow only
+- ✅ This document is planning-only; no changes to local config or infrastructure have been made
 - ⏳ Next phase (Phase 1) will create production Dokploy application
 
 ---
@@ -26,7 +26,7 @@
   - Relay: 3053
   - Web: 3054
 - ✅ Local orchestrator (`buildflow-orchestrator.sh`) manages all three
-- ✅ ProBot dashboard shows unified health check at `/api/unified-health`
+- ✅ Brain Console shows unified health check at `/api/unified-health`
 - ✅ Local relay data persists in `~/.buildflow/`
 - ✅ No production relay service exists yet
 
@@ -169,7 +169,7 @@ curl -H "Authorization: Bearer $RELAY_ADMIN_TOKEN" \
 
 **During Phase 4:**
 - Update CustomGPT to use production buildflow.prochat.tools
-- Update ProBot dashboard to show production relay status
+- Update the dashboard to show production relay status
 - Local relay continues as warm standby
 - Gradual traffic shift (if A/B testable) or immediate switch
 - Monitor both local and production concurrently
@@ -185,7 +185,7 @@ curl -H "Authorization: Bearer $RELAY_ADMIN_TOKEN" \
 curl https://buildflow.prochat.tools/ready  # production
 curl http://localhost:3054/api/unified-health  # local
 
-# 3. Update ProBot dashboard (future: show both relays in sidebar)
+# 3. Update the dashboard (future: show both relays in sidebar)
 # (Currently no change needed; local remains primary)
 
 # 4. Run verification suite (see Phase 3 checks above)
@@ -197,7 +197,7 @@ curl http://localhost:3054/api/unified-health  # local
 - [ ] CustomGPT uses production URL
 - [ ] First real action via production succeeds
 - [ ] Local relay accessible as backup
-- [ ] ProBot shows status of both
+- [ ] Dashboard shows status of both
 - [ ] Zero user-facing downtime
 
 **Dual-Relay Monitoring (48 hours):**
@@ -223,7 +223,7 @@ curl http://localhost:3054/api/unified-health  # local
 
 **During Phase 5:**
 - Option 1: Keep local relay as warm standby (recommended)
-- Option 2: Archive local relay data and remove from active ProBot
+- Option 2: Archive local relay data and remove from the active dashboard
 - Remove references to localhost-only BuildFlow from docs
 - Update infrastructure docs to mark production as primary
 
@@ -231,13 +231,13 @@ curl http://localhost:3054/api/unified-health  # local
 ```bash
 # Option 1 (Warm Standby — Recommended)
 # Keep local BuildFlow running
-# Update ProBot dashboard to show "Local" label
+# Update the dashboard to show "Local" label
 # Document fallback procedure in runbook
 
 # Option 2 (Remove Local)
 # Backup local relay data
 tar czf /tmp/buildflow-local-backup.tar.gz ~/.buildflow/
-# Stop local BuildFlow from ProBot
+# Stop local BuildFlow from the dashboard
 # Archive local relay from documentation
 ```
 
@@ -245,7 +245,7 @@ tar czf /tmp/buildflow-local-backup.tar.gz ~/.buildflow/
 - Remove "Phase 0" current-state section from migration plan
 - Update infra.md to mark buildflow.prochat.tools as primary
 - Document fallback procedure if production fails
-- Update ProBot dashboard labels if local is removed
+- Update dashboard labels if local is removed
 
 **Success Criteria:**
 - [ ] Local relay data backed up (if removing)
@@ -257,7 +257,7 @@ tar czf /tmp/buildflow-local-backup.tar.gz ~/.buildflow/
 **Future Maintenance:**
 - Monitor relay audit logs (will grow — Phase 2E adds rotation)
 - Monitor volume size and clean requests.json if needed (manual interim)
-- Update ProBot dashboard labels annually
+- Update dashboard labels annually
 
 ---
 
@@ -267,7 +267,7 @@ tar czf /tmp/buildflow-local-backup.tar.gz ~/.buildflow/
 
 - ✅ Local BuildFlow remains PRIMARY until Phase 4
 - ✅ Local relay data never moves, never deleted
-- ✅ ProBot local dashboard continues unchanged until explicitly told
+- ✅ Local dashboard continues unchanged until explicitly told
 - ✅ Local agent can connect to BOTH relays (for testing)
 - ✅ Production relay has independent data volume (no cross-contamination)
 - ✅ Local and production tokens are separate (independent auth)
@@ -276,7 +276,7 @@ tar czf /tmp/buildflow-local-backup.tar.gz ~/.buildflow/
 - Local orchestrator script
 - Local health check endpoint
 - Local database/vault location
-- ProBot UI (shows only local until told to add production)
+- Dashboard UI (shows only local until told to add production)
 - CustomGPT integration (uses local until Phase 4)
 
 ---
@@ -368,7 +368,7 @@ ssh dokploy "docker logs buildflow-relay | tail -200"
 
 **Health Checks (automated):**
 ```bash
-# Every 5 minutes (via ProBot or Dokploy health check)
+# Every 5 minutes (via the dashboard or Dokploy health check)
 curl -s https://buildflow.prochat.tools/ready | jq .ready
 # Alert if: not ready OR timeout
 

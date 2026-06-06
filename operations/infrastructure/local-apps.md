@@ -24,7 +24,6 @@ One permanent port per app, one per database.
 
 | Name | App Port | DB Port | Description |
 |------|----------|---------|-------------|
-| ProBot | 7070 | - | Dashboard and automation daemon |
 | Says the Bible | 3058 | 5441 | Main app and admin panel |
 | Firecrawl | 3055 | 5443 | Web scraping and research API |
 | ProChat | 3056 | 5434 | Marketing and conversion site |

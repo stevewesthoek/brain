@@ -44,8 +44,7 @@
     "freeze",
     "unfreeze",
     "keep-alive",
-    "probot-app-launcher-diagnostics",
-    "probot-dashboard-scheduler-registration"
+    "brain-nightly-scheduler-new-job"
   ],
   "protected_categories": [
     "workflow",

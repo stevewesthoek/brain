@@ -30,7 +30,6 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | Operational decisions | `operations/decision-log.md` | relevant runbook/spec |
 | Scripts/tools | `tools/README.md`, `tools/scripts/` | tool-specific folder |
 | Infrastructure/deploy | `operations/infrastructure/`, `operations/deploy/` | `operations/runbooks/` |
-| ProBot/runtime | `projects/probot/`, `runtime/` | `operations/decision-log.md` |
 | Personal strategy/research/tasks | `mind` repo, not brain | `/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md` |
 
 ## Skill Routing

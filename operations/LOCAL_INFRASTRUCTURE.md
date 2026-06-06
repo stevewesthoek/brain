@@ -7,9 +7,8 @@ This document tracks all locally-running applications, their ports, and configur
 | Application | Port | Purpose | Location | Start Command | Notes |
 |-------------|------|---------|----------|----------------|-------|
 | **xgrow** | 7080 | X-Gro: AI-powered Twitter content automation | `prochattools/saas/xgrow` | `npm run dev` | OAuth callback: `http://localhost:7080/api/auth/x/callback` |
-| **ProBot Dashboard** | 7070 | ProBot control plane dashboard | `stevewesthoek/brain/projects/probot` | (see ProBot docs) | Main monitoring and management UI |
-| **Via di Eden** | 3057 | Client website with TinaCloud CMS | `prochattools/clients/via-di-eden` | ProBot Local Apps registry | Local app port 3057; local OrbStack Postgres 5447. Production uses `https://viadieden.com`, not localhost. |
-| **Oliveto Organizing** | 3059 | Client website with TinaCloud CMS | `prochattools/clients/oliveto-organizing` | ProBot Local Apps registry | Local app port 3059; local OrbStack Postgres 5453. Production uses `https://olivetoorganizing.com`, not localhost. |
+| **Via di Eden** | 3057 | Client website with TinaCloud CMS | `prochattools/clients/via-di-eden` | Brain Core Local Apps registry | Local app port 3057; local OrbStack Postgres 5447. Production uses `https://viadieden.com`, not localhost. |
+| **Oliveto Organizing** | 3059 | Client website with TinaCloud CMS | `prochattools/clients/oliveto-organizing` | Brain Core Local Apps registry | Local app port 3059; local OrbStack Postgres 5453. Production uses `https://olivetoorganizing.com`, not localhost. |
 
 ## Local Database Ports
 
@@ -22,7 +21,6 @@ This document tracks all locally-running applications, their ports, and configur
 
 - **3000–3999**: Development & testing (ephemeral, first-come-first-served)
 - **7000–7999**: Fixed, always-on local applications (fixed allocation)
-  - **7070**: ProBot Dashboard (reserved)
   - **7080**: xgrow (reserved)
 
 Reserve new ports by updating this file and committing the change.

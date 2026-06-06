@@ -77,7 +77,6 @@ These are not nightly batch jobs, but they still consume machine resources and s
 
 | Job | Surface | Trigger model | Verified state on 2026-04-04 | Approx duration | Resource profile | Scheduling rule | Source / notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `tools.prochat.probot` | macOS `launchd` LaunchAgent | `RunAtLoad` + `KeepAlive` | Running live | Continuous | `Low` steady-state, bursty when handling Telegram requests | Treat as an always-on service, not part of the nightly queue. Avoid overlapping heavy local AI work if Telegram responsiveness matters. | Repo docs: `projects/probot/README.md`, installer: `projects/probot/scripts/install-launchd.sh`. Live LaunchAgent verified `2026-04-04`. |
 
 ## App-Level Schedulers Found In Brain
 
@@ -101,7 +100,6 @@ This is the implemented ordering policy for the `Office` Mac nightly lane.
 | `Heavy media lane` | `03:00` onward | `stb-pipeline-batch` | Reserve this lane for one heavy batch only. Nothing else expensive should start here. |
 | `Maintenance lane` | After heavy lane completion | `n8n-backup` then `claude-session-cleanup` | Only start when the heavy media lane has exited. Timeouts stop the chain. |
 | `Hourly guard lane` | `:10` every hour | `stb-flip-available` | Leave independent. It is lightweight and idempotent. |
-| `Daemon lane` | Always on | `tools.prochat.probot` | Monitor separately from batch ordering. |
 
 Recommended near-term target schedule:
 
@@ -152,7 +150,7 @@ Current implementation shape:
 
 Last updated:
 - `2026-04-07` — Added `dance-of-life-sync`, `gemini-cleanup`, and `skill-prune` to Nightly Chain Members table to reflect current scheduler state.
-- `2026-04-08` — Added `bible-studies-pipeline` as chain member #5 (between `dance-of-life-sync` and `gemini-cleanup`). Added `bible-studies-pipeline` and `skill-prune` to ProBot dashboard job order. Updated `render-office-scheduler-report.sh` to include all 7 chain members (was only showing 3).
+- `2026-04-08` — Added `bible-studies-pipeline` as chain member #5 (between `dance-of-life-sync` and `gemini-cleanup`). Added `bible-studies-pipeline` and `skill-prune` to Brain Console job order. Updated `render-office-scheduler-report.sh` to include all 7 chain members (was only showing 3).
 - `2026-04-26` — Hardened skill-prune: clarified REPORT-only mode, added `gws-token-refresh` as daily job, documented manual scripts, updated sources. Added safety validation to delete/quarantine/keep scripts.
 - `2026-05-17` — Added `mind-steward-dry-run` as a non-blocking report-only nightly chain member. It now validates `projects/mind-steward` and writes runtime report files without touching Mind content. The job name remains for compatibility with existing report IDs.
 - `2026-05-17` — Added `local-apps-report` and `video-runtime-report` as non-blocking report-only nightly chain members. They write safe runtime/local JSON and Markdown summaries without mutating Mind or executing actions.

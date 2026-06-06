@@ -128,9 +128,9 @@ Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION
 
 Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the default repo-local `operations/system-configs/codex/skills` path and reports folders containing `SKILL.md` as indexed.
 
-Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` or `PROBOT_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
+Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
 
-Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Steward, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state, Brain Console scaffold status, and ProBot thin-client wiring.
+Current `/orchestrators` returns placeholder summaries for Video Orchestrator, Mind Steward, and Office Nightly Scheduler. Current `/capabilities` returns a manifest of read endpoints and approval-request endpoints with `executableActionsEnabled: false`, `runtimeReportsSupported: true`, and `runtimeReportEndpoint: /runtime/reports`, plus read-only metadata for Mind cleanup state and Brain Console scaffold status.
 
 Current `/runtime/reports` returns read-only runtime report summaries for the mind-steward dry-run report, approval audit JSONL health, video runtime status, and local-app runtime status. It does not read Mind content and always reports `writesToMind: false` and `executableActions: false`.
 
@@ -200,8 +200,6 @@ POST /approvals/:id/reject
 
 These endpoints are local-only, approval-aware scaffolding. They create or update approval records but always return `executed: false`; they do not run shell commands, start/stop apps, trigger scheduler jobs, switch profiles, resume sessions, or mutate external systems.
 
-These adapters intentionally do not import ProBot dashboard code. Future slices should migrate richer read-only backend logic from ProBot without importing dashboard rendering or browser state.
-
 ## Validation
 
 ```bash
@@ -264,7 +262,7 @@ brain-approvals
 brain-video-orchestrator
 ```
 
-This is not an Obsidian plugin yet. It is the audited data shape that a plugin can render without importing the legacy ProBot dashboard.
+This is not an Obsidian plugin yet. It is the audited data shape that a plugin can render without importing dashboard rendering or browser state.
 
 ## Safety boundary
 

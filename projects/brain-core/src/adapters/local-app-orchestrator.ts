@@ -722,7 +722,6 @@ function deriveCategory(name: string, repoPath: string | null): BrainCoreLocalAp
   if (/mind steward/i.test(name)) return 'brain-core';
   if (/video/i.test(name)) return 'video';
   if (/scheduler|automation/i.test(name)) return 'operations';
-  if (/probot/i.test(name)) return 'dashboard';
   if (/firecrawl/i.test(name)) return 'research';
   if (repoPath) return 'local-app';
   return 'other';

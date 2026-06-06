@@ -17,9 +17,9 @@ const markers = [
   'brain-console-open-fix-2026-05-19-01',
   'brain-console-connection-diagnostics-2026-05-19-01',
   'brain-console-emergency-restore-2026-05-19-01',
-  'probot-decommission-gap-closure-2026-05-19-01',
-  'probot-functional-polish-2026-05-19-01',
-  'probot-functional-parity-2026-05-19-01',
+  'brainConsole-decommission-gap-closure-2026-05-19-01',
+  'brainConsole-functional-polish-2026-05-19-01',
+  'brainConsole-functional-parity-2026-05-19-01',
   'native-card-ui-2026-05-19-01',
   'scaffold 2026-05-18',
 ];

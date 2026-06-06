@@ -1,28 +1,4 @@
-[
-  {
-    "name": "ProBot",
-    "repoPath": "/Users/Office/Repos/stevewesthoek/brain/projects/probot",
-    "port": 7070,
-    "appPort": 7070,
-    "url": "http://localhost:7070",
-    "appUrl": "http://localhost:7070",
-    "check": "http://localhost:7070",
-    "healthCheck": "http://localhost:7070",
-    "start": "bash scripts/dev/start-local.sh",
-    "startCommand": "bash scripts/dev/start-local.sh",
-    "stop": "bash scripts/dev/stop-local.sh",
-    "stopCommand": "bash scripts/dev/stop-local.sh",
-    "restart": "bash scripts/dev/restart-local.sh",
-    "restartCommand": "bash scripts/dev/restart-local.sh",
-    "description": "ProBot dashboard and automation daemon",
-    "databaseEngine": null,
-    "databaseServiceName": null,
-    "dockerContainerName": null,
-    "databasePort": null,
-    "databaseName": null,
-    "databaseUser": null,
-    "notes": "Control-plane dashboard; no project-local database."
-  },
+[ 
   {
     "name": "Says the Bible",
     "repoPath": "/Users/Office/Repos/prochattools/web/says-the-bible",
@@ -48,9 +24,9 @@
       "pathPrepend": [
         "/Users/Office/.nvm/versions/node/v20.20.2/bin"
       ],
-      "notes": "Says the Bible uses Next.js 14 and must run locally with Node 20. This runtime override is app-specific and does not change ProBot or other local apps."
+      "notes": "Says the Bible uses Next.js 14 and must run locally with Node 20. This runtime override is app-specific and does not change the other local apps."
     },
-    "notes": "ProBot runs this from repoPath and injects PORT=3058 at launch. Local dev opens directly to /admin. The start and stop scripts both operate on the 3058 listener so the app can be restarted cleanly from ProBot. The production Dockerfile still uses PORT=3000. Local runtime is pinned per-app to Node 20 through the runtime.pathPrepend override."
+    "notes": "Brain Console runs this from repoPath and injects PORT=3058 at launch. Local dev opens directly to /admin. The start and stop scripts both operate on the 3058 listener so the app can be restarted cleanly from Brain Console. The production Dockerfile still uses PORT=3000. Local runtime is pinned per-app to Node 20 through the runtime.pathPrepend override."
   },
   {
     "name": "Firecrawl",
@@ -119,7 +95,7 @@
     "databaseName": "viadieden",
     "databaseUser": "postgres",
     "startupTimeoutMs": 120000,
-    "notes": "ProBot runs this from the canonical registry and injects PORT=3057. The start command brings up the reserved OrbStack Postgres stack at operations/database/standalone/viadieden before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3057/admin/index.html. This repo's local Tina server must stay on its reserved port 4011 with datalayer port 9002, separate from Oliveto Organizing. Production TinaCloud must use the public production URL, not localhost."
+    "notes": "Brain Console runs this from the canonical registry and injects PORT=3057. The start command brings up the reserved OrbStack Postgres stack at operations/database/standalone/viadieden before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3057/admin/index.html. This repo's local Tina server must stay on its reserved port 4011 with datalayer port 9002, separate from Oliveto Organizing. Production TinaCloud must use the public production URL, not localhost."
   },
   {
     "name": "Oliveto Organizing",
@@ -144,7 +120,7 @@
     "databaseName": "olivetoorganizing",
     "databaseUser": "postgres",
     "startupTimeoutMs": 120000,
-    "notes": "ProBot runs this from the canonical registry and injects PORT=3059. The start command brings up the reserved OrbStack Postgres stack on port 5453 at operations/database/standalone/olivetoorganizing before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3059/admin/index.html. This repo's local Tina server must stay on its reserved port 4012 with datalayer port 9003, separate from Via di Eden. Production TinaCloud must use the public production URL, not localhost."
+    "notes": "Brain Console runs this from the canonical registry and injects PORT=3059. The start command brings up the reserved OrbStack Postgres stack on port 5453 at operations/database/standalone/olivetoorganizing before launching the Next.js/Tina local dev server. Local Tina admin is available at http://localhost:3059/admin/index.html. This repo's local Tina server must stay on its reserved port 4012 with datalayer port 9003, separate from Via di Eden. Production TinaCloud must use the public production URL, not localhost."
   },
   {
     "name": "JPV Bootcamp",
@@ -190,7 +166,7 @@
     "databasePort": 5445,
     "databaseName": "xgrow_dev",
     "databaseUser": "xgrow",
-    "notes": "ProBot start now brings up the dedicated postgres container before launching the app. The compose file maps host 5445 to the container."
+    "notes": "Brain Console start now brings up the dedicated postgres container before launching the app. The compose file maps host 5445 to the container."
   },
   {
     "name": "vault-legal",
@@ -361,7 +337,7 @@
     "databaseName": "tradebot",
     "databaseUser": "tradebot",
     "startupTimeoutMs": 120000,
-    "notes": "Phase 1 only: read-only cockpit. Fixed local app port is 3061. Health check is /api/health. ProBot owns lifecycle orchestration and injects/uses the fixed port. Future local Postgres should use reserved host port 5454; TradeBot must not reuse ProChat DB port 5434."
+    "notes": "Phase 1 only: read-only cockpit. Fixed local app port is 3061. Health check is /api/health. Brain Console owns lifecycle orchestration and injects/uses the fixed port. Future local Postgres should use reserved host port 5454; TradeBot must not reuse ProChat DB port 5434."
   },
   {
     "name": "Brain Core API",
@@ -486,6 +462,6 @@
     "databaseName": "video_orchestrator",
     "databaseUser": "postgres",
     "startupTimeoutMs": 30000,
-    "notes": "Phase 2A/2B implementation: production package generation for 9 platform targets. Local database manages durable entities (videos, renders, packages, accounts, jobs). No automatic posting—all publishing is adapter-dependent with manual fallback. Queries the database from ProBot Studio tab."
+    "notes": "Phase 2A/2B implementation: production package generation for 9 platform targets. Local database manages durable entities (videos, renders, packages, accounts, jobs). No automatic posting—all publishing is adapter-dependent with manual fallback. Queries the database from Brain Console Studio tab."
   }
 ]

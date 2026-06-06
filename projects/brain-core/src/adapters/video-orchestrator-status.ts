@@ -51,7 +51,7 @@ export function getVideoOrchestratorStatus(): BrainCoreVideoOrchestratorStatus {
       id: 'intake-stage',
       name: 'Intake & Research',
       status: 'partial',
-      summary: 'Bible research + topic intake. ProBot design phase complete; code not started.',
+      summary: 'Bible research + topic intake. Design phase complete; code not started.',
     },
     {
       id: 'script-generation',

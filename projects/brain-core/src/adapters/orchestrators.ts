@@ -35,17 +35,6 @@ const ORCHESTRATORS: BrainCoreOrchestratorSummary[] = [
     description: 'AI model routing and cost optimization',
   },
   {
-    id: 'probot-dashboard',
-    name: 'ProBot Dashboard',
-    status: 'placeholder',
-    source: 'placeholder',
-    actionsSupported: false,
-    health: 'warning',
-    lifecycle: 'legacy',
-    role: 'legacy',
-    description: 'Legacy dashboard service',
-  },
-  {
     id: 'save-to-mind',
     name: 'Save to Mind',
     status: 'placeholder',

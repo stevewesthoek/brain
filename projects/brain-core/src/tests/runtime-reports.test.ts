@@ -152,7 +152,7 @@ test('runtime reports honor configured video and local-apps JSON paths', () => {
     localAppsPath,
     JSON.stringify({
       status: 'ok',
-      apps: [{ id: 'probot', name: 'ProBot', status: 'running', actionsSupported: false }],
+      apps: [{ id: 'office-scheduler', name: 'Office Nightly Scheduler', status: 'running', actionsSupported: false }],
       writesToMind: false,
       executableActions: false,
     }),

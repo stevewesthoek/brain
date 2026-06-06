@@ -114,7 +114,7 @@ export interface BrainCoreLocalAppSummary {
 
 export type BrainCoreLocalAppDashboardStatus = 'available' | 'partial' | 'unavailable';
 export type BrainCoreLocalAppHealth = 'healthy' | 'warning' | 'error' | 'unknown';
-export type BrainCoreLocalAppSource = 'probot' | 'brain-core' | 'infrastructure-config' | 'unknown';
+export type BrainCoreLocalAppSource = 'brain-core' | 'infrastructure-config' | 'unknown';
 export type BrainCoreLocalAppActionPolicyStatus = 'disabled' | 'planned' | 'enabled';
 export type BrainCoreLocalAppActionExecutionPath = 'none' | 'brain-core-allowlisted-action';
 export type BrainCoreLocalAppReadinessStatus = 'not-ready' | 'ready';
@@ -834,7 +834,7 @@ export interface BrainCoreStbPipelineStatus {
   id: 'stb-pipeline-status';
   pipelineId: 'stb-daily-pipeline';
   projectId: 'says-the-bible';
-  source: 'runtime-file' | 'probot-status' | 'static-registry' | 'unavailable';
+  source: 'runtime-file' | 'static-registry' | 'unavailable';
   status: 'operational' | 'stale' | 'error' | 'unknown';
   health: BrainCoreHealth;
   lastRunAt?: string;
@@ -5234,11 +5234,6 @@ export interface BrainCoreCapabilitySummary {
     packageStatus?: 'buildable' | 'pending' | 'blocked';
     manualInstallRequired?: true;
   };
-  probot: {
-    thinClientStatus: 'wired' | 'pending' | 'blocked';
-    commandAliasesEnabled: boolean;
-    actionsEnabled: false;
-  };
   executionGate: {
     executionEnabled: false;
     mindStewardDryRunExecutionFlagEnabled: boolean;
@@ -7437,254 +7432,6 @@ export interface BrainCoreVideoControlledExecutionImplementationApprovalPacketSt
 
 export interface BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGateResponse {
   gate: BrainCoreVideoControlledExecutionImplementationApprovalPacketStartGate;
-}
-
-
-export type BrainCoreProBotDashboardParityStatus = 'available' | 'partial' | 'planned' | 'legacy-only' | 'blocked';
-export type BrainCoreProBotDashboardParityDecision = 'keep' | 'redesign' | 'drop' | 'later';
-
-export interface BrainCoreProBotDashboardParityTab {
-  id: string;
-  probotLabel: string;
-  brainConsoleSection: string;
-  status: BrainCoreProBotDashboardParityStatus;
-  decision: BrainCoreProBotDashboardParityDecision;
-  priority: 'high' | 'medium' | 'low';
-  brainCoreEndpoints: string[];
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  mutationControlsEnabled: false;
-  sensitiveDataExposed: false;
-  notes: string[];
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotDashboardParityResponse {
-  id: 'probot-dashboard-parity';
-  generatedAt: string;
-  status: 'in-progress' | 'complete' | 'blocked';
-  summary: {
-    totalTabs: number;
-    availableCount: number;
-    partialCount: number;
-    plannedCount: number;
-    legacyOnlyCount: number;
-    visibleInBrainConsoleCount: number;
-    workingInBrainConsoleCount: number;
-    blockerCount: number;
-  };
-  tabs: BrainCoreProBotDashboardParityTab[];
-  safety: {
-    readOnly: true;
-    exposesSecrets: false;
-    exposesFinancialData: false;
-    mutationControlsEnabled: false;
-    directShellExecutionEnabled: false;
-    approvalRequiredForFutureActions: true;
-    writesToMind: false;
-    writesFiles: false;
-  };
-  nextSafeStep: string;
-}
-
-
-export type BrainCoreProBotMigrationDecision = 'keep' | 'redesign' | 'legacy-admin-only' | 'blocked';
-export type BrainCoreProBotMigrationStatus = 'available' | 'partial' | 'missing' | 'legacy-only' | 'blocked';
-
-export interface BrainCoreProBotParityFeature {
-  id: string;
-  label: string;
-  probotTab: string;
-  brainConsoleSection: string | 'none';
-  migrationDecision: BrainCoreProBotMigrationDecision;
-  migrationStatus: BrainCoreProBotMigrationStatus;
-  safeDataAvailable: boolean;
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  relatedBrainCoreEndpoints: string[];
-  blockedReason: string | null;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotParitySafety {
-  readOnly: true;
-  exposesSecrets: false;
-  exposesCredentials: false;
-  exposesOAuth: false;
-  exposesStripeFinancialData: false;
-  exposesGoogleAdsSpendData: false;
-  exposesAccountIds: false;
-  exposesRawLogs: false;
-  mutationControlsEnabled: false;
-  shellExecutionEnabled: false;
-  platformWritesEnabled: false;
-  mindWritesEnabled: false;
-  publishingEnabled: false;
-  decommissionEnabled: false;
-}
-
-export interface BrainCoreProBotDetailParityResponse {
-  id: string;
-  source: 'probot';
-  target: 'brain-console';
-  status: BrainCoreProBotMigrationStatus;
-  migrationStatus: BrainCoreProBotMigrationStatus;
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  legacyOnly: boolean;
-  featureCount: number;
-  features: BrainCoreProBotParityFeature[];
-  summary: {
-    availableCount: number;
-    partialCount: number;
-    missingCount: number;
-    legacyOnlyCount: number;
-    blockedCount: number;
-    visibleCount: number;
-    workingCount: number;
-  };
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotSessionsParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-sessions-parity';
-}
-
-export interface BrainCoreProBotLocalAppsParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-local-apps-parity';
-}
-
-export interface BrainCoreProBotSchedulerParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-scheduler-parity';
-}
-
-export interface BrainCoreProBotStudioParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-studio-parity';
-}
-
-export interface BrainCoreProBotExternalAdminParityResponse extends BrainCoreProBotDetailParityResponse {
-  id: 'probot-external-admin-parity';
-}
-
-export interface BrainCoreProBotDecommissionReadinessCriteria {
-  id: string;
-  label: string;
-  satisfied: boolean;
-  description: string;
-  requiresUserApproval: boolean;
-}
-
-export interface BrainCoreProBotDecommissionReadinessResponse {
-  id: 'probot-decommission-readiness';
-  status: 'not-ready' | 'ready-pending-approval';
-  ready: false;
-  criteria: BrainCoreProBotDecommissionReadinessCriteria[];
-  satisfiedCriteriaCount: number;
-  unsatisfiedCriteriaCount: number;
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotExternalAdminIntegration {
-  id: string;
-  label: string;
-  probotTab: string;
-  brainConsoleSection: string;
-  migrationDecision: 'legacy-admin-only' | 'metadata-only';
-  migrationStatus: 'legacy-only' | 'partial' | 'blocked';
-  safeMetadataAvailable: boolean;
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  safeFields: string[];
-  prohibitedFields: string[];
-  blockedReason: string;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotExternalAdminSafeMetadataResponse {
-  id: 'probot-external-admin-safe-metadata';
-  status: 'partial';
-  source: 'probot';
-  target: 'brain-console';
-  integrationCount: number;
-  safeMetadataAvailableCount: number;
-  metadataOnlyCount: number;
-  legacyOnlyCount: number;
-  integrations: BrainCoreProBotExternalAdminIntegration[];
-  safety: {
-    readOnly: boolean;
-    metadataOnly: boolean;
-    exposesSecrets: boolean;
-    exposesCredentials: boolean;
-    exposesOAuth: boolean;
-    exposesStripeFinancialData: boolean;
-    exposesGoogleAdsSpendData: boolean;
-    exposesAccountIds: boolean;
-    exposesRawLogs: boolean;
-    mutationControlsEnabled: boolean;
-    shellExecutionEnabled: boolean;
-    platformWritesEnabled: boolean;
-    mindWritesEnabled: boolean;
-    publishingEnabled: boolean;
-    decommissionEnabled: boolean;
-  };
-  blockers: string[];
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotFeatureParityRow {
-  probotTab: string;
-  brainConsoleCard: string;
-  parityStatus: 'covered' | 'partial' | 'legacy-only' | 'missing' | 'blocked';
-  safeDataStatus: 'available' | 'metadata-only' | 'unavailable' | 'intentionally-hidden';
-  endpointRefs: string[];
-  visibleInBrainConsole: boolean;
-  workingInBrainConsole: boolean;
-  decommissionBlocker: boolean;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotFeatureParityMatrixResponse {
-  id: 'probot-feature-parity-matrix';
-  status: 'partial';
-  source: 'probot';
-  target: 'brain-console';
-  tabCount: number;
-  coveredCount: number;
-  partialCount: number;
-  legacyOnlyCount: number;
-  missingCount: number;
-  blockedCount: number;
-  decommissionReady: boolean;
-  rows: BrainCoreProBotFeatureParityRow[];
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
-}
-
-export interface BrainCoreProBotPhaseOutChecklistItem {
-  id: string;
-  label: string;
-  satisfied: boolean;
-  description: string;
-  requiresUserApproval: boolean;
-}
-
-export interface BrainCoreProBotPhaseOutChecklistResponse {
-  id: 'probot-phase-out-checklist';
-  status: 'not-ready';
-  ready: false;
-  itemCount: number;
-  satisfiedCount: number;
-  unsatisfiedCount: number;
-  requiresApprovalCount: number;
-  items: BrainCoreProBotPhaseOutChecklistItem[];
-  blockers: string[];
-  safety: BrainCoreProBotParitySafety;
-  nextSafeStep: string;
 }
 
 export type BrainCoreVideoThumbnailPlanStatus = 'planned' | 'blocked' | 'ready-read-only';

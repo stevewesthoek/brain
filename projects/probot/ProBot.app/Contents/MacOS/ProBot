@@ -1,5 +1,0 @@
-#!/bin/bash
-# ProBot wrapper - run from compiled JavaScript for always-up-to-date code
-# Navigate from MacOS/ -> Contents/ -> ProBot.app/ -> projects/probot/
-PROBOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
-exec node "$PROBOT_DIR/dist/index.js" "$@"

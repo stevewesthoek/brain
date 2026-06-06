@@ -112,7 +112,7 @@ The following are explicitly NOT supported in this first action:
    - No command substitution
 
 3. **No local app lifecycle**
-   - No starting ProBot
+   - No local app lifecycle
    - No stopping services
    - No restarting orchestrators
    - No background task triggers
@@ -195,7 +195,7 @@ When execution occurs, a new audit event is created:
 - Broad execution is disabled by default
 - Feature flag parsing is implemented
 - `/execution/readiness`, `/execution/plans`, and `/capabilities` expose flag state
-- Brain Console and ProBot display flag state read-only
+- Brain Console displays flag state read-only
 - Approval store/audit is verified operational
 - The only implemented execution path is `scheduler-run-mind-steward-dry-run`
 - Execution requires the feature flag, durable approval store, durable audit path, approved record, exact command allowlist, and Brain `runtime/local/` output
@@ -267,7 +267,7 @@ Current scaffold status:
 - [x] Rollback drill procedure written as an operator checklist
 - [x] Rollback drill behavior covered by feature-flag tests and read-only endpoint checks
 - [x] Brain Console updated to display flag state
-- [x] ProBot status includes execution flag state
+- [x] Brain Core status includes execution flag state
 - [x] Brain Core CI passes with 49 tests
 - [x] New feature flag tests added and passing
 - [x] Operator runbook updated

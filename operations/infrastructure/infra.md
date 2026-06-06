@@ -16,15 +16,15 @@ Related local control-plane inventory:
 - `operations/infrastructure/local-apps.json` — **canonical** local runtime registry for app ports, database ports, and health checks on the `Office` Mac
 - `operations/infrastructure/local-apps.md` — human-readable runbook and inventory mirror for the canonical registry
 - The registry is in a compatibility window: expanded fields are preferred, but legacy aliases remain in the JSON so older consumers keep working.
-- ProBot starts apps from `repoPath` and injects `PORT` from the registry when available, so local app commands can stay repo-relative and avoid stale hardcoded paths.
-- ProBot Local Apps actions must go through the centralized ProBot local-app orchestrator. App-specific scripts are allowed only as registry-declared helpers; the dashboard must not grow separate lifecycle implementations per app.
+- Brain Console starts apps from `repoPath` and injects `PORT` from the registry when available, so local app commands can stay repo-relative and avoid stale hardcoded paths.
+- Brain Console local-app actions must go through the centralized local-app orchestrator. App-specific scripts are allowed only as registry-declared helpers; the dashboard must not grow separate lifecycle implementations per app.
 - Start/restart actions must be clean and port-authoritative: stop any existing session on the reserved app port, verify the port is free, start once, then wait for health.
-- For apps with expensive `predev` work or a need for restartable dashboard launches, the local registry should point ProBot at a wrapper script that can clear stale listeners and boot the app directly rather than using `npm run dev`.
+- For apps with expensive `predev` work or a need for restartable dashboard launches, the local registry should point the dashboard at a wrapper script that can clear stale listeners and boot the app directly rather than using `npm run dev`.
 
 ## Local Applications (`Office` Mac)
 
 All locally-running apps on the `Office` Mac are indexed in:
-- **`operations/infrastructure/local-apps.json`** — machine-readable canonical registry; ProBot dashboard reads this file on every `/api/local-apps` request (no restart needed)
+- **`operations/infrastructure/local-apps.json`** — machine-readable canonical registry; Brain Console reads this file on every `/api/local-apps` request (no restart needed)
 - **`operations/infrastructure/local-apps.md`** — human-readable runbook with schema docs, reserved port policy, and inventory table
 
 The registry is dual-compatible during the migration window:
@@ -32,9 +32,9 @@ The registry is dual-compatible during the migration window:
 - legacy consumers may continue to use `port`, `url`, `check`, `start`, and `stop`
 - both sets of fields are kept aligned in `local-apps.json`
 
-Current inventory: ProBot (7070), Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), JPV Bootcamp (3000 / DB 5444), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054), TradeBot (3061 / DB 5454).
+Current inventory: Says the Bible (3058 / DB 5441), Firecrawl (3055 / DB 5443), ProChat (3056 / DB 5434), Via di Eden (3057 / DB 5447), Oliveto Organizing (3059 / DB 5453), JPV Bootcamp (3000 / DB 5444), xGrow (7080 / DB 5445), Google Ads API (8001), ComfyUI (8188), Family Finance (3060 / DB 5452), Fala (3050), BuildFlow (3054), TradeBot (3061 / DB 5454).
 
-To add a new local app, edit `local-apps.json` — the ProBot "Local Apps" tab updates immediately.
+To add a new local app, edit `local-apps.json` — the Brain Console "Local Apps" tab updates immediately.
 
 ## Local port policy
 
@@ -140,7 +140,7 @@ Tailscale private services (no internet exposure):
 - Firecrawl admin queue: `http://100.83.38.48:3002/admin/<BULL_AUTH_KEY>/queues`
 
 Retired infrastructure:
-- The old OpenClaw / ProBot AWS Lightsail host was decommissioned on `2026-04-04` after Telegram cutover to the local `ProBot` daemon on the `Office` Mac.
+- The old OpenClaw AWS Lightsail host was decommissioned on `2026-04-04` after Telegram cutover to the local daemon on the `Office` Mac.
 
 ## Hosted Platform Inventory
 
@@ -467,25 +467,25 @@ Known sites still present on Hetzner server filesystem (not yet deleted):
 ### Family Finance
 - **Status**: Local-only application; no production deployment
 - **Registry**: `local-apps.json` entry with name `"Family Finance"` — canonical configuration source
-- **Canonical local execution**: One way only — ProBot dashboard manages lifecycle
+- **Canonical local execution**: One way only — Brain Console manages lifecycle
   - **App port**: `3060` (http://localhost:3060)
   - **Database**: OrbStack PostgreSQL at `localhost:5452/family_finance`
-  - **Start command**: `npm run dev` (ProBot injects `PORT=3060`)
+  - **Start command**: `npm run dev` (Brain Console injects `PORT=3060`)
   - **Database service**: `docker compose up` from `operations/database/standalone/familyfinance/docker-compose.yml`
-- **ProBot integration**: 
-  - ProBot dashboard reads `local-apps.json` Family Finance entry on every page load (no restart needed)
-  - "Local Apps" tab in ProBot shows Family Finance with start/stop/health controls
-  - ProBot reserves ports 3060 and 5452; only ProBot may manage startup/shutdown
+- **Brain Console integration**: 
+  - Brain Console reads `local-apps.json` Family Finance entry on every page load (no restart needed)
+  - "Local Apps" tab in Brain Console shows Family Finance with start/stop/health controls
+  - Brain Console reserves ports 3060 and 5452; only Brain Console may manage startup/shutdown
 - **Dokploy**: ❌ No active deployment; historical production Dokploy app was deleted 2026-05-03 (ID: uMrNEbM2ROMb8z6PD3-O0)
 - **Supabase**: ❌ No production database; all data is local only
-- **Manual execution**: ⚠️ Avoid `npm run dev` outside ProBot; use ProBot dashboard instead to ensure port isolation and health-check compliance
+- **Manual execution**: ⚠️ Avoid `npm run dev` outside Brain Console; use Brain Console instead to ensure port isolation and health-check compliance
 - **Reference**: Canonical local database compose at `operations/database/standalone/familyfinance/docker-compose.yml`
-- **Constraint**: Future agents must not create Family Finance databases on production Supabase, must not attempt to deploy to Dokploy, and must only verify local OrbStack runtime via ProBot dashboard
+- **Constraint**: Future agents must not create Family Finance databases on production Supabase, must not attempt to deploy to Dokploy, and must only verify local OrbStack runtime via Brain Console
 
 ### TradeBot
 - Status: Local-only Phase 1 read-only cockpit
 - Registry: local-apps.json entry with name "TradeBot" — canonical configuration source
-- Canonical local execution: ProBot dashboard manages lifecycle
+- Canonical local execution: Brain Console manages lifecycle
   - App port: 3061 (http://localhost:3061/dashboard)
   - Health check: http://localhost:3061/api/health
   - Future database: OrbStack PostgreSQL reserved at localhost:5454/tradebot
@@ -518,7 +518,7 @@ Completed (2026-05-03):
 - ✅ Supabase host corrected from stale 10.0.2.4 to Azure Tailscale IP 100.71.31.88 in all docs
 - ✅ Family Finance Dokploy app deleted (production app ID: uMrNEbM2ROMb8z6PD3-O0)
 - ✅ Family Finance finalized as local-only with canonical infra.md documentation
-- ✅ ProBot dashboard confirmed as sole execution interface for Family Finance lifecycle
+- ✅ Brain Console confirmed as sole execution interface for Family Finance lifecycle
 
 Last updated:
 - 2026-05-19 WEST (Dokploy architecture documentation + auto-deploy verification)
