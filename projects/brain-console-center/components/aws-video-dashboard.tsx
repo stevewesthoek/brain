@@ -531,7 +531,7 @@ function ReviewCard({
         <div><span>Images</span><strong>{imageKeys.length}</strong></div>
         <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{media.publishKey ? media.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
       </div>
-      <div className="compact-error">Generated media must be reviewed before YouTube dry-run or private publish.</div>
+      {reviewRecord?.reviewStatus !== 'approved' ? <div className="compact-error">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
       <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
         Review media hydrated from canonical artifacts{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
       </div>

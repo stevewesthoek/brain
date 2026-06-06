@@ -2335,7 +2335,13 @@ export async function routeRequest(
       if (jobReviewMatch) {
         try {
           const jobId = decodeURIComponent(jobReviewMatch[1] ?? '');
-          const review = await getVideoReview(jobId);
+          // Add timeout to prevent hanging on slow S3 operations
+          const review = await Promise.race([
+            getVideoReview(jobId),
+            new Promise<any>((_, reject) =>
+              setTimeout(() => reject(new Error('Review fetch timeout after 10s')), 10000)
+            ),
+          ]);
           if (!review.ok) {
             sendJson(response, 404, review);
           } else {

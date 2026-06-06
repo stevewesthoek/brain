@@ -1926,19 +1926,48 @@ function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoRev
 }
 
 async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null> {
-  // Local-first: read local file immediately
+  // Fast path: read local immediately. If approved with media, use it and skip slow S3 check.
   const localValue = await readLocalJobMetadataJson(jobId, 'review.json');
   const localReview = parseReviewRecord(localValue, jobId);
 
-  // Then read S3/remote for comparison
-  const remoteValue = await readS3JobMetadataJson(jobId, 'review.json');
-  const remoteReview = parseReviewRecord(remoteValue, jobId);
+  // If local review is approved with complete media, return it immediately (don't block on S3)
+  const mediaComplete = localReview && localReview.media &&
+    localReview.media.videoKey && localReview.media.thumbnailKey &&
+    localReview.media.sceneImageKeys && localReview.media.sceneImageKeys.length > 0;
+
+  if (localReview?.reviewStatus === 'approved' && mediaComplete) {
+    return localReview;
+  }
+
+  // Slow path: read S3 only if local is missing or pending
+  // Use timeout to prevent indefinite blocking
+  let remoteReview: VideoReviewMetadata | null = null;
+  try {
+    const remoteValue = await Promise.race([
+      readS3JobMetadataJson(jobId, 'review.json'),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('S3 read timeout')), 3000))
+    ]);
+    remoteReview = parseReviewRecord(remoteValue, jobId);
+  } catch (err) {
+    console.warn(`[video-review] S3 read timeout for ${jobId}, using local only`);
+  }
 
   // Merge: never downgrade from approved to pending
   return mergeReviewMetadata(localReview, remoteReview, jobId);
 }
 
 async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | null> {
+  // Read existing review FIRST (fast) to know if we need to hydrate
+  const existing = await readReviewJson(jobId);
+
+  // If existing review is approved with complete media, return immediately without hydration
+  if (existing?.reviewStatus === 'approved' &&
+      existing.media?.videoKey && existing.media?.thumbnailKey &&
+      existing.media?.sceneImageKeys?.length) {
+    return existing;
+  }
+
+  // Slow hydration path: only do expensive operations if review is missing/pending
   const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
   const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
   let resolved = await resolvePublishableAssets(jobId);
@@ -1968,38 +1997,28 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
   const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
   const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
 
-  // ALWAYS hydrate fresh media from canonical sources
+  // Hydrate fresh media from canonical sources
   const hydratedMedia = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
 
-  const existing = await readReviewJson(jobId);
   if (existing) {
-    // Preserve approval state and metadata, but always use freshly hydrated media
+    // Preserve approval state and metadata, but use freshly hydrated media
     const updated: VideoReviewMetadata = {
       ...existing,
       updatedAt: new Date().toISOString(),
       media: hydratedMedia,
     };
     const mediaChanged = JSON.stringify(updated.media) !== JSON.stringify(existing.media);
-    const same = !mediaChanged
-      && updated.reviewStatus === existing.reviewStatus
-      && updated.createdAt === existing.createdAt
-      && updated.notes === existing.notes
-      && updated.reviewedAt === existing.reviewedAt
-      && updated.reviewedBy === existing.reviewedBy;
 
-    if (same) return existing;
+    if (!mediaChanged) return existing;
 
-    // Persist updated review: media repairs are allowed even for approved reviews
-    // reviewStatus cannot downgrade from approved/changes_requested to pending
-    if (mediaChanged) {
-      try {
-        await writeReviewJson(jobId, updated);
-        if (existing.reviewStatus === 'approved') {
-          console.log(`[video-review] hydrate preserved approved jobId=${jobId}`);
-        }
-      } catch (err) {
-        console.warn(`[getOrCreateReview] Failed to refresh review.json for ${jobId}:`, err);
+    // Persist updated review: media repairs allowed, but never downgrade approval
+    try {
+      await writeReviewJson(jobId, updated);
+      if (existing.reviewStatus === 'approved') {
+        console.log(`[video-review] preserved approved jobId=${jobId}`);
       }
+    } catch (err) {
+      console.warn(`[getOrCreateReview] Failed to persist review for ${jobId}:`, err);
     }
     return updated;
   }
@@ -2020,7 +2039,7 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
   try {
     await writeReviewJson(jobId, created);
   } catch (err) {
-    console.warn(`[getOrCreateReview] Failed to persist review.json for ${jobId}:`, err);
+    console.warn(`[getOrCreateReview] Failed to persist review for ${jobId}:`, err);
   }
   return created;
 }
