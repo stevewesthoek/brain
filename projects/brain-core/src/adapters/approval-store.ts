@@ -5,6 +5,7 @@ import type { BrainCoreApprovalRecord, BrainCoreApprovalStoreSummary } from '../
 
 const DEFAULT_RELATIVE_PATH = 'runtime/local/brain-core/approvals.json';
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', 'mind'];
+const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-classifier-dry-run';
 const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -101,9 +102,11 @@ export function persistApprovalStore(records: BrainCoreApprovalRecord[]): boolea
 function normalizeRecord(record: BrainCoreApprovalRecord): BrainCoreApprovalRecord {
   const executed = record.execution?.status === 'ok';
   const executionGate =
-    executed && record.kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+    executed && record.kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+      ? 'enabled-for-mind-steward-inbox-classifier-dry-run'
+      : executed && record.kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? 'enabled-for-mind-steward-inbox-dry-run'
-      : executed
+        : executed
         ? 'enabled-for-mind-steward-dry-run'
         : 'disabled-until-explicit-enable';
 

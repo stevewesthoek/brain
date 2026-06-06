@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { classifyRequestedKind } from './action-allowlist.js';
 import {
   getExecutionPlanPreview,
-  getMindStewardDryRunExecutionFlagName,
   isMindStewardDryRunExecutionFlagEnabled,
+  isMindStewardInboxClassifierDryRunExecutionFlagEnabled,
 } from './execution-plans.js';
 import {
   getApprovalStorePath,
@@ -33,12 +33,16 @@ let nextAuditNumber = 1;
 const APPROVAL_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 const MIND_STEWARD_DRY_RUN_KIND = 'scheduler-run-mind-steward-dry-run';
 const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
+const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-classifier-dry-run';
 const MIND_STEWARD_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-dry-run-report.sh';
 const MIND_STEWARD_INBOX_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh';
+const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh';
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
+const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
 const MIND_STEWARD_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-dry-run-report.sh';
 const MIND_STEWARD_INBOX_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-inbox-dry-run-report.sh';
+const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh';
 
 export function requestAction(kind = 'manual-request'): BrainCoreActionRequestResult {
   syncApprovalStoreFromDisk();
@@ -316,11 +320,13 @@ function createPreview(kind: string, wouldExecute = false): BrainCoreApprovalPre
 
 function createPolicy(kind: string, executionEnabled = false): BrainCoreExecutionGatePolicy {
   const executionGate =
-    executionEnabled && kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+    executionEnabled && kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+      ? 'enabled-for-mind-steward-inbox-classifier-dry-run'
+      : executionEnabled && kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? 'enabled-for-mind-steward-inbox-dry-run'
-      : executionEnabled
-        ? 'enabled-for-mind-steward-dry-run'
-        : 'disabled-until-explicit-enable';
+        : executionEnabled
+          ? 'enabled-for-mind-steward-dry-run'
+          : 'disabled-until-explicit-enable';
 
   return {
     executionEnabled,
@@ -446,7 +452,11 @@ function readPersistedAuditEvents(): BrainCoreApprovalAuditEvent[] {
 }
 
 function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCoreApprovalExecutionSummary | undefined {
-  if (record.kind !== MIND_STEWARD_DRY_RUN_KIND && record.kind !== MIND_STEWARD_INBOX_DRY_RUN_KIND) {
+  if (
+    record.kind !== MIND_STEWARD_DRY_RUN_KIND &&
+    record.kind !== MIND_STEWARD_INBOX_DRY_RUN_KIND &&
+    record.kind !== MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+  ) {
     return undefined;
   }
 
@@ -495,6 +505,19 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
   });
   const exitCode = typeof result.status === 'number' ? result.status : 1;
   const outputPath = path.relative(repoRoot, getMindStewardOutputPath(record.kind, runtimeDir));
+  const report = readMindStewardExecutionReport(getMindStewardOutputPath(record.kind, runtimeDir));
+
+  if (report?.status === 'blocked') {
+    return {
+      status: 'blocked',
+      command: getMindStewardExecutionCommand(record.kind),
+      outputPath,
+      exitCode,
+      message: report.message || 'mind-steward dry-run was blocked',
+      writesToMind: false,
+      externalSideEffects: false,
+    };
+  }
 
   if (exitCode !== 0) {
     return {
@@ -506,6 +529,13 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
       writesToMind: false,
       externalSideEffects: false,
     };
+  }
+
+  if (record.kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND && (!report || report.status !== 'ok')) {
+    return createBlockedExecutionSummary(
+      getMindStewardExecutionCommand(record.kind),
+      report?.message || 'mind-steward inbox classifier dry-run report is missing or invalid.',
+    );
   }
 
   return {
@@ -543,17 +573,26 @@ function getSafeMindStewardRuntimeDir(): string | undefined {
 }
 
 function getMindStewardOutputPath(kind: string, runtimeDir: string): string {
-  const outputFileName = kind === MIND_STEWARD_INBOX_DRY_RUN_KIND ? 'inbox-latest.json' : 'latest.json';
+  const outputFileName =
+    kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+      ? 'inbox-classifier-latest.json'
+      : kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+        ? 'inbox-latest.json'
+        : 'latest.json';
   return path.join(runtimeDir, outputFileName);
 }
 
 function getMindStewardScriptPath(kind: string, repoRoot: string): string {
   const configuredPath =
-    kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+    kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+      ? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT
+      : kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT
       : process.env.BRAIN_CORE_MIND_STEWARD_DRY_RUN_SCRIPT;
   const defaultRelativePath =
-    kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
+    kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+      ? MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT_RELATIVE
+      : kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? MIND_STEWARD_INBOX_DRY_RUN_SCRIPT_RELATIVE
       : MIND_STEWARD_DRY_RUN_SCRIPT_RELATIVE;
   if (configuredPath) {
@@ -575,19 +614,59 @@ function resolveSafeScriptPath(repoRoot: string, configuredPath: string): string
 }
 
 function getMindStewardExecutionCommand(kind: string): BrainCoreApprovalExecutionSummary['command'] {
+  if (kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND) {
+    return MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_COMMAND;
+  }
+
   return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND ? MIND_STEWARD_INBOX_DRY_RUN_COMMAND : MIND_STEWARD_DRY_RUN_COMMAND;
 }
 
 function getMindStewardExecutionFlagName(kind: string): string {
+  if (kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND) {
+    return MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG;
+  }
+
   return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
     ? MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG
     : MIND_STEWARD_DRY_RUN_EXECUTION_FLAG;
 }
 
 function isMindStewardExecutionFlagEnabled(kind: string): boolean {
+  if (kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND) {
+    return isMindStewardInboxClassifierDryRunExecutionFlagEnabled();
+  }
+
   return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
     ? process.env[MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true'
     : isMindStewardDryRunExecutionFlagEnabled();
+}
+
+type MindStewardExecutionReport = {
+  status?: string;
+  message?: string;
+  mode?: string;
+  writesToMind?: boolean;
+  externalSideEffects?: boolean;
+  executableActions?: boolean;
+  selector?: {
+    status?: string;
+    providerId?: string;
+    model?: string;
+    baseUrl?: string;
+    reason?: string;
+  };
+};
+
+function readMindStewardExecutionReport(reportPath: string): MindStewardExecutionReport | undefined {
+  if (!fs.existsSync(reportPath)) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as MindStewardExecutionReport;
+  } catch {
+    return undefined;
+  }
 }
 
 function resolveMindRoot(): string {
