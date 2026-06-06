@@ -15,6 +15,7 @@ const nav = [
   { href: '/ai-models', label: 'AI Models', icon: BrainCircuit },
   { href: '/local-apps', label: 'Local Apps', icon: AppWindow },
   { href: '/dokploy', label: 'Dokploy', icon: Server },
+  { href: '/monitoring', label: 'New Relic', icon: Activity },
   { href: '/tunnels', label: 'Tunnels', icon: Globe },
   { href: '/scheduler', label: 'Scheduler', icon: CalendarClock },
   {

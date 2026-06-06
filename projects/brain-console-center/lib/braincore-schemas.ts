@@ -166,6 +166,35 @@ export const infraCloudflareTunnelsStatusSchema = z.object({
 });
 export type InfraCloudflareTunnelsStatus = z.infer<typeof infraCloudflareTunnelsStatusSchema>;
 
+export const infraNewRelicHostSchema = z.object({
+  name: z.string(),
+  reporting: z.boolean(),
+  alertSeverity: z.string().nullable(),
+  online: z.boolean().nullable(),
+  lastSeenAt: z.string().nullable(),
+});
+export type InfraNewRelicHost = z.infer<typeof infraNewRelicHostSchema>;
+
+export const infraNewRelicSyntheticSchema = z.object({
+  name: z.string(),
+  reporting: z.boolean(),
+  alertSeverity: z.string().nullable(),
+  monitorId: z.string().optional(),
+  online: z.boolean().nullable(),
+  lastCheckAt: z.string().nullable(),
+  lastResult: z.string().nullable(),
+  lastError: z.string().nullable(),
+});
+export type InfraNewRelicSynthetic = z.infer<typeof infraNewRelicSyntheticSchema>;
+
+export const infraNewRelicStatusSchema = z.object({
+  status: z.enum(['ok', 'not-configured', 'error']),
+  hosts: z.array(infraNewRelicHostSchema).default([]),
+  synthetics: z.array(infraNewRelicSyntheticSchema).default([]),
+  error: z.string().optional(),
+});
+export type InfraNewRelicStatus = z.infer<typeof infraNewRelicStatusSchema>;
+
 export const infraOfficeSchedulerJobSchema = z.object({
   key: z.string(),
   label: z.string(),

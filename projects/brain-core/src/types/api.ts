@@ -10519,6 +10519,8 @@ export interface BrainCoreInfraNewRelicHost {
   name: string;
   reporting: boolean;
   alertSeverity: string | null;
+  online: boolean | null;
+  lastSeenAt: string | null;
 }
 
 export interface BrainCoreInfraNewRelicSynthetic {
@@ -10526,6 +10528,10 @@ export interface BrainCoreInfraNewRelicSynthetic {
   reporting: boolean;
   alertSeverity: string | null;
   monitorId?: string;
+  online: boolean | null;
+  lastCheckAt: string | null;
+  lastResult: string | null;
+  lastError: string | null;
 }
 
 export interface BrainCoreInfraNewRelicResponse {

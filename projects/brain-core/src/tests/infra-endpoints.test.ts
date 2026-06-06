@@ -210,11 +210,20 @@ test('GET /infra/monitoring returns a valid status shape', async () => {
 
 test('GET /infra/monitoring ok response includes hosts and synthetics arrays', async () => {
   const response = await exercise({ method: 'GET', url: '/infra/monitoring' });
-  const body = JSON.parse(response.body) as { status: string; hosts?: unknown[]; synthetics?: unknown[] };
+  const body = JSON.parse(response.body) as {
+    status: string;
+    hosts?: Array<{ online?: boolean | null; lastSeenAt?: string | null }>;
+    synthetics?: Array<{ online?: boolean | null; lastCheckAt?: string | null; lastResult?: string | null }>;
+  };
 
   if (body.status === 'ok') {
     assert.ok(Array.isArray(body.hosts), 'ok status must include hosts array');
     assert.ok(Array.isArray(body.synthetics), 'ok status must include synthetics array');
+    assert.ok(body.hosts.every((host) => typeof host.online === 'boolean' || host.online === null), 'hosts must include online boolean|null');
+    assert.ok(body.hosts.every((host) => typeof host.lastSeenAt === 'string' || host.lastSeenAt === null), 'hosts must include lastSeenAt string|null');
+    assert.ok(body.synthetics.every((synthetic) => typeof synthetic.online === 'boolean' || synthetic.online === null), 'synthetics must include online boolean|null');
+    assert.ok(body.synthetics.every((synthetic) => typeof synthetic.lastCheckAt === 'string' || synthetic.lastCheckAt === null), 'synthetics must include lastCheckAt string|null');
+    assert.ok(body.synthetics.every((synthetic) => typeof synthetic.lastResult === 'string' || synthetic.lastResult === null), 'synthetics must include lastResult string|null');
   }
 });
 

@@ -30,6 +30,8 @@ test('getInfraNewRelicStatus falls back to ~/.config/newrelic/.env when process 
     assert.equal((init?.headers as Record<string, string>)['API-Key'], 'nr-user-api-key');
     const body = JSON.parse(String(init?.body ?? '{}')) as { query?: string };
     assert.ok(body.query?.includes('accountId = 7019441'));
+    assert.ok(body.query?.includes('hostSamples'));
+    assert.ok(body.query?.includes('syntheticChecks'));
 
     return new Response(
       JSON.stringify({
@@ -37,6 +39,10 @@ test('getInfraNewRelicStatus falls back to ~/.config/newrelic/.env when process 
           actor: {
             hosts: { results: { entities: [{ name: 'dokploy', reporting: true, alertSeverity: 'WARNING' }] } },
             synthetics: { results: { entities: [{ name: 'prochat.tools', reporting: true, alertSeverity: 'NOT_ALERTING', monitorId: '123' }] } },
+            account: {
+              hostSamples: { results: [{ facet: 'dokploy', 'latest.timestamp': 1717000000000 }] },
+              syntheticChecks: { results: [{ facet: 'prochat.tools', 'latest.result': 'SUCCESS', 'latest.timestamp': 1717000000000, 'latest.error': null }] },
+            },
           },
         },
       }),
@@ -49,8 +55,12 @@ test('getInfraNewRelicStatus falls back to ~/.config/newrelic/.env when process 
     assert.equal(status.status, 'ok');
     assert.equal(status.hosts.length, 1);
     assert.equal(status.hosts[0]?.name, 'dokploy');
+    assert.equal(status.hosts[0]?.online, true);
+    assert.equal(status.hosts[0]?.lastSeenAt, new Date(1717000000000).toISOString());
     assert.equal(status.synthetics.length, 1);
     assert.equal(status.synthetics[0]?.monitorId, '123');
+    assert.equal(status.synthetics[0]?.online, true);
+    assert.equal(status.synthetics[0]?.lastCheckAt, new Date(1717000000000).toISOString());
   } finally {
     fetchMock.mock.restore();
     readFileSyncMock.mock.restore();

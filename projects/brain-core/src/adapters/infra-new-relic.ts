@@ -6,6 +6,8 @@ export interface InfraNewRelicHost {
   name: string;
   reporting: boolean;
   alertSeverity: string | null;
+  online: boolean | null;
+  lastSeenAt: string | null;
 }
 
 export interface InfraNewRelicSynthetic {
@@ -13,6 +15,10 @@ export interface InfraNewRelicSynthetic {
   reporting: boolean;
   alertSeverity: string | null;
   monitorId?: string;
+  online: boolean | null;
+  lastCheckAt: string | null;
+  lastResult: string | null;
+  lastError: string | null;
 }
 
 export interface InfraNewRelicStatus {
@@ -44,6 +50,14 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
       synthetics: entitySearch(query: "accountId = ${accountId} AND domain = 'SYNTH' AND type = 'MONITOR'") {
         results { entities { name reporting alertSeverity ... on SyntheticMonitorEntityOutline { monitorId } } }
       }
+      account(id: ${accountId}) {
+        hostSamples: nrql(query: "SELECT latest(timestamp) FROM SystemSample FACET hostname SINCE 15 minutes ago LIMIT 100") {
+          results
+        }
+        syntheticChecks: nrql(query: "SELECT latest(result), latest(error), latest(timestamp) FROM SyntheticCheck FACET monitorName SINCE 1 day ago LIMIT 100") {
+          results
+        }
+      }
     }
   }`;
 
@@ -71,22 +85,54 @@ export async function getInfraNewRelicStatus(): Promise<InfraNewRelicStatus> {
         actor?: {
           hosts?: { results?: { entities?: Array<{ name?: string; reporting?: boolean; alertSeverity?: string }> } };
           synthetics?: { results?: { entities?: Array<{ name?: string; reporting?: boolean; alertSeverity?: string; monitorId?: string }> } };
+          account?: {
+            hostSamples?: { results?: Array<{ facet?: string; hostname?: string; 'latest.timestamp'?: number }> };
+            syntheticChecks?: { results?: Array<{ facet?: string; monitorName?: string; 'latest.result'?: string; 'latest.error'?: string; 'latest.timestamp'?: number }> };
+          };
         };
       };
     };
 
-    const hosts: InfraNewRelicHost[] = (data.data?.actor?.hosts?.results?.entities ?? []).map((e) => ({
-      name: e.name ?? 'unknown',
-      reporting: e.reporting ?? false,
-      alertSeverity: e.alertSeverity ?? null,
-    }));
+    const hostSamples = data.data?.actor?.account?.hostSamples?.results ?? [];
+    const syntheticChecks = data.data?.actor?.account?.syntheticChecks?.results ?? [];
+    const hostLastSeen = new Map(
+      hostSamples
+        .filter((sample): sample is { facet: string; 'latest.timestamp': number } => Boolean(sample.facet) && typeof sample['latest.timestamp'] === 'number')
+        .map((sample) => [sample.facet, sample['latest.timestamp']]),
+    );
+    const syntheticLatest = new Map(
+      syntheticChecks
+        .filter((check): check is { facet: string; 'latest.result'?: string; 'latest.error'?: string; 'latest.timestamp'?: number } => Boolean(check.facet))
+        .map((check) => [check.facet, check]),
+    );
 
-    const synthetics: InfraNewRelicSynthetic[] = (data.data?.actor?.synthetics?.results?.entities ?? []).map((e) => ({
-      name: e.name ?? 'unknown',
-      reporting: e.reporting ?? false,
-      alertSeverity: e.alertSeverity ?? null,
-      ...(e.monitorId !== undefined && { monitorId: e.monitorId }),
-    }));
+    const hosts: InfraNewRelicHost[] = (data.data?.actor?.hosts?.results?.entities ?? []).map((e) => {
+      const lastSeen = e.name ? hostLastSeen.get(e.name) : undefined;
+      const online = typeof lastSeen === 'number' ? true : e.reporting ?? false ? true : null;
+      return {
+        name: e.name ?? 'unknown',
+        reporting: e.reporting ?? false,
+        alertSeverity: e.alertSeverity ?? null,
+        online,
+        lastSeenAt: typeof lastSeen === 'number' ? new Date(lastSeen).toISOString() : null,
+      };
+    });
+
+    const synthetics: InfraNewRelicSynthetic[] = (data.data?.actor?.synthetics?.results?.entities ?? []).map((e) => {
+      const latest = e.name ? syntheticLatest.get(e.name) : undefined;
+      const result = latest?.['latest.result'] ?? null;
+      const online = result === 'SUCCESS' ? true : result === 'FAILED' ? false : null;
+      return {
+        name: e.name ?? 'unknown',
+        reporting: e.reporting ?? false,
+        alertSeverity: online === true ? null : e.alertSeverity ?? null,
+        ...(e.monitorId !== undefined && { monitorId: e.monitorId }),
+        online,
+        lastCheckAt: latest?.['latest.timestamp'] ? new Date(latest['latest.timestamp']).toISOString() : null,
+        lastResult: result,
+        lastError: latest?.['latest.error'] ?? null,
+      };
+    });
 
     return { status: 'ok', hosts, synthetics };
   } catch (err) {
