@@ -101,6 +101,8 @@ GET /execution/maintenance-previews/:id
 **Runtime Infrastructure:**
 ```text
 GET /local-apps
+GET /infra/dokploy
+GET /infra/tunnels
 GET /video/status
 GET /video/queue
 GET /stb/status
@@ -134,6 +136,10 @@ Current `/runtime/reports` returns read-only runtime report summaries for the mi
 Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are read-only scheduler surfaces. They report placeholder state until a runtime report is available. When `runtime/local/mind-steward/latest.json` exists, or when `BRAIN_CORE_MIND_STEWARD_REPORT_PATH` points to a safe JSON report, `/scheduler/status` and `/scheduler/latest-run` expose that report as read-only scheduler state. They do not inspect logs, run jobs, or mutate scheduler state.
 
 Current `/local-apps` is a read-only placeholder or report-backed list for local services. When `runtime/local/local-apps/latest.json` exists, or when `BRAIN_CORE_LOCAL_APPS_REPORT_PATH` points to a safe JSON report, the endpoint returns report-backed summaries. It still does not start, stop, or restart apps.
+
+Current `/infra/dokploy` is a read-only report-backed list of Dokploy applications and compose services. It reads `~/.config/dokploy/.env` for `DOKPLOY_URL` and `DOKPLOY_API_KEY`, calls the Dokploy API, and returns app/service status summaries without exposing credentials or shell controls.
+
+Current `/infra/tunnels` is a read-only report-backed list of Cloudflare tunnels and their hostnames. It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then checks tunnel route reachability without exposing secrets or mutating tunnel config.
 
 Current `/video/status` and `/video/queue` are read-only placeholder or report-backed surfaces for the future Video Orchestrator adapter. When `runtime/local/video/latest.json` exists, or when `BRAIN_CORE_VIDEO_REPORT_PATH` points to a safe JSON report, the endpoint returns read-only queue/status summaries. They do not inspect media folders, start renders, upload files, or trigger workflow execution.
 

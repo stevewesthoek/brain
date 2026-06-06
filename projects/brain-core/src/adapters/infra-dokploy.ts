@@ -46,6 +46,12 @@ function loadCredentials(): { url: string; apiKey: string } | null {
   }
 }
 
+function buildProjectAllUrl(baseUrl: string): string {
+  const normalized = baseUrl.replace(/\/$/, '');
+  if (normalized.endsWith('/api')) return `${normalized}/project.all`;
+  return `${normalized}/api/project.all`;
+}
+
 export async function getInfraDokployStatus(): Promise<InfraDokployStatus> {
   const creds = loadCredentials();
   if (!creds) {
@@ -66,7 +72,7 @@ export async function getInfraDokployStatus(): Promise<InfraDokployStatus> {
     const timeout = setTimeout(() => controller.abort(), 10_000);
     let rawResponse: Response;
     try {
-      rawResponse = await fetch(`${creds.url}/api/project.all`, {
+      rawResponse = await fetch(buildProjectAllUrl(creds.url), {
         headers: { 'x-api-key': creds.apiKey, 'Content-Type': 'application/json' },
         signal: controller.signal,
       });

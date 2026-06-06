@@ -10453,7 +10453,7 @@ export interface BrainCoreInfraTunnel {
   id: string;
   name: string;
   status: string;
-  hostnames: Array<{ hostname: string; service: string }>;
+  hostnames: Array<{ hostname: string; service: string; online: boolean | null }>;
 }
 
 export interface BrainCoreInfraTunnelsResponse {

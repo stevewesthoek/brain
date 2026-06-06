@@ -29,17 +29,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (!mounted) return;
 
     const htmlElement = document.documentElement;
-    let effectiveTheme: 'light' | 'dark' = 'light';
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const effectiveTheme: 'light' | 'dark' = theme === 'system'
+        ? (mediaQuery.matches ? 'dark' : 'light')
+        : theme;
 
-    if (theme === 'system') {
-      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else {
-      effectiveTheme = theme;
-    }
+      setResolvedTheme(effectiveTheme);
+      htmlElement.setAttribute('data-theme', effectiveTheme);
+      htmlElement.style.colorScheme = effectiveTheme;
+    };
 
-    setResolvedTheme(effectiveTheme);
-    htmlElement.setAttribute('data-theme', effectiveTheme);
-    htmlElement.style.colorScheme = effectiveTheme;
+    applyTheme();
+    if (theme !== 'system') return;
+
+    mediaQuery.addEventListener('change', applyTheme);
+    return () => mediaQuery.removeEventListener('change', applyTheme);
   }, [theme, mounted]);
 
   const setTheme = (newTheme: Theme) => {

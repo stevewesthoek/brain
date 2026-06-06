@@ -18,7 +18,7 @@ type LocalAppsTab = 'apps' | 'actions' | 'policy';
 type LocalActionName = 'start' | 'stop' | 'restart';
 type InFlightLocalAction = { appId?: unknown; action?: unknown; startedAt?: unknown };
 
-const APPS_PER_PAGE = 4;
+const APPS_PER_PAGE = 8;
 const STATUS_PRIORITY: Record<string, number> = {
   running: 0,
   starting: 1,

@@ -5,6 +5,7 @@ import os from 'node:os';
 export interface InfraTunnelHostname {
   hostname: string;
   service: string;
+  online: boolean | null;
 }
 
 export interface InfraTunnel {
@@ -19,6 +20,10 @@ export interface InfraCloudflareTunnelsStatus {
   tunnels: InfraTunnel[];
   error?: string;
 }
+
+const CACHE_TTL_MS = 90_000;
+let cachedTunnels: InfraCloudflareTunnelsStatus | null = null;
+let cachedAt = 0;
 
 function loadCredentials(): { token: string; accountId: string } | null {
   const token = process.env.CLOUDFLARE_API_TOKEN;
@@ -42,14 +47,43 @@ function loadCredentials(): { token: string; accountId: string } | null {
   return null;
 }
 
+async function checkHostnameReachable(hostname: string): Promise<boolean | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5_000);
+    try {
+      const response = await fetch(`https://${hostname}`, {
+        method: 'HEAD',
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+      return response.ok || response.status >= 200;
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch {
+    return false;
+  }
+}
+
+function buildTunnelConfigUrl(accountId: string, tunnelId: string): string {
+  return `https://api.cloudflare.com/client/v4/accounts/${accountId}/cfd_tunnel/${tunnelId}/configurations`;
+}
+
 export async function getInfraCloudflareTunnels(): Promise<InfraCloudflareTunnelsStatus> {
+  const now = Date.now();
+  if (cachedTunnels && now - cachedAt < CACHE_TTL_MS) return cachedTunnels;
+
   const creds = loadCredentials();
   if (!creds) {
-    return {
+    const result: InfraCloudflareTunnelsStatus = {
       status: 'not-configured',
       tunnels: [],
       error: 'Cloudflare credentials not configured. Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, or create ~/.config/cloudflare-ai/credentials/prochat-provisioner.env.',
     };
+    cachedTunnels = result;
+    cachedAt = now;
+    return result;
   }
 
   try {
@@ -66,7 +100,10 @@ export async function getInfraCloudflareTunnels(): Promise<InfraCloudflareTunnel
     }
 
     if (!rawResponse.ok) {
-      return { status: 'error', tunnels: [], error: `Cloudflare API returned ${rawResponse.status}` };
+      const result: InfraCloudflareTunnelsStatus = { status: 'error', tunnels: [], error: `Cloudflare API returned ${rawResponse.status}` };
+      cachedTunnels = result;
+      cachedAt = now;
+      return result;
     }
 
     const data = (await rawResponse.json()) as {
@@ -78,15 +115,66 @@ export async function getInfraCloudflareTunnels(): Promise<InfraCloudflareTunnel
       }>;
     };
 
-    const tunnels: InfraTunnel[] = (data.result ?? []).map((t) => ({
-      id: t.id ?? '',
-      name: t.name ?? 'unknown',
-      status: t.status ?? 'unknown',
-      hostnames: [],
-    }));
+    const tunnels: InfraTunnel[] = [];
+    for (const tunnel of data.result ?? []) {
+      const tunnelId = tunnel.id ?? '';
+      const tunnelName = tunnel.name ?? 'unknown';
+      if (!tunnelId) continue;
 
-    return { status: 'ok', tunnels };
+      const configController = new AbortController();
+      const configTimeout = setTimeout(() => configController.abort(), 10_000);
+      let configRes: Response;
+      try {
+        configRes = await fetch(buildTunnelConfigUrl(creds.accountId, tunnelId), {
+          headers: { Authorization: `Bearer ${creds.token}` },
+          signal: configController.signal,
+        });
+      } finally {
+        clearTimeout(configTimeout);
+      }
+
+      const hostnames: Array<{ hostname: string; service: string }> = [];
+      if (configRes.ok) {
+        const configJson = (await configRes.json()) as {
+          result?: {
+            config?: {
+              ingress?: Array<{
+                hostname?: string;
+                service?: string;
+              }>;
+            };
+          };
+        };
+        const ingressRules = configJson.result?.config?.ingress;
+        for (const rule of ingressRules ?? []) {
+          if (!rule.hostname?.trim() || !rule.service) continue;
+          hostnames.push({ hostname: rule.hostname, service: rule.service });
+        }
+      }
+
+      const hostnamesWithReachability = await Promise.all(
+        hostnames.map(async (hostname) => ({
+          ...hostname,
+          online: await checkHostnameReachable(hostname.hostname),
+        })),
+      );
+
+      tunnels.push({
+        id: tunnelId,
+        name: tunnelName,
+        status: tunnel.status ?? 'unknown',
+        hostnames: hostnamesWithReachability,
+      });
+    }
+
+    const result: InfraCloudflareTunnelsStatus = { status: 'ok', tunnels };
+    cachedTunnels = result;
+    cachedAt = now;
+    return result;
   } catch (err) {
-    return { status: 'error', tunnels: [], error: err instanceof Error ? err.message : String(err) };
+    const result: InfraCloudflareTunnelsStatus = { status: 'error', tunnels: [], error: err instanceof Error ? err.message : String(err) };
+    cachedTunnels = result;
+    cachedAt = now;
+    return result;
   }
 }

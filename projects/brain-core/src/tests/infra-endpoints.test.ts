@@ -102,10 +102,24 @@ test('GET /infra/tunnels returns a valid status shape', async () => {
 
 test('GET /infra/tunnels ok response includes tunnels array', async () => {
   const response = await exercise({ method: 'GET', url: '/infra/tunnels' });
-  const body = JSON.parse(response.body) as { status: string; tunnels?: unknown[] };
+  const body = JSON.parse(response.body) as { status: string; tunnels?: Array<{ hostnames?: unknown[] }> };
 
   if (body.status === 'ok') {
     assert.ok(Array.isArray(body.tunnels), 'ok status must include tunnels array');
+    assert.ok(body.tunnels.every((tunnel) => Array.isArray(tunnel.hostnames)), 'ok status tunnels must include hostnames arrays');
+  }
+});
+
+test('GET /infra/tunnels ok response hostname items include reachability state', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/tunnels' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    tunnels?: Array<{ hostnames?: Array<{ online?: boolean | null }> }>;
+  };
+
+  if (body.status === 'ok') {
+    const hostnames = body.tunnels?.flatMap((tunnel) => tunnel.hostnames ?? []) ?? [];
+    assert.ok(hostnames.every((hostname) => typeof hostname.online === 'boolean' || hostname.online === null), 'ok status hostname items must include online boolean|null');
   }
 });
 

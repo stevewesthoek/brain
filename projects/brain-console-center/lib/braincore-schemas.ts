@@ -144,6 +144,56 @@ export const localAppsActionStatusSchema = z.record(z.unknown());
 export const localAppsActionReadinessSchema = z.record(z.unknown());
 export const localAppsActionResultSchema = z.record(z.unknown());
 
+export const infraTunnelHostnameSchema = z.object({
+  hostname: z.string(),
+  service: z.string(),
+  online: z.boolean().nullable(),
+});
+export type InfraTunnelHostname = z.infer<typeof infraTunnelHostnameSchema>;
+
+export const infraTunnelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  hostnames: z.array(infraTunnelHostnameSchema).default([]),
+});
+export type InfraTunnel = z.infer<typeof infraTunnelSchema>;
+
+export const infraCloudflareTunnelsStatusSchema = z.object({
+  status: z.enum(['ok', 'not-configured', 'error']),
+  tunnels: z.array(infraTunnelSchema).default([]),
+  error: z.string().optional(),
+});
+export type InfraCloudflareTunnelsStatus = z.infer<typeof infraCloudflareTunnelsStatusSchema>;
+
+export const infraDokployAppSchema = z.object({
+  project: z.string(),
+  environment: z.string(),
+  name: z.string(),
+  status: z.string(),
+});
+export type InfraDokployApp = z.infer<typeof infraDokployAppSchema>;
+
+export const infraDokployComposeSchema = z.object({
+  project: z.string(),
+  environment: z.string(),
+  name: z.string(),
+  status: z.string(),
+});
+export type InfraDokployCompose = z.infer<typeof infraDokployComposeSchema>;
+
+export const infraDokployStatusSchema = z.object({
+  status: z.enum(['ok', 'not-configured', 'error']),
+  apps: z.array(infraDokployAppSchema).default([]),
+  compose: z.array(infraDokployComposeSchema).default([]),
+  totalApps: z.number(),
+  totalCompose: z.number(),
+  appsByStatus: z.record(z.number()).default({}),
+  composeByStatus: z.record(z.number()).default({}),
+  error: z.string().optional(),
+});
+export type InfraDokployStatus = z.infer<typeof infraDokployStatusSchema>;
+
 export const videoJobSchema = z.object({
   jobId: z.string(),
   channelId: z.string().optional().default('unknown'),

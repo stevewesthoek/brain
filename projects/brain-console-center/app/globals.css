@@ -21,6 +21,31 @@
   --success-soft: #edf6ff;
   --error-soft: #fff1f1;
   --warning-soft: #fff8e8;
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+  --surface-subtle: #fafafa;
+  --surface-translucent: rgba(255, 255, 255, 0.92);
+  --surface-frosted: rgba(255, 255, 255, 0.86);
+  --surface-chrome: rgba(255, 255, 255, 0.82);
+  --hero-surface: linear-gradient(180deg, rgba(250, 250, 250, 0.9), rgba(255, 255, 255, 0.98));
+  --hero-surface-strong: linear-gradient(180deg, rgba(250, 250, 250, 0.94), rgba(255, 255, 255, 0.98));
+  --grid-line: rgba(0, 0, 0, 0.035);
+  --grid-line-soft: rgba(0, 0, 0, 0.03);
+  --section-line: rgba(0, 0, 0, 0.04);
+  --badge-success-border: #cfe8ff;
+  --badge-success-bg: #edf6ff;
+  --badge-success-text: #0059c8;
+  --badge-warning-border: #ffe1a6;
+  --badge-warning-bg: #fff8e8;
+  --badge-warning-text: #8a5a00;
+  --badge-error-border: #ffd0d0;
+  --badge-error-bg: #fff1f1;
+  --badge-error-text: #b00000;
+  --code-bg: #f5f5f5;
+  --code-fg: #171717;
+  --on-destructive: #ffffff;
+  --hover-shadow: 0 12px 44px rgba(0, 0, 0, 0.08);
+  --toast-shadow: 0 16px 60px rgba(0, 0, 0, 0.14);
   --radius: 12px;
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.04);
   --font-sans: var(--font-geist-sans, Geist), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -41,7 +66,7 @@
   --border: #2a2a2a;
   --border-strong: #3a3a3a;
   --accent: #0070f3;
-  --accent-foreground: #000000;
+  --accent-foreground: #ffffff;
   --accent-soft: #0a2a4a;
   --destructive: #ff3333;
   --warning: #f5a623;
@@ -49,6 +74,31 @@
   --success-soft: #0a2a4a;
   --error-soft: #3d0000;
   --warning-soft: #3d2a00;
+  --surface: #0a0a0a;
+  --surface-strong: #111111;
+  --surface-subtle: #151515;
+  --surface-translucent: rgba(17, 17, 17, 0.92);
+  --surface-frosted: rgba(10, 10, 10, 0.86);
+  --surface-chrome: rgba(10, 10, 10, 0.82);
+  --hero-surface: linear-gradient(180deg, rgba(17, 17, 17, 0.96), rgba(10, 10, 10, 0.98));
+  --hero-surface-strong: linear-gradient(180deg, rgba(17, 17, 17, 0.96), rgba(10, 10, 10, 0.98));
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --grid-line-soft: rgba(255, 255, 255, 0.02);
+  --section-line: rgba(255, 255, 255, 0.055);
+  --badge-success-border: #2f81f7;
+  --badge-success-bg: #001d3d;
+  --badge-success-text: #3291ff;
+  --badge-warning-border: #9f6b00;
+  --badge-warning-bg: #2f2100;
+  --badge-warning-text: #f5a623;
+  --badge-error-border: #7f1d1d;
+  --badge-error-bg: #2a0505;
+  --badge-error-text: #ff6b6b;
+  --code-bg: #151515;
+  --code-fg: #ededed;
+  --on-destructive: #ffffff;
+  --hover-shadow: 0 12px 44px rgba(0, 0, 0, 0.36);
+  --toast-shadow: 0 16px 60px rgba(0, 0, 0, 0.42);
   --radius: 12px;
   --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 32px rgba(0, 0, 0, 0.34);
   --font-sans: var(--font-geist-sans, Geist), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -89,16 +139,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line-soft) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 44%);
-}
-
-[data-theme='dark'] body::before {
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
 }
 
 a {
@@ -122,6 +166,15 @@ pre {
   font-family: var(--mono);
 }
 
+.card code:not(.topbar-endpoint),
+.publish-panel code,
+details code {
+  color: var(--code-fg);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
 ::selection {
   background: var(--foreground);
   color: var(--background);
@@ -140,13 +193,9 @@ pre {
   height: 100dvh;
   padding: 18px 14px;
   border-right: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface-chrome);
   backdrop-filter: blur(18px);
   transition: background-color 200ms ease, border-color 200ms ease;
-}
-
-[data-theme='dark'] .sidebar {
-  background: rgba(10, 10, 10, 0.82);
 }
 
 .brand {
@@ -241,13 +290,9 @@ pre {
   min-height: 58px;
   padding: 0 32px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--surface-frosted);
   backdrop-filter: blur(18px);
   transition: background-color 200ms ease, border-color 200ms ease;
-}
-
-[data-theme='dark'] .topbar {
-  background: rgba(10, 10, 10, 0.86);
 }
 
 .topbar-endpoint {
@@ -360,7 +405,7 @@ p {
   min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface-translucent);
   box-shadow: var(--shadow-soft);
 }
 
@@ -403,7 +448,7 @@ p {
 .metric-card:hover {
   border-color: var(--border-strong);
   transform: translateY(-1px);
-  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--hover-shadow);
 }
 
 .overview-screen {
@@ -423,15 +468,9 @@ p {
   border-radius: 20px;
   background:
     radial-gradient(circle at 82% 12%, rgba(0, 112, 243, 0.12), transparent 18rem),
-    linear-gradient(180deg, rgba(250, 250, 250, 0.9), rgba(255, 255, 255, 0.98));
+    var(--hero-surface);
   box-shadow: var(--shadow-soft);
   transition: background-color 200ms ease;
-}
-
-[data-theme='dark'] .overview-hero {
-  background:
-    radial-gradient(circle at 82% 12%, rgba(0, 112, 243, 0.1), transparent 18rem),
-    linear-gradient(180deg, rgba(22, 22, 22, 0.9), rgba(16, 16, 16, 0.98));
 }
 
 .overview-hero::before {
@@ -439,7 +478,7 @@ p {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-image: linear-gradient(to right, var(--section-line) 1px, transparent 1px);
   background-size: 72px 100%;
   mask-image: linear-gradient(to right, transparent, black 14%, black 86%, transparent);
 }
@@ -461,7 +500,7 @@ p {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-translucent);
 }
 
 .overview-status-card strong {
@@ -510,9 +549,9 @@ p {
 }
 
 .badge.success {
-  border-color: #cfe8ff;
-  background: var(--success-soft);
-  color: #0059c8;
+  border-color: var(--badge-success-border);
+  background: var(--badge-success-bg);
+  color: var(--badge-success-text);
 }
 
 .badge.success::before {
@@ -520,9 +559,9 @@ p {
 }
 
 .badge.warning {
-  border-color: #ffe1a6;
-  background: var(--warning-soft);
-  color: #8a5a00;
+  border-color: var(--badge-warning-border);
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
 }
 
 .badge.warning::before {
@@ -530,9 +569,9 @@ p {
 }
 
 .badge.error {
-  border-color: #ffd0d0;
-  background: var(--error-soft);
-  color: #b00000;
+  border-color: var(--badge-error-border);
+  background: var(--badge-error-bg);
+  color: var(--badge-error-text);
 }
 
 .badge.error::before {
@@ -557,12 +596,12 @@ p {
 }
 
 .button:hover {
-  background: #000000;
+  background: var(--card-foreground);
 }
 
 .button.secondary {
   border-color: var(--border);
-  background: var(--background);
+  background: var(--card);
   color: var(--foreground);
 }
 
@@ -574,7 +613,7 @@ p {
 .button.destructive {
   border-color: var(--destructive);
   background: var(--destructive);
-  color: #ffffff;
+  color: var(--on-destructive);
 }
 
 .button.compact,
@@ -599,7 +638,7 @@ p {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--background);
+  background: var(--card);
   color: var(--foreground);
 }
 
@@ -614,7 +653,7 @@ p {
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--background);
+  background: var(--card);
   box-shadow: var(--shadow-soft);
 }
 
@@ -672,7 +711,7 @@ tr:last-child td {
 .tabs button:hover,
 .segmented button.active,
 .segmented button:hover {
-  background: var(--background);
+  background: var(--card);
   color: var(--foreground);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
@@ -698,7 +737,7 @@ tr:last-child td {
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--background);
+  background: var(--card);
 }
 
 .local-summary-strip span,
@@ -733,7 +772,7 @@ tr:last-child td {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--background);
+  background: var(--card);
   box-shadow: var(--shadow-soft);
   transition: border-color 160ms ease, transform 160ms ease;
 }
@@ -843,6 +882,69 @@ tr:last-child td {
   align-self: end;
 }
 
+.tunnel-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.tunnel-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tunnel-summary > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+}
+
+.tunnel-summary span {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tunnel-summary strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tunnel-hostname {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--muted);
+}
+
+.tunnel-hostname-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tunnel-hostname-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  flex: none;
+}
+
 .local-apps-pager,
 .pager-row,
 .pager {
@@ -870,7 +972,7 @@ tr:last-child td {
   padding: 0 9px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--background);
+  background: var(--card);
   color: var(--body);
   cursor: pointer;
   font-size: 12px;
@@ -894,14 +996,14 @@ tr:last-child td {
 
 .compact-error {
   padding: 12px 14px;
-  border: 1px solid #ffd0d0;
+  border: 1px solid var(--badge-error-border);
   border-radius: 10px;
-  background: var(--error-soft);
-  color: #9f0000;
+  background: var(--badge-error-bg);
+  color: var(--badge-error-text);
 }
 
 .compact-error p {
-  color: #9f0000;
+  color: var(--badge-error-text);
 }
 
 .compact-pre,
@@ -909,6 +1011,10 @@ tr:last-child td {
   max-height: 52vh;
   overflow: auto;
   margin: 10px 0 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
   color: var(--body);
   font-size: 12px;
   line-height: 1.55;
@@ -943,7 +1049,7 @@ tr:last-child td {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--background);
+  background: var(--card);
 }
 
 .publish-panel pre {
@@ -968,15 +1074,9 @@ tr:last-child td {
   border-radius: 20px;
   background:
     radial-gradient(circle at 84% 0%, rgba(0, 112, 243, 0.14), transparent 18rem),
-    linear-gradient(180deg, rgba(250, 250, 250, 0.94), rgba(255, 255, 255, 0.98));
+    var(--hero-surface-strong);
   box-shadow: var(--shadow-soft);
   transition: background-color 200ms ease;
-}
-
-[data-theme='dark'] .aws-hero {
-  background:
-    radial-gradient(circle at 84% 0%, rgba(0, 112, 243, 0.1), transparent 18rem),
-    linear-gradient(180deg, rgba(22, 22, 22, 0.94), rgba(16, 16, 16, 0.98));
 }
 
 .aws-hero h1 {
@@ -1005,7 +1105,7 @@ tr:last-child td {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface-translucent);
 }
 
 .aws-metrics span {
@@ -1036,7 +1136,7 @@ tr:last-child td {
   padding: 18px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: var(--background);
+  background: var(--card);
   box-shadow: var(--shadow-soft);
 }
 
@@ -1066,7 +1166,7 @@ tr:last-child td {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: var(--background);
+  background: var(--card);
   color: var(--muted-foreground);
   font-family: var(--mono);
   font-size: 11px;
@@ -1074,8 +1174,8 @@ tr:last-child td {
 
 .pipeline-step.done,
 .pipeline-steps > div.done {
-  border-color: #cfe8ff;
-  background: var(--success-soft);
+  border-color: var(--badge-success-border);
+  background: var(--badge-success-bg);
 }
 
 .pipeline-step.active,
@@ -1083,7 +1183,7 @@ tr:last-child td {
 .pipeline-step.recommended,
 .pipeline-steps > div.recommended {
   border-color: var(--foreground);
-  background: var(--background);
+  background: var(--card);
   box-shadow: inset 0 0 0 1px var(--foreground);
 }
 
@@ -1118,13 +1218,9 @@ tr:last-child td {
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--surface-frosted);
   box-shadow: var(--shadow-soft);
   transition: background-color 200ms ease;
-}
-
-[data-theme='dark'] .aws-subnav {
-  background: rgba(16, 16, 16, 0.86);
 }
 
 .aws-subnav button {
@@ -1142,8 +1238,9 @@ tr:last-child td {
 
 .aws-subnav button.active,
 .aws-subnav button:hover {
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--muted-strong);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .aws-main-panel,
@@ -1190,7 +1287,7 @@ tr:last-child td {
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--background);
+  background: var(--card);
   color: var(--foreground);
   cursor: pointer;
   text-align: left;
@@ -1231,14 +1328,14 @@ tr:last-child td {
 }
 
 .success-panel {
-  border-color: #cfe8ff;
-  background: var(--success-soft);
+  border-color: var(--badge-success-border);
+  background: var(--badge-success-bg);
 }
 
 .danger-button {
   border-color: var(--destructive);
   background: var(--destructive);
-  color: #ffffff;
+  color: var(--on-destructive);
 }
 
 .button.next-action,
@@ -1263,13 +1360,13 @@ tr:last-child td {
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--background);
-  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.14);
+  background: var(--card);
+  box-shadow: var(--toast-shadow);
 }
 
 .error-toast {
-  border-color: #ffd0d0;
-  background: var(--error-soft);
+  border-color: var(--badge-error-border);
+  background: var(--badge-error-bg);
 }
 
 .timeline {
@@ -1328,7 +1425,7 @@ tr:last-child td {
 }
 
 .theme-toggle button.active {
-  background: var(--background);
+  background: var(--card);
   color: var(--foreground);
   box-shadow: inset 0 0 0 1px var(--border);
 }

@@ -11,6 +11,8 @@ export const READ_ENDPOINTS = [
   '/scheduler/latest-run',
   '/scheduler/jobs',
   '/local-apps',
+  '/infra/dokploy',
+  '/infra/tunnels',
   '/video/status',
   '/video/queue',
   '/approvals',

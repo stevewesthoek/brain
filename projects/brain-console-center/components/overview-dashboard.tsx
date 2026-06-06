@@ -16,7 +16,7 @@ function metricValue(metric: OpsMetric): string {
 
 function MetricCard({ metric }: { metric: OpsMetric }) {
   return (
-    <article className="card">
+    <article className="card metric-card">
       <div className="card-header">
         <div>
           <div className="card-title">{metric.label}</div>
@@ -53,18 +53,21 @@ export function OverviewDashboard() {
     ...(usage.data ? [usage.data.data.codexCurrentWindow, usage.data.data.codexFiveHourWindow, usage.data.data.codexSevenDayWindow] : []),
     ...(costs.data ? [costs.data.data.claudeCodeHaiku, costs.data.data.claudeCodeSonnet, costs.data.data.claudeCodeOpus] : []),
   ];
+  const primaryMetrics = metrics.slice(0, 4);
+  const secondaryMetrics = metrics.slice(4);
 
   return (
-    <div className="stack">
-      <section className="page-heading">
-        <div>
+    <div className="stack overview-screen">
+      <section className="overview-hero">
+        <div className="overview-copy">
           <div className="eyebrow">Overview</div>
           <h1>Operational pulse</h1>
           <p>Live system, Codex window, and Claude Code cost cards from Brain Core. Missing telemetry is shown as not instrumented, not guessed.</p>
         </div>
-        <div className="row">
+        <div className="overview-status-card">
           <StatusBadge status={system.isError || usage.isError || costs.isError ? 'error' : 'fresh'} label={system.isError || usage.isError || costs.isError ? 'partial error' : 'auto refresh'} />
-          <span className="meta">System refreshes every 5 seconds</span>
+          <strong>5s</strong>
+          <span>System refresh cadence</span>
         </div>
       </section>
 
@@ -79,8 +82,12 @@ export function OverviewDashboard() {
         </div>
       ) : null}
 
+      <section className="overview-primary-grid">
+        {primaryMetrics.map((metric) => <MetricCard key={metric.id} metric={metric} />)}
+      </section>
+
       <section className="grid cards">
-        {metrics.map((metric) => <MetricCard key={metric.id} metric={metric} />)}
+        {secondaryMetrics.map((metric) => <MetricCard key={metric.id} metric={metric} />)}
       </section>
     </div>
   );
