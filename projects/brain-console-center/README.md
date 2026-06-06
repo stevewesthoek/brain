@@ -11,10 +11,7 @@ Brain Console Center is the fourth and final dashboard direction for the `brain`
 Brain Console Center → Brain Core API → runtime/job/config sources
 ```
 
-Legacy dashboards are reference-only:
-
-- `projects/brain-console-obsidian` — frozen legacy native Obsidian dashboard
-- `projects/brain-console-web` — legacy AWS Video reference dashboard
+Legacy dashboards are reference-only.
 
 ## Run
 

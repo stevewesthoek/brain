@@ -1,9 +1,0 @@
-{
-  "id": "brain-console",
-  "name": "Brain Console",
-  "version": "2.18",
-  "minAppVersion": "1.5.0",
-  "description": "Read-only Brain Core console for the Mind vault.",
-  "author": "Steve Westhoek",
-  "isDesktopOnly": true
-}

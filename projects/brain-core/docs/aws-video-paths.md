@@ -24,7 +24,7 @@ Canonical remote AWS Video storage:
 s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/
 ```
 
-Brain Console Center calls Brain Core. Brain Console Web is legacy.
+Brain Console Center calls Brain Core.
 
 ## Resolver Rules
 

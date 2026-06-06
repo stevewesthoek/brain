@@ -57,7 +57,7 @@ Canonical remote AWS Video storage is:
 s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/
 ```
 
-Brain Console Center calls Brain Core for AWS Video status and recent jobs. Brain Console Web is legacy. Never use `process.cwd()` to infer the jobs folder, never create jobs under `projects/brain-core/jobs`, and never create jobs under `projects/brain-console-center/jobs`.
+Brain Console Center calls Brain Core for AWS Video status and recent jobs. Never use `process.cwd()` to infer the jobs folder, never create jobs under `projects/brain-core/jobs`, and never create jobs under `projects/brain-console-center/jobs`.
 
 If the dashboard shows 0 jobs, first check `/api/video-orchestrator/jobs/recent` diagnostics. See [aws-video-paths.md](aws-video-paths.md).
 

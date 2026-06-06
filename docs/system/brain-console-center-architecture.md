@@ -13,9 +13,6 @@ Brain Console Center is the single leading operations dashboard for the Brain re
 
 Legacy dashboards are reference-only:
 
-- Brain Console Obsidian Plugin
-- Brain Console Web
-
 New dashboard feature work belongs in Brain Console Center and must be backed by Brain Core API contracts.
 
 ## Tech stack

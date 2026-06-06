@@ -2903,7 +2903,7 @@ export async function generateApprovedScript(
     approvals: {
       script: {
         status: 'approved',
-        approvedBy: approval.approvedBy || input.requestedBy || 'brain-console-web',
+        approvedBy: approval.approvedBy || input.requestedBy || 'brain-console-center',
         approvedAt: approval.approvedAt || new Date().toISOString(),
         notes: approval.notes || null,
       },

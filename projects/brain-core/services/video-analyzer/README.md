@@ -290,7 +290,7 @@ $ grep -i gemini projects/brain-core/services/video-analyzer/analyze.py
 
 **TypeScript interfaces:** No Gemini fields
 ```bash
-$ grep -i gemini projects/brain-console-obsidian/src/adapters/research-video.ts
+$ grep -i gemini projects/brain-core/services/video-analyzer/analyze.py
 # (no output = not present)
 ```
 
@@ -452,7 +452,7 @@ notebooklm auth check --test  # Confirm passes
 - **NotebookLM CLI:** `operations/runbooks/notebooklm-cli.md`
 - **Credentials:** `operations/accounts/credentials-index.md` (NotebookLM section)
 - **Brain Core API:** `projects/brain-core/README.md`
-- **Brain Console:** `projects/brain-console-obsidian/CLAUDE.md`
+- **Brain Console:** `projects/brain-console-center/README.md`
 
 ---
 

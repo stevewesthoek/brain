@@ -2,7 +2,7 @@
 
 **Status:** active Brain Core control-plane note
 
-Brain Core is the API runtime for AWS Video operations. Brain Console Center is the active UI. Brain Console Web is legacy.
+Brain Core is the API runtime for AWS Video operations. Brain Console Center is the active UI.
 
 ## Generation Modes
 

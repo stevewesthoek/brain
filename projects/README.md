@@ -30,9 +30,6 @@ for global behavior, identity, and safety.
 
 - `brain-console-center/` — planned single leading local operations dashboard for Brain, backed by Brain Core API; see `docs/system/brain-console-center-roadmap.md`
 - `brain-core/` — local API and safety boundary for Brain operational data/actions
-- `brain-console-web/` — legacy AWS Video reference dashboard; no new feature work
-- `brain-console-obsidian/` — frozen legacy native Obsidian dashboard; no new feature work
-- `brain-console-obsidian/` — Brain Console Obsidian plugin and local dashboard surface
 - `cedula/` — Paraguay residency / cédula onboarding project with funnel, planning, and meeting notes
 
 ## Naming
