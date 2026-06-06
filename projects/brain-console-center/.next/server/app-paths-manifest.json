@@ -1,3 +1,12 @@
 {
-  "/aws-video/page": "app/aws-video/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/dokploy/page": "app/dokploy/page.js",
+  "/ai-models/page": "app/ai-models/page.js",
+  "/aws-video/page": "app/aws-video/page.js",
+  "/page": "app/page.js",
+  "/monitoring/page": "app/monitoring/page.js",
+  "/local-apps/page": "app/local-apps/page.js",
+  "/scheduler/page": "app/scheduler/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/tunnels/page": "app/tunnels/page.js"
 }
