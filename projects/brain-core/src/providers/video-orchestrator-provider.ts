@@ -1422,6 +1422,28 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   const args = [scriptPath, jobId];
   if (options.dryRun) args.push('--dry-run');
 
+  // For dry-run: write "running" state before starting the long-running operation
+  const dryRunStartedAt = new Date().toISOString();
+  if (options.dryRun) {
+    try {
+      const publishCheckRunning: PublishCheckMetadata = {
+        jobId,
+        youtubeDryRun: {
+          status: 'running',
+          startedAt: dryRunStartedAt,
+          checkedBy: 'brain-console-center',
+          videoKey: resolved.videoKey,
+          thumbnailKey: resolved.thumbnailKey,
+        },
+        dryRunPassed: false,
+      };
+      await writePublishCheckJson(jobId, publishCheckRunning);
+    } catch (writeError) {
+      console.warn(`[runControlledYouTubePublish] Warning: Failed to write publish-check.json with 'running' status for ${jobId}:`, writeError);
+      // Don't fail the dry-run if we can't write state — proceed anyway
+    }
+  }
+
   try {
     const { stdout, stderr } = await execFileAsync('bash', args, { timeout: options.dryRun ? 120000 : 1800000 });
     const updatedPublishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
@@ -1442,34 +1464,27 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
         : null;
     if (publishStatus) result.publishStatus = publishStatus;
 
-    // PERSISTENCE: On successful dry-run, write publish-check.json and update publish.json
+    // PERSISTENCE: On successful dry-run, write publish-check.json with passed status
     if (options.dryRun && result.ok) {
       const now = new Date().toISOString();
 
       // Write publish-check.json with dry-run proof
-      const publishCheck = {
+      const publishCheckPassed: PublishCheckMetadata = {
         jobId,
         youtubeDryRun: {
           status: 'passed',
+          startedAt: dryRunStartedAt,
           checkedAt: now,
           checkedBy: 'brain-console-center',
           privacy: 'private',
           videoKey: resolved.videoKey,
           thumbnailKey: resolved.thumbnailKey,
         },
+        dryRunPassed: true,
       };
 
       try {
-        // Write locally
-        const publishCheckPath = getJobMetadataPath(jobId, 'publish-check.json');
-        await writeFile(publishCheckPath, JSON.stringify(publishCheck, null, 2));
-
-        // Write to S3
-        await execFileAsync('aws', [
-          's3', 'cp', publishCheckPath,
-          `s3://${S3_BUCKET}/${S3_JOBS_PREFIX}${jobId}/metadata/publish-check.json`,
-          '--region', AWS_REGION,
-        ], { timeout: S3_METADATA_TIMEOUT_MS });
+        await writePublishCheckJson(jobId, publishCheckPassed);
       } catch (writeError) {
         // Log but don't fail the dry-run if write fails
         console.warn(`[runControlledYouTubePublish] Warning: Failed to persist publish-check.json for ${jobId}:`, writeError);
@@ -1486,14 +1501,10 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
           };
 
           const publishJsonPath = getJobMetadataPath(jobId, 'publish.json');
-          await writeFile(publishJsonPath, JSON.stringify(updatedPublish, null, 2));
+          await writeFile(publishJsonPath, `${JSON.stringify(updatedPublish, null, 2)}\n`, 'utf-8');
 
           // Write to S3
-          await execFileAsync('aws', [
-            's3', 'cp', publishJsonPath,
-            `s3://${S3_BUCKET}/${S3_JOBS_PREFIX}${jobId}/metadata/publish.json`,
-            '--region', AWS_REGION,
-          ], { timeout: S3_METADATA_TIMEOUT_MS });
+          await writeS3MetadataJson(jobId, 'publish.json', updatedPublish);
         } catch (publishUpdateError) {
           console.warn(`[runControlledYouTubePublish] Warning: Failed to update publish.json with dryRunPassed for ${jobId}:`, publishUpdateError);
         }
@@ -1507,6 +1518,29 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     return result;
   } catch (error) {
     const outputError = error as Error & { stdout?: string; stderr?: string };
+
+    // On dry-run failure, write failed state to persist across refresh
+    if (options.dryRun) {
+      try {
+        const now = new Date().toISOString();
+        const publishCheckFailed: PublishCheckMetadata = {
+          jobId,
+          youtubeDryRun: {
+            status: 'failed',
+            startedAt: dryRunStartedAt,
+            checkedAt: now,
+            checkedBy: 'brain-console-center',
+            error: outputError.message.slice(-500),
+            code: 'youtube_upload_script_failed',
+          },
+          dryRunPassed: false,
+        };
+        await writePublishCheckJson(jobId, publishCheckFailed);
+      } catch (writeError) {
+        console.warn(`[runControlledYouTubePublish] Warning: Failed to write publish-check.json with 'failed' status for ${jobId}:`, writeError);
+      }
+    }
+
     const result: ControlledYouTubePublishResult = {
       ok: false,
       jobId,
@@ -1771,8 +1805,34 @@ async function writeReviewJson(jobId: string, review: VideoReviewMetadata): Prom
   ]);
 }
 
-async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null> {
-  const value = await readJobMetadataJson(jobId, 'review.json');
+interface PublishCheckMetadata {
+  jobId: string;
+  youtubeDryRun: {
+    status: 'running' | 'passed' | 'failed';
+    startedAt?: string;
+    checkedAt?: string;
+    checkedBy?: string;
+    videoKey?: string;
+    thumbnailKey?: string;
+    privacy?: string;
+    error?: string;
+    code?: string;
+  };
+  dryRunPassed: boolean;
+}
+
+async function writePublishCheckJson(jobId: string, publishCheck: PublishCheckMetadata): Promise<void> {
+  const content = `${JSON.stringify(publishCheck, null, 2)}\n`;
+  const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+  await mkdir(metadataDir, { recursive: true });
+  const publishCheckPath = join(metadataDir, 'publish-check.json');
+  await Promise.all([
+    writeFile(publishCheckPath, content, 'utf-8'),
+    writeS3MetadataJson(jobId, 'publish-check.json', publishCheck as unknown as Record<string, unknown>),
+  ]);
+}
+
+function parseReviewRecord(value: unknown, jobId: string): VideoReviewMetadata | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
   const media = record.media && typeof record.media === 'object' ? record.media as Record<string, unknown> : {};
@@ -1795,6 +1855,87 @@ async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null
       youtubePackageKey: stringValue(media.youtubePackageKey),
     },
   };
+}
+
+function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoReviewMetadata | null, jobId: string): VideoReviewMetadata | null {
+  // If both exist, merge with approval state winning from whichever is approved
+  if (local && remote) {
+    const localApproved = ['approved', 'changes_requested'].includes(local.reviewStatus);
+    const remoteApproved = ['approved', 'changes_requested'].includes(remote.reviewStatus);
+
+    // If local is approved and remote is pending, use local (local state is fresher)
+    if (localApproved && !remoteApproved) {
+      return {
+        ...local,
+        updatedAt: new Date().toISOString(),
+        media: {
+          ...local.media,
+          // Merge media from remote if it has better data
+          ...Object.fromEntries(
+            Object.entries(remote.media).filter(([_, v]) => v !== null && (local.media[_ as keyof VideoReviewMedia] === null || !local.media[_ as keyof VideoReviewMedia]))
+          ) as Partial<VideoReviewMedia>,
+        },
+      };
+    }
+    // If remote is approved and local is pending, use remote (primary)
+    if (remoteApproved && !localApproved) {
+      return {
+        ...remote,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    // If both approved, merge media from both
+    if (localApproved && remoteApproved) {
+      return {
+        ...local,
+        updatedAt: new Date().toISOString(),
+        reviewStatus: local.reviewStatus,
+        reviewedAt: local.reviewedAt || remote.reviewedAt,
+        reviewedBy: local.reviewedBy || remote.reviewedBy,
+        notes: local.notes || remote.notes,
+        media: {
+          scenePlanKey: local.media.scenePlanKey || remote.media.scenePlanKey,
+          narrationScriptKey: local.media.narrationScriptKey || remote.media.narrationScriptKey,
+          audioKey: local.media.audioKey || remote.media.audioKey,
+          sceneImageKeys: (local.media.sceneImageKeys?.length ?? 0) >= (remote.media.sceneImageKeys?.length ?? 0) ? local.media.sceneImageKeys : remote.media.sceneImageKeys,
+          videoKey: local.media.videoKey || remote.media.videoKey,
+          thumbnailKey: local.media.thumbnailKey || remote.media.thumbnailKey,
+          publishKey: local.media.publishKey || remote.media.publishKey,
+          youtubePackageKey: local.media.youtubePackageKey || remote.media.youtubePackageKey,
+        },
+      };
+    }
+    // Both pending: prefer more complete media
+    return {
+      ...local,
+      updatedAt: new Date().toISOString(),
+      media: {
+        scenePlanKey: local.media.scenePlanKey || remote.media.scenePlanKey,
+        narrationScriptKey: local.media.narrationScriptKey || remote.media.narrationScriptKey,
+        audioKey: local.media.audioKey || remote.media.audioKey,
+        sceneImageKeys: (local.media.sceneImageKeys?.length ?? 0) >= (remote.media.sceneImageKeys?.length ?? 0) ? local.media.sceneImageKeys : remote.media.sceneImageKeys,
+        videoKey: local.media.videoKey || remote.media.videoKey,
+        thumbnailKey: local.media.thumbnailKey || remote.media.thumbnailKey,
+        publishKey: local.media.publishKey || remote.media.publishKey,
+        youtubePackageKey: local.media.youtubePackageKey || remote.media.youtubePackageKey,
+      },
+    };
+  }
+  // Return whichever exists
+  return local ?? remote;
+}
+
+async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null> {
+  // Local-first: read local file immediately
+  const localValue = await readLocalJobMetadataJson(jobId, 'review.json');
+  const localReview = parseReviewRecord(localValue, jobId);
+
+  // Then read S3/remote for comparison
+  const remoteValue = await readS3JobMetadataJson(jobId, 'review.json');
+  const remoteReview = parseReviewRecord(remoteValue, jobId);
+
+  // Merge: never downgrade from approved to pending
+  return mergeReviewMetadata(localReview, remoteReview, jobId);
 }
 
 async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | null> {
@@ -1848,7 +1989,8 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
 
     if (same) return existing;
 
-    // Only persist if media changed (not just updatedAt drifting)
+    // Persist updated review: media repairs are allowed even for approved reviews
+    // reviewStatus cannot downgrade from approved/changes_requested to pending
     if (mediaChanged) {
       try {
         await writeReviewJson(jobId, updated);
@@ -2198,23 +2340,11 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
     return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
   }
 
-  // CRITICAL: Read existing review first to preserve approval status before hydration
-  const existingReview = await readReviewJson(jobId);
-  const isApproved = existingReview?.reviewStatus === 'approved' || existingReview?.reviewStatus === 'changes_requested';
-
+  // getOrCreateReview() now uses mergeReviewMetadata() which ensures monotonic state:
+  // approved state cannot downgrade to pending, media gets repaired
   const review = await getOrCreateReview(jobId);
   if (!review) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
-  }
-
-  // CRITICAL: Never downgrade from approved back to pending during hydration
-  if (isApproved && review.reviewStatus !== 'approved' && review.reviewStatus !== 'changes_requested') {
-    if (existingReview) {
-      review.reviewStatus = existingReview.reviewStatus;
-      review.reviewedAt = existingReview.reviewedAt;
-      review.reviewedBy = existingReview.reviewedBy;
-      review.notes = existingReview.notes;
-    }
   }
 
   return { ok: true, review };
