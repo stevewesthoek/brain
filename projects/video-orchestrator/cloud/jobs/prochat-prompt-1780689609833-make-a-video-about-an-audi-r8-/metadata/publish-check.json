@@ -1,0 +1,13 @@
+{
+  "jobId": "prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-",
+  "youtubeDryRun": {
+    "status": "passed",
+    "startedAt": "2026-06-06T11:08:45.006Z",
+    "checkedAt": "2026-06-06T11:08:51.463Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780689609833-make-a-video-about-an-audi-r8-/exports/thumbnail-001.jpg"
+  },
+  "dryRunPassed": true
+}

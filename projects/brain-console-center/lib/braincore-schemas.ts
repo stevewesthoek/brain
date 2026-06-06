@@ -364,6 +364,62 @@ export const videoStatusSchema = z.object({
 
 export const videoActionResultSchema = z.record(z.unknown());
 
+export const videoAnalysisAiSummarySchema = z.object({
+  topic: z.string().nullable().optional(),
+  speaker: z.string().nullable().optional(),
+  key_claims: z.array(z.string()).default([]),
+  evidence_type: z.string().nullable().optional(),
+  confidence: z.string().nullable().optional(),
+  research_hooks: z.array(z.string()).default([]),
+}).passthrough();
+
+export const videoAnalysisResponseSchema = z.object({
+  ok: z.boolean(),
+  title: z.string().nullable().optional(),
+  channel: z.string().nullable().optional(),
+  transcript: z.string().nullable().optional(),
+  human_summary: z.string().nullable().optional(),
+  ai_summary: videoAnalysisAiSummarySchema.nullable().optional(),
+  mind_path: z.string().nullable().optional(),
+  error: z.string().nullable().optional(),
+  step: z.string().nullable().optional(),
+}).passthrough();
+
+export const videoAnalysisHistoryAiSummarySchema = z.object({
+  topic: z.string().nullable(),
+  speaker: z.string().nullable(),
+  keyClaims: z.array(z.string()).default([]),
+  evidenceType: z.string().nullable(),
+  confidence: z.string().nullable(),
+  researchHooks: z.array(z.string()).default([]),
+});
+
+export const videoAnalysisHistoryEntrySchema = z.object({
+  id: z.string(),
+  analyzedAt: z.string(),
+  url: z.string(),
+  focus: z.string().nullable(),
+  ok: z.boolean(),
+  title: z.string().nullable(),
+  channel: z.string().nullable(),
+  transcript: z.string().nullable(),
+  humanSummary: z.string().nullable(),
+  aiSummary: videoAnalysisHistoryAiSummarySchema.nullable(),
+  mindPath: z.string().nullable(),
+  error: z.string().nullable(),
+  step: z.string().nullable(),
+});
+
+export const videoAnalysisHistoryResponseSchema = z.object({
+  status: z.enum(['ok', 'empty', 'invalid']),
+  path: z.string(),
+  total: z.number(),
+  returned: z.number(),
+  entries: z.array(videoAnalysisHistoryEntrySchema).default([]),
+  latestAnalyzedAt: z.string().nullable(),
+  error: z.string().optional(),
+});
+
 export const youtubePublishResultSchema = z.object({
   ok: z.boolean(),
   jobId: z.string().optional(),
@@ -430,5 +486,8 @@ export type VideoJob = z.output<typeof videoJobSchema>;
 export type VideoJobsDiagnostics = z.output<typeof videoJobsDiagnosticsSchema>;
 export type VideoTimeline = z.output<typeof videoTimelineSchema>;
 export type VideoReview = z.output<typeof videoReviewSchema>['review'];
+export type VideoAnalysisResponse = z.output<typeof videoAnalysisResponseSchema>;
+export type VideoAnalysisHistoryEntry = z.output<typeof videoAnalysisHistoryEntrySchema>;
+export type VideoAnalysisHistoryResponse = z.output<typeof videoAnalysisHistoryResponseSchema>;
 export type YouTubePackage = z.infer<typeof youtubePackageSchema>;
 export type ThumbnailMetadata = z.infer<typeof thumbnailMetadataSchema>;

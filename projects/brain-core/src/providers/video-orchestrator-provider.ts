@@ -2975,6 +2975,7 @@ export async function generateApprovedScript(
   // For TTS-backed hybrid modes: synthesize narration from script using TTS
   // For other modes: copy fixture narration
   const narrationKey = `jobs/${jobId}/audio/narration.mp3`;
+  const ttsVoiceId = process.env.AWS_VIDEO_TTS_VOICE_ID || 'Matthew';
   let audioProvider: string | undefined;
   let voiceId: string | undefined;
 
@@ -3032,7 +3033,7 @@ export async function generateApprovedScript(
         ttsResult = await ttsProvider.synthesizeNarration({
           jobId,
           text: cleanedNarration,
-          voiceId: 'Joanna',
+          voiceId: ttsVoiceId,
           bucket: S3_BUCKET,
           region: AWS_REGION,
           outputKey: narrationKey,
@@ -3041,7 +3042,7 @@ export async function generateApprovedScript(
         const message = `Failed to synthesize narration audio with AWS Polly: ${ttsErr instanceof Error ? ttsErr.message : String(ttsErr)}`;
         await writeFailedStatus('tts_synthesis_failed', message, {
           audioProvider: 'aws-polly',
-          voiceId: 'Joanna',
+          voiceId: ttsVoiceId,
           narrationScriptKey,
           expectedAudioKey: narrationKey,
           textLength: cleanedNarration.length,
@@ -3069,7 +3070,7 @@ export async function generateApprovedScript(
         const message = `TTS audio object not found in S3 after synthesis: ${narrationKey}`;
         await writeFailedStatus('tts_audio_missing_after_synthesis', message, {
           audioProvider: 'aws-polly',
-          voiceId: 'Joanna',
+          voiceId: ttsVoiceId,
           expectedAudioKey: narrationKey,
         });
         return {
@@ -3092,7 +3093,7 @@ export async function generateApprovedScript(
         const message = `Failed to download TTS audio for local slideshow assembly: ${err instanceof Error ? err.message : String(err)}`;
         await writeFailedStatus('tts_audio_local_copy_failed', message, {
           audioProvider: 'aws-polly',
-          voiceId: 'Joanna',
+          voiceId: ttsVoiceId,
           audioKey: narrationKey,
         });
         return {

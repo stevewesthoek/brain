@@ -15,7 +15,7 @@ export class BrainCoreError extends Error {
   }
 }
 
-export async function brainCoreRequest<T>(path: string, schema: z.ZodType<T>, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
+export async function brainCoreRequest<TSchema extends z.ZodTypeAny>(path: string, schema: TSchema, init?: RequestInit & { timeoutMs?: number }): Promise<z.output<TSchema>> {
   const controller = new AbortController();
   const { timeoutMs, ...requestInit } = init ?? {};
   const timeout = setTimeout(() => controller.abort(), timeoutMs ?? REQUEST_TIMEOUT_MS);
@@ -47,7 +47,7 @@ export async function brainCoreRequest<T>(path: string, schema: z.ZodType<T>, in
         payload,
       });
     }
-    return parsed.data;
+    return parsed.data as z.output<TSchema>;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new BrainCoreError(`${requestInit.method ?? 'GET'} ${path} timed out`);
@@ -58,7 +58,7 @@ export async function brainCoreRequest<T>(path: string, schema: z.ZodType<T>, in
   }
 }
 
-export function postBrainCoreAction<T>(path: string, schema: z.ZodType<T>, body: Record<string, unknown> = {}, timeoutMs?: number): Promise<T> {
+export function postBrainCoreAction<TSchema extends z.ZodTypeAny>(path: string, schema: TSchema, body: Record<string, unknown> = {}, timeoutMs?: number): Promise<z.output<TSchema>> {
   return brainCoreRequest(path, schema, {
     method: 'POST',
     body: JSON.stringify(body),

@@ -247,6 +247,7 @@ import { getInfraVOReadiness } from '../adapters/infra-video-orchestrator-readin
 import { getInfraPipelinesStatus } from '../adapters/infra-pipelines-status.js';
 import { getSystemMetrics } from '../adapters/system-metrics.js';
 import type { VideoAnalysisResult } from '../adapters/research-video.js';
+import { readVideoAnalysisHistory, recordVideoAnalysisHistory } from '../adapters/research-video-history.js';
 import { defaultAlertManager } from '../adapters/alerting.js';
 import { planProjectExecution, savePlan, retrievePlan } from '../adapters/agent-orchestrator-planner.js';
 import { OrchestrationExecutor, recordApprovalDecision } from '../adapters/agent-orchestrator-executor.js';
@@ -2098,6 +2099,11 @@ export async function routeRequest(
           sendJson(response, 200, await getInfraPipelinesStatus());
           return;
         }
+        if (url.pathname === '/research/video-analyze/history') {
+          const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '12', 10), 12);
+          sendJson(response, 200, await readVideoAnalysisHistory(limit));
+          return;
+        }
         if (url.pathname === '/system/metrics') {
           sendJson(response, 200, await getSystemMetrics());
           return;
@@ -3786,6 +3792,7 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       sendJson(response, 500, { ok: false, error: 'analyzer produced invalid JSON', raw: result.slice(0, 500) });
       return;
     }
+    recordVideoAnalysisHistory(youtubeUrl, focus, parsed);
     sendJson(response, parsed.ok ? 200 : 500, parsed);
     return;
   }

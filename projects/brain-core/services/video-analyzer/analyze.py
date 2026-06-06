@@ -48,6 +48,26 @@ def run_cmd(cmd, check=True):
     result = subprocess.run(cmd, capture_output=True, text=True, shell=False)
     return result.returncode, result.stdout, result.stderr
 
+def fetch_youtube_metadata(youtube_url: str):
+    """Fetch title/channel metadata from YouTube oEmbed. Return dict or empty dict."""
+    try:
+        normalized_url = youtube_url.split('&')[0]
+        resp = requests.get(
+            'https://www.youtube.com/oembed',
+            params={'url': normalized_url, 'format': 'json'},
+            timeout=20,
+        )
+        if not resp.ok:
+            return {}
+        data = resp.json()
+        return {
+            'title': data.get('title'),
+            'channel': data.get('author_name'),
+        }
+    except Exception as e:
+        log(f"oEmbed metadata lookup failed: {e}")
+        return {}
+
 def save_transcript_to_mind(youtube_url: str, title: str, transcript: str):
     """Save transcript to mind/capture/inbox as markdown file. Return file path or None."""
     try:
@@ -318,19 +338,22 @@ def main():
         print(json.dumps({"ok": False, "error": err, "step": "transcript"}))
         sys.exit(0)
 
+    # Step 3.5: Fetch canonical YouTube metadata for title/channel fallback
+    youtube_meta = fetch_youtube_metadata(args.url)
+
     # Step 4: Structure transcript (optional — if fails, still return raw transcript)
     structured = structure_transcript(transcript, args.focus or None)
 
     # Step 5: Save transcript to mind/capture/inbox
-    title = (structured.get("title") if structured else None) or "Untitled Video"
+    title = (structured.get("title") if structured and structured.get("title") else None) or youtube_meta.get('title') or "Untitled Video"
     mind_path = save_transcript_to_mind(args.url, title, transcript)
 
     # Step 6: Return result
     result = {
         "ok": True,
         "transcript": transcript,
-        "title": structured.get("title") if structured else None,
-        "channel": structured.get("channel") if structured else None,
+        "title": title,
+        "channel": (structured.get("channel") if structured and structured.get("channel") else None) or youtube_meta.get('channel'),
         "human_summary": structured.get("human_summary") if structured else None,
         "ai_summary": structured.get("ai_summary") if structured else None,
         "mind_path": mind_path,  # Path to transcript in mind/capture/inbox

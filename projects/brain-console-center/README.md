@@ -59,6 +59,7 @@ docs/system/brain-console-center-design-system.md
 - New Relic uptime from `/infra/monitoring`
 - Office nightly scheduler status from `/infra/scheduler`
 - Cloudflare Tunnels from `/infra/tunnels`
+- Video Analyzer from `/research/video-analyze` and `/research/video-analyze/history`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints
 
 ## Design system

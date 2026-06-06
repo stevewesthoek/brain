@@ -14,11 +14,12 @@ export class PollyTTSProvider implements TTSProvider {
     const {
       jobId,
       text,
-      voiceId = 'Joanna',
+      voiceId = process.env.AWS_VIDEO_TTS_VOICE_ID || 'Matthew',
       bucket,
       region,
       outputKey,
     } = input;
+    const engine = process.env.AWS_VIDEO_TTS_ENGINE || 'neural';
 
     if (!text || text.trim().length === 0) {
       throw new Error('Cannot synthesize narration: text is empty');
@@ -34,6 +35,7 @@ export class PollyTTSProvider implements TTSProvider {
         '--text', text,
         '--output-format', 'mp3',
         '--voice-id', voiceId,
+        '--engine', engine,
         '--region', region,
         '--no-cli-pager',
         tmpPath,
