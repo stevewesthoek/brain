@@ -10462,6 +10462,45 @@ export interface BrainCoreInfraTunnelsResponse {
   error?: string;
 }
 
+export type BrainCoreInfraSchedulerJobStatus = 'success' | 'failed' | 'timeout' | 'never' | 'running';
+
+export interface BrainCoreInfraSchedulerJob {
+  key: string;
+  label: string;
+  planned: true;
+  executed: boolean;
+  status: BrainCoreInfraSchedulerJobStatus;
+  exitCode: number | null;
+  durationSeconds: number | null;
+  lastRunAt: string | null;
+  nextRunAt: string;
+  errorMessage: string | null;
+}
+
+export interface BrainCoreInfraSchedulerReport {
+  available: boolean;
+  path: string;
+  summary: string;
+  generatedAt: string | null;
+  failureCount: number;
+}
+
+export interface BrainCoreInfraSchedulerResponse {
+  status: 'ok' | 'not-configured' | 'error';
+  jobs: BrainCoreInfraSchedulerJob[];
+  totalJobs: number;
+  plannedJobs: number;
+  executedJobs: number;
+  runningJobs: number;
+  successfulJobs: number;
+  failedJobs: number;
+  timeoutJobs: number;
+  neverRunJobs: number;
+  nextRunAt: string;
+  report: BrainCoreInfraSchedulerReport;
+  error?: string;
+}
+
 export interface BrainCoreInfraDomain {
   name: string;
   status: string;

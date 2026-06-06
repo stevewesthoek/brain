@@ -102,6 +102,7 @@ GET /execution/maintenance-previews/:id
 ```text
 GET /local-apps
 GET /infra/dokploy
+GET /infra/scheduler
 GET /infra/tunnels
 GET /video/status
 GET /video/queue
@@ -138,6 +139,8 @@ Current `/scheduler/status`, `/scheduler/latest-run`, and `/scheduler/jobs` are 
 Current `/local-apps` is a read-only placeholder or report-backed list for local services. When `runtime/local/local-apps/latest.json` exists, or when `BRAIN_CORE_LOCAL_APPS_REPORT_PATH` points to a safe JSON report, the endpoint returns report-backed summaries. It still does not start, stop, or restart apps.
 
 Current `/infra/dokploy` is a read-only report-backed list of Dokploy applications and compose services. It reads `~/.config/dokploy/.env` for `DOKPLOY_URL` and `DOKPLOY_API_KEY`, calls the Dokploy API, and returns app/service status summaries without exposing credentials or shell controls.
+
+Current `/infra/scheduler` is a read-only report-backed list of Office nightly scheduled tasks. It reads the local `office-scheduler` state directory and report files, returning planned job rows with execution status, last run time, next run time, and report summary without exposing shell control or mutation paths.
 
 Current `/infra/tunnels` is a read-only report-backed list of Cloudflare tunnels and their hostnames. It reads `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then checks tunnel route reachability without exposing secrets or mutating tunnel config.
 

@@ -57,6 +57,7 @@ docs/system/brain-console-center-design-system.md
 - Overview cards from `/ops/system-metrics`, `/ops/ai-usage-windows`, and `/ops/ai-costs`
 - Local Applications from `/local-apps/dashboard`, `/local-apps/action-readiness`, and `/local-apps/actions/status`
 - Dokploy status from `/infra/dokploy`
+- Office nightly scheduler status from `/infra/scheduler`
 - Cloudflare Tunnels from `/infra/tunnels`
 - AWS Video Pipeline from the current Brain Core AWS Video endpoints
 

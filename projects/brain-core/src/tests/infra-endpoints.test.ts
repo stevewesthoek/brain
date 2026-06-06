@@ -87,6 +87,39 @@ test('POST /infra/dokploy is rejected', async () => {
   assert.ok(response.statusCode === 404 || response.statusCode === 405);
 });
 
+// ── /infra/scheduler ──────────────────────────────────────────────────────────
+
+test('GET /infra/scheduler returns a valid status shape', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/scheduler' });
+  const body = JSON.parse(response.body) as { status: string };
+
+  assert.equal(response.statusCode, 200);
+  assert.ok(
+    body.status === 'ok' || body.status === 'not-configured' || body.status === 'error',
+    `status must be ok|not-configured|error, got ${body.status}`,
+  );
+});
+
+test('GET /infra/scheduler ok response includes jobs array and report summary', async () => {
+  const response = await exercise({ method: 'GET', url: '/infra/scheduler' });
+  const body = JSON.parse(response.body) as {
+    status: string;
+    jobs?: Array<{ planned?: boolean; executed?: boolean; status?: string }>;
+    report?: { summary?: string };
+  };
+
+  if (body.status === 'ok') {
+    assert.ok(Array.isArray(body.jobs), 'ok status must include jobs array');
+    assert.ok(body.jobs.every((job) => typeof job.planned === 'boolean' && typeof job.executed === 'boolean' && typeof job.status === 'string'), 'jobs must include planned, executed, and status fields');
+    assert.ok(typeof body.report?.summary === 'string', 'ok status must include report summary');
+  }
+});
+
+test('POST /infra/scheduler is rejected', async () => {
+  const response = await exercise({ method: 'POST', url: '/infra/scheduler' });
+  assert.ok(response.statusCode === 404 || response.statusCode === 405);
+});
+
 // ── /infra/tunnels ────────────────────────────────────────────────────────────
 
 test('GET /infra/tunnels returns a valid status shape', async () => {

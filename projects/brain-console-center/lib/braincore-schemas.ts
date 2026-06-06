@@ -166,6 +166,46 @@ export const infraCloudflareTunnelsStatusSchema = z.object({
 });
 export type InfraCloudflareTunnelsStatus = z.infer<typeof infraCloudflareTunnelsStatusSchema>;
 
+export const infraOfficeSchedulerJobSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  planned: z.literal(true),
+  executed: z.boolean(),
+  status: z.enum(['success', 'failed', 'timeout', 'never', 'running']),
+  exitCode: z.number().nullable(),
+  durationSeconds: z.number().nullable(),
+  lastRunAt: z.string().nullable(),
+  nextRunAt: z.string(),
+  errorMessage: z.string().nullable(),
+});
+export type InfraOfficeSchedulerJob = z.infer<typeof infraOfficeSchedulerJobSchema>;
+
+export const infraOfficeSchedulerReportSchema = z.object({
+  available: z.boolean(),
+  path: z.string(),
+  summary: z.string(),
+  generatedAt: z.string().nullable(),
+  failureCount: z.number(),
+});
+export type InfraOfficeSchedulerReport = z.infer<typeof infraOfficeSchedulerReportSchema>;
+
+export const infraOfficeSchedulerStatusSchema = z.object({
+  status: z.enum(['ok', 'not-configured', 'error']),
+  jobs: z.array(infraOfficeSchedulerJobSchema).default([]),
+  totalJobs: z.number(),
+  plannedJobs: z.number(),
+  executedJobs: z.number(),
+  runningJobs: z.number(),
+  successfulJobs: z.number(),
+  failedJobs: z.number(),
+  timeoutJobs: z.number(),
+  neverRunJobs: z.number(),
+  nextRunAt: z.string(),
+  report: infraOfficeSchedulerReportSchema,
+  error: z.string().optional(),
+});
+export type InfraOfficeSchedulerStatus = z.infer<typeof infraOfficeSchedulerStatusSchema>;
+
 export const infraDokployAppSchema = z.object({
   project: z.string(),
   environment: z.string(),
