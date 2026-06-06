@@ -2195,6 +2195,19 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
   return { ok: true, review };
 }
 
+function getMissingReviewMediaFields(media: VideoReviewMedia): string[] {
+  const missing: string[] = [];
+  if (!media.scenePlanKey) missing.push('scenePlanKey');
+  if (!media.narrationScriptKey) missing.push('narrationScriptKey');
+  if (!media.audioKey) missing.push('audioKey');
+  if (media.sceneImageKeys.length === 0) missing.push('sceneImageKeys');
+  if (!media.videoKey) missing.push('videoKey');
+  if (!media.thumbnailKey) missing.push('thumbnailKey');
+  if (!media.publishKey) missing.push('publishKey');
+  if (!media.youtubePackageKey) missing.push('youtubePackageKey');
+  return missing;
+}
+
 export async function approveVideoReview(
   jobId: string,
   input: { reviewedBy?: unknown; notes?: unknown },
@@ -2206,25 +2219,23 @@ export async function approveVideoReview(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
-  // Always hydrate fresh media from canonical sources
-  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
-  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
-  const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
-  const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
+  const existingReview = await readReviewJson(jobId);
+  let mediaToApprove: VideoReviewMedia;
 
-  const hydratedMedia = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
+  // Fast path: if existing review media is already complete, approve it directly
+  if (existingReview && getMissingReviewMediaFields(existingReview.media).length === 0) {
+    mediaToApprove = existingReview.media;
+  } else {
+    // Slow path: hydrate fresh media from canonical sources (only if not already complete)
+    const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+    const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+    const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
+    const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
 
-  // Validate all mandatory media fields are present
-  const missing: string[] = [];
-  if (!hydratedMedia.scenePlanKey) missing.push('scenePlanKey');
-  if (!hydratedMedia.narrationScriptKey) missing.push('narrationScriptKey');
-  if (!hydratedMedia.audioKey) missing.push('audioKey');
-  if (hydratedMedia.sceneImageKeys.length === 0) missing.push('sceneImageKeys');
-  if (!hydratedMedia.videoKey) missing.push('videoKey');
-  if (!hydratedMedia.thumbnailKey) missing.push('thumbnailKey');
-  if (!hydratedMedia.publishKey) missing.push('publishKey');
-  if (!hydratedMedia.youtubePackageKey) missing.push('youtubePackageKey');
+    mediaToApprove = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
+  }
 
+  const missing = getMissingReviewMediaFields(mediaToApprove);
   if (missing.length > 0) {
     return {
       ok: false,
@@ -2235,7 +2246,7 @@ export async function approveVideoReview(
     } as unknown as VideoReviewError;
   }
 
-  const current = await getOrCreateReview(jobId);
+  const current = existingReview ?? await getOrCreateReview(jobId);
   if (!current) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
   }
@@ -2249,7 +2260,7 @@ export async function approveVideoReview(
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes,
-    media: hydratedMedia,
+    media: mediaToApprove,
   };
   try {
     await writeReviewJson(jobId, approved);
@@ -2270,15 +2281,23 @@ export async function requestVideoReviewChanges(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
-  // Always hydrate fresh media from canonical sources
-  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
-  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
-  const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
-  const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
+  const existingReview = await readReviewJson(jobId);
+  let mediaToUse: VideoReviewMedia;
 
-  const hydratedMedia = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
+  // Fast path: if existing review media is already complete, use it directly
+  if (existingReview && getMissingReviewMediaFields(existingReview.media).length === 0) {
+    mediaToUse = existingReview.media;
+  } else {
+    // Slow path: hydrate fresh media from canonical sources (only if not already complete)
+    const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+    const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+    const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
+    const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
 
-  const current = await getOrCreateReview(jobId);
+    mediaToUse = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
+  }
+
+  const current = existingReview ?? await getOrCreateReview(jobId);
   if (!current) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
   }
@@ -2292,7 +2311,7 @@ export async function requestVideoReviewChanges(
     reviewedAt: now,
     reviewedBy: input.reviewedBy.trim(),
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes ?? 'Changes requested',
-    media: hydratedMedia,
+    media: mediaToUse,
   };
   try {
     await writeReviewJson(jobId, requested);
