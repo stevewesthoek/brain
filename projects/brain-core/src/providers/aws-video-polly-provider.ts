@@ -1,11 +1,18 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { writeFile, readFile, unlink } from 'node:fs/promises';
+import { unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TTSProvider, TTSProviderInput, TTSProviderOutput } from './aws-video-tts-types.js';
 
 const execFileAsync = promisify(execFile);
+
+type PollyEngine = 'neural' | 'standard';
+
+function isUnsupportedEngineError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return /selected engine is not supported|engine.*not supported|ValidationException/i.test(message);
+}
 
 export class PollyTTSProvider implements TTSProvider {
   readonly name = 'aws-polly';
@@ -19,7 +26,7 @@ export class PollyTTSProvider implements TTSProvider {
       region,
       outputKey,
     } = input;
-    const engine = process.env.AWS_VIDEO_TTS_ENGINE || 'neural';
+    const preferredEngine = (process.env.AWS_VIDEO_TTS_ENGINE || 'neural') as PollyEngine;
 
     if (!text || text.trim().length === 0) {
       throw new Error('Cannot synthesize narration: text is empty');
@@ -29,19 +36,31 @@ export class PollyTTSProvider implements TTSProvider {
     const generatedAt = new Date().toISOString();
 
     try {
-      // Synthesize audio using AWS Polly
-      await execFileAsync('aws', [
-        'polly', 'synthesize-speech',
-        '--text', text,
-        '--output-format', 'mp3',
-        '--voice-id', voiceId,
-        '--engine', engine,
-        '--region', region,
-        '--no-cli-pager',
-        tmpPath,
-      ], { timeout: 30_000 });
+      const synthesize = async (engine: PollyEngine): Promise<void> => {
+        await execFileAsync('aws', [
+          'polly', 'synthesize-speech',
+          '--text', text,
+          '--output-format', 'mp3',
+          '--voice-id', voiceId,
+          '--engine', engine,
+          '--region', region,
+          '--no-cli-pager',
+          tmpPath,
+        ], { timeout: 30_000 });
+      };
 
-      // Upload to S3
+      let engineUsed: PollyEngine = preferredEngine;
+      try {
+        await synthesize(preferredEngine);
+      } catch (error) {
+        if (preferredEngine !== 'standard' && isUnsupportedEngineError(error)) {
+          engineUsed = 'standard';
+          await synthesize('standard');
+        } else {
+          throw error;
+        }
+      }
+
       await execFileAsync('aws', [
         's3', 'cp',
         tmpPath,
@@ -58,11 +77,10 @@ export class PollyTTSProvider implements TTSProvider {
         generatedAt,
       };
     } finally {
-      // Clean up temporary file
       try {
         await unlink(tmpPath);
       } catch {
-        // Ignore cleanup errors
+        // Ignore cleanup errors.
       }
     }
   }
