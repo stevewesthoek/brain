@@ -1838,17 +1838,26 @@ async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | n
       updatedAt: new Date().toISOString(),
       media: hydratedMedia,
     };
-    const same = updated.reviewStatus === existing.reviewStatus
+    const mediaChanged = JSON.stringify(updated.media) !== JSON.stringify(existing.media);
+    const same = !mediaChanged
+      && updated.reviewStatus === existing.reviewStatus
       && updated.createdAt === existing.createdAt
       && updated.notes === existing.notes
       && updated.reviewedAt === existing.reviewedAt
-      && updated.reviewedBy === existing.reviewedBy
-      && JSON.stringify(updated.media) === JSON.stringify(existing.media);
+      && updated.reviewedBy === existing.reviewedBy;
+
     if (same) return existing;
-    try {
-      await writeReviewJson(jobId, updated);
-    } catch (err) {
-      console.warn(`[getOrCreateReview] Failed to refresh review.json for ${jobId}:`, err);
+
+    // Only persist if media changed (not just updatedAt drifting)
+    if (mediaChanged) {
+      try {
+        await writeReviewJson(jobId, updated);
+        if (existing.reviewStatus === 'approved') {
+          console.log(`[video-review] hydrate preserved approved jobId=${jobId}`);
+        }
+      } catch (err) {
+        console.warn(`[getOrCreateReview] Failed to refresh review.json for ${jobId}:`, err);
+      }
     }
     return updated;
   }
@@ -2188,10 +2197,26 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
   if (!isValidJobId(jobId)) {
     return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
   }
+
+  // CRITICAL: Read existing review first to preserve approval status before hydration
+  const existingReview = await readReviewJson(jobId);
+  const isApproved = existingReview?.reviewStatus === 'approved' || existingReview?.reviewStatus === 'changes_requested';
+
   const review = await getOrCreateReview(jobId);
   if (!review) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
   }
+
+  // CRITICAL: Never downgrade from approved back to pending during hydration
+  if (isApproved && review.reviewStatus !== 'approved' && review.reviewStatus !== 'changes_requested') {
+    if (existingReview) {
+      review.reviewStatus = existingReview.reviewStatus;
+      review.reviewedAt = existingReview.reviewedAt;
+      review.reviewedBy = existingReview.reviewedBy;
+      review.notes = existingReview.notes;
+    }
+  }
+
   return { ok: true, review };
 }
 
@@ -2263,7 +2288,10 @@ export async function approveVideoReview(
     media: mediaToApprove,
   };
   try {
+    const writeStart = Date.now();
     await writeReviewJson(jobId, approved);
+    const writeDurationMs = Date.now() - writeStart;
+    console.log(`[video-review] approve persisted jobId=${jobId} durationMs=${writeDurationMs}`);
   } catch {
     return { ok: false, code: 'review_write_failed', error: 'Failed to write review metadata.', jobId };
   }
