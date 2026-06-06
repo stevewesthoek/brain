@@ -76,7 +76,7 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
     },
     {
       id: 'mind-steward-dry-run',
-      name: 'Model-router dry-run report',
+      name: 'Mind Steward dry-run report',
       status: reportStatus,
       mutationRequired: false,
     },
@@ -95,7 +95,7 @@ function readMindStewardRuntimeReport(): MindStewardRuntimeReport | undefined {
   } catch {
     return {
       status: 'failed',
-      message: 'Model-router runtime report exists but could not be parsed.',
+      message: 'Mind Steward runtime report exists but could not be parsed.',
     };
   }
 }
