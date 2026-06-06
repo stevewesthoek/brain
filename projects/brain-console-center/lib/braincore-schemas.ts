@@ -353,6 +353,7 @@ export const videoReviewSchema = z.object({
       thumbnailKey: z.string().nullable(),
       publishKey: z.string().nullable(),
       youtubePackageKey: z.string().nullable(),
+      overlayPlanKey: z.string().nullable().optional(),
     }),
   }),
 }).passthrough();

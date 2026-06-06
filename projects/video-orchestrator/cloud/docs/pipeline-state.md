@@ -20,7 +20,7 @@ Five modes are fully operational, and one image-provider mode is wired with fail
 3. **Hybrid TTS mode**: prompt-derived scene plan + narration script + TTS audio + fixture video
 4. **Hybrid Storyboard mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + fixture video
 5. **Hybrid Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + local FFmpeg slideshow MP4
-6. **Hybrid Image Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + configured image-provider scene images + local FFmpeg slideshow MP4; fails loudly when image provider config is missing
+6. **Hybrid Image Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + configured image-provider scene images + deterministic text overlay frames + local FFmpeg slideshow MP4; fails loudly when image provider config is missing
 
 Generated-media review gate:
 
@@ -30,6 +30,12 @@ Generated-media review gate:
   - `POST /api/video-orchestrator/jobs/:jobId/review/approve`
   - `POST /api/video-orchestrator/jobs/:jobId/review/request-changes`
 - If review is missing or pending, publish returns `publish_review_required`.
+
+Current operating sequence:
+
+```text
+draft → approve script → generate images/audio/overlay slideshow → review thumbnail/metadata/overlay → approve review → dry-run → private publish
+```
 
 ## Fixture Mode
 
@@ -197,11 +203,15 @@ Metadata:
   "storyboardGenerated": true,
   "imageGenerated": true,
   "slideshowGenerated": true,
+  "overlayGenerated": true,
   "thumbnailGenerated": true,
   "imageProvider": "aws-bedrock-nova-canvas",
   "imageModelId": "amazon.nova-canvas-v1:0",
   "audioProvider": "aws-polly",
   "videoProvider": "local-ffmpeg-slideshow",
+  "overlayProvider": "deterministic-overlay",
+  "overlayPlanKey": "jobs/<jobId>/metadata/overlay-plan.json",
+  "overlayFrameKeys": ["jobs/<jobId>/frames/frame-001.png"],
   "sceneImageKeys": ["jobs/<jobId>/images/scene-001.png"],
   "videoKey": "jobs/<jobId>/video-generated/generated-001.mp4",
   "videoSourceKey": "jobs/<jobId>/video-generated/generated-001.mp4",
@@ -218,6 +228,10 @@ During review phase: converts first scene PNG to JPEG, writes `thumbnail.json` m
 - Output: `jobs/<jobId>/exports/thumbnail-001.jpg` (JPEG, 1280×720)
 - Metadata: `jobs/<jobId>/metadata/thumbnail.json` ({thumbnailStatus, provider, source, width, height, ...})
 - UI: Brain Console Center Review tab shows thumbnail preview with copy-to-preview command
+
+**Deterministic overlay generation:**
+
+During slideshow assembly, Brain Core creates `metadata/overlay-plan.json`, renders lower-third text onto copied PNG frames under `frames/frame-NNN.png`, and uses those overlay frames for FFmpeg. The original provider-generated scene images remain unchanged. Review blocks only when a hybrid image slideshow is missing the overlay plan or the plan contains internal implementation terms.
 
 Configuration:
 
@@ -252,6 +266,7 @@ Titan Image is not the selected provider. It is visible in some regions, but is 
 - Generates prompt-derived narration script from scene descriptions
 - Synthesizes narration MP3 using AWS Polly
 - Requires an explicit image provider for scene images
+- Renders deterministic on-screen text overlays onto copied slideshow frames
 - Assembles `generated-001.mp4` locally with FFmpeg from generated scene images and narration audio
 
 **What it does NOT do:**

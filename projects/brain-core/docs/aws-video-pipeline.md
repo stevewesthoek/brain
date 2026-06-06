@@ -245,11 +245,17 @@ Prompt-derived metadata with TTS narration, model-generated scene images, and a 
   "storyboardGenerated": true,
   "imageGenerated": true,
   "slideshowGenerated": true,
+  "overlayGenerated": true,
   "thumbnailGenerated": true,
   "imageProvider": "aws-bedrock-nova-canvas",
   "imageModelId": "amazon.nova-canvas-v1:0",
   "audioProvider": "aws-polly",
   "videoProvider": "local-ffmpeg-slideshow",
+  "overlayProvider": "deterministic-overlay",
+  "overlayPlanKey": "jobs/<jobId>/metadata/overlay-plan.json",
+  "overlayFrameKeys": [
+    "jobs/<jobId>/frames/frame-001.png"
+  ],
   "sceneImageKeys": [
     "jobs/<jobId>/images/scene-001.png"
   ],
@@ -268,6 +274,12 @@ During the review phase, Brain Core automatically generates a canonical YouTube 
 - Metadata: `jobs/<jobId>/metadata/thumbnail.json` (thumbnailStatus, provider, dimensions)
 - Integration: YouTube package gets `thumbnailKey` pre-populated with canonical path
 - UI: Brain Console Center shows thumbnail preview in Review tab with copy-to-preview command
+
+**Deterministic overlay generation:**
+
+During local slideshow assembly, Brain Core writes `jobs/<jobId>/metadata/overlay-plan.json`, renders safe lower-third text onto copied frames in `jobs/<jobId>/frames/frame-NNN.png`, and uses those overlay frames for FFmpeg assembly. Original generated scene images remain untouched.
+
+Overlay text comes from the YouTube package title when available, then cleaned scene `onScreenText` or short scene summaries. Prompt-command wording such as "make a video about" is removed, and internal implementation terms are blocked from approval.
 
 **Image provider configuration:**
 
@@ -297,6 +309,7 @@ Verified provider:
 - Generates prompt-derived scene plan and narration script
 - Synthesizes narration MP3 using AWS Polly
 - Requires an explicit image provider for scene images
+- Renders deterministic lower-third overlay text onto copied slideshow frames
 - Assembles `generated-001.mp4` locally with FFmpeg from generated scene images and narration audio
 - Uploads the assembled MP4 back to S3
 
@@ -307,7 +320,13 @@ Verified provider:
 
 ### 2.9. Review Gate for Generated Media
 
-Generated-media modes require an explicit review before YouTube dry-run or private publish:
+Generated-media modes require an explicit review before YouTube dry-run or private publish. Current operator sequence:
+
+```text
+draft → approve script → generate images/audio/overlay slideshow → review thumbnail/metadata/overlay → approve review → dry-run → private publish
+```
+
+Modes requiring review:
 
 - `hybrid_storyboard`
 - `hybrid_slideshow`
@@ -331,7 +350,8 @@ Brain Core writes `jobs/<jobId>/metadata/review.json` when publish metadata exis
     "sceneImageKeys": ["jobs/<jobId>/images/scene-001.png"],
     "videoKey": "jobs/<jobId>/exports/generated-001-final.mp4",
     "thumbnailKey": "jobs/<jobId>/exports/thumbnail-001.jpg",
-    "publishKey": "jobs/<jobId>/metadata/publish.json"
+    "publishKey": "jobs/<jobId>/metadata/publish.json",
+    "overlayPlanKey": "jobs/<jobId>/metadata/overlay-plan.json"
   }
 }
 ```

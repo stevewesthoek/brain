@@ -44,6 +44,7 @@ export interface GenerationManifest {
   storyboardGenerated?: boolean;
   imageGenerated?: boolean;
   slideshowGenerated?: boolean;
+  overlayGenerated?: boolean;
   scenePlanKey?: string;
   narrationScriptKey?: string;
   narrationAudioKey?: string;
@@ -55,6 +56,9 @@ export interface GenerationManifest {
   sceneImageKeys?: string[];
   imageProvider?: string;
   imageModelId?: string;
+  overlayProvider?: string;
+  overlayPlanKey?: string;
+  overlayFrameKeys?: string[];
   sourceVideoKey?: string;
   videoSourceKey?: string;
   finalVideoKey?: string;

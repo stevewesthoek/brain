@@ -162,6 +162,22 @@ require_json_number_equals() {
   fi
 }
 
+require_json_no_internal_terms() {
+  local file="$1"
+  local label="$2"
+  if [[ ! -f "$file" ]]; then
+    fail "cannot check internal terms because JSON file is missing: $file"
+    return
+  fi
+  local matches
+  matches="$(jq -r '.. | strings' "$file" | grep -E -i '(^|[^[:alnum:]_])(AWS|Bedrock|Nova|Polly|FFmpeg|pipeline|fixture)([^[:alnum:]_]|$)' || true)"
+  if [[ -z "$matches" ]]; then
+    pass "$label has no internal implementation terms"
+  else
+    fail "$label contains internal implementation terms: $(printf '%s' "$matches" | head -1)"
+  fi
+}
+
 require_not_s3_uri() {
   local label="$1"
   local value="$2"
@@ -302,6 +318,8 @@ print_expected_artifacts() {
       printf '  - audio/narration.mp3 (MP3)\n'
       printf '  - metadata/storyboard.json\n'
       printf '  - images/scene-001.png or .jpg\n'
+      printf '  - metadata/overlay-plan.json\n'
+      printf '  - frames/frame-001.png\n'
       printf '  - video-generated/generated-001.mp4 (video)\n'
       ;;
   esac
@@ -449,8 +467,25 @@ case "$MODE" in
     require_json_equals "$tmp_dir/image-generation.json" '.settings.quality' 'standard'
     require_json_true "$assets_json" '.imageGenerated'
     require_json_true "$assets_json" '.slideshowGenerated'
+    require_json_true "$assets_json" '.overlayGenerated'
+    require_json_equals "$assets_json" '.overlayProvider' 'deterministic-overlay'
+    require_json_nonempty "$assets_json" '.overlayPlanKey'
+    require_json_nonempty "$assets_json" '.overlayFrameKeys[0]'
     require_json_equals "$assets_json" '.videoProvider' 'local-ffmpeg-slideshow'
     require_json_equals "$assets_json" '.videoSourceKey' "$(object_key "video-generated/generated-001.mp4")"
+    overlay_plan_key="$(json_value "$assets_json" '.overlayPlanKey')"
+    overlay_frame_key="$(json_value "$assets_json" '.overlayFrameKeys[0]')"
+    if [[ -n "$overlay_plan_key" ]]; then
+      require_object "$overlay_plan_key"
+      download_object "$overlay_plan_key" "$tmp_dir/overlay-plan.json"
+      require_json_equals "$tmp_dir/overlay-plan.json" '.provider' 'deterministic-overlay'
+      require_json_equals "$tmp_dir/overlay-plan.json" '.mode' 'hybrid_image_slideshow'
+      require_json_nonempty "$tmp_dir/overlay-plan.json" '.cards[0].text'
+      require_json_no_internal_terms "$tmp_dir/overlay-plan.json" 'overlay-plan.json'
+    fi
+    if [[ -n "$overlay_frame_key" ]]; then
+      require_object "$overlay_frame_key"
+    fi
     image_provider="$(json_value "$assets_json" '.imageProvider')"
     if [[ -z "$image_provider" ]]; then
       fail '.imageProvider is missing'

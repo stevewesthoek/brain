@@ -9,6 +9,7 @@ import { DeterministicScenePlanningProvider } from './aws-video-scene-planner.js
 import { PollyTTSProvider } from './aws-video-polly-provider.js';
 import { DeterministicStoryboardProvider } from './aws-video-storyboard-provider.js';
 import { LocalFfmpegSlideshowProvider } from './aws-video-slideshow-provider.js';
+import { containsInternalOverlayTerms, DeterministicOverlayProvider, type OverlayPlan } from './aws-video-overlay-provider.js';
 import {
   AwsBedrockImageProvider,
   getConfiguredImageProvider,
@@ -1123,6 +1124,16 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
       }
     }
 
+    const overlayPlanKey = (assets as Record<string, unknown>)?.overlayPlanKey;
+    if (typeof overlayPlanKey === 'string') {
+      try {
+        const overlayPlan = await readJobMetadataJson(jobId, 'overlay-plan.json');
+        if (overlayPlan) result.overlayPlan = overlayPlan;
+      } catch {
+        // Silently fail if overlay-plan.json doesn't exist
+      }
+    }
+
     // Load publish-check.json for dry-run proof persistence
     try {
       const publishCheck = await readJobMetadataJson(jobId, 'publish-check.json');
@@ -1772,6 +1783,14 @@ async function hydrateVideoReviewMedia(
     youtubePackageKey = canonicalYoutubePackageKey;
   }
 
+  let overlayPlanKey: string | null = stringValue(assets?.overlayPlanKey);
+  if (!overlayPlanKey && stringValue(assets?.generationMode) === 'hybrid_image_slideshow_video') {
+    const canonicalOverlayPlanKey = `jobs/${jobId}/metadata/overlay-plan.json`;
+    if (await objectExists(canonicalOverlayPlanKey)) {
+      overlayPlanKey = canonicalOverlayPlanKey;
+    }
+  }
+
   return {
     scenePlanKey,
     narrationScriptKey,
@@ -1781,6 +1800,7 @@ async function hydrateVideoReviewMedia(
     thumbnailKey,
     publishKey,
     youtubePackageKey,
+    overlayPlanKey,
   };
 }
 
@@ -1853,6 +1873,7 @@ function parseReviewRecord(value: unknown, jobId: string): VideoReviewMetadata |
       thumbnailKey: stringValue(media.thumbnailKey),
       publishKey: stringValue(media.publishKey),
       youtubePackageKey: stringValue(media.youtubePackageKey),
+      overlayPlanKey: stringValue(media.overlayPlanKey),
     },
   };
 }
@@ -1902,6 +1923,7 @@ function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoRev
           thumbnailKey: local.media.thumbnailKey || remote.media.thumbnailKey,
           publishKey: local.media.publishKey || remote.media.publishKey,
           youtubePackageKey: local.media.youtubePackageKey || remote.media.youtubePackageKey,
+          overlayPlanKey: local.media.overlayPlanKey || remote.media.overlayPlanKey,
         },
       };
     }
@@ -1918,6 +1940,7 @@ function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoRev
         thumbnailKey: local.media.thumbnailKey || remote.media.thumbnailKey,
         publishKey: local.media.publishKey || remote.media.publishKey,
         youtubePackageKey: local.media.youtubePackageKey || remote.media.youtubePackageKey,
+        overlayPlanKey: local.media.overlayPlanKey || remote.media.overlayPlanKey,
       },
     };
   }
@@ -2382,6 +2405,19 @@ function getMissingReviewMediaFields(media: VideoReviewMedia): string[] {
   return missing;
 }
 
+async function getReviewOverlayBlockers(jobId: string, media: VideoReviewMedia): Promise<string[]> {
+  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+  if (stringValue(assetsJson?.generationMode) !== 'hybrid_image_slideshow_video') return [];
+
+  const overlayPlanKey = media.overlayPlanKey ?? stringValue(assetsJson?.overlayPlanKey);
+  if (!overlayPlanKey) return ['overlayPlanKey'];
+
+  const overlayPlan = await readJobMetadataJson(jobId, 'overlay-plan.json');
+  if (!overlayPlan) return ['overlay-plan.json'];
+  if (containsInternalOverlayTerms(overlayPlan)) return ['overlay internal terms'];
+  return [];
+}
+
 export async function approveVideoReview(
   jobId: string,
   input: { reviewedBy?: unknown; notes?: unknown },
@@ -2410,6 +2446,7 @@ export async function approveVideoReview(
   }
 
   const missing = getMissingReviewMediaFields(mediaToApprove);
+  const overlayBlockers = await getReviewOverlayBlockers(jobId, mediaToApprove);
   if (missing.length > 0) {
     return {
       ok: false,
@@ -2417,6 +2454,15 @@ export async function approveVideoReview(
       error: `Cannot approve review: missing required media fields: ${missing.join(', ')}`,
       jobId,
       details: { missing },
+    } as unknown as VideoReviewError;
+  }
+  if (overlayBlockers.length > 0) {
+    return {
+      ok: false,
+      code: 'review_media_incomplete',
+      error: `Cannot approve review: overlay plan issue: ${overlayBlockers.join(', ')}`,
+      jobId,
+      details: { missing: overlayBlockers },
     } as unknown as VideoReviewError;
   }
 
@@ -2611,6 +2657,7 @@ export interface VideoReviewMedia {
   thumbnailKey: string | null;
   publishKey: string | null;
   youtubePackageKey: string | null;
+  overlayPlanKey: string | null;
 }
 
 export interface VideoReviewMetadata {
@@ -3143,6 +3190,10 @@ export async function generateApprovedScript(
   let imageProvider: string | undefined;
   let imageModelId: string | undefined;
   let imageRegion: string | undefined;
+  let overlayPlanKey: string | undefined;
+  let overlayPlanContent: OverlayPlan | null = null;
+  let overlayFrameKeys: string[] = [];
+  let overlayFramePaths: string[] = [];
   let imageGenerationSettings: {
     width: number;
     height: number;
@@ -3445,13 +3496,64 @@ export async function generateApprovedScript(
       await mkdir(join(jobRoot, 'video-generated'), { recursive: true });
       const scenePlanPath = join(metadataDir, 'scene-plan.json');
       const scenePlanData = JSON.parse(await readFile(scenePlanPath, 'utf-8')) as ScenePlan;
+      let slideshowScenes = scenePlanData.scenes.map((scene, index) => ({
+        index: index + 1,
+        imagePath: join(jobRoot, 'images', `scene-${String(index + 1).padStart(3, '0')}.png`),
+        imageKey: slideshowImageKeys[index] ?? `jobs/${jobId}/images/scene-${String(index + 1).padStart(3, '0')}.png`,
+        durationSeconds: scene.durationSeconds,
+      }));
+
+      if (isHybridImageSlideshowMode) {
+        await updateProgressStatus('overlay_started', { videoKey });
+        const framesDir = join(jobRoot, 'frames');
+        await mkdir(framesDir, { recursive: true });
+        const existingYoutubePackage = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
+        const overlayProvider = new DeterministicOverlayProvider();
+        const overlayResult = await overlayProvider.renderOverlayFrames({
+          jobId,
+          framesDir,
+          scenePlan: scenePlanData,
+          scenes: slideshowScenes,
+          title: stringValue(existingYoutubePackage?.title) ?? script.title,
+        });
+        overlayPlanKey = overlayResult.overlayPlanKey;
+        overlayPlanContent = overlayResult.plan;
+        overlayFrameKeys = overlayResult.frameKeys;
+        overlayFramePaths = overlayResult.framePaths;
+        await writeFile(join(metadataDir, 'overlay-plan.json'), `${JSON.stringify(overlayPlanContent, null, 2)}\n`, 'utf-8');
+        await writeS3MetadataJson(jobId, 'overlay-plan.json', overlayPlanContent as unknown as Record<string, unknown>);
+        for (let index = 0; index < overlayFramePaths.length; index += 1) {
+          const framePath = overlayFramePaths[index];
+          const frameKey = overlayFrameKeys[index];
+          if (!framePath || !frameKey) continue;
+          await execFileAsync('aws', [
+            's3', 'cp',
+            framePath,
+            `s3://${S3_BUCKET}/${frameKey}`,
+            '--region', AWS_REGION,
+            '--no-cli-pager',
+            '--content-type', 'image/png',
+          ]);
+        }
+        slideshowScenes = slideshowScenes.map((scene, index) => ({
+          ...scene,
+          imagePath: overlayFramePaths[index] ?? scene.imagePath,
+          imageKey: overlayFrameKeys[index] ?? scene.imageKey,
+        }));
+        await updateProgressStatus('overlay_complete', {
+          overlayProvider: overlayResult.provider,
+          overlayPlanKey,
+          overlayFrameCount: overlayFrameKeys.length,
+        });
+      }
+
       const slideshowAssembly = await slideshowProvider.assembleSlideshow({
         jobId,
         narrationPath: join(audioDir, 'narration.mp3'),
         outputVideoPath,
-        scenes: scenePlanData.scenes.map((scene, index) => ({
-          index: index + 1,
-          imagePath: join(jobRoot, 'images', `scene-${String(index + 1).padStart(3, '0')}.png`),
+        scenes: slideshowScenes.map((scene) => ({
+          index: scene.index,
+          imagePath: scene.imagePath,
           durationSeconds: scene.durationSeconds,
         })),
       });
@@ -3573,6 +3675,10 @@ export async function generateApprovedScript(
     assetsJson.storyboardGenerated = true;
     assetsJson.imageGenerated = true;
     assetsJson.slideshowGenerated = true;
+    assetsJson.overlayGenerated = overlayFrameKeys.length > 0;
+    assetsJson.overlayProvider = overlayFrameKeys.length > 0 ? 'deterministic-overlay' : undefined;
+    assetsJson.overlayPlanKey = overlayPlanKey;
+    assetsJson.overlayFrameKeys = overlayFrameKeys;
     assetsJson.narration = {
       path: narrationKey,
       source: 'tts',
@@ -3589,6 +3695,7 @@ export async function generateApprovedScript(
       narrationScript: 'deterministic-local',
       narrationAudio: 'aws-polly',
       sceneImages: imageProvider,
+      overlays: overlayFrameKeys.length > 0 ? 'deterministic-overlay' : undefined,
       video: 'local-ffmpeg-slideshow',
     };
     assetsJson.imageGeneration = {
@@ -3616,6 +3723,7 @@ export async function generateApprovedScript(
       imageProvider === 'deterministic-placeholder'
         ? 'Development proof mode: scene images use deterministic placeholders; final video is slideshow assembly, not motion-video generation.'
         : 'Scene images are generated by an image model; final video is slideshow assembly, not motion-video generation.',
+      ...(overlayPlanContent?.warnings ?? []),
     ];
   } else if (isHybridSlideshowMode && narrationScriptKey && storyboardKey) {
     assetsJson.scenePlanKey = scenePlanKey;

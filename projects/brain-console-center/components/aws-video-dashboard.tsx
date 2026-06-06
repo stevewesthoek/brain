@@ -48,6 +48,13 @@ function stringField(value: unknown, key: string): string | null {
   return typeof field === 'string' && field.length > 0 ? field : null;
 }
 
+function containsInternalOverlayTerms(value: unknown): boolean {
+  if (typeof value === 'string') return /\b(AWS|Bedrock|Nova|Polly|FFmpeg|pipeline|fixture)\b/i.test(value);
+  if (Array.isArray(value)) return value.some((item) => containsInternalOverlayTerms(item));
+  const record = asRecord(value);
+  return record ? Object.values(record).some((item) => containsInternalOverlayTerms(item)) : false;
+}
+
 function isReadyToPublish(job: Partial<VideoJob> | null | undefined): boolean {
   return job?.status === 'ready_to_publish' || job?.status === 'published';
 }
@@ -466,6 +473,9 @@ function ReviewCard({
     youtubePackageKey: reviewMedia?.youtubePackageKey
       ?? stringField(artifactRecord, 'youtubePackageKey')
       ?? (artifactRecord.generationMode ? `jobs/${jobId}/metadata/youtube-package.json` : null),
+    overlayPlanKey: reviewMedia?.overlayPlanKey
+      ?? stringField(artifactRecord, 'overlayPlanKey')
+      ?? null,
   };
   const media = effectiveMedia;
   const imageKeys = media.sceneImageKeys;
@@ -512,6 +522,13 @@ function ReviewCard({
 
   const hasInternalTermsInMetadata = youtubePackageMetadata?.quality?.hasInternalTerms === true;
   const metadataWarnings = youtubePackageMetadata?.quality?.warnings ?? [];
+  const overlayPlan = asRecord(artifactRecord.overlayPlan);
+  const overlayCards = Array.isArray(overlayPlan?.cards) ? overlayPlan.cards.map(asRecord).filter((card): card is Record<string, unknown> => Boolean(card)) : [];
+  const overlayWarnings = Array.isArray(overlayPlan?.warnings) ? overlayPlan.warnings.filter((warning): warning is string => typeof warning === 'string') : [];
+  const requiresOverlayPlan = stringField(artifactRecord, 'generationMode') === 'hybrid_image_slideshow_video';
+  const overlayMissing = requiresOverlayPlan && !overlayPlan && !media.overlayPlanKey;
+  const overlayHasInternalTerms = requiresOverlayPlan && containsInternalOverlayTerms(overlayPlan);
+  const overlayBlocksApproval = overlayMissing || overlayHasInternalTerms;
 
   return (
     <article className="card">
@@ -586,6 +603,36 @@ function ReviewCard({
           </div>
         </details>
       )}
+      {requiresOverlayPlan ? (
+        <details open style={{ marginBottom: '1rem' }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>Overlay plan</summary>
+          <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--card)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            <div className="aws-facts" style={{ marginBottom: '0.75rem' }}>
+              <div><span>Title</span><strong style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{stringField(overlayPlan, 'title') ?? 'missing'}</strong></div>
+              <div><span>Provider</span><strong>{stringField(overlayPlan, 'provider') ?? stringField(artifactRecord, 'overlayProvider') ?? 'missing'}</strong></div>
+              <div><span>Cards</span><strong>{overlayCards.length}</strong></div>
+              <div><span>Plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media.overlayPlanKey ?? stringField(artifactRecord, 'overlayPlanKey') ?? 'missing'}</strong></div>
+            </div>
+            {overlayCards.length > 0 ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                {overlayCards.map((card, index) => {
+                  const type = stringField(card, 'type') ?? `card ${index + 1}`;
+                  const sceneIndex = typeof card.sceneIndex === 'number' ? ` ${card.sceneIndex}` : '';
+                  return <span key={`${type}-${index}`} style={{ padding: '0.25rem 0.5rem', backgroundColor: 'var(--border)', borderRadius: '3px', fontSize: '0.8rem' }}>{type}{sceneIndex}</span>;
+                })}
+              </div>
+            ) : null}
+            {overlayWarnings.length > 0 ? (
+              <div style={{ fontSize: '0.85rem', color: 'var(--badge-warning-text)', padding: '0.5rem', backgroundColor: 'var(--badge-warning-bg)', border: '1px solid var(--badge-warning-border)', borderRadius: '3px' }}>
+                <strong>Overlay warnings:</strong>
+                <ul style={{ margin: '0.25rem 0 0 1rem', paddingLeft: 0 }}>
+                  {overlayWarnings.map(w => <li key={w}>{w}</li>)}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
       <div className="aws-facts">
         <div><span>Status</span><strong>{reviewRecord?.reviewStatus ?? 'pending'}</strong></div>
         <div><span>Created</span><strong>{reviewRecord?.createdAt ? timeAgo(reviewRecord.createdAt) : 'unknown'}</strong></div>
@@ -613,13 +660,21 @@ function ReviewCard({
           </div>
         </div>
       )}
+      {overlayBlocksApproval && (
+        <div style={{ fontSize: '0.85rem', color: 'var(--badge-error-text)', padding: '0.75rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
+          <strong>Cannot approve: Overlay plan issue</strong>
+          <div style={{ marginTop: '0.25rem' }}>
+            {overlayMissing ? 'Hybrid image slideshow is missing metadata/overlay-plan.json.' : 'Overlay plan contains internal implementation terms.'}
+          </div>
+        </div>
+      )}
       <div className="stack">
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
           <button
-            className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata ? 'button next-action' : 'button'}
-            disabled={!jobId || approvePending || !mediaComplete || hasInternalTermsInMetadata}
+            className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
+            disabled={!jobId || approvePending || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
             onClick={onApprove}
           >
             {approvePending ? 'Approving review…' : 'Approve review'}
@@ -637,6 +692,7 @@ function ReviewCard({
           <div><span>Thumbnail</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.thumbnailKey ?? 'missing'}</strong></div>
           <div><span>Publish JSON</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.publishKey ?? 'missing'}</strong></div>
           <div><span>YouTube package</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.youtubePackageKey ?? 'missing'}</strong></div>
+          <div><span>Overlay plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.overlayPlanKey ?? 'not required'}</strong></div>
         </div>
         {imageKeys.length > 0 ? (
           <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
