@@ -13,6 +13,8 @@ const CANDIDATE_KINDS = [
   'scheduler-run-graphify-preflight-brain',
   'scheduler-run-graphify-update-mind-blocked',
   'scheduler-run-graphify-update-brain-blocked',
+  'scheduler-run-graphify-update-mind',
+  'scheduler-run-graphify-update-brain',
 ] as const;
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
@@ -121,6 +123,16 @@ export function listExecutionPlans(): BrainCoreExecutionPlan[] {
       'scheduler-run-graphify-update-brain-blocked',
       'Validate guarded Graphify update path for Brain without enabling execution.',
       'bash tools/scripts/graphify-orchestrator-report.sh update-brain-blocked',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-update-mind',
+      'Execute controlled Graphify incremental update for Mind repository.',
+      'bash tools/scripts/graphify-orchestrator-report.sh update-mind',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-update-brain',
+      'Execute controlled Graphify incremental update for Brain repository.',
+      'bash tools/scripts/graphify-orchestrator-report.sh update-brain',
     ),
   ];
 }

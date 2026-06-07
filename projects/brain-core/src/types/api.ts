@@ -5403,7 +5403,9 @@ export interface BrainCoreExecutionPlan {
     | 'scheduler-run-graphify-preflight-mind'
     | 'scheduler-run-graphify-preflight-brain'
     | 'scheduler-run-graphify-update-mind-blocked'
-    | 'scheduler-run-graphify-update-brain-blocked';
+    | 'scheduler-run-graphify-update-brain-blocked'
+    | 'scheduler-run-graphify-update-mind'
+    | 'scheduler-run-graphify-update-brain';
   candidate: true;
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;

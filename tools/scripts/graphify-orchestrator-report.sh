@@ -19,6 +19,12 @@ case "$KIND" in
   update-brain-blocked)
     npm run graphify:update:brain:blocked
     ;;
+  update-mind)
+    GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true npm run graphify:update:mind:execute
+    ;;
+  update-brain)
+    GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true npm run graphify:update:brain:execute
+    ;;
   *)
     cat >&2 <<'EOF'
 Unsupported Graphify orchestrator report kind.
@@ -28,6 +34,8 @@ Allowed kinds:
 - preflight-brain
 - update-mind-blocked
 - update-brain-blocked
+- update-mind (requires approval)
+- update-brain (requires approval)
 EOF
     exit 2
     ;;
