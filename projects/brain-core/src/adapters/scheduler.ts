@@ -17,6 +17,8 @@ const MIND_STEWARD_RUNTIME_REPORT_PATH = 'latest.json';
 const MIND_STEWARD_INBOX_RUNTIME_REPORT_PATH = 'inbox-latest.json';
 const MIND_STEWARD_INBOX_CLASSIFIER_RUNTIME_REPORT_PATH = 'inbox-classifier-latest.json';
 const MIND_STEWARD_INBOX_QUEUE_RUNTIME_REPORT_PATH = 'inbox-queue-latest.json';
+const GRAPHIFY_MIND_RUNTIME_REPORT_PATH = 'mind-knowledge-latest.json';
+const GRAPHIFY_BRAIN_RUNTIME_REPORT_PATH = 'brain-runtime-latest.json';
 
 export function getSchedulerStatus(): BrainCoreSchedulerStatus {
   const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
@@ -98,6 +100,10 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
   const inboxClassifierReportStatus = inboxClassifierReport ? toJobStatus(inboxClassifierReport.status) : 'placeholder';
   const inboxQueueReport = readMindStewardRuntimeReport(MIND_STEWARD_INBOX_QUEUE_RUNTIME_REPORT_PATH);
   const inboxQueueReportStatus = inboxQueueReport ? toJobStatus(inboxQueueReport.status) : 'placeholder';
+  const graphifyMindReport = readGraphifyRuntimeReport(GRAPHIFY_MIND_RUNTIME_REPORT_PATH);
+  const graphifyMindReportStatus = graphifyMindReport ? toJobStatus(graphifyMindReport.status) : 'placeholder';
+  const graphifyBrainReport = readGraphifyRuntimeReport(GRAPHIFY_BRAIN_RUNTIME_REPORT_PATH);
+  const graphifyBrainReportStatus = graphifyBrainReport ? toJobStatus(graphifyBrainReport.status) : 'placeholder';
 
   return [
     {
@@ -148,6 +154,30 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
       status: inboxQueueReportStatus,
       mutationRequired: false,
     },
+    {
+      id: 'graphify-preflight-mind',
+      name: 'Graphify Mind preflight report',
+      status: graphifyMindReportStatus,
+      mutationRequired: false,
+    },
+    {
+      id: 'graphify-preflight-brain',
+      name: 'Graphify Brain preflight report',
+      status: graphifyBrainReportStatus,
+      mutationRequired: false,
+    },
+    {
+      id: 'graphify-update-mind-blocked',
+      name: 'Graphify Mind guarded update blocked report',
+      status: graphifyMindReportStatus,
+      mutationRequired: false,
+    },
+    {
+      id: 'graphify-update-brain-blocked',
+      name: 'Graphify Brain guarded update blocked report',
+      status: graphifyBrainReportStatus,
+      mutationRequired: false,
+    },
   ];
 }
 
@@ -167,6 +197,20 @@ function readMindStewardRuntimeReport(reportFileName: string): MindStewardRuntim
       status: 'failed',
       message: 'Mind Steward runtime report exists but could not be parsed.',
     };
+  }
+}
+
+function readGraphifyRuntimeReport(reportFileName: string): { status?: string } | undefined {
+  const resolvedReportPath = path.resolve(process.cwd(), '../..', 'runtime/local/graphify', reportFileName);
+
+  if (!fs.existsSync(resolvedReportPath)) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(resolvedReportPath, 'utf8')) as { status?: string };
+  } catch {
+    return { status: 'failed' };
   }
 }
 
@@ -213,7 +257,7 @@ function toLatestRunStatus(status: string | undefined): 'ok' | 'failed' | 'unkno
 }
 
 function toJobStatus(status: string | undefined): BrainCoreSchedulerJobSummary['status'] {
-  if (status === 'success' || status === 'ok') {
+  if (status === 'success' || status === 'ok' || status === 'execution-blocked') {
     return 'ok';
   }
 

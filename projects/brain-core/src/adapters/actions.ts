@@ -36,10 +36,18 @@ const MIND_STEWARD_DRY_RUN_KIND = 'scheduler-run-mind-steward-dry-run';
 const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-classifier-dry-run';
 const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-queue-dry-run';
+const GRAPHIFY_PREFLIGHT_MIND_KIND = 'scheduler-run-graphify-preflight-mind';
+const GRAPHIFY_PREFLIGHT_BRAIN_KIND = 'scheduler-run-graphify-preflight-brain';
+const GRAPHIFY_UPDATE_MIND_BLOCKED_KIND = 'scheduler-run-graphify-update-mind-blocked';
+const GRAPHIFY_UPDATE_BRAIN_BLOCKED_KIND = 'scheduler-run-graphify-update-brain-blocked';
 const MIND_STEWARD_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-dry-run-report.sh';
 const MIND_STEWARD_INBOX_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh';
 const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh';
+const GRAPHIFY_PREFLIGHT_MIND_COMMAND = 'bash tools/scripts/graphify-orchestrator-report.sh preflight-mind';
+const GRAPHIFY_PREFLIGHT_BRAIN_COMMAND = 'bash tools/scripts/graphify-orchestrator-report.sh preflight-brain';
+const GRAPHIFY_UPDATE_MIND_BLOCKED_COMMAND = 'bash tools/scripts/graphify-orchestrator-report.sh update-mind-blocked';
+const GRAPHIFY_UPDATE_BRAIN_BLOCKED_COMMAND = 'bash tools/scripts/graphify-orchestrator-report.sh update-brain-blocked';
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
@@ -460,6 +468,10 @@ function readPersistedAuditEvents(): BrainCoreApprovalAuditEvent[] {
 }
 
 function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCoreApprovalExecutionSummary | undefined {
+  if (isGraphifyActionKind(record.kind)) {
+    return executeApprovedGraphifyAction(record);
+  }
+
   if (
     record.kind !== MIND_STEWARD_DRY_RUN_KIND &&
     record.kind !== MIND_STEWARD_INBOX_DRY_RUN_KIND &&
@@ -578,6 +590,62 @@ function createBlockedExecutionSummary(
   };
 }
 
+function executeApprovedGraphifyAction(record: BrainCoreApprovalRecord): BrainCoreApprovalExecutionSummary {
+  const command = getGraphifyExecutionCommand(record.kind);
+  const store = readApprovalStore();
+  if (!store.enabled || store.status !== 'available') {
+    return createBlockedExecutionSummary(command, 'Durable approval store is not available.');
+  }
+
+  if (!getAuditPath()) {
+    return createBlockedExecutionSummary(command, 'Durable approval audit path is not available.');
+  }
+
+  if (record.status !== 'pending' && record.status !== 'approved') {
+    return createBlockedExecutionSummary(command, `Approval status ${record.status} cannot execute.`);
+  }
+
+  const repoRoot = getBrainRepoRoot();
+  const scriptPath = path.resolve(repoRoot, 'tools/scripts/graphify-orchestrator-report.sh');
+  if (!fs.existsSync(scriptPath)) {
+    return createBlockedExecutionSummary(command, 'Allowlisted Graphify orchestrator report script is missing.');
+  }
+
+  const result = spawnSync('bash', [path.relative(repoRoot, scriptPath), getGraphifyExecutionArgument(record.kind)], {
+    cwd: repoRoot,
+    env: { ...process.env },
+    encoding: 'utf8',
+  });
+  const exitCode = typeof result.status === 'number' ? result.status : 1;
+  const reportPath = getGraphifyOutputPath(record.kind, repoRoot);
+  const report = readGraphifyExecutionReport(reportPath);
+  const successfulStatus = report?.status === 'ok' || report?.status === 'execution-blocked';
+
+  if (exitCode !== 0 || !successfulStatus) {
+    return {
+      status: 'error',
+      command,
+      outputPath: path.relative(repoRoot, reportPath),
+      exitCode,
+      message: report?.status
+        ? `Graphify orchestrator report status was ${report.status}.`
+        : result.stderr || result.error?.message || 'Graphify orchestrator report failed.',
+      writesToMind: false,
+      externalSideEffects: false,
+    };
+  }
+
+  return {
+    status: 'ok',
+    command,
+    outputPath: path.relative(repoRoot, reportPath),
+    exitCode,
+    message: `Graphify orchestrator report completed with status ${report.status}.`,
+    writesToMind: false,
+    externalSideEffects: false,
+  };
+}
+
 function getSafeMindStewardRuntimeDir(): string | undefined {
   const repoRoot = getBrainRepoRoot();
   const runtimeDir = path.resolve(repoRoot, 'runtime/local/mind-steward');
@@ -633,6 +701,36 @@ function resolveSafeScriptPath(repoRoot: string, configuredPath: string): string
   }
 
   return resolved;
+}
+
+function isGraphifyActionKind(kind: string): boolean {
+  return (
+    kind === GRAPHIFY_PREFLIGHT_MIND_KIND ||
+    kind === GRAPHIFY_PREFLIGHT_BRAIN_KIND ||
+    kind === GRAPHIFY_UPDATE_MIND_BLOCKED_KIND ||
+    kind === GRAPHIFY_UPDATE_BRAIN_BLOCKED_KIND
+  );
+}
+
+function getGraphifyExecutionCommand(kind: string): BrainCoreApprovalExecutionSummary['command'] {
+  if (kind === GRAPHIFY_PREFLIGHT_MIND_KIND) return GRAPHIFY_PREFLIGHT_MIND_COMMAND;
+  if (kind === GRAPHIFY_PREFLIGHT_BRAIN_KIND) return GRAPHIFY_PREFLIGHT_BRAIN_COMMAND;
+  if (kind === GRAPHIFY_UPDATE_MIND_BLOCKED_KIND) return GRAPHIFY_UPDATE_MIND_BLOCKED_COMMAND;
+  return GRAPHIFY_UPDATE_BRAIN_BLOCKED_COMMAND;
+}
+
+function getGraphifyExecutionArgument(kind: string): string {
+  if (kind === GRAPHIFY_PREFLIGHT_MIND_KIND) return 'preflight-mind';
+  if (kind === GRAPHIFY_PREFLIGHT_BRAIN_KIND) return 'preflight-brain';
+  if (kind === GRAPHIFY_UPDATE_MIND_BLOCKED_KIND) return 'update-mind-blocked';
+  return 'update-brain-blocked';
+}
+
+function getGraphifyOutputPath(kind: string, repoRoot: string): string {
+  const fileName = kind === GRAPHIFY_PREFLIGHT_MIND_KIND || kind === GRAPHIFY_UPDATE_MIND_BLOCKED_KIND
+    ? 'mind-knowledge-latest.json'
+    : 'brain-runtime-latest.json';
+  return path.resolve(repoRoot, 'runtime/local/graphify', fileName);
 }
 
 function getMindStewardExecutionCommand(kind: string): BrainCoreApprovalExecutionSummary['command'] {
@@ -691,6 +789,21 @@ type MindStewardExecutionReport = {
   };
 };
 
+type GraphifyExecutionReport = {
+  status?: string;
+  mode?: string;
+  safety?: {
+    runsGraphify?: boolean;
+    callsAiModelSelector?: boolean;
+    writesTargetRepo?: boolean;
+    hardcodesModelFallback?: boolean;
+  };
+  execution?: {
+    operation?: string;
+    blockedReason?: string | null;
+  };
+};
+
 function readMindStewardExecutionReport(reportPath: string): MindStewardExecutionReport | undefined {
   if (!fs.existsSync(reportPath)) {
     return undefined;
@@ -698,6 +811,18 @@ function readMindStewardExecutionReport(reportPath: string): MindStewardExecutio
 
   try {
     return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as MindStewardExecutionReport;
+  } catch {
+    return undefined;
+  }
+}
+
+function readGraphifyExecutionReport(reportPath: string): GraphifyExecutionReport | undefined {
+  if (!fs.existsSync(reportPath)) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as GraphifyExecutionReport;
   } catch {
     return undefined;
   }

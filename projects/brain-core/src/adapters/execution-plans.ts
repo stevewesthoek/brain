@@ -9,6 +9,10 @@ const CANDIDATE_KINDS = [
   'scheduler-run-mind-steward-inbox-dry-run',
   'scheduler-run-mind-steward-inbox-classifier-dry-run',
   'scheduler-run-mind-steward-inbox-queue-dry-run',
+  'scheduler-run-graphify-preflight-mind',
+  'scheduler-run-graphify-preflight-brain',
+  'scheduler-run-graphify-update-mind-blocked',
+  'scheduler-run-graphify-update-brain-blocked',
 ] as const;
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
@@ -98,6 +102,26 @@ export function listExecutionPlans(): BrainCoreExecutionPlan[] {
     createMindStewardInboxDryRunPlan(),
     createMindStewardInboxClassifierDryRunPlan(),
     createMindStewardInboxQueueDryRunPlan(),
+    createGraphifyPlan(
+      'scheduler-run-graphify-preflight-mind',
+      'Run report-only Graphify preflight for Mind.',
+      'bash tools/scripts/graphify-orchestrator-report.sh preflight-mind',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-preflight-brain',
+      'Run report-only Graphify preflight for Brain.',
+      'bash tools/scripts/graphify-orchestrator-report.sh preflight-brain',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-update-mind-blocked',
+      'Validate guarded Graphify update path for Mind without enabling execution.',
+      'bash tools/scripts/graphify-orchestrator-report.sh update-mind-blocked',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-update-brain-blocked',
+      'Validate guarded Graphify update path for Brain without enabling execution.',
+      'bash tools/scripts/graphify-orchestrator-report.sh update-brain-blocked',
+    ),
   ];
 }
 
@@ -351,6 +375,52 @@ function createMindStewardInboxQueueDryRunPlan(): BrainCoreExecutionPlan {
         id: 'inspect-inbox-queue',
         description: 'Build report-only queue/throttle candidate list from Mind inbox',
         commandPreview: 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh',
+        willRunNow: false,
+      },
+    ],
+  };
+}
+
+
+
+function createGraphifyPlan(
+  kind: BrainCoreExecutionPlan['kind'],
+  summary: string,
+  commandPreview: string,
+): BrainCoreExecutionPlan {
+  return {
+    kind,
+    candidate: true,
+    executionEnabled: false,
+    mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
+    wouldExecute: false,
+    executed: false,
+    riskLevel: 'low',
+    writesToMind: false,
+    externalSideEffects: false,
+    requiresApproval: true,
+    requiresDurableApprovalStore: true,
+    requiresDurableAudit: true,
+    requiresRollbackPlan: true,
+    rollbackPlan: 'Remove generated runtime/local/graphify report files if needed; no Mind content is changed.',
+    summary,
+    mindPreviewPolicy: {
+      status: 'preview-only',
+      firstProposedAction: 'mind-steward-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      writesToMind: false,
+      externalSideEffects: false,
+      applyRouteEnabled: false,
+      allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+      blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+      requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    },
+    steps: [
+      {
+        id: 'run-graphify-orchestrator-report',
+        description: summary,
+        commandPreview,
         willRunNow: false,
       },
     ],

@@ -5363,7 +5363,11 @@ export interface BrainCoreApprovalExecutionSummary {
     | 'bash tools/scripts/mind-steward-dry-run-report.sh'
     | 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh'
     | 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh'
-    | 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh';
+    | 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh'
+    | 'bash tools/scripts/graphify-orchestrator-report.sh preflight-mind'
+    | 'bash tools/scripts/graphify-orchestrator-report.sh preflight-brain'
+    | 'bash tools/scripts/graphify-orchestrator-report.sh update-mind-blocked'
+    | 'bash tools/scripts/graphify-orchestrator-report.sh update-brain-blocked';
   outputPath?: string;
   exitCode?: number;
   message: string;
@@ -5395,7 +5399,11 @@ export interface BrainCoreExecutionPlan {
     | 'scheduler-run-mind-steward-dry-run'
     | 'scheduler-run-mind-steward-inbox-dry-run'
     | 'scheduler-run-mind-steward-inbox-classifier-dry-run'
-    | 'scheduler-run-mind-steward-inbox-queue-dry-run';
+    | 'scheduler-run-mind-steward-inbox-queue-dry-run'
+    | 'scheduler-run-graphify-preflight-mind'
+    | 'scheduler-run-graphify-preflight-brain'
+    | 'scheduler-run-graphify-update-mind-blocked'
+    | 'scheduler-run-graphify-update-brain-blocked';
   candidate: true;
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;
