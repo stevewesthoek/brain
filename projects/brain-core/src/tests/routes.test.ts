@@ -2105,6 +2105,10 @@ test('POST /actions/request rejects unsupported custom kinds without executing',
 test('roadmap POST targets create approval requests without executing', async () => {
   const routes = [
     ['/scheduler/jobs/mind-compile-loop/request-run', 'scheduler-run-mind-compile-loop'],
+    ['/scheduler/jobs/graphify-preflight-mind/request-run', 'scheduler-run-graphify-preflight-mind'],
+    ['/scheduler/jobs/graphify-preflight-brain/request-run', 'scheduler-run-graphify-preflight-brain'],
+    ['/scheduler/jobs/graphify-update-mind-blocked/request-run', 'scheduler-run-graphify-update-mind-blocked'],
+    ['/scheduler/jobs/graphify-update-brain-blocked/request-run', 'scheduler-run-graphify-update-brain-blocked'],
     ['/skills/profile?profile=research', 'skill-profile-research'],
     ['/sessions/abc123/resume', 'session-resume-abc123'],
   ] as const;
