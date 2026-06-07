@@ -920,7 +920,7 @@ export function AwsVideoDashboard() {
   });
 
   const youtubeDryRun = useMutation({
-    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/publish/youtube/dry-run`, youtubePublishResultSchema, {}, 180_000),
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/publish/youtube/dry-run`, youtubePublishResultSchema, {}, 45_000),
     onSuccess: async (result, { jobIdArg }) => {
       if (result.ok) {
         updateActionState(jobIdArg, { dryRunPassed: true });
@@ -928,7 +928,12 @@ export function AwsVideoDashboard() {
       addActivity(result.ok ? `YouTube dry-run passed for ${jobIdArg}` : `YouTube dry-run failed for ${jobIdArg}: ${result.error || 'unknown'}`);
       await invalidateVideo();
     },
-    onError: (error, { jobIdArg }) => {
+    onError: async (error, { jobIdArg }) => {
+      if (isTimeoutError(error)) {
+        addActivity(`YouTube dry-run is still running for ${jobIdArg}; page refresh is safe.`);
+        await invalidateVideo();
+        return;
+      }
       addActivity(`YouTube dry-run error for ${jobIdArg}: ${errorMessage(error)}`);
       console.error(`[youtubeDryRun] Error for ${jobIdArg}:`, error);
     },
@@ -938,7 +943,7 @@ export function AwsVideoDashboard() {
     mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/publish/youtube`, youtubePublishResultSchema, {
       dryRun: false,
       requestedBy: 'brain-console-center',
-    }, 1_900_000),
+    }, 60_000),
     onSuccess: async (result, { jobIdArg }) => {
       if (result.ok) {
         // PART 2: Terminal upload states — treat all these as uploaded
@@ -968,6 +973,16 @@ export function AwsVideoDashboard() {
     onMutate: ({ jobIdArg }) => {
       // PART 3: Mark upload in-flight
       updateActionState(jobIdArg, { uploadStartedAt: new Date().toISOString() });
+    },
+    onError: async (error, { jobIdArg }) => {
+      if (isTimeoutError(error)) {
+        addActivity(`Private YouTube upload is still running for ${jobIdArg}; page refresh is safe.`);
+        await invalidateVideo();
+        return;
+      }
+      updateActionState(jobIdArg, { uploadStartedAt: undefined });
+      addActivity(`Private YouTube upload error for ${jobIdArg}: ${errorMessage(error)}`);
+      console.error(`[youtubePublish] Error for ${jobIdArg}:`, error);
     },
   });
 
