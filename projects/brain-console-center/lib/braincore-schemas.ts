@@ -382,6 +382,51 @@ export const videoStatusSchema = z.object({
   data: z.record(z.unknown()).optional(),
 }).passthrough();
 
+export const videoControlPlaneSchema = z.object({
+  ok: z.boolean().optional(),
+  data: z.object({
+    jobId: z.string(),
+    prompt: z.string().nullable().optional(),
+    title: z.string().nullable().optional(),
+    canonicalPhase: z.string(),
+    phaseStatus: z.string(),
+    progress: z.number().nullable().optional(),
+    execution: z.object({
+      status: z.string().nullable(),
+      unavailableReason: z.string().optional(),
+    }),
+    artifacts: z.object({
+      status: z.string().nullable(),
+      unavailableReason: z.string().optional(),
+    }),
+    review: z.object({
+      status: z.string().nullable(),
+      reviewStatus: z.string().nullable().optional(),
+      media: z.record(z.unknown()).nullable().optional(),
+    }),
+    publish: z.object({
+      status: z.string().nullable(),
+      publishStatus: z.string().nullable().optional(),
+    }),
+    finalization: z.object({
+      status: z.enum(['pending', 'complete', 'failed']).nullable(),
+      reason: z.string().optional(),
+    }),
+    allowedActions: z.array(z.object({
+      action: z.string(),
+      enabled: z.boolean(),
+      reason: z.string().optional(),
+    })),
+    missingRequirements: z.array(z.object({
+      field: z.string(),
+      label: z.string(),
+    })),
+    warnings: z.array(z.string()),
+    errors: z.array(z.string()),
+    updatedAt: z.string(),
+  }).optional(),
+}).passthrough();
+
 export const videoActionResultSchema = z.record(z.unknown());
 
 export const videoAnalysisAiSummarySchema = z.object({

@@ -106,6 +106,7 @@ import { readWebhookDeliveries, readPlatformEventMapping } from '../adapters/vo-
 import { getVideoOrchestratorIntake, getVideoOrchestratorIntakePlan } from '../adapters/video-orchestrator-intake.js';
 import { getVideoOrchestratorResearch, getVideoOrchestratorResearchPlan } from '../adapters/video-orchestrator-research.js';
 import { getVideoOrchestratorScript, getVideoOrchestratorScriptPlan } from '../adapters/video-orchestrator-script.js';
+import { getVideoOrchestratorControlPlane } from '../adapters/video-orchestrator-control-plane.js';
 import { readVideoAssetPlans, readVideoAssetPlan } from '../adapters/video-orchestrator-asset-plan.js';
 import { readVideoDesignPlans, readVideoDesignPlan } from '../adapters/video-orchestrator-design-plan.js';
 import { readVideoVoiceoverPlans, readVideoVoiceoverPlan } from '../adapters/video-orchestrator-voiceover-plan.js';
@@ -2497,6 +2498,25 @@ export async function routeRequest(
           sendJson(response, 500, {
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch job execution status',
+          });
+        }
+        return;
+      }
+
+      const jobControlPlaneMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/control-plane$/.exec(url.pathname);
+      if (jobControlPlaneMatch) {
+        try {
+          const jobId = decodeURIComponent(jobControlPlaneMatch[1] ?? '');
+          const controlPlane = await getVideoOrchestratorControlPlane(jobId);
+          if (!controlPlane) {
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+          } else {
+            sendJson(response, 200, { ok: true, data: controlPlane });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch control-plane state',
           });
         }
         return;

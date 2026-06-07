@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
-import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview } from '@/lib/braincore-schemas';
+import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, videoControlPlaneSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 
@@ -510,6 +510,7 @@ function ReviewCard({
   isRecommended,
   finalizationState,
   isPendingTimeout,
+  controlPlaneData,
 }: {
   jobId: string | null;
   reviewData: VideoReview | null;
@@ -523,6 +524,7 @@ function ReviewCard({
   isRecommended?: boolean;
   finalizationState?: 'pending' | 'failed' | 'complete' | null;
   isPendingTimeout?: boolean;
+  controlPlaneData?: Record<string, unknown> | null;
 }) {
   if (!jobId) return null;
   const reviewRecord = reviewData;
@@ -807,13 +809,31 @@ function ReviewCard({
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
-          <button
-            className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
-            disabled={!jobId || approvePending || reviewRecord?.reviewStatus === 'approved' || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
-            onClick={onApprove}
-          >
-            {approvePending ? 'Approving review…' : reviewRecord?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
-          </button>
+          {/* Use control-plane allowedActions if available, otherwise fallback to local rules */}
+          {controlPlaneData && Array.isArray((controlPlaneData as any)?.allowedActions) ? (
+            (() => {
+              const approveReviewAction = (controlPlaneData as any).allowedActions.find((a: any) => a.action === 'approve_review');
+              const shouldHighlight = approveReviewAction?.enabled && isRecommended;
+              return (
+                <button
+                  className={shouldHighlight ? 'button next-action' : 'button'}
+                  disabled={!jobId || approvePending || !approveReviewAction?.enabled}
+                  onClick={onApprove}
+                  title={approveReviewAction?.reason ?? undefined}
+                >
+                  {approvePending ? 'Approving review…' : reviewRecord?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
+                </button>
+              );
+            })()
+          ) : (
+            <button
+              className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
+              disabled={!jobId || approvePending || reviewRecord?.reviewStatus === 'approved' || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
+              onClick={onApprove}
+            >
+              {approvePending ? 'Approving review…' : reviewRecord?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
+            </button>
+          )}
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>{requestChangesPending ? 'Requesting changes…' : 'Request changes'}</button>
         </div>
       </div>
@@ -982,6 +1002,13 @@ export function AwsVideoDashboard() {
     refetchInterval: 15_000,
   });
 
+  const controlPlane = useQuery({
+    queryKey: ['aws-video-control-plane', jobId],
+    queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema),
+    enabled: Boolean(jobId),
+    refetchInterval: 8_000,
+  });
+
   const invalidateVideo = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['aws-video-status'] }),
@@ -991,6 +1018,7 @@ export function AwsVideoDashboard() {
       queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts'] }),
       queryClient.invalidateQueries({ queryKey: ['aws-video-execution'] }),
       queryClient.invalidateQueries({ queryKey: ['aws-video-review'] }),
+      queryClient.invalidateQueries({ queryKey: ['aws-video-control-plane'] }),
     ]);
   };
 
@@ -1050,6 +1078,7 @@ export function AwsVideoDashboard() {
         queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
         queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
         queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-control-plane', jobIdArg] }),
       ]);
     },
     onError: async (error, { jobIdArg }) => {
@@ -1061,6 +1090,7 @@ export function AwsVideoDashboard() {
           queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
           queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
           queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
+          queryClient.invalidateQueries({ queryKey: ['aws-video-control-plane', jobIdArg] }),
         ]);
         return;
       }
@@ -1078,6 +1108,7 @@ export function AwsVideoDashboard() {
         queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
         queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
         queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
+        queryClient.invalidateQueries({ queryKey: ['aws-video-control-plane', jobIdArg] }),
       ]);
     },
   });
@@ -1636,6 +1667,7 @@ export function AwsVideoDashboard() {
                 isRecommended={recommendedStep?.key === 'review'}
                 finalizationState={finalizationState}
                 isPendingTimeout={anyPendingTimeout}
+                controlPlaneData={controlPlane.data?.data ?? null}
               />
               <MotionCard artifactData={artifactData} />
             </div>
