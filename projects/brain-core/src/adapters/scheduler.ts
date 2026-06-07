@@ -50,6 +50,45 @@ export function getSchedulerLatestRun(): BrainCoreSchedulerStatus {
   };
 }
 
+export function getMindStewardSchedulerStatus() {
+  const reportDefinitions = [
+    { key: 'dryRun', fileName: MIND_STEWARD_RUNTIME_REPORT_PATH },
+    { key: 'inbox', fileName: MIND_STEWARD_INBOX_RUNTIME_REPORT_PATH },
+    { key: 'classifier', fileName: MIND_STEWARD_INBOX_CLASSIFIER_RUNTIME_REPORT_PATH },
+    { key: 'queue', fileName: MIND_STEWARD_INBOX_QUEUE_RUNTIME_REPORT_PATH },
+  ] as const;
+
+  const reports = Object.fromEntries(
+    reportDefinitions.map(({ key, fileName }) => {
+      const report = readMindStewardRuntimeReport(fileName);
+      return [
+        key,
+        {
+          available: Boolean(report),
+          fileName,
+          status: report?.status ?? 'missing',
+          message: report?.message ?? null,
+          mode: report?.mode ?? null,
+          writesToMind: report?.writesToMind ?? null,
+          executableActions: report?.executableActions ?? null,
+          endedAtLisbon: report?.endedAtLisbon ?? null,
+          durationSeconds: report?.durationSeconds ?? null,
+        },
+      ];
+    }),
+  );
+
+  const availableCount = Object.values(reports).filter(report => report.available).length;
+
+  return {
+    status: availableCount === 0 ? 'missing' : availableCount === reportDefinitions.length ? 'ok' : 'partial',
+    source: 'runtime/local/mind-steward',
+    reportCount: reportDefinitions.length,
+    availableCount,
+    reports,
+  };
+}
+
 export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
   const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
   const reportStatus = report ? toJobStatus(report.status) : 'placeholder';

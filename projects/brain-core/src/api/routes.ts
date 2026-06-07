@@ -77,7 +77,7 @@ import {
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
 import { getAiModelSelectorStatus, getAiModelSelectorHealthMatrix, controlAiModelSelector } from '../adapters/ai-model-selector-service.js';
 import { listRepos } from '../adapters/repos.js';
-import { getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
+import { getMindStewardSchedulerStatus, getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 import { getVideoStatus, listVideoQueue } from '../adapters/video.js';
@@ -328,13 +328,13 @@ export async function routeRequest(
       sendJson(response, 200, getStatus());
       return;
     case '/ops/system-metrics':
-      sendJson(response, 200, readOpsSystemMetrics());
+      sendJson(response, 200, await readOpsSystemMetrics());
       return;
     case '/ops/ai-usage-windows':
-      sendJson(response, 200, readOpsAiUsageWindows());
+      sendJson(response, 200, await readOpsAiUsageWindows());
       return;
     case '/ops/ai-costs':
-      sendJson(response, 200, readOpsAiCosts());
+      sendJson(response, 200, await readOpsAiCosts());
       return;
     case '/sessions':
       sendJson(response, 200, { sessions: listSessions() });
@@ -645,6 +645,9 @@ export async function routeRequest(
       return;
     case '/scheduler/latest-run':
       sendJson(response, 200, getSchedulerLatestRun());
+      return;
+    case '/scheduler/mind-steward/status':
+      sendJson(response, 200, getMindStewardSchedulerStatus());
       return;
     case '/scheduler/jobs':
       sendJson(response, 200, { jobs: listSchedulerJobs() });
