@@ -1,0 +1,42 @@
+{
+  "jobId": "prochat-prompt-1780833570715-make-a-short-video-about-an-au",
+  "generationMode": "hybrid_image_slideshow_video",
+  "mediaSource": "hybrid",
+  "scenePlanKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/audio/narration-script.txt",
+  "audioKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/audio/narration.mp3",
+  "videoSourceKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/video-generated/generated-001.mp4",
+  "videoKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/generated-001-final.mp4",
+  "finalVideo": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+  "overlayPlanKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/overlay-plan.json",
+  "sceneImageKeys": [],
+  "publishableAssets": {
+    "videoKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+    "narrationKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/audio/narration.mp3",
+    "missing": [],
+    "checked": {
+      "publishJson": true,
+      "assetsJson": true,
+      "statusJson": true,
+      "inferredS3": true
+    },
+    "source": {
+      "publishJson": true,
+      "assetsJson": true,
+      "statusJson": true,
+      "inferredS3": true
+    },
+    "selectedSource": {
+      "videoKey": "inferredS3",
+      "thumbnailKey": "inferredS3",
+      "narrationKey": "inferredS3"
+    },
+    "expectedKeys": {
+      "videoKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/generated-001-final.mp4",
+      "thumbnailKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+      "narrationKey": "jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/audio/narration.mp3"
+    }
+  }
+}

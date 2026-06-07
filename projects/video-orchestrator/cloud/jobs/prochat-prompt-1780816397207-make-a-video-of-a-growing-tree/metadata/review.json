@@ -2,10 +2,10 @@
   "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
   "reviewStatus": "approved",
   "createdAt": "2026-06-07T07:16:11.406Z",
-  "updatedAt": "2026-06-07T10:49:58.214Z",
-  "reviewedAt": "2026-06-07T10:49:58.214Z",
+  "updatedAt": "2026-06-07T11:56:18.485Z",
+  "reviewedAt": "2026-06-07T11:56:18.485Z",
   "reviewedBy": "brain-console-center",
-  "notes": "approval smoke",
+  "notes": "recovery approval after motion finalization fix",
   "media": {
     "scenePlanKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/scene-plan.json",
     "narrationScriptKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration-script.txt",

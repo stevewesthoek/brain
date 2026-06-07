@@ -2251,19 +2251,51 @@ export async function routeRequest(
       // ── Video Orchestrator: Operational Job API ──────────────────────────
       if (url.pathname === '/api/video-orchestrator/jobs/recent') {
         try {
-          const result = await getRecentVideoJobsResult();
-          if (!result.ok) {
+          // Bounded timeout: return partial data fast instead of hanging on slow S3
+          const RECENT_JOBS_TIMEOUT_MS = 7_000;
+          const result = await Promise.race([
+            getRecentVideoJobsResult(),
+            new Promise<Awaited<ReturnType<typeof getRecentVideoJobsResult>>>((resolve) =>
+              setTimeout(() => resolve({
+                ok: true,
+                jobs: [],
+                diagnostics: {
+                  repoRoot: '',
+                  jobsRoot: '',
+                  jobDirectoryExists: false,
+                  jobDirectoryReadable: false,
+                  localJobFolderCount: 0,
+                  localDiscoveredJobCount: 0,
+                  cwd: process.cwd(),
+                  modulePath: '',
+                  expectedCanonicalPath: 'projects/video-orchestrator/cloud/jobs',
+                  s3Bucket: '',
+                  s3Prefix: '',
+                  s3DiscoveryAttempted: false,
+                  s3DiscoveredJobCount: 0,
+                  hydratedJobCount: 0,
+                  skippedJobCount: 0,
+                  skippedJobs: [],
+                  warnings: ['Recent jobs fetch timed out after 7s; showing partial data. Retrying…'],
+                  error: null,
+                },
+              }), RECENT_JOBS_TIMEOUT_MS)
+            ),
+          ]);
+
+          if (!result.ok && result.diagnostics.error) {
             sendJson(response, 500, {
               ok: false,
               error: {
                 code: 'video_jobs_discovery_failed',
-                message: result.diagnostics.error ?? 'Failed to discover video orchestrator jobs.',
+                message: result.diagnostics.error,
               },
               jobs: result.jobs,
               diagnostics: result.diagnostics,
             });
             return;
           }
+          // Always return 200 for partial data
           sendJson(response, 200, result);
         } catch (error) {
           sendJson(response, 500, {

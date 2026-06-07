@@ -225,3 +225,220 @@ test('finalize, get review, and approve share the same canonical media contract'
     await rm(jobRoot, { recursive: true, force: true });
   }
 });
+
+test('createJobFromPrompt dedup: second request with same channelId+prompt returns cached result with duplicateSuppressed flag', async () => {
+  // This test verifies the in-memory dedup map prevents duplicate job creation
+  // within the 30s TTL window
+  // Note: This test requires a valid channel config to exist (prochat or test channel)
+  // If the channel doesn't exist, both requests will fail and dedup won't be tested
+  const { createJobFromPrompt } = await import('../providers/video-orchestrator-provider.js');
+
+  const channelId = 'prochat';
+  const prompt = 'A tree growing over time for dedup test';
+
+  const result1 = await createJobFromPrompt({
+    channelId,
+    prompt,
+    requestedBy: 'test-suite',
+  });
+
+  // Skip test if channel config doesn't exist
+  if (!result1.ok && (result1 as unknown as Record<string, unknown>).code === 'invalid_channel') {
+    console.log('Skipping dedup test: channel config not found');
+    return;
+  }
+
+  assert.equal(result1.ok, true, `First call failed: ${!result1.ok ? (result1 as unknown as Record<string, unknown>).message : ''}`);
+  if (!result1.ok) return;
+
+  const jobId1 = result1.jobId;
+
+  // Call again immediately with same channelId+prompt
+  const result2 = await createJobFromPrompt({
+    channelId,
+    prompt,
+    requestedBy: 'test-suite',
+  });
+
+  assert.equal(result2.ok, true);
+  if (!result2.ok) return;
+
+  // Should return same jobId
+  assert.equal(result2.jobId, jobId1);
+
+  // Should include duplicateSuppressed flag
+  assert.equal(result2.duplicateSuppressed, true);
+});
+
+test('review finalization state: getVideoReview includes finalization field for generated-media jobs', async () => {
+  // This test verifies that getVideoReview includes finalization state information
+  // for generated-media jobs at ready_to_publish state
+  const { getVideoReview } = await import('../providers/video-orchestrator-provider.js');
+
+  const jobId = `test-finalize-state-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const jobsRoot = getVideoOrchestratorJobsRoot();
+  const jobRoot = join(jobsRoot, jobId);
+  const metadataRoot = join(jobRoot, 'metadata');
+  const audioRoot = join(jobRoot, 'audio');
+  const exportsRoot = join(jobRoot, 'exports');
+  const imagesRoot = join(jobRoot, 'images');
+
+  try {
+    await mkdir(metadataRoot, { recursive: true });
+    await mkdir(audioRoot, { recursive: true });
+    await mkdir(exportsRoot, { recursive: true });
+    await mkdir(imagesRoot, { recursive: true });
+
+    // Create minimal media files
+    await writeFile(join(metadataRoot, 'scene-plan.json'), JSON.stringify({
+      jobId,
+      scenes: [{ sceneIndex: 1, onScreenText: 'Test', summary: 'Test' }],
+    }, null, 2));
+    await writeFile(join(audioRoot, 'narration-script.txt'), 'Test.');
+    await writeFile(join(audioRoot, 'narration.mp3'), Buffer.from('audio'));
+    await writeFile(join(imagesRoot, 'scene-001.png'), Buffer.from('image'));
+    await writeFile(join(exportsRoot, 'generated-001-final.mp4'), Buffer.from('video'));
+    await writeFile(join(exportsRoot, 'thumbnail-001.jpg'), Buffer.from('thumb'));
+
+    // Create status.json with ready_to_publish for a generated-media job
+    await writeFile(join(metadataRoot, 'status.json'), JSON.stringify({
+      jobId,
+      status: 'ready_to_publish',
+      generationMode: 'hybrid_slideshow_video',
+    }, null, 2));
+
+    // Create assets.json with generationMode
+    await writeFile(join(metadataRoot, 'assets.json'), JSON.stringify({
+      jobId,
+      generationMode: 'hybrid_slideshow_video',
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: `jobs/${jobId}/exports/thumbnail-001.jpg`,
+    }, null, 2));
+
+    // Create review.json with all null media
+    await writeFile(join(metadataRoot, 'review.json'), JSON.stringify({
+      jobId,
+      reviewStatus: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      reviewedAt: null,
+      reviewedBy: null,
+      notes: null,
+      media: {
+        scenePlanKey: null,
+        narrationScriptKey: null,
+        audioKey: null,
+        sceneImageKeys: [],
+        videoKey: null,
+        thumbnailKey: null,
+        publishKey: null,
+        youtubePackageKey: null,
+        overlayPlanKey: null,
+      },
+    }, null, 2));
+
+    // Call getVideoReview which should trigger finalization for ready_to_publish jobs
+    const result = await getVideoReview(jobId);
+
+    assert.equal(result.ok, true, `getVideoReview failed: ${result.ok ? '' : (result as any).error}`);
+    if (!result.ok) return;
+
+    // Finalization info should be present in review
+    assert(result.review.finalization !== undefined, 'finalization field should be present');
+    assert.equal(typeof result.review.finalization.attempted, 'boolean');
+    assert.equal(typeof result.review.finalization.ok, 'boolean');
+    assert(Array.isArray(result.review.finalization.missing));
+  } finally {
+    await rm(jobRoot, { recursive: true, force: true });
+  }
+});
+
+test('already-approved job: getVideoReview preserves reviewStatus after finalization', async () => {
+  // This test verifies that finalizing an already-approved job
+  // keeps the reviewStatus as 'approved' (no downgrade)
+  // This reuses the setup from the main finalization test which has full media
+  const { approveVideoReview, getVideoReview } = await import('../providers/video-orchestrator-provider.js');
+  const { finalizeAwsVideoPublishPackage } = await import('../providers/video-orchestrator-provider.js');
+
+  const jobId = `test-approved-final-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const jobsRoot = getVideoOrchestratorJobsRoot();
+  const jobRoot = join(jobsRoot, jobId);
+  const metadataRoot = join(jobRoot, 'metadata');
+  const audioRoot = join(jobRoot, 'audio');
+  const exportsRoot = join(jobRoot, 'exports');
+  const videoGeneratedRoot = join(jobRoot, 'video-generated');
+  const imagesRoot = join(jobRoot, 'images');
+
+  const canonicalMedia = {
+    scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
+    narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
+    audioKey: `jobs/${jobId}/audio/narration.mp3`,
+    sceneImageKeys: [`jobs/${jobId}/images/scene-001.png`],
+    videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+    thumbnailKey: `jobs/${jobId}/exports/thumbnail-001.jpg`,
+    publishKey: `jobs/${jobId}/metadata/publish.json`,
+    youtubePackageKey: `jobs/${jobId}/metadata/youtube-package.json`,
+    overlayPlanKey: `jobs/${jobId}/metadata/overlay-plan.json`,
+  };
+
+  try {
+    await mkdir(metadataRoot, { recursive: true });
+    await mkdir(audioRoot, { recursive: true });
+    await mkdir(exportsRoot, { recursive: true });
+    await mkdir(videoGeneratedRoot, { recursive: true });
+    await mkdir(imagesRoot, { recursive: true });
+
+    // Create all required media files
+    await writeFile(join(metadataRoot, 'scene-plan.json'), JSON.stringify({
+      jobId,
+      scenes: [{ sceneIndex: 1, onScreenText: 'Test', summary: 'Test' }],
+    }, null, 2));
+    await writeFile(join(audioRoot, 'narration-script.txt'), 'Test.');
+    await writeFile(join(audioRoot, 'narration.mp3'), Buffer.from('audio'));
+    await writeFile(join(imagesRoot, 'scene-001.png'), Buffer.from('image'));
+    await writeFile(join(videoGeneratedRoot, 'generated-001.mp4'), Buffer.from('generated'));
+    await writeFile(join(exportsRoot, 'generated-001-final.mp4'), Buffer.from('video'));
+    await writeFile(join(exportsRoot, 'thumbnail-001.jpg'), Buffer.from('thumb'));
+    await writeFile(join(metadataRoot, 'publish.json'), JSON.stringify({
+      jobId,
+      videoKey: canonicalMedia.videoKey,
+      thumbnailKey: canonicalMedia.thumbnailKey,
+    }, null, 2));
+    await writeFile(join(metadataRoot, 'youtube-package.json'), JSON.stringify({
+      jobId,
+      title: 'Test',
+    }, null, 2));
+    await writeFile(join(metadataRoot, 'overlay-plan.json'), JSON.stringify({
+      jobId,
+      provider: 'test',
+      cards: [],
+    }, null, 2));
+    await writeFile(join(metadataRoot, 'assets.json'), JSON.stringify({
+      jobId,
+      generationMode: 'hybrid_slideshow_video',
+    }, null, 2));
+
+    // Create review.json with complete media
+    await writeFile(join(metadataRoot, 'review.json'), JSON.stringify({
+      jobId,
+      reviewStatus: 'approved',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: 'test-setup',
+      notes: null,
+      media: canonicalMedia,
+    }, null, 2));
+
+    // Now call getVideoReview which will finalize for approved jobs
+    const reviewAfterFinalize = await getVideoReview(jobId);
+
+    assert.equal(reviewAfterFinalize.ok, true, `getVideoReview failed`);
+    if (!reviewAfterFinalize.ok) return;
+
+    // Review status should still be 'approved' after finalization
+    assert.equal(reviewAfterFinalize.review.reviewStatus, 'approved', 'reviewStatus should remain approved');
+  } finally {
+    await rm(jobRoot, { recursive: true, force: true });
+  }
+});

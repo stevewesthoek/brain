@@ -49,6 +49,15 @@ const GENERATION_MODE = 'fixture_assembly';
 const MEDIA_SOURCE = 'fixture';
 const FIXTURE_TITLE_PREFIX = '[PIPELINE PROOF] ';
 
+// Dedup window for createJobFromPrompt: suppress duplicate creates within 30s of the first
+const CREATE_DEDUP_WINDOW_MS = 30_000;
+interface RecentCreateRequest {
+  jobId: string;
+  createdAt: number;
+  result: CreateJobFromPromptResponse;
+}
+const _recentCreateRequests = new Map<string, RecentCreateRequest>();
+
 export interface VideoGenerationProviderInput {
   jobId: string;
   prompt: string;
@@ -3012,9 +3021,22 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
   }
 
-  return finalized?.ok
-    ? { ok: true, review, finalization: { finalized: true, missing: finalized.missing, repaired: finalized.repaired } }
-    : { ok: true, review };
+  if (finalized) {
+    return {
+      ok: true,
+      review: {
+        ...review,
+        finalization: {
+          attempted: true,
+          ok: finalized.ok,
+          missing: finalized.missing,
+          repaired: finalized.ok ? finalized.repaired : [],
+        },
+      },
+    };
+  }
+
+  return { ok: true, review };
 }
 
 export function getMissingReviewMediaFields(media: VideoReviewMedia): string[] {
@@ -3306,13 +3328,20 @@ export interface VideoReviewMetadata {
   reviewedBy: string | null;
   notes: string | null;
   media: VideoReviewMedia;
+  finalization?: {
+    attempted: boolean;
+    ok: boolean;
+    missing: string[];
+    repaired: string[];
+  };
 }
 
 export interface VideoReviewResponse {
   ok: true;
   review: VideoReviewMetadata;
   finalization?: {
-    finalized: true;
+    attempted: boolean;
+    ok: boolean;
     missing: string[];
     repaired: string[];
   };
@@ -4679,6 +4708,7 @@ export interface CreateJobFromPromptRequest {
   channelId: string;
   prompt: string;
   requestedBy: string;
+  clientActionId?: string;
 }
 
 export interface CreateJobFromPromptResponse {
@@ -4690,6 +4720,7 @@ export interface CreateJobFromPromptResponse {
   approvalStatus: 'pending';
   nextStep: 'approve_script';
   createdAt: string;
+  duplicateSuppressed?: true;
 }
 
 export interface CreateJobFromPromptError {
@@ -4735,6 +4766,13 @@ export async function createJobFromPrompt(
       code: 'invalid_request',
       message: 'requestedBy is required and must be a string',
     };
+  }
+
+  // Check for duplicate create within 30s window (idempotency)
+  const dedupeKey = `${input.channelId}:${input.prompt.trim().toLowerCase()}`;
+  const cached = _recentCreateRequests.get(dedupeKey);
+  if (cached && (Date.now() - cached.createdAt) < CREATE_DEDUP_WINDOW_MS) {
+    return { ...cached.result, duplicateSuppressed: true };
   }
 
   const root = getVideoOrchestratorRoot();
@@ -4842,7 +4880,7 @@ export async function createJobFromPrompt(
       writeFile(path.join(scriptsDir, 'script.md'), scriptContent),
     ]);
 
-    return {
+    const successResult: CreateJobFromPromptResponse = {
       ok: true,
       jobId,
       channelId: input.channelId,
@@ -4852,6 +4890,15 @@ export async function createJobFromPrompt(
       nextStep: 'approve_script',
       createdAt: now_iso,
     };
+
+    // Store for dedup window
+    _recentCreateRequests.set(dedupeKey, {
+      jobId,
+      createdAt: Date.now(),
+      result: successResult,
+    });
+
+    return successResult;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
 

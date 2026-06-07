@@ -1,0 +1,36 @@
+{
+  "jobId": "prochat-prompt-1780835140061-a-tree-growing-over-time-for-d",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T12:26:12.222Z",
+  "updatedAt": "2026-06-07T12:26:12.222Z",
+  "publishedAt": null,
+  "title": "A Tree Growing Over Time for Dedup Test",
+  "description": "A short video about A Tree Growing Over Time for Dedup Test. A tree growing over time for dedup test. Created as a private preview for review before public release.",
+  "tags": [
+    "tree",
+    "growing",
+    "over",
+    "time",
+    "dedup",
+    "tree growing",
+    "growing over",
+    "over time",
+    "time dedup"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

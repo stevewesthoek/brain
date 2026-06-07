@@ -505,6 +505,7 @@ function ReviewCard({
   notes,
   setNotes,
   isRecommended,
+  finalizationState,
 }: {
   jobId: string | null;
   reviewData: VideoReview | null;
@@ -516,6 +517,7 @@ function ReviewCard({
   notes: string;
   setNotes: (value: string) => void;
   isRecommended?: boolean;
+  finalizationState?: 'pending' | 'failed' | 'complete' | null;
 }) {
   if (!jobId) return null;
   const reviewRecord = reviewData;
@@ -750,12 +752,28 @@ function ReviewCard({
         Review media hydrated from canonical artifacts{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
-        <div style={{ fontSize: '0.85rem', color: 'var(--badge-error-text)', padding: '0.75rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
-          <strong>Cannot approve: Missing fields</strong>
-          <div style={{ marginTop: '0.25rem' }}>
-            {missingReviewMediaFields.map(field => field.label).join(', ')}
+        finalizationState === 'pending' ? (
+          <div style={{ fontSize: '0.85rem', color: 'var(--badge-warning-text)', padding: '0.75rem', backgroundColor: 'var(--badge-warning-bg)', border: '1px solid var(--badge-warning-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
+            <strong>Finalizing publish package…</strong>
+            <div style={{ marginTop: '0.25rem' }}>
+              Generating missing fields: {missingReviewMediaFields.map(field => field.label).join(', ')}
+            </div>
           </div>
-        </div>
+        ) : finalizationState === 'failed' ? (
+          <div style={{ fontSize: '0.85rem', color: 'var(--badge-warning-text)', padding: '0.75rem', backgroundColor: 'var(--badge-warning-bg)', border: '1px solid var(--badge-warning-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
+            <strong>Finalization incomplete</strong>
+            <div style={{ marginTop: '0.25rem' }}>
+              Missing: {missingReviewMediaFields.map(field => field.label).join(', ')}
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: '0.85rem', color: 'var(--badge-error-text)', padding: '0.75rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
+            <strong>Cannot approve: Missing fields</strong>
+            <div style={{ marginTop: '0.25rem' }}>
+              {missingReviewMediaFields.map(field => field.label).join(', ')}
+            </div>
+          </div>
+        )
       )}
       {hasInternalTermsInMetadata && (
         <div style={{ fontSize: '0.85rem', color: 'var(--badge-error-text)', padding: '0.75rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
@@ -916,7 +934,7 @@ export function AwsVideoDashboard() {
   };
 
   const createDraft = useMutation({
-    mutationFn: () => postBrainCoreAction('/api/video-orchestrator/jobs/create-from-prompt', videoActionResultSchema, { channelId, prompt, requestedBy: 'brain-console-center' }),
+    mutationFn: () => postBrainCoreAction('/api/video-orchestrator/jobs/create-from-prompt', videoActionResultSchema, { channelId, prompt, requestedBy: 'brain-console-center' }, 15_000),
     onSuccess: async (result) => {
       const possibleJobId = typeof result.jobId === 'string' ? result.jobId : typeof (result.job as { jobId?: unknown } | undefined)?.jobId === 'string' ? (result.job as { jobId: string }).jobId : null;
       if (possibleJobId) setSelectedJobId(possibleJobId);
@@ -924,6 +942,14 @@ export function AwsVideoDashboard() {
       setActiveView('overview');
       addActivity(`Draft created${possibleJobId ? `: ${possibleJobId}` : ''}`);
       await invalidateVideo();
+    },
+    onError: async (error) => {
+      if (isTimeoutError(error)) {
+        addActivity('Draft creation accepted or still running. Refreshing job list…');
+        await invalidateVideo();
+        return;
+      }
+      addActivity(`Draft creation failed: ${errorMessage(error)}`);
     },
   });
 
@@ -1163,6 +1189,11 @@ export function AwsVideoDashboard() {
   const selectedReview = review.data?.review ?? null;
   const reviewStatus = selectedReview?.reviewStatus ?? 'pending';
   const reviewApproved = reviewStatus === 'approved';
+  const finalizationState: 'pending' | 'failed' | 'complete' | null =
+    selectedReview?.finalization == null ? null
+    : selectedReview.finalization.ok ? 'complete'
+    : selectedReview.finalization.attempted ? 'failed'
+    : 'pending';
   const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video'].includes(generationMode);
   const generationInProgress = ['generating', 'ready_to_publish'].includes(selectedJob?.status ?? '');
   const generationTimeoutStillRunning = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && generationInProgress);
@@ -1209,8 +1240,8 @@ export function AwsVideoDashboard() {
                 ? { title: 'Publishing privately…', detail: 'Uploading the final video and thumbnail to YouTube. This may take a minute.' }
                 : null;
 
-  const queryError = jobs.error ?? status.error;
-  const queryErrorMessage = errorMessage(queryError);
+  const statusOnlyError = status.error;
+  const statusOnlyErrorMessage = errorMessage(statusOnlyError);
   const refreshSafeTimeoutErrors = [approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error]
     .filter((error) => !(isTimeoutError(error) && refreshSafeTimeoutErrors.includes(error)))
@@ -1219,13 +1250,13 @@ export function AwsVideoDashboard() {
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const quotaExceeded = backendYoutubeUpload?.status === 'quota_exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
   const finalVideoAvailable = Boolean(finalVideoKey);
-  const visibleErrorMessage = queryErrorMessage ?? actionErrorMessage;
+  const visibleErrorMessage = statusOnlyErrorMessage ?? actionErrorMessage;
   const visibleErrorSummary = quotaExceeded
     ? 'YouTube upload quota reached'
-    : queryErrorMessage
+    : statusOnlyErrorMessage
       ? 'Brain Core request failed'
       : actionErrorSummary(actionError) ?? 'Action failed';
-  const visibleErrorDetails = queryErrorMessage ?? actionErrorMessage;
+  const visibleErrorDetails = statusOnlyErrorMessage ?? actionErrorMessage;
   const showErrorToast = Boolean(!quotaExceeded && visibleErrorMessage && visibleErrorMessage !== dismissedError);
 
   const counts = {
@@ -1254,8 +1285,8 @@ export function AwsVideoDashboard() {
           <div className="toast error-toast">
             <div className="toast-content">
               <strong>{visibleErrorSummary}</strong>
-              {queryErrorMessage ? <p>{queryErrorMessage}</p> : null}
-              {!queryErrorMessage && visibleErrorDetails ? (
+              {statusOnlyErrorMessage ? <p>{statusOnlyErrorMessage}</p> : null}
+              {!statusOnlyErrorMessage && visibleErrorDetails ? (
                 <details className="toast-details">
                   <summary>Show details</summary>
                   <pre>{visibleErrorDetails}</pre>
@@ -1428,6 +1459,7 @@ export function AwsVideoDashboard() {
                 notes={reviewNotes}
                 setNotes={setReviewNotes}
                 isRecommended={recommendedStep?.key === 'review'}
+                finalizationState={finalizationState}
               />
               <MotionCard artifactData={artifactData} />
             </div>
@@ -1438,7 +1470,7 @@ export function AwsVideoDashboard() {
               <div className="card-header"><div><div className="card-title">Recent jobs</div><div className="card-description">Select one job. Long IDs wrap; no horizontal scrolling.</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
               <JobsDiagnosticsCard
                 diagnostics={jobList.length === 0 || (jobsDiagnostics?.skippedJobCount ?? 0) > 0 || jobs.isError ? jobsDiagnostics : null}
-                error={queryErrorMessage}
+                error={statusOnlyErrorMessage}
               />
               <div className="job-list">
                 {jobList.map((item) => (
@@ -1449,7 +1481,7 @@ export function AwsVideoDashboard() {
                     <span className="meta no-margin">{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</span>
                   </button>
                 ))}
-                {jobList.length === 0 && !jobsDiagnostics?.localJobFolderCount && !jobsDiagnostics?.s3DiscoveredJobCount && !queryErrorMessage ? <p>No video jobs returned by Brain Core.</p> : null}
+                {jobList.length === 0 && !jobsDiagnostics?.localJobFolderCount && !jobsDiagnostics?.s3DiscoveredJobCount && !statusOnlyErrorMessage ? <p>No video jobs returned by Brain Core.</p> : null}
               </div>
             </article>
           ) : null}

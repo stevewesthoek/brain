@@ -1,0 +1,20 @@
+{
+  "jobId": "prochat-prompt-1780835140061-a-tree-growing-over-time-for-d",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T12:26:15.266Z",
+  "updatedAt": "2026-06-07T12:26:15.266Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/youtube-package.json",
+    "overlayPlanKey": null
+  }
+}

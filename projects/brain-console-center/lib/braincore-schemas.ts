@@ -367,6 +367,12 @@ export const videoReviewSchema = z.object({
       youtubePackageKey: z.string().nullable(),
       overlayPlanKey: z.string().nullable().optional(),
     }),
+    finalization: z.object({
+      attempted: z.boolean(),
+      ok: z.boolean(),
+      missing: z.array(z.string()),
+      repaired: z.array(z.string()),
+    }).optional(),
   }),
 }).passthrough();
 
