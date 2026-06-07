@@ -65,6 +65,11 @@ function errorMessage(error: unknown): string | null {
   return String(error);
 }
 
+function isTimeoutError(error: unknown): boolean {
+  const message = errorMessage(error);
+  return Boolean(message && /timed out/i.test(message));
+}
+
 function actionErrorSummary(error: unknown): string | null {
   const message = errorMessage(error);
   if (!message) return null;
@@ -758,6 +763,7 @@ export function AwsVideoDashboard() {
   const [dismissedError, setDismissedError] = useState<string | null>(null);
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
   const [activity, setActivity] = useState<string[]>([]);
+  const [generationTimeoutJobId, setGenerationTimeoutJobId] = useState<string | null>(null);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
   const beginAction = () => setDismissedError(null);
@@ -884,7 +890,18 @@ export function AwsVideoDashboard() {
 
   const generate = useMutation({
     mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/generate`, videoActionResultSchema, { requestedBy: 'brain-console-center' }, GENERATE_TIMEOUT_MS),
-    onSuccess: async (_, { jobIdArg }) => { addActivity(`Generation accepted for ${jobIdArg}`); await invalidateVideo(); },
+    onSuccess: async (_, { jobIdArg }) => {
+      setGenerationTimeoutJobId((current) => (current === jobIdArg ? null : current));
+      addActivity(`Generation accepted for ${jobIdArg}`);
+      await invalidateVideo();
+    },
+    onError: async (error, { jobIdArg }) => {
+      if (!isTimeoutError(error)) return;
+
+      setGenerationTimeoutJobId(jobIdArg);
+      addActivity(`Generation is still running for ${jobIdArg}; timeout reached while waiting for backend response.`);
+      await invalidateVideo();
+    },
   });
 
   const youtubeDryRun = useMutation({
@@ -1038,8 +1055,11 @@ export function AwsVideoDashboard() {
   const reviewStatus = selectedReview?.reviewStatus ?? 'pending';
   const reviewApproved = reviewStatus === 'approved';
   const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video'].includes(generationMode);
+  const generationInProgress = ['generating', 'ready_to_publish'].includes(selectedJob?.status ?? '');
+  const generationTimeoutStillRunning = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && generationInProgress);
+  const generationTimeoutFailed = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && selectedJob?.status === 'failed');
   const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
-  const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets);
+  const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets && !generationInProgress);
 
   const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && ['pending', 'not_available'].includes(publishStatus) && (!requiresReviewGate || reviewApproved));
   const canPublish = canDryRun && dryRunPassedForThisJob && (!requiresReviewGate || reviewApproved);
@@ -1057,7 +1077,7 @@ export function AwsVideoDashboard() {
   const guideSteps = [
     { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
     { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
-    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate', help: 'Run image generation and assembly.', done: selectedReady || selectedPublished, active: canGenerate || selectedJob?.status === 'generating' },
+    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate', help: 'Run image generation and assembly.', done: selectedReady || selectedPublished, active: canGenerate || generationInProgress || generationTimeoutStillRunning },
     { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved && selectedReady },
     { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
     { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
@@ -1066,7 +1086,7 @@ export function AwsVideoDashboard() {
   const nextStep = recommendedStep;
   const queryError = jobs.error ?? status.error;
   const queryErrorMessage = errorMessage(queryError);
-  const actionError = [approve.error, generate.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean);
+  const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const visibleErrorMessage = queryErrorMessage ?? actionErrorMessage;
@@ -1155,6 +1175,18 @@ export function AwsVideoDashboard() {
         <main className="aws-main-panel">
           {activeView === 'overview' ? (
             <div className="stack">
+              {generationTimeoutStillRunning ? (
+                <div className="compact-info">
+                  <strong>Generation is still running</strong>
+                  <p>Page refresh is safe.</p>
+                </div>
+              ) : null}
+              {generationTimeoutFailed ? (
+                <div className="compact-error">
+                  <strong>Generation failed</strong>
+                  <p>{actionErrorSummary(generate.error) ?? 'The backend reported a failure after the timeout.'}</p>
+                </div>
+              ) : null}
               <article className="card aws-selected-card">
                 <div className="card-header compact-header">
                   <div className="min-w-0">
