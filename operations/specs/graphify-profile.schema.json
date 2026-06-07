@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brain.local/specs/graphify-profile.schema.json",
+  "title": "Graphify Repository Profile",
+  "description": "Declarative repo-local profile consumed by the Brain Graphify Orchestrator. This schema is repo-agnostic and contains no procedural logic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "graphifyStandardVersion",
+    "profile",
+    "repoRole",
+    "modes",
+    "outputs",
+    "initialBuildPolicy",
+    "criticalRebuildPolicy",
+    "incrementalPolicy",
+    "exclude"
+  ],
+  "properties": {
+    "graphifyStandardVersion": {
+      "type": "string",
+      "const": "1"
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["mind-knowledge", "brain-runtime", "code-app", "research", "mixed"]
+    },
+    "repoRole": {
+      "type": "string",
+      "minLength": 1
+    },
+    "modes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "human-file-relationship",
+          "ai-context",
+          "code-architecture",
+          "knowledge-research",
+          "operations-freshness"
+        ]
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["report", "json", "html"]
+      }
+    },
+    "optionalOutputs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["callflow-html", "architecture-html"]
+      },
+      "default": []
+    },
+    "initialBuildPolicy": {
+      "$ref": "#/$defs/selectorPolicy"
+    },
+    "criticalRebuildPolicy": {
+      "$ref": "#/$defs/selectorPolicy"
+    },
+    "incrementalPolicy": {
+      "$ref": "#/$defs/incrementalPolicy"
+    },
+    "exclude": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "trackGeneratedArtifacts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^graphify-out/"
+      },
+      "default": []
+    },
+    "dashboardVisibility": {
+      "type": "boolean",
+      "default": true
+    },
+    "humanReadableFileGraph": {
+      "type": "boolean",
+      "default": true
+    },
+    "aiContextMode": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "$defs": {
+    "selectorPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskType", "qualityTier", "selectionPolicy", "fallbackPolicy"],
+      "properties": {
+        "taskType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualityTier": {
+          "type": "string",
+          "enum": ["highest", "balanced", "efficient", "local"]
+        },
+        "selectionPolicy": {
+          "type": "string",
+          "enum": ["ordered_premium", "selector_default", "local_private", "balanced", "cost_efficient"]
+        },
+        "preferredModels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "preferredProviders": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "fallbackPolicy": {
+          "type": "string",
+          "enum": ["selector_default", "ordered", "ordered_strict", "ordered_then_selector_default"]
+        }
+      }
+    },
+    "incrementalPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskType", "qualityTier", "selectionPolicy"],
+      "properties": {
+        "taskType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "qualityTier": {
+          "type": "string",
+          "enum": ["highest", "balanced", "efficient", "local"]
+        },
+        "selectionPolicy": {
+          "type": "string",
+          "enum": ["ordered_premium", "selector_default", "local_private", "balanced", "cost_efficient"]
+        },
+        "preferLocalWhenSafe": {
+          "type": "boolean",
+          "default": true
+        },
+        "allowAstOnly": {
+          "type": "boolean",
+          "default": true
+        },
+        "fallbackPolicy": {
+          "type": "string",
+          "enum": ["selector_default", "ordered", "ordered_strict", "ordered_then_selector_default"],
+          "default": "selector_default"
+        }
+      }
+    }
+  }
+}
