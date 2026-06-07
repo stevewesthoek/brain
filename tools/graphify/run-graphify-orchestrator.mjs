@@ -190,6 +190,30 @@ function outputValidation(outputs) {
   };
 }
 
+function hookWatchReadiness(profile) {
+  const hooks = profile.hooks ?? {
+    enabled: false,
+    postCommit: false,
+    postCheckout: false,
+    operation: 'update',
+  };
+  const watch = profile.watch ?? {
+    enabled: false,
+    debounceMs: 30000,
+    maxRunsPerHour: 4,
+    operation: 'update',
+  };
+
+  return {
+    status: hooks.enabled || watch.enabled ? 'blocked' : 'disabled',
+    hooks,
+    watch,
+    hookFeatureFlagEnabled: process.env.GRAPHIFY_ORCHESTRATOR_ENABLE_HOOKS === 'true',
+    watchFeatureFlagEnabled: process.env.GRAPHIFY_ORCHESTRATOR_ENABLE_WATCH === 'true',
+    message: 'Hook/watch execution remains disabled by default. O8 only reports readiness.',
+  };
+}
+
 function checkGraphifyCommand() {
   const result = spawnSync('graphify', ['--version'], {
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -405,6 +429,15 @@ function toMarkdown(report) {
     lines.push(`Missing: ${report.outputValidation.missing.join(', ')}`);
   }
   lines.push('');
+  lines.push('## Hook/watch readiness');
+  lines.push('');
+  lines.push(`Status: ${report.hookWatchReadiness.status}`);
+  lines.push(`Hooks enabled: ${report.hookWatchReadiness.hooks.enabled}`);
+  lines.push(`Hook feature flag enabled: ${report.hookWatchReadiness.hookFeatureFlagEnabled}`);
+  lines.push(`Watch enabled: ${report.hookWatchReadiness.watch.enabled}`);
+  lines.push(`Watch feature flag enabled: ${report.hookWatchReadiness.watchFeatureFlagEnabled}`);
+  lines.push(report.hookWatchReadiness.message);
+  lines.push('');
   lines.push('## Expected outputs');
   lines.push('');
   for (const output of report.expectedOutputs) {
@@ -593,6 +626,7 @@ async function main() {
       ...executionResult,
     },
     outputValidation: outputValidation(outputs),
+    hookWatchReadiness: hookWatchReadiness(loadedProfile.profile),
     expectedOutputs: outputs,
     safety: {
       runsGraphify: plan.runsGraphify,
