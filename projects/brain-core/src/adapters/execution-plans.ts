@@ -15,6 +15,10 @@ const CANDIDATE_KINDS = [
   'scheduler-run-graphify-update-brain-blocked',
   'scheduler-run-graphify-update-mind',
   'scheduler-run-graphify-update-brain',
+  'scheduler-run-graphify-full-brain-selector-preview',
+  'scheduler-run-graphify-full-mind-selector-preview',
+  'scheduler-run-graphify-critical-rebuild-brain-selector-preview',
+  'scheduler-run-graphify-critical-rebuild-mind-selector-preview',
 ] as const;
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
@@ -133,6 +137,26 @@ export function listExecutionPlans(): BrainCoreExecutionPlan[] {
       'scheduler-run-graphify-update-brain',
       'Execute controlled Graphify incremental update for Brain repository.',
       'bash tools/scripts/graphify-orchestrator-report.sh update-brain',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-full-brain-selector-preview',
+      'Report-only: Preview which AI model would be used for full semantic build of Brain. Does not execute Graphify full rebuild.',
+      'bash tools/scripts/graphify-orchestrator-report.sh full-brain-selector-preview',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-full-mind-selector-preview',
+      'Report-only: Preview which AI model would be used for full semantic build of Mind. Does not execute Graphify full rebuild.',
+      'bash tools/scripts/graphify-orchestrator-report.sh full-mind-selector-preview',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-critical-rebuild-brain-selector-preview',
+      'Report-only: Preview which AI model would be used for critical rebuild of Brain. Does not execute Graphify critical rebuild.',
+      'bash tools/scripts/graphify-orchestrator-report.sh critical-rebuild-brain-selector-preview',
+    ),
+    createGraphifyPlan(
+      'scheduler-run-graphify-critical-rebuild-mind-selector-preview',
+      'Report-only: Preview which AI model would be used for critical rebuild of Mind. Does not execute Graphify critical rebuild.',
+      'bash tools/scripts/graphify-orchestrator-report.sh critical-rebuild-mind-selector-preview',
     ),
   ];
 }
