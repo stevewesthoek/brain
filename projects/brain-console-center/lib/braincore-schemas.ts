@@ -329,6 +329,18 @@ export const videoArtifactsResponseSchema = z.object({
   data: z.record(z.unknown()).nullable().optional(),
 }).passthrough();
 
+export const videoMotionPlanSchema = z.object({
+  jobId: z.string(),
+  provider: z.literal('local-ffmpeg-motion'),
+  mode: z.literal('ken-burns'),
+  sceneCount: z.number(),
+  generatedClipKeys: z.array(z.string()).default([]),
+  generatedFrameKeys: z.array(z.string()).default([]),
+  warnings: z.array(z.string()).default([]),
+  fallbackUsed: z.boolean(),
+  fallbackReason: z.string().nullable(),
+}).passthrough();
+
 export const videoExecutionResponseSchema = z.object({
   ok: z.boolean().optional(),
   data: z.record(z.unknown()).nullable().optional(),

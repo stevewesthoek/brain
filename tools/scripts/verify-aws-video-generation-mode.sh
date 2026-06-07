@@ -383,6 +383,21 @@ if [[ -f "$assets_json" ]]; then
   require_json_equals "$assets_json" '.generationMode' "$expected_generation_mode_value"
 fi
 
+motion_plan_key="$(json_value "$assets_json" '.motionPlanKey')"
+if [[ -n "$motion_plan_key" ]]; then
+  motion_plan_json="$tmp_dir/motion-plan.json"
+  download_object "$motion_plan_key" "$motion_plan_json"
+  require_json_equals "$motion_plan_json" '.provider' 'local-ffmpeg-motion'
+  require_json_equals "$motion_plan_json" '.mode' 'ken-burns'
+  require_json_nonempty "$motion_plan_json" '.sceneCount'
+  if [[ "$(json_value "$motion_plan_json" '.fallbackUsed')" == "true" ]]; then
+    pass "motion fell back to slideshow assembly"
+    info "motionPlan.fallbackReason: $(json_value "$motion_plan_json" '.fallbackReason')"
+  else
+    require_json_nonempty "$motion_plan_json" '.generatedClipKeys[0]'
+  fi
+fi
+
 case "$MODE" in
   fixture)
     require_object "$(object_key "audio/narration.mp3")"

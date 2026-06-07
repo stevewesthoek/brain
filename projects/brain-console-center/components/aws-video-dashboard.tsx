@@ -233,6 +233,49 @@ function ScenePlanCard({
   );
 }
 
+function MotionCard({
+  artifactData,
+}: {
+  artifactData: Record<string, unknown> | null | undefined;
+}) {
+  const motionPlan = asRecord(artifactData?.motionPlan);
+  const motionPlanKey = stringField(artifactData, 'motionPlanKey');
+  const motionProvider = stringField(artifactData, 'motionProvider');
+  const motionMode = stringField(motionPlan, 'mode') ?? 'ken-burns';
+  const motionClipKeys = Array.isArray(artifactData?.motionClipKeys) ? (artifactData.motionClipKeys as string[]) : [];
+  const motionFrameKeys = Array.isArray(artifactData?.motionFrameKeys) ? (artifactData.motionFrameKeys as string[]) : [];
+  const warnings = Array.isArray(motionPlan?.warnings) ? (motionPlan.warnings as unknown[]).filter((item): item is string => typeof item === 'string') : [];
+  const fallbackUsed = artifactData?.motionFallbackUsed === true || motionPlan?.fallbackUsed === true;
+  const fallbackReason = stringField(artifactData, 'motionFallbackReason') ?? stringField(motionPlan, 'fallbackReason');
+  const motionGenerated = artifactData?.motionGenerated === true;
+
+  if (!motionPlanKey && motionClipKeys.length === 0 && motionFrameKeys.length === 0 && !fallbackUsed && warnings.length === 0) return null;
+
+  return (
+    <article className="card">
+      <div className="card-title">Motion</div>
+      <div className="aws-facts">
+        <div><span>Provider</span><strong>{motionProvider ?? 'local-ffmpeg-motion'}</strong></div>
+        <div><span>Mode</span><strong>{motionMode}</strong></div>
+        <div><span>Generated</span><strong>{motionGenerated ? 'true' : 'false'}</strong></div>
+        <div><span>Clips</span><strong>{motionClipKeys.length}</strong></div>
+        <div><span>Frames</span><strong>{motionFrameKeys.length}</strong></div>
+        <div><span>Fallback</span><strong>{fallbackUsed ? 'used' : 'not used'}</strong></div>
+        <div><span>Plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{motionPlanKey ?? 'missing'}</strong></div>
+      </div>
+      {fallbackReason ? <div className="compact-warning" style={{ marginTop: '0.75rem' }}>{fallbackReason}</div> : null}
+      {warnings.length > 0 ? (
+        <div className="compact-info" style={{ marginTop: '0.75rem' }}>
+          <strong>Warnings</strong>
+          <ul style={{ margin: '0.25rem 0 0 1rem', paddingLeft: 0 }}>
+            {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+          </ul>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function stripAnsiCodes(text: string): string {
   // Remove ANSI escape codes like \x1b[32m, [1m, etc.
   return text.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[0-9;]*m/g, '');
@@ -1373,18 +1416,21 @@ export function AwsVideoDashboard() {
           ) : null}
 
           {activeView === 'review' ? (
-            <ReviewCard
-              jobId={jobId}
-              reviewData={selectedReview}
-              artifactData={artifactData}
-              approvePending={approveReview.isPending}
-              requestChangesPending={requestReviewChanges.isPending}
-              onApprove={() => { if (jobId) { beginAction(); approveReview.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); } }}
-              onRequestChanges={() => { if (jobId) { beginAction(); requestReviewChanges.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); } }}
-              notes={reviewNotes}
-              setNotes={setReviewNotes}
-              isRecommended={recommendedStep?.key === 'review'}
-            />
+            <div className="stack">
+              <ReviewCard
+                jobId={jobId}
+                reviewData={selectedReview}
+                artifactData={artifactData}
+                approvePending={approveReview.isPending}
+                requestChangesPending={requestReviewChanges.isPending}
+                onApprove={() => { if (jobId) { beginAction(); approveReview.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); } }}
+                onRequestChanges={() => { if (jobId) { beginAction(); requestReviewChanges.mutate({ jobIdArg: jobId, notes: reviewNotes.trim() || undefined }); } }}
+                notes={reviewNotes}
+                setNotes={setReviewNotes}
+                isRecommended={recommendedStep?.key === 'review'}
+              />
+              <MotionCard artifactData={artifactData} />
+            </div>
           ) : null}
 
           {activeView === 'jobs' ? (

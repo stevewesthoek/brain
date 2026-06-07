@@ -20,7 +20,7 @@ Five modes are fully operational, and one image-provider mode is wired with fail
 3. **Hybrid TTS mode**: prompt-derived scene plan + narration script + TTS audio + fixture video
 4. **Hybrid Storyboard mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + fixture video
 5. **Hybrid Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + deterministic storyboard images + local FFmpeg slideshow MP4
-6. **Hybrid Image Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + configured image-provider scene images + deterministic text overlay frames + local FFmpeg slideshow MP4; fails loudly when image provider config is missing
+6. **Hybrid Image Slideshow mode**: prompt-derived scene plan + narration script + TTS audio + configured image-provider scene images + deterministic motion layer when FFmpeg is available + deterministic text overlay frames + local FFmpeg slideshow MP4; fails loudly when image provider config is missing
 
 Generated-media review gate:
 
@@ -189,7 +189,7 @@ Metadata:
 
 ## Hybrid Image Slideshow Mode
 
-Hybrid image slideshow keeps the working FFmpeg slideshow path, but scene images come from the configured image provider instead of the deterministic placeholder provider. Canonical YouTube thumbnail is automatically generated from the first scene image.
+Hybrid image slideshow keeps the working FFmpeg slideshow path, but scene images come from the configured image provider instead of the deterministic placeholder provider. Brain Core first tries a deterministic local motion pass and records `metadata/motion-plan.json`; if that pass fails, the job keeps the slideshow fallback and still finalizes. Canonical YouTube thumbnail is automatically generated from the first scene image.
 
 Metadata:
 

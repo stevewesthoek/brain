@@ -1197,6 +1197,7 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
     readJobMetadataJson(jobId, 'assets.json'),
     resolvePublishableAssets(jobId),
   ]);
+  const motionPlan = await readJobMetadataJson(jobId, 'motion-plan.json');
 
   if (finalized.ok) {
     const assetsRecord = assets as Record<string, unknown> | null;
@@ -1231,6 +1232,7 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
     if (finalized.youtubePackage) result.youtubePackage = finalized.youtubePackage;
     if (finalized.thumbnail) result.thumbnailJson = finalized.thumbnail;
     if (finalized.review?.media) result.reviewMedia = finalized.review.media;
+    if (motionPlan) result.motionPlan = motionPlan;
     return result;
   }
 
@@ -1239,6 +1241,7 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
       ...(assets as Record<string, unknown>),
       publishableAssets: resolved,
     };
+    if (motionPlan) result.motionPlan = motionPlan;
 
     // Try to load and embed scene plan if scenePlanKey is present
     const scenePlanKey = (assets as Record<string, unknown>)?.scenePlanKey;
@@ -1293,6 +1296,7 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   };
 
   if (publishCheck) result.publishCheck = publishCheck;
+  if (motionPlan) result.motionPlan = motionPlan;
 
   return result;
 }
@@ -2583,6 +2587,131 @@ interface ThumbnailMetadata {
   warnings: string[];
 }
 
+interface MotionPlanMetadata {
+  jobId: string;
+  provider: 'local-ffmpeg-motion';
+  mode: 'ken-burns';
+  sceneCount: number;
+  generatedClipKeys: string[];
+  generatedFrameKeys: string[];
+  warnings: string[];
+  fallbackUsed: boolean;
+  fallbackReason: string | null;
+}
+
+async function requireExecutable(name: string, code: string): Promise<string> {
+  try {
+    const resolved = (await execFileAsync('bash', ['-lc', `command -v ${name}`], { timeout: 10_000 })).stdout.trim();
+    if (!resolved) throw new Error('not found');
+    return resolved;
+  } catch {
+    throw new Error(code);
+  }
+}
+
+async function createMotionClipFromSceneImage(input: {
+  ffmpegPath: string;
+  imagePath: string;
+  outputClipPath: string;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  sceneIndex: number;
+}): Promise<void> {
+  const safeDuration = Math.max(2, Math.round(input.durationSeconds));
+  const frames = Math.max(60, safeDuration * 30);
+  const zoomTarget = 1.10 + (input.sceneIndex % 4) * 0.01;
+  const centerX = '(iw-iw/zoom)/2';
+  const centerY = '(ih-ih/zoom)/2';
+  const filter = `zoompan=z='1.0+(${zoomTarget - 1.0})*on/${frames}':x='${centerX}':y='${centerY}':d=${frames}:s=${input.width}x${input.height}:fps=30,format=yuv420p`;
+
+  await execFileAsync(input.ffmpegPath, [
+    '-y',
+    '-loop', '1',
+    '-i', input.imagePath,
+    '-t', String(safeDuration),
+    '-vf', filter,
+    '-an',
+    input.outputClipPath,
+  ], { timeout: 120_000 });
+}
+
+export async function buildDeterministicMotionLayer(input: {
+  jobId: string;
+  jobRoot: string;
+  metadataDir: string;
+  scenePlan: ScenePlan;
+  sceneImageKeys: string[];
+  imageGenerationSettings?: { width?: number; height?: number } | null;
+}): Promise<{
+  motionPlan: MotionPlanMetadata;
+  motionClipKeys: string[];
+  motionFrameKeys: string[];
+  warnings: string[];
+  fallbackUsed: boolean;
+  fallbackReason: string | null;
+}> {
+  const warnings: string[] = [];
+  const motionClipKeys: string[] = [];
+  const motionFrameKeys: string[] = [];
+  let fallbackUsed = false;
+  let fallbackReason: string | null = null;
+  const ffmpegPath = await requireExecutable('ffmpeg', 'motion_generation_not_available');
+  const motionDir = join(input.jobRoot, 'motion');
+  const framesDir = join(input.jobRoot, 'frames');
+  await mkdir(motionDir, { recursive: true });
+  await mkdir(framesDir, { recursive: true });
+
+  const width = Number(input.imageGenerationSettings?.width ?? 1280);
+  const height = Number(input.imageGenerationSettings?.height ?? 720);
+
+  try {
+    for (const [index, scene] of input.scenePlan.scenes.entries()) {
+      const sceneNumber = index + 1;
+      const sourceKey = input.sceneImageKeys[index] ?? `jobs/${input.jobId}/images/scene-${String(sceneNumber).padStart(3, '0')}.png`;
+      const sourcePath = join(input.jobRoot, sourceKey.replace(/^jobs\/[^/]+\//, ''));
+      const clipKey = `jobs/${input.jobId}/motion/scene-${String(sceneNumber).padStart(3, '0')}.mp4`;
+      const clipPath = join(input.jobRoot, 'motion', `scene-${String(sceneNumber).padStart(3, '0')}.mp4`);
+      if (!await fileExists(sourcePath)) {
+        throw new Error(`missing source scene image: ${sourceKey}`);
+      }
+      await createMotionClipFromSceneImage({
+        ffmpegPath,
+        imagePath: sourcePath,
+        outputClipPath: clipPath,
+        durationSeconds: scene.durationSeconds,
+        width,
+        height,
+        sceneIndex: index,
+      });
+      motionClipKeys.push(clipKey);
+      motionFrameKeys.push(`jobs/${input.jobId}/frames/frame-${String(sceneNumber).padStart(3, '0')}.png`);
+    }
+  } catch (error) {
+    fallbackUsed = true;
+    fallbackReason = error instanceof Error ? error.message : String(error);
+    warnings.push(`Motion generation fell back to slideshow assembly: ${fallbackReason}`);
+    motionClipKeys.length = 0;
+    motionFrameKeys.length = 0;
+  }
+
+  const motionPlan: MotionPlanMetadata = {
+    jobId: input.jobId,
+    provider: 'local-ffmpeg-motion',
+    mode: 'ken-burns',
+    sceneCount: input.scenePlan.scenes.length,
+    generatedClipKeys: motionClipKeys,
+    generatedFrameKeys: motionFrameKeys,
+    warnings,
+    fallbackUsed,
+    fallbackReason,
+  };
+
+  await writeFile(join(input.metadataDir, 'motion-plan.json'), `${JSON.stringify(motionPlan, null, 2)}\n`, 'utf-8');
+  await writeS3MetadataJson(input.jobId, 'motion-plan.json', motionPlan as unknown as Record<string, unknown>);
+  return { motionPlan, motionClipKeys, motionFrameKeys, warnings, fallbackUsed, fallbackReason };
+}
+
 async function createCanonicalThumbnail(jobId: string, assetsJson: Record<string, unknown> | null): Promise<ThumbnailMetadata | null> {
   if (!assetsJson || typeof assetsJson !== 'object') {
     return null;
@@ -3689,6 +3818,11 @@ export async function generateApprovedScript(
   let overlayPlanContent: OverlayPlan | null = null;
   let overlayFrameKeys: string[] = [];
   let overlayFramePaths: string[] = [];
+  let motionPlanKey: string | undefined;
+  let motionClipKeys: string[] = [];
+  let motionFrameKeys: string[] = [];
+  let motionFallbackUsed = false;
+  let motionFallbackReason: string | null = null;
   let imageGenerationSettings: {
     width: number;
     height: number;
@@ -3928,6 +4062,20 @@ export async function generateApprovedScript(
       await writeS3MetadataJson(jobId, 'storyboard.json', storyboard as unknown as Record<string, unknown>);
 
       if (isHybridImageSlideshowMode) {
+        const motionLayer = await buildDeterministicMotionLayer({
+          jobId,
+          jobRoot,
+          metadataDir,
+          scenePlan: scenePlanContent,
+          sceneImageKeys,
+          imageGenerationSettings,
+        });
+        motionPlanKey = `jobs/${jobId}/metadata/motion-plan.json`;
+        motionClipKeys = motionLayer.motionClipKeys;
+        motionFrameKeys = motionLayer.motionFrameKeys;
+        motionFallbackUsed = motionLayer.fallbackUsed;
+        motionFallbackReason = motionLayer.fallbackReason;
+
         imageGenerationKey = `jobs/${jobId}/metadata/image-generation.json`;
         const imageGenerationSummary = {
           jobId,
@@ -4042,6 +4190,14 @@ export async function generateApprovedScript(
         });
       }
 
+      if (motionClipKeys.length > 0) {
+        slideshowScenes = slideshowScenes.map((scene, index) => ({
+          ...scene,
+          imagePath: join(jobRoot, 'motion', `scene-${String(index + 1).padStart(3, '0')}.mp4`),
+          imageKey: motionClipKeys[index] ?? scene.imageKey,
+        }));
+      }
+
       const slideshowAssembly = await slideshowProvider.assembleSlideshow({
         jobId,
         narrationPath: join(audioDir, 'narration.mp3'),
@@ -4063,6 +4219,8 @@ export async function generateApprovedScript(
         videoProvider: slideshowAssembly.provider,
         videoKey,
         sceneImageCount: sceneImageKeys.length,
+        ...(motionPlanKey ? { motionPlanKey } : {}),
+        ...(motionClipKeys.length > 0 ? { motionClipCount: motionClipKeys.length } : {}),
       });
     } catch (err) {
       const message = `Failed to assemble slideshow video: ${err instanceof Error ? err.message : String(err)}`;
@@ -4164,6 +4322,13 @@ export async function generateApprovedScript(
     if (imageModelId) assetsJson.imageModelId = imageModelId;
     assetsJson.videoProvider = 'local-ffmpeg-slideshow';
     assetsJson.videoKey = videoKey;
+    assetsJson.motionGenerated = motionClipKeys.length > 0 && !motionFallbackUsed;
+    assetsJson.motionProvider = 'local-ffmpeg-motion';
+    assetsJson.motionPlanKey = motionPlanKey;
+    assetsJson.motionClipKeys = motionClipKeys;
+    assetsJson.motionFrameKeys = motionFrameKeys;
+    assetsJson.motionFallbackUsed = motionFallbackUsed;
+    assetsJson.motionFallbackReason = motionFallbackReason;
     assetsJson.aiGenerated = false;
     assetsJson.partialAiGenerated = imageProvider !== 'deterministic-placeholder';
     assetsJson.ttsGenerated = true;
@@ -4232,6 +4397,13 @@ export async function generateApprovedScript(
     assetsJson.imageProvider = imageProvider;
     assetsJson.videoProvider = 'local-ffmpeg-slideshow';
     assetsJson.videoKey = videoKey;
+    assetsJson.motionGenerated = false;
+    assetsJson.motionProvider = 'local-ffmpeg-motion';
+    assetsJson.motionPlanKey = motionPlanKey ?? null;
+    assetsJson.motionClipKeys = motionClipKeys;
+    assetsJson.motionFrameKeys = motionFrameKeys;
+    assetsJson.motionFallbackUsed = motionFallbackUsed;
+    assetsJson.motionFallbackReason = motionFallbackReason;
     assetsJson.ttsGenerated = true;
     assetsJson.storyboardGenerated = true;
     assetsJson.slideshowGenerated = true;
