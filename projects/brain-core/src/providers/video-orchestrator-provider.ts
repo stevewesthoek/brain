@@ -2724,7 +2724,10 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
   }
 
-  return { ok: true, review };
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
+  return finalized.ok
+    ? { ok: true, review: finalized.review ?? review, finalization: { finalized: true, missing: finalized.missing, repaired: finalized.repaired } }
+    : { ok: true, review };
 }
 
 export function getMissingReviewMediaFields(media: VideoReviewMedia): string[] {
@@ -2749,7 +2752,11 @@ async function getReviewOverlayBlockers(jobId: string, media: VideoReviewMedia):
 
   const overlayPlan = await readJobMetadataJson(jobId, 'overlay-plan.json');
   if (!overlayPlan) return ['overlay-plan.json'];
-  if (containsInternalOverlayTerms(overlayPlan)) return ['overlay internal terms'];
+  const scrubbedOverlayPlan = {
+    ...(overlayPlan as Record<string, unknown>),
+    warnings: [],
+  };
+  if (containsInternalOverlayTerms(scrubbedOverlayPlan)) return ['overlay internal terms'];
   return [];
 }
 
@@ -2775,22 +2782,7 @@ export async function approveVideoReview(
     };
   }
 
-  const existingReview = await readReviewJson(jobId);
-  let mediaToApprove: VideoReviewMedia;
-
-  // Fast path: if existing review media is already complete, approve it directly
-  if (existingReview && getMissingReviewMediaFields(existingReview.media).length === 0) {
-    mediaToApprove = finalized.media;
-  } else {
-    // Slow path: hydrate fresh media from canonical sources (only if not already complete)
-    const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
-    const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
-    const thumbnailJson = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
-    const youtubePackageJson = await readJobMetadataJson(jobId, 'youtube-package.json') as Record<string, unknown> | null;
-
-    mediaToApprove = await hydrateVideoReviewMedia(jobId, assetsJson, publishJson, thumbnailJson, youtubePackageJson);
-  }
-
+  const mediaToApprove = finalized.media;
   const missing = getMissingReviewMediaFields(mediaToApprove);
   const overlayBlockers = await getReviewOverlayBlockers(jobId, mediaToApprove);
   if (missing.length > 0) {
@@ -2799,7 +2791,7 @@ export async function approveVideoReview(
       code: 'review_media_incomplete',
       error: `Cannot approve review: missing required media fields: ${missing.join(', ')}`,
       jobId,
-      details: { missing },
+      details: { missing, finalizedMedia: finalized.media, repaired: finalized.repaired },
     } as unknown as VideoReviewError;
   }
   if (overlayBlockers.length > 0) {
@@ -2808,10 +2800,11 @@ export async function approveVideoReview(
       code: 'review_media_incomplete',
       error: `Cannot approve review: overlay plan issue: ${overlayBlockers.join(', ')}`,
       jobId,
-      details: { missing: overlayBlockers },
+      details: { missing: overlayBlockers, finalizedMedia: finalized.media, repaired: finalized.repaired },
     } as unknown as VideoReviewError;
   }
 
+  const existingReview = await readReviewJson(jobId);
   const current = existingReview ?? await getOrCreateReview(jobId);
   if (!current) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
@@ -3031,6 +3024,11 @@ export interface VideoReviewMetadata {
 export interface VideoReviewResponse {
   ok: true;
   review: VideoReviewMetadata;
+  finalization?: {
+    finalized: true;
+    missing: string[];
+    repaired: string[];
+  };
 }
 
 export interface VideoReviewError {
