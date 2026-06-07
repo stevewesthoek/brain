@@ -191,6 +191,9 @@ function selectorRequestFromPolicy(policy) {
 
   return {
     taskType: policy.taskType ?? null,
+    inputTokenCount: 0,
+    urgent: false,
+    previousFailures: [],
     qualityTier: policy.qualityTier ?? null,
     selectionPolicy: policy.selectionPolicy ?? null,
     fallbackPolicy: policy.fallbackPolicy ?? 'selector_default',
@@ -201,6 +204,28 @@ function selectorRequestFromPolicy(policy) {
       fallback_policy: policy.fallbackPolicy ?? 'selector_default',
       selection_policy: policy.selectionPolicy ?? null,
     },
+  };
+}
+
+function selectorResolutionPlan(operation, selectorRequest) {
+  const resolutionEnabled = process.env.GRAPHIFY_ORCHESTRATOR_ENABLE_SELECTOR_RESOLUTION === 'true';
+  const resolutionSupported = ['full', 'critical-rebuild'].includes(operation);
+  const resolutionRequested = Boolean(selectorRequest && resolutionSupported);
+
+  return {
+    resolutionRequested,
+    resolutionEnabled,
+    status: !resolutionRequested ? 'skipped' : resolutionEnabled ? 'ready' : 'blocked',
+    blockedReason: resolutionRequested && !resolutionEnabled
+      ? 'Selector resolution disabled. Set GRAPHIFY_ORCHESTRATOR_ENABLE_SELECTOR_RESOLUTION=true to enable.'
+      : null,
+    request: selectorRequest,
+    selectedProvider: null,
+    selectedModel: null,
+    baseUrl: null,
+    reason: null,
+    costEstimate: null,
+    error: null,
   };
 }
 
@@ -219,6 +244,7 @@ function executionPlan(profile, operation, executeRequested) {
     'critical-rebuild': 'graphify .',
   };
 
+  const selectorRequest = selectorRequestFromPolicy(policyByOperation[operation] ?? null);
   const executionEnabled = process.env.GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION === 'true';
   let plan = {
     operation,
@@ -231,7 +257,8 @@ function executionPlan(profile, operation, executeRequested) {
     hardcodesModelFallback: false,
     graphifyCommand: commandByOperation[operation] ?? null,
     selectorPolicy: policyByOperation[operation] ?? null,
-    selectorRequest: selectorRequestFromPolicy(policyByOperation[operation] ?? null),
+    selectorRequest,
+    selector: selectorResolutionPlan(operation, selectorRequest),
   };
 
   if (!executeRequested) {
@@ -289,9 +316,17 @@ function toMarkdown(report) {
 
   if (report.execution.selectorRequest) {
     lines.push('');
-    lines.push('## AI Model Selector Request Preview');
+    lines.push('## AI Model Selector');
     lines.push('');
-    lines.push('This is report-only metadata. The orchestrator does not call AI Model Selector in O3 preview mode.');
+    lines.push(`Resolution requested: ${report.execution.selector?.resolutionRequested ?? false}`);
+    lines.push(`Resolution enabled: ${report.execution.selector?.resolutionEnabled ?? false}`);
+    lines.push(`Selector status: ${report.execution.selector?.status ?? 'skipped'}`);
+    if (report.execution.selector?.blockedReason) lines.push(`Blocked: ${report.execution.selector.blockedReason}`);
+    if (report.execution.selector?.selectedProvider) lines.push(`Selected provider: ${report.execution.selector.selectedProvider}`);
+    if (report.execution.selector?.selectedModel) lines.push(`Selected model: ${report.execution.selector.selectedModel}`);
+    if (report.execution.selector?.error) lines.push(`Error: ${report.execution.selector.error}`);
+    lines.push('');
+    lines.push('### Request');
     lines.push('');
     lines.push('```json');
     lines.push(JSON.stringify(report.execution.selectorRequest, null, 2));
@@ -358,6 +393,54 @@ function toMarkdown(report) {
   lines.push('');
 
   return lines.join('\n');
+}
+
+async function resolveSelector(selectorPlan, profileName) {
+  if (!selectorPlan?.resolutionRequested || !selectorPlan.resolutionEnabled) {
+    return selectorPlan;
+  }
+
+  const safeProfileName = String(profileName ?? 'unknown').replace(/[^a-z0-9._-]+/gi, '-').toLowerCase();
+  const requestPath = resolve(brainRoot, `runtime/local/graphify/${safeProfileName}-selector-request.json`);
+  const resolverPath = resolve(brainRoot, 'tools/graphify/resolve-selector.py');
+
+  await mkdir(dirname(requestPath), { recursive: true });
+  await writeFile(requestPath, `${JSON.stringify(selectorPlan.request, null, 2)}\n`, 'utf8');
+
+  const result = spawnSync('python3', [resolverPath, '--request', requestPath], {
+    cwd: brainRoot,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    encoding: 'utf8',
+    timeout: 60000,
+  });
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(result.stdout || '{}');
+  } catch (error) {
+    return {
+      ...selectorPlan,
+      status: 'failed',
+      error: `failed to parse selector resolver output: ${error instanceof Error ? error.message : String(error)}`,
+      stdoutTail: getLastNChars(result.stdout ?? '', 2000),
+      stderrTail: getLastNChars(result.stderr ?? '', 2000),
+    };
+  }
+
+  const selection = parsed.selection ?? {};
+  return {
+    ...selectorPlan,
+    status: result.status === 0 && parsed.status === 'ok' ? 'ok' : 'failed',
+    selectedProvider: selection.provider_id ?? selection.provider ?? null,
+    selectedModel: selection.model_id ?? selection.model ?? null,
+    baseUrl: selection.base_url ?? selection.endpoint ?? null,
+    reason: selection.reason ?? selection.decision_reason ?? null,
+    costEstimate: selection.cost_estimate ?? selection.estimated_cost ?? null,
+    error: parsed.error ?? null,
+    result: parsed,
+    stdoutTail: getLastNChars(result.stdout ?? '', 2000),
+    stderrTail: getLastNChars(result.stderr ?? '', 2000),
+  };
 }
 
 async function executeGraphify(repoRoot, profile) {
@@ -435,6 +518,10 @@ async function main() {
   const reportMarkdownPath = args.reportMarkdown ?? reportDefaults.markdown;
   const errors = validateProfile(loadedProfile.profile);
   const plan = executionPlan(loadedProfile.profile, args.operation, args.execute);
+  const selector = errors.length === 0
+    ? await resolveSelector(plan.selector, loadedProfile.profile.profile ?? args.profile)
+    : plan.selector;
+  const selectorCallAttempted = Boolean(selector?.resolutionRequested && selector?.resolutionEnabled);
 
   let executionResult = null;
   if (!plan.plannedOnly && args.operation === 'update') {
@@ -445,9 +532,13 @@ async function main() {
     ? 'invalid-profile'
     : plan.blockedReason
       ? 'execution-blocked'
-      : executionResult?.exitCode && executionResult.exitCode !== 0
-        ? 'failed'
-        : 'ok';
+      : selector?.status === 'failed'
+        ? 'selector-failed'
+        : selector?.status === 'blocked'
+          ? 'selector-blocked'
+          : executionResult?.exitCode && executionResult.exitCode !== 0
+            ? 'failed'
+            : 'ok';
 
   const report = {
     status,
@@ -474,13 +565,15 @@ async function main() {
       runsGraphify: plan.runsGraphify,
       graphifyCommand: plan.graphifyCommand,
       selectorPolicy: plan.selectorPolicy,
+      selectorRequest: plan.selectorRequest,
+      selector,
       blockedReason: plan.blockedReason ?? null,
       ...executionResult,
     },
     expectedOutputs: expectedOutputs(repoRoot, loadedProfile.profile),
     safety: {
       runsGraphify: plan.runsGraphify,
-      callsAiModelSelector: plan.callsAiModelSelector,
+      callsAiModelSelector: selectorCallAttempted,
       writesTargetRepo: plan.writesTargetRepo,
       hardcodesModelFallback: plan.hardcodesModelFallback,
     },
