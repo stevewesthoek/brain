@@ -9,6 +9,8 @@ See also:
 - `operations/specs/graphify-standard.md`
 - `operations/specs/graphify-orchestrator-implementation-plan.md`
 - `operations/specs/ai-model-selector-preference-policy.md`
+- `operations/specs/graphify-profile.schema.json`
+- `operations/specs/graphify-profile.examples.json`
 
 ## Purpose
 

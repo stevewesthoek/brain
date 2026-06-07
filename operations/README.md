@@ -18,7 +18,9 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
   - **`human-writing-guardrails.md`** — shared final-stage writing-quality standard for research, Bible stories, marketing copy, websites, video scripts, captions, and other human-facing text.
 - `specs/` — implementation-facing operating specifications
   - **`graphify-standard.md`** — canonical Graphify operating standard for cross-repo graph generation, AI context, model-selection policy, and repo profiles.
-  - **`graphify-profile-contract.md`** — declarative `.graphify-profile.json` contract and example profiles for Graphify-enabled repositories.
+  - **`graphify-profile-contract.md`** — declarative `.graphify-profile.json` contract for Graphify-enabled repositories.
+  - **`graphify-profile.schema.json`** — machine-readable schema for repo-local Graphify profiles.
+  - **`graphify-profile.examples.json`** — canonical starter examples for `mind-knowledge`, `brain-runtime`, and `code-app` profiles.
   - **`ai-context-compression-standard.md`** — live-zone-only and reversible-compression rules for future AI context tooling.
 - `scripts/` — executable helpers
 - `snippets/` — reusable command or content fragments
