@@ -186,6 +186,24 @@ function checkGraphifyCommand() {
   return result.status === 0;
 }
 
+function selectorRequestFromPolicy(policy) {
+  if (!policy) return null;
+
+  return {
+    taskType: policy.taskType ?? null,
+    qualityTier: policy.qualityTier ?? null,
+    selectionPolicy: policy.selectionPolicy ?? null,
+    fallbackPolicy: policy.fallbackPolicy ?? 'selector_default',
+    taskMetadata: {
+      quality_tier: policy.qualityTier ?? null,
+      preferred_models: policy.preferredModels ?? [],
+      preferred_providers: policy.preferredProviders ?? [],
+      fallback_policy: policy.fallbackPolicy ?? 'selector_default',
+      selection_policy: policy.selectionPolicy ?? null,
+    },
+  };
+}
+
 function executionPlan(profile, operation, executeRequested) {
   const policyByOperation = {
     preflight: null,
@@ -213,6 +231,7 @@ function executionPlan(profile, operation, executeRequested) {
     hardcodesModelFallback: false,
     graphifyCommand: commandByOperation[operation] ?? null,
     selectorPolicy: policyByOperation[operation] ?? null,
+    selectorRequest: selectorRequestFromPolicy(policyByOperation[operation] ?? null),
   };
 
   if (!executeRequested) {
@@ -267,6 +286,17 @@ function toMarkdown(report) {
     `Command: ${report.execution.graphifyCommand ?? 'none'}`,
     `Selector policy: ${report.execution.selectorPolicy ? report.execution.selectorPolicy.taskType : 'none'}`,
   ];
+
+  if (report.execution.selectorRequest) {
+    lines.push('');
+    lines.push('## AI Model Selector Request Preview');
+    lines.push('');
+    lines.push('This is report-only metadata. The orchestrator does not call AI Model Selector in O3 preview mode.');
+    lines.push('');
+    lines.push('```json');
+    lines.push(JSON.stringify(report.execution.selectorRequest, null, 2));
+    lines.push('```');
+  }
 
   if (report.execution.blockedReason) {
     lines.push('', `Blocked: ${report.execution.blockedReason}`);
