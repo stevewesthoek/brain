@@ -155,20 +155,29 @@ Graphify must use AI Model Selector for model/provider/backend decisions wheneve
 
 Do not hardcode model fallback logic in per-repo scripts.
 
-### Required selector capability
+### Selector dependency
 
-AI Model Selector must be verified or extended to support:
+AI Model Selector now provides the repo-agnostic preference and fallback policy required by this standard.
+
+See:
+
+```text
+operations/specs/ai-model-selector-preference-policy.md
+```
+
+The selector supports:
 
 - task-type specific routing;
 - quality tiers;
 - ordered preferred models;
-- ordered fallbacks;
-- provider constraints;
-- local-only mode;
-- premium-only / approved-model-only mode;
-- structured selection reports.
+- ordered preferred providers;
+- allowed/disallowed models;
+- allowed/disallowed providers;
+- fallback policies such as `selector_default`, `ordered`, `ordered_strict`, and `ordered_then_selector_default`;
+- existing local/private/offline constraints;
+- structured selector behavior without application-specific fallback logic.
 
-If these capabilities are missing, implement them in AI Model Selector before implementing Graphify-specific model routing.
+Existing local-only behavior remains a hard constraint and must not be overridden by model preferences.
 
 ### Required Graphify task types
 
