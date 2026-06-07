@@ -1114,6 +1114,22 @@ export function AwsVideoDashboard() {
   ];
   const recommendedStep = guideSteps.find((step) => step.active && !step.done) ?? guideSteps.find((step) => !step.done);
   const nextStep = recommendedStep;
+  const busyAction = createDraft.isPending
+    ? { title: 'Creating draft…', detail: 'Preparing a new video job. Please wait before clicking another action.' }
+    : approve.isPending
+      ? { title: 'Approving script…', detail: 'Saving approval and refreshing the pipeline state.' }
+      : generate.isPending
+        ? { title: 'Generating video…', detail: 'Creating narration, images, overlays, thumbnail, and final video. This can take a while.' }
+        : approveReview.isPending
+          ? { title: 'Approving review…', detail: 'Validating generated media and unlocking the publish step.' }
+          : requestReviewChanges.isPending || requestChanges.isPending
+            ? { title: 'Saving requested changes…', detail: 'Writing change notes and refreshing the job state.' }
+            : youtubeDryRun.isPending
+              ? { title: 'Running YouTube dry-run…', detail: 'Validating video, thumbnail, and metadata. Refresh is safe after this transitions to running.' }
+              : youtubePublish.isPending
+                ? { title: 'Publishing privately…', detail: 'Uploading the final video and thumbnail to YouTube. This may take a minute.' }
+                : null;
+
   const queryError = jobs.error ?? status.error;
   const queryErrorMessage = errorMessage(queryError);
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
@@ -1133,6 +1149,18 @@ export function AwsVideoDashboard() {
 
   return (
     <div className="aws-video-screen">
+      {busyAction ? (
+        <div className="busy-overlay" role="status" aria-live="polite" aria-busy="true">
+          <div className="busy-dialog">
+            <div className="busy-spinner" aria-hidden="true" />
+            <div>
+              <strong>{busyAction.title}</strong>
+              <p>{busyAction.detail}</p>
+            </div>
+            <div className="busy-progress" aria-hidden="true"><span /></div>
+          </div>
+        </div>
+      ) : null}
       {showErrorToast && visibleErrorMessage ? (
         <div className="toast-stack" role="alert" aria-live="assertive">
           <div className="toast error-toast">
