@@ -332,7 +332,36 @@ Modes requiring review:
 - `hybrid_slideshow`
 - `hybrid_image_slideshow`
 
-Brain Core writes `jobs/<jobId>/metadata/review.json` when publish metadata exists or when generated publish assets are detected.
+Brain Core writes `jobs/<jobId>/metadata/review.json` when publish metadata exists or when generated publish assets are detected. The generated-media handoff is finalized by Brain Core before review, dry-run, or private publish. Finalization is idempotent: it repairs `publish.json`, `thumbnail.json`, `youtube-package.json`, and `review.json` from canonical artifacts without downgrading an already approved review.
+
+**Operator timing expectations:**
+
+- Generate, dry-run, and private publish can take longer than the browser action timeout.
+- A timeout toast does not automatically mean the backend failed. Check the selected job status and activity panel after refresh.
+- If the job moves to `ready_to_publish`, continue with Review even if an earlier Generate toast timed out.
+- If dry-run shows `running`, page refresh is safe; the durable state is stored in `metadata/publish-check.json`.
+- If publish completes, duplicate upload protection may appear on later clicks or refreshes. Treat this as an already-uploaded state, not as a pipeline failure.
+- Real failures remain red and include a failed local step such as `tts_synthesis_failed`, `image_generation_failed`, or `slideshow_failed`.
+
+**Canonical finalized package:**
+
+```text
+jobs/<jobId>/metadata/scene-plan.json
+jobs/<jobId>/audio/narration-script.txt
+jobs/<jobId>/audio/narration.mp3
+jobs/<jobId>/metadata/assets.json
+jobs/<jobId>/metadata/storyboard.json
+jobs/<jobId>/metadata/image-generation.json
+jobs/<jobId>/metadata/overlay-plan.json
+jobs/<jobId>/video-generated/generated-001.mp4
+jobs/<jobId>/exports/generated-001-final.mp4
+jobs/<jobId>/exports/thumbnail-001.jpg
+jobs/<jobId>/metadata/thumbnail.json
+jobs/<jobId>/metadata/youtube-package.json
+jobs/<jobId>/metadata/publish.json
+jobs/<jobId>/metadata/review.json
+jobs/<jobId>/metadata/publish-check.json  # after dry-run starts
+```
 
 ```json
 {
