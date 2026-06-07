@@ -566,6 +566,9 @@ export type VideoAnalysisHistoryResponse = z.output<typeof videoAnalysisHistoryR
 export type YouTubePackage = z.infer<typeof youtubePackageSchema>;
 export type ThumbnailMetadata = z.infer<typeof thumbnailMetadataSchema>;
 
+// Control-plane data type (used in dashboard, defined by brain-core)
+export type VideoControlPlaneData = Record<string, unknown> | null;
+
 export const mindStewardReportStatusSchema = z.object({
   available: z.boolean(),
   fileName: z.string(),

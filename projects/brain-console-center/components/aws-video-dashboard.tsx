@@ -1198,14 +1198,15 @@ export function AwsVideoDashboard() {
   const legacyReviewData = review.data?.review ?? null;
 
   // ─── Derived from control-plane ───────────────────────────────────────────
-  const cpSelectedJob = controlPlaneData?.selectedJob ?? null;
-  const cpPhase = controlPlaneData?.phase ?? controlPlaneData?.canonicalPhase ?? 'unknown';
-  const cpAllowedActions = controlPlaneData?.allowedActions ?? {};
-  const cpFinalization = controlPlaneData?.finalization ?? null;
-  const cpArtifacts = controlPlaneData?.artifacts ?? null;
-  const cpExecution = controlPlaneData?.execution ?? null;
-  const cpReview = controlPlaneData?.review ?? null;
-  const cpPublish = controlPlaneData?.publish ?? null;
+  const cp = controlPlaneData as any;
+  const cpSelectedJob = cp?.selectedJob ?? null;
+  const cpPhase = cp?.phase ?? cp?.canonicalPhase ?? 'unknown';
+  const cpAllowedActions = cp?.allowedActions ?? {};
+  const cpFinalization = cp?.finalization ?? null;
+  const cpArtifacts = cp?.artifacts ?? null;
+  const cpExecution = cp?.execution ?? null;
+  const cpReview = cp?.review ?? null;
+  const cpPublish = cp?.publish ?? null;
 
   // Media source and generation mode from control-plane (canonical)
   const mediaSource = cpArtifacts?.mediaSource ?? cpSelectedJob?.mediaSource ?? 'unknown';
@@ -1247,11 +1248,11 @@ export function AwsVideoDashboard() {
         mediaSource: cpSelectedJob.mediaSource,
         generationMode: cpSelectedJob.generationMode,
         updatedAt: cpSelectedJob.updatedAt,
-        progress: controlPlaneData?.progress ?? 0,
+        progress: (typeof cp?.progress === 'number' ? cp.progress : 0) ?? 0,
         currentStep: cpExecution?.localStep ?? null,
       }
     : selected
-      ? { ...selected, progress: selected.progress ?? 0, currentStep: null }
+      ? { ...selected, progress: (typeof selected.progress === 'number' ? selected.progress : 0) ?? 0, currentStep: null }
       : null;
 
   // Action state per job

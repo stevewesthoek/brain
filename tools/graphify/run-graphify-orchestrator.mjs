@@ -178,6 +178,18 @@ function expectedOutputs(repoRoot, profile) {
   }));
 }
 
+function outputValidation(outputs) {
+  const requiredCount = outputs.length;
+  const availableCount = outputs.filter(output => output.exists).length;
+  const missing = outputs.filter(output => !output.exists).map(output => output.path);
+  return {
+    status: requiredCount === 0 ? 'not-configured' : availableCount === requiredCount ? 'ok' : 'partial',
+    requiredCount,
+    availableCount,
+    missing,
+  };
+}
+
 function checkGraphifyCommand() {
   const result = spawnSync('graphify', ['--version'], {
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -385,6 +397,14 @@ function toMarkdown(report) {
   }
   lines.push('');
 
+  lines.push('## Output validation');
+  lines.push('');
+  lines.push(`Status: ${report.outputValidation.status}`);
+  lines.push(`Available: ${report.outputValidation.availableCount}/${report.outputValidation.requiredCount}`);
+  if (report.outputValidation.missing.length > 0) {
+    lines.push(`Missing: ${report.outputValidation.missing.join(', ')}`);
+  }
+  lines.push('');
   lines.push('## Expected outputs');
   lines.push('');
   for (const output of report.expectedOutputs) {
@@ -528,6 +548,8 @@ async function main() {
     executionResult = await executeGraphify(repoRoot, loadedProfile.profile);
   }
 
+  const outputs = expectedOutputs(repoRoot, loadedProfile.profile);
+
   const status = errors.length > 0
     ? 'invalid-profile'
     : plan.blockedReason
@@ -570,7 +592,8 @@ async function main() {
       blockedReason: plan.blockedReason ?? null,
       ...executionResult,
     },
-    expectedOutputs: expectedOutputs(repoRoot, loadedProfile.profile),
+    outputValidation: outputValidation(outputs),
+    expectedOutputs: outputs,
     safety: {
       runsGraphify: plan.runsGraphify,
       callsAiModelSelector: selectorCallAttempted,
