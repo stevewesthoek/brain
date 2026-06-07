@@ -5,6 +5,7 @@ This plan defines the next Brain-owned implementation phase for standardized Gra
 It follows:
 
 - `operations/specs/graphify-standard.md`
+- `operations/specs/graphify-profile-contract.md`
 - `operations/specs/ai-model-selector-preference-policy.md`
 
 ## Goal

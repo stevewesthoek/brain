@@ -12,7 +12,7 @@ brain = execution layer and operational standard
 other repos = consumers: products, applications, codebases, research/project repositories
 ```
 
-No project repository should invent its own Graphify workflow. Repositories consume this standard through a small declarative profile.
+No project repository should invent its own Graphify workflow. Repositories consume this standard through a small declarative profile defined in `operations/specs/graphify-profile-contract.md`.
 
 ## Goals
 
