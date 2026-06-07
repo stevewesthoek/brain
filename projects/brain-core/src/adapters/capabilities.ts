@@ -92,12 +92,21 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
               executionReadiness.mindStewardInboxClassifierDryRunExecutionFlagName,
           }
         : {}),
+      ...(typeof executionReadiness.mindStewardInboxQueueDryRunExecutionFlagEnabled === 'boolean'
+        ? {
+            mindStewardInboxQueueDryRunExecutionFlagEnabled:
+              executionReadiness.mindStewardInboxQueueDryRunExecutionFlagEnabled,
+          }
+        : {}),
+      ...(executionReadiness.mindStewardInboxQueueDryRunExecutionFlagName
+        ? { mindStewardInboxQueueDryRunExecutionFlagName: executionReadiness.mindStewardInboxQueueDryRunExecutionFlagName }
+        : {}),
     },
     notes: [
       'Brain Core is local-only by default.',
       'Approval request endpoints record intent and audit events but do not execute actions.',
       'Scheduler, video, local-app, and orchestrator adapters remain placeholders until live read-only sources are validated.',
-      'Brain Core also exposes an approved, feature-flagged, report-only Mind Steward inbox classifier dry-run preflight.',
+      'Brain Core also exposes approved, feature-flagged, report-only Mind Steward inbox dry-run, inbox classifier dry-run, and inbox queue dry-run preflights.',
       'Approval audit persistence is supported only through a safe runtime JSONL path outside Mind, .env, .git, node_modules, dist, and build.',
       'Runtime reports are read-only and report-only; they summarize Brain-owned runtime state without storing it in Mind.',
     ],

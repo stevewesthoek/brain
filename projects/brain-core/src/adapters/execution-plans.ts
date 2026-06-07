@@ -8,10 +8,12 @@ const CANDIDATE_KINDS = [
   'scheduler-run-mind-steward-dry-run',
   'scheduler-run-mind-steward-inbox-dry-run',
   'scheduler-run-mind-steward-inbox-classifier-dry-run',
+  'scheduler-run-mind-steward-inbox-queue-dry-run',
 ] as const;
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
+const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
 
 const MIND_PREVIEW_ALLOWED_TARGETS = [
   'router/current.md',
@@ -70,6 +72,10 @@ export function isMindStewardInboxClassifierDryRunExecutionFlagEnabled(): boolea
   return process.env[MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
 }
 
+export function isMindStewardInboxQueueDryRunExecutionFlagEnabled(): boolean {
+  return process.env[MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+}
+
 export function getMindStewardDryRunExecutionFlagName(): typeof MIND_STEWARD_DRY_RUN_EXECUTION_FLAG {
   return MIND_STEWARD_DRY_RUN_EXECUTION_FLAG;
 }
@@ -82,8 +88,17 @@ export function getMindStewardInboxClassifierDryRunExecutionFlagName(): typeof M
   return MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG;
 }
 
+export function getMindStewardInboxQueueDryRunExecutionFlagName(): typeof MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG {
+  return MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG;
+}
+
 export function listExecutionPlans(): BrainCoreExecutionPlan[] {
-  return [createMindStewardDryRunPlan(), createMindStewardInboxDryRunPlan(), createMindStewardInboxClassifierDryRunPlan()];
+  return [
+    createMindStewardDryRunPlan(),
+    createMindStewardInboxDryRunPlan(),
+    createMindStewardInboxClassifierDryRunPlan(),
+    createMindStewardInboxQueueDryRunPlan(),
+  ];
 }
 
 export function getExecutionPlan(kind: string): BrainCoreExecutionPlan | undefined {
@@ -94,6 +109,7 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
   const mindStewardDryRunExecutionFlagEnabled = isMindStewardDryRunExecutionFlagEnabled();
   const mindStewardInboxDryRunExecutionFlagEnabled = isMindStewardInboxDryRunExecutionFlagEnabled();
   const mindStewardInboxClassifierDryRunExecutionFlagEnabled = isMindStewardInboxClassifierDryRunExecutionFlagEnabled();
+  const mindStewardInboxQueueDryRunExecutionFlagEnabled = isMindStewardInboxQueueDryRunExecutionFlagEnabled();
   const blockers = [
     'durable approval store not proven for this request',
     'durable audit not proven for this request',
@@ -114,6 +130,8 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
     mindStewardInboxDryRunExecutionFlagName: getMindStewardInboxDryRunExecutionFlagName(),
     mindStewardInboxClassifierDryRunExecutionFlagEnabled,
     mindStewardInboxClassifierDryRunExecutionFlagName: getMindStewardInboxClassifierDryRunExecutionFlagName(),
+    mindStewardInboxQueueDryRunExecutionFlagEnabled,
+    mindStewardInboxQueueDryRunExecutionFlagName: getMindStewardInboxQueueDryRunExecutionFlagName(),
     candidateCount: listExecutionPlans().length,
     readyCandidateCount: 0,
     blockers,
@@ -287,6 +305,52 @@ function createMindStewardInboxClassifierDryRunPlan(): BrainCoreExecutionPlan {
         id: 'select-classifier',
         description: 'Run selector-backed classifier preflight in report-only mode',
         commandPreview: 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh',
+        willRunNow: false,
+      },
+    ],
+  };
+}
+
+function createMindStewardInboxQueueDryRunPlan(): BrainCoreExecutionPlan {
+  return {
+    kind: 'scheduler-run-mind-steward-inbox-queue-dry-run',
+    candidate: true,
+    executionEnabled: false,
+    mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
+    mindStewardInboxDryRunExecutionFlagEnabled: isMindStewardInboxDryRunExecutionFlagEnabled(),
+    mindStewardInboxDryRunExecutionFlagName: getMindStewardInboxDryRunExecutionFlagName(),
+    mindStewardInboxClassifierDryRunExecutionFlagEnabled: isMindStewardInboxClassifierDryRunExecutionFlagEnabled(),
+    mindStewardInboxClassifierDryRunExecutionFlagName: getMindStewardInboxClassifierDryRunExecutionFlagName(),
+    mindStewardInboxQueueDryRunExecutionFlagEnabled: isMindStewardInboxQueueDryRunExecutionFlagEnabled(),
+    mindStewardInboxQueueDryRunExecutionFlagName: getMindStewardInboxQueueDryRunExecutionFlagName(),
+    wouldExecute: false,
+    executed: false,
+    riskLevel: 'low',
+    writesToMind: false,
+    externalSideEffects: false,
+    requiresApproval: true,
+    requiresDurableApprovalStore: true,
+    requiresDurableAudit: true,
+    requiresRollbackPlan: true,
+    rollbackPlan: 'Remove generated runtime/local/mind-steward inbox queue report files if needed; no Mind content is changed.',
+    summary: 'Report-only Mind Steward inbox queue dry-run candidate. Queue/throttle preflight stays disabled and does not process captures.',
+    mindPreviewPolicy: {
+      status: 'preview-only',
+      firstProposedAction: 'mind-steward-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      writesToMind: false,
+      externalSideEffects: false,
+      applyRouteEnabled: false,
+      allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+      blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+      requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    },
+    steps: [
+      {
+        id: 'inspect-inbox-queue',
+        description: 'Build report-only queue/throttle candidate list from Mind inbox',
+        commandPreview: 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh',
         willRunNow: false,
       },
     ],

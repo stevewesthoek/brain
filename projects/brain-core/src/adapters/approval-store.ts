@@ -7,6 +7,7 @@ const DEFAULT_RELATIVE_PATH = 'runtime/local/brain-core/approvals.json';
 const DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', 'mind'];
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-classifier-dry-run';
 const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
+const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-queue-dry-run';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
@@ -104,6 +105,8 @@ function normalizeRecord(record: BrainCoreApprovalRecord): BrainCoreApprovalReco
   const executionGate =
     executed && record.kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
       ? 'enabled-for-mind-steward-inbox-classifier-dry-run'
+      : executed && record.kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND
+      ? 'enabled-for-mind-steward-inbox-queue-dry-run'
       : executed && record.kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? 'enabled-for-mind-steward-inbox-dry-run'
         : executed

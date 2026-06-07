@@ -7,6 +7,7 @@ import {
   getExecutionPlanPreview,
   isMindStewardDryRunExecutionFlagEnabled,
   isMindStewardInboxClassifierDryRunExecutionFlagEnabled,
+  isMindStewardInboxQueueDryRunExecutionFlagEnabled,
 } from './execution-plans.js';
 import {
   getApprovalStorePath,
@@ -34,15 +35,19 @@ const APPROVAL_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 const MIND_STEWARD_DRY_RUN_KIND = 'scheduler-run-mind-steward-dry-run';
 const MIND_STEWARD_INBOX_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-dry-run';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-classifier-dry-run';
+const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND = 'scheduler-run-mind-steward-inbox-queue-dry-run';
 const MIND_STEWARD_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-dry-run-report.sh';
 const MIND_STEWARD_INBOX_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh';
+const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_COMMAND = 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh';
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
+const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
 const MIND_STEWARD_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-dry-run-report.sh';
 const MIND_STEWARD_INBOX_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-inbox-dry-run-report.sh';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh';
+const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT_RELATIVE = 'tools/scripts/mind-steward-inbox-queue-dry-run-report.sh';
 
 export function requestAction(kind = 'manual-request'): BrainCoreActionRequestResult {
   syncApprovalStoreFromDisk();
@@ -319,14 +324,17 @@ function createPreview(kind: string, wouldExecute = false): BrainCoreApprovalPre
 }
 
 function createPolicy(kind: string, executionEnabled = false): BrainCoreExecutionGatePolicy {
-  const executionGate =
-    executionEnabled && kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
-      ? 'enabled-for-mind-steward-inbox-classifier-dry-run'
-      : executionEnabled && kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
-      ? 'enabled-for-mind-steward-inbox-dry-run'
-        : executionEnabled
-          ? 'enabled-for-mind-steward-dry-run'
-          : 'disabled-until-explicit-enable';
+  let executionGate: BrainCoreExecutionGatePolicy['executionGate'] = 'disabled-until-explicit-enable';
+
+  if (executionEnabled && kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND) {
+    executionGate = 'enabled-for-mind-steward-inbox-classifier-dry-run';
+  } else if (executionEnabled && kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND) {
+    executionGate = 'enabled-for-mind-steward-inbox-queue-dry-run';
+  } else if (executionEnabled && kind === MIND_STEWARD_INBOX_DRY_RUN_KIND) {
+    executionGate = 'enabled-for-mind-steward-inbox-dry-run';
+  } else if (executionEnabled) {
+    executionGate = 'enabled-for-mind-steward-dry-run';
+  }
 
   return {
     executionEnabled,
@@ -455,7 +463,8 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
   if (
     record.kind !== MIND_STEWARD_DRY_RUN_KIND &&
     record.kind !== MIND_STEWARD_INBOX_DRY_RUN_KIND &&
-    record.kind !== MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
+    record.kind !== MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND &&
+    record.kind !== MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND
   ) {
     return undefined;
   }
@@ -538,6 +547,13 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
     );
   }
 
+  if (record.kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND && (!report || report.status !== 'success')) {
+    return createBlockedExecutionSummary(
+      getMindStewardExecutionCommand(record.kind),
+      report?.message || 'mind-steward inbox queue dry-run report is missing or invalid.',
+    );
+  }
+
   return {
     status: 'ok',
     command: getMindStewardExecutionCommand(record.kind),
@@ -576,6 +592,8 @@ function getMindStewardOutputPath(kind: string, runtimeDir: string): string {
   const outputFileName =
     kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
       ? 'inbox-classifier-latest.json'
+      : kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND
+        ? 'inbox-queue-latest.json'
       : kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
         ? 'inbox-latest.json'
         : 'latest.json';
@@ -586,12 +604,16 @@ function getMindStewardScriptPath(kind: string, repoRoot: string): string {
   const configuredPath =
     kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
       ? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT
+      : kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND
+        ? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT
       : kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT
       : process.env.BRAIN_CORE_MIND_STEWARD_DRY_RUN_SCRIPT;
   const defaultRelativePath =
     kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND
       ? MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT_RELATIVE
+      : kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND
+        ? MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT_RELATIVE
       : kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
       ? MIND_STEWARD_INBOX_DRY_RUN_SCRIPT_RELATIVE
       : MIND_STEWARD_DRY_RUN_SCRIPT_RELATIVE;
@@ -618,12 +640,20 @@ function getMindStewardExecutionCommand(kind: string): BrainCoreApprovalExecutio
     return MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_COMMAND;
   }
 
+  if (kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND) {
+    return MIND_STEWARD_INBOX_QUEUE_DRY_RUN_COMMAND;
+  }
+
   return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND ? MIND_STEWARD_INBOX_DRY_RUN_COMMAND : MIND_STEWARD_DRY_RUN_COMMAND;
 }
 
 function getMindStewardExecutionFlagName(kind: string): string {
   if (kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND) {
     return MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG;
+  }
+
+  if (kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND) {
+    return MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG;
   }
 
   return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND
@@ -634,6 +664,10 @@ function getMindStewardExecutionFlagName(kind: string): string {
 function isMindStewardExecutionFlagEnabled(kind: string): boolean {
   if (kind === MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_KIND) {
     return isMindStewardInboxClassifierDryRunExecutionFlagEnabled();
+  }
+
+  if (kind === MIND_STEWARD_INBOX_QUEUE_DRY_RUN_KIND) {
+    return isMindStewardInboxQueueDryRunExecutionFlagEnabled();
   }
 
   return kind === MIND_STEWARD_INBOX_DRY_RUN_KIND

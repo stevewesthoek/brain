@@ -148,6 +148,16 @@ function writeClassifierInboxFixture(mindRoot: string): void {
   fs.writeFileSync(path.join(inboxDir, '2026-06-07-large.md'), 'x'.repeat(2 * 1024 * 1024 + 1));
 }
 
+function writeQueueInboxFixture(mindRoot: string): void {
+  const inboxDir = path.join(mindRoot, 'capture', 'inbox');
+  fs.mkdirSync(inboxDir, { recursive: true });
+  fs.writeFileSync(path.join(inboxDir, '2026-06-07-alpha.md'), '# Alpha\nAlpha inbox entry.\n');
+  fs.writeFileSync(path.join(inboxDir, '2026-06-07-beta.md'), '# Beta\nBeta inbox entry.\n');
+  fs.writeFileSync(path.join(inboxDir, '2026-06-07-gamma.md'), '# Gamma\nGamma inbox entry.\n');
+  fs.writeFileSync(path.join(inboxDir, '2026-06-07-delta.md'), '# Delta\nDelta inbox entry.\n');
+  fs.writeFileSync(path.join(inboxDir, '2026-06-07-large.md'), 'x'.repeat(2 * 1024 * 1024 + 1));
+}
+
 test('GET /status returns read-only status for local requests', async () => {
   const response = await exercise({ method: 'GET', url: '/status' });
   const body = JSON.parse(response.body) as { service: string; mode: string; ok: boolean };
@@ -258,6 +268,7 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.executionGate.mindStewardDryRunExecutionFlagEnabled, false);
   assert.equal(body.executionGate.mindStewardDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION');
   assert.equal(body.executionGate.firstCandidate, 'scheduler-run-mind-steward-dry-run');
+  assert.equal(body.executionGate.candidateActionKinds.includes('scheduler-run-mind-steward-inbox-queue-dry-run'), true);
   assert.equal(body.executionGate.readinessEndpoint, '/execution/readiness');
   assert.equal(body.executionGate.plansEndpoint, '/execution/plans');
   assert.equal(body.executionGate.candidateActionKinds.includes('scheduler-run-mind-steward-dry-run'), true);
@@ -443,12 +454,13 @@ test('GET /scheduler/jobs returns placeholder mind-steward jobs', async () => {
   const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean; status: string }> };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.jobs.length, 7);
+  assert.equal(body.jobs.length, 8);
   assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
   assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-dry-run'), true);
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-inbox-dry-run'), true);
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-inbox-classifier-dry-run'), true);
+  assert.equal(body.jobs.some((job) => job.id === 'mind-steward-inbox-queue-dry-run'), true);
 });
 
 test('GET /scheduler/jobs reports mind-steward dry-run ok status when runtime report exists', async () => {
@@ -522,6 +534,33 @@ test('GET /scheduler/jobs reports mind-steward inbox classifier dry-run ok statu
 
     assert.equal(response.statusCode, 200);
     assert.equal(classifierJob?.status, 'ok');
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /scheduler/jobs reports mind-steward inbox queue dry-run ok status when runtime report exists', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-scheduler-inbox-queue-jobs');
+  const reportPath = path.join(testDir, 'inbox-queue-latest.json');
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify({ status: 'success' }));
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = path.join(testDir, 'latest.json');
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
+    const body = JSON.parse(response.body) as { jobs: Array<{ id: string; status: string }> };
+    const queueJob = body.jobs.find((job) => job.id === 'mind-steward-inbox-queue-dry-run');
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(queueJob?.status, 'ok');
   } finally {
     if (previousReportPath === undefined) {
       delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
@@ -1465,6 +1504,28 @@ test('POST /scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run use
   assert.equal(body.executed, false);
 });
 
+test('POST /scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run uses execution plan preview metadata without executing', async () => {
+  const response = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+  const body = JSON.parse(response.body) as {
+    approval: { kind: string; status: string };
+    preview: { kind: string; summary: string; wouldExecute: boolean; writesToMind: boolean };
+    policy: { executionEnabled: boolean; requiresDurableAudit: boolean; requiresRollbackPlan: boolean };
+    executed: boolean;
+  };
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(body.approval.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+  assert.equal(body.approval.status, 'pending');
+  assert.equal(body.preview.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+  assert.equal(body.preview.summary.toLowerCase().includes('queue/throttle preflight'), true);
+  assert.equal(body.preview.wouldExecute, false);
+  assert.equal(body.preview.writesToMind, false);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.policy.requiresDurableAudit, true);
+  assert.equal(body.policy.requiresRollbackPlan, true);
+  assert.equal(body.executed, false);
+});
+
 test('GET /execution/plans returns the future first execution candidate', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/plans' });
   const body = JSON.parse(response.body) as {
@@ -1478,6 +1539,8 @@ test('GET /execution/plans returns the future first execution candidate', async 
       mindStewardInboxDryRunExecutionFlagName?: string;
       mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
       mindStewardInboxClassifierDryRunExecutionFlagName?: string;
+      mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
+      mindStewardInboxQueueDryRunExecutionFlagName?: string;
       wouldExecute: boolean;
       executed: boolean;
       writesToMind: boolean;
@@ -1496,10 +1559,11 @@ test('GET /execution/plans returns the future first execution candidate', async 
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.plans.length, 3);
+  assert.equal(body.plans.length, 4);
   assert.equal(body.plans[0]?.kind, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.plans[1]?.kind, 'scheduler-run-mind-steward-inbox-dry-run');
   assert.equal(body.plans[2]?.kind, 'scheduler-run-mind-steward-inbox-classifier-dry-run');
+  assert.equal(body.plans[3]?.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
   assert.equal(body.plans[0]?.candidate, true);
   assert.equal(body.plans[0]?.executionEnabled, false);
   assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagEnabled, false);
@@ -1521,6 +1585,8 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans[1]?.mindStewardInboxDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION');
   assert.equal(body.plans[2]?.mindStewardInboxClassifierDryRunExecutionFlagEnabled, false);
   assert.equal(body.plans[2]?.mindStewardInboxClassifierDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION');
+  assert.equal(body.plans[3]?.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
+  assert.equal(body.plans[3]?.mindStewardInboxQueueDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION');
 });
 
 test('GET /execution/mind-preview-policy returns preview-only policy metadata', async () => {
@@ -1701,6 +1767,29 @@ test('GET /execution/plans/:kind returns the inbox classifier execution plan by 
   );
 });
 
+test('GET /execution/plans/:kind returns the inbox queue execution plan by kind', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-mind-steward-inbox-queue-dry-run' });
+  const body = JSON.parse(response.body) as {
+    plan: {
+      kind: string;
+      summary: string;
+      executed: boolean;
+      wouldExecute: boolean;
+      mindStewardInboxQueueDryRunExecutionFlagName?: string;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.plan.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+  assert.equal(body.plan.executed, false);
+  assert.equal(body.plan.wouldExecute, false);
+  assert.equal(body.plan.summary.toLowerCase().includes('queue/throttle preflight'), true);
+  assert.equal(
+    body.plan.mindStewardInboxQueueDryRunExecutionFlagName,
+    'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION',
+  );
+});
+
 test('GET /execution/plans/:kind returns not found for unknown kind', async () => {
   const response = await exercise({ method: 'GET', url: '/execution/plans/unknown-kind' });
   const body = JSON.parse(response.body) as { error: { code: string } };
@@ -1719,6 +1808,8 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
     mindStewardInboxDryRunExecutionFlagName?: string;
     mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
     mindStewardInboxClassifierDryRunExecutionFlagName?: string;
+    mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
+    mindStewardInboxQueueDryRunExecutionFlagName?: string;
     candidateCount: number;
     readyCandidateCount: number;
     blockers: string[];
@@ -1734,7 +1825,9 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
   assert.equal(body.mindStewardInboxDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION');
   assert.equal(body.mindStewardInboxClassifierDryRunExecutionFlagEnabled, false);
   assert.equal(body.mindStewardInboxClassifierDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION');
-  assert.equal(body.candidateCount, 3);
+  assert.equal(body.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
+  assert.equal(body.mindStewardInboxQueueDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION');
+  assert.equal(body.candidateCount, 4);
   assert.equal(body.readyCandidateCount, 0);
   assert.equal(body.writesToMind, false);
   assert.equal(body.executableActions, false);
@@ -1752,6 +1845,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
       mindStewardDryRunExecutionFlagEnabled: boolean;
       mindStewardInboxDryRunExecutionFlagEnabled?: boolean;
       mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
+      mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
       readyCandidateCount: number;
       blockers: string[];
       executableActions: boolean;
@@ -1764,6 +1858,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
         mindStewardDryRunExecutionFlagEnabled: boolean;
         mindStewardInboxDryRunExecutionFlagEnabled?: boolean;
         mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
+        mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
       };
     };
     const planResponse = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-mind-steward-dry-run' });
@@ -1779,6 +1874,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
       plan: {
         executionEnabled: boolean;
         mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
+        mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
         wouldExecute: boolean;
         executed: boolean;
       };
@@ -1788,6 +1884,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     assert.equal(readinessBody.mindStewardDryRunExecutionFlagEnabled, true);
     assert.equal(readinessBody.mindStewardInboxDryRunExecutionFlagEnabled, false);
     assert.equal(readinessBody.mindStewardInboxClassifierDryRunExecutionFlagEnabled, false);
+    assert.equal(readinessBody.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
     assert.equal(readinessBody.executionEnabled, false);
     assert.equal(readinessBody.readyCandidateCount, 0);
     assert.equal(readinessBody.executableActions, false);
@@ -1798,6 +1895,7 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     assert.equal(capabilitiesBody.executionGate.mindStewardDryRunExecutionFlagEnabled, true);
     assert.equal(capabilitiesBody.executionGate.mindStewardInboxDryRunExecutionFlagEnabled, false);
     assert.equal(capabilitiesBody.executionGate.mindStewardInboxClassifierDryRunExecutionFlagEnabled, false);
+    assert.equal(capabilitiesBody.executionGate.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
     assert.equal(planBody.plan.mindStewardDryRunExecutionFlagEnabled, true);
     assert.equal(planBody.plan.executionEnabled, false);
     assert.equal(planBody.plan.wouldExecute, false);
@@ -1810,6 +1908,19 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
     assert.equal(classifierPlanBody.plan.executionEnabled, false);
     assert.equal(classifierPlanBody.plan.wouldExecute, false);
     assert.equal(classifierPlanBody.plan.executed, false);
+    const queuePlanResponse = await exercise({ method: 'GET', url: '/execution/plans/scheduler-run-mind-steward-inbox-queue-dry-run' });
+    const queuePlanBody = JSON.parse(queuePlanResponse.body) as {
+      plan: {
+        executionEnabled: boolean;
+        mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
+        wouldExecute: boolean;
+        executed: boolean;
+      };
+    };
+    assert.equal(queuePlanBody.plan.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
+    assert.equal(queuePlanBody.plan.executionEnabled, false);
+    assert.equal(queuePlanBody.plan.wouldExecute, false);
+    assert.equal(queuePlanBody.plan.executed, false);
   } finally {
     if (previousFlag === undefined) {
       delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
@@ -2564,6 +2675,257 @@ test('POST /approvals/:id/approve blocks the mind-steward inbox classifier dry-r
       delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
     } else {
       process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = previousFlag;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('approved scheduler-run-mind-steward-inbox-queue-dry-run executes exactly one report-only action when all gates pass', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-queue-action-execution');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const mindRoot = path.join(testDir, 'mind');
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  writeQueueInboxFixture(mindRoot);
+  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = 'true';
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
+
+  try {
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
+    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const approvalBody = JSON.parse(approvalResponse.body) as {
+      executed: boolean;
+      approval: { kind: string; status: string };
+      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
+      policy: { executionEnabled: boolean; executionGate: string };
+      execution: { status: string; command: string; outputPath: string; writesToMind: boolean; externalSideEffects: boolean };
+    };
+    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
+    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; kind: string; executed: boolean }> };
+    const reportPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
+    const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
+      status: string;
+      mode: string;
+      writesToMind: boolean;
+      externalSideEffects: boolean;
+      executableActions: boolean;
+      queue_mode: string;
+      max_concurrent_jobs: number;
+      max_files_per_run: number;
+      debounce_seconds: number;
+      max_retries: number;
+      large_file_threshold_mb: number;
+      minimum_seconds_between_runs: number;
+      inbox: {
+        total_inbox_files: number;
+        candidate_files_selected_for_next_run: Array<{ status: string }>;
+        blocked_large_file_entries: Array<{ status: string }>;
+        skipped_entries: Array<{ status: string }>;
+        summary_counts: {
+          total_inbox_files: number;
+          pending: number;
+          blocked_large_file: number;
+          skipped_capacity: number;
+        };
+      };
+    };
+
+    assert.equal(requestResponse.statusCode, 202);
+    assert.equal(requestBody.approval.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+    assert.equal(requestBody.executed, false);
+    assert.equal(approvalResponse.statusCode, 200);
+    assert.equal(approvalBody.approval.status, 'approved');
+    assert.equal(approvalBody.executed, true);
+    assert.equal(approvalBody.preview.wouldExecute, true);
+    assert.equal(approvalBody.preview.writesToMind, false);
+    assert.equal(approvalBody.preview.externalSideEffects, false);
+    assert.equal(approvalBody.preview.commands.length, 1);
+    assert.equal(approvalBody.execution.status, 'ok');
+    assert.equal(approvalBody.execution.command, 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh');
+    assert.equal(approvalBody.execution.outputPath, 'runtime/local/mind-steward/inbox-queue-latest.json');
+    assert.equal(approvalBody.execution.writesToMind, false);
+    assert.equal(approvalBody.execution.externalSideEffects, false);
+    assert.equal(approvalBody.policy.executionEnabled, true);
+    assert.equal(approvalBody.policy.executionGate, 'enabled-for-mind-steward-inbox-queue-dry-run');
+    assert.equal(report.status, 'success');
+    assert.equal(report.mode, 'dry-run-report-only');
+    assert.equal(report.queue_mode, 'dry-run-report-only');
+    assert.equal(report.writesToMind, false);
+    assert.equal(report.externalSideEffects, false);
+    assert.equal(report.executableActions, false);
+    assert.equal(report.max_concurrent_jobs, 1);
+    assert.equal(report.max_files_per_run, 3);
+    assert.equal(report.debounce_seconds, 30);
+    assert.equal(report.max_retries, 2);
+    assert.equal(report.large_file_threshold_mb, 2);
+    assert.equal(report.minimum_seconds_between_runs, 300);
+    assert.equal(report.inbox.total_inbox_files, 5);
+    assert.equal(report.inbox.candidate_files_selected_for_next_run.length, 3);
+    assert.equal(report.inbox.blocked_large_file_entries.length, 1);
+    assert.equal(report.inbox.skipped_entries.length, 1);
+    assert.equal(report.inbox.candidate_files_selected_for_next_run.every((item) => item.status === 'pending'), true);
+    assert.equal(report.inbox.blocked_large_file_entries.every((item) => item.status === 'blocked_large_file'), true);
+    assert.equal(report.inbox.skipped_entries.every((item) => item.status === 'skipped_capacity'), true);
+    assert.equal(report.inbox.summary_counts.total_inbox_files, 5);
+    assert.equal(report.inbox.summary_counts.pending, 3);
+    assert.equal(report.inbox.summary_counts.blocked_large_file, 1);
+    assert.equal(report.inbox.summary_counts.skipped_capacity, 1);
+    assert.equal(
+      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-mind-steward-inbox-queue-dry-run' && event.executed === true),
+      true,
+    );
+  } finally {
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = previousFlag;
+    }
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    if (previousMindRoot === undefined) {
+      delete process.env.MIND_STEWARD_MIND_ROOT;
+    } else {
+      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /approvals/:id/approve does not execute the mind-steward inbox queue dry-run when the feature flag is disabled', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-queue-action-blocked');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const mindRoot = path.join(testDir, 'mind');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  writeQueueInboxFixture(mindRoot);
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
+  delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+
+  try {
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const body = JSON.parse(response.body) as {
+      policy: { executionEnabled: boolean };
+      execution: { status: string; message: string; writesToMind: boolean };
+      executed: boolean;
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.executed, false);
+    assert.equal(body.policy.executionEnabled, false);
+    assert.equal(body.execution.status, 'blocked');
+    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION'), true);
+    assert.equal(body.execution.writesToMind, false);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    if (previousMindRoot === undefined) {
+      delete process.env.MIND_STEWARD_MIND_ROOT;
+    } else {
+      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
+    }
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = previousFlag;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /approvals/:id/approve blocks the mind-steward inbox queue dry-run when the script path is missing', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-queue-action-missing-script');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const mindRoot = path.join(testDir, 'mind');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
+  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+  const previousScript = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  writeQueueInboxFixture(mindRoot);
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
+  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = 'true';
+  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT = 'tools/scripts/mind-steward-inbox-queue-dry-run-report.missing.sh';
+
+  try {
+    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const body = JSON.parse(response.body) as {
+      execution: { status: string; message: string; writesToMind: boolean };
+      executed: boolean;
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.executed, false);
+    assert.equal(body.execution.status, 'blocked');
+    assert.equal(body.execution.message.includes('missing'), true);
+    assert.equal(body.execution.writesToMind, false);
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    if (previousMindRoot === undefined) {
+      delete process.env.MIND_STEWARD_MIND_ROOT;
+    } else {
+      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
+    }
+    if (previousFlag === undefined) {
+      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+    } else {
+      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = previousFlag;
+    }
+    if (previousScript === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT;
+    } else {
+      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT = previousScript;
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }

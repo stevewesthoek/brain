@@ -16,6 +16,7 @@ interface MindStewardRuntimeReport {
 const MIND_STEWARD_RUNTIME_REPORT_PATH = 'latest.json';
 const MIND_STEWARD_INBOX_RUNTIME_REPORT_PATH = 'inbox-latest.json';
 const MIND_STEWARD_INBOX_CLASSIFIER_RUNTIME_REPORT_PATH = 'inbox-classifier-latest.json';
+const MIND_STEWARD_INBOX_QUEUE_RUNTIME_REPORT_PATH = 'inbox-queue-latest.json';
 
 export function getSchedulerStatus(): BrainCoreSchedulerStatus {
   const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
@@ -56,6 +57,8 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
   const inboxReportStatus = inboxReport ? toJobStatus(inboxReport.status) : 'placeholder';
   const inboxClassifierReport = readMindStewardRuntimeReport(MIND_STEWARD_INBOX_CLASSIFIER_RUNTIME_REPORT_PATH);
   const inboxClassifierReportStatus = inboxClassifierReport ? toJobStatus(inboxClassifierReport.status) : 'placeholder';
+  const inboxQueueReport = readMindStewardRuntimeReport(MIND_STEWARD_INBOX_QUEUE_RUNTIME_REPORT_PATH);
+  const inboxQueueReportStatus = inboxQueueReport ? toJobStatus(inboxQueueReport.status) : 'placeholder';
 
   return [
     {
@@ -98,6 +101,12 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
       id: 'mind-steward-inbox-classifier-dry-run',
       name: 'Mind Steward inbox classifier dry-run report',
       status: inboxClassifierReportStatus,
+      mutationRequired: false,
+    },
+    {
+      id: 'mind-steward-inbox-queue-dry-run',
+      name: 'Mind Steward inbox queue dry-run report',
+      status: inboxQueueReportStatus,
       mutationRequired: false,
     },
   ];
@@ -153,7 +162,7 @@ function toRuntimeSchedulerStatus(
 }
 
 function toLatestRunStatus(status: string | undefined): 'ok' | 'failed' | 'unknown' {
-  if (status === 'success') {
+  if (status === 'success' || status === 'ok') {
     return 'ok';
   }
 
@@ -165,7 +174,7 @@ function toLatestRunStatus(status: string | undefined): 'ok' | 'failed' | 'unkno
 }
 
 function toJobStatus(status: string | undefined): BrainCoreSchedulerJobSummary['status'] {
-  if (status === 'success') {
+  if (status === 'success' || status === 'ok') {
     return 'ok';
   }
 

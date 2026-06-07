@@ -5242,6 +5242,8 @@ export interface BrainCoreCapabilitySummary {
     mindStewardInboxDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
     mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
     mindStewardInboxClassifierDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
+    mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
+    mindStewardInboxQueueDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
     candidateActionKinds: string[];
     readinessEndpoint: '/execution/readiness';
     plansEndpoint: '/execution/plans';
@@ -5319,7 +5321,8 @@ export interface BrainCoreExecutionGatePolicy {
     | 'disabled-until-explicit-enable'
     | 'enabled-for-mind-steward-dry-run'
     | 'enabled-for-mind-steward-inbox-dry-run'
-    | 'enabled-for-mind-steward-inbox-classifier-dry-run';
+    | 'enabled-for-mind-steward-inbox-classifier-dry-run'
+    | 'enabled-for-mind-steward-inbox-queue-dry-run';
   requiresDurableAudit: true;
   requiresRollbackPlan: true;
 }
@@ -5359,7 +5362,8 @@ export interface BrainCoreApprovalExecutionSummary {
   command:
     | 'bash tools/scripts/mind-steward-dry-run-report.sh'
     | 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh'
-    | 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh';
+    | 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh'
+    | 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh';
   outputPath?: string;
   exitCode?: number;
   message: string;
@@ -5390,7 +5394,8 @@ export interface BrainCoreExecutionPlan {
   kind:
     | 'scheduler-run-mind-steward-dry-run'
     | 'scheduler-run-mind-steward-inbox-dry-run'
-    | 'scheduler-run-mind-steward-inbox-classifier-dry-run';
+    | 'scheduler-run-mind-steward-inbox-classifier-dry-run'
+    | 'scheduler-run-mind-steward-inbox-queue-dry-run';
   candidate: true;
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;
@@ -5399,6 +5404,8 @@ export interface BrainCoreExecutionPlan {
   mindStewardInboxDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
   mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
   mindStewardInboxClassifierDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
+  mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
+  mindStewardInboxQueueDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
   wouldExecute: false;
   executed: false;
   riskLevel: 'low';
@@ -5486,6 +5493,8 @@ export interface BrainCoreExecutionReadiness {
   mindStewardInboxDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
   mindStewardInboxClassifierDryRunExecutionFlagEnabled?: boolean;
   mindStewardInboxClassifierDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
+  mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
+  mindStewardInboxQueueDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
   candidateCount: number;
   readyCandidateCount: number;
   blockers: string[];
