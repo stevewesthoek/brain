@@ -411,8 +411,16 @@ async function main() {
     executionResult = await executeGraphify(repoRoot, loadedProfile.profile);
   }
 
+  const status = errors.length > 0
+    ? 'invalid-profile'
+    : plan.blockedReason
+      ? 'execution-blocked'
+      : executionResult?.exitCode && executionResult.exitCode !== 0
+        ? 'failed'
+        : 'ok';
+
   const report = {
-    status: errors.length === 0 ? 'ok' : 'invalid-profile',
+    status,
     mode: args.execute && args.operation === 'update' ? 'execution' : 'report-only',
     generatedAt: new Date().toISOString(),
     repo: {
