@@ -1289,12 +1289,18 @@ export function AwsVideoDashboard() {
   const selectedReview = review.data?.review ?? null;
   const reviewStatus = selectedReview?.reviewStatus ?? 'pending';
   const reviewApproved = reviewStatus === 'approved';
-  const finalizationState: 'pending' | 'failed' | 'complete' | null =
-    selectedReview?.finalization == null ? null
-    : selectedReview.finalization.ok ? 'complete'
-    : selectedReview.finalization.attempted ? 'failed'
-    : 'pending';
   const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video'].includes(generationMode);
+  // For generated-media jobs in post-generation states, treat missing review media as finalization pending
+  // (backend may still be repairing/finalizing canonical review media). Only show red error if finalization
+  // explicitly failed or was attempted but incomplete.
+  const isPostGenerationState = ['ready_to_publish', 'complete', 'generated'].includes(selectedJob?.status ?? '');
+  const isGeneratedMedia = requiresReviewGate;
+  const finalizationState: 'pending' | 'failed' | 'complete' | null =
+    selectedReview?.finalization == null
+      ? isGeneratedMedia && isPostGenerationState ? 'pending' : null
+      : selectedReview.finalization.ok ? 'complete'
+      : selectedReview.finalization.attempted ? 'failed'
+      : 'pending';
   const generationInProgress = ['generating', 'ready_to_publish'].includes(selectedJob?.status ?? '');
   const generationTimeoutStillRunning = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && generationInProgress);
   const generationTimeoutFailed = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && selectedJob?.status === 'failed');
