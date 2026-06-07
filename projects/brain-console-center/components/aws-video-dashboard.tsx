@@ -861,10 +861,41 @@ function ReviewCard({
   );
 }
 
+interface TimeoutMonitorSnapshot {
+  pendingActionByJobId: Record<string, PendingAction>;
+  createDraftTimedOut: boolean;
+  currentCreateActionId: string | null;
+  preTimeoutJobIds: string[];
+  selectedJobId: string | null;
+}
+
+const TIMEOUT_MONITOR_KEY = 'aws-video-timeout-monitor';
+
+function readTimeoutMonitor(): TimeoutMonitorSnapshot {
+  try {
+    const raw = sessionStorage.getItem(TIMEOUT_MONITOR_KEY);
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<TimeoutMonitorSnapshot>;
+      return {
+        pendingActionByJobId: p.pendingActionByJobId ?? {},
+        createDraftTimedOut: p.createDraftTimedOut ?? false,
+        currentCreateActionId: p.currentCreateActionId ?? null,
+        preTimeoutJobIds: p.preTimeoutJobIds ?? [],
+        selectedJobId: p.selectedJobId ?? null,
+      };
+    }
+  } catch { /* ignore parse/storage errors */ }
+  return { pendingActionByJobId: {}, createDraftTimedOut: false, currentCreateActionId: null, preTimeoutJobIds: [], selectedJobId: null };
+}
+
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(() => {
+    const m = readTimeoutMonitor();
+    const hasActive = m.createDraftTimedOut || Object.keys(m.pendingActionByJobId).length > 0;
+    return hasActive ? m.selectedJobId : null;
+  });
   const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
@@ -873,10 +904,18 @@ export function AwsVideoDashboard() {
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
   const [activity, setActivity] = useState<string[]>([]);
   const [generationTimeoutJobId, setGenerationTimeoutJobId] = useState<string | null>(null);
-  const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(null);
-  const [pendingActionByJobId, setPendingActionByJobId] = useState<Record<string, PendingAction>>({});
-  const [createDraftTimedOut, setCreateDraftTimedOut] = useState(false);
-  const [preTimeoutJobIds, setPreTimeoutJobIds] = useState<string[]>([]);
+  const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(
+    () => readTimeoutMonitor().currentCreateActionId
+  );
+  const [pendingActionByJobId, setPendingActionByJobId] = useState<Record<string, PendingAction>>(
+    () => readTimeoutMonitor().pendingActionByJobId
+  );
+  const [createDraftTimedOut, setCreateDraftTimedOut] = useState<boolean>(
+    () => readTimeoutMonitor().createDraftTimedOut
+  );
+  const [preTimeoutJobIds, setPreTimeoutJobIds] = useState<string[]>(
+    () => readTimeoutMonitor().preTimeoutJobIds
+  );
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
   const beginAction = () => setDismissedError(null);
@@ -1139,6 +1178,25 @@ export function AwsVideoDashboard() {
     }
   }, [approve.isSuccess, generate.isSuccess, approveReview.isSuccess, youtubeDryRun.isSuccess, youtubePublish.isSuccess]);
 
+  // Persist timeout monitor state to sessionStorage
+  useEffect(() => {
+    const hasActive = createDraftTimedOut || Object.keys(pendingActionByJobId).length > 0;
+    try {
+      if (hasActive) {
+        const snapshot: TimeoutMonitorSnapshot = {
+          pendingActionByJobId,
+          createDraftTimedOut,
+          currentCreateActionId,
+          preTimeoutJobIds,
+          selectedJobId,
+        };
+        sessionStorage.setItem(TIMEOUT_MONITOR_KEY, JSON.stringify(snapshot));
+      } else {
+        sessionStorage.removeItem(TIMEOUT_MONITOR_KEY);
+      }
+    } catch { /* storage quota or private-mode errors: ignore */ }
+  }, [pendingActionByJobId, createDraftTimedOut, currentCreateActionId, preTimeoutJobIds, selectedJobId]);
+
   const selectedJobDetail = job.data?.data;
   const selectedJobList = selected;
   const timelineEvents = timeline.data?.data.events ?? [];
@@ -1317,6 +1375,22 @@ export function AwsVideoDashboard() {
   // Poll-based clearing of pending actions: create_draft
   useEffect(() => {
     if (!createDraftTimedOut || createDraft.isPending) return;
+
+    // Primary: deterministic match by clientActionId (post-backend-change jobs have this)
+    if (currentCreateActionId) {
+      const matched = jobList.find(j => j.clientActionId === currentCreateActionId);
+      if (matched) {
+        setSelectedJobId(matched.jobId);
+        setCreateDraftTimedOut(false);
+        setCurrentCreateActionId(null);
+        addActivity(`Draft created: ${matched.jobId}`);
+        setActiveView('overview');
+      }
+      // clientActionId known but not yet visible in list — keep overlay locked
+      return;
+    }
+
+    // Fallback: first new job not in preTimeoutJobIds (jobs predating the backend change)
     const newJob = jobList.find(j => !preTimeoutJobIds.includes(j.jobId));
     if (newJob) {
       setSelectedJobId(newJob.jobId);
@@ -1325,7 +1399,7 @@ export function AwsVideoDashboard() {
       addActivity(`Draft created: ${newJob.jobId}`);
       setActiveView('overview');
     }
-  }, [createDraftTimedOut, jobList, preTimeoutJobIds, createDraft.isPending]);
+  }, [createDraftTimedOut, jobList, preTimeoutJobIds, createDraft.isPending, currentCreateActionId]);
 
   // Poll-based clearing of pending actions: generate
   useEffect(() => {

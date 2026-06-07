@@ -880,6 +880,7 @@ async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?:
 
   const inferredArts = shouldInferS3Artifacts && inferredArtifacts ? inferredArtifacts : { narration: null, finalVideo: null, thumbnail: null };
   const pubData = publish as Record<string, unknown> | null;
+  const topicData = topic as Record<string, unknown> | null;
   const yt = (pubData?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined;
   const assetsData = assets as Record<string, unknown> | null;
   const narration = assetsData?.narration as Record<string, unknown> | undefined;
@@ -932,6 +933,7 @@ async function buildVideoJobSummary(jobId: string, options?: { skipS3Inference?:
     generationMode,
     videoSourceKey: stringValue(statusJson?.videoSourceKey) ?? stringValue(assetsData?.videoSourceKey) ?? stringValue(pubData?.videoSourceKey),
     audioSourceKey: stringValue(statusJson?.audioSourceKey) ?? stringValue(assetsData?.audioSourceKey) ?? stringValue(pubData?.audioSourceKey),
+    clientActionId: (topicData?.clientActionId as string) || null,
   };
 }
 
@@ -3261,6 +3263,7 @@ export interface VideoJobSummary {
   generationMode?: string | null;
   videoSourceKey?: string | null;
   audioSourceKey?: string | null;
+  clientActionId?: string | null;
 }
 
 export interface VideoJobTimelineEvent {
@@ -4863,6 +4866,7 @@ export async function createJobFromPrompt(
       description: input.prompt,
       source: 'interactive-prompt',
       createdAt: now_iso,
+      ...(input.clientActionId ? { clientActionId: input.clientActionId } : {}),
     };
 
     const scriptMetadata: ScriptMetadata = {

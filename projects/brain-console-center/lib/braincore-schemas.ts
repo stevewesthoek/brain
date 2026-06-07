@@ -277,6 +277,7 @@ export const videoJobSchema = z.object({
   publishing: z.record(z.unknown()).optional(),
   error: z.record(z.unknown()).optional(),
   artifacts: z.record(z.unknown()).optional(),
+  clientActionId: z.string().optional().nullable(),
 }).passthrough();
 
 export const videoJobsDiagnosticsSchema = z.object({
