@@ -2684,6 +2684,7 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       channelId: (body.channelId as string) ?? '',
       prompt: (body.prompt as string) ?? '',
       requestedBy: (body.requestedBy as string) ?? '',
+      clientActionId: (body.clientActionId as string) ?? undefined,
     });
 
     if (result.ok) {

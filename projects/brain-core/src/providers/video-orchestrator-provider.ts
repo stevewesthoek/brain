@@ -52,9 +52,11 @@ const FIXTURE_TITLE_PREFIX = '[PIPELINE PROOF] ';
 // Dedup window for createJobFromPrompt: suppress duplicate creates within 30s of the first
 const CREATE_DEDUP_WINDOW_MS = 30_000;
 interface RecentCreateRequest {
-  jobId: string;
+  jobId?: string;
   createdAt: number;
-  result: CreateJobFromPromptResponse;
+  result?: CreateJobFromPromptResponse;
+  inFlightPromise?: Promise<CreateJobFromPromptResponse | CreateJobFromPromptError>;
+  accepted?: boolean;
 }
 const _recentCreateRequests = new Map<string, RecentCreateRequest>();
 
@@ -4721,6 +4723,8 @@ export interface CreateJobFromPromptResponse {
   nextStep: 'approve_script';
   createdAt: string;
   duplicateSuppressed?: true;
+  accepted?: true;
+  inFlight?: true;
 }
 
 export interface CreateJobFromPromptError {
@@ -4769,16 +4773,40 @@ export async function createJobFromPrompt(
   }
 
   // Check for duplicate create within 30s window (idempotency)
-  const dedupeKey = `${input.channelId}:${input.prompt.trim().toLowerCase()}`;
+  // Prefer clientActionId if provided, fallback to channelId:normalizedPrompt
+  const dedupeKey = input.clientActionId
+    ? `${input.channelId}:${input.clientActionId}`
+    : `${input.channelId}:${input.prompt.trim().toLowerCase()}`;
+
   const cached = _recentCreateRequests.get(dedupeKey);
   if (cached && (Date.now() - cached.createdAt) < CREATE_DEDUP_WINDOW_MS) {
-    return { ...cached.result, duplicateSuppressed: true };
+    // If request is still in-flight, return accepted response
+    if (cached.inFlightPromise) {
+      return {
+        ok: true,
+        jobId: cached.jobId ?? 'pending',
+        channelId: input.channelId,
+        topicId: 'pending',
+        scriptStatus: 'draft',
+        approvalStatus: 'pending',
+        nextStep: 'approve_script',
+        createdAt: new Date().toISOString(),
+        accepted: true,
+        inFlight: true,
+      };
+    }
+    // If result is cached, return it with suppressed flag
+    if (cached.result) {
+      return { ...cached.result, duplicateSuppressed: true };
+    }
   }
 
   const root = getVideoOrchestratorRoot();
 
-  // Validate channel exists and load config
-  try {
+  // Create a promise for this request and store it immediately for dedup
+  const requestPromise: Promise<CreateJobFromPromptResponse | CreateJobFromPromptError> = (async () => {
+    // Validate channel exists and load config
+    try {
     const channelDir = join(root, 'channels', input.channelId);
     await access(channelDir);
 
@@ -4891,38 +4919,57 @@ export async function createJobFromPrompt(
       createdAt: now_iso,
     };
 
-    // Store for dedup window
+      // Store for dedup window
+      _recentCreateRequests.set(dedupeKey, {
+        jobId,
+        createdAt: Date.now(),
+        result: successResult,
+      });
+
+      return successResult;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if it's a channel not found error
+      if (errorMsg.includes('ENOENT') || errorMsg.includes('not found')) {
+        return {
+          ok: false,
+          code: 'invalid_channel',
+          message: `Channel '${input.channelId}' not found or missing configuration`,
+        };
+      }
+
+      if (errorMsg.includes('config') || errorMsg.includes('profile')) {
+        return {
+          ok: false,
+          code: 'config_missing',
+          message: `Channel configuration or content profile not found for '${input.channelId}'`,
+        };
+      }
+
+      return {
+        ok: false,
+        code: 'write_failed',
+        message: `Failed to create job: ${errorMsg}`,
+      };
+    }
+  })();
+
+  // Store the in-flight promise immediately for dedup protection
+  _recentCreateRequests.set(dedupeKey, {
+    createdAt: Date.now(),
+    inFlightPromise: requestPromise,
+  });
+
+  // Wait for the promise and update the map with the final result
+  const result = await requestPromise;
+  if (result.ok) {
     _recentCreateRequests.set(dedupeKey, {
-      jobId,
       createdAt: Date.now(),
-      result: successResult,
+      result,
+      jobId: result.jobId,
     });
-
-    return successResult;
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-
-    // Check if it's a channel not found error
-    if (errorMsg.includes('ENOENT') || errorMsg.includes('not found')) {
-      return {
-        ok: false,
-        code: 'invalid_channel',
-        message: `Channel '${input.channelId}' not found or missing configuration`,
-      };
-    }
-
-    if (errorMsg.includes('config') || errorMsg.includes('profile')) {
-      return {
-        ok: false,
-        code: 'config_missing',
-        message: `Channel configuration or content profile not found for '${input.channelId}'`,
-      };
-    }
-
-    return {
-      ok: false,
-      code: 'write_failed',
-      message: `Failed to create job: ${errorMsg}`,
-    };
   }
+
+  return result;
 }

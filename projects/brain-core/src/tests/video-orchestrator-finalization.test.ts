@@ -270,6 +270,97 @@ test('createJobFromPrompt dedup: second request with same channelId+prompt retur
   assert.equal(result2.duplicateSuppressed, true);
 });
 
+test('createJobFromPrompt with clientActionId: second request with same clientActionId returns same job', async () => {
+  // This test verifies that clientActionId-based dedup works correctly
+  const { createJobFromPrompt } = await import('../providers/video-orchestrator-provider.js');
+
+  const channelId = 'prochat';
+  const prompt = 'Test clientActionId dedup';
+  const clientActionId = `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const result1 = await createJobFromPrompt({
+    channelId,
+    prompt,
+    requestedBy: 'test-suite',
+    clientActionId,
+  });
+
+  if (!result1.ok && (result1 as unknown as Record<string, unknown>).code === 'invalid_channel') {
+    console.log('Skipping clientActionId test: channel config not found');
+    return;
+  }
+
+  assert.equal(result1.ok, true);
+  if (!result1.ok) return;
+
+  const jobId1 = result1.jobId;
+
+  // Call again with same clientActionId but different prompt
+  const result2 = await createJobFromPrompt({
+    channelId,
+    prompt: 'Different prompt entirely',
+    requestedBy: 'test-suite',
+    clientActionId,
+  });
+
+  assert.equal(result2.ok, true);
+  if (!result2.ok) return;
+
+  // Should return same jobId (dedup by clientActionId, not prompt)
+  assert.equal(result2.jobId, jobId1);
+  assert.equal(result2.duplicateSuppressed, true);
+});
+
+test('createJobFromPrompt in-flight dedup: concurrent requests with same clientActionId return accepted state', async () => {
+  // This test verifies that in-flight requests return accepted: true, inFlight: true
+  // instead of creating duplicate jobs
+  const { createJobFromPrompt } = await import('../providers/video-orchestrator-provider.js');
+
+  const channelId = 'prochat';
+  const prompt = 'Test concurrent in-flight dedup';
+  const clientActionId = `concurrent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Fire both requests immediately (without awaiting first)
+  const promise1 = createJobFromPrompt({
+    channelId,
+    prompt,
+    requestedBy: 'test-suite',
+    clientActionId,
+  });
+
+  const promise2 = createJobFromPrompt({
+    channelId,
+    prompt,
+    requestedBy: 'test-suite',
+    clientActionId,
+  });
+
+  const [result1, result2] = await Promise.all([promise1, promise2]);
+
+  if (!result1.ok && (result1 as unknown as Record<string, unknown>).code === 'invalid_channel') {
+    console.log('Skipping in-flight dedup test: channel config not found');
+    return;
+  }
+
+  // First should be ok: true
+  assert.equal(result1.ok, true);
+  if (!result1.ok) return;
+
+  // Second should also be ok: true
+  assert.equal(result2.ok, true);
+  if (!result2.ok) return;
+
+  // Second should be marked as either inFlight (arrived while first was running)
+  // or duplicateSuppressed (arrived after first completed)
+  assert(result2.inFlight || result2.duplicateSuppressed, 'Second request should be marked inFlight or duplicateSuppressed');
+
+  // If not in-flight, both should reference the same job
+  if (!result2.inFlight) {
+    assert.equal(result2.jobId, result1.jobId);
+    assert.equal(result2.duplicateSuppressed, true);
+  }
+});
+
 test('review finalization state: getVideoReview includes finalization field for generated-media jobs', async () => {
   // This test verifies that getVideoReview includes finalization state information
   // for generated-media jobs at ready_to_publish state

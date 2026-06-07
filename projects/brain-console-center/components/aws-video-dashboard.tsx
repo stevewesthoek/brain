@@ -861,6 +861,7 @@ export function AwsVideoDashboard() {
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
   const [activity, setActivity] = useState<string[]>([]);
   const [generationTimeoutJobId, setGenerationTimeoutJobId] = useState<string | null>(null);
+  const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(null);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
   const beginAction = () => setDismissedError(null);
@@ -934,10 +935,18 @@ export function AwsVideoDashboard() {
   };
 
   const createDraft = useMutation({
-    mutationFn: () => postBrainCoreAction('/api/video-orchestrator/jobs/create-from-prompt', videoActionResultSchema, { channelId, prompt, requestedBy: 'brain-console-center' }, 15_000),
+    mutationFn: async () => {
+      // Generate stable clientActionId once per button click
+      const actionId = currentCreateActionId || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setCurrentCreateActionId(actionId);
+      return postBrainCoreAction('/api/video-orchestrator/jobs/create-from-prompt', videoActionResultSchema, { channelId, prompt, requestedBy: 'brain-console-center', clientActionId: actionId }, 15_000);
+    },
     onSuccess: async (result) => {
       const possibleJobId = typeof result.jobId === 'string' ? result.jobId : typeof (result.job as { jobId?: unknown } | undefined)?.jobId === 'string' ? (result.job as { jobId: string }).jobId : null;
-      if (possibleJobId) setSelectedJobId(possibleJobId);
+      if (possibleJobId) {
+        setSelectedJobId(possibleJobId);
+        setCurrentCreateActionId(null);
+      }
       setPrompt('');
       setActiveView('overview');
       addActivity(`Draft created${possibleJobId ? `: ${possibleJobId}` : ''}`);
@@ -945,11 +954,12 @@ export function AwsVideoDashboard() {
     },
     onError: async (error) => {
       if (isTimeoutError(error)) {
-        addActivity('Draft creation accepted or still running. Refreshing job list…');
+        addActivity('Draft creation is still running. Do not click again; refreshing job list…');
         await invalidateVideo();
         return;
       }
       addActivity(`Draft creation failed: ${errorMessage(error)}`);
+      setCurrentCreateActionId(null);
     },
   });
 
@@ -1216,7 +1226,7 @@ export function AwsVideoDashboard() {
         : 'Waiting for generated assets';
   const guideSteps = [
     { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
-    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished, active: canApprove },
+    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished || hasGeneratedAssets, active: canApprove && !hasGeneratedAssets },
     { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate', help: 'Run image generation and assembly.', done: selectedReady || selectedPublished, active: canGenerate || generationInProgress || generationTimeoutStillRunning },
     { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved && selectedReady },
     { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
@@ -1242,7 +1252,7 @@ export function AwsVideoDashboard() {
 
   const statusOnlyError = status.error;
   const statusOnlyErrorMessage = errorMessage(statusOnlyError);
-  const refreshSafeTimeoutErrors = [approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
+  const refreshSafeTimeoutErrors = [createDraft.error, approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error]
     .filter((error) => !(isTimeoutError(error) && refreshSafeTimeoutErrors.includes(error)))
     .find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
