@@ -736,10 +736,10 @@ function ReviewCard({
         <div className="pipeline-actions">
           <button
             className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
-            disabled={!jobId || approvePending || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
+            disabled={!jobId || approvePending || reviewRecord?.reviewStatus === 'approved' || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
             onClick={onApprove}
           >
-            {approvePending ? 'Approving review…' : 'Approve review'}
+            {approvePending ? 'Approving review…' : reviewRecord?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
           </button>
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>{requestChangesPending ? 'Requesting changes…' : 'Request changes'}</button>
         </div>
