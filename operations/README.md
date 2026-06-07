@@ -25,6 +25,7 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
   - **`infinite-brain-runtime-inventory.md`** — Current state inventory of Brain Core, Graphify, Mind Steward, and Mind vault. Identifies gaps, safety risks, and prerequisites for autonomous knowledge graph maintenance.
   - **`infinite-brain-runtime-roadmap.md`** — 18-phase roadmap (IB0–IB17) across 4 phase groups: Foundation, Knowledge Maintenance, Continuous Reasoning, Query & Discovery. Spans 7 sprints (~4.5 months) with go/no-go checkpoints.
   - **`infinite-brain-runtime-implementation-plan.md`** — Sprint-by-sprint implementation breakdown with deliverables, task-level details, testing strategy, and quality gates for each of 7 sprints.
+  - **`infinite-brain-runtime-notebooklm-findings.md`** — Research findings from NotebookLM "Brain Video Analyzer" notebook. Provides 16 recommended entity types (vs. 8 observed), validates 10 edge types, specifies atomic note guidance (50–300 lines), AI/manual maintenance split, LLM retrieval strategies, and explicit warnings against common anti-patterns. Alignment recommendations for planning documents.
 - `scripts/` — executable helpers
 - `snippets/` — reusable command or content fragments
 - `system-configs/` — curated synced tool and machine config
