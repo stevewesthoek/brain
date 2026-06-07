@@ -52,7 +52,37 @@ The first implementation slice is report-only. It must not:
 
 
 
-## Planned Graphify CLI syntax
+## Guarded execution
+
+As of Phase O2.1, the orchestrator supports guarded `--operation update --execute` mode:
+
+**When to execute:**
+```bash
+# Plan only (report-only)
+node tools/graphify/run-graphify-orchestrator.mjs --repo . --operation update
+
+# Execute (with guard flag enabled)
+GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true node tools/graphify/run-graphify-orchestrator.mjs --repo . --operation update --execute
+```
+
+**Execution conditions:**
+- `GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true` environment variable must be set
+- `--execute` flag must be passed
+- `--operation update` (not `full`, `critical-rebuild`)
+- Profile validation must pass
+- `graphify` command must be available on PATH
+
+**Blocked operations:**
+- `full` — remains report-only (requires AI Model Selector integration)
+- `critical-rebuild` — remains report-only (requires AI Model Selector integration)
+- Any operation without `GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true` and `--execute`
+
+**Report outputs:**
+- JSON report includes execution metadata (timestamps, exit code, stdout/stderr tail)
+- Markdown report includes execution result when run
+- Safety flags confirm: no AI Model Selector calls, no hardcoded model logic
+
+**Planned Graphify CLI syntax**
 
 The orchestrator plans commands using the official terminal CLI shape:
 
@@ -60,5 +90,3 @@ The orchestrator plans commands using the official terminal CLI shape:
 graphify .
 graphify . --update
 ```
-
-Execution remains disabled until the orchestrator gains an explicitly guarded run path.

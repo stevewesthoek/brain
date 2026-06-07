@@ -2,9 +2,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 const brainRoot = resolve(new URL('../..', import.meta.url).pathname);
 const examplesPath = resolve(brainRoot, 'operations/specs/graphify-profile.examples.json');
+
 function defaultReportPaths(profileName) {
   const safeProfileName = String(profileName ?? 'unknown').replace(/[^a-z0-9._-]+/gi, '-').toLowerCase();
   return {
@@ -20,6 +22,7 @@ function parseArgs(argv) {
     operation: 'preflight',
     reportJson: null,
     reportMarkdown: null,
+    execute: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -38,6 +41,8 @@ function parseArgs(argv) {
       args.reportJson = resolve(brainRoot, argv[++index] ?? '');
     } else if (arg === '--report-md') {
       args.reportMarkdown = resolve(brainRoot, argv[++index] ?? '');
+    } else if (arg === '--execute') {
+      args.execute = true;
     } else if (arg === '--help' || arg === '-h') {
       args.help = true;
     } else {
@@ -49,7 +54,36 @@ function parseArgs(argv) {
 }
 
 function helpText() {
-  return `Usage: node tools/graphify/run-graphify-orchestrator.mjs --repo <path> [--profile <name>]\n\nReport-only Graphify orchestrator preflight.\n\nOptions:\n  --repo <path>         Target repository path to inspect. Required.\n  --profile <name>      Named example profile fallback when .graphify-profile.json is absent.\n  --operation <name>    Planned operation: preflight, full, update, or critical-rebuild. Default: preflight.\n  --report-json <path>  Brain-relative report JSON output.\n  --report-md <path>    Brain-relative report Markdown output.\n\nOperations other than preflight are currently planning/report-only and do not execute Graphify.\n`;
+  const lines = [
+    'Usage: node tools/graphify/run-graphify-orchestrator.mjs --repo <path> [--profile <name>]',
+    '',
+    'Graphify orchestrator with optional guarded execution.',
+    '',
+    'Options:',
+    '  --repo <path>         Target repository path to inspect. Required.',
+    '  --profile <name>      Named example profile fallback when .graphify-profile.json is absent.',
+    '  --operation <name>    Operation: preflight, full, update, or critical-rebuild. Default: preflight.',
+    '  --execute             Enable execution for --operation update (requires GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true).',
+    '  --report-json <path>  Brain-relative report JSON output.',
+    '  --report-md <path>    Brain-relative report Markdown output.',
+    '',
+    'Guarded execution:',
+    '  - Only --operation update can execute',
+    '  - Requires GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true environment variable',
+    '  - Full and critical-rebuild remain blocked even with --execute and the env flag',
+    '',
+    'Examples:',
+    '  # Preflight only (default)',
+    '  node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime',
+    '',
+    '  # Plan an update (report-only)',
+    '  node tools/graphify/run-graphify-orchestrator.mjs --repo . --operation update --profile brain-runtime',
+    '',
+    '  # Execute an update (requires env flag)',
+    '  GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true node tools/graphify/run-graphify-orchestrator.mjs --repo . --operation update --execute --profile brain-runtime',
+    '',
+  ];
+  return lines.join('\n');
 }
 
 async function readJson(path) {
@@ -144,7 +178,15 @@ function expectedOutputs(repoRoot, profile) {
   }));
 }
 
-function plannedExecution(profile, operation) {
+function checkGraphifyCommand() {
+  const result = spawnSync('graphify', ['--version'], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  });
+  return result.status === 0;
+}
+
+function executionPlan(profile, operation, executeRequested) {
   const policyByOperation = {
     preflight: null,
     full: profile.initialBuildPolicy ?? null,
@@ -159,55 +201,191 @@ function plannedExecution(profile, operation) {
     'critical-rebuild': 'graphify .',
   };
 
-  return {
+  const executionEnabled = process.env.GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION === 'true';
+  let plan = {
     operation,
+    executeRequested,
+    executionEnabled,
     plannedOnly: true,
     runsGraphify: false,
     callsAiModelSelector: false,
     writesTargetRepo: false,
+    hardcodesModelFallback: false,
     graphifyCommand: commandByOperation[operation] ?? null,
     selectorPolicy: policyByOperation[operation] ?? null,
   };
+
+  if (!executeRequested) {
+    return plan;
+  }
+
+  if (operation !== 'update') {
+    plan.blockedReason = `Operation '${operation}' is not executable yet. Only 'update' can execute.`;
+    return plan;
+  }
+
+  if (!executionEnabled) {
+    plan.blockedReason = 'Execution disabled. Set GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true to enable.';
+    return plan;
+  }
+
+  if (!checkGraphifyCommand()) {
+    plan.blockedReason = 'graphify command not found on PATH. Install graphify CLI to enable execution.';
+    return plan;
+  }
+
+  plan.plannedOnly = false;
+  plan.runsGraphify = true;
+  plan.writesTargetRepo = true;
+  return plan;
+}
+
+function getLastNChars(str, n) {
+  if (!str) return '';
+  return str.length > n ? str.slice(-n) : str;
 }
 
 function toMarkdown(report) {
   const lines = [
-    '# Graphify Orchestrator Preflight',
+    '# Graphify Orchestrator Report',
     '',
     `Status: ${report.status}`,
-    '',
     `Generated: ${report.generatedAt}`,
+    '',
+    '## Configuration',
+    '',
     `Target repo: ${report.repo.path}`,
     `Profile source: ${report.profile.source}`,
     `Profile: ${report.profile.name}`,
     `Operation: ${report.execution.operation}`,
+    `Execute requested: ${report.execution.executeRequested}`,
+    `Execution enabled: ${report.execution.executionEnabled}`,
     `Planned only: ${report.execution.plannedOnly}`,
     '',
-    '## Planned execution',
+    '## Execution',
     '',
-    `Graphify command: ${report.execution.graphifyCommand ?? 'none'}`,
+    `Command: ${report.execution.graphifyCommand ?? 'none'}`,
     `Selector policy: ${report.execution.selectorPolicy ? report.execution.selectorPolicy.taskType : 'none'}`,
-    '',
-    '## Safety',
-    '',
-    `- Runs Graphify: ${report.safety.runsGraphify}`,
-    `- Calls AI Model Selector: ${report.safety.callsAiModelSelector}`,
-    `- Writes target repo: ${report.safety.writesTargetRepo}`,
-    `- Hardcodes model fallback: ${report.safety.hardcodesModelFallback}`,
-    '',
-    '## Validation',
-    '',
-    ...(report.validation.errors.length === 0
-      ? ['- Profile validation passed.']
-      : report.validation.errors.map(error => `- ${error}`)),
-    '',
-    '## Expected outputs',
-    '',
-    ...report.expectedOutputs.map(output => `- [${output.exists ? 'x' : ' '}] ${output.path}`),
-    '',
   ];
 
-  return `${lines.join('\n')}\n`;
+  if (report.execution.blockedReason) {
+    lines.push('', `Blocked: ${report.execution.blockedReason}`);
+  }
+
+  if (report.execution.startedAt) {
+    lines.push('');
+    lines.push('## Execution Result');
+    lines.push('');
+    lines.push(`Started: ${report.execution.startedAt}`);
+    lines.push(`Ended: ${report.execution.endedAt}`);
+    lines.push(`Duration: ${report.execution.durationMs}ms`);
+    lines.push(`Exit code: ${report.execution.exitCode}`);
+
+    if (report.execution.stdoutTail) {
+      lines.push('');
+      lines.push('### stdout (tail)');
+      lines.push('');
+      lines.push('```');
+      lines.push(report.execution.stdoutTail);
+      lines.push('```');
+    }
+
+    if (report.execution.stderrTail) {
+      lines.push('');
+      lines.push('### stderr (tail)');
+      lines.push('');
+      lines.push('```');
+      lines.push(report.execution.stderrTail);
+      lines.push('```');
+    }
+  }
+
+  lines.push('');
+  lines.push('## Safety');
+  lines.push('');
+  lines.push(`- Runs Graphify: ${report.safety.runsGraphify}`);
+  lines.push(`- Calls AI Model Selector: ${report.safety.callsAiModelSelector}`);
+  lines.push(`- Writes target repo: ${report.safety.writesTargetRepo}`);
+  lines.push(`- Hardcodes model fallback: ${report.safety.hardcodesModelFallback}`);
+  lines.push('');
+
+  lines.push('## Validation');
+  lines.push('');
+  if (report.validation.errors.length === 0) {
+    lines.push('- Profile validation passed.');
+  } else {
+    for (const error of report.validation.errors) {
+      lines.push(`- ${error}`);
+    }
+  }
+  lines.push('');
+
+  lines.push('## Expected outputs');
+  lines.push('');
+  for (const output of report.expectedOutputs) {
+    lines.push(`- [${output.exists ? 'x' : ' '}] ${output.path}`);
+  }
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+async function executeGraphify(repoRoot, profile) {
+  const startedAt = new Date();
+  let stdout = '';
+  let stderr = '';
+  let exitCode = 1;
+  let endedAt = null;
+
+  try {
+    const result = spawnSync('graphify', ['.', '--update'], {
+      cwd: repoRoot,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: 'utf8',
+      timeout: 300000,
+    });
+
+    stdout = result.stdout ?? '';
+    stderr = result.stderr ?? '';
+    exitCode = result.status ?? 1;
+  } catch (error) {
+    stderr = error instanceof Error ? error.message : String(error);
+  }
+
+  endedAt = new Date();
+  const durationMs = endedAt.getTime() - startedAt.getTime();
+  const stdoutTail = getLastNChars(stdout, 2000);
+  const stderrTail = getLastNChars(stderr, 2000);
+
+  const graphJsonPath = resolve(repoRoot, 'graphify-out/graph.json');
+  const reportPath = resolve(repoRoot, 'graphify-out/GRAPH_REPORT.md');
+
+  let graphJsonValid = false;
+  if (exitCode === 0 && existsSync(graphJsonPath)) {
+    try {
+      const content = await readFile(graphJsonPath, 'utf8');
+      JSON.parse(content);
+      graphJsonValid = true;
+    } catch {
+      graphJsonValid = false;
+    }
+  }
+
+  const reportExists = exitCode === 0 && existsSync(reportPath);
+
+  return {
+    exitCode,
+    startedAt: startedAt.toISOString(),
+    endedAt: endedAt.toISOString(),
+    durationMs,
+    stdoutTail,
+    stderrTail,
+    validation: {
+      graphJsonValid,
+      reportExists,
+      allValid: exitCode === 0 && graphJsonValid && reportExists,
+    },
+  };
 }
 
 async function main() {
@@ -226,9 +404,16 @@ async function main() {
   const reportJsonPath = args.reportJson ?? reportDefaults.json;
   const reportMarkdownPath = args.reportMarkdown ?? reportDefaults.markdown;
   const errors = validateProfile(loadedProfile.profile);
+  const plan = executionPlan(loadedProfile.profile, args.operation, args.execute);
+
+  let executionResult = null;
+  if (!plan.plannedOnly && args.operation === 'update') {
+    executionResult = await executeGraphify(repoRoot, loadedProfile.profile);
+  }
+
   const report = {
     status: errors.length === 0 ? 'ok' : 'invalid-profile',
-    mode: 'report-only-preflight',
+    mode: args.execute && args.operation === 'update' ? 'execution' : 'report-only',
     generatedAt: new Date().toISOString(),
     repo: {
       path: repoRoot,
@@ -243,20 +428,30 @@ async function main() {
     validation: {
       errors,
     },
-    execution: plannedExecution(loadedProfile.profile, args.operation),
+    execution: {
+      operation: args.operation,
+      executeRequested: args.execute,
+      executionEnabled: plan.executionEnabled,
+      plannedOnly: plan.plannedOnly,
+      runsGraphify: plan.runsGraphify,
+      graphifyCommand: plan.graphifyCommand,
+      selectorPolicy: plan.selectorPolicy,
+      blockedReason: plan.blockedReason ?? null,
+      ...executionResult,
+    },
     expectedOutputs: expectedOutputs(repoRoot, loadedProfile.profile),
     safety: {
-      runsGraphify: false,
-      callsAiModelSelector: false,
-      writesTargetRepo: false,
-      hardcodesModelFallback: false,
+      runsGraphify: plan.runsGraphify,
+      callsAiModelSelector: plan.callsAiModelSelector,
+      writesTargetRepo: plan.writesTargetRepo,
+      hardcodesModelFallback: plan.hardcodesModelFallback,
     },
   };
 
   await mkdir(dirname(reportJsonPath), { recursive: true });
   await mkdir(dirname(reportMarkdownPath), { recursive: true });
   await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(reportMarkdownPath, toMarkdown(report), 'utf8');
+  await writeFile(reportMarkdownPath, `${toMarkdown(report)}\n`, 'utf8');
 
   process.stdout.write(`Wrote ${reportJsonPath}\nWrote ${reportMarkdownPath}\nStatus: ${report.status}\n`);
 }

@@ -10,7 +10,9 @@
     "sync-credentials": "bash tools/scripts/sync-credentials.sh",
     "graphify:preflight": "node tools/graphify/run-graphify-orchestrator.mjs",
     "graphify:preflight:mind": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge",
-    "graphify:preflight:brain": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime"
+    "graphify:preflight:brain": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime",
+    "graphify:update:mind:blocked": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge --operation update --execute",
+    "graphify:update:brain:blocked": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime --operation update --execute"
   },
   "keywords": [
     "claude",
