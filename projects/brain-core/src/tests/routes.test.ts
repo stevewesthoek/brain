@@ -2131,6 +2131,74 @@ test('roadmap POST targets create approval requests without executing', async ()
   }
 });
 
+test('approved Graphify scheduler candidates execute safe report wrappers', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-graphify-action-execution');
+  const storePath = path.join(testDir, 'approvals.json');
+  const auditPath = path.join(testDir, 'approval-audit.jsonl');
+  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
+  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+
+  const cases = [
+    {
+      route: '/scheduler/jobs/graphify-preflight-mind/request-run',
+      kind: 'scheduler-run-graphify-preflight-mind',
+      command: 'bash tools/scripts/graphify-orchestrator-report.sh preflight-mind',
+      outputPath: 'runtime/local/graphify/mind-knowledge-latest.json',
+    },
+    {
+      route: '/scheduler/jobs/graphify-update-brain-blocked/request-run',
+      kind: 'scheduler-run-graphify-update-brain-blocked',
+      command: 'bash tools/scripts/graphify-orchestrator-report.sh update-brain-blocked',
+      outputPath: 'runtime/local/graphify/brain-runtime-latest.json',
+    },
+  ] as const;
+
+  try {
+    for (const item of cases) {
+      const requestResponse = await exercise({ method: 'POST', url: item.route });
+      const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
+      const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+      const approvalBody = JSON.parse(approvalResponse.body) as {
+        approval: { status: string };
+        execution: { status: string; command: string; outputPath: string; exitCode: number; writesToMind: boolean; externalSideEffects: boolean };
+        executed: boolean;
+      };
+      const reportPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
+
+      assert.equal(requestResponse.statusCode, 202);
+      assert.equal(requestBody.approval.kind, item.kind);
+      assert.equal(requestBody.executed, false);
+      assert.equal(approvalResponse.statusCode, 200);
+      assert.equal(approvalBody.approval.status, 'approved');
+      assert.equal(approvalBody.executed, true);
+      assert.equal(approvalBody.execution.status, 'ok');
+      assert.equal(approvalBody.execution.command, item.command);
+      assert.equal(approvalBody.execution.outputPath, item.outputPath);
+      assert.equal(approvalBody.execution.exitCode, 0);
+      assert.equal(approvalBody.execution.writesToMind, false);
+      assert.equal(approvalBody.execution.externalSideEffects, false);
+      assert.equal(fs.existsSync(reportPath), true);
+    }
+  } finally {
+    if (previousStorePath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
+    }
+    if (previousAuditPath === undefined) {
+      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+    } else {
+      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
 test('POST /approvals/:id/approve executes only the approved mind-steward dry-run when all gates pass', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
   const storePath = path.join(testDir, 'approvals.json');
