@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
-import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, videoControlPlaneSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview } from '@/lib/braincore-schemas';
+import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, videoControlPlaneSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview, type VideoControlPlaneData } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 
@@ -58,9 +58,6 @@ function containsInternalOverlayTerms(value: unknown): boolean {
   return record ? Object.values(record).some((item) => containsInternalOverlayTerms(item)) : false;
 }
 
-function isReadyToPublish(job: Partial<VideoJob> | null | undefined): boolean {
-  return job?.status === 'ready_to_publish' || job?.status === 'published';
-}
 
 function errorMessage(error: unknown): string | null {
   if (!error) return null;
@@ -116,35 +113,6 @@ function isQuotaExceededResult(error: unknown, result?: Record<string, unknown> 
   return payload.code === 'youtube_quota_exceeded';
 }
 
-// Monotonic status derivation: prevents status from downgrading backwards through list refresh cycles
-function getMonotonicJobStatus(
-  detail: Partial<VideoJob> | null | undefined,
-  listJob: Partial<VideoJob> | null | undefined,
-  hasGeneratedAssets: boolean,
-): string {
-  // Detail view is canonical when it exists (fresh fetch with reconciliation)
-  const canonical = detail?.status ?? listJob?.status ?? 'unknown';
-
-  // If detail says ready_to_publish or published, never downgrade to generating
-  if (['ready_to_publish', 'published'].includes(canonical)) return canonical;
-  if (hasGeneratedAssets && canonical === 'generating') return 'ready_to_publish';
-
-  return canonical;
-}
-
-function pipelineSteps(job: Partial<VideoJob> | null | undefined, selectedReady: boolean, selectedUploaded: boolean) {
-  const status = job?.status ?? 'not_available';
-  const approval = nestedStatus(job?.approval);
-  const generation = nestedStatus(job?.generation);
-  const publishing = nestedStatus(job?.publishing);
-  return [
-    { key: 'draft', label: 'Draft', state: job ? 'complete' : 'not available' },
-    { key: 'approval', label: 'Approve', state: approval === 'approved' ? 'complete' : approval },
-    { key: 'generation', label: 'Generate', state: selectedReady ? 'complete' : generation },
-    { key: 'contract', label: 'Publish contract', state: selectedReady || status === 'published' ? 'complete' : 'waiting' },
-    { key: 'youtube', label: 'Private YouTube', state: selectedUploaded ? 'uploaded' : publishing },
-  ];
-}
 
 function JobsDiagnosticsCard({
   diagnostics,
@@ -522,14 +490,13 @@ function ReviewCard({
   notes: string;
   setNotes: (value: string) => void;
   isRecommended?: boolean;
-  finalizationState?: 'pending' | 'failed' | 'complete' | null;
+  finalizationState?: 'not_required' | 'pending' | 'failed' | 'complete' | null;
   isPendingTimeout?: boolean;
   controlPlaneData?: Record<string, unknown> | null;
 }) {
   if (!jobId) return null;
 
-  // CONTROL PLANE IS CANONICAL: when available, use controlPlane.review.media directly
-  // Otherwise fall back to reconstructing from reviewData + artifactData
+  // Extract control-plane review media as canonical source
   const controlPlaneReviewMedia = controlPlaneData
     ? (() => {
         const cpRecord = asRecord(controlPlaneData);
@@ -537,62 +504,30 @@ function ReviewCard({
         return cpReview?.media as Partial<VideoReview['media']> | null | undefined;
       })()
     : null;
-  const usingControlPlaneMedia = Boolean(controlPlaneReviewMedia);
 
-  const reviewRecord = reviewData;
+  // Log dev warning if falling back to legacy data when control-plane exists
+  if (controlPlaneData && !controlPlaneReviewMedia && process.env.NODE_ENV === 'development') {
+    console.warn('[ReviewCard] Control-plane exists but review.media is null; falling back to legacy review/artifact data');
+  }
+
+  // Control-plane is ALWAYS canonical when available. Never reconstruct from legacy sources.
+  const reviewMedia = controlPlaneReviewMedia ?? null;
+
   const artifactRecord: Record<string, unknown> = artifactData ?? {};
-  const artifactReviewMedia = asRecord(artifactRecord.reviewMedia) as Partial<VideoReview['media']> | null;
-  const reviewMedia = (usingControlPlaneMedia && controlPlaneReviewMedia ? controlPlaneReviewMedia : reviewRecord?.media ?? artifactReviewMedia) ?? null;
   const publishableAssets = asRecord(artifactRecord.publishableAssets);
-  const artifactNarration = asRecord(artifactRecord.narration);
-  const artifactSourceVideo = asRecord(artifactRecord.sourceVideo);
-  const artifactSceneImageKeys = Array.isArray(artifactRecord.sceneImageKeys)
-    ? (artifactRecord.sceneImageKeys as unknown[]).filter((item): item is string => typeof item === 'string')
-    : [];
-  const effectiveSceneImageKeys = Array.isArray(reviewMedia?.sceneImageKeys) && reviewMedia.sceneImageKeys.length > 0
-    ? reviewMedia.sceneImageKeys
-    : artifactSceneImageKeys;
-  const effectiveMedia = {
-    scenePlanKey: reviewMedia?.scenePlanKey ?? stringField(artifactRecord, 'scenePlanKey') ?? null,
-    narrationScriptKey: reviewMedia?.narrationScriptKey ?? stringField(artifactRecord, 'narrationScriptKey') ?? null,
-    audioKey: reviewMedia?.audioKey
-      ?? stringField(artifactRecord, 'audioKey')
-      ?? stringField(artifactRecord, 'audioSourceKey')
-      ?? stringField(artifactNarration, 'path')
-      ?? null,
-    sceneImageKeys: effectiveSceneImageKeys,
-    videoKey: reviewMedia?.videoKey
-      ?? stringField(artifactRecord, 'videoKey')
-      ?? stringField(artifactRecord, 'videoSourceKey')
-      ?? stringField(artifactSourceVideo, 'path')
-      ?? stringField(artifactRecord, 'finalVideo')
-      ?? stringField(publishableAssets, 'videoKey')
-      ?? null,
-    thumbnailKey: reviewMedia?.thumbnailKey
-      ?? stringField(artifactRecord, 'thumbnailKey')
-      ?? stringField(artifactRecord, 'thumbnail')
-      ?? stringField(publishableAssets, 'thumbnailKey')
-      ?? null,
-    publishKey: reviewMedia?.publishKey
-      ?? (stringField(artifactRecord, 'publishKey') ?? (artifactRecord.publishableAssets || artifactRecord.generationMode ? `jobs/${jobId}/metadata/publish.json` : null)),
-    youtubePackageKey: reviewMedia?.youtubePackageKey
-      ?? stringField(artifactRecord, 'youtubePackageKey')
-      ?? (artifactRecord.generationMode ? `jobs/${jobId}/metadata/youtube-package.json` : null),
-    overlayPlanKey: reviewMedia?.overlayPlanKey
-      ?? stringField(artifactRecord, 'overlayPlanKey')
-      ?? null,
-  };
-  const media = effectiveMedia;
-  const imageKeys = media.sceneImageKeys;
+
+  // For thumbnail + YouTube metadata details, still use legacy artifact data
+  // (ReviewCard renders these from artifactData for display purposes only)
+  // But these DO NOT drive missing field logic.
+  const imageKeys = reviewMedia?.sceneImageKeys ?? [];
   const bucket = 'prochat-video-dev-909439522876-eu-north-1-an';
   const region = 'eu-north-1';
   const s3Command = (key: string | null, label: string) => key
     ? `aws s3 cp "s3://${bucket}/${key}" - --region ${region}`
     : `# ${label} not available`;
 
-  // Compute missing media fields for validation. Use canonical review data first,
-  // but fall back to the artifacts endpoint so stale review.json cannot hide
-  // already-generated media from the operator.
+  // Compute missing media fields using ONLY control-plane review media (canonical).
+  // If control-plane is unavailable, reportmissing media without fallback reconstruction.
   const requiredMediaFields = [
     { key: 'scenePlanKey', label: 'Scene plan' },
     { key: 'narrationScriptKey', label: 'Narration script' },
@@ -602,8 +537,11 @@ function ReviewCard({
     { key: 'publishKey', label: 'Publish JSON' },
     { key: 'youtubePackageKey', label: 'YouTube package' },
   ] as const;
-  const missingReviewMediaFields = requiredMediaFields.filter(field => !media[field.key]);
-  const mediaComplete = missingReviewMediaFields.length === 0 && media.sceneImageKeys.length > 0;
+
+  const missingReviewMediaFields = reviewMedia
+    ? requiredMediaFields.filter(field => !reviewMedia[field.key])
+    : [];
+  const mediaComplete = reviewMedia ? missingReviewMediaFields.length === 0 && (reviewMedia.sceneImageKeys ?? []).length > 0 : false;
 
   // Extract YouTube package metadata from artifacts
   const youtubePackage = asRecord(artifactRecord.youtubePackage) ?? null;
@@ -642,31 +580,31 @@ function ReviewCard({
   const overlayCards = Array.isArray(overlayPlan?.cards) ? (overlayPlan.cards as unknown[]).map(asRecord).filter((card): card is Record<string, unknown> => Boolean(card)) : [];
   const overlayWarnings = Array.isArray(overlayPlan?.warnings) ? (overlayPlan.warnings as unknown[]).filter((warning): warning is string => typeof warning === 'string') : [];
   const requiresOverlayPlan = stringField(artifactRecord, 'generationMode') === 'hybrid_image_slideshow_video';
-  const overlayMissing = requiresOverlayPlan && !overlayPlan && !media.overlayPlanKey;
+  const overlayMissing = requiresOverlayPlan && !overlayPlan && !reviewMedia?.overlayPlanKey;
   const overlayHasInternalTerms = requiresOverlayPlan && containsInternalOverlayTerms(overlayPlan);
   const overlayBlocksApproval = overlayMissing || overlayHasInternalTerms;
 
   return (
     <article className="card">
       <div className="card-title">Review</div>
-      {media?.thumbnailKey && (
+      {reviewMedia?.thumbnailKey && (
         <details open style={{ marginBottom: '1rem' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>Thumbnail preview</summary>
           <div style={{ marginTop: '0.75rem', padding: '0.75rem', backgroundColor: 'var(--card)', borderRadius: '4px', border: '1px solid var(--border)' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>
-              <code style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>{media.thumbnailKey}</code>
+              <code style={{ wordBreak: 'break-all', fontSize: '0.8rem' }}>{reviewMedia.thumbnailKey}</code>
             </div>
             <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
               <img
-                src={`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?ts=${encodeURIComponent(reviewRecord?.updatedAt ?? media.thumbnailKey ?? '')}`}
-                alt={`Generated thumbnail: ${media.thumbnailKey}`}
+                src={`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?ts=${encodeURIComponent(reviewData?.updatedAt ?? reviewMedia.thumbnailKey ?? '')}`}
+                alt={`Generated thumbnail: ${reviewMedia.thumbnailKey}`}
                 style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid var(--border)' }}
               />
             </div>
             <button
               className="button small"
               onClick={() => {
-                const cmd = `aws s3 cp "s3://${bucket}/${media.thumbnailKey}" - --region ${region} | open -a Preview -f`;
+                const cmd = `aws s3 cp "s3://${bucket}/${reviewMedia.thumbnailKey}" - --region ${region} | open -a Preview -f`;
                 navigator.clipboard.writeText(cmd);
                 alert('Copy command to preview thumbnail:\n' + cmd);
               }}
@@ -680,7 +618,7 @@ function ReviewCard({
           </div>
         </details>
       )}
-      {media?.videoKey ? (
+      {reviewMedia?.videoKey ? (
         <div style={{ marginBottom: '1rem' }}>
           <button className="button secondary" onClick={() => downloadFinalVideo(jobId)}>
             Download final MP4
@@ -737,7 +675,7 @@ function ReviewCard({
               <div><span>Title</span><strong style={{ fontSize: '0.9rem', wordBreak: 'break-word' }}>{stringField(overlayPlan, 'title') ?? 'missing'}</strong></div>
               <div><span>Provider</span><strong>{stringField(overlayPlan, 'provider') ?? stringField(artifactRecord, 'overlayProvider') ?? 'missing'}</strong></div>
               <div><span>Cards</span><strong>{overlayCards.length}</strong></div>
-              <div><span>Plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media.overlayPlanKey ?? stringField(artifactRecord, 'overlayPlanKey') ?? 'missing'}</strong></div>
+              <div><span>Plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.overlayPlanKey ?? stringField(artifactRecord, 'overlayPlanKey') ?? 'missing'}</strong></div>
             </div>
             {overlayCards.length > 0 ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -760,15 +698,15 @@ function ReviewCard({
         </details>
       ) : null}
       <div className="aws-facts">
-        <div><span>Status</span><strong>{reviewRecord?.reviewStatus ?? 'pending'}</strong></div>
-        <div><span>Created</span><strong>{reviewRecord?.createdAt ? timeAgo(reviewRecord.createdAt) : 'unknown'}</strong></div>
-        <div><span>Updated</span><strong>{reviewRecord?.updatedAt ? timeAgo(reviewRecord.updatedAt) : 'unknown'}</strong></div>
+        <div><span>Status</span><strong>{reviewData?.reviewStatus ?? 'pending'}</strong></div>
+        <div><span>Created</span><strong>{reviewData?.createdAt ? timeAgo(reviewData.createdAt) : 'unknown'}</strong></div>
+        <div><span>Updated</span><strong>{reviewData?.updatedAt ? timeAgo(reviewData.updatedAt) : 'unknown'}</strong></div>
         <div><span>Images</span><strong>{imageKeys.length}</strong></div>
-        <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{media.publishKey ? media.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
+        <div><span>Review JSON</span><strong style={{ fontSize: '0.85rem', wordBreak: 'break-all' }}>{reviewMedia?.publishKey ? reviewMedia.publishKey.replace('/publish.json', '/review.json') : 'jobs/.../metadata/review.json'}</strong></div>
       </div>
-      {reviewRecord?.reviewStatus !== 'approved' ? <div className="compact-warning">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
+      {reviewData?.reviewStatus !== 'approved' ? <div className="compact-warning">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
       <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
-        Review media from {usingControlPlaneMedia ? 'control-plane' : 'canonical artifacts'}{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
+        Review media from control-plane{!reviewMedia ? ' (unavailable)' : ''}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
         isPendingTimeout ? (
@@ -825,8 +763,9 @@ function ReviewCard({
           {controlPlaneData ? (
             (() => {
               const cpRecord = asRecord(controlPlaneData);
-              const cpActions = cpRecord?.allowedActions && Array.isArray(cpRecord.allowedActions) ? (cpRecord.allowedActions as any[]) : [];
-              const approveReviewAction = cpActions.find((a: any) => a.action === 'approve_review');
+              const cpActionsRecord = cpRecord?.allowedActions as Record<string, { enabled: boolean; reason?: string }> | undefined;
+              const approveReviewAction = cpActionsRecord?.approve_review;
+              const cpReviewStatus = asRecord(cpRecord?.review)?.reviewStatus ?? 'pending';
               const shouldHighlight = approveReviewAction?.enabled && isRecommended;
               return (
                 <button
@@ -835,17 +774,17 @@ function ReviewCard({
                   onClick={onApprove}
                   title={approveReviewAction?.reason ?? undefined}
                 >
-                  {approvePending ? 'Approving review…' : reviewRecord?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
+                  {approvePending ? 'Approving review…' : cpReviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
                 </button>
               );
             })()
           ) : (
             <button
-              className={mediaComplete && reviewRecord?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
-              disabled={!jobId || approvePending || reviewRecord?.reviewStatus === 'approved' || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
+              className={mediaComplete && reviewData?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
+              disabled={!jobId || approvePending || reviewData?.reviewStatus === 'approved' || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
               onClick={onApprove}
             >
-              {approvePending ? 'Approving review…' : reviewRecord?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
+              {approvePending ? 'Approving review…' : reviewData?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
             </button>
           )}
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>{requestChangesPending ? 'Requesting changes…' : 'Request changes'}</button>
@@ -854,14 +793,14 @@ function ReviewCard({
       <details style={{ marginTop: '1rem' }}>
         <summary style={{ cursor: 'pointer' }}>Media details</summary>
         <div className="aws-facts" style={{ marginTop: '0.75rem' }}>
-          <div><span>Scene plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.scenePlanKey ?? 'missing'}</strong></div>
-          <div><span>Narration script</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.narrationScriptKey ?? 'missing'}</strong></div>
-          <div><span>Narration audio</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.audioKey ?? 'missing'}</strong></div>
-          <div><span>Final MP4</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.videoKey ?? 'missing'}</strong></div>
-          <div><span>Thumbnail</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.thumbnailKey ?? 'missing'}</strong></div>
-          <div><span>Publish JSON</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.publishKey ?? 'missing'}</strong></div>
-          <div><span>YouTube package</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.youtubePackageKey ?? 'missing'}</strong></div>
-          <div><span>Overlay plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{media?.overlayPlanKey ?? 'not required'}</strong></div>
+          <div><span>Scene plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.scenePlanKey ?? 'missing'}</strong></div>
+          <div><span>Narration script</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.narrationScriptKey ?? 'missing'}</strong></div>
+          <div><span>Narration audio</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.audioKey ?? 'missing'}</strong></div>
+          <div><span>Final MP4</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.videoKey ?? 'missing'}</strong></div>
+          <div><span>Thumbnail</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.thumbnailKey ?? 'missing'}</strong></div>
+          <div><span>Publish JSON</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.publishKey ?? 'missing'}</strong></div>
+          <div><span>YouTube package</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.youtubePackageKey ?? 'missing'}</strong></div>
+          <div><span>Overlay plan</span><strong style={{ fontSize: '0.82rem', wordBreak: 'break-all' }}>{reviewMedia?.overlayPlanKey ?? 'not required'}</strong></div>
         </div>
         {imageKeys.length > 0 ? (
           <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
@@ -876,13 +815,13 @@ function ReviewCard({
       <details style={{ marginTop: '1rem' }}>
         <summary style={{ cursor: 'pointer' }}>S3 copy commands</summary>
         <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.8rem' }}>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.scenePlanKey ?? null, 'scene plan')}</code>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.narrationScriptKey ?? null, 'narration script')}</code>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.audioKey ?? null, 'narration audio')}</code>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.videoKey ?? null, 'final MP4')}</code>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.thumbnailKey ?? null, 'thumbnail')}</code>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.publishKey ?? null, 'publish JSON')}</code>
-          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(media?.youtubePackageKey ?? null, 'youtube package')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.scenePlanKey ?? null, 'scene plan')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.narrationScriptKey ?? null, 'narration script')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.audioKey ?? null, 'narration audio')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.videoKey ?? null, 'final MP4')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.thumbnailKey ?? null, 'thumbnail')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.publishKey ?? null, 'publish JSON')}</code>
+          <code style={{ whiteSpace: 'pre-wrap' }}>{s3Command(reviewMedia?.youtubePackageKey ?? null, 'youtube package')}</code>
         </div>
       </details>
       {artifactData ? (
@@ -978,6 +917,7 @@ export function AwsVideoDashboard() {
     queryFn: () => brainCoreRequest('/api/video-orchestrator/jobs/recent', recentVideoJobsSchema),
     refetchInterval: 15_000,
     retry: 1,
+    placeholderData: (prev) => prev,
   });
 
   const jobList = jobs.data?.jobs ?? [];
@@ -1021,6 +961,7 @@ export function AwsVideoDashboard() {
     queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema),
     enabled: Boolean(jobId),
     refetchInterval: 8_000,
+    placeholderData: (prev) => prev,
   });
 
   const invalidateVideo = async () => {
@@ -1242,131 +1183,131 @@ export function AwsVideoDashboard() {
     } catch { /* storage quota or private-mode errors: ignore */ }
   }, [pendingActionByJobId, createDraftTimedOut, currentCreateActionId, preTimeoutJobIds, selectedJobId]);
 
-  // CONTROL PLANE IS NOW CANONICAL
-  // Old endpoints kept for debug panels only; they do NOT drive main UI state
-  const controlPlaneData = controlPlane.data?.data ?? null;
-  const selectedJobDetail = job.data?.data;
-  const selectedJobList = selected;
-  const timelineEvents = timeline.data?.data.events ?? [];
-  const artifactData = artifacts.data?.data ?? null;
-  const executionData = execution.data?.data ?? null;
-  const reviewData = review.data?.review ?? null;
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONTROL PLANE IS THE SOLE SOURCE OF TRUTH FOR MAIN UI STATE
+  // Legacy queries are kept for debug panels only.
+  // Use keepPreviousData semantics: keep last good CP data while refetching.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const controlPlaneData: VideoControlPlaneData | null = controlPlane.data?.data ?? null;
+  const controlPlaneStale = controlPlane.isError || controlPlane.isRefetching;
 
-  // Media source and generation mode from controlPlane (canonical), fallback to old sources for debug only
-  const mediaSource = stringField(selectedJobDetail, 'mediaSource') ?? stringField(selectedJobList, 'mediaSource') ?? stringField(artifactData, 'mediaSource') ?? 'unknown';
-  const generationMode = stringField(selectedJobDetail, 'generationMode') ?? stringField(selectedJobList, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
-  const publishableAssets = asRecord(artifactData?.publishableAssets);
-  const videoSourceKey = stringField(selectedJobDetail, 'videoSourceKey') ?? stringField(selectedJobList, 'videoSourceKey') ?? stringField(artifactData, 'videoSourceKey');
-  const audioSourceKey = stringField(selectedJobDetail, 'audioSourceKey') ?? stringField(selectedJobList, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
+  // Legacy data — debug panels ONLY, never drives main UI
+  const timelineEvents = timeline.data?.data.events ?? [];
+  const legacyArtifactData = artifacts.data?.data ?? null;
+  const legacyExecutionData = execution.data?.data ?? null;
+  const legacyReviewData = review.data?.review ?? null;
+
+  // ─── Derived from control-plane ───────────────────────────────────────────
+  const cpSelectedJob = controlPlaneData?.selectedJob ?? null;
+  const cpPhase = controlPlaneData?.phase ?? controlPlaneData?.canonicalPhase ?? 'unknown';
+  const cpAllowedActions = controlPlaneData?.allowedActions ?? {};
+  const cpFinalization = controlPlaneData?.finalization ?? null;
+  const cpArtifacts = controlPlaneData?.artifacts ?? null;
+  const cpExecution = controlPlaneData?.execution ?? null;
+  const cpReview = controlPlaneData?.review ?? null;
+  const cpPublish = controlPlaneData?.publish ?? null;
+
+  // Media source and generation mode from control-plane (canonical)
+  const mediaSource = cpArtifacts?.mediaSource ?? cpSelectedJob?.mediaSource ?? 'unknown';
+  const generationMode = cpArtifacts?.generationMode ?? cpSelectedJob?.generationMode ?? 'unknown';
   const isHybridMode = generationMode === 'hybrid_scene_plan_fixture_media';
   const isHybridTTSMode = generationMode === 'hybrid_tts_fixture_video';
   const isHybridStoryboardMode = generationMode === 'hybrid_storyboard_fixture_video';
   const isHybridSlideshowMode = generationMode === 'hybrid_slideshow_video';
   const isHybridImageSlideshowMode = generationMode === 'hybrid_image_slideshow_video';
   const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video' || generationMode === 'hybrid_slideshow_video' || generationMode === 'hybrid_image_slideshow_video';
-  const scenePlanKey = stringField(artifactData, 'scenePlanKey');
-  const narrationScriptKey = stringField(artifactData, 'narrationScriptKey');
-  const storyboardKey = stringField(artifactData, 'storyboardKey');
-  const sceneImageKeys = Array.isArray(artifactData?.sceneImageKeys) ? (artifactData?.sceneImageKeys as string[]) : [];
+
+  // Artifact keys from control-plane
+  const scenePlanKey = cpArtifacts?.scenePlanKey ?? null;
+  const narrationScriptKey = cpArtifacts?.narrationScriptKey ?? null;
+  const sceneImageKeys = cpArtifacts?.sceneImageKeys ?? [];
+  const finalVideoKey = cpArtifacts?.finalVideoKey ?? cpArtifacts?.videoKey ?? null;
+  const thumbnailKey = cpArtifacts?.thumbnailKey ?? null;
+  const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
+  const hasScenePlan = Boolean(scenePlanKey);
+
+  // For detail cards that still need legacy artifact data (scene plan content, image generation, etc.)
+  const artifactData = legacyArtifactData;
+  // Detail-level rendering vars from legacy artifacts (for sub-cards only, not main state)
   const imageProvider = stringField(artifactData, 'imageProvider');
   const imageModelId = stringField(artifactData, 'imageModelId');
+  const videoProvider = stringField(artifactData, 'videoProvider');
   const imageGenerated = artifactData?.imageGenerated === true;
   const partialAiGenerated = artifactData?.partialAiGenerated === true;
   const slideshowGenerated = artifactData?.slideshowGenerated === true;
-  const videoProvider = stringField(artifactData, 'videoProvider');
-  const hasScenePlan = Boolean(scenePlanKey || asRecord(artifactData?.scenePlan));
-  const hasStoryboard = Boolean(storyboardKey || (Array.isArray(sceneImageKeys) && sceneImageKeys.length > 0));
-  const finalVideoKey = stringField(artifactData, 'finalVideo') ?? stringField(publishableAssets, 'videoKey');
-  const generatedVideoKey = stringField(artifactData, 'videoKey') ?? videoSourceKey ?? finalVideoKey;
-  const thumbnailKey = stringField(artifactData, 'thumbnail') ?? stringField(publishableAssets, 'thumbnailKey');
-  const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
-  const awsSucceeded = stringField(executionData, 'awsStatus') === 'SUCCEEDED';
-  const localGenerationComplete = nestedStatus(selectedJobDetail?.generation) === 'complete';
-  const publishStatus = nestedStatus(selectedJobDetail?.publishing);
+  const generatedVideoKey = cpArtifacts?.videoKey ?? cpArtifacts?.finalVideoKey ?? null;
 
-  // Derive canonical selectedJob with monotonic status
-  const selectedJob = {
-    ...(selectedJobDetail ?? selectedJobList),
-    status: getMonotonicJobStatus(selectedJobDetail, selectedJobList, hasGeneratedAssets),
-  };
+  // Selected job — from control-plane
+  const selectedJob = cpSelectedJob
+    ? {
+        jobId: cpSelectedJob.jobId,
+        title: cpSelectedJob.title,
+        status: cpSelectedJob.status,
+        approval: { status: cpSelectedJob.approvalStatus },
+        mediaSource: cpSelectedJob.mediaSource,
+        generationMode: cpSelectedJob.generationMode,
+        updatedAt: cpSelectedJob.updatedAt,
+        progress: controlPlaneData?.progress ?? 0,
+        currentStep: cpExecution?.localStep ?? null,
+      }
+    : selected
+      ? { ...selected, progress: selected.progress ?? 0, currentStep: null }
+      : null;
 
-  // PART 2: Canonical selected job state: local action state wins for upload
-  // PART 1: Hydrate dry-run from backend (persistent) with local optimistic override
-  const backendYoutube = asRecord(asRecord(selectedJob?.artifacts)?.youtube ?? asRecord(artifactData)?.youtube);
-  const backendPublishJson = asRecord(asRecord(selectedJob?.artifacts)?.publishJson ?? asRecord(artifactData)?.publishJson);
-  const backendPublishCheck = asRecord(asRecord(selectedJob?.artifacts)?.publishCheck ?? asRecord(artifactData)?.publishCheck);
-  const backendYoutubeDryRun = asRecord(backendPublishCheck?.youtubeDryRun);
-  const backendYoutubeUpload = asRecord(backendPublishCheck?.youtubeUpload) ?? asRecord(backendPublishJson?.youtubeUpload);
-
-  // Dry-run proof from backend: either in publish-check.json or publish.json
-  const backendDryRunStatus = typeof backendYoutubeDryRun?.status === 'string' ? backendYoutubeDryRun.status : null;
-  const backendDryRunPassed =
-    backendDryRunStatus === 'passed' ||
-    backendPublishJson?.dryRunPassed === true;
-  const backendDryRunRunning = backendDryRunStatus === 'running';
-  const backendDryRunFailed = backendDryRunStatus === 'failed';
-
+  // Action state per job
   const actionState = jobId ? actionStateByJobId[jobId] : undefined;
 
-  // PART 1: Dry-run state: local optimistic > backend persistent
-  // Backend is canonical across refresh; local state is optimistic immediate UI
-  // Never downgrade: running → passed → (never back to pending)
+  // Dry-run state: control-plane canonical, local optimistic override
+  const backendDryRunStatus = cpPublish?.dryRunStatus ?? null;
+  const backendDryRunPassed = backendDryRunStatus === 'passed';
+  const backendDryRunRunning = backendDryRunStatus === 'running';
+  const backendDryRunFailed = backendDryRunStatus === 'failed';
   const dryRunPassedForThisJob = (actionState?.dryRunPassed ?? backendDryRunPassed) && !actionState?.uploadStartedAt;
   const dryRunRunning = !dryRunPassedForThisJob && (youtubeDryRun.isPending || backendDryRunRunning);
   const dryRunFailed = !dryRunPassedForThisJob && !dryRunRunning && backendDryRunFailed;
 
-  // PART 2: Upload state: local optimistic > backend > list status
-  // Don't downgrade uploaded status during background polling
-  const backendUploaded = backendYoutube?.videoId || backendPublishJson?.videoId || backendPublishJson?.uploadedAt;
+  // Upload state: local optimistic > control-plane > list status
+  const backendUploaded = cpPublish?.videoId || cpPublish?.uploadStatus === 'uploaded';
   const selectedPublished = actionState?.uploaded
     ? true
     : backendUploaded
       ? true
-      : selectedJob?.status === 'published'
+      : cpSelectedJob?.status === 'published'
         ? true
-        : ['uploaded', 'published'].includes(publishStatus)
+        : cpPublish?.status === 'uploaded' || cpPublish?.status === 'published'
           ? true
           : false;
 
-  const selectedReady = isReadyToPublish(selectedJob) || ((awsSucceeded || localGenerationComplete || hasGeneratedAssets) && hasGeneratedAssets);
+  const selectedReady = ['ready_to_publish', 'published', 'uploaded'].includes(cpSelectedJob?.status ?? '') || hasGeneratedAssets;
   const selectedUploaded = selectedPublished;
 
-  // PART 3: In-flight state: upload mutation is pending OR uploadStartedAt is recent
+  // In-flight state
   const isPublishingThisJob = youtubePublish.isPending || (actionState?.uploadStartedAt ? (Date.now() - new Date(actionState.uploadStartedAt).getTime()) < 60000 : false);
 
-  const selectedApprovalStatus = nestedStatus(selectedJob?.approval);
-  const selectedGenerationStatus = nestedStatus(selectedJob?.generation);
-  const selectedReview = review.data?.review ?? null;
-  const reviewStatus = selectedReview?.reviewStatus ?? 'pending';
+  const selectedApprovalStatus = cpSelectedJob?.approvalStatus ?? 'pending';
+  const reviewStatus = cpReview?.reviewStatus ?? 'pending';
   const reviewApproved = reviewStatus === 'approved';
   const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video'].includes(generationMode);
-  // For generated-media jobs in post-generation states, treat missing review media as finalization pending
-  // (backend may still be repairing/finalizing canonical review media). Only show red error if finalization
-  // explicitly failed or was attempted but incomplete.
-  const isPostGenerationState = ['ready_to_publish', 'complete', 'generated'].includes(selectedJob?.status ?? '');
-  const isGeneratedMedia = requiresReviewGate;
-  const finalizationState: 'pending' | 'failed' | 'complete' | null =
-    selectedReview?.finalization == null
-      ? isGeneratedMedia && isPostGenerationState ? 'pending' : null
-      : selectedReview.finalization.ok ? 'complete'
-      : selectedReview.finalization.attempted ? 'failed'
-      : 'pending';
-  const generationInProgress = ['generating', 'ready_to_publish'].includes(selectedJob?.status ?? '');
+
+  // Finalization from control-plane
+  const finalizationState = cpFinalization?.status ?? null;
+
+  const generationInProgress = ['generating'].includes(cpSelectedJob?.status ?? '') || cpPhase === 'generating';
   const generationTimeoutStillRunning = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && generationInProgress);
-  const generationTimeoutFailed = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && selectedJob?.status === 'failed');
+  const generationTimeoutFailed = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && cpSelectedJob?.status === 'failed');
 
   // Pending action state for selected job
   const pendingActionForSelectedJob = jobId ? pendingActionByJobId[jobId] : undefined;
   const createDraftIsStillProcessing = createDraftTimedOut && !createDraft.isPending;
   const anyPendingTimeout = Boolean(pendingActionForSelectedJob || createDraftIsStillProcessing);
 
-  const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
-  const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets && !generationInProgress);
+  // Allowed actions from control-plane
+  const canApprove = cpAllowedActions.approve_script?.enabled ?? false;
+  const canGenerate = cpAllowedActions.generate?.enabled ?? false;
+  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && (cpAllowedActions.dry_run?.enabled ?? false));
+  const canPublish = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && dryRunPassedForThisJob && (cpAllowedActions.publish_private?.enabled ?? false));
+  const canDownloadVideo = cpAllowedActions.download_video?.enabled ?? false;
 
-  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && ['pending', 'not_available'].includes(publishStatus) && (!requiresReviewGate || reviewApproved));
-  const canPublish = canDryRun && dryRunPassedForThisJob && (!requiresReviewGate || reviewApproved);
-
-  const publishNeedsRepair = hasGeneratedAssets && selectedJob?.status === 'generating' && !stringField(publishableAssets, 'videoKey');
   const publishReadinessLabel = selectedUploaded
     ? 'Already uploaded'
     : requiresReviewGate && !reviewApproved
@@ -1374,15 +1315,19 @@ export function AwsVideoDashboard() {
     : canDryRun
       ? 'Ready for dry-run'
       : hasGeneratedAssets
-        ? 'Generated assets available — publish contract repair needed'
+        ? 'Generated assets available'
         : 'Waiting for generated assets';
+
+  // Pipeline step model derived from control-plane phase and allowedActions
   const guideSteps = [
-    { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
-    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedPublished || hasGeneratedAssets, active: canApprove && !hasGeneratedAssets },
-    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate', help: 'Run image generation and assembly.', done: selectedReady || selectedPublished, active: canGenerate || generationInProgress || generationTimeoutStillRunning },
-    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved && selectedReady },
-    { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
-    { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Private publish', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
+    { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Create draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
+    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve script', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedUploaded, active: canApprove },
+    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate media', help: 'Run image generation and assembly.', done: selectedReady || selectedUploaded, active: canGenerate || generationInProgress || generationTimeoutStillRunning },
+    { key: 'finalize', view: 'overview' as const, action: 'Finalize', label: 'Finalize package', help: 'Finalize review and publish metadata.', done: cpFinalization?.status === 'complete' || selectedUploaded, active: cpFinalization?.status === 'pending' },
+    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review media', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved && selectedReady && cpFinalization?.status === 'complete' },
+    { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run upload', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
+    { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Publish privately', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
+    { key: 'download', view: 'publish' as const, action: 'Download', label: 'Download / audit', help: 'Download final video or audit upload.', done: false, active: canDownloadVideo },
   ];
   const recommendedStep = guideSteps.find((step) => step.active && !step.done) ?? guideSteps.find((step) => !step.done);
   const nextStep = recommendedStep;
@@ -1410,7 +1355,7 @@ export function AwsVideoDashboard() {
     .find(Boolean) ?? (pendingActionForSelectedJob === 'generate' || generationTimeoutStillRunning ? null : generate.error);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
-  const quotaExceeded = backendYoutubeUpload?.status === 'quota_exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
+  const quotaExceeded = cpPublish?.quotaStatus === 'exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
   const finalVideoAvailable = Boolean(finalVideoKey);
   const visibleErrorMessage = statusOnlyErrorMessage ?? actionErrorMessage;
   const visibleErrorSummary = quotaExceeded
@@ -1486,47 +1431,31 @@ export function AwsVideoDashboard() {
   // Poll-based clearing of pending actions: publish
   useEffect(() => {
     if (!jobId || pendingActionByJobId[jobId] !== 'publish') return;
-    if (selectedUploaded || selectedJob?.status === 'failed' || backendYoutubeUpload?.status === 'quota_exceeded') {
+    if (selectedUploaded || selectedJob?.status === 'failed' || cpPublish?.quotaStatus === 'exceeded') {
       clearPendingAction(jobId);
     }
-  }, [jobId, selectedUploaded, selectedJob?.status, backendYoutubeUpload?.status, pendingActionByJobId]);
+  }, [jobId, selectedUploaded, selectedJob?.status, cpPublish?.quotaStatus, pendingActionByJobId]);
 
   // DEV ASSERTION: When controlPlane is available, verify it is driving the main UI state
-  // This prevents regressions where ReviewCard or main panels drift back to using old fragments
   useEffect(() => {
     if (!jobId || !controlPlaneData || process.env.NODE_ENV !== 'development') return;
 
-    const cpData = controlPlaneData as any;
-
-    // Assert: ReviewCard uses controlPlane.review.media when available, not old review.data
-    if (cpData.review?.media && review.data?.review?.media) {
-      const cpHasFields = Object.keys(cpData.review.media).length > 0;
-      if (cpHasFields) {
-        console.debug('[AwsVideo] ✓ ReviewCard using control-plane media (not legacy review.data)');
-      }
+    if (cpReview?.media) {
+      console.debug('[AwsVideo] ✓ ReviewCard using control-plane media');
     }
-
-    // Assert: Execution/Artifacts panels never render empty objects
-    if (cpData.execution && cpData.execution.status === null && cpData.execution.unavailableReason) {
+    if (cpExecution && cpExecution.status === null && cpExecution.unavailableReason) {
       console.debug('[AwsVideo] ✓ Execution shows unavailableReason (structured, not empty {})');
     }
-    if (cpData.artifacts && cpData.artifacts.status === null && cpData.artifacts.unavailableReason) {
+    if (cpArtifacts && cpArtifacts.status === null && cpArtifacts.unavailableReason) {
       console.debug('[AwsVideo] ✓ Artifacts shows unavailableReason (structured, not empty {})');
     }
-
-    // Assert: finalization pending shows amber, not red error
-    if (cpData.finalization?.status === 'pending') {
+    if (cpFinalization?.status === 'pending') {
       console.debug('[AwsVideo] ✓ Finalization pending state detected');
     }
-
-    // Assert: approve_review button enabled from control-plane allowedActions
-    if (Array.isArray(cpData.allowedActions)) {
-      const approveAction = cpData.allowedActions.find((a: any) => a.action === 'approve_review');
-      if (approveAction) {
-        console.debug(`[AwsVideo] ✓ approve_review action enabled=${approveAction.enabled} (from control-plane)`);
-      }
+    if (cpAllowedActions.approve_review) {
+      console.debug(`[AwsVideo] ✓ approve_review enabled=${cpAllowedActions.approve_review.enabled}`);
     }
-  }, [jobId, controlPlaneData, review.data?.review?.media]);
+  }, [jobId, controlPlaneData, cpReview?.media, cpExecution, cpArtifacts, cpFinalization?.status, cpAllowedActions]);
 
   return (
     <div className="aws-video-screen">
@@ -1666,12 +1595,12 @@ export function AwsVideoDashboard() {
               <article className="card">
                 <div className="card-title">Pipeline flow</div>
                 <div className="pipeline-flow">
-                  {pipelineSteps(selectedJob, selectedReady, selectedUploaded).map((step, index) => (
+                  {guideSteps.map((step, index) => (
                     <div className="pipeline-step" key={step.key}>
                       <div className="pipeline-index">{index + 1}</div>
                       <div className="min-w-0">
                         <strong>{step.label}</strong>
-                        <span>{step.state}</span>
+                        <span>{step.done ? 'complete' : step.active ? 'active' : 'waiting'}</span>
                       </div>
                     </div>
                   ))}
@@ -1712,7 +1641,7 @@ export function AwsVideoDashboard() {
             <div className="stack">
               <ReviewCard
                 jobId={jobId}
-                reviewData={selectedReview}
+                reviewData={legacyReviewData}
                 artifactData={artifactData}
                 approvePending={approveReview.isPending}
                 requestChangesPending={requestReviewChanges.isPending}
@@ -1723,7 +1652,7 @@ export function AwsVideoDashboard() {
                 isRecommended={recommendedStep?.key === 'review'}
                 finalizationState={finalizationState}
                 isPendingTimeout={anyPendingTimeout}
-                controlPlaneData={controlPlane.data?.data ?? null}
+                controlPlaneData={controlPlaneData}
               />
               <MotionCard artifactData={artifactData} />
             </div>
@@ -1795,12 +1724,12 @@ export function AwsVideoDashboard() {
                         : null}
               <div className="publish-guard">
                 <div><span>generationMode</span><strong>{generationMode}</strong></div>
-                <div><span>videoSourceKey</span><strong>{videoSourceKey ?? 'unknown'}</strong></div>
-                <div><span>audioSourceKey</span><strong>{audioSourceKey ?? 'unknown'}</strong></div>
+                <div><span>videoKey</span><strong>{cpArtifacts?.videoKey ?? cpArtifacts?.finalVideoKey ?? 'unknown'}</strong></div>
+                <div><span>audioKey</span><strong>{cpArtifacts?.audioKey ?? 'unknown'}</strong></div>
               </div>
               <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} />
               {!selectedReady ? anyPendingTimeout ? <div className="compact-info">Waiting for job state… Action is still processing in Brain Core. Refresh is safe.</div> : <div className="compact-warning">This job is not ready to publish. Complete approval and generation first.</div> : null}
-              {publishNeedsRepair ? <div className="compact-warning">Generated assets available — publish contract repair needed.</div> : null}
+              {cpFinalization?.status === 'pending' ? <div className="compact-warning">Finalizing publish package…</div> : null}
               {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
                 <button className={recommendedStep?.key === 'dry-run' ? 'button next-action' : 'button secondary'} disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
@@ -1827,14 +1756,24 @@ export function AwsVideoDashboard() {
         </main>
 
         <aside className="aws-side-panel">
-          {/* CONTROL PLANE: Execution panel from canonical source */}
+          {/* Stale indicator when control-plane refetch is pending/failed */}
+          {controlPlaneStale && controlPlaneData ? (
+            <div className="compact-warning" style={{ marginBottom: '0.75rem', fontSize: '0.8rem' }}>
+              Control-plane data may be stale. Refetching…
+            </div>
+          ) : null}
+
+          {/* Execution panel */}
           <article className="card">
-            <div className="card-title">Execution (control-plane)</div>
-            {controlPlaneData ? (
+            <div className="card-title">Execution</div>
+            {cpExecution ? (
               <div className="aws-facts">
-                <div><span>Status</span><strong>{controlPlaneData.execution?.status ?? 'pending'}</strong></div>
-                {controlPlaneData.execution?.unavailableReason ? (
-                  <div><span>Reason</span><strong>{controlPlaneData.execution.unavailableReason}</strong></div>
+                <div><span>Status</span><strong>{cpExecution.status ?? 'pending'}</strong></div>
+                {cpExecution.awsStatus ? <div><span>AWS status</span><strong>{cpExecution.awsStatus}</strong></div> : null}
+                {cpExecution.localStep ? <div><span>Step</span><strong>{cpExecution.localStep}</strong></div> : null}
+                {cpExecution.executionArn ? <div><span>Execution ARN</span><strong style={{ fontSize: '0.78rem', wordBreak: 'break-all' }}>{cpExecution.executionArn}</strong></div> : null}
+                {cpExecution.unavailableReason ? (
+                  <div><span>Reason</span><strong>{cpExecution.unavailableReason}</strong></div>
                 ) : null}
               </div>
             ) : (
@@ -1842,14 +1781,18 @@ export function AwsVideoDashboard() {
             )}
           </article>
 
-          {/* CONTROL PLANE: Artifacts panel from canonical source */}
+          {/* Artifacts panel */}
           <article className="card">
-            <div className="card-title">Artifacts (control-plane)</div>
-            {controlPlaneData ? (
+            <div className="card-title">Artifacts</div>
+            {cpArtifacts ? (
               <div className="aws-facts">
-                <div><span>Status</span><strong>{controlPlaneData.artifacts?.status ?? 'pending'}</strong></div>
-                {controlPlaneData.artifacts?.unavailableReason ? (
-                  <div><span>Reason</span><strong>{controlPlaneData.artifacts.unavailableReason}</strong></div>
+                <div><span>Status</span><strong>{cpArtifacts.status ?? 'pending'}</strong></div>
+                {cpArtifacts.scenePlanKey ? <div><span>Scene plan</span><strong>present</strong></div> : null}
+                {cpArtifacts.audioKey ? <div><span>Audio</span><strong>present</strong></div> : null}
+                {cpArtifacts.finalVideoKey ? <div><span>Video</span><strong>present</strong></div> : null}
+                {cpArtifacts.thumbnailKey ? <div><span>Thumbnail</span><strong>present</strong></div> : null}
+                {cpArtifacts.unavailableReason ? (
+                  <div><span>Reason</span><strong>{cpArtifacts.unavailableReason}</strong></div>
                 ) : null}
               </div>
             ) : (
@@ -1857,16 +1800,29 @@ export function AwsVideoDashboard() {
             )}
           </article>
 
+          {/* Finalization panel */}
+          {cpFinalization && cpFinalization.status !== 'not_required' ? (
+            <article className="card">
+              <div className="card-title">Finalization</div>
+              <div className="aws-facts">
+                <div><span>Status</span><strong>{cpFinalization.status ?? 'unknown'}</strong></div>
+                {cpFinalization.repaired.length > 0 ? <div><span>Repaired</span><strong>{cpFinalization.repaired.join(', ')}</strong></div> : null}
+                {cpFinalization.missingFields.length > 0 ? <div><span>Missing</span><strong>{cpFinalization.missingFields.join(', ')}</strong></div> : null}
+                {cpFinalization.error ? <div><span>Error</span><strong>{cpFinalization.error}</strong></div> : null}
+              </div>
+            </article>
+          ) : null}
+
           <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending || anyPendingTimeout} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
 
-          {/* DEBUG: Old fragments kept for inspection only */}
+          {/* DEBUG: Legacy data collapsed */}
           <details style={{ marginTop: '1rem' }}>
             <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: legacy execution data</summary>
-            <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1600)}</pre>
+            <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(legacyExecutionData ?? {}, null, 2).slice(0, 1600)}</pre>
           </details>
           <details style={{ marginTop: '0.5rem' }}>
             <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: legacy artifacts data</summary>
-            <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1600)}</pre>
+            <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(legacyArtifactData ?? {}, null, 2).slice(0, 1600)}</pre>
           </details>
         </aside>
       </section>
