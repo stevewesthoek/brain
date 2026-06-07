@@ -1,93 +1,116 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { brainCoreRequest } from '@/lib/braincore-client';
-import { opsAiCostsSchema, opsAiUsageWindowsSchema, opsSystemMetricsSchema, type OpsMetric } from '@/lib/braincore-schemas';
-import { formatDuration, formatPercent, formatUsd, timeAgo } from '@/lib/utils';
-import { StatusBadge } from '@/components/status-badge';
+import { useEffect, useState } from 'react';
 
-function metricValue(metric: OpsMetric): string {
-  if (metric.unit === 'ratio') return formatPercent(metric.value === null ? null : metric.value * 100);
-  if (metric.unit === 'seconds') return formatDuration(metric.value);
-  if (metric.unit === 'usd') return formatUsd(metric.value);
-  if (typeof metric.value === 'number') return String(metric.value);
-  return 'Not instrumented';
+import { brainCoreRequest } from '../lib/braincore-client';
+import { mindStewardSchedulerStatusSchema, type MindStewardSchedulerStatus } from '../lib/braincore-schemas';
+
+function formatReportLabel(key: string) {
+  if (key === 'dryRun') return 'Dry run';
+  if (key === 'inbox') return 'Inbox';
+  if (key === 'classifier') return 'Classifier';
+  if (key === 'queue') return 'Queue';
+  return key;
 }
 
-function MetricCard({ metric }: { metric: OpsMetric }) {
+function MindStewardStatusCard() {
+  const [status, setStatus] = useState<MindStewardSchedulerStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStatus() {
+      try {
+        const payload = await brainCoreRequest('/scheduler/mind-steward/status', mindStewardSchedulerStatusSchema);
+        if (!cancelled) {
+          setStatus(payload);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+          setStatus(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadStatus();
+    const interval = window.setInterval(loadStatus, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
   return (
-    <article className="card metric-card">
-      <div className="card-header">
-        <div>
-          <div className="card-title">{metric.label}</div>
-          <div className="card-description">{metric.source}</div>
+    <article className="card">
+      <div className="card-title">Mind Steward preflights</div>
+      {loading ? <p className="meta">Loading Mind Steward runtime reports…</p> : null}
+      {error ? <p className="meta">Status unavailable: {error}</p> : null}
+      {status ? (
+        <div className="stack gap-sm">
+          <p className="meta">
+            {status.availableCount}/{status.reportCount} reports available from {status.source}. Status: {status.status}.
+          </p>
+          <div className="grid two">
+            {Object.entries(status.reports).map(([key, report]) => (
+              <div className="surface compact" key={key}>
+                <strong>{formatReportLabel(key)}</strong>
+                <p className="meta">
+                  {report.available ? report.status : 'missing'}
+                  {report.mode ? ` · ${report.mode}` : ''}
+                </p>
+                <p className="meta">
+                  writesToMind: {String(report.writesToMind ?? false)} · executableActions:{' '}
+                  {String(report.executableActions ?? false)}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <StatusBadge status={metric.status} />
-      </div>
-      <div className="metric">{metricValue(metric)}</div>
-      <div className="meta">Updated {timeAgo(metric.generatedAt)}</div>
-      {metric.message ? <p className="meta">{metric.message}</p> : null}
+      ) : null}
     </article>
   );
 }
 
 export function OverviewDashboard() {
-  const system = useQuery({
-    queryKey: ['ops-system-metrics'],
-    queryFn: () => brainCoreRequest('/ops/system-metrics', opsSystemMetricsSchema),
-    refetchInterval: 5_000,
-  });
-  const usage = useQuery({
-    queryKey: ['ops-ai-usage-windows'],
-    queryFn: () => brainCoreRequest('/ops/ai-usage-windows', opsAiUsageWindowsSchema),
-    refetchInterval: 30_000,
-  });
-  const costs = useQuery({
-    queryKey: ['ops-ai-costs'],
-    queryFn: () => brainCoreRequest('/ops/ai-costs', opsAiCostsSchema),
-    refetchInterval: 60_000,
-  });
-
-  const metrics: OpsMetric[] = [
-    ...(system.data ? [system.data.data.cpuLoad, system.data.data.memoryPressure, system.data.data.gpuLoad, system.data.data.uptime] : []),
-    ...(usage.data ? [usage.data.data.codexCurrentWindow, usage.data.data.codexFiveHourWindow, usage.data.data.codexSevenDayWindow] : []),
-    ...(costs.data ? [costs.data.data.claudeCodeHaiku, costs.data.data.claudeCodeSonnet, costs.data.data.claudeCodeOpus] : []),
-  ];
-  const primaryMetrics = metrics.slice(0, 4);
-  const secondaryMetrics = metrics.slice(4);
-
   return (
     <div className="stack overview-screen">
-      <section className="overview-hero">
+      <section className="overview-hero overview-hero-compact">
         <div className="overview-copy">
           <div className="eyebrow">Overview</div>
-          <h1>Operational pulse</h1>
-          <p>Live system, Codex window, and Claude Code cost cards from Brain Core. Missing telemetry is shown as not instrumented, not guessed.</p>
+          <h1>Operational control</h1>
+          <p>
+            The global pulse strip above stays pinned on every dashboard view, so system health, Codex windows,
+            and Claude Code cost estimates are always visible without opening a separate page.
+          </p>
         </div>
         <div className="overview-status-card">
-          <StatusBadge status={system.isError || usage.isError || costs.isError ? 'error' : 'fresh'} label={system.isError || usage.isError || costs.isError ? 'partial error' : 'auto refresh'} />
-          <strong>5s</strong>
-          <span>System refresh cadence</span>
+          <div className="card-title">Global coverage</div>
+          <strong>Always on</strong>
+          <span>Top-of-screen telemetry is shared across every dashboard surface.</span>
         </div>
       </section>
 
-      {(system.isLoading || usage.isLoading || costs.isLoading) && metrics.length === 0 ? (
-        <div className="card">Loading Brain Core operational metrics…</div>
-      ) : null}
-
-      {(system.error || usage.error || costs.error) ? (
-        <div className="card">
-          <div className="card-title">Some overview data failed to load</div>
-          <p>Brain Console Center keeps available cards visible and marks missing data explicitly.</p>
-        </div>
-      ) : null}
-
-      <section className="overview-primary-grid">
-        {primaryMetrics.map((metric) => <MetricCard key={metric.id} metric={metric} />)}
-      </section>
-
-      <section className="grid cards">
-        {secondaryMetrics.map((metric) => <MetricCard key={metric.id} metric={metric} />)}
+      <section className="grid two">
+        <article className="card">
+          <div className="card-title">What stays pinned</div>
+          <p className="meta">
+            CPU load, memory pressure, GPU state, uptime, Codex windows, and Claude Code costs remain in the
+            same global location regardless of the page you open.
+          </p>
+        </article>
+        <article className="card">
+          <div className="card-title">Refresh cadence</div>
+          <p className="meta">
+            System telemetry refreshes every second. Codex and Claude estimate cards refresh every five seconds.
+          </p>
+        </article>
+        <MindStewardStatusCard />
       </section>
     </div>
   );

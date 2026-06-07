@@ -501,3 +501,30 @@ export type VideoAnalysisHistoryEntry = z.output<typeof videoAnalysisHistoryEntr
 export type VideoAnalysisHistoryResponse = z.output<typeof videoAnalysisHistoryResponseSchema>;
 export type YouTubePackage = z.infer<typeof youtubePackageSchema>;
 export type ThumbnailMetadata = z.infer<typeof thumbnailMetadataSchema>;
+
+export const mindStewardReportStatusSchema = z.object({
+  available: z.boolean(),
+  fileName: z.string(),
+  status: z.string(),
+  message: z.string().nullable(),
+  mode: z.string().nullable(),
+  writesToMind: z.boolean().nullable(),
+  executableActions: z.boolean().nullable(),
+  endedAtLisbon: z.string().nullable(),
+  durationSeconds: z.number().nullable(),
+});
+
+export const mindStewardSchedulerStatusSchema = z.object({
+  status: z.string(),
+  source: z.string(),
+  reportCount: z.number(),
+  availableCount: z.number(),
+  reports: z.object({
+    dryRun: mindStewardReportStatusSchema,
+    inbox: mindStewardReportStatusSchema,
+    classifier: mindStewardReportStatusSchema,
+    queue: mindStewardReportStatusSchema,
+  }),
+});
+
+export type MindStewardSchedulerStatus = z.infer<typeof mindStewardSchedulerStatusSchema>;
