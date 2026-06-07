@@ -77,6 +77,7 @@ import {
 import { listRuntimeReports } from '../adapters/runtime-reports.js';
 import { getAiModelSelectorStatus, getAiModelSelectorHealthMatrix, controlAiModelSelector } from '../adapters/ai-model-selector-service.js';
 import { listRepos } from '../adapters/repos.js';
+import { getGraphifyStatus } from '../adapters/graphify-status.js';
 import { getMindStewardSchedulerStatus, getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
@@ -650,6 +651,9 @@ export async function routeRequest(
       return;
     case '/scheduler/mind-steward/status':
       sendJson(response, 200, getMindStewardSchedulerStatus());
+      return;
+    case '/graphify/status':
+      sendJson(response, 200, getGraphifyStatus());
       return;
     case '/scheduler/jobs':
       sendJson(response, 200, { jobs: listSchedulerJobs() });
