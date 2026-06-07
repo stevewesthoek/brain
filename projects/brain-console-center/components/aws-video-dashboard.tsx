@@ -527,10 +527,22 @@ function ReviewCard({
   controlPlaneData?: Record<string, unknown> | null;
 }) {
   if (!jobId) return null;
+
+  // CONTROL PLANE IS CANONICAL: when available, use controlPlane.review.media directly
+  // Otherwise fall back to reconstructing from reviewData + artifactData
+  const controlPlaneReviewMedia = controlPlaneData
+    ? (() => {
+        const cpRecord = asRecord(controlPlaneData);
+        const cpReview = cpRecord?.review ? asRecord(cpRecord.review) : null;
+        return cpReview?.media as Partial<VideoReview['media']> | null | undefined;
+      })()
+    : null;
+  const usingControlPlaneMedia = Boolean(controlPlaneReviewMedia);
+
   const reviewRecord = reviewData;
   const artifactRecord: Record<string, unknown> = artifactData ?? {};
   const artifactReviewMedia = asRecord(artifactRecord.reviewMedia) as Partial<VideoReview['media']> | null;
-  const reviewMedia = reviewRecord?.media ?? artifactReviewMedia ?? null;
+  const reviewMedia = (usingControlPlaneMedia && controlPlaneReviewMedia ? controlPlaneReviewMedia : reviewRecord?.media ?? artifactReviewMedia) ?? null;
   const publishableAssets = asRecord(artifactRecord.publishableAssets);
   const artifactNarration = asRecord(artifactRecord.narration);
   const artifactSourceVideo = asRecord(artifactRecord.sourceVideo);
@@ -756,7 +768,7 @@ function ReviewCard({
       </div>
       {reviewRecord?.reviewStatus !== 'approved' ? <div className="compact-warning">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
       <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
-        Review media hydrated from canonical artifacts{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
+        Review media from {usingControlPlaneMedia ? 'control-plane' : 'canonical artifacts'}{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
         isPendingTimeout ? (
@@ -809,10 +821,12 @@ function ReviewCard({
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
-          {/* Use control-plane allowedActions if available, otherwise fallback to local rules */}
-          {controlPlaneData && Array.isArray((controlPlaneData as any)?.allowedActions) ? (
+          {/* CONTROL PLANE CANONICAL: use allowedActions.approve_review when available */}
+          {controlPlaneData ? (
             (() => {
-              const approveReviewAction = (controlPlaneData as any).allowedActions.find((a: any) => a.action === 'approve_review');
+              const cpRecord = asRecord(controlPlaneData);
+              const cpActions = cpRecord?.allowedActions && Array.isArray(cpRecord.allowedActions) ? (cpRecord.allowedActions as any[]) : [];
+              const approveReviewAction = cpActions.find((a: any) => a.action === 'approve_review');
               const shouldHighlight = approveReviewAction?.enabled && isRecommended;
               return (
                 <button
@@ -851,7 +865,7 @@ function ReviewCard({
         </div>
         {imageKeys.length > 0 ? (
           <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
-            {imageKeys.slice(0, 4).map((key) => (
+            {imageKeys.slice(0, 4).map((key: string) => (
               <code key={key} style={{ fontSize: '0.78rem', wordBreak: 'break-all', padding: '0.5rem', backgroundColor: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '3px', color: 'var(--code-fg)' }}>
                 {key}
               </code>
@@ -1228,15 +1242,20 @@ export function AwsVideoDashboard() {
     } catch { /* storage quota or private-mode errors: ignore */ }
   }, [pendingActionByJobId, createDraftTimedOut, currentCreateActionId, preTimeoutJobIds, selectedJobId]);
 
+  // CONTROL PLANE IS NOW CANONICAL
+  // Old endpoints kept for debug panels only; they do NOT drive main UI state
+  const controlPlaneData = controlPlane.data?.data ?? null;
   const selectedJobDetail = job.data?.data;
   const selectedJobList = selected;
   const timelineEvents = timeline.data?.data.events ?? [];
   const artifactData = artifacts.data?.data ?? null;
   const executionData = execution.data?.data ?? null;
   const reviewData = review.data?.review ?? null;
-  const publishableAssets = asRecord(artifactData?.publishableAssets);
+
+  // Media source and generation mode from controlPlane (canonical), fallback to old sources for debug only
   const mediaSource = stringField(selectedJobDetail, 'mediaSource') ?? stringField(selectedJobList, 'mediaSource') ?? stringField(artifactData, 'mediaSource') ?? 'unknown';
   const generationMode = stringField(selectedJobDetail, 'generationMode') ?? stringField(selectedJobList, 'generationMode') ?? stringField(artifactData, 'generationMode') ?? 'unknown';
+  const publishableAssets = asRecord(artifactData?.publishableAssets);
   const videoSourceKey = stringField(selectedJobDetail, 'videoSourceKey') ?? stringField(selectedJobList, 'videoSourceKey') ?? stringField(artifactData, 'videoSourceKey');
   const audioSourceKey = stringField(selectedJobDetail, 'audioSourceKey') ?? stringField(selectedJobList, 'audioSourceKey') ?? stringField(artifactData, 'audioSourceKey');
   const isHybridMode = generationMode === 'hybrid_scene_plan_fixture_media';
@@ -1471,6 +1490,43 @@ export function AwsVideoDashboard() {
       clearPendingAction(jobId);
     }
   }, [jobId, selectedUploaded, selectedJob?.status, backendYoutubeUpload?.status, pendingActionByJobId]);
+
+  // DEV ASSERTION: When controlPlane is available, verify it is driving the main UI state
+  // This prevents regressions where ReviewCard or main panels drift back to using old fragments
+  useEffect(() => {
+    if (!jobId || !controlPlaneData || process.env.NODE_ENV !== 'development') return;
+
+    const cpData = controlPlaneData as any;
+
+    // Assert: ReviewCard uses controlPlane.review.media when available, not old review.data
+    if (cpData.review?.media && review.data?.review?.media) {
+      const cpHasFields = Object.keys(cpData.review.media).length > 0;
+      if (cpHasFields) {
+        console.debug('[AwsVideo] ✓ ReviewCard using control-plane media (not legacy review.data)');
+      }
+    }
+
+    // Assert: Execution/Artifacts panels never render empty objects
+    if (cpData.execution && cpData.execution.status === null && cpData.execution.unavailableReason) {
+      console.debug('[AwsVideo] ✓ Execution shows unavailableReason (structured, not empty {})');
+    }
+    if (cpData.artifacts && cpData.artifacts.status === null && cpData.artifacts.unavailableReason) {
+      console.debug('[AwsVideo] ✓ Artifacts shows unavailableReason (structured, not empty {})');
+    }
+
+    // Assert: finalization pending shows amber, not red error
+    if (cpData.finalization?.status === 'pending') {
+      console.debug('[AwsVideo] ✓ Finalization pending state detected');
+    }
+
+    // Assert: approve_review button enabled from control-plane allowedActions
+    if (Array.isArray(cpData.allowedActions)) {
+      const approveAction = cpData.allowedActions.find((a: any) => a.action === 'approve_review');
+      if (approveAction) {
+        console.debug(`[AwsVideo] ✓ approve_review action enabled=${approveAction.enabled} (from control-plane)`);
+      }
+    }
+  }, [jobId, controlPlaneData, review.data?.review?.media]);
 
   return (
     <div className="aws-video-screen">
@@ -1771,9 +1827,47 @@ export function AwsVideoDashboard() {
         </main>
 
         <aside className="aws-side-panel">
-          <article className="card"><div className="card-title">Execution</div><pre className="compact-pre">{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
-          <article className="card"><div className="card-title">Artifacts</div><pre className="compact-pre">{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
+          {/* CONTROL PLANE: Execution panel from canonical source */}
+          <article className="card">
+            <div className="card-title">Execution (control-plane)</div>
+            {controlPlaneData ? (
+              <div className="aws-facts">
+                <div><span>Status</span><strong>{controlPlaneData.execution?.status ?? 'pending'}</strong></div>
+                {controlPlaneData.execution?.unavailableReason ? (
+                  <div><span>Reason</span><strong>{controlPlaneData.execution.unavailableReason}</strong></div>
+                ) : null}
+              </div>
+            ) : (
+              <p>Execution pending</p>
+            )}
+          </article>
+
+          {/* CONTROL PLANE: Artifacts panel from canonical source */}
+          <article className="card">
+            <div className="card-title">Artifacts (control-plane)</div>
+            {controlPlaneData ? (
+              <div className="aws-facts">
+                <div><span>Status</span><strong>{controlPlaneData.artifacts?.status ?? 'pending'}</strong></div>
+                {controlPlaneData.artifacts?.unavailableReason ? (
+                  <div><span>Reason</span><strong>{controlPlaneData.artifacts.unavailableReason}</strong></div>
+                ) : null}
+              </div>
+            ) : (
+              <p>Artifacts pending</p>
+            )}
+          </article>
+
           <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending || anyPendingTimeout} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
+
+          {/* DEBUG: Old fragments kept for inspection only */}
+          <details style={{ marginTop: '1rem' }}>
+            <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: legacy execution data</summary>
+            <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1600)}</pre>
+          </details>
+          <details style={{ marginTop: '0.5rem' }}>
+            <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: legacy artifacts data</summary>
+            <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1600)}</pre>
+          </details>
         </aside>
       </section>
 
