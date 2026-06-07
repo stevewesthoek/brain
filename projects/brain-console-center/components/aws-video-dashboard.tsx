@@ -1168,7 +1168,10 @@ export function AwsVideoDashboard() {
 
   const queryError = jobs.error ?? status.error;
   const queryErrorMessage = errorMessage(queryError);
-  const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
+  const refreshSafeTimeoutErrors = [approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
+  const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error]
+    .filter((error) => !(isTimeoutError(error) && refreshSafeTimeoutErrors.includes(error)))
+    .find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const quotaExceeded = backendYoutubeUpload?.status === 'quota_exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
