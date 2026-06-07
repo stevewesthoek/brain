@@ -22,6 +22,9 @@ interface ActionState {
   lastActionAt?: string;
 }
 
+// Pending action after timeout: job is still processing in brain core
+type PendingAction = 'generate' | 'approve_review' | 'dry_run' | 'publish';
+
 function pct(value: number | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, Math.round(value)));
@@ -506,6 +509,7 @@ function ReviewCard({
   setNotes,
   isRecommended,
   finalizationState,
+  isPendingTimeout,
 }: {
   jobId: string | null;
   reviewData: VideoReview | null;
@@ -518,6 +522,7 @@ function ReviewCard({
   setNotes: (value: string) => void;
   isRecommended?: boolean;
   finalizationState?: 'pending' | 'failed' | 'complete' | null;
+  isPendingTimeout?: boolean;
 }) {
   if (!jobId) return null;
   const reviewRecord = reviewData;
@@ -752,7 +757,14 @@ function ReviewCard({
         Review media hydrated from canonical artifacts{missingReviewMediaFields.length > 0 ? ' — repair attempted' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
-        finalizationState === 'pending' ? (
+        isPendingTimeout ? (
+          <div style={{ fontSize: '0.85rem', color: 'var(--badge-warning-text)', padding: '0.75rem', backgroundColor: 'var(--badge-warning-bg)', border: '1px solid var(--badge-warning-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
+            <strong>Waiting for job data…</strong>
+            <div style={{ marginTop: '0.25rem' }}>
+              Action is still processing in Brain Core. Fields will populate when complete.
+            </div>
+          </div>
+        ) : finalizationState === 'pending' ? (
           <div style={{ fontSize: '0.85rem', color: 'var(--badge-warning-text)', padding: '0.75rem', backgroundColor: 'var(--badge-warning-bg)', border: '1px solid var(--badge-warning-border)', borderRadius: '4px', marginBottom: '0.75rem' }}>
             <strong>Finalizing publish package…</strong>
             <div style={{ marginTop: '0.25rem' }}>
@@ -862,6 +874,9 @@ export function AwsVideoDashboard() {
   const [activity, setActivity] = useState<string[]>([]);
   const [generationTimeoutJobId, setGenerationTimeoutJobId] = useState<string | null>(null);
   const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(null);
+  const [pendingActionByJobId, setPendingActionByJobId] = useState<Record<string, PendingAction>>({});
+  const [createDraftTimedOut, setCreateDraftTimedOut] = useState(false);
+  const [preTimeoutJobIds, setPreTimeoutJobIds] = useState<string[]>([]);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
   const beginAction = () => setDismissedError(null);
@@ -873,6 +888,12 @@ export function AwsVideoDashboard() {
       [jobId]: { ...prev[jobId], ...update, lastActionAt: new Date().toISOString() },
     }));
   };
+
+  // Pending action helpers
+  const setPendingAction = (id: string, action: PendingAction) =>
+    setPendingActionByJobId(prev => ({ ...prev, [id]: action }));
+  const clearPendingAction = (id: string) =>
+    setPendingActionByJobId(prev => { const n = { ...prev }; delete n[id]; return n; });
 
   const status = useQuery({
     queryKey: ['aws-video-status'],
@@ -946,6 +967,7 @@ export function AwsVideoDashboard() {
       if (possibleJobId) {
         setSelectedJobId(possibleJobId);
         setCurrentCreateActionId(null);
+        setCreateDraftTimedOut(false);
       }
       setPrompt('');
       setActiveView('overview');
@@ -954,7 +976,9 @@ export function AwsVideoDashboard() {
     },
     onError: async (error) => {
       if (isTimeoutError(error)) {
-        addActivity('Draft creation is still running. Do not click again; refreshing job list…');
+        setCreateDraftTimedOut(true);
+        setPreTimeoutJobIds(jobList.map(j => j.jobId));
+        addActivity('Draft creation is still running. Refresh is safe. Waiting for new job…');
         await invalidateVideo();
         return;
       }
@@ -976,6 +1000,7 @@ export function AwsVideoDashboard() {
   const approveReview = useMutation({
     mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/approve`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }, 15_000),
     onSuccess: async (result, { jobIdArg }) => {
+      clearPendingAction(jobIdArg);
       addActivity(`Approved review for ${jobIdArg}`);
       setReviewNotes('');
       setActiveView('publish');
@@ -990,7 +1015,8 @@ export function AwsVideoDashboard() {
     },
     onError: async (error, { jobIdArg }) => {
       if (isTimeoutError(error)) {
-        addActivity(`Review approval is still being persisted for ${jobIdArg}; refreshing state now.`);
+        setPendingAction(jobIdArg, 'approve_review');
+        addActivity(`Review approval is still being persisted for ${jobIdArg}; waiting for confirmation…`);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['aws-video-review', jobIdArg] }),
           queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
@@ -1021,6 +1047,7 @@ export function AwsVideoDashboard() {
     mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/generate`, videoActionResultSchema, { requestedBy: 'brain-console-center' }, GENERATE_TIMEOUT_MS),
     onSuccess: async (_, { jobIdArg }) => {
       setGenerationTimeoutJobId((current) => (current === jobIdArg ? null : current));
+      clearPendingAction(jobIdArg);
       addActivity(`Generation accepted for ${jobIdArg}`);
       await invalidateVideo();
     },
@@ -1028,7 +1055,8 @@ export function AwsVideoDashboard() {
       if (!isTimeoutError(error)) return;
 
       setGenerationTimeoutJobId(jobIdArg);
-      addActivity(`Generation is still running for ${jobIdArg}; timeout reached while waiting for backend response.`);
+      setPendingAction(jobIdArg, 'generate');
+      addActivity(`Generation is still running for ${jobIdArg}; refresh is safe.`);
       await invalidateVideo();
     },
   });
@@ -1036,6 +1064,7 @@ export function AwsVideoDashboard() {
   const youtubeDryRun = useMutation({
     mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/publish/youtube/dry-run`, youtubePublishResultSchema, {}, 45_000),
     onSuccess: async (result, { jobIdArg }) => {
+      clearPendingAction(jobIdArg);
       if (result.ok) {
         updateActionState(jobIdArg, { dryRunPassed: true });
       }
@@ -1044,7 +1073,8 @@ export function AwsVideoDashboard() {
     },
     onError: async (error, { jobIdArg }) => {
       if (isTimeoutError(error)) {
-        addActivity(`YouTube dry-run is still running for ${jobIdArg}; page refresh is safe.`);
+        setPendingAction(jobIdArg, 'dry_run');
+        addActivity(`YouTube dry-run is still running for ${jobIdArg}; refresh is safe.`);
         await invalidateVideo();
         return;
       }
@@ -1059,6 +1089,7 @@ export function AwsVideoDashboard() {
       requestedBy: 'brain-console-center',
     }, 60_000),
     onSuccess: async (result, { jobIdArg }) => {
+      clearPendingAction(jobIdArg);
       if (result.ok) {
         // PART 2: Terminal upload states — treat all these as uploaded
         const isTerminalUpload = result.videoId || result.publishStatus === 'uploaded';
@@ -1090,7 +1121,8 @@ export function AwsVideoDashboard() {
     },
     onError: async (error, { jobIdArg }) => {
       if (isTimeoutError(error)) {
-        addActivity(`Private YouTube upload is still running for ${jobIdArg}; page refresh is safe.`);
+        setPendingAction(jobIdArg, 'publish');
+        addActivity(`Private YouTube upload is still running for ${jobIdArg}; refresh is safe.`);
         await invalidateVideo();
         return;
       }
@@ -1208,6 +1240,12 @@ export function AwsVideoDashboard() {
   const generationInProgress = ['generating', 'ready_to_publish'].includes(selectedJob?.status ?? '');
   const generationTimeoutStillRunning = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && generationInProgress);
   const generationTimeoutFailed = Boolean(generationTimeoutJobId && generationTimeoutJobId === jobId && selectedJob?.status === 'failed');
+
+  // Pending action state for selected job
+  const pendingActionForSelectedJob = jobId ? pendingActionByJobId[jobId] : undefined;
+  const createDraftIsStillProcessing = createDraftTimedOut && !createDraft.isPending;
+  const anyPendingTimeout = Boolean(pendingActionForSelectedJob || createDraftIsStillProcessing);
+
   const canApprove = Boolean(jobId && selectedApprovalStatus !== 'approved' && !['generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? ''));
   const canGenerate = Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'failed'].includes(selectedJob?.status ?? '') && selectedGenerationStatus !== 'complete' && !hasGeneratedAssets && !generationInProgress);
 
@@ -1234,20 +1272,20 @@ export function AwsVideoDashboard() {
   ];
   const recommendedStep = guideSteps.find((step) => step.active && !step.done) ?? guideSteps.find((step) => !step.done);
   const nextStep = recommendedStep;
-  const busyAction = createDraft.isPending
-    ? { title: 'Creating draft…', detail: 'Preparing a new video job. Please wait before clicking another action.' }
+  const busyAction = createDraft.isPending || createDraftIsStillProcessing
+    ? { title: createDraft.isPending ? 'Creating draft…' : 'Still processing in Brain Core.', detail: createDraft.isPending ? 'Preparing a new video job. Please wait before clicking another action.' : 'Refresh is safe. Waiting for new job to appear…' }
     : approve.isPending
       ? { title: 'Approving script…', detail: 'Saving approval and refreshing the pipeline state.' }
-      : generate.isPending
-        ? { title: 'Generating video…', detail: 'Creating narration, images, overlays, thumbnail, and final video. This can take a while.' }
-        : approveReview.isPending
-          ? { title: 'Approving review…', detail: 'Validating generated media and unlocking the publish step.' }
+      : generate.isPending || pendingActionForSelectedJob === 'generate'
+        ? { title: generate.isPending ? 'Generating video…' : 'Still processing in Brain Core.', detail: generate.isPending ? 'Creating narration, images, overlays, thumbnail, and final video. This can take a while.' : 'Refresh is safe. Waiting for job state…' }
+        : approveReview.isPending || pendingActionForSelectedJob === 'approve_review'
+          ? { title: approveReview.isPending ? 'Approving review…' : 'Still processing in Brain Core.', detail: approveReview.isPending ? 'Validating generated media and unlocking the publish step.' : 'Refresh is safe. Waiting for job state…' }
           : requestReviewChanges.isPending || requestChanges.isPending
             ? { title: 'Saving requested changes…', detail: 'Writing change notes and refreshing the job state.' }
-            : youtubeDryRun.isPending
-              ? { title: 'Running YouTube dry-run…', detail: 'Validating video, thumbnail, and metadata. Refresh is safe after this transitions to running.' }
-              : youtubePublish.isPending
-                ? { title: 'Publishing privately…', detail: 'Uploading the final video and thumbnail to YouTube. This may take a minute.' }
+            : youtubeDryRun.isPending || pendingActionForSelectedJob === 'dry_run'
+              ? { title: youtubeDryRun.isPending ? 'Running YouTube dry-run…' : 'Still processing in Brain Core.', detail: youtubeDryRun.isPending ? 'Validating video, thumbnail, and metadata. Refresh is safe after this transitions to running.' : 'Refresh is safe. Waiting for job state…' }
+              : youtubePublish.isPending || pendingActionForSelectedJob === 'publish'
+                ? { title: youtubePublish.isPending ? 'Publishing privately…' : 'Still processing in Brain Core.', detail: youtubePublish.isPending ? 'Uploading the final video and thumbnail to YouTube. This may take a minute.' : 'Refresh is safe. Waiting for job state…' }
                 : null;
 
   const statusOnlyError = status.error;
@@ -1255,7 +1293,7 @@ export function AwsVideoDashboard() {
   const refreshSafeTimeoutErrors = [createDraft.error, approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error]
     .filter((error) => !(isTimeoutError(error) && refreshSafeTimeoutErrors.includes(error)))
-    .find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
+    .find(Boolean) ?? (pendingActionForSelectedJob === 'generate' || generationTimeoutStillRunning ? null : generate.error);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const quotaExceeded = backendYoutubeUpload?.status === 'quota_exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
@@ -1267,7 +1305,7 @@ export function AwsVideoDashboard() {
       ? 'Brain Core request failed'
       : actionErrorSummary(actionError) ?? 'Action failed';
   const visibleErrorDetails = statusOnlyErrorMessage ?? actionErrorMessage;
-  const showErrorToast = Boolean(!quotaExceeded && visibleErrorMessage && visibleErrorMessage !== dismissedError);
+  const showErrorToast = Boolean(!anyPendingTimeout && !quotaExceeded && visibleErrorMessage && visibleErrorMessage !== dismissedError);
 
   const counts = {
     total: jobList.length,
@@ -1275,6 +1313,53 @@ export function AwsVideoDashboard() {
     active: jobList.filter((item) => ['generating', 'publishing'].includes(item.status ?? '')).length,
     published: jobList.filter((item) => item.status === 'published').length,
   };
+
+  // Poll-based clearing of pending actions: create_draft
+  useEffect(() => {
+    if (!createDraftTimedOut || createDraft.isPending) return;
+    const newJob = jobList.find(j => !preTimeoutJobIds.includes(j.jobId));
+    if (newJob) {
+      setSelectedJobId(newJob.jobId);
+      setCreateDraftTimedOut(false);
+      setCurrentCreateActionId(null);
+      addActivity(`Draft created: ${newJob.jobId}`);
+      setActiveView('overview');
+    }
+  }, [createDraftTimedOut, jobList, preTimeoutJobIds, createDraft.isPending]);
+
+  // Poll-based clearing of pending actions: generate
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'generate') return;
+    if (['ready_to_publish', 'failed', 'published'].includes(selectedJob?.status ?? '')) {
+      clearPendingAction(jobId);
+      if (generationTimeoutJobId === jobId) setGenerationTimeoutJobId(null);
+    }
+  }, [jobId, selectedJob?.status, pendingActionByJobId, generationTimeoutJobId]);
+
+  // Poll-based clearing of pending actions: approve_review
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'approve_review') return;
+    if (reviewStatus === 'approved') {
+      clearPendingAction(jobId);
+      setActiveView('publish');
+    }
+  }, [jobId, reviewStatus, pendingActionByJobId]);
+
+  // Poll-based clearing of pending actions: dry_run
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'dry_run') return;
+    if (['passed', 'failed', 'quota_exceeded'].includes(backendDryRunStatus ?? '')) {
+      clearPendingAction(jobId);
+    }
+  }, [jobId, backendDryRunStatus, pendingActionByJobId]);
+
+  // Poll-based clearing of pending actions: publish
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'publish') return;
+    if (selectedUploaded || selectedJob?.status === 'failed' || backendYoutubeUpload?.status === 'quota_exceeded') {
+      clearPendingAction(jobId);
+    }
+  }, [jobId, selectedUploaded, selectedJob?.status, backendYoutubeUpload?.status, pendingActionByJobId]);
 
   return (
     <div className="aws-video-screen">
@@ -1426,8 +1511,8 @@ export function AwsVideoDashboard() {
                 </div>
                 <div className="pipeline-actions">
                   <button className={recommendedStep?.key === 'draft' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
-                  <button className={recommendedStep?.key === 'approve' ? 'button next-action' : 'button'} disabled={!canApprove || approve.isPending} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve</button>
-                  <button className={recommendedStep?.key === 'generate' ? 'button next-action' : 'button'} disabled={!canGenerate || generate.isPending} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
+                  <button className={recommendedStep?.key === 'approve' ? 'button next-action' : 'button'} disabled={!canApprove || approve.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve</button>
+                  <button className={recommendedStep?.key === 'generate' ? 'button next-action' : 'button'} disabled={!canGenerate || generate.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
                   <button className={recommendedStep?.view === 'publish' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
                 </div>
               </article>
@@ -1470,6 +1555,7 @@ export function AwsVideoDashboard() {
                 setNotes={setReviewNotes}
                 isRecommended={recommendedStep?.key === 'review'}
                 finalizationState={finalizationState}
+                isPendingTimeout={anyPendingTimeout}
               />
               <MotionCard artifactData={artifactData} />
             </div>
@@ -1503,7 +1589,7 @@ export function AwsVideoDashboard() {
               <div className="stack">
                 <input className="input" placeholder="Channel id, for example prochat" value={channelId} onChange={(event) => setChannelId(event.target.value)} />
                 <textarea className="textarea" placeholder="Draft prompt" value={prompt} onChange={(event) => setPrompt(event.target.value)} />
-                <button className="button" disabled={channelId.trim().length === 0 || prompt.trim().length < 10 || createDraft.isPending} onClick={() => { beginAction(); createDraft.mutate(); }}><FilePlus2 size={16} /> {createDraft.isPending ? 'Creating…' : 'Create draft'}</button>
+                <button className="button" disabled={channelId.trim().length === 0 || prompt.trim().length < 10 || createDraft.isPending || anyPendingTimeout} onClick={() => { beginAction(); createDraft.mutate(); }}><FilePlus2 size={16} /> {createDraft.isPending ? 'Creating…' : 'Create draft'}</button>
               </div>
             </article>
           ) : null}
@@ -1545,12 +1631,12 @@ export function AwsVideoDashboard() {
                 <div><span>audioSourceKey</span><strong>{audioSourceKey ?? 'unknown'}</strong></div>
               </div>
               <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} />
-              {!selectedReady ? <div className="compact-warning">This job is not ready to publish. Complete approval and generation first.</div> : null}
+              {!selectedReady ? anyPendingTimeout ? <div className="compact-info">Waiting for job state… Action is still processing in Brain Core. Refresh is safe.</div> : <div className="compact-warning">This job is not ready to publish. Complete approval and generation first.</div> : null}
               {publishNeedsRepair ? <div className="compact-warning">Generated assets available — publish contract repair needed.</div> : null}
               {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
-                <button className={recommendedStep?.key === 'dry-run' ? 'button next-action' : 'button secondary'} disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
-                <button className={recommendedStep?.key === 'publish' ? 'button next-action' : 'button danger-button'} disabled={!canPublish || isPublishingThisJob || quotaExceeded} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
+                <button className={recommendedStep?.key === 'dry-run' ? 'button next-action' : 'button secondary'} disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
+                <button className={recommendedStep?.key === 'publish' ? 'button next-action' : 'button danger-button'} disabled={!canPublish || isPublishingThisJob || quotaExceeded || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
                 {finalVideoAvailable ? <button className="button secondary" onClick={() => { if (jobId) downloadFinalVideo(jobId); }}>Download final MP4</button> : null}
               </div>
               <p className="meta no-margin">{requiresReviewGate ? 'Review approval is required before dry-run or private upload.' : 'Private upload unlocks automatically after a successful dry-run for this selected job.'}</p>
@@ -1575,7 +1661,7 @@ export function AwsVideoDashboard() {
         <aside className="aws-side-panel">
           <article className="card"><div className="card-title">Execution</div><pre className="compact-pre">{JSON.stringify(execution.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
           <article className="card"><div className="card-title">Artifacts</div><pre className="compact-pre">{JSON.stringify(artifacts.data?.data ?? {}, null, 2).slice(0, 1600)}</pre></article>
-          <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
+          <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending || anyPendingTimeout} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
         </aside>
       </section>
 
