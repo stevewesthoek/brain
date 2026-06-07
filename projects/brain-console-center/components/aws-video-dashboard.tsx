@@ -465,14 +465,18 @@ function ReviewCard({
 }) {
   if (!jobId) return null;
   const reviewRecord = reviewData;
-  const reviewMedia = reviewRecord?.media ?? null;
-  const artifactRecord = artifactData ?? {};
+  const artifactRecord: Record<string, unknown> = artifactData ?? {};
+  const artifactReviewMedia = asRecord(artifactRecord.reviewMedia) as Partial<VideoReview['media']> | null;
+  const reviewMedia = reviewRecord?.media ?? artifactReviewMedia ?? null;
   const publishableAssets = asRecord(artifactRecord.publishableAssets);
   const artifactNarration = asRecord(artifactRecord.narration);
   const artifactSourceVideo = asRecord(artifactRecord.sourceVideo);
   const artifactSceneImageKeys = Array.isArray(artifactRecord.sceneImageKeys)
-    ? artifactRecord.sceneImageKeys.filter((item): item is string => typeof item === 'string')
+    ? (artifactRecord.sceneImageKeys as unknown[]).filter((item): item is string => typeof item === 'string')
     : [];
+  const effectiveSceneImageKeys = Array.isArray(reviewMedia?.sceneImageKeys) && reviewMedia.sceneImageKeys.length > 0
+    ? reviewMedia.sceneImageKeys
+    : artifactSceneImageKeys;
   const effectiveMedia = {
     scenePlanKey: reviewMedia?.scenePlanKey ?? stringField(artifactRecord, 'scenePlanKey') ?? null,
     narrationScriptKey: reviewMedia?.narrationScriptKey ?? stringField(artifactRecord, 'narrationScriptKey') ?? null,
@@ -481,7 +485,7 @@ function ReviewCard({
       ?? stringField(artifactRecord, 'audioSourceKey')
       ?? stringField(artifactNarration, 'path')
       ?? null,
-    sceneImageKeys: (reviewMedia?.sceneImageKeys?.length ?? 0) > 0 ? reviewMedia!.sceneImageKeys : artifactSceneImageKeys,
+    sceneImageKeys: effectiveSceneImageKeys,
     videoKey: reviewMedia?.videoKey
       ?? stringField(artifactRecord, 'videoKey')
       ?? stringField(artifactRecord, 'videoSourceKey')
@@ -529,18 +533,29 @@ function ReviewCard({
   // Extract YouTube package metadata from artifacts
   const youtubePackage = asRecord(artifactRecord.youtubePackage) ?? null;
   const youtubePackageQuality = youtubePackage ? asRecord(youtubePackage.metadataQuality) : null;
-  const youtubePackageMetadata = youtubePackage
+  const youtubePackageMetadata: {
+    title: string | null;
+    description: string | null;
+    tags: string[];
+    quality: {
+      titleLength: number;
+      tagCount: number;
+      descriptionLength: number;
+      hasInternalTerms: boolean;
+      warnings: string[];
+    } | null;
+  } | null = youtubePackage
     ? {
         title: stringField(youtubePackage, 'title'),
         description: stringField(youtubePackage, 'description'),
-        tags: Array.isArray(youtubePackage.tags) ? youtubePackage.tags.filter((t): t is string => typeof t === 'string') : [],
+        tags: Array.isArray(youtubePackage.tags) ? (youtubePackage.tags as unknown[]).filter((t): t is string => typeof t === 'string') : [],
         quality: youtubePackageQuality
           ? {
               titleLength: typeof youtubePackageQuality.titleLength === 'number' ? youtubePackageQuality.titleLength : 0,
               tagCount: typeof youtubePackageQuality.tagCount === 'number' ? youtubePackageQuality.tagCount : 0,
               descriptionLength: typeof youtubePackageQuality.descriptionLength === 'number' ? youtubePackageQuality.descriptionLength : 0,
               hasInternalTerms: youtubePackageQuality.hasInternalTerms === true,
-              warnings: Array.isArray(youtubePackageQuality.warnings) ? youtubePackageQuality.warnings : [],
+              warnings: Array.isArray(youtubePackageQuality.warnings) ? (youtubePackageQuality.warnings as unknown[]).filter((w): w is string => typeof w === 'string') : [],
             }
           : null,
       }
@@ -549,8 +564,8 @@ function ReviewCard({
   const hasInternalTermsInMetadata = youtubePackageMetadata?.quality?.hasInternalTerms === true;
   const metadataWarnings = youtubePackageMetadata?.quality?.warnings ?? [];
   const overlayPlan = asRecord(artifactRecord.overlayPlan);
-  const overlayCards = Array.isArray(overlayPlan?.cards) ? overlayPlan.cards.map(asRecord).filter((card): card is Record<string, unknown> => Boolean(card)) : [];
-  const overlayWarnings = Array.isArray(overlayPlan?.warnings) ? overlayPlan.warnings.filter((warning): warning is string => typeof warning === 'string') : [];
+  const overlayCards = Array.isArray(overlayPlan?.cards) ? (overlayPlan.cards as unknown[]).map(asRecord).filter((card): card is Record<string, unknown> => Boolean(card)) : [];
+  const overlayWarnings = Array.isArray(overlayPlan?.warnings) ? (overlayPlan.warnings as unknown[]).filter((warning): warning is string => typeof warning === 'string') : [];
   const requiresOverlayPlan = stringField(artifactRecord, 'generationMode') === 'hybrid_image_slideshow_video';
   const overlayMissing = requiresOverlayPlan && !overlayPlan && !media.overlayPlanKey;
   const overlayHasInternalTerms = requiresOverlayPlan && containsInternalOverlayTerms(overlayPlan);

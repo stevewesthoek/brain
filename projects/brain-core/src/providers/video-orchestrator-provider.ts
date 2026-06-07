@@ -1102,10 +1102,47 @@ export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeli
 export async function getVideoJobArtifacts(jobId: string): Promise<Record<string, unknown> | null> {
   if (!isValidJobId(jobId)) return null;
 
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
   const [assets, resolved] = await Promise.all([
     readJobMetadataJson(jobId, 'assets.json'),
     resolvePublishableAssets(jobId),
   ]);
+
+  if (finalized.ok) {
+    const assetsRecord = assets as Record<string, unknown> | null;
+    const result: Record<string, unknown> = {
+      ...(assetsRecord ?? {}),
+      publishableAssets: resolved,
+      finalization: {
+        finalized: finalized.finalized,
+        repaired: finalized.repaired,
+        missing: finalized.missing,
+      },
+    };
+
+    if (finalized.media.scenePlanKey) result.scenePlanKey = finalized.media.scenePlanKey;
+    if (finalized.media.narrationScriptKey) result.narrationScriptKey = finalized.media.narrationScriptKey;
+    if (finalized.media.audioKey) result.audioKey = finalized.media.audioKey;
+    if (finalized.media.sceneImageKeys.length > 0) result.sceneImageKeys = finalized.media.sceneImageKeys;
+    if (finalized.media.overlayPlanKey) result.overlayPlanKey = finalized.media.overlayPlanKey;
+    if (finalized.media.videoKey) {
+      result.finalVideo = finalized.media.videoKey;
+      result.videoKey = finalized.media.videoKey;
+    }
+    if (finalized.media.thumbnailKey) {
+      result.thumbnail = finalized.media.thumbnailKey;
+      result.thumbnailKey = finalized.media.thumbnailKey;
+    }
+    if (stringValue(assetsRecord?.generationMode)) result.generationMode = stringValue(assetsRecord?.generationMode);
+    if (stringValue(assetsRecord?.videoSourceKey)) result.videoSourceKey = stringValue(assetsRecord?.videoSourceKey);
+    if (stringValue(assetsRecord?.audioSourceKey)) result.audioSourceKey = stringValue(assetsRecord?.audioSourceKey);
+    if (finalized.publish) result.publish = finalized.publish;
+    if (finalized.review) result.review = finalized.review;
+    if (finalized.youtubePackage) result.youtubePackage = finalized.youtubePackage;
+    if (finalized.thumbnail) result.thumbnailJson = finalized.thumbnail;
+    if (finalized.review?.media) result.reviewMedia = finalized.review.media;
+    return result;
+  }
 
   if (assets) {
     const result: Record<string, unknown> = {
@@ -1343,6 +1380,21 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
         },
       };
     }
+  }
+
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
+  if (!finalized.ok) {
+    return {
+      ok: false,
+      jobId,
+      dryRun: options.dryRun,
+      code: finalized.code,
+      error: finalized.error,
+      details: {
+        missing: finalized.missing,
+        ...(finalized.details ?? {}),
+      },
+    };
   }
 
   // Now resolve assets (expensive operation)
@@ -1616,9 +1668,12 @@ export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJo
       };
     }
 
-    // If AWS execution succeeded, check for generated assets
+    // If AWS execution succeeded, check for generated assets and repair canonical metadata.
     const inferred = awsStatus === 'SUCCEEDED' ? await inferGeneratedS3Artifacts(jobId) : null;
     const hasPublishAssets = Boolean(inferred?.finalVideo && inferred?.thumbnail);
+    if (awsStatus === 'SUCCEEDED') {
+      await finalizeAwsVideoPublishPackage(jobId);
+    }
     return {
       ...base,
       awsStatus,
@@ -1878,7 +1933,7 @@ function parseReviewRecord(value: unknown, jobId: string): VideoReviewMetadata |
   };
 }
 
-function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoReviewMetadata | null, jobId: string): VideoReviewMetadata | null {
+export function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoReviewMetadata | null, jobId: string): VideoReviewMetadata | null {
   // If both exist, merge with approval state winning from whichever is approved
   if (local && remote) {
     const localApproved = ['approved', 'changes_requested'].includes(local.reviewStatus);
@@ -1948,6 +2003,281 @@ function mergeReviewMetadata(local: VideoReviewMetadata | null, remote: VideoRev
   return local ?? remote;
 }
 
+export interface FinalizeAwsVideoPublishPackageResult {
+  ok: true;
+  finalized: true;
+  missing: string[];
+  repaired: string[];
+  media: VideoReviewMedia;
+  review: VideoReviewMetadata | null;
+  publish: Record<string, unknown> | null;
+  youtubePackage: Record<string, unknown> | null;
+  thumbnail: Record<string, unknown> | null;
+  assets: Record<string, unknown> | null;
+}
+
+export interface FinalizeAwsVideoPublishPackageError {
+  ok: false;
+  code: 'publish_package_incomplete' | 'finalization_failed' | 'invalid_job_id';
+  missing: string[];
+  error: string;
+  details?: Record<string, unknown>;
+}
+
+async function ensureCanonicalThumbnailMetadata(jobId: string, assetsJson: Record<string, unknown> | null): Promise<{ repaired: boolean; thumbnailJson: Record<string, unknown> | null }> {
+  const canonicalKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  const localThumbnailPath = join(getVideoOrchestratorRoot(), canonicalKey);
+  const localExists = await fileExists(localThumbnailPath);
+  const s3Exists = localExists ? true : await checkS3ObjectExists(S3_BUCKET, canonicalKey, AWS_REGION);
+  if (!localExists && !s3Exists) {
+    const created = await createCanonicalThumbnail(jobId, assetsJson);
+    if (created) {
+      return { repaired: true, thumbnailJson: created as unknown as Record<string, unknown> };
+    }
+    return { repaired: false, thumbnailJson: null };
+  }
+
+  const existing = await readJobMetadataJson(jobId, 'thumbnail.json') as Record<string, unknown> | null;
+  if (existing && stringValue(existing.thumbnailKey) === canonicalKey) {
+    return { repaired: false, thumbnailJson: existing };
+  }
+
+  const repaired = existing ?? {
+    jobId,
+    thumbnailStatus: 'generated',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    provider: 'selected-scene-image',
+    source: {
+      kind: 'scene-image',
+      key: Array.isArray(assetsJson?.sceneImageKeys) ? stringValue((assetsJson.sceneImageKeys as string[])[0]) : null,
+    },
+    thumbnailKey: canonicalKey,
+    previewKey: canonicalKey,
+    width: 1280,
+    height: 720,
+    mimeType: 'image/jpeg',
+    titleOverlay: null,
+    prompt: null,
+    warnings: [],
+  };
+  await writeThumbnailMetadata(jobId, repaired as unknown as ThumbnailMetadata);
+  return { repaired: true, thumbnailJson: repaired };
+}
+
+export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<FinalizeAwsVideoPublishPackageResult | FinalizeAwsVideoPublishPackageError> {
+  if (!isValidJobId(jobId)) {
+    return {
+      ok: false,
+      code: 'invalid_job_id',
+      error: 'Invalid jobId',
+      missing: [],
+    };
+  }
+
+  const [statusJson, assetsJson, publishJson, reviewJson, youtubePackageJson, thumbnailJson, scriptJson] = await Promise.all([
+    readJobMetadataJson(jobId, 'status.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'assets.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'publish.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'review.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'youtube-package.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'thumbnail.json') as Promise<Record<string, unknown> | null>,
+    readJobMetadataJson(jobId, 'script.json') as Promise<ScriptMetadata | null>,
+  ]);
+
+  const generationMode = stringValue(assetsJson?.generationMode) ?? stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode) ?? null;
+  const isHybridImageSlideshow = generationMode === 'hybrid_image_slideshow_video';
+  const requiredKeys = [
+    'jobs/' + jobId + '/metadata/scene-plan.json',
+    'jobs/' + jobId + '/audio/narration-script.txt',
+    'jobs/' + jobId + '/audio/narration.mp3',
+    'jobs/' + jobId + '/metadata/assets.json',
+    ...(isHybridImageSlideshow ? ['jobs/' + jobId + '/metadata/overlay-plan.json'] : []),
+    'jobs/' + jobId + '/video-generated/generated-001.mp4',
+    'jobs/' + jobId + '/exports/generated-001-final.mp4',
+    'jobs/' + jobId + '/exports/thumbnail-001.jpg',
+    'jobs/' + jobId + '/metadata/youtube-package.json',
+    'jobs/' + jobId + '/metadata/publish.json',
+    'jobs/' + jobId + '/metadata/review.json',
+  ];
+
+  const repaired: string[] = [];
+  const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const canonicalThumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  const canonicalYoutubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
+  const canonicalPublishKey = `jobs/${jobId}/metadata/publish.json`;
+  const canonicalReviewKey = `jobs/${jobId}/metadata/review.json`;
+
+  let thumbnailRepair = thumbnailJson;
+  if (!thumbnailRepair || stringValue(thumbnailRepair.thumbnailKey) !== canonicalThumbnailKey) {
+    const thumbnailResult = await ensureCanonicalThumbnailMetadata(jobId, assetsJson);
+    if (thumbnailResult.thumbnailJson) {
+      thumbnailRepair = thumbnailResult.thumbnailJson;
+      repaired.push('thumbnail.json');
+    }
+  }
+
+  let youtubePackageRepair = youtubePackageJson;
+  if (!youtubePackageRepair) {
+    const scenePlan = await readJobMetadataJson(jobId, 'scene-plan.json') as Record<string, unknown> | null;
+    const topicTitle = stringValue((await readJobMetadataJson(jobId, 'topic.json') as Record<string, unknown> | null)?.title) ?? stringValue((scriptJson as ScriptMetadata | null)?.title) ?? 'Untitled';
+    const built = buildYouTubePackage({
+      jobId,
+      topicTitle,
+      topicDescription: stringValue((await readJobMetadataJson(jobId, 'topic.json') as Record<string, unknown> | null)?.description) ?? undefined,
+      generationMode: generationMode ?? 'hybrid_image_slideshow_video',
+      mediaSource: stringValue(assetsJson?.mediaSource) ?? 'hybrid',
+      videoKey: stringValue(assetsJson?.videoSourceKey) ?? canonicalVideoKey,
+      thumbnailKey: canonicalThumbnailKey,
+      scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
+      narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
+      scenePlan: Array.isArray(scenePlan?.scenes) ? (scenePlan.scenes as ScenePlan['scenes']) : undefined,
+    });
+    youtubePackageRepair = built as unknown as Record<string, unknown>;
+    await writeFile(getJobMetadataPath(jobId, 'youtube-package.json'), `${JSON.stringify(built, null, 2)}\n`, 'utf-8');
+    await writeS3MetadataJson(jobId, 'youtube-package.json', built as unknown as Record<string, unknown>);
+    repaired.push('youtube-package.json');
+  }
+
+  let publishRepair = publishJson;
+  const needsPublishRepair = !publishRepair
+    || stringValue(publishRepair.videoKey) !== canonicalVideoKey
+    || stringValue(publishRepair.thumbnailKey) !== canonicalThumbnailKey
+    || stringValue(publishRepair.youtubePackageKey) !== canonicalYoutubePackageKey;
+  if (needsPublishRepair) {
+    publishRepair = await repairPublishJson(jobId, publishRepair, {
+      videoKey: canonicalVideoKey,
+      thumbnailKey: canonicalThumbnailKey,
+      narrationKey: stringValue(assetsJson?.audioKey) ?? stringValue(assetsJson?.audioSourceKey) ?? `jobs/${jobId}/audio/narration.mp3`,
+      source: { publishJson: false, assetsJson: false, statusJson: false, inferredS3: false },
+      selectedSource: { videoKey: 'inferredS3', thumbnailKey: 'inferredS3', narrationKey: 'inferredS3' },
+      missing: [],
+      checked: { publishJson: false, assetsJson: false, statusJson: false, inferredS3: false },
+      expectedKeys: { videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey, narrationKey: `jobs/${jobId}/audio/narration.mp3` },
+    } as PublishableAssetsResolution);
+    repaired.push('publish.json');
+  }
+
+  const assetPublishable = {
+    videoKey: canonicalVideoKey,
+    thumbnailKey: canonicalThumbnailKey,
+    narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    missing: [],
+    checked: {
+      publishJson: true,
+      assetsJson: true,
+      statusJson: true,
+      inferredS3: true,
+    },
+    source: {
+      publishJson: true,
+      assetsJson: true,
+      statusJson: true,
+      inferredS3: true,
+    },
+    selectedSource: {
+      videoKey: 'inferredS3',
+      thumbnailKey: 'inferredS3',
+      narrationKey: 'inferredS3',
+    },
+    expectedKeys: {
+      videoKey: canonicalVideoKey,
+      thumbnailKey: canonicalThumbnailKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  };
+  const repairedAssets = {
+    ...(assetsJson ?? {}),
+    jobId,
+    generationMode: generationMode ?? stringValue(assetsJson?.generationMode) ?? 'hybrid_image_slideshow_video',
+    mediaSource: stringValue(assetsJson?.mediaSource) ?? 'hybrid',
+    scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
+    narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
+    audioKey: `jobs/${jobId}/audio/narration.mp3`,
+    videoSourceKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
+    videoKey: canonicalVideoKey,
+    finalVideo: canonicalVideoKey,
+    thumbnailKey: canonicalThumbnailKey,
+    overlayPlanKey: isHybridImageSlideshow ? `jobs/${jobId}/metadata/overlay-plan.json` : stringValue(assetsJson?.overlayPlanKey) ?? null,
+    sceneImageKeys: Array.isArray(assetsJson?.sceneImageKeys)
+      ? (assetsJson.sceneImageKeys as string[]).filter((item): item is string => typeof item === 'string')
+      : [],
+    publishableAssets: assetPublishable,
+  };
+  const needsAssetsRepair = JSON.stringify(assetsJson ?? {}) !== JSON.stringify(repairedAssets);
+  if (needsAssetsRepair) {
+    const content = `${JSON.stringify(repairedAssets, null, 2)}\n`;
+    const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+    await mkdir(metadataDir, { recursive: true });
+    await Promise.all([
+      writeFile(join(metadataDir, 'assets.json'), content, 'utf-8'),
+      writeS3MetadataJson(jobId, 'assets.json', repairedAssets as Record<string, unknown>),
+    ]);
+    repaired.push('assets.json');
+  }
+
+  const canonicalMedia: VideoReviewMedia = {
+    scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
+    narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
+    audioKey: `jobs/${jobId}/audio/narration.mp3`,
+    sceneImageKeys: Array.isArray(assetsJson?.sceneImageKeys) ? (assetsJson.sceneImageKeys as string[]).filter((item): item is string => typeof item === 'string') : [],
+    videoKey: canonicalVideoKey,
+    thumbnailKey: canonicalThumbnailKey,
+    publishKey: canonicalPublishKey,
+    youtubePackageKey: canonicalYoutubePackageKey,
+    overlayPlanKey: isHybridImageSlideshow ? `jobs/${jobId}/metadata/overlay-plan.json` : stringValue(assetsJson?.overlayPlanKey) ?? null,
+  };
+
+  let reviewRepair = reviewJson ? parseReviewRecord(reviewJson, jobId) : null;
+  const approvedReview = reviewRepair?.reviewStatus === 'approved';
+  const repairedReview: VideoReviewMetadata = {
+    jobId,
+    reviewStatus: approvedReview ? 'approved' : (reviewRepair?.reviewStatus ?? 'pending'),
+    createdAt: reviewRepair?.createdAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    reviewedAt: reviewRepair?.reviewedAt ?? null,
+    reviewedBy: reviewRepair?.reviewedBy ?? null,
+    notes: reviewRepair?.notes ?? null,
+    media: canonicalMedia,
+  };
+  if (!reviewRepair || JSON.stringify(reviewRepair.media) !== JSON.stringify(canonicalMedia) || approvedReview && reviewRepair.reviewStatus !== 'approved') {
+    await writeReviewJson(jobId, repairedReview);
+    repaired.push('review.json');
+    reviewRepair = repairedReview;
+  }
+
+  const finalExistenceChecks = await Promise.all(requiredKeys.map(async (key) => {
+    const local = await fileExists(join(getVideoOrchestratorRoot(), key));
+    if (local) return { key, exists: true };
+    return { key, exists: await checkS3ObjectExists(S3_BUCKET, key, AWS_REGION) };
+  }));
+  const finalMissing = finalExistenceChecks.filter((item) => !item.exists).map((item) => item.key);
+  if (finalMissing.length > 0) {
+    return {
+      ok: false,
+      code: 'publish_package_incomplete',
+      error: `Publish package incomplete; missing: ${finalMissing.join(', ')}`,
+      missing: finalMissing,
+      details: {
+        repaired,
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    finalized: true,
+    missing: [],
+    repaired,
+    media: canonicalMedia,
+    review: reviewRepair,
+    publish: publishRepair,
+    youtubePackage: youtubePackageRepair,
+    thumbnail: thumbnailRepair,
+    assets: assetsJson,
+  };
+}
+
 async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null> {
   // Fast path: read local immediately. If approved with media, use it and skip slow S3 check.
   const localValue = await readLocalJobMetadataJson(jobId, 'review.json');
@@ -1980,6 +2310,11 @@ async function readReviewJson(jobId: string): Promise<VideoReviewMetadata | null
 }
 
 async function getOrCreateReview(jobId: string): Promise<VideoReviewMetadata | null> {
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
+  if (finalized.ok && finalized.review) {
+    return finalized.review;
+  }
+
   // Read existing review FIRST (fast) to know if we need to hydrate
   const existing = await readReviewJson(jobId);
 
@@ -2392,7 +2727,7 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
   return { ok: true, review };
 }
 
-function getMissingReviewMediaFields(media: VideoReviewMedia): string[] {
+export function getMissingReviewMediaFields(media: VideoReviewMedia): string[] {
   const missing: string[] = [];
   if (!media.scenePlanKey) missing.push('scenePlanKey');
   if (!media.narrationScriptKey) missing.push('narrationScriptKey');
@@ -2429,12 +2764,23 @@ export async function approveVideoReview(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
+  if (!finalized.ok) {
+    return {
+      ok: false,
+      code: 'review_media_incomplete',
+      error: finalized.error,
+      jobId,
+      details: { missing: finalized.missing, ...(finalized.details ?? {}) },
+    };
+  }
+
   const existingReview = await readReviewJson(jobId);
   let mediaToApprove: VideoReviewMedia;
 
   // Fast path: if existing review media is already complete, approve it directly
   if (existingReview && getMissingReviewMediaFields(existingReview.media).length === 0) {
-    mediaToApprove = existingReview.media;
+    mediaToApprove = finalized.media;
   } else {
     // Slow path: hydrate fresh media from canonical sources (only if not already complete)
     const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
@@ -2504,12 +2850,23 @@ export async function requestVideoReviewChanges(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
+  if (!finalized.ok) {
+    return {
+      ok: false,
+      code: 'review_media_incomplete',
+      error: finalized.error,
+      jobId,
+      details: { missing: finalized.missing, ...(finalized.details ?? {}) },
+    };
+  }
+
   const existingReview = await readReviewJson(jobId);
   let mediaToUse: VideoReviewMedia;
 
   // Fast path: if existing review media is already complete, use it directly
   if (existingReview && getMissingReviewMediaFields(existingReview.media).length === 0) {
-    mediaToUse = existingReview.media;
+    mediaToUse = finalized.media;
   } else {
     // Slow path: hydrate fresh media from canonical sources (only if not already complete)
     const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;

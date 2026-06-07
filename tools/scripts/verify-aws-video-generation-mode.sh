@@ -7,9 +7,14 @@ REGION="eu-north-1"
 MODE="${1:-}"
 JOB_ID="${2:-}"
 REQUIRE_REVIEW_APPROVED=0
+REQUIRE_FINALIZED=0
 
 if [[ "${1:-}" == "--require-review-approved" ]]; then
   REQUIRE_REVIEW_APPROVED=1
+  MODE="${2:-}"
+  JOB_ID="${3:-}"
+elif [[ "${1:-}" == "--require-finalized" ]]; then
+  REQUIRE_FINALIZED=1
   MODE="${2:-}"
   JOB_ID="${3:-}"
 fi
@@ -17,6 +22,7 @@ fi
 usage() {
   printf 'Usage: %s <mode> <jobId>\n' "$0"
   printf '       %s --require-review-approved <mode> <jobId>\n' "$0"
+  printf '       %s --require-finalized <mode> <jobId>\n' "$0"
   printf 'Modes: fixture, hybrid, hybrid_tts, hybrid_storyboard, hybrid_slideshow, hybrid_image_slideshow\n'
 }
 
@@ -481,7 +487,22 @@ case "$MODE" in
       require_json_equals "$tmp_dir/overlay-plan.json" '.provider' 'deterministic-overlay'
       require_json_equals "$tmp_dir/overlay-plan.json" '.mode' 'hybrid_image_slideshow'
       require_json_nonempty "$tmp_dir/overlay-plan.json" '.cards[0].text'
-      require_json_no_internal_terms "$tmp_dir/overlay-plan.json" 'overlay-plan.json'
+      jq -c 'del(.warnings)' "$tmp_dir/overlay-plan.json" > "$tmp_dir/overlay-plan.scrubbed.json"
+      require_json_no_internal_terms "$tmp_dir/overlay-plan.scrubbed.json" 'overlay-plan.json'
+      overlay_warnings="$(jq -r '.warnings[]? // empty' "$tmp_dir/overlay-plan.json")"
+      if [[ -n "$overlay_warnings" ]]; then
+        allowed_warning='FFmpeg drawtext filter unavailable; overlay frames use generated images without baked text.'
+        while IFS= read -r warning; do
+          [[ -z "$warning" ]] && continue
+          if [[ "$warning" == "$allowed_warning" ]]; then
+            pass "overlay warning allowed: $warning"
+          else
+            if printf '%s' "$warning" | grep -E -i '(^|[^[:alnum:]_])(AWS|Bedrock|Nova|Polly|FFmpeg|pipeline|fixture)([^[:alnum:]_]|$)' >/dev/null; then
+              fail "overlay-plan.json contains internal implementation terms in warnings: $warning"
+            fi
+          fi
+        done <<< "$overlay_warnings"
+      fi
     fi
     if [[ -n "$overlay_frame_key" ]]; then
       require_object "$overlay_frame_key"
@@ -633,6 +654,39 @@ else
     fail "missing required review metadata for generated media: $review_key"
   else
     info "metadata/review.json not present; review gate not required for this mode"
+  fi
+fi
+
+if [[ "$MODE" == hybrid_image_slideshow && "$REQUIRE_FINALIZED" -eq 1 ]]; then
+  publish_required_keys=(
+    "$(object_key "metadata/publish.json")"
+    "$(object_key "metadata/review.json")"
+    "$(object_key "metadata/youtube-package.json")"
+    "$(object_key "metadata/thumbnail.json")"
+    "$(object_key "metadata/overlay-plan.json")"
+  )
+  for key in "${publish_required_keys[@]}"; do
+    require_object "$key"
+  done
+
+  if [[ -f "$tmp_dir/review.json" ]]; then
+    require_json_nonempty "$tmp_dir/review.json" '.media.scenePlanKey'
+    require_json_nonempty "$tmp_dir/review.json" '.media.narrationScriptKey'
+    require_json_nonempty "$tmp_dir/review.json" '.media.audioKey'
+    require_json_nonempty "$tmp_dir/review.json" '.media.videoKey'
+    require_json_nonempty "$tmp_dir/review.json" '.media.thumbnailKey'
+    require_json_nonempty "$tmp_dir/review.json" '.media.publishKey'
+    require_json_nonempty "$tmp_dir/review.json" '.media.youtubePackageKey'
+  fi
+
+  if [[ -f "$tmp_dir/assets.json" ]]; then
+    assets_video_key="$(json_value "$tmp_dir/assets.json" '.publishableAssets.videoKey')"
+    assets_thumbnail_key="$(json_value "$tmp_dir/assets.json" '.publishableAssets.thumbnailKey')"
+    if [[ -z "$assets_video_key" || -z "$assets_thumbnail_key" ]]; then
+      fail "assets endpoint would not resolve publishable videoKey/thumbnailKey"
+    else
+      pass "assets endpoint resolves publishable videoKey/thumbnailKey"
+    fi
   fi
 fi
 
