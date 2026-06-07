@@ -307,7 +307,8 @@ export async function routeRequest(
     return;
   }
 
-  if (method !== 'GET') {
+  const isVideoDownloadHead = method === 'HEAD' && /^\/api\/video-orchestrator\/jobs\/[^/]+\/video$/.test(url.pathname);
+  if (method !== 'GET' && !isVideoDownloadHead) {
     sendJson(response, 405, {
       error: {
         code: 'method_not_allowed',
@@ -2342,6 +2343,17 @@ export async function routeRequest(
 
       const jobVideoMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/video$/.exec(url.pathname);
       if (jobVideoMatch) {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          response.writeHead(405, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Access-Control-Allow-Headers': 'content-type',
+          });
+          response.end(JSON.stringify({ ok: false, code: 'method_not_allowed', error: 'Use GET or HEAD to download the final MP4.' }));
+          return;
+        }
         try {
           const jobId = decodeURIComponent(jobVideoMatch[1] ?? '');
           const result = await resolveDownloadableVideo(jobId);
@@ -2360,6 +2372,11 @@ export async function routeRequest(
             'Content-Disposition': `attachment; filename="${jobId.replace(/[^A-Za-z0-9._-]/g, '-')}.mp4"`,
             'Cache-Control': 'no-store',
           });
+
+          if (request.method === 'HEAD') {
+            response.end();
+            return;
+          }
 
           if (result.localPath) {
             const { createReadStream } = await import('node:fs');

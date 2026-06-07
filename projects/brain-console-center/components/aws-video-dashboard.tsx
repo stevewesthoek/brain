@@ -895,7 +895,7 @@ export function AwsVideoDashboard() {
     onSuccess: async (_, { jobIdArg }) => { setChangeRequest(''); addActivity(`Requested changes for ${jobIdArg}`); await invalidateVideo(); },
   });
   const approveReview = useMutation({
-    mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/approve`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }),
+    mutationFn: ({ jobIdArg, notes }: { jobIdArg: string; notes?: string }) => postBrainCoreAction(`/api/video-orchestrator/jobs/${encodeURIComponent(jobIdArg)}/review/approve`, videoReviewSchema, { reviewedBy: 'brain-console-center', notes }, 15_000),
     onSuccess: async (result, { jobIdArg }) => {
       addActivity(`Approved review for ${jobIdArg}`);
       setReviewNotes('');
@@ -908,6 +908,20 @@ export function AwsVideoDashboard() {
         queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
         queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
       ]);
+    },
+    onError: async (error, { jobIdArg }) => {
+      if (isTimeoutError(error)) {
+        addActivity(`Review approval is still being persisted for ${jobIdArg}; refreshing state now.`);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['aws-video-review', jobIdArg] }),
+          queryClient.invalidateQueries({ queryKey: ['aws-video-artifacts', jobIdArg] }),
+          queryClient.invalidateQueries({ queryKey: ['aws-video-job', jobIdArg] }),
+          queryClient.invalidateQueries({ queryKey: ['aws-video-jobs'] }),
+        ]);
+        return;
+      }
+      addActivity(`Review approval error for ${jobIdArg}: ${errorMessage(error)}`);
+      console.error(`[approveReview] Error for ${jobIdArg}:`, error);
     },
   });
   const requestReviewChanges = useMutation({
