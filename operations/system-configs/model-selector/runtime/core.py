@@ -48,11 +48,25 @@ ALLOWED_PROVIDER_TYPES = {
 
 @dataclass
 class TaskMetadata:
-    """Privacy and operational flags for task execution."""
+    """Privacy and operational flags for task execution.
+
+    Generic preference/fallback fields support ordered model preferences,
+    provider allow/disallow lists, and fallback policies. All default to
+    empty/None so existing callers are unaffected.
+    """
     sensitive: bool = False
     private: bool = False
     offline: bool = False
     external_provider_disallowed: bool = False
+    quality_tier: str | None = None
+    preferred_models: list[str] = field(default_factory=list)
+    preferred_providers: list[str] = field(default_factory=list)
+    allowed_models: list[str] = field(default_factory=list)
+    disallowed_models: list[str] = field(default_factory=list)
+    allowed_providers: list[str] = field(default_factory=list)
+    disallowed_providers: list[str] = field(default_factory=list)
+    fallback_policy: str | None = None
+    selection_policy: str | None = None
 
 
 @dataclass
@@ -721,7 +735,10 @@ class ModelSelector:
         cost_penalty = min(0.6, cost * 10)
         return (quality * affinity) + self._bedrock_outcome_score(model) - cost_penalty - priority_penalty
 
-    def _pick_bedrock_model(self, task_type: str, task_spec: dict, input_tokens: int, urgent: bool = False) -> dict | None:
+    def _pick_bedrock_model(self, task_type: str, task_spec: dict, input_tokens: int, urgent: bool = False, task_metadata: TaskMetadata | None = None) -> dict | None:
+        if task_metadata is None:
+            task_metadata = TaskMetadata()
+
         required_capability = task_spec["capability"]
         candidates = []
         for model in self._bedrock_models:
@@ -748,6 +765,16 @@ class ModelSelector:
                 continue
             candidates.append(model)
 
+        # Apply model-level allow/disallow filters
+        if task_metadata.disallowed_models:
+            dis = set(task_metadata.disallowed_models)
+            candidates = [m for m in candidates
+                          if m.get("model_id") not in dis and m.get("id") not in dis]
+        if task_metadata.allowed_models:
+            al = set(task_metadata.allowed_models)
+            candidates = [m for m in candidates
+                          if m.get("model_id") in al or m.get("id") in al]
+
         if not candidates:
             return None
 
@@ -757,13 +784,23 @@ class ModelSelector:
             reverse=True,
         )
 
+        # Apply preference ordering to scored models
+        if task_metadata.preferred_models:
+            pref_order = {m: i for i, m in enumerate(task_metadata.preferred_models)}
+            def bedrock_pref_key(m):
+                return pref_order.get(m.get("model_id", ""), pref_order.get(m.get("id", ""), len(task_metadata.preferred_models)))
+            scored.sort(key=bedrock_pref_key)
+
         # Controlled exploration lets the selector learn without letting cost drift.
         exploration_rate = float(self._bedrock_config.get("exploration_rate", 0.0))
         if not urgent and len(scored) > 1 and random.random() < exploration_rate:
             return random.choice(scored[: min(3, len(scored))])
         return scored[0]
 
-    def _pick_model(self, provider: dict, task_spec: dict) -> str:
+    def _pick_model(self, provider: dict, task_spec: dict, task_metadata: TaskMetadata | None = None) -> str:
+        if task_metadata is None:
+            task_metadata = TaskMetadata()
+
         models = provider.get("models", [])
         ptype = provider.get("type", "")
         if ptype == "openai-compatible":
@@ -783,6 +820,12 @@ class ModelSelector:
             return ""
         viable = []
         for model in models:
+            # Check model-level allow/disallow filters
+            if task_metadata.allowed_models and str(model) not in task_metadata.allowed_models:
+                continue
+            if str(model) in task_metadata.disallowed_models:
+                continue
+
             if not self._model_meets_min_params(model, task_spec):
                 continue
             resource_ok, reason = self._local_model_resource_ok(provider, str(model), task_spec)
@@ -790,6 +833,12 @@ class ModelSelector:
                 log.info("selector  skip local_model_resource_guard  provider=%s  model=%s  reason=%s", provider.get("id"), model, reason)
                 continue
             viable.append(model)
+
+        # Apply preference ordering to viable models
+        if task_metadata.preferred_models and viable:
+            pref_order = {m: i for i, m in enumerate(task_metadata.preferred_models)}
+            viable.sort(key=lambda m: pref_order.get(str(m), len(task_metadata.preferred_models)))
+
         return viable[0] if viable else ""
 
     def _resolve_key(self, provider: dict) -> str | None:
@@ -823,23 +872,40 @@ class ModelSelector:
         return "; ".join(parts)
 
     def _provider_allowed_for_metadata(self, provider: dict, task_metadata: TaskMetadata) -> bool:
-        if not task_metadata.external_provider_disallowed and not task_metadata.offline:
-            return True
+        provider_id = provider.get("id", "")
 
-        provider_type = provider.get("type", "")
-        if provider_type != "openai-compatible":
+        if task_metadata.external_provider_disallowed or task_metadata.offline:
+            # Hard constraint: external provider disallowed / offline mode.
+            # Only allow local providers for offline/private tasks.
+            provider_type = provider.get("type", "")
+            if provider_type != "openai-compatible":
+                return False
+
+            hostname = urllib.parse.urlparse(str(provider.get("base_url", ""))).hostname or ""
+            if hostname in {"localhost", "127.0.0.1", "::1"}:
+                pass  # Allow; fall through to generic filters
+            elif hostname.startswith("10.") or hostname.startswith("192.168."):
+                pass  # Allow; fall through to generic filters
+            elif hostname.startswith("172."):
+                parts = hostname.split(".")
+                if len(parts) >= 2 and parts[1].isdigit():
+                    if 16 <= int(parts[1]) <= 31:
+                        pass  # Allow; fall through to generic filters
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+
+        # Generic preference filters (apply after hard constraints)
+        if provider_id in task_metadata.disallowed_providers:
             return False
 
-        hostname = urllib.parse.urlparse(str(provider.get("base_url", ""))).hostname or ""
-        if hostname in {"localhost", "127.0.0.1", "::1"}:
-            return True
-        if hostname.startswith("10.") or hostname.startswith("192.168."):
-            return True
-        if hostname.startswith("172."):
-            parts = hostname.split(".")
-            if len(parts) >= 2 and parts[1].isdigit():
-                return 16 <= int(parts[1]) <= 31
-        return False
+        if task_metadata.allowed_providers and provider_id not in task_metadata.allowed_providers:
+            return False
+
+        return True
 
     def select_provider(
         self,
@@ -893,6 +959,17 @@ class ModelSelector:
                 p["priority"],
             ))
 
+        # Apply preferred provider ordering (stable sort preserves existing relative order)
+        if task_metadata.preferred_providers:
+            pref_set = set(task_metadata.preferred_providers)
+            eligible.sort(key=lambda p: 0 if p["id"] in pref_set else 1)
+
+        # Apply ordered_strict filter if requested (restrict to preferred providers only)
+        fallback_policy = task_metadata.fallback_policy or "selector_default"
+        if fallback_policy == "ordered_strict" and task_metadata.preferred_providers:
+            pref_set = set(task_metadata.preferred_providers)
+            eligible = [p for p in eligible if p["id"] in pref_set]
+
         for provider in eligible:
             if self._circuit_breaker.is_open(provider["id"]):
                 log.debug("selector  skip circuit_open  provider=%s", provider["id"])
@@ -922,13 +999,13 @@ class ModelSelector:
 
             bedrock_model = None
             if ptype == "bedrock":
-                bedrock_model = self._pick_bedrock_model(task_type, task_spec, input_token_count, urgent)
+                bedrock_model = self._pick_bedrock_model(task_type, task_spec, input_token_count, urgent, task_metadata)
                 if bedrock_model is None:
                     log.debug("selector  skip no_viable_bedrock_model  provider=%s", provider["id"])
                     continue
                 model = str(bedrock_model.get("model_id", ""))
             else:
-                model = self._pick_model(provider, task_spec)
+                model = self._pick_model(provider, task_spec, task_metadata)
                 # For vision tasks, prefer qwen2.5vl:7b regardless of default preferred_models
                 if required_capability == "image/analyze":
                     task_preferred = task_spec.get("preferred_local_model")

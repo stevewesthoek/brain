@@ -193,7 +193,56 @@ The implementation is complete when:
 9. Tests cover generic preference/fallback behavior independent of Graphify.
 10. Documentation explains how any repo/module should call the selector.
 
-## Graphify usage as one consumer
+## Consumer contract
+
+Any module, repo, automation, CLI workflow, or scheduler job can call AI Model Selector with preference metadata. The consumer is responsible ONLY for calling the selector with the right parameters; the selector handles all fallback and constraint logic.
+
+### Example: Graphify using the generic mechanism
+
+For high-quality full semantic graph builds, Graphify Orchestrator calls:
+
+```python
+from operations.system-configs.model-selector.runtime.core import ModelSelector, TaskMetadata
+
+selector = ModelSelector()
+result = selector.select(
+    task_type="semantic_graph",
+    input_token_count=estimated_tokens,
+    urgent=False,
+    task_metadata=TaskMetadata(
+        quality_tier="highest",
+        preferred_models=["codex-5.5-xhigh", "bedrock-opus"],
+        fallback_policy="ordered_then_selector_default",
+    ),
+)
+
+# Result: SelectionResult with provider_id, model, base_url, api_key, reason
+```
+
+### Fallback policies
+
+- **`selector_default`** (default if omitted): Use existing selector ranking (priority, cost, batch window, health, rate limits, circuit breakers). No preference override.
+- **`ordered`**: Try preferred providers/models first. If unhealthy, rate-limited, or unavailable, fall back to selector default ranking.
+- **`ordered_then_selector_default`**: Same as `ordered` — explicit name for clarity and resilience.
+- **`ordered_strict`**: Try preferred providers/models only. If none are viable, raise `NoProviderAvailable`. No fallback.
+
+### Hard constraints always apply
+
+These cannot be overridden by preferences:
+
+- `offline=True` — only local providers allowed, regardless of preferred external models
+- `external_provider_disallowed=True` — same as offline for external providers
+- `sensitive=True` / `private=True` — existing privacy constraints unchanged
+
+### Ordering and filtering semantics
+
+1. **Hard constraints first**: offline, external_provider_disallowed, disallowed_providers, allowed_providers
+2. **Then provider preference ordering**: preferred_providers bumped to front (stable sort)
+3. **Then ordered_strict filter** (if requested): restrict to preferred_providers only
+4. **For each provider, model-level filters**: disallowed_models, allowed_models, preferred_models
+5. **Finally, existing checks**: health, rate limits, circuit breakers, resource guards, context limits
+
+### Graphify usage as one consumer
 
 Graphify will be only one consumer of this general mechanism.
 
