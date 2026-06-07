@@ -16,6 +16,8 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
   - **`context-compression.md`** — explicit reversible compression, retrieval, evaluation, and failure-learning workflow for large local context.
 - `standards/` — durable standards used by multiple workflows
   - **`human-writing-guardrails.md`** — shared final-stage writing-quality standard for research, Bible stories, marketing copy, websites, video scripts, captions, and other human-facing text.
+- `specs/` — implementation-facing operating specifications
+  - **`graphify-standard.md`** — canonical Graphify operating standard for cross-repo graph generation, AI context, model-selection policy, and repo profiles.
   - **`ai-context-compression-standard.md`** — live-zone-only and reversible-compression rules for future AI context tooling.
 - `scripts/` — executable helpers
 - `snippets/` — reusable command or content fragments
