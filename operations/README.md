@@ -22,6 +22,9 @@ Operational docs, helper scripts, deployment notes, and selected synced system c
   - **`graphify-profile.schema.json`** — machine-readable schema for repo-local Graphify profiles.
   - **`graphify-profile.examples.json`** — canonical starter examples for `mind-knowledge`, `brain-runtime`, and `code-app` profiles.
   - **`ai-context-compression-standard.md`** — live-zone-only and reversible-compression rules for future AI context tooling.
+  - **`infinite-brain-runtime-inventory.md`** — Current state inventory of Brain Core, Graphify, Mind Steward, and Mind vault. Identifies gaps, safety risks, and prerequisites for autonomous knowledge graph maintenance.
+  - **`infinite-brain-runtime-roadmap.md`** — 18-phase roadmap (IB0–IB17) across 4 phase groups: Foundation, Knowledge Maintenance, Continuous Reasoning, Query & Discovery. Spans 7 sprints (~4.5 months) with go/no-go checkpoints.
+  - **`infinite-brain-runtime-implementation-plan.md`** — Sprint-by-sprint implementation breakdown with deliverables, task-level details, testing strategy, and quality gates for each of 7 sprints.
 - `scripts/` — executable helpers
 - `snippets/` — reusable command or content fragments
 - `system-configs/` — curated synced tool and machine config
