@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
 import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, videoControlPlaneSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview, type VideoControlPlaneData } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
+import { useAwsVideoSelection } from '@/components/aws-video/use-aws-video-selection';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -843,23 +844,6 @@ interface TimeoutMonitorSnapshot {
 }
 
 const TIMEOUT_MONITOR_KEY = 'aws-video-timeout-monitor';
-const SELECTED_JOB_KEY = 'aws-video-selected-job-id';
-
-function readPersistedSelectedJobId(): string | null {
-  try {
-    return sessionStorage.getItem(SELECTED_JOB_KEY) || null;
-  } catch { return null; }
-}
-
-function persistSelectedJobId(jobId: string | null): void {
-  try {
-    if (jobId) {
-      sessionStorage.setItem(SELECTED_JOB_KEY, jobId);
-    } else {
-      sessionStorage.removeItem(SELECTED_JOB_KEY);
-    }
-  } catch { /* storage quota or private-mode errors: ignore */ }
-}
 
 function readTimeoutMonitor(): TimeoutMonitorSnapshot {
   try {
@@ -881,24 +865,6 @@ function readTimeoutMonitor(): TimeoutMonitorSnapshot {
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
-  // Keep the server render deterministic. Browser storage is restored after hydration.
-  const [selectedJobId, setSelectedJobIdRaw] = useState<string | null>(null);
-  const [selectionRestored, setSelectionRestored] = useState(false);
-  const setSelectedJobId = useCallback((id: string | null) => {
-    setSelectedJobIdRaw(id);
-    persistSelectedJobId(id);
-  }, []);
-  useEffect(() => {
-    const persisted = readPersistedSelectedJobId();
-    if (persisted) {
-      setSelectedJobIdRaw(persisted);
-    } else {
-      const m = readTimeoutMonitor();
-      const hasActive = m.createDraftTimedOut || Object.keys(m.pendingActionByJobId).length > 0;
-      if (hasActive) setSelectedJobIdRaw(m.selectedJobId);
-    }
-    setSelectionRestored(true);
-  }, []);
   const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
@@ -907,18 +873,21 @@ export function AwsVideoDashboard() {
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
   const [activity, setActivity] = useState<string[]>([]);
   const [generationTimeoutJobId, setGenerationTimeoutJobId] = useState<string | null>(null);
-  const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(
-    () => readTimeoutMonitor().currentCreateActionId
-  );
-  const [pendingActionByJobId, setPendingActionByJobId] = useState<Record<string, PendingAction>>(
-    () => readTimeoutMonitor().pendingActionByJobId
-  );
-  const [createDraftTimedOut, setCreateDraftTimedOut] = useState<boolean>(
-    () => readTimeoutMonitor().createDraftTimedOut
-  );
-  const [preTimeoutJobIds, setPreTimeoutJobIds] = useState<string[]>(
-    () => readTimeoutMonitor().preTimeoutJobIds
-  );
+
+  // Timeout monitor state — restored after mount to avoid hydration mismatch
+  const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(null);
+  const [pendingActionByJobId, setPendingActionByJobId] = useState<Record<string, PendingAction>>({});
+  const [createDraftTimedOut, setCreateDraftTimedOut] = useState<boolean>(false);
+  const [preTimeoutJobIds, setPreTimeoutJobIds] = useState<string[]>([]);
+
+  // Restore timeout-monitor state from sessionStorage after mount (hydration-safe)
+  useEffect(() => {
+    const m = readTimeoutMonitor();
+    if (m.currentCreateActionId) setCurrentCreateActionId(m.currentCreateActionId);
+    if (Object.keys(m.pendingActionByJobId).length > 0) setPendingActionByJobId(m.pendingActionByJobId);
+    if (m.createDraftTimedOut) setCreateDraftTimedOut(m.createDraftTimedOut);
+    if (m.preTimeoutJobIds.length > 0) setPreTimeoutJobIds(m.preTimeoutJobIds);
+  }, []);
 
   const addActivity = (message: string) => setActivity((items) => [`${new Date().toLocaleTimeString()} · ${message}`, ...items].slice(0, 14));
   const beginAction = () => setDismissedError(null);
@@ -953,14 +922,8 @@ export function AwsVideoDashboard() {
   const jobList = jobs.data?.jobs ?? [];
   const jobsDiagnostics = jobs.data?.diagnostics ?? payloadDiagnostics(jobs.error);
 
-  // Default selection: on first load with no persisted ID, pick jobList[0].
-  // After that, selectedJobId is canonical and never overwritten by jobList changes.
-  const resolvedJobId = selectedJobId ?? (selectionRestored ? jobList[0]?.jobId ?? null : null);
-  useEffect(() => {
-    if (selectionRestored && !selectedJobId && jobList.length > 0) {
-      setSelectedJobId(jobList[0].jobId);
-    }
-  }, [selectionRestored, selectedJobId, jobList]);
+  // Hydration-safe selected-job hook — defers sessionStorage to after mount
+  const { selectedJobId, setSelectedJobId, resolvedJobId, isSelectionReady } = useAwsVideoSelection(jobList);
 
   // selected is used only for the jobs list highlight and legacy fallback display.
   // It must NEVER drive control-plane query key or panel state.
@@ -1611,11 +1574,13 @@ export function AwsVideoDashboard() {
                 <div className="card-header compact-header">
                   <div className="min-w-0">
                     <div className="card-title">Selected job</div>
-                    <div className="card-description truncate">{shortJobId(jobId ?? selectedJob?.jobId)}</div>
+                    <div className="card-description truncate">{!isSelectionReady ? 'Loading selected job…' : shortJobId(jobId ?? undefined)}</div>
                   </div>
-                  <StatusBadge status={selectedJob?.status ?? (controlPlaneLoading ? 'pending' : undefined)} />
+                  <StatusBadge status={!isSelectionReady ? 'pending' : selectedJob?.status ?? (controlPlaneLoading ? 'pending' : undefined)} />
                 </div>
-                {selectedJob ? (
+                {!isSelectionReady ? (
+                  <div className="compact-info">Loading selected job…</div>
+                ) : selectedJob ? (
                   <>
                     {isHybridImageSlideshowMode
                       ? <div className="compact-info">Generated image slideshow: scene images are generated by {imageProvider ?? 'the configured image provider'}; final video is assembled as a slideshow.</div>
