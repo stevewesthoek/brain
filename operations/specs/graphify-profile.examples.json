@@ -1,0 +1,157 @@
+{
+  "examples": {
+    "mind-knowledge": {
+      "graphifyStandardVersion": "1",
+      "profile": "mind-knowledge",
+      "repoRole": "strategy-memory",
+      "modes": [
+        "knowledge-research",
+        "human-file-relationship",
+        "ai-context",
+        "operations-freshness"
+      ],
+      "outputs": ["report", "json", "html"],
+      "optionalOutputs": [],
+      "initialBuildPolicy": {
+        "taskType": "graphify_semantic_full_build",
+        "qualityTier": "highest",
+        "selectionPolicy": "ordered_premium",
+        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "fallbackPolicy": "ordered_then_selector_default"
+      },
+      "criticalRebuildPolicy": {
+        "taskType": "graphify_semantic_critical_rebuild",
+        "qualityTier": "highest",
+        "selectionPolicy": "ordered_premium",
+        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "fallbackPolicy": "ordered_then_selector_default"
+      },
+      "incrementalPolicy": {
+        "taskType": "graphify_incremental_update",
+        "qualityTier": "efficient",
+        "selectionPolicy": "selector_default",
+        "preferLocalWhenSafe": true,
+        "allowAstOnly": true,
+        "fallbackPolicy": "selector_default"
+      },
+      "exclude": [
+        ".git/**",
+        ".obsidian/**",
+        "graphify-out/cache/**"
+      ],
+      "trackGeneratedArtifacts": [
+        "graphify-out/GRAPH_REPORT.md",
+        "graphify-out/graph.json",
+        "graphify-out/graph.html"
+      ],
+      "dashboardVisibility": true,
+      "humanReadableFileGraph": true,
+      "aiContextMode": true
+    },
+    "brain-runtime": {
+      "graphifyStandardVersion": "1",
+      "profile": "brain-runtime",
+      "repoRole": "execution-layer",
+      "modes": [
+        "code-architecture",
+        "operations-freshness",
+        "ai-context",
+        "human-file-relationship"
+      ],
+      "outputs": ["report", "json", "html"],
+      "optionalOutputs": ["callflow-html", "architecture-html"],
+      "initialBuildPolicy": {
+        "taskType": "graphify_semantic_full_build",
+        "qualityTier": "highest",
+        "selectionPolicy": "ordered_premium",
+        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "fallbackPolicy": "ordered_then_selector_default"
+      },
+      "criticalRebuildPolicy": {
+        "taskType": "graphify_semantic_critical_rebuild",
+        "qualityTier": "highest",
+        "selectionPolicy": "ordered_premium",
+        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "fallbackPolicy": "ordered_then_selector_default"
+      },
+      "incrementalPolicy": {
+        "taskType": "graphify_incremental_update",
+        "qualityTier": "efficient",
+        "selectionPolicy": "selector_default",
+        "preferLocalWhenSafe": true,
+        "allowAstOnly": true,
+        "fallbackPolicy": "selector_default"
+      },
+      "exclude": [
+        ".git/**",
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        ".next/**",
+        "coverage/**",
+        ".cache/**",
+        "runtime/local/**"
+      ],
+      "trackGeneratedArtifacts": [
+        "graphify-out/GRAPH_REPORT.md",
+        "graphify-out/graph.json",
+        "graphify-out/graph.html"
+      ],
+      "dashboardVisibility": true,
+      "humanReadableFileGraph": true,
+      "aiContextMode": true
+    },
+    "code-app": {
+      "graphifyStandardVersion": "1",
+      "profile": "code-app",
+      "repoRole": "application-codebase",
+      "modes": [
+        "code-architecture",
+        "ai-context",
+        "human-file-relationship",
+        "operations-freshness"
+      ],
+      "outputs": ["report", "json", "html"],
+      "optionalOutputs": ["callflow-html"],
+      "initialBuildPolicy": {
+        "taskType": "graphify_semantic_full_build",
+        "qualityTier": "highest",
+        "selectionPolicy": "ordered_premium",
+        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "fallbackPolicy": "ordered_then_selector_default"
+      },
+      "criticalRebuildPolicy": {
+        "taskType": "graphify_semantic_critical_rebuild",
+        "qualityTier": "highest",
+        "selectionPolicy": "ordered_premium",
+        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "fallbackPolicy": "ordered_then_selector_default"
+      },
+      "incrementalPolicy": {
+        "taskType": "graphify_incremental_update",
+        "qualityTier": "efficient",
+        "selectionPolicy": "selector_default",
+        "preferLocalWhenSafe": true,
+        "allowAstOnly": true,
+        "fallbackPolicy": "selector_default"
+      },
+      "exclude": [
+        ".git/**",
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        ".next/**",
+        "coverage/**",
+        ".cache/**"
+      ],
+      "trackGeneratedArtifacts": [
+        "graphify-out/GRAPH_REPORT.md",
+        "graphify-out/graph.json",
+        "graphify-out/graph.html"
+      ],
+      "dashboardVisibility": true,
+      "humanReadableFileGraph": true,
+      "aiContextMode": true
+    }
+  }
+}
