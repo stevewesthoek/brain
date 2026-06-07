@@ -20,3 +20,16 @@ Utility scripts and wrappers for local workflows on this machine.
 ## Rule
 
 `scripts/` contains machine-specific helpers and should not be deleted without checking whether they are still in active use. See `brain/CLAUDE.md` under "Do not break".
+
+
+
+## Graphify orchestration
+
+Run the report-only Graphify orchestrator preflight:
+
+```bash
+npm run graphify:preflight -- --repo /Users/Office/Repos/stevewesthoek/mind --profile mind-knowledge
+npm run graphify:preflight -- --repo /Users/Office/Repos/stevewesthoek/brain --profile brain-runtime
+```
+
+This preflight validates the selected repo profile and expected Graphify outputs. It does not run Graphify, call AI Model Selector, or modify the target repo.

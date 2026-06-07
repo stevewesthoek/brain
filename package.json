@@ -7,7 +7,8 @@
     "models:sync:bedrock": "bash tools/scripts/models-sync-bedrock.sh",
     "models:validate": "bash tools/scripts/models-validate.sh",
     "sync-ai-skills": "node tools/scripts/sync-ai-skills.mjs",
-    "sync-credentials": "bash tools/scripts/sync-credentials.sh"
+    "sync-credentials": "bash tools/scripts/sync-credentials.sh",
+    "graphify:preflight": "node tools/graphify/run-graphify-orchestrator.mjs"
   },
   "keywords": [
     "claude",
