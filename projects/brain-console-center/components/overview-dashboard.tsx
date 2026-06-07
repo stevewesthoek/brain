@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react';
 
 import { brainCoreRequest } from '../lib/braincore-client';
-import { mindStewardSchedulerStatusSchema, type MindStewardSchedulerStatus } from '../lib/braincore-schemas';
+import {
+  graphifyStatusSchema,
+  mindStewardSchedulerStatusSchema,
+  type GraphifyStatus,
+  type MindStewardSchedulerStatus,
+} from '../lib/braincore-schemas';
 
 function formatReportLabel(key: string) {
   if (key === 'dryRun') return 'Dry run';
@@ -11,6 +16,80 @@ function formatReportLabel(key: string) {
   if (key === 'classifier') return 'Classifier';
   if (key === 'queue') return 'Queue';
   return key;
+}
+
+function formatGraphifyReportLabel(key: string) {
+  if (key === 'mindKnowledge') return 'Mind';
+  if (key === 'brainRuntime') return 'Brain';
+  return key;
+}
+
+function GraphifyStatusCard() {
+  const [status, setStatus] = useState<GraphifyStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStatus() {
+      try {
+        const payload = await brainCoreRequest('/graphify/status', graphifyStatusSchema);
+        if (!cancelled) {
+          setStatus(payload);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+          setStatus(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadStatus();
+    const interval = window.setInterval(loadStatus, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <article className="card">
+      <div className="card-title">Graphify runtime</div>
+      {loading ? <p className="meta">Loading Graphify runtime reports…</p> : null}
+      {error ? <p className="meta">Status unavailable: {error}</p> : null}
+      {status ? (
+        <div className="stack gap-sm">
+          <p className="meta">
+            {status.availableCount}/{status.reportCount} reports available from {status.source}. Status: {status.status}.
+          </p>
+          <div className="grid two">
+            {Object.entries(status.reports).map(([key, report]) => (
+              <div className="surface compact" key={key}>
+                <strong>{formatGraphifyReportLabel(key)}</strong>
+                <p className="meta">
+                  {report.available ? report.status : 'missing'}
+                  {report.operation ? ` · ${report.operation}` : ''}
+                </p>
+                <p className="meta">
+                  outputs: {report.outputValidation?.status ?? 'unknown'} · selector:{' '}
+                  {report.selectorStatus ?? 'skipped'}
+                </p>
+                <p className="meta">
+                  runsGraphify: {String(report.safety?.runsGraphify ?? false)} · writesTargetRepo:{' '}
+                  {String(report.safety?.writesTargetRepo ?? false)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
 }
 
 function MindStewardStatusCard() {
@@ -111,6 +190,7 @@ export function OverviewDashboard() {
           </p>
         </article>
         <MindStewardStatusCard />
+        <GraphifyStatusCard />
       </section>
     </div>
   );

@@ -596,3 +596,56 @@ export const mindStewardSchedulerStatusSchema = z.object({
 });
 
 export type MindStewardSchedulerStatus = z.infer<typeof mindStewardSchedulerStatusSchema>;
+
+
+
+export const graphifyOutputValidationSchema = z.object({
+  status: z.string(),
+  requiredCount: z.number(),
+  availableCount: z.number(),
+  missing: z.array(z.string()),
+}).nullable();
+
+export const graphifySafetySchema = z.object({
+  runsGraphify: z.boolean().optional(),
+  callsAiModelSelector: z.boolean().optional(),
+  writesTargetRepo: z.boolean().optional(),
+  hardcodesModelFallback: z.boolean().optional(),
+}).nullable();
+
+export const graphifyReportStatusSchema = z.object({
+  available: z.boolean(),
+  fileName: z.string(),
+  status: z.string(),
+  generatedAt: z.string().nullable(),
+  repoPath: z.string().nullable(),
+  profile: z.string().nullable(),
+  repoRole: z.string().nullable(),
+  modes: z.array(z.string()),
+  operation: z.string().nullable(),
+  executeRequested: z.boolean().nullable(),
+  executionEnabled: z.boolean().nullable(),
+  plannedOnly: z.boolean().nullable(),
+  graphifyCommand: z.string().nullable(),
+  blockedReason: z.string().nullable(),
+  selectorStatus: z.string().nullable(),
+  selectorResolutionRequested: z.boolean().nullable(),
+  selectorResolutionEnabled: z.boolean().nullable(),
+  selectedProvider: z.string().nullable(),
+  selectedModel: z.string().nullable(),
+  outputValidation: graphifyOutputValidationSchema,
+  safety: graphifySafetySchema,
+});
+
+export const graphifyStatusSchema = z.object({
+  status: z.string(),
+  source: z.string(),
+  reportCount: z.number(),
+  availableCount: z.number(),
+  reports: z.object({
+    mindKnowledge: graphifyReportStatusSchema,
+    brainRuntime: graphifyReportStatusSchema,
+  }),
+});
+
+export type GraphifyStatus = z.infer<typeof graphifyStatusSchema>;
