@@ -17,6 +17,7 @@ function parseArgs(argv) {
   const args = {
     repo: null,
     profile: null,
+    operation: 'preflight',
     reportJson: null,
     reportMarkdown: null,
   };
@@ -27,6 +28,12 @@ function parseArgs(argv) {
       args.repo = argv[++index] ?? null;
     } else if (arg === '--profile') {
       args.profile = argv[++index] ?? null;
+    } else if (arg === '--operation') {
+      const operation = argv[++index] ?? null;
+      if (!['preflight', 'full', 'update', 'critical-rebuild'].includes(operation)) {
+        throw new Error('--operation must be preflight, full, update, or critical-rebuild');
+      }
+      args.operation = operation;
     } else if (arg === '--report-json') {
       args.reportJson = resolve(brainRoot, argv[++index] ?? '');
     } else if (arg === '--report-md') {
@@ -42,7 +49,7 @@ function parseArgs(argv) {
 }
 
 function helpText() {
-  return `Usage: node tools/graphify/run-graphify-orchestrator.mjs --repo <path> [--profile <name>]\n\nReport-only Graphify orchestrator preflight.\n\nOptions:\n  --repo <path>         Target repository path to inspect. Required.\n  --profile <name>      Named example profile fallback when .graphify-profile.json is absent.\n  --report-json <path>  Brain-relative report JSON output.\n  --report-md <path>    Brain-relative report Markdown output.\n`;
+  return `Usage: node tools/graphify/run-graphify-orchestrator.mjs --repo <path> [--profile <name>]\n\nReport-only Graphify orchestrator preflight.\n\nOptions:\n  --repo <path>         Target repository path to inspect. Required.\n  --profile <name>      Named example profile fallback when .graphify-profile.json is absent.\n  --operation <name>    Planned operation: preflight, full, update, or critical-rebuild. Default: preflight.\n  --report-json <path>  Brain-relative report JSON output.\n  --report-md <path>    Brain-relative report Markdown output.\n\nOperations other than preflight are currently planning/report-only and do not execute Graphify.\n`;
 }
 
 async function readJson(path) {
@@ -137,6 +144,32 @@ function expectedOutputs(repoRoot, profile) {
   }));
 }
 
+function plannedExecution(profile, operation) {
+  const policyByOperation = {
+    preflight: null,
+    full: profile.initialBuildPolicy ?? null,
+    update: profile.incrementalPolicy ?? null,
+    'critical-rebuild': profile.criticalRebuildPolicy ?? null,
+  };
+
+  const commandByOperation = {
+    preflight: null,
+    full: 'graphify update .',
+    update: 'graphify update . --update',
+    'critical-rebuild': 'graphify update .',
+  };
+
+  return {
+    operation,
+    plannedOnly: true,
+    runsGraphify: false,
+    callsAiModelSelector: false,
+    writesTargetRepo: false,
+    graphifyCommand: commandByOperation[operation] ?? null,
+    selectorPolicy: policyByOperation[operation] ?? null,
+  };
+}
+
 function toMarkdown(report) {
   const lines = [
     '# Graphify Orchestrator Preflight',
@@ -147,6 +180,13 @@ function toMarkdown(report) {
     `Target repo: ${report.repo.path}`,
     `Profile source: ${report.profile.source}`,
     `Profile: ${report.profile.name}`,
+    `Operation: ${report.execution.operation}`,
+    `Planned only: ${report.execution.plannedOnly}`,
+    '',
+    '## Planned execution',
+    '',
+    `Graphify command: ${report.execution.graphifyCommand ?? 'none'}`,
+    `Selector policy: ${report.execution.selectorPolicy ? report.execution.selectorPolicy.taskType : 'none'}`,
     '',
     '## Safety',
     '',
@@ -203,6 +243,7 @@ async function main() {
     validation: {
       errors,
     },
+    execution: plannedExecution(loadedProfile.profile, args.operation),
     expectedOutputs: expectedOutputs(repoRoot, loadedProfile.profile),
     safety: {
       runsGraphify: false,
