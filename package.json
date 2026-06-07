@@ -8,7 +8,9 @@
     "models:validate": "bash tools/scripts/models-validate.sh",
     "sync-ai-skills": "node tools/scripts/sync-ai-skills.mjs",
     "sync-credentials": "bash tools/scripts/sync-credentials.sh",
-    "graphify:preflight": "node tools/graphify/run-graphify-orchestrator.mjs"
+    "graphify:preflight": "node tools/graphify/run-graphify-orchestrator.mjs",
+    "graphify:preflight:mind": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge",
+    "graphify:preflight:brain": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime"
   },
   "keywords": [
     "claude",
