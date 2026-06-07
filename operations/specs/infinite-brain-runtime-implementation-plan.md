@@ -24,21 +24,23 @@ Each sprint is designed to be executable by one developer (~60% effort per week)
 
 #### IB0: Configuration & Project Structure
 - `INFINITE_BRAIN_RUNTIME_CONFIG.json` (canonical config)
-  - Entity type whitelist: Tasks, Decisions, Projects, Concepts, Sources
+  - Internal entity type vocabulary: Pillar, Decision, Concept, Question, Playbook, Task, Event, Pattern, Hypothesis, Fact, Source, Bookmark, Note, Contact, Reference, Custom
+  - User-facing folders are not required to mirror the 16 entity types; classification is machine-maintained metadata, not Steve-maintained hierarchy
   - Edge type whitelist: supports, contradicts, depends_on, derived_from, related_to, part_of, preceded_by, followed_by, authored, tagging
+  - Atomic note rule: 50–300 lines, one main idea, one-sentence summary, provenance/source required
   - Confidence thresholds: default 0.75 for inference, 0.90 for auto-creation
-  - Limits: max 20 notes/week, max vault 5GB
-  - Sync rules: one-way (Mind → Brain for Decisions/Projects)
+  - Limits: max 20 knowledge-write proposals/week until soft launch proves quality; generated reports can exceed this
+  - Sync rules: Brain orchestrates; Mind remains strategy/source-of-truth memory; no destructive Mind conversion
 - `IBR_DECISION_LOG.md` (decisions D1–D5 documented)
-  - D1: Entity whitelist = Medium (Tasks, Decisions, Projects, Concepts, Sources) ✓
-  - D2: Edge inference = Conservative (require approval for edges) ✓
-  - D3: Update frequency = Scheduled (daily 00:00 UTC) ✓
-  - D4: Versioning = Dual (git + version field) ✓
-  - D5: iOS sync = Safe (detect lock, queue writes) ✓
-- `.github/workflows/ibr-daily-update.yml` (optional GitHub Actions)
-  - Trigger: 00:00 UTC daily
-  - Jobs: preflight → inference → insights → reporting
-  - Slack notifications on job results
+  - D1: Entity vocabulary = full 16 NotebookLM types, exposed as metadata rather than mandatory folders ✓
+  - D2: Edge inference = Conservative (report-only first; require approval before writes) ✓
+  - D3: Runtime style = Invisible by default (Brain Console/status only; Steve does not manually maintain taxonomy) ✓
+  - D4: Versioning = Dual (git + append-only runtime change logs) ✓
+  - D5: Mind safety = Non-destructive coexistence; queue writes and require approval for knowledge mutations ✓
+- Brain-owned scheduler jobs, not default GitHub Actions
+  - Initial trigger: Brain Core scheduler/action approval system
+  - Jobs: preflight → inference dry-run → write proposal → reporting
+  - Notifications/status: Brain Console first; external notification integrations are later optional additions
 
 **Tasks:**
 ```
@@ -51,10 +53,10 @@ Each sprint is designed to be executable by one developer (~60% effort per week)
     - D1–D5 recorded in IBR_DECISION_LOG.md
     - Traceability to inventory.md
 
-[ ] Create GitHub Actions workflow (0.5 day)
-    - Scheduled trigger (daily 00:00 UTC)
-    - Job definitions (placeholders for IB1+)
-    - Notifications (Slack or email)
+[ ] Register Brain Core scheduler placeholders (0.5 day)
+    - Report-only jobs only
+    - Approval-gated execution paths
+    - Brain Console status surfaces before external notifications
 
 [ ] Create project folders (0.25 day)
     - `tools/scripts/ibr/` (scripts)

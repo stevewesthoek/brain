@@ -14,6 +14,30 @@ This roadmap outlines 18 phases (IB0–IB17) to evolve the Brain system from tod
 
 **Go/no-go decision point:** End of IB4 (after foundation hardening and first soft-launch candidate)
 
+## Non-Negotiable User Experience Principles
+
+The Infinite Brain Runtime must be a black-box improvement layer for Steve, not a new manual filing system.
+
+Steve should not need to:
+
+- remember entity types;
+- maintain graph edges;
+- move notes into a taxonomy;
+- run startup rituals;
+- manually clean stale information;
+- change his capture, strategy, research, or project workflow.
+
+The runtime should:
+
+- classify, atomize, summarize, index, and connect knowledge automatically;
+- keep Mind human-readable and strategically useful;
+- keep Brain responsible for execution, scheduling, reports, and safety gates;
+- surface status in Brain Console instead of requiring command memorization;
+- use report-only and approval-gated phases before any knowledge mutation;
+- use AI Model Selector for all model/provider choices;
+- use Graphify for repo/context graphing without turning Graphify into a knowledge-writing engine;
+- reject hidden continuous loops until they are observable, reversible, and feature-flagged.
+
 ---
 
 ## Target Architecture
