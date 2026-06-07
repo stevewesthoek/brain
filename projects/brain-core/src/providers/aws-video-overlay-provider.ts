@@ -195,19 +195,36 @@ export class DeterministicOverlayProvider {
         const lineHeight = Math.round(fontSize * 1.24);
         const boxHeight = lineCount * lineHeight + 44;
         const y = `h-${plan.style.safeMargin}-${boxHeight}`;
-        const drawText = [
-          'scale=1280:720:force_original_aspect_ratio=increase',
-          'crop=1280:720',
+        const baseFrameFilter = 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720';
+        const drawTextFilter = [
+          baseFrameFilter,
           `drawtext=textfile='${this.escapeFilterPath(textPath)}':fontcolor=white:fontsize=${fontSize}:line_spacing=8:x=${plan.style.safeMargin}:y=${y}:box=1:boxcolor=black@0.58:boxborderw=24:shadowcolor=black@0.85:shadowx=3:shadowy=3`,
         ].join(',');
 
-        await execFileAsync(ffmpegPath, [
-          '-y',
-          '-i', scene.imagePath,
-          '-vf', drawText,
-          '-frames:v', '1',
-          outputPath,
-        ], { timeout: 30_000 });
+        try {
+          await execFileAsync(ffmpegPath, [
+            '-y',
+            '-i', scene.imagePath,
+            '-vf', drawTextFilter,
+            '-frames:v', '1',
+            outputPath,
+          ], { timeout: 30_000 });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error ?? '');
+          if (!/No such filter:\s*'drawtext'|Filter not found/i.test(message)) {
+            throw error;
+          }
+          if (!plan.warnings.includes('FFmpeg drawtext filter unavailable; overlay frames use generated images without baked text.')) {
+            plan.warnings.push('FFmpeg drawtext filter unavailable; overlay frames use generated images without baked text.');
+          }
+          await execFileAsync(ffmpegPath, [
+            '-y',
+            '-i', scene.imagePath,
+            '-vf', baseFrameFilter,
+            '-frames:v', '1',
+            outputPath,
+          ], { timeout: 30_000 });
+        }
 
         framePaths.push(outputPath);
         frameKeys.push(outputKey);
