@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish, getVideoJobThumbnail } from '../providers/video-orchestrator-provider.js';
+import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish, getVideoJobThumbnail, resolveDownloadableVideo } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
 import { listApprovals } from '../adapters/approvals.js';
@@ -2336,6 +2336,75 @@ export async function routeRequest(
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch job thumbnail',
           }));
+        }
+        return;
+      }
+
+      const jobVideoMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/video$/.exec(url.pathname);
+      if (jobVideoMatch) {
+        try {
+          const jobId = decodeURIComponent(jobVideoMatch[1] ?? '');
+          const result = await resolveDownloadableVideo(jobId);
+          const httpResponse = response as IncomingMessage & ServerResponse & {
+            headersSent?: boolean;
+            destroy: (error?: Error) => void;
+          };
+          if (!result.ok) {
+            const statusCode = result.code === 'invalid_job_id' ? 400 : 404;
+            sendJson(response, statusCode, { ok: false, code: result.code, error: result.error, details: result.details ?? null });
+            return;
+          }
+
+          response.writeHead(200, {
+            'Content-Type': 'video/mp4',
+            'Content-Disposition': `attachment; filename="${jobId.replace(/[^A-Za-z0-9._-]/g, '-')}.mp4"`,
+            'Cache-Control': 'no-store',
+          });
+
+          if (result.localPath) {
+            const { createReadStream } = await import('node:fs');
+            const stream = createReadStream(result.localPath);
+            stream.on('error', (streamError) => {
+              if (!httpResponse.headersSent) {
+                sendJson(response, 404, { ok: false, code: 'video_not_found', error: streamError instanceof Error ? streamError.message : 'Final MP4 could not be read.' });
+                return;
+              }
+              httpResponse.destroy(streamError as Error);
+            });
+            stream.pipe(response as unknown as NodeJS.WritableStream);
+            return;
+          }
+
+          if (result.bucket && result.region) {
+            const { spawn } = await import('node:child_process');
+            const child = spawn('aws', ['s3', 'cp', `s3://${result.bucket}/${result.videoKey}`, '-', '--region', result.region, '--no-cli-pager'], { stdio: ['ignore', 'pipe', 'pipe'] });
+            let stderr = '';
+            child.stderr.on('data', (chunk) => {
+              stderr += Buffer.isBuffer(chunk) ? chunk.toString('utf-8') : String(chunk);
+            });
+            child.stdout.pipe(response as unknown as NodeJS.WritableStream);
+            child.on('error', (childError) => {
+              if (!httpResponse.headersSent) {
+                sendJson(response, 404, { ok: false, code: 'video_not_found', error: childError instanceof Error ? childError.message : 'Final MP4 could not be downloaded.' });
+                return;
+              }
+              httpResponse.destroy(childError as Error);
+            });
+            child.on('close', (code) => {
+              if (code === 0) return;
+              const message = stderr.trim() || `aws s3 cp exited ${code ?? 'unknown'}`;
+              if (!httpResponse.headersSent) {
+                sendJson(response, 404, { ok: false, code: 'video_not_found', error: message });
+                return;
+              }
+              httpResponse.destroy(new Error(message));
+            });
+            return;
+          }
+
+          sendJson(response, 404, { ok: false, code: 'video_not_ready', error: 'Final MP4 is not ready for download.' });
+        } catch (error) {
+          sendJson(response, 500, { ok: false, code: 'video_not_ready', error: error instanceof Error ? error.message : 'Failed to fetch video' });
         }
         return;
       }

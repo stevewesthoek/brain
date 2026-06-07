@@ -696,6 +696,12 @@ if [[ -f "$publish_check_json" || -f "$tmp_dir/publish-check.json" ]]; then
   fi
 fi
 
+youtube_upload_status="$(json_value "$publish_check_json" '.youtubeUpload.status')"
+if [[ "$youtube_upload_status" == "quota_exceeded" ]]; then
+  pass "YouTube upload is quota-blocked but generated assets remain valid"
+  info "youtubeUpload.errorCode: $(json_value "$publish_check_json" '.youtubeUpload.errorCode')"
+fi
+
 if [[ "$REQUIRE_REVIEW_APPROVED" -eq 1 ]]; then
   if [[ "${review_status:-}" != "approved" ]]; then
     fail "--require-review-approved set but reviewStatus is not approved (got: ${review_status:-<empty>})"

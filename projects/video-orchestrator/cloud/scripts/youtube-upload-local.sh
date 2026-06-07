@@ -54,6 +54,18 @@ UNLISTED=false
 FORCE_NEW_UPLOAD=false
 RETRY_THUMBNAIL=false
 
+is_quota_error() {
+    local text="${1:-}"
+    shopt -s nocasematch
+    case "$text" in
+        *quotaexceeded*|*dailylimitexceeded*|*ratelimitexceeded*|*userratelimitexceeded*|*"exceeded your quota"*)
+            return 0
+            ;;
+    esac
+    shopt -u nocasematch
+    return 1
+}
+
 # Color output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -490,6 +502,29 @@ EOF
 
         if [ -z "$VIDEO_ID" ]; then
             ERROR=$(echo "$UPLOAD_RESPONSE" | jq -r '.error.message // "Unknown error"')
+            ERROR_REASON=$(echo "$UPLOAD_RESPONSE" | jq -r '.error.errors[0].reason // empty')
+            if is_quota_error "$ERROR $ERROR_REASON $UPLOAD_RESPONSE"; then
+                NOW=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+                UPDATED_PUBLISH=$(echo "$PUBLISH_JSON" | jq \
+                    --arg ts "$NOW" \
+                    --arg err "$ERROR" \
+                    '.publishStatus = "pending" |
+                     .updatedAt = $ts |
+                     .youtubeUpload = {
+                       status: "quota_exceeded",
+                       checkedAt: $ts,
+                       errorCode: "youtube_quota_exceeded",
+                       message: $err,
+                       videoKey: .videoKey,
+                       thumbnailKey: .thumbnailKey
+                     } |
+                     .platforms.youtube.status = "quota_exceeded" |
+                     .platforms.youtube.error = "youtube_quota_exceeded"')
+                aws s3 cp - "s3://$BUCKET/jobs/$JOB_ID/metadata/publish.json" --region eu-north-1 <<< "$(echo "$UPDATED_PUBLISH" | jq .)"
+                echo -e "${YELLOW}⚠ YouTube upload quota reached: $ERROR${NC}"
+                echo "Response: $UPLOAD_RESPONSE"
+                exit 1
+            fi
             echo -e "${RED}❌ Video upload failed: $ERROR${NC}"
             echo "Response: $UPLOAD_RESPONSE"
             exit 1

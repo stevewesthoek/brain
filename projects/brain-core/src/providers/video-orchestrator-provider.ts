@@ -43,6 +43,7 @@ const S3_DISCOVERY_LIMIT = 100;
 const S3_METADATA_TIMEOUT_MS = 1_200;
 const S3_HEAD_TIMEOUT_MS = 800;
 const S3_PUBLISH_ASSET_TIMEOUT_MS = 10_000;
+const S3_VIDEO_DOWNLOAD_TIMEOUT_MS = 15_000;
 const RECENT_JOB_HYDRATION_CONCURRENCY = 3;
 const GENERATION_MODE = 'fixture_assembly';
 const MEDIA_SOURCE = 'fixture';
@@ -514,6 +515,95 @@ export interface PublishableAssetsResolution {
     videoKey: string;
     thumbnailKey: string;
     narrationKey: string;
+  };
+}
+
+export type ResolveDownloadableVideoResult =
+  | {
+    ok: true;
+    jobId: string;
+    videoKey: string;
+    localPath?: string;
+    bucket?: string;
+    region?: string;
+  }
+  | {
+    ok: false;
+    code: string;
+    error: string;
+    details?: unknown;
+  };
+
+export function classifyYouTubeQuotaError(input: unknown): boolean {
+  const text = [
+    typeof input === 'string' ? input : null,
+    input && typeof input === 'object' ? JSON.stringify(input) : null,
+  ].filter((value): value is string => Boolean(value)).join('\n').toLowerCase();
+  return [
+    'quotaexceeded',
+    'dailylimitexceeded',
+    'ratelimitexceeded',
+    'userratelimitexceeded',
+    'exceeded your quota',
+    'quota reason',
+  ].some((needle) => text.includes(needle));
+}
+
+async function resolveVideoKeyForDownload(jobId: string): Promise<ResolveDownloadableVideoResult> {
+  if (!isValidJobId(jobId)) {
+    return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId' };
+  }
+
+  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+  const generationMode = stringValue(publishJson?.generationMode) ?? stringValue(assetsJson?.generationMode);
+  const publishVideoKey = stringValue(publishJson?.videoKey);
+  if (isGeneratedMediaGenerationMode(generationMode) && publishVideoKey?.startsWith('jobs/test-001/')) {
+    return {
+      ok: false,
+      code: 'generated_media_publish_assets_invalid',
+      error: 'Generated-media jobs must not download fixture test-001 video assets.',
+      details: { jobId, generationMode, videoKey: publishVideoKey },
+    };
+  }
+
+  const finalized = await finalizeAwsVideoPublishPackage(jobId);
+  if (!finalized.ok) {
+    return {
+      ok: false,
+      code: finalized.code,
+      error: finalized.error,
+      details: finalized.details ?? { missing: finalized.missing },
+    };
+  }
+
+  const publishVideoKeyResolved = publishVideoKey ?? finalized.media.videoKey ?? null;
+  const fallbackVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const resolvedKey = publishVideoKeyResolved ?? fallbackVideoKey;
+
+  if (isGeneratedMediaGenerationMode(generationMode) && resolvedKey.startsWith('jobs/test-001/')) {
+    return {
+      ok: false,
+      code: 'generated_media_publish_assets_invalid',
+      error: 'Generated-media jobs must not download fixture test-001 video assets.',
+      details: { jobId, generationMode, videoKey: resolvedKey },
+    };
+  }
+
+  const localPath = join(getVideoOrchestratorRoot(), resolvedKey);
+  if (await fileExists(localPath)) {
+    return { ok: true, jobId, videoKey: resolvedKey, localPath };
+  }
+
+  if (await s3ObjectExists(resolvedKey, S3_VIDEO_DOWNLOAD_TIMEOUT_MS)) {
+    return { ok: true, jobId, videoKey: resolvedKey, bucket: S3_BUCKET, region: AWS_REGION };
+  }
+
+  return {
+    ok: false,
+    code: 'video_not_found',
+    error: 'Final MP4 could not be found locally or on S3.',
+    details: { jobId, videoKey: resolvedKey },
   };
 }
 
@@ -1242,6 +1332,10 @@ export async function getVideoJobThumbnail(jobId: string): Promise<{ success: fa
   return { success: false };
 }
 
+export async function resolveDownloadableVideo(jobId: string): Promise<ResolveDownloadableVideoResult> {
+  return resolveVideoKeyForDownload(jobId);
+}
+
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
@@ -1581,6 +1675,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     return result;
   } catch (error) {
     const outputError = error as Error & { stdout?: string; stderr?: string };
+    const quotaExceeded = classifyYouTubeQuotaError(`${outputError.message}\n${outputError.stdout ?? ''}\n${outputError.stderr ?? ''}`);
 
     // On dry-run failure, write failed state to persist across refresh
     if (options.dryRun) {
@@ -1604,11 +1699,56 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
       }
     }
 
+    if (!options.dryRun && quotaExceeded) {
+      try {
+        const now = new Date().toISOString();
+        const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+        const publishPlatforms = publishJson?.platforms && typeof publishJson.platforms === 'object'
+          ? publishJson.platforms as Record<string, unknown>
+          : {};
+        const publishYoutube = publishPlatforms.youtube && typeof publishPlatforms.youtube === 'object'
+          ? publishPlatforms.youtube as Record<string, unknown>
+          : {};
+        const youtubeUpload = publishJson?.youtubeUpload && typeof publishJson.youtubeUpload === 'object'
+          ? publishJson.youtubeUpload as Record<string, unknown>
+          : {};
+        const updatedPublish = publishJson ? {
+          ...publishJson,
+          publishStatus: 'pending',
+          updatedAt: now,
+          youtubeUpload: {
+            ...youtubeUpload,
+            status: 'quota_exceeded',
+            checkedAt: now,
+            errorCode: 'youtube_quota_exceeded',
+            message: 'YouTube upload quota reached. The video is ready; download the MP4 or try private publish again after quota resets.',
+            videoKey: stringValue(publishJson.videoKey) ?? null,
+            thumbnailKey: stringValue(publishJson.thumbnailKey) ?? null,
+          },
+          platforms: {
+            ...publishPlatforms,
+            youtube: {
+              ...publishYoutube,
+              status: 'quota_exceeded',
+              error: 'youtube_quota_exceeded',
+            },
+          },
+        } : null;
+        if (updatedPublish) {
+          await writeFile(getJobMetadataPath(jobId, 'publish.json'), `${JSON.stringify(updatedPublish, null, 2)}\n`, 'utf-8');
+          await writeFile(getJobPublishingPath(jobId), `${JSON.stringify(updatedPublish, null, 2)}\n`, 'utf-8');
+          await writeS3MetadataJson(jobId, 'publish.json', updatedPublish);
+        }
+      } catch (writeError) {
+        console.warn(`[runControlledYouTubePublish] Warning: Failed to persist quota-exceeded publish metadata for ${jobId}:`, writeError);
+      }
+    }
+
     const result: ControlledYouTubePublishResult = {
       ok: false,
       jobId,
       dryRun: options.dryRun,
-      code: 'youtube_upload_script_failed',
+      code: quotaExceeded ? 'youtube_quota_exceeded' : 'youtube_upload_script_failed',
       error: outputError.message.slice(-2000),
     };
     if (typeof outputError.stdout === 'string') result.stdout = outputError.stdout.slice(-4000);

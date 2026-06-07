@@ -106,6 +106,13 @@ function payloadDetails(error: unknown): Record<string, unknown> | null {
   return details && typeof details === 'object' ? details as Record<string, unknown> : null;
 }
 
+function isQuotaExceededResult(error: unknown, result?: Record<string, unknown> | null): boolean {
+  if (result?.code === 'youtube_quota_exceeded') return true;
+  if (!(error instanceof BrainCoreError) || !error.payload || typeof error.payload !== 'object') return false;
+  const payload = error.payload as Record<string, unknown>;
+  return payload.code === 'youtube_quota_exceeded';
+}
+
 // Monotonic status derivation: prevents status from downgrading backwards through list refresh cycles
 function getMonotonicJobStatus(
   detail: Partial<VideoJob> | null | undefined,
@@ -229,6 +236,10 @@ function ScenePlanCard({
 function stripAnsiCodes(text: string): string {
   // Remove ANSI escape codes like \x1b[32m, [1m, etc.
   return text.replace(/\x1b\[[0-9;]*m/g, '').replace(/\[[0-9;]*m/g, '');
+}
+
+function downloadFinalVideo(jobId: string): void {
+  window.open(`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/video`, '_blank', 'noopener,noreferrer');
 }
 
 function CompactPublishResultCard({
@@ -605,6 +616,16 @@ function ReviewCard({
           </div>
         </details>
       )}
+      {media?.videoKey ? (
+        <div style={{ marginBottom: '1rem' }}>
+          <button className="button secondary" onClick={() => downloadFinalVideo(jobId)}>
+            Download final MP4
+          </button>
+          <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.35rem' }}>
+            Use this when YouTube upload quota is reached or to inspect video quality locally.
+          </div>
+        </div>
+      ) : null}
       {youtubePackageMetadata && (
         <details open style={{ marginBottom: '1rem' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>YouTube metadata</summary>
@@ -1042,6 +1063,7 @@ export function AwsVideoDashboard() {
   const backendPublishJson = asRecord(asRecord(selectedJob?.artifacts)?.publishJson ?? asRecord(artifactData)?.publishJson);
   const backendPublishCheck = asRecord(asRecord(selectedJob?.artifacts)?.publishCheck ?? asRecord(artifactData)?.publishCheck);
   const backendYoutubeDryRun = asRecord(backendPublishCheck?.youtubeDryRun);
+  const backendYoutubeUpload = asRecord(backendPublishCheck?.youtubeUpload) ?? asRecord(backendPublishJson?.youtubeUpload);
 
   // Dry-run proof from backend: either in publish-check.json or publish.json
   const backendDryRunStatus = typeof backendYoutubeDryRun?.status === 'string' ? backendYoutubeDryRun.status : null;
@@ -1135,10 +1157,16 @@ export function AwsVideoDashboard() {
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error].find(Boolean) ?? (generationTimeoutStillRunning ? null : generate.error);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
+  const quotaExceeded = backendYoutubeUpload?.status === 'quota_exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
+  const finalVideoAvailable = Boolean(finalVideoKey);
   const visibleErrorMessage = queryErrorMessage ?? actionErrorMessage;
-  const visibleErrorSummary = queryErrorMessage ? 'Brain Core request failed' : actionErrorSummary(actionError) ?? 'Action failed';
+  const visibleErrorSummary = quotaExceeded
+    ? 'YouTube upload quota reached'
+    : queryErrorMessage
+      ? 'Brain Core request failed'
+      : actionErrorSummary(actionError) ?? 'Action failed';
   const visibleErrorDetails = queryErrorMessage ?? actionErrorMessage;
-  const showErrorToast = Boolean(visibleErrorMessage && visibleErrorMessage !== dismissedError);
+  const showErrorToast = Boolean(!quotaExceeded && visibleErrorMessage && visibleErrorMessage !== dismissedError);
 
   const counts = {
     total: jobList.length,
@@ -1389,6 +1417,7 @@ export function AwsVideoDashboard() {
                 <div><span>Review</span><strong>{reviewStatus}</strong></div>
               </div>
               {requiresReviewGate && !reviewApproved ? <div className="compact-warning">Review gate is enforced for generated media. Dry-run and private publish stay disabled until review is approved.</div> : null}
+              {quotaExceeded ? <div className="compact-warning">YouTube upload quota reached. The video is ready; download the MP4 or try private publish again after quota resets.</div> : null}
               {reviewApproved && requiresReviewGate ? <div className="success-panel">Review approved. Dry-run is now enabled.</div> : null}
               {dryRunRunning ? <div className="compact-info">Dry-run is running... Page refresh is safe; state persists in publish-check.json.</div> : null}
               {dryRunFailed ? <div className="compact-error">Dry-run failed. Check logs below or re-run.</div> : null}
@@ -1416,9 +1445,11 @@ export function AwsVideoDashboard() {
               {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
               <div className="pipeline-actions">
                 <button className={recommendedStep?.key === 'dry-run' ? 'button next-action' : 'button secondary'} disabled={!canDryRun || youtubeDryRun.isPending || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubeDryRun.mutate({ jobIdArg: jobId }); } }}>{youtubeDryRun.isPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}</button>
-                <button className={recommendedStep?.key === 'publish' ? 'button next-action' : 'button danger-button'} disabled={!canPublish || isPublishingThisJob} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
+                <button className={recommendedStep?.key === 'publish' ? 'button next-action' : 'button danger-button'} disabled={!canPublish || isPublishingThisJob || quotaExceeded} onClick={() => { if (jobId) { beginAction(); youtubePublish.mutate({ jobIdArg: jobId }); } }}>{isPublishingThisJob ? 'Publishing privately…' : 'Publish privately'}</button>
+                {finalVideoAvailable ? <button className="button secondary" onClick={() => { if (jobId) downloadFinalVideo(jobId); }}>Download final MP4</button> : null}
               </div>
               <p className="meta no-margin">{requiresReviewGate ? 'Review approval is required before dry-run or private upload.' : 'Private upload unlocks automatically after a successful dry-run for this selected job.'}</p>
+              {finalVideoAvailable ? <p className="meta no-margin">Use this when YouTube upload quota is reached or to inspect video quality locally.</p> : null}
               <CompactPublishResultCard
                 dryRunResult={youtubeDryRun.data}
                 uploadResult={youtubePublish.data}
