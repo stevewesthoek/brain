@@ -5,15 +5,20 @@ import { dirname, resolve } from 'node:path';
 
 const brainRoot = resolve(new URL('../..', import.meta.url).pathname);
 const examplesPath = resolve(brainRoot, 'operations/specs/graphify-profile.examples.json');
-const defaultReportJson = resolve(brainRoot, 'runtime/local/graphify/orchestrator-latest.json');
-const defaultReportMarkdown = resolve(brainRoot, 'runtime/local/graphify/orchestrator-latest.md');
+function defaultReportPaths(profileName) {
+  const safeProfileName = String(profileName ?? 'unknown').replace(/[^a-z0-9._-]+/gi, '-').toLowerCase();
+  return {
+    json: resolve(brainRoot, `runtime/local/graphify/${safeProfileName}-latest.json`),
+    markdown: resolve(brainRoot, `runtime/local/graphify/${safeProfileName}-latest.md`),
+  };
+}
 
 function parseArgs(argv) {
   const args = {
     repo: null,
     profile: null,
-    reportJson: defaultReportJson,
-    reportMarkdown: defaultReportMarkdown,
+    reportJson: null,
+    reportMarkdown: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -177,6 +182,9 @@ async function main() {
   if (!existsSync(repoRoot)) throw new Error(`Target repo does not exist: ${repoRoot}`);
 
   const loadedProfile = await loadProfile(repoRoot, args.profile);
+  const reportDefaults = defaultReportPaths(loadedProfile.profile.profile ?? args.profile);
+  const reportJsonPath = args.reportJson ?? reportDefaults.json;
+  const reportMarkdownPath = args.reportMarkdown ?? reportDefaults.markdown;
   const errors = validateProfile(loadedProfile.profile);
   const report = {
     status: errors.length === 0 ? 'ok' : 'invalid-profile',
@@ -204,12 +212,12 @@ async function main() {
     },
   };
 
-  await mkdir(dirname(args.reportJson), { recursive: true });
-  await mkdir(dirname(args.reportMarkdown), { recursive: true });
-  await writeFile(args.reportJson, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(args.reportMarkdown, toMarkdown(report), 'utf8');
+  await mkdir(dirname(reportJsonPath), { recursive: true });
+  await mkdir(dirname(reportMarkdownPath), { recursive: true });
+  await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await writeFile(reportMarkdownPath, toMarkdown(report), 'utf8');
 
-  process.stdout.write(`Wrote ${args.reportJson}\nWrote ${args.reportMarkdown}\nStatus: ${report.status}\n`);
+  process.stdout.write(`Wrote ${reportJsonPath}\nWrote ${reportMarkdownPath}\nStatus: ${report.status}\n`);
 }
 
 main().catch(error => {
