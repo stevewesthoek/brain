@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
@@ -706,7 +706,7 @@ function ReviewCard({
       </div>
       {reviewData?.reviewStatus !== 'approved' ? <div className="compact-warning">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
       <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
-        Review media from control-plane{!reviewMedia ? ' (unavailable)' : ''}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
+        Review media from control-plane{!controlPlaneData ? ' (loading…)' : !reviewMedia ? ' (unavailable)' : ''}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
         isPendingTimeout ? (
@@ -843,6 +843,23 @@ interface TimeoutMonitorSnapshot {
 }
 
 const TIMEOUT_MONITOR_KEY = 'aws-video-timeout-monitor';
+const SELECTED_JOB_KEY = 'aws-video-selected-job-id';
+
+function readPersistedSelectedJobId(): string | null {
+  try {
+    return sessionStorage.getItem(SELECTED_JOB_KEY) || null;
+  } catch { return null; }
+}
+
+function persistSelectedJobId(jobId: string | null): void {
+  try {
+    if (jobId) {
+      sessionStorage.setItem(SELECTED_JOB_KEY, jobId);
+    } else {
+      sessionStorage.removeItem(SELECTED_JOB_KEY);
+    }
+  } catch { /* storage quota or private-mode errors: ignore */ }
+}
 
 function readTimeoutMonitor(): TimeoutMonitorSnapshot {
   try {
@@ -864,11 +881,17 @@ function readTimeoutMonitor(): TimeoutMonitorSnapshot {
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(() => {
+  const [selectedJobId, setSelectedJobIdRaw] = useState<string | null>(() => {
+    const persisted = readPersistedSelectedJobId();
+    if (persisted) return persisted;
     const m = readTimeoutMonitor();
     const hasActive = m.createDraftTimedOut || Object.keys(m.pendingActionByJobId).length > 0;
     return hasActive ? m.selectedJobId : null;
   });
+  const setSelectedJobId = useCallback((id: string | null) => {
+    setSelectedJobIdRaw(id);
+    persistSelectedJobId(id);
+  }, []);
   const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
   const [changeRequest, setChangeRequest] = useState('');
@@ -922,9 +945,24 @@ export function AwsVideoDashboard() {
 
   const jobList = jobs.data?.jobs ?? [];
   const jobsDiagnostics = jobs.data?.diagnostics ?? payloadDiagnostics(jobs.error);
-  const selected = useMemo(() => jobList.find((job) => job.jobId === selectedJobId) ?? jobList[0] ?? null, [jobList, selectedJobId]);
-  const jobId = selected?.jobId ?? null;
 
+  // Default selection: on first load with no persisted ID, pick jobList[0].
+  // After that, selectedJobId is canonical and never overwritten by jobList changes.
+  const resolvedJobId = selectedJobId ?? jobList[0]?.jobId ?? null;
+  useEffect(() => {
+    if (!selectedJobId && jobList.length > 0) {
+      setSelectedJobId(jobList[0].jobId);
+    }
+  }, [selectedJobId, jobList]);
+
+  // selected is used only for the jobs list highlight and legacy fallback display.
+  // It must NEVER drive control-plane query key or panel state.
+  const selected = useMemo(() => jobList.find((job) => job.jobId === resolvedJobId) ?? null, [jobList, resolvedJobId]);
+
+  // jobId is the canonical selected identity — stable across /jobs/recent refetches
+  const jobId = resolvedJobId;
+
+  // Legacy queries — used for debug panels only, not for driving main UI state
   const job = useQuery({
     queryKey: ['aws-video-job', jobId],
     queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}`, videoJobResponseSchema),
@@ -961,7 +999,12 @@ export function AwsVideoDashboard() {
     queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema),
     enabled: Boolean(jobId),
     refetchInterval: 8_000,
-    placeholderData: (prev) => prev,
+    placeholderData: (prev, prevQuery) => {
+      // Only keep placeholder if it belongs to the same jobId
+      const prevJobId = (prevQuery?.queryKey as [string, string | null] | undefined)?.[1];
+      if (prevJobId && prevJobId === jobId) return prev;
+      return undefined;
+    },
   });
 
   const invalidateVideo = async () => {
@@ -1189,6 +1232,7 @@ export function AwsVideoDashboard() {
   // Use keepPreviousData semantics: keep last good CP data while refetching.
   // ═══════════════════════════════════════════════════════════════════════════
   const controlPlaneData: VideoControlPlaneData | null = controlPlane.data?.data ?? null;
+  const controlPlaneLoading = controlPlane.isLoading && Boolean(jobId);
   const controlPlaneStale = controlPlane.isError || controlPlane.isRefetching;
 
   // Legacy data — debug panels ONLY, never drives main UI
@@ -1560,9 +1604,9 @@ export function AwsVideoDashboard() {
                 <div className="card-header compact-header">
                   <div className="min-w-0">
                     <div className="card-title">Selected job</div>
-                    <div className="card-description truncate">{shortJobId(selectedJob?.jobId)}</div>
+                    <div className="card-description truncate">{shortJobId(jobId ?? selectedJob?.jobId)}</div>
                   </div>
-                  <StatusBadge status={selectedJob?.status} />
+                  <StatusBadge status={selectedJob?.status ?? (controlPlaneLoading ? 'pending' : undefined)} />
                 </div>
                 {selectedJob ? (
                   <>
@@ -1590,6 +1634,14 @@ export function AwsVideoDashboard() {
                       <div><span>Generation mode</span><strong>{generationMode}</strong></div>
                     </div>
                   </>
+                ) : jobId && controlPlaneLoading ? (
+                  <div className="compact-info">Loading selected job…</div>
+                ) : jobId && controlPlane.isError ? (
+                  <div className="compact-error">
+                    <strong>Failed to load job data</strong>
+                    <p>Job ID: {shortJobId(jobId)}</p>
+                    <button className="button secondary" onClick={() => void controlPlane.refetch()}>Retry</button>
+                  </div>
                 ) : <p>Select or create a job to start.</p>}
               </article>
 
@@ -1667,14 +1719,17 @@ export function AwsVideoDashboard() {
                 error={statusOnlyErrorMessage}
               />
               <div className="job-list">
-                {jobList.map((item) => (
-                  <button key={item.jobId} className={`job-list-item ${item.jobId === selectedJob?.jobId ? 'active' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setActiveView('overview'); }}>
-                    <div className="min-w-0"><strong>{item.title || item.jobId}</strong><span>{item.jobId} · {item.channelId}</span></div>
-                    <StatusBadge status={item.status} />
-                    <div className="job-progress"><div className="progress"><span style={{ width: `${pct(item.progress)}%` }} /></div><span>{pct(item.progress)}%</span></div>
-                    <span className="meta no-margin">{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</span>
-                  </button>
-                ))}
+                {jobList.map((item) => {
+                  const isTestJob = /^Test\s+clientActionId\s+dedup/i.test(item.title ?? '');
+                  return (
+                    <button key={item.jobId} className={`job-list-item ${item.jobId === jobId ? 'active' : ''}${isTestJob ? ' test-job' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setActiveView('overview'); }}>
+                      <div className="min-w-0"><strong>{item.title || item.jobId}{isTestJob ? ' [diagnostic]' : ''}</strong><span>{item.jobId} · {item.channelId}</span></div>
+                      <StatusBadge status={item.status} />
+                      <div className="job-progress"><div className="progress"><span style={{ width: `${pct(item.progress)}%` }} /></div><span>{pct(item.progress)}%</span></div>
+                      <span className="meta no-margin">{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</span>
+                    </button>
+                  );
+                })}
                 {jobList.length === 0 && !jobsDiagnostics?.localJobFolderCount && !jobsDiagnostics?.s3DiscoveredJobCount && !statusOnlyErrorMessage ? <p>No video jobs returned by Brain Core.</p> : null}
               </div>
             </article>
@@ -1777,6 +1832,8 @@ export function AwsVideoDashboard() {
                   <div><span>Reason</span><strong>{cpExecution.unavailableReason}</strong></div>
                 ) : null}
               </div>
+            ) : controlPlaneLoading ? (
+              <p>Loading execution data…</p>
             ) : (
               <p>Execution pending</p>
             )}
@@ -1796,6 +1853,8 @@ export function AwsVideoDashboard() {
                   <div><span>Reason</span><strong>{cpArtifacts.unavailableReason}</strong></div>
                 ) : null}
               </div>
+            ) : controlPlaneLoading ? (
+              <p>Loading artifacts…</p>
             ) : (
               <p>Artifacts pending</p>
             )}
