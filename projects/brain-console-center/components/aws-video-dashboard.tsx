@@ -881,16 +881,23 @@ function readTimeoutMonitor(): TimeoutMonitorSnapshot {
 export function AwsVideoDashboard() {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<AwsVideoView>('overview');
-  const [selectedJobId, setSelectedJobIdRaw] = useState<string | null>(() => {
-    const persisted = readPersistedSelectedJobId();
-    if (persisted) return persisted;
-    const m = readTimeoutMonitor();
-    const hasActive = m.createDraftTimedOut || Object.keys(m.pendingActionByJobId).length > 0;
-    return hasActive ? m.selectedJobId : null;
-  });
+  // Keep the server render deterministic. Browser storage is restored after hydration.
+  const [selectedJobId, setSelectedJobIdRaw] = useState<string | null>(null);
+  const [selectionRestored, setSelectionRestored] = useState(false);
   const setSelectedJobId = useCallback((id: string | null) => {
     setSelectedJobIdRaw(id);
     persistSelectedJobId(id);
+  }, []);
+  useEffect(() => {
+    const persisted = readPersistedSelectedJobId();
+    if (persisted) {
+      setSelectedJobIdRaw(persisted);
+    } else {
+      const m = readTimeoutMonitor();
+      const hasActive = m.createDraftTimedOut || Object.keys(m.pendingActionByJobId).length > 0;
+      if (hasActive) setSelectedJobIdRaw(m.selectedJobId);
+    }
+    setSelectionRestored(true);
   }, []);
   const [channelId, setChannelId] = useState('prochat');
   const [prompt, setPrompt] = useState('');
@@ -948,12 +955,12 @@ export function AwsVideoDashboard() {
 
   // Default selection: on first load with no persisted ID, pick jobList[0].
   // After that, selectedJobId is canonical and never overwritten by jobList changes.
-  const resolvedJobId = selectedJobId ?? jobList[0]?.jobId ?? null;
+  const resolvedJobId = selectedJobId ?? (selectionRestored ? jobList[0]?.jobId ?? null : null);
   useEffect(() => {
-    if (!selectedJobId && jobList.length > 0) {
+    if (selectionRestored && !selectedJobId && jobList.length > 0) {
       setSelectedJobId(jobList[0].jobId);
     }
-  }, [selectedJobId, jobList]);
+  }, [selectionRestored, selectedJobId, jobList]);
 
   // selected is used only for the jobs list highlight and legacy fallback display.
   // It must NEVER drive control-plane query key or panel state.
