@@ -49,3 +49,16 @@ The first implementation slice is report-only. It must not:
 - modify `graphify-out/`;
 - hardcode model fallback logic;
 - bypass AI Model Selector.
+
+
+
+## Planned Graphify CLI syntax
+
+The orchestrator plans commands using the official terminal CLI shape:
+
+```text
+graphify .
+graphify . --update
+```
+
+Execution remains disabled until the orchestrator gains an explicitly guarded run path.

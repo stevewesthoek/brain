@@ -154,9 +154,9 @@ function plannedExecution(profile, operation) {
 
   const commandByOperation = {
     preflight: null,
-    full: 'graphify update .',
-    update: 'graphify update . --update',
-    'critical-rebuild': 'graphify update .',
+    full: 'graphify .',
+    update: 'graphify . --update',
+    'critical-rebuild': 'graphify .',
   };
 
   return {
