@@ -46,7 +46,19 @@
       ],
       "dashboardVisibility": true,
       "humanReadableFileGraph": true,
-      "aiContextMode": true
+      "aiContextMode": true,
+      "hooks": {
+        "enabled": false,
+        "postCommit": false,
+        "postCheckout": false,
+        "operation": "update"
+      },
+      "watch": {
+        "enabled": false,
+        "debounceMs": 30000,
+        "maxRunsPerHour": 4,
+        "operation": "update"
+      }
     },
     "brain-runtime": {
       "graphifyStandardVersion": "1",
@@ -99,7 +111,19 @@
       ],
       "dashboardVisibility": true,
       "humanReadableFileGraph": true,
-      "aiContextMode": true
+      "aiContextMode": true,
+      "hooks": {
+        "enabled": false,
+        "postCommit": false,
+        "postCheckout": false,
+        "operation": "update"
+      },
+      "watch": {
+        "enabled": false,
+        "debounceMs": 30000,
+        "maxRunsPerHour": 4,
+        "operation": "update"
+      }
     },
     "code-app": {
       "graphifyStandardVersion": "1",
@@ -151,7 +175,19 @@
       ],
       "dashboardVisibility": true,
       "humanReadableFileGraph": true,
-      "aiContextMode": true
+      "aiContextMode": true,
+      "hooks": {
+        "enabled": false,
+        "postCommit": false,
+        "postCheckout": false,
+        "operation": "update"
+      },
+      "watch": {
+        "enabled": false,
+        "debounceMs": 30000,
+        "maxRunsPerHour": 4,
+        "operation": "update"
+      }
     }
   }
 }
