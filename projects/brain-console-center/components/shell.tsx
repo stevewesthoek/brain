@@ -9,6 +9,7 @@ import { brainCoreStatusSchema } from '@/lib/braincore-schemas';
 import { cn, timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { GlobalPulseStrip } from '@/components/global-pulse-strip';
 
 const nav = [
   { href: '/', label: 'Overview', icon: Gauge },
@@ -91,6 +92,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle />
           </div>
         </header>
+        <GlobalPulseStrip />
         <div className="content">{children}</div>
       </main>
     </div>

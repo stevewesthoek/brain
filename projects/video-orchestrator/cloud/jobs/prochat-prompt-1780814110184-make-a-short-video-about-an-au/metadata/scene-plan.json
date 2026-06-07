@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780814110184-make-a-short-video-about-an-au",
+  "prompt": "Make a short video about an Audi R8 driving through a rainy city at sunset.",
+  "title": "Make a short video about an Audi R8 driving through a rainy city at sunset.",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 1 of 3",
+      "narrationText": "Make a short video about an Audi R8 driving through a rainy city at sunset.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-07T06:48:39.667Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

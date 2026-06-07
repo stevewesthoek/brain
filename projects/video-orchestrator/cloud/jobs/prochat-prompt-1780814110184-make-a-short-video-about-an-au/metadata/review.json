@@ -1,0 +1,24 @@
+{
+  "jobId": "prochat-prompt-1780814110184-make-a-short-video-about-an-au",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T06:50:42.254Z",
+  "updatedAt": "2026-06-07T06:50:42.254Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/audio/narration.mp3",
+    "sceneImageKeys": [
+      "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-001.png",
+      "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-002.png",
+      "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-003.png"
+    ],
+    "videoKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/overlay-plan.json"
+  }
+}

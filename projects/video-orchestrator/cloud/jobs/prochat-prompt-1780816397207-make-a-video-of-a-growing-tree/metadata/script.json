@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780816397207",
+  "status": "approved",
+  "title": "Make a video of a growing tree. ",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T07:13:17.207Z",
+  "updatedAt": "2026-06-07T07:13:31.434Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-07T07:13:31.434Z"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "jobId": "prochat-prompt-1780821571340-make-a-video-about-a-party-on-",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Hybrid Image Slideshow pipeline proof — prompt-derived scene plan, TTS audio, generated scene images, and ffmpeg slideshow video",
+  "createdAt": "2026-06-07T08:42:11.817Z",
+  "generatedBy": "interactive-prompt",
+  "title": "A Party on the Street",
+  "description": "A short video about A Party on the Street. Make a video about a party on the street. Created as a private preview for review before public release.",
+  "tags": [
+    "a party on the street",
+    "party",
+    "street",
+    "party street",
+    "about",
+    "scene",
+    "short video",
+    "visual story"
+  ],
+  "youtubePackageKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/youtube-package.json",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/audio/narration.mp3",
+  "providerName": "hybrid-image-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "partialAiGenerated": true,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "imageGenerated": true,
+  "slideshowGenerated": true,
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "updatedAt": "2026-06-07T08:48:12.870Z",
+  "publishedAt": null,
+  "videoKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-07T08:46:54.758Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "provider": "aws-bedrock-nova-canvas",
+  "modelId": "amazon.nova-canvas-v1:0",
+  "region": "us-east-1",
+  "sceneCount": 3,
+  "generatedImageKeys": [
+    "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-001.png",
+    "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-002.png",
+    "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-003.png"
+  ],
+  "promptHashes": [
+    "3ec05fe58e2b44e1",
+    "2d74920aa2524883",
+    "4c8acd685d035ecc"
+  ],
+  "warnings": [
+    "Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video."
+  ],
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "cfgScale": 6.5,
+    "quality": "standard",
+    "seed": 42
+  },
+  "createdAt": "2026-06-07T07:14:41.263Z"
+}

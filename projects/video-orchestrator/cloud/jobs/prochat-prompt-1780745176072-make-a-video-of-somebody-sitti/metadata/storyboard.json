@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780745176072-make-a-video-of-somebody-sitti",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-06T11:37:17.819Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "Make a video of somebody sitting behind the computer.  — scene 1 of 3",
+      "visualPrompt": "Make a video of somebody sitting behind the computer.  — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-001.png",
+      "finalImagePrompt": "Make a video of somebody sitting behind the computer. — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "91a4d4c2c1fb73f7",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-06T11:37:23.733Z",
+      "durationSeconds": 20,
+      "narrationText": "Make a video of somebody sitting behind the computer.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "Make a video of somebody sitting behind the computer.  — scene 2 of 3",
+      "visualPrompt": "Make a video of somebody sitting behind the computer.  — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-002.png",
+      "finalImagePrompt": "Make a video of somebody sitting behind the computer. — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "b055eea4fb486b45",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-06T11:37:31.497Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "Make a video of somebody sitting behind the computer.  — scene 3 of 3",
+      "visualPrompt": "Make a video of somebody sitting behind the computer.  — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-003.png",
+      "finalImagePrompt": "Make a video of somebody sitting behind the computer. — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "77504a99292f95dd",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-06T11:37:38.151Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

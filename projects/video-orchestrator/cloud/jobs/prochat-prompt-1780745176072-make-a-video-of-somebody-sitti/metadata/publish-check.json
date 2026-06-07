@@ -1,0 +1,13 @@
+{
+  "jobId": "prochat-prompt-1780745176072-make-a-video-of-somebody-sitti",
+  "youtubeDryRun": {
+    "status": "passed",
+    "startedAt": "2026-06-06T11:38:51.365Z",
+    "checkedAt": "2026-06-06T11:38:57.759Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/exports/thumbnail-001.jpg"
+  },
+  "dryRunPassed": true
+}

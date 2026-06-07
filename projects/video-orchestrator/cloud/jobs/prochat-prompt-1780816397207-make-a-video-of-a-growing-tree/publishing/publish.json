@@ -1,0 +1,48 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Hybrid Image Slideshow pipeline proof — prompt-derived scene plan, TTS audio, generated scene images, and ffmpeg slideshow video",
+  "createdAt": "2026-06-07T07:15:44.153Z",
+  "generatedBy": "interactive-prompt",
+  "title": "A Growing Tree",
+  "description": "A short video about A Growing Tree. Make a video of a growing tree. Created as a private preview for review before public release.",
+  "tags": [
+    "a growing tree",
+    "growing",
+    "tree",
+    "growing tree",
+    "scene",
+    "short video",
+    "visual story",
+    "ai video"
+  ],
+  "youtubePackageKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/youtube-package.json",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration.mp3",
+  "providerName": "hybrid-image-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "partialAiGenerated": true,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "imageGenerated": true,
+  "slideshowGenerated": true,
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "updatedAt": "2026-06-07T09:10:59.114Z",
+  "publishedAt": null,
+  "videoKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/thumbnail-001.jpg",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-07T09:09:03.117Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

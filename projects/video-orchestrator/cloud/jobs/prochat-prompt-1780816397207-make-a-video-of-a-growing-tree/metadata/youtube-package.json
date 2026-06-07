@@ -1,0 +1,44 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "sourcePrompt": "Make a video of a growing tree. ",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "A Growing Tree",
+  "description": "A short video about A Growing Tree. Make a video of a growing tree. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about A Growing Tree. Make a video of a growing tree. Created as a private preview for review before public release.",
+  "tags": [
+    "a growing tree",
+    "growing",
+    "tree",
+    "growing tree",
+    "scene",
+    "short video",
+    "visual story",
+    "ai video"
+  ],
+  "searchKeywords": [
+    "a growing tree",
+    "growing",
+    "tree",
+    "growing tree",
+    "scene",
+    "short video",
+    "visual story",
+    "ai video"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/video-generated/generated-001.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T07:15:35.806Z",
+  "updatedAt": "2026-06-07T07:15:35.806Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 14,
+    "tagCount": 8,
+    "descriptionLength": 130,
+    "hasInternalTerms": false
+  }
+}

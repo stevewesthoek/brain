@@ -1,0 +1,7 @@
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-001.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-002.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-003.png'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-003.png'

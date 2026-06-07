@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780814906259-make-a-short-video-about-an-au",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-07T06:52:31.216Z",
+  "updatedAt": "2026-06-07T06:52:31.216Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

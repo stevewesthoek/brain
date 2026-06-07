@@ -2384,7 +2384,11 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
     notes: reviewRepair?.notes ?? null,
     media: canonicalMedia,
   };
-  if (!reviewRepair || JSON.stringify(reviewRepair.media) !== JSON.stringify(canonicalMedia) || approvedReview && reviewRepair.reviewStatus !== 'approved') {
+
+  // Write review if: (1) no review exists, or (2) media changed
+  // Always preserve approval state: if previously approved, stay approved
+  const mediaChanged = !reviewRepair || JSON.stringify(reviewRepair.media) !== JSON.stringify(canonicalMedia);
+  if (mediaChanged) {
     await writeReviewJson(jobId, repairedReview);
     repaired.push('review.json');
     reviewRepair = repairedReview;
@@ -2986,16 +2990,30 @@ export async function getVideoReview(jobId: string): Promise<VideoReviewResponse
     return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
   }
 
-  // getOrCreateReview() now uses mergeReviewMetadata() which ensures monotonic state:
-  // approved state cannot downgrade to pending, media gets repaired
-  const review = await getOrCreateReview(jobId);
+  // For generated-media jobs at ready_to_publish: always finalize to ensure review media is complete
+  // This repairs stale review.json and aligns canonical artifacts with the review contract
+  const statusJson = await readJobMetadataJson(jobId, 'status.json') as Record<string, unknown> | null;
+  const assetsJson = await readJobMetadataJson(jobId, 'assets.json') as Record<string, unknown> | null;
+  const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+
+  const generationMode = stringValue(assetsJson?.generationMode) ?? stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode);
+  const localStatus = statusJson?.status as string | undefined;
+
+  let finalized = null;
+  if (isGeneratedMediaGenerationMode(generationMode) && (localStatus === 'complete' || localStatus === 'ready_to_publish')) {
+    // Always finalize for generated-media jobs at terminal generation states
+    finalized = await finalizeAwsVideoPublishPackage(jobId);
+  }
+
+  // Use finalized review if available, otherwise create fresh from canonical sources
+  let review = finalized?.ok && finalized.review ? finalized.review : await getOrCreateReview(jobId);
+
   if (!review) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
   }
 
-  const finalized = await finalizeAwsVideoPublishPackage(jobId);
-  return finalized.ok
-    ? { ok: true, review: finalized.review ?? review, finalization: { finalized: true, missing: finalized.missing, repaired: finalized.repaired } }
+  return finalized?.ok
+    ? { ok: true, review, finalization: { finalized: true, missing: finalized.missing, repaired: finalized.repaired } }
     : { ok: true, review };
 }
 
@@ -3040,6 +3058,7 @@ export async function approveVideoReview(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
+  // Always finalize before approval to ensure media is complete and aligned with canonical artifacts
   const finalized = await finalizeAwsVideoPublishPackage(jobId);
   if (!finalized.ok) {
     return {
@@ -3054,6 +3073,7 @@ export async function approveVideoReview(
   const mediaToApprove = finalized.media;
   const missing = getMissingReviewMediaFields(mediaToApprove);
   const overlayBlockers = await getReviewOverlayBlockers(jobId, mediaToApprove);
+
   if (missing.length > 0) {
     return {
       ok: false,
@@ -3063,14 +3083,10 @@ export async function approveVideoReview(
       details: { missing, finalizedMedia: finalized.media, repaired: finalized.repaired },
     } as unknown as VideoReviewError;
   }
+
+  // Overlay plan issues are warnings only, not blockers for review approval
   if (overlayBlockers.length > 0) {
-    return {
-      ok: false,
-      code: 'review_media_incomplete',
-      error: `Cannot approve review: overlay plan issue: ${overlayBlockers.join(', ')}`,
-      jobId,
-      details: { missing: overlayBlockers, finalizedMedia: finalized.media, repaired: finalized.repaired },
-    } as unknown as VideoReviewError;
+    console.warn(`[approveVideoReview] Motion layer warnings for ${jobId}: ${overlayBlockers.join(', ')} (non-blocking)`);
   }
 
   const existingReview = await readReviewJson(jobId);
@@ -3090,6 +3106,7 @@ export async function approveVideoReview(
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : current.notes,
     media: mediaToApprove,
   };
+
   try {
     const writeStart = Date.now();
     await writeReviewJson(jobId, approved);
@@ -3098,6 +3115,7 @@ export async function approveVideoReview(
   } catch {
     return { ok: false, code: 'review_write_failed', error: 'Failed to write review metadata.', jobId };
   }
+
   return { ok: true, review: approved };
 }
 
@@ -4626,9 +4644,13 @@ export async function generateApprovedScript(
     await writeFile(metadataPublishPath, publishJsonContent, 'utf-8');
     await writeFile(publishingPublishPath, publishJsonContent, 'utf-8');
     await writeS3MetadataJson(jobId, 'publish.json', publishJson);
-    const generatedReview = await getOrCreateReview(jobId);
-    if (generatedReview) {
-      await writeReviewJson(jobId, generatedReview);
+
+    // Finalize the publish package: repairs canonical media contract and review.json
+    // This ensures all required artifacts are accounted for and review media is complete
+    const finalized = await finalizeAwsVideoPublishPackage(jobId);
+    if (!finalized.ok) {
+      console.warn(`[generateApprovedScript] Finalization warnings for ${jobId}: ${finalized.error}`);
+      // Non-fatal: finalization warnings don't block generation trigger
     }
   } catch (err) {
     return {

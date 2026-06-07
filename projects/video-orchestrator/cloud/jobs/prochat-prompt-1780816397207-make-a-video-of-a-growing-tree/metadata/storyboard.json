@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-07T07:14:12.610Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "Make a video of a growing tree.  — scene 1 of 3",
+      "visualPrompt": "Make a video of a growing tree.  — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-001.png",
+      "finalImagePrompt": "Make a video of a growing tree. — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "3ec05fe58e2b44e1",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-07T07:14:21.262Z",
+      "durationSeconds": 20,
+      "narrationText": "Make a video of a growing tree.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "Make a video of a growing tree.  — scene 2 of 3",
+      "visualPrompt": "Make a video of a growing tree.  — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-002.png",
+      "finalImagePrompt": "Make a video of a growing tree. — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "2d74920aa2524883",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-07T07:14:29.610Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "Make a video of a growing tree.  — scene 3 of 3",
+      "visualPrompt": "Make a video of a growing tree.  — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-003.png",
+      "finalImagePrompt": "Make a video of a growing tree. — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "4c8acd685d035ecc",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-07T07:14:37.971Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780814110184-make-a-short-video-about-an-au",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-07T06:48:57.655Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 1 of 3",
+      "visualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-001.png",
+      "finalImagePrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "0d2cc769c2558886",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-07T06:49:04.967Z",
+      "durationSeconds": 20,
+      "narrationText": "Make a short video about an Audi R8 driving through a rainy city at sunset.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 2 of 3",
+      "visualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-002.png",
+      "finalImagePrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "c347cec09a564989",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-07T06:49:13.099Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 3 of 3",
+      "visualPrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-003.png",
+      "finalImagePrompt": "Make a short video about an Audi R8 driving through a rainy city at sunset. — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "d7a1fe9cee77d9d7",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-07T06:49:23.127Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

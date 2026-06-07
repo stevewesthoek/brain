@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-07T07:15:57.809Z",
+  "updatedAt": "2026-06-07T07:15:57.809Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

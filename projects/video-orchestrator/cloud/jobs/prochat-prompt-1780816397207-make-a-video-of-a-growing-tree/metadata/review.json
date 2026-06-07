@@ -1,0 +1,24 @@
+{
+  "jobId": "prochat-prompt-1780816397207-make-a-video-of-a-growing-tree",
+  "reviewStatus": "approved",
+  "createdAt": "2026-06-07T07:16:11.406Z",
+  "updatedAt": "2026-06-07T10:49:58.214Z",
+  "reviewedAt": "2026-06-07T10:49:58.214Z",
+  "reviewedBy": "brain-console-center",
+  "notes": "approval smoke",
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration.mp3",
+    "sceneImageKeys": [
+      "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-001.png",
+      "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-002.png",
+      "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-003.png"
+    ],
+    "videoKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/overlay-plan.json"
+  }
+}

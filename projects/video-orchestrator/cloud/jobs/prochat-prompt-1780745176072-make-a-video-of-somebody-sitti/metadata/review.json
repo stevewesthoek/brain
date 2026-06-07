@@ -1,0 +1,23 @@
+{
+  "jobId": "prochat-prompt-1780745176072-make-a-video-of-somebody-sitti",
+  "reviewStatus": "approved",
+  "createdAt": "2026-06-06T11:37:59.691Z",
+  "updatedAt": "2026-06-06T11:38:39.365Z",
+  "reviewedAt": "2026-06-06T11:38:39.365Z",
+  "reviewedBy": "brain-console-center",
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/audio/narration.mp3",
+    "sceneImageKeys": [
+      "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-001.png",
+      "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-002.png",
+      "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-003.png"
+    ],
+    "videoKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/video-generated/generated-001.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/metadata/youtube-package.json"
+  }
+}

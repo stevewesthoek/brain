@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780745176072-make-a-video-of-somebody-sitti",
+  "provider": "aws-bedrock-nova-canvas",
+  "modelId": "amazon.nova-canvas-v1:0",
+  "region": "us-east-1",
+  "sceneCount": 3,
+  "generatedImageKeys": [
+    "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-001.png",
+    "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-002.png",
+    "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-003.png"
+  ],
+  "promptHashes": [
+    "91a4d4c2c1fb73f7",
+    "b055eea4fb486b45",
+    "77504a99292f95dd"
+  ],
+  "warnings": [
+    "Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video."
+  ],
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "cfgScale": 6.5,
+    "quality": "standard",
+    "seed": 42
+  },
+  "createdAt": "2026-06-06T11:37:39.963Z"
+}

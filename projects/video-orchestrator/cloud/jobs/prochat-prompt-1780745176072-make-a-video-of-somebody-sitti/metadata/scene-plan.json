@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780745176072-make-a-video-of-somebody-sitti",
+  "prompt": "Make a video of somebody sitting behind the computer. ",
+  "title": "Make a video of somebody sitting behind the computer. ",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video of somebody sitting behind the computer.  — scene 1 of 3",
+      "narrationText": "Make a video of somebody sitting behind the computer.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video of somebody sitting behind the computer.  — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video of somebody sitting behind the computer.  — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-06T11:37:09.883Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

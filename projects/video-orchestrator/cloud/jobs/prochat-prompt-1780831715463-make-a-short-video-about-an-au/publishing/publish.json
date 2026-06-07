@@ -1,0 +1,41 @@
+{
+  "jobId": "prochat-prompt-1780831715463-make-a-short-video-about-an-au",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T11:29:16.921Z",
+  "updatedAt": "2026-06-07T11:29:16.921Z",
+  "publishedAt": null,
+  "title": "An Audi R8 Driving Through a Rainy City at Sunset",
+  "description": "A short video about An Audi R8 Driving Through a Rainy City at Sunset. Make a short video about an Audi R8 driving through a rainy city at sunset. Created as a private preview for review before public release.",
+  "tags": [
+    "an audi r8 driving through a rainy city at sunset",
+    "audi",
+    "driving",
+    "through",
+    "rainy",
+    "city",
+    "sunset",
+    "audi driving",
+    "driving through",
+    "through rainy",
+    "rainy city",
+    "city sunset",
+    "short",
+    "about"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

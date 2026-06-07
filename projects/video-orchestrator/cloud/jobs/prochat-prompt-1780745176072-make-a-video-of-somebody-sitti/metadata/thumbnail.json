@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780745176072-make-a-video-of-somebody-sitti",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-06T11:37:53.810Z",
+  "updatedAt": "2026-06-06T11:37:53.810Z",
+  "provider": "aws-bedrock-nova-canvas",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

@@ -1,0 +1,44 @@
+{
+  "jobId": "prochat-prompt-1780821571340-make-a-video-about-a-party-on-",
+  "sourcePrompt": "Make a video about a party on the street. ",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "A Party on the Street",
+  "description": "A short video about A Party on the Street. Make a video about a party on the street. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about A Party on the Street. Make a video about a party on the street. Created as a private preview for review before public release.",
+  "tags": [
+    "a party on the street",
+    "party",
+    "street",
+    "party street",
+    "about",
+    "scene",
+    "short video",
+    "visual story"
+  ],
+  "searchKeywords": [
+    "a party on the street",
+    "party",
+    "street",
+    "party street",
+    "about",
+    "scene",
+    "short video",
+    "visual story"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/video-generated/generated-001.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T08:42:02.245Z",
+  "updatedAt": "2026-06-07T08:42:02.245Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 21,
+    "tagCount": 8,
+    "descriptionLength": 147,
+    "hasInternalTerms": false
+  }
+}

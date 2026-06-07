@@ -1,0 +1,24 @@
+{
+  "jobId": "prochat-prompt-1780821571340-make-a-video-about-a-party-on-",
+  "reviewStatus": "approved",
+  "createdAt": "2026-06-07T08:40:06.358Z",
+  "updatedAt": "2026-06-07T10:40:03.436Z",
+  "reviewedAt": "2026-06-07T10:40:03.436Z",
+  "reviewedBy": "brain-console-center",
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/audio/narration.mp3",
+    "sceneImageKeys": [
+      "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-001.png",
+      "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-002.png",
+      "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-003.png"
+    ],
+    "videoKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/overlay-plan.json"
+  }
+}

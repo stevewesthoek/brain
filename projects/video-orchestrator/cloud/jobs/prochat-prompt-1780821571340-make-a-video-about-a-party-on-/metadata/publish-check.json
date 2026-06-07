@@ -1,0 +1,13 @@
+{
+  "jobId": "prochat-prompt-1780821571340-make-a-video-about-a-party-on-",
+  "youtubeDryRun": {
+    "status": "passed",
+    "startedAt": "2026-06-07T08:46:45.581Z",
+    "checkedAt": "2026-06-07T08:46:54.758Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg"
+  },
+  "dryRunPassed": true
+}

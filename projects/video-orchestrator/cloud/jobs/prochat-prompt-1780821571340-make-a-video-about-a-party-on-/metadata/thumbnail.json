@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780821571340-make-a-video-about-a-party-on-",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-07T08:42:15.294Z",
+  "updatedAt": "2026-06-07T08:42:15.294Z",
+  "provider": "selected-scene-image",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

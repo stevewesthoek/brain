@@ -1,4 +1,4 @@
-import os from 'node:os';
+import { getSystemMetrics } from './system-metrics.js';
 
 type Freshness = 'fresh' | 'stale' | 'unavailable' | 'not_instrumented';
 
@@ -36,23 +36,23 @@ function metric<T>(input: Omit<OpsMetric<T>, 'generatedAt'> & { generatedAt?: st
   };
 }
 
-export function readOpsSystemMetrics(): OpsDashboardEnvelope<{
+export async function readOpsSystemMetrics(): Promise<OpsDashboardEnvelope<{
   cpuLoad: OpsMetric<number>;
   memoryPressure: OpsMetric<number>;
   gpuLoad: OpsMetric<number>;
   uptime: OpsMetric<number>;
-}> {
+}>> {
   const generatedAt = nowIso();
-  const cpuCount = Math.max(1, os.cpus().length);
-  const loadAverage = os.loadavg()[0] ?? 0;
-  const totalMemory = os.totalmem();
-  const freeMemory = os.freemem();
-  const memoryPressure = totalMemory > 0 ? 1 - freeMemory / totalMemory : null;
+  const system = await getSystemMetrics();
+  const cpuCount = Math.max(1, system.cpuCount);
+  const loadAverage = system.loadAvg1;
+  const memoryPressure = system.memFreePercent === null ? null : 1 - system.memFreePercent / 100;
+  const gpuLoad = system.gpuUtilizationPercent;
 
   return {
     id: 'ops-system-metrics',
     generatedAt,
-    status: 'partial',
+    status: memoryPressure === null && gpuLoad === null ? 'not_instrumented' : 'partial',
     data: {
       cpuLoad: metric({
         id: 'cpu-load',
@@ -61,8 +61,8 @@ export function readOpsSystemMetrics(): OpsDashboardEnvelope<{
         unit: 'ratio',
         status: 'fresh',
         generatedAt,
-        source: 'node:os.loadavg',
-        message: '1-minute load average normalized by logical CPU count.',
+        source: 'system-metrics.loadAvg1',
+        message: '1-minute load average from the host, normalized by logical CPU count.',
       }),
       memoryPressure: metric({
         id: 'memory-pressure',
@@ -71,120 +71,141 @@ export function readOpsSystemMetrics(): OpsDashboardEnvelope<{
         unit: 'ratio',
         status: memoryPressure === null ? 'unavailable' : 'fresh',
         generatedAt,
-        source: 'node:os.totalmem/freemem',
+        source: 'system-metrics.memory_pressure',
+        message: memoryPressure === null
+          ? 'Host memory pressure could not be read from the machine.'
+          : 'Memory pressure from the host memory_pressure command.',
       }),
       gpuLoad: metric<number>({
         id: 'gpu-load',
         label: 'GPU load',
-        value: null,
+        value: gpuLoad === null ? null : round(gpuLoad / 100, 4),
         unit: 'ratio',
-        status: 'not_instrumented',
+        status: gpuLoad === null ? 'unavailable' : 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: 'GPU load is not safely instrumented in Brain Core yet.',
+        source: 'system-metrics.ioreg',
+        message: gpuLoad === null
+          ? 'GPU utilization could not be read from the host.'
+          : 'GPU utilization reported by the host GPU driver.',
       }),
       uptime: metric({
         id: 'uptime',
         label: 'Machine uptime',
-        value: Math.floor(os.uptime()),
+        value: Math.floor(system.uptimeSeconds),
         unit: 'seconds',
         status: 'fresh',
         generatedAt,
-        source: 'node:os.uptime',
+        source: 'system-metrics.uptime',
       }),
     },
   };
 }
 
-export function readOpsAiUsageWindows(): OpsDashboardEnvelope<{
+export async function readOpsAiUsageWindows(): Promise<OpsDashboardEnvelope<{
   codexCurrentWindow: OpsMetric<number>;
   codexFiveHourWindow: OpsMetric<number>;
   codexSevenDayWindow: OpsMetric<number>;
-}> {
+}>> {
   const generatedAt = nowIso();
-  const notInstrumented = 'Codex usage-window telemetry is not safely instrumented in Brain Core yet.';
+  const system = await getSystemMetrics();
+  const codex = system.codex;
+  const fiveHourWindow = codex.fiveHour;
+  const sevenDayWindow = codex.sevenDay;
 
   return {
     id: 'ops-ai-usage-windows',
     generatedAt,
-    status: 'not_instrumented',
+    status: 'available',
     data: {
       codexCurrentWindow: metric<number>({
         id: 'codex-current-window',
         label: 'Codex current window',
-        value: null,
-        unit: 'usage',
-        status: 'not_instrumented',
+        value: round(fiveHourWindow.usedPercent / 100, 4),
+        unit: 'ratio',
+        status: 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: notInstrumented,
+        source: 'system-metrics.codex.fiveHour',
+        message: fiveHourWindow.resetsAt
+          ? `Used in the current 5-hour window, resets at ${fiveHourWindow.resetsAt}`
+          : 'Current Codex window reported by the host.',
       }),
       codexFiveHourWindow: metric<number>({
         id: 'codex-five-hour-window',
         label: 'Codex 5-hour window',
-        value: null,
-        unit: 'usage',
-        status: 'not_instrumented',
+        value: round(fiveHourWindow.remainingPercent / 100, 4),
+        unit: 'ratio',
+        status: 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: notInstrumented,
+        source: 'system-metrics.codex.fiveHour',
+        message: fiveHourWindow.resetsAt
+          ? `Remaining in the current 5-hour window, resets at ${fiveHourWindow.resetsAt}`
+          : 'Five-hour Codex window reported by the host.',
       }),
       codexSevenDayWindow: metric<number>({
         id: 'codex-seven-day-window',
         label: 'Codex 7-day window',
-        value: null,
-        unit: 'usage',
-        status: 'not_instrumented',
+        value: round(sevenDayWindow.usedPercent / 100, 4),
+        unit: 'ratio',
+        status: 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: notInstrumented,
+        source: 'system-metrics.codex.sevenDay',
+        message: sevenDayWindow.resetsAt
+          ? `Resets at ${sevenDayWindow.resetsAt}`
+          : 'Seven-day Codex window reported by the host.',
       }),
     },
   };
 }
 
-export function readOpsAiCosts(): OpsDashboardEnvelope<{
+export async function readOpsAiCosts(): Promise<OpsDashboardEnvelope<{
   claudeCodeHaiku: OpsMetric<number>;
   claudeCodeSonnet: OpsMetric<number>;
   claudeCodeOpus: OpsMetric<number>;
-}> {
+}>> {
   const generatedAt = nowIso();
-  const notInstrumented = 'Claude Code per-model cost telemetry is not safely instrumented in Brain Core yet.';
+  const system = await getSystemMetrics();
+  const claudeApi = system.claudeApi;
 
   return {
     id: 'ops-ai-costs',
     generatedAt,
-    status: 'not_instrumented',
+    status: claudeApi ? 'available' : 'partial',
     data: {
       claudeCodeHaiku: metric<number>({
         id: 'claude-code-haiku-cost',
         label: 'Claude Code Haiku cost',
-        value: null,
+        value: claudeApi ? round(claudeApi.haiku.costUsd, 4) : 0,
         unit: 'usd',
-        status: 'not_instrumented',
+        status: 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: notInstrumented,
+        source: claudeApi ? 'system-metrics.claudeApi.haiku' : 'system-metrics.claudeApi',
+        message: claudeApi
+          ? `${claudeApi.haiku.callCount} call${claudeApi.haiku.callCount === 1 ? '' : 's'} this cycle.`
+          : 'Claude API usage file not available on this machine.',
       }),
       claudeCodeSonnet: metric<number>({
         id: 'claude-code-sonnet-cost',
         label: 'Claude Code Sonnet cost',
-        value: null,
+        value: claudeApi ? round(claudeApi.sonnet.costUsd, 4) : 0,
         unit: 'usd',
-        status: 'not_instrumented',
+        status: 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: notInstrumented,
+        source: claudeApi ? 'system-metrics.claudeApi.sonnet' : 'system-metrics.claudeApi',
+        message: claudeApi
+          ? `${claudeApi.sonnet.callCount} call${claudeApi.sonnet.callCount === 1 ? '' : 's'} this cycle.`
+          : 'Claude API usage file not available on this machine.',
       }),
       claudeCodeOpus: metric<number>({
         id: 'claude-code-opus-cost',
         label: 'Claude Code Opus cost',
-        value: null,
+        value: claudeApi ? round(claudeApi.opus.costUsd, 4) : 0,
         unit: 'usd',
-        status: 'not_instrumented',
+        status: 'fresh',
         generatedAt,
-        source: 'not-instrumented',
-        message: notInstrumented,
+        source: claudeApi ? 'system-metrics.claudeApi.opus' : 'system-metrics.claudeApi',
+        message: claudeApi
+          ? `${claudeApi.opus.callCount} call${claudeApi.opus.callCount === 1 ? '' : 's'} this cycle.`
+          : 'Claude API usage file not available on this machine.',
       }),
     },
   };
