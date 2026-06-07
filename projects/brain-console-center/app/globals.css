@@ -1006,6 +1006,29 @@ tr:last-child td {
   color: var(--badge-error-text);
 }
 
+.compact-info,
+.compact-warning {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.compact-info {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
+  color: var(--body);
+}
+
+.compact-warning {
+  border-color: var(--badge-warning-border);
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
+}
+
+.compact-warning p {
+  color: var(--badge-warning-text);
+}
+
 .compact-pre,
 .local-details-tabs pre {
   max-height: 52vh;
@@ -1330,6 +1353,7 @@ tr:last-child td {
 .success-panel {
   border-color: var(--badge-success-border);
   background: var(--badge-success-bg);
+  color: var(--badge-success-text);
 }
 
 .danger-button {
@@ -1352,21 +1376,70 @@ tr:last-child td {
   z-index: 50;
   display: grid;
   gap: 10px;
-  width: min(420px, calc(100vw - 36px));
+  width: min(720px, calc(100vw - 32px));
+  max-width: min(720px, calc(100vw - 32px));
 }
 
 .toast,
 .error-toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  max-height: 60vh;
+  overflow: auto;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--card);
   box-shadow: var(--toast-shadow);
+  overflow-wrap: anywhere;
 }
 
 .error-toast {
   border-color: var(--badge-error-border);
   background: var(--badge-error-bg);
+}
+
+.toast-content {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.toast-content p {
+  margin: 0;
+  color: inherit;
+}
+
+.toast button {
+  flex: 0 0 auto;
+}
+
+.toast-details {
+  margin-top: 4px;
+}
+
+.toast-details summary {
+  cursor: pointer;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.toast-details pre {
+  max-height: 38vh;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .timeline {
