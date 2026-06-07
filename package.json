@@ -12,7 +12,9 @@
     "graphify:preflight:mind": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge",
     "graphify:preflight:brain": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime",
     "graphify:update:mind:blocked": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge --operation update --execute",
-    "graphify:update:brain:blocked": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime --operation update --execute"
+    "graphify:update:brain:blocked": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime --operation update --execute",
+    "graphify:update:brain:execute": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime --operation update --execute",
+    "graphify:update:mind:execute": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge --operation update --execute"
   },
   "keywords": [
     "claude",
