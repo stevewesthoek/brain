@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -91,10 +91,10 @@ export function InfiniteBrainProposalReview() {
 
   async function fetchMetadataValidation() {
     try {
-      const data = await brainCoreRequest('/infinite-brain/metadata-writer-validation', z.object({
-        ok: z.boolean(),
-        report: z.unknown().optional(),
-      }));
+      const data = await brainCoreRequest(
+        '/infinite-brain/metadata-writer-validation',
+        infiniteBrainMetadataValidationResponseSchema
+      );
       if (data.ok && data.report) {
         setMetadataValidationRecord(data.report);
       }
