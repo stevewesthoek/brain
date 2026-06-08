@@ -21,7 +21,7 @@ const DEFAULT_MIND_REPO_PATH = path.resolve(BRAIN_ROOT, '..', 'mind');
 
 const DEFAULT_ALLOWLISTED_TEST_PATH = path.resolve(
   DEFAULT_MIND_REPO_PATH,
-  '00_System',
+  'system',
   'InfiniteBrainWriteTest.md'
 );
 

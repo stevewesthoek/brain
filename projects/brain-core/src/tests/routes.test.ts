@@ -5275,7 +5275,7 @@ test('Route: GET /api/infinite-brain/metadata-writer/write returns 404 when no r
 
 test('Route: GET /api/infinite-brain/metadata-writer/write returns latest report when it exists', async () => {
   const testDir = mkdtempSync(path.join(tmpdir(), 'brain-route-test-'));
-  const mindDir = path.join(testDir, '00_System');
+  const mindDir = path.join(testDir, 'system');
   fs.mkdirSync(mindDir, { recursive: true });
 
   const previousMindEnv = process.env.IBR_MIND_REPO_PATH;

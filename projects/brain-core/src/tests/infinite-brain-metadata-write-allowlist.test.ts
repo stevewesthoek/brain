@@ -67,10 +67,10 @@ test('Allowlist: isMetadataWritePathAllowlisted rejects other paths', () => {
 
 test('Allowlist: directory rejected', () => {
   const mindPath = process.env.IBR_MIND_REPO_PATH || '/Users/Office/Repos/stevewesthoek/mind';
-  const dirPath = path.join(mindPath, '00_System');
+  const dirPath = path.join(mindPath, 'system');
   const validation = validateSingleFileWriteScope(dirPath);
   // Directory may or may not exist, but if it does, it should be rejected
-  if (validation.normalizedPath && validation.normalizedPath.endsWith('00_System')) {
+  if (validation.normalizedPath && validation.normalizedPath.endsWith('system')) {
     // If normalized, it would not have .md extension, so it will be rejected
     assert.equal(validation.allowed, false, 'directories should be rejected');
   }

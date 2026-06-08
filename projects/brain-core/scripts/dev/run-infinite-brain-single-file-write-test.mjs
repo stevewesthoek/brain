@@ -15,7 +15,7 @@ import process from 'node:process';
 const BASE = process.env.BRAIN_CORE_API_BASE ?? 'http://127.0.0.1:4877';
 const TARGET_PATH =
   process.env.IBR_SINGLE_FILE_WRITE_TARGET ??
-  '/Users/Office/Repos/stevewesthoek/mind/00_System/InfiniteBrainWriteTest.md';
+  '/Users/Office/Repos/stevewesthoek/mind/system/InfiniteBrainWriteTest.md';
 const OPERATOR = process.env.IBR_OPERATOR ?? 'Steve';
 const FIELD_NAME = process.env.IBR_WRITE_FIELD ?? 'status';
 const VALUE = process.env.IBR_WRITE_VALUE ?? 'verified';

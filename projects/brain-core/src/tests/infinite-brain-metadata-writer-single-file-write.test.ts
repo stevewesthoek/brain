@@ -18,7 +18,7 @@ import { runMetadataWriterSingleFileWrite } from '../adapters/infinite-brain-wri
 function createTempMindStructure(): { mindRoot: string; allowlistedPath: string; cleanup: () => void } {
   const tempDir = mkdtempSync(path.join(tmpdir(), 'ibr-test-'));
   const mindRoot = tempDir;
-  const systemDir = path.join(mindRoot, '00_System');
+  const systemDir = path.join(mindRoot, 'system');
   fs.mkdirSync(systemDir, { recursive: true });
 
   const allowlistedPath = path.join(systemDir, 'InfiniteBrainWriteTest.md');
@@ -57,7 +57,7 @@ function withTempMindEnv(mindRoot: string, callback: () => void) {
 
   try {
     process.env.IBR_MIND_REPO_PATH = mindRoot;
-    process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = path.join(mindRoot, '00_System', 'InfiniteBrainWriteTest.md');
+    process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = path.join(mindRoot, 'system', 'InfiniteBrainWriteTest.md');
     process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = path.join(mindRoot, 'write-report.json');
 
     callback();
@@ -148,7 +148,7 @@ function withTempMindEnvAndGates(mindRoot: string, callback: () => void) {
 
   try {
     process.env.IBR_MIND_REPO_PATH = mindRoot;
-    process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = path.join(mindRoot, '00_System', 'InfiniteBrainWriteTest.md');
+    process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = path.join(mindRoot, 'system', 'InfiniteBrainWriteTest.md');
     process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = path.join(mindRoot, 'write-report.json');
     process.env.IBR_OPERATOR_APPROVAL_PATH = path.join(mindRoot, 'operator-approval-latest.json');
     process.env.IBR_IOS_SYNC_SAFETY_REPORT_PATH = path.join(mindRoot, 'ios-sync-safety-latest.json');
@@ -467,11 +467,11 @@ test('Single-file write: second file in same temp Mind remains unchanged', () =>
     withTempMindEnvAndGates(mindRoot, () => {
       setupGateFiles(mindRoot);
       // Create a second file
-      const secondFilePath = path.join(mindRoot, '00_System', 'OtherFile.md');
+      const secondFilePath = path.join(mindRoot, 'system', 'OtherFile.md');
       fs.writeFileSync(secondFilePath, 'Second file content');
       const secondFileOriginal = fs.readFileSync(secondFilePath, 'utf8');
 
-      const allowlistedPath = path.join(mindRoot, '00_System', 'InfiniteBrainWriteTest.md');
+      const allowlistedPath = path.join(mindRoot, 'system', 'InfiniteBrainWriteTest.md');
 
       // Write to allowlisted file
       const report = runMetadataWriterSingleFileWrite({
