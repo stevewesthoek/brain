@@ -649,3 +649,71 @@ export const graphifyStatusSchema = z.object({
 });
 
 export type GraphifyStatus = z.infer<typeof graphifyStatusSchema>;
+
+const infiniteBrainAtomizerSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    timestamp: z.string(),
+    filesAnalyzed: z.number(),
+    keepAtomic: z.number(),
+    considerSplit: z.number(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
+const infiniteBrainClassifierSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    timestamp: z.string(),
+    totalFiles: z.number(),
+    withExistingType: z.number(),
+    inferred: z.number(),
+    needsAtomization: z.number(),
+    avgConfidence: z.number(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
+const infiniteBrainEdgesSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    timestamp: z.string(),
+    totalEntities: z.number(),
+    totalInferredEdges: z.number(),
+    highConfidenceEdges: z.number(),
+    candidates: z.number(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
+export const infiniteBrainStatusSchema = z.object({
+  timestamp: z.string(),
+  runtime: z.object({
+    atomizer: infiniteBrainAtomizerSchema,
+    classifier: infiniteBrainClassifierSchema,
+    edges: infiniteBrainEdgesSchema,
+  }),
+  changelog: z.unknown().optional(),
+  evidence: z.unknown().optional(),
+  safety: z.object({
+    writesToMind: z.boolean(),
+    continuousRuntime: z.boolean(),
+    modelFallbackHardcoded: z.boolean(),
+    iosSyncCoordination: z.boolean(),
+  }),
+  readiness: z.object({
+    mindWriteReady: z.boolean(),
+    reason: z.string(),
+  }),
+});
+
+export type InfiniteBrainStatus = z.infer<typeof infiniteBrainStatusSchema>;

@@ -2,62 +2,18 @@
 
 import { useEffect, useState } from 'react';
 
-interface RuntimeStatus {
-  timestamp: string;
-  runtime: {
-    atomizer: {
-      available: boolean;
-      timestamp?: string;
-      filesAnalyzed?: number;
-      keepAtomic?: number;
-      considerSplit?: number;
-      reason?: string;
-    };
-    classifier: {
-      available: boolean;
-      timestamp?: string;
-      totalFiles?: number;
-      withExistingType?: number;
-      inferred?: number;
-      needsAtomization?: number;
-      avgConfidence?: number;
-      reason?: string;
-    };
-    edges: {
-      available: boolean;
-      timestamp?: string;
-      totalEntities?: number;
-      totalInferredEdges?: number;
-      highConfidenceEdges?: number;
-      candidates?: number;
-      reason?: string;
-    };
-  };
-  safety: {
-    writesToMind: boolean;
-    continuousRuntime: boolean;
-    modelFallbackHardcoded: boolean;
-    iosSyncCoordination: boolean;
-  };
-  readiness: {
-    mindWriteReady: boolean;
-    reason: string;
-  };
-}
+import { brainCoreRequest } from '../lib/braincore-client';
+import { infiniteBrainStatusSchema, type InfiniteBrainStatus } from '../lib/braincore-schemas';
 
 export function InfiniteBrainDashboard() {
-  const [status, setStatus] = useState<RuntimeStatus | null>(null);
+  const [status, setStatus] = useState<InfiniteBrainStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStatus() {
       try {
-        const response = await fetch('/infinite-brain/status');
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await brainCoreRequest('/infinite-brain/status', infiniteBrainStatusSchema);
         setStatus(data);
         setError(null);
       } catch (err) {
