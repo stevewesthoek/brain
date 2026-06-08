@@ -42,6 +42,8 @@ operations/system-configs/docker/
 operations/system-configs/antigravity/User/
 
 # Claude local runtime and machine state
+operations/system-configs/claude/.last-cleanup
+operations/system-configs/claude/.last-sync
 operations/system-configs/claude/image-cache/
 operations/system-configs/claude/.claude/
 operations/system-configs/claude/backups/
@@ -52,6 +54,7 @@ operations/system-configs/claude/file-history/
 operations/system-configs/claude/history.jsonl
 operations/system-configs/claude/logs/
 operations/system-configs/claude/paste-cache/
+operations/system-configs/claude/plans/
 operations/system-configs/claude/plugins/
 operations/system-configs/claude/projects/
 operations/system-configs/claude/session-env/
@@ -79,6 +82,9 @@ operations/system-configs/codex/logs_*.sqlite-wal
 operations/system-configs/codex/goals_*.sqlite
 operations/system-configs/codex/goals_*.sqlite-shm
 operations/system-configs/codex/goals_*.sqlite-wal
+operations/system-configs/codex/memories_*.sqlite
+operations/system-configs/codex/memories_*.sqlite-shm
+operations/system-configs/codex/memories_*.sqlite-wal
 operations/system-configs/codex/models_cache.json
 operations/system-configs/codex/plugins/
 operations/system-configs/codex/session_index.jsonl
@@ -163,3 +169,6 @@ operations/security-auto-approvals.log
 # Next.js build artifacts and cache
 projects/brain-console-center/.next/
 projects/brain-console-center/tsconfig.tsbuildinfo
+
+# Video orchestrator runtime job artifacts
+projects/video-orchestrator/cloud/jobs/
