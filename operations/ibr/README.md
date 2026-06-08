@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor
 
 ---
 
@@ -1386,6 +1386,156 @@ Executor Dry Run section now shows:
 - Build "How to fix blocker" guidance links
 - Add operation search/filter
 - Show operation dependencies
+
+---
+
+### PHASE Y — Writer Architecture Design & Disabled Executor Skeleton
+
+**Files:**
+- `operations/ibr/INFINITE_BRAIN_WRITER_ARCHITECTURE.md` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-proposal-executor.ts` (NEW)
+- `operations/ibr/README.md` (This documentation)
+
+**What it does:**
+- Defines architecture for future proposal writer layer (not yet implemented)
+- Creates disabled executor skeleton that returns blocked status
+- Documents category-specific writer boundaries and responsibilities
+- Outlines approval gates, safety requirements, and rollback strategy
+- Specifies preconditions that must pass before execution is allowed
+- Establishes deterministic attempt ID generation
+- Clarifies no shell execution, no direct model calls, no continuous runtime
+
+**Writer Architecture Document (`INFINITE_BRAIN_WRITER_ARCHITECTURE.md`):**
+
+**Scope:** Design document only, no implementation
+
+**Writer Responsibilities:**
+- Apply approved proposals to Mind vault after all checks pass
+- Update entity changelog (append-only JSONL)
+- Post evidence to evidence store
+- Run post-write verification before marking steps applied
+- Provide rollback capability for destructive operations
+
+**Category-Specific Writers:**
+1. **Atomization:** Split atomic notes from entity metadata (creates files in `mind/01-inbox/`)
+2. **Entity Metadata:** Update YAML frontmatter only
+3. **Edge/Evidence:** Record relationship edges and supporting evidence (append-only)
+4. **Wiki-Writing:** Generate wiki pages in `mind/05-wiki/`
+5. **Task Extraction:** Create tasks in `mind/04-tasks/`
+6. **Cleanup:** Review and cleanup marked entities (DISABLED/DESTRUCTIVE, requires per-item approval)
+
+**Key Design Principles:**
+- **Blocked-by-default:** All execution disabled until all 7 preconditions pass
+- **Operator authority:** Humans make execution decisions, not automated systems
+- **Visibility-first:** Show dry-run and readiness before allowing write
+- **Type-safe:** TypeScript only, no shell execution, no subprocess calls
+- **Audit trail:** All mutations logged to entity changelog + evidence store
+- **Rollback-capable:** Every write has documented rollback strategy
+- **iOS-sync-aware:** Respects Obsidian sync timing and limitations
+- **Deterministic IDs:** No randomness, repeatable execution
+
+**Approval Gates (3 levels):**
+1. **Readiness Checks:** All 10 checks must pass (currently 4 are blocked)
+2. **Explicit Operator Approval:** User explicitly clicks "Execute" (not just "Approved")
+3. **Dry-Run-Before-Write:** Dry-run must exist and match current state
+
+**Disabled Executor Skeleton (`infinite-brain-proposal-executor.ts`):**
+
+**Exports:**
+- `executeInfiniteBrainProposalPlanDisabled()` — Always returns blocked status
+- `evaluateExecutorPreconditions()` — Lists all 7 preconditions (all blocked)
+- `readExecutorDryRunForExecution()` — Reads dry-run for inspection
+
+**Types:**
+- `InfiniteBrainExecutionPrecondition` — name, status, reason
+- `InfiniteBrainExecutionAttempt` — attemptId, preconditions, blockedReasons
+- `InfiniteBrainExecutionResult` — Always returns ok: false, executed: false, canExecute: false
+
+**Behavior:**
+```typescript
+executeInfiniteBrainProposalPlanDisabled(dryRunId, totalSteps) returns:
+{
+  ok: false,
+  status: 'blocked',
+  canExecute: false,
+  executed: false,
+  appliedSteps: 0,
+  writesToMind: false,
+  executionBlocked: true,
+  attempt: {
+    attemptId: deterministic_hash,
+    preconditions: [
+      { name: 'readinessCanExecute', status: 'blocked', reason: '...' },
+      { name: 'dryRunAvailable', status: 'blocked', reason: '...' },
+      { name: 'explicitOperatorApproval', status: 'blocked', reason: '...' },
+      { name: 'allowlistedWriterAvailable', status: 'blocked', reason: '...' },
+      { name: 'iosSyncSafe', status: 'blocked', reason: '...' },
+      { name: 'rollbackPlanAvailable', status: 'blocked', reason: '...' },
+      { name: 'postWriteVerificationAvailable', status: 'blocked', reason: '...' },
+    ],
+    blockedReasons: [...]
+  }
+}
+```
+
+**Preconditions (All Block Execution in Phase Y):**
+1. `readinessCanExecute` — Execution readiness checks not all passing
+2. `dryRunAvailable` — Dry-run report must be generated and validated
+3. `explicitOperatorApproval` — Operator approval gate not yet implemented
+4. `allowlistedWriterAvailable` — Proposal writer not yet implemented
+5. `iosSyncSafe` — iOS sync safety verification not yet implemented
+6. `rollbackPlanAvailable` — Rollback capability not yet implemented
+7. `postWriteVerificationAvailable` — Post-write verification not yet implemented
+
+**Deterministic Attempt IDs:**
+- Hash of: dryRunId + precondition names/statuses (sorted)
+- No randomness, no Date.now(), no crypto.randomBytes()
+- Same dry-run + same preconditions = same attemptId
+
+**Safety Invariants:**
+- ✅ Execution always returns blocked status
+- ✅ canExecute always false
+- ✅ executed always false
+- ✅ appliedSteps always 0
+- ✅ writesToMind always false
+- ✅ No proposals applied
+- ✅ No files created, deleted, or moved
+- ✅ No model calls
+- ✅ No continuous runtime
+- ✅ No shell execution
+- ✅ Deterministic IDs (no randomness)
+
+**What This Phase Does NOT Include:**
+- ❌ Real writer implementation
+- ❌ Actual file writes
+- ❌ Apply button in Console
+- ❌ Execute button in Console
+- ❌ iOS sync safety verification
+- ❌ Operator approval gate UI
+- ❌ Category-specific writer functions
+- ❌ Rollback implementation
+
+**Future Implementation Phases:**
+| Phase | Blocker | Status |
+|-------|---------|--------|
+| Z | Allowlisted writer functions | ⏳ Blocked |
+| Z+1 | iOS sync safety verification | ⏳ Blocked |
+| Z+2 | Operator approval gate | ⏳ Blocked |
+| Z+3 | Category-specific implementations | ⏳ Blocked |
+
+**Testing:**
+- TypeScript typecheck: ✅ Pass
+- No forbidden patterns: ✅ Verified
+- Disabled skeleton exports: ✅ Match contract
+- Preconditions all block: ✅ Confirmed
+- Execution result always blocked: ✅ Confirmed
+
+**Reference Documentation:**
+- Full writer architecture: `operations/ibr/INFINITE_BRAIN_WRITER_ARCHITECTURE.md`
+- Design principles and rationale: Same document
+- Category boundaries and responsibilities: Same document
+- Rollback strategy: Same document
+- iOS sync requirements: Same document
 
 ---
 
