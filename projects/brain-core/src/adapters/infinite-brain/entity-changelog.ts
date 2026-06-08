@@ -6,15 +6,11 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import type { EntityMutation } from './types.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const CHANGELOG_PATH = path.join(
-  __dirname,
-  '../../../../runtime/local/infinite-brain/entity-changelog.jsonl'
-);
+const CHANGELOG_PATH = process.env.IBR_ENTITY_CHANGELOG_PATH
+  ? path.resolve(process.env.IBR_ENTITY_CHANGELOG_PATH)
+  : path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain/entity-changelog.jsonl');
 
 /**
  * Ensure changelog directory exists

@@ -6,11 +6,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { promisify } from 'util';
-import { exec as execCallback } from 'child_process';
 import type { GitLockStatus, WriteLockAcquisition } from './types.js';
-
-const exec = promisify(execCallback);
 
 // Mind repo path (typically ~/Repos/stevewesthoek/mind)
 const MIND_REPO_PATH = process.env.MIND_REPO_PATH || path.resolve('../../mind');
@@ -66,24 +62,17 @@ async function waitForGitLock(): Promise<GitLockStatus> {
 }
 
 /**
- * Check git status (no uncommitted changes)
+ * Placeholder for git status safety.
+ *
+ * This coordinator intentionally does not invoke git directly. Brain write
+ * execution must later use a Brain-owned allowlisted command/action to verify
+ * repository cleanliness before any Mind mutation is permitted.
  */
 async function checkGitStatus(): Promise<{ clean: boolean; reason?: string }> {
-  try {
-    const { stdout } = await exec(`cd "${MIND_REPO_PATH}" && git status --porcelain`);
-    if (stdout.trim().length === 0) {
-      return { clean: true };
-    }
-    return {
-      clean: false,
-      reason: `Uncommitted changes detected: ${stdout.slice(0, 100)}...`,
-    };
-  } catch (error) {
-    return {
-      clean: false,
-      reason: `Failed to check git status: ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
+  return {
+    clean: false,
+    reason: 'Mind git status was not checked by an allowlisted Brain action; writes remain blocked.',
+  };
 }
 
 /**

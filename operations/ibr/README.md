@@ -13,7 +13,7 @@ Infinite Brain Runtime is the autonomous knowledge graph maintenance layer for S
 - Preserves Mind as strategic memory (read-only from IBR)
 - Supports Brain Core scheduler for approval-gated execution
 - Uses AI Model Selector for all model routing
-- Keeps iOS sync coordination safe by detecting Obsidian locks
+- Keeps Mind writes blocked until iOS/git safety can be verified by allowlisted Brain actions
 
 ---
 
@@ -166,7 +166,7 @@ const supporting = await getEvidenceForEdge('edge-id-123');
 
 ---
 
-### PHASE IB3 — iOS Sync Coordination
+### PHASE IB3 — Mind Write Coordination Readiness
 
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain/mind-write-coordinator.ts` — Coordinator

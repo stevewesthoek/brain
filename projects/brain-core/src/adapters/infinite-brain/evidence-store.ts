@@ -6,15 +6,11 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import type { EvidenceRecord, EdgeRecord } from './types.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const EVIDENCE_STORE_PATH = path.join(
-  __dirname,
-  '../../../../runtime/local/infinite-brain/evidence-store.jsonl'
-);
+const EVIDENCE_STORE_PATH = process.env.IBR_EVIDENCE_STORE_PATH
+  ? path.resolve(process.env.IBR_EVIDENCE_STORE_PATH)
+  : path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain/evidence-store.jsonl');
 
 /**
  * Ensure evidence store directory exists
