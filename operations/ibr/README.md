@@ -848,6 +848,138 @@ curl http://localhost:3000/api/infinite-brain/proposals/application-plan/summary
 
 ---
 
+### PHASE U — Execution Readiness Console Visibility
+
+**Files:**
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — InfiniteBrainExecutionReadiness component
+- `operations/ibr/README.md` — This documentation
+
+**What it does:**
+- Displays execution readiness status in Console dashboard
+- Shows total steps, blocked steps, blocker count, can-execute flag, execution status
+- Provides "Generate Execution Readiness" button to generate/refresh readiness report
+- Always displays: `canExecute: false`, `executionBlocked: true`, safety messaging
+- Never provides an Apply button or execution controls
+- Never writes to Mind
+- Never applies proposals
+
+**UI Component: InfiniteBrainExecutionReadiness**
+
+Behavior:
+- Fetches latest readiness summary via `GET /infinite-brain/proposals/execution-readiness/summary`
+- Displays readiness metadata (generated timestamp, status, blocker count)
+- Shows three-column metric display: Can Execute (always No), Status (always Blocked), Total Steps
+- Button labeled "Generate Execution Readiness" (never "Apply")
+- On button click: calls `POST /infinite-brain/proposals/execution-readiness/generate`, waits for result, refetches summary
+- Safety banner explains: "Execution is blocked. No proposals are applied. Mind is unchanged."
+- Error handling with red alert boxes
+- Success confirmation with green alert boxes
+- Loading state while fetching
+
+**Display Fields:**
+- Can Execute: Always shows "No" (literal false)
+- Status: Always shows "Blocked" (literal true for executionBlocked)
+- Total Steps: Count from plan (0 if no plan)
+- Blocked Steps: Count from plan (all steps blocked in this phase)
+- Blockers: Count of blocked/failed required checks
+- Generated: ISO8601 timestamp of report generation
+
+**API Integration:**
+
+```typescript
+// Fetch readiness summary
+GET /infinite-brain/proposals/execution-readiness/summary
+Response:
+{
+  ok: true,
+  summary: {
+    available: true,
+    generatedAt: "2026-06-08T...",
+    canExecute: false,
+    totalSteps: 5,
+    blockedSteps: 5,
+    blockerCount: 3,
+    executionBlocked: true
+  }
+}
+
+// Generate readiness report
+POST /infinite-brain/proposals/execution-readiness/generate
+Response:
+{
+  ok: true,
+  code: "execution_readiness_generated",
+  message: "Execution readiness report generated",
+  report: {
+    reportId: "readiness-abc123...",
+    generatedAt: "2026-06-08T...",
+    status: "blocked",
+    canExecute: false,
+    totalSteps: 5,
+    blockedSteps: 5,
+    blockerCount: 3
+  },
+  safety: {
+    writesToMind: false,
+    appliesProposals: false,
+    canExecute: false,
+    executionBlocked: true,
+    previewOnly: true,
+    continuousRuntime: false,
+    modelCalls: false
+  }
+}
+```
+
+**Safety Invariants:**
+- ✅ Readiness-check-only (no execution)
+- ✅ Can Execute always false
+- ✅ Execution Blocked always true
+- ✅ No proposals applied
+- ✅ No Mind writes
+- ✅ No Apply button
+- ✅ No execution controls
+- ✅ No model calls
+- ✅ No continuous runtime
+
+**Integration:**
+- Brain Core status: `GET /infinite-brain/status` includes `runtime.executionReadiness`
+- Console display: New "Execution Readiness" section in InfiniteBrainProposalReview component
+- No direct fetch: Uses existing brainCoreRequest pattern
+- Inline Zod schemas for readiness responses (no hardcoded inline schemas in component — schemas already in braincore-schemas.ts)
+
+**User Experience Flow:**
+1. User visits Console dashboard
+2. Sees "Execution Readiness" section below Application Plan Preview
+3. Shows current readiness status if report exists (can execute: No, blocked: Yes, etc.)
+4. User can click "Generate Execution Readiness" button
+5. Button shows loading state "Generating..."
+6. On success, displays green banner "✓ Readiness report generated successfully"
+7. Section updates with new metrics
+8. Safety message always visible: "Execution is blocked. No proposals are applied. Mind is unchanged."
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Schemas use Zod unions (available/unavailable)
+- ✅ Build: `npm run typecheck` passes
+- ✅ No forbidden patterns (child_process, exec, Math.random, provider calls)
+- ✅ No direct fetch (uses brainCoreRequest)
+- ✅ No random/time-based stable IDs in component
+
+**Testing:**
+- Manual: Click "Generate Execution Readiness" button, verify readiness summary updates
+- Manual: Verify can-execute always shows "No"
+- Manual: Verify execution status always shows "Blocked"
+- Manual: Verify safety banner present
+- Manual: Verify no Apply button present
+
+**Next Phase (U+1):**
+- Build 10 required checks display (detailed readiness view)
+- Implement check details page (what's blocking execution)
+- Add check-resolution guidance (how to unblock each check)
+
+---
+
 ### PHASE O2 — Proposal Review UI (Decision-Record-Only)
 
 **Files:**

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
 import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse } from '../lib/braincore-schemas';
@@ -403,6 +404,209 @@ export function InfiniteBrainApplicationPreview() {
             className="mt-3 w-full px-3 py-2 bg-purple-600 text-white rounded text-sm font-semibold hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
           >
             {generating ? 'Generating...' : 'Generate Application Preview'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function InfiniteBrainExecutionReadiness() {
+  const [readinessSummary, setReadinessSummary] = useState<{
+    available: boolean;
+    generatedAt?: string;
+    canExecute?: boolean;
+    totalSteps?: number;
+    blockedSteps?: number;
+    blockerCount?: number;
+    executionBlocked?: boolean;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationSuccess, setGenerationSuccess] = useState(false);
+
+  async function fetchReadinessSummary() {
+    try {
+      const data = await brainCoreRequest(
+        '/infinite-brain/proposals/execution-readiness/summary',
+        z.object({
+          ok: z.literal(true),
+          summary: z.union([
+            z.object({
+              available: z.literal(true),
+              generatedAt: z.string(),
+              canExecute: z.literal(false),
+              totalSteps: z.number(),
+              blockedSteps: z.number(),
+              blockerCount: z.number(),
+              executionBlocked: z.literal(true),
+            }),
+            z.object({
+              available: z.literal(false),
+              reason: z.string(),
+            }),
+          ]),
+        })
+      );
+      setReadinessSummary(data.summary);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load readiness summary');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchReadinessSummary();
+  }, []);
+
+  async function handleGenerateReadiness() {
+    setGenerating(true);
+    setGenerationError(null);
+    setGenerationSuccess(false);
+
+    try {
+      const response = await postBrainCoreAction(
+        '/infinite-brain/proposals/execution-readiness/generate',
+        z.object({
+          ok: z.literal(true),
+          code: z.string(),
+          message: z.string(),
+          report: z.object({
+            reportId: z.string(),
+            generatedAt: z.string(),
+            status: z.string(),
+            canExecute: z.literal(false),
+            totalSteps: z.number(),
+            blockedSteps: z.number(),
+            blockerCount: z.number(),
+          }),
+          safety: z.object({
+            writesToMind: z.literal(false),
+            appliesProposals: z.literal(false),
+            canExecute: z.literal(false),
+            executionBlocked: z.literal(true),
+            previewOnly: z.literal(true),
+            continuousRuntime: z.literal(false),
+            modelCalls: z.literal(false),
+          }),
+        }),
+        {}
+      );
+
+      if (response.ok) {
+        setGenerationSuccess(true);
+        await fetchReadinessSummary();
+      } else {
+        setGenerationError('Failed to generate readiness report');
+      }
+    } catch (err) {
+      setGenerationError(err instanceof Error ? err.message : 'Failed to generate readiness report');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Execution Readiness</h3>
+        <p className="text-sm text-slate-500 mt-2">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="font-semibold text-amber-900">Execution Readiness</h3>
+            <p className="text-xs text-amber-700 mt-1">
+              Determines whether execution of approved proposals would be allowed
+            </p>
+            <div className="mt-2 text-xs text-amber-700 space-y-0.5">
+              <p>✓ Execution is blocked</p>
+              <p>✓ No proposals are applied</p>
+              <p>✓ Mind is unchanged</p>
+              <p>✓ Preview and readiness checks only</p>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{error}</p>
+          </div>
+        )}
+
+        {generationError && (
+          <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{generationError}</p>
+          </div>
+        )}
+
+        {generationSuccess && (
+          <div className="mt-3 p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">✓ Readiness report generated successfully</p>
+          </div>
+        )}
+
+        {readinessSummary && readinessSummary.available ? (
+          <div className="mt-3 space-y-2">
+            <div className="bg-white rounded p-2 border border-slate-200 text-xs space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-slate-600">Can Execute</p>
+                  <p className="font-semibold text-red-600">
+                    {readinessSummary.canExecute === false ? 'No' : 'Unknown'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Status</p>
+                  <p className="font-semibold text-amber-600">
+                    {readinessSummary.executionBlocked === true ? 'Blocked' : 'Unknown'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <p className="text-slate-600">Total Steps</p>
+                  <p className="font-semibold text-slate-900">{readinessSummary.totalSteps || 0}</p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Blocked Steps</p>
+                  <p className="font-semibold text-red-600">{readinessSummary.blockedSteps || 0}</p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Blockers</p>
+                  <p className="font-semibold text-amber-600">{readinessSummary.blockerCount || 0}</p>
+                </div>
+              </div>
+              {readinessSummary.generatedAt && (
+                <p className="text-xs text-slate-500">
+                  Generated: {new Date(readinessSummary.generatedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleGenerateReadiness}
+              disabled={generating}
+              className="w-full px-3 py-2 bg-amber-600 text-white rounded text-sm font-semibold hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+            >
+              {generating ? 'Generating...' : 'Regenerate Readiness Report'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleGenerateReadiness}
+            disabled={generating}
+            className="mt-3 w-full px-3 py-2 bg-amber-600 text-white rounded text-sm font-semibold hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+          >
+            {generating ? 'Generating...' : 'Generate Execution Readiness'}
           </button>
         )}
       </div>
