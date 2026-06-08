@@ -151,6 +151,9 @@ operations/automations/n8n/n8n_backup/
 # BuildFlow working state
 .buildflow/
 
+# Obsidian vault metadata (belongs in mind/ repo, not brain/)
+.obsidian/
+
 # Embedded/nested repo kept out until normalized
 ai/skills/taste-skill/
 
