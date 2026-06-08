@@ -18,6 +18,16 @@ projects/brain-core/dist/
 projects/brain-core/runtime/
 projects/model-router/dist/
 
+# Test artifact directories — occasionally leaked to root if tests run before cleanup
+brain-core-i7-9-*/
+brain-core-script-approval-*/
+tt-ig-test-*/
+vo-pub-test-*/
+vo-pub-ig-test-*/
+vo-pub-ig-local-*/
+vo-pub-cred-test-*/
+tsx-*/
+
 # AI memory — ephemeral session handoff
 .ai/current.md
 
@@ -149,3 +159,7 @@ operations/security-auto-approvals.log
 
 # Web auth profiles — session tokens, never commit to git
 .web-profiles/
+
+# Next.js build artifacts and cache
+projects/brain-console-center/.next/
+projects/brain-console-center/tsconfig.tsbuildinfo
