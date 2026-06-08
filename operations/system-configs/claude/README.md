@@ -10,7 +10,6 @@ It is the canonical home for Claude Code global config. Files here are loaded by
 - `claude.json.template` — safe MCP registration template (the live `claude.json` is NOT symlinked — it contains secrets and lives only on this machine)
 - `settings.json` — Claude Code settings (hooks, permissions, etc.)
 - `hooks/` — lightweight global preflight scripts used by Claude Code hooks
-  - `gemini-preprocess-hook.sh` — Automatically compresses large inputs (>5k tokens) with Gemini Flash (free) before Claude processes them. Saves 70-80% on input tokens. Triggers on Read/WebFetch. See `brain/operations/runbooks/gemini-preprocessing-hook.md` for full docs.
   - `check-risky-command.sh` — PreToolUse safety check for Bash commands
   - `rtk-safe-bash-hook.sh` — PreToolUse Bash wrapper that runs `check-risky-command.sh` first, then RTK command rewriting for token savings. See `brain/operations/runbooks/rtk.md`.
   - `check-sensitive-edit.sh` — PreToolUse check for sensitive file edits
