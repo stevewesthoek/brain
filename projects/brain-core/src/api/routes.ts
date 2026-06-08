@@ -25,7 +25,7 @@ import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDr
 import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafetyReport, readIosSyncSafetySummary } from '../adapters/infinite-brain-ios-sync-safety.js';
 import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
 import { generateMetadataWriterEnablementRecord, writeMetadataWriterEnablementRecord, readMetadataWriterEnablementRecord } from '../adapters/infinite-brain-metadata-writer-enablement.js';
-import { runMetadataWriterDryRunOnly, writeMetadataWriterDryRunReport, readMetadataWriterDryRunReport } from '../adapters/infinite-brain-writers/writer-metadata.js';
+import { runMetadataWriterDryRunOnly, writeMetadataWriterDryRunReport, readMetadataWriterDryRunReport, runMetadataWriterSingleFileWrite, writeMetadataWriterWriteReport, readMetadataWriterWriteReport, type MetadataWriterSingleFileWriteInput } from '../adapters/infinite-brain-writers/writer-metadata.js';
 import { generatePostWriteVerificationReport, writePostWriteVerificationReport, readPostWriteVerificationReport, readPostWriteVerificationSummary } from '../adapters/infinite-brain-post-write-verification.js';
 import { generateWriteManifest, writeWriteManifest, readWriteManifest } from '../adapters/infinite-brain-write-manifest.js';
 import { generateMetadataValidationReport, writeMetadataValidationReport, readMetadataValidationReport } from '../adapters/infinite-brain-metadata-writer-validation.js';
@@ -2828,6 +2828,25 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Metadata Writer Single-File Write Report (Fetch) ──────
+      if (url.pathname === '/api/infinite-brain/metadata-writer/write' && request.method === 'GET') {
+        const report = readMetadataWriterWriteReport();
+        if (!report) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'metadata_writer_write_missing',
+            message: 'No metadata writer single-file write report found. Run a test write first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          report,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -3013,6 +3032,164 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'metadata_writer_dry_run_write_failed',
         message: 'Failed to write metadata writer dry-run report',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Metadata Writer Single-File Test Write ──────────────────
+  if (url.pathname === '/api/infinite-brain/metadata-writer/write/single-file-test') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_body',
+        message: 'Request body must be valid JSON.',
+      });
+      return;
+    }
+
+    // Validate required fields
+    const manualSingleWriteConfirm = body.manualSingleWriteConfirm === true;
+    const operator = (body.operator as string) ?? '';
+    const reason = (body.reason as string) ?? '';
+    const targetPath = (body.targetPath as string) ?? '';
+    const fieldName = (body.fieldName as string) ?? '';
+    const value = body.value;
+
+    if (!manualSingleWriteConfirm) {
+      const report = runMetadataWriterSingleFileWrite({
+        targetPath,
+        fieldName,
+        value,
+        operator,
+        reason,
+        manualSingleWriteConfirm: false,
+      });
+      writeMetadataWriterWriteReport(report);
+      sendJson(response, 400, {
+        ok: false,
+        code: 'confirmation_required',
+        message: 'manualSingleWriteConfirm must be exactly true',
+        report,
+      });
+      return;
+    }
+
+    if (!operator || operator.trim().length === 0) {
+      const report = runMetadataWriterSingleFileWrite({
+        targetPath,
+        fieldName,
+        value,
+        operator,
+        reason,
+        manualSingleWriteConfirm,
+      });
+      writeMetadataWriterWriteReport(report);
+      sendJson(response, 400, {
+        ok: false,
+        code: 'operator_required',
+        message: 'operator is required and must be non-empty',
+        report,
+      });
+      return;
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      const report = runMetadataWriterSingleFileWrite({
+        targetPath,
+        fieldName,
+        value,
+        operator,
+        reason,
+        manualSingleWriteConfirm,
+      });
+      writeMetadataWriterWriteReport(report);
+      sendJson(response, 400, {
+        ok: false,
+        code: 'reason_required',
+        message: 'reason is required and must be non-empty',
+        report,
+      });
+      return;
+    }
+
+    if (!targetPath || targetPath.trim().length === 0) {
+      const report = runMetadataWriterSingleFileWrite({
+        targetPath,
+        fieldName,
+        value,
+        operator,
+        reason,
+        manualSingleWriteConfirm,
+      });
+      writeMetadataWriterWriteReport(report);
+      sendJson(response, 400, {
+        ok: false,
+        code: 'target_path_required',
+        message: 'targetPath is required and must be non-empty',
+        report,
+      });
+      return;
+    }
+
+    if (!fieldName || fieldName.trim().length === 0) {
+      const report = runMetadataWriterSingleFileWrite({
+        targetPath,
+        fieldName,
+        value,
+        operator,
+        reason,
+        manualSingleWriteConfirm,
+      });
+      writeMetadataWriterWriteReport(report);
+      sendJson(response, 400, {
+        ok: false,
+        code: 'field_name_required',
+        message: 'fieldName is required and must be non-empty',
+        report,
+      });
+      return;
+    }
+
+    // Run the single-file test write
+    const input: MetadataWriterSingleFileWriteInput = {
+      targetPath: targetPath.trim(),
+      fieldName: fieldName.trim(),
+      value,
+      operator: operator.trim(),
+      reason: reason.trim(),
+      manualSingleWriteConfirm: true,
+    };
+
+    const report = runMetadataWriterSingleFileWrite(input);
+    const writeSuccess = writeMetadataWriterWriteReport(report);
+
+    if (writeSuccess) {
+      const statusCode = report.status === 'test-write-applied' ? 200 : 400;
+      sendJson(response, statusCode, {
+        ok: report.status === 'test-write-applied',
+        code: report.status === 'test-write-applied' ? 'test_write_applied' : 'test_write_blocked',
+        message: report.status === 'test-write-applied'
+          ? 'Single-file metadata test write applied successfully'
+          : 'Single-file metadata test write was blocked',
+        report,
+        safety: {
+          applied: false,
+          autonomousExecution: false,
+          singleFileOnly: true,
+          allowlistedOnly: true,
+          wroteToMind: report.wroteToMind,
+          modifiedMind: report.modifiedMind,
+          testWriteApplied: report.testWriteApplied,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'report_write_failed',
+        message: 'Failed to write single-file test write report',
+        report,
       });
     }
     return;

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, infiniteBrainMetadataPatchPreviewResponseSchema, infiniteBrainMetadataPatchPreviewGenerateResponseSchema, infiniteBrainMetadataWriterEnablementResponseSchema, infiniteBrainMetadataWriterEnablementGenerateResponseSchema, infiniteBrainMetadataWriterDryRunResponseSchema, infiniteBrainMetadataWriterDryRunGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord, type InfiniteBrainMetadataPatchPreviewRecord, type InfiniteBrainMetadataWriterEnablementRecord, type InfiniteBrainMetadataWriterDryRunReport } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, infiniteBrainMetadataPatchPreviewResponseSchema, infiniteBrainMetadataPatchPreviewGenerateResponseSchema, infiniteBrainMetadataWriterEnablementResponseSchema, infiniteBrainMetadataWriterEnablementGenerateResponseSchema, infiniteBrainMetadataWriterDryRunResponseSchema, infiniteBrainMetadataWriterDryRunGenerateResponseSchema, infiniteBrainMetadataWriterSingleFileWriteResponseSchema, infiniteBrainMetadataWriterSingleFileWriteReportSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord, type InfiniteBrainMetadataPatchPreviewRecord, type InfiniteBrainMetadataWriterEnablementRecord, type InfiniteBrainMetadataWriterDryRunReport, type InfiniteBrainMetadataWriterSingleFileWriteReport } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -80,6 +80,17 @@ export function InfiniteBrainProposalReview() {
   const [generatingMetadataWriterDryRun, setGeneratingMetadataWriterDryRun] = useState(false);
   const [metadataWriterDryRunError, setMetadataWriterDryRunError] = useState<string | null>(null);
   const [metadataWriterDryRunSuccess, setMetadataWriterDryRunSuccess] = useState<string | null>(null);
+  const [metadataWriterSingleFileWriteReport, setMetadataWriterSingleFileWriteReport] = useState<InfiniteBrainMetadataWriterSingleFileWriteReport | null>(null);
+  const [metadataWriterSingleFileWriteLoading, setMetadataWriterSingleFileWriteLoading] = useState(true);
+  const [singleFileWriteOperator, setSingleFileWriteOperator] = useState('');
+  const [singleFileWriteReason, setSingleFileWriteReason] = useState('');
+  const [singleFileWriteTargetPath, setSingleFileWriteTargetPath] = useState('');
+  const [singleFileWriteFieldName, setSingleFileWriteFieldName] = useState('');
+  const [singleFileWriteValue, setSingleFileWriteValue] = useState('');
+  const [singleFileWriteConfirmed, setSingleFileWriteConfirmed] = useState(false);
+  const [runningMetadataWriterSingleFileWrite, setRunningMetadataWriterSingleFileWrite] = useState(false);
+  const [singleFileWriteError, setSingleFileWriteError] = useState<string | null>(null);
+  const [singleFileWriteSuccess, setSingleFileWriteSuccess] = useState<string | null>(null);
 
   async function fetchPostWriteVerification() {
     try {
@@ -171,6 +182,22 @@ export function InfiniteBrainProposalReview() {
     }
   }
 
+  async function fetchMetadataWriterSingleFileWrite() {
+    try {
+      const data = await brainCoreRequest(
+        '/api/infinite-brain/metadata-writer/write',
+        z.object({ ok: z.boolean(), report: infiniteBrainMetadataWriterSingleFileWriteReportSchema })
+      );
+      if (data.ok && data.report) {
+        setMetadataWriterSingleFileWriteReport(data.report);
+      }
+    } catch {
+      // Not found is okay, we'll let the user run a test write
+    } finally {
+      setMetadataWriterSingleFileWriteLoading(false);
+    }
+  }
+
   async function fetchOperatorApproval() {
     try {
       const data = await brainCoreRequest('/infinite-brain/operator-approval', z.object({
@@ -210,6 +237,7 @@ export function InfiniteBrainProposalReview() {
     fetchMetadataPatchPreview();
     fetchMetadataWriterEnablement();
     fetchMetadataWriterDryRun();
+    fetchMetadataWriterSingleFileWrite();
   }, []);
 
   async function handleSubmitDecision(e: React.FormEvent) {
@@ -451,6 +479,58 @@ export function InfiniteBrainProposalReview() {
       setMetadataWriterDryRunError(err instanceof Error ? err.message : 'Failed to generate dry-run');
     } finally {
       setGeneratingMetadataWriterDryRun(false);
+    }
+  }
+
+  async function handleRunSingleFileWrite(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!singleFileWriteConfirmed) {
+      setSingleFileWriteError('You must confirm this is the only allowlisted test file');
+      return;
+    }
+
+    if (!singleFileWriteOperator.trim() || !singleFileWriteReason.trim() || !singleFileWriteTargetPath.trim() || !singleFileWriteFieldName.trim()) {
+      setSingleFileWriteError('Please provide all required fields');
+      return;
+    }
+
+    setRunningMetadataWriterSingleFileWrite(true);
+    setSingleFileWriteError(null);
+    setSingleFileWriteSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/api/infinite-brain/metadata-writer/write/single-file-test',
+        infiniteBrainMetadataWriterSingleFileWriteResponseSchema,
+        {
+          manualSingleWriteConfirm: true,
+          operator: singleFileWriteOperator.trim(),
+          reason: singleFileWriteReason.trim(),
+          targetPath: singleFileWriteTargetPath.trim(),
+          fieldName: singleFileWriteFieldName.trim(),
+          value: singleFileWriteValue,
+        }
+      );
+
+      if (result.ok && result.report.testWriteApplied) {
+        setMetadataWriterSingleFileWriteReport(result.report);
+        setSingleFileWriteSuccess('Single-file metadata test write applied successfully');
+        setSingleFileWriteOperator('');
+        setSingleFileWriteReason('');
+        setSingleFileWriteTargetPath('');
+        setSingleFileWriteFieldName('');
+        setSingleFileWriteValue('');
+        setSingleFileWriteConfirmed(false);
+        await fetchMetadataWriterSingleFileWrite();
+      } else {
+        setMetadataWriterSingleFileWriteReport(result.report);
+        setSingleFileWriteError(result.report.blockers.join(', ') || 'Single-file write was blocked');
+      }
+    } catch (err) {
+      setSingleFileWriteError(err instanceof Error ? err.message : 'Failed to run single-file write');
+    } finally {
+      setRunningMetadataWriterSingleFileWrite(false);
     }
   }
 
@@ -1383,6 +1463,163 @@ export function InfiniteBrainProposalReview() {
         >
           {generatingMetadataWriterDryRun ? 'Generating...' : 'Generate Metadata Writer Dry Run'}
         </button>
+      </div>
+
+      {/* Single-File Metadata Test Write Section */}
+      <div className="p-4 bg-red-50 rounded-lg border border-red-300 border-2 space-y-3">
+        <div>
+          <h3 className="font-semibold text-red-900 text-lg">⚠️ Single-File Metadata Test Write (First Real Write)</h3>
+          <p className="text-xs text-red-700 mt-1">
+            This is the first allowlisted real write to the Mind repo. Limited to one test file only.
+          </p>
+          <div className="mt-2 text-xs text-red-700 space-y-0.5">
+            <p>✓ Allowlisted only: {metadataWriterSingleFileWriteReport?.allowlistedOnly ? 'Yes' : 'Not set'}</p>
+            <p>✓ Single file only: {metadataWriterSingleFileWriteReport?.singleFileOnly ? 'Yes' : 'Not set'}</p>
+            <p>✓ Manual confirmation required: true</p>
+            <p>✓ Operator approval gate checked</p>
+            <p>✓ iOS sync safety checked</p>
+          </div>
+        </div>
+
+        {metadataWriterSingleFileWriteReport && (
+          <div className="p-3 bg-white border border-red-300 rounded space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-red-900">Write ID:</p>
+              <p className="text-xs text-red-800 font-mono">{metadataWriterSingleFileWriteReport.writeId}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-red-700">Status</p>
+                <p className={`font-semibold ${metadataWriterSingleFileWriteReport.status === 'test-write-applied' ? 'text-green-700' : 'text-amber-700'}`}>
+                  {metadataWriterSingleFileWriteReport.status}
+                </p>
+              </div>
+              <div>
+                <p className="text-red-700">Wrote to Mind</p>
+                <p className="font-semibold text-red-900">{metadataWriterSingleFileWriteReport.wroteToMind ? 'YES' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-red-700">Modified Mind</p>
+                <p className="font-semibold text-red-900">{metadataWriterSingleFileWriteReport.modifiedMind ? 'YES' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-red-700">Test Write Applied</p>
+                <p className="font-semibold text-red-900">{metadataWriterSingleFileWriteReport.testWriteApplied ? 'YES' : 'No'}</p>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-1 bg-slate-50 p-2 rounded">
+              <p><span className="font-semibold">Target:</span> {metadataWriterSingleFileWriteReport.targetPath}</p>
+              <p><span className="font-semibold">Field:</span> {metadataWriterSingleFileWriteReport.fieldName}</p>
+              <p><span className="font-semibold">Before Hash:</span> <code className="text-xs">{metadataWriterSingleFileWriteReport.beforeContentHash}</code></p>
+              <p><span className="font-semibold">After Hash:</span> <code className="text-xs">{metadataWriterSingleFileWriteReport.afterContentHash}</code></p>
+            </div>
+
+            {metadataWriterSingleFileWriteReport.rollbackId && (
+              <p className="text-xs text-green-700">✓ Rollback snapshot: {metadataWriterSingleFileWriteReport.rollbackId}</p>
+            )}
+
+            {metadataWriterSingleFileWriteReport.blockers.length > 0 && (
+              <div className="p-2 bg-red-100 rounded border border-red-200">
+                <p className="text-xs font-semibold text-red-900 mb-1">Blockers:</p>
+                <ul className="text-xs text-red-800 space-y-0.5">
+                  {metadataWriterSingleFileWriteReport.blockers.map((blocker, i) => (
+                    <li key={i}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleRunSingleFileWrite} className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-red-900 mb-1">Operator Name *</label>
+            <input
+              type="text"
+              value={singleFileWriteOperator}
+              onChange={(e) => setSingleFileWriteOperator(e.target.value)}
+              placeholder="Your name or ID"
+              className="w-full px-2 py-1 border border-red-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-red-900 mb-1">Reason for Write *</label>
+            <textarea
+              value={singleFileWriteReason}
+              onChange={(e) => setSingleFileWriteReason(e.target.value)}
+              placeholder="Why this test write is necessary"
+              className="w-full px-2 py-1 border border-red-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500 h-12"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-red-900 mb-1">Target File Path *</label>
+            <input
+              type="text"
+              value={singleFileWriteTargetPath}
+              onChange={(e) => setSingleFileWriteTargetPath(e.target.value)}
+              placeholder="/Users/Office/Repos/stevewesthoek/mind/00_System/InfiniteBrainWriteTest.md"
+              className="w-full px-2 py-1 border border-red-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-red-900 mb-1">Field Name *</label>
+            <input
+              type="text"
+              value={singleFileWriteFieldName}
+              onChange={(e) => setSingleFileWriteFieldName(e.target.value)}
+              placeholder="e.g., description"
+              className="w-full px-2 py-1 border border-red-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-red-900 mb-1">Value (String, Number, or Boolean)</label>
+            <input
+              type="text"
+              value={singleFileWriteValue}
+              onChange={(e) => setSingleFileWriteValue(e.target.value)}
+              placeholder="Test value"
+              className="w-full px-2 py-1 border border-red-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          <div className="flex items-start gap-2 p-2 bg-red-100 rounded border border-red-200">
+            <input
+              type="checkbox"
+              id="singleFileConfirm"
+              checked={singleFileWriteConfirmed}
+              onChange={(e) => setSingleFileWriteConfirmed(e.target.checked)}
+              className="mt-0.5"
+            />
+            <label htmlFor="singleFileConfirm" className="text-xs text-red-900">
+              I understand this will modify the ONLY allowlisted Mind test file. No other files will be touched.
+            </label>
+          </div>
+
+          {singleFileWriteError && (
+            <div className="p-2 bg-red-100 rounded border border-red-300">
+              <p className="text-xs text-red-700">{singleFileWriteError}</p>
+            </div>
+          )}
+
+          {singleFileWriteSuccess && (
+            <div className="p-2 bg-green-50 rounded border border-green-200">
+              <p className="text-xs text-green-700">{singleFileWriteSuccess}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={runningMetadataWriterSingleFileWrite || !singleFileWriteConfirmed}
+            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+          >
+            {runningMetadataWriterSingleFileWrite ? 'Running...' : 'Run Single-File Metadata Test Write'}
+          </button>
+        </form>
       </div>
     </div>
   );

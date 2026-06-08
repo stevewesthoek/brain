@@ -1184,6 +1184,81 @@ export type InfiniteBrainPostWriteVerificationRecord = z.infer<typeof infiniteBr
 export type InfiniteBrainPostWriteVerificationResponse = z.infer<typeof infiniteBrainPostWriteVerificationResponseSchema>;
 export type InfiniteBrainPostWriteVerificationGenerateResponse = z.infer<typeof infiniteBrainPostWriteVerificationGenerateResponseSchema>;
 
+const infiniteBrainMetadataWriterPreconditionSchema = z.object({
+  name: z.string(),
+  status: z.enum(['pass', 'blocked']),
+  reason: z.string(),
+});
+
+const infiniteBrainMetadataWriterSingleFileWriteSafetySchema = z.object({
+  writesToMind: z.boolean(),
+  modifiesMind: z.boolean(),
+  arbitraryWritesAllowed: z.literal(false),
+  singleFileOnly: z.literal(true),
+  allowlistedOnly: z.literal(true),
+  deletesFiles: z.literal(false),
+  movesFiles: z.literal(false),
+  appliesProposals: z.literal(false),
+  applied: z.literal(false),
+  autonomousExecution: z.literal(false),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+export const infiniteBrainMetadataWriterSingleFileWriteReportSchema = z.object({
+  writeId: z.string(),
+  generatedAt: z.string(),
+  status: z.enum(['blocked', 'test-write-applied']),
+  writerCategory: z.literal('entity-metadata'),
+  targetPath: z.string(),
+  fieldName: z.string(),
+  beforeContentHash: z.string(),
+  afterContentHash: z.string(),
+  rollbackId: z.string().nullable(),
+  postWriteVerificationId: z.string().nullable(),
+  singleFileOnly: z.literal(true),
+  allowlistedOnly: z.literal(true),
+  manualSingleWriteConfirm: z.boolean(),
+  wroteToMind: z.boolean(),
+  modifiedMind: z.boolean(),
+  applied: z.literal(false),
+  testWriteApplied: z.boolean(),
+  autonomousExecution: z.literal(false),
+  blockers: z.array(z.string()),
+  preconditions: z.array(infiniteBrainMetadataWriterPreconditionSchema),
+  safety: infiniteBrainMetadataWriterSingleFileWriteSafetySchema,
+});
+
+export const infiniteBrainMetadataWriterSingleFileWriteRequestSchema = z.object({
+  manualSingleWriteConfirm: z.literal(true),
+  operator: z.string().min(1),
+  reason: z.string().min(1),
+  targetPath: z.string().min(1),
+  fieldName: z.string().min(1),
+  value: z.unknown(),
+});
+
+export const infiniteBrainMetadataWriterSingleFileWriteResponseSchema = z.object({
+  ok: z.boolean(),
+  code: z.string(),
+  message: z.string(),
+  report: infiniteBrainMetadataWriterSingleFileWriteReportSchema,
+  safety: z.object({
+    applied: z.literal(false),
+    autonomousExecution: z.literal(false),
+    singleFileOnly: z.literal(true),
+    allowlistedOnly: z.literal(true),
+    wroteToMind: z.boolean(),
+    modifiedMind: z.boolean(),
+    testWriteApplied: z.boolean(),
+  }),
+});
+
+export type InfiniteBrainMetadataWriterSingleFileWriteReport = z.infer<typeof infiniteBrainMetadataWriterSingleFileWriteReportSchema>;
+export type InfiniteBrainMetadataWriterSingleFileWriteRequest = z.infer<typeof infiniteBrainMetadataWriterSingleFileWriteRequestSchema>;
+export type InfiniteBrainMetadataWriterSingleFileWriteResponse = z.infer<typeof infiniteBrainMetadataWriterSingleFileWriteResponseSchema>;
+
 const infiniteBrainWriteManifestSafetySchema = z.object({
   writesToMind: z.literal(false),
   modifiesMind: z.literal(false),
