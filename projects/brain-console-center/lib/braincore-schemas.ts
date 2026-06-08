@@ -841,6 +841,54 @@ export const infiniteBrainApplicationPlanGenerateResponseSchema = z.object({
   safety: infiniteBrainApplicationPlanSafetySchema,
 });
 
+const infiniteBrainExecutionReadinessSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canExecute: z.literal(false),
+  executionBlocked: z.literal(true),
+  previewOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+});
+
+const infiniteBrainExecutionReadinessSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    generatedAt: z.string(),
+    canExecute: z.literal(false),
+    totalSteps: z.number(),
+    blockedSteps: z.number(),
+    blockerCount: z.number(),
+    executionBlocked: z.literal(true),
+    safety: infiniteBrainExecutionReadinessSafetySchema,
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
+export const infiniteBrainExecutionReadinessGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('execution_readiness_generated'),
+  message: z.string(),
+  report: z.object({
+    reportId: z.string(),
+    generatedAt: z.string(),
+    status: z.literal('blocked'),
+    canExecute: z.literal(false),
+    totalSteps: z.number(),
+    blockedSteps: z.number(),
+    blockerCount: z.number(),
+  }),
+  safety: infiniteBrainExecutionReadinessSafetySchema,
+});
+
+export const infiniteBrainExecutionReadinessSummaryResponseSchema = z.object({
+  ok: z.literal(true),
+  summary: infiniteBrainExecutionReadinessSchema,
+});
+
 export const infiniteBrainProposalSchema = z.object({
   proposalId: z.string(),
   category: z.string(),

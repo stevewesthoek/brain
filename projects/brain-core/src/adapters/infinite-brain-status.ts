@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { summarizeInfiniteBrainProposalApprovals } from './infinite-brain-proposal-approval-store.js';
 import { readApplicationPlanSummary } from './infinite-brain-proposal-application-planner.js';
+import { readExecutionReadinessSummary } from './infinite-brain-proposal-execution-readiness.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -449,10 +450,34 @@ function getApplicationPlanStatus() {
 }
 
 /**
+ * Get execution readiness status
+ */
+function getExecutionReadinessStatus() {
+  const summary = readExecutionReadinessSummary();
+  if (!summary) {
+    return {
+      available: false,
+      reason: 'Execution readiness report not found. Run /generate endpoint first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    canExecute: summary.canExecute,
+    totalSteps: summary.totalSteps,
+    blockedSteps: summary.blockedSteps,
+    blockerCount: summary.blockerCount,
+    executionBlocked: true,
+    safety: summary.safety,
+  };
+}
+
+/**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -461,6 +486,7 @@ export async function getInfiniteBrainStatus() {
     getProposalStatus(),
     getProposalApprovalStatus(),
     Promise.resolve(getApplicationPlanStatus()),
+    Promise.resolve(getExecutionReadinessStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -477,6 +503,7 @@ export async function getInfiniteBrainStatus() {
       proposals,
       proposalApprovals,
       applicationPlan,
+      executionReadiness,
       pipeline,
     },
     infrastructure: {

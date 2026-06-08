@@ -20,6 +20,7 @@ import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../
 import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
 import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal } from '../adapters/infinite-brain-proposal-approval-store.js';
 import { generateApplicationPlan, writeApplicationPlan, readApplicationPlan, readApplicationPlanSummary } from '../adapters/infinite-brain-proposal-application-planner.js';
+import { generateExecutionReadinessReport, writeExecutionReadinessReport, readExecutionReadinessReport, readExecutionReadinessSummary } from '../adapters/infinite-brain-proposal-execution-readiness.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -2954,6 +2955,75 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'application_plan_missing',
         message: 'No application plan found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      summary,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Generate Execution Readiness ──────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/execution-readiness/generate' && request.method === 'POST') {
+    const report = generateExecutionReadinessReport();
+    const success = writeExecutionReadinessReport(report);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'execution_readiness_generated',
+        message: 'Execution readiness report generated (execution remains blocked)',
+        report: {
+          reportId: report.reportId,
+          generatedAt: report.generatedAt,
+          status: report.status,
+          canExecute: report.canExecute,
+          totalSteps: report.totalSteps,
+          blockedSteps: report.blockedSteps,
+          blockerCount: report.blockers.length,
+        },
+        safety: report.safety,
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'readiness_generation_failed',
+        message: 'Failed to generate and save execution readiness report',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Fetch Execution Readiness ────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/execution-readiness' && request.method === 'GET') {
+    const report = readExecutionReadinessReport();
+    if (!report) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'execution_readiness_missing',
+        message: 'No execution readiness report found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      report,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Execution Readiness Summary ───────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/execution-readiness/summary' && request.method === 'GET') {
+    const summary = readExecutionReadinessSummary();
+    if (!summary) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'execution_readiness_missing',
+        message: 'No execution readiness report found. Run /generate endpoint first.',
       });
       return;
     }
