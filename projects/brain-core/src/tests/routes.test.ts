@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -5165,5 +5165,213 @@ test('GET /api/infinite-brain/write-manifest returns stored manifest', async () 
       process.env.IBR_WRITE_MANIFEST_PATH = previousEnv;
     }
     fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Metadata Writer Single-File Test Write Route Tests (Phase AL)
+// ─────────────────────────────────────────────────────────────────────
+
+test('Route: POST /api/infinite-brain/metadata-writer/write/single-file-test without manualSingleWriteConfirm returns 400', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/metadata-writer/write/single-file-test',
+    remoteAddress: '127.0.0.1',
+  });
+
+  // Mock the request stream to provide JSON body
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(
+        Buffer.from(
+          JSON.stringify({
+            manualSingleWriteConfirm: false,
+            operator: 'test-operator',
+            reason: 'testing',
+            targetPath: '/test/path.md',
+            fieldName: 'description',
+            value: 'test',
+          }),
+        ),
+      );
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+
+  assert.equal(response.statusCode, 400, 'must return 400 without confirmation');
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  assert.equal(body.ok, false, 'ok must be false');
+  assert(body.code?.includes('confirmation') || body.code?.includes('Confirmation'), 'code should mention confirmation');
+});
+
+test('Route: POST /api/infinite-brain/metadata-writer/write/single-file-test with missing operator returns 400', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/metadata-writer/write/single-file-test',
+    remoteAddress: '127.0.0.1',
+  });
+
+  // Mock the request stream to provide JSON body
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(
+        Buffer.from(
+          JSON.stringify({
+            manualSingleWriteConfirm: true,
+            operator: '',
+            reason: 'testing',
+            targetPath: '/test/path.md',
+            fieldName: 'description',
+            value: 'test',
+          }),
+        ),
+      );
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+
+  assert.equal(response.statusCode, 400, 'must return 400 with missing operator');
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  assert.equal(body.ok, false, 'ok must be false');
+});
+
+test('Route: GET /api/infinite-brain/metadata-writer/write returns 404 when no report exists', async () => {
+  const testDir = mkdtempSync(path.join(tmpdir(), 'brain-route-test-'));
+  const previousEnv = process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH;
+
+  try {
+    process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = path.join(testDir, 'write-report.json');
+
+    const request = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/metadata-writer/write',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+
+    assert.equal(response.statusCode, 404, 'must return 404 when report missing');
+    const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+    assert.equal(body.ok, false, 'ok must be false');
+    assert(body.code?.includes('missing'), 'code should indicate missing');
+  } finally {
+    if (previousEnv !== undefined) {
+      process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = previousEnv;
+    } else {
+      delete process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH;
+    }
+    rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('Route: GET /api/infinite-brain/metadata-writer/write returns latest report when it exists', async () => {
+  const testDir = mkdtempSync(path.join(tmpdir(), 'brain-route-test-'));
+  const mindDir = path.join(testDir, '00_System');
+  fs.mkdirSync(mindDir, { recursive: true });
+
+  const previousMindEnv = process.env.IBR_MIND_REPO_PATH;
+  const previousAllowlistEnv = process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH;
+  const previousReportEnv = process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH;
+
+  try {
+    process.env.IBR_MIND_REPO_PATH = testDir;
+    process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = path.join(mindDir, 'InfiniteBrainWriteTest.md');
+    process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = path.join(testDir, 'write-report.json');
+
+    // Create the allowlisted file
+    fs.writeFileSync(process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH, '---\nid: test\n---\n# Test');
+
+    // Create a mock report
+    const report = {
+      writeId: 'test-write-123',
+      generatedAt: new Date().toISOString(),
+      status: 'test-write-applied' as const,
+      writerCategory: 'entity-metadata' as const,
+      targetPath: process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH,
+      fieldName: 'description',
+      beforeContentHash: 'hash1',
+      afterContentHash: 'hash2',
+      rollbackId: 'rollback-123',
+      postWriteVerificationId: null,
+      singleFileOnly: true,
+      allowlistedOnly: true,
+      manualSingleWriteConfirm: true,
+      wroteToMind: true,
+      modifiedMind: true,
+      applied: false,
+      testWriteApplied: true,
+      autonomousExecution: false,
+      blockers: [],
+      preconditions: [],
+      safety: {
+        writesToMind: true,
+        modifiesMind: true,
+        arbitraryWritesAllowed: false,
+        singleFileOnly: true,
+        allowlistedOnly: true,
+        deletesFiles: false,
+        movesFiles: false,
+        appliesProposals: false,
+        applied: false,
+        autonomousExecution: false,
+        continuousRuntime: false,
+        modelCalls: false,
+        usesShell: false,
+      },
+    };
+
+    fs.writeFileSync(process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH, JSON.stringify(report, null, 2));
+
+    const request = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/metadata-writer/write',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+
+    assert.equal(response.statusCode, 200, 'must return 200 when report exists');
+    const body = JSON.parse(response.body) as {
+      ok?: boolean;
+      report?: {
+        status?: string;
+        testWriteApplied?: boolean;
+        writeId?: string;
+      };
+    };
+    assert.equal(body.ok, true, 'ok must be true');
+    assert.equal(body.report?.status, 'test-write-applied', 'report status must match');
+    assert.equal(body.report?.testWriteApplied, true, 'testWriteApplied must be true');
+    assert.equal(body.report?.writeId, 'test-write-123', 'writeId must match');
+  } finally {
+    if (previousMindEnv !== undefined) {
+      process.env.IBR_MIND_REPO_PATH = previousMindEnv;
+    } else {
+      delete process.env.IBR_MIND_REPO_PATH;
+    }
+
+    if (previousAllowlistEnv !== undefined) {
+      process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = previousAllowlistEnv;
+    } else {
+      delete process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH;
+    }
+
+    if (previousReportEnv !== undefined) {
+      process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = previousReportEnv;
+    } else {
+      delete process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH;
+    }
+
+    rmSync(testDir, { recursive: true, force: true });
   }
 });
