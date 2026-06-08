@@ -16,9 +16,16 @@ This document describes the intended structure and purpose of the Brain reposito
 ### Human Readability
 - **`README.md`** — Full repo structure, contribution contract, folder descriptions, and quick reference.
 
+### Session Management (AI Handoff System)
+- **`.ai/`** — Operational context folder for AI session recovery (tracked, intentional)
+  - `.ai/current.md` — Short-term session handoff (auto-written by hooks, ignored by git but recoverable)
+  - `.ai/decision-log.md` — Durable decision history (append-only, tracked)
+  - `.ai/handoffs/` — Optional milestone snapshots (tracked for important checkpoints)
+  - Do not move or rename without updating `/handoff` skill and all hooks
+
 ### Not Committed to Root
 - Runtime-generated files (`.gitignore` excludes these)
-- Session state and debug dumps
+- Session state and debug dumps (except `.ai/` which is intentional)
 - Generated tool artifacts
 - Local machine state
 
@@ -26,7 +33,8 @@ This document describes the intended structure and purpose of the Brain reposito
 
 | Folder | Purpose | Notes |
 |--------|---------|-------|
-| `ai/` | Shared AI skills, policies, agents, and prompts | See `ai/skills/` for active skill symlinks |
+| `.ai/` | **Session recovery state** (intentional, operational) | Contains `.ai/current.md` (session handoff), `.ai/decision-log.md` (durable decisions), `.ai/handoffs/` (milestone snapshots). Tracked in git for continuity. Do not move without updating handoff skill. See "Session Management" section above. |
+| `ai/` | **Shared AI skills, policies, agents, and prompts** | Tracked, durable infrastructure. See `ai/skills/` for active skill symlinks (should contain only symlinks, never raw skill folders). |
 | `docs/` | Documentation: architecture, guides, skill profiles, and archived reports | See `docs/repo-structure.md` (this file) |
 | `operations/` | Runbooks, standards, system configs, deploy docs, infrastructure, decision log | Critical: `operations/system-configs/` contains symlink targets for `~/.claude`, `~/.codex`, etc. |
 | `tools/` | Utility scripts, workflow wrappers, and tool-specific documentation | See `tools/scripts/` for automated helpers |
@@ -35,7 +43,14 @@ This document describes the intended structure and purpose of the Brain reposito
 
 ## Key Constraints
 
-### Do Not Move or Delete
+### Do Not Move, Rename, or Delete
+- `.ai/` — Session recovery system used by `/handoff` skill and hooks. Moving requires updating:
+  - `/handoff` skill implementation
+  - `operations/system-configs/claude/hooks/inject-handoff.sh`
+  - `tools/scripts/auto-handoff.sh`
+  - `CLAUDE.md` session lifecycle documentation
+  - All AI agent AGENTS.md files (claude, codex, gemini)
+  - Breaks session resume workflows if paths change.
 - `operations/system-configs/` — Contains 17 symlinks to home directory config. Moving breaks all tool integrations.
 - `ai/skills/active/` — Should contain only symlinks to `vendors/` or `custom/` skill sources, never raw skill folders.
 - `tools/scripts/` — Contains CLI automation and helper scripts.

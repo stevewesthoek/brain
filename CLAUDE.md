@@ -22,7 +22,12 @@ Do not load the whole brain repo. Use `00-memory-map.md`, then search/read only 
 2. **Work** — Route by cost (Haiku → Sonnet → Opus → Codex). Use skills only when they add clear, measurable value over doing the task directly.
 3. **End** — Run `/handoff pause`. If a non-obvious pattern was solved, run `/learner`.
 
-`.ai/current.md` is the recovery point (auto-written by Stop hook). `decision-log.md` is durable — commit before switching devices.
+**Session recovery system (.ai/ folder):**
+- `.ai/current.md` — Short-term compressed session state (auto-written by Stop hook, overwritten each session, not tracked in git)
+- `.ai/decision-log.md` — Durable append-only decisions (tracked in git, survives across sessions)
+- `.ai/handoffs/` — Optional milestone handoff snapshots (tracked in git, archived when important)
+
+**Distinction:** `.ai/` is operational session state (like a browser tab recovery system). `ai/` is the tracked durable AI infrastructure (skills, policies, agents). Do not confuse them. Do not move `.ai/` without updating the `/handoff` skill and hooks.
 
 ## Skill Installation & Profile Management
 
