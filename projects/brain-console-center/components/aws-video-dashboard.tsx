@@ -24,7 +24,7 @@ interface ActionState {
 }
 
 // Pending action after timeout: job is still processing in brain core
-type PendingAction = 'generate' | 'approve_review' | 'dry_run' | 'publish';
+type PendingAction = 'approve_script' | 'generate' | 'approve_review' | 'dry_run' | 'publish';
 
 function pct(value: number | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
@@ -497,7 +497,9 @@ function ReviewCard({
 }) {
   if (!jobId) return null;
 
-  // Extract control-plane review media as canonical source
+  // Extract control-plane review media as canonical source.
+  // NOTE: controlPlaneData is ALREADY the normalized payload (inner data object).
+  // Do not double-wrap; access directly.
   const controlPlaneReviewMedia = controlPlaneData
     ? (() => {
         const cpRecord = asRecord(controlPlaneData);
@@ -542,7 +544,8 @@ function ReviewCard({
   const missingReviewMediaFields = reviewMedia
     ? requiredMediaFields.filter(field => !reviewMedia[field.key])
     : [];
-  const mediaComplete = reviewMedia ? missingReviewMediaFields.length === 0 && (reviewMedia.sceneImageKeys ?? []).length > 0 : false;
+  // Media is complete when control-plane review.media has all required fields (no sceneImageKeys requirement)
+  const mediaComplete = reviewMedia ? missingReviewMediaFields.length === 0 : false;
 
   // Extract YouTube package metadata from artifacts
   const youtubePackage = asRecord(artifactRecord.youtubePackage) ?? null;
@@ -707,7 +710,7 @@ function ReviewCard({
       </div>
       {reviewData?.reviewStatus !== 'approved' ? <div className="compact-warning">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
       <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
-        Review media from control-plane{!controlPlaneData ? ' (loading…)' : !reviewMedia ? ' (unavailable)' : ''}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
+        Review media from control-plane{!reviewMedia ? (controlPlaneData ? ' (unavailable)' : ' (loading…)') : ''}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
         isPendingTimeout ? (
@@ -760,34 +763,29 @@ function ReviewCard({
         <label className="meta no-margin">Notes</label>
         <textarea className="textarea compact-textarea" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Optional review notes" />
         <div className="pipeline-actions">
-          {/* CONTROL PLANE CANONICAL: use allowedActions.approve_review when available */}
-          {controlPlaneData ? (
-            (() => {
-              const cpRecord = asRecord(controlPlaneData);
-              const cpActionsRecord = cpRecord?.allowedActions as Record<string, { enabled: boolean; reason?: string }> | undefined;
-              const approveReviewAction = cpActionsRecord?.approve_review;
-              const cpReviewStatus = asRecord(cpRecord?.review)?.reviewStatus ?? 'pending';
-              const shouldHighlight = approveReviewAction?.enabled && isRecommended;
-              return (
-                <button
-                  className={shouldHighlight ? 'button next-action' : 'button'}
-                  disabled={!jobId || approvePending || !approveReviewAction?.enabled}
-                  onClick={onApprove}
-                  title={approveReviewAction?.reason ?? undefined}
-                >
-                  {approvePending ? 'Approving review…' : cpReviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
-                </button>
-              );
-            })()
-          ) : (
-            <button
-              className={mediaComplete && reviewData?.reviewStatus !== 'approved' && isRecommended && !hasInternalTermsInMetadata && !overlayBlocksApproval ? 'button next-action' : 'button'}
-              disabled={!jobId || approvePending || reviewData?.reviewStatus === 'approved' || !mediaComplete || hasInternalTermsInMetadata || overlayBlocksApproval}
-              onClick={onApprove}
-            >
-              {approvePending ? 'Approving review…' : reviewData?.reviewStatus === 'approved' ? 'Review approved' : 'Approve review'}
-            </button>
-          )}
+          {/* CONTROL PLANE CANONICAL: always use allowedActions.approve_review.enabled */}
+          {(() => {
+            // controlPlaneData is ALREADY the normalized inner payload.
+            // Read directly; do not wrap again.
+            const cpRecord = asRecord(controlPlaneData);
+            const cpActionsRecord = cpRecord?.allowedActions as Record<string, { enabled: boolean; reason?: string }> | undefined;
+            const approveReviewAction = cpActionsRecord?.approve_review;
+            const cpReviewStatus = asRecord(cpRecord?.review)?.reviewStatus ?? 'pending';
+            const shouldHighlight = approveReviewAction?.enabled && isRecommended;
+            // Control-plane is canonical. If available, trust it entirely. Otherwise fall back to legacy logic.
+            const isEnabled = controlPlaneData && approveReviewAction !== undefined ? approveReviewAction.enabled : (mediaComplete && !hasInternalTermsInMetadata && !overlayBlocksApproval);
+            const isApproved = controlPlaneData && cpReviewStatus === 'approved' ? true : reviewData?.reviewStatus === 'approved';
+            return (
+              <button
+                className={shouldHighlight ? 'button next-action' : 'button'}
+                disabled={!jobId || approvePending || !isEnabled}
+                onClick={onApprove}
+                title={approveReviewAction?.reason ?? undefined}
+              >
+                {approvePending ? 'Approving review…' : isApproved ? 'Review approved' : 'Approve review'}
+              </button>
+            );
+          })()}
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>{requestChangesPending ? 'Requesting changes…' : 'Request changes'}</button>
         </div>
       </div>
@@ -1024,8 +1022,22 @@ export function AwsVideoDashboard() {
 
   // PART 1: Fix approve mutation to take explicit jobId argument
   const approve = useMutation({
-    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/approve`, videoActionResultSchema, { approvedBy: 'brain-console-center' }),
-    onSuccess: async (_, { jobIdArg }) => { addActivity(`Approved script for ${jobIdArg}`); await invalidateVideo(); },
+    mutationFn: ({ jobIdArg }: { jobIdArg: string }) => postBrainCoreAction(`/api/video-orchestrator/scripts/${encodeURIComponent(jobIdArg)}/approve`, videoActionResultSchema, { approvedBy: 'brain-console-center' }, 15_000),
+    onSuccess: async (_, { jobIdArg }) => {
+      clearPendingAction(jobIdArg);
+      addActivity(`Approved script for ${jobIdArg}`);
+      await invalidateVideo();
+    },
+    onError: async (error, { jobIdArg }) => {
+      if (isTimeoutError(error)) {
+        setPendingAction(jobIdArg, 'approve_script');
+        addActivity(`Script approval is still being persisted for ${jobIdArg}; waiting for confirmation…`);
+        await invalidateVideo();
+        return;
+      }
+      addActivity(`Script approval error for ${jobIdArg}: ${errorMessage(error)}`);
+      console.error(`[approve] Error for ${jobIdArg}:`, error);
+    },
   });
 
   const requestChanges = useMutation({
@@ -1200,8 +1212,10 @@ export function AwsVideoDashboard() {
   // CONTROL PLANE IS THE SOLE SOURCE OF TRUTH FOR MAIN UI STATE
   // Legacy queries are kept for debug panels only.
   // Use keepPreviousData semantics: keep last good CP data while refetching.
+  // NORMALIZATION: Extract the inner data object once and reuse everywhere.
   // ═══════════════════════════════════════════════════════════════════════════
-  const controlPlaneData: VideoControlPlaneData | null = controlPlane.data?.data ?? null;
+  const rawControlPlaneResponse = controlPlane.data ?? null;
+  const controlPlaneData: VideoControlPlaneData | null = rawControlPlaneResponse?.data ?? null;
   const controlPlaneLoading = controlPlane.isLoading && Boolean(jobId);
   const controlPlaneStale = controlPlane.isError || controlPlane.isRefetching;
 
@@ -1211,7 +1225,9 @@ export function AwsVideoDashboard() {
   const legacyExecutionData = execution.data?.data ?? null;
   const legacyReviewData = review.data?.review ?? null;
 
-  // ─── Derived from control-plane ───────────────────────────────────────────
+  // ─── Derived from control-plane (normalized payload) ─────────────────────
+  // CANONICAL: Always use normalized controlPlaneData (inner data object).
+  // Do NOT read from the raw response envelope.
   const cp = controlPlaneData as any;
   const cpSelectedJob = cp?.selectedJob ?? null;
   const cpPhase = cp?.phase ?? cp?.canonicalPhase ?? 'unknown';
@@ -1316,9 +1332,13 @@ export function AwsVideoDashboard() {
   const createDraftIsStillProcessing = createDraftTimedOut && !createDraft.isPending;
   const anyPendingTimeout = Boolean(pendingActionForSelectedJob || createDraftIsStillProcessing);
 
-  // Allowed actions from control-plane
-  const canApprove = cpAllowedActions.approve_script?.enabled ?? false;
-  const canGenerate = cpAllowedActions.generate?.enabled ?? false;
+  // Allowed actions from control-plane, with deterministic local fallback for older/stale CP responses.
+  // A draft/awaiting_approval job with pending approval is always approvable by contract.
+  const canApprove = (cpAllowedActions.approve_script?.enabled ?? false)
+    || Boolean(jobId && selectedApprovalStatus === 'pending' && ['draft', 'awaiting_approval'].includes(selectedJob?.status ?? ''));
+  const canGenerate = (cpAllowedActions.generate?.enabled ?? false)
+    || Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'ready_to_generate'].includes(selectedJob?.status ?? ''));
+  const canApproveReview = cpAllowedActions.approve_review?.enabled ?? false;
   const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && (cpAllowedActions.dry_run?.enabled ?? false));
   const canPublish = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && dryRunPassedForThisJob && (cpAllowedActions.publish_private?.enabled ?? false));
   const canDownloadVideo = cpAllowedActions.download_video?.enabled ?? false;
@@ -1334,12 +1354,13 @@ export function AwsVideoDashboard() {
         : 'Waiting for generated assets';
 
   // Pipeline step model derived from control-plane phase and allowedActions
+  // CANONICAL: Review media is active when control-plane.allowedActions.approve_review.enabled = true
   const guideSteps = [
     { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Create draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
     { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve script', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedUploaded, active: canApprove },
     { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate media', help: 'Run image generation and assembly.', done: selectedReady || selectedUploaded, active: canGenerate || generationInProgress || generationTimeoutStillRunning },
     { key: 'finalize', view: 'overview' as const, action: 'Finalize', label: 'Finalize package', help: 'Finalize review and publish metadata.', done: cpFinalization?.status === 'complete' || selectedUploaded, active: cpFinalization?.status === 'pending' },
-    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review media', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: requiresReviewGate && !reviewApproved && selectedReady && cpFinalization?.status === 'complete' },
+    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review media', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: canApproveReview },
     { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run upload', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
     { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Publish privately', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
     { key: 'download', view: 'publish' as const, action: 'Download', label: 'Download / audit', help: 'Download final video or audit upload.', done: false, active: canDownloadVideo },
@@ -1348,8 +1369,8 @@ export function AwsVideoDashboard() {
   const nextStep = recommendedStep;
   const busyAction = createDraft.isPending || createDraftIsStillProcessing
     ? { title: createDraft.isPending ? 'Creating draft…' : 'Still processing in Brain Core.', detail: createDraft.isPending ? 'Preparing a new video job. Please wait before clicking another action.' : 'Refresh is safe. Waiting for new job to appear…' }
-    : approve.isPending
-      ? { title: 'Approving script…', detail: 'Saving approval and refreshing the pipeline state.' }
+    : approve.isPending || pendingActionForSelectedJob === 'approve_script'
+      ? { title: approve.isPending ? 'Approving script…' : 'Still processing in Brain Core.', detail: approve.isPending ? 'Saving approval and refreshing the pipeline state.' : 'Refresh is safe. Waiting for script approval confirmation…' }
       : generate.isPending || pendingActionForSelectedJob === 'generate'
         ? { title: generate.isPending ? 'Generating video…' : 'Still processing in Brain Core.', detail: generate.isPending ? 'Creating narration, images, overlays, thumbnail, and final video. This can take a while.' : 'Refresh is safe. Waiting for job state…' }
         : approveReview.isPending || pendingActionForSelectedJob === 'approve_review'
@@ -1364,7 +1385,7 @@ export function AwsVideoDashboard() {
 
   const statusOnlyError = status.error;
   const statusOnlyErrorMessage = errorMessage(statusOnlyError);
-  const refreshSafeTimeoutErrors = [createDraft.error, approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
+  const refreshSafeTimeoutErrors = [createDraft.error, approve.error, approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error]
     .filter((error) => !(isTimeoutError(error) && refreshSafeTimeoutErrors.includes(error)))
     .find(Boolean) ?? (pendingActionForSelectedJob === 'generate' || generationTimeoutStillRunning ? null : generate.error);
@@ -1416,6 +1437,14 @@ export function AwsVideoDashboard() {
       setActiveView('overview');
     }
   }, [createDraftTimedOut, jobList, preTimeoutJobIds, createDraft.isPending, currentCreateActionId]);
+
+  // Poll-based clearing of pending actions: approve_script
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'approve_script') return;
+    if (selectedApprovalStatus === 'approved' || ['approved', 'ready_to_generate', 'generating', 'ready_to_publish', 'published'].includes(selectedJob?.status ?? '')) {
+      clearPendingAction(jobId);
+    }
+  }, [jobId, selectedApprovalStatus, selectedJob?.status, pendingActionByJobId]);
 
   // Poll-based clearing of pending actions: generate
   useEffect(() => {
