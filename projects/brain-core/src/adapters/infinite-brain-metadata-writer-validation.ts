@@ -180,8 +180,8 @@ function performMetadataValidationChecks(
   checks.push({
     checkId: `check-${checkIndex++}`,
     label: 'Frontmatter patcher available',
-    status: 'blocked',
-    reason: 'Frontmatter patcher not yet implemented. Planned for future phase.',
+    status: 'pass',
+    reason: 'Frontmatter patcher implemented and available in-memory only.',
   });
 
   // Check 6: conflictDetectionAvailable
@@ -265,7 +265,7 @@ function validateManifestEntries(
       targetPathsPreview: entry.targetPathsPreview || [],
       validationStatus,
       reasons,
-      frontmatterPatchAvailable: false,
+      frontmatterPatchAvailable: true,
       targetPathSafe,
       conflictDetectionAvailable: false,
       yamlValidationAvailable: false,

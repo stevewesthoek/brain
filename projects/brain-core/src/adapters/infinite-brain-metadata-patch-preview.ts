@@ -221,8 +221,8 @@ function performPatchPreviewChecks(
   checks.push({
     checkId: `check-${checkIndex++}`,
     label: 'Frontmatter patch engine available',
-    status: 'blocked',
-    reason: 'Frontmatter patch engine not yet implemented. Planned for future phase.',
+    status: 'pass',
+    reason: 'Frontmatter patch engine implemented and available in-memory only.',
   });
 
   // Check 6: beforeAfterDiffAvailable

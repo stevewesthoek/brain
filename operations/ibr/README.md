@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete + Metadata writer validation (AG) complete + Metadata patch preview (AH) complete  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete + Metadata writer validation (AG) complete + Metadata patch preview (AH) complete + Frontmatter patch engine (AJ0) complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete; AG metadata writer validation complete; AH metadata patch preview complete
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete; AG metadata writer validation complete; AH metadata patch preview complete; AJ0 frontmatter patch engine complete
 
 ---
 
@@ -2514,6 +2514,178 @@ All tests pass: ✅ 9/9
 - Conflict detection engine (blocks check 8)
 - Rollback preview for patches (blocks check 9)
 - Post-write verification for metadata changes (blocks check 10)
+
+---
+
+### PHASE AJ0 — Frontmatter Patch Preview Engine
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-frontmatter-patch-engine.ts` (NEW)
+- `projects/brain-core/src/tests/infinite-brain-frontmatter-patch-engine.test.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-metadata-patch-preview.ts` (MODIFIED)
+- `projects/brain-core/src/adapters/infinite-brain-metadata-writer-validation.ts` (MODIFIED)
+- `operations/ibr/README.md` (This documentation)
+
+**What it does:**
+- Provides pure in-memory utility for calculating frontmatter patch previews
+- Parses markdown frontmatter (YAML between `---` delimiters)
+- Builds frontmatter patch previews without reading or writing files
+- Validates patch operations (setField only; removeFieldPreview blocked)
+- Returns preview markdown and diff metadata
+- No filesystem access, no Mind access, no execution controls
+- Preview-only, all operations blocked by default
+
+**Key Safety Invariants:**
+- ✅ `writesToMind: false` (always)
+- ✅ `modifiesMind: false` (always)
+- ✅ `canWrite: false` (always)
+- ✅ `canWriteToMind: false` (always)
+- ✅ `previewOnly: true` (always)
+- ✅ `inMemoryOnly: true` (always)
+- ✅ `usesShell: false` (always)
+- ✅ `modelCalls: false` (always)
+- ✅ `continuousRuntime: false` (always)
+- ✅ No filesystem access (no fs.readFile, fs.writeFile)
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ Deterministic output for same input
+
+**Frontmatter Patch Engine Exports:**
+
+```typescript
+parseMarkdownFrontmatterPreview(markdown: string)
+  - Parses markdown with optional frontmatter
+  - Returns: { frontmatter, body, hasFrontmatter }
+
+buildFrontmatterPatchPreview(markdown: string, patch: FrontmatterPatchInput)
+  - Applies patch operations in-memory
+  - Returns: { markdown, frontmatter, fieldChanges, diffSummary, ... }
+
+applyFrontmatterPatchInMemory(markdown: string, patch: FrontmatterPatchInput)
+  - Validates patch without applying
+  - Returns: { success: boolean, error?: string }
+
+validateFrontmatterPatchInput(patch: FrontmatterPatchInput)
+  - Validates patch structure and field names
+  - Returns: { valid: boolean, errors: string[] }
+
+getFrontmatterPatchEngineSafety()
+  - Returns safety block with all correct values
+```
+
+**Supported Field Names:**
+- Safe list: id, name, description, type, tags, category, status, priority, created, modified, author, version, metadata, source
+- Invalid fields are rejected with error
+
+**Supported Operations:**
+- `setField` — Add or modify a frontmatter field (allowed)
+- `removeFieldPreview` — Blocked by default, operations rejected
+
+**Engine Behavior:**
+- Input is a markdown string (no file paths)
+- Output is new markdown string (preview) + diff metadata
+- Markdown without frontmatter gets new frontmatter block prepended
+- Body content is always preserved unchanged
+- Field changes tracked with before/after values
+- Deterministic output (same input → same output)
+
+**Example Usage:**
+```typescript
+const markdown = `---
+id: old-id
+---
+# Body content`;
+
+const patch = {
+  operations: [
+    { type: 'setField', fieldName: 'id', value: 'new-id' },
+    { type: 'setField', fieldName: 'status', value: 'active' }
+  ]
+};
+
+const preview = buildFrontmatterPatchPreview(markdown, patch);
+// preview.markdown has updated frontmatter, unchanged body
+// preview.fieldChanges shows id modified, status added
+// preview.diffSummary: "~ id: old-id → new-id\n+ status: active"
+```
+
+**Metadata Patch Preview Integration:**
+- Check 5 (frontmatterPatchEngineAvailable) now passes
+- Validation entries now have `frontmatterPatchAvailable: true`
+- Metadata validation check 5 (Frontmatter patcher available) now passes
+- Metadata validation entries now have `frontmatterPatchAvailable: true`
+- Patch preview remains blocked overall (other checks still blocked)
+- `previewAvailable` remains `false` (no full before/after available without input content)
+- `canWrite` remains `false`
+- `canWriteToMind` remains `false`
+
+**Tests Added:**
+- 16 focused tests in `infinite-brain-frontmatter-patch-engine.test.ts`:
+  1. Parses markdown with existing frontmatter
+  2. Parses markdown without frontmatter
+  3. setField produces in-memory preview and preserves body
+  4. removeFieldPreview is blocked by default
+  5. Invalid field names are rejected
+  6. Safety block has correct values (writesToMind: false, etc.)
+  7. Output deterministic for same input
+  8. Engine does not require filesystem paths
+  9. Handles numeric values
+  10. Handles boolean values
+  11. Handles complex object values
+  12. Parses numeric fields in frontmatter
+  13. Parses boolean fields in frontmatter
+  14. Frontmatter patch preview tests confirm engine availability
+  15. Metadata validation tests confirm engine availability
+  16. Metadata validation entries confirm frontmatterPatchAvailable: true
+
+All tests pass: ✅ 16/16
+
+**What This Phase Does NOT Include:**
+- ❌ Real frontmatter writes to Mind
+- ❌ Apply button in Console
+- ❌ Execute button in Console
+- ❌ Before/after diff generation from file reads
+- ❌ Conflict detection
+- ❌ YAML parser beyond basic parsing
+- ❌ Continuous runtime
+
+**Safety Checks (Verified):**
+- ✅ No `writesToMind: true` in source
+- ✅ No `canWrite: true` in source
+- ✅ No `canWriteToMind: true` in source
+- ✅ No shell execution
+- ✅ No fs.readFile, fs.writeFile
+- ✅ No child_process, exec, spawn
+- ✅ No Math.random or crypto.randomBytes for IDs
+- ✅ No model provider calls
+- ✅ Pure in-memory operation
+- ✅ Deterministic output (no timestamps in IDs)
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ All 16 unit tests pass
+- ✅ Patch preview tests pass (frontmatterPatchEngineAvailable check passes)
+- ✅ Metadata validation tests pass (frontmatterPatchAvailable: true)
+- ✅ Build: `npm run typecheck` passes
+- ✅ Build: `npm run build` passes
+- ✅ No forbidden patterns
+- ✅ Deterministic behavior confirmed
+
+**How It Bridges:**
+- Takes markdown string + patch operations
+- Calculates frontmatter changes in-memory
+- Returns preview markdown + diff metadata
+- Future writer can use to validate patches before applying
+- Patch engine is read-only reference for future phases
+- Enables metadata patch validation without file I/O
+
+**Future Gates (Still Blocked):**
+- Before/after diff generation (requires file content input)
+- Conflict detection for metadata entries (blocked)
+- YAML syntax validation (blocked)
+- Post-write verification for metadata patches (blocked)
+- Rollback plan for metadata patches (blocked)
+- Real metadata writer implementation (blocked)
 
 ---
 
