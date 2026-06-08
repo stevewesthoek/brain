@@ -47,6 +47,27 @@ async function loadClassifierReport() {
 }
 
 /**
+ * Normalize text into a deterministic set of tokens
+ */
+function tokenSet(text) {
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[\s\-_./\\]+/)
+      .filter(t => t.length > 2)
+  );
+}
+
+/**
+ * Calculate Jaccard similarity between two token sets
+ */
+function jaccardSimilarity(setA, setB) {
+  const intersection = new Set([...setA].filter(x => setB.has(x)));
+  const union = new Set([...setA, ...setB]);
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
+
+/**
  * Infer edges between entities (deterministic heuristics, no model calls)
  */
 function inferEdges(entities) {
@@ -121,20 +142,27 @@ function inferEdges(entities) {
     });
   });
 
-  // Rule 3: Sources are derived_from or related_to other entities
+  // Rule 3: Sources can be derived_from when file paths or summaries overlap.
+  // Keep this deterministic: dry-run reports must be reproducible and must not
+  // sample random edges.
   const sources = entityMap.get('Source') || [];
   sources.forEach((source) => {
-    entities.filter((e) => e.inferredType !== 'Source' && e !== source).forEach((other) => {
-      if (Math.random() < 0.3) { // Sample: 30% chance of related_to
-        edges.push({
-          sourceId: other.path,
-          targetId: source.path,
-          edgeType: 'derived_from',
-          confidence: 0.5,
-          reasoning: 'Potential source reference',
-        });
-      }
-    });
+    const sourceTokens = tokenSet(`${source.path} ${source.summary || ''}`);
+    entities
+      .filter((e) => e.inferredType !== 'Source' && e !== source)
+      .forEach((other) => {
+        const otherTokens = tokenSet(`${other.path} ${other.summary || ''}`);
+        const overlap = jaccardSimilarity(sourceTokens, otherTokens);
+        if (overlap >= 0.15) {
+          edges.push({
+            sourceId: other.path,
+            targetId: source.path,
+            edgeType: 'derived_from',
+            confidence: Math.min(0.75, 0.45 + overlap),
+            reasoning: 'Deterministic source/entity token overlap',
+          });
+        }
+      });
   });
 
   // Rule 4: Questions derive from Concepts or Decisions

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { brainCoreRequest } from '../lib/braincore-client';
+import { InfiniteBrainDashboard } from './infinite-brain-dashboard';
 import {
   graphifyStatusSchema,
   mindStewardSchedulerStatusSchema,
@@ -191,6 +192,10 @@ export function OverviewDashboard() {
         </article>
         <MindStewardStatusCard />
         <GraphifyStatusCard />
+      </section>
+
+      <section className="stack">
+        <InfiniteBrainDashboard />
       </section>
     </div>
   );
