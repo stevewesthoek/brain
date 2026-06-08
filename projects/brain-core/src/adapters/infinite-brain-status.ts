@@ -260,6 +260,64 @@ async function getInsightStatus(): Promise<
 }
 
 /**
+ * Get pipeline status
+ */
+async function getPipelineStatus(): Promise<
+  | {
+      available: true;
+      timestamp: string;
+      status: string;
+      stepCount: number;
+      failedStepCount: number;
+      durationMs: number;
+      lastCompletedStep: string;
+      reportOnly: boolean;
+      writesToMind: boolean;
+      continuousRuntime: boolean;
+    }
+  | { available: false; reason: string }
+> {
+  interface PipelineReport {
+    timestamp: string;
+    status: string;
+    durationMs: number;
+    steps: Array<{ displayName: string }>;
+    failedSteps: Array<{ displayName: string }>;
+    safety: {
+      writesToMind: boolean;
+      continuousRuntime: boolean;
+    };
+  }
+
+  const report = await loadReport<PipelineReport>(
+    path.join(RUNTIME_DIR, 'pipeline-latest.json')
+  );
+
+  if (!report) {
+    return { available: false, reason: 'Pipeline report not found' };
+  }
+
+  const steps = report.steps || [];
+  const failedSteps = report.failedSteps || [];
+  const lastCompletedStep = steps.length > 0
+    ? steps[steps.length - 1]?.displayName || '(unknown)'
+    : '(none)';
+
+  return {
+    available: true,
+    timestamp: report.timestamp,
+    status: report.status,
+    stepCount: steps.length,
+    failedStepCount: failedSteps.length,
+    durationMs: report.durationMs,
+    lastCompletedStep,
+    reportOnly: true,
+    writesToMind: report.safety.writesToMind,
+    continuousRuntime: report.safety.continuousRuntime,
+  };
+}
+
+/**
  * Get changelog statistics (stub)
  */
 async function getChangelogStats(): Promise<ChangelogStats> {
@@ -288,12 +346,13 @@ async function getEvidenceStats(): Promise<EvidenceStats> {
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
     getRelationshipAuditStatus(),
     getInsightStatus(),
+    getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
   ]);
@@ -306,6 +365,7 @@ export async function getInfiniteBrainStatus() {
       edges,
       relationshipAudit,
       insights,
+      pipeline,
     },
     infrastructure: {
       changelog: {

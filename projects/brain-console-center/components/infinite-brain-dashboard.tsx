@@ -175,6 +175,38 @@ export function InfiniteBrainDashboard() {
           <p className="text-sm text-slate-500 mt-2">{status.runtime.insights.reason}</p>
         )}
       </div>
+
+      {/* Pipeline Report */}
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Report-Only Pipeline</h3>
+        {status.runtime.pipeline.available ? (
+          <div className="mt-2 text-sm text-slate-700 space-y-1">
+            <p>Status: <strong className={status.runtime.pipeline.status === 'complete' ? 'text-green-700' : 'text-yellow-700'}>{status.runtime.pipeline.status}</strong></p>
+            <p>Steps: <strong>{status.runtime.pipeline.stepCount}</strong> (Failed: <strong>{status.runtime.pipeline.failedStepCount}</strong>)</p>
+            <p>Duration: <strong>{status.runtime.pipeline.durationMs}ms</strong></p>
+            <p>Last completed: <strong>{status.runtime.pipeline.lastCompletedStep}</strong></p>
+            <div className="mt-2 flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${status.runtime.pipeline.reportOnly ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span>Report-only: {status.runtime.pipeline.reportOnly ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${!status.runtime.pipeline.writesToMind ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span>Writes to Mind: {status.runtime.pipeline.writesToMind ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${!status.runtime.pipeline.continuousRuntime ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span>Continuous: {status.runtime.pipeline.continuousRuntime ? 'Yes' : 'No'}</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Updated: {status.runtime.pipeline.timestamp ? new Date(status.runtime.pipeline.timestamp).toLocaleString() : 'Never'}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 mt-2">{status.runtime.pipeline.reason}</p>
+        )}
+      </div>
     </div>
   );
 }

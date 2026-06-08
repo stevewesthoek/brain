@@ -19,7 +19,8 @@
     "ibr:classify:dry-run": "node tools/infinite-brain/entity-classifier-dry-run.mjs",
     "ibr:edges:dry-run": "node tools/infinite-brain/edge-inference-dry-run.mjs",
     "ibr:relationships:audit": "node tools/infinite-brain/relationship-audit-dry-run.mjs",
-    "ibr:insights:dry-run": "node tools/infinite-brain/insight-generation-dry-run.mjs"
+    "ibr:insights:dry-run": "node tools/infinite-brain/insight-generation-dry-run.mjs",
+    "ibr:pipeline:dry-run": "node tools/infinite-brain/run-report-only-pipeline.mjs"
   },
   "keywords": [
     "claude",
