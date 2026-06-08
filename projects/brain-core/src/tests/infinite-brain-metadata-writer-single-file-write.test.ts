@@ -83,6 +83,61 @@ function withTempMindEnv(mindRoot: string, callback: () => void) {
   }
 }
 
+// Helper to create both operator approval and iOS sync safety gate files
+function setupGateFiles(mindRoot: string): void {
+  // Create operator approval gate
+  const approvalPath = path.join(mindRoot, 'operator-approval-latest.json');
+  fs.mkdirSync(path.dirname(approvalPath), { recursive: true });
+  fs.writeFileSync(approvalPath, JSON.stringify({
+    approvalId: 'test-approval',
+    generatedAt: new Date().toISOString(),
+    operator: 'test-operator',
+    decision: 'approved',
+    reason: 'test',
+    dryRunReportId: null,
+    readinessReportId: null,
+    scope: 'execution-approval-intent',
+    executionEnabled: false,
+    canExecute: false,
+    applied: false,
+    writesToMind: false,
+    requiredNextGates: [],
+    safety: {
+      writesToMind: false,
+      appliesProposals: false,
+      canExecute: false,
+      executionEnabled: false,
+      applied: false,
+      approvalRecordOnly: true,
+      continuousRuntime: false,
+      modelCalls: false,
+    },
+  }));
+
+  // Create iOS sync safety gate - matches IosSyncSafetyReport interface
+  const iosSyncPath = path.join(mindRoot, 'ios-sync-safety-latest.json');
+  fs.writeFileSync(iosSyncPath, JSON.stringify({
+    reportId: 'sync-safety-test123',
+    generatedAt: new Date().toISOString(),
+    mindPath: mindRoot,
+    status: 'uncertain',
+    syncSafe: false,
+    canWriteToMind: false,
+    checks: [],
+    blockers: [],
+    recommendations: [],
+    safety: {
+      writesToMind: false,
+      modifiesGit: false,
+      usesShell: false,
+      canWriteToMind: false,
+      syncSafe: false,
+      reportOnly: true,
+      continuousRuntime: false,
+    },
+  }));
+}
+
 // Helper for post-write verification tests that need gates enabled
 function withTempMindEnvAndGates(mindRoot: string, callback: () => void) {
   const oldMindRepoPath = process.env.IBR_MIND_REPO_PATH;
@@ -234,7 +289,7 @@ test('Single-file write: outside allowlist blocks and file unchanged', () => {
 
       assert.equal(report.status, 'blocked');
       assert.equal(report.wroteToMind, false);
-      assert(report.blockers.some(b => b.includes('notAllowlisted')));
+      assert(report.blockers.some(b => b.startsWith('targetPathNotAllowlisted:')));
       assert.equal(fs.readFileSync(nonAllowlistedPath, 'utf8'), 'Original content');
     });
   } finally {
@@ -299,7 +354,8 @@ test('Single-file write: invalid fieldName blocks and file unchanged', () => {
 test('Single-file write: successful temp allowlisted write modifies exactly one file', () => {
   const { mindRoot, allowlistedPath, cleanup } = createTempMindStructure();
   try {
-    withTempMindEnv(mindRoot, () => {
+    withTempMindEnvAndGates(mindRoot, () => {
+      setupGateFiles(mindRoot);
       const beforeContent = fs.readFileSync(allowlistedPath, 'utf8');
 
       const report = runMetadataWriterSingleFileWrite({
@@ -328,7 +384,8 @@ test('Single-file write: successful temp allowlisted write modifies exactly one 
 test('Single-file write: successful report has correct flags', () => {
   const { mindRoot, allowlistedPath, cleanup } = createTempMindStructure();
   try {
-    withTempMindEnv(mindRoot, () => {
+    withTempMindEnvAndGates(mindRoot, () => {
+      setupGateFiles(mindRoot);
       const report = runMetadataWriterSingleFileWrite({
         targetPath: allowlistedPath,
         fieldName: 'status',
@@ -358,7 +415,8 @@ test('Single-file write: successful report has correct flags', () => {
 test('Single-file write: rollback snapshot created after successful write', () => {
   const { mindRoot, allowlistedPath, cleanup } = createTempMindStructure();
   try {
-    withTempMindEnv(mindRoot, () => {
+    withTempMindEnvAndGates(mindRoot, () => {
+      setupGateFiles(mindRoot);
       const report = runMetadataWriterSingleFileWrite({
         targetPath: allowlistedPath,
         fieldName: 'name',
@@ -370,7 +428,7 @@ test('Single-file write: rollback snapshot created after successful write', () =
 
       assert.equal(report.status, 'test-write-applied');
       assert(report.rollbackId, 'rollbackId should be present');
-      assert.equal(report.rollbackId?.length, 12, 'rollbackId should be 12 characters');
+      assert.equal(report.rollbackId?.length, 16, 'rollbackId should be 16 characters (rbk- prefix + 12 hex chars)');
     });
   } finally {
     cleanup();
@@ -380,7 +438,8 @@ test('Single-file write: rollback snapshot created after successful write', () =
 test('Single-file write: after hash matches actual file content', () => {
   const { mindRoot, allowlistedPath, cleanup } = createTempMindStructure();
   try {
-    withTempMindEnv(mindRoot, () => {
+    withTempMindEnvAndGates(mindRoot, () => {
+      setupGateFiles(mindRoot);
       const report = runMetadataWriterSingleFileWrite({
         targetPath: allowlistedPath,
         fieldName: 'description',
@@ -405,7 +464,8 @@ test('Single-file write: after hash matches actual file content', () => {
 test('Single-file write: second file in same temp Mind remains unchanged', () => {
   const { mindRoot, cleanup } = createTempMindStructure();
   try {
-    withTempMindEnv(mindRoot, () => {
+    withTempMindEnvAndGates(mindRoot, () => {
+      setupGateFiles(mindRoot);
       // Create a second file
       const secondFilePath = path.join(mindRoot, '00_System', 'OtherFile.md');
       fs.writeFileSync(secondFilePath, 'Second file content');
@@ -462,7 +522,7 @@ test('Gate enforcement: missing operator approval blocks write and file unchange
       // Should be blocked due to missing operator approval
       assert.equal(report.status, 'blocked');
       assert.equal(report.wroteToMind, false);
-      assert(report.blockers.some(b => b.includes('operatorApprovals')));
+      assert(report.blockers.some(b => b.includes('operatorApproval')));
 
       // Verify file unchanged
       const afterContent = fs.readFileSync(allowlistedPath, 'utf8');
