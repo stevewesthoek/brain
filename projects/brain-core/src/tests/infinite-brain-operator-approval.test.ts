@@ -1,6 +1,7 @@
 /**
  * Infinite Brain Operator Approval Tests
- * Verify approval intent recording and blocking behavior
+ * Adapter-level tests for approval intent recording and blocking behavior
+ * Route-level tests are in routes.test.ts
  */
 
 import { test } from 'node:test';
@@ -9,26 +10,23 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
 
-test('POST operator approval rejects missing operator', () => {
+test('Adapter: generateOperatorApprovalRecord with empty operator still produces valid record', () => {
   const record = generateOperatorApprovalRecord('', 'approved', 'test reason');
-  // Empty operator should still generate a record, but validation happens in API layer
-  // Here we just verify the schema is valid
+  // Adapter doesn't validate; API layer does
   assert(record.approvalId);
   assert.equal(record.executionEnabled, false);
   assert.equal(record.canExecute, false);
 });
 
-test('POST operator approval rejects missing reason', () => {
-  // Validation happens in API layer, but record generation always includes reason
+test('Adapter: generateOperatorApprovalRecord with empty reason still produces valid record', () => {
+  // Adapter accepts empty reason; API layer validates non-empty
   const record = generateOperatorApprovalRecord('test-operator', 'approved', '');
   assert(record.approvalId);
   assert.equal(record.reason, '');
-  // API layer validates non-empty
 });
 
-test('POST operator approval rejects invalid decision', () => {
-  // Invalid decision would fail type check in TypeScript
-  // Runtime validation happens in API layer
+test('Adapter: generateOperatorApprovalRecord validates decision is one of the allowed values', () => {
+  // TypeScript types enforce this at compile time; runtime record has correct value
   const record = generateOperatorApprovalRecord('test-operator', 'approved', 'test reason');
   assert(['approved', 'rejected', 'needs-review'].includes(record.decision));
 });

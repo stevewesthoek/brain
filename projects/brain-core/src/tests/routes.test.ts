@@ -4590,3 +4590,249 @@ test('POST /api/infinite-brain/proposals/application-plan/generate produces dete
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
+
+// ── Infinite Brain: Operator Approval Route Tests ──────────────────────────────
+
+test('POST /api/infinite-brain/operator-approval/record rejects missing operator', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/operator-approval/record',
+    remoteAddress: '127.0.0.1',
+  });
+
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(Buffer.from(JSON.stringify({
+        operator: '',
+        decision: 'approved',
+        reason: 'test reason',
+      })));
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+
+  assert.equal(response.statusCode, 400, 'must return 400 for empty operator');
+  assert.equal(body.code, 'missing_operator', 'code must be missing_operator');
+  assert.equal(body.ok, false, 'ok must be false');
+});
+
+test('POST /api/infinite-brain/operator-approval/record rejects missing reason', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/operator-approval/record',
+    remoteAddress: '127.0.0.1',
+  });
+
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(Buffer.from(JSON.stringify({
+        operator: 'test-operator',
+        decision: 'approved',
+        reason: '',
+      })));
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+
+  assert.equal(response.statusCode, 400, 'must return 400 for empty reason');
+  assert.equal(body.code, 'missing_reason', 'code must be missing_reason');
+  assert.equal(body.ok, false, 'ok must be false');
+});
+
+test('POST /api/infinite-brain/operator-approval/record rejects invalid decision', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/operator-approval/record',
+    remoteAddress: '127.0.0.1',
+  });
+
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(Buffer.from(JSON.stringify({
+        operator: 'test-operator',
+        decision: 'invalid-decision',
+        reason: 'test reason',
+      })));
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+
+  assert.equal(response.statusCode, 400, 'must return 400 for invalid decision');
+  assert.equal(body.code, 'invalid_decision', 'code must be invalid_decision');
+  assert.equal(body.ok, false, 'ok must be false');
+});
+
+test('POST /api/infinite-brain/operator-approval/record accepts approved intent', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-operator-approval');
+  const approvalPath = path.join(testDir, 'approval.json');
+  const previousEnv = process.env.IBR_OPERATOR_APPROVAL_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_OPERATOR_APPROVAL_PATH = approvalPath;
+
+    const request = createRequest({
+      method: 'POST',
+      url: '/api/infinite-brain/operator-approval/record',
+      remoteAddress: '127.0.0.1',
+    });
+
+    (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+      if (event === 'data') {
+        callback(Buffer.from(JSON.stringify({
+          operator: 'test-operator',
+          decision: 'approved',
+          reason: 'test approval intent',
+        })));
+      } else if (event === 'end') {
+        callback();
+      }
+    };
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+    const body = JSON.parse(response.body) as {
+      ok?: boolean;
+      record?: { decision: string };
+      safety?: { executionEnabled: boolean; canExecute: boolean; applied: boolean; writesToMind: boolean; approvalRecordOnly: boolean };
+    };
+
+    assert.equal(response.statusCode, 200, 'must return 200 for valid input');
+    assert.equal(body.ok, true, 'ok must be true');
+    assert.equal(body.record?.decision, 'approved', 'decision must be approved');
+    assert.equal(body.safety?.executionEnabled, false, 'executionEnabled must be false');
+    assert.equal(body.safety?.canExecute, false, 'canExecute must be false');
+    assert.equal(body.safety?.applied, false, 'applied must be false');
+    assert.equal(body.safety?.writesToMind, false, 'writesToMind must be false');
+    assert.equal(body.safety?.approvalRecordOnly, true, 'approvalRecordOnly must be true');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_OPERATOR_APPROVAL_PATH;
+    } else {
+      process.env.IBR_OPERATOR_APPROVAL_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /api/infinite-brain/operator-approval returns stored record', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-operator-approval-get');
+  const approvalPath = path.join(testDir, 'approval.json');
+  const previousEnv = process.env.IBR_OPERATOR_APPROVAL_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_OPERATOR_APPROVAL_PATH = approvalPath;
+
+    // Pre-write an approval record file
+    const record = {
+      approvalId: 'approval-test-123',
+      generatedAt: new Date().toISOString(),
+      operator: 'test-operator',
+      decision: 'approved',
+      reason: 'test approval',
+      dryRunReportId: null,
+      readinessReportId: null,
+      scope: 'execution-approval-intent' as const,
+      executionEnabled: false,
+      canExecute: false,
+      applied: false,
+      writesToMind: false,
+      requiredNextGates: ['deletion-sync-verification'],
+      safety: {
+        writesToMind: false,
+        appliesProposals: false,
+        canExecute: false,
+        executionEnabled: false,
+        applied: false,
+        approvalRecordOnly: true,
+        continuousRuntime: false,
+        modelCalls: false,
+      },
+    };
+
+    fs.writeFileSync(approvalPath, JSON.stringify(record, null, 2));
+
+    // GET to retrieve the record
+    const getRequest = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/operator-approval',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const getResponse = new MockResponse();
+    await routeRequest(getRequest, getResponse);
+
+    const body = JSON.parse(getResponse.body) as {
+      ok?: boolean;
+      record?: { decision: string; operator: string; executionEnabled: boolean; canExecute: boolean };
+    };
+
+    assert.equal(getResponse.statusCode, 200, 'must return 200 when record exists');
+    assert.equal(body.ok, true, 'ok must be true');
+    assert.equal(body.record?.decision, 'approved', 'decision must be approved');
+    assert.equal(body.record?.operator, 'test-operator', 'operator must match');
+    assert.equal(body.record?.executionEnabled, false, 'executionEnabled must be false');
+    assert.equal(body.record?.canExecute, false, 'canExecute must be false');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_OPERATOR_APPROVAL_PATH;
+    } else {
+      process.env.IBR_OPERATOR_APPROVAL_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /api/infinite-brain/operator-approval returns 404 when missing', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-operator-approval-404');
+  const approvalPath = path.join(testDir, 'approval-missing.json');
+  const previousEnv = process.env.IBR_OPERATOR_APPROVAL_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_OPERATOR_APPROVAL_PATH = approvalPath;
+
+    const request = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/operator-approval',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+    const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+
+    assert.equal(response.statusCode, 404, 'must return 404 when record missing');
+    assert.equal(body.code, 'operator_approval_missing', 'code must be operator_approval_missing');
+    assert.equal(body.ok, false, 'ok must be false');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_OPERATOR_APPROVAL_PATH;
+    } else {
+      process.env.IBR_OPERATOR_APPROVAL_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
