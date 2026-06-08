@@ -26,6 +26,7 @@ import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafet
 import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
 import { generatePostWriteVerificationReport, writePostWriteVerificationReport, readPostWriteVerificationReport, readPostWriteVerificationSummary } from '../adapters/infinite-brain-post-write-verification.js';
 import { generateWriteManifest, writeWriteManifest, readWriteManifest } from '../adapters/infinite-brain-write-manifest.js';
+import { generateMetadataValidationReport, writeMetadataValidationReport, readMetadataValidationReport } from '../adapters/infinite-brain-metadata-writer-validation.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -2748,6 +2749,25 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Metadata Writer Validation (Fetch) ──────────────────
+      if (url.pathname === '/api/infinite-brain/metadata-writer-validation' && request.method === 'GET') {
+        const report = readMetadataValidationReport();
+        if (!report) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'metadata_writer_validation_missing',
+            message: 'No metadata writer validation report found. Generate one first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          report,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -2889,6 +2909,37 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'write_manifest_write_failed',
         message: 'Failed to write write manifest',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Metadata Writer Validation (Generate) ───────────────────
+  if (url.pathname === '/api/infinite-brain/metadata-writer-validation/generate') {
+    const report = generateMetadataValidationReport();
+    const success = writeMetadataValidationReport(report);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'metadata_writer_validation_generated',
+        message: 'Metadata writer validation report generated (validation-only, no writes)',
+        report,
+        safety: {
+          validationAvailable: false,
+          canWrite: false,
+          canWriteToMind: false,
+          writesToMind: false,
+          modifiesMind: false,
+          validationOnly: true,
+          reportOnly: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'metadata_writer_validation_write_failed',
+        message: 'Failed to write metadata writer validation report',
       });
     }
     return;

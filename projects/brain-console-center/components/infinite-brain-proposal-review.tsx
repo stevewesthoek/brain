@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -57,6 +57,11 @@ export function InfiniteBrainProposalReview() {
   const [generatingWriteManifest, setGeneratingWriteManifest] = useState(false);
   const [writeManifestError, setWriteManifestError] = useState<string | null>(null);
   const [writeManifestSuccess, setWriteManifestSuccess] = useState<string | null>(null);
+  const [metadataValidationRecord, setMetadataValidationRecord] = useState<InfiniteBrainMetadataValidationRecord | null>(null);
+  const [metadataValidationLoading, setMetadataValidationLoading] = useState(true);
+  const [generatingMetadataValidation, setGeneratingMetadataValidation] = useState(false);
+  const [metadataValidationError, setMetadataValidationError] = useState<string | null>(null);
+  const [metadataValidationSuccess, setMetadataValidationSuccess] = useState<string | null>(null);
 
   async function fetchPostWriteVerification() {
     try {
@@ -81,6 +86,22 @@ export function InfiniteBrainProposalReview() {
       // Not found is okay, we'll let the user generate one
     } finally {
       setWriteManifestLoading(false);
+    }
+  }
+
+  async function fetchMetadataValidation() {
+    try {
+      const data = await brainCoreRequest('/infinite-brain/metadata-writer-validation', z.object({
+        ok: z.boolean(),
+        report: z.unknown().optional(),
+      }));
+      if (data.ok && data.report) {
+        setMetadataValidationRecord(data.report);
+      }
+    } catch {
+      // Not found is okay, we'll let the user generate one
+    } finally {
+      setMetadataValidationLoading(false);
     }
   }
 
@@ -119,6 +140,7 @@ export function InfiniteBrainProposalReview() {
     fetchOperatorApproval();
     fetchPostWriteVerification();
     fetchWriteManifest();
+    fetchMetadataValidation();
   }, []);
 
   async function handleSubmitDecision(e: React.FormEvent) {
@@ -245,6 +267,32 @@ export function InfiniteBrainProposalReview() {
       setWriteManifestError(err instanceof Error ? err.message : 'Failed to generate manifest');
     } finally {
       setGeneratingWriteManifest(false);
+    }
+  }
+
+  async function handleGenerateMetadataValidation() {
+    setGeneratingMetadataValidation(true);
+    setMetadataValidationError(null);
+    setMetadataValidationSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/infinite-brain/metadata-writer-validation/generate',
+        infiniteBrainMetadataValidationGenerateResponseSchema,
+        {}
+      );
+
+      if (result.ok) {
+        setMetadataValidationRecord(result.report);
+        setMetadataValidationSuccess('Metadata validation report generated');
+        await fetchMetadataValidation();
+      } else {
+        setMetadataValidationError('Failed to generate metadata validation report');
+      }
+    } catch (err) {
+      setMetadataValidationError(err instanceof Error ? err.message : 'Failed to generate validation report');
+    } finally {
+      setGeneratingMetadataValidation(false);
     }
   }
 
@@ -749,6 +797,126 @@ export function InfiniteBrainProposalReview() {
           className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
         >
           {generatingWriteManifest ? 'Generating Manifest...' : 'Generate Write Manifest'}
+        </button>
+      </div>
+
+      {/* Metadata Writer Validation Section */}
+      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+        <div>
+          <h3 className="font-semibold text-blue-900">Metadata Writer Validation</h3>
+          <p className="text-xs text-blue-700 mt-1">
+            Validates metadata entries from manifest for safe write. Validation-only status display.
+          </p>
+          <div className="mt-2 text-xs text-blue-700 space-y-0.5">
+            <p>✓ Validation-only status, no metadata written</p>
+            <p>✓ Mind unchanged</p>
+            <p>✓ No metadata write controls</p>
+            <p>✓ Safety: all metadata write gates blocked</p>
+          </div>
+        </div>
+
+        {metadataValidationRecord && (
+          <div className="p-3 bg-white border border-blue-200 rounded space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-blue-900">Report ID:</p>
+              <p className="text-xs text-blue-800 font-mono">{metadataValidationRecord.reportId}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-blue-700">Status</p>
+                <p className="font-semibold text-blue-900 capitalize">{metadataValidationRecord.status}</p>
+              </div>
+              <div>
+                <p className="text-blue-700">Generated</p>
+                <p className="font-semibold text-blue-900">{new Date(metadataValidationRecord.generatedAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-blue-700">Total Metadata Entries</p>
+                <p className="font-semibold text-blue-900">{metadataValidationRecord.totalMetadataEntries}</p>
+              </div>
+              <div>
+                <p className="text-blue-700">Validated Entries</p>
+                <p className="font-semibold text-blue-900">{metadataValidationRecord.validatedEntries}</p>
+              </div>
+              <div>
+                <p className="text-blue-700">Blocked Entries</p>
+                <p className="font-semibold text-blue-900">{metadataValidationRecord.blockedEntries}</p>
+              </div>
+              <div>
+                <p className="text-blue-700">Validation Available</p>
+                <p className="font-semibold text-blue-900">{metadataValidationRecord.validationAvailable ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+
+            {metadataValidationRecord.blockers.length > 0 && (
+              <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                <p className="text-xs font-semibold text-amber-900 mb-1">Blockers ({metadataValidationRecord.blockers.length}):</p>
+                <ul className="text-xs text-amber-800 space-y-0.5">
+                  {metadataValidationRecord.blockers.map((blocker: string, i: number) => (
+                    <li key={i}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {metadataValidationRecord.entries.length > 0 && (
+              <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                <p className="text-xs font-semibold text-slate-900 mb-2">Validation Entries (showing {Math.min(5, metadataValidationRecord.entries.length)}):</p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {metadataValidationRecord.entries.slice(0, 5).map((entry: any) => (
+                    <div key={entry.entryId} className="p-2 bg-white border border-slate-300 rounded text-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-900">{entry.manifestEntryId}</p>
+                          <p className="text-slate-600">Proposal: {entry.proposalId}</p>
+                          <p className="text-slate-500">Entry: {entry.entryId.substring(0, 12)}...</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
+                            Write Blocked
+                          </span>
+                        </div>
+                      </div>
+                      {entry.targetPathsPreview.length > 0 && (
+                        <p className="text-slate-600 mt-1">Targets: {entry.targetPathsPreview.join(', ')}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="p-2 bg-cyan-50 rounded border border-cyan-200">
+              <p className="text-xs font-semibold text-cyan-900 mb-1">Safety Status:</p>
+              <div className="text-xs text-cyan-800 space-y-0.5">
+                <p>• Validation Only: {metadataValidationRecord.safety.validationOnly ? 'Yes' : 'No'}</p>
+                <p>• Report Only: {metadataValidationRecord.safety.reportOnly ? 'Yes' : 'No'}</p>
+                <p>• Writes to Mind: {metadataValidationRecord.safety.writesToMind ? 'Yes' : 'No'}</p>
+                <p>• Modifies Mind: {metadataValidationRecord.safety.modifiesMind ? 'Yes' : 'No'}</p>
+                <p>• Can Write to Mind: {metadataValidationRecord.safety.canWriteToMind ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {metadataValidationError && (
+          <div className="p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{metadataValidationError}</p>
+          </div>
+        )}
+
+        {metadataValidationSuccess && (
+          <div className="p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">{metadataValidationSuccess}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleGenerateMetadataValidation}
+          disabled={generatingMetadataValidation}
+          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+        >
+          {generatingMetadataValidation ? 'Generating Report...' : 'Generate Metadata Writer Validation'}
         </button>
       </div>
     </div>

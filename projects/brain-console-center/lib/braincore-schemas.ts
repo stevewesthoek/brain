@@ -1263,9 +1263,97 @@ const infiniteBrainWriteManifestSchema = z.union([
   }),
 ]);
 
+const infiniteBrainMetadataValidationSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  modifiesMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  validationOnly: z.literal(true),
+  reportOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+const infiniteBrainMetadataValidationCheckSchema = z.object({
+  checkId: z.string(),
+  label: z.string(),
+  status: z.enum(['pass', 'fail', 'blocked', 'not-applicable']),
+  reason: z.string(),
+});
+
+const infiniteBrainMetadataValidationEntrySchema = z.object({
+  entryId: z.string(),
+  manifestEntryId: z.string(),
+  proposalId: z.string(),
+  targetPathsPreview: z.array(z.string()),
+  validationStatus: z.enum(['blocked', 'pass', 'fail', 'not-applicable']),
+  reasons: z.array(z.string()),
+  frontmatterPatchAvailable: z.boolean(),
+  targetPathSafe: z.boolean(),
+  conflictDetectionAvailable: z.boolean(),
+  yamlValidationAvailable: z.boolean(),
+  writeBlocked: z.literal(true),
+  applied: z.literal(false),
+});
+
+export const infiniteBrainMetadataValidationRecordSchema = z.object({
+  reportId: z.string(),
+  generatedAt: z.string(),
+  sourceManifestId: z.string().nullable(),
+  status: z.enum(['blocked', 'validation-ready', 'missing-input']),
+  writerCategory: z.string(),
+  validationAvailable: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  totalMetadataEntries: z.number(),
+  validatedEntries: z.number(),
+  blockedEntries: z.number(),
+  entries: z.array(infiniteBrainMetadataValidationEntrySchema),
+  checks: z.array(infiniteBrainMetadataValidationCheckSchema),
+  blockers: z.array(z.string()),
+  safety: infiniteBrainMetadataValidationSafetySchema,
+});
+
+export const infiniteBrainMetadataValidationResponseSchema = z.object({
+  ok: z.literal(true),
+  report: infiniteBrainMetadataValidationRecordSchema,
+});
+
+export const infiniteBrainMetadataValidationGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('metadata_writer_validation_generated'),
+  message: z.string(),
+  report: infiniteBrainMetadataValidationRecordSchema,
+  safety: infiniteBrainMetadataValidationSafetySchema,
+});
+
+const infiniteBrainMetadataValidationSchema = z.union([
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+  z.object({
+    available: z.literal(true),
+    generatedAt: z.string(),
+    status: z.enum(['blocked', 'validation-ready', 'missing-input']),
+    totalMetadataEntries: z.number(),
+    validatedEntries: z.number(),
+    blockedEntries: z.number(),
+    validationAvailable: z.literal(false),
+    canWrite: z.literal(false),
+    canWriteToMind: z.literal(false),
+    blockerCount: z.number(),
+  }),
+]);
+
 export type InfiniteBrainWriteManifestRecord = z.infer<typeof infiniteBrainWriteManifestRecordSchema>;
 export type InfiniteBrainWriteManifestResponse = z.infer<typeof infiniteBrainWriteManifestResponseSchema>;
 export type InfiniteBrainWriteManifestGenerateResponse = z.infer<typeof infiniteBrainWriteManifestGenerateResponseSchema>;
+export type InfiniteBrainMetadataValidationRecord = z.infer<typeof infiniteBrainMetadataValidationRecordSchema>;
+export type InfiniteBrainMetadataValidationResponse = z.infer<typeof infiniteBrainMetadataValidationResponseSchema>;
+export type InfiniteBrainMetadataValidationGenerateResponse = z.infer<typeof infiniteBrainMetadataValidationGenerateResponseSchema>;
 
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
@@ -1281,6 +1369,7 @@ export const infiniteBrainStatusSchema = z.object({
     operatorApproval: infiniteBrainOperatorApprovalSchema,
     postWriteVerification: infiniteBrainPostWriteVerificationSchema,
     writeManifest: infiniteBrainWriteManifestSchema,
+    metadataValidation: infiniteBrainMetadataValidationSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete + Metadata writer validation (AG) complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete; AG metadata writer validation complete
 
 ---
 
@@ -2148,6 +2148,182 @@ All tests pass: ✅ 9/9
 
 ---
 
+### PHASE AG — Metadata Writer Validation
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-metadata-writer-validation.ts` — Metadata validation adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/metadata-writer-validation` endpoints
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Metadata validation schemas
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for metadata validation
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-core/src/tests/infinite-brain-metadata-writer-validation.test.ts` — Unit tests
+
+**What it does:**
+- Validates metadata entries from write manifest for safe writes
+- Filters manifest entries for `entity-metadata` category only
+- Performs 10 validation checks (manifest presence, metadata entries count, path validation, yaml validation, etc.)
+- Generates validation report with entry-level and check-level details
+- Stores report at `runtime/local/infinite-brain/metadata-writer-validation-latest.json`
+- Provides validation-only status without performing any metadata writes
+- Console visibility section displays validation status, entries, checks, and blockers
+- No Apply/Write buttons, no execution controls, no Mind writes
+
+**Key Safety Invariants:**
+- ✅ `validationAvailable: false` (always)
+- ✅ `canWrite: false` (always)
+- ✅ `canWriteToMind: false` (always)
+- ✅ `writesToMind: false` (always)
+- ✅ `modifiesMind: false` (always)
+- ✅ `appliesProposals: false` (always)
+- ✅ `validationOnly: true` (always)
+- ✅ `reportOnly: true` (always)
+- ✅ All entries have `writeBlocked: true` and `applied: false`
+- ✅ No Mind modifications
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ Deterministic report IDs
+
+**Metadata Validation Report Schema:**
+```typescript
+{
+  reportId: string;                    // Deterministic SHA256 hash
+  generatedAt: string;                 // ISO8601 timestamp
+  sourceManifestId: string | null;     // Reference to write manifest
+  status: 'blocked' | 'validation-ready' | 'missing-input';
+  writerCategory: string;              // 'entity-metadata'
+  validationAvailable: false;          // Always false
+  canWrite: false;                     // Always false
+  canWriteToMind: false;               // Always false
+  totalMetadataEntries: number;        // Count of metadata entries in manifest
+  validatedEntries: number;            // Count of entries with passing status
+  blockedEntries: number;              // Count of entries with blocked status
+  entries: MetadataValidationEntry[];  // Array of validation entries
+  checks: MetadataValidationCheck[];   // Array of validation checks
+  blockers: string[];                  // Reasons validation is blocked
+  safety: {
+    writesToMind: false;
+    modifiesMind: false;
+    appliesProposals: false;
+    canWrite: false;
+    canWriteToMind: false;
+    validationOnly: true;
+    reportOnly: true;
+    continuousRuntime: false;
+    modelCalls: false;
+    usesShell: false;
+  };
+}
+```
+
+**Metadata Validation Entry Schema:**
+```typescript
+{
+  entryId: string;                       // Deterministic SHA256 hash
+  manifestEntryId: string;               // Reference to manifest entry
+  proposalId: string;                    // Proposal ID
+  targetPathsPreview: string[];          // Target file paths
+  validationStatus: 'blocked' | 'pass' | 'fail' | 'not-applicable';
+  reasons: string[];                     // Validation failure reasons
+  frontmatterPatchAvailable: boolean;    // YAML frontmatter patcher ready
+  targetPathSafe: boolean;               // Paths are safe (no traversal, in Mind)
+  conflictDetectionAvailable: boolean;   // Conflict detection ready
+  yamlValidationAvailable: boolean;      // YAML syntax validation ready
+  writeBlocked: true;                    // Always true
+  applied: false;                        // Always false
+}
+```
+
+**Validation Checks (10 total):**
+1. ✅ Write manifest exists (pass/blocked)
+2. ✅ Metadata entries present (pass/blocked)
+3. ⏳ Target paths are markdown (blocked — not yet implemented)
+4. ⏳ Target paths stay inside Mind (blocked — not yet implemented)
+5. ⏳ Frontmatter patcher available (blocked — not yet implemented)
+6. ⏳ Conflict detection available (blocked — not yet implemented)
+7. ⏳ YAML validation available (blocked — not yet implemented)
+8. ⏳ Post-write verification available (blocked — not yet implemented)
+9. ⏳ Rollback available (blocked — not yet implemented)
+10. ⏳ Operator approval present (blocked — not yet implemented)
+
+**API Endpoints:**
+
+`GET /infinite-brain/metadata-writer-validation`
+- Returns latest metadata validation report
+- 404 with code `metadata_writer_validation_missing` if not found
+- Response includes report with all validation gates blocked
+
+`POST /infinite-brain/metadata-writer-validation/generate`
+- Generates new metadata validation report from write manifest
+- Requires write manifest to be present
+- Response includes generated report with all gates blocked
+- Returns: `ok: true`, `report`, `code: 'metadata_writer_validation_generated'`, `safety` block with all false values
+
+**Console UI (Metadata Validation Section):**
+- Added to InfiniteBrainProposalReview component after write manifest section
+- Button: "Generate Metadata Writer Validation" (not "Write", not "Apply")
+- Displays:
+  - Report ID and generation timestamp
+  - Status (blocked/validation-ready/missing-input)
+  - Total metadata entries, validated entries, blocked entries
+  - Validation availability flags (all false)
+  - Validation entries (showing up to 5, with scrollable list if more)
+  - Blocker list with count
+  - Validation checks list
+  - Safety status verification (all false/true per spec)
+- Safety message: "Validation-only status, no metadata written. Mind unchanged."
+- No write, apply, or execute functionality
+
+**Status Integration:**
+- Added `metadataValidation` to `runtime` object in status response
+- Includes: `available`, `generatedAt`, `status`, `totalMetadataEntries`, `validatedEntries`, `blockedEntries`, `validationAvailable`, `canWrite`, `canWriteToMind`, `blockerCount`
+- Union type: { available: false, reason: string } OR { available: true, ... }
+
+**Deterministic ID Generation:**
+- `reportId = SHA256(manifestId + sortedMetadataEntryIds + sortedCheckStatuses).substring(0,12)`
+- Format: `mvv-{hash}`
+- No timestamp, no randomness in IDs (generatedAt is okay)
+- Same manifest and entries always produce same report ID
+
+**Environment Variables:**
+- `IBR_WRITE_MANIFEST_PATH` — Override manifest path (used as input)
+- `IBR_METADATA_WRITER_VALIDATION_PATH` — Override validation report path (storage location)
+- `IBR_MIND_REPO_PATH` — Override Mind repo path (used for path validation checks)
+
+**Safety Checks:**
+- ✅ No `writesToMind: true` in source
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ No Math.random or crypto.randomBytes for IDs
+- ✅ No child_process, exec, spawn
+- ✅ Deterministic ID via SHA256
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Zod schemas pass validation
+- ✅ 6 adapter-level tests pass (missing manifest, creates entries, deterministic IDs, writeBlocked/applied, safety block, summary)
+- ✅ Route-level tests pass
+- ✅ Build passes
+- ✅ Console component renders without errors
+- ✅ All safety invariants enforced
+
+**How it Bridges:**
+- Takes write manifest (concrete write descriptions)
+- Filters for metadata category entries only
+- Performs validation checks on metadata-safe properties
+- Future writer can consume validation report after ALL validation gates pass
+- Validation is read-only reference for future phases
+- Enables category-specific validation layer before any writes occur
+
+**Future Gates (Still Blocked):**
+- Frontmatter patch validation (blocks metadata validation check 5)
+- Conflict detection for metadata entries (blocks validation check 6)
+- YAML syntax validation (blocks validation check 7)
+- Post-write verification integration (blocks validation check 8)
+- Rollback plan for metadata (blocks validation check 9)
+- Operator approval on metadata changes (blocks validation check 10)
+
+---
+
 **Future Implementation Phases:**
 | Phase | Blocker | Status |
 |-------|---------|--------|
@@ -2156,7 +2332,8 @@ All tests pass: ✅ 9/9
 | Z+3 | Category-specific implementations | ⏳ Blocked |
 | Z+4 | Post-write verification (PHASE AE) | ✅ Console visibility added |
 | Z+5 | Write manifest generation (PHASE AF) | ✅ Manifest generation complete |
-| Z+6 | Rollback implementation | ⏳ Blocked |
+| Z+6 | Metadata writer validation (PHASE AG) | ✅ Validation framework added |
+| Z+7 | Rollback implementation | ⏳ Blocked |
 
 ---
 
