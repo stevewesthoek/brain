@@ -15,6 +15,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { readWriteManifest } from './infinite-brain-write-manifest.js';
+import { readMetadataWriteRollbackSnapshot } from './infinite-brain-metadata-write-rollback.js';
+import { readMetadataWriterWriteReport } from './infinite-brain-writers/writer-metadata.js';
 
 const DEFAULT_POST_WRITE_VERIFICATION_RELATIVE_PATH = 'runtime/local/infinite-brain/post-write-verification-latest.json';
 const DEFAULT_EXECUTOR_DRY_RUN_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-executor-dry-run-latest.json';
@@ -43,6 +45,17 @@ export interface PostWriteVerificationSafety {
   usesShell: boolean;
 }
 
+export interface MetadataSingleFileWriteVerification {
+  available: boolean;
+  status: 'verified' | 'blocked' | 'mismatch';
+  targetPath?: string;
+  afterContentHashMatches?: boolean;
+  rollbackSnapshotAvailable?: boolean;
+  singleFileOnly?: boolean;
+  allowlistedOnly?: boolean;
+  verifiedAt?: string;
+}
+
 export interface PostWriteVerificationReport {
   reportId: string;
   generatedAt: string;
@@ -55,6 +68,7 @@ export interface PostWriteVerificationReport {
   checks: PostWriteVerificationCheck[];
   blockers: string[];
   recommendations: string[];
+  metadataSingleFileWriteVerification?: MetadataSingleFileWriteVerification;
   safety: PostWriteVerificationSafety;
 }
 
@@ -260,6 +274,45 @@ export function generatePostWriteVerificationReport(): PostWriteVerificationRepo
 
   const status = blockers.length > 0 ? 'blocked' : 'ready-for-future-write-verification';
 
+  // Check for metadata single-file write verification
+  const metadataSingleFileWriteReport = readMetadataWriterWriteReport();
+  let metadataSingleFileWriteVerification: MetadataSingleFileWriteVerification | undefined;
+
+  if (metadataSingleFileWriteReport && metadataSingleFileWriteReport.status === 'test-write-applied') {
+    const rollbackSnapshot = readMetadataWriteRollbackSnapshot();
+    const rollbackAvailable = rollbackSnapshot !== null;
+
+    // Verify the written file matches expected hash
+    let afterContentHashMatches = false;
+    try {
+      const fileContent = fs.readFileSync(metadataSingleFileWriteReport.targetPath, 'utf8');
+      const actualHash = crypto
+        .createHash('sha256')
+        .update(fileContent)
+        .digest('hex')
+        .substring(0, 12);
+      afterContentHashMatches = actualHash === metadataSingleFileWriteReport.afterContentHash;
+    } catch {
+      afterContentHashMatches = false;
+    }
+
+    metadataSingleFileWriteVerification = {
+      available: true,
+      status: afterContentHashMatches && rollbackAvailable ? 'verified' : 'mismatch',
+      targetPath: metadataSingleFileWriteReport.targetPath,
+      afterContentHashMatches,
+      rollbackSnapshotAvailable: rollbackAvailable,
+      singleFileOnly: metadataSingleFileWriteReport.singleFileOnly,
+      allowlistedOnly: metadataSingleFileWriteReport.allowlistedOnly,
+      verifiedAt: new Date().toISOString(),
+    };
+  } else {
+    metadataSingleFileWriteVerification = {
+      available: false,
+      status: 'blocked',
+    };
+  }
+
   return {
     reportId: generateReportId(dryRunId, checks, mindPath),
     generatedAt: new Date().toISOString(),
@@ -272,6 +325,7 @@ export function generatePostWriteVerificationReport(): PostWriteVerificationRepo
     checks,
     blockers,
     recommendations,
+    metadataSingleFileWriteVerification,
     safety: generateSafetyBlock(),
   };
 }
