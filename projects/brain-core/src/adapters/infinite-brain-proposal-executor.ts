@@ -10,6 +10,14 @@
  */
 
 import crypto from 'node:crypto';
+import {
+  evaluateAtomizationWriterPreconditions,
+  evaluateMetadataWriterPreconditions,
+  evaluateEdgesWriterPreconditions,
+  evaluateWikiWriterPreconditions,
+  evaluateTasksWriterPreconditions,
+  evaluateCleanupWriterPreconditions,
+} from './infinite-brain-writers/index.js';
 
 export type ExecutionPreconditionName =
   | 'readinessCanExecute'
@@ -78,6 +86,70 @@ function generateAttemptId(dryRunId: string | null, preconditions: InfiniteBrain
 }
 
 /**
+ * Evaluate writer stub availability
+ * Returns status of all disabled category-specific writers
+ */
+export interface WriterStubStatus {
+  category: 'atomization' | 'entity-metadata' | 'edge-review' | 'wiki-writing' | 'task-extraction' | 'cleanup';
+  available: boolean;
+  blockerCount: number;
+  blockers: string[];
+}
+
+export function evaluateWriterStubAvailability(): WriterStubStatus[] {
+  return [
+    {
+      category: 'atomization',
+      available: false,
+      blockerCount: evaluateAtomizationWriterPreconditions().filter(p => p.status === 'blocked').length,
+      blockers: evaluateAtomizationWriterPreconditions()
+        .filter(p => p.status === 'blocked')
+        .map(p => p.reason),
+    },
+    {
+      category: 'entity-metadata',
+      available: false,
+      blockerCount: evaluateMetadataWriterPreconditions().filter(p => p.status === 'blocked').length,
+      blockers: evaluateMetadataWriterPreconditions()
+        .filter(p => p.status === 'blocked')
+        .map(p => p.reason),
+    },
+    {
+      category: 'edge-review',
+      available: false,
+      blockerCount: evaluateEdgesWriterPreconditions().filter(p => p.status === 'blocked').length,
+      blockers: evaluateEdgesWriterPreconditions()
+        .filter(p => p.status === 'blocked')
+        .map(p => p.reason),
+    },
+    {
+      category: 'wiki-writing',
+      available: false,
+      blockerCount: evaluateWikiWriterPreconditions().filter(p => p.status === 'blocked').length,
+      blockers: evaluateWikiWriterPreconditions()
+        .filter(p => p.status === 'blocked')
+        .map(p => p.reason),
+    },
+    {
+      category: 'task-extraction',
+      available: false,
+      blockerCount: evaluateTasksWriterPreconditions().filter(p => p.status === 'blocked').length,
+      blockers: evaluateTasksWriterPreconditions()
+        .filter(p => p.status === 'blocked')
+        .map(p => p.reason),
+    },
+    {
+      category: 'cleanup',
+      available: false,
+      blockerCount: evaluateCleanupWriterPreconditions().filter(p => p.status === 'blocked').length,
+      blockers: evaluateCleanupWriterPreconditions()
+        .filter(p => p.status === 'blocked')
+        .map(p => p.reason),
+    },
+  ];
+}
+
+/**
  * Evaluate all execution preconditions
  * All preconditions block execution in this phase
  */
@@ -101,7 +173,7 @@ function evaluateExecutorPreconditions(): InfiniteBrainExecutionPrecondition[] {
     {
       name: 'allowlistedWriterAvailable',
       status: 'blocked',
-      reason: 'Proposal writer not yet implemented. Execution blocked until writer is available.',
+      reason: 'Proposal writer stubs available but disabled. All category writers are blocked.',
     },
     {
       name: 'iosSyncSafe',

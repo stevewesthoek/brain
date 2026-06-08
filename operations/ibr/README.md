@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked)
 
 ---
 
@@ -1536,6 +1536,170 @@ executeInfiniteBrainProposalPlanDisabled(dryRunId, totalSteps) returns:
 - Category boundaries and responsibilities: Same document
 - Rollback strategy: Same document
 - iOS sync requirements: Same document
+
+---
+
+### PHASE Z — Category-Specific Writer Stubs (All Blocked)
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-writers/types.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/writer-atomization.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/writer-metadata.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/writer-edges.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/writer-wiki.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/writer-tasks.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/writer-cleanup.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-writers/index.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-proposal-executor.ts` (MODIFIED)
+- `projects/brain-core/src/tests/infinite-brain-writer-stubs.test.ts` (NEW)
+- `operations/ibr/README.md` (This documentation)
+
+**What it does:**
+- Creates 6 category-specific disabled writer stubs
+- All writers return blocked status (ok: false, canWrite: false)
+- Each writer defines its blockers (category-specific)
+- Connects disabled executor to writer stubs
+- Cleanup writer explicitly marked DESTRUCTIVE and disabled
+- Maintains safety: no Mind writes, no file operations, no execution
+
+**Writer Stubs Created:**
+
+1. **Atomization Writer:**
+   - Stub: `runAtomizationWriterDisabled()`
+   - Blockers: path safety, dry-run validation, writer not implemented, post-write verification
+   - Category: `atomization`
+
+2. **Metadata Writer:**
+   - Stub: `runMetadataWriterDisabled()`
+   - Blockers: frontmatter patcher, conflict detection, YAML validation, writer not implemented
+   - Category: `entity-metadata`
+
+3. **Edges/Evidence Writer:**
+   - Stub: `runEdgesWriterDisabled()`
+   - Blockers: evidence store gate, edge validation, confidence scoring, writer not implemented
+   - Category: `edge-review`
+
+4. **Wiki Writer:**
+   - Stub: `runWikiWriterDisabled()`
+   - Blockers: wiki path policy, content validation, link resolution, writer not implemented
+   - Category: `wiki-writing`
+
+5. **Tasks Writer:**
+   - Stub: `runTasksWriterDisabled()`
+   - Blockers: task schema approval, ID generation, kanban integration, writer not implemented
+   - Category: `task-extraction`
+
+6. **Cleanup Writer (DESTRUCTIVE-DISABLED):**
+   - Stub: `runCleanupWriterDisabled()`
+   - Blockers: destructive operations disabled, per-item approval missing, archive strategy incomplete, deletion audit trail incomplete, iOS sync safety uncertain, writer not implemented
+   - Category: `cleanup`
+   - Explicit messaging: "DESTRUCTIVE OPERATIONS DISABLED"
+
+**Shared Writer Types (`types.ts`):**
+- `InfiniteBrainWriterCategory` — Enum of 6 categories
+- `InfiniteBrainWriterInput` — dryRunId, category, targetSteps, etc.
+- `InfiniteBrainWriterPrecondition` — name, status, reason, requiredForWrite
+- `InfiniteBrainWriterResult` — ok: false, status: blocked, canWrite: false, etc.
+- `InfiniteBrainWriterSafety` — writesToMind: false, canWrite: false, etc.
+- `createBlockedWriterResult()` — Helper to create blocked result for any category
+
+**Writer Result Structure:**
+```typescript
+{
+  ok: false,
+  status: 'blocked',
+  category: 'atomization' | 'entity-metadata' | 'edge-review' | 'wiki-writing' | 'task-extraction' | 'cleanup',
+  canWrite: false,
+  wroteToMind: false,
+  applied: false,
+  filesCreated: [],
+  filesModified: [],
+  filesDeleted: [],
+  executionBlocked: true,
+  blockers: [...],
+  preconditions: [...],
+  safety: {
+    writesToMind: false,
+    deletesFiles: false,
+    movesFiles: false,
+    appliesProposal: false,
+    callsModels: false,
+    usesShell: false,
+    continuousRuntime: false,
+    canWrite: false,
+    wroteToMind: false,
+    executionBlocked: true,
+  }
+}
+```
+
+**Disabled Executor Integration:**
+- Updated `infinite-brain-proposal-executor.ts` to import writer stubs
+- Added `evaluateWriterStubAvailability()` function
+- Returns status of all 6 writers (all available: false, all blocked)
+- `allowlistedWriterAvailable` precondition updated: "stubs available but disabled"
+- Executor still returns `canExecute: false, executed: false`
+
+**Writer Stub Availability:**
+```typescript
+evaluateWriterStubAvailability() returns: [
+  { category: 'atomization', available: false, blockerCount: 4, blockers: [...] },
+  { category: 'entity-metadata', available: false, blockerCount: 4, blockers: [...] },
+  { category: 'edge-review', available: false, blockerCount: 4, blockers: [...] },
+  { category: 'wiki-writing', available: false, blockerCount: 4, blockers: [...] },
+  { category: 'task-extraction', available: false, blockerCount: 4, blockers: [...] },
+  { category: 'cleanup', available: false, blockerCount: 6, blockers: [...] },
+]
+```
+
+**Safety Invariants (All Maintained):**
+- ✅ All writers return blocked (ok: false)
+- ✅ canWrite always false
+- ✅ wroteToMind always false
+- ✅ applied always false
+- ✅ filesCreated always empty
+- ✅ filesModified always empty
+- ✅ filesDeleted always empty
+- ✅ executionBlocked always true
+- ✅ No Mind writes
+- ✅ No file operations
+- ✅ No model calls
+- ✅ No shell execution
+- ✅ No continuous runtime
+- ✅ Cleanup explicitly marked DESTRUCTIVE-DISABLED
+
+**Tests Added:**
+- 9 focused tests in `infinite-brain-writer-stubs.test.ts`:
+  1. Atomization writer returns blocked
+  2. Metadata writer returns blocked
+  3. Edges writer returns blocked
+  4. Wiki writer returns blocked
+  5. Tasks writer returns blocked
+  6. Cleanup writer returns blocked with destructive-disabled messaging
+  7. All writers have safety invariants correct
+  8. Writer stub availability shows all blocked
+  9. Disabled executor remains blocked with writer stubs
+
+All tests pass: ✅ 9/9
+
+**What This Phase Does NOT Include:**
+- ❌ Real writer implementation
+- ❌ Actual file writes
+- ❌ Apply button in Console
+- ❌ Execute button in Console
+- ❌ Category-specific implementation logic
+- ❌ Post-write verification
+- ❌ Rollback implementation
+- ❌ Cleanup deletion capability
+
+**Future Implementation Phases:**
+| Phase | Blocker | Status |
+|-------|---------|--------|
+| Z+1 | iOS sync safety verification | ⏳ Blocked |
+| Z+2 | Operator approval gate | ⏳ Blocked |
+| Z+3 | Category-specific implementations | ⏳ Blocked |
+| Z+4 | Post-write verification | ⏳ Blocked |
+| Z+5 | Rollback implementation | ⏳ Blocked |
 
 ---
 
