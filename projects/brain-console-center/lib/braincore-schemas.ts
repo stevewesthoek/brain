@@ -712,6 +712,20 @@ const infiniteBrainRelationshipAuditSchema = z.union([
   }),
 ]);
 
+const infiniteBrainInsightsSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    timestamp: z.string(),
+    insightCount: z.number(),
+    hypothesisCount: z.number(),
+    recommendationCount: z.number(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({
@@ -719,6 +733,7 @@ export const infiniteBrainStatusSchema = z.object({
     classifier: infiniteBrainClassifierSchema,
     edges: infiniteBrainEdgesSchema,
     relationshipAudit: infiniteBrainRelationshipAuditSchema,
+    insights: infiniteBrainInsightsSchema,
   }),
   changelog: z.unknown().optional(),
   evidence: z.unknown().optional(),

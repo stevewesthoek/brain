@@ -158,6 +158,23 @@ export function InfiniteBrainDashboard() {
           <p className="text-sm text-slate-500 mt-2">{status.runtime.relationshipAudit.reason}</p>
         )}
       </div>
+
+      {/* Insight Generation Report */}
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Insight Generation (IB10)</h3>
+        {status.runtime.insights.available ? (
+          <div className="mt-2 text-sm text-slate-700 space-y-1">
+            <p>Insights: <strong>{status.runtime.insights.insightCount}</strong></p>
+            <p>Hypotheses: <strong>{status.runtime.insights.hypothesisCount}</strong></p>
+            <p>Recommendations: <strong>{status.runtime.insights.recommendationCount}</strong></p>
+            <p className="text-xs text-slate-500 mt-2">
+              Updated: {status.runtime.insights.timestamp ? new Date(status.runtime.insights.timestamp).toLocaleString() : 'Never'}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 mt-2">{status.runtime.insights.reason}</p>
+        )}
+      </div>
     </div>
   );
 }

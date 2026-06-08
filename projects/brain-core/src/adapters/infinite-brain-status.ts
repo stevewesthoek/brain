@@ -55,6 +55,21 @@ interface RelationshipAuditReport {
   recommendations: Array<{ priority: string; category: string; count: number }>;
 }
 
+interface InsightReport {
+  timestamp: string;
+  status: string;
+  summary: {
+    insightCount: number;
+    hypothesisCount: number;
+    recommendationCount: number;
+  };
+  safety: {
+    writesToMind: boolean;
+    continuousRuntime: boolean;
+    modelCalls: boolean;
+  };
+}
+
 interface ChangelogStats {
   totalMutations: number;
   byAction: Record<string, number>;
@@ -215,6 +230,36 @@ async function getRelationshipAuditStatus(): Promise<
 }
 
 /**
+ * Get insight generation status
+ */
+async function getInsightStatus(): Promise<
+  | {
+      available: true;
+      timestamp: string;
+      insightCount: number;
+      hypothesisCount: number;
+      recommendationCount: number;
+    }
+  | { available: false; reason: string }
+> {
+  const report = await loadReport<InsightReport>(
+    path.join(RUNTIME_DIR, 'insights-latest.json')
+  );
+
+  if (!report) {
+    return { available: false, reason: 'Insight report not found' };
+  }
+
+  return {
+    available: true,
+    timestamp: report.timestamp,
+    insightCount: report.summary.insightCount,
+    hypothesisCount: report.summary.hypothesisCount,
+    recommendationCount: report.summary.recommendationCount,
+  };
+}
+
+/**
  * Get changelog statistics (stub)
  */
 async function getChangelogStats(): Promise<ChangelogStats> {
@@ -243,11 +288,12 @@ async function getEvidenceStats(): Promise<EvidenceStats> {
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
     getRelationshipAuditStatus(),
+    getInsightStatus(),
     getChangelogStats(),
     getEvidenceStats(),
   ]);
@@ -259,6 +305,7 @@ export async function getInfiniteBrainStatus() {
       classifier,
       edges,
       relationshipAudit,
+      insights,
     },
     infrastructure: {
       changelog: {
