@@ -4476,3 +4476,117 @@ test('GET /api/infinite-brain/proposals/application-plan returns 404 when plan m
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
+
+test('POST /api/infinite-brain/proposals/application-plan/generate produces deterministic planId', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-plan-deterministic');
+  const proposalsPath = path.join(testDir, 'proposals-latest.json');
+  const approvalsPath = path.join(testDir, 'proposal-approvals.json');
+  const planPath1 = path.join(testDir, 'plan-1.json');
+  const planPath2 = path.join(testDir, 'plan-2.json');
+
+  const previousProposalsPath = process.env.IBR_PROPOSALS_REPORT_PATH;
+  const previousApprovalsPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
+  const previousPlanPath = process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  // Write same proposals and approvals twice
+  fs.writeFileSync(proposalsPath, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    totalProposals: 1,
+    proposals: [
+      {
+        proposalId: 'prop-deterministic-test',
+        category: 'atomization',
+        title: 'Test Proposal',
+        summary: 'Determinism test',
+        confidence: 0.9,
+        priority: 'high',
+        riskLevel: 'low',
+        requiresApproval: true,
+        writesToMindIfApproved: false,
+        safetyMode: 'report-only',
+        status: 'proposed',
+        sourcePaths: ['test.md'],
+        proposedAction: 'Split',
+      }
+    ]
+  }, null, 2));
+
+  fs.writeFileSync(approvalsPath, JSON.stringify({
+    records: [
+      {
+        proposalId: 'prop-deterministic-test',
+        category: 'atomization',
+        decision: 'approved',
+        decidedAt: new Date().toISOString(),
+        decidedBy: 'test',
+        executionBlocked: true,
+        applied: false,
+      }
+    ]
+  }, null, 2));
+
+  process.env.IBR_PROPOSALS_REPORT_PATH = proposalsPath;
+  process.env.IBR_PROPOSAL_APPROVALS_PATH = approvalsPath;
+
+  let planId1: string | undefined;
+  let planId2: string | undefined;
+
+  try {
+    // Generate plan first time
+    process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = planPath1;
+
+    const request1 = createRequest({
+      method: 'POST',
+      url: '/api/infinite-brain/proposals/application-plan/generate',
+    });
+
+    const response1 = new MockResponse();
+    await routeRequest(request1, response1);
+
+    const body1 = JSON.parse(response1.body) as {
+      plan: { planId: string };
+    };
+    planId1 = body1.plan.planId;
+
+    // Generate plan second time (should be identical)
+    process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = planPath2;
+
+    const request2 = createRequest({
+      method: 'POST',
+      url: '/api/infinite-brain/proposals/application-plan/generate',
+    });
+
+    const response2 = new MockResponse();
+    await routeRequest(request2, response2);
+
+    const body2 = JSON.parse(response2.body) as {
+      plan: { planId: string };
+    };
+    planId2 = body2.plan.planId;
+
+    // Both plan IDs should be identical (deterministic)
+    assert.equal(planId1, planId2);
+    assert.equal(typeof planId1, 'string');
+    assert.ok(planId1.startsWith('plan-'));
+  } finally {
+    if (previousProposalsPath === undefined) {
+      delete process.env.IBR_PROPOSALS_REPORT_PATH;
+    } else {
+      process.env.IBR_PROPOSALS_REPORT_PATH = previousProposalsPath;
+    }
+    if (previousApprovalsPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPROVALS_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPROVALS_PATH = previousApprovalsPath;
+    }
+    if (previousPlanPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = previousPlanPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});

@@ -116,8 +116,19 @@ function readJsonSafely<T>(filePath: string): T | null {
   }
 }
 
-function generatePlanId(): string {
-  return `plan-${crypto.randomBytes(6).toString('hex')}`;
+function generatePlanId(approvedProposalIds: string[], steps: ProposalApplicationPlanStep[]): string {
+  // Deterministic plan ID based on approved proposals and steps
+  const sortedIds = [...approvedProposalIds].sort();
+  const stepIds = steps.map(s => s.stepId).sort();
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({
+      approvedProposalIds: sortedIds,
+      stepIds,
+    }))
+    .digest('hex')
+    .substring(0, 12);
+  return `plan-${hash}`;
 }
 
 function generateStepId(proposalId: string, index: number): string {
@@ -243,7 +254,7 @@ export function generateApplicationPlan(): ProposalApplicationPlan {
 
   if (!proposalsReport?.proposals) {
     return {
-      planId: generatePlanId(),
+      planId: generatePlanId([], []),
       generatedAt: new Date().toISOString(),
       sourceProposalReport: PROPOSALS_REPORT_RELATIVE_PATH,
       sourceApprovalStore: APPROVALS_STORE_RELATIVE_PATH,
@@ -270,6 +281,7 @@ export function generateApplicationPlan(): ProposalApplicationPlan {
 
   // Process each proposal
   const steps: ProposalApplicationPlanStep[] = [];
+  const approvedProposalIds: string[] = [];
   let approvedCount = 0;
 
   proposalsReport.proposals.forEach((proposal, index) => {
@@ -278,13 +290,14 @@ export function generateApplicationPlan(): ProposalApplicationPlan {
     // Only include proposals with "approved" decision
     if (approval?.decision === 'approved') {
       approvedCount++;
+      approvedProposalIds.push(proposal.proposalId);
       const step = createApplicationPlanStep(proposal, approval, steps.length);
       steps.push(step);
     }
   });
 
   return {
-    planId: generatePlanId(),
+    planId: generatePlanId(approvedProposalIds, steps),
     generatedAt: new Date().toISOString(),
     sourceProposalReport: PROPOSALS_REPORT_RELATIVE_PATH,
     sourceApprovalStore: APPROVALS_STORE_RELATIVE_PATH,
