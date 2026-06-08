@@ -788,6 +788,56 @@ const infiniteBrainPipelineSchema = z.union([
   }),
 ]);
 
+export const infiniteBrainProposalSchema = z.object({
+  proposalId: z.string(),
+  category: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  confidence: z.number().min(0).max(1),
+  priority: z.enum(['low', 'medium', 'high']),
+  riskLevel: z.enum(['low', 'medium', 'high']),
+  requiresApproval: z.boolean(),
+  writesToMindIfApproved: z.boolean(),
+  safetyMode: z.enum(['deterministic', 'report-only', 'approval-gated']),
+  status: z.enum(['proposed', 'pending', 'approved', 'rejected', 'needs-review', 'applied']),
+}).passthrough();
+
+export const infiniteBrainProposalApprovalRecordSchema = z.object({
+  proposalId: z.string(),
+  category: z.string(),
+  decision: z.enum(['approved', 'rejected', 'needs-review']),
+  decidedAt: z.string(),
+  decidedBy: z.string(),
+  reason: z.string().optional(),
+  sourceReport: z.string(),
+  proposalHash: z.string(),
+  writesToMindIfApproved: z.boolean(),
+  executionBlocked: z.literal(true),
+  applied: z.literal(false),
+}).passthrough();
+
+export const infiniteBrainProposalsResponseSchema = z.object({
+  proposals: z.array(infiniteBrainProposalSchema).default([]),
+  timestamp: z.string().optional(),
+}).passthrough();
+
+export const infiniteBrainProposalApprovalDecisionResponseSchema = z.object({
+  ok: z.boolean(),
+  code: z.string(),
+  message: z.string(),
+  record: infiniteBrainProposalApprovalRecordSchema.optional(),
+  safety: z.object({
+    applied: z.literal(false),
+    executionBlocked: z.literal(true),
+    writesToMind: z.literal(false),
+  }).optional(),
+}).passthrough();
+
+export type InfiniteBrainProposal = z.infer<typeof infiniteBrainProposalSchema>;
+export type InfiniteBrainProposalApprovalRecord = z.infer<typeof infiniteBrainProposalApprovalRecordSchema>;
+export type InfiniteBrainProposalsResponse = z.infer<typeof infiniteBrainProposalsResponseSchema>;
+export type InfiniteBrainProposalApprovalDecisionResponse = z.infer<typeof infiniteBrainProposalApprovalDecisionResponseSchema>;
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({
