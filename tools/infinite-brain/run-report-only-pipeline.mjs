@@ -4,92 +4,78 @@
  * Infinite Brain Runtime — Report-Only Pipeline Runner
  * Executes all dry-run phases in sequence: atomizer → classifier → edges → audit → insights
  * Deterministic, report-only, no mutations, no Mind writes, no model calls
+ * No child_process/spawn/shell execution — all phases imported and called directly
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { spawn } from 'child_process';
+import { runAtomizerDryRun } from './atomizer-dry-run.mjs';
+import { runEntityClassifierDryRun } from './entity-classifier-dry-run.mjs';
+import { runEdgeInferenceDryRun } from './edge-inference-dry-run.mjs';
+import { runRelationshipAuditDryRun } from './relationship-audit-dry-run.mjs';
+import { runInsightGenerationDryRun } from './insight-generation-dry-run.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const RUNTIME_DIR = path.resolve(__dirname, '../../runtime/local/infinite-brain');
-const BRAIN_ROOT = path.resolve(__dirname, '../..');
 
 // Phases to execute in order
 const PHASES = [
   {
     name: 'atomizer',
     displayName: 'Atomizer Dry-Run',
-    script: 'atomizer-dry-run.mjs',
-    npmScript: 'ibr:atomizer:dry-run',
+    fn: runAtomizerDryRun,
     outputFile: 'atomizer-latest.json',
   },
   {
     name: 'classifier',
     displayName: 'Entity Classifier Dry-Run',
-    script: 'entity-classifier-dry-run.mjs',
-    npmScript: 'ibr:classify:dry-run',
+    fn: runEntityClassifierDryRun,
     outputFile: 'entity-classifier-latest.json',
   },
   {
     name: 'edges',
     displayName: 'Edge Inference Dry-Run',
-    script: 'edge-inference-dry-run.mjs',
-    npmScript: 'ibr:edges:dry-run',
+    fn: runEdgeInferenceDryRun,
     outputFile: 'edge-inference-latest.json',
   },
   {
     name: 'relationships',
     displayName: 'Relationship Audit',
-    script: 'relationship-audit-dry-run.mjs',
-    npmScript: 'ibr:relationships:audit',
+    fn: runRelationshipAuditDryRun,
     outputFile: 'relationship-audit-latest.json',
   },
   {
     name: 'insights',
     displayName: 'Insight Generation Dry-Run',
-    script: 'insight-generation-dry-run.mjs',
-    npmScript: 'ibr:insights:dry-run',
+    fn: runInsightGenerationDryRun,
     outputFile: 'insights-latest.json',
   },
 ];
 
 /**
- * Execute a single phase via npm script
+ * Execute a single phase by calling its function directly
  */
-function executePhase(npmScript) {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    let stdout = '';
-    let stderr = '';
+async function executePhase(phaseFn) {
+  const startTime = Date.now();
+  let exitCode = 0;
+  let success = true;
 
-    const proc = spawn('npm', ['run', npmScript], {
-      cwd: BRAIN_ROOT,
-      stdio: 'pipe',
-      shell: true,
-    });
+  try {
+    await phaseFn();
+  } catch (error) {
+    exitCode = 1;
+    success = false;
+  }
 
-    proc.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-
-    proc.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    proc.on('close', (code) => {
-      const durationMs = Date.now() - startTime;
-      resolve({
-        exitCode: code,
-        durationMs,
-        stdout,
-        stderr,
-        success: code === 0,
-      });
-    });
-  });
+  const durationMs = Date.now() - startTime;
+  return {
+    exitCode,
+    durationMs,
+    success,
+  };
 }
 
 /**
@@ -264,7 +250,7 @@ async function runPipeline() {
   const pipelineStart = Date.now();
   console.log('[IBR-Pipeline] Starting report-only pipeline execution...');
   console.log(`[IBR-Pipeline] Runtime dir: ${RUNTIME_DIR}`);
-  console.log(`[IBR-Pipeline] Executing ${PHASES.length} phases...\n`);
+  console.log(`[IBR-Pipeline] Executing ${PHASES.length} phases (no shell execution)...\n`);
 
   await fs.mkdir(RUNTIME_DIR, { recursive: true });
 
@@ -276,7 +262,7 @@ async function runPipeline() {
     const phase = PHASES[i];
     console.log(`[IBR-Pipeline] [${i + 1}/${PHASES.length}] Executing ${phase.displayName}...`);
 
-    const result = await executePhase(phase.npmScript);
+    const result = await executePhase(phase.fn);
     const stepDuration = result.durationMs;
 
     // Extract metrics if phase succeeded
@@ -306,7 +292,7 @@ async function runPipeline() {
     if (!result.success) {
       failedSteps.push({
         ...step,
-        stderr: result.stderr || '(no stderr)',
+        stderr: '(error occurred in direct function call)',
       });
       console.error(`[IBR-Pipeline] ✗ ${phase.displayName} failed with exit code ${result.exitCode}`);
     } else {

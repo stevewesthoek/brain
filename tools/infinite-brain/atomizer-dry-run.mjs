@@ -271,9 +271,9 @@ async function saveReports(jsonReport, markdown) {
 }
 
 /**
- * Main
+ * Export function for direct import by pipeline runner
  */
-async function main() {
+export async function runAtomizerDryRun() {
   console.log('[IB-Atomizer] Starting dry-run analysis...');
   console.log(`[IB-Atomizer] Vault path: ${MIND_VAULT_PATH}`);
   console.log(`[IB-Atomizer] Output dir: ${OUTPUT_DIR}`);
@@ -314,4 +314,9 @@ async function main() {
   }
 }
 
-main();
+/**
+ * Direct execution when run as script (ESM guard)
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runAtomizerDryRun();
+}

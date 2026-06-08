@@ -395,9 +395,9 @@ function formatMarkdownReport(report) {
 }
 
 /**
- * Main execution
+ * Export function for direct import by pipeline runner
  */
-async function main() {
+export async function runInsightGenerationDryRun() {
   console.log('[IB-Insight] Starting insight generation dry-run...');
   console.log(`[IB-Insight] Runtime dir: ${RUNTIME_DIR}`);
   console.log('[IB-Insight] Loading reports...\n');
@@ -441,4 +441,9 @@ async function main() {
   }
 }
 
-main();
+/**
+ * Direct execution when run as script (ESM guard)
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runInsightGenerationDryRun();
+}

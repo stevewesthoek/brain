@@ -329,9 +329,9 @@ async function saveReports(jsonReport, markdown) {
 }
 
 /**
- * Main
+ * Export function for direct import by pipeline runner
  */
-async function main() {
+export async function runEdgeInferenceDryRun() {
   console.log('[IB-Inference] Starting edge inference dry-run...');
   console.log(`[IB-Inference] Classifier report: ${CLASSIFIER_REPORT_PATH}`);
   console.log(`[IB-Inference] Output dir: ${OUTPUT_DIR}`);
@@ -372,4 +372,9 @@ async function main() {
   }
 }
 
-main();
+/**
+ * Direct execution when run as script (ESM guard)
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runEdgeInferenceDryRun();
+}

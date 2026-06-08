@@ -430,9 +430,9 @@ function generateMarkdownReport(audit, entities, edges) {
 }
 
 /**
- * Main execution
+ * Export function for direct import by pipeline runner
  */
-async function main() {
+export async function runRelationshipAuditDryRun() {
   console.log('Infinite Brain Runtime — Relationship Audit (IB9)');
   console.log('Report-only: no repairs or mutations\n');
 
@@ -517,9 +517,16 @@ async function main() {
   console.log(`Recommendations: ${audit.recommendations.length}`);
   console.log('');
   console.log('Status: ✓ Audit complete (report-only, no repairs)');
+
+  return { success: true, report: jsonReport };
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error.message);
-  process.exit(1);
-});
+/**
+ * Direct execution when run as script (ESM guard)
+ */
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runRelationshipAuditDryRun().catch((error) => {
+    console.error('Fatal error:', error.message);
+    process.exit(1);
+  });
+}
