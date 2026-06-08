@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete
 
 ---
 
@@ -1973,6 +1973,181 @@ All tests pass: ✅ 9/9
 
 ---
 
+---
+
+### PHASE AF — Write Manifest Generation
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-write-manifest.ts` — Write manifest adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/write-manifest` endpoints
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Write manifest schemas
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for write manifest display
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-core/src/adapters/infinite-brain-post-write-verification.ts` — Post-write verification check 2 update
+- `projects/brain-core/src/tests/infinite-brain-write-manifest.test.ts` — Unit tests
+- `projects/brain-core/src/tests/routes.test.ts` — Route-level tests
+
+**What it does:**
+- Converts executor dry-run operations into concrete manifest of intended writes
+- Reads from executor dry-run report, generates manifest entries
+- Stores manifest at `runtime/local/infinite-brain/write-manifest-latest.json`
+- Provides manifest-only status without performing any writes
+- Integrates with post-write verification check 2 (expectedWriteManifestExists)
+- Console visibility section displays manifest status, entries, and blockers
+- No Apply/Write buttons, no execution controls, no Mind writes
+
+**Key Safety Invariants:**
+- ✅ `writeEnabled: false` (always)
+- ✅ `canWriteToMind: false` (always)
+- ✅ `writesToMind: false` (always)
+- ✅ `modifiesMind: false` (always)
+- ✅ `deletesFiles: false` (always)
+- ✅ `movesFiles: false` (always)
+- ✅ `manifestOnly: true` (always)
+- ✅ `reportOnly: true` (always)
+- ✅ All entries have `writeBlocked: true` and `applied: false`
+- ✅ No Mind modifications
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ Deterministic manifest IDs
+
+**Write Manifest Record Schema:**
+```typescript
+{
+  manifestId: string;                   // Deterministic SHA256 hash
+  generatedAt: string;                  // ISO8601 timestamp
+  sourceDryRunReportId: string | null;  // Reference to executor dry-run report
+  status: 'blocked' | 'manifest-ready'; // manifest-ready means manifest generated
+  writeEnabled: false;                  // Always false
+  canWriteToMind: false;                // Always false
+  totalOperations: number;              // Count of dry-run operations
+  totalManifestEntries: number;         // Count of converted manifest entries
+  entries: WriteManifestEntry[];        // Array of manifest entries
+  blockers: string[];                   // Reasons manifest is blocked
+  safety: {
+    writesToMind: false;
+    modifiesMind: false;
+    deletesFiles: false;
+    movesFiles: false;
+    appliesProposals: false;
+    writeEnabled: false;
+    canWriteToMind: false;
+    manifestOnly: true;
+    reportOnly: true;
+    continuousRuntime: false;
+    modelCalls: false;
+    usesShell: false;
+  };
+}
+```
+
+**Manifest Entry Schema:**
+```typescript
+{
+  entryId: string;                      // Deterministic SHA256 hash
+  operationId: string;                  // Reference to dry-run operation
+  proposalId: string;                   // Proposal ID
+  category: string;                     // Category (inbox, strategy, etc.)
+  operationType: string;                // Operation type (create, update, delete, etc.)
+  intendedAction: string;               // Human-readable action
+  targetPathsPreview: string[];         // Target file paths
+  contentPreviewAvailable: boolean;     // Whether content preview is available
+  contentPreviewHash: string | null;    // Hash of content preview (if available)
+  wouldCreateFiles: boolean;            // Whether this would create files
+  wouldModifyFiles: boolean;            // Whether this would modify files
+  wouldDeleteFiles: boolean;            // Whether this would delete files
+  wouldMoveFiles: boolean;              // Whether this would move files
+  requiresRollbackPlan: boolean;        // Whether rollback plan is needed
+  rollbackPreview: string;              // Rollback plan description
+  validationRequired: string[];         // Required validation steps
+  writeBlocked: true;                   // Always true
+  applied: false;                       // Always false
+}
+```
+
+**API Endpoints:**
+
+`GET /infinite-brain/write-manifest`
+- Returns latest write manifest
+- 404 with code `write_manifest_missing` if not found
+- Response includes manifest with all safety gates blocked
+
+`POST /infinite-brain/write-manifest/generate`
+- Generates new write manifest from executor dry-run report
+- Requires executor dry-run report to be present
+- Response includes generated manifest with all gates blocked
+- Returns: `ok: true`, `manifest`, `code: 'write_manifest_generated'`, `safety` block with all false values
+
+**Console UI (Write Manifest Section):**
+- Added to InfiniteBrainProposalReview component after post-write verification section
+- Button: "Generate Write Manifest" (not "Write", not "Apply", not "Execute")
+- Displays:
+  - Manifest ID and generation timestamp
+  - Status (blocked/manifest-ready)
+  - Write flags (all false)
+  - Total operations and manifest entries
+  - Executor dry-run report reference
+  - Manifest entries (showing up to 5, with scrollable list if more)
+  - Blocker list with count
+  - Safety status verification (all false)
+- Safety message: "Manifest only. No files are written. Mind is unchanged."
+- No write, apply, or execute functionality
+
+**Post-Write Verification Integration (Check 2):**
+- Check 2 (expectedWriteManifestExists) now checks for write manifest presence
+- If manifest exists: check status becomes `pass`
+- If manifest missing: check status remains `blocked`
+- Post-write verification overall remains blocked until real writer + post-write logic exist
+
+**Status Integration:**
+- Added `writeManifest` to `runtime` object in status response
+- Includes: `available`, `generatedAt`, `status`, `totalManifestEntries`, `writeEnabled`, `canWriteToMind`, `blockerCount`
+- Union type: { available: false, reason: string } OR { available: true, ... }
+
+**Deterministic ID Generation:**
+- `manifestId = SHA256(dryRunId + sortedOperationIds).substring(0,12)`
+- `entryId = SHA256(operationId + operationType + category).substring(0,12)`
+- Format: `manifest-{hash}`, `entry-{hash}`
+- No timestamp, no randomness in IDs (generatedAt is okay)
+- Same input always produces same IDs
+
+**Environment Variables:**
+- `IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH` — Override dry-run path (used as input)
+- `IBR_WRITE_MANIFEST_PATH` — Override manifest path (storage location)
+
+**Safety Checks:**
+- ✅ No `writesToMind: true` in source
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ No Math.random or crypto.randomBytes for IDs
+- ✅ No child_process, exec, spawn
+- ✅ Deterministic ID via SHA256
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Zod schemas pass validation
+- ✅ 6 adapter-level tests pass (missing dry-run, creates entries, deterministic IDs, writeBlocked/applied, safety block, summary)
+- ✅ 3 route-level tests pass (POST generate, GET 404, GET stored)
+- ✅ Build passes
+- ✅ Console component renders without errors
+- ✅ All safety invariants enforced
+
+**How it Bridges:**
+- Takes executor dry-run report (what WOULD execute)
+- Converts each operation into manifest entry (concrete write description)
+- Future writer can consume manifest only after ALL execution gates pass
+- Post-write verification can use manifest to validate against actual writes
+- Manifest is read-only reference for future phases
+
+**Future Gates (Still Blocked):**
+- Real writer implementation (blocks actual writes)
+- Post-write verification with manifest comparison (blocks final validation)
+- Rollback plan validation (blocks execution)
+- Changelog verification (blocks execution)
+- Operator post-write review (blocks execution)
+
+---
+
 **Future Implementation Phases:**
 | Phase | Blocker | Status |
 |-------|---------|--------|
@@ -1980,7 +2155,8 @@ All tests pass: ✅ 9/9
 | Z+2 | Operator approval gate | ⏳ Blocked |
 | Z+3 | Category-specific implementations | ⏳ Blocked |
 | Z+4 | Post-write verification (PHASE AE) | ✅ Console visibility added |
-| Z+5 | Rollback implementation | ⏳ Blocked |
+| Z+5 | Write manifest generation (PHASE AF) | ✅ Manifest generation complete |
+| Z+6 | Rollback implementation | ⏳ Blocked |
 
 ---
 

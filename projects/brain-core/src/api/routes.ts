@@ -25,6 +25,7 @@ import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDr
 import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafetyReport, readIosSyncSafetySummary } from '../adapters/infinite-brain-ios-sync-safety.js';
 import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
 import { generatePostWriteVerificationReport, writePostWriteVerificationReport, readPostWriteVerificationReport, readPostWriteVerificationSummary } from '../adapters/infinite-brain-post-write-verification.js';
+import { generateWriteManifest, writeWriteManifest, readWriteManifest } from '../adapters/infinite-brain-write-manifest.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -2728,6 +2729,25 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Write Manifest (Fetch) ────────────────────────────────
+      if (url.pathname === '/api/infinite-brain/write-manifest' && request.method === 'GET') {
+        const manifest = readWriteManifest();
+        if (!manifest) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'write_manifest_missing',
+            message: 'No write manifest found. Generate one first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          manifest,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -2839,6 +2859,36 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'post_write_verification_write_failed',
         message: 'Failed to write post-write verification report',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Write Manifest (Generate) ──────────────────────────────
+  if (url.pathname === '/api/infinite-brain/write-manifest/generate') {
+    const manifest = generateWriteManifest();
+    const success = writeWriteManifest(manifest);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'write_manifest_generated',
+        message: 'Write manifest generated (manifest-only, no writes)',
+        manifest,
+        safety: {
+          writeEnabled: false,
+          canWriteToMind: false,
+          writesToMind: false,
+          modifiesMind: false,
+          manifestOnly: true,
+          reportOnly: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'write_manifest_write_failed',
+        message: 'Failed to write write manifest',
       });
     }
     return;

@@ -1184,6 +1184,89 @@ export type InfiniteBrainPostWriteVerificationRecord = z.infer<typeof infiniteBr
 export type InfiniteBrainPostWriteVerificationResponse = z.infer<typeof infiniteBrainPostWriteVerificationResponseSchema>;
 export type InfiniteBrainPostWriteVerificationGenerateResponse = z.infer<typeof infiniteBrainPostWriteVerificationGenerateResponseSchema>;
 
+const infiniteBrainWriteManifestSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  modifiesMind: z.literal(false),
+  deletesFiles: z.literal(false),
+  movesFiles: z.literal(false),
+  appliesProposals: z.literal(false),
+  writeEnabled: z.literal(false),
+  canWriteToMind: z.literal(false),
+  manifestOnly: z.literal(true),
+  reportOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+const infiniteBrainWriteManifestEntrySchema = z.object({
+  entryId: z.string(),
+  operationId: z.string(),
+  proposalId: z.string(),
+  category: z.string(),
+  operationType: z.string(),
+  intendedAction: z.string(),
+  targetPathsPreview: z.array(z.string()),
+  contentPreviewAvailable: z.boolean(),
+  contentPreviewHash: z.string().nullable(),
+  wouldCreateFiles: z.boolean(),
+  wouldModifyFiles: z.boolean(),
+  wouldDeleteFiles: z.boolean(),
+  wouldMoveFiles: z.boolean(),
+  requiresRollbackPlan: z.boolean(),
+  rollbackPreview: z.string(),
+  validationRequired: z.array(z.string()),
+  writeBlocked: z.literal(true),
+  applied: z.literal(false),
+});
+
+export const infiniteBrainWriteManifestRecordSchema = z.object({
+  manifestId: z.string(),
+  generatedAt: z.string(),
+  sourceDryRunReportId: z.string().nullable(),
+  status: z.enum(['blocked', 'manifest-ready']),
+  writeEnabled: z.literal(false),
+  canWriteToMind: z.literal(false),
+  totalOperations: z.number(),
+  totalManifestEntries: z.number(),
+  entries: z.array(infiniteBrainWriteManifestEntrySchema),
+  blockers: z.array(z.string()),
+  safety: infiniteBrainWriteManifestSafetySchema,
+});
+
+export const infiniteBrainWriteManifestResponseSchema = z.object({
+  ok: z.literal(true),
+  manifest: infiniteBrainWriteManifestRecordSchema,
+});
+
+export const infiniteBrainWriteManifestGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('write_manifest_generated'),
+  message: z.string(),
+  manifest: infiniteBrainWriteManifestRecordSchema,
+  safety: infiniteBrainWriteManifestSafetySchema,
+});
+
+const infiniteBrainWriteManifestSchema = z.union([
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+  z.object({
+    available: z.literal(true),
+    generatedAt: z.string(),
+    status: z.enum(['blocked', 'manifest-ready']),
+    totalManifestEntries: z.number(),
+    writeEnabled: z.literal(false),
+    canWriteToMind: z.literal(false),
+    blockerCount: z.number(),
+  }),
+]);
+
+export type InfiniteBrainWriteManifestRecord = z.infer<typeof infiniteBrainWriteManifestRecordSchema>;
+export type InfiniteBrainWriteManifestResponse = z.infer<typeof infiniteBrainWriteManifestResponseSchema>;
+export type InfiniteBrainWriteManifestGenerateResponse = z.infer<typeof infiniteBrainWriteManifestGenerateResponseSchema>;
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({
@@ -1197,6 +1280,7 @@ export const infiniteBrainStatusSchema = z.object({
     applicationPlan: infiniteBrainApplicationPlanSchema,
     operatorApproval: infiniteBrainOperatorApprovalSchema,
     postWriteVerification: infiniteBrainPostWriteVerificationSchema,
+    writeManifest: infiniteBrainWriteManifestSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

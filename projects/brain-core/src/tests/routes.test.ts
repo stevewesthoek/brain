@@ -4992,3 +4992,178 @@ test('GET /api/infinite-brain/post-write-verification returns stored report', as
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
+
+test('POST /api/infinite-brain/write-manifest/generate returns manifest-only result', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/write-manifest/generate',
+    remoteAddress: '127.0.0.1',
+  });
+
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(Buffer.from(JSON.stringify({})));
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as {
+    ok?: boolean;
+    code?: string;
+    manifest?: {
+      status?: string;
+      writeEnabled?: boolean;
+      canWriteToMind?: boolean;
+    };
+    safety?: {
+      writeEnabled?: boolean;
+      canWriteToMind?: boolean;
+      writesToMind?: boolean;
+      manifestOnly?: boolean;
+      reportOnly?: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200, 'must return 200 for manifest generation');
+  assert.equal(body.ok, true, 'ok must be true');
+  assert.equal(body.code, 'write_manifest_generated', 'code must be write_manifest_generated');
+  assert.equal(body.manifest?.writeEnabled, false, 'writeEnabled must be false');
+  assert.equal(body.manifest?.canWriteToMind, false, 'canWriteToMind must be false');
+  assert.equal(body.safety?.writesToMind, false, 'writesToMind must be false');
+  assert.equal(body.safety?.manifestOnly, true, 'manifestOnly must be true');
+  assert.equal(body.safety?.reportOnly, true, 'reportOnly must be true');
+});
+
+test('GET /api/infinite-brain/write-manifest returns 404 when missing', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-write-manifest-missing');
+  const manifestPath = path.join(testDir, 'missing.json');
+  const previousEnv = process.env.IBR_WRITE_MANIFEST_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_WRITE_MANIFEST_PATH = manifestPath;
+
+    const request = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/write-manifest',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+    const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+
+    assert.equal(response.statusCode, 404, 'must return 404 when manifest missing');
+    assert.equal(body.code, 'write_manifest_missing', 'code must be write_manifest_missing');
+    assert.equal(body.ok, false, 'ok must be false');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_WRITE_MANIFEST_PATH;
+    } else {
+      process.env.IBR_WRITE_MANIFEST_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /api/infinite-brain/write-manifest returns stored manifest', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-write-manifest-get');
+  const manifestPath = path.join(testDir, 'manifest.json');
+  const previousEnv = process.env.IBR_WRITE_MANIFEST_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_WRITE_MANIFEST_PATH = manifestPath;
+
+    // Pre-write a write manifest
+    const manifest = {
+      manifestId: 'manifest-test-123',
+      generatedAt: new Date().toISOString(),
+      sourceDryRunReportId: 'dry-run-123',
+      status: 'blocked' as const,
+      writeEnabled: false,
+      canWriteToMind: false,
+      totalOperations: 1,
+      totalManifestEntries: 1,
+      entries: [
+        {
+          entryId: 'entry-1',
+          operationId: 'op-1',
+          proposalId: 'proposal-1',
+          category: 'inbox',
+          operationType: 'create',
+          intendedAction: 'create in inbox',
+          targetPathsPreview: ['/path/to/file'],
+          contentPreviewAvailable: false,
+          contentPreviewHash: null,
+          wouldCreateFiles: true,
+          wouldModifyFiles: false,
+          wouldDeleteFiles: false,
+          wouldMoveFiles: false,
+          requiresRollbackPlan: false,
+          rollbackPreview: '',
+          validationRequired: [],
+          writeBlocked: true,
+          applied: false,
+        },
+      ],
+      blockers: [],
+      safety: {
+        writesToMind: false,
+        modifiesMind: false,
+        deletesFiles: false,
+        movesFiles: false,
+        appliesProposals: false,
+        writeEnabled: false,
+        canWriteToMind: false,
+        manifestOnly: true,
+        reportOnly: true,
+        continuousRuntime: false,
+        modelCalls: false,
+        usesShell: false,
+      },
+    };
+
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+
+    // GET to retrieve the manifest
+    const getRequest = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/write-manifest',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const getResponse = new MockResponse();
+    await routeRequest(getRequest, getResponse);
+    const body = JSON.parse(getResponse.body) as {
+      ok?: boolean;
+      manifest?: {
+        status?: string;
+        writeEnabled?: boolean;
+        canWriteToMind?: boolean;
+        totalManifestEntries?: number;
+      };
+    };
+
+    assert.equal(getResponse.statusCode, 200, 'must return 200 when manifest exists');
+    assert.equal(body.ok, true, 'ok must be true');
+    assert.equal(body.manifest?.status, 'blocked', 'status must be blocked');
+    assert.equal(body.manifest?.writeEnabled, false, 'writeEnabled must be false');
+    assert.equal(body.manifest?.canWriteToMind, false, 'canWriteToMind must be false');
+    assert.equal(body.manifest?.totalManifestEntries, 1, 'totalManifestEntries must be 1');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_WRITE_MANIFEST_PATH;
+    } else {
+      process.env.IBR_WRITE_MANIFEST_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});

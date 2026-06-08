@@ -14,6 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import { readWriteManifest } from './infinite-brain-write-manifest.js';
 
 const DEFAULT_POST_WRITE_VERIFICATION_RELATIVE_PATH = 'runtime/local/infinite-brain/post-write-verification-latest.json';
 const DEFAULT_EXECUTOR_DRY_RUN_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-executor-dry-run-latest.json';
@@ -141,11 +142,15 @@ function performPostWriteVerificationChecks(
   });
 
   // Check 2: expectedWriteManifestExists
+  const writeManifest = readWriteManifest();
+  const manifestExists = writeManifest !== null;
   checks.push({
     checkId: `check-${checkIndex++}`,
     label: 'Expected write manifest exists',
-    status: 'blocked',
-    reason: 'Expected write manifest not yet implemented. This phase defines the check only.',
+    status: manifestExists ? 'pass' : 'blocked',
+    reason: manifestExists
+      ? 'Write manifest found'
+      : 'No write manifest. Generate one first.',
   });
 
   // Check 3: mindPathExists
