@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -720,6 +720,172 @@ export function InfiniteBrainExecutionReadiness() {
             className="mt-3 w-full px-3 py-2 bg-amber-600 text-white rounded text-sm font-semibold hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
           >
             {generating ? 'Generating...' : 'Generate Execution Readiness'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function InfiniteBrainExecutorDryRun() {
+  const [drySummary, setDrySummary] = useState<{
+    available: boolean;
+    generatedAt?: string;
+    status?: string;
+    canExecute?: boolean;
+    wouldExecuteSteps?: number;
+    blockedSteps?: number;
+    operationCount?: number;
+    blockerCount?: number;
+    dryRunOnly?: boolean;
+    executionBlocked?: boolean;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationSuccess, setGenerationSuccess] = useState(false);
+
+  async function fetchDryRunSummary() {
+    try {
+      const data = await brainCoreRequest(
+        '/infinite-brain/proposals/executor-dry-run/summary',
+        infiniteBrainExecutorDryRunSummaryResponseSchema
+      );
+      setDrySummary(data.summary);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dry-run summary');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchDryRunSummary();
+  }, []);
+
+  async function handleGenerateDryRun() {
+    setGenerating(true);
+    setGenerationError(null);
+    setGenerationSuccess(false);
+
+    try {
+      const response = await postBrainCoreAction(
+        '/infinite-brain/proposals/executor-dry-run/generate',
+        infiniteBrainExecutorDryRunGenerateResponseSchema,
+        {}
+      );
+
+      if (response.ok) {
+        setGenerationSuccess(true);
+        await fetchDryRunSummary();
+      } else {
+        setGenerationError('Failed to generate dry-run report');
+      }
+    } catch (err) {
+      setGenerationError(err instanceof Error ? err.message : 'Failed to generate dry-run report');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Executor Dry Run</h3>
+        <p className="text-sm text-slate-500 mt-2">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="p-4 bg-violet-50 rounded-lg border border-violet-200">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="font-semibold text-violet-900">Executor Dry Run</h3>
+            <p className="text-xs text-violet-700 mt-1">
+              Describes what would execute if execution were allowed
+            </p>
+            <div className="mt-2 text-xs text-violet-700 space-y-0.5">
+              <p>✓ Dry run only — no proposals applied</p>
+              <p>✓ Execution remains blocked</p>
+              <p>✓ Mind is unchanged</p>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{error}</p>
+          </div>
+        )}
+
+        {generationError && (
+          <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{generationError}</p>
+          </div>
+        )}
+
+        {generationSuccess && (
+          <div className="mt-3 p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">✓ Dry-run report generated successfully</p>
+          </div>
+        )}
+
+        {drySummary && drySummary.available ? (
+          <div className="mt-3 space-y-2">
+            <div className="bg-white rounded p-2 border border-slate-200 text-xs space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-slate-600">Can Execute</p>
+                  <p className="font-semibold text-red-600">
+                    {drySummary.canExecute === false ? 'No' : 'Unknown'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Dry Run Only</p>
+                  <p className="font-semibold text-violet-600">
+                    {drySummary.dryRunOnly === true ? 'Yes' : 'No'}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <p className="text-slate-600">Operations</p>
+                  <p className="font-semibold text-slate-900">{drySummary.operationCount || 0}</p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Blocked</p>
+                  <p className="font-semibold text-red-600">{drySummary.blockedSteps || 0}</p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Blockers</p>
+                  <p className="font-semibold text-violet-600">{drySummary.blockerCount || 0}</p>
+                </div>
+              </div>
+              {drySummary.generatedAt && (
+                <p className="text-xs text-slate-500">
+                  Generated: {new Date(drySummary.generatedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleGenerateDryRun}
+              disabled={generating}
+              className="w-full px-3 py-2 bg-violet-600 text-white rounded text-sm font-semibold hover:bg-violet-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+            >
+              {generating ? 'Generating...' : 'Regenerate Dry Run'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleGenerateDryRun}
+            disabled={generating}
+            className="mt-3 w-full px-3 py-2 bg-violet-600 text-white rounded text-sm font-semibold hover:bg-violet-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+          >
+            {generating ? 'Generating...' : 'Generate Executor Dry Run'}
           </button>
         )}
       </div>

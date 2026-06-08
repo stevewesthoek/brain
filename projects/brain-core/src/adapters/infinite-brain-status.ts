@@ -8,6 +8,7 @@ import path from 'path';
 import { summarizeInfiniteBrainProposalApprovals } from './infinite-brain-proposal-approval-store.js';
 import { readApplicationPlanSummary } from './infinite-brain-proposal-application-planner.js';
 import { readExecutionReadinessSummary } from './infinite-brain-proposal-execution-readiness.js';
+import { readExecutorDryRunSummary } from './infinite-brain-proposal-executor-dry-run.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -474,10 +475,37 @@ function getExecutionReadinessStatus() {
 }
 
 /**
+ * Get executor dry-run status
+ */
+function getExecutorDryRunStatus() {
+  const summary = readExecutorDryRunSummary();
+  if (!summary) {
+    return {
+      available: false,
+      reason: 'Executor dry-run report not found. Run /generate endpoint first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    status: summary.status,
+    canExecute: summary.canExecute,
+    wouldExecuteSteps: summary.wouldExecuteSteps,
+    blockedSteps: summary.blockedSteps,
+    operationCount: summary.operationCount,
+    blockerCount: summary.blockerCount,
+    dryRunOnly: true,
+    executionBlocked: true,
+    safety: summary.safety,
+  };
+}
+
+/**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -487,6 +515,7 @@ export async function getInfiniteBrainStatus() {
     getProposalApprovalStatus(),
     Promise.resolve(getApplicationPlanStatus()),
     Promise.resolve(getExecutionReadinessStatus()),
+    Promise.resolve(getExecutorDryRunStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -504,6 +533,7 @@ export async function getInfiniteBrainStatus() {
       proposalApprovals,
       applicationPlan,
       executionReadiness,
+      executorDryRun,
       pipeline,
     },
     infrastructure: {

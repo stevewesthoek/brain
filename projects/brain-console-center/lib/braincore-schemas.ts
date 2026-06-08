@@ -917,6 +917,93 @@ export const infiniteBrainExecutionReadinessFullReportSchema = z.object({
 export type InfiniteBrainExecutionReadinessCheck = z.infer<typeof infiniteBrainExecutionReadinessCheckSchema>;
 export type InfiniteBrainExecutionReadinessFullReport = z.infer<typeof infiniteBrainExecutionReadinessFullReportSchema>;
 
+const infiniteBrainExecutorDryRunSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canExecute: z.literal(false),
+  dryRunOnly: z.literal(true),
+  executionBlocked: z.literal(true),
+  deletesFiles: z.literal(false),
+  movesFiles: z.literal(false),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+});
+
+const infiniteBrainExecutorDryRunOperationSchema = z.object({
+  operationId: z.string(),
+  stepId: z.string(),
+  proposalId: z.string(),
+  category: z.string(),
+  operationType: z.string(),
+  targetPathsPreview: z.array(z.string()),
+  wouldWriteToMind: z.boolean(),
+  wouldDeleteFiles: z.boolean(),
+  wouldMoveFiles: z.boolean(),
+  dryRunOnly: z.literal(true),
+  executionBlocked: z.literal(true),
+  applied: z.literal(false),
+  rollbackPreview: z.string(),
+  validationChecks: z.array(z.object({
+    checkId: z.string(),
+    label: z.string(),
+    status: z.enum(['pass', 'fail', 'uncertain']),
+    reason: z.string(),
+  })),
+});
+
+export const infiniteBrainExecutorDryRunSummarySchema = z.object({
+  available: z.literal(true),
+  generatedAt: z.string(),
+  status: z.string(),
+  canExecute: z.literal(false),
+  wouldExecuteSteps: z.number(),
+  blockedSteps: z.number(),
+  operationCount: z.number(),
+  blockerCount: z.number(),
+  dryRunOnly: z.literal(true),
+  executionBlocked: z.literal(true),
+  safety: infiniteBrainExecutorDryRunSafetySchema,
+});
+
+export const infiniteBrainExecutorDryRunGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('executor_dry_run_generated'),
+  message: z.string(),
+  report: z.object({
+    reportId: z.string(),
+    generatedAt: z.string(),
+    status: z.string(),
+    canExecute: z.literal(false),
+    wouldExecuteSteps: z.number(),
+    blockedSteps: z.number(),
+    operationCount: z.number(),
+    blockerCount: z.number(),
+  }),
+  safety: infiniteBrainExecutorDryRunSafetySchema,
+});
+
+export const infiniteBrainExecutorDryRunReportSchema = z.object({
+  ok: z.literal(true),
+  report: z.object({
+    reportId: z.string(),
+    generatedAt: z.string(),
+    applicationPlanId: z.string().nullable(),
+    readinessReportId: z.string().nullable(),
+    status: z.enum(['blocked', 'dry-run-ready']),
+    canExecute: z.literal(false),
+    wouldExecuteSteps: z.number(),
+    blockedSteps: z.number(),
+    operations: z.array(infiniteBrainExecutorDryRunOperationSchema),
+    blockers: z.array(z.string()),
+    safety: infiniteBrainExecutorDryRunSafetySchema,
+  }),
+});
+
+export const infiniteBrainExecutorDryRunSummaryResponseSchema = z.object({
+  ok: z.literal(true),
+  summary: infiniteBrainExecutorDryRunSummarySchema,
+});
+
 export const infiniteBrainProposalSchema = z.object({
   proposalId: z.string(),
   category: z.string(),

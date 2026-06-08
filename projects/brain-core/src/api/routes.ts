@@ -21,6 +21,7 @@ import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
 import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal } from '../adapters/infinite-brain-proposal-approval-store.js';
 import { generateApplicationPlan, writeApplicationPlan, readApplicationPlan, readApplicationPlanSummary } from '../adapters/infinite-brain-proposal-application-planner.js';
 import { generateExecutionReadinessReport, writeExecutionReadinessReport, readExecutionReadinessReport, readExecutionReadinessSummary } from '../adapters/infinite-brain-proposal-execution-readiness.js';
+import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDryRunReport, readExecutorDryRunSummary } from '../adapters/infinite-brain-proposal-executor-dry-run.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -3024,6 +3025,77 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'execution_readiness_missing',
         message: 'No execution readiness report found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      summary,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Executor Dry-Run Generate ──────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/executor-dry-run/generate' && request.method === 'POST') {
+    const report = generateExecutorDryRunReport();
+    const success = writeExecutorDryRunReport(report);
+
+    if (!success) {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'executor_dry_run_write_failed',
+        message: 'Failed to write executor dry-run report.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      code: 'executor_dry_run_generated',
+      message: 'Executor dry-run report generated (dry-run only, no execution).',
+      report: {
+        reportId: report.reportId,
+        generatedAt: report.generatedAt,
+        status: report.status,
+        canExecute: report.canExecute,
+        wouldExecuteSteps: report.wouldExecuteSteps,
+        blockedSteps: report.blockedSteps,
+        operationCount: report.operations.length,
+        blockerCount: report.blockers.length,
+      },
+      safety: report.safety,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Executor Dry-Run Report ────────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/executor-dry-run' && request.method === 'GET') {
+    const report = readExecutorDryRunReport();
+    if (!report) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'executor_dry_run_missing',
+        message: 'No executor dry-run report found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      report,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Executor Dry-Run Summary ───────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/executor-dry-run/summary' && request.method === 'GET') {
+    const summary = readExecutorDryRunSummary();
+    if (!summary) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'executor_dry_run_missing',
+        message: 'No executor dry-run report found. Run /generate endpoint first.',
       });
       return;
     }

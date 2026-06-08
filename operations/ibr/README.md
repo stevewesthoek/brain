@@ -1126,6 +1126,157 @@ Static guidance for known blockers:
 
 ---
 
+### PHASE W — Executor Dry-Run Contract
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-proposal-executor-dry-run.ts` (NEW)
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` (MODIFIED)
+- `projects/brain-core/src/api/routes.ts` (MODIFIED)
+- `projects/brain-console-center/lib/braincore-schemas.ts` (MODIFIED)
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` (MODIFIED)
+- `operations/ibr/README.md` (This documentation)
+
+**What it does:**
+- Generates executor dry-run report describing what would execute if execution were allowed
+- Reads approved proposals, application plan, and readiness report
+- Produces operations contract with category-specific operation types
+- All operations marked: dryRunOnly: true, executionBlocked: true, applied: false
+- No execution occurs
+- No Mind writes occur
+- No proposals are applied
+
+**Executor Dry-Run Report:**
+
+Input files:
+- `proposal-application-plan-latest.json` — approved proposals converted to plan
+- `proposal-execution-readiness-latest.json` — execution readiness checks and blockers
+
+Output file:
+- `proposal-executor-dry-run-latest.json` — dry-run contract
+
+Report fields:
+- **reportId**: Deterministic SHA256 hash of planId + readinessId + step IDs
+- **generatedAt**: ISO8601 timestamp
+- **applicationPlanId**: ID from application plan (null if missing)
+- **readinessReportId**: ID from readiness report (null if missing)
+- **status**: blocked | dry-run-ready (blocked if canExecute is false)
+- **canExecute**: false (always)
+- **wouldExecuteSteps**: 0 (no execution in this phase)
+- **blockedSteps**: count of total steps (all blocked)
+- **operations**: Array of dry-run operations
+- **blockers**: List of blocker reasons from readiness report
+- **safety**: All safety literals enforced
+
+**Operation Types by Category:**
+
+| Category | Operation Type | Preview Behavior |
+|----------|---------------|------------------|
+| atomization | preview_atomic_note_creation | Show paths that would be created |
+| entity-metadata | preview_metadata_update | Show frontmatter changes |
+| edge-review | preview_edge_review | Show edge updates |
+| cleanup | preview_cleanup_review | Show entities to review for cleanup |
+| wiki-writing | preview_wiki_page_creation | Show wiki page paths |
+| task-extraction | preview_task_creation | Show tasks to be created |
+| fallback | preview_manual_review | Manual review required |
+
+**Operation Schema:**
+
+```typescript
+{
+  operationId: string,                    // deterministic hash
+  stepId: string,
+  proposalId: string,
+  category: string,
+  operationType: string,                  // category-specific type
+  targetPathsPreview: string[],
+  wouldWriteToMind: boolean,
+  wouldDeleteFiles: boolean,              // always false in this phase
+  wouldMoveFiles: boolean,                // always false in this phase
+  dryRunOnly: true,
+  executionBlocked: true,
+  applied: false,
+  rollbackPreview: string,
+  validationChecks: [{
+    checkId: string,
+    label: string,
+    status: 'pass' | 'fail' | 'uncertain',
+    reason: string
+  }]
+}
+```
+
+**API Endpoints:**
+
+POST `/infinite-brain/proposals/executor-dry-run/generate`
+- Generates dry-run report from latest plan + readiness
+- Returns report summary + safety invariants
+- Response includes: canExecute false, dryRunOnly true, executionBlocked true, writesToMind false
+
+GET `/infinite-brain/proposals/executor-dry-run`
+- Returns full dry-run report with all operations
+- 404 if missing
+
+GET `/infinite-brain/proposals/executor-dry-run/summary`
+- Returns metadata: status, canExecute, wouldExecuteSteps, blockedSteps, operationCount, blockerCount
+- 404 if missing
+
+**Safety Invariants:**
+- ✅ Dry-run-only (no execution)
+- ✅ Can Execute always false
+- ✅ Execution Blocked always true
+- ✅ No proposals applied
+- ✅ No Mind writes
+- ✅ All operations marked dryRunOnly: true
+- ✅ All operations marked executionBlocked: true
+- ✅ All operations marked applied: false
+- ✅ No model calls
+- ✅ No continuous runtime
+- ✅ Deterministic report and operation IDs (no randomness)
+
+**Console Display:**
+
+New "Executor Dry Run" section shows:
+- Can Execute: No (always)
+- Dry Run Only: Yes (always)
+- Operations: count
+- Blocked: count
+- Blockers: count
+- Generated: timestamp
+- Button: "Generate Executor Dry Run" (never "Execute" or "Apply")
+
+**Status Integration:**
+
+`GET /infinite-brain/status` now includes:
+- `runtime.executorDryRun`:
+  - available
+  - generatedAt
+  - status
+  - canExecute: false
+  - wouldExecuteSteps: 0
+  - blockedSteps
+  - operationCount
+  - blockerCount
+  - dryRunOnly: true
+  - executionBlocked: true
+  - safety (all false/true literals)
+
+**Future Phase (After Implementation Approval):**
+
+When all 10 readiness checks pass AND explicit operator approval is recorded:
+- Build actual proposal executor
+- Implement allowlisted writer for each category
+- Add proposal application state tracking
+- Create proposal rollback capability
+- Add audit trail logging
+
+**Next Phase (W+1):**
+- Build operation details viewer (show what each operation would do)
+- Add rollback preview for each operation
+- Show validation check details and uncertainties
+- Build "How to fix blocker" guidance links
+
+---
+
 ### PHASE O2 — Proposal Review UI (Decision-Record-Only)
 
 **Files:**
