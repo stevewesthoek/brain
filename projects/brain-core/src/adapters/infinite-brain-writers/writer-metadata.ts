@@ -473,6 +473,17 @@ export function runMetadataWriterSingleFileWrite(input: MetadataWriterSingleFile
     blockers.push('invalidFieldName');
   }
 
+  // Validate: external gates must be satisfied before any single-file test write.
+  for (const precondition of preconditions) {
+    if (
+      precondition.status === 'blocked' &&
+      (precondition.name === 'operatorApprovalIntentRecorded' ||
+        precondition.name === 'iosSyncSafetyReportExists')
+    ) {
+      blockers.push(precondition.name);
+    }
+  }
+
   // If any blockers, return blocked report
   if (blockers.length > 0) {
     const blockedPreconditions = preconditions.map(p => {
