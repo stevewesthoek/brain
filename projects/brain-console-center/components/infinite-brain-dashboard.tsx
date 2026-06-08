@@ -176,6 +176,42 @@ export function InfiniteBrainDashboard() {
         )}
       </div>
 
+      {/* Proposal Generation Report */}
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Proposal Generation (IB11)</h3>
+        {status.runtime.proposals.available ? (
+          <div className="mt-2 text-sm text-slate-700 space-y-1">
+            <p>Total proposals: <strong>{status.runtime.proposals.totalProposals}</strong></p>
+            <p className="font-semibold text-blue-700">
+              High priority: <strong>{status.runtime.proposals.highPriorityProposals}</strong>
+            </p>
+            <p>Medium priority: <strong>{status.runtime.proposals.mediumPriorityProposals}</strong></p>
+            <p>Low priority: <strong>{status.runtime.proposals.lowPriorityProposals}</strong></p>
+            <p className="text-xs mt-2">Categories:</p>
+            <div className="text-xs text-slate-600 ml-2 space-y-0.5">
+              {Object.entries(status.runtime.proposals.byCategory).map(([category, count]) => (
+                <p key={category}>{category}: {count}</p>
+              ))}
+            </div>
+            <div className="mt-2 flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${status.runtime.proposals.reportOnly ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span>Report-only: {status.runtime.proposals.reportOnly ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className={`inline-block w-2 h-2 rounded-full ${!status.runtime.proposals.writesToMind ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span>Writes to Mind: {status.runtime.proposals.writesToMind ? 'Yes' : 'No'}</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              Updated: {status.runtime.proposals.timestamp ? new Date(status.runtime.proposals.timestamp).toLocaleString() : 'Never'}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 mt-2">{status.runtime.proposals.reason}</p>
+        )}
+      </div>
+
       {/* Pipeline Report */}
       <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
         <h3 className="font-semibold text-slate-900">Report-Only Pipeline</h3>

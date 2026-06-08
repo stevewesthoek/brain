@@ -15,6 +15,7 @@ import { runEntityClassifierDryRun } from './entity-classifier-dry-run.mjs';
 import { runEdgeInferenceDryRun } from './edge-inference-dry-run.mjs';
 import { runRelationshipAuditDryRun } from './relationship-audit-dry-run.mjs';
 import { runInsightGenerationDryRun } from './insight-generation-dry-run.mjs';
+import { runProposalGenerationDryRun } from './proposal-generation-dry-run.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,6 +53,12 @@ const PHASES = [
     displayName: 'Insight Generation Dry-Run',
     fn: runInsightGenerationDryRun,
     outputFile: 'insights-latest.json',
+  },
+  {
+    name: 'proposals',
+    displayName: 'Proposal Generation Dry-Run',
+    fn: runProposalGenerationDryRun,
+    outputFile: 'proposals-latest.json',
   },
 ];
 
@@ -141,6 +148,16 @@ async function extractPhaseMetrics(phase) {
         recommendationCount: report.summary?.recommendationCount,
       };
 
+    case 'proposals':
+      return {
+        proposalsGenerated: report.totalProposals,
+        proposalsByCategory: report.byCategory,
+        highPriorityProposals: report.byPriority?.high || 0,
+        mediumPriorityProposals: report.byPriority?.medium || 0,
+        lowPriorityProposals: report.byPriority?.low || 0,
+        proposalsRequireApproval: report.proposalsRequireApproval,
+      };
+
     default:
       return null;
   }
@@ -204,7 +221,8 @@ function formatPipelineMarkdown(report) {
   md += `- **Classifier:** ${report.summaryMetrics.classifier.totalFilesAnalyzed} files classified (${report.summaryMetrics.classifier.avgConfidence}% avg confidence)\n`;
   md += `- **Edges:** ${report.summaryMetrics.edges.totalInferredEdges} edges inferred\n`;
   md += `- **Audit:** Health score ${report.summaryMetrics.relationships.healthScore}%\n`;
-  md += `- **Insights:** ${report.summaryMetrics.insights.insightCount} insights generated\n\n`;
+  md += `- **Insights:** ${report.summaryMetrics.insights.insightCount} insights generated\n`;
+  md += `- **Proposals:** ${report.summaryMetrics.proposals.proposalsGenerated} generated (${report.summaryMetrics.proposals.highPriorityProposals} high priority)\n\n`;
 
   md += `## Safety & Determinism\n\n`;
   md += `- **Writes to Mind:** ${report.safety.writesToMind ? 'ON' : 'OFF'} ✓\n`;
@@ -226,10 +244,11 @@ function formatPipelineMarkdown(report) {
 
   md += `## Next Recommended Action\n\n`;
   if (report.status === 'complete' && report.failedSteps.length === 0) {
-    md += `All phases completed successfully. Graph is ready for:\n`;
-    md += `1. Brain Core status integration (J2)\n`;
-    md += `2. Console visibility update (J3)\n`;
-    md += `3. Optional scheduler candidate addition (J4)\n`;
+    md += `All phases completed successfully. Next steps:\n`;
+    md += `1. Review proposals in proposals-latest.json and proposals-latest.md\n`;
+    md += `2. Update Brain Core status integration for proposals visibility\n`;
+    md += `3. Update Console dashboard to show proposal summary\n`;
+    md += `4. Create approval workflow for proposal execution\n`;
   } else if (report.failedSteps.length > 0) {
     md += `Fix failed phases before proceeding:\n`;
     report.failedSteps.forEach((step) => {
@@ -309,6 +328,7 @@ async function runPipeline() {
     edges: steps[2]?.metrics || {},
     relationships: steps[3]?.metrics || {},
     insights: steps[4]?.metrics || {},
+    proposals: steps[5]?.metrics || {},
   };
 
   // Generate pipeline report
@@ -354,6 +374,7 @@ async function runPipeline() {
   console.log(`  Edges: ${summaryMetrics.edges.totalInferredEdges || 'N/A'} edges inferred`);
   console.log(`  Audit Health: ${summaryMetrics.relationships.healthScore || 'N/A'}%`);
   console.log(`  Insights: ${summaryMetrics.insights.insightCount || 'N/A'} generated`);
+  console.log(`  Proposals: ${summaryMetrics.proposals.proposalsGenerated || 'N/A'} generated (${summaryMetrics.proposals.highPriorityProposals || 0} high priority)`);
 
   if (failedSteps.length === 0) {
     console.log(`\n✓ Report-only pipeline execution succeeded`);

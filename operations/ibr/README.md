@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Atomizer dry-run (IB4) complete  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (report-only)
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only
 
 ---
 
@@ -356,6 +356,132 @@ cat runtime/local/infinite-brain/atomizer-latest.md
 - ✅ Deterministic heuristics (heading-based analysis)
 - ✅ No model calls
 - ✅ No file moves or deletions
+
+---
+
+### PHASE IB11 — Proposal Generation (Report-Only)
+
+**Files:**
+- `tools/infinite-brain/proposal-generation-dry-run.mjs` — Proposal generation tool
+- `package.json` script: `ibr:proposals:dry-run`
+- `tools/infinite-brain/run-report-only-pipeline.mjs` — Integrated in pipeline step 6
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Schema extension
+- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — UI display
+
+**What it does:**
+- Reads all prior reports (atomizer, classifier, edges, audit, insights)
+- Generates deterministic proposals in 6 categories
+- Each proposal includes metadata: confidence, priority, risk level, approval flag
+- All proposals require explicit approval before execution
+- Reports only; no mutations, no Mind writes, no model calls
+
+**Proposal Categories:**
+
+1. **atomization** — Propose splitting files >300 lines into atomic notes
+2. **entity-metadata** — Propose adding/normalizing entity type metadata from inferred types
+3. **edge-review** — Propose reviewing low-confidence or suspicious edges
+4. **cleanup** — Propose removing stale/duplicate/orphan entities/edges
+5. **wiki-writing** — Propose high-value wiki/knowledge page candidates
+6. **task-extraction** — Propose possible tasks from classifier/insights data
+
+**Record Schema:**
+```typescript
+{
+  proposalId: string;                 // deterministic ID: prop-XYZ-{hash}
+  category: string;                   // one of 6 categories above
+  title: string;                      // human-readable proposal title
+  summary: string;                    // one-sentence summary
+  sourceReports: string[];            // which reports informed this proposal
+  sourcePaths: string[];              // affected files/entities
+  evidence: object;                   // supporting data
+  confidence: number;                 // 0.0–1.0
+  priority: 'high' | 'medium' | 'low';
+  riskLevel: string;                  // 'low', 'medium', 'high'
+  proposedAction: string;             // specific action to take
+  requiresApproval: boolean;          // always true
+  writesToMindIfApproved: boolean;    // true if this writes to Mind vault
+  safetyMode: 'report-only';         // always 'report-only' until execution
+  status: 'proposed';                // always 'proposed'
+}
+```
+
+**Output:**
+- `runtime/local/infinite-brain/proposals-latest.json` (JSON report with all proposals)
+- `runtime/local/infinite-brain/proposals-latest.md` (Markdown summary, high/medium priority)
+
+**Usage:**
+```bash
+# Run proposal generator (requires prior phases to complete)
+npm run ibr:pipeline:dry-run    # Runs all phases including proposals
+
+# Or generate proposals only (from existing reports)
+npm run ibr:proposals:dry-run
+
+# View JSON report
+jq '.' runtime/local/infinite-brain/proposals-latest.json
+
+# View markdown summary
+cat runtime/local/infinite-brain/proposals-latest.md
+
+# Filter proposals by category
+jq '.proposals[] | select(.category=="atomization")' runtime/local/infinite-brain/proposals-latest.json
+
+# Count by priority
+jq '.byPriority' runtime/local/infinite-brain/proposals-latest.json
+```
+
+**Report Metadata:**
+```typescript
+{
+  timestamp: string;
+  status: 'complete';
+  totalProposals: number;
+  byCategory: Record<string, number>;
+  byPriority: { high: number, medium: number, low: number };
+  proposalsRequireApproval: number;
+  highPriorityProposals: number;
+  sourceReports: ['atomizer-latest.json', 'entity-classifier-latest.json', 
+                  'edge-inference-latest.json', 'relationship-audit-latest.json',
+                  'insights-latest.json'];
+  safety: {
+    writesToMind: false;
+    deletesFiles: false;
+    movesFiles: false;
+    continuousRuntime: false;
+    modelCalls: false;
+    deterministic: true;
+    reportOnly: true;
+  }
+}
+```
+
+**Safety:**
+- ✅ Report-only (no mutations applied)
+- ✅ Deterministic heuristics (no randomness, reproducible)
+- ✅ No model calls
+- ✅ No Mind writes (only proposals about future writes)
+- ✅ Approval required metadata in every proposal
+- ✅ All proposals flagged `requiresApproval: true`
+- ✅ Console integration via brainCoreRequest
+
+**Integration:**
+- Brain Core status: `GET /infinite-brain/status` includes `proposals` section under runtime
+- Console display: Dashboard shows total proposals, high/medium/low counts, by-category breakdown, report-only status, approval required flag
+- No direct fetch: Uses existing brainCoreRequest pattern
+- Pipeline integration: Proposals phase runs as step 6 after insights
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Schemas pass Zod validation
+- ✅ Console component uses brainCoreRequest
+- ✅ Build: `npm run typecheck` passes
+- ✅ No forbidden patterns (child_process, exec, Math.random, provider calls)
+
+**Next Steps (Future Phases):**
+- **Approval Workflow:** Build a Brain Core scheduler stage that accepts/rejects proposals
+- **Execution Phase:** Implement approval-gated proposal execution (IB12+)
+- **Feedback Loop:** Track which proposals were approved/rejected for machine learning
 
 ---
 

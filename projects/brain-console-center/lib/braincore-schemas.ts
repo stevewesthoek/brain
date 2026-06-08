@@ -738,6 +738,25 @@ const infiniteBrainInsightsSchema = z.union([
   }),
 ]);
 
+const infiniteBrainProposalsSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    timestamp: z.string(),
+    totalProposals: z.number(),
+    byCategory: z.record(z.number()),
+    highPriorityProposals: z.number(),
+    mediumPriorityProposals: z.number(),
+    lowPriorityProposals: z.number(),
+    proposalsRequireApproval: z.number(),
+    reportOnly: z.boolean(),
+    writesToMind: z.boolean(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
 const infiniteBrainPipelineSchema = z.union([
   z.object({
     available: z.literal(true),
@@ -765,6 +784,7 @@ export const infiniteBrainStatusSchema = z.object({
     edges: infiniteBrainEdgesSchema,
     relationshipAudit: infiniteBrainRelationshipAuditSchema,
     insights: infiniteBrainInsightsSchema,
+    proposals: infiniteBrainProposalsSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

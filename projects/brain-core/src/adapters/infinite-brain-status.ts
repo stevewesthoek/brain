@@ -70,6 +70,25 @@ interface InsightReport {
   };
 }
 
+interface ProposalReport {
+  timestamp: string;
+  status: string;
+  totalProposals: number;
+  byCategory: Record<string, number>;
+  byPriority: Record<string, number>;
+  proposalsRequireApproval: number;
+  highPriorityProposals: number;
+  mediumPriorityProposals: number;
+  lowPriorityProposals: number;
+  safety: {
+    writesToMind: boolean;
+    continuousRuntime: boolean;
+    modelCalls: boolean;
+    deterministic: boolean;
+    reportOnly: boolean;
+  };
+}
+
 interface ChangelogStats {
   totalMutations: number;
   byAction: Record<string, number>;
@@ -260,6 +279,46 @@ async function getInsightStatus(): Promise<
 }
 
 /**
+ * Get proposal generation status
+ */
+async function getProposalStatus(): Promise<
+  | {
+      available: true;
+      timestamp: string;
+      totalProposals: number;
+      byCategory: Record<string, number>;
+      highPriorityProposals: number;
+      mediumPriorityProposals: number;
+      lowPriorityProposals: number;
+      proposalsRequireApproval: number;
+      reportOnly: boolean;
+      writesToMind: boolean;
+    }
+  | { available: false; reason: string }
+> {
+  const report = await loadReport<ProposalReport>(
+    path.join(RUNTIME_DIR, 'proposals-latest.json')
+  );
+
+  if (!report) {
+    return { available: false, reason: 'Proposal report not found' };
+  }
+
+  return {
+    available: true,
+    timestamp: report.timestamp,
+    totalProposals: report.totalProposals,
+    byCategory: report.byCategory,
+    highPriorityProposals: report.highPriorityProposals,
+    mediumPriorityProposals: report.mediumPriorityProposals,
+    lowPriorityProposals: report.lowPriorityProposals,
+    proposalsRequireApproval: report.proposalsRequireApproval,
+    reportOnly: report.safety.reportOnly,
+    writesToMind: report.safety.writesToMind,
+  };
+}
+
+/**
  * Get pipeline status
  */
 async function getPipelineStatus(): Promise<
@@ -346,12 +405,13 @@ async function getEvidenceStats(): Promise<EvidenceStats> {
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
     getRelationshipAuditStatus(),
     getInsightStatus(),
+    getProposalStatus(),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -365,6 +425,7 @@ export async function getInfiniteBrainStatus() {
       edges,
       relationshipAudit,
       insights,
+      proposals,
       pipeline,
     },
     infrastructure: {
