@@ -84,7 +84,7 @@
       "uniqueItems": true,
       "items": {
         "type": "string",
-        "pattern": "^graphify-out/"
+        "pattern": "^(\\.?graphify-out)/"
       },
       "default": []
     },

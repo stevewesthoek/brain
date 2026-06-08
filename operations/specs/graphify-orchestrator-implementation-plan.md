@@ -62,10 +62,10 @@ Runs standard Graphify commands for:
 Validates required outputs:
 
 ```text
-graphify-out/GRAPH_REPORT.md
-graphify-out/graph.json
-graphify-out/graph.html
-graphify-out/cache/
+.graphify-out/GRAPH_REPORT.md
+.graphify-out/graph.json
+.graphify-out/graph.html
+.graphify-out/cache/
 ```
 
 Optional code outputs may include callflow/architecture HTML.

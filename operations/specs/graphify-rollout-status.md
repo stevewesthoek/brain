@@ -179,7 +179,7 @@ Reasons:
 ✅ Validated:
 - Execution ran successfully (orchestrator exit code 0)
 - No source files modified
-- Only graphify-out/ artifacts updated
+- Only .graphify-out/ artifacts updated
 - Runtime report correctly shows safety fields (writesTargetRepo=true, callsAiModelSelector=false)
 - Status: ok (graphify command failed due to missing boto3, expected environmental issue, not orchestrator issue)
 
@@ -192,7 +192,7 @@ Reasons:
 ✅ Validated:
 - Execution ran successfully
 - No Mind source files modified
-- Only graphify-out/ and graph artifacts updated
+- Only .graphify-out/ and graph artifacts updated
 - Same safety validation as Brain
 
 **Status:** Safe execution path verified for Mind repo.

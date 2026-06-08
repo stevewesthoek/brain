@@ -112,7 +112,7 @@ mind/
   08-live/               # Active work and daily notes
   09-router/             # Routing decisions and workflow state
   10-system/             # System configuration and metadata
-  graphify-out/          # Graphify-generated artifacts (graph.json, html, reports)
+  .graphify-out/          # Graphify-generated artifacts (graph.json, html, reports)
 ```
 
 **Entity density:** ~1,500+ notes across all areas (estimated from disk usage and structure)

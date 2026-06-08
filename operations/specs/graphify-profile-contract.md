@@ -69,7 +69,7 @@ No consuming repo should add this file until the orchestrator can validate it.
     "allowAstOnly": true
   },
   "exclude": [".git/**", "node_modules/**", "dist/**", "build/**", ".next/**", "coverage/**"],
-  "trackGeneratedArtifacts": ["graphify-out/GRAPH_REPORT.md", "graphify-out/graph.json", "graphify-out/graph.html"],
+  "trackGeneratedArtifacts": [".graphify-out/GRAPH_REPORT.md", ".graphify-out/graph.json", ".graphify-out/graph.html"],
   "dashboardVisibility": true,
   "humanReadableFileGraph": true,
   "aiContextMode": true
@@ -208,8 +208,8 @@ The orchestrator should validate the chosen outputs carefully because mixed repo
     "preferLocalWhenSafe": true,
     "allowAstOnly": true
   },
-  "exclude": [".git/**", ".obsidian/**", "graphify-out/cache/**"],
-  "trackGeneratedArtifacts": ["graphify-out/GRAPH_REPORT.md", "graphify-out/graph.json", "graphify-out/graph.html"],
+  "exclude": [".git/**", ".obsidian/**", ".graphify-out/cache/**"],
+  "trackGeneratedArtifacts": [".graphify-out/GRAPH_REPORT.md", ".graphify-out/graph.json", ".graphify-out/graph.html"],
   "dashboardVisibility": true,
   "humanReadableFileGraph": true,
   "aiContextMode": true
@@ -248,7 +248,7 @@ The orchestrator should validate the chosen outputs carefully because mixed repo
     "allowAstOnly": true
   },
   "exclude": [".git/**", "node_modules/**", "dist/**", "build/**", ".next/**", "coverage/**", ".cache/**"],
-  "trackGeneratedArtifacts": ["graphify-out/GRAPH_REPORT.md", "graphify-out/graph.json", "graphify-out/graph.html"],
+  "trackGeneratedArtifacts": [".graphify-out/GRAPH_REPORT.md", ".graphify-out/graph.json", ".graphify-out/graph.html"],
   "dashboardVisibility": true,
   "humanReadableFileGraph": true,
   "aiContextMode": true

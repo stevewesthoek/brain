@@ -29,17 +29,17 @@ Graphify must provide:
 Required default outputs:
 
 ```text
-graphify-out/GRAPH_REPORT.md
-graphify-out/graph.json
-graphify-out/graph.html
-graphify-out/cache/
+.graphify-out/GRAPH_REPORT.md
+.graphify-out/graph.json
+.graphify-out/graph.html
+.graphify-out/cache/
 ```
 
 Optional code-repo outputs:
 
 ```text
-graphify-out/callflow.html
-graphify-out/architecture.html
+.graphify-out/callflow.html
+.graphify-out/architecture.html
 ```
 
 Names may change only if this standard is updated.
@@ -82,8 +82,8 @@ Give AI fast, low-token relational context before reading source files.
 Required AI workflow:
 
 ```text
-1. read graphify-out/GRAPH_REPORT.md;
-2. query/traverse graphify-out/graph.json or Graphify query/path/explain commands;
+1. read .graphify-out/GRAPH_REPORT.md;
+2. query/traverse .graphify-out/graph.json or Graphify query/path/explain commands;
 3. inspect only targeted files;
 4. report which graph path or community informed the answer when useful.
 ```
@@ -307,7 +307,7 @@ Graphify Orchestrator
 ### AI assistant usage
 
 ```text
-If graphify-out/GRAPH_REPORT.md and graphify-out/graph.json exist:
+If .graphify-out/GRAPH_REPORT.md and .graphify-out/graph.json exist:
   read report first
   query graph before broad file reads
   inspect source files only after graph traversal
