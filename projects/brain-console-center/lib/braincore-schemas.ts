@@ -788,30 +788,58 @@ const infiniteBrainPipelineSchema = z.union([
   }),
 ]);
 
+const infiniteBrainApplicationPlanSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  deletesFiles: z.literal(false).optional(),
+  movesFiles: z.literal(false).optional(),
+  continuousRuntime: z.literal(false).optional(),
+  modelCalls: z.literal(false).optional(),
+  executionBlocked: z.literal(true),
+  previewOnly: z.literal(true),
+});
+
+const infiniteBrainApplicationPlanSummarySchema = z.object({
+  available: z.literal(true).optional(),
+  path: z.string().optional(),
+  totalApprovedProposals: z.number(),
+  totalPlannedSteps: z.number(),
+  executionBlocked: z.literal(true),
+  previewOnly: z.literal(true),
+  safety: infiniteBrainApplicationPlanSafetySchema.optional(),
+});
+
 const infiniteBrainApplicationPlanSchema = z.union([
-  z.object({
+  infiniteBrainApplicationPlanSummarySchema.extend({
     available: z.literal(true),
     path: z.string(),
-    totalApprovedProposals: z.number(),
-    totalPlannedSteps: z.number(),
-    executionBlocked: z.literal(true),
-    previewOnly: z.literal(true),
-    safety: z.object({
-      writesToMind: z.literal(false),
-      appliesProposals: z.literal(false),
-      deletesFiles: z.literal(false),
-      movesFiles: z.literal(false),
-      continuousRuntime: z.literal(false),
-      modelCalls: z.literal(false),
-      executionBlocked: z.literal(true),
-      previewOnly: z.literal(true),
-    }),
+    safety: infiniteBrainApplicationPlanSafetySchema,
   }),
   z.object({
     available: z.literal(false),
     reason: z.string(),
   }),
 ]);
+
+export const infiniteBrainApplicationPlanSummaryResponseSchema = z.object({
+  ok: z.literal(true),
+  summary: infiniteBrainApplicationPlanSummarySchema,
+});
+
+export const infiniteBrainApplicationPlanGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('application_plan_generated'),
+  message: z.string(),
+  plan: z.object({
+    planId: z.string(),
+    generatedAt: z.string(),
+    status: z.literal('preview-only'),
+    totalApprovedProposals: z.number(),
+    totalPlannedSteps: z.number(),
+    stepCount: z.number(),
+  }),
+  safety: infiniteBrainApplicationPlanSafetySchema,
+});
 
 export const infiniteBrainProposalSchema = z.object({
   proposalId: z.string(),

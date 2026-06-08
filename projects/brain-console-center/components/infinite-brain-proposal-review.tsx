@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -288,13 +288,11 @@ export function InfiniteBrainApplicationPreview() {
 
   async function fetchPlanSummary() {
     try {
-      const response = await fetch('/api/infinite-brain/proposals/application-plan/summary');
-      if (response.ok) {
-        const data = await response.json() as { summary?: { totalApprovedProposals: number; totalPlannedSteps: number; executionBlocked: boolean; previewOnly: boolean } };
-        if (data.summary) {
-          setPlanSummary(data.summary);
-        }
-      }
+      const data = await brainCoreRequest(
+        '/infinite-brain/proposals/application-plan/summary',
+        infiniteBrainApplicationPlanSummaryResponseSchema
+      );
+      setPlanSummary(data.summary);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load plan summary');
@@ -315,7 +313,7 @@ export function InfiniteBrainApplicationPreview() {
     try {
       const response = await postBrainCoreAction(
         '/infinite-brain/proposals/application-plan/generate',
-        {} as any,
+        infiniteBrainApplicationPlanGenerateResponseSchema,
         {}
       );
 
