@@ -1,0 +1,90 @@
+{
+  "version": "1.0.0",
+  "entityTypes": {
+    "internal": [
+      "Pillar",
+      "Decision",
+      "Concept",
+      "Question",
+      "Playbook",
+      "Task",
+      "Event",
+      "Pattern",
+      "Hypothesis",
+      "Fact",
+      "Source",
+      "Bookmark",
+      "Note",
+      "Contact",
+      "Reference",
+      "Custom"
+    ],
+    "whitelist": [
+      "Task",
+      "Decision",
+      "Pillar",
+      "Concept",
+      "Source",
+      "Question",
+      "Pattern",
+      "Hypothesis",
+      "Fact"
+    ]
+  },
+  "edgeTypes": {
+    "list": [
+      "supports",
+      "contradicts",
+      "depends_on",
+      "derived_from",
+      "related_to",
+      "part_of",
+      "preceded_by",
+      "followed_by",
+      "authored",
+      "tagging"
+    ]
+  },
+  "atomicNoteRules": {
+    "minLines": 50,
+    "maxLines": 300,
+    "requireOneSentenceSummary": true,
+    "requireProvenance": true,
+    "requiredFrontmatterFields": [
+      "id",
+      "title",
+      "type",
+      "created",
+      "updated"
+    ]
+  },
+  "confidenceThresholds": {
+    "inferenceDefault": 0.75,
+    "autoCreationDefault": 0.90
+  },
+  "writeModes": [
+    "reportOnly",
+    "approvalGated",
+    "guardedExecution",
+    "scheduled"
+  ],
+  "repoRoles": {
+    "mind": "mindStrategyMemory",
+    "brain": "brainRuntime"
+  },
+  "modelPolicy": {
+    "mustUseAiModelSelector": true,
+    "noProviderFallbackInRuntime": true
+  },
+  "graphPolicy": {
+    "graphifyEnabled": true,
+    "graphifyOwnsRepoContextGraphs": true,
+    "knowledgeGraphEdgesOwnedByInfiniteBrainRuntime": true
+  },
+  "safety": {
+    "noDestructiveMindConversion": true,
+    "noSilentDeletion": true,
+    "noHiddenContinuousLoop": true,
+    "approvalRequiredForKnowledgeWrites": true
+  }
+}

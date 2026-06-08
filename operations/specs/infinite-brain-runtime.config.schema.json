@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Infinite Brain Runtime Configuration Schema",
+  "description": "Machine-readable schema for Infinite Brain Runtime configuration. Defines entity types, edge types, confidence thresholds, write modes, and safety policies.",
+  "type": "object",
+  "required": [
+    "version",
+    "entityTypes",
+    "edgeTypes",
+    "atomicNoteRules",
+    "confidenceThresholds",
+    "writeModes",
+    "repoRoles",
+    "modelPolicy",
+    "graphPolicy",
+    "safety"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version (semver)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "entityTypes": {
+      "type": "object",
+      "description": "16 internal entity types (machine-maintained metadata, not user-facing folders)",
+      "properties": {
+        "internal": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Full 16-type vocabulary",
+          "enum": [[
+            "Pillar",
+            "Decision",
+            "Concept",
+            "Question",
+            "Playbook",
+            "Task",
+            "Event",
+            "Pattern",
+            "Hypothesis",
+            "Fact",
+            "Source",
+            "Bookmark",
+            "Note",
+            "Contact",
+            "Reference",
+            "Custom"
+          ]]
+        },
+        "whitelist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Entity types enabled for auto-creation (subset of internal 16)"
+        }
+      }
+    },
+    "edgeTypes": {
+      "type": "object",
+      "description": "10 relationship edge types",
+      "properties": {
+        "list": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Standard 10 edge types (mandatory, not configurable)",
+          "enum": [[
+            "supports",
+            "contradicts",
+            "depends_on",
+            "derived_from",
+            "related_to",
+            "part_of",
+            "preceded_by",
+            "followed_by",
+            "authored",
+            "tagging"
+          ]]
+        }
+      }
+    },
+    "atomicNoteRules": {
+      "type": "object",
+      "description": "Rules for atomic notes: size, content, metadata",
+      "properties": {
+        "minLines": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 50,
+          "description": "Minimum lines per atomic note"
+        },
+        "maxLines": {
+          "type": "integer",
+          "minimum": 50,
+          "default": 300,
+          "description": "Maximum lines per atomic note"
+        },
+        "requireOneSentenceSummary": {
+          "type": "boolean",
+          "default": true,
+          "description": "Every note must have one-sentence summary"
+        },
+        "requireProvenance": {
+          "type": "boolean",
+          "default": true,
+          "description": "Every note must have source/provenance field"
+        },
+        "requiredFrontmatterFields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["id", "title", "type", "created", "updated"],
+          "description": "Required YAML frontmatter fields"
+        }
+      }
+    },
+    "confidenceThresholds": {
+      "type": "object",
+      "description": "Confidence scoring thresholds (0.0–1.0)",
+      "properties": {
+        "inferenceDefault": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.75,
+          "description": "Default confidence for relationship inference"
+        },
+        "autoCreationDefault": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.90,
+          "description": "Minimum confidence for auto-creation without approval"
+        }
+      }
+    },
+    "writeModes": {
+      "type": "array",
+      "description": "Write mode names (not configuration)",
+      "items": { "type": "string" },
+      "enum": [[
+        "reportOnly",
+        "approvalGated",
+        "guardedExecution",
+        "scheduled"
+      ]]
+    },
+    "repoRoles": {
+      "type": "object",
+      "description": "Repository roles in Infinite Brain system",
+      "properties": {
+        "mind": {
+          "type": "string",
+          "const": "mindStrategyMemory",
+          "description": "Mind is strategy and natural-language memory (read-only from IBR)"
+        },
+        "brain": {
+          "type": "string",
+          "const": "brainRuntime",
+          "description": "Brain is execution layer and runtime (IBR runtime here)"
+        }
+      }
+    },
+    "modelPolicy": {
+      "type": "object",
+      "description": "AI Model Selector integration policy",
+      "properties": {
+        "mustUseAiModelSelector": {
+          "type": "boolean",
+          "const": true,
+          "description": "All model decisions must use AI Model Selector"
+        },
+        "noProviderFallbackInRuntime": {
+          "type": "boolean",
+          "const": true,
+          "description": "No hardcoded provider fallback logic in IBR scripts"
+        }
+      }
+    },
+    "graphPolicy": {
+      "type": "object",
+      "description": "Graphify integration policy",
+      "properties": {
+        "graphifyEnabled": {
+          "type": "boolean",
+          "const": true,
+          "description": "Graphify is enabled for context extraction"
+        },
+        "graphifyOwnsRepoContextGraphs": {
+          "type": "boolean",
+          "const": true,
+          "description": "Graphify owns repo/context graphs"
+        },
+        "knowledgeGraphEdgesOwnedByInfiniteBrainRuntime": {
+          "type": "boolean",
+          "const": true,
+          "description": "IBR owns knowledge graph edges/relationships"
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "description": "Non-negotiable safety rules",
+      "properties": {
+        "noDestructiveMindConversion": {
+          "type": "boolean",
+          "const": true,
+          "description": "Do not destructively rewrite Mind content"
+        },
+        "noSilentDeletion": {
+          "type": "boolean",
+          "const": true,
+          "description": "No silent deletion; always report before removing"
+        },
+        "noHiddenContinuousLoop": {
+          "type": "boolean",
+          "const": true,
+          "description": "No continuous runtime; only scheduled or manual trigger"
+        },
+        "approvalRequiredForKnowledgeWrites": {
+          "type": "boolean",
+          "const": true,
+          "description": "All knowledge writes require explicit approval"
+        }
+      }
+    }
+  }
+}
