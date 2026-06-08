@@ -889,6 +889,34 @@ export const infiniteBrainExecutionReadinessSummaryResponseSchema = z.object({
   summary: infiniteBrainExecutionReadinessSchema,
 });
 
+const infiniteBrainExecutionReadinessCheckSchema = z.object({
+  checkId: z.string(),
+  label: z.string(),
+  status: z.enum(['pass', 'fail', 'blocked', 'not-applicable']),
+  reason: z.string(),
+  requiredForExecution: z.boolean(),
+});
+
+export const infiniteBrainExecutionReadinessFullReportSchema = z.object({
+  ok: z.literal(true),
+  report: z.object({
+    reportId: z.string(),
+    generatedAt: z.string(),
+    applicationPlanId: z.string().nullable(),
+    status: z.literal('blocked'),
+    canExecute: z.literal(false),
+    totalSteps: z.number(),
+    executableSteps: z.number(),
+    blockedSteps: z.number(),
+    blockers: z.array(z.string()),
+    checks: z.array(infiniteBrainExecutionReadinessCheckSchema),
+    safety: infiniteBrainExecutionReadinessSafetySchema,
+  }),
+});
+
+export type InfiniteBrainExecutionReadinessCheck = z.infer<typeof infiniteBrainExecutionReadinessCheckSchema>;
+export type InfiniteBrainExecutionReadinessFullReport = z.infer<typeof infiniteBrainExecutionReadinessFullReportSchema>;
+
 export const infiniteBrainProposalSchema = z.object({
   proposalId: z.string(),
   category: z.string(),

@@ -980,6 +980,152 @@ Response:
 
 ---
 
+### PHASE V — Detailed Readiness Checks in Console
+
+**Files:**
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Full readiness report schema
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — Enhanced component with checks display
+- `operations/ibr/README.md` — This documentation
+
+**What it does:**
+- Displays all 10 readiness checks with status, label, and reason
+- Shows check status badges: pass (green), blocked (amber), fail (red), not-applicable (gray)
+- Displays blockers in "What's Blocking Execution" section with guidance
+- Shows check count summary (pass, blocked, failed, N/A)
+- Provides static guidance text for known blockers
+- Never provides Apply button or execution controls
+- Never writes to Mind
+- Never applies proposals
+
+**Readiness Checks Display:**
+
+Fetches full readiness report via:
+```typescript
+GET /infinite-brain/proposals/execution-readiness
+Response: { reportId, generatedAt, applicationPlanId, status, canExecute, totalSteps, executableSteps, blockedSteps, blockers[], checks[], safety }
+```
+
+Each check displays:
+- **checkId**: Machine ID (check-0, check-1, etc.)
+- **label**: Human-readable check name ("Plan exists", "Execution blocked flag set", etc.)
+- **status**: pass | fail | blocked | not-applicable
+- **reason**: Explanation of current status
+- **requiredForExecution**: Whether this check must pass for execution
+
+**Blocker Guidance Text:**
+
+Static guidance for known blockers:
+- "Mind write gate available" → "Requires explicit Mind writer implementation and approval gates."
+- "iOS sync safety available" → "Requires verified iOS/Obsidian sync safety before writes."
+- "Allowlisted writer available" → "Requires Brain-owned allowlisted writer; no shell execution."
+- "Operator approval gate" → "Requires explicit operator approval for execution."
+- "Dry-run validation available" → "Requires a completed dry-run validation before execution."
+
+**Schema: infiniteBrainExecutionReadinessFullReportSchema**
+
+```typescript
+{
+  ok: true,
+  report: {
+    reportId: string,
+    generatedAt: string,
+    applicationPlanId: string | null,
+    status: 'blocked',
+    canExecute: false,
+    totalSteps: number,
+    executableSteps: number,
+    blockedSteps: number,
+    blockers: string[],
+    checks: [{
+      checkId: string,
+      label: string,
+      status: 'pass' | 'fail' | 'blocked' | 'not-applicable',
+      reason: string,
+      requiredForExecution: boolean
+    }],
+    safety: {
+      writesToMind: false,
+      appliesProposals: false,
+      canExecute: false,
+      executionBlocked: true,
+      previewOnly: true,
+      continuousRuntime: false,
+      modelCalls: false
+    }
+  }
+}
+```
+
+**UI Layout:**
+
+1. Summary metrics (Can Execute: No, Status: Blocked, Total Steps, Blocked Steps, Blockers)
+2. "Readiness Checks" section:
+   - List all 10 checks with badges
+   - Show check label, reason, status
+   - Color-coded badges
+   - Summary counts at bottom
+3. "What's Blocking Execution" section:
+   - List all active blockers
+   - Show guidance text for each (if available)
+   - Red/warning color scheme
+4. Or "No active blockers" message if empty (execution still blocked by default)
+5. "Generate Execution Readiness" button (never "Apply" or "Execute")
+
+**Safety Invariants:**
+- ✅ Readiness-visibility-only (no execution)
+- ✅ Can Execute always false (displayed as "No")
+- ✅ Execution Blocked always true (displayed as "Blocked")
+- ✅ No proposals applied
+- ✅ No Mind writes
+- ✅ No Apply button
+- ✅ No execution controls
+- ✅ No model calls
+- ✅ No continuous runtime
+- ✅ All 10 checks visible
+- ✅ All blockers visible with guidance
+
+**Integration:**
+- Brain Core status: `/infinite-brain/status` includes `runtime.executionReadiness`
+- Console display: Enhanced InfiniteBrainExecutionReadiness component
+- No direct fetch: Uses brainCoreRequest pattern
+- Full report fetched independently from summary
+
+**User Experience Flow:**
+1. User visits Console dashboard
+2. Sees "Execution Readiness" section with summary metrics
+3. Button: "Generate Execution Readiness"
+4. On success, displays:
+   - All 10 checks with status badges
+   - Reasons why each check is blocked/failed/passed
+   - "What's Blocking Execution" list with guidance
+   - Check count summary
+5. Safety banner always visible explaining readiness-only visibility
+6. Can regenerate report at any time
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Schemas use Zod with z.literal() for safety
+- ✅ Build: `npm run typecheck` passes
+- ✅ No forbidden patterns (child_process, exec, Math.random, provider calls)
+- ✅ No direct fetch (uses brainCoreRequest)
+- ✅ Full report schema defined and exported
+
+**Testing:**
+- Manual: Click "Generate Execution Readiness", verify all 10 checks display
+- Manual: Verify all blockers are visible
+- Manual: Verify check status badges render correctly
+- Manual: Verify safety banner present
+- Manual: Verify no Apply/Execute button
+- Manual: Verify guidance text displays for blockers
+
+**Next Phase (V+1):**
+- Build check details deep view (modal or separate page)
+- Add "How to unblock" implementation guidance links
+- Add feedback mechanism to track check improvements
+- Implement milestone tracking for unblocking progress
+
+---
+
 ### PHASE O2 — Proposal Review UI (Decision-Record-Only)
 
 **Files:**

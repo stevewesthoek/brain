@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -411,6 +411,29 @@ export function InfiniteBrainApplicationPreview() {
   );
 }
 
+function getCheckStatusBadge(status: string): { bg: string; text: string; label: string } {
+  switch (status) {
+    case 'pass':
+      return { bg: 'bg-green-100', text: 'text-green-700', label: '✓ Pass' };
+    case 'blocked':
+      return { bg: 'bg-amber-100', text: 'text-amber-700', label: '⊘ Blocked' };
+    case 'fail':
+      return { bg: 'bg-red-100', text: 'text-red-700', label: '✗ Failed' };
+    case 'not-applicable':
+      return { bg: 'bg-slate-100', text: 'text-slate-700', label: '– N/A' };
+    default:
+      return { bg: 'bg-slate-100', text: 'text-slate-700', label: status };
+  }
+}
+
+const BLOCKER_GUIDANCE: Record<string, string> = {
+  'Mind write gate available': 'Requires explicit Mind writer implementation and approval gates.',
+  'iOS sync safety available': 'Requires verified iOS/Obsidian sync safety before writes.',
+  'Allowlisted writer available': 'Requires Brain-owned allowlisted writer; no shell execution.',
+  'Operator approval gate': 'Requires explicit operator approval for execution.',
+  'Dry-run validation available': 'Requires a completed dry-run validation before execution.',
+};
+
 export function InfiniteBrainExecutionReadiness() {
   const [readinessSummary, setReadinessSummary] = useState<{
     available: boolean;
@@ -420,6 +443,19 @@ export function InfiniteBrainExecutionReadiness() {
     blockedSteps?: number;
     blockerCount?: number;
     executionBlocked?: boolean;
+  } | null>(null);
+  const [fullReport, setFullReport] = useState<{
+    reportId: string;
+    generatedAt: string;
+    applicationPlanId: string | null;
+    status: string;
+    canExecute: boolean;
+    totalSteps: number;
+    executableSteps: number;
+    blockedSteps: number;
+    blockers: string[];
+    checks: InfiniteBrainExecutionReadinessCheck[];
+    safety: Record<string, unknown>;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -459,8 +495,21 @@ export function InfiniteBrainExecutionReadiness() {
     }
   }
 
+  async function fetchFullReport() {
+    try {
+      const data = await brainCoreRequest(
+        '/infinite-brain/proposals/execution-readiness',
+        infiniteBrainExecutionReadinessFullReportSchema
+      );
+      setFullReport(data.report);
+    } catch (err) {
+      // Silently fail if full report not available yet
+    }
+  }
+
   useEffect(() => {
     fetchReadinessSummary();
+    fetchFullReport();
   }, []);
 
   async function handleGenerateReadiness() {
@@ -500,6 +549,7 @@ export function InfiniteBrainExecutionReadiness() {
       if (response.ok) {
         setGenerationSuccess(true);
         await fetchReadinessSummary();
+        await fetchFullReport();
       } else {
         setGenerationError('Failed to generate readiness report');
       }
@@ -556,7 +606,7 @@ export function InfiniteBrainExecutionReadiness() {
         )}
 
         {readinessSummary && readinessSummary.available ? (
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-3">
             <div className="bg-white rounded p-2 border border-slate-200 text-xs space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -592,6 +642,69 @@ export function InfiniteBrainExecutionReadiness() {
                 </p>
               )}
             </div>
+
+            {fullReport ? (
+              <div className="space-y-3">
+                {/* Readiness Checks Section */}
+                {fullReport.checks && fullReport.checks.length > 0 && (
+                  <div className="bg-white rounded p-3 border border-slate-200">
+                    <h4 className="text-xs font-semibold text-slate-900 mb-2">Readiness Checks</h4>
+                    <div className="space-y-2">
+                      {fullReport.checks.map((check) => {
+                        const badge = getCheckStatusBadge(check.status);
+                        return (
+                          <div key={check.checkId} className="p-2 bg-slate-50 rounded border border-slate-100 text-xs">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <p className="font-semibold text-slate-900">{check.label}</p>
+                                <p className="text-slate-600 mt-1">{check.reason}</p>
+                              </div>
+                              <span className={`px-2 py-1 rounded font-semibold whitespace-nowrap ${badge.bg} ${badge.text}`}>
+                                {badge.label}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-slate-200 text-xs text-slate-600">
+                      {fullReport.checks.filter(c => c.status === 'pass').length} pass, {fullReport.checks.filter(c => c.status === 'blocked').length} blocked, {fullReport.checks.filter(c => c.status === 'fail').length} failed, {fullReport.checks.filter(c => c.status === 'not-applicable').length} N/A
+                    </div>
+                  </div>
+                )}
+
+                {/* What's Blocking Execution Section */}
+                {fullReport.blockers && fullReport.blockers.length > 0 && (
+                  <div className="bg-red-50 rounded p-3 border border-red-200">
+                    <h4 className="text-xs font-semibold text-red-900 mb-2">What's Blocking Execution</h4>
+                    <div className="space-y-2">
+                      {fullReport.blockers.map((blocker, idx) => (
+                        <div key={idx} className="text-xs">
+                          <p className="font-semibold text-red-800">• {blocker}</p>
+                          {BLOCKER_GUIDANCE[blocker] && (
+                            <p className="text-red-700 ml-4 mt-0.5">{BLOCKER_GUIDANCE[blocker]}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No Blockers Section */}
+                {(!fullReport.blockers || fullReport.blockers.length === 0) && (
+                  <div className="bg-slate-50 rounded p-3 border border-slate-200 text-xs">
+                    <p className="text-slate-600">
+                      No active blockers detected. Execution remains blocked by default in this phase.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50 rounded p-3 border border-slate-200 text-xs text-slate-600">
+                <p>No detailed readiness report yet. Generate execution readiness to see check details.</p>
+              </div>
+            )}
+
             <button
               onClick={handleGenerateReadiness}
               disabled={generating}
