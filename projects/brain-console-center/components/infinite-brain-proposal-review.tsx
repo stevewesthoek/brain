@@ -120,20 +120,22 @@ export function InfiniteBrainProposalReview() {
   return (
     <div className="space-y-4">
       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h3 className="font-semibold text-blue-900">Proposal Review</h3>
-        <p className="text-xs text-blue-700 mt-1">Decision-only mode: Records decisions without applying changes.</p>
+        <h3 className="font-semibold text-blue-900">Proposal Review — Decision-Record-Only</h3>
+        <p className="text-xs text-blue-700 mt-1">Your decisions are recorded for later review. Proposals are never applied in this phase.</p>
         <div className="mt-2 text-xs text-blue-700 space-y-0.5">
+          <p>✓ Decision recorded only</p>
+          <p>✓ Proposal not applied</p>
           <p>✓ Mind unchanged</p>
-          <p>✓ Execution blocked</p>
-          <p>✓ Applied: false</p>
+          <p>✓ Execution remains blocked</p>
         </div>
       </div>
 
       {/* Success message */}
       {submitSuccess && (
         <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-          <p className="text-sm font-semibold text-green-900">Decision recorded</p>
+          <p className="text-sm font-semibold text-green-900">✓ Decision recorded</p>
           <p className="text-xs text-green-700 mt-1">{submitSuccess.message}</p>
+          <p className="text-xs text-green-600 mt-1">Proposal remains blocked. Mind unchanged.</p>
         </div>
       )}
 

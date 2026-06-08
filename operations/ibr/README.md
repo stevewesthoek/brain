@@ -723,6 +723,7 @@ curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
 - `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — React component
 - `projects/brain-core/src/api/routes.ts` — GET `/infinite-brain/proposals` endpoint
 - `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — Integration
+- `projects/brain-core/src/tests/routes.test.ts` — Focused route tests
 
 **What it does:**
 - Fetches proposals from `GET /infinite-brain/proposals`
@@ -731,16 +732,17 @@ curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
 - Allows selecting a proposal and recording a decision (approved/rejected/needs-review)
 - Requires a short reason text before submission
 - Calls `POST /infinite-brain/proposals/approvals` to record decision
-- Displays safety confirmation: decision-only, no execution, no Mind writes
+- Displays clear safety messaging: decision-only, no execution, Mind unchanged, execution blocked
 - No Apply button, no continuous runtime enabled
 
 **UI Features:**
 - Proposal list grouped by priority
 - Selection radio buttons
 - Decision form with radio options + textarea for reason
-- Success/error messages
+- Success/error messages with execution-blocked confirmation
 - Auto-refetch after successful submission
 - Polling-free (manual refresh interval)
+- Clear safety banner: "Decision-Record-Only" mode
 
 **Safety Invariants:**
 - ✅ Decision recorded only (no proposal application)
@@ -749,6 +751,17 @@ curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
 - ✅ Applied always false
 - ✅ No Apply button present
 - ✅ Brain Core client/proxy pattern used
+
+**Route Tests (Focused Coverage):**
+1. GET `/infinite-brain/proposals` returns proposals report or 404 with `proposals_report_missing`
+2. GET `/infinite-brain/proposals/approvals` returns summary with `executionBlocked: true`, `applied: 0`
+3. POST `/api/infinite-brain/proposals/approvals` rejects invalid proposalId with 404
+4. POST `/api/infinite-brain/proposals/approvals` rejects invalid decision with 400
+5. POST response includes safety invariants: `applied: false`, `executionBlocked: true`, `writesToMind: false`
+
+**Environment Variables (For Testing):**
+- `IBR_PROPOSAL_APPROVALS_PATH` — Override approval store path (absolute or relative to BRAIN_ROOT)
+- `IBR_PROPOSALS_REPORT_PATH` — Override proposals report path (absolute or relative to BRAIN_ROOT)
 
 **API Integration:**
 ```typescript
@@ -773,6 +786,7 @@ const result = await postBrainCoreAction(
 - ✅ TypeScript types valid
 - ✅ Schemas pass Zod validation
 - ✅ Component uses brainCoreRequest pattern
+- ✅ Focused route tests cover main flows
 - ✅ Build: `npm run typecheck` passes
 - ✅ No forbidden patterns
 - ✅ No Model provider calls

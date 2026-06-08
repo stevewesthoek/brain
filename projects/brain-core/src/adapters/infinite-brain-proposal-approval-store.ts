@@ -55,10 +55,18 @@ export interface InfiniteBrainProposalReport {
 }
 
 function getDefaultStorePath(): string {
+  const envPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
+  if (envPath) {
+    return path.isAbsolute(envPath) ? envPath : path.resolve(BRAIN_ROOT, envPath);
+  }
   return path.resolve(BRAIN_ROOT, DEFAULT_RELATIVE_PATH);
 }
 
 function getProposalsReportPath(): string {
+  const envPath = process.env.IBR_PROPOSALS_REPORT_PATH;
+  if (envPath) {
+    return path.isAbsolute(envPath) ? envPath : path.resolve(BRAIN_ROOT, envPath);
+  }
   return path.resolve(BRAIN_ROOT, PROPOSALS_REPORT_RELATIVE_PATH);
 }
 
