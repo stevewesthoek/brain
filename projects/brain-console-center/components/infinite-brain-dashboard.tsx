@@ -212,6 +212,29 @@ export function InfiniteBrainDashboard() {
         )}
       </div>
 
+      {/* Proposal Approvals */}
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Proposal Approvals (Decision Records)</h3>
+        <div className="mt-2 text-sm text-slate-700 space-y-1">
+          <p>Total decisions: <strong>{status.runtime.proposalApprovals.totalDecisions}</strong></p>
+          <p>Approved: <strong className="text-green-700">{status.runtime.proposalApprovals.approved}</strong></p>
+          <p>Rejected: <strong className="text-red-700">{status.runtime.proposalApprovals.rejected}</strong></p>
+          <p>Needs review: <strong className="text-yellow-700">{status.runtime.proposalApprovals.needsReview}</strong></p>
+          <p>Applied: <strong>{status.runtime.proposalApprovals.applied}</strong></p>
+          <div className="mt-2 flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1">
+              <span className={`inline-block w-2 h-2 rounded-full ${status.runtime.proposalApprovals.executionBlocked ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              <span>Execution blocked: {status.runtime.proposalApprovals.executionBlocked ? 'Yes' : 'No'}</span>
+            </div>
+          </div>
+          {status.runtime.proposalApprovals.latestDecisionAt && (
+            <p className="text-xs text-slate-500 mt-2">
+              Latest decision: {new Date(status.runtime.proposalApprovals.latestDecisionAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Pipeline Report */}
       <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
         <h3 className="font-semibold text-slate-900">Report-Only Pipeline</h3>

@@ -18,6 +18,7 @@ import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
 import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
 import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
+import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval } from '../adapters/infinite-brain-proposal-approval-store.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -376,6 +377,12 @@ export async function routeRequest(
       return;
     case '/infinite-brain/status':
       sendJson(response, 200, await getInfiniteBrainStatus());
+      return;
+    case '/infinite-brain/proposals':
+      sendJson(response, 200, { proposals: readInfiniteBrainProposalApprovals() });
+      return;
+    case '/infinite-brain/proposals/approvals':
+      sendJson(response, 200, summarizeInfiniteBrainProposalApprovals());
       return;
     case '/post-orchestrator/status':
       sendJson(response, 200, readPostOrchestratorStatus());
@@ -2772,6 +2779,69 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       confirmation: (body.confirmation as string) ?? '',
     });
     sendJson(response, result.ok ? 200 : 400, result);
+    return;
+  }
+
+  // ── Infinite Brain: Proposal Approvals (Decision Records) ──────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/approvals') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, { ok: false, code: 'invalid_body', message: 'Request body must be valid JSON.' });
+      return;
+    }
+
+    const proposalId = (body.proposalId as string) ?? '';
+    const decision = (body.decision as string) ?? '';
+    const decidedBy = (body.decidedBy as string) ?? '';
+    const reason = (body.reason as string) ?? '';
+    const category = (body.category as string) ?? '';
+
+    if (!proposalId || !decision || !decidedBy || !category) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_fields',
+        message: 'proposalId, category, decision, and decidedBy are required',
+      });
+      return;
+    }
+
+    if (!['approved', 'rejected', 'needs-review'].includes(decision)) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_decision',
+        message: 'decision must be one of: approved, rejected, needs-review',
+      });
+      return;
+    }
+
+    const record = createInfiniteBrainProposalApprovalRecord(
+      proposalId,
+      category,
+      decision as 'approved' | 'rejected' | 'needs-review',
+      decidedBy,
+      reason || undefined
+    );
+
+    const success = writeInfiniteBrainProposalApproval(record);
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'approval_recorded',
+        message: 'Proposal approval decision recorded (execution remains blocked)',
+        record,
+        safety: {
+          applied: false,
+          executionBlocked: true,
+          writesToMind: false,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'write_failed',
+        message: 'Failed to write approval record',
+      });
+    }
     return;
   }
 

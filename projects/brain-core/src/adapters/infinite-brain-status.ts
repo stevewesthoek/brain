@@ -5,6 +5,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { summarizeInfiniteBrainProposalApprovals } from './infinite-brain-proposal-approval-store.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -319,6 +320,28 @@ async function getProposalStatus(): Promise<
 }
 
 /**
+ * Get proposal approval status
+ */
+async function getProposalApprovalStatus() {
+  try {
+    const summary = summarizeInfiniteBrainProposalApprovals();
+    return summary;
+  } catch {
+    return {
+      available: false,
+      path: 'runtime/local/infinite-brain/proposal-approvals.json',
+      totalDecisions: 0,
+      approved: 0,
+      rejected: 0,
+      needsReview: 0,
+      applied: 0,
+      executionBlocked: true as const,
+      latestDecisionAt: undefined,
+    };
+  }
+}
+
+/**
  * Get pipeline status
  */
 async function getPipelineStatus(): Promise<
@@ -405,13 +428,14 @@ async function getEvidenceStats(): Promise<EvidenceStats> {
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
     getRelationshipAuditStatus(),
     getInsightStatus(),
     getProposalStatus(),
+    getProposalApprovalStatus(),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -426,6 +450,7 @@ export async function getInfiniteBrainStatus() {
       relationshipAudit,
       insights,
       proposals,
+      proposalApprovals,
       pipeline,
     },
     infrastructure: {

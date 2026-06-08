@@ -757,6 +757,18 @@ const infiniteBrainProposalsSchema = z.union([
   }),
 ]);
 
+const infiniteBrainProposalApprovalsSchema = z.object({
+  available: z.boolean(),
+  path: z.string(),
+  totalDecisions: z.number(),
+  approved: z.number(),
+  rejected: z.number(),
+  needsReview: z.number(),
+  applied: z.number(),
+  executionBlocked: z.literal(true),
+  latestDecisionAt: z.string().optional(),
+});
+
 const infiniteBrainPipelineSchema = z.union([
   z.object({
     available: z.literal(true),
@@ -785,6 +797,7 @@ export const infiniteBrainStatusSchema = z.object({
     relationshipAudit: infiniteBrainRelationshipAuditSchema,
     insights: infiniteBrainInsightsSchema,
     proposals: infiniteBrainProposalsSchema,
+    proposalApprovals: infiniteBrainProposalApprovalsSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

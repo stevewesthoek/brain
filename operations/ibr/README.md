@@ -608,6 +608,115 @@ cat runtime/local/infinite-brain/relationship-audit-latest.md
 
 ---
 
+### PHASE N — Proposal Approval Records (Decision-Only)
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-proposal-approval-store.ts` — Approval store adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST endpoints
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Zod schema
+- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — UI display
+
+**What it does:**
+- Records approval decisions for Infinite Brain proposals (no execution)
+- Tracks: proposalId, decision (approved/rejected/needs-review), decidedBy, reason
+- Ensures safety invariants: `executionBlocked: true`, `applied: false`
+- All records immutable (append-only or overwrite same proposal)
+- No Mind writes (decisions record-only, execution blocked)
+
+**Record Schema:**
+```typescript
+{
+  proposalId: string;              // from proposals-latest.json
+  category: string;                // one of 6 proposal categories
+  decision: 'approved' | 'rejected' | 'needs-review';
+  decidedAt: string;               // ISO8601
+  decidedBy: string;               // who made the decision
+  reason?: string;                 // optional explanation
+  sourceReport: string;            // always 'proposals-latest.json'
+  proposalHash: string;            // 16-char SHA256 hash
+  writesToMindIfApproved: boolean; // false in current phase
+  executionBlocked: true;          // always true
+  applied: false;                  // always false
+}
+```
+
+**Storage:**
+- Path: `runtime/local/infinite-brain/proposal-approvals.json`
+- Format: JSON with `{ records: [...] }` root
+- Thread-safe: append or merge decisions safely
+
+**API Endpoints:**
+
+GET `/infinite-brain/proposals`
+- Returns all approval records (decision history)
+
+GET `/infinite-brain/proposals/approvals`
+- Returns summary: total decisions, approved, rejected, needs-review, applied (always 0), executionBlocked (always true)
+
+POST `/infinite-brain/proposals/approvals`
+- Records a decision
+- Body: `{ proposalId, category, decision, decidedBy, reason? }`
+- Response includes: `applied: false`, `executionBlocked: true`, `writesToMind: false`
+- Decision recorded but never applied in current phase
+
+**Usage:**
+
+```bash
+# GET approval summary
+curl http://localhost:3000/infinite-brain/proposals/approvals
+
+# Record an approval decision
+curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "proposalId": "prop-ato-a1b2c3d4",
+    "category": "atomization",
+    "decision": "approved",
+    "decidedBy": "steve",
+    "reason": "File split aligns with project structure"
+  }'
+
+# Response (execution always blocked)
+{
+  "ok": true,
+  "code": "approval_recorded",
+  "record": {
+    "proposalId": "prop-ato-a1b2c3d4",
+    "decision": "approved",
+    "decidedAt": "2026-06-08T...",
+    "executionBlocked": true,
+    "applied": false
+  },
+  "safety": {
+    "applied": false,
+    "executionBlocked": true,
+    "writesToMind": false
+  }
+}
+```
+
+**Console Display:**
+- Dashboard shows: total decisions, approved/rejected/needs-review counts
+- Applied count always 0
+- Execution blocked status always true
+- Latest decision timestamp
+
+**Safety:**
+- ✅ Decision-record-only (no proposal application)
+- ✅ Execution always blocked (executionBlocked: true)
+- ✅ No Mind writes
+- ✅ No model calls
+- ✅ Approval records immutable
+- ✅ All records tracked with proposalId and hash
+
+**Next Phase (IB12+):**
+- Build approval workflow (accept/review decisions)
+- Create approval-gated proposal execution when ready
+- Track approval decisions for machine learning
+
+---
+
 ## Contact
 
 For architecture decisions or questions about IBR foundation:
