@@ -717,6 +717,69 @@ curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
 
 ---
 
+### PHASE O2 — Proposal Review UI (Decision-Record-Only)
+
+**Files:**
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — React component
+- `projects/brain-core/src/api/routes.ts` — GET `/infinite-brain/proposals` endpoint
+- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — Integration
+
+**What it does:**
+- Fetches proposals from `GET /infinite-brain/proposals`
+- Displays top 20 proposals grouped by priority (high/medium/low)
+- Shows: title, summary, category, confidence, writes-to-mind flag
+- Allows selecting a proposal and recording a decision (approved/rejected/needs-review)
+- Requires a short reason text before submission
+- Calls `POST /infinite-brain/proposals/approvals` to record decision
+- Displays safety confirmation: decision-only, no execution, no Mind writes
+- No Apply button, no continuous runtime enabled
+
+**UI Features:**
+- Proposal list grouped by priority
+- Selection radio buttons
+- Decision form with radio options + textarea for reason
+- Success/error messages
+- Auto-refetch after successful submission
+- Polling-free (manual refresh interval)
+
+**Safety Invariants:**
+- ✅ Decision recorded only (no proposal application)
+- ✅ Mind unchanged (no writes)
+- ✅ Execution blocked (always true in response)
+- ✅ Applied always false
+- ✅ No Apply button present
+- ✅ Brain Core client/proxy pattern used
+
+**API Integration:**
+```typescript
+// Fetch proposals
+const data = await brainCoreRequest('/infinite-brain/proposals', infiniteBrainProposalsResponseSchema);
+
+// Record decision
+const result = await postBrainCoreAction(
+  '/infinite-brain/proposals/approvals',
+  infiniteBrainProposalApprovalDecisionResponseSchema,
+  { proposalId, decision, decidedBy: 'console-ui', reason }
+);
+```
+
+**Usage:**
+- Component embedded in InfiniteBrainDashboard
+- Appears below "Proposal Approvals (Decision Records)" section
+- Renders automatically if proposals are available
+- No manual action needed to activate
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Schemas pass Zod validation
+- ✅ Component uses brainCoreRequest pattern
+- ✅ Build: `npm run typecheck` passes
+- ✅ No forbidden patterns
+- ✅ No Model provider calls
+- ✅ No Math.random, no shell execution
+
+---
+
 ## Contact
 
 For architecture decisions or questions about IBR foundation:

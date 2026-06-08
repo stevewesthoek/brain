@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { brainCoreRequest } from '../lib/braincore-client';
 import { infiniteBrainStatusSchema, type InfiniteBrainStatus } from '../lib/braincore-schemas';
+import { InfiniteBrainProposalReview } from './infinite-brain-proposal-review';
 
 export function InfiniteBrainDashboard() {
   const [status, setStatus] = useState<InfiniteBrainStatus | null>(null);
@@ -234,6 +235,9 @@ export function InfiniteBrainDashboard() {
           )}
         </div>
       </div>
+
+      {/* Proposal Review UI */}
+      <InfiniteBrainProposalReview />
 
       {/* Pipeline Report */}
       <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">

@@ -2793,6 +2793,36 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  // ── Infinite Brain: Fetch Proposals ───────────────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals' && request.method === 'GET') {
+    const report = readInfiniteBrainProposalReport();
+    if (!report) {
+      sendJson(response, 404, {
+        proposals: [],
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      proposals: (report.proposals ?? []).map((p) => ({
+        proposalId: p.proposalId,
+        category: p.category,
+        title: (p as Record<string, unknown>).title ?? 'Untitled',
+        summary: (p as Record<string, unknown>).summary ?? '',
+        confidence: (p as Record<string, unknown>).confidence ?? 0.5,
+        priority: (p as Record<string, unknown>).priority ?? 'medium',
+        riskLevel: (p as Record<string, unknown>).riskLevel ?? 'medium',
+        requiresApproval: (p as Record<string, unknown>).requiresApproval ?? true,
+        writesToMindIfApproved: p.writesToMindIfApproved ?? false,
+        safetyMode: (p as Record<string, unknown>).safetyMode ?? 'approval-gated',
+        status: (p as Record<string, unknown>).status ?? 'proposed',
+      })),
+      timestamp: report.timestamp ?? new Date().toISOString(),
+    });
+    return;
+  }
+
   // ── Infinite Brain: Proposal Approvals (Decision Records) ──────────────────
   if (url.pathname === '/api/infinite-brain/proposals/approvals') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
