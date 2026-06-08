@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) complete  
+**Status:** Foundation Phase (IB0–IB3) + Atomizer dry-run (IB4) complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (report-only)
 
 ---
 
@@ -295,6 +295,67 @@ jq empty operations/specs/infinite-brain-runtime.example.config.json
 - Silent deletion without logging
 - Untracked entity mutations
 - Destructive Mind restructuring
+
+---
+
+### PHASE IB4 — Atomizer Dry-Run (Report-Only)
+
+**Files:**
+- `tools/infinite-brain/atomizer-dry-run.mjs` — Atomization analysis tool
+- `package.json` script: `ibr:atomizer:dry-run`
+
+**What it does:**
+- Scans Mind vault for files exceeding 300 lines (atomic note limit)
+- Analyzes sections and estimated split boundaries
+- Generates JSON + Markdown reports (no writes)
+- Classifies each candidate: keep_atomic or consider_split
+- Suggests entity types and one-sentence summaries
+
+**Record Schema:**
+```typescript
+{
+  path: string;              // relative path in vault
+  fileName: string;
+  totalLines: number;
+  metadata: {
+    title?: string;
+    type?: string;           // entity type
+    status?: string;
+  };
+  sections: Array<{
+    heading: string;
+    lines: number;
+  }>;
+  recommendation: 'keep_atomic' | 'consider_split';
+  rationale: string;
+}
+```
+
+**Output:**
+- `runtime/local/infinite-brain/atomizer-latest.json`
+- `runtime/local/infinite-brain/atomizer-latest.md`
+
+**Usage:**
+```bash
+# Run dry-run
+npm run ibr:atomizer:dry-run
+
+# Or with custom vault path
+MIND_VAULT_PATH=/path/to/vault npm run ibr:atomizer:dry-run
+
+# View JSON report
+jq '.' runtime/local/infinite-brain/atomizer-latest.json
+
+# View markdown report
+cat runtime/local/infinite-brain/atomizer-latest.md
+```
+
+**Safety:**
+- ✅ Report-only (no files written to Mind)
+- ✅ No mutations attempted
+- ✅ Deterministic heuristics (heading-based analysis)
+- ✅ No model calls
+- ✅ No file moves or deletions
 
 ---
 
