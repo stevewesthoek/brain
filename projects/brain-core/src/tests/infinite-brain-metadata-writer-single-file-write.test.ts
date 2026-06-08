@@ -302,7 +302,7 @@ test('Single-file write: missing target file blocks and does not create file', (
   try {
     withTempMindEnv(mindRoot, () => {
       // Delete the allowlisted file
-      const allowlistedPath = path.join(mindRoot, '00_System', 'InfiniteBrainWriteTest.md');
+      const allowlistedPath = path.join(mindRoot, 'system', 'InfiniteBrainWriteTest.md');
       rmSync(allowlistedPath, { force: true });
       assert(!fs.existsSync(allowlistedPath));
 
