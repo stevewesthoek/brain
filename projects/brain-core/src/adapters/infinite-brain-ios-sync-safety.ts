@@ -15,10 +15,10 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
 const DEFAULT_IOS_SYNC_SAFETY_RELATIVE_PATH = 'runtime/local/infinite-brain/ios-sync-safety-latest.json';
-const DEFAULT_MIND_REPO_PATH = path.resolve(process.cwd(), '..', 'stevewesthoek', 'mind');
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
+const DEFAULT_MIND_REPO_PATH = path.resolve(BRAIN_ROOT, '..', 'mind');
 
 export interface IosSyncSafetyCheck {
   checkId: string;
@@ -83,12 +83,7 @@ function generateReportId(mindPath: string, checks: IosSyncSafetyCheck[]): strin
 }
 
 function fileExists(filePath: string): boolean {
-  try {
-    existsSync(filePath);
-    return true;
-  } catch {
-    return false;
-  }
+  return existsSync(filePath);
 }
 
 function isDirectory(dirPath: string): boolean {
