@@ -717,6 +717,137 @@ curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
 
 ---
 
+### PHASE P — Proposal Application Planning (Preview-Only)
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-proposal-application-planner.ts` — Planner adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST endpoints for application plan
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Zod schema for application plan
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — Application plan preview UI
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-core/src/tests/routes.test.ts` — Route tests
+
+**What it does:**
+- Reads approved proposals from approval records
+- Generates a preview application plan without executing anything
+- Each step includes: proposed action, source paths, target path previews, rollback plan preview, risk level, confidence
+- All steps marked: `executionBlocked: true`, `applied: false`, `previewOnly: true`
+- Never writes to Mind, never applies proposals, never calls models
+
+**Category-specific preview behavior:**
+
+- **atomization** — Preview: new atomic file paths (split targets)
+- **entity-metadata** — Preview: which files would get frontmatter changes
+- **edge-review** — Preview: edge store modifications (no new files)
+- **cleanup** — Preview: which entities would be cleaned up (no file deletion preview)
+- **wiki-writing** — Preview: new wiki page paths
+- **task-extraction** — Preview: task creation (no file changes)
+
+**Record Schema:**
+```typescript
+interface ProposalApplicationPlanStep {
+  stepId: string;
+  proposalId: string;
+  category: string;
+  proposedAction: string;
+  sourcePaths: string[];
+  targetPathsPreview: string[];
+  wouldWriteToMind: boolean;
+  requiresApproval: boolean;
+  executionBlocked: boolean;
+  applied: boolean;
+  rollbackRequired: boolean;
+  rollbackPlanPreview: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  confidence: number;
+  reason: string;
+}
+
+interface ProposalApplicationPlan {
+  planId: string;
+  generatedAt: string;
+  sourceProposalReport: string;
+  sourceApprovalStore: string;
+  status: 'preview-only';
+  totalApprovedProposals: number;
+  totalPlannedSteps: number;
+  steps: ProposalApplicationPlanStep[];
+  safety: {
+    writesToMind: false;
+    appliesProposals: false;
+    deletesFiles: false;
+    movesFiles: false;
+    continuousRuntime: false;
+    modelCalls: false;
+    executionBlocked: true;
+    previewOnly: true;
+  };
+}
+```
+
+**API Endpoints:**
+
+POST `/api/infinite-brain/proposals/application-plan/generate`
+- Generates preview plan from approved proposals
+- Writes only to Brain runtime
+- Returns plan summary: `planId`, `generatedAt`, `status`, `totalApprovedProposals`, `totalPlannedSteps`
+- Response includes: `safety` (all false/true as above)
+
+GET `/api/infinite-brain/proposals/application-plan`
+- Returns full plan with all steps (if available)
+- 404 if no plan found
+
+GET `/api/infinite-brain/proposals/application-plan/summary`
+- Returns plan metadata: `totalApprovedProposals`, `totalPlannedSteps`, `executionBlocked: true`, `previewOnly: true`
+
+**Usage:**
+
+```bash
+# Generate plan (from console UI button or manual API call)
+curl -X POST http://localhost:3000/api/infinite-brain/proposals/application-plan/generate
+
+# Fetch full plan
+curl http://localhost:3000/api/infinite-brain/proposals/application-plan
+
+# Fetch summary
+curl http://localhost:3000/api/infinite-brain/proposals/application-plan/summary
+```
+
+**Console Display:**
+- "Generate Application Preview" button (never labeled "Apply")
+- Shows approved proposal count
+- Shows planned step count
+- Safety banner: "This is a preview only. No files are changed."
+- Never applies proposals
+
+**Safety:**
+- ✅ Preview-only (no mutations applied)
+- ✅ No proposals executed
+- ✅ No Mind writes
+- ✅ Execution always blocked (executionBlocked: true)
+- ✅ All steps marked applied: false
+- ✅ No model calls
+- ✅ Rollback plan provided for preview (informational only)
+
+**Integration:**
+- Brain Core status: `GET /infinite-brain/status` includes `applicationPlan` section
+- Console display: Shows plan summary with safety messaging
+- No direct fetch: Uses existing brainCoreRequest pattern
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Schemas pass Zod validation
+- ✅ Route tests cover: empty plan, approved-only filtering, missing plan 404
+- ✅ Build: `npm run typecheck` passes
+- ✅ No forbidden patterns (child_process, exec, Math.random, provider calls)
+
+**Next Phase (IB13+):**
+- Build approval-gated proposal execution (actual application when ready)
+- Implement rollback tracking
+- Add execution metrics and feedback loop
+
+---
+
 ### PHASE O2 — Proposal Review UI (Decision-Record-Only)
 
 **Files:**

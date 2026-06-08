@@ -788,6 +788,31 @@ const infiniteBrainPipelineSchema = z.union([
   }),
 ]);
 
+const infiniteBrainApplicationPlanSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    path: z.string(),
+    totalApprovedProposals: z.number(),
+    totalPlannedSteps: z.number(),
+    executionBlocked: z.literal(true),
+    previewOnly: z.literal(true),
+    safety: z.object({
+      writesToMind: z.literal(false),
+      appliesProposals: z.literal(false),
+      deletesFiles: z.literal(false),
+      movesFiles: z.literal(false),
+      continuousRuntime: z.literal(false),
+      modelCalls: z.literal(false),
+      executionBlocked: z.literal(true),
+      previewOnly: z.literal(true),
+    }),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
 export const infiniteBrainProposalSchema = z.object({
   proposalId: z.string(),
   category: z.string(),
@@ -848,6 +873,7 @@ export const infiniteBrainStatusSchema = z.object({
     insights: infiniteBrainInsightsSchema,
     proposals: infiniteBrainProposalsSchema,
     proposalApprovals: infiniteBrainProposalApprovalsSchema,
+    applicationPlan: infiniteBrainApplicationPlanSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

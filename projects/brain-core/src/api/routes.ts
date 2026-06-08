@@ -19,6 +19,7 @@ import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
 import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
 import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
 import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal } from '../adapters/infinite-brain-proposal-approval-store.js';
+import { generateApplicationPlan, writeApplicationPlan, readApplicationPlan, readApplicationPlanSummary } from '../adapters/infinite-brain-proposal-application-planner.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -2892,6 +2893,75 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         message: 'Failed to write approval record',
       });
     }
+    return;
+  }
+
+  // ── Infinite Brain: Generate Application Plan ──────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/application-plan/generate' && request.method === 'POST') {
+    const plan = generateApplicationPlan();
+    const success = writeApplicationPlan(plan);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'application_plan_generated',
+        message: 'Application plan generated from approved proposals (preview-only)',
+        plan: {
+          planId: plan.planId,
+          generatedAt: plan.generatedAt,
+          status: plan.status,
+          totalApprovedProposals: plan.totalApprovedProposals,
+          totalPlannedSteps: plan.totalPlannedSteps,
+          stepCount: plan.steps.length,
+        },
+        safety: plan.safety,
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'plan_generation_failed',
+        message: 'Failed to generate and save application plan',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Fetch Application Plan ─────────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/application-plan' && request.method === 'GET') {
+    const plan = readApplicationPlan();
+    if (!plan) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'application_plan_missing',
+        message: 'No application plan found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      plan,
+      safety: plan.safety,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Application Plan Summary ───────────────────────────────
+  if (url.pathname === '/api/infinite-brain/proposals/application-plan/summary' && request.method === 'GET') {
+    const summary = readApplicationPlanSummary();
+    if (!summary) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'application_plan_missing',
+        message: 'No application plan found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      summary,
+    });
     return;
   }
 

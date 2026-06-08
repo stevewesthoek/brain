@@ -4231,3 +4231,248 @@ test('POST /api/infinite-brain/proposals/approvals exercise success path', async
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
+
+test('POST /api/infinite-brain/proposals/application-plan/generate returns empty plan with no approvals', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-plan-empty');
+  const proposalsPath = path.join(testDir, 'proposals-latest.json');
+  const approvalsPath = path.join(testDir, 'proposal-approvals.json');
+  const planPath = path.join(testDir, 'proposal-application-plan-latest.json');
+
+  const previousProposalsPath = process.env.IBR_PROPOSALS_REPORT_PATH;
+  const previousApprovalsPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
+  const previousPlanPath = process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  // Write proposals without approvals
+  fs.writeFileSync(proposalsPath, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    totalProposals: 0,
+    proposals: []
+  }, null, 2));
+
+  process.env.IBR_PROPOSALS_REPORT_PATH = proposalsPath;
+  process.env.IBR_PROPOSAL_APPROVALS_PATH = approvalsPath;
+  process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = planPath;
+
+  try {
+    const request = createRequest({
+      method: 'POST',
+      url: '/api/infinite-brain/proposals/application-plan/generate',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+
+    const body = JSON.parse(response.body) as {
+      ok: boolean;
+      code: string;
+      plan: { totalApprovedProposals: number; totalPlannedSteps: number };
+      safety: { executionBlocked: boolean; previewOnly: boolean };
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.plan.totalApprovedProposals, 0);
+    assert.equal(body.plan.totalPlannedSteps, 0);
+    assert.equal(body.safety.executionBlocked, true);
+    assert.equal(body.safety.previewOnly, true);
+  } finally {
+    if (previousProposalsPath === undefined) {
+      delete process.env.IBR_PROPOSALS_REPORT_PATH;
+    } else {
+      process.env.IBR_PROPOSALS_REPORT_PATH = previousProposalsPath;
+    }
+    if (previousApprovalsPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPROVALS_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPROVALS_PATH = previousApprovalsPath;
+    }
+    if (previousPlanPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = previousPlanPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /api/infinite-brain/proposals/application-plan/generate includes approved proposals only', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-plan-approved');
+  const proposalsPath = path.join(testDir, 'proposals-latest.json');
+  const approvalsPath = path.join(testDir, 'proposal-approvals.json');
+  const planPath = path.join(testDir, 'proposal-application-plan-latest.json');
+
+  const previousProposalsPath = process.env.IBR_PROPOSALS_REPORT_PATH;
+  const previousApprovalsPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
+  const previousPlanPath = process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  // Write proposals
+  fs.writeFileSync(proposalsPath, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    totalProposals: 3,
+    proposals: [
+      {
+        proposalId: 'prop-test-approved',
+        category: 'atomization',
+        title: 'Approved Proposal',
+        summary: 'This is approved',
+        confidence: 0.95,
+        priority: 'high',
+        riskLevel: 'low',
+        requiresApproval: true,
+        writesToMindIfApproved: true,
+        safetyMode: 'report-only',
+        status: 'proposed',
+        sourcePaths: ['path/to/file.md'],
+        proposedAction: 'Split file',
+      },
+      {
+        proposalId: 'prop-test-rejected',
+        category: 'cleanup',
+        title: 'Rejected Proposal',
+        summary: 'This is rejected',
+        confidence: 0.5,
+        priority: 'low',
+        riskLevel: 'medium',
+        requiresApproval: true,
+        writesToMindIfApproved: false,
+        safetyMode: 'report-only',
+        status: 'proposed',
+      },
+      {
+        proposalId: 'prop-test-review',
+        category: 'entity-metadata',
+        title: 'Under Review',
+        summary: 'Needs review',
+        confidence: 0.7,
+        priority: 'medium',
+        riskLevel: 'low',
+        requiresApproval: true,
+        writesToMindIfApproved: false,
+        safetyMode: 'report-only',
+        status: 'proposed',
+      }
+    ]
+  }, null, 2));
+
+  // Write approvals: one approved, one rejected, one needs-review
+  fs.writeFileSync(approvalsPath, JSON.stringify({
+    records: [
+      {
+        proposalId: 'prop-test-approved',
+        category: 'atomization',
+        decision: 'approved',
+        decidedAt: new Date().toISOString(),
+        decidedBy: 'test',
+        executionBlocked: true,
+        applied: false,
+      },
+      {
+        proposalId: 'prop-test-rejected',
+        category: 'cleanup',
+        decision: 'rejected',
+        decidedAt: new Date().toISOString(),
+        decidedBy: 'test',
+        executionBlocked: true,
+        applied: false,
+      },
+      {
+        proposalId: 'prop-test-review',
+        category: 'entity-metadata',
+        decision: 'needs-review',
+        decidedAt: new Date().toISOString(),
+        decidedBy: 'test',
+        executionBlocked: true,
+        applied: false,
+      }
+    ]
+  }, null, 2));
+
+  process.env.IBR_PROPOSALS_REPORT_PATH = proposalsPath;
+  process.env.IBR_PROPOSAL_APPROVALS_PATH = approvalsPath;
+  process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = planPath;
+
+  try {
+    const request = createRequest({
+      method: 'POST',
+      url: '/api/infinite-brain/proposals/application-plan/generate',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+
+    const body = JSON.parse(response.body) as {
+      ok: boolean;
+      plan: { totalApprovedProposals: number; totalPlannedSteps: number };
+      safety: { executionBlocked: boolean; appliesProposals: boolean; previewOnly: boolean };
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.plan.totalApprovedProposals, 1);
+    assert.equal(body.plan.totalPlannedSteps, 1);
+    assert.equal(body.safety.executionBlocked, true);
+    assert.equal(body.safety.appliesProposals, false);
+    assert.equal(body.safety.previewOnly, true);
+  } finally {
+    if (previousProposalsPath === undefined) {
+      delete process.env.IBR_PROPOSALS_REPORT_PATH;
+    } else {
+      process.env.IBR_PROPOSALS_REPORT_PATH = previousProposalsPath;
+    }
+    if (previousApprovalsPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPROVALS_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPROVALS_PATH = previousApprovalsPath;
+    }
+    if (previousPlanPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = previousPlanPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /api/infinite-brain/proposals/application-plan returns 404 when plan missing', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-plan-missing');
+  const planPath = path.join(testDir, 'nonexistent-plan.json');
+
+  const previousPlanPath = process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = planPath;
+
+  try {
+    const request = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/proposals/application-plan',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+
+    assert.equal(response.statusCode, 404);
+
+    // Only parse if response body is not empty
+    if (response.body) {
+      const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+      assert.equal(body.ok, false);
+      assert.equal(body.code, 'application_plan_missing');
+    }
+  } finally {
+    if (previousPlanPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPLICATION_PLAN_PATH = previousPlanPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});

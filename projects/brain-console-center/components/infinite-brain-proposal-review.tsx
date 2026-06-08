@@ -5,6 +5,24 @@ import { useEffect, useState } from 'react';
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
 import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse } from '../lib/braincore-schemas';
 
+interface ApplicationPlanPreview {
+  ok: boolean;
+  plan?: {
+    planId: string;
+    generatedAt: string;
+    status: string;
+    totalApprovedProposals: number;
+    totalPlannedSteps: number;
+    stepCount: number;
+  };
+  safety?: {
+    writesToMind: boolean;
+    appliesProposals: boolean;
+    executionBlocked: boolean;
+    previewOnly: boolean;
+  };
+}
+
 type ProposalWithDecision = InfiniteBrainProposal & {
   approvalDecision?: 'approved' | 'rejected' | 'needs-review';
   approvalDecidedAt?: string;
@@ -251,6 +269,145 @@ export function InfiniteBrainProposalReview() {
           </button>
         </form>
       )}
+    </div>
+  );
+}
+
+export function InfiniteBrainApplicationPreview() {
+  const [planSummary, setPlanSummary] = useState<{
+    totalApprovedProposals: number;
+    totalPlannedSteps: number;
+    executionBlocked: boolean;
+    previewOnly: boolean;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationSuccess, setGenerationSuccess] = useState(false);
+
+  async function fetchPlanSummary() {
+    try {
+      const response = await fetch('/api/infinite-brain/proposals/application-plan/summary');
+      if (response.ok) {
+        const data = await response.json() as { summary?: { totalApprovedProposals: number; totalPlannedSteps: number; executionBlocked: boolean; previewOnly: boolean } };
+        if (data.summary) {
+          setPlanSummary(data.summary);
+        }
+      }
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load plan summary');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchPlanSummary();
+  }, []);
+
+  async function handleGeneratePlan() {
+    setGenerating(true);
+    setGenerationError(null);
+    setGenerationSuccess(false);
+
+    try {
+      const response = await postBrainCoreAction(
+        '/infinite-brain/proposals/application-plan/generate',
+        {} as any,
+        {}
+      );
+
+      if (response.ok) {
+        setGenerationSuccess(true);
+        await fetchPlanSummary();
+      } else {
+        setGenerationError('Failed to generate plan');
+      }
+    } catch (err) {
+      setGenerationError(err instanceof Error ? err.message : 'Failed to generate plan');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Application Plan Preview</h3>
+        <p className="text-sm text-slate-500 mt-2">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="font-semibold text-purple-900">Application Plan Preview</h3>
+            <p className="text-xs text-purple-700 mt-1">
+              Generates preview of approved proposals without applying them
+            </p>
+            <div className="mt-2 text-xs text-purple-700 space-y-0.5">
+              <p>✓ Preview only — no proposals applied</p>
+              <p>✓ Execution remains blocked</p>
+              <p>✓ Mind unchanged</p>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{error}</p>
+          </div>
+        )}
+
+        {generationError && (
+          <div className="mt-3 p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{generationError}</p>
+          </div>
+        )}
+
+        {generationSuccess && (
+          <div className="mt-3 p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">✓ Plan generated successfully</p>
+          </div>
+        )}
+
+        {planSummary ? (
+          <div className="mt-3 space-y-2">
+            <div className="bg-white rounded p-2 border border-slate-200 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-slate-600">Approved Proposals</p>
+                  <p className="font-semibold text-slate-900">{planSummary.totalApprovedProposals}</p>
+                </div>
+                <div>
+                  <p className="text-slate-600">Planned Steps</p>
+                  <p className="font-semibold text-slate-900">{planSummary.totalPlannedSteps}</p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleGeneratePlan}
+              disabled={generating}
+              className="w-full px-3 py-2 bg-purple-600 text-white rounded text-sm font-semibold hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+            >
+              {generating ? 'Generating...' : 'Regenerate Plan'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleGeneratePlan}
+            disabled={generating}
+            className="mt-3 w-full px-3 py-2 bg-purple-600 text-white rounded text-sm font-semibold hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+          >
+            {generating ? 'Generating...' : 'Generate Application Preview'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
