@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780922612744-test-concurrent-in-flight-dedu",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780922612744",
+  "status": "draft",
+  "title": "Test concurrent in-flight dedup",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780922612744-test-concurrent-in-flight-dedu/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-08T12:43:32.744Z",
+  "updatedAt": "2026-06-08T12:43:32.744Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by test-suite"
+  }
+}

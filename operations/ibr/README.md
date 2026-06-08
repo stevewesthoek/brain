@@ -1277,6 +1277,118 @@ When all 10 readiness checks pass AND explicit operator approval is recorded:
 
 ---
 
+### PHASE X — Executor Dry-Run Operations Console Visibility
+
+**Files:**
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` (MODIFIED)
+- `projects/brain-console-center/lib/braincore-schemas.ts` (NO CHANGE — schemas already exist)
+- `operations/ibr/README.md` (This documentation)
+
+**What it does:**
+- Enhances InfiniteBrainExecutorDryRun component to display detailed operations from full dry-run report
+- Adds "View Detailed Operations" button to fetch and display full report
+- Shows operations in scrollable grid (max 10 initially, with count summary)
+- Displays each operation's details: category, operationType, proposalId, stepId, targetPathsPreview
+- Shows safety indicators: wouldWriteToMind, wouldDeleteFiles, wouldMoveFiles
+- Displays applied/dryRunOnly/executionBlocked status badges
+- All operations marked: dryRunOnly=true, executionBlocked=true, applied=false
+- No execution controls added
+- No Apply/Execute buttons
+- No Mind writes
+- Visibility-only, blocked-by-default
+
+**Component Enhancements:**
+
+1. **State Management:**
+   - Added `fullReport` state for complete dry-run report
+   - Added `fetchingFullReport` loading flag for async report fetch
+
+2. **New Function:**
+   ```typescript
+   async function fetchFullDryRunReport() {
+     // Fetch from /infinite-brain/proposals/executor-dry-run
+     // Uses brainCoreRequest with infiniteBrainExecutorDryRunReportSchema
+   }
+   ```
+
+3. **Operations Display:**
+   - Conditional rendering: Show "View Detailed Operations" button if fullReport not yet loaded
+   - Once loaded, display "Dry-Run Operations" section with:
+     - Safety banner: "dry run only", "no files changed", "Mind unchanged"
+     - Grid of operations (first 10, scrollable)
+     - Each operation card shows:
+       - operationType + category
+       - Dry-run status badge
+       - proposalId (first 8 chars)
+       - stepId (first 12 chars)
+       - targetPathsPreview (first 2 paths with "N more" summary)
+       - Safety flags: wouldWriteToMind, wouldDeleteFiles, wouldMoveFiles
+   - Pagination: "Showing X of Y operations" if count > 10
+
+4. **Safety Messaging:**
+   - Banner states: dry run only, no execution, no files changed, Mind unchanged
+   - Status badges show dryRunOnly=true, applied=false
+   - Never labels operations as "pending execution" or "will apply"
+
+5. **UI Flow:**
+   - Generate Dry Run (existing): Generates report, fetches summary
+   - View Detailed Operations (new): Fetches full report, displays operations
+   - Regenerate Dry Run (existing): Regenerates report, clears fullReport state
+
+**Operation Card Display:**
+
+```
+┌─────────────────────────────────────┐
+│ preview_atomic_note_creation [Dry-run]
+│ atomization
+│
+│ Proposal: a1b2c3d4
+│ Step: 123456789abc
+│ Paths:
+│   • mind/01-inbox/atomic-001.md
+│   • mind/01-inbox/atomic-002.md
+│   +1 more
+│
+│ [Writes to Mind] [Deletes] [Moves]
+└─────────────────────────────────────┘
+```
+
+**Safety Invariants Maintained:**
+- ✅ Visibility-only (no execution)
+- ✅ No Apply/Execute buttons
+- ✅ No Mind writes
+- ✅ All operations marked applied=false
+- ✅ All operations marked dryRunOnly=true
+- ✅ All operations marked executionBlocked=true
+- ✅ Blocked-by-default (nothing changes)
+- ✅ Uses Brain Core client/proxy pattern
+
+**Testing:**
+- TypeScript typecheck passes
+- Build succeeds
+- No forbidden patterns (Math.random, child_process, exec, spawn, shell, fs.write)
+- Component renders without errors
+- "View Detailed Operations" button fetches full report
+- Operations display with all required fields
+- Safety indicators show correctly
+
+**Console Display Updated:**
+
+Executor Dry Run section now shows:
+1. Summary metrics (Can Execute, Dry Run Only, Operations, Blocked, Blockers, Generated)
+2. If fullReport loaded: "Dry-Run Operations" section with operation details
+3. If fullReport not loaded: "View Detailed Operations" button
+4. "Regenerate Dry Run" button always present
+
+**Future Enhancement (Not in Phase X):**
+- Add rollback preview for each operation
+- Show validation check details and uncertainties
+- Build "How to fix blocker" guidance links
+- Add operation search/filter
+- Show operation dependencies
+
+---
+
 ### PHASE O2 — Proposal Review UI (Decision-Record-Only)
 
 **Files:**

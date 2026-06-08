@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -740,11 +740,13 @@ export function InfiniteBrainExecutorDryRun() {
     dryRunOnly?: boolean;
     executionBlocked?: boolean;
   } | null>(null);
+  const [fullReport, setFullReport] = useState<z.infer<typeof infiniteBrainExecutorDryRunReportSchema> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationSuccess, setGenerationSuccess] = useState(false);
+  const [fetchingFullReport, setFetchingFullReport] = useState(false);
 
   async function fetchDryRunSummary() {
     try {
@@ -758,6 +760,21 @@ export function InfiniteBrainExecutorDryRun() {
       setError(err instanceof Error ? err.message : 'Failed to load dry-run summary');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchFullDryRunReport() {
+    setFetchingFullReport(true);
+    try {
+      const data = await brainCoreRequest(
+        '/infinite-brain/proposals/executor-dry-run',
+        infiniteBrainExecutorDryRunReportSchema
+      );
+      setFullReport(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load full dry-run report');
+    } finally {
+      setFetchingFullReport(false);
     }
   }
 
@@ -835,7 +852,7 @@ export function InfiniteBrainExecutorDryRun() {
         )}
 
         {drySummary && drySummary.available ? (
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-3">
             <div className="bg-white rounded p-2 border border-slate-200 text-xs space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -871,6 +888,79 @@ export function InfiniteBrainExecutorDryRun() {
                 </p>
               )}
             </div>
+
+            {fullReport && fullReport.report ? (
+              <div className="bg-white rounded p-3 border border-slate-200 space-y-2">
+                <h4 className="font-semibold text-slate-900 text-sm">Dry-Run Operations</h4>
+                <div className="text-xs text-slate-600 bg-violet-50 rounded p-2 border border-violet-100">
+                  <p>✓ These operations would execute if approval were granted</p>
+                  <p>✓ Dry run only — no files are changed</p>
+                  <p>✓ Mind remains unchanged</p>
+                </div>
+
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {fullReport.report.operations && fullReport.report.operations.length > 0 ? (
+                    fullReport.report.operations.slice(0, 10).map((op: any, idx: number) => (
+                      <div key={op.operationId || idx} className="bg-slate-50 rounded border border-slate-200 p-2">
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="flex-1">
+                            <p className="font-semibold text-xs text-slate-900">{op.operationType}</p>
+                            <p className="text-xs text-slate-600">{op.category}</p>
+                          </div>
+                          <span className="text-xs px-2 py-0.5 bg-violet-100 text-violet-700 rounded">
+                            {op.applied === false ? 'Dry-run' : 'Unknown'}
+                          </span>
+                        </div>
+
+                        <div className="text-xs space-y-1 text-slate-700">
+                          {op.proposalId && (
+                            <p><span className="text-slate-600">Proposal:</span> {op.proposalId.slice(0, 8)}</p>
+                          )}
+                          {op.stepId && (
+                            <p><span className="text-slate-600">Step:</span> {op.stepId.slice(0, 12)}</p>
+                          )}
+                          {op.targetPathsPreview && op.targetPathsPreview.length > 0 && (
+                            <div>
+                              <p className="text-slate-600">Paths:</p>
+                              <ul className="list-disc list-inside text-slate-600">
+                                {op.targetPathsPreview.slice(0, 2).map((p: string, i: number) => (
+                                  <li key={i} className="truncate">{p}</li>
+                                ))}
+                                {op.targetPathsPreview.length > 2 && (
+                                  <li>+{op.targetPathsPreview.length - 2} more</li>
+                                )}
+                              </ul>
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-1">
+                            {op.wouldWriteToMind !== false && <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Writes to Mind</span>}
+                            {op.wouldDeleteFiles !== false && <span className="bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">Deletes</span>}
+                            {op.wouldMoveFiles !== false && <span className="bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">Moves</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-600">No operations recorded</p>
+                  )}
+                </div>
+
+                {fullReport.report.operations && fullReport.report.operations.length > 10 && (
+                  <p className="text-xs text-slate-500 text-center">
+                    Showing 10 of {fullReport.report.operations.length} operations
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={fetchFullDryRunReport}
+                disabled={fetchingFullReport}
+                className="w-full px-3 py-2 bg-slate-200 text-slate-700 rounded text-sm font-semibold hover:bg-slate-300 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+              >
+                {fetchingFullReport ? 'Loading...' : 'View Detailed Operations'}
+              </button>
+            )}
+
             <button
               onClick={handleGenerateDryRun}
               disabled={generating}
