@@ -5409,7 +5409,8 @@ export interface BrainCoreExecutionPlan {
     | 'scheduler-run-graphify-full-brain-selector-preview'
     | 'scheduler-run-graphify-full-mind-selector-preview'
     | 'scheduler-run-graphify-critical-rebuild-brain-selector-preview'
-    | 'scheduler-run-graphify-critical-rebuild-mind-selector-preview';
+    | 'scheduler-run-graphify-critical-rebuild-mind-selector-preview'
+    | 'scheduler-run-infinite-brain-report-only-pipeline';
   candidate: true;
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;

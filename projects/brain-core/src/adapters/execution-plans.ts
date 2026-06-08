@@ -19,6 +19,7 @@ const CANDIDATE_KINDS = [
   'scheduler-run-graphify-full-mind-selector-preview',
   'scheduler-run-graphify-critical-rebuild-brain-selector-preview',
   'scheduler-run-graphify-critical-rebuild-mind-selector-preview',
+  'scheduler-run-infinite-brain-report-only-pipeline',
 ] as const;
 const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
@@ -158,6 +159,7 @@ export function listExecutionPlans(): BrainCoreExecutionPlan[] {
       'Report-only: Preview which AI model would be used for critical rebuild of Mind. Does not execute Graphify critical rebuild.',
       'bash tools/scripts/graphify-orchestrator-report.sh critical-rebuild-mind-selector-preview',
     ),
+    createInfiniteBrainPipeline(),
   ];
 }
 
@@ -457,6 +459,46 @@ function createGraphifyPlan(
         id: 'run-graphify-orchestrator-report',
         description: summary,
         commandPreview,
+        willRunNow: false,
+      },
+    ],
+  };
+}
+
+function createInfiniteBrainPipeline(): BrainCoreExecutionPlan {
+  return {
+    kind: 'scheduler-run-infinite-brain-report-only-pipeline',
+    candidate: true,
+    executionEnabled: false,
+    mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
+    wouldExecute: false,
+    executed: false,
+    riskLevel: 'low',
+    writesToMind: false,
+    externalSideEffects: false,
+    requiresApproval: true,
+    requiresDurableApprovalStore: true,
+    requiresDurableAudit: true,
+    requiresRollbackPlan: true,
+    rollbackPlan: 'Remove generated runtime/local/infinite-brain report files if needed; no Mind content is changed.',
+    summary: 'Report-only Infinite Brain pipeline candidate. Atomizer, classifier, edge inference, relationship audit, and insights stay disabled.',
+    mindPreviewPolicy: {
+      status: 'preview-only',
+      firstProposedAction: 'mind-steward-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      writesToMind: false,
+      externalSideEffects: false,
+      applyRouteEnabled: false,
+      allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+      blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+      requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    },
+    steps: [
+      {
+        id: 'run-infinite-brain-pipeline',
+        description: 'Run report-only Infinite Brain pipeline',
+        commandPreview: 'npm run ibr:pipeline:dry-run',
         willRunNow: false,
       },
     ],

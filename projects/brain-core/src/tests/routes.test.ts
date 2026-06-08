@@ -454,7 +454,7 @@ test('GET /scheduler/jobs returns placeholder mind-steward jobs', async () => {
   const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean; status: string }> };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.jobs.length, 12);
+  assert.equal(body.jobs.length, 13);
   assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
   assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-dry-run'), true);
@@ -465,6 +465,7 @@ test('GET /scheduler/jobs returns placeholder mind-steward jobs', async () => {
   assert.equal(body.jobs.some((job) => job.id === 'graphify-preflight-brain'), true);
   assert.equal(body.jobs.some((job) => job.id === 'graphify-update-mind-blocked'), true);
   assert.equal(body.jobs.some((job) => job.id === 'graphify-update-brain-blocked'), true);
+  assert.equal(body.jobs.some((job) => job.id === 'infinite-brain-report-only-pipeline'), true);
 });
 
 test('GET /scheduler/jobs reports mind-steward dry-run ok status when runtime report exists', async () => {
@@ -1563,7 +1564,7 @@ test('GET /execution/plans returns the future first execution candidate', async 
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.plans.length, 8);
+  assert.equal(body.plans.length, 15);
   assert.equal(body.plans[0]?.kind, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.plans[1]?.kind, 'scheduler-run-mind-steward-inbox-dry-run');
   assert.equal(body.plans[2]?.kind, 'scheduler-run-mind-steward-inbox-classifier-dry-run');
@@ -1572,6 +1573,7 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans.some((plan) => plan.kind === 'scheduler-run-graphify-preflight-brain'), true);
   assert.equal(body.plans.some((plan) => plan.kind === 'scheduler-run-graphify-update-mind-blocked'), true);
   assert.equal(body.plans.some((plan) => plan.kind === 'scheduler-run-graphify-update-brain-blocked'), true);
+  assert.equal(body.plans.some((plan) => plan.kind === 'scheduler-run-infinite-brain-report-only-pipeline'), true);
   assert.equal(body.plans[0]?.candidate, true);
   assert.equal(body.plans[0]?.executionEnabled, false);
   assert.equal(body.plans[0]?.mindStewardDryRunExecutionFlagEnabled, false);
@@ -1595,6 +1597,17 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans[2]?.mindStewardInboxClassifierDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION');
   assert.equal(body.plans[3]?.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
   assert.equal(body.plans[3]?.mindStewardInboxQueueDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION');
+});
+
+test('GET /execution/plans includes Infinite Brain report-only pipeline candidate', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/plans' });
+  const body = JSON.parse(response.body) as { plans: Array<{ kind: string; writesToMind: boolean; externalSideEffects: boolean; executed: boolean }> };
+
+  const infiniteBrainPlan = body.plans.find((plan) => plan.kind === 'scheduler-run-infinite-brain-report-only-pipeline');
+  assert.ok(infiniteBrainPlan, 'Infinite Brain plan should exist');
+  assert.equal(infiniteBrainPlan.writesToMind, false);
+  assert.equal(infiniteBrainPlan.externalSideEffects, false);
+  assert.equal(infiniteBrainPlan.executed, false);
 });
 
 test('GET /execution/mind-preview-policy returns preview-only policy metadata', async () => {

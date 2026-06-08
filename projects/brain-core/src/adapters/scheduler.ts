@@ -19,6 +19,7 @@ const MIND_STEWARD_INBOX_CLASSIFIER_RUNTIME_REPORT_PATH = 'inbox-classifier-late
 const MIND_STEWARD_INBOX_QUEUE_RUNTIME_REPORT_PATH = 'inbox-queue-latest.json';
 const GRAPHIFY_MIND_RUNTIME_REPORT_PATH = 'mind-knowledge-latest.json';
 const GRAPHIFY_BRAIN_RUNTIME_REPORT_PATH = 'brain-runtime-latest.json';
+const INFINITE_BRAIN_PIPELINE_RUNTIME_REPORT_PATH = '../infinite-brain/pipeline-latest.json';
 
 export function getSchedulerStatus(): BrainCoreSchedulerStatus {
   const report = readMindStewardRuntimeReport(MIND_STEWARD_RUNTIME_REPORT_PATH);
@@ -104,6 +105,8 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
   const graphifyMindReportStatus = graphifyMindReport ? toJobStatus(graphifyMindReport.status) : 'placeholder';
   const graphifyBrainReport = readGraphifyRuntimeReport(GRAPHIFY_BRAIN_RUNTIME_REPORT_PATH);
   const graphifyBrainReportStatus = graphifyBrainReport ? toJobStatus(graphifyBrainReport.status) : 'placeholder';
+  const infiniteBrainReport = readGraphifyRuntimeReport(INFINITE_BRAIN_PIPELINE_RUNTIME_REPORT_PATH);
+  const infiniteBrainReportStatus = infiniteBrainReport ? toJobStatus(infiniteBrainReport.status) : 'placeholder';
 
   return [
     {
@@ -176,6 +179,12 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
       id: 'graphify-update-brain-blocked',
       name: 'Graphify Brain guarded update blocked report',
       status: graphifyBrainReportStatus,
+      mutationRequired: false,
+    },
+    {
+      id: 'infinite-brain-report-only-pipeline',
+      name: 'Infinite Brain report-only pipeline',
+      status: infiniteBrainReportStatus,
       mutationRequired: false,
     },
   ];
