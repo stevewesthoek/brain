@@ -61,10 +61,14 @@ function getDryRunPath(): string {
   return path.resolve(BRAIN_ROOT, DEFAULT_DRY_RUN_RELATIVE_PATH);
 }
 
-function generateDryRunId(operationCount: number): string {
+function generateDryRunId(operationCount: number, operationIds: string[]): string {
   const hash = crypto
     .createHash('sha256')
-    .update(`metadata-writer-dry-run|${operationCount}|${Date.now()}`)
+    .update(JSON.stringify({
+      scope: 'metadata-writer-dry-run',
+      operationCount,
+      operationIds: [...operationIds].sort(),
+    }))
     .digest('hex')
     .substring(0, 12);
   return `mdwr-${hash}`;
@@ -181,7 +185,7 @@ export function runMetadataWriterDryRunOnly(): MetadataWriterDryRunReport {
 
   const plannedOperations = buildMetadataWriterExecutionPlan();
 
-  const dryRunId = generateDryRunId(plannedOperations.length);
+  const dryRunId = generateDryRunId(plannedOperations.length, plannedOperations.map(op => op.operationId));
 
   const report: MetadataWriterDryRunReport = {
     dryRunId,

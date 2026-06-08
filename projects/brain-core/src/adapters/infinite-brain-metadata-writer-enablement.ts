@@ -80,8 +80,11 @@ function readJsonSafely<T>(filePath: string): T | null {
 }
 
 function generateEnablementId(operator: string, decision: MetadataWriterEnablementDecision, reason: string): string {
-  const input = `${operator}|${decision}|reason|entity-metadata`;
-  const hash = crypto.createHash('sha256').update(input).digest('hex').substring(0, 12);
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({ operator, decision, reason, writerCategory: 'entity-metadata' }))
+    .digest('hex')
+    .substring(0, 12);
   return `enbl-${hash}`;
 }
 
