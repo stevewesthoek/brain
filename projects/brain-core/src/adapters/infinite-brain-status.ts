@@ -11,6 +11,7 @@ import { readExecutionReadinessSummary } from './infinite-brain-proposal-executi
 import { readExecutorDryRunSummary } from './infinite-brain-proposal-executor-dry-run.js';
 import { readIosSyncSafetySummary } from './infinite-brain-ios-sync-safety.js';
 import { readOperatorApprovalSummary } from './infinite-brain-operator-approval.js';
+import { readPostWriteVerificationSummary } from './infinite-brain-post-write-verification.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -551,11 +552,31 @@ function getOperatorApprovalStatus() {
   };
 }
 
+function getPostWriteVerificationStatus() {
+  const summary = readPostWriteVerificationSummary();
+  if (!summary.available) {
+    return {
+      available: false,
+      reason: 'Post-write verification report not found. Generate one first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    status: summary.status,
+    verificationAvailable: summary.verificationAvailable,
+    canVerifyWrites: summary.canVerifyWrites,
+    canExecute: summary.canExecute,
+    blockerCount: summary.blockerCount,
+  };
+}
+
 /**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, postWriteVerification, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -568,6 +589,7 @@ export async function getInfiniteBrainStatus() {
     Promise.resolve(getExecutorDryRunStatus()),
     Promise.resolve(getIosSyncSafetyStatus()),
     Promise.resolve(getOperatorApprovalStatus()),
+    Promise.resolve(getPostWriteVerificationStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -588,6 +610,7 @@ export async function getInfiniteBrainStatus() {
       executorDryRun,
       iosSyncSafety,
       operatorApproval,
+      postWriteVerification,
       pipeline,
     },
     infrastructure: {

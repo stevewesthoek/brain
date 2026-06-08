@@ -24,6 +24,7 @@ import { generateExecutionReadinessReport, writeExecutionReadinessReport, readEx
 import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDryRunReport, readExecutorDryRunSummary } from '../adapters/infinite-brain-proposal-executor-dry-run.js';
 import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafetyReport, readIosSyncSafetySummary } from '../adapters/infinite-brain-ios-sync-safety.js';
 import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
+import { generatePostWriteVerificationReport, writePostWriteVerificationReport, readPostWriteVerificationReport, readPostWriteVerificationSummary } from '../adapters/infinite-brain-post-write-verification.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -2708,6 +2709,25 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Post-Write Verification (Fetch) ─────────────────────
+      if (url.pathname === '/api/infinite-brain/post-write-verification' && request.method === 'GET') {
+        const report = readPostWriteVerificationReport();
+        if (!report) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'post_write_verification_missing',
+            message: 'No post-write verification report found. Generate one first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          report,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -2788,6 +2808,37 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'approval_write_failed',
         message: 'Failed to write operator approval record',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Post-Write Verification (Generate) ────────────────────
+  if (url.pathname === '/api/infinite-brain/post-write-verification/generate') {
+    const report = generatePostWriteVerificationReport();
+    const success = writePostWriteVerificationReport(report);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'post_write_verification_generated',
+        message: 'Post-write verification report generated (report-only, no writes)',
+        report,
+        safety: {
+          verificationAvailable: false,
+          canVerifyWrites: false,
+          canExecute: false,
+          writesToMind: false,
+          modifiesMind: false,
+          verificationOnly: true,
+          reportOnly: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'post_write_verification_write_failed',
+        message: 'Failed to write post-write verification report',
       });
     }
     return;

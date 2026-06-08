@@ -4836,3 +4836,159 @@ test('GET /api/infinite-brain/operator-approval returns 404 when missing', async
     fs.rmSync(testDir, { recursive: true, force: true });
   }
 });
+
+// ── Infinite Brain: Post-Write Verification Route Tests ────────────────────
+
+test('POST /api/infinite-brain/post-write-verification/generate returns report-only result', async () => {
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/post-write-verification/generate',
+    remoteAddress: '127.0.0.1',
+  });
+
+  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+    if (event === 'data') {
+      callback(Buffer.from(JSON.stringify({})));
+    } else if (event === 'end') {
+      callback();
+    }
+  };
+
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as {
+    ok?: boolean;
+    code?: string;
+    report?: {
+      status?: string;
+      verificationAvailable?: boolean;
+      canVerifyWrites?: boolean;
+      canExecute?: boolean;
+    };
+    safety?: {
+      verificationAvailable?: boolean;
+      canVerifyWrites?: boolean;
+      canExecute?: boolean;
+      writesToMind?: boolean;
+      reportOnly?: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200, 'must return 200 for report generation');
+  assert.equal(body.ok, true, 'ok must be true');
+  assert.equal(body.code, 'post_write_verification_generated', 'code must be post_write_verification_generated');
+  assert.equal(body.report?.verificationAvailable, false, 'verificationAvailable must be false');
+  assert.equal(body.report?.canVerifyWrites, false, 'canVerifyWrites must be false');
+  assert.equal(body.report?.canExecute, false, 'canExecute must be false');
+  assert.equal(body.safety?.writesToMind, false, 'writesToMind must be false');
+  assert.equal(body.safety?.reportOnly, true, 'reportOnly must be true');
+});
+
+test('GET /api/infinite-brain/post-write-verification returns 404 when missing', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-post-write-verification-missing');
+  const reportPath = path.join(testDir, 'missing.json');
+  const previousEnv = process.env.IBR_POST_WRITE_VERIFICATION_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_POST_WRITE_VERIFICATION_PATH = reportPath;
+
+    const request = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/post-write-verification',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+    const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+
+    assert.equal(response.statusCode, 404, 'must return 404 when report missing');
+    assert.equal(body.code, 'post_write_verification_missing', 'code must be post_write_verification_missing');
+    assert.equal(body.ok, false, 'ok must be false');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_POST_WRITE_VERIFICATION_PATH;
+    } else {
+      process.env.IBR_POST_WRITE_VERIFICATION_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /api/infinite-brain/post-write-verification returns stored report', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-post-write-verification-get');
+  const reportPath = path.join(testDir, 'report.json');
+  const previousEnv = process.env.IBR_POST_WRITE_VERIFICATION_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  try {
+    process.env.IBR_POST_WRITE_VERIFICATION_PATH = reportPath;
+
+    // Pre-write a post-write verification report
+    const report = {
+      reportId: 'pwv-test-123',
+      generatedAt: new Date().toISOString(),
+      status: 'blocked' as const,
+      verificationAvailable: false,
+      canVerifyWrites: false,
+      canExecute: false,
+      mindPath: '/path/to/mind',
+      dryRunReportId: null,
+      checks: [],
+      blockers: [],
+      recommendations: [],
+      safety: {
+        writesToMind: false,
+        modifiesMind: false,
+        deletesFiles: false,
+        movesFiles: false,
+        canExecute: false,
+        verificationOnly: true,
+        reportOnly: true,
+        continuousRuntime: false,
+        modelCalls: false,
+        usesShell: false,
+      },
+    };
+
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+
+    // GET to retrieve the report
+    const getRequest = createRequest({
+      method: 'GET',
+      url: '/api/infinite-brain/post-write-verification',
+      remoteAddress: '127.0.0.1',
+    });
+
+    const getResponse = new MockResponse();
+    await routeRequest(getRequest, getResponse);
+    const body = JSON.parse(getResponse.body) as {
+      ok?: boolean;
+      report?: {
+        status?: string;
+        verificationAvailable?: boolean;
+        canVerifyWrites?: boolean;
+        canExecute?: boolean;
+      };
+    };
+
+    assert.equal(getResponse.statusCode, 200, 'must return 200 when report exists');
+    assert.equal(body.ok, true, 'ok must be true');
+    assert.equal(body.report?.status, 'blocked', 'status must be blocked');
+    assert.equal(body.report?.verificationAvailable, false, 'verificationAvailable must be false');
+    assert.equal(body.report?.canVerifyWrites, false, 'canVerifyWrites must be false');
+    assert.equal(body.report?.canExecute, false, 'canExecute must be false');
+  } finally {
+    if (previousEnv === undefined) {
+      delete process.env.IBR_POST_WRITE_VERIFICATION_PATH;
+    } else {
+      process.env.IBR_POST_WRITE_VERIFICATION_PATH = previousEnv;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});

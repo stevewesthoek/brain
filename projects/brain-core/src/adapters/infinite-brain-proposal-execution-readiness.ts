@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { readIosSyncSafetySummary } from './infinite-brain-ios-sync-safety.js';
 import { readOperatorApprovalSummary } from './infinite-brain-operator-approval.js';
+import { readPostWriteVerificationSummary } from './infinite-brain-post-write-verification.js';
 
 const DEFAULT_READINESS_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-execution-readiness-latest.json';
 const PLAN_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-application-plan-latest.json';
@@ -252,6 +253,26 @@ function performReadinessChecks(plan: ApplicationPlan | null): ExecutionReadines
     status: 'not-applicable',
     reason: 'Dry-run validation planned for future phase. Currently not applicable.',
     requiredForExecution: false,
+  });
+
+  // Check 11: Post-write verification available
+  const postWriteVerification = readPostWriteVerificationSummary();
+  const postWriteVerificationStatus = postWriteVerification.available
+    ? postWriteVerification.canVerifyWrites
+      ? 'pass'
+      : 'blocked'
+    : 'blocked';
+  const postWriteVerificationReason = postWriteVerification.available
+    ? postWriteVerification.canVerifyWrites
+      ? 'Post-write verification ready for writes'
+      : `Post-write verification present but blocked. Status: ${postWriteVerification.status}`
+    : 'No post-write verification report. Execution blocked until verification is available.';
+  checks.push({
+    checkId: `check-${checkIndex++}`,
+    label: 'Post-write verification available',
+    status: postWriteVerificationStatus as any,
+    reason: postWriteVerificationReason,
+    requiredForExecution: true,
   });
 
   return checks;
