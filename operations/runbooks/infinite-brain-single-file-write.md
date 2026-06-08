@@ -5,7 +5,7 @@ Operator procedures for controlled single-file metadata writes to the Mind repos
 ## System Overview
 
 **Status:** ✅ Operational (Phase AL: Single-file allowlisted test write executor)  
-**Write Scope:** Single allowlisted file only — `/Users/Office/Repos/stevewesthoek/mind/00_System/InfiniteBrainWriteTest.md`  
+**Write Scope:** Single allowlisted file only — `/Users/Office/Repos/stevewesthoek/mind/system/InfiniteBrainWriteTest.md`  
 **Write Mode:** Manual test write (no autonomous execution)  
 **Safety Gates:** Operator approval + iOS sync safety check + rollback snapshot  
 **Scope Constraints:** Single-file-only, allowlist-enforced, no multi-file writes  
@@ -182,7 +182,7 @@ The following actions are **not implemented** and must never be attempted:
 | Apply button | Test write only, no production | No Apply endpoint |
 | Execute button | No automatic execution | No Execute endpoint |
 | Broad Mind writing | Single allowlisted file | `allowlistedOnly: true` enforced |
-| Write outside allowlist | Not allowlisted | `/00_System/InfiniteBrainWriteTest.md` only |
+| Write outside allowlist | Not allowlisted | `/system/InfiniteBrainWriteTest.md` only |
 | Shell execution | No subprocess spawning | TypeScript adapters only |
 | Model provider calls | Deterministic, no LLM | Metadata writes only |
 | Random IDs | Stable, deterministic IDs | SHA256 hashing only |
@@ -193,7 +193,7 @@ If any of these appear to be possible, **stop and investigate** — a safety con
 
 ## Target File
 
-**Path:** `/Users/Office/Repos/stevewesthoek/mind/00_System/InfiniteBrainWriteTest.md`
+**Path:** `/Users/Office/Repos/stevewesthoek/mind/system/InfiniteBrainWriteTest.md`
 
 **Allowlist Status:** ✅ Only allowlisted Mind file  
 **Write Pattern:** YAML frontmatter field update  
@@ -337,7 +337,7 @@ All runners are manual operator workflows. No autonomous execution has been adde
 No. This is Phase AL: single-file allowlisted test write executor. The system is safe and working correctly, but it is for controlled testing only. No production writes are implemented.
 
 **Can I write to other Mind files?**  
-No. The allowlist enforces single-file-only writes to `/00_System/InfiniteBrainWriteTest.md`. Attempting to write elsewhere will fail at the allowlist gate.
+No. The allowlist enforces single-file-only writes to `/system/InfiniteBrainWriteTest.md`. Attempting to write elsewhere will fail at the allowlist gate.
 
 **Will this autonomous commit changes to Mind?**  
 No. `autonomousExecution: false` always. All writes are manual operator commands via CLI runners.

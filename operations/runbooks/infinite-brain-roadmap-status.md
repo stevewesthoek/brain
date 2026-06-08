@@ -33,7 +33,7 @@ Completed capabilities:
 Current allowed Mind target:
 
 ```text
-/Users/Office/Repos/stevewesthoek/mind/00_System/InfiniteBrainWriteTest.md
+/Users/Office/Repos/stevewesthoek/mind/system/InfiniteBrainWriteTest.md
 ```
 
 Current allowed operation:

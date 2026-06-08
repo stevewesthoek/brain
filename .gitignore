@@ -38,6 +38,9 @@ tsx-*/
 # Generated model caches (regenerable via sync commands)
 ai/models/bedrock-models.generated.json
 
+# Graphify generated output
+.graphify-out/
+
 # Tool and infra state we do not want in Git
 operations/system-configs/docker/
 operations/system-configs/antigravity/User/

@@ -82,12 +82,12 @@ npm run graphify:update:mind:blocked
    ```
 
 3. **Check git status:**
-   - Only `graphify-out/` artifacts should be modified
+   - Only `.graphify-out/` artifacts should be modified
    - No source files should change
    - No config files should change
 
 4. **Commit decision:**
-   - Generated `graphify-out/` files are tracked by default (per profile)
+   - Generated `.graphify-out/` files are tracked by default (per profile)
    - If tracking is disabled, generated files are intentionally not committed
    - Source orchestrator or docs changes are committed separately
 
