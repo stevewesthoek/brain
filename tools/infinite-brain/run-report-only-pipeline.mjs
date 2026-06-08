@@ -4,7 +4,7 @@
  * Infinite Brain Runtime — Report-Only Pipeline Runner
  * Executes all dry-run phases in sequence: atomizer → classifier → edges → audit → insights
  * Deterministic, report-only, no mutations, no Mind writes, no model calls
- * No child_process/spawn/shell execution — all phases imported and called directly
+ * Safe execution model: all phases are imported and called directly
  */
 
 import fs from 'fs/promises';
