@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import { readIosSyncSafetySummary } from './infinite-brain-ios-sync-safety.js';
 
 const DEFAULT_READINESS_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-execution-readiness-latest.json';
 const PLAN_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-application-plan-latest.json';
@@ -197,11 +198,20 @@ function performReadinessChecks(plan: ApplicationPlan | null): ExecutionReadines
   });
 
   // Check 7: iOS sync safety available
+  const iosSyncSafety = readIosSyncSafetySummary();
+  const iosSyncStatus = iosSyncSafety.available
+    ? iosSyncSafety.status === 'safe' ? 'pass' : 'blocked'
+    : 'blocked';
+  const iosSyncReason = iosSyncSafety.available
+    ? iosSyncSafety.status === 'safe'
+      ? 'iOS sync safety report indicates safe status'
+      : `iOS sync safety report indicates ${iosSyncSafety.status} status. Blockers: ${iosSyncSafety.blockerCount}`
+    : 'iOS sync safety report not available. Generate report first.';
   checks.push({
     checkId: `check-${checkIndex++}`,
     label: 'iOS sync safety available',
-    status: 'blocked',
-    reason: 'iOS sync coordination layer not yet implemented. Mind writes remain blocked.',
+    status: iosSyncStatus as any,
+    reason: iosSyncReason,
     requiredForExecution: true,
   });
 

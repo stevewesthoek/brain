@@ -22,6 +22,7 @@ import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval,
 import { generateApplicationPlan, writeApplicationPlan, readApplicationPlan, readApplicationPlanSummary } from '../adapters/infinite-brain-proposal-application-planner.js';
 import { generateExecutionReadinessReport, writeExecutionReadinessReport, readExecutionReadinessReport, readExecutionReadinessSummary } from '../adapters/infinite-brain-proposal-execution-readiness.js';
 import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDryRunReport, readExecutorDryRunSummary } from '../adapters/infinite-brain-proposal-executor-dry-run.js';
+import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafetyReport, readIosSyncSafetySummary } from '../adapters/infinite-brain-ios-sync-safety.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -3103,6 +3104,43 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     sendJson(response, 200, {
       ok: true,
       summary,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: iOS Sync Safety Report ────────────────────────────────
+  if (url.pathname === '/api/infinite-brain/ios-sync-safety' && request.method === 'GET') {
+    const report = readIosSyncSafetyReport();
+    if (!report) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'ios_sync_safety_missing',
+        message: 'No iOS sync safety report found. Run /generate endpoint first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      report,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: iOS Sync Safety Generate ────────────────────────────────
+  if (url.pathname === '/api/infinite-brain/ios-sync-safety/generate' && request.method === 'POST') {
+    const report = generateIosSyncSafetyReport();
+    writeIosSyncSafetyReport(report);
+
+    sendJson(response, 200, {
+      ok: true,
+      report,
+      safety: {
+        syncSafe: false,
+        canWriteToMind: false,
+        writesToMind: false,
+        reportOnly: true,
+      },
     });
     return;
   }

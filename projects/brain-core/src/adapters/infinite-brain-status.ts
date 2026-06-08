@@ -9,6 +9,7 @@ import { summarizeInfiniteBrainProposalApprovals } from './infinite-brain-propos
 import { readApplicationPlanSummary } from './infinite-brain-proposal-application-planner.js';
 import { readExecutionReadinessSummary } from './infinite-brain-proposal-execution-readiness.js';
 import { readExecutorDryRunSummary } from './infinite-brain-proposal-executor-dry-run.js';
+import { readIosSyncSafetySummary } from './infinite-brain-ios-sync-safety.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -502,10 +503,33 @@ function getExecutorDryRunStatus() {
 }
 
 /**
+ * Get iOS/Obsidian sync safety status
+ */
+function getIosSyncSafetyStatus() {
+  const summary = readIosSyncSafetySummary();
+  if (!summary.available) {
+    return {
+      available: false,
+      reason: 'iOS sync safety report not found. Run /generate endpoint first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    status: summary.status,
+    syncSafe: summary.syncSafe,
+    canWriteToMind: summary.canWriteToMind,
+    blockerCount: summary.blockerCount,
+    reportOnly: true,
+  };
+}
+
+/**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -516,6 +540,7 @@ export async function getInfiniteBrainStatus() {
     Promise.resolve(getApplicationPlanStatus()),
     Promise.resolve(getExecutionReadinessStatus()),
     Promise.resolve(getExecutorDryRunStatus()),
+    Promise.resolve(getIosSyncSafetyStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -534,6 +559,7 @@ export async function getInfiniteBrainStatus() {
       applicationPlan,
       executionReadiness,
       executorDryRun,
+      iosSyncSafety,
       pipeline,
     },
     infrastructure: {
