@@ -1116,6 +1116,74 @@ export type InfiniteBrainOperatorApprovalRecord = z.infer<typeof infiniteBrainOp
 export type InfiniteBrainOperatorApprovalResponse = z.infer<typeof infiniteBrainOperatorApprovalResponseSchema>;
 export type InfiniteBrainOperatorApprovalRecordIntentRequest = z.infer<typeof infiniteBrainOperatorApprovalRecordIntentRequestSchema>;
 
+const infiniteBrainPostWriteVerificationSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  modifiesMind: z.literal(false),
+  deletesFiles: z.literal(false),
+  movesFiles: z.literal(false),
+  canExecute: z.literal(false),
+  verificationOnly: z.literal(true),
+  reportOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+const infiniteBrainPostWriteVerificationCheckSchema = z.object({
+  checkId: z.string(),
+  label: z.string(),
+  status: z.enum(['pass', 'fail', 'blocked', 'not-applicable']),
+  reason: z.string(),
+});
+
+export const infiniteBrainPostWriteVerificationRecordSchema = z.object({
+  reportId: z.string(),
+  generatedAt: z.string(),
+  status: z.enum(['blocked', 'ready-for-future-write-verification', 'missing-input']),
+  verificationAvailable: z.literal(false),
+  canVerifyWrites: z.literal(false),
+  canExecute: z.literal(false),
+  mindPath: z.string(),
+  dryRunReportId: z.string().nullable(),
+  checks: z.array(infiniteBrainPostWriteVerificationCheckSchema),
+  blockers: z.array(z.string()),
+  recommendations: z.array(z.string()),
+  safety: infiniteBrainPostWriteVerificationSafetySchema,
+});
+
+export const infiniteBrainPostWriteVerificationResponseSchema = z.object({
+  ok: z.literal(true),
+  report: infiniteBrainPostWriteVerificationRecordSchema,
+});
+
+export const infiniteBrainPostWriteVerificationGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('post_write_verification_generated'),
+  message: z.string(),
+  report: infiniteBrainPostWriteVerificationRecordSchema,
+  safety: infiniteBrainPostWriteVerificationSafetySchema,
+});
+
+const infiniteBrainPostWriteVerificationSchema = z.union([
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+  z.object({
+    available: z.literal(true),
+    generatedAt: z.string(),
+    status: z.enum(['blocked', 'ready-for-future-write-verification', 'missing-input']),
+    verificationAvailable: z.literal(false),
+    canVerifyWrites: z.literal(false),
+    canExecute: z.literal(false),
+    blockerCount: z.number(),
+  }),
+]);
+
+export type InfiniteBrainPostWriteVerificationRecord = z.infer<typeof infiniteBrainPostWriteVerificationRecordSchema>;
+export type InfiniteBrainPostWriteVerificationResponse = z.infer<typeof infiniteBrainPostWriteVerificationResponseSchema>;
+export type InfiniteBrainPostWriteVerificationGenerateResponse = z.infer<typeof infiniteBrainPostWriteVerificationGenerateResponseSchema>;
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({
@@ -1128,6 +1196,7 @@ export const infiniteBrainStatusSchema = z.object({
     proposalApprovals: infiniteBrainProposalApprovalsSchema,
     applicationPlan: infiniteBrainApplicationPlanSchema,
     operatorApproval: infiniteBrainOperatorApprovalSchema,
+    postWriteVerification: infiniteBrainPostWriteVerificationSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

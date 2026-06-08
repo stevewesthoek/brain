@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked)
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete
 
 ---
 
@@ -1820,13 +1820,166 @@ All tests pass: ✅ 9/9
 
 ---
 
+### PHASE AE — Post-Write Verification Console Visibility
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-post-write-verification.ts` — Post-write verification adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/post-write-verification` endpoints
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Post-write verification schemas
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for post-write verification display
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-core/src/adapters/infinite-brain-proposal-execution-readiness.ts` — Readiness check 11 update
+- `projects/brain-core/src/tests/infinite-brain-post-write-verification.test.ts` — Unit tests
+- `projects/brain-core/src/tests/routes.test.ts` — Route-level tests
+
+**What it does:**
+- Provides read-only framework for verifying expected write results against actual proposal execution
+- Generates post-write verification report with 10 checks (all blocked, report-only)
+- Stores report at `runtime/local/infinite-brain/post-write-verification-latest.json`
+- Integrates with execution readiness check 11 (post-write verification gate)
+- Console visibility section displays report status, checks, and safety information
+- No Apply/Execute buttons, no execution controls, no Mind writes
+
+**Key Safety Invariants:**
+- ✅ `verificationAvailable: false` (always)
+- ✅ `canVerifyWrites: false` (always)
+- ✅ `canExecute: false` (always)
+- ✅ `writesToMind: false` (always)
+- ✅ `modifiesMind: false` (always)
+- ✅ `deletesFiles: false` (always)
+- ✅ `movesFiles: false` (always)
+- ✅ `reportOnly: true` (always)
+- ✅ `verificationOnly: true` (always)
+- ✅ No Mind modifications
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ Deterministic report IDs
+
+**Post-Write Verification Report Schema:**
+```typescript
+{
+  reportId: string;                   // Deterministic SHA256 hash
+  generatedAt: string;                // ISO8601 timestamp
+  status: 'blocked' | 'ready-for-future-write-verification' | 'missing-input';
+  verificationAvailable: false;       // Always false (not implemented yet)
+  canVerifyWrites: false;             // Always false (not implemented yet)
+  canExecute: false;                  // Always false
+  mindPath: string;                   // Path to Mind repo
+  dryRunReportId: string | null;      // Reference to executor dry-run report
+  checks: PostWriteVerificationCheck[];
+  blockers: string[];                 // Blocked checks or failed checks
+  recommendations: string[];          // Recommendations to unblock
+  safety: {
+    writesToMind: false;
+    modifiesMind: false;
+    deletesFiles: false;
+    movesFiles: false;
+    canExecute: false;
+    verificationOnly: true;
+    reportOnly: true;
+    continuousRuntime: false;
+    modelCalls: false;
+    usesShell: false;
+  };
+}
+```
+
+**Post-Write Verification Checks (All Blocked in Phase AE):**
+1. **Dry-run report exists** — Pass if executor dry-run report found
+2. **Expected write manifest exists** — Blocked (not yet implemented)
+3. **Mind path exists** — Pass if Mind repo accessible (read-only)
+4. **Expected target paths resolvable** — Blocked (requires write manifest)
+5. **Frontmatter validation available** — Blocked (not yet implemented)
+6. **Reference integrity validation available** — Blocked (not yet implemented)
+7. **Duplicate detection available** — Blocked (not yet implemented)
+8. **Rollback verification available** — Blocked (not yet implemented)
+9. **Changelog verification available** — Blocked (not yet implemented)
+10. **Operator post-write review available** — Blocked (not yet implemented)
+
+**API Endpoints:**
+
+`GET /infinite-brain/post-write-verification`
+- Returns latest post-write verification report
+- 404 with code `post_write_verification_missing` if not found
+- Response includes safety block with all false/blocked values
+
+`POST /infinite-brain/post-write-verification/generate`
+- Generates new post-write verification report
+- Requires executor dry-run report to be present
+- Response includes generated report with all gates blocked
+- Returns: `ok: true`, `report`, `code: 'post_write_verification_generated'`, `safety` block
+
+**Console UI (Post-Write Verification Section):**
+- Added to InfiniteBrainProposalReview component alongside Operator Approval section
+- Button: "Generate Post-Write Verification Report" (not "Apply", not "Execute")
+- Displays:
+  - Report ID and generation timestamp
+  - Status (blocked/ready-for-future-write-verification/missing-input)
+  - Verification flags (all false)
+  - Executor dry-run report reference
+  - All 10 checks with status badges (pass/fail/blocked/not-applicable)
+  - Blocker list with count
+  - Safety verification summary (all false)
+- Safety message: "Post-write verification is report-only. No writes are performed. Mind is unchanged."
+- No write, apply, or execute functionality
+
+**Execution Readiness Integration (Check 11):**
+- Check 11 is added to readiness check sequence
+- If post-write verification missing: check status becomes `blocked`
+- If post-write verification exists but canVerifyWrites is false: check status becomes `blocked`
+- Overall readiness report STILL shows `canExecute: false` (other gates block execution)
+- Reason includes post-write verification status and blocker count
+
+**Status Integration:**
+- Added `postWriteVerification` to `runtime` object in status response
+- Includes: `available`, `generatedAt`, `status`, `verificationAvailable`, `canVerifyWrites`, `canExecute`, `blockerCount`
+- Union type: { available: false, reason: string } OR { available: true, ... }
+
+**Deterministic ID Generation:**
+- `reportId = SHA256(dryRunId + checkStatuses + mindPath).substring(0,12)`
+- Format: `pwv-{hash}`
+- Sorted component string (no timestamp, no randomness)
+- Same input always produces same ID
+
+**Environment Variables:**
+- `IBR_POST_WRITE_VERIFICATION_PATH` — Override report path (absolute or relative to BRAIN_ROOT)
+- `IBR_MIND_REPO_PATH` — Override Mind repo path (used in deterministic ID generation)
+
+**Safety Checks:**
+- ✅ No `writesToMind: true` in source
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ No Math.random or crypto.randomBytes for IDs
+- ✅ No child_process, exec, spawn
+- ✅ Deterministic ID via SHA256
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Zod schemas pass validation
+- ✅ 5 adapter-level tests pass (missing dry-run, report-only, deterministic IDs, safety block, summary blocked)
+- ✅ 3 route-level tests pass (POST generate, GET 404, GET stored report)
+- ✅ Build passes
+- ✅ Console component renders without errors
+- ✅ All safety invariants enforced
+
+**Future Gates (Still Blocked):**
+- Expected write manifest generation (blocks verification checks 2, 4)
+- Frontmatter validation schema (blocks check 5)
+- Reference integrity validation engine (blocks check 6)
+- Duplicate detection across Mind (blocks check 7)
+- Rollback verification system (blocks check 8)
+- Changelog verification framework (blocks check 9)
+- Operator post-write review UI and logic (blocks check 10)
+
+---
+
 **Future Implementation Phases:**
 | Phase | Blocker | Status |
 |-------|---------|--------|
 | Z+1 | iOS sync safety verification | ⏳ Blocked |
 | Z+2 | Operator approval gate | ⏳ Blocked |
 | Z+3 | Category-specific implementations | ⏳ Blocked |
-| Z+4 | Post-write verification | ⏳ Blocked |
+| Z+4 | Post-write verification (PHASE AE) | ✅ Console visibility added |
 | Z+5 | Rollback implementation | ⏳ Blocked |
 
 ---

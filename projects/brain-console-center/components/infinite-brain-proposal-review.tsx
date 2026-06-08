@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -47,6 +47,24 @@ export function InfiniteBrainProposalReview() {
   const [recordingApproval, setRecordingApproval] = useState(false);
   const [approvalRecordError, setApprovalRecordError] = useState<string | null>(null);
   const [approvalRecordSuccess, setApprovalRecordSuccess] = useState<string | null>(null);
+  const [postWriteVerificationRecord, setPostWriteVerificationRecord] = useState<InfiniteBrainPostWriteVerificationRecord | null>(null);
+  const [postWriteVerificationLoading, setPostWriteVerificationLoading] = useState(true);
+  const [generatingPostWriteVerification, setGeneratingPostWriteVerification] = useState(false);
+  const [postWriteVerificationError, setPostWriteVerificationError] = useState<string | null>(null);
+  const [postWriteVerificationSuccess, setPostWriteVerificationSuccess] = useState<string | null>(null);
+
+  async function fetchPostWriteVerification() {
+    try {
+      const data = await brainCoreRequest('/infinite-brain/post-write-verification', infiniteBrainPostWriteVerificationResponseSchema);
+      if (data.ok && data.report) {
+        setPostWriteVerificationRecord(data.report);
+      }
+    } catch {
+      // Not found is okay, we'll let the user generate one
+    } finally {
+      setPostWriteVerificationLoading(false);
+    }
+  }
 
   async function fetchOperatorApproval() {
     try {
@@ -81,6 +99,7 @@ export function InfiniteBrainProposalReview() {
   useEffect(() => {
     fetchProposals();
     fetchOperatorApproval();
+    fetchPostWriteVerification();
   }, []);
 
   async function handleSubmitDecision(e: React.FormEvent) {
@@ -155,6 +174,32 @@ export function InfiniteBrainProposalReview() {
       setApprovalRecordError(err instanceof Error ? err.message : 'Failed to record approval intent');
     } finally {
       setRecordingApproval(false);
+    }
+  }
+
+  async function handleGeneratePostWriteVerification() {
+    setGeneratingPostWriteVerification(true);
+    setPostWriteVerificationError(null);
+    setPostWriteVerificationSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/infinite-brain/post-write-verification/generate',
+        infiniteBrainPostWriteVerificationGenerateResponseSchema,
+        {}
+      );
+
+      if (result.ok) {
+        setPostWriteVerificationRecord(result.report);
+        setPostWriteVerificationSuccess('Post-write verification report generated');
+        await fetchPostWriteVerification();
+      } else {
+        setPostWriteVerificationError('Failed to generate post-write verification');
+      }
+    } catch (err) {
+      setPostWriteVerificationError(err instanceof Error ? err.message : 'Failed to generate report');
+    } finally {
+      setGeneratingPostWriteVerification(false);
     }
   }
 
@@ -425,6 +470,121 @@ export function InfiniteBrainProposalReview() {
             {recordingApproval ? 'Recording...' : 'Record Approval Intent'}
           </button>
         </form>
+      </div>
+
+      {/* Post-Write Verification Section */}
+      <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200 space-y-3">
+        <div>
+          <h3 className="font-semibold text-cyan-900">Post-Write Verification</h3>
+          <p className="text-xs text-cyan-700 mt-1">
+            Read-only framework for verifying expected write results. Report-only status display.
+          </p>
+          <div className="mt-2 text-xs text-cyan-700 space-y-0.5">
+            <p>✓ Report-only status, no writes performed</p>
+            <p>✓ Mind unchanged</p>
+            <p>✓ No execution controls</p>
+            <p>✓ Safety: all verification gates blocked</p>
+          </div>
+        </div>
+
+        {postWriteVerificationRecord && (
+          <div className="p-3 bg-white border border-cyan-200 rounded space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-cyan-900">Report ID:</p>
+              <p className="text-xs text-cyan-800 font-mono">{postWriteVerificationRecord.reportId}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-cyan-700">Status</p>
+                <p className="font-semibold text-cyan-900 capitalize">{postWriteVerificationRecord.status}</p>
+              </div>
+              <div>
+                <p className="text-cyan-700">Generated</p>
+                <p className="font-semibold text-cyan-900">{new Date(postWriteVerificationRecord.generatedAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-cyan-700">Verification Available</p>
+                <p className="font-semibold text-cyan-900">{postWriteVerificationRecord.verificationAvailable ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-cyan-700">Can Verify Writes</p>
+                <p className="font-semibold text-cyan-900">{postWriteVerificationRecord.canVerifyWrites ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-cyan-700">Can Execute</p>
+                <p className="font-semibold text-cyan-900">{postWriteVerificationRecord.canExecute ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-cyan-700">Dry-Run Report</p>
+                <p className="font-semibold text-cyan-900 font-mono text-xs">{postWriteVerificationRecord.dryRunReportId || 'None'}</p>
+              </div>
+            </div>
+
+            {postWriteVerificationRecord.blockers.length > 0 && (
+              <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                <p className="text-xs font-semibold text-amber-900 mb-1">Blockers ({postWriteVerificationRecord.blockers.length}):</p>
+                <ul className="text-xs text-amber-800 space-y-0.5">
+                  {postWriteVerificationRecord.blockers.map((blocker, i) => (
+                    <li key={i}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {postWriteVerificationRecord.checks.length > 0 && (
+              <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                <p className="text-xs font-semibold text-slate-900 mb-2">Verification Checks:</p>
+                <div className="space-y-1">
+                  {postWriteVerificationRecord.checks.map((check) => {
+                    const badge = getCheckStatusBadge(check.status);
+                    return (
+                      <div key={check.checkId} className="flex items-start gap-2">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${badge.bg} ${badge.text}`}>
+                          {badge.label}
+                        </span>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-slate-900">{check.label}</p>
+                          <p className="text-xs text-slate-600">{check.reason}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="p-2 bg-blue-50 rounded border border-blue-200">
+              <p className="text-xs font-semibold text-blue-900 mb-1">Safety Verification:</p>
+              <div className="text-xs text-blue-800 space-y-0.5">
+                <p>• Writes to Mind: {postWriteVerificationRecord.safety.writesToMind ? 'Yes' : 'No'}</p>
+                <p>• Modifies Mind: {postWriteVerificationRecord.safety.modifiesMind ? 'Yes' : 'No'}</p>
+                <p>• Deletes Files: {postWriteVerificationRecord.safety.deletesFiles ? 'Yes' : 'No'}</p>
+                <p>• Can Execute: {postWriteVerificationRecord.safety.canExecute ? 'Yes' : 'No'}</p>
+                <p>• Report Only: {postWriteVerificationRecord.safety.reportOnly ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {postWriteVerificationError && (
+          <div className="p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{postWriteVerificationError}</p>
+          </div>
+        )}
+
+        {postWriteVerificationSuccess && (
+          <div className="p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">{postWriteVerificationSuccess}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleGeneratePostWriteVerification}
+          disabled={generatingPostWriteVerification}
+          className="w-full px-4 py-2 bg-cyan-600 text-white rounded-lg font-semibold text-sm hover:bg-cyan-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+        >
+          {generatingPostWriteVerification ? 'Generating Report...' : 'Generate Post-Write Verification Report'}
+        </button>
       </div>
     </div>
   );
