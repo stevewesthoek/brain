@@ -396,6 +396,92 @@ npm run typecheck 2>&1 | head -20
 
 ---
 
+### PHASE IB9 — Relationship Audit (Report-Only)
+
+**Files:**
+- `tools/infinite-brain/relationship-audit-dry-run.mjs` — Audit analysis tool
+- `package.json` script: `ibr:relationships:audit`
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Schema extension
+- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — UI display
+
+**What it does:**
+- Evaluates health of inferred edges from IB8 edge inference
+- Detects broken references (orphan source/target entities)
+- Finds duplicate edge pairs (same source, target, type)
+- Flags bidirectional conflicts (e.g., both "supports" and "contradicts")
+- Identifies missing evidence/reasoning fields
+- Spots suspicious patterns (very low confidence, no reasoning)
+- Computes health score (% of valid edges)
+- Generates top 10 riskiest edges for review
+- Creates actionable recommendations
+
+**Record Schema:**
+```typescript
+{
+  timestamp: string;              // ISO8601
+  totalInferredEdges: number;
+  totalReviewCandidates: number;
+  edgesByType: Record<string, number>;
+  confidenceDistribution: {
+    veryHigh: number;  // >= 0.9
+    high: number;      // >= 0.75
+    medium: number;    // >= 0.6
+    low: number;       // >= 0.4
+    veryLow: number;   // < 0.4
+  };
+  highConfidenceCount: number;
+  lowConfidenceCount: number;
+  orphanSources: Array<{ edgeId, entityId, confidence }>;
+  orphanTargets: Array<{ edgeId, entityId, confidence }>;
+  duplicateEdgePairs: Array<{ edgeA, edgeB, confidenceA, confidenceB }>;
+  bidirectionalIssues: Array<{ sourceEntity, targetEntity, edgeType1, edgeType2 }>;
+  missingEvidenceFields: Array<{ edgeId, reason }>;
+  suspiciousPatterns: Array<{ edgeId, pattern, confidence }>;
+  topRiskyEdges: Array<{ sourceEntityId, targetEntityId, edgeType, confidence, reasoning }>;
+  healthScore: number;  // 0-100
+  recommendations: Array<{ priority, category, count, action, rationale }>;
+}
+```
+
+**Output:**
+- `runtime/local/infinite-brain/relationship-audit-latest.json` (JSON report)
+- `runtime/local/infinite-brain/relationship-audit-latest.md` (Markdown report)
+
+**Usage:**
+```bash
+# Run audit (requires IB8 edge inference report first)
+npm run ibr:classify:dry-run     # Generate entities
+npm run ibr:edges:dry-run        # Generate edges
+npm run ibr:relationships:audit  # Audit relationships
+
+# View JSON report
+jq '.' runtime/local/infinite-brain/relationship-audit-latest.json
+
+# View markdown report
+cat runtime/local/infinite-brain/relationship-audit-latest.md
+```
+
+**Safety:**
+- ✅ Report-only (no repairs, no mutations)
+- ✅ Deterministic heuristics (no randomness)
+- ✅ No model calls
+- ✅ No file moves or deletions
+- ✅ Console integration via brainCoreRequest
+
+**Integration:**
+- Brain Core status: `GET /infinite-brain/status` includes `relationshipAudit` section
+- Console display: Dashboard shows health score, issue counts, last updated
+- No direct fetch: Uses existing brainCoreRequest pattern
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Schemas pass Zod validation
+- ✅ Console component uses brainCoreRequest
+- ✅ Build: `npm run typecheck` passes
+
+---
+
 ## Contact
 
 For architecture decisions or questions about IBR foundation:

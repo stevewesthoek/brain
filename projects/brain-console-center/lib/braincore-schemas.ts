@@ -695,12 +695,30 @@ const infiniteBrainEdgesSchema = z.union([
   }),
 ]);
 
+const infiniteBrainRelationshipAuditSchema = z.union([
+  z.object({
+    available: z.literal(true),
+    timestamp: z.string(),
+    totalEdges: z.number(),
+    duplicateEdges: z.number(),
+    orphanReferences: z.number(),
+    suspiciousPatterns: z.number(),
+    healthScore: z.number(),
+    recommendationsCount: z.number(),
+  }),
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+]);
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({
     atomizer: infiniteBrainAtomizerSchema,
     classifier: infiniteBrainClassifierSchema,
     edges: infiniteBrainEdgesSchema,
+    relationshipAudit: infiniteBrainRelationshipAuditSchema,
   }),
   changelog: z.unknown().optional(),
   evidence: z.unknown().optional(),

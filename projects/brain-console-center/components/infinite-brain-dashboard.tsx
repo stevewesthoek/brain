@@ -136,6 +136,28 @@ export function InfiniteBrainDashboard() {
           <p className="text-sm text-slate-500 mt-2">{status.runtime.edges.reason}</p>
         )}
       </div>
+
+      {/* Relationship Audit Report */}
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Relationship Audit (IB9)</h3>
+        {status.runtime.relationshipAudit.available ? (
+          <div className="mt-2 text-sm text-slate-700 space-y-1">
+            <p>Total edges: <strong>{status.runtime.relationshipAudit.totalEdges}</strong></p>
+            <p className={`font-semibold ${status.runtime.relationshipAudit.healthScore >= 80 ? 'text-green-700' : status.runtime.relationshipAudit.healthScore >= 60 ? 'text-yellow-700' : 'text-red-700'}`}>
+              Health score: <strong>{status.runtime.relationshipAudit.healthScore.toFixed(1)}%</strong>
+            </p>
+            <p>Duplicate edges: <strong>{status.runtime.relationshipAudit.duplicateEdges}</strong></p>
+            <p>Orphan references: <strong>{status.runtime.relationshipAudit.orphanReferences}</strong></p>
+            <p>Suspicious patterns: <strong>{status.runtime.relationshipAudit.suspiciousPatterns}</strong></p>
+            <p>Recommendations: <strong>{status.runtime.relationshipAudit.recommendationsCount}</strong></p>
+            <p className="text-xs text-slate-500 mt-2">
+              Updated: {status.runtime.relationshipAudit.timestamp ? new Date(status.runtime.relationshipAudit.timestamp).toLocaleString() : 'Never'}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500 mt-2">{status.runtime.relationshipAudit.reason}</p>
+        )}
+      </div>
     </div>
   );
 }

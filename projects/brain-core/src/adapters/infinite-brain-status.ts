@@ -39,6 +39,22 @@ interface EdgeInferenceReport {
   };
 }
 
+interface RelationshipAuditReport {
+  timestamp: string;
+  totalInferredEdges: number;
+  totalReviewCandidates: number;
+  highConfidenceCount: number;
+  lowConfidenceCount: number;
+  orphanSources: Array<{ edgeId: string; entityId: string; confidence: number }>;
+  orphanTargets: Array<{ edgeId: string; entityId: string; confidence: number }>;
+  duplicateEdgePairs: Array<{ edgeA: string; edgeB: string }>;
+  bidirectionalIssues: Array<{ sourceEntity: string; targetEntity: string }>;
+  missingEvidenceFields: Array<{ edgeId: string; reason: string }>;
+  suspiciousPatterns: Array<{ edgeId: string; pattern: string }>;
+  healthScore: number;
+  recommendations: Array<{ priority: string; category: string; count: number }>;
+}
+
 interface ChangelogStats {
   totalMutations: number;
   byAction: Record<string, number>;
@@ -163,6 +179,42 @@ async function getEdgeInferenceStatus(): Promise<
 }
 
 /**
+ * Get relationship audit status
+ */
+async function getRelationshipAuditStatus(): Promise<
+  | {
+      available: true;
+      timestamp: string;
+      totalEdges: number;
+      duplicateEdges: number;
+      orphanReferences: number;
+      suspiciousPatterns: number;
+      healthScore: number;
+      recommendationsCount: number;
+    }
+  | { available: false; reason: string }
+> {
+  const report = await loadReport<RelationshipAuditReport>(
+    path.join(RUNTIME_DIR, 'relationship-audit-latest.json')
+  );
+
+  if (!report) {
+    return { available: false, reason: 'Relationship audit report not found' };
+  }
+
+  return {
+    available: true,
+    timestamp: report.timestamp,
+    totalEdges: report.totalInferredEdges,
+    duplicateEdges: report.duplicateEdgePairs.length,
+    orphanReferences: report.orphanSources.length + report.orphanTargets.length,
+    suspiciousPatterns: report.suspiciousPatterns.length,
+    healthScore: report.healthScore,
+    recommendationsCount: report.recommendations.length,
+  };
+}
+
+/**
  * Get changelog statistics (stub)
  */
 async function getChangelogStats(): Promise<ChangelogStats> {
@@ -191,10 +243,11 @@ async function getEvidenceStats(): Promise<EvidenceStats> {
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
+    getRelationshipAuditStatus(),
     getChangelogStats(),
     getEvidenceStats(),
   ]);
@@ -205,6 +258,7 @@ export async function getInfiniteBrainStatus() {
       atomizer,
       classifier,
       edges,
+      relationshipAudit,
     },
     infrastructure: {
       changelog: {
