@@ -1443,6 +1443,121 @@ const infiniteBrainMetadataPatchPreviewSchema = z.union([
   }),
 ]);
 
+export const infiniteBrainMetadataWriterEnablementSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  modifiesMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  writeEnabled: z.literal(false),
+  executionEnabled: z.literal(false),
+  enablementRecordOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+export const infiniteBrainMetadataWriterEnablementRecordSchema = z.object({
+  enablementId: z.string(),
+  generatedAt: z.string(),
+  operator: z.string(),
+  decision: z.enum(['disabled', 'dry-run-only', 'future-enabled-requested']),
+  reason: z.string(),
+  scope: z.literal('metadata-writer-enablement'),
+  writerCategory: z.literal('entity-metadata'),
+  writeEnabled: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  executionEnabled: z.literal(false),
+  expiresAt: z.string().optional(),
+  requiredNextGates: z.array(z.string()),
+  safety: infiniteBrainMetadataWriterEnablementSafetySchema,
+});
+
+export const infiniteBrainMetadataWriterEnablementResponseSchema = z.object({
+  ok: z.literal(true),
+  record: infiniteBrainMetadataWriterEnablementRecordSchema,
+});
+
+export const infiniteBrainMetadataWriterEnablementGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('metadata_writer_enablement_recorded'),
+  message: z.string(),
+  record: infiniteBrainMetadataWriterEnablementRecordSchema,
+  safety: z.object({
+    writeEnabled: z.literal(false),
+    canWrite: z.literal(false),
+    canWriteToMind: z.literal(false),
+    executionEnabled: z.literal(false),
+    enablementRecordOnly: z.literal(true),
+  }),
+});
+
+export const infiniteBrainMetadataWriterDryRunSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  modifiesMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  dryRunOnly: z.literal(true),
+  globalExecutionDisabled: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+export const infiniteBrainMetadataWriterDryRunReportSchema = z.object({
+  dryRunId: z.string(),
+  generatedAt: z.string(),
+  status: z.enum(['blocked', 'dry-run-only']),
+  writerCategory: z.literal('entity-metadata'),
+  dryRunOnly: z.literal(true),
+  writeEnabled: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  wroteToMind: z.literal(false),
+  applied: z.literal(false),
+  plannedOperations: z.array(z.object({
+    operationId: z.string(),
+    manifestEntryId: z.string(),
+    proposalId: z.string(),
+    targetPathsPreview: z.array(z.string()),
+    patchPreviewSummary: z.string(),
+    writeBlocked: z.literal(true),
+    applied: z.literal(false),
+    dryRunOnly: z.literal(true),
+  })),
+  blockers: z.array(z.string()),
+  preconditions: z.array(z.object({
+    name: z.string(),
+    status: z.enum(['pass', 'blocked', 'uncertain']),
+    reason: z.string(),
+    requiredForWrite: z.boolean(),
+  })),
+  safety: infiniteBrainMetadataWriterDryRunSafetySchema,
+});
+
+export const infiniteBrainMetadataWriterDryRunResponseSchema = z.object({
+  ok: z.literal(true),
+  report: infiniteBrainMetadataWriterDryRunReportSchema,
+});
+
+export const infiniteBrainMetadataWriterDryRunGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('metadata_writer_dry_run_generated'),
+  message: z.string(),
+  report: infiniteBrainMetadataWriterDryRunReportSchema,
+  safety: z.object({
+    dryRunOnly: z.literal(true),
+    writeEnabled: z.literal(false),
+    canWrite: z.literal(false),
+    canWriteToMind: z.literal(false),
+    wroteToMind: z.literal(false),
+    applied: z.literal(false),
+    globalExecutionDisabled: z.literal(true),
+  }),
+});
+
 export type InfiniteBrainWriteManifestRecord = z.infer<typeof infiniteBrainWriteManifestRecordSchema>;
 export type InfiniteBrainWriteManifestResponse = z.infer<typeof infiniteBrainWriteManifestResponseSchema>;
 export type InfiniteBrainWriteManifestGenerateResponse = z.infer<typeof infiniteBrainWriteManifestGenerateResponseSchema>;
@@ -1452,6 +1567,12 @@ export type InfiniteBrainMetadataValidationGenerateResponse = z.infer<typeof inf
 export type InfiniteBrainMetadataPatchPreviewRecord = z.infer<typeof infiniteBrainMetadataPatchPreviewRecordSchema>;
 export type InfiniteBrainMetadataPatchPreviewResponse = z.infer<typeof infiniteBrainMetadataPatchPreviewResponseSchema>;
 export type InfiniteBrainMetadataPatchPreviewGenerateResponse = z.infer<typeof infiniteBrainMetadataPatchPreviewGenerateResponseSchema>;
+export type InfiniteBrainMetadataWriterEnablementRecord = z.infer<typeof infiniteBrainMetadataWriterEnablementRecordSchema>;
+export type InfiniteBrainMetadataWriterEnablementResponse = z.infer<typeof infiniteBrainMetadataWriterEnablementResponseSchema>;
+export type InfiniteBrainMetadataWriterEnablementGenerateResponse = z.infer<typeof infiniteBrainMetadataWriterEnablementGenerateResponseSchema>;
+export type InfiniteBrainMetadataWriterDryRunReport = z.infer<typeof infiniteBrainMetadataWriterDryRunReportSchema>;
+export type InfiniteBrainMetadataWriterDryRunResponse = z.infer<typeof infiniteBrainMetadataWriterDryRunResponseSchema>;
+export type InfiniteBrainMetadataWriterDryRunGenerateResponse = z.infer<typeof infiniteBrainMetadataWriterDryRunGenerateResponseSchema>;
 
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
@@ -1469,6 +1590,35 @@ export const infiniteBrainStatusSchema = z.object({
     writeManifest: infiniteBrainWriteManifestSchema,
     metadataValidation: infiniteBrainMetadataValidationSchema,
     metadataPatchPreview: infiniteBrainMetadataPatchPreviewSchema,
+    metadataWriterEnablement: z.union([
+      z.object({ available: z.literal(false), reason: z.string() }),
+      z.object({
+        available: z.literal(true),
+        generatedAt: z.string(),
+        operator: z.string(),
+        decision: z.enum(['disabled', 'dry-run-only', 'future-enabled-requested']),
+        writeEnabled: z.literal(false),
+        canWrite: z.literal(false),
+        canWriteToMind: z.literal(false),
+        executionEnabled: z.literal(false),
+        enablementRecordOnly: z.literal(true),
+      }),
+    ]),
+    metadataWriterDryRun: z.union([
+      z.object({ available: z.literal(false), reason: z.string() }),
+      z.object({
+        available: z.literal(true),
+        generatedAt: z.string(),
+        status: z.enum(['blocked', 'dry-run-only']),
+        dryRunOnly: z.literal(true),
+        writeEnabled: z.literal(false),
+        canWrite: z.literal(false),
+        canWriteToMind: z.literal(false),
+        wroteToMind: z.literal(false),
+        applied: z.literal(false),
+        globalExecutionDisabled: z.literal(true),
+      }),
+    ]),
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

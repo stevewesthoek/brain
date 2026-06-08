@@ -15,6 +15,7 @@ import { readPostWriteVerificationSummary } from './infinite-brain-post-write-ve
 import { readWriteManifestSummary } from './infinite-brain-write-manifest.js';
 import { readMetadataValidationSummary } from './infinite-brain-metadata-writer-validation.js';
 import { readMetadataPatchPreviewSummary } from './infinite-brain-metadata-patch-preview.js';
+import { readMetadataWriterEnablementSummary } from './infinite-brain-metadata-writer-enablement.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -641,11 +642,41 @@ function getMetadataPatchPreviewStatus() {
   };
 }
 
+function getMetadataWriterEnablementStatus() {
+  const summary = readMetadataWriterEnablementSummary();
+  if (!summary.available) {
+    return {
+      available: false,
+      reason: 'Metadata writer enablement gate not recorded yet. Record intent first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    operator: summary.operator,
+    decision: summary.decision,
+    writeEnabled: summary.writeEnabled,
+    canWrite: summary.canWrite,
+    canWriteToMind: summary.canWriteToMind,
+    executionEnabled: summary.executionEnabled,
+    enablementRecordOnly: true,
+  };
+}
+
+function getMetadataWriterDryRunStatus() {
+  // Placeholder: will read dry-run report when writer-metadata exports are available
+  return {
+    available: false,
+    reason: 'Metadata writer dry-run report not generated yet. Generate one first.',
+  };
+}
+
 /**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, postWriteVerification, writeManifest, metadataValidation, metadataPatchPreview, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, postWriteVerification, writeManifest, metadataValidation, metadataPatchPreview, metadataWriterEnablement, metadataWriterDryRun, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -662,6 +693,8 @@ export async function getInfiniteBrainStatus() {
     Promise.resolve(getWriteManifestStatus()),
     Promise.resolve(getMetadataValidationStatus()),
     Promise.resolve(getMetadataPatchPreviewStatus()),
+    Promise.resolve(getMetadataWriterEnablementStatus()),
+    Promise.resolve(getMetadataWriterDryRunStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -686,6 +719,8 @@ export async function getInfiniteBrainStatus() {
       writeManifest,
       metadataValidation,
       metadataPatchPreview,
+      metadataWriterEnablement,
+      metadataWriterDryRun,
       pipeline,
     },
     infrastructure: {

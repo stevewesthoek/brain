@@ -24,6 +24,8 @@ import { generateExecutionReadinessReport, writeExecutionReadinessReport, readEx
 import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDryRunReport, readExecutorDryRunSummary } from '../adapters/infinite-brain-proposal-executor-dry-run.js';
 import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafetyReport, readIosSyncSafetySummary } from '../adapters/infinite-brain-ios-sync-safety.js';
 import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
+import { generateMetadataWriterEnablementRecord, writeMetadataWriterEnablementRecord, readMetadataWriterEnablementRecord } from '../adapters/infinite-brain-metadata-writer-enablement.js';
+import { runMetadataWriterDryRunOnly, writeMetadataWriterDryRunReport, readMetadataWriterDryRunReport } from '../adapters/infinite-brain-writers/writer-metadata.js';
 import { generatePostWriteVerificationReport, writePostWriteVerificationReport, readPostWriteVerificationReport, readPostWriteVerificationSummary } from '../adapters/infinite-brain-post-write-verification.js';
 import { generateWriteManifest, writeWriteManifest, readWriteManifest } from '../adapters/infinite-brain-write-manifest.js';
 import { generateMetadataValidationReport, writeMetadataValidationReport, readMetadataValidationReport } from '../adapters/infinite-brain-metadata-writer-validation.js';
@@ -2788,6 +2790,44 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Metadata Writer Enablement (Fetch) ────────────────────
+      if (url.pathname === '/api/infinite-brain/metadata-writer/enablement' && request.method === 'GET') {
+        const record = readMetadataWriterEnablementRecord();
+        if (!record) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'metadata_writer_enablement_missing',
+            message: 'No metadata writer enablement record found. Record intent first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          record,
+        });
+        return;
+      }
+
+      // ── Infinite Brain: Metadata Writer Dry Run (Fetch) ───────────────────────
+      if (url.pathname === '/api/infinite-brain/metadata-writer/dry-run' && request.method === 'GET') {
+        const report = readMetadataWriterDryRunReport();
+        if (!report) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'metadata_writer_dry_run_missing',
+            message: 'No metadata writer dry-run report found. Generate one first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          report,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -2868,6 +2908,111 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'approval_write_failed',
         message: 'Failed to write operator approval record',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Metadata Writer Enablement (Record Intent) ──────────────
+  if (url.pathname === '/api/infinite-brain/metadata-writer/enablement/record') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_body',
+        message: 'Request body must be valid JSON.',
+      });
+      return;
+    }
+
+    const operator = (body.operator as string) ?? '';
+    const decision = (body.decision as string) ?? '';
+    const reason = (body.reason as string) ?? '';
+
+    if (!operator || !operator.trim()) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_operator',
+        message: 'operator is required and must be non-empty',
+      });
+      return;
+    }
+
+    if (!reason || !reason.trim()) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_reason',
+        message: 'reason is required and must be non-empty',
+      });
+      return;
+    }
+
+    if (!['disabled', 'dry-run-only', 'future-enabled-requested'].includes(decision)) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_decision',
+        message: 'decision must be one of: disabled, dry-run-only, future-enabled-requested',
+      });
+      return;
+    }
+
+    const record = generateMetadataWriterEnablementRecord({
+      operator: operator.trim(),
+      decision: decision as 'disabled' | 'dry-run-only' | 'future-enabled-requested',
+      reason: reason.trim(),
+    });
+    const success = writeMetadataWriterEnablementRecord(record);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'metadata_writer_enablement_recorded',
+        message: 'Metadata writer enablement gate recorded (execution remains blocked)',
+        record,
+        safety: {
+          writeEnabled: false,
+          canWrite: false,
+          canWriteToMind: false,
+          executionEnabled: false,
+          enablementRecordOnly: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'enablement_write_failed',
+        message: 'Failed to write metadata writer enablement record',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Metadata Writer Dry Run (Generate) ─────────────────────
+  if (url.pathname === '/api/infinite-brain/metadata-writer/dry-run/generate') {
+    const report = runMetadataWriterDryRunOnly();
+    const success = writeMetadataWriterDryRunReport(report);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'metadata_writer_dry_run_generated',
+        message: 'Metadata writer dry-run report generated (dry-run only, no writes)',
+        report,
+        safety: {
+          dryRunOnly: true,
+          writeEnabled: false,
+          canWrite: false,
+          canWriteToMind: false,
+          wroteToMind: false,
+          applied: false,
+          globalExecutionDisabled: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'metadata_writer_dry_run_write_failed',
+        message: 'Failed to write metadata writer dry-run report',
       });
     }
     return;

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, infiniteBrainMetadataPatchPreviewResponseSchema, infiniteBrainMetadataPatchPreviewGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord, type InfiniteBrainMetadataPatchPreviewRecord } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, infiniteBrainMetadataPatchPreviewResponseSchema, infiniteBrainMetadataPatchPreviewGenerateResponseSchema, infiniteBrainMetadataWriterEnablementResponseSchema, infiniteBrainMetadataWriterEnablementGenerateResponseSchema, infiniteBrainMetadataWriterDryRunResponseSchema, infiniteBrainMetadataWriterDryRunGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord, type InfiniteBrainMetadataPatchPreviewRecord, type InfiniteBrainMetadataWriterEnablementRecord, type InfiniteBrainMetadataWriterDryRunReport } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -67,6 +67,19 @@ export function InfiniteBrainProposalReview() {
   const [generatingMetadataPatchPreview, setGeneratingMetadataPatchPreview] = useState(false);
   const [metadataPatchPreviewError, setMetadataPatchPreviewError] = useState<string | null>(null);
   const [metadataPatchPreviewSuccess, setMetadataPatchPreviewSuccess] = useState<string | null>(null);
+  const [metadataWriterEnablementRecord, setMetadataWriterEnablementRecord] = useState<InfiniteBrainMetadataWriterEnablementRecord | null>(null);
+  const [metadataWriterEnablementLoading, setMetadataWriterEnablementLoading] = useState(true);
+  const [writerEnablementOperator, setWriterEnablementOperator] = useState('');
+  const [writerEnablementDecision, setWriterEnablementDecision] = useState<'disabled' | 'dry-run-only' | 'future-enabled-requested' | ''>('');
+  const [writerEnablementReason, setWriterEnablementReason] = useState('');
+  const [recordingWriterEnablement, setRecordingWriterEnablement] = useState(false);
+  const [writerEnablementError, setWriterEnablementError] = useState<string | null>(null);
+  const [writerEnablementSuccess, setWriterEnablementSuccess] = useState<string | null>(null);
+  const [metadataWriterDryRunReport, setMetadataWriterDryRunReport] = useState<InfiniteBrainMetadataWriterDryRunReport | null>(null);
+  const [metadataWriterDryRunLoading, setMetadataWriterDryRunLoading] = useState(true);
+  const [generatingMetadataWriterDryRun, setGeneratingMetadataWriterDryRun] = useState(false);
+  const [metadataWriterDryRunError, setMetadataWriterDryRunError] = useState<string | null>(null);
+  const [metadataWriterDryRunSuccess, setMetadataWriterDryRunSuccess] = useState<string | null>(null);
 
   async function fetchPostWriteVerification() {
     try {
@@ -126,6 +139,38 @@ export function InfiniteBrainProposalReview() {
     }
   }
 
+  async function fetchMetadataWriterEnablement() {
+    try {
+      const data = await brainCoreRequest(
+        '/api/infinite-brain/metadata-writer/enablement',
+        infiniteBrainMetadataWriterEnablementResponseSchema
+      );
+      if (data.ok && data.record) {
+        setMetadataWriterEnablementRecord(data.record);
+      }
+    } catch {
+      // Not found is okay, we'll let the user record one
+    } finally {
+      setMetadataWriterEnablementLoading(false);
+    }
+  }
+
+  async function fetchMetadataWriterDryRun() {
+    try {
+      const data = await brainCoreRequest(
+        '/api/infinite-brain/metadata-writer/dry-run',
+        infiniteBrainMetadataWriterDryRunResponseSchema
+      );
+      if (data.ok && data.report) {
+        setMetadataWriterDryRunReport(data.report);
+      }
+    } catch {
+      // Not found is okay, we'll let the user generate one
+    } finally {
+      setMetadataWriterDryRunLoading(false);
+    }
+  }
+
   async function fetchOperatorApproval() {
     try {
       const data = await brainCoreRequest('/infinite-brain/operator-approval', z.object({
@@ -163,6 +208,8 @@ export function InfiniteBrainProposalReview() {
     fetchWriteManifest();
     fetchMetadataValidation();
     fetchMetadataPatchPreview();
+    fetchMetadataWriterEnablement();
+    fetchMetadataWriterDryRun();
   }, []);
 
   async function handleSubmitDecision(e: React.FormEvent) {
@@ -341,6 +388,69 @@ export function InfiniteBrainProposalReview() {
       setMetadataPatchPreviewError(err instanceof Error ? err.message : 'Failed to generate patch preview');
     } finally {
       setGeneratingMetadataPatchPreview(false);
+    }
+  }
+
+  async function handleRecordWriterEnablement(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!writerEnablementOperator.trim() || !writerEnablementDecision || !writerEnablementReason.trim()) {
+      setWriterEnablementError('Please provide operator name, decision, and reason');
+      return;
+    }
+
+    setRecordingWriterEnablement(true);
+    setWriterEnablementError(null);
+    setWriterEnablementSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/api/infinite-brain/metadata-writer/enablement/record',
+        infiniteBrainMetadataWriterEnablementGenerateResponseSchema,
+        {
+          operator: writerEnablementOperator.trim(),
+          decision: writerEnablementDecision,
+          reason: writerEnablementReason.trim(),
+        }
+      );
+
+      if (result.ok) {
+        setMetadataWriterEnablementRecord(result.record);
+        setWriterEnablementSuccess('Metadata writer enablement gate recorded');
+        setWriterEnablementOperator('');
+        setWriterEnablementDecision('');
+        setWriterEnablementReason('');
+      }
+    } catch (err) {
+      setWriterEnablementError(err instanceof Error ? err.message : 'Failed to record enablement gate');
+    } finally {
+      setRecordingWriterEnablement(false);
+    }
+  }
+
+  async function handleGenerateMetadataWriterDryRun() {
+    setGeneratingMetadataWriterDryRun(true);
+    setMetadataWriterDryRunError(null);
+    setMetadataWriterDryRunSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/api/infinite-brain/metadata-writer/dry-run/generate',
+        infiniteBrainMetadataWriterDryRunGenerateResponseSchema,
+        {}
+      );
+
+      if (result.ok) {
+        setMetadataWriterDryRunReport(result.report);
+        setMetadataWriterDryRunSuccess('Metadata writer dry-run report generated');
+        await fetchMetadataWriterDryRun();
+      } else {
+        setMetadataWriterDryRunError('Failed to generate dry-run report');
+      }
+    } catch (err) {
+      setMetadataWriterDryRunError(err instanceof Error ? err.message : 'Failed to generate dry-run');
+    } finally {
+      setGeneratingMetadataWriterDryRun(false);
     }
   }
 
@@ -1090,6 +1200,188 @@ export function InfiniteBrainProposalReview() {
           className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold text-sm hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
         >
           {generatingMetadataPatchPreview ? 'Generating Preview...' : 'Generate Metadata Patch Preview'}
+        </button>
+      </div>
+
+      {/* Metadata Writer Enablement Gate Section */}
+      <div className="p-4 bg-rose-50 rounded-lg border border-rose-200 space-y-3">
+        <div>
+          <h3 className="font-semibold text-rose-900">Metadata Writer Enablement Gate</h3>
+          <p className="text-xs text-rose-700 mt-1">
+            Record explicit metadata writer enablement intent. Real writes remain disabled.
+          </p>
+          <div className="mt-2 text-xs text-rose-700 space-y-0.5">
+            <p>✓ Enablement intent recorded only</p>
+            <p>✓ Real metadata writes remain disabled</p>
+            <p>✓ Mind unchanged</p>
+            <p>✓ Safety: all write flags false</p>
+          </div>
+        </div>
+
+        {metadataWriterEnablementRecord && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded">
+            <p className="text-xs font-semibold text-green-900">Current Enablement Gate:</p>
+            <div className="mt-2 space-y-1 text-xs text-green-800">
+              <p><strong>Operator:</strong> {metadataWriterEnablementRecord.operator}</p>
+              <p><strong>Decision:</strong> <span className="capitalize">{metadataWriterEnablementRecord.decision.replace(/-/g, ' ')}</span></p>
+              <p><strong>Write Enabled:</strong> {metadataWriterEnablementRecord.writeEnabled ? 'Yes' : 'No'}</p>
+              <p><strong>Can Write:</strong> {metadataWriterEnablementRecord.canWrite ? 'Yes' : 'No'}</p>
+              <p><strong>Can Write To Mind:</strong> {metadataWriterEnablementRecord.canWriteToMind ? 'Yes' : 'No'}</p>
+            </div>
+          </div>
+        )}
+
+        {writerEnablementError && (
+          <div className="p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{writerEnablementError}</p>
+          </div>
+        )}
+
+        {writerEnablementSuccess && (
+          <div className="p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">{writerEnablementSuccess}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleRecordWriterEnablement} className="space-y-3">
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Operator Name (required)</label>
+            <input
+              type="text"
+              value={writerEnablementOperator}
+              onChange={(e) => setWriterEnablementOperator(e.target.value)}
+              placeholder="Your name or identifier"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Enablement Decision (required)</label>
+            <div className="space-y-2">
+              {(['disabled', 'dry-run-only', 'future-enabled-requested'] as const).map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="writer-decision"
+                    value={opt}
+                    checked={writerEnablementDecision === opt}
+                    onChange={(e) => setWriterEnablementDecision(e.target.value as typeof opt)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-slate-700 capitalize">
+                    {opt === 'future-enabled-requested' ? 'Future-Enabled (Requested)' : opt.replace(/-/g, ' ').charAt(0).toUpperCase() + opt.slice(1).replace(/-/g, ' ')}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Reason (required)</label>
+            <textarea
+              value={writerEnablementReason}
+              onChange={(e) => setWriterEnablementReason(e.target.value)}
+              placeholder="Explain your enablement intent..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+              rows={3}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!writerEnablementOperator.trim() || !writerEnablementDecision || !writerEnablementReason.trim() || recordingWriterEnablement}
+            className="w-full px-4 py-2 bg-rose-600 text-white rounded-lg font-semibold text-sm hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+          >
+            {recordingWriterEnablement ? 'Recording...' : 'Record Metadata Writer Gate'}
+          </button>
+        </form>
+      </div>
+
+      {/* Metadata Writer Dry Run Section */}
+      <div className="p-4 bg-fuchsia-50 rounded-lg border border-fuchsia-200 space-y-3">
+        <div>
+          <h3 className="font-semibold text-fuchsia-900">Metadata Writer Dry Run</h3>
+          <p className="text-xs text-fuchsia-700 mt-1">
+            Generate planned metadata operations without executing them. Dry-run only.
+          </p>
+          <div className="mt-2 text-xs text-fuchsia-700 space-y-0.5">
+            <p>✓ Dry-run only — no writes performed</p>
+            <p>✓ Planned operations generated</p>
+            <p>✓ Mind unchanged</p>
+            <p>✓ Safety: global execution disabled</p>
+          </div>
+        </div>
+
+        {metadataWriterDryRunReport && (
+          <div className="p-3 bg-white border border-fuchsia-200 rounded space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-fuchsia-900">Dry-Run ID:</p>
+              <p className="text-xs text-fuchsia-800 font-mono">{metadataWriterDryRunReport.dryRunId}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-fuchsia-700">Status</p>
+                <p className="font-semibold text-fuchsia-900 capitalize">{metadataWriterDryRunReport.status}</p>
+              </div>
+              <div>
+                <p className="text-fuchsia-700">Dry-Run Only</p>
+                <p className="font-semibold text-fuchsia-900">{metadataWriterDryRunReport.dryRunOnly ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-fuchsia-700">Write Enabled</p>
+                <p className="font-semibold text-fuchsia-900">{metadataWriterDryRunReport.writeEnabled ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-fuchsia-700">Can Write</p>
+                <p className="font-semibold text-fuchsia-900">{metadataWriterDryRunReport.canWrite ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+
+            {metadataWriterDryRunReport.blockers.length > 0 && (
+              <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                <p className="text-xs font-semibold text-amber-900 mb-1">Blockers ({metadataWriterDryRunReport.blockers.length}):</p>
+                <ul className="text-xs text-amber-800 space-y-0.5">
+                  {metadataWriterDryRunReport.blockers.map((blocker, i) => (
+                    <li key={i}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {metadataWriterDryRunReport.plannedOperations.length > 0 && (
+              <div className="p-2 bg-cyan-50 rounded border border-cyan-200">
+                <p className="text-xs font-semibold text-cyan-900 mb-1">Planned Operations ({metadataWriterDryRunReport.plannedOperations.length}):</p>
+                <ul className="text-xs text-cyan-800 space-y-1">
+                  {metadataWriterDryRunReport.plannedOperations.slice(0, 5).map((op, i) => (
+                    <li key={i}>• {op.patchPreviewSummary}</li>
+                  ))}
+                  {metadataWriterDryRunReport.plannedOperations.length > 5 && (
+                    <li>• ... and {metadataWriterDryRunReport.plannedOperations.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {metadataWriterDryRunError && (
+          <div className="p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{metadataWriterDryRunError}</p>
+          </div>
+        )}
+
+        {metadataWriterDryRunSuccess && (
+          <div className="p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">{metadataWriterDryRunSuccess}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleGenerateMetadataWriterDryRun}
+          disabled={generatingMetadataWriterDryRun}
+          className="w-full px-4 py-2 bg-fuchsia-600 text-white rounded-lg font-semibold text-sm hover:bg-fuchsia-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+        >
+          {generatingMetadataWriterDryRun ? 'Generating...' : 'Generate Metadata Writer Dry Run'}
         </button>
       </div>
     </div>
