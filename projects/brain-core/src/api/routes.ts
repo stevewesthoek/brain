@@ -17,6 +17,7 @@ import { readAgentApprovalGates } from '../adapters/agent-approval-gates.js';
 import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
 import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
+import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -81,6 +82,19 @@ import { getGraphifyStatus } from '../adapters/graphify-status.js';
 import { getMindStewardSchedulerStatus, getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
+
+type RecentVideoJobsResult = Awaited<ReturnType<typeof getRecentVideoJobsResult>>;
+let lastGoodRecentVideoJobsResult: RecentVideoJobsResult | null = null;
+
+function withRecentJobsTimeoutWarning(result: RecentVideoJobsResult, warning: string): RecentVideoJobsResult {
+  return {
+    ...result,
+    diagnostics: {
+      ...result.diagnostics,
+      warnings: Array.from(new Set([...(result.diagnostics.warnings ?? []), warning])),
+    },
+  };
+}
 import { getVideoStatus, listVideoQueue } from '../adapters/video.js';
 import { getStbPipelineStatus } from '../adapters/stb-status.js';
 import { getVideoOrchestratorStatus as getVideoOrchestrationStatus } from '../adapters/video-orchestrator-status.js';
@@ -359,6 +373,9 @@ export async function routeRequest(
       return;
     case '/platforms':
       sendJson(response, 200, { platforms: listPlatforms() });
+      return;
+    case '/infinite-brain/status':
+      sendJson(response, 200, await getInfiniteBrainStatus());
       return;
     case '/post-orchestrator/status':
       sendJson(response, 200, readPostOrchestratorStatus());
@@ -2258,35 +2275,44 @@ export async function routeRequest(
         try {
           // Bounded timeout: return partial data fast instead of hanging on slow S3
           const RECENT_JOBS_TIMEOUT_MS = 7_000;
+          const timeoutWarning = 'Recent jobs fetch timed out after 7s; showing last known good jobs. Retrying…';
           const result = await Promise.race([
             getRecentVideoJobsResult(),
-            new Promise<Awaited<ReturnType<typeof getRecentVideoJobsResult>>>((resolve) =>
-              setTimeout(() => resolve({
-                ok: true,
-                jobs: [],
-                diagnostics: {
-                  repoRoot: '',
-                  jobsRoot: '',
-                  jobDirectoryExists: false,
-                  jobDirectoryReadable: false,
-                  localJobFolderCount: 0,
-                  localDiscoveredJobCount: 0,
-                  cwd: process.cwd(),
-                  modulePath: '',
-                  expectedCanonicalPath: 'projects/video-orchestrator/cloud/jobs',
-                  s3Bucket: '',
-                  s3Prefix: '',
-                  s3DiscoveryAttempted: false,
-                  s3DiscoveredJobCount: 0,
-                  hydratedJobCount: 0,
-                  skippedJobCount: 0,
-                  skippedJobs: [],
-                  warnings: ['Recent jobs fetch timed out after 7s; showing partial data. Retrying…'],
-                  error: null,
-                },
-              }), RECENT_JOBS_TIMEOUT_MS)
+            new Promise<RecentVideoJobsResult>((resolve) =>
+              setTimeout(() => resolve(
+                lastGoodRecentVideoJobsResult
+                  ? withRecentJobsTimeoutWarning(lastGoodRecentVideoJobsResult, timeoutWarning)
+                  : {
+                      ok: true,
+                      jobs: [],
+                      diagnostics: {
+                        repoRoot: '',
+                        jobsRoot: '',
+                        jobDirectoryExists: false,
+                        jobDirectoryReadable: false,
+                        localJobFolderCount: 0,
+                        localDiscoveredJobCount: 0,
+                        cwd: process.cwd(),
+                        modulePath: '',
+                        expectedCanonicalPath: 'projects/video-orchestrator/cloud/jobs',
+                        s3Bucket: '',
+                        s3Prefix: '',
+                        s3DiscoveryAttempted: false,
+                        s3DiscoveredJobCount: 0,
+                        hydratedJobCount: 0,
+                        skippedJobCount: 0,
+                        skippedJobs: [],
+                        warnings: [timeoutWarning, 'No cached recent jobs snapshot is available yet.'],
+                        error: null,
+                      },
+                    },
+              ), RECENT_JOBS_TIMEOUT_MS)
             ),
           ]);
+
+          if (result.ok && result.jobs.length > 0) {
+            lastGoodRecentVideoJobsResult = result;
+          }
 
           if (!result.ok && result.diagnostics.error) {
             sendJson(response, 500, {
