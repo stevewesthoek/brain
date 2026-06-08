@@ -10,6 +10,7 @@ import { readApplicationPlanSummary } from './infinite-brain-proposal-applicatio
 import { readExecutionReadinessSummary } from './infinite-brain-proposal-execution-readiness.js';
 import { readExecutorDryRunSummary } from './infinite-brain-proposal-executor-dry-run.js';
 import { readIosSyncSafetySummary } from './infinite-brain-ios-sync-safety.js';
+import { readOperatorApprovalSummary } from './infinite-brain-operator-approval.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -526,10 +527,35 @@ function getIosSyncSafetyStatus() {
 }
 
 /**
+ * Get operator approval intent status
+ */
+function getOperatorApprovalStatus() {
+  const summary = readOperatorApprovalSummary();
+  if (!summary.available) {
+    return {
+      available: false,
+      reason: 'Operator approval record not found. Record approval intent first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    operator: summary.operator,
+    decision: summary.decision,
+    executionEnabled: summary.executionEnabled,
+    canExecute: summary.canExecute,
+    applied: summary.applied,
+    writesToMind: summary.writesToMind,
+    approvalRecordOnly: summary.approvalRecordOnly,
+  };
+}
+
+/**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -541,6 +567,7 @@ export async function getInfiniteBrainStatus() {
     Promise.resolve(getExecutionReadinessStatus()),
     Promise.resolve(getExecutorDryRunStatus()),
     Promise.resolve(getIosSyncSafetyStatus()),
+    Promise.resolve(getOperatorApprovalStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -560,6 +587,7 @@ export async function getInfiniteBrainStatus() {
       executionReadiness,
       executorDryRun,
       iosSyncSafety,
+      operatorApproval,
       pipeline,
     },
     infrastructure: {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -39,6 +39,30 @@ export function InfiniteBrainProposalReview() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<InfiniteBrainProposalApprovalDecisionResponse | null>(null);
+  const [operatorApprovalRecord, setOperatorApprovalRecord] = useState<InfiniteBrainOperatorApprovalRecord | null>(null);
+  const [operatorApprovalLoading, setOperatorApprovalLoading] = useState(true);
+  const [operatorName, setOperatorName] = useState('');
+  const [approvalDecision, setApprovalDecision] = useState<'approved' | 'rejected' | 'needs-review' | ''>('');
+  const [approvalReason, setApprovalReason] = useState('');
+  const [recordingApproval, setRecordingApproval] = useState(false);
+  const [approvalRecordError, setApprovalRecordError] = useState<string | null>(null);
+  const [approvalRecordSuccess, setApprovalRecordSuccess] = useState<string | null>(null);
+
+  async function fetchOperatorApproval() {
+    try {
+      const data = await brainCoreRequest('/infinite-brain/operator-approval', z.object({
+        ok: z.boolean(),
+        record: z.unknown().optional(),
+      }));
+      if (data.ok && data.record) {
+        setOperatorApprovalRecord(data.record as InfiniteBrainOperatorApprovalRecord);
+      }
+    } catch {
+      // Not found is okay, we'll let the user record one
+    } finally {
+      setOperatorApprovalLoading(false);
+    }
+  }
 
   async function fetchProposals() {
     try {
@@ -56,6 +80,7 @@ export function InfiniteBrainProposalReview() {
 
   useEffect(() => {
     fetchProposals();
+    fetchOperatorApproval();
   }, []);
 
   async function handleSubmitDecision(e: React.FormEvent) {
@@ -93,6 +118,43 @@ export function InfiniteBrainProposalReview() {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit decision');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleRecordApprovalIntent(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!operatorName.trim() || !approvalDecision || !approvalReason.trim()) {
+      setApprovalRecordError('Please provide operator name, decision, and reason');
+      return;
+    }
+
+    setRecordingApproval(true);
+    setApprovalRecordError(null);
+    setApprovalRecordSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/infinite-brain/operator-approval/record',
+        infiniteBrainOperatorApprovalResponseSchema,
+        {
+          operator: operatorName.trim(),
+          decision: approvalDecision,
+          reason: approvalReason.trim(),
+        } as z.infer<typeof infiniteBrainOperatorApprovalRecordIntentRequestSchema>
+      );
+
+      if (result.ok) {
+        setOperatorApprovalRecord(result.record);
+        setApprovalRecordSuccess('Operator approval intent recorded');
+        setOperatorName('');
+        setApprovalDecision('');
+        setApprovalReason('');
+      }
+    } catch (err) {
+      setApprovalRecordError(err instanceof Error ? err.message : 'Failed to record approval intent');
+    } finally {
+      setRecordingApproval(false);
     }
   }
 
@@ -270,6 +332,100 @@ export function InfiniteBrainProposalReview() {
           </button>
         </form>
       )}
+
+      {/* Operator Approval Intent Section */}
+      <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+        <div>
+          <h3 className="font-semibold text-amber-900">Operator Approval Intent</h3>
+          <p className="text-xs text-amber-700 mt-1">
+            Record explicit approval intent. Execution remains blocked.
+          </p>
+          <div className="mt-2 text-xs text-amber-700 space-y-0.5">
+            <p>✓ Approval intent recorded only</p>
+            <p>✓ Execution remains blocked</p>
+            <p>✓ Mind unchanged</p>
+            <p>✓ No proposals applied</p>
+          </div>
+        </div>
+
+        {operatorApprovalRecord && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded">
+            <p className="text-xs font-semibold text-green-900">Current Approval Intent:</p>
+            <div className="mt-2 space-y-1 text-xs text-green-800">
+              <p><strong>Operator:</strong> {operatorApprovalRecord.operator}</p>
+              <p><strong>Decision:</strong> <span className="capitalize">{operatorApprovalRecord.decision}</span></p>
+              <p><strong>Execution Enabled:</strong> {operatorApprovalRecord.executionEnabled ? 'Yes' : 'No'}</p>
+              <p><strong>Can Execute:</strong> {operatorApprovalRecord.canExecute ? 'Yes' : 'No'}</p>
+              <p><strong>Applied:</strong> {operatorApprovalRecord.applied ? 'Yes' : 'No'}</p>
+            </div>
+          </div>
+        )}
+
+        {approvalRecordError && (
+          <div className="p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{approvalRecordError}</p>
+          </div>
+        )}
+
+        {approvalRecordSuccess && (
+          <div className="p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">{approvalRecordSuccess}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleRecordApprovalIntent} className="space-y-3">
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Operator Name (required)</label>
+            <input
+              type="text"
+              value={operatorName}
+              onChange={(e) => setOperatorName(e.target.value)}
+              placeholder="Your name or identifier"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Approval Decision (required)</label>
+            <div className="space-y-2">
+              {(['approved', 'rejected', 'needs-review'] as const).map((opt) => (
+                <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="approval-decision"
+                    value={opt}
+                    checked={approvalDecision === opt}
+                    onChange={(e) => setApprovalDecision(e.target.value as typeof opt)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm text-slate-700 capitalize">
+                    {opt === 'needs-review' ? 'Needs Review' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">Reason (required)</label>
+            <textarea
+              value={approvalReason}
+              onChange={(e) => setApprovalReason(e.target.value)}
+              placeholder="Explain your approval intent..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+              rows={3}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!operatorName.trim() || !approvalDecision || !approvalReason.trim() || recordingApproval}
+            className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg font-semibold text-sm hover:bg-amber-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+          >
+            {recordingApproval ? 'Recording...' : 'Record Approval Intent'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

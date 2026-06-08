@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { readIosSyncSafetySummary } from './infinite-brain-ios-sync-safety.js';
+import { readOperatorApprovalSummary } from './infinite-brain-operator-approval.js';
 
 const DEFAULT_READINESS_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-execution-readiness-latest.json';
 const PLAN_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-application-plan-latest.json';
@@ -225,11 +226,22 @@ function performReadinessChecks(plan: ApplicationPlan | null): ExecutionReadines
   });
 
   // Check 9: Operator approval present
+  const operatorApproval = readOperatorApprovalSummary();
+  const operatorApprovalStatus = operatorApproval.available
+    ? operatorApproval.decision === 'approved'
+      ? 'pass'
+      : 'blocked'
+    : 'blocked';
+  const operatorApprovalReason = operatorApproval.available
+    ? operatorApproval.decision === 'approved'
+      ? `Operator approval recorded by ${operatorApproval.operator}`
+      : `Operator approval present but decision is ${operatorApproval.decision}`
+    : 'No operator approval record. Execution blocked until approval is recorded.';
   checks.push({
     checkId: `check-${checkIndex++}`,
     label: 'Operator approval gate',
-    status: 'blocked',
-    reason: 'Execution approval gate not yet implemented. Execution blocked by default.',
+    status: operatorApprovalStatus as any,
+    reason: operatorApprovalReason,
     requiredForExecution: true,
   });
 

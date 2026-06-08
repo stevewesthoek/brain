@@ -23,6 +23,7 @@ import { generateApplicationPlan, writeApplicationPlan, readApplicationPlan, rea
 import { generateExecutionReadinessReport, writeExecutionReadinessReport, readExecutionReadinessReport, readExecutionReadinessSummary } from '../adapters/infinite-brain-proposal-execution-readiness.js';
 import { generateExecutorDryRunReport, writeExecutorDryRunReport, readExecutorDryRunReport, readExecutorDryRunSummary } from '../adapters/infinite-brain-proposal-executor-dry-run.js';
 import { generateIosSyncSafetyReport, writeIosSyncSafetyReport, readIosSyncSafetyReport, readIosSyncSafetySummary } from '../adapters/infinite-brain-ios-sync-safety.js';
+import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperatorApprovalRecord, readOperatorApprovalSummary } from '../adapters/infinite-brain-operator-approval.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -3142,6 +3143,99 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         reportOnly: true,
       },
     });
+    return;
+  }
+
+  // ── Infinite Brain: Operator Approval Record (Fetch) ──────────────────────
+  if (url.pathname === '/api/infinite-brain/operator-approval' && request.method === 'GET') {
+    const record = readOperatorApprovalRecord();
+    if (!record) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'operator_approval_missing',
+        message: 'No operator approval record found. Record approval intent first.',
+      });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      record,
+    });
+    return;
+  }
+
+  // ── Infinite Brain: Operator Approval Record (Record Intent) ──────────────
+  if (url.pathname === '/api/infinite-brain/operator-approval/record' && request.method === 'POST') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_body',
+        message: 'Request body must be valid JSON.',
+      });
+      return;
+    }
+
+    const operator = (body.operator as string) ?? '';
+    const decision = (body.decision as string) ?? '';
+    const reason = (body.reason as string) ?? '';
+
+    if (!operator || !operator.trim()) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_operator',
+        message: 'operator is required and must be non-empty',
+      });
+      return;
+    }
+
+    if (!reason || !reason.trim()) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_reason',
+        message: 'reason is required and must be non-empty',
+      });
+      return;
+    }
+
+    if (!['approved', 'rejected', 'needs-review'].includes(decision)) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_decision',
+        message: 'decision must be one of: approved, rejected, needs-review',
+      });
+      return;
+    }
+
+    const record = generateOperatorApprovalRecord(
+      operator.trim(),
+      decision as 'approved' | 'rejected' | 'needs-review',
+      reason.trim()
+    );
+    const success = writeOperatorApprovalRecord(record);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'operator_approval_recorded',
+        message: 'Operator approval intent recorded (execution remains blocked)',
+        record,
+        safety: {
+          canExecute: false,
+          executionEnabled: false,
+          applied: false,
+          writesToMind: false,
+          approvalRecordOnly: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'approval_write_failed',
+        message: 'Failed to write operator approval record',
+      });
+    }
     return;
   }
 

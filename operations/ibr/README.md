@@ -1692,6 +1692,134 @@ All tests pass: ✅ 9/9
 - ❌ Rollback implementation
 - ❌ Cleanup deletion capability
 
+---
+
+### PHASE AB — Operator Approval Intent Recording
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-operator-approval.ts` — Operator approval adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/operator-approval` endpoints
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Operator approval schemas
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI for recording approval
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-core/src/adapters/infinite-brain-proposal-execution-readiness.ts` — Readiness check 9 update
+- `projects/brain-core/src/tests/infinite-brain-operator-approval.test.ts` — Unit tests
+
+**What it does:**
+- Records explicit operator approval intent (approved/rejected/needs-review)
+- Requires operator name, decision, and written reason
+- Generates deterministic `approvalId` from operator + decision + reason (no timestamps/randomness in ID)
+- Stores approval record at `runtime/local/infinite-brain/operator-approval-latest.json`
+- Integrates with execution readiness check 9 (operator approval gate)
+- Approval intent alone does NOT enable execution (executionEnabled remains false)
+
+**Key Safety Invariants:**
+- ✅ `executionEnabled: false` (always, even if decision is approved)
+- ✅ `canExecute: false` (always)
+- ✅ `applied: false` (always)
+- ✅ `writesToMind: false` (always)
+- ✅ `approvalRecordOnly: true` (always)
+- ✅ Required next gates listed (deletion-sync-verification, allowlisted-writer-deployment, post-write-verification)
+- ✅ No Mind modifications
+- ✅ No shell execution
+- ✅ No model provider calls
+
+**Operator Approval Record Schema:**
+```typescript
+{
+  approvalId: string;              // Deterministic SHA256 hash
+  generatedAt: string;             // ISO8601 timestamp
+  operator: string;                // Operator name/identifier
+  decision: 'approved' | 'rejected' | 'needs-review';
+  reason: string;                  // Required written reason
+  dryRunReportId: string | null;   // Optional reference to dry-run
+  readinessReportId: string | null;// Optional reference to readiness report
+  scope: 'execution-approval-intent';
+  executionEnabled: false;         // Always false
+  canExecute: false;               // Always false
+  applied: false;                  // Always false
+  writesToMind: false;             // Always false
+  expiresAt?: string;              // Optional expiration (ISO8601)
+  requiredNextGates: string[];     // Gates still required before execution
+  safety: {
+    writesToMind: false;
+    appliesProposals: false;
+    canExecute: false;
+    executionEnabled: false;
+    applied: false;
+    approvalRecordOnly: true;
+    continuousRuntime: false;
+    modelCalls: false;
+  };
+}
+```
+
+**API Endpoints:**
+
+`GET /infinite-brain/operator-approval`
+- Returns latest approval record
+- 404 with code `operator_approval_missing` if not found
+
+`POST /infinite-brain/operator-approval/record`
+- Records approval intent
+- Requires: `operator` (non-empty), `decision` (approved|rejected|needs-review), `reason` (non-empty)
+- Response includes safety block with all false values except `approvalRecordOnly: true`
+- Returns: `ok: true`, `record`, `safety` object with execution block confirmation
+
+**Console UI (Operator Approval Intent Form):**
+- Embedded in InfiniteBrainProposalReview component
+- Fields: operator name (text), decision (radio: approved/rejected/needs-review), reason (textarea)
+- Button: "Record Approval Intent" (not "Apply", not "Execute")
+- Shows current approval intent if available
+- Safety text: "Approval intent does not execute proposals. Execution remains blocked. Mind is unchanged."
+- Calls `POST /infinite-brain/operator-approval/record` via brainCoreRequest pattern
+
+**Execution Readiness Integration (Check 9):**
+- If approval exists with decision `approved`: check status becomes `pass`
+- If approval exists with decision `rejected` or `needs-review`: check status remains `blocked`
+- If approval missing: check status remains `blocked`
+- Reason includes operator name and approval status
+- Overall readiness report STILL shows `canExecute: false` (other gates block execution)
+
+**Status Integration:**
+- Added `operatorApproval` to `runtime` object in status response
+- Includes: `available`, `generatedAt`, `operator`, `decision`, `executionEnabled`, `canExecute`, `applied`, `writesToMind`, `approvalRecordOnly`
+
+**Deterministic ID Generation:**
+- `approvalId = SHA256(operator + decision + dryRunReportId + readinessReportId + reason).substring(0,12)`
+- Sorted component string (no timestamp, no randomness)
+- Same input always produces same ID
+
+**Environment Variables:**
+- `IBR_OPERATOR_APPROVAL_PATH` — Override approval record path (absolute or relative to BRAIN_ROOT)
+
+**Safety Checks:**
+- ✅ No `executionEnabled: true` in source
+- ✅ No `canExecute: true` in source
+- ✅ No `applied: true` in source
+- ✅ No `writesToMind: true` in source
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ No Math.random or crypto.randomBytes for IDs
+- ✅ No child_process, exec, spawn
+- ✅ Deterministic ID via SHA256
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Zod schemas pass validation
+- ✅ 10 unit tests pass (missing operator, missing reason, invalid decision, approved decision blocks, deterministic ID, readiness integration, needs-review blocked, rejected blocked, required gates, etc.)
+- ✅ Build passes
+- ✅ No forbidden patterns
+
+**Future Gates (Still Blocked):**
+- Deletion sync verification (blocks execution)
+- Allowlisted writer deployment (blocks execution)
+- Post-write verification (blocks execution)
+- Mind write coordination (blocks execution)
+- Rollback implementation (blocks execution)
+
+---
+
 **Future Implementation Phases:**
 | Phase | Blocker | Status |
 |-------|---------|--------|

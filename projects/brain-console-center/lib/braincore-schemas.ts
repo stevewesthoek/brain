@@ -1054,6 +1054,68 @@ export type InfiniteBrainProposalApprovalRecord = z.infer<typeof infiniteBrainPr
 export type InfiniteBrainProposalsResponse = z.infer<typeof infiniteBrainProposalsResponseSchema>;
 export type InfiniteBrainProposalApprovalDecisionResponse = z.infer<typeof infiniteBrainProposalApprovalDecisionResponseSchema>;
 
+const infiniteBrainOperatorApprovalSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canExecute: z.literal(false),
+  executionEnabled: z.literal(false),
+  applied: z.literal(false),
+  approvalRecordOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+});
+
+const infiniteBrainOperatorApprovalSchema = z.union([
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+  z.object({
+    available: z.literal(true),
+    generatedAt: z.string(),
+    operator: z.string(),
+    decision: z.enum(['approved', 'rejected', 'needs-review']),
+    executionEnabled: z.literal(false),
+    canExecute: z.literal(false),
+    applied: z.literal(false),
+    writesToMind: z.literal(false),
+    approvalRecordOnly: z.literal(true),
+  }),
+]);
+
+export const infiniteBrainOperatorApprovalRecordSchema = z.object({
+  approvalId: z.string(),
+  generatedAt: z.string(),
+  operator: z.string(),
+  decision: z.enum(['approved', 'rejected', 'needs-review']),
+  reason: z.string(),
+  dryRunReportId: z.string().nullable(),
+  readinessReportId: z.string().nullable(),
+  scope: z.literal('execution-approval-intent'),
+  executionEnabled: z.literal(false),
+  canExecute: z.literal(false),
+  applied: z.literal(false),
+  writesToMind: z.literal(false),
+  expiresAt: z.string().optional(),
+  requiredNextGates: z.array(z.string()),
+  safety: infiniteBrainOperatorApprovalSafetySchema,
+});
+
+export const infiniteBrainOperatorApprovalResponseSchema = z.object({
+  ok: z.literal(true),
+  record: infiniteBrainOperatorApprovalRecordSchema,
+});
+
+export const infiniteBrainOperatorApprovalRecordIntentRequestSchema = z.object({
+  operator: z.string().min(1),
+  decision: z.enum(['approved', 'rejected', 'needs-review']),
+  reason: z.string().min(1),
+});
+
+export type InfiniteBrainOperatorApprovalRecord = z.infer<typeof infiniteBrainOperatorApprovalRecordSchema>;
+export type InfiniteBrainOperatorApprovalResponse = z.infer<typeof infiniteBrainOperatorApprovalResponseSchema>;
+export type InfiniteBrainOperatorApprovalRecordIntentRequest = z.infer<typeof infiniteBrainOperatorApprovalRecordIntentRequestSchema>;
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({
@@ -1065,6 +1127,7 @@ export const infiniteBrainStatusSchema = z.object({
     proposals: infiniteBrainProposalsSchema,
     proposalApprovals: infiniteBrainProposalApprovalsSchema,
     applicationPlan: infiniteBrainApplicationPlanSchema,
+    operatorApproval: infiniteBrainOperatorApprovalSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),
