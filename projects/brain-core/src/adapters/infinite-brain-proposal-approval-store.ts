@@ -10,9 +10,10 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 
 const DEFAULT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-approvals.json';
+const PROPOSALS_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposals-latest.json';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
+const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
 
 export interface InfiniteBrainProposalApprovalRecord {
   proposalId: string;
@@ -40,8 +41,25 @@ export interface InfiniteBrainProposalApprovalSummary {
   latestDecisionAt: string | undefined;
 }
 
+export interface InfiniteBrainProposalRecord {
+  proposalId: string;
+  category: string;
+  writesToMindIfApproved?: boolean;
+  [key: string]: unknown;
+}
+
+export interface InfiniteBrainProposalReport {
+  timestamp?: string;
+  totalProposals?: number;
+  proposals?: InfiniteBrainProposalRecord[];
+}
+
 function getDefaultStorePath(): string {
-  return path.resolve(PACKAGE_ROOT, DEFAULT_RELATIVE_PATH);
+  return path.resolve(BRAIN_ROOT, DEFAULT_RELATIVE_PATH);
+}
+
+function getProposalsReportPath(): string {
+  return path.resolve(BRAIN_ROOT, PROPOSALS_REPORT_RELATIVE_PATH);
 }
 
 function readJsonSafely<T>(filePath: string): T | null {
@@ -68,6 +86,15 @@ function computeProposalHash(proposalId: string, proposalContent: string): strin
     .update(`${proposalId}:${proposalContent}`)
     .digest('hex')
     .substring(0, 16);
+}
+
+export function readInfiniteBrainProposalReport(): InfiniteBrainProposalReport | null {
+  return readJsonSafely<InfiniteBrainProposalReport>(getProposalsReportPath());
+}
+
+export function findInfiniteBrainProposal(proposalId: string): InfiniteBrainProposalRecord | undefined {
+  const report = readInfiniteBrainProposalReport();
+  return report?.proposals?.find((proposal) => proposal.proposalId === proposalId);
 }
 
 /**
@@ -133,7 +160,7 @@ export function summarizeInfiniteBrainProposalApprovals(): InfiniteBrainProposal
 
   return {
     available: records.length > 0,
-    path: path.relative(PACKAGE_ROOT, filePath) || DEFAULT_RELATIVE_PATH,
+    path: path.relative(BRAIN_ROOT, filePath) || DEFAULT_RELATIVE_PATH,
     totalDecisions: records.length,
     approved,
     rejected,
@@ -158,22 +185,21 @@ export function findInfiniteBrainProposalApproval(
  * Create an approval record from a proposal ID and decision
  */
 export function createInfiniteBrainProposalApprovalRecord(
-  proposalId: string,
-  category: string,
+  proposal: InfiniteBrainProposalRecord,
   decision: 'approved' | 'rejected' | 'needs-review',
   decidedBy: string,
   reason?: string
 ): InfiniteBrainProposalApprovalRecord {
   return {
-    proposalId,
-    category,
+    proposalId: proposal.proposalId,
+    category: proposal.category,
     decision,
     decidedAt: new Date().toISOString(),
     decidedBy,
     reason,
     sourceReport: 'proposals-latest.json',
-    proposalHash: computeProposalHash(proposalId, category),
-    writesToMindIfApproved: false,
+    proposalHash: computeProposalHash(proposal.proposalId, JSON.stringify(proposal)),
+    writesToMindIfApproved: proposal.writesToMindIfApproved === true,
     executionBlocked: true,
     applied: false,
   };

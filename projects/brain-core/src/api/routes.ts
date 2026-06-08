@@ -18,7 +18,7 @@ import { readAgentConsoleSummary } from '../adapters/agent-console-summary.js';
 import { readAgentCostSummary } from '../adapters/agent-cost-summary.js';
 import { readOpsAiCosts, readOpsAiUsageWindows, readOpsSystemMetrics } from '../adapters/ops-dashboard.js';
 import { getInfiniteBrainStatus } from '../adapters/infinite-brain-status.js';
-import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval } from '../adapters/infinite-brain-proposal-approval-store.js';
+import { readInfiniteBrainProposalApprovals, writeInfiniteBrainProposalApproval, summarizeInfiniteBrainProposalApprovals, createInfiniteBrainProposalApprovalRecord, findInfiniteBrainProposalApproval, readInfiniteBrainProposalReport, findInfiniteBrainProposal } from '../adapters/infinite-brain-proposal-approval-store.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -378,9 +378,20 @@ export async function routeRequest(
     case '/infinite-brain/status':
       sendJson(response, 200, await getInfiniteBrainStatus());
       return;
-    case '/infinite-brain/proposals':
-      sendJson(response, 200, { proposals: readInfiniteBrainProposalApprovals() });
+    case '/infinite-brain/proposals': {
+      const report = readInfiniteBrainProposalReport();
+      const approvals = readInfiniteBrainProposalApprovals();
+      if (!report) {
+        sendJson(response, 404, {
+          ok: false,
+          code: 'proposals_report_missing',
+          message: 'Infinite Brain proposals report is not available. Run npm run ibr:proposals:dry-run first.',
+        });
+        return;
+      }
+      sendJson(response, 200, { ...report, approvals });
       return;
+    }
     case '/infinite-brain/proposals/approvals':
       sendJson(response, 200, summarizeInfiniteBrainProposalApprovals());
       return;
@@ -2794,13 +2805,12 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     const decision = (body.decision as string) ?? '';
     const decidedBy = (body.decidedBy as string) ?? '';
     const reason = (body.reason as string) ?? '';
-    const category = (body.category as string) ?? '';
 
-    if (!proposalId || !decision || !decidedBy || !category) {
+    if (!proposalId || !decision || !decidedBy) {
       sendJson(response, 400, {
         ok: false,
         code: 'missing_fields',
-        message: 'proposalId, category, decision, and decidedBy are required',
+        message: 'proposalId, decision, and decidedBy are required',
       });
       return;
     }
@@ -2814,9 +2824,19 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       return;
     }
 
+    const proposal = findInfiniteBrainProposal(proposalId);
+    if (!proposal) {
+      sendJson(response, 404, {
+        ok: false,
+        code: 'proposal_not_found',
+        message: 'Proposal ID was not found in runtime/local/infinite-brain/proposals-latest.json',
+        proposalId,
+      });
+      return;
+    }
+
     const record = createInfiniteBrainProposalApprovalRecord(
-      proposalId,
-      category,
+      proposal,
       decision as 'approved' | 'rejected' | 'needs-review',
       decidedBy,
       reason || undefined
