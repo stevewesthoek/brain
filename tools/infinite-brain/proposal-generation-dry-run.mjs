@@ -23,10 +23,10 @@ const OUTPUT_DIR = RUNTIME_DIR;
 /**
  * Generate deterministic proposal ID
  */
-function generateProposalId(category, index) {
+function generateProposalId(category, index, stableInput = '') {
   const hash = crypto
     .createHash('sha256')
-    .update(`${category}-${index}-${Date.now()}`)
+    .update(`${category}-${index}-${stableInput}`)
     .digest('hex')
     .substring(0, 8);
   return `prop-${category.substring(0, 3)}-${hash}`;
@@ -60,7 +60,7 @@ function generateAtomizationProposals(atomizerReport, classifierReport) {
   atomizerReport.candidates.slice(0, 30).forEach((candidate) => {
     proposalIndex++;
     proposals.push({
-      proposalId: generateProposalId('atomization', proposalIndex),
+      proposalId: generateProposalId('atomization', proposalIndex, candidate.path),
       category: 'atomization',
       title: `Split "${candidate.title}" into ${Math.max(2, candidate.sections.length)} atomic notes`,
       summary: `File has ${candidate.totalLines} lines (exceeds 300-line atomic limit). Contains ${candidate.sections.length} sections.`,
@@ -102,7 +102,7 @@ function generateEntityMetadataProposals(classifierReport) {
     if (!candidate.existingType) {
       proposalIndex++;
       proposals.push({
-        proposalId: generateProposalId('entity-metadata', proposalIndex),
+        proposalId: generateProposalId('entity-metadata', proposalIndex, candidate.path),
         category: 'entity-metadata',
         title: `Add inferred type to "${candidate.title}"`,
         summary: `File lacks type metadata. Classifier infers: ${candidate.inferredType} (${(candidate.confidence * 100).toFixed(0)}% confidence)`,
@@ -145,7 +145,7 @@ function generateEdgeReviewProposals(auditReport, edgeReport) {
       if (candidate.confidence < 0.5) {
         proposalIndex++;
         proposals.push({
-          proposalId: generateProposalId('edge-review', proposalIndex),
+          proposalId: generateProposalId('edge-review', proposalIndex, `${candidate.sourceId || ''}-${candidate.targetId || ''}-${candidate.edgeType || ''}`),
           category: 'edge-review',
           title: `Review suspicious edge: ${candidate.edgeType}`,
           summary: `Edge has low confidence (${(candidate.confidence * 100).toFixed(0)}%). Consider removal or verification.`,
@@ -176,7 +176,7 @@ function generateEdgeReviewProposals(auditReport, edgeReport) {
     auditReport.orphanSources.slice(0, 10).forEach((orphan, idx) => {
       proposalIndex++;
       proposals.push({
-        proposalId: generateProposalId('edge-review', proposalIndex),
+        proposalId: generateProposalId('edge-review', proposalIndex, orphan.entityId),
         category: 'edge-review',
         title: `Remove orphan source reference`,
         summary: `Edge references non-existent entity: ${orphan.entityId}`,
@@ -218,7 +218,7 @@ function generateCleanupProposals(auditReport) {
     auditReport.duplicateEdgePairs.slice(0, 10).forEach((dup, idx) => {
       proposalIndex++;
       proposals.push({
-        proposalId: generateProposalId('cleanup', proposalIndex),
+        proposalId: generateProposalId('cleanup', proposalIndex, `${dup.sourceId || ''}-${dup.targetId || ''}-${dup.edgeType || ''}`),
         category: 'cleanup',
         title: `Deduplicate edge: ${dup.edgeType}`,
         summary: `Found ${dup.count} duplicate edges between same entities`,
@@ -266,7 +266,7 @@ function generateWikiProposals(classifierReport, edgeReport) {
     if (item.path && idx < 10) {
       proposalIndex++;
       proposals.push({
-        proposalId: generateProposalId('wiki-writing', proposalIndex),
+        proposalId: generateProposalId('wiki-writing', proposalIndex, item.path),
         category: 'wiki-writing',
         title: `Create wiki page: "${item.title}"`,
         summary: `High-value ${item.path.split('/')[0] || 'root'} entity suitable for wiki/reference documentation`,
@@ -310,7 +310,7 @@ function generateTaskExtractionProposals(classifierReport) {
       // Sample every 3rd task to avoid too many proposals
       proposalIndex++;
       proposals.push({
-        proposalId: generateProposalId('task-extraction', proposalIndex),
+        proposalId: generateProposalId('task-extraction', proposalIndex, task.path || task.title),
         category: 'task-extraction',
         title: `Review and confirm task: "${task.title}"`,
         summary: `Task exists but may need status verification or clarification`,
