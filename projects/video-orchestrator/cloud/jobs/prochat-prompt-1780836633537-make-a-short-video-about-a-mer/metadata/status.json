@@ -1,0 +1,18 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-07T12:54:20.376Z",
+  "updatedAt": "2026-06-07T12:57:06.575Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780836633537-make-a-short-vide-1780837024664-18m2gmj",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/audio/narration.mp3",
+  "providerName": "hybrid-image-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "partialAiGenerated": true,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "imageGenerated": true,
+  "slideshowGenerated": true
+}

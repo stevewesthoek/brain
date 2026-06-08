@@ -1,0 +1,28 @@
+{
+  "jobId": "prochat-prompt-1780844790820-make-a-video-of-a-butterfly-",
+  "provider": "aws-bedrock-nova-canvas",
+  "modelId": "amazon.nova-canvas-v1:0",
+  "region": "us-east-1",
+  "sceneCount": 3,
+  "generatedImageKeys": [
+    "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-001.png",
+    "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-002.png",
+    "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-003.png"
+  ],
+  "promptHashes": [
+    "63493c50e65c4232",
+    "bc7d0dec6c0ef78a",
+    "690f077a504de76b"
+  ],
+  "warnings": [
+    "Scene images are model-generated via Nova Canvas and assembled into a slideshow, not motion video."
+  ],
+  "settings": {
+    "width": 1280,
+    "height": 720,
+    "cfgScale": 6.5,
+    "quality": "standard",
+    "seed": 42
+  },
+  "createdAt": "2026-06-07T15:12:31.976Z"
+}

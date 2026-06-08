@@ -1,0 +1,20 @@
+{
+  "jobId": "prochat-prompt-1780848901843-test-concurrent-in-flight-dedu",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T16:17:16.244Z",
+  "updatedAt": "2026-06-07T16:17:16.244Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/overlay-plan.json"
+  }
+}

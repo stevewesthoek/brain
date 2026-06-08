@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "provider": "local-ffmpeg-motion",
+  "mode": "ken-burns",
+  "sceneCount": 3,
+  "generatedClipKeys": [
+    "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-001.mp4",
+    "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-002.mp4",
+    "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-003.mp4"
+  ],
+  "generatedFrameKeys": [
+    "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/frames/frame-001.png",
+    "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/frames/frame-002.png",
+    "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/frames/frame-003.png"
+  ],
+  "warnings": [],
+  "fallbackUsed": false,
+  "fallbackReason": null
+}

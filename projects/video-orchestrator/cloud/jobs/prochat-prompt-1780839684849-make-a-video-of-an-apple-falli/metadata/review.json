@@ -1,0 +1,20 @@
+{
+  "jobId": "prochat-prompt-1780839684849-make-a-video-of-an-apple-falli",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T13:43:02.346Z",
+  "updatedAt": "2026-06-07T13:43:02.346Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/overlay-plan.json"
+  }
+}

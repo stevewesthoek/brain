@@ -1,0 +1,20 @@
+{
+  "jobId": "prochat-prompt-1780851419769-make-a-short-video-about-a-red",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T17:00:03.431Z",
+  "updatedAt": "2026-06-07T17:00:03.431Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/overlay-plan.json"
+  }
+}

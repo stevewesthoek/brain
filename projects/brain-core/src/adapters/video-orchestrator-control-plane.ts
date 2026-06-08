@@ -279,12 +279,17 @@ function computeFinalizationState(
 
 export async function getVideoOrchestratorControlPlane(
   jobId: string,
+  fastPath: boolean = false,
 ): Promise<VideoOrchestratorControlPlane | null> {
-  const [job, artifacts, execution, review] = await Promise.all([
-    getVideoJob(jobId),
-    getVideoJobArtifacts(jobId),
-    getVideoJobExecutionStatus(jobId),
-    getVideoReview(jobId),
+  // Fast path: skip finalization repair and expensive S3 operations for read-only control-plane queries
+  // Only read local job metadata and execution status, no S3 inference or repairs
+  const job = fastPath
+    ? await getVideoJob(jobId, { skipS3Inference: true, skipAwsReconciliation: true })
+    : await getVideoJob(jobId);
+
+  const [execution, review] = await Promise.all([
+    getVideoJobExecutionStatus(jobId, fastPath),
+    getVideoReview(jobId, fastPath),
   ]);
 
   if (!job) {
@@ -292,13 +297,35 @@ export async function getVideoOrchestratorControlPlane(
   }
 
   const jobData = job as Record<string, any>;
-  const artifactsData = (artifacts as Record<string, any>) ?? {};
   const executionData = (execution as Record<string, any>) ?? null;
 
   // Fix reviewData extraction: review.ok means review.review contains the metadata
   const reviewData = review?.ok ? (review as VideoReviewResponse).review : null;
 
-  // Repair review.media when stale: if artifacts have complete media but review.json is missing/stale
+  // For fast path, skip finalization repairs and S3 operations
+  // Use review.media as the source of truth (canonical state at time of approval)
+  let artifactsData: Record<string, any> = {};
+  if (!fastPath) {
+    // Slow path: full artifact resolution with finalization repairs (S3 existence checks, etc.)
+    const artifacts = await getVideoJobArtifacts(jobId);
+    artifactsData = (artifacts as Record<string, any>) ?? {};
+  } else {
+    // Fast path: construct from job summary + review metadata only
+    // No S3 operations, no repairs, just the authoritative review state
+    const jobArtifacts = jobData?.artifacts ?? {};
+    artifactsData = {
+      scenePlanKey: `jobs/${jobId}/metadata/scene-plan.json`,
+      narrationScriptKey: `jobs/${jobId}/audio/narration-script.txt`,
+      audioKey: `jobs/${jobId}/audio/narration.mp3`,
+      videoKey: jobArtifacts?.finalVideo ?? `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: jobArtifacts?.thumbnail ?? `jobs/${jobId}/exports/thumbnail-001.jpg`,
+      publishKey: `jobs/${jobId}/metadata/publish.json`,
+      youtubePackageKey: `jobs/${jobId}/metadata/youtube-package.json`,
+    };
+  }
+
+  // Use review.media as canonical source for fast path
+  // In slow path, finalization may have repaired it
   const reviewMediaFromReview = reviewData?.media ?? null;
   const reviewMedia: VideoReviewMedia | null = reviewMediaFromReview ?? (
     artifactsData?.videoKey ? {

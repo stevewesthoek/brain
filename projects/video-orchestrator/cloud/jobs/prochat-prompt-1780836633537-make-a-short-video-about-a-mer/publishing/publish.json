@@ -1,0 +1,53 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "publishStatus": "pending",
+  "publishBlocked": true,
+  "reason": "Hybrid Image Slideshow pipeline proof — prompt-derived scene plan, TTS audio, generated scene images, and ffmpeg slideshow video",
+  "createdAt": "2026-06-07T12:57:08.331Z",
+  "generatedBy": "interactive-prompt",
+  "title": "A Mercedes Driving Through a Rainy City. Timeout-Safe S",
+  "description": "A short video about A Mercedes Driving Through a Rainy City. Timeout-Safe S. Make a short video about a Mercedes driving through a rainy city. timeout-safe smoke 1780836633. Make a short video about a Mercedes driving through a rainy city. Created as a private preview for review before public release.",
+  "tags": [
+    "mercedes",
+    "driving",
+    "through",
+    "rainy",
+    "city",
+    "timeout-safe",
+    "mercedes driving",
+    "driving through",
+    "through rainy",
+    "rainy city",
+    "city timeout-safe",
+    "short",
+    "about"
+  ],
+  "youtubePackageKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/youtube-package.json",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/audio/narration.mp3",
+  "providerName": "hybrid-image-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "partialAiGenerated": true,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "imageGenerated": true,
+  "slideshowGenerated": true,
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "updatedAt": "2026-06-07T13:04:25.305Z",
+  "publishedAt": null,
+  "videoKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/thumbnail-001.jpg",
+  "dryRunPassed": true,
+  "dryRunCheckedAt": "2026-06-07T13:03:44.516Z",
+  "dryRunCheckedBy": "brain-console-center"
+}

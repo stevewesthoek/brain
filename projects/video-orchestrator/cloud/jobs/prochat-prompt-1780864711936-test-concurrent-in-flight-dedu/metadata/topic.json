@@ -1,0 +1,10 @@
+{
+  "jobId": "prochat-prompt-1780864711936-test-concurrent-in-flight-dedu",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780864711936",
+  "title": "Test concurrent in-flight dedup",
+  "description": "Test concurrent in-flight dedup",
+  "source": "interactive-prompt",
+  "createdAt": "2026-06-07T20:38:31.936Z",
+  "clientActionId": "concurrent-1780864711936-wywjfg"
+}

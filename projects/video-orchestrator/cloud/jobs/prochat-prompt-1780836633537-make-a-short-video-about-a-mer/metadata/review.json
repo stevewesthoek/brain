@@ -1,0 +1,24 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "reviewStatus": "approved",
+  "createdAt": "2026-06-07T12:54:18.526Z",
+  "updatedAt": "2026-06-07T12:58:36.272Z",
+  "reviewedAt": "2026-06-07T12:58:36.272Z",
+  "reviewedBy": "brain-console-center",
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/audio/narration.mp3",
+    "sceneImageKeys": [
+      "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-001.png",
+      "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-002.png",
+      "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-003.png"
+    ],
+    "videoKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/overlay-plan.json"
+  }
+}

@@ -2,7 +2,7 @@
   "jobId": "prochat-prompt-1780835140061-a-tree-growing-over-time-for-d",
   "reviewStatus": "pending",
   "createdAt": "2026-06-07T12:26:15.266Z",
-  "updatedAt": "2026-06-07T12:26:15.266Z",
+  "updatedAt": "2026-06-07T12:32:58.942Z",
   "reviewedAt": null,
   "reviewedBy": null,
   "notes": null,
@@ -15,6 +15,6 @@
     "thumbnailKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/exports/thumbnail-001.jpg",
     "publishKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/publish.json",
     "youtubePackageKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/youtube-package.json",
-    "overlayPlanKey": null
+    "overlayPlanKey": "jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/overlay-plan.json"
   }
 }

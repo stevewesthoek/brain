@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780848901842-test-clientactionid-dedup",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780848901842",
+  "status": "draft",
+  "title": "Test clientActionId dedup",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780848901842-test-clientactionid-dedup/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T16:15:01.842Z",
+  "updatedAt": "2026-06-07T16:15:01.842Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by test-suite"
+  }
+}

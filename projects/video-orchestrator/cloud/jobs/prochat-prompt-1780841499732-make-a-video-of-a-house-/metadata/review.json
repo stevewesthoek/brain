@@ -1,0 +1,20 @@
+{
+  "jobId": "prochat-prompt-1780841499732-make-a-video-of-a-house-",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T14:12:20.200Z",
+  "updatedAt": "2026-06-07T14:13:10.537Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/overlay-plan.json"
+  }
+}

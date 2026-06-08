@@ -1,0 +1,42 @@
+{
+  "jobId": "prochat-prompt-1780851419769-make-a-short-video-about-a-red",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T16:57:30.510Z",
+  "updatedAt": "2026-06-07T16:57:30.510Z",
+  "publishedAt": null,
+  "title": "A Red Fox Running Through a Snowy Forest at Sunrise",
+  "description": "A short video about A Red Fox Running Through a Snowy Forest at Sunrise. Make a short video about a red fox running through a snowy forest at sunrise. Created as a private preview for review before public release.",
+  "tags": [
+    "red",
+    "fox",
+    "running",
+    "through",
+    "snowy",
+    "forest",
+    "sunrise",
+    "red fox",
+    "fox running",
+    "running through",
+    "through snowy",
+    "snowy forest",
+    "forest sunrise",
+    "short",
+    "about"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

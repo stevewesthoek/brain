@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780856992851-a-tree-growing-over-time-for-d",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780856992851",
+  "status": "approved",
+  "title": "A tree growing over time for dedup test",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T18:29:52.851Z",
+  "updatedAt": "2026-06-07T18:56:21.295Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-07T18:56:21.295Z"
+  }
+}

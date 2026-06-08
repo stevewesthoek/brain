@@ -382,6 +382,11 @@ export const videoStatusSchema = z.object({
   data: z.record(z.unknown()).optional(),
 }).passthrough();
 
+const controlPlaneAllowedActionSchema = z.object({
+  enabled: z.boolean(),
+  reason: z.string().optional(),
+}).passthrough();
+
 export const videoControlPlaneSchema = z.object({
   ok: z.boolean().optional(),
   data: z.object({
@@ -391,40 +396,47 @@ export const videoControlPlaneSchema = z.object({
     canonicalPhase: z.string(),
     phaseStatus: z.string(),
     progress: z.number().nullable().optional(),
+    phase: z.string().optional(),
+    selectedJob: z.string().nullable().optional(),
+    selectedApprovalStatus: z.string().nullable().optional(),
     execution: z.object({
       status: z.string().nullable(),
       unavailableReason: z.string().optional(),
-    }),
+    }).passthrough(),
     artifacts: z.object({
       status: z.string().nullable(),
       unavailableReason: z.string().optional(),
-    }),
+      videoKey: z.string().nullable().optional(),
+    }).passthrough(),
     review: z.object({
       status: z.string().nullable(),
       reviewStatus: z.string().nullable().optional(),
       media: z.record(z.unknown()).nullable().optional(),
-    }),
+    }).passthrough(),
     publish: z.object({
       status: z.string().nullable(),
       publishStatus: z.string().nullable().optional(),
-    }),
+    }).passthrough(),
     finalization: z.object({
       status: z.enum(['pending', 'complete', 'failed']).nullable(),
       reason: z.string().optional(),
-    }),
-    allowedActions: z.array(z.object({
-      action: z.string(),
-      enabled: z.boolean(),
-      reason: z.string().optional(),
-    })),
+    }).passthrough(),
+    allowedActions: z.union([
+      z.array(z.object({
+        action: z.string(),
+        enabled: z.boolean(),
+        reason: z.string().optional(),
+      }).passthrough()),
+      z.record(controlPlaneAllowedActionSchema),
+    ]),
     missingRequirements: z.array(z.object({
       field: z.string(),
       label: z.string(),
-    })),
+    }).passthrough()),
     warnings: z.array(z.string()),
     errors: z.array(z.string()),
     updatedAt: z.string(),
-  }).optional(),
+  }).passthrough().optional(),
 }).passthrough();
 
 export const videoActionResultSchema = z.record(z.unknown());

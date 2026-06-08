@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780841499732-make-a-video-of-a-house-",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780841499732",
+  "status": "draft",
+  "title": "Make a video of a house. ",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T14:11:39.732Z",
+  "updatedAt": "2026-06-07T14:11:39.732Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by brain-console-center"
+  }
+}

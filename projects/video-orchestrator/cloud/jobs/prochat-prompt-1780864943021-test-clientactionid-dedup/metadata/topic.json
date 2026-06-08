@@ -1,0 +1,10 @@
+{
+  "jobId": "prochat-prompt-1780864943021-test-clientactionid-dedup",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780864943021",
+  "title": "Test clientActionId dedup",
+  "description": "Test clientActionId dedup",
+  "source": "interactive-prompt",
+  "createdAt": "2026-06-07T20:42:23.021Z",
+  "clientActionId": "test-1780864943020-zw6jdm"
+}

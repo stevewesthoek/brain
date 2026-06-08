@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780844790820-make-a-video-of-a-butterfly-",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-07T15:13:52.342Z",
+  "updatedAt": "2026-06-07T15:13:52.342Z",
+  "provider": "selected-scene-image",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

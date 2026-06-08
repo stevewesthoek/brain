@@ -6,6 +6,7 @@ import {
   approveVideoReview,
   finalizeAwsVideoPublishPackage,
   getMissingReviewMediaFields,
+  getVideoJobExecutionStatus,
   getVideoOrchestratorJobsRoot,
   getVideoReview,
   mergeReviewMetadata,
@@ -529,6 +530,46 @@ test('already-approved job: getVideoReview preserves reviewStatus after finaliza
 
     // Review status should still be 'approved' after finalization
     assert.equal(reviewAfterFinalize.review.reviewStatus, 'approved', 'reviewStatus should remain approved');
+  } finally {
+    await rm(jobRoot, { recursive: true, force: true });
+  }
+});
+
+test('execution endpoint resilience: getVideoJobExecutionStatus returns base structure when status.json missing', async () => {
+  // Regression test for: execution endpoint returns "Job not found" even though job exists with script.json + assets
+  // Root cause: status.json missing → early return null → 404 error from route
+  // Fix: Validate job exists (script.json present), then return base execution structure with default values
+  const jobId = `test-exec-missing-status-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const jobsRoot = getVideoOrchestratorJobsRoot();
+  const jobRoot = join(jobsRoot, jobId);
+  const metadataRoot = join(jobRoot, 'metadata');
+
+  try {
+    await mkdir(metadataRoot, { recursive: true });
+
+    // Create minimal job structure: script.json only (NO status.json)
+    // This matches the real job: prochat-prompt-1780856968989-make-a-video-of-a-box-
+    await writeFile(join(metadataRoot, 'script.json'), JSON.stringify({
+      jobId,
+      status: 'approved',
+      approval: {
+        required: true,
+        status: 'approved',
+        approvedBy: 'brain-console-center',
+        approvedAt: new Date().toISOString(),
+      },
+    }, null, 2));
+
+    // Call execution endpoint directly
+    const execution = await getVideoJobExecutionStatus(jobId);
+
+    // Must NOT return null (that would cause 404 in the route)
+    assert.ok(execution !== null, 'execution must not be null when script.json exists');
+    assert.equal(execution.jobId, jobId, 'jobId must match request');
+    assert.equal(execution.awsStatus, null, 'awsStatus should be null (no executionArn)');
+    assert.equal(execution.executionArn, null, 'executionArn should be null (missing from status.json)');
+    assert.equal(execution.localStatus, 'pending', 'localStatus should default to pending when status.json missing');
+    assert.ok(execution.checkedAt, 'checkedAt must be present');
   } finally {
     await rm(jobRoot, { recursive: true, force: true });
   }

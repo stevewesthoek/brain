@@ -1,0 +1,35 @@
+{
+  "jobId": "prochat-prompt-1780841499732-make-a-video-of-a-house-",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T14:12:18.118Z",
+  "updatedAt": "2026-06-07T14:12:18.118Z",
+  "publishedAt": null,
+  "title": "A House",
+  "description": "A short video about A House. Make a video of a house. Created as a private preview for review before public release.",
+  "tags": [
+    "a house",
+    "house",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview",
+    "private preview"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780844790820-make-a-video-of-a-butterfly-",
+  "prompt": "Make a video of a butterfly. ",
+  "title": "Make a video of a butterfly. ",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video of a butterfly.  — scene 1 of 3",
+      "narrationText": "Make a video of a butterfly.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video of a butterfly.  — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a video of a butterfly.  — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-07T15:08:01.738Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

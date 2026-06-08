@@ -1,0 +1,44 @@
+{
+  "jobId": "prochat-prompt-1780856992854-test-clientactionid-dedup",
+  "sourcePrompt": "Test clientActionId dedup",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "Test Clientactionid Dedup",
+  "description": "A short video about Test Clientactionid Dedup. Test clientActionId dedup. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about Test Clientactionid Dedup. Test clientActionId dedup. Created as a private preview for review before public release.",
+  "tags": [
+    "clientactionid",
+    "dedup",
+    "clientactionid dedup",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview"
+  ],
+  "searchKeywords": [
+    "clientactionid",
+    "dedup",
+    "clientactionid dedup",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/exports/generated-001-final.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T18:51:11.447Z",
+  "updatedAt": "2026-06-07T18:51:11.447Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 25,
+    "tagCount": 8,
+    "descriptionLength": 136,
+    "hasInternalTerms": false
+  }
+}

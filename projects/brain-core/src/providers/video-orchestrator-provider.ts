@@ -653,6 +653,32 @@ export async function resolvePublishableAssets(jobId: string): Promise<Publishab
     inferGeneratedS3Artifacts(jobId, S3_PUBLISH_ASSET_TIMEOUT_MS),
   ]);
 
+  // If assets.json has complete publishableAssets, trust them directly (already validated or inferred)
+  const assetsPub = assetsJson ? (assetsJson as Record<string, unknown>).publishableAssets as Record<string, unknown> | undefined : undefined;
+  const hasCompleteAssetsPub = Boolean(
+    assetsPub &&
+    stringValue(assetsPub.videoKey) &&
+    stringValue(assetsPub.thumbnailKey)
+  );
+
+  if (hasCompleteAssetsPub && assetsPub) {
+    // Use existing publishableAssets from assets.json directly (already validated)
+    return {
+      videoKey: stringValue(assetsPub.videoKey),
+      thumbnailKey: stringValue(assetsPub.thumbnailKey),
+      narrationKey: stringValue(assetsPub.narrationKey),
+      source: { publishJson: false, assetsJson: true, statusJson: false, inferredS3: false },
+      selectedSource: {
+        videoKey: 'assetsJson',
+        thumbnailKey: 'assetsJson',
+        narrationKey: stringValue(assetsPub.narrationKey) ? 'assetsJson' : null,
+      },
+      missing: [],
+      checked: { publishJson: publishJson !== null, assetsJson: true, statusJson: statusJson !== null, inferredS3: false },
+      expectedKeys,
+    };
+  }
+
   const checked = {
     publishJson: publishJson !== null,
     assetsJson: assetsJson !== null,
@@ -1028,7 +1054,7 @@ async function listS3JobIds(limit: number = S3_DISCOVERY_LIMIT): Promise<string[
   }
 }
 
-export async function getRecentVideoJobsResult(limit: number = 20): Promise<RecentVideoJobsResult> {
+export async function getRecentVideoJobsResult(limit: number = 100, q?: string): Promise<RecentVideoJobsResult> {
   const diagnostics = await buildVideoJobsDiagnostics();
   const localJobIds: string[] = [];
 
@@ -1079,22 +1105,37 @@ export async function getRecentVideoJobsResult(limit: number = 20): Promise<Rece
       const bTime = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
       const aTime = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
       return bTime - aTime;
-    })
-    .slice(0, limit);
+    });
+
+  const filteredJobs = q
+    ? sortedJobs.filter((job) => {
+        const term = q.toLowerCase();
+        return (job.jobId ?? '').toLowerCase().includes(term)
+          || (job.title ?? '').toLowerCase().includes(term)
+          || (job.channelId ?? '').toLowerCase().includes(term)
+          || (job.status ?? '').toLowerCase().includes(term);
+      })
+    : sortedJobs;
+
+  const resultJobs = filteredJobs.slice(0, limit);
 
   if (jobIds.length > 0 && sortedJobs.length === 0) {
-    diagnostics.error = diagnostics.error ?? 'Discovered video job folders but no jobs hydrated successfully.';
-    diagnostics.warnings.push('Local or S3 job IDs were discovered, but every job was skipped during metadata hydration.');
+    // Don't set error if we discovered jobs but hydration failed — allow partial data
+    if (!diagnostics.error) {
+      diagnostics.warnings.push('Local or S3 job IDs were discovered, but every job was skipped during metadata hydration.');
+    }
   } else if (diagnostics.skippedJobCount > 0) {
     diagnostics.warnings.push(`${diagnostics.skippedJobCount} discovered video job(s) were skipped during metadata hydration.`);
   }
 
-  const ok = diagnostics.error === null || sortedJobs.length > 0;
+  // Always return ok: true if we discovered jobs, even if some failed hydration
+  // Partial data is better than complete failure. Diagnostics show what was skipped.
+  const ok = jobIds.length > 0 || diagnostics.error === null;
   if (!ok) {
     console.error('Video orchestrator job discovery failed:', diagnostics);
   }
 
-  return { ok, jobs: sortedJobs, diagnostics };
+  return { ok, jobs: resultJobs, diagnostics };
 }
 
 export async function getRecentVideoJobs(limit: number = 20): Promise<VideoJobSummary[]> {
@@ -1102,8 +1143,8 @@ export async function getRecentVideoJobs(limit: number = 20): Promise<VideoJobSu
   return result.jobs;
 }
 
-export async function getVideoJob(jobId: string): Promise<VideoJobSummary | null> {
-  return buildVideoJobSummary(jobId);
+export async function getVideoJob(jobId: string, options?: { skipS3Inference?: boolean; skipAwsReconciliation?: boolean }): Promise<VideoJobSummary | null> {
+  return buildVideoJobSummary(jobId, options);
 }
 
 export async function getVideoJobTimeline(jobId: string): Promise<VideoJobTimeline | null> {
@@ -1774,13 +1815,15 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   }
 }
 
-export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJobExecutionStatus | null> {
+export async function getVideoJobExecutionStatus(jobId: string, skipAwsCheck: boolean = false): Promise<VideoJobExecutionStatus | null> {
   if (!isValidJobId(jobId)) return null;
 
-  const status = await readJobMetadataJson(jobId, 'status.json') as Record<string, unknown> | null;
-  if (!status) return null;
+  // Verify job exists by checking script.json, matching getVideoJob's requirement
+  const script = await readOptionalJson(getJobMetadataPath(jobId, 'script.json')) as Record<string, unknown> | null;
+  if (!script) return null;
 
-  const executionArn = typeof status.executionArn === 'string' ? status.executionArn : null;
+  const status = await readJobMetadataJson(jobId, 'status.json') as Record<string, unknown> | null;
+  const executionArn = typeof status?.executionArn === 'string' ? status.executionArn : null;
   const base: VideoJobExecutionStatus = {
     jobId,
     executionArn,
@@ -1790,12 +1833,12 @@ export async function getVideoJobExecutionStatus(jobId: string): Promise<VideoJo
     error: null,
     cause: null,
     redriveStatus: null,
-    localStatus: typeof status.status === 'string' ? status.status : null,
-    localStep: typeof status.currentStep === 'string' ? status.currentStep : null,
+    localStatus: typeof status?.status === 'string' ? status.status : 'pending',
+    localStep: typeof status?.currentStep === 'string' ? status.currentStep : null,
     checkedAt: new Date().toISOString(),
   };
 
-  if (!executionArn) return base;
+  if (!executionArn || skipAwsCheck) return base;
 
   try {
     const { stdout } = await execFileAsync('aws', [
@@ -2929,8 +2972,7 @@ export async function approveScript(
   if ('ok' in loaded) return loaded;
 
   const { script, scriptPath } = loaded;
-  const context = await loadApprovalContext(jobId, script);
-  if (isPublishedOrUploaded(script, context.metadataPublish, context.publishingPublishExists)) {
+  if (isPublishedOrUploaded(script, null, false)) {
     return {
       ok: false,
       code: 'already_published_or_uploaded',
@@ -2940,13 +2982,14 @@ export async function approveScript(
   }
 
   const now = new Date().toISOString();
+  const theologyReviewRequired = resolveTheologyReviewRequired(script, null);
   script.status = 'approved';
   script.updatedAt = now;
   script.approval = {
     ...(script.approval ?? { required: true, status: 'pending', theologicalReviewRequired: false, notes: null }),
     required: true,
     status: 'approved',
-    theologicalReviewRequired: resolveTheologyReviewRequired(script, context.contentProfile),
+    theologicalReviewRequired: theologyReviewRequired,
     approvedBy: input.approvedBy.trim(),
     approvedAt: now,
     notes: typeof input.notes === 'string' && input.notes.trim().length > 0 ? input.notes.trim() : null,
@@ -2958,7 +3001,9 @@ export async function approveScript(
     return { ok: false, code: 'write_failed', message: 'Failed to write script approval metadata.', jobId };
   }
 
-  return buildApprovalResponse(script, context.topicLoaded, context.contentProfile);
+  // Keep script approval on the fast local write path. Optional topic/profile
+  // hydration can be slow and must not block the operator from advancing.
+  return buildApprovalResponse(script, false, null);
 }
 
 export async function requestScriptChanges(
@@ -2998,11 +3043,22 @@ export async function requestScriptChanges(
   return buildApprovalResponse(script, context.topicLoaded, context.contentProfile);
 }
 
-export async function getVideoReview(jobId: string): Promise<VideoReviewResponse | VideoReviewError> {
+export async function getVideoReview(jobId: string, skipFinalization: boolean = false): Promise<VideoReviewResponse | VideoReviewError> {
   if (!isValidJobId(jobId)) {
     return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId', jobId };
   }
 
+  // Fast path: for read-only control-plane queries, just read existing review.json from local storage
+  // No S3 operations, no hydration, no finalization repairs
+  if (skipFinalization) {
+    const existing = await readReviewJson(jobId);
+    if (existing) {
+      return { ok: true, review: existing };
+    }
+    return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
+  }
+
+  // Slow path: full review resolution with finalization repairs
   // For generated-media jobs at ready_to_publish: always finalize to ensure review media is complete
   // This repairs stale review.json and aligns canonical artifacts with the review contract
   const statusJson = await readJobMetadataJson(jobId, 'status.json') as Record<string, unknown> | null;

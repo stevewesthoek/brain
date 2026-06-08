@@ -1,0 +1,7 @@
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-001.mp4'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-002.mp4'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-003.mp4'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-003.mp4'

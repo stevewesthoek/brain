@@ -4070,8 +4070,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/types/api.ts": {
-    "mtime": 1780787451.3944683,
-    "ast_hash": "495a895bfeb01f2ae95961e66b6268d4",
+    "mtime": 1780862827.9351535,
+    "ast_hash": "27c4dc62c7dc562c0d3c770cb2c9534f",
     "semantic_hash": ""
   },
   "projects/brain-core/src/types/work-queue.ts": {
@@ -4115,8 +4115,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/providers/video-orchestrator-provider.ts": {
-    "mtime": 1780787991.1431644,
-    "ast_hash": "742dea8305334b07115d1b7f0eae046b",
+    "mtime": 1780864888.3390129,
+    "ast_hash": "e2ceabcd815536e2645b5be4747b9a47",
     "semantic_hash": ""
   },
   "projects/brain-core/src/providers/aws-video-storyboard-types.ts": {
@@ -4260,8 +4260,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/tests/routes.test.ts": {
-    "mtime": 1780788586.4245276,
-    "ast_hash": "329045981fa2dc98a6b7c8d77db3f1c3",
+    "mtime": 1780857851.7429905,
+    "ast_hash": "1e7c578b4dce6a21063b4979cf6e2bc0",
     "semantic_hash": ""
   },
   "projects/brain-core/src/tests/sessions.test.ts": {
@@ -4675,8 +4675,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/scheduler.ts": {
-    "mtime": 1780787479.621164,
-    "ast_hash": "2c9e4de8da6c5a3855949fb952d6b59f",
+    "mtime": 1780853450.1588745,
+    "ast_hash": "1acf62b73566a2f07e53a6215fa211ef",
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/infra-video-orchestrator-thumbnail-winner.ts": {
@@ -4820,8 +4820,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/capabilities.ts": {
-    "mtime": 1780787499.1355596,
-    "ast_hash": "31c4afb9cfa1722b0cc4f272ac5999dc",
+    "mtime": 1780815637.8889794,
+    "ast_hash": "a4c088da69716e2dbd1e9e06839e5038",
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/infra-stripe.ts": {
@@ -4900,8 +4900,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/approval-store.ts": {
-    "mtime": 1780787489.815109,
-    "ast_hash": "ad8d8c97e2420b2ae4dda4bc3e305be9",
+    "mtime": 1780815621.2629366,
+    "ast_hash": "c206af60a00dd0a5af6657cb9a0fdaa0",
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/ai-model-selector.ts": {
@@ -5040,8 +5040,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/actions.ts": {
-    "mtime": 1780787891.4797919,
-    "ast_hash": "1b8b0e22f4a2106973346316c7ec445f",
+    "mtime": 1780854107.0455182,
+    "ast_hash": "bac68d9b3ce856b4561c6f29f8b44991",
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/subagent-executor.ts": {
@@ -5115,8 +5115,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/execution-plans.ts": {
-    "mtime": 1780787471.6304908,
-    "ast_hash": "b49befea5cfeedf46fa1b2b33afb2464",
+    "mtime": 1780862823.8835185,
+    "ast_hash": "777b31e602612a923a1c2852c68cf10b",
     "semantic_hash": ""
   },
   "projects/brain-core/src/adapters/video-orchestrator-controlled-execution-approval-request-design.ts": {
@@ -5475,8 +5475,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/api/routes.ts": {
-    "mtime": 1780769866.000077,
-    "ast_hash": "2c06dcf491f09d7495b9a6336133d18f",
+    "mtime": 1780856582.7623076,
+    "ast_hash": "9b19350aedc796bafe2fffb7fab62846",
     "semantic_hash": ""
   },
   "projects/brain-core/src/api/server.ts": {
@@ -5635,8 +5635,8 @@
     "semantic_hash": ""
   },
   "projects/brain-console-center/components/overview-dashboard.tsx": {
-    "mtime": 1780748488.9366076,
-    "ast_hash": "f3a78b6719b340b315800b70d9f691bf",
+    "mtime": 1780849480.3362384,
+    "ast_hash": "e9a0cb8659d2bfb9481c0aca3337390c",
     "semantic_hash": ""
   },
   "projects/brain-console-center/components/status-badge.tsx": {
@@ -5655,8 +5655,8 @@
     "semantic_hash": ""
   },
   "projects/brain-console-center/components/aws-video-dashboard.tsx": {
-    "mtime": 1780787899.8535354,
-    "ast_hash": "36c3f207420011fed6ece3fe3d33e989",
+    "mtime": 1780858472.9560733,
+    "ast_hash": "f8256d516a3e76d200bbd16e99a6def9",
     "semantic_hash": ""
   },
   "projects/brain-console-center/components/providers.tsx": {
@@ -5670,8 +5670,8 @@
     "semantic_hash": ""
   },
   "projects/brain-console-center/lib/braincore-schemas.ts": {
-    "mtime": 1780787864.2718084,
-    "ast_hash": "382f26d590bbdc81b0719c35f7ee07e5",
+    "mtime": 1780849241.7460003,
+    "ast_hash": "6326856cd56176d73aa5196512fea2cf",
     "semantic_hash": ""
   },
   "projects/brain-console-center/lib/braincore-client.ts": {
@@ -5710,8 +5710,8 @@
     "semantic_hash": ""
   },
   "operations/system-configs/model-selector/runtime/core.py": {
-    "mtime": 1780661378.2114663,
-    "ast_hash": "4ce8d0309b4a4cdde7d1f8f323eaa23f",
+    "mtime": 1780834455.9424586,
+    "ast_hash": "c619d049acd11b8f7f7e188234769fcb",
     "semantic_hash": ""
   },
   "operations/system-configs/model-selector/runtime/selector_service.py": {
@@ -8014,96 +8014,6 @@
     "ast_hash": "c55342ebd6109d7c7d8ebbda1e119bfa",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/7da70a3af5a339e9@v2": {
-    "mtime": 1778149086.444576,
-    "ast_hash": "1487f17111eaf085e4604a06a55f57d3",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/d05888cbcabe7716@v2": {
-    "mtime": 1778165526.9897692,
-    "ast_hash": "9304d3efa055a1e38386eb7a8d8a6700",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/bc23624ce5842200@v2": {
-    "mtime": 1778184987.589126,
-    "ast_hash": "24446f77a9627d28294808662282240d",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/d33c134cd4dedb23@v2": {
-    "mtime": 1778165526.9894533,
-    "ast_hash": "2f37e08430079fcf36ed3779edf3ea8c",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/bc23624ce5842200@v3": {
-    "mtime": 1778187729.6008062,
-    "ast_hash": "4a8d46a89dc1390d781299a7cdd7d26c",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/84d978cd36037324@v2": {
-    "mtime": 1778149086.4441204,
-    "ast_hash": "5726dd1cf3437115ffa39d5e4933cbae",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/b018b5865389446c@v2": {
-    "mtime": 1778193020.42575,
-    "ast_hash": "6896f83b7e53e7a42a10303a88804f78",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/84d978cd36037324@v3": {
-    "mtime": 1778165526.9898648,
-    "ast_hash": "9304d3efa055a1e38386eb7a8d8a6700",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/4212419b2e5dd8d4@v2": {
-    "mtime": 1778165526.989443,
-    "ast_hash": "af2a2b5d1f62e787db508ebf73621822",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/b018b5865389446c@v3": {
-    "mtime": 1778193602.658791,
-    "ast_hash": "4d80ebf81d8de747e932a52a257fb6ab",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/745a527dc0bee550@v2": {
-    "mtime": 1778148244.3096557,
-    "ast_hash": "8444a63ef2895d750251ac8bdb1dab8e",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/7da70a3af5a339e9@v1": {
-    "mtime": 1778148806.3356326,
-    "ast_hash": "c8edeabd684a6aaa3b21c2a1584b394f",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/149cc605bbddf47a@v2": {
-    "mtime": 1778184987.5891263,
-    "ast_hash": "cb919ae64a8f77e0e8560a22279225b4",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/d05888cbcabe7716@v1": {
-    "mtime": 1778164267.2038567,
-    "ast_hash": "5726dd1cf3437115ffa39d5e4933cbae",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/149cc605bbddf47a@v3": {
-    "mtime": 1778187729.6008177,
-    "ast_hash": "442e2192c61908b720bcbbc89b594e76",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/745a527dc0bee550@v3": {
-    "mtime": 1778165526.9897182,
-    "ast_hash": "8946f3733339bb737b291e6ab9ea37f6",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/50dd1a1f87415310@v2": {
-    "mtime": 1778162483.9883838,
-    "ast_hash": "f245ff641befefee372cd8b77edf3d73",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/file-history/de3270da-03f3-448e-871d-2d636205e48c/b018b5865389446c@v1": {
-    "mtime": 1778192866.7557728,
-    "ast_hash": "7cfd7c91b4dab4886d1488443761dc7b",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/file-history/762aa0e3-8149-46cd-aca5-cc5502280555/e3392c724b3767db@v2": {
     "mtime": 1778834866.910813,
     "ast_hash": "d830d72c1b7a852fd6d1b105b204b6fb",
@@ -9185,8 +9095,8 @@
     "semantic_hash": ""
   },
   "tools/README.md": {
-    "mtime": 1780739411.6574893,
-    "ast_hash": "bb56c3d8ba2a952c45c59f713cebbda5",
+    "mtime": 1780839210.7611697,
+    "ast_hash": "09e13ccd53c5d4616f50a1c4add4fa45",
     "semantic_hash": ""
   },
   "tools/chatgpt-custom-instructions.md": {
@@ -10020,8 +9930,8 @@
     "semantic_hash": ""
   },
   "projects/video-orchestrator/cloud/docs/pipeline-state.md": {
-    "mtime": 1780787974.4697154,
-    "ast_hash": "dcf271a6777f370055473bfb7c98783d",
+    "mtime": 1780830675.091627,
+    "ast_hash": "cf5b196dff34fca59b203bf953275ded",
     "semantic_hash": ""
   },
   "projects/video-orchestrator/cloud/templates/prochat-script-template.md": {
@@ -10395,8 +10305,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/README.md": {
-    "mtime": 1780787670.8548112,
-    "ast_hash": "26f97eafe504513ccf6f5e67b5d5c60d",
+    "mtime": 1780816133.0840578,
+    "ast_hash": "f8e360ca5904027d776bcab522e88b90",
     "semantic_hash": ""
   },
   "projects/brain-core/runtime/local/model-router/latest.md": {
@@ -10535,8 +10445,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/docs/aws-video-pipeline.md": {
-    "mtime": 1780787962.426083,
-    "ast_hash": "2ab7bdf7628b349207f54a951a097131",
+    "mtime": 1780830670.7179077,
+    "ast_hash": "f020669e0e28f5426fa83d14952944b6",
     "semantic_hash": ""
   },
   "projects/brain-core/docs/PHASE-3-IMPLEMENTATION-COMPLETE.md": {
@@ -11205,8 +11115,8 @@
     "semantic_hash": ""
   },
   "operations/README.md": {
-    "mtime": 1780524269.7986326,
-    "ast_hash": "c671fc65b9c74adc45a52280c1c59766",
+    "mtime": 1780872869.202673,
+    "ast_hash": "433b90f8fbbfbeea52023ddf1f19570e",
     "semantic_hash": ""
   },
   "operations/REVISION_SUMMARY.md": {
@@ -12454,11 +12364,6 @@
     "ast_hash": "9bccb9040b2d20347e0edbb6748ee524",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/plans/zippy-moseying-pearl.md": {
-    "mtime": 1778179412.6084166,
-    "ast_hash": "d915fc669ee5644bad9de7d38b94cc65",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/plans/whimsical-mapping-pine.md": {
     "mtime": 1780484774.5611832,
     "ast_hash": "30341fbe7721c48092831cadced16027",
@@ -13199,11 +13104,6 @@
     "ast_hash": "1357b6c3f68a6f8c04bc6987876c6638",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/projects/-Users-Office-Repos-stevewesthoek-brain/de3270da-03f3-448e-871d-2d636205e48c/tool-results/bhyeajso1.txt": {
-    "mtime": 1778191864.9116132,
-    "ast_hash": "e56fe677b4b0ef0e3ec89b1f6851a8b6",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/projects/-Users-Office-Repos-prochattools-demo-vault-legal/22f59f58-7087-4135-98b6-f87f922982ed/tool-results/b408w6c5a.txt": {
     "mtime": 1779726977.4237227,
     "ast_hash": "04a61888398ab231cc233f30bd12a751",
@@ -13242,26 +13142,6 @@
   "operations/system-configs/claude/projects/-Users-Office-Repos-stevewesthoek-buildflow/a1bc2834-8002-4617-97b6-89d8975ac1a2/tool-results/b2w80a3cs.txt": {
     "mtime": 1779384926.7603066,
     "ast_hash": "eabc91bf019f4263dac35b015e154915",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/projects/-Users-Office-Repos-stevewesthoek-buildflow/b9c65975-2629-49db-8a68-2763bdf06a5b/tool-results/bnvoei4uh.txt": {
-    "mtime": 1778264144.8051274,
-    "ast_hash": "1d806bd7aaa12bc7b73c6e2d60995094",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/projects/-Users-Office-Repos-stevewesthoek-buildflow/b9c65975-2629-49db-8a68-2763bdf06a5b/tool-results/bu843wx02.txt": {
-    "mtime": 1778265171.0638292,
-    "ast_hash": "387254bf08f99547b6c657bbcc905390",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/projects/-Users-Office-Repos-stevewesthoek-buildflow/b9c65975-2629-49db-8a68-2763bdf06a5b/tool-results/bp55i2dwr.txt": {
-    "mtime": 1778265746.0968075,
-    "ast_hash": "291d62657b07a898ef085180557ec91b",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/projects/-Users-Office-Repos-stevewesthoek-buildflow/b9c65975-2629-49db-8a68-2763bdf06a5b/tool-results/b01z476op.txt": {
-    "mtime": 1778265739.3700325,
-    "ast_hash": "d3e070c161e502fdf0504bfb3abfe04b",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/projects/-Users-Office-Repos-prochattools-clients-via-di-eden/935abdec-d330-4bc2-9862-aa99031f0966/tool-results/bc0a144ki.txt": {
@@ -13544,11 +13424,6 @@
     "ast_hash": "6b17d8b4ac6b32f8b22aa94c7c0f64a0",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/21e5e75846b54096.txt": {
-    "mtime": 1778184987.343283,
-    "ast_hash": "b0fd9fa7c4b816a5f826cf333513100c",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/aaeaf8cb0e3e5ff1.txt": {
     "mtime": 1778507206.6178896,
     "ast_hash": "26ee44a51f6729549a89afbb3218e091",
@@ -13677,11 +13552,6 @@
   "operations/system-configs/claude/paste-cache/ddedb38ae74a3277.txt": {
     "mtime": 1780355837.4862123,
     "ast_hash": "14eb2c3ee63caa4dcff60503ed2baca9",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/paste-cache/8963f1d009bc9109.txt": {
-    "mtime": 1778253316.0785582,
-    "ast_hash": "2c21e76618cf44bf0d946b1beafd335c",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/paste-cache/b59dbbcf67b461ea.txt": {
@@ -14109,11 +13979,6 @@
     "ast_hash": "5457d280f716780378ff81711afc8571",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/c0a6850d30bc0f65.txt": {
-    "mtime": 1778184245.297395,
-    "ast_hash": "51db5f46b5c5010ad9ec663956d7f795",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/fbe88409467e6d54.txt": {
     "mtime": 1778580068.2525542,
     "ast_hash": "c8b7db8a99fd28a2c18cb480b453f14e",
@@ -14239,11 +14104,6 @@
     "ast_hash": "68573affdf143f399d9963df9ff5b08f",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/d7601e7b286091b8.txt": {
-    "mtime": 1778252194.3398325,
-    "ast_hash": "80c9c75a524e99a4bdb03f826bbb0b6b",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/687d73d51cdc294a.txt": {
     "mtime": 1779746231.543666,
     "ast_hash": "c67e82fd386e046642bfcc4a063d6d95",
@@ -14287,11 +14147,6 @@
   "operations/system-configs/claude/paste-cache/c16683e0c69580f4.txt": {
     "mtime": 1780045894.3629525,
     "ast_hash": "a0a396a9691a91f73c44a196692b3f90",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/paste-cache/657eec149cdb5bc5.txt": {
-    "mtime": 1778265665.09829,
-    "ast_hash": "74adbebb65266432b09676ba98e60c27",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/paste-cache/37dcde6073d6e82e.txt": {
@@ -14389,11 +14244,6 @@
     "ast_hash": "0e6d9c3199a8b30a79928e4c70fbf337",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/7da1ef3adc7e23c8.txt": {
-    "mtime": 1778254290.1092107,
-    "ast_hash": "999c1a00673570388d7a209992ae023a",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/460adcdb3c281e79.txt": {
     "mtime": 1779211108.0914996,
     "ast_hash": "b8590c0b55f53a332d32825e66b9f7cd",
@@ -14417,11 +14267,6 @@
   "operations/system-configs/claude/paste-cache/cbd6eb49182a5489.txt": {
     "mtime": 1780095201.3919773,
     "ast_hash": "3cb555d7100ab85cd2397d886126a256",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/paste-cache/695fbbea79e48634.txt": {
-    "mtime": 1778252465.3964562,
-    "ast_hash": "7578e3b55ed3bd939177c0fc6c583c1e",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/paste-cache/ea54ddd11c24fdeb.txt": {
@@ -14684,11 +14529,6 @@
     "ast_hash": "0cfe3fba32b63ed81806eca6486a8742",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/0ea21986669ab834.txt": {
-    "mtime": 1778263744.5999434,
-    "ast_hash": "b6e505c8a2dd61978618cf6cd2bd3fc7",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/7fec68b0875249be.txt": {
     "mtime": 1779137193.4123538,
     "ast_hash": "57fa38426d560c8a8818463dc9bc61a0",
@@ -14852,11 +14692,6 @@
   "operations/system-configs/claude/paste-cache/14fd021363fb0792.txt": {
     "mtime": 1780061831.9880152,
     "ast_hash": "4d6618599759d92e32d177d2c46f5509",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/paste-cache/726a2303c190b4ff.txt": {
-    "mtime": 1778262481.404069,
-    "ast_hash": "c917e3e96aa73059694ea2af3f53a2ce",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/paste-cache/ad9c5fe27be6c324.txt": {
@@ -15274,11 +15109,6 @@
     "ast_hash": "eab2c7f5843b57baf68796428b52baf1",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/9074b8f64d1b44ca.txt": {
-    "mtime": 1778266803.2062914,
-    "ast_hash": "4a3cafa5c0a83a69dcdd58c1f065d290",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/bd9a0ec527683a11.txt": {
     "mtime": 1780336678.925366,
     "ast_hash": "39432a11f0731bb7fe310bcf07256a29",
@@ -15429,11 +15259,6 @@
     "ast_hash": "301a6da45e5af9785b715a215b501236",
     "semantic_hash": ""
   },
-  "operations/system-configs/claude/paste-cache/dd83c76c6af5f206.txt": {
-    "mtime": 1778264969.2542055,
-    "ast_hash": "8ce3e778422adbcf0296e9b339312759",
-    "semantic_hash": ""
-  },
   "operations/system-configs/claude/paste-cache/7f608cef01357959.txt": {
     "mtime": 1778499226.9185936,
     "ast_hash": "108a49ddead729a68cc7ceaee6929d7a",
@@ -15497,11 +15322,6 @@
   "operations/system-configs/claude/paste-cache/632f132979c469f5.txt": {
     "mtime": 1778500264.5149746,
     "ast_hash": "05b5b379de4dbe81443e4368f94da8f4",
-    "semantic_hash": ""
-  },
-  "operations/system-configs/claude/paste-cache/3f5c88fa21b02703.txt": {
-    "mtime": 1778177406.9759994,
-    "ast_hash": "6e7b41f32fca6091c69530ea09938222",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/paste-cache/1ec220ed7a023078.txt": {
@@ -26535,13 +26355,13 @@
     "semantic_hash": ""
   },
   "operations/system-configs/claude/model-tracking.json": {
-    "mtime": 1780778366.980466,
+    "mtime": 1780872900.449817,
     "ast_hash": "58b963bc914891b16a855f299fa2f5ea",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/settings.json": {
-    "mtime": 1780351597.554475,
-    "ast_hash": "8492afd3c883f54b124151ae19fbc6f3",
+    "mtime": 1780849831.20236,
+    "ast_hash": "7a45145290522cde37e55e63d6bb8579",
     "semantic_hash": ""
   },
   "operations/system-configs/claude/statusline-command.sh": {
@@ -27065,8 +26885,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1780739591.3480709,
-    "ast_hash": "c13f816e269732e96ed88995e3cfbcdc",
+    "mtime": 1780862422.8861005,
+    "ast_hash": "c11f24f07e8c13b34e07118012ae18b0",
     "semantic_hash": ""
   },
   "projects/brain-console-center/package.json": {
@@ -28415,8 +28235,8 @@
     "semantic_hash": ""
   },
   "projects/video-orchestrator/cloud/scripts/youtube-upload-local.sh": {
-    "mtime": 1780677597.766897,
-    "ast_hash": "61c83bff83e839bd0a81f58254b3da0b",
+    "mtime": 1780825526.2443738,
+    "ast_hash": "b181dc5fc9e3d1c3c6f2b7995c879421",
     "semantic_hash": ""
   },
   "projects/video-orchestrator/cloud/stepfunctions/video-publisher-youtube.json": {
@@ -28815,7 +28635,7 @@
     "semantic_hash": ""
   },
   "tools/scripts/brain-console-center-dev-reset.sh": {
-    "mtime": 1780670069.64392,
+    "mtime": 1780823834.1273785,
     "ast_hash": "e1fa338d4d21e9801f722922dd4e7a89",
     "semantic_hash": ""
   },
@@ -29000,8 +28820,8 @@
     "semantic_hash": ""
   },
   "tools/scripts/verify-aws-video-generation-mode.sh": {
-    "mtime": 1780787929.6477873,
-    "ast_hash": "17986a3d2cb3bbea562bf36575522f9c",
+    "mtime": 1780830622.0395947,
+    "ast_hash": "33b49aea7d73e4d8f1bba6f95087f051",
     "semantic_hash": ""
   },
   "tools/scripts/verify-cli-access.sh": {
@@ -29570,8 +29390,8 @@
     "semantic_hash": ""
   },
   "projects/brain-core/src/providers/aws-video-overlay-provider.ts": {
-    "mtime": 1780787986.3658497,
-    "ast_hash": "7410e904fc7f092997588851ff92bb55",
+    "mtime": 1780814527.973435,
+    "ast_hash": "928eada574a95bfac20dae4a9516dc1a",
     "semantic_hash": ""
   },
   "projects/brain-core/src/providers/youtube-package-builder.ts": {
@@ -30427,6 +30247,2421 @@
   "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780745176072-make-a-video-of-somebody-sitti/video-generated/generated-001.mp4": {
     "mtime": 1780745862.3974028,
     "ast_hash": "da31494a2f921deec7f300df14278e83",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-profile.examples.json": {
+    "mtime": 1780858627.7079463,
+    "ast_hash": "7c44a649d6adce74a847bd92de347729",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-profile.schema.json": {
+    "mtime": 1780858511.0481493,
+    "ast_hash": "e001b8afc617af6b0bc72c67908e86ee",
+    "semantic_hash": ""
+  },
+  "operations/system-configs/model-selector/tests/test_model_selector_preference_policy.py": {
+    "mtime": 1780834495.9185321,
+    "ast_hash": "03a6b07c135e967fdf998bb7003a9545",
+    "semantic_hash": ""
+  },
+  "operations/tests/graphify-hook-watch-disabled.test.mjs": {
+    "mtime": 1780862873.9018044,
+    "ast_hash": "9cdfded16b61aa40b32e9d63c69be67f",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/components/aws-video/use-aws-video-selection.test.ts": {
+    "mtime": 1780853488.3168314,
+    "ast_hash": "45267b4c83dd5cbe0153827449f1ae45",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/components/aws-video/use-aws-video-selection.ts": {
+    "mtime": 1780853339.930225,
+    "ast_hash": "c2f67707e4fad5bedc320a13f6c2bfea",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/lib/aws-video-selection.test.ts": {
+    "mtime": 1780850065.3581827,
+    "ast_hash": "75b8b13fbfe564f6dec5efb4c7a00987",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/lib/aws-video-selection.ts": {
+    "mtime": 1780850049.3576043,
+    "ast_hash": "28c11f2666fc3b25ce5746f23ce15822",
+    "semantic_hash": ""
+  },
+  "projects/brain-core/src/adapters/graphify-status.ts": {
+    "mtime": 1780847655.9892695,
+    "ast_hash": "d407c6fdaeab7d04d10cd3dc6bbec31b",
+    "semantic_hash": ""
+  },
+  "projects/brain-core/src/adapters/video-orchestrator-control-plane.ts": {
+    "mtime": 1780848758.2404711,
+    "ast_hash": "0317f46601f9f5940cf3ac810a2981a5",
+    "semantic_hash": ""
+  },
+  "projects/brain-core/src/tests/video-orchestrator-control-plane.test.ts": {
+    "mtime": 1780848808.3531477,
+    "ast_hash": "ec24470b7829979d7d5957400b0d8821",
+    "semantic_hash": ""
+  },
+  "projects/brain-core/src/tests/video-orchestrator-download.test.ts": {
+    "mtime": 1780825721.618178,
+    "ast_hash": "1156cb14d59ded091d46ca2dcadaf6eb",
+    "semantic_hash": ""
+  },
+  "projects/brain-core/src/tests/video-orchestrator-finalization.test.ts": {
+    "mtime": 1780864689.3094726,
+    "ast_hash": "92548bd899986c4d5189edd1a6dbb438",
+    "semantic_hash": ""
+  },
+  "projects/brain-core/src/tests/video-orchestrator-motion.test.ts": {
+    "mtime": 1780830794.0944178,
+    "ast_hash": "00ab8cffcd80c225e9cd010964b02b3b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/approvals.json": {
+    "mtime": 1780814918.0760849,
+    "ast_hash": "fb5c17e6529b02064535622205da239e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/assets.json": {
+    "mtime": 1780815003.1138606,
+    "ast_hash": "d596599ea72928b17922d61335b753f1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/image-generation.json": {
+    "mtime": 1780814966.8090324,
+    "ast_hash": "69e68c9ec42a1622c46dba79eed24d09",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/overlay-plan.json": {
+    "mtime": 1780814982.9822617,
+    "ast_hash": "8cfa3ced9e9d7839544d12013a7b044d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/publish.json": {
+    "mtime": 1780815013.9226122,
+    "ast_hash": "906938b28f8565686cc7ed4635fbfb26",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/review.json": {
+    "mtime": 1780815044.066222,
+    "ast_hash": "0ebb6640a5c4cbf37f4f9cc146baa17a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/scene-plan.json": {
+    "mtime": 1780814919.6678512,
+    "ast_hash": "cf8da166d7ee75770d40bfb8b5a5c927",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/script.json": {
+    "mtime": 1780814121.6328092,
+    "ast_hash": "1cb9e61cad6eec473215cbc24279e7fc",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/status.json": {
+    "mtime": 1780815011.309491,
+    "ast_hash": "c703853abe51bf7f15b1a0cef50a214a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/storyboard.json": {
+    "mtime": 1780814964.7693672,
+    "ast_hash": "0e79ceade408c25bf57544f9e4f31ed1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/thumbnail.json": {
+    "mtime": 1780815030.2749395,
+    "ast_hash": "3da49bbc5561d0f641a3c5cd82228005",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/topic.json": {
+    "mtime": 1780814110.1892424,
+    "ast_hash": "0cd5ef35a6eb241351c610d1384b9be6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/metadata/youtube-package.json": {
+    "mtime": 1780815006.5061243,
+    "ast_hash": "fc103b60605055b83dc38850626e4bae",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/publishing/publish.json": {
+    "mtime": 1780815013.922917,
+    "ast_hash": "906938b28f8565686cc7ed4635fbfb26",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/approvals.json": {
+    "mtime": 1780815057.8204951,
+    "ast_hash": "5abec11c7a1976941650c55529964357",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/assets.json": {
+    "mtime": 1780815141.218555,
+    "ast_hash": "70b2c491b082ba48356223180b5a60cf",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/image-generation.json": {
+    "mtime": 1780815106.0984597,
+    "ast_hash": "b9b2a51b1d85b43f00130158b59fabe7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/overlay-plan.json": {
+    "mtime": 1780815122.6799839,
+    "ast_hash": "c2f60d065e82603ce591db1dba43a389",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/publish.json": {
+    "mtime": 1780815149.6406262,
+    "ast_hash": "458b0d1bc2c02ca525af54c8941712aa",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/review.json": {
+    "mtime": 1780815166.4396484,
+    "ast_hash": "b9be211f56b3017b62efa206ad933924",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/scene-plan.json": {
+    "mtime": 1780815059.3338916,
+    "ast_hash": "b725200b42efd6f5a6a35510028ef332",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/script.json": {
+    "mtime": 1780815033.679509,
+    "ast_hash": "52ac94847a9391bca11c957588a3dbf9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/status.json": {
+    "mtime": 1780815148.073445,
+    "ast_hash": "6d7c500b2b4b1a71d7c1e663ac234dd5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/storyboard.json": {
+    "mtime": 1780815104.1071131,
+    "ast_hash": "74946c175086dd946e42eb471573536b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/thumbnail.json": {
+    "mtime": 1780815153.1505516,
+    "ast_hash": "be3bfea9efde7434b5efa2301ca9a08b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/topic.json": {
+    "mtime": 1780814906.260873,
+    "ast_hash": "d0a98b2d54e8de38b42bb15008cb1d58",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/metadata/youtube-package.json": {
+    "mtime": 1780815142.789187,
+    "ast_hash": "dbb7ae95d432c37c69a5907302d4d4f5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/publishing/publish.json": {
+    "mtime": 1780815149.6408434,
+    "ast_hash": "458b0d1bc2c02ca525af54c8941712aa",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/approvals.json": {
+    "mtime": 1780816431.628765,
+    "ast_hash": "5f97249f69bfdf53318c65b11b22abd9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/assets.json": {
+    "mtime": 1780817667.949945,
+    "ast_hash": "2753c8b8766b2d3c53a665cc46e077e5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/image-generation.json": {
+    "mtime": 1780816481.264271,
+    "ast_hash": "16d2e6063c317db16352b4acef7089ee",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/overlay-plan.json": {
+    "mtime": 1780816509.1670463,
+    "ast_hash": "142c1f630c206d01fdbfebbf1c0e69f1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/publish-check.json": {
+    "mtime": 1780823343.1182601,
+    "ast_hash": "ba532e6eebecbab4c8d29756029b7154",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/publish.json": {
+    "mtime": 1780823460.8239954,
+    "ast_hash": "18c7bec2f72fe97f00b92de4b3652593",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/review.json": {
+    "mtime": 1780833378.485945,
+    "ast_hash": "5f270dacce7279878f304710aa9ebf5e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/scene-plan.json": {
+    "mtime": 1780816433.2211769,
+    "ast_hash": "6d72e9b3283d9cbecba950ebe9085352",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/script.json": {
+    "mtime": 1780816411.4419665,
+    "ast_hash": "0da589c322d3c685032140c2b0deef99",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/status.json": {
+    "mtime": 1780816542.5291846,
+    "ast_hash": "e03788185898e2db3b0a174e2c5d85e0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/storyboard.json": {
+    "mtime": 1780816479.5910842,
+    "ast_hash": "32f1e91c7b0f08816b63978a8cb7582c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/thumbnail.json": {
+    "mtime": 1780816559.6662638,
+    "ast_hash": "c127be262dfe0bfa36ced048f7ddd5ba",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/topic.json": {
+    "mtime": 1780816397.2089028,
+    "ast_hash": "626a9fda9051741762877cdf722e5d6f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/metadata/youtube-package.json": {
+    "mtime": 1780816535.8090467,
+    "ast_hash": "ed65bd4fb7403a40fc9788f0bf25edca",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/publishing/publish.json": {
+    "mtime": 1780823460.8239973,
+    "ast_hash": "18c7bec2f72fe97f00b92de4b3652593",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/approvals.json": {
+    "mtime": 1780821604.574086,
+    "ast_hash": "1a7ae50daac95b7ef603f4f4c4bf81c6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/assets.json": {
+    "mtime": 1780821730.1257837,
+    "ast_hash": "0f1b6b8a58f49bd1da6185d58f9fd8ad",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/image-generation.json": {
+    "mtime": 1780821667.9493673,
+    "ast_hash": "ffa23eaa1910568cb4dc9f49e06a670c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/overlay-plan.json": {
+    "mtime": 1780821696.3870358,
+    "ast_hash": "e75e8ae5362cffac03b508cd6a650c9d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/publish-check.json": {
+    "mtime": 1780822014.76001,
+    "ast_hash": "83b2670877c4488e210b486222706926",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/publish.json": {
+    "mtime": 1780822096.3736703,
+    "ast_hash": "1760b0d82543f2f67c59500ee9429e11",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/review.json": {
+    "mtime": 1780828803.4451149,
+    "ast_hash": "8c497d6579ff3a412d1d1e73bc5e4bdf",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/scene-plan.json": {
+    "mtime": 1780821606.358362,
+    "ast_hash": "7db9bd074a419542c62ae7bc94a653cd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/script.json": {
+    "mtime": 1780821596.084337,
+    "ast_hash": "5d20f0dfe4568047e4ccec906d92f32a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/status.json": {
+    "mtime": 1780821730.125604,
+    "ast_hash": "1b7ef6aaf6c8566b7d9cf6d753629c65",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/storyboard.json": {
+    "mtime": 1780821666.2866368,
+    "ast_hash": "c9292dc6fce6db49bed04a4679304567",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/thumbnail.json": {
+    "mtime": 1780821735.2963936,
+    "ast_hash": "09f7ca756138a46ed704263f907714f6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/topic.json": {
+    "mtime": 1780821571.3626678,
+    "ast_hash": "c3e086c653ba5c186757b38255ce9585",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/metadata/youtube-package.json": {
+    "mtime": 1780821722.2498474,
+    "ast_hash": "c04a6eea8e128fdf0349e588f6b5e2dc",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/publishing/publish.json": {
+    "mtime": 1780822096.37367,
+    "ast_hash": "1760b0d82543f2f67c59500ee9429e11",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/assets.json": {
+    "mtime": 1780831771.7021952,
+    "ast_hash": "ac7ea023f1ac5e2f8fd46f0adb793748",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/publish.json": {
+    "mtime": 1780831758.5730119,
+    "ast_hash": "535c81ee96d4198efb817eb916795d44",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/review.json": {
+    "mtime": 1780831805.504707,
+    "ast_hash": "0936ddbd55c702b0186c6e398f5ccfc1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/script.json": {
+    "mtime": 1780831736.4494479,
+    "ast_hash": "684509d568f59548e127fd0bc6ddab5f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/topic.json": {
+    "mtime": 1780831715.4651701,
+    "ast_hash": "42e2760d645d0981925e6f8e51721cda",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/metadata/youtube-package.json": {
+    "mtime": 1780831751.6514595,
+    "ast_hash": "92872e10914a967b360a027ea8940946",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/publishing/publish.json": {
+    "mtime": 1780831758.5729883,
+    "ast_hash": "535c81ee96d4198efb817eb916795d44",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833509397-make-a-short-video-about-an-au/metadata/script.json": {
+    "mtime": 1780833509.4005558,
+    "ast_hash": "10461624dc33e977d822bf6a44922376",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833509397-make-a-short-video-about-an-au/metadata/topic.json": {
+    "mtime": 1780833509.400542,
+    "ast_hash": "b6aeccc15ff97dc4f62173eaf98cdc67",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/assets.json": {
+    "mtime": 1780833657.722388,
+    "ast_hash": "ae6b57d39abe2a5a4f949ab1684776a4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/publish.json": {
+    "mtime": 1780833644.7079015,
+    "ast_hash": "45fafc985358116f98be499dcbd44dc3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/review.json": {
+    "mtime": 1780833739.9498212,
+    "ast_hash": "e279686fcb2e377401403cf06513fff4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/script.json": {
+    "mtime": 1780833627.7330453,
+    "ast_hash": "6f598a761108463eff639aa470a92959",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/topic.json": {
+    "mtime": 1780833570.7233398,
+    "ast_hash": "709a1bde27321c8ec92e3e3345e31520",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/metadata/youtube-package.json": {
+    "mtime": 1780833635.8069494,
+    "ast_hash": "7bc669b8f4c3930b09b3e1dca9120292",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/publishing/publish.json": {
+    "mtime": 1780833644.7081616,
+    "ast_hash": "45fafc985358116f98be499dcbd44dc3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/assets.json": {
+    "mtime": 1780835577.8249414,
+    "ast_hash": "654d9b2a49b7899c94a3a048c12783f3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/publish.json": {
+    "mtime": 1780835173.4520357,
+    "ast_hash": "ea7c15832aad240631766c73f03a8634",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/review.json": {
+    "mtime": 1780835578.9429219,
+    "ast_hash": "67adb61d2abd484b839382422186d964",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780835140.0626106,
+    "ast_hash": "542e25b70dcf9e07e1b4902a320132e7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780835140.0625842,
+    "ast_hash": "1da61cc41652a039a44c1bf57178b023",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/metadata/youtube-package.json": {
+    "mtime": 1780835170.8379784,
+    "ast_hash": "71174ba50caffaf0aca12bc22b2e8de2",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/publishing/publish.json": {
+    "mtime": 1780835173.452028,
+    "ast_hash": "ea7c15832aad240631766c73f03a8634",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835210937-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780835210.9389527,
+    "ast_hash": "097a1b63421804fe661542de6d3c1309",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835210937-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780835210.9389606,
+    "ast_hash": "ec7835e57a6d537d173dc70a00ca75d6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835297879-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780835297.8811529,
+    "ast_hash": "9ff4a0c781d27ce0e8e474ba8d8dd2fd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835297879-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780835297.881144,
+    "ast_hash": "38b7db46fad1ed137e283d34046e069e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/metadata/assets.json": {
+    "mtime": 1780835620.908518,
+    "ast_hash": "59224c24822816832982c26fb8c4dc64",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/metadata/publish.json": {
+    "mtime": 1780835602.5943172,
+    "ast_hash": "25f54e16093b9beaa30bbc6455d19e98",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/metadata/review.json": {
+    "mtime": 1780835677.0699625,
+    "ast_hash": "6dc7f7cfee7d3e81fdff3b379114089d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780835356.0094764,
+    "ast_hash": "55b03a677c2d28bafc3ec5b1cb56a76a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780835356.0094736,
+    "ast_hash": "ddf8962512e192018bbf4228a67e97df",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/metadata/youtube-package.json": {
+    "mtime": 1780835597.6471512,
+    "ast_hash": "235ccbd688366627f1c5872cb524957a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/publishing/publish.json": {
+    "mtime": 1780835602.5942805,
+    "ast_hash": "25f54e16093b9beaa30bbc6455d19e98",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/assets.json": {
+    "mtime": 1780835700.2676284,
+    "ast_hash": "c4c17460ade0b34a09b97ff2dfa985c9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/publish.json": {
+    "mtime": 1780835679.1129475,
+    "ast_hash": "1b74bec22a5d7308b019b46fcbcae5a5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/review.json": {
+    "mtime": 1780835733.979207,
+    "ast_hash": "c154f00707369629e5284e4e808ac167",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/script.json": {
+    "mtime": 1780835613.130397,
+    "ast_hash": "0b939781e85ff5bfea416ec661b1bbca",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/topic.json": {
+    "mtime": 1780835613.130704,
+    "ast_hash": "d17452f9a48336687c0258c36b260c7c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/youtube-package.json": {
+    "mtime": 1780835676.2946646,
+    "ast_hash": "09bc14a01cbcac8c1b7249d3c4e73ad6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/publishing/publish.json": {
+    "mtime": 1780835679.1129496,
+    "ast_hash": "1b74bec22a5d7308b019b46fcbcae5a5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836237901-make-a-short-video-about-an-au/metadata/script.json": {
+    "mtime": 1780836237.9028864,
+    "ast_hash": "6459a02a99e086c8154f9ab3ed6fb851",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836237901-make-a-short-video-about-an-au/metadata/topic.json": {
+    "mtime": 1780836237.902885,
+    "ast_hash": "19f4793a5a4890087afad3049cd8681d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426562-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780836426.564229,
+    "ast_hash": "5e654040a805db4f36a03b762195a602",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426562-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780836426.5642269,
+    "ast_hash": "1a4decc96e0b105bc3ab06d579a275db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426565-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780836426.5654676,
+    "ast_hash": "b6e8e7e9431074259025d63978e23338",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426565-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780836426.5654452,
+    "ast_hash": "0a61fea19b17df08619cdd4a06a47797",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426565-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780836426.5662408,
+    "ast_hash": "52ef8a33f8d63b5e025591e1a1e9bb09",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426565-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780836426.5662236,
+    "ast_hash": "da4615fdaabdef31d4177fa0a87506a1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487343-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780836487.3451889,
+    "ast_hash": "944ff3ec73ee6f4460bc67001a925b08",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487343-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780836487.3451762,
+    "ast_hash": "77abb62eb4642d19716a74a8e33077a9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487346-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780836487.3464594,
+    "ast_hash": "f59b3d7423979b37ea2a3f5c1d1a4468",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487346-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780836487.346459,
+    "ast_hash": "2e55a7a6c0b5da76c0124e7a84962e82",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487347-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780836487.3474932,
+    "ast_hash": "eb6b1d8b8c99ca3e559b373ef821d19d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487347-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780836487.3474503,
+    "ast_hash": "90f35ff7631a40f2576ddc7cf3385e67",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/approvals.json": {
+    "mtime": 1780836862.0340447,
+    "ast_hash": "9caea05baf59341ec54d77b26aefc8f8",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/assets.json": {
+    "mtime": 1780837034.2856517,
+    "ast_hash": "749288fb9cb4a1ba024b63691c53af7b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/image-generation.json": {
+    "mtime": 1780836948.3195853,
+    "ast_hash": "dd6511632418092c89970006ee27e5c5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/motion-plan.json": {
+    "mtime": 1780836938.9391496,
+    "ast_hash": "a409b6cc5590f21bca3587a68310a51c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/overlay-plan.json": {
+    "mtime": 1780836981.0688837,
+    "ast_hash": "bf278643a192d3df0c3eb0e400c6d15e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/publish-check.json": {
+    "mtime": 1780837424.518494,
+    "ast_hash": "78d0c00d7a6367e21c92eb1904e88183",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/publish.json": {
+    "mtime": 1780837466.0254397,
+    "ast_hash": "d34d8a382f424337f3c3090ce44e59e3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/review.json": {
+    "mtime": 1780837116.2891223,
+    "ast_hash": "02c083323ed9dac817bf85d44cf0d34d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/scene-plan.json": {
+    "mtime": 1780836863.95301,
+    "ast_hash": "86773d083c697d4efc751d7a11bcf736",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/script.json": {
+    "mtime": 1780836834.979768,
+    "ast_hash": "fae0b39fcb48a539f5a8f5ba35370997",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/status.json": {
+    "mtime": 1780837026.578754,
+    "ast_hash": "065c172e3919b39b8007ac6d84fe624f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/storyboard.json": {
+    "mtime": 1780836921.2247415,
+    "ast_hash": "f02d3eccc57479ae25c5829057305636",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/thumbnail.json": {
+    "mtime": 1780837028.3302007,
+    "ast_hash": "ad1600ae38bbcd960fc5f62c0a097b41",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/topic.json": {
+    "mtime": 1780836633.5382922,
+    "ast_hash": "01c7b41ad1f02325ec5d5c4c0db99543",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/metadata/youtube-package.json": {
+    "mtime": 1780837017.2017527,
+    "ast_hash": "fc0f470c1994398591f9740c064cffdd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/publishing/publish.json": {
+    "mtime": 1780837466.0254347,
+    "ast_hash": "d34d8a382f424337f3c3090ce44e59e3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/assets.json": {
+    "mtime": 1780839755.0510035,
+    "ast_hash": "9a4fe8ebb2860f4e0f0b3be871dbe4fd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/publish.json": {
+    "mtime": 1780839729.1329908,
+    "ast_hash": "ad90044a47cd3afd0ca10f52eefe88f7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/review.json": {
+    "mtime": 1780839782.3490431,
+    "ast_hash": "7f359dd330675eb81abe7d5398f4ffa9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/script.json": {
+    "mtime": 1780839723.3059354,
+    "ast_hash": "1ec778144885fb578294137a1fb83d5b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/topic.json": {
+    "mtime": 1780839684.864606,
+    "ast_hash": "1303fa3fc864566bffdb9840cf99a113",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/youtube-package.json": {
+    "mtime": 1780839725.4415257,
+    "ast_hash": "384a76de3b890b23be0c979260a2bc7b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/publishing/publish.json": {
+    "mtime": 1780839729.133009,
+    "ast_hash": "ad90044a47cd3afd0ca10f52eefe88f7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/assets.json": {
+    "mtime": 1780840384.044862,
+    "ast_hash": "9603846e4dd597b5567dab6b41b739fd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/publish.json": {
+    "mtime": 1780840362.1525095,
+    "ast_hash": "a5b00f7a29d9c124c2be9d55f1e3b5d0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/review.json": {
+    "mtime": 1780840451.726185,
+    "ast_hash": "1e660e1d24d1422e3202a58bf9cc1a55",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/script.json": {
+    "mtime": 1780840337.2004175,
+    "ast_hash": "0a1e1e81d494aed72edb22c023cf951a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/topic.json": {
+    "mtime": 1780840337.200386,
+    "ast_hash": "fce75865ae5a0147788e359c4e53eec0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/youtube-package.json": {
+    "mtime": 1780840354.545911,
+    "ast_hash": "67c23d4767be700ffc7f9615b5883ded",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/publishing/publish.json": {
+    "mtime": 1780840362.1524956,
+    "ast_hash": "a5b00f7a29d9c124c2be9d55f1e3b5d0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/assets.json": {
+    "mtime": 1780841558.9784098,
+    "ast_hash": "e7ea6689e3cb7169af942dc4b45fa427",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/publish.json": {
+    "mtime": 1780841540.1998744,
+    "ast_hash": "27ac183750d4777bea23ebb974ff17ea",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/review.json": {
+    "mtime": 1780841590.5423927,
+    "ast_hash": "4e334899b6a4add6f66c2139b9e877ee",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/script.json": {
+    "mtime": 1780841499.7361596,
+    "ast_hash": "ace1e8e57525c26262a01bcce2f0ebfa",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/topic.json": {
+    "mtime": 1780841499.7364779,
+    "ast_hash": "a2ff705eee0722c3adace5d948da8146",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/metadata/youtube-package.json": {
+    "mtime": 1780841534.782386,
+    "ast_hash": "e009bd8b4427853eb0608192137db4b4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/publishing/publish.json": {
+    "mtime": 1780841540.1999316,
+    "ast_hash": "27ac183750d4777bea23ebb974ff17ea",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/approvals.json": {
+    "mtime": 1780842940.7313366,
+    "ast_hash": "1f54d7ad9cea2e5756729684d85ff646",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/assets.json": {
+    "mtime": 1780843274.0403068,
+    "ast_hash": "3a935980126e49aa0a1ed80071a8e10c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/image-generation.json": {
+    "mtime": 1780843172.8207045,
+    "ast_hash": "65b2049fd5b2ed9d6e8b1520876d3a9a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/motion-plan.json": {
+    "mtime": 1780843161.673514,
+    "ast_hash": "3e3f3a087b2defe0212b67210ae86f5b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/overlay-plan.json": {
+    "mtime": 1780843249.2440248,
+    "ast_hash": "b0e80057ea503b1a261b2de3d6423efd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/publish.json": {
+    "mtime": 1780843738.6620562,
+    "ast_hash": "c9cc9641c8143656975dc99a2d8aa00f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/review.json": {
+    "mtime": 1780844686.8828528,
+    "ast_hash": "9720c54d2735c03b20d885cab4653ecb",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/scene-plan.json": {
+    "mtime": 1780842953.0453844,
+    "ast_hash": "eecccd2de58c700ff54c78c08e8ff68c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/script.json": {
+    "mtime": 1780842905.3256688,
+    "ast_hash": "b109c8ee943d88c87a3a7fe42a116ad3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/status.json": {
+    "mtime": 1780843284.5905414,
+    "ast_hash": "78e0f2856085f83250cf848f99d510e2",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/storyboard.json": {
+    "mtime": 1780843147.5052948,
+    "ast_hash": "901030add914cb6874c90a344074c458",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/thumbnail.json": {
+    "mtime": 1780843328.4287198,
+    "ast_hash": "df8887a5d999e688059d0aba74f2c223",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/topic.json": {
+    "mtime": 1780842815.2564127,
+    "ast_hash": "1f0b9c8fa657309a03fabdb57f233da1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/youtube-package.json": {
+    "mtime": 1780843274.0428352,
+    "ast_hash": "677293c0733deda2fce1e3e9a3f772ce",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/publishing/publish.json": {
+    "mtime": 1780843738.6621163,
+    "ast_hash": "c9cc9641c8143656975dc99a2d8aa00f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/approvals.json": {
+    "mtime": 1780844876.5061166,
+    "ast_hash": "960bd78dc617c7bff19b19acc76c68f9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/assets.json": {
+    "mtime": 1780845226.9887187,
+    "ast_hash": "d417f5a1673124ddf0cc74f8dc51a77d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/image-generation.json": {
+    "mtime": 1780845151.9766927,
+    "ast_hash": "383bb9963d81578362ea940c90f5a0f3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/motion-plan.json": {
+    "mtime": 1780845148.6875083,
+    "ast_hash": "e9e9681a1c466de2ce73db044ca1396c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/overlay-plan.json": {
+    "mtime": 1780845176.9144058,
+    "ast_hash": "861e403528745f8375481caee819d0dc",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/publish.json": {
+    "mtime": 1780847978.133107,
+    "ast_hash": "418b6f1da30f18f8d7bf1af69294f9eb",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/review.json": {
+    "mtime": 1780845235.9694576,
+    "ast_hash": "97b078e17dab14d18dc8eb4ad02516ce",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/scene-plan.json": {
+    "mtime": 1780844881.739312,
+    "ast_hash": "a55b13dc6cf109cb343181bcd48ebcca",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/script.json": {
+    "mtime": 1780844840.4699242,
+    "ast_hash": "1d2d3ccb42d8114d7fd0695047f8f51f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/status.json": {
+    "mtime": 1780845249.4063385,
+    "ast_hash": "5b63cd16b35199eedd3d852d22ba1600",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/storyboard.json": {
+    "mtime": 1780845137.8003347,
+    "ast_hash": "bcc1b1e9ce9e5491a06f2d0798bf6413",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/thumbnail.json": {
+    "mtime": 1780845233.889712,
+    "ast_hash": "7684c5f61fa5d7af9e126a7931a04a2b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/topic.json": {
+    "mtime": 1780844795.3911793,
+    "ast_hash": "7df17afab99fc48379c2b365316ea73c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/youtube-package.json": {
+    "mtime": 1780845246.993457,
+    "ast_hash": "ad688646d749d04796e0f28470dfdbe7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/publishing/publish.json": {
+    "mtime": 1780847978.1331344,
+    "ast_hash": "418b6f1da30f18f8d7bf1af69294f9eb",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835434-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780848835.4364824,
+    "ast_hash": "71767f65ad8bc896de3bde1b60a7596b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835434-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780848835.4364676,
+    "ast_hash": "32a9794890b7ed7211ebfe0b28963065",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835437-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780848835.4377596,
+    "ast_hash": "6bb998f0949e47531fad7f76e607eb3a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835437-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780848835.4376981,
+    "ast_hash": "1eadf319459b545d6abedbfaccca72c2",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/metadata/assets.json": {
+    "mtime": 1780848900.60635,
+    "ast_hash": "7b26ab2083d24f82fb507fda0bfabba9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/metadata/publish.json": {
+    "mtime": 1780848894.537604,
+    "ast_hash": "72eabc106d3fdfb152a52b5ec388ff0c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/metadata/review.json": {
+    "mtime": 1780848906.2835162,
+    "ast_hash": "59f0b257248ef3f22ad2992c8fdaf61c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780848835.4385138,
+    "ast_hash": "137c16e9055eace3eb04e40485c7f98a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780848835.4385083,
+    "ast_hash": "84266af267ec107603b9c13fa358ad03",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/metadata/youtube-package.json": {
+    "mtime": 1780848884.226339,
+    "ast_hash": "19cf0e82bc02ecf1d0b4ea8cea45b80b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/publishing/publish.json": {
+    "mtime": 1780848894.53761,
+    "ast_hash": "72eabc106d3fdfb152a52b5ec388ff0c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901840-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780848901.8415854,
+    "ast_hash": "263712c0b970ebf411140a5812b831ad",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901840-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780848901.8415859,
+    "ast_hash": "c9e67a61a1923606cc230f39514ff4d2",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901842-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780848901.8425786,
+    "ast_hash": "0353c6fa1d59757c9311542a7512908c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901842-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780848901.8425813,
+    "ast_hash": "d66c4605826c8f9deec7ff55ce618414",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/assets.json": {
+    "mtime": 1780848970.177916,
+    "ast_hash": "6f83d0f15823fedd00dc02be0f7dc01a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/publish.json": {
+    "mtime": 1780848961.6161642,
+    "ast_hash": "59ae8306d51bc3809d2e3e6263ef346a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/review.json": {
+    "mtime": 1780849036.2515087,
+    "ast_hash": "9e0ac06d8b9d9694a0d88011b89b55d8",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780848901.843323,
+    "ast_hash": "74ebdcfdafa21094a4c68177c002e939",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780848901.843286,
+    "ast_hash": "d8926742e71d120b9cc9ab84d4eb1022",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/youtube-package.json": {
+    "mtime": 1780848953.6513386,
+    "ast_hash": "f9d47ff9d3165f329b6d249bfad81116",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/publishing/publish.json": {
+    "mtime": 1780848961.6161659,
+    "ast_hash": "59ae8306d51bc3809d2e3e6263ef346a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/assets.json": {
+    "mtime": 1780851464.9072347,
+    "ast_hash": "adc08d2f08a81a5b66e9e1d418f19b48",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/publish.json": {
+    "mtime": 1780851453.255818,
+    "ast_hash": "744b96f7ee52d0c1ecdedcd900f2bc92",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/review.json": {
+    "mtime": 1780851605.2131066,
+    "ast_hash": "aaf4703e5c85f4bbbd3bac4363279e85",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/script.json": {
+    "mtime": 1780851419.7730994,
+    "ast_hash": "0b37f424e856ddad63fd1c95989b6e38",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/topic.json": {
+    "mtime": 1780851419.7730832,
+    "ast_hash": "c038242a480c81b04d5a2bd31037691b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/metadata/youtube-package.json": {
+    "mtime": 1780851446.842165,
+    "ast_hash": "d3d30fc577fba1ea45e9519b813b6d89",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/publishing/publish.json": {
+    "mtime": 1780851453.2557678,
+    "ast_hash": "b4fad32f122b6ece661178af0dc3ab22",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176120-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780856176.1273713,
+    "ast_hash": "665c4b22868a155594b7324d3d6e3420",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176120-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780856176.1274269,
+    "ast_hash": "2226d2806ba0c88536612573e1ed5e46",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176131-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780856176.1337688,
+    "ast_hash": "8f4535703af9788689725a8b16f2f0a3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176131-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780856176.1338983,
+    "ast_hash": "6a952a60ee8fa269eb6816a5d4275179",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176140-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780856176.1413672,
+    "ast_hash": "7ceea19b0d90a17f1573d3fec3328868",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176140-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780856176.1415462,
+    "ast_hash": "b88c8b6713629bc2347c707c1003ea0e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257522-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780856257.5246098,
+    "ast_hash": "8325e5fba4cb0cb0fa46d9a190582754",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257522-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780856257.5245602,
+    "ast_hash": "ba52e767d842e323b3584b1a7921b998",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/assets.json": {
+    "mtime": 1780858210.4739394,
+    "ast_hash": "f15592b0fe86c53a1ac013598d4a4a97",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/publish.json": {
+    "mtime": 1780858179.9169102,
+    "ast_hash": "9f593c48269eaa7e98d884f9aafee8d9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/review.json": {
+    "mtime": 1780858376.524506,
+    "ast_hash": "4d96b11b59d0acb74cd919f7638944dc",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780858124.2992165,
+    "ast_hash": "dab296984bb3953b409b240eaf914db1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780856257.526363,
+    "ast_hash": "b5c3d9c5477efea52e4ebcea0b1fae35",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/youtube-package.json": {
+    "mtime": 1780858159.058213,
+    "ast_hash": "d80e09ddb6688e83413f10b6ff8d1b2d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/publishing/publish.json": {
+    "mtime": 1780858179.9169102,
+    "ast_hash": "9f593c48269eaa7e98d884f9aafee8d9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/metadata/assets.json": {
+    "mtime": 1780856935.3635685,
+    "ast_hash": "1d21eb0f31a11292d0cc75dc105bb02a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/metadata/publish.json": {
+    "mtime": 1780856925.2346258,
+    "ast_hash": "f46d2c8396ef5c1b7b55a6218a5632c0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/metadata/review.json": {
+    "mtime": 1780857100.4549656,
+    "ast_hash": "238a317f71d2a1c889128489f5bbebe0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780856257.5282035,
+    "ast_hash": "c9a04509a8030a274ea8d9fad7b094f3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780856257.528056,
+    "ast_hash": "8fd4c9456178754e60a5c06f2a1a8a16",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/metadata/youtube-package.json": {
+    "mtime": 1780856908.9837196,
+    "ast_hash": "57820684c1dd32df36f5265e42c91cd4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/publishing/publish.json": {
+    "mtime": 1780856925.2345924,
+    "ast_hash": "f46d2c8396ef5c1b7b55a6218a5632c0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/assets.json": {
+    "mtime": 1780862487.7819917,
+    "ast_hash": "d163dcd3db85228c5c7dd2b8e52621e9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/publish.json": {
+    "mtime": 1780862463.21584,
+    "ast_hash": "ff080be4ee19d7fc70b96341e59ebb0f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/review.json": {
+    "mtime": 1780862722.359067,
+    "ast_hash": "c26dd730ea7a69a4c06861b8a0cce74e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/script.json": {
+    "mtime": 1780862396.7007568,
+    "ast_hash": "46bd7fdcfd37a9de9fa5dacd407cdd35",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/topic.json": {
+    "mtime": 1780856976.602954,
+    "ast_hash": "ef9910c85c61b66124d5003121bf1d4b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/youtube-package.json": {
+    "mtime": 1780862405.4051402,
+    "ast_hash": "0808d2e825b83c8c6bc594fb21212612",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/publishing/publish.json": {
+    "mtime": 1780862463.216033,
+    "ast_hash": "ff080be4ee19d7fc70b96341e59ebb0f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/metadata/assets.json": {
+    "mtime": 1780858651.4678607,
+    "ast_hash": "b8e657f7f605847126fe2f1a69c9baf8",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/metadata/publish.json": {
+    "mtime": 1780858626.8879933,
+    "ast_hash": "8e8a245aec129b7894486812349eca1e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/metadata/review.json": {
+    "mtime": 1780858983.416485,
+    "ast_hash": "44ce0623522c855d41d7c3b55a3a92ff",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780858582.1190488,
+    "ast_hash": "32e3e7c6a67bfc8b80e42ef09f4fb3b3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780856992.8531966,
+    "ast_hash": "8253d97b7ada4f8784f4b6fc50e51cc5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/metadata/youtube-package.json": {
+    "mtime": 1780858608.6301525,
+    "ast_hash": "6537dcb8a90faa089f88f0a55689ca67",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/publishing/publish.json": {
+    "mtime": 1780858626.887981,
+    "ast_hash": "8e8a245aec129b7894486812349eca1e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/assets.json": {
+    "mtime": 1780858363.467296,
+    "ast_hash": "a21fc77fd0a606a5d2c5fcf0e6783e97",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/publish.json": {
+    "mtime": 1780858326.411182,
+    "ast_hash": "3481e4a9a2f30bc3051fb340296c50c2",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/review.json": {
+    "mtime": 1780858530.2488952,
+    "ast_hash": "f2f3c1dc43ca9cb797b39af4509899ad",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780858214.946063,
+    "ast_hash": "8615f5e5cc21a4a1cc4eda4bc9b92770",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780856992.8546634,
+    "ast_hash": "42d84e434e40e7ed8bfe8f35a136c061",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/metadata/youtube-package.json": {
+    "mtime": 1780858273.9776182,
+    "ast_hash": "b6336b993a17ab0b5615a7604c0d8576",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/publishing/publish.json": {
+    "mtime": 1780858326.411182,
+    "ast_hash": "3481e4a9a2f30bc3051fb340296c50c2",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/metadata/assets.json": {
+    "mtime": 1780857633.6278145,
+    "ast_hash": "c77176a0164be52ef0e0bb253d4d29ce",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/metadata/publish.json": {
+    "mtime": 1780857601.382819,
+    "ast_hash": "2908953cdc0c6846437b5dccd357e610",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/metadata/review.json": {
+    "mtime": 1780857827.1913233,
+    "ast_hash": "d69ff5ae2f89bab40e3011137a34126c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780857571.4813273,
+    "ast_hash": "fcf8ed2900d5287185defda6f7e58bdd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780856992.8559244,
+    "ast_hash": "b134fa1bbaac314d96f0efbac603e2c6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/metadata/youtube-package.json": {
+    "mtime": 1780857593.9648137,
+    "ast_hash": "d1bff3b2252cc018a9fcc04eb79d6126",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/publishing/publish.json": {
+    "mtime": 1780857601.3828194,
+    "ast_hash": "2908953cdc0c6846437b5dccd357e610",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711933-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780864711.935215,
+    "ast_hash": "dfe1fc37318d52fec0be36066b984b8d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711933-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780864711.9352148,
+    "ast_hash": "9aac80fe7f9a590aa1ff559588ed2ec0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711935-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780864711.9362867,
+    "ast_hash": "497e516d2a86ed3e889332245a17876d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711935-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780864711.9362702,
+    "ast_hash": "e032d4248d1fb37a61356f535e0018d7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711936-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780864711.9370153,
+    "ast_hash": "ed5dd96c4c2fa8f60fb2273194addca4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711936-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780864711.9369943,
+    "ast_hash": "46207cc27772385d133d783ca396bbba",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757836-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780864757.8382502,
+    "ast_hash": "4a1e6c3b515f139c72159ce4312ac460",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757836-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780864757.8382375,
+    "ast_hash": "93da1921a4b6a0c44540452f7576a82d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757839-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780864757.8393867,
+    "ast_hash": "55f3f16303905b117a0a1648213cba9c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757839-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780864757.8393295,
+    "ast_hash": "0036148544d6fae4464d271f4e0dc46d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757839-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780864757.8401027,
+    "ast_hash": "68a27ff2eebfdf57f15fdfcaefe6c967",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757839-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780864757.8400908,
+    "ast_hash": "323e3949eb10b30f328b55f6feddf6a7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943019-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780864943.0207253,
+    "ast_hash": "e03aabad371503141cc7cf7881b70d7b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943019-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780864943.0207212,
+    "ast_hash": "d39bfcf9b06ce215c11667ae2ccb2da6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943021-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780864943.0215805,
+    "ast_hash": "77ed9b0104f3bc16254e5e34e0f6d8c8",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943021-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780864943.0215664,
+    "ast_hash": "2ea1cc62113d1cda07f0e2c308001d1b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943022-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780864943.0223584,
+    "ast_hash": "0ce0d1f119d4e87de802b52b81db88d5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943022-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780864943.0223463,
+    "ast_hash": "34f9ec73861f1df521ffbf819e46b87d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983909-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780864983.9103901,
+    "ast_hash": "115df35472b94b112ae87007dfaa6df1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983909-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780864983.9103804,
+    "ast_hash": "bd67ab39d2a698378db0396e8b65843d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983910-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780864983.9111667,
+    "ast_hash": "c3167fc22bb562aaa0ed85d748faf587",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983910-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780864983.9111598,
+    "ast_hash": "25015577bed9f8df9fb129dbfd164b31",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983911-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780864983.9119196,
+    "ast_hash": "ccf0a6567f8c19e5e85c3a15eff11c23",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983911-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780864983.911886,
+    "ast_hash": "6c13e6719bd5aa07ded691c71899b834",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478838-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780872478.8394566,
+    "ast_hash": "fb1db01d5c3cec9ecb931db10d01b058",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478838-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780872478.8394482,
+    "ast_hash": "01702dba968f62cf8c9cde13ec5f01d3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478839-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780872478.8402784,
+    "ast_hash": "a0342ea57065d38f2c49bc6b71514f8c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478839-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780872478.8402574,
+    "ast_hash": "5da3f866b6394556242413b8f06e256c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478840-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780872478.8409579,
+    "ast_hash": "497567891130b7f1f599aca8b058d0e4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478840-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780872478.8409276,
+    "ast_hash": "157c72101c15b875ab9e52a31a5ec0db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518369-a-tree-growing-over-time-for-d/metadata/script.json": {
+    "mtime": 1780872518.3727684,
+    "ast_hash": "e2c5994b14f4d8ed4f647112b653bdbc",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518369-a-tree-growing-over-time-for-d/metadata/topic.json": {
+    "mtime": 1780872518.3727288,
+    "ast_hash": "c0dd7a3515699a761ecce1912e8ac42c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518373-test-clientactionid-dedup/metadata/script.json": {
+    "mtime": 1780872518.3743925,
+    "ast_hash": "d1f142cc4042382ba3cb2dffb79d9b65",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518373-test-clientactionid-dedup/metadata/topic.json": {
+    "mtime": 1780872518.3743644,
+    "ast_hash": "8db9e7abec21132ee415dad0dcbf2899",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518375-test-concurrent-in-flight-dedu/metadata/script.json": {
+    "mtime": 1780872518.3759222,
+    "ast_hash": "c611d02cf1341f2ef9af06e60b70001d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518375-test-concurrent-in-flight-dedu/metadata/topic.json": {
+    "mtime": 1780872518.37591,
+    "ast_hash": "719d6965270fda0046c6c4ef9798df8b",
+    "semantic_hash": ""
+  },
+  "tools/graphify/resolve-selector.py": {
+    "mtime": 1780845646.092217,
+    "ast_hash": "312e261543fa15cf241e4e8f75ba654f",
+    "semantic_hash": ""
+  },
+  "tools/graphify/run-graphify-orchestrator.mjs": {
+    "mtime": 1780859234.9135787,
+    "ast_hash": "6c0b96e51c31b8ed3d93300c56093b57",
+    "semantic_hash": ""
+  },
+  "tools/scripts/graphify-orchestrator-report.sh": {
+    "mtime": 1780862804.384741,
+    "ast_hash": "69317408ac1e080820dc94b074f5c732",
+    "semantic_hash": ""
+  },
+  "tools/scripts/mind-steward-inbox-queue-dry-run-report.sh": {
+    "mtime": 1780816108.7741868,
+    "ast_hash": "11b392a6f6e24e4ba7677ce8117dfd2a",
+    "semantic_hash": ""
+  },
+  "operations/specs/ai-model-selector-preference-policy.md": {
+    "mtime": 1780834484.32939,
+    "ast_hash": "72b39fc433b5bbb62c6dfcab75ba5559",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-execution-guardrails.md": {
+    "mtime": 1780841483.0189729,
+    "ast_hash": "1166db712e65b57d9e619726216a9e6a",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-hook-watch-plan.md": {
+    "mtime": 1780858256.5231075,
+    "ast_hash": "2580df6736b7566569211aaf8d3914ca",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-orchestrator-implementation-plan.md": {
+    "mtime": 1780835796.7036285,
+    "ast_hash": "bc9449240eb14332dac65e0d778f8990",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-profile-contract.md": {
+    "mtime": 1780837170.5964005,
+    "ast_hash": "4cb5a31b2a9d4759ea8891af5f0392fe",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-rollout-status.md": {
+    "mtime": 1780862924.1669095,
+    "ast_hash": "dea6c12afbf1d31ad21d1c5042a9ae12",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-scheduler-integration-plan.md": {
+    "mtime": 1780849713.7107604,
+    "ast_hash": "cd0cfe9913ec0f6e7a9a2f1dfe8d5272",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-selector-integration-plan.md": {
+    "mtime": 1780845314.7166176,
+    "ast_hash": "b8bf7f8441097554816423a7da92ec06",
+    "semantic_hash": ""
+  },
+  "operations/specs/graphify-standard.md": {
+    "mtime": 1780835831.1737838,
+    "ast_hash": "8703b9f719bc288dd9eee6ab0a3f25d9",
+    "semantic_hash": ""
+  },
+  "operations/specs/infinite-brain-runtime-implementation-plan.md": {
+    "mtime": 1780873514.2490044,
+    "ast_hash": "4e1f03049f00df0ba7e221ab67b2252f",
+    "semantic_hash": ""
+  },
+  "operations/specs/infinite-brain-runtime-inventory.md": {
+    "mtime": 1780872318.967491,
+    "ast_hash": "fd5fcde69d6db0b1812be05eb8d73a6c",
+    "semantic_hash": ""
+  },
+  "operations/specs/infinite-brain-runtime-notebooklm-findings.md": {
+    "mtime": 1780872862.8690076,
+    "ast_hash": "befce0350f4218da2bec4deaf127525b",
+    "semantic_hash": ""
+  },
+  "operations/specs/infinite-brain-runtime-roadmap.md": {
+    "mtime": 1780873558.89091,
+    "ast_hash": "596a156e354c1769127dcdcc74a165bb",
+    "semantic_hash": ""
+  },
+  "operations/system-configs/claude/plans/crispy-sprouting-forest.md": {
+    "mtime": 1780834761.0596662,
+    "ast_hash": "851cd621788e38030b312660d310c1d7",
+    "semantic_hash": ""
+  },
+  "operations/system-configs/claude/plans/kind-wibbling-liskov.md": {
+    "mtime": 1780834057.2139583,
+    "ast_hash": "4498c5c5b93cdf69405668dadec13abd",
+    "semantic_hash": ""
+  },
+  "operations/system-configs/claude/plans/lazy-swinging-parasol.md": {
+    "mtime": 1780835111.8958855,
+    "ast_hash": "c7cf9d262169680631d6606b8351b4c9",
+    "semantic_hash": ""
+  },
+  "operations/system-configs/claude/plans/splendid-hugging-stream.md": {
+    "mtime": 1780839063.0971987,
+    "ast_hash": "7f433f1f849c39e8eb69373aa169a085",
+    "semantic_hash": ""
+  },
+  "operations/system-configs/claude/plans/zippy-juggling-locket.md": {
+    "mtime": 1780848632.7621765,
+    "ast_hash": "7ec0c2367ec0da4528106971ba1d89c5",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/AWS_VIDEO_DASHBOARD_STABILIZATION_PLAN.md": {
+    "mtime": 1780853197.7956116,
+    "ast_hash": "6a3cc35da15b9701833cf11e223ef5cc",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/CONTROL_PLANE_ASSERTIONS.md": {
+    "mtime": 1780843636.2898743,
+    "ast_hash": "255a045d9e8836956a869620437b0c1b",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/docs/aws-video-dashboard-handoff.md": {
+    "mtime": 1780859389.3197815,
+    "ast_hash": "1dff1b3bb86fc5174f8aa74869667011",
+    "semantic_hash": ""
+  },
+  "projects/brain-console-center/docs/claude-code-aws-video-dashboard-artifact-execution-fix.md": {
+    "mtime": 1780864565.338747,
+    "ast_hash": "cb7a3dbc838cfab8151aa9d4fa229e4f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/audio/narration-script.txt": {
+    "mtime": 1780814921.2101545,
+    "ast_hash": "bf32e7326f79a8f9d4239e8027df2948",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/scripts/script.md": {
+    "mtime": 1780814110.1892395,
+    "ast_hash": "ae79a92b8aac9579bd7d1046ee86f5db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780814996.3517606,
+    "ast_hash": "9faab2d982b395eb84d48da1eb8c705c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/audio/narration-script.txt": {
+    "mtime": 1780815061.2009518,
+    "ast_hash": "229692a493bc660cddd191fc950fcb95",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/scripts/script.md": {
+    "mtime": 1780814906.2609327,
+    "ast_hash": "ae79a92b8aac9579bd7d1046ee86f5db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780815134.5325902,
+    "ast_hash": "437ce669cd262b9318c3467e7ac88b0e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration-script.txt": {
+    "mtime": 1780816434.9915502,
+    "ast_hash": "230bb35e803a182808129b30a2c5c23d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/scripts/script.md": {
+    "mtime": 1780816397.2089097,
+    "ast_hash": "069dc15744d0ac7c0464f0ec6a77731a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780816521.2225296,
+    "ast_hash": "8f8c78c9bbdd056f8f380bcc355422f7",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/audio/narration-script.txt": {
+    "mtime": 1780821608.0500023,
+    "ast_hash": "7ed7db45653b96c2aba8d5d9e3895b7c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/scripts/script.md": {
+    "mtime": 1780821571.3627126,
+    "ast_hash": "53ec70a20e467837f7562d7e72fc1e1e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780821711.4030638,
+    "ast_hash": "808b9362b69a38e101157f2f7a25a7e5",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780831715463-make-a-short-video-about-an-au/scripts/script.md": {
+    "mtime": 1780831715.4651852,
+    "ast_hash": "ae79a92b8aac9579bd7d1046ee86f5db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833509397-make-a-short-video-about-an-au/scripts/script.md": {
+    "mtime": 1780833509.4005587,
+    "ast_hash": "ae79a92b8aac9579bd7d1046ee86f5db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780833570715-make-a-short-video-about-an-au/scripts/script.md": {
+    "mtime": 1780833570.7233543,
+    "ast_hash": "ae79a92b8aac9579bd7d1046ee86f5db",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835140061-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780835140.0625968,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835210937-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780835210.938994,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835297879-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780835297.881157,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835356008-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780835356.009478,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/scripts/script.md": {
+    "mtime": 1780835613.1306949,
+    "ast_hash": "12abcd7b6510f5283f733c362ac701f9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836237901-make-a-short-video-about-an-au/scripts/script.md": {
+    "mtime": 1780836237.9028752,
+    "ast_hash": "f1eaa67e048de73abfd4f9b3337cebfd",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426562-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780836426.5642786,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426565-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780836426.5654747,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836426565-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780836426.5662367,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487343-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780836487.3451998,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487346-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780836487.3464751,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836487347-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780836487.3474772,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/audio/narration-script.txt": {
+    "mtime": 1780836867.5519776,
+    "ast_hash": "c73163968d9d48523c63b6cdbbc8979e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/scripts/script.md": {
+    "mtime": 1780836633.5383008,
+    "ast_hash": "7690aff9a11beee060711c5d2fd2c782",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780837003.800968,
+    "ast_hash": "749bac8f1ebbef85f1fefab0809246ff",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/scripts/script.md": {
+    "mtime": 1780839684.8646345,
+    "ast_hash": "4e04f78eb7f70f2c9e60b30fe61a8307",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/scripts/script.md": {
+    "mtime": 1780840337.200434,
+    "ast_hash": "8be7bfb7c7def422a9bf1d9c2ebec7d3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780841499732-make-a-video-of-a-house-/scripts/script.md": {
+    "mtime": 1780841499.7364573,
+    "ast_hash": "d2315f30bd174157d61b42f70a558af0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/audio/narration-script.txt": {
+    "mtime": 1780842971.2083273,
+    "ast_hash": "efcc75e9d6d8b05aade7575251b92b68",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/scripts/script.md": {
+    "mtime": 1780842815.256448,
+    "ast_hash": "b149916c192c20092f5314b740c8f064",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780843261.8463275,
+    "ast_hash": "6f32216617eb41606d99498a96d10233",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/audio/narration-script.txt": {
+    "mtime": 1780844902.7571695,
+    "ast_hash": "ea735bed2695c2fb7f56a00087370617",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/scripts/script.md": {
+    "mtime": 1780844795.3911698,
+    "ast_hash": "014434d1991f67bf9a273a47626f9e43",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/video-generated/generated-001.mp4.concat.txt": {
+    "mtime": 1780845192.5968964,
+    "ast_hash": "95f8214483563e5221c14bee4c4a500d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835434-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780848835.436476,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835437-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780848835.4377158,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848835438-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780848835.4385307,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901840-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780848901.8417215,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901842-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780848901.842623,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780848901.8433483,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/scripts/script.md": {
+    "mtime": 1780851419.773082,
+    "ast_hash": "a9db40e0b25e19182aeba4bfa2cf4215",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176120-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780856176.1273992,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176131-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780856176.1338155,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856176140-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780856176.1413753,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257522-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780856257.5245602,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780856257.526383,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856257527-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780856257.5281978,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/scripts/script.md": {
+    "mtime": 1780856976.6030319,
+    "ast_hash": "38e3b3b44be178c652e7b5c76656b695",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992851-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780856992.8531938,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992854-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780856992.8546638,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856992855-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780856992.8559299,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711933-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780864711.9352322,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711935-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780864711.936283,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864711936-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780864711.9370284,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757836-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780864757.83825,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757839-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780864757.839368,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864757839-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780864757.8401153,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943019-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780864943.0207217,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943021-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780864943.0215936,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864943022-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780864943.0223675,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983909-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780864983.9103878,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983910-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780864983.91117,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780864983911-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780864983.9118986,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478838-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780872478.8394558,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478839-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780872478.8402746,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872478840-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780872478.840944,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518369-a-tree-growing-over-time-for-d/scripts/script.md": {
+    "mtime": 1780872518.3727682,
+    "ast_hash": "8bf67e22832d656b85032f211e2b65af",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518373-test-clientactionid-dedup/scripts/script.md": {
+    "mtime": 1780872518.3744879,
+    "ast_hash": "60cd201d5202bbb64e9408e42477bb32",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780872518375-test-concurrent-in-flight-dedu/scripts/script.md": {
+    "mtime": 1780872518.375939,
+    "ast_hash": "5622a32674ed7b89c77f25806f425c60",
+    "semantic_hash": ""
+  },
+  "tools/graphify/EXECUTABLE-UPDATE-GUIDE.md": {
+    "mtime": 1780862435.0143812,
+    "ast_hash": "98bf0bb21455a1bde980e0c8a5f45c28",
+    "semantic_hash": ""
+  },
+  "tools/graphify/HOOK-WATCH-READINESS.md": {
+    "mtime": 1780862888.9026463,
+    "ast_hash": "de10c4dbf46b4d2288b785002fc8316c",
+    "semantic_hash": ""
+  },
+  "tools/graphify/README.md": {
+    "mtime": 1780841918.7767422,
+    "ast_hash": "55acc953a4028350ad8a837f083810e4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/exports/thumbnail-001.jpg": {
+    "mtime": 1780815027.2299259,
+    "ast_hash": "e24124bd7b5409dc707c40f3fb852a1f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/frames/frame-001.png": {
+    "mtime": 1780814978.2060418,
+    "ast_hash": "74f109bb92d1a7eac86fc579270a2775",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/frames/frame-002.png": {
+    "mtime": 1780814978.4866486,
+    "ast_hash": "001fc4cb9bb48a752ade187671dddab0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/frames/frame-003.png": {
+    "mtime": 1780814981.6671927,
+    "ast_hash": "d0858e6cfcff0717eb85ccaf20ca5f91",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-001.png": {
+    "mtime": 1780814944.0,
+    "ast_hash": "f03eae775628c535a9e2ac5866c35e9d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-002.png": {
+    "mtime": 1780814952.0,
+    "ast_hash": "ddcb7ec02f2e90ae0260421d14f86c8f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/images/scene-003.png": {
+    "mtime": 1780814963.0,
+    "ast_hash": "aa09af3ea2a9372e6c434ca6ee3747e0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/exports/thumbnail-001.jpg": {
+    "mtime": 1780815151.3001447,
+    "ast_hash": "e24124bd7b5409dc707c40f3fb852a1f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/frames/frame-001.png": {
+    "mtime": 1780815116.2305336,
+    "ast_hash": "74f109bb92d1a7eac86fc579270a2775",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/frames/frame-002.png": {
+    "mtime": 1780815117.910533,
+    "ast_hash": "001fc4cb9bb48a752ade187671dddab0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/frames/frame-003.png": {
+    "mtime": 1780815121.367355,
+    "ast_hash": "d0858e6cfcff0717eb85ccaf20ca5f91",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/images/scene-001.png": {
+    "mtime": 1780815083.0,
+    "ast_hash": "3b6946ee97f6f5ffc33a89b44fc07626",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/images/scene-002.png": {
+    "mtime": 1780815092.0,
+    "ast_hash": "ac7497fd7bcdd7013f86fb835436859c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/images/scene-003.png": {
+    "mtime": 1780815100.0,
+    "ast_hash": "31fa7fa1985e5d1e749d9386715946e3",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/exports/thumbnail-001.jpg": {
+    "mtime": 1780816557.8693972,
+    "ast_hash": "48ef95f38bf1047405bb51956b2d71c6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/frames/frame-001.png": {
+    "mtime": 1780816499.4541411,
+    "ast_hash": "ad90c1061930b99794d419e14eb4701c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/frames/frame-002.png": {
+    "mtime": 1780816502.7430043,
+    "ast_hash": "4e85d8101de131a6f0f61a1c90c6e731",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/frames/frame-003.png": {
+    "mtime": 1780816506.1303103,
+    "ast_hash": "13b78495cf1e0ea2e6c41ff0693da70b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-001.png": {
+    "mtime": 1780816461.0,
+    "ast_hash": "b37f87dac720d24c58eaa4bd4433b205",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-002.png": {
+    "mtime": 1780816469.0,
+    "ast_hash": "6d552c7d090099c7e314c720e8ec2078",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/images/scene-003.png": {
+    "mtime": 1780816477.0,
+    "ast_hash": "e3889aa30a87573fb9bdee787e54ff3f",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/exports/thumbnail-001.jpg": {
+    "mtime": 1780821726.6853497,
+    "ast_hash": "1b3d8f382ee3533cf2f9c6b48ea63a67",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-001.png": {
+    "mtime": 1780821690.0311284,
+    "ast_hash": "78a233a123f7dfb90b90c4bf0a3c4663",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-002.png": {
+    "mtime": 1780821693.2831194,
+    "ast_hash": "650eb9e0d8c18f153cd5b45f4192f014",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/frames/frame-003.png": {
+    "mtime": 1780821694.8977509,
+    "ast_hash": "0a6b79dc31f471673b7e149f25d12741",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-001.png": {
+    "mtime": 1780821640.0,
+    "ast_hash": "1955084f0e53f4a8fde2b70ec1b4ca85",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-002.png": {
+    "mtime": 1780821654.0,
+    "ast_hash": "df0111a86180a92373e38f3e43027964",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/images/scene-003.png": {
+    "mtime": 1780821662.0,
+    "ast_hash": "8cb6d411a3851ba15978787758ccd0ab",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/thumbnail-001.jpg": {
+    "mtime": 1780837023.0065012,
+    "ast_hash": "320d74d17c6f006d251839f6cc1e2825",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/frames/frame-001.png": {
+    "mtime": 1780836973.932853,
+    "ast_hash": "747d15ca66f1f605d14af7973256587b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/frames/frame-002.png": {
+    "mtime": 1780836974.3276176,
+    "ast_hash": "3a4a063e598a719ff55995fd17da9538",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/frames/frame-003.png": {
+    "mtime": 1780836974.8156412,
+    "ast_hash": "94067ee029a2dc7913d746456968eee4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-001.png": {
+    "mtime": 1780836896.0,
+    "ast_hash": "97eca84da0e56f3451369781ae90a648",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-002.png": {
+    "mtime": 1780836910.0,
+    "ast_hash": "767f534660439e73a1a07c2cb079b674",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-003.png": {
+    "mtime": 1780836919.0,
+    "ast_hash": "31e862d4fc957b52dc7e4aec61363033",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/frames/frame-001.png": {
+    "mtime": 1780843230.0587728,
+    "ast_hash": "ff6d6bc400b0c2dfd8c0d6bb6518ef73",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/frames/frame-002.png": {
+    "mtime": 1780843238.682994,
+    "ast_hash": "1dd60e49279914c4201970d88a27c138",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/frames/frame-003.png": {
+    "mtime": 1780843244.547488,
+    "ast_hash": "46e5059b704851160cfa88fe222430a4",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-001.png": {
+    "mtime": 1780843099.0,
+    "ast_hash": "67dab52f562b9096d42f5d944453bd36",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-002.png": {
+    "mtime": 1780843128.0,
+    "ast_hash": "45d7d8360c8f8c95f9965cfad7ae5c03",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-003.png": {
+    "mtime": 1780843145.0,
+    "ast_hash": "629c0259039ce8ca53962076f3d11401",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/exports/thumbnail-001.jpg": {
+    "mtime": 1780845222.0042303,
+    "ast_hash": "6d55f6b97a221c6b2b28ae306c5ffd1d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/frames/frame-001.png": {
+    "mtime": 1780845173.0757937,
+    "ast_hash": "10b29809549b957093287067071ce3f9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/frames/frame-002.png": {
+    "mtime": 1780845176.5370111,
+    "ast_hash": "bc78091df0bbceaff8f240d74e29d78a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/frames/frame-003.png": {
+    "mtime": 1780845176.9070513,
+    "ast_hash": "00aca58c5ace2e8297a5813d6220c3b1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-001.png": {
+    "mtime": 1780845091.0,
+    "ast_hash": "e9dbf9d90d30bb795fe00eb4e3e08e5d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-002.png": {
+    "mtime": 1780845118.0,
+    "ast_hash": "8b5b11bdac5d0337b1f7a1a995d1ae7b",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/images/scene-003.png": {
+    "mtime": 1780845136.0,
+    "ast_hash": "9cc4c7a1d845a3f89efa9031bcc625e1",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/audio/narration.mp3": {
+    "mtime": 1780814931.0,
+    "ast_hash": "2a7126224171e3dbdb4879691da371c0",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814110184-make-a-short-video-about-an-au/video-generated/generated-001.mp4": {
+    "mtime": 1780814996.6492376,
+    "ast_hash": "aa7c839b8a283af1e94048e6f8657ed8",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/audio/narration.mp3": {
+    "mtime": 1780815069.0,
+    "ast_hash": "d72bda24d61e1e34a6ae48e9c11b39c8",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780814906259-make-a-short-video-about-an-au/video-generated/generated-001.mp4": {
+    "mtime": 1780815134.8217144,
+    "ast_hash": "fd5dfc56b37d2bc8077508c5f14b181a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/audio/narration.mp3": {
+    "mtime": 1780816445.0,
+    "ast_hash": "9a3e46a65d0c49ff62116dd0d1e51865",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780816397207-make-a-video-of-a-growing-tree/video-generated/generated-001.mp4": {
+    "mtime": 1780816521.5108752,
+    "ast_hash": "b9942c2dcb146d1491ca55e6cee8289c",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/audio/narration.mp3": {
+    "mtime": 1780821620.0,
+    "ast_hash": "fb171fa3a3663bd11bd1151622ef20ef",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780821571340-make-a-video-about-a-party-on-/video-generated/generated-001.mp4": {
+    "mtime": 1780821711.7394357,
+    "ast_hash": "4a55fef36cad9d6be41acd9703637e38",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/audio/narration.mp3": {
+    "mtime": 1780836877.0,
+    "ast_hash": "ac22da6498511e1fdf86ece364772611",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-001.mp4": {
+    "mtime": 1780836929.8270636,
+    "ast_hash": "bbf58d60ebc64411c97c8cd4ad41dca6",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-002.mp4": {
+    "mtime": 1780836932.7933233,
+    "ast_hash": "f35a0fffb76223f59d41331b25179969",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-003.mp4": {
+    "mtime": 1780836936.42647,
+    "ast_hash": "05ca32e7f73dd0c36c973597d8c0829e",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/video-generated/generated-001.mp4": {
+    "mtime": 1780837007.024324,
+    "ast_hash": "c74519b59113f57d48828de5af2c6221",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/audio/narration.mp3": {
+    "mtime": 1780843031.0,
+    "ast_hash": "4396030c86ec9e1939618a7ee7826a9d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/motion/scene-001.mp4": {
+    "mtime": 1780843154.0879047,
+    "ast_hash": "e59004eb3881eb96a391fab44974bfd9",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/motion/scene-002.mp4": {
+    "mtime": 1780843156.8241768,
+    "ast_hash": "5e10c5e1aa2bb723ee690d4fbd10be83",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/motion/scene-003.mp4": {
+    "mtime": 1780843161.0433226,
+    "ast_hash": "4137354b0e6e5fc96c1dc805acf32017",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/video-generated/generated-001.mp4": {
+    "mtime": 1780843263.9834971,
+    "ast_hash": "9553a98de0f61810aa3d3f75f486c91d",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/audio/narration.mp3": {
+    "mtime": 1780844977.0,
+    "ast_hash": "fd0ceddc9d275c1eadb1743a36f2d38a",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-001.mp4": {
+    "mtime": 1780845142.9893782,
+    "ast_hash": "8ec552943fec039fbfff7c5d1b71adea",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-002.mp4": {
+    "mtime": 1780845145.289308,
+    "ast_hash": "687b4e5c76b4474393fefa07001a9efc",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/motion/scene-003.mp4": {
+    "mtime": 1780845147.7323205,
+    "ast_hash": "80e5d1bf3aaea0db92807ad02c9eda35",
+    "semantic_hash": ""
+  },
+  "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/video-generated/generated-001.mp4": {
+    "mtime": 1780845195.640503,
+    "ast_hash": "9de9e5044a3d0387409c677ff39aaa68",
     "semantic_hash": ""
   }
 }

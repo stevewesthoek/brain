@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-07T14:37:55.090Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "A video of a bed \n — scene 1 of 3",
+      "visualPrompt": "A video of a bed \n — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-001.png",
+      "finalImagePrompt": "A video of a bed — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "24d4ef29a48246d2",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-07T14:38:20.760Z",
+      "durationSeconds": 20,
+      "narrationText": "A video of a bed",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "A video of a bed \n — scene 2 of 3",
+      "visualPrompt": "A video of a bed \n — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-002.png",
+      "finalImagePrompt": "A video of a bed — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "3538fa0198d1f07f",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-07T14:38:48.048Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "A video of a bed \n — scene 3 of 3",
+      "visualPrompt": "A video of a bed \n — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-003.png",
+      "finalImagePrompt": "A video of a bed — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "667db1ce053346f1",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-07T14:39:05.867Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

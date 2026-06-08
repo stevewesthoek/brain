@@ -1,0 +1,35 @@
+{
+  "jobId": "prochat-prompt-1780856257525-test-clientactionid-dedup",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T18:49:32.806Z",
+  "updatedAt": "2026-06-07T18:49:32.806Z",
+  "publishedAt": null,
+  "title": "Test Clientactionid Dedup",
+  "description": "A short video about Test Clientactionid Dedup. Test clientActionId dedup. Created as a private preview for review before public release.",
+  "tags": [
+    "clientactionid",
+    "dedup",
+    "clientactionid dedup",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780856257525-test-clientactionid-dedup/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "prompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s",
+  "title": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 1 of 3",
+      "narrationText": "Make a short video about a Mercedes driving through a rainy city.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-07T12:54:23.952Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

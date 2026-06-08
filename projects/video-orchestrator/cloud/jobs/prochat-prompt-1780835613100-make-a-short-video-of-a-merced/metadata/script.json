@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780835613100-make-a-short-video-of-a-merced",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780835613100",
+  "status": "draft",
+  "title": "Make a short video of a Mercedes driving through a rainy city. ",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T12:33:33.100Z",
+  "updatedAt": "2026-06-07T12:33:33.100Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by brain-console-center"
+  }
+}

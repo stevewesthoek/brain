@@ -1,0 +1,36 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T14:41:59.249264Z",
+  "updatedAt": "2026-06-07T14:48:52.849Z",
+  "publishedAt": null,
+  "title": "A Bed",
+  "description": "A short video about A Bed. A video of a bed. Created as a private preview for review before public release.",
+  "tags": [
+    "a bed",
+    "bed",
+    "scene",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/exports/thumbnail-001.jpg",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  },
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "aiGenerated": false,
+  "videoSourceKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/audio/narration.mp3",
+  "youtubePackageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/metadata/youtube-package.json"
+}

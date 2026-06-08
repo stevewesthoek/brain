@@ -1,0 +1,32 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "prompt": "A video of a bed \n",
+  "title": "A video of a bed \n",
+  "targetDurationSeconds": 60,
+  "scenes": [
+    {
+      "index": 0,
+      "durationSeconds": 20,
+      "visualPrompt": "A video of a bed \n — scene 1 of 3",
+      "narrationText": "A video of a bed",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 1,
+      "durationSeconds": 20,
+      "visualPrompt": "A video of a bed \n — scene 2 of 3",
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 2,
+      "durationSeconds": 20,
+      "visualPrompt": "A video of a bed \n — scene 3 of 3",
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ],
+  "createdAt": "2026-06-07T14:35:53.042Z",
+  "providerName": "deterministic-local",
+  "deterministic": true
+}

@@ -1,0 +1,20 @@
+{
+  "jobId": "prochat-prompt-1780856968989-make-a-video-of-a-box-",
+  "reviewStatus": "pending",
+  "createdAt": "2026-06-07T20:05:14.591Z",
+  "updatedAt": "2026-06-07T20:05:14.591Z",
+  "reviewedAt": null,
+  "reviewedBy": null,
+  "notes": null,
+  "media": {
+    "scenePlanKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/scene-plan.json",
+    "narrationScriptKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/audio/narration-script.txt",
+    "audioKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/audio/narration.mp3",
+    "sceneImageKeys": [],
+    "videoKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/exports/thumbnail-001.jpg",
+    "publishKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/publish.json",
+    "youtubePackageKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/youtube-package.json",
+    "overlayPlanKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/overlay-plan.json"
+  }
+}

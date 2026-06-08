@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-07T12:57:08.328Z",
+  "updatedAt": "2026-06-07T12:57:08.328Z",
+  "provider": "selected-scene-image",
+  "source": {
+    "kind": "scene-image",
+    "key": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-001.png"
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

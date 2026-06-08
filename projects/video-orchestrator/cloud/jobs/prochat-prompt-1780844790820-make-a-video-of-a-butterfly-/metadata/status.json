@@ -1,0 +1,18 @@
+{
+  "status": "generating",
+  "currentStep": "workflow_started",
+  "startedAt": "2026-06-07T15:07:48.705Z",
+  "updatedAt": "2026-06-07T15:14:09.394Z",
+  "executionArn": "arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-prochat-prompt-1780844790820-make-a-video-of-a-1780845246799-5rdy0g",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/audio/narration.mp3",
+  "providerName": "hybrid-image-slideshow-ffmpeg",
+  "aiGenerated": false,
+  "partialAiGenerated": true,
+  "ttsGenerated": true,
+  "storyboardGenerated": true,
+  "imageGenerated": true,
+  "slideshowGenerated": true
+}

@@ -1,0 +1,38 @@
+{
+  "jobId": "prochat-prompt-1780835613100-make-a-short-video-of-a-merced",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T12:34:37.127Z",
+  "updatedAt": "2026-06-07T12:34:37.127Z",
+  "publishedAt": null,
+  "title": "A Mercedes Driving Through a Rainy City",
+  "description": "A short video about A Mercedes Driving Through a Rainy City. Make a short video of a Mercedes driving through a rainy city. Created as a private preview for review before public release.",
+  "tags": [
+    "a mercedes driving through a rainy city",
+    "mercedes",
+    "driving",
+    "through",
+    "rainy",
+    "city",
+    "mercedes driving",
+    "driving through",
+    "through rainy",
+    "rainy city",
+    "short"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

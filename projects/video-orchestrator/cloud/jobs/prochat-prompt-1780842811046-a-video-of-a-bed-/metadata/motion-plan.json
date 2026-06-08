@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "provider": "local-ffmpeg-motion",
+  "mode": "ken-burns",
+  "sceneCount": 3,
+  "generatedClipKeys": [
+    "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/motion/scene-001.mp4",
+    "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/motion/scene-002.mp4",
+    "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/motion/scene-003.mp4"
+  ],
+  "generatedFrameKeys": [
+    "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/frames/frame-001.png",
+    "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/frames/frame-002.png",
+    "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/frames/frame-003.png"
+  ],
+  "warnings": [],
+  "fallbackUsed": false,
+  "fallbackReason": null
+}

@@ -1,0 +1,44 @@
+{
+  "jobId": "prochat-prompt-1780856968989-make-a-video-of-a-box-",
+  "sourcePrompt": "Make a video of a box. ",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "A Box",
+  "description": "A short video about A Box. Make a video of a box. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about A Box. Make a video of a box. Created as a private preview for review before public release.",
+  "tags": [
+    "a box",
+    "box",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview",
+    "private preview"
+  ],
+  "searchKeywords": [
+    "a box",
+    "box",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview",
+    "private preview"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/exports/generated-001-final.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T20:00:01.535Z",
+  "updatedAt": "2026-06-07T20:00:01.535Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 5,
+    "tagCount": 8,
+    "descriptionLength": 112,
+    "hasInternalTerms": false
+  }
+}

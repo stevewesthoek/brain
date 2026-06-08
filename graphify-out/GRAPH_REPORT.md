@@ -1,16 +1,16 @@
-# Graph Report - brain  (2026-06-07)
+# Graph Report - brain  (2026-06-08)
 
 ## Corpus Check
-- 4262 files · ~6,661,732 words
+- 4659 files · ~8,722,979 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 90041 nodes · 117669 edges · 6410 communities (6077 shown, 333 thin omitted)
+- 96769 nodes · 124305 edges · 6852 communities (6514 shown, 338 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 1115 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `30ef779a`
+- Built from commit: `24ef4040`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -976,6 +976,7 @@
 - [[_COMMUNITY_Community 972|Community 972]]
 - [[_COMMUNITY_Community 973|Community 973]]
 - [[_COMMUNITY_Community 974|Community 974]]
+- [[_COMMUNITY_Community 975|Community 975]]
 - [[_COMMUNITY_Community 976|Community 976]]
 - [[_COMMUNITY_Community 977|Community 977]]
 - [[_COMMUNITY_Community 978|Community 978]]
@@ -2200,6 +2201,7 @@
 - [[_COMMUNITY_Community 2198|Community 2198]]
 - [[_COMMUNITY_Community 2199|Community 2199]]
 - [[_COMMUNITY_Community 2200|Community 2200]]
+- [[_COMMUNITY_Community 2201|Community 2201]]
 - [[_COMMUNITY_Community 2202|Community 2202]]
 - [[_COMMUNITY_Community 2203|Community 2203]]
 - [[_COMMUNITY_Community 2204|Community 2204]]
@@ -5856,7 +5858,6 @@
 - [[_COMMUNITY_Community 5856|Community 5856]]
 - [[_COMMUNITY_Community 5857|Community 5857]]
 - [[_COMMUNITY_Community 5858|Community 5858]]
-- [[_COMMUNITY_Community 5859|Community 5859]]
 - [[_COMMUNITY_Community 5860|Community 5860]]
 - [[_COMMUNITY_Community 5861|Community 5861]]
 - [[_COMMUNITY_Community 5862|Community 5862]]
@@ -6304,10 +6305,451 @@
 - [[_COMMUNITY_Community 6407|Community 6407]]
 - [[_COMMUNITY_Community 6408|Community 6408]]
 - [[_COMMUNITY_Community 6409|Community 6409]]
+- [[_COMMUNITY_Community 6410|Community 6410]]
+- [[_COMMUNITY_Community 6411|Community 6411]]
+- [[_COMMUNITY_Community 6412|Community 6412]]
+- [[_COMMUNITY_Community 6413|Community 6413]]
+- [[_COMMUNITY_Community 6414|Community 6414]]
+- [[_COMMUNITY_Community 6415|Community 6415]]
+- [[_COMMUNITY_Community 6416|Community 6416]]
+- [[_COMMUNITY_Community 6417|Community 6417]]
+- [[_COMMUNITY_Community 6418|Community 6418]]
+- [[_COMMUNITY_Community 6419|Community 6419]]
+- [[_COMMUNITY_Community 6420|Community 6420]]
+- [[_COMMUNITY_Community 6421|Community 6421]]
+- [[_COMMUNITY_Community 6422|Community 6422]]
+- [[_COMMUNITY_Community 6423|Community 6423]]
+- [[_COMMUNITY_Community 6424|Community 6424]]
+- [[_COMMUNITY_Community 6425|Community 6425]]
+- [[_COMMUNITY_Community 6426|Community 6426]]
+- [[_COMMUNITY_Community 6427|Community 6427]]
+- [[_COMMUNITY_Community 6428|Community 6428]]
+- [[_COMMUNITY_Community 6429|Community 6429]]
+- [[_COMMUNITY_Community 6430|Community 6430]]
+- [[_COMMUNITY_Community 6431|Community 6431]]
+- [[_COMMUNITY_Community 6432|Community 6432]]
+- [[_COMMUNITY_Community 6433|Community 6433]]
+- [[_COMMUNITY_Community 6434|Community 6434]]
+- [[_COMMUNITY_Community 6435|Community 6435]]
+- [[_COMMUNITY_Community 6436|Community 6436]]
+- [[_COMMUNITY_Community 6437|Community 6437]]
+- [[_COMMUNITY_Community 6438|Community 6438]]
+- [[_COMMUNITY_Community 6439|Community 6439]]
+- [[_COMMUNITY_Community 6440|Community 6440]]
+- [[_COMMUNITY_Community 6441|Community 6441]]
+- [[_COMMUNITY_Community 6442|Community 6442]]
+- [[_COMMUNITY_Community 6443|Community 6443]]
+- [[_COMMUNITY_Community 6444|Community 6444]]
+- [[_COMMUNITY_Community 6445|Community 6445]]
+- [[_COMMUNITY_Community 6446|Community 6446]]
+- [[_COMMUNITY_Community 6447|Community 6447]]
+- [[_COMMUNITY_Community 6448|Community 6448]]
+- [[_COMMUNITY_Community 6449|Community 6449]]
+- [[_COMMUNITY_Community 6450|Community 6450]]
+- [[_COMMUNITY_Community 6451|Community 6451]]
+- [[_COMMUNITY_Community 6452|Community 6452]]
+- [[_COMMUNITY_Community 6453|Community 6453]]
+- [[_COMMUNITY_Community 6454|Community 6454]]
+- [[_COMMUNITY_Community 6455|Community 6455]]
+- [[_COMMUNITY_Community 6456|Community 6456]]
+- [[_COMMUNITY_Community 6457|Community 6457]]
+- [[_COMMUNITY_Community 6458|Community 6458]]
+- [[_COMMUNITY_Community 6459|Community 6459]]
+- [[_COMMUNITY_Community 6460|Community 6460]]
+- [[_COMMUNITY_Community 6461|Community 6461]]
+- [[_COMMUNITY_Community 6462|Community 6462]]
+- [[_COMMUNITY_Community 6463|Community 6463]]
+- [[_COMMUNITY_Community 6464|Community 6464]]
+- [[_COMMUNITY_Community 6465|Community 6465]]
+- [[_COMMUNITY_Community 6466|Community 6466]]
+- [[_COMMUNITY_Community 6467|Community 6467]]
+- [[_COMMUNITY_Community 6468|Community 6468]]
+- [[_COMMUNITY_Community 6469|Community 6469]]
+- [[_COMMUNITY_Community 6470|Community 6470]]
+- [[_COMMUNITY_Community 6471|Community 6471]]
+- [[_COMMUNITY_Community 6472|Community 6472]]
+- [[_COMMUNITY_Community 6473|Community 6473]]
+- [[_COMMUNITY_Community 6474|Community 6474]]
+- [[_COMMUNITY_Community 6475|Community 6475]]
+- [[_COMMUNITY_Community 6476|Community 6476]]
+- [[_COMMUNITY_Community 6477|Community 6477]]
+- [[_COMMUNITY_Community 6478|Community 6478]]
+- [[_COMMUNITY_Community 6479|Community 6479]]
+- [[_COMMUNITY_Community 6480|Community 6480]]
+- [[_COMMUNITY_Community 6481|Community 6481]]
+- [[_COMMUNITY_Community 6482|Community 6482]]
+- [[_COMMUNITY_Community 6483|Community 6483]]
+- [[_COMMUNITY_Community 6484|Community 6484]]
+- [[_COMMUNITY_Community 6485|Community 6485]]
+- [[_COMMUNITY_Community 6486|Community 6486]]
+- [[_COMMUNITY_Community 6487|Community 6487]]
+- [[_COMMUNITY_Community 6488|Community 6488]]
+- [[_COMMUNITY_Community 6489|Community 6489]]
+- [[_COMMUNITY_Community 6490|Community 6490]]
+- [[_COMMUNITY_Community 6491|Community 6491]]
+- [[_COMMUNITY_Community 6492|Community 6492]]
+- [[_COMMUNITY_Community 6493|Community 6493]]
+- [[_COMMUNITY_Community 6494|Community 6494]]
+- [[_COMMUNITY_Community 6495|Community 6495]]
+- [[_COMMUNITY_Community 6496|Community 6496]]
+- [[_COMMUNITY_Community 6497|Community 6497]]
+- [[_COMMUNITY_Community 6498|Community 6498]]
+- [[_COMMUNITY_Community 6499|Community 6499]]
+- [[_COMMUNITY_Community 6500|Community 6500]]
+- [[_COMMUNITY_Community 6501|Community 6501]]
+- [[_COMMUNITY_Community 6502|Community 6502]]
+- [[_COMMUNITY_Community 6503|Community 6503]]
+- [[_COMMUNITY_Community 6504|Community 6504]]
+- [[_COMMUNITY_Community 6505|Community 6505]]
+- [[_COMMUNITY_Community 6506|Community 6506]]
+- [[_COMMUNITY_Community 6507|Community 6507]]
+- [[_COMMUNITY_Community 6508|Community 6508]]
+- [[_COMMUNITY_Community 6509|Community 6509]]
+- [[_COMMUNITY_Community 6510|Community 6510]]
+- [[_COMMUNITY_Community 6511|Community 6511]]
+- [[_COMMUNITY_Community 6512|Community 6512]]
+- [[_COMMUNITY_Community 6513|Community 6513]]
+- [[_COMMUNITY_Community 6514|Community 6514]]
+- [[_COMMUNITY_Community 6515|Community 6515]]
+- [[_COMMUNITY_Community 6516|Community 6516]]
+- [[_COMMUNITY_Community 6517|Community 6517]]
+- [[_COMMUNITY_Community 6518|Community 6518]]
+- [[_COMMUNITY_Community 6519|Community 6519]]
+- [[_COMMUNITY_Community 6520|Community 6520]]
+- [[_COMMUNITY_Community 6521|Community 6521]]
+- [[_COMMUNITY_Community 6522|Community 6522]]
+- [[_COMMUNITY_Community 6523|Community 6523]]
+- [[_COMMUNITY_Community 6524|Community 6524]]
+- [[_COMMUNITY_Community 6525|Community 6525]]
+- [[_COMMUNITY_Community 6526|Community 6526]]
+- [[_COMMUNITY_Community 6527|Community 6527]]
+- [[_COMMUNITY_Community 6528|Community 6528]]
+- [[_COMMUNITY_Community 6529|Community 6529]]
+- [[_COMMUNITY_Community 6530|Community 6530]]
+- [[_COMMUNITY_Community 6531|Community 6531]]
+- [[_COMMUNITY_Community 6532|Community 6532]]
+- [[_COMMUNITY_Community 6533|Community 6533]]
+- [[_COMMUNITY_Community 6534|Community 6534]]
+- [[_COMMUNITY_Community 6535|Community 6535]]
+- [[_COMMUNITY_Community 6536|Community 6536]]
+- [[_COMMUNITY_Community 6537|Community 6537]]
+- [[_COMMUNITY_Community 6538|Community 6538]]
+- [[_COMMUNITY_Community 6539|Community 6539]]
+- [[_COMMUNITY_Community 6540|Community 6540]]
+- [[_COMMUNITY_Community 6541|Community 6541]]
+- [[_COMMUNITY_Community 6542|Community 6542]]
+- [[_COMMUNITY_Community 6543|Community 6543]]
+- [[_COMMUNITY_Community 6544|Community 6544]]
+- [[_COMMUNITY_Community 6545|Community 6545]]
+- [[_COMMUNITY_Community 6546|Community 6546]]
+- [[_COMMUNITY_Community 6547|Community 6547]]
+- [[_COMMUNITY_Community 6548|Community 6548]]
+- [[_COMMUNITY_Community 6549|Community 6549]]
+- [[_COMMUNITY_Community 6550|Community 6550]]
+- [[_COMMUNITY_Community 6551|Community 6551]]
+- [[_COMMUNITY_Community 6552|Community 6552]]
+- [[_COMMUNITY_Community 6553|Community 6553]]
+- [[_COMMUNITY_Community 6554|Community 6554]]
+- [[_COMMUNITY_Community 6555|Community 6555]]
+- [[_COMMUNITY_Community 6556|Community 6556]]
+- [[_COMMUNITY_Community 6557|Community 6557]]
+- [[_COMMUNITY_Community 6558|Community 6558]]
+- [[_COMMUNITY_Community 6559|Community 6559]]
+- [[_COMMUNITY_Community 6560|Community 6560]]
+- [[_COMMUNITY_Community 6561|Community 6561]]
+- [[_COMMUNITY_Community 6562|Community 6562]]
+- [[_COMMUNITY_Community 6563|Community 6563]]
+- [[_COMMUNITY_Community 6564|Community 6564]]
+- [[_COMMUNITY_Community 6565|Community 6565]]
+- [[_COMMUNITY_Community 6566|Community 6566]]
+- [[_COMMUNITY_Community 6567|Community 6567]]
+- [[_COMMUNITY_Community 6568|Community 6568]]
+- [[_COMMUNITY_Community 6569|Community 6569]]
+- [[_COMMUNITY_Community 6570|Community 6570]]
+- [[_COMMUNITY_Community 6571|Community 6571]]
+- [[_COMMUNITY_Community 6572|Community 6572]]
+- [[_COMMUNITY_Community 6573|Community 6573]]
+- [[_COMMUNITY_Community 6574|Community 6574]]
+- [[_COMMUNITY_Community 6575|Community 6575]]
+- [[_COMMUNITY_Community 6576|Community 6576]]
+- [[_COMMUNITY_Community 6577|Community 6577]]
+- [[_COMMUNITY_Community 6578|Community 6578]]
+- [[_COMMUNITY_Community 6579|Community 6579]]
+- [[_COMMUNITY_Community 6580|Community 6580]]
+- [[_COMMUNITY_Community 6581|Community 6581]]
+- [[_COMMUNITY_Community 6582|Community 6582]]
+- [[_COMMUNITY_Community 6583|Community 6583]]
+- [[_COMMUNITY_Community 6584|Community 6584]]
+- [[_COMMUNITY_Community 6585|Community 6585]]
+- [[_COMMUNITY_Community 6586|Community 6586]]
+- [[_COMMUNITY_Community 6587|Community 6587]]
+- [[_COMMUNITY_Community 6588|Community 6588]]
+- [[_COMMUNITY_Community 6589|Community 6589]]
+- [[_COMMUNITY_Community 6590|Community 6590]]
+- [[_COMMUNITY_Community 6591|Community 6591]]
+- [[_COMMUNITY_Community 6592|Community 6592]]
+- [[_COMMUNITY_Community 6593|Community 6593]]
+- [[_COMMUNITY_Community 6594|Community 6594]]
+- [[_COMMUNITY_Community 6595|Community 6595]]
+- [[_COMMUNITY_Community 6596|Community 6596]]
+- [[_COMMUNITY_Community 6597|Community 6597]]
+- [[_COMMUNITY_Community 6598|Community 6598]]
+- [[_COMMUNITY_Community 6599|Community 6599]]
+- [[_COMMUNITY_Community 6600|Community 6600]]
+- [[_COMMUNITY_Community 6601|Community 6601]]
+- [[_COMMUNITY_Community 6602|Community 6602]]
+- [[_COMMUNITY_Community 6603|Community 6603]]
+- [[_COMMUNITY_Community 6604|Community 6604]]
+- [[_COMMUNITY_Community 6605|Community 6605]]
+- [[_COMMUNITY_Community 6606|Community 6606]]
+- [[_COMMUNITY_Community 6607|Community 6607]]
+- [[_COMMUNITY_Community 6608|Community 6608]]
+- [[_COMMUNITY_Community 6609|Community 6609]]
+- [[_COMMUNITY_Community 6610|Community 6610]]
+- [[_COMMUNITY_Community 6611|Community 6611]]
+- [[_COMMUNITY_Community 6612|Community 6612]]
+- [[_COMMUNITY_Community 6613|Community 6613]]
+- [[_COMMUNITY_Community 6614|Community 6614]]
+- [[_COMMUNITY_Community 6615|Community 6615]]
+- [[_COMMUNITY_Community 6616|Community 6616]]
+- [[_COMMUNITY_Community 6617|Community 6617]]
+- [[_COMMUNITY_Community 6618|Community 6618]]
+- [[_COMMUNITY_Community 6619|Community 6619]]
+- [[_COMMUNITY_Community 6620|Community 6620]]
+- [[_COMMUNITY_Community 6621|Community 6621]]
+- [[_COMMUNITY_Community 6622|Community 6622]]
+- [[_COMMUNITY_Community 6623|Community 6623]]
+- [[_COMMUNITY_Community 6624|Community 6624]]
+- [[_COMMUNITY_Community 6625|Community 6625]]
+- [[_COMMUNITY_Community 6626|Community 6626]]
+- [[_COMMUNITY_Community 6627|Community 6627]]
+- [[_COMMUNITY_Community 6628|Community 6628]]
+- [[_COMMUNITY_Community 6629|Community 6629]]
+- [[_COMMUNITY_Community 6630|Community 6630]]
+- [[_COMMUNITY_Community 6631|Community 6631]]
+- [[_COMMUNITY_Community 6632|Community 6632]]
+- [[_COMMUNITY_Community 6633|Community 6633]]
+- [[_COMMUNITY_Community 6634|Community 6634]]
+- [[_COMMUNITY_Community 6635|Community 6635]]
+- [[_COMMUNITY_Community 6636|Community 6636]]
+- [[_COMMUNITY_Community 6637|Community 6637]]
+- [[_COMMUNITY_Community 6638|Community 6638]]
+- [[_COMMUNITY_Community 6639|Community 6639]]
+- [[_COMMUNITY_Community 6640|Community 6640]]
+- [[_COMMUNITY_Community 6641|Community 6641]]
+- [[_COMMUNITY_Community 6642|Community 6642]]
+- [[_COMMUNITY_Community 6643|Community 6643]]
+- [[_COMMUNITY_Community 6644|Community 6644]]
+- [[_COMMUNITY_Community 6645|Community 6645]]
+- [[_COMMUNITY_Community 6646|Community 6646]]
+- [[_COMMUNITY_Community 6647|Community 6647]]
+- [[_COMMUNITY_Community 6648|Community 6648]]
+- [[_COMMUNITY_Community 6649|Community 6649]]
+- [[_COMMUNITY_Community 6650|Community 6650]]
+- [[_COMMUNITY_Community 6651|Community 6651]]
+- [[_COMMUNITY_Community 6652|Community 6652]]
+- [[_COMMUNITY_Community 6653|Community 6653]]
+- [[_COMMUNITY_Community 6654|Community 6654]]
+- [[_COMMUNITY_Community 6655|Community 6655]]
+- [[_COMMUNITY_Community 6656|Community 6656]]
+- [[_COMMUNITY_Community 6657|Community 6657]]
+- [[_COMMUNITY_Community 6658|Community 6658]]
+- [[_COMMUNITY_Community 6659|Community 6659]]
+- [[_COMMUNITY_Community 6660|Community 6660]]
+- [[_COMMUNITY_Community 6661|Community 6661]]
+- [[_COMMUNITY_Community 6662|Community 6662]]
+- [[_COMMUNITY_Community 6663|Community 6663]]
+- [[_COMMUNITY_Community 6664|Community 6664]]
+- [[_COMMUNITY_Community 6665|Community 6665]]
+- [[_COMMUNITY_Community 6666|Community 6666]]
+- [[_COMMUNITY_Community 6667|Community 6667]]
+- [[_COMMUNITY_Community 6668|Community 6668]]
+- [[_COMMUNITY_Community 6669|Community 6669]]
+- [[_COMMUNITY_Community 6670|Community 6670]]
+- [[_COMMUNITY_Community 6671|Community 6671]]
+- [[_COMMUNITY_Community 6672|Community 6672]]
+- [[_COMMUNITY_Community 6673|Community 6673]]
+- [[_COMMUNITY_Community 6674|Community 6674]]
+- [[_COMMUNITY_Community 6675|Community 6675]]
+- [[_COMMUNITY_Community 6676|Community 6676]]
+- [[_COMMUNITY_Community 6677|Community 6677]]
+- [[_COMMUNITY_Community 6678|Community 6678]]
+- [[_COMMUNITY_Community 6679|Community 6679]]
+- [[_COMMUNITY_Community 6680|Community 6680]]
+- [[_COMMUNITY_Community 6681|Community 6681]]
+- [[_COMMUNITY_Community 6682|Community 6682]]
+- [[_COMMUNITY_Community 6683|Community 6683]]
+- [[_COMMUNITY_Community 6684|Community 6684]]
+- [[_COMMUNITY_Community 6685|Community 6685]]
+- [[_COMMUNITY_Community 6686|Community 6686]]
+- [[_COMMUNITY_Community 6687|Community 6687]]
+- [[_COMMUNITY_Community 6688|Community 6688]]
+- [[_COMMUNITY_Community 6689|Community 6689]]
+- [[_COMMUNITY_Community 6690|Community 6690]]
+- [[_COMMUNITY_Community 6691|Community 6691]]
+- [[_COMMUNITY_Community 6692|Community 6692]]
+- [[_COMMUNITY_Community 6693|Community 6693]]
+- [[_COMMUNITY_Community 6694|Community 6694]]
+- [[_COMMUNITY_Community 6695|Community 6695]]
+- [[_COMMUNITY_Community 6696|Community 6696]]
+- [[_COMMUNITY_Community 6697|Community 6697]]
+- [[_COMMUNITY_Community 6698|Community 6698]]
+- [[_COMMUNITY_Community 6699|Community 6699]]
+- [[_COMMUNITY_Community 6700|Community 6700]]
+- [[_COMMUNITY_Community 6701|Community 6701]]
+- [[_COMMUNITY_Community 6702|Community 6702]]
+- [[_COMMUNITY_Community 6703|Community 6703]]
+- [[_COMMUNITY_Community 6704|Community 6704]]
+- [[_COMMUNITY_Community 6705|Community 6705]]
+- [[_COMMUNITY_Community 6706|Community 6706]]
+- [[_COMMUNITY_Community 6707|Community 6707]]
+- [[_COMMUNITY_Community 6708|Community 6708]]
+- [[_COMMUNITY_Community 6709|Community 6709]]
+- [[_COMMUNITY_Community 6710|Community 6710]]
+- [[_COMMUNITY_Community 6711|Community 6711]]
+- [[_COMMUNITY_Community 6712|Community 6712]]
+- [[_COMMUNITY_Community 6713|Community 6713]]
+- [[_COMMUNITY_Community 6714|Community 6714]]
+- [[_COMMUNITY_Community 6715|Community 6715]]
+- [[_COMMUNITY_Community 6716|Community 6716]]
+- [[_COMMUNITY_Community 6717|Community 6717]]
+- [[_COMMUNITY_Community 6718|Community 6718]]
+- [[_COMMUNITY_Community 6719|Community 6719]]
+- [[_COMMUNITY_Community 6720|Community 6720]]
+- [[_COMMUNITY_Community 6721|Community 6721]]
+- [[_COMMUNITY_Community 6722|Community 6722]]
+- [[_COMMUNITY_Community 6723|Community 6723]]
+- [[_COMMUNITY_Community 6724|Community 6724]]
+- [[_COMMUNITY_Community 6725|Community 6725]]
+- [[_COMMUNITY_Community 6726|Community 6726]]
+- [[_COMMUNITY_Community 6727|Community 6727]]
+- [[_COMMUNITY_Community 6728|Community 6728]]
+- [[_COMMUNITY_Community 6729|Community 6729]]
+- [[_COMMUNITY_Community 6730|Community 6730]]
+- [[_COMMUNITY_Community 6731|Community 6731]]
+- [[_COMMUNITY_Community 6732|Community 6732]]
+- [[_COMMUNITY_Community 6733|Community 6733]]
+- [[_COMMUNITY_Community 6734|Community 6734]]
+- [[_COMMUNITY_Community 6735|Community 6735]]
+- [[_COMMUNITY_Community 6736|Community 6736]]
+- [[_COMMUNITY_Community 6737|Community 6737]]
+- [[_COMMUNITY_Community 6738|Community 6738]]
+- [[_COMMUNITY_Community 6739|Community 6739]]
+- [[_COMMUNITY_Community 6740|Community 6740]]
+- [[_COMMUNITY_Community 6741|Community 6741]]
+- [[_COMMUNITY_Community 6742|Community 6742]]
+- [[_COMMUNITY_Community 6743|Community 6743]]
+- [[_COMMUNITY_Community 6744|Community 6744]]
+- [[_COMMUNITY_Community 6745|Community 6745]]
+- [[_COMMUNITY_Community 6746|Community 6746]]
+- [[_COMMUNITY_Community 6747|Community 6747]]
+- [[_COMMUNITY_Community 6748|Community 6748]]
+- [[_COMMUNITY_Community 6749|Community 6749]]
+- [[_COMMUNITY_Community 6750|Community 6750]]
+- [[_COMMUNITY_Community 6751|Community 6751]]
+- [[_COMMUNITY_Community 6752|Community 6752]]
+- [[_COMMUNITY_Community 6753|Community 6753]]
+- [[_COMMUNITY_Community 6754|Community 6754]]
+- [[_COMMUNITY_Community 6755|Community 6755]]
+- [[_COMMUNITY_Community 6756|Community 6756]]
+- [[_COMMUNITY_Community 6757|Community 6757]]
+- [[_COMMUNITY_Community 6758|Community 6758]]
+- [[_COMMUNITY_Community 6759|Community 6759]]
+- [[_COMMUNITY_Community 6760|Community 6760]]
+- [[_COMMUNITY_Community 6761|Community 6761]]
+- [[_COMMUNITY_Community 6762|Community 6762]]
+- [[_COMMUNITY_Community 6763|Community 6763]]
+- [[_COMMUNITY_Community 6764|Community 6764]]
+- [[_COMMUNITY_Community 6765|Community 6765]]
+- [[_COMMUNITY_Community 6766|Community 6766]]
+- [[_COMMUNITY_Community 6767|Community 6767]]
+- [[_COMMUNITY_Community 6768|Community 6768]]
+- [[_COMMUNITY_Community 6769|Community 6769]]
+- [[_COMMUNITY_Community 6770|Community 6770]]
+- [[_COMMUNITY_Community 6771|Community 6771]]
+- [[_COMMUNITY_Community 6772|Community 6772]]
+- [[_COMMUNITY_Community 6773|Community 6773]]
+- [[_COMMUNITY_Community 6774|Community 6774]]
+- [[_COMMUNITY_Community 6775|Community 6775]]
+- [[_COMMUNITY_Community 6776|Community 6776]]
+- [[_COMMUNITY_Community 6777|Community 6777]]
+- [[_COMMUNITY_Community 6778|Community 6778]]
+- [[_COMMUNITY_Community 6779|Community 6779]]
+- [[_COMMUNITY_Community 6780|Community 6780]]
+- [[_COMMUNITY_Community 6781|Community 6781]]
+- [[_COMMUNITY_Community 6782|Community 6782]]
+- [[_COMMUNITY_Community 6783|Community 6783]]
+- [[_COMMUNITY_Community 6784|Community 6784]]
+- [[_COMMUNITY_Community 6785|Community 6785]]
+- [[_COMMUNITY_Community 6786|Community 6786]]
+- [[_COMMUNITY_Community 6787|Community 6787]]
+- [[_COMMUNITY_Community 6788|Community 6788]]
+- [[_COMMUNITY_Community 6789|Community 6789]]
+- [[_COMMUNITY_Community 6790|Community 6790]]
+- [[_COMMUNITY_Community 6791|Community 6791]]
+- [[_COMMUNITY_Community 6792|Community 6792]]
+- [[_COMMUNITY_Community 6793|Community 6793]]
+- [[_COMMUNITY_Community 6794|Community 6794]]
+- [[_COMMUNITY_Community 6795|Community 6795]]
+- [[_COMMUNITY_Community 6796|Community 6796]]
+- [[_COMMUNITY_Community 6797|Community 6797]]
+- [[_COMMUNITY_Community 6798|Community 6798]]
+- [[_COMMUNITY_Community 6799|Community 6799]]
+- [[_COMMUNITY_Community 6800|Community 6800]]
+- [[_COMMUNITY_Community 6801|Community 6801]]
+- [[_COMMUNITY_Community 6802|Community 6802]]
+- [[_COMMUNITY_Community 6803|Community 6803]]
+- [[_COMMUNITY_Community 6804|Community 6804]]
+- [[_COMMUNITY_Community 6805|Community 6805]]
+- [[_COMMUNITY_Community 6806|Community 6806]]
+- [[_COMMUNITY_Community 6807|Community 6807]]
+- [[_COMMUNITY_Community 6808|Community 6808]]
+- [[_COMMUNITY_Community 6809|Community 6809]]
+- [[_COMMUNITY_Community 6810|Community 6810]]
+- [[_COMMUNITY_Community 6811|Community 6811]]
+- [[_COMMUNITY_Community 6812|Community 6812]]
+- [[_COMMUNITY_Community 6813|Community 6813]]
+- [[_COMMUNITY_Community 6814|Community 6814]]
+- [[_COMMUNITY_Community 6815|Community 6815]]
+- [[_COMMUNITY_Community 6816|Community 6816]]
+- [[_COMMUNITY_Community 6817|Community 6817]]
+- [[_COMMUNITY_Community 6818|Community 6818]]
+- [[_COMMUNITY_Community 6819|Community 6819]]
+- [[_COMMUNITY_Community 6820|Community 6820]]
+- [[_COMMUNITY_Community 6821|Community 6821]]
+- [[_COMMUNITY_Community 6822|Community 6822]]
+- [[_COMMUNITY_Community 6823|Community 6823]]
+- [[_COMMUNITY_Community 6824|Community 6824]]
+- [[_COMMUNITY_Community 6825|Community 6825]]
+- [[_COMMUNITY_Community 6826|Community 6826]]
+- [[_COMMUNITY_Community 6827|Community 6827]]
+- [[_COMMUNITY_Community 6828|Community 6828]]
+- [[_COMMUNITY_Community 6829|Community 6829]]
+- [[_COMMUNITY_Community 6830|Community 6830]]
+- [[_COMMUNITY_Community 6831|Community 6831]]
+- [[_COMMUNITY_Community 6832|Community 6832]]
+- [[_COMMUNITY_Community 6833|Community 6833]]
+- [[_COMMUNITY_Community 6834|Community 6834]]
+- [[_COMMUNITY_Community 6835|Community 6835]]
+- [[_COMMUNITY_Community 6836|Community 6836]]
+- [[_COMMUNITY_Community 6837|Community 6837]]
+- [[_COMMUNITY_Community 6838|Community 6838]]
+- [[_COMMUNITY_Community 6839|Community 6839]]
+- [[_COMMUNITY_Community 6840|Community 6840]]
+- [[_COMMUNITY_Community 6841|Community 6841]]
+- [[_COMMUNITY_Community 6842|Community 6842]]
+- [[_COMMUNITY_Community 6843|Community 6843]]
+- [[_COMMUNITY_Community 6844|Community 6844]]
+- [[_COMMUNITY_Community 6845|Community 6845]]
+- [[_COMMUNITY_Community 6846|Community 6846]]
+- [[_COMMUNITY_Community 6847|Community 6847]]
+- [[_COMMUNITY_Community 6848|Community 6848]]
+- [[_COMMUNITY_Community 6849|Community 6849]]
+- [[_COMMUNITY_Community 6850|Community 6850]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `main()` - 347 edges
-2. `routeRequest()` - 316 edges
+2. `routeRequest()` - 320 edges
 3. `logger` - 287 edges
 4. `Exception` - 165 edges
 5. `AsyncFirecrawlClient` - 152 edges
@@ -6326,8 +6768,8 @@
   ai/skills/custom/ui-ux-pro-max/scripts/core.py → tools/firecrawl/apps/api/src/__tests__/snips/v1/lib.ts
 - `Extract results list from search result dict.` --rationale_for--> `extractResults()`  [EXTRACTED]
   ai/skills/custom/ui-ux-pro-max/scripts/design_system.py → tools/firecrawl/apps/api/src/search/v2/ddgsearch.ts
-- `TestCrawlE2E` --calls--> `from_env()`  [INFERRED]
-  tools/firecrawl/apps/python-sdk/firecrawl/__tests__/e2e/v2/test_crawl.py → ai/skills/custom/whatsapp/lib/whatsapp_sdk.py
+- `ensureServer()` --calls--> `releaseLock()`  [INFERRED]
+  ai/skills/vendors/gstack/browse/src/cli.ts → tools/firecrawl/apps/api/src/services/billing/batch_billing.ts
 
 ## Import Cycles
 - 2-file cycle: `projects/brain-core/src/adapters/local-app-action-executor.ts -> projects/brain-core/src/adapters/local-app-orchestrator.ts -> projects/brain-core/src/adapters/local-app-action-executor.ts`
@@ -6337,7 +6779,8 @@
 - 2-file cycle: `tools/firecrawl/apps/api/src/lib/gcs-jobs.ts -> tools/firecrawl/apps/api/src/services/logging/log_job.ts -> tools/firecrawl/apps/api/src/lib/gcs-jobs.ts`
 - 3-file cycle: `projects/brain-core/src/adapters/video-orchestrator-controlled-execution-first-approval-creation-implementation-plan.ts -> projects/brain-core/src/adapters/video-orchestrator-controlled-execution-validator-implementation-plan.ts -> projects/brain-core/src/adapters/video-orchestrator-controlled-execution-second-approval-creation-implementation-plan.ts -> projects/brain-core/src/adapters/video-orchestrator-controlled-execution-first-approval-creation-implementation-plan.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/engines/fire-engine/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/postprocessors/youtube.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/engines/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/engines/fire-engine/index.ts`
-- 3-file cycle: `tools/firecrawl/apps/api/src/controllers/auth.ts -> tools/firecrawl/apps/api/src/services/queue-service.ts -> tools/firecrawl/apps/api/src/lib/deep-research/deep-research-service.ts -> tools/firecrawl/apps/api/src/controllers/auth.ts`
+- 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/error.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/services/sentry.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/error.ts`
+- 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/removeBase64Images.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/lib/branding/transformer.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/lib/branding/transformer.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/engines/index/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/engines/index/index.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/lib/extractMetadata.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
@@ -6346,128 +6789,127 @@
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/diff.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/performAttributes.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/query.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
-- 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/removeBase64Images.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/sendToSearchIndex.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
 - 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/transformers/uploadScreenshot.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts`
-- 3-file cycle: `tools/firecrawl/apps/api/src/scraper/scrapeURL/error.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/index.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/retryTracker.ts -> tools/firecrawl/apps/api/src/scraper/scrapeURL/error.ts`
+- 3-file cycle: `tools/firecrawl/apps/api/src/controllers/auth.ts -> tools/firecrawl/apps/api/src/services/queue-service.ts -> tools/firecrawl/apps/api/src/lib/deep-research/deep-research-service.ts -> tools/firecrawl/apps/api/src/controllers/auth.ts`
 
-## Communities (6410 total, 333 thin omitted)
+## Communities (6852 total, 338 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.13
-Nodes (26): MindPathKind, collectPathStatus(), createMindPathSnapshotFromRoot(), DISALLOWED_SEGMENTS, isSafeRootPath(), isSmallMarkdownFile(), pathHasTrailingSlash(), containsSourceTrace() (+18 more)
+Cohesion: 0.04
+Nodes (63): cancel_crawl(), Cancel a crawl job.          Args:         client: Async HTTP client instance, get_extract_status(), Get the current status of an extract job (async).      .. deprecated::         T, get_credit_usage(), get_credit_usage_historical(), get_queue_status(), get_token_usage() (+55 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.03
-Nodes (145): getInfraUmamiStatus(), InfraUmamiStatus, InfraUmamiWebsite, umamiFetch(), acceptanceCheck(), ANALYTICS_FIXTURES, buildCopyPreview(), buildManualExportItem() (+137 more)
+Cohesion: 0.01
+Nodes (305): getActionSummary(), requestActionApprovalById(), getApprovalAuditEvents(), getAgent(), controlAiModelSelector(), getAiModelSelectorHealthMatrix(), getAiModelSelectorStatus(), getMindPreviewPolicy() (+297 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.01
-Nodes (418): ACTIONS_REGISTRY, APP_LIFECYCLE_RISK, BLOCKED_HUMAN_REVIEW, enrichActionWithReadiness(), FUTURE_HIGH_RISK, getActionSummary(), mapActionKindToApprovalRequestKind(), MIND_WRITE_RISK (+410 more)
+Nodes (512): directoryStats(), execFileAsync, readStorageStats(), triggerStorageCleanup(), acceptanceCheck(), ANALYTICS_FIXTURES, buildCopyPreview(), buildManualExportItem() (+504 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.05
-Nodes (71): indexQueuePrometheus(), scrapeURLWithIndex(), sendDocumentToIndex(), avgrabAgent, AvgrabResolvedPost, AvgrabResolveResponse, getResolveRegex(), matchesResolveRegex() (+63 more)
+Cohesion: 0.07
+Nodes (59): buildPreRerankPrompt(), buildRefrasedPrompt(), buildRerankerUserPrompt(), extractConfig, RerankerOptions, RerankerResult, rerankLinksWithLLM(), generateBasicCompletion() (+51 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.07
-Nodes (68): concurrencyQueueBackfillController(), triggerPrecrawl(), LOCK_FILE, getACUCTeam(), workerFun(), cleanOldConcurrencyLimitedJobs(), cleanOldConcurrencyLimitEntries(), cleanOldCrawlConcurrencyLimitEntries() (+60 more)
+Cohesion: 0.03
+Nodes (66): ActionsResult, AgentOptions, AgentOptionsExtract, AsyncCrawlWatcher, ChangeTrackingData, ChangeTrackingOptions, ClickAction, CrawlWatcher (+58 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.05
-Nodes (57): readVideoControlledExecutionApprovalStoreImplementationPlan(), safety, readVideoControlledExecutionArtifactPolicyImplementationPlan(), safety, readVideoControlledExecutionAuditComplianceEvidencePacket(), safety, readVideoControlledExecutionExecutionPlanImplementationPlan(), safety (+49 more)
+Nodes (54): ConvertRequest, ConvertResponse, ErrorResponse, Handler, HealthCheckResponse, IndexResponse, download_from_s3(), handler() (+46 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.02
-Nodes (167): getSitemapXML(), _getSitemapXMLGZ(), gunzipAsync, scrapeSitemap(), SitemapData, SitemapScrapeOptions, documentMaxReasonableTime(), getDocumentTypeFromContentType() (+159 more)
+Nodes (192): getSitemapXML(), _getSitemapXMLGZ(), gunzipAsync, scrapeSitemap(), SitemapData, SitemapScrapeOptions, documentMaxReasonableTime(), getDocumentTypeFromContentType() (+184 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.06
-Nodes (46): DeepResearchActivity, DeepResearchSource, getDeepResearch(), getDeepResearchExpiry(), saveDeepResearch(), StoredDeepResearch, updateDeepResearch(), DeepResearchServiceOptions (+38 more)
+Cohesion: 0.05
+Nodes (54): extractImages(), extractImagesCheerio(), resolveImageUrl(), extractLinks(), extractLinksRust(), resolveUrlWithBaseHref(), AttributeSelector, _extract_attributes() (+46 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.01
-Nodes (230): cancel_crawl(), Cancel a crawl job.          Args:         client: Async HTTP client instance, test_async_batch_start_and_status(), test_async_batch_wait_minimal(), test_async_batch_wait_with_all_params(), test_async_cancel_batch(), test_crawl_params_request_validation(), test_async_active_crawls() (+222 more)
+Cohesion: 0.02
+Nodes (117): Firecrawl, Unified Firecrawl client (v2 by default, v1 under ``.v1``).      Provides a sing, _configure_logger(), Configure the firecrawl logger for console output.      The function attaches a, Set up logging based on the FIRECRAWL_LOGGING_LEVEL environment variable., setup_logging(), get_version(), Dynamically set version (+109 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.04
-Nodes (25): test_async_transport_used_no_threads(), test_event_loop_not_blocked(), test_scrape_concurrency(), test_wait_batch_scrape_polling_interval(), clear_firecrawl_api_key_env(), test_async_cloud_requires_api_key(), test_async_self_host_allows_missing_api_key(), test_cloud_requires_api_key() (+17 more)
+Cohesion: 0.48
+Nodes (5): clear_firecrawl_api_key_env(), test_async_cloud_requires_api_key(), test_async_self_host_allows_missing_api_key(), test_cloud_requires_api_key(), test_self_host_allows_missing_api_key()
 
 ### Community 10 - "Community 10"
 Cohesion: 0.01
-Nodes (314): crawl_params_preview(), _fetch_all_pages_async(), get_active_crawls(), get_crawl_errors(), get_crawl_status(), get_crawl_status_page(), _parse_crawl_documents(), _parse_crawl_status_response() (+306 more)
+Nodes (694): MergeOptions, agent(), cancel_agent(), get_agent_status(), _normalize_agent_response_payload(), _prepare_agent_request(), Cancel a running agent job.      Args:         client: Async HTTP client instanc, start_agent() (+686 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.02
-Nodes (140): _prepare_crawl_request(), extract(), get_extract_status(), _prepare_extract_request(), Extract structured data and wait until completion (async).      .. deprecated::, Start an extract job (non-blocking, async).      .. deprecated::         The ext, Get the current status of an extract job (async).      .. deprecated::         T, start_extract() (+132 more)
+Cohesion: 0.09
+Nodes (26): Transforms an array of items into a list of result_type or Document.     If the, _transform_array(), areMergeable(), mergeArrays(), mergeNullValObjs(), mergeObjects(), unifyItemValues(), unifyValue() (+18 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.02
-Nodes (259): requestAction(), recordApprovalDecision(), controlAiModelSelector(), getInfraGoogleAdsMetrics(), GOOGLE_ADS_DB_PATH, InfraGoogleAdsMetrics, approveVOJob(), ApproveVOJobResult (+251 more)
+Cohesion: 0.04
+Nodes (138): requestAction(), createVOApproval(), acknowledgeEventRequest, AcknowledgeEventResponse, emitEventRequest, EmitEventResponse, EventEntry, readActiveSubscriptions() (+130 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.04
-Nodes (63): extract_info(), get_companies_from_hubspot(), initialize_clients(), main(), scrape_url(), update_hubspot(), Example: Using Firecrawl Python SDK v2 to extract attributes from HTML elements, Cli (+55 more)
+Nodes (73): extract_info(), get_companies_from_hubspot(), initialize_clients(), main(), scrape_url(), update_hubspot(), analyze_with_claude(), build_search_query() (+65 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.06
-Nodes (57): AssetPlanFixture, assetPlanFixtures, generateAssetPlan(), readVideoAssetPlan(), readVideoAssetPlans(), DesignPlanFixture, designPlanFixtures, generateDesignPlan() (+49 more)
+Nodes (53): AssemblyPlanFixture, assemblyPlanFixtures, generateAssemblyPlan(), generateAssemblyTimelineFromPlans(), readVideoAssemblyPlan(), AssetPlanFixture, assetPlanFixtures, generateAssetPlan() (+45 more)
 
 ### Community 15 - "Community 15"
-Cohesion: 0.11
-Nodes (52): _(), ae(), be(), bt(), Ce(), Ct(), de(), dt() (+44 more)
+Cohesion: 0.10
+Nodes (56): pass, Z, j, _(), ae(), be(), bt(), Ce() (+48 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.02
-Nodes (170): crawlData, onlyChildrenLinks, testurls, scrapeRequestWithSkipTlsVerification, containsDocsFirecrawlDev, scrapeRequestWithRemoveTags, childrenLinks, pathSplits (+162 more)
+Cohesion: 0.01
+Nodes (236): extractHeaderHtmlChunk(), findHeaderStart(), stripNoise(), enhanceBrandingWithLLM(), isDebugBrandingEnabled(), CONFIDENCE_THRESHOLDS, detectLogoVariants(), detectRepeatedLogos() (+228 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.12
-Nodes (38): browseBin, copyDirSync(), createEvalCollector(), describeIfSelected(), describeWithWorktree(), dumpOutcomeDiagnostic(), finalizeEvalCollector(), logCost() (+30 more)
+Cohesion: 0.13
+Nodes (36): browseBin, copyDirSync(), createEvalCollector(), describeIfSelected(), dumpOutcomeDiagnostic(), finalizeEvalCollector(), logCost(), recordE2E() (+28 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.07
-Nodes (42): BaseEventData, ConcurrentBrowserLimitReachedEventData, EventDataMap, EventDefinitionSlug, chInsert(), ExtractorOptions, ImageSearchResult, NewsSearchResult (+34 more)
+Cohesion: 0.04
+Nodes (45): 10. Conclusion & Recommendations, 1. Entity Types — Specific Recommendations, 1. Index-First Scanning for Token Efficiency, 2. Edge Types — Specific Recommendations, 2. Scoped Retrieval via Entity Types, 3. Atomic Note Guidance — Specific Recommendations, 3. Logical Pathfinding via Edge Types, 4. AI-Maintained vs. Manual Maintenance (+37 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.04
-Nodes (191): crawlMonitorController(), ResponseType, checkTeamCredits(), authenticateUser(), ScrapeDocumentOptions, saveExtract(), getTeamIdSyncB, scrapeDocument_F0() (+183 more)
+Cohesion: 0.02
+Nodes (327): concurrencyQueueBackfillController(), crawlMonitorController(), ResponseType, metricsController(), nuqMetricsController(), LOCK_FILE, BillingOperation, checkTeamCredits() (+319 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.02
-Nodes (193): analyzeSchemaAndPrompt(), analyzeSchemaAndPrompt_F0(), BatchExtractOptions, batchExtractPromise(), batchExtractPromise_F0(), checkShouldExtract_F0(), singleAnswerCompletion_F0(), singleAnswerCompletion() (+185 more)
+Cohesion: 0.01
+Nodes (306): analyzeSchemaAndPrompt(), analyzeSchemaAndPrompt_F0(), BatchExtractOptions, batchExtractPromise(), batchExtractPromise_F0(), checkShouldExtract_F0(), singleAnswerCompletion_F0(), singleAnswerCompletion() (+298 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.07
-Nodes (37): entry(), failureModes, proposedFutureRequestShape, proposedFutureResponseShape, readVideoProviderRequestWrapperImplementationPlan(), readVideoProviderRequestWrapperImplementationPlanEntry(), requestValidationSteps, safety (+29 more)
+Cohesion: 0.05
+Nodes (39): Atomic Note Guidance (Current), Brain Core System, Current Constraints, Current Knowledge Structure (Mind + Brain), Current Risks, D1: Entity Type Whitelist, D2: Edge Inference Strategy, D3: Update Frequency (+31 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.04
-Nodes (110): aggregateHistoricalPeriodsByApiKeyMonth(), aggregateHistoricalPeriodsByMonth(), getGroupedCredits(), getTeamBalance(), getTeamHistoricalUsage(), getTeamHistoricalUsageByApiKey(), HistoricalPeriod, HistoricalPeriodByApiKey (+102 more)
+Cohesion: 0.03
+Nodes (122): aggregateHistoricalPeriodsByApiKeyMonth(), aggregateHistoricalPeriodsByMonth(), getGroupedCredits(), getTeamBalance(), getTeamHistoricalUsage(), getTeamHistoricalUsageByApiKey(), HistoricalPeriod, HistoricalPeriodByApiKey (+114 more)
 
 ### Community 23 - "Community 23"
 Cohesion: 0.03
-Nodes (139): FirecrawlLiveSiteTest, ScrapeTest, getJobFromGCS(), newPermutations, permutations, ZDRMode, Scrape a single URL and return the document.          The v2 API returns: { succ, concurrentIf() (+131 more)
+Nodes (156): CrawlTest, ScrapeTest, newPermutations, permutations, ZDRMode, concurrentIf(), createTestIdUrl(), describeIf() (+148 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.07
-Nodes (33): callJudge(), judge(), JudgeScore, outcomeJudge(), OutcomeJudgeResult, designQualityJudge(), designQualityJudge(), setupEnd (+25 more)
+Cohesion: 0.06
+Nodes (33): callJudge(), judge(), JudgeScore, OutcomeJudgeResult, designQualityJudge(), designQualityJudge(), setupEnd, setupStart (+25 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.24
-Nodes (11): FirecrawlHttpClient, abortableSleep(), executeWithRetry(), Request, Class, Map, Object, OkHttpClient (+3 more)
+Cohesion: 0.26
+Nodes (9): FirecrawlHttpClient, Request, Class, Map, Object, OkHttpClient, String, SuppressWarnings (+1 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.01
-Nodes (110): TestAsyncCrawlValidation, _FakeAsyncClient, _FakeAsyncResponse, test_basic_request_preparation(), test_interact_raises_when_success_false(), test_interact_request_and_response_normalization(), test_interact_validates_required_inputs(), test_interact_with_prompt() (+102 more)
+Nodes (113): TestAsyncCrawlValidation, _FakeAsyncClient, _FakeAsyncResponse, test_basic_request_preparation(), test_interact_raises_when_success_false(), test_interact_request_and_response_normalization(), test_interact_validates_required_inputs(), test_interact_with_prompt() (+105 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.03
-Nodes (86): lowerOut, notesExist, notesPath, researchDir, reviewDir, sectionSynonyms, setupReviewDir(), afterReport (+78 more)
+Nodes (107): createCoverageAuditFixture(), describeWithWorktree(), gstackDir, judgePassed(), outcomeJudge(), SkillTestResult, lowerOut, reportDir (+99 more)
 
 ### Community 29 - "Community 29"
-Cohesion: 0.04
-Nodes (103): acucCacheClearController(), checkFireEngine(), addCoupon(), generateSyntheticEmail(), integCreateUserController(), redisHealthController(), integRotateApiKeyController(), extractExternalUserId() (+95 more)
+Cohesion: 0.02
+Nodes (196): acucCacheClearController(), cclog(), cclogController(), checkFireEngine(), addCoupon(), generateSyntheticEmail(), integCreateUserController(), indexQueuePrometheus() (+188 more)
 
 ### Community 30 - "Community 30"
 Cohesion: 0.06
@@ -6482,16 +6924,16 @@ Cohesion: 0.07
 Nodes (27): aiGenerated, audioSourceKey, bedrockRegion, currentStep, error, executionArn, failedStep, generationMode (+19 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.04
-Nodes (145): generateLifecycleSteps(), generateRequirements(), readControlledDualRunRequestDesign(), generateEvidenceStage(), generateStbEvidenceItems(), generateVideoEvidenceItems(), PLANNING_STAGES, readStbVideoDualRunEvidence() (+137 more)
+Cohesion: 0.03
+Nodes (177): generateLifecycleSteps(), generateRequirements(), readControlledDualRunRequestDesign(), generateEvidenceStage(), generateStbEvidenceItems(), generateVideoEvidenceItems(), PLANNING_STAGES, readStbVideoDualRunEvidence() (+169 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.04
-Nodes (93): generateBrowseSetup(), generateCommandReference(), generateSnapshotFlags(), AI_SLOP_BLACKLIST, codexErrorHandling(), OPENAI_HARD_REJECTIONS, OPENAI_LITMUS_CHECKS, generateDesignHardRules() (+85 more)
+Cohesion: 0.05
+Nodes (87): generateBrowseSetup(), generateCommandReference(), generateSnapshotFlags(), AI_SLOP_BLACKLIST, codexErrorHandling(), OPENAI_HARD_REJECTIONS, OPENAI_LITMUS_CHECKS, generateDesignHardRules() (+79 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.03
-Nodes (130): listActionSummaries(), AgentConsoleSnapshotFile, DEFAULT_AGENT_CONSOLE_PATH, readAgentConsoleSummary(), readSnapshotFile(), saveAgentConsoleSummarySnapshot(), AgentExecutorPlanSnapshotFile, DEFAULT_EXECUTOR_PLAN_PATH (+122 more)
+Cohesion: 0.04
+Nodes (108): listActionSummaries(), AgentConsoleSnapshotFile, DEFAULT_AGENT_CONSOLE_PATH, readAgentConsoleSummary(), readSnapshotFile(), saveAgentConsoleSummarySnapshot(), AgentExecutorPlanSnapshotFile, DEFAULT_EXECUTOR_PLAN_PATH (+100 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.07
@@ -6502,80 +6944,80 @@ Cohesion: 0.20
 Nodes (12): stateDir, CAREFUL_SCRIPT, carefulInput(), detectSafeRmWorks(), { exitCode, output }, { exitCode, raw }, FREEZE_SCRIPT, freezeInput() (+4 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.38
-Nodes (6): createBrainCoreServer(), startBrainCoreServer(), getBindHost(), getPort(), LOCAL_HOSTS, stop()
+Cohesion: 0.44
+Nodes (5): createBrainCoreServer(), startBrainCoreServer(), getBindHost(), getPort(), LOCAL_HOSTS
 
 ### Community 39 - "Community 39"
-Cohesion: 0.02
-Nodes (222): buildCommandSpec(), cap(), clearManagedProcessRecord(), compactOutput(), containsSecretLikeText(), createResult(), derivePortChecks(), disabled() (+214 more)
+Cohesion: 0.03
+Nodes (209): buildCommandSpec(), cap(), clearManagedProcessRecord(), compactOutput(), containsSecretLikeText(), createResult(), derivePortChecks(), disabled() (+201 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.14
-Nodes (16): getInfraCloudfareDomains(), InfraCloudfareDomain, InfraCloudflareDomainsStatus, loadCredentials(), buildTunnelConfigUrl(), getInfraCloudflareTunnels(), InfraCloudflareTunnelsStatus, InfraTunnel (+8 more)
+Cohesion: 0.21
+Nodes (12): buildTunnelConfigUrl(), getInfraCloudflareTunnels(), InfraCloudflareTunnelsStatus, InfraTunnel, InfraTunnelHostname, loadCredentials(), buildProjectAllUrl(), getInfraDokployStatus() (+4 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.03
-Nodes (81): BrowseCommand, extractBrowseCommands(), extractRemoteSlugPatterns(), extractWeightsFromTable(), validateSkill(), ValidationResult, regenerateAndValidate(), ROOT (+73 more)
+Nodes (79): BrowseCommand, extractBrowseCommands(), extractRemoteSlugPatterns(), extractWeightsFromTable(), validateSkill(), ValidationResult, regenerateAndValidate(), ROOT (+71 more)
 
 ### Community 42 - "Community 42"
 Cohesion: 0.07
-Nodes (30): blockedActions, blockers, composedScaffoldRefs, createVideoProviderDisabledOrchestrationFacade(), methodSurface, readVideoProviderDisabledOrchestrationFacadeStatus(), safety, blockedCapabilities (+22 more)
+Nodes (28): blockedActions, blockers, composedScaffoldRefs, methodSurface, safety, blockedCapabilities, blockers, integratedRefs (+20 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.04
-Nodes (82): AUTUMN_BYPASS_ORG_IDS, AutumnService, BoundedMap, BoundedSet, isAutumnCheckDryRun(), isAutumnCheckEnabled(), isAutumnEnabled(), isAutumnRequestTrackEnabled() (+74 more)
+Cohesion: 0.05
+Nodes (37): aiGenerated, audioKey, audioProvider, audioSourceKey, finalVideo, generationMode, imageGenerated, imageGenerationKey (+29 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.05
-Nodes (85): BrowserState, RefEntry, addConsoleEntry(), addDialogEntry(), addNetworkEntry(), CircularBuffer, consoleBuffer, dialogBuffer (+77 more)
+Cohesion: 0.04
+Nodes (92): last, BrowserState, RefEntry, addConsoleEntry(), addDialogEntry(), addNetworkEntry(), CircularBuffer, consoleBuffer (+84 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.17
-Nodes (24): MIND_LEGACY_READ_ONLY_PATHS, MIND_LIVE_FILES, MIND_REQUIRED_INDEX_FILES, MIND_REQUIRED_PATHS, MIND_ROUTER_CONTRACT_FILES, MindContractDryRunResult, MindFailureBufferStatus, MindPathStatus (+16 more)
+Cohesion: 0.05
+Nodes (37): aiGenerated, audioKey, audioProvider, audioSourceKey, finalVideo, generationMode, imageGenerated, imageGenerationKey (+29 more)
 
 ### Community 46 - "Community 46"
 Cohesion: 0.07
 Nodes (26): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generationMode (+18 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.07
-Nodes (59): VideoJobsDiagnostics, buildStepFunctionsExecutionName(), buildVideoJobsDiagnostics(), ChannelStatus, ContentProfile, ControlledYouTubePublishResult, CreateJobFromPromptError, CreateJobFromPromptRequest (+51 more)
+Cohesion: 0.06
+Nodes (56): buildStepFunctionsExecutionName(), ChannelStatus, ContentProfile, ControlledYouTubePublishResult, CreateJobFromPromptError, CreateJobFromPromptRequest, CreateJobFromPromptResponse, FinalizeAwsVideoPublishPackageError (+48 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.03
-Nodes (98): checkStbHealth(), getInfraPipelinesStatus(), InfraPipelinesStatusResponse, InfraStbStatus, InfraVOPipelineSummary, buildVideoOrchestratorSummary(), buildViralFlowSummary(), getInfraStudioStatus() (+90 more)
+Nodes (113): checkStbHealth(), getInfraPipelinesStatus(), InfraPipelinesStatusResponse, InfraStbStatus, InfraVOPipelineSummary, buildVideoOrchestratorSummary(), buildViralFlowSummary(), getInfraStudioStatus() (+105 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.03
-Nodes (47): CrawlTest, from_env(), Builder, CrawlOptions, Builder, LocationConfig, Builder, MapOptions (+39 more)
+Cohesion: 0.06
+Nodes (15): Builder, CrawlOptions, Boolean, Builder, Integer, List, Object, ScrapeOptions (+7 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.09
-Nodes (51): applyApprovedMindWritePreview(), containsLiveLookingSecret(), countLines(), createMindPreviewArtifact(), createMindWritePreview(), CreateMindWritePreviewInput, createPreviewId(), createSimpleUnifiedDiff() (+43 more)
+Cohesion: 0.04
+Nodes (109): MIND_ANTI_CLUTTER_LIMITS, MIND_LEGACY_READ_ONLY_PATHS, MIND_LIVE_FILES, MIND_REQUIRED_INDEX_FILES, MIND_REQUIRED_PATHS, MIND_ROUTER_CONTRACT_FILES, MindContractDryRunResult, MindContractSnapshot (+101 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.05
-Nodes (96): ALLOWED_EXACT_KINDS, ALLOWED_PREFIXES, classifyRequestedKind(), isAllowlistedRequestedKind(), normalizeRequestedKind(), appendAuditEvent(), approvals, auditEvents (+88 more)
+Nodes (103): ALLOWED_EXACT_KINDS, ALLOWED_PREFIXES, classifyRequestedKind(), isAllowlistedRequestedKind(), normalizeRequestedKind(), appendAuditEvent(), approvals, auditEvents (+95 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.07
 Nodes (26): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generationMode (+18 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.21
-Nodes (25): acquireLock(), buildNoteFilename(), C, discoverResources(), discoverSeries(), discoverVideos(), formatNote(), formatTimestamp() (+17 more)
+Cohesion: 0.09
+Nodes (48): StructuredLogger, acquireLock(), buildNoteFilename(), C, discoverResources(), discoverSeries(), discoverVideos(), formatNote() (+40 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.02
-Nodes (148): browser_execute(), delete_browser(), list_browsers(), _normalize_browser_create_response(), _normalize_browser_delete_response(), _normalize_browser_execute_response(), _normalize_browser_list_response(), Async browser session methods for Firecrawl v2 API.  Provides async create, exec (+140 more)
+Cohesion: 0.17
+Nodes (12): isZodV4Schema(), SchemaConverter, tryZodV4Conversion(), zodSchema, jsonSchema, arrayResult, complexResult, complexSchema (+4 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.13
-Nodes (28): MIND_ANTI_CLUTTER_LIMITS, MindContractSnapshot, MindRouterLoopPlan, MindRouterPlanAction, createActions(), createBlockers(), createMindRouterLoopPlan(), createWarnings() (+20 more)
+Cohesion: 0.06
+Nodes (35): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generatedBy (+27 more)
 
 ### Community 56 - "Community 56"
-Cohesion: 0.10
-Nodes (43): str, activeDir, activeDirReal, args, checkMode, __dirname, dryRun, error() (+35 more)
+Cohesion: 0.17
+Nodes (21): str, check_notebooklm_auth(), extract_transcript(), fetch_youtube_metadata(), get_or_create_notebook(), log(), main(), Verify NotebookLM auth is valid. Return (ok, error_message). (+13 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.07
@@ -6583,27 +7025,31 @@ Nodes (26): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt
 
 ### Community 58 - "Community 58"
 Cohesion: 0.05
-Nodes (55): ActionState, AwsVideoView, imageGeneration, imageGenerationSettings, imageModelId, imageProvider, imageRegion, narrationScriptKey (+47 more)
+Nodes (60): ActionState, AwsVideoView, imageGeneration, imageGenerationSettings, imageModelId, imageProvider, imageRegion, narrationScriptKey (+52 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.20
 Nodes (32): assessCoverage(), buildColor(), CANONICAL_SECTIONS, collectBullets(), collectColorValues(), collectParagraphs(), detectFormat(), extractColors() (+24 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.05
-Nodes (32): test_async_watcher_batch_progresses(), test_async_watcher_crawl_progresses(), start(), Watcher, Watcher, Adds an event handler function for a specific event type.          Args:, Dispatches an event to all registered handlers for that event type.          Arg, Create a watcher for crawl or batch jobs.          Args:             job_id: Job (+24 more)
+Cohesion: 0.10
+Nodes (16): Watcher, Dispatches an event to all registered handlers for that event type.          Arg, TestWatcherE2E, Poll job status over HTTP once. Returns True if terminal., DummyClient, DummyHttpClient, FakeConnect, FakeWebSocket (+8 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.05
-Nodes (89): browser(), Create a new browser session.      Args:         client: Async HTTP client insta, billTeam(), calculateBrowserSessionCredits(), enqueueBrowserSessionActivity(), activeBrowserCountKey(), BrowserSessionRow, BrowserSessionStatus (+81 more)
+Nodes (94): browser(), Create a new browser session.      Args:         client: Async HTTP client insta, billTeam(), calculateBrowserSessionCredits(), enqueueBrowserSessionActivity(), activeBrowserCountKey(), BrowserSessionRow, BrowserSessionStatus (+86 more)
 
 ### Community 62 - "Community 62"
 Cohesion: 0.05
 Nodes (74): DEFAULT_APPROVALS_DIR, dependenciesComplete(), dispatchTask(), executeBashTask(), executeClaudeTask(), executeCodexTask(), executeGeminiTask(), executeN8nTask() (+66 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.17
-Nodes (11): SearchTest, BeforeAll, EnabledIfEnvironmentVariable, Test, aiTerms, allText, allWebText, docs (+3 more)
+Cohesion: 0.12
+Nodes (17): SearchTest, SearchData, List, Map, Object, Override, String, BeforeAll (+9 more)
+
+### Community 64 - "Community 64"
+Cohesion: 0.06
+Nodes (33): cleanUpJob(), saveExtractResult(), scrapeURLWithFireEngineChromeCDP(), scrapeURLWithFireEngineTLSClient(), removeJobFromGCS(), saveDeepResearchToGCS(), saveExtractToGCS(), saveLlmsTxtToGCS() (+25 more)
 
 ### Community 65 - "Community 65"
 Cohesion: 0.07
@@ -6614,20 +7060,20 @@ Cohesion: 0.07
 Nodes (26): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generationMode (+18 more)
 
 ### Community 67 - "Community 67"
-Cohesion: 0.07
-Nodes (76): adc_status(), assert_live_allowed(), build_parser(), cmd_alerts(), cmd_analyze(), cmd_apply(), cmd_approve(), cmd_auto_approve() (+68 more)
+Cohesion: 0.09
+Nodes (67): adc_status(), assert_live_allowed(), build_parser(), cmd_analyze(), cmd_apply(), cmd_approve(), cmd_auto_approve(), cmd_batch_apply() (+59 more)
 
 ### Community 68 - "Community 68"
 Cohesion: 0.07
 Nodes (26): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generationMode (+18 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.12
-Nodes (19): Exception, CircuitBreakerState, NoProviderAvailable, SelectionResult, BM25, detect_domain(), _load_csv(), Lowercase, split, remove punctuation, filter short words (+11 more)
+Cohesion: 0.17
+Nodes (15): BM25, detect_domain(), _load_csv(), Lowercase, split, remove punctuation, filter short words, Build BM25 index from documents, Score all documents against query, Load CSV and return list of dicts, Core search function using BM25 (+7 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.11
-Nodes (59): _add_create_args(), _add_download_args(), _add_json_out(), _add_poll_args(), _add_prompt_args(), _augment_prompt(), _augment_prompt_fields(), _build_create_payload() (+51 more)
+Nodes (60): Show comprehensive status of the Google Ads automation pipeline.      Displays:, _add_create_args(), _add_download_args(), _add_json_out(), _add_poll_args(), _add_prompt_args(), _augment_prompt(), _augment_prompt_fields() (+52 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.02
@@ -6638,36 +7084,36 @@ Cohesion: 0.08
 Nodes (25): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generationMode (+17 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.11
+Cohesion: 0.08
 Nodes (28): CommandResult, FormatSpec, Job, JobStatus, JobType, LlmNetworkScope, LlmProviderMode, LlmProviderResult (+20 more)
 
 ### Community 74 - "Community 74"
-Cohesion: 0.04
-Nodes (69): analyze_top_stocks(), Colors, find_relevant_page_via_map(), main(), plot_scores(), Colors, detect_mime_type(), extract_urls_from_markdown() (+61 more)
+Cohesion: 0.06
+Nodes (53): analyze_top_stocks(), Colors, find_relevant_page_via_map(), main(), plot_scores(), Colors, detect_mime_type(), extract_urls_from_markdown() (+45 more)
 
 ### Community 75 - "Community 75"
 Cohesion: 0.12
-Nodes (21): completedPlanningRefs, entry(), explicitApprovalChecklist, implementationStartBlockers, readVideoProviderImplementationPhaseStartGate(), readVideoProviderImplementationPhaseStartGateEntry(), remainingApprovalRequirements, safety (+13 more)
+Nodes (17): completedPlanningRefs, entry(), explicitApprovalChecklist, implementationStartBlockers, remainingApprovalRequirements, safety, completedPlanningSurfaceRefs, entry() (+9 more)
 
 ### Community 76 - "Community 76"
 Cohesion: 0.02
 Nodes (90): minLength, type, minLength, type, minLength, type, minLength, type (+82 more)
 
 ### Community 77 - "Community 77"
-Cohesion: 0.06
-Nodes (62): renderMarkdown(), annotLastPinClick, annotState, apply(), bufferToBase64(), buildAnnotationsForCapture(), buildCollapsible(), buildColorModels() (+54 more)
+Cohesion: 0.04
+Nodes (159): renderMarkdown(), Initialize the unified client.          Args:             api_key: Firecrawl API, Initialize with API keys and configuration., actionLabel(), annotLastPinClick, annotState, applyParamDefaults(), applyParamValue() (+151 more)
 
 ### Community 78 - "Community 78"
-Cohesion: 0.12
-Nodes (30): AiModelsPage(), Page(), AwsVideoPage(), AiModelSelectorDashboard(), checkedAt(), costLabel(), MatrixModelView, statusFor() (+22 more)
+Cohesion: 0.09
+Nodes (34): AiModelsPage(), Page(), AwsVideoPage(), AiModelSelectorDashboard(), checkedAt(), costLabel(), MatrixModelView, statusFor() (+26 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.02
-Nodes (108): eventTypes, prohibitedFields, safety, BlockedActionFixtureInput, BlockedActionFixtureResult, blockers, fixtureActionTypes, fixtureDefaults (+100 more)
+Nodes (128): BlockedActionFixtureInput, BlockedActionFixtureResult, blockers, fixtureActionTypes, fixtureDefaults, recordVideoProviderBlockedActionFixture(), safety, entry() (+120 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.06
-Nodes (55): compareEvalResults(), ComparisonResult, DEFAULT_EVAL_DIR, EvalResult, extractToolSummary(), findPreviousRun(), formatComparison(), generateCommentary() (+47 more)
+Cohesion: 0.13
+Nodes (28): compareEvalResults(), ComparisonResult, DEFAULT_EVAL_DIR, EvalCollector, EvalResult, EvalTestEntry, extractToolSummary(), findPreviousRun() (+20 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.08
@@ -6683,11 +7129,11 @@ Nodes (71): commit_file(), decide_route(), extract_frontmatter(), get_file_conte
 
 ### Community 84 - "Community 84"
 Cohesion: 0.05
-Nodes (79): createCoverageAuditFixture(), CodexResult, installSkillToTempHome(), parseCodexJSONL(), ParsedCodexJSONL, runCodexSkill(), createTestWorktree(), getWorktreeManager() (+71 more)
+Nodes (65): CodexResult, installSkillToTempHome(), parseCodexJSONL(), ParsedCodexJSONL, runCodexSkill(), createTestWorktree(), getWorktreeManager(), harvestAndCleanup() (+57 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.03
-Nodes (146): cclog(), cclogController(), metricsController(), nuqMetricsController(), cleanUpRequests(), zdrcleanerController(), metrics, fs (+138 more)
+Cohesion: 0.06
+Nodes (35): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generatedBy (+27 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.02
@@ -6706,12 +7152,12 @@ Cohesion: 0.08
 Nodes (25): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generationMode (+17 more)
 
 ### Community 90 - "Community 90"
-Cohesion: 0.22
-Nodes (32): Image, Paragraph, Table, parse_block_children(), apply_text_style_wrappers(), child(), children(), get_attr_local() (+24 more)
+Cohesion: 0.21
+Nodes (34): Image, Paragraph, ParagraphKind, Table, parse_block_children(), apply_text_style_wrappers(), child(), children() (+26 more)
 
 ### Community 91 - "Community 91"
-Cohesion: 0.17
-Nodes (28): buildClassificationPrompt(), clampNumber(), classifyMindCaptureInbox(), classifyWithLocalModel(), cleanSingleLine(), cleanText(), estimateTokens(), firstHeading() (+20 more)
+Cohesion: 0.10
+Nodes (39): PACKAGE_ROOT, args, ClassificationCliReport, endedAt, MODULE_DIR, PACKAGE_ROOT, report, runInput (+31 more)
 
 ### Community 92 - "Community 92"
 Cohesion: 0.11
@@ -6734,44 +7180,44 @@ Cohesion: 0.02
 Nodes (84): Phase Summary (Revised Structure), VO-6A: Explicit Local Render Spike, Test-Only Asset, Operator-Gated, VO-6B: Controlled Production Render Design, VO-6C: Source Media Inventory and Read-Only Validation, VO-6D: Output Directory Approval and Write Boundary, VO-6E: Final Production Render Execution Request, VO-7A: Controlled Production Render Spike, VO-7AA: Real Upload No-Op Wiring Readiness Review and Activation Plan (+76 more)
 
 ### Community 98 - "Community 98"
-Cohesion: 0.10
-Nodes (37): ApprovalStats, ApprovalStatsResponse, AuditLogEntry, AuditLogResponse, getApprovalStats(), getFullAuditLog(), parseDateParam(), checkAndEscalateExpiredApprovals() (+29 more)
+Cohesion: 0.07
+Nodes (53): ApprovalStats, ApprovalStatsResponse, AuditLogEntry, AuditLogResponse, getApprovalStats(), getFullAuditLog(), parseDateParam(), chooseBest() (+45 more)
 
 ### Community 99 - "Community 99"
-Cohesion: 0.09
-Nodes (15): createRobotsChecker(), fetchRobotsTxt(), isUrlAllowedByRobots(), RobotsTxtChecker, GET(), getRobotsTxt(), linksToFilter, mockAxios (+7 more)
+Cohesion: 0.06
+Nodes (35): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generatedBy (+27 more)
 
 ### Community 100 - "Community 100"
-Cohesion: 0.14
-Nodes (14): getSearchIndexClient(), indexDocumentIfEnabled(), IndexDocumentRequest, SearchIndexClient, SearchIndexClientConfig, SearchRequest, SearchResponse, SearchResult (+6 more)
+Cohesion: 0.06
+Nodes (35): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generatedBy (+27 more)
 
 ### Community 101 - "Community 101"
-Cohesion: 0.16
-Nodes (20): calculate_risk_score(), format_slack_message(), format_webhook_payload(), get_escalation_config(), get_escalation_message(), get_notification_config(), Format notification as Slack message., Format notification for generic webhook. (+12 more)
+Cohesion: 0.14
+Nodes (22): cmd_alerts(), Show pending alerts and escalations that need human attention.      Displays:, calculate_risk_score(), format_slack_message(), format_webhook_payload(), get_escalation_config(), get_escalation_message(), get_notification_config() (+14 more)
 
 ### Community 102 - "Community 102"
 Cohesion: 0.08
-Nodes (3): ModelSelector, Estimate local GPU/CPU load from active Ollama inference.         Returns a valu, Return conservative local resource headroom for local LLM selection.          ma
+Nodes (18): Exception, Any, bool, float, int, Path, str, CircuitBreaker (+10 more)
 
 ### Community 103 - "Community 103"
 Cohesion: 0.08
 Nodes (24): aiGenerated, audioKey, audioProvider, audioSourceKey, generationMode, imageGenerated, imageGenerationKey, imageModelId (+16 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.12
-Nodes (14): args, ClassificationCliReport, endedAt, MODULE_DIR, PACKAGE_ROOT, report, runInput, RUNTIME_DIR (+6 more)
+Cohesion: 0.15
+Nodes (26): args, createMindRelativePaths(), MODULE_DIR, PACKAGE_ROOT, parseArgs(), RUNTIME_DIR, CACHE_DIR, compressArray() (+18 more)
 
 ### Community 105 - "Community 105"
 Cohesion: 0.02
 Nodes (84): minLength, type, minLength, type, enum, type, const, type (+76 more)
 
 ### Community 106 - "Community 106"
-Cohesion: 0.10
-Nodes (15): Unit tests for agent methods with mocked HTTP client., Test starting an agent job with dict schema., Test starting an agent job with Pydantic schema., Test starting an agent job with all parameters., Test getting agent status., Unit tests for agent methods with mocked HTTP client., Set up test fixtures., Test agent that completes immediately (no job ID). (+7 more)
+Cohesion: 0.09
+Nodes (16): Unit tests for agent methods with mocked HTTP client., Test starting an agent job with dict schema., Test starting an agent job with Pydantic schema., Test starting an agent job with all parameters., Test getting agent status., Test canceling an agent job., Unit tests for agent methods with mocked HTTP client., Set up test fixtures. (+8 more)
 
 ### Community 107 - "Community 107"
-Cohesion: 0.05
-Nodes (50): MergeOptions, AgentOptions, AgentOptionsJson, JsonOptions, ScrapeFormats, ScrapeOptions, ScrapeRequestBody, ScrapeResponse (+42 more)
+Cohesion: 0.03
+Nodes (79): IndexSupabaseService, AgentOptions, AgentOptionsJson, JsonOptions, ScrapeFormats, ScrapeOptions, ScrapeRequestBody, ScrapeResponse (+71 more)
 
 ### Community 108 - "Community 108"
 Cohesion: 0.02
@@ -6782,24 +7228,24 @@ Cohesion: 0.11
 Nodes (47): BookmarkId, Bookmark, _chrome_microseconds_to_iso_date(), _chrome_time_bounds_today(), _chrome_time_from_unix_seconds(), close_tab(), _escape_applescript_string(), focus_tab() (+39 more)
 
 ### Community 110 - "Community 110"
-Cohesion: 0.01
-Nodes (222): ActionsResult, AgentOptions, AgentOptionsExtract, AsyncCrawlWatcher, AsyncFirecrawlApp, BatchScrapeResponse, BatchScrapeStatusResponse, ChangeTrackingData (+214 more)
+Cohesion: 0.03
+Nodes (105): AsyncFirecrawlApp, BatchScrapeResponse, BatchScrapeStatusResponse, CrawlErrorsResponse, CrawlParams, CrawlResponse, CrawlStatusResponse, DeepResearchParams (+97 more)
 
 ### Community 111 - "Community 111"
-Cohesion: 0.02
-Nodes (103): agent(), cancel_agent(), get_agent_status(), _normalize_agent_response_payload(), _prepare_agent_request(), Cancel a running agent job.      Args:         client: Async HTTP client instanc, start_agent(), wait_agent() (+95 more)
+Cohesion: 0.06
+Nodes (57): Firecrawl, camelize(), cancel_agent(), cancel_batch_scrape(), cancel_crawl(), client(), crawl_params_preview(), crawl_urls() (+49 more)
 
 ### Community 112 - "Community 112"
-Cohesion: 0.13
-Nodes (16): Test that the API connection works., Send text message.          Args:             to: Recipient phone number (includ, Send media message (image, video, audio, document).          Args:             t, Send template message.          Args:             to: Recipient phone number, Mark incoming message as read.          Args:             message_id: WhatsApp m, List all message templates.          Returns:             List of template objec, Get details of a specific template.          Args:             template_name: Te, Get WhatsApp phone number information.          Returns:             Phone numbe (+8 more)
+Cohesion: 0.06
+Nodes (44): parse_webhook(), Send text message.          Args:             to: Recipient phone number (includ, Send media message (image, video, audio, document).          Args:             t, Send template message.          Args:             to: Recipient phone number, Send interactive message with buttons.          Args:             to: Recipient, WhatsApp API configuration., Mark incoming message as read.          Args:             message_id: WhatsApp m, List all message templates.          Returns:             List of template objec (+36 more)
 
 ### Community 113 - "Community 113"
 Cohesion: 0.02
 Nodes (82): additionalProperties, enum, type, enum, type, minLength, type, minLength (+74 more)
 
 ### Community 114 - "Community 114"
-Cohesion: 0.10
-Nodes (37): findHandoff(), HANDOFF_CANDIDATES, listRepos(), parseRepoAliases(), toRepoSummary(), getSkillsDir(), listSkills(), toDisplayName() (+29 more)
+Cohesion: 0.08
+Nodes (47): findHandoff(), HANDOFF_CANDIDATES, listRepos(), parseRepoAliases(), toRepoSummary(), DISALLOWED_SEGMENTS, invalidRuntimeReport(), listRuntimeReports() (+39 more)
 
 ### Community 115 - "Community 115"
 Cohesion: 0.02
@@ -6822,12 +7268,12 @@ Cohesion: 0.04
 Nodes (38): lambda_handler(), Lambda: Check Approval Status Verifies that script.status = approved in metadata, Check if script has been approved.      Expected input:     {       "jobId": "te, lambda_handler(), Lambda: Trigger MediaConvert Job Creates and submits a MediaConvert job for fina, Create and submit MediaConvert job for final assembly.      Expected input:, lambda_handler(), Lambda: Update Status Updates metadata/status.json with current assembly status. (+30 more)
 
 ### Community 120 - "Community 120"
-Cohesion: 0.18
-Nodes (4): CircuitBreaker, CircuitBreakerConfig, CircuitState, CircuitBreaker
+Cohesion: 0.22
+Nodes (3): CircuitBreaker, CircuitBreakerConfig, CircuitState
 
 ### Community 121 - "Community 121"
-Cohesion: 0.17
-Nodes (33): readJSON(), buildSnapshot(), buildSummary(), checkDatabaseAndPackage(), DEFAULT_LOCAL_REGISTRY_PATH, DEFAULT_LOG_PATH, DEFAULT_SNAPSHOT_PATH, __dirname (+25 more)
+Cohesion: 0.11
+Nodes (42): readJSON(), buildSnapshot(), buildSummary(), checkDatabaseAndPackage(), DEFAULT_LOCAL_REGISTRY_PATH, DEFAULT_LOG_PATH, DEFAULT_SNAPSHOT_PATH, __dirname (+34 more)
 
 ### Community 122 - "Community 122"
 Cohesion: 0.14
@@ -6838,8 +7284,8 @@ Cohesion: 0.24
 Nodes (6): Unit tests for agent request preparation., Test request preparation with strict_constrain_to_urls., Unit tests for agent request preparation., Test request preparation with URLs., Test webhook config with metadata., TestAgentRequestPreparation
 
 ### Community 124 - "Community 124"
-Cohesion: 0.12
-Nodes (23): checkContainerStatus(), ContainerResult, createInstagramMediaContainer(), InstagramPublishRequest, InstagramPublishResult, publishInstagramContainer(), ReqHandle, ResHandle (+15 more)
+Cohesion: 0.07
+Nodes (50): checkContainerStatus(), ContainerResult, createInstagramMediaContainer(), InstagramPublishRequest, InstagramPublishResult, publishInstagramContainer(), publishToInstagram(), ReqHandle (+42 more)
 
 ### Community 125 - "Community 125"
 Cohesion: 0.08
@@ -6878,12 +7324,12 @@ Cohesion: 0.08
 Nodes (24): aiGenerated, audioKey, audioProvider, audioSourceKey, generationMode, imageGenerated, imageGenerationKey, imageModelId (+16 more)
 
 ### Community 134 - "Community 134"
-Cohesion: 0.14
-Nodes (35): _filter_links(), _filter_url(), FilterLinksCall, FilterLinksResult, FilterUrlCall, FilterUrlResult, get_url_depth(), is_external_main_page() (+27 more)
+Cohesion: 0.13
+Nodes (34): _filter_links(), _filter_url(), FilterLinksCall, FilterLinksResult, FilterUrlCall, FilterUrlResult, is_external_main_page(), is_file() (+26 more)
 
 ### Community 135 - "Community 135"
-Cohesion: 0.02
-Nodes (88): Unit tests for Firecrawl v2 pagination functionality., Ensure request_timeout is forwarded to the HTTP client., Test get_crawl_status_page returns a single page., Ensure request_timeout is forwarded to crawl status page requests., Test get_crawl_status with auto_paginate=True., Test get_crawl_status with max_pages limit., Test get_crawl_status with max_results limit., Test get_crawl_status with max_wait_time limit. (+80 more)
+Cohesion: 0.03
+Nodes (48): from_env(), Unit tests for crawl params functionality in Firecrawl v2 SDK., Unit tests for CrawlParamsRequest., Test creating CrawlParamsRequest with valid data., Test that CrawlParamsRequest serializes correctly., Unit tests for CrawlParamsData., Test creating CrawlParamsData with minimal data., Test creating CrawlParamsData with values. (+40 more)
 
 ### Community 136 - "Community 136"
 Cohesion: 0.13
@@ -6894,32 +7340,32 @@ Cohesion: 0.03
 Nodes (75): const, type, const, type, const, type, const, type (+67 more)
 
 ### Community 138 - "Community 138"
-Cohesion: 0.08
-Nodes (30): BatchScrapeJob, BatchScrapeOptions, BatchScrapeResponse, BrowserCreateResponse, BrowserDeleteResponse, BrowserExecuteResponse, BrowserListResponse, FirecrawlClient (+22 more)
+Cohesion: 0.06
+Nodes (34): BatchScrapeJob, BatchScrapeOptions, BatchScrapeResponse, BrowserCreateResponse, BrowserDeleteResponse, BrowserExecuteResponse, BrowserListResponse, Builder (+26 more)
 
 ### Community 139 - "Community 139"
-Cohesion: 0.14
-Nodes (37): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), acceptCli(), argVal(), deindentContent(), detectCommentSyntax() (+29 more)
+Cohesion: 0.11
+Nodes (49): hasGeneratedHeader(), HEADER_MARKERS, isGeneratedFile(), isGitIgnored(), acceptCli(), argVal(), deindentContent(), detectCommentSyntax() (+41 more)
 
 ### Community 140 - "Community 140"
 Cohesion: 0.03
 Nodes (73): enum, type, enum, type, minLength, type, minLength, type (+65 more)
 
 ### Community 141 - "Community 141"
-Cohesion: 0.04
-Nodes (46): Alert, AlertChannel, AlertManager, AlertSeverity, ConsoleAlertChannel, defaultAlertManager, SlackAlertChannel, buildErrorContext() (+38 more)
+Cohesion: 0.05
+Nodes (36): Alert, AlertChannel, AlertManager, AlertSeverity, ConsoleAlertChannel, defaultAlertManager, SlackAlertChannel, buildErrorContext() (+28 more)
 
 ### Community 142 - "Community 142"
-Cohesion: 0.07
-Nodes (39): actionStatus, actionSupported(), activeAction, activeActionForApp(), AppCard(), apps, busy, dedupeAppsById() (+31 more)
+Cohesion: 0.08
+Nodes (38): actionStatus, actionSupported(), activeAction, activeActionForApp(), AppCard(), apps, busy, dedupeAppsById() (+30 more)
 
 ### Community 143 - "Community 143"
 Cohesion: 0.09
 Nodes (25): copyDirSync(), DedupIndex, getDedupPath(), git(), HarvestResult, loadDedupIndex(), saveDedupIndex(), WorktreeInfo (+17 more)
 
 ### Community 144 - "Community 144"
-Cohesion: 0.21
-Nodes (17): decode_cp1252(), DocProvider, extract_ascii_strings(), extract_document_text_cp1252(), extract_document_text_utf16(), extract_summary_info(), extract_text_content(), extract_text_fallback() (+9 more)
+Cohesion: 0.32
+Nodes (15): decode_cp1252(), DocProvider, extract_ascii_strings(), extract_document_text_cp1252(), extract_document_text_utf16(), extract_summary_info(), extract_text_content(), extract_text_fallback() (+7 more)
 
 ### Community 145 - "Community 145"
 Cohesion: 0.08
@@ -6927,7 +7373,7 @@ Nodes (24): aiGenerated, audioSourceKey, createdAt, description, generatedBy, ge
 
 ### Community 146 - "Community 146"
 Cohesion: 0.06
-Nodes (48): [crawledUrls, setCrawledUrls], CrawlerOptions, [crawlStatus, setCrawlStatus], [currentPage, setCurrentPage], [elapsedTime, setElapsedTime], FormData, [formData, setFormData], handleChange() (+40 more)
+Nodes (49): [crawledUrls, setCrawledUrls], CrawlerOptions, [crawlStatus, setCrawlStatus], [currentPage, setCurrentPage], [elapsedTime, setElapsedTime], FormData, [formData, setFormData], handleChange() (+41 more)
 
 ### Community 147 - "Community 147"
 Cohesion: 0.08
@@ -6942,12 +7388,12 @@ Cohesion: 0.08
 Nodes (24): aiGenerated, audioKey, audioProvider, audioSourceKey, generationMode, imageGenerated, imageGenerationKey, imageModelId (+16 more)
 
 ### Community 150 - "Community 150"
-Cohesion: 0.11
-Nodes (31): wire, AdapterMode, AnalyticsSummary, ApprovalStatus, ArtifactVariant, AuditEvent, BrandProfile, contentItemFromWire() (+23 more)
+Cohesion: 0.08
+Nodes (40): packages, Firecrawl.MixProject, deps(), package(), project(), wire, AdapterMode, AnalyticsSummary (+32 more)
 
 ### Community 151 - "Community 151"
-Cohesion: 0.04
-Nodes (68): const, type, const, type, type, const, type, additionalProperties (+60 more)
+Cohesion: 0.03
+Nodes (71): const, type, const, type, type, const, type, additionalProperties (+63 more)
 
 ### Community 152 - "Community 152"
 Cohesion: 0.03
@@ -6955,7 +7401,7 @@ Nodes (70): const, type, const, type, const, type, enum, type (+62 more)
 
 ### Community 154 - "Community 154"
 Cohesion: 0.09
-Nodes (25): sendJson(), BaseHTTPRequestHandler, handleApprove(), handleReject(), connect_db(), GoogleAdsHTTPHandler, Reject a mutation by ID., Apply an approved mutation by ID.          This calls the CLI directly via subpr (+17 more)
+Nodes (23): sendJson(), BaseHTTPRequestHandler, handleApprove(), handleReject(), connect_db(), GoogleAdsHTTPHandler, Reject a mutation by ID., Apply an approved mutation by ID.          This calls the CLI directly via subpr (+15 more)
 
 ### Community 155 - "Community 155"
 Cohesion: 0.18
@@ -6963,15 +7409,15 @@ Nodes (16): formatAge(), getConfiguredSessionDirs(), getExtension(), getFilename
 
 ### Community 156 - "Community 156"
 Cohesion: 0.03
-Nodes (70): const, type, enum, type, enum, type, const, type (+62 more)
+Nodes (72): const, type, enum, type, enum, type, const, type (+64 more)
 
 ### Community 157 - "Community 157"
-Cohesion: 0.09
-Nodes (45): parseArgs(), CACHE_DIR, compressArray(), compressContent(), compressJson(), compressJsonValue(), compressLines(), compressText() (+37 more)
+Cohesion: 0.15
+Nodes (24): candidateFiles(), classifyLine(), collectPatterns(), compactSnippet(), DEFAULT_OUT, extractStrings(), main(), parseArgs() (+16 more)
 
 ### Community 158 - "Community 158"
 Cohesion: 0.07
-Nodes (23): CampaignSnapshot, DailyMetrics, GoogleAdsAPI, GoogleAdsAPIError, GoogleAdsAuthError, GoogleAdsQueryError, A search term from the account., A Google Ads recommendation. (+15 more)
+Nodes (25): CampaignSnapshot, DailyMetrics, GoogleAdsAPI, GoogleAdsAPIError, GoogleAdsAuthError, GoogleAdsQueryError, A search term from the account., A Google Ads recommendation. (+17 more)
 
 ### Community 159 - "Community 159"
 Cohesion: 0.03
@@ -6979,7 +7425,7 @@ Nodes (70): minLength, type, minLength, type, minLength, type, minLength, type (
 
 ### Community 160 - "Community 160"
 Cohesion: 0.05
-Nodes (20): nestedDir, teardown(), versionFile, { exitCode }, { exitCode, stdout }, binDir, cache, cached (+12 more)
+Nodes (21): nestedDir, teardown(), versionFile, { exitCode }, { exitCode, stdout }, binDir, cache, cached (+13 more)
 
 ### Community 161 - "Community 161"
 Cohesion: 0.21
@@ -6990,16 +7436,16 @@ Cohesion: 0.08
 Nodes (37): ACCOUNT_FIXTURES, ANALYTICS_FIXTURES, CONTENT_ITEM_FIXTURES, DEFAULT_ANALYTICS, PACKAGE_FIXTURES, PIPELINE_PROFILE_FIXTURES, PROJECT_FIXTURES, readVOAccounts() (+29 more)
 
 ### Community 163 - "Community 163"
-Cohesion: 0.07
-Nodes (33): CreditUsage, FirecrawlApp, SearchDocument, SearchParams, SearchResponse, test_real_search(), test_search_error_response(), test_search_network_error() (+25 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 164 - "Community 164"
-Cohesion: 0.18
-Nodes (24): cleanup(), clearScrollY(), clearSession(), copyToClipboard(), desc(), handleAccept(), handleClick(), handleKeyDown() (+16 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 165 - "Community 165"
-Cohesion: 0.07
-Nodes (23): allowedSorts, body_parser_1, cors_1, express_1, http_1, Mutation, path_1, placeholders (+15 more)
+Cohesion: 0.12
+Nodes (16): allowedSorts, body_parser_1, cors_1, express_1, http_1, path_1, placeholders, sqlite3_1 (+8 more)
 
 ### Community 166 - "Community 166"
 Cohesion: 0.05
@@ -7014,12 +7460,12 @@ Cohesion: 0.03
 Nodes (69): type, minLength, type, enum, type, enum, type, minLength (+61 more)
 
 ### Community 169 - "Community 169"
-Cohesion: 0.20
-Nodes (22): ensurePlistInstalled(), execFileAsync, execLaunchctl(), findLegacyBrainCoreTargets(), formatError(), installedPlist, isPortListening(), launchctlPrint() (+14 more)
+Cohesion: 0.21
+Nodes (20): ensurePlistInstalled(), execFileAsync, execLaunchctl(), findLegacyBrainCoreTargets(), formatError(), installedPlist, isPortListening(), launchctlPrint() (+12 more)
 
 ### Community 170 - "Community 170"
 Cohesion: 0.14
-Nodes (25): BrainCoreVideoSeoPackage, BrainCoreVideoSeoPackageResponse, isSeoPackage(), readSeoPackageFile(), readVideoOrchestratorSeoPackage(), seoPackageFixtures, loadStoredVideoOrchestratorSeoPackage(), saveVideoOrchestratorSeoPackage() (+17 more)
+Nodes (24): BrainCoreVideoSeoPackage, BrainCoreVideoSeoPackageResponse, isSeoPackage(), readSeoPackageFile(), readVideoOrchestratorSeoPackage(), seoPackageFixtures, loadStoredVideoOrchestratorSeoPackage(), saveVideoOrchestratorSeoPackage() (+16 more)
 
 ### Community 171 - "Community 171"
 Cohesion: 0.18
@@ -7038,16 +7484,16 @@ Cohesion: 0.07
 Nodes (25): config, downloadAccountStatement(), elements, fs, https, inputs, log, logoutButtons (+17 more)
 
 ### Community 175 - "Community 175"
-Cohesion: 0.28
-Nodes (13): appendOriginToDirective(), buildTagBlock(), commentClose(), commentOpen(), __dirname, findCspMetaTags(), HARD_EXCLUDES, injectCli() (+5 more)
+Cohesion: 0.23
+Nodes (15): Forward attribute access to the underlying client., appendOriginToDirective(), buildTagBlock(), commentClose(), commentOpen(), __dirname, findCspMetaTags(), getAttr() (+7 more)
 
 ### Community 176 - "Community 176"
-Cohesion: 0.18
-Nodes (21): AnalyticsSnapshot, ArtifactStatus, AudioArtifact, CompositionArtifact, CompositionOutput, JobArtifact, jobArtifactFromWire(), MetadataArtifact (+13 more)
+Cohesion: 0.19
+Nodes (20): AnalyticsSnapshot, ArtifactStatus, AudioArtifact, CompositionArtifact, CompositionOutput, JobArtifact, jobArtifactFromWire(), MetadataArtifact (+12 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.05
-Nodes (42): codexSkillName(), condenseOpenAIShortDescription(), extractHookSafetyProse(), extractNameAndDescription(), generateOpenAIYaml(), transformFrontmatter(), Host, AI_SLOP_BLACKLIST (+34 more)
+Nodes (43): codexSkillName(), condenseOpenAIShortDescription(), extractHookSafetyProse(), extractNameAndDescription(), generateOpenAIYaml(), transformFrontmatter(), Host, HOST_PATHS (+35 more)
 
 ### Community 178 - "Community 178"
 Cohesion: 0.03
@@ -7066,28 +7512,28 @@ Cohesion: 0.17
 Nodes (21): buildTargetNames(), cleanSkillsLock(), cleanup(), DEPRECATED_NAMES, findProjectRoot(), findSkillsDirs(), HARNESS_DIRS, isImpeccableSkill() (+13 more)
 
 ### Community 182 - "Community 182"
-Cohesion: 0.01
-Nodes (125): Unit tests for recursive schema handling in v1 client., Tests for _contains_recursive_ref method in V1FirecrawlApp., Test definition that references itself., Test mutually recursive definitions., Test empty definitions dict., Test None definitions., Tests for _resolve_refs method in V1FirecrawlApp., Test schema with no recursive references. (+117 more)
+Cohesion: 0.02
+Nodes (86): Tests for _resolve_refs method in V1FirecrawlApp., Test resolving a simple $ref., Test resolving nested $refs., Test resolving $refs in array items., Test that resolution stops at max depth., Test resolving refs with circular references., Test schema with no $defs., Test that $defs key is skipped during resolution. (+78 more)
 
 ### Community 183 - "Community 183"
-Cohesion: 0.04
-Nodes (48): Start a crawl job and wait for it to complete.          Args:         client: HT, CancelCrawlResponse, CrawlAsyncResponse, CrawlError, CrawlErrorsResponse, CrawlOptions, CrawlRequestBody, CrawlScrapeFormats (+40 more)
+Cohesion: 0.06
+Nodes (34): CancelCrawlResponse, CrawlAsyncResponse, CrawlError, CrawlErrorsResponse, CrawlOptions, CrawlRequestBody, CrawlScrapeFormats, CrawlScrapeOptions (+26 more)
 
 ### Community 184 - "Community 184"
-Cohesion: 0.13
-Nodes (22): Send interactive message with buttons.          Args:             to: Recipient, cmd_account_info(), cmd_get_template(), cmd_list_templates(), cmd_mark_read(), cmd_phone_info(), cmd_send(), cmd_send_interactive() (+14 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 185 - "Community 185"
-Cohesion: 0.14
-Nodes (15): geistMono, geistSans, metadata, RootLayout(), GlobalPulseStrip(), Providers(), DashboardShell(), nav (+7 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 186 - "Community 186"
 Cohesion: 0.11
-Nodes (25): assert(), backlogDisabledKeys, compositeRestartCandidate, EXCLUDED_LIVE_ACTION_APPS, executable, expectGet(), fixedLifecycleCandidates, get() (+17 more)
+Nodes (24): assert(), backlogDisabledKeys, compositeRestartCandidate, EXCLUDED_LIVE_ACTION_APPS, executable, expectGet(), fixedLifecycleCandidates, get() (+16 more)
 
 ### Community 187 - "Community 187"
-Cohesion: 0.14
-Nodes (18): ANALYTICS_FILE, AnalyticsEvent, filterByPeriod(), formatReport(), main(), parseJSONL(), runScript(), SCRIPT (+10 more)
+Cohesion: 0.32
+Nodes (9): ANALYTICS_FILE, AnalyticsEvent, filterByPeriod(), formatReport(), main(), parseJSONL(), runScript(), SCRIPT (+1 more)
 
 ### Community 188 - "Community 188"
 Cohesion: 0.14
@@ -7098,24 +7544,24 @@ Cohesion: 0.11
 Nodes (13): Unit tests for webhook functionality in Firecrawl v2 SDK., Test WebhookConfig class functionality., Test webhook config with None values are excluded from serialization., Test creating WebhookConfig with minimal parameters., Test creating WebhookConfig with all parameters., Test WebhookConfig validation., Test CrawlRequest webhook functionality., Test CrawlRequest with string webhook. (+5 more)
 
 ### Community 190 - "Community 190"
-Cohesion: 0.09
-Nodes (12): Tests for _normalize_schema_for_openai method in V1FirecrawlApp., Test that additionalProperties: true is removed when properties exist., Test that additionalProperties: false is preserved., Test that required fields not in properties are removed., Test that empty required array is removed., Test that $ref is preserved., Test normalization with $defs., Test normalization of nested objects. (+4 more)
+Cohesion: 0.03
+Nodes (41): Unit tests for recursive schema handling in v1 client., Test definition that references itself., Test mutually recursive definitions., Test empty definitions dict., Test None definitions., Tests for _normalize_schema_for_openai method in V1FirecrawlApp., Test that additionalProperties: true is removed when properties exist., Test that additionalProperties: false is preserved. (+33 more)
 
 ### Community 191 - "Community 191"
-Cohesion: 0.14
-Nodes (46): ListType, ParagraphKind, child(), children(), compute_style_size_buckets_for_doc(), DocxProvider, get_attr_local(), image_from_drawing() (+38 more)
+Cohesion: 0.16
+Nodes (35): ListType, child(), children(), compute_style_size_buckets_for_doc(), get_attr_local(), image_from_drawing(), image_from_relationship_id(), image_from_vml() (+27 more)
 
 ### Community 192 - "Community 192"
-Cohesion: 0.12
-Nodes (13): formatLabel(), normalizeHistoryEntry(), normalizeSummary(), toSelection(), VideoAnalysisSummary, VideoAnalyzerDashboard(), VideoAnalyzerSelection, BRAIN_CORE_URL (+5 more)
+Cohesion: 0.07
+Nodes (29): geistMono, geistSans, metadata, RootLayout(), GlobalPulseStrip(), Providers(), DashboardShell(), nav (+21 more)
 
 ### Community 193 - "Community 193"
 Cohesion: 0.10
 Nodes (57): Any, ArgumentParser, bool, bytes, float, int, Namespace, Path (+49 more)
 
 ### Community 194 - "Community 194"
-Cohesion: 0.18
-Nodes (14): arm_rollback_monitor(), check_mutations_for_rollback(), create_rollback_schema(), export_rollback_csv(), get_rollback_status(), override_rollback(), _perform_rollback(), Check pending rollback monitors. If threshold breached, revert mutation.      Re (+6 more)
+Cohesion: 0.16
+Nodes (16): cmd_rollback_status(), Show rollback status: at-risk mutations, recent reversions, manual overrides (Ph, arm_rollback_monitor(), check_mutations_for_rollback(), create_rollback_schema(), export_rollback_csv(), get_rollback_status(), override_rollback() (+8 more)
 
 ### Community 195 - "Community 195"
 Cohesion: 0.10
@@ -7138,24 +7584,24 @@ Cohesion: 0.03
 Nodes (65): const, type, const, type, const, type, const, type (+57 more)
 
 ### Community 200 - "Community 200"
-Cohesion: 0.19
-Nodes (15): char, converter, ConvertHTMLToMarkdown(), FreeCString(), Converter, NewConverter(), NewHandler(), contains() (+7 more)
+Cohesion: 0.12
+Nodes (19): char, converter, DocumentConverter, ConvertHTMLToMarkdown(), FreeCString(), Converter, NewConverter(), NewHandler() (+11 more)
 
 ### Community 201 - "Community 201"
 Cohesion: 0.10
 Nodes (20): acceptedProviders, aiGenerated, audioSourceKey, currentStep, executionArn, failedStep, generationMode, imageGenerated (+12 more)
 
 ### Community 202 - "Community 202"
-Cohesion: 0.24
-Nodes (17): apiPathList(), C, captureDownloadUrl(), crawl(), downloadFile(), fileOnGDrive(), getFreeGB(), getPageTitle() (+9 more)
+Cohesion: 0.31
+Nodes (15): apiPathList(), C, captureDownloadUrl(), crawl(), downloadFile(), fileOnGDrive(), getFreeGB(), getPageTitle() (+7 more)
 
 ### Community 203 - "Community 203"
-Cohesion: 0.08
-Nodes (19): [auditTrail, setAuditTrail], DashboardStats, [detailMutationId, setDetailMutationId], [filter, setFilter], getTimeAgo(), Mutation, [mutation, setMutation], MutationDashboardProps (+11 more)
+Cohesion: 0.09
+Nodes (18): [auditTrail, setAuditTrail], DashboardStats, [detailMutationId, setDetailMutationId], [filter, setFilter], getTimeAgo(), Mutation, [mutation, setMutation], MutationDashboardProps (+10 more)
 
 ### Community 204 - "Community 204"
-Cohesion: 0.17
-Nodes (14): cmd_analyze_ab_tests(), Analyze A/B test results: compare test vs control buckets (Phase 4I)., analyze_ab_test_results(), queue_optimization_suggestions(), Score mutation using ML model if available, else fallback to rules.      Returns, Fallback rule-based scoring (same as notifications.py)., Suggest bid adjustments based on keyword performance.      Returns list of bid a, Queue cost optimization mutations for auto-approval. (+6 more)
+Cohesion: 0.15
+Nodes (16): cmd_analyze_ab_tests(), cmd_train_model(), Train ML model on historical mutations for better risk prediction (Phase 4I)., Analyze A/B test results: compare test vs control buckets (Phase 4I)., analyze_ab_test_results(), queue_optimization_suggestions(), Score mutation using ML model if available, else fallback to rules.      Returns, Fallback rule-based scoring (same as notifications.py). (+8 more)
 
 ### Community 205 - "Community 205"
 Cohesion: 0.17
@@ -7178,8 +7624,8 @@ Cohesion: 0.15
 Nodes (17): main(), Phase 3 Integration Test: Verify thumbnail modules load and basic functionality, Verify TemplateLibrary can discover templates., Verify VariantGenerator creates 3 variants., Verify error types are properly defined., Run all integration tests., Verify all Phase 3 modules can be imported., Verify ConfigLoader can load default configs. (+9 more)
 
 ### Community 210 - "Community 210"
-Cohesion: 0.42
-Nodes (9): requireApprovedReviewForPublish(), VideoReviewMetadata, inferGenerationModeForPublishGate(), isGeneratedMediaGenerationMode(), isReviewApproved(), publishGateDecision(), ReviewStatus, shouldRequireReviewGate() (+1 more)
+Cohesion: 0.48
+Nodes (8): requireApprovedReviewForPublish(), inferGenerationModeForPublishGate(), isGeneratedMediaGenerationMode(), isReviewApproved(), publishGateDecision(), ReviewStatus, shouldRequireReviewGate(), validateGeneratedMediaPublishAssets()
 
 ### Community 211 - "Community 211"
 Cohesion: 0.03
@@ -7198,8 +7644,8 @@ Cohesion: 0.18
 Nodes (17): build_task_content(), clickup_status_to_mind_status(), commit_import(), import_tasks(), main(), parse_clickup_priority(), parse_csv_file(), Map ClickUp status to Mind task status. (+9 more)
 
 ### Community 215 - "Community 215"
-Cohesion: 0.25
-Nodes (17): _apply_updates(), cmd_link(), cmd_status(), connect(), fetch_youtube_stats(), get_youtube_api_key(), _keychain_get(), main() (+9 more)
+Cohesion: 0.09
+Nodes (25): _apply_updates(), cmd_link(), cmd_status(), connect(), fetch_youtube_stats(), get_youtube_api_key(), _keychain_get(), main() (+17 more)
 
 ### Community 216 - "Community 216"
 Cohesion: 0.27
@@ -7211,7 +7657,7 @@ Nodes (9): __dirname, ensureServerRunning(), resolveFiles(), liveCli(), PID_FILE
 
 ### Community 218 - "Community 218"
 Cohesion: 0.04
-Nodes (55): ActiveCrawl, ActiveCrawlsResponse, AgentOptions, AgentResponse, AgentStatusResponse, AgentWebhookConfig, AgentWebhookEvent, BatchScrapeJob (+47 more)
+Nodes (59): ActiveCrawl, ActiveCrawlsResponse, AgentOptions, AgentResponse, AgentStatusResponse, AgentWebhookConfig, AgentWebhookEvent, AttributesFormat (+51 more)
 
 ### Community 219 - "Community 219"
 Cohesion: 0.03
@@ -7222,16 +7668,16 @@ Cohesion: 0.04
 Nodes (58): additionalProperties, properties, required, type, const, type, const, type (+50 more)
 
 ### Community 222 - "Community 222"
-Cohesion: 0.13
-Nodes (19): approveScript(), buildApprovalResponse(), isPublishedOrUploaded(), requestScriptChanges(), resolveTheologyReviewRequired(), https, httpsNoDotGit, remotes (+11 more)
+Cohesion: 0.12
+Nodes (21): approveScript(), buildApprovalResponse(), isPublishedOrUploaded(), loadApprovalContext(), readScriptForApproval(), requestScriptChanges(), resolveTheologyReviewRequired(), https (+13 more)
 
 ### Community 223 - "Community 223"
-Cohesion: 0.23
-Nodes (15): AiModelSelectorBedrockClaudeCode, AiModelSelectorBedrockModelMap, AiModelSelectorBedrockPortfolioModel, AiModelSelectorControlResult, AiModelSelectorHealthMatrix, AiModelSelectorHealthMatrixModel, AiModelSelectorProvider, AiModelSelectorStatus (+7 more)
+Cohesion: 0.24
+Nodes (13): AiModelSelectorBedrockClaudeCode, AiModelSelectorBedrockModelMap, AiModelSelectorBedrockPortfolioModel, AiModelSelectorControlResult, AiModelSelectorHealthMatrix, AiModelSelectorHealthMatrixModel, AiModelSelectorProvider, AiModelSelectorStatus (+5 more)
 
 ### Community 224 - "Community 224"
-Cohesion: 0.11
-Nodes (18): DocumentConverter, Comment, CommentId, Document, DocumentMetadata, Inline, List, ListItem (+10 more)
+Cohesion: 0.18
+Nodes (15): Block, Comment, CommentId, Document, DocumentMetadata, Inline, List, ListItem (+7 more)
 
 ### Community 225 - "Community 225"
 Cohesion: 0.03
@@ -7242,12 +7688,12 @@ Cohesion: 0.11
 Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
 
 ### Community 227 - "Community 227"
-Cohesion: 0.04
-Nodes (65): AttributeResult, AttributeSelector, extractAttributes(), extractImages(), extractImagesCheerio(), resolveImageUrl(), extractLinks(), extractLinksRust() (+57 more)
+Cohesion: 0.05
+Nodes (40): Document, MapData, stop(), start(), test_change_tracking_options(), TestChangeTracking, List, Map (+32 more)
 
 ### Community 228 - "Community 228"
-Cohesion: 0.08
-Nodes (55): actionLabel(), applyParamDefaults(), applyParamValue(), brandMarkSvg(), buildConfigureRow(), buildConfirmedRow(), buildCyclingRow(), buildDots() (+47 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 229 - "Community 229"
 Cohesion: 0.04
@@ -7263,7 +7709,7 @@ Nodes (7): Test that scraping with branding format returns branding data., Test 
 
 ### Community 232 - "Community 232"
 Cohesion: 0.04
-Nodes (55): minLength, type, minLength, type, minLength, type, minLength, type (+47 more)
+Nodes (52): minLength, type, minLength, type, minLength, type, minLength, type (+44 more)
 
 ### Community 233 - "Community 233"
 Cohesion: 0.26
@@ -7282,16 +7728,16 @@ Cohesion: 0.04
 Nodes (55): minLength, type, minLength, type, minLength, type, minLength, type (+47 more)
 
 ### Community 237 - "Community 237"
-Cohesion: 0.33
-Nodes (6): packages, Firecrawl.MixProject, deps(), package(), project(), Project
+Cohesion: 0.06
+Nodes (35): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generatedBy (+27 more)
 
 ### Community 238 - "Community 238"
-Cohesion: 0.07
-Nodes (12): Builder, ScrapeOptions, Boolean, Builder, Integer, List, LocationConfig, Long (+4 more)
+Cohesion: 0.05
+Nodes (15): Builder, Builder, ScrapeOptions, Integer, LocationConfig, Boolean, Builder, Integer (+7 more)
 
 ### Community 239 - "Community 239"
-Cohesion: 0.26
-Nodes (12): beginEditPin(), cancelEditingPin(), clearAnnotations(), finalizeEditingPin(), localCoords(), onAnnotDown(), onAnnotInputKey(), onAnnotMove() (+4 more)
+Cohesion: 0.06
+Nodes (35): aiGenerated, audioSourceKey, createdAt, description, dryRunCheckedAt, dryRunCheckedBy, dryRunPassed, generatedBy (+27 more)
 
 ### Community 240 - "Community 240"
 Cohesion: 0.07
@@ -7322,8 +7768,8 @@ Cohesion: 0.04
 Nodes (52): minLength, type, minLength, type, minLength, type, minLength, type (+44 more)
 
 ### Community 247 - "Community 247"
-Cohesion: 0.15
-Nodes (14): analyze_applied_mutations(), create_analysis_schema(), export_analysis_csv(), get_insights(), Find mutations applied 48+ hours ago and measure actual impact.      Returns cou, Create mutation_analysis table if it doesn't exist., Generate high-level insights from mutation analysis., Suggest approval gate adjustments based on insights. (+6 more)
+Cohesion: 0.14
+Nodes (16): analyze_applied_mutations(), create_analysis_schema(), export_analysis_csv(), get_insights(), Find mutations applied 48+ hours ago and measure actual impact.      Returns cou, Create mutation_analysis table if it doesn't exist., Generate high-level insights from mutation analysis., Suggest approval gate adjustments based on insights. (+8 more)
 
 ### Community 248 - "Community 248"
 Cohesion: 0.04
@@ -7378,8 +7824,8 @@ Cohesion: 0.54
 Nodes (6): NotificationPayload, NotificationResult, notifyApprovalAutoRejected(), notifyApprovalExpiringInFiveMinutes(), notifyApprovalRequested(), sendApprovalNotification()
 
 ### Community 262 - "Community 262"
-Cohesion: 0.21
-Nodes (8): parse_webhook(), WhatsApp API configuration., Handle incoming WhatsApp webhooks., Validate configuration., Initialize client with config., verify_webhook(), WhatsAppConfig, WhatsAppWebhookHandler
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 263 - "Community 263"
 Cohesion: 0.04
@@ -7450,8 +7896,8 @@ Cohesion: 0.04
 Nodes (46): additionalProperties, code, password, description, format, maxLength, minLength, ory.sh/kratos (+38 more)
 
 ### Community 281 - "Community 281"
-Cohesion: 0.05
-Nodes (47): const, type, const, type, additionalProperties, properties, required, type (+39 more)
+Cohesion: 0.06
+Nodes (43): const, type, const, type, properties, const, type, const (+35 more)
 
 ### Community 282 - "Community 282"
 Cohesion: 0.04
@@ -7574,8 +8020,8 @@ Cohesion: 0.05
 Nodes (43): 1. Visual Theme & Atmosphere, 2. Color Palette & Roles, 3. Typography Rules, 4. Component Stylings, 5. Layout Principles, 6. Depth & Elevation, 7. Do's and Don'ts, 8. Responsive Behavior (+35 more)
 
 ### Community 367 - "Community 367"
-Cohesion: 0.11
-Nodes (55): approveVideoReview(), buildReviewMedia(), buildVideoJobSummary(), buildVideoJobSummaryWithDiagnostics(), checkS3ObjectExists(), createCanonicalThumbnail(), createJobFromPrompt(), createPendingReview() (+47 more)
+Cohesion: 0.12
+Nodes (56): approveVideoReview(), buildDeterministicMotionLayer(), buildReviewMedia(), buildVideoJobSummary(), buildVideoJobSummaryWithDiagnostics(), checkS3ObjectExists(), createCanonicalThumbnail(), createMotionClipFromSceneImage() (+48 more)
 
 ### Community 368 - "Community 368"
 Cohesion: 0.05
@@ -7630,8 +8076,8 @@ Cohesion: 0.12
 Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
 
 ### Community 381 - "Community 381"
-Cohesion: 0.09
-Nodes (14): BrowserSession, BrowserTest, BrowserExecuteResponse, BrowserListResponse, Boolean, Integer, Override, String (+6 more)
+Cohesion: 0.06
+Nodes (19): BrowserSession, BrowserTest, BrowserDeleteResponse, BrowserExecuteResponse, BrowserListResponse, Integer, Long, Override (+11 more)
 
 ### Community 382 - "Community 382"
 Cohesion: 0.05
@@ -7759,11 +8205,11 @@ Nodes (39): Adding a New Platform, AI Model Routing, Architecture Overview, Blue
 
 ### Community 413 - "Community 413"
 Cohesion: 0.05
-Nodes (39): const, type, const, type, properties, const, type, const (+31 more)
+Nodes (40): const, type, const, type, additionalProperties, properties, required, type (+32 more)
 
 ### Community 414 - "Community 414"
 Cohesion: 0.05
-Nodes (44): enum, type, enum, type, additionalProperties, required, type, minLength (+36 more)
+Nodes (40): enum, type, enum, type, minLength, type, minLength, type (+32 more)
 
 ### Community 415 - "Community 415"
 Cohesion: 0.05
@@ -7786,8 +8232,8 @@ Cohesion: 0.05
 Nodes (39): 1. Fix Token (Priority), 1. Verify Setup, 2. Test Connection (Will Fail Until Token Fixed), 2. Universal Capability Install, 3. n8n Webhook Setup, 3. Send Your First Message, 4. Programmatic Usage (Python), 4. Test End-to-End (+31 more)
 
 ### Community 420 - "Community 420"
-Cohesion: 0.12
-Nodes (26): MindMaintenancePreviewQueue, BLOCKED_RUNTIME_ROOTS, createQueueId(), isRuntimeRootSafe(), listMaintenancePreviewArtifacts(), ListMaintenancePreviewArtifactsInput, MaintenancePreviewArtifactListItem, MaintenancePreviewArtifactMeta (+18 more)
+Cohesion: 0.06
+Nodes (58): readQueueSummary(), BLOCKED_PATHS_EXACT, BLOCKED_PATHS_PREFIXES, createActionId(), isPathBlocked(), mapFindingToAction(), MindMaintenancePreviewAction, MindMaintenancePreviewActionKind (+50 more)
 
 ### Community 421 - "Community 421"
 Cohesion: 0.14
@@ -7807,7 +8253,7 @@ Nodes (38): command_manifest_id, created_at, discovery_id, dry_run, execution_co
 
 ### Community 425 - "Community 425"
 Cohesion: 0.05
-Nodes (38): 0.0.1 — 2026-03-11, 0.0.2 — 2026-03-12, [0.10.0.0] - 2026-03-22 — Autoplan, [0.11.18.1] - 2026-03-24, [0.11.3.0] - 2026-03-23 — Design Outside Voices, [0.11.4.0] - 2026-03-22 — Codex in Office Hours, [0.11.5.1] - 2026-03-23 — Inline Office Hours, 0.3.1 — 2026-03-12 (+30 more)
+Nodes (38): 0.0.1 — 2026-03-11, 0.0.2 — 2026-03-12, [0.11.12.0] - 2026-03-24 — Triple-Voice Autoplan, [0.11.18.0] - 2026-03-24 — Ship With Teeth, [0.11.1.1] - 2026-03-22 — Plan Files Always Show Review Status, 0.3.1 — 2026-03-12, 0.4.1 — 2026-03-16, 0.4.2 — 2026-03-16 (+30 more)
 
 ### Community 426 - "Community 426"
 Cohesion: 0.05
@@ -7947,7 +8393,7 @@ Nodes (37): const, type, const, type, const, type, const, type (+29 more)
 
 ### Community 460 - "Community 460"
 Cohesion: 0.05
-Nodes (37): minLength, type, minLength, type, minLength, type, properties, created_at (+29 more)
+Nodes (41): minLength, type, additionalProperties, required, type, minLength, type, minLength (+33 more)
 
 ### Community 461 - "Community 461"
 Cohesion: 0.05
@@ -8014,8 +8460,8 @@ Cohesion: 0.06
 Nodes (36): type, items, type, additionalProperties, properties, required, type, type (+28 more)
 
 ### Community 477 - "Community 477"
-Cohesion: 0.07
-Nodes (33): const, type, additionalProperties, properties, required, type, const, type (+25 more)
+Cohesion: 0.05
+Nodes (50): const, type, additionalProperties, properties, required, type, const, type (+42 more)
 
 ### Community 478 - "Community 478"
 Cohesion: 0.06
@@ -8166,8 +8612,8 @@ Cohesion: 0.06
 Nodes (34): const, type, type, type, enum, type, const, type (+26 more)
 
 ### Community 515 - "Community 515"
-Cohesion: 0.05
-Nodes (40): additionalProperties, minLength, type, enum, type, $id, minLength, type (+32 more)
+Cohesion: 0.06
+Nodes (34): minLength, type, enum, type, minLength, type, minLength, type (+26 more)
 
 ### Community 516 - "Community 516"
 Cohesion: 0.06
@@ -8191,7 +8637,7 @@ Nodes (34): type, const, type, const, type, const, type, const (+26 more)
 
 ### Community 521 - "Community 521"
 Cohesion: 0.06
-Nodes (34): enum, type, enum, type, pattern, type, pattern, type (+26 more)
+Nodes (34): enum, type, enum, type, format, type, pattern, type (+26 more)
 
 ### Community 522 - "Community 522"
 Cohesion: 0.06
@@ -8407,7 +8853,7 @@ Nodes (32): enum, type, generated_by, provenance, source_final_render_execution_
 
 ### Community 575 - "Community 575"
 Cohesion: 0.06
-Nodes (32): description, enum, type, description, pattern, type, description, enum (+24 more)
+Nodes (32): description, enum, type, description, format, type, description, pattern (+24 more)
 
 ### Community 576 - "Community 576"
 Cohesion: 0.06
@@ -8427,7 +8873,7 @@ Nodes (32): minLength, type, enum, type, $ref, minLength, type, minLength (+24 m
 
 ### Community 580 - "Community 580"
 Cohesion: 0.07
-Nodes (34): const, const, const, const, additionalProperties, properties, required, type (+26 more)
+Nodes (34): const, type, const, const, const, additionalProperties, properties, required (+26 more)
 
 ### Community 581 - "Community 581"
 Cohesion: 0.06
@@ -8458,8 +8904,8 @@ Cohesion: 0.06
 Nodes (32): type, const, type, type, const, type, const, type (+24 more)
 
 ### Community 588 - "Community 588"
-Cohesion: 0.06
-Nodes (32): const, type, const, type, additionalProperties, properties, required, type (+24 more)
+Cohesion: 0.04
+Nodes (51): const, type, const, type, const, type, properties, const (+43 more)
 
 ### Community 589 - "Community 589"
 Cohesion: 0.06
@@ -8494,8 +8940,8 @@ Cohesion: 0.06
 Nodes (30): created_at, dry_run_upload_spike_result_id, final_real_upload_preflight_gate_id, final_render_execution_request_id, local_output_review_id, platform, platform_upload_request_id, production_render_spike_result_id (+22 more)
 
 ### Community 597 - "Community 597"
-Cohesion: 0.11
-Nodes (8): Builder, SearchOptions, Builder, Integer, List, Object, ScrapeOptions, String
+Cohesion: 0.10
+Nodes (9): Builder, SearchOptions, Boolean, Builder, Integer, List, Object, ScrapeOptions (+1 more)
 
 ### Community 598 - "Community 598"
 Cohesion: 0.06
@@ -8543,7 +8989,7 @@ Nodes (30): 10. FINAL PRE-FLIGHT CHECK, 1. ACTIVE BASELINE CONFIGURATION, 2. DEF
 
 ### Community 610 - "Community 610"
 Cohesion: 0.06
-Nodes (31): format, type, enum, type, enum, type, pattern, type (+23 more)
+Nodes (31): pattern, type, format, type, enum, type, enum, type (+23 more)
 
 ### Community 611 - "Community 611"
 Cohesion: 0.06
@@ -8551,7 +8997,7 @@ Nodes (31): enum, type, properties, enum, type, enum, type, enum (+23 more)
 
 ### Community 612 - "Community 612"
 Cohesion: 0.06
-Nodes (31): pattern, type, format, type, enum, type, pattern, type (+23 more)
+Nodes (31): pattern, type, pattern, type, pattern, type, enum, type (+23 more)
 
 ### Community 613 - "Community 613"
 Cohesion: 0.06
@@ -8562,16 +9008,16 @@ Cohesion: 0.07
 Nodes (31): items, type, const, type, const, type, minLength, type (+23 more)
 
 ### Community 615 - "Community 615"
-Cohesion: 0.06
-Nodes (31): enum, type, minLength, type, minLength, type, minLength, type (+23 more)
+Cohesion: 0.05
+Nodes (37): enum, type, additionalProperties, minLength, type, $id, minLength, type (+29 more)
 
 ### Community 616 - "Community 616"
 Cohesion: 0.06
 Nodes (31): const, type, const, type, const, type, properties, const (+23 more)
 
 ### Community 617 - "Community 617"
-Cohesion: 0.06
-Nodes (31): const, type, const, type, type, const, type, const (+23 more)
+Cohesion: 0.07
+Nodes (30): const, type, const, type, type, const, type, const (+22 more)
 
 ### Community 618 - "Community 618"
 Cohesion: 0.06
@@ -8594,12 +9040,12 @@ Cohesion: 0.06
 Nodes (31): const, type, type, additionalProperties, properties, required, type, const (+23 more)
 
 ### Community 623 - "Community 623"
-Cohesion: 0.06
-Nodes (31): const, type, type, additionalProperties, properties, required, type, const (+23 more)
+Cohesion: 0.07
+Nodes (29): const, type, additionalProperties, properties, required, type, const, type (+21 more)
 
 ### Community 624 - "Community 624"
-Cohesion: 0.07
-Nodes (31): items, type, type, const, type, const, type, blocking_reasons (+23 more)
+Cohesion: 0.50
+Nodes (4): validation, additionalProperties, required, type
 
 ### Community 625 - "Community 625"
 Cohesion: 0.06
@@ -8639,7 +9085,7 @@ Nodes (30): 1. Fix Token ✅ (High Priority), 2. Run Universal Capability Instal
 
 ### Community 634 - "Community 634"
 Cohesion: 0.08
-Nodes (50): AgentAiSurfaceCapabilityManifest, FALLBACK_AI_SURFACES, listAgentAiSurfaceCapabilities(), AGENT_CAPABILITIES, AgentCapabilityKind, AgentCapabilitySafetyClass, AgentCapabilitySummary, cloneCapability() (+42 more)
+Nodes (48): AgentAiSurfaceCapabilityManifest, FALLBACK_AI_SURFACES, listAgentAiSurfaceCapabilities(), AGENT_CAPABILITIES, AgentCapabilityKind, AgentCapabilitySafetyClass, AgentCapabilitySummary, cloneCapability() (+40 more)
 
 ### Community 635 - "Community 635"
 Cohesion: 0.07
@@ -8650,12 +9096,12 @@ Cohesion: 0.12
 Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
 
 ### Community 637 - "Community 637"
-Cohesion: 0.27
-Nodes (13): publishToInstagram(), PLATFORM_CAPABILITIES, PlatformCapability, publishDirect(), PublishResult, publishToInstagram(), publishToPlatform(), publishToTikTok() (+5 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 638 - "Community 638"
-Cohesion: 0.21
-Nodes (14): entry(), evidenceRefs, implementationRestrictions, nonApprovalStatements, operatorDecisionSummary, packetSections, readVideoProviderImplementationApprovalPacket(), readVideoProviderImplementationApprovalPacketEntry() (+6 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 639 - "Community 639"
 Cohesion: 0.18
@@ -8746,8 +9192,8 @@ Cohesion: 0.07
 Nodes (30): description, type, additionalProperties, description, properties, required, type, description (+22 more)
 
 ### Community 661 - "Community 661"
-Cohesion: 0.07
-Nodes (30): const, type, type, properties, const, type, const, type (+22 more)
+Cohesion: 0.06
+Nodes (34): const, type, type, additionalProperties, properties, required, type, const (+26 more)
 
 ### Community 662 - "Community 662"
 Cohesion: 0.07
@@ -8759,7 +9205,7 @@ Nodes (30): const, const, additionalProperties, properties, required, type, cons
 
 ### Community 664 - "Community 664"
 Cohesion: 0.07
-Nodes (30): items, type, const, const, additionalProperties, properties, required, type (+22 more)
+Nodes (30): items, const, const, additionalProperties, properties, required, type, const (+22 more)
 
 ### Community 665 - "Community 665"
 Cohesion: 0.07
@@ -8871,7 +9317,7 @@ Nodes (29): type, type, const, type, blockers_remaining, dry_run_execution_passe
 
 ### Community 692 - "Community 692"
 Cohesion: 0.07
-Nodes (29): minLength, type, $ref, minLength, type, minLength, type, properties (+21 more)
+Nodes (30): minLength, type, $ref, minLength, type, properties, created_at, execution_boundary (+22 more)
 
 ### Community 693 - "Community 693"
 Cohesion: 0.07
@@ -8919,7 +9365,7 @@ Nodes (29): items, type, enum, type, type, enum, type, blocking_reasons (+21 mor
 
 ### Community 704 - "Community 704"
 Cohesion: 0.07
-Nodes (29): items, type, enum, type, type, enum, type, enum (+21 more)
+Nodes (29): items, type, type, enum, type, enum, type, blocking_reasons (+21 more)
 
 ### Community 705 - "Community 705"
 Cohesion: 0.07
@@ -9091,7 +9537,7 @@ Nodes (28): minLength, type, minLength, type, minLength, type, properties, creat
 
 ### Community 747 - "Community 747"
 Cohesion: 0.07
-Nodes (28): const, type, const, type, const, type, const, type (+20 more)
+Nodes (29): items, type, type, const, type, const, type, additionalProperties (+21 more)
 
 ### Community 748 - "Community 748"
 Cohesion: 0.07
@@ -9118,8 +9564,8 @@ Cohesion: 0.07
 Nodes (28): enum, type, enum, type, type, additionalProperties, properties, required (+20 more)
 
 ### Community 754 - "Community 754"
-Cohesion: 0.15
-Nodes (8): AgentOptions, AgentResponse, AgentStatusResponse, AgentTest, Test canceling an agent job., BeforeAll, EnabledIfEnvironmentVariable, Test
+Cohesion: 0.17
+Nodes (7): AgentOptions, AgentResponse, AgentStatusResponse, AgentTest, BeforeAll, EnabledIfEnvironmentVariable, Test
 
 ### Community 755 - "Community 755"
 Cohesion: 0.07
@@ -9218,20 +9664,20 @@ Cohesion: 0.12
 Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
 
 ### Community 779 - "Community 779"
-Cohesion: 0.22
-Nodes (13): allowedFutureAuditFields, appendOnlyRules, disallowedAuditFields, entry(), proposedAuditEventTypes, proposedAuditRecordShape, readVideoProviderAuditPersistenceBoundaryPlan(), readVideoProviderAuditPersistenceBoundaryPlanEntry() (+5 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 780 - "Community 780"
 Cohesion: 0.20
 Nodes (10): HOST_PRIORITY, liveLabel(), MonitoringDashboard(), reportingLabel(), ServerRow(), toneForState(), WebsiteRow(), InfraNewRelicHost (+2 more)
 
 ### Community 781 - "Community 781"
-Cohesion: 0.18
-Nodes (9): Unit tests for crawl params functionality in Firecrawl v2 SDK., Unit tests for CrawlParamsRequest., Test creating CrawlParamsRequest with valid data., Test that CrawlParamsRequest serializes correctly., Unit tests for CrawlParamsData., Test creating CrawlParamsData with minimal data., Test creating CrawlParamsData with values., TestCrawlParamsData (+1 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 782 - "Community 782"
-Cohesion: 0.27
-Nodes (15): barPaletteForTheme(), connectSSE(), defangOutsideHandlers(), designPanelCss(), detectPageTheme(), init(), initActionPicker(), initAnnotOverlay() (+7 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 783 - "Community 783"
 Cohesion: 0.07
@@ -9310,20 +9756,20 @@ Cohesion: 0.18
 Nodes (26): description, post, post, post, post, post, post, /batch/scrape (+18 more)
 
 ### Community 802 - "Community 802"
-Cohesion: 0.20
-Nodes (9): declareThumbnailWinner(), DeclareThumbnailWinnerRequest, DeclareThumbnailWinnerResponse, getPool(), _injectPoolForTesting(), JobRow, ThumbnailArtifact, ThumbnailVariant (+1 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 803 - "Community 803"
-Cohesion: 0.23
-Nodes (12): entry(), prohibitedControls, proposedFutureEditableFields, proposedReadOnlyFields, proposedReviewStates, readVideoPromptReviewUxImplementationPlan(), readVideoPromptReviewUxImplementationPlanEntry(), requiredGuardrails (+4 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 804 - "Community 804"
 Cohesion: 0.23
 Nodes (12): entry(), prohibitedImplementationPatterns, readVideoProviderWrapperSecurityReviewPlan(), readVideoProviderWrapperSecurityReviewPlanEntry(), requiredAutomatedReviewChecks, requiredEvidence, requiredManualReviewChecks, safety (+4 more)
 
 ### Community 805 - "Community 805"
-Cohesion: 0.24
-Nodes (11): blockedControls, entry(), readVideoProviderApprovalPacketConsoleReviewSummary(), readVideoProviderApprovalPacketConsoleReviewSummaryEntry(), requiredOperatorAcknowledgements, reviewHighlights, reviewWarnings, safety (+3 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 806 - "Community 806"
 Cohesion: 0.26
@@ -9370,8 +9816,8 @@ Cohesion: 0.08
 Nodes (25): created_at, dry_run_upload_spike_result_id, final_real_upload_preflight_gate_id, final_render_execution_request_id, local_output_review_id, platform, platform_upload_request_id, production_render_spike_result_id (+17 more)
 
 ### Community 817 - "Community 817"
-Cohesion: 0.26
-Nodes (11): analyze_with_claude(), build_search_query(), Colors, display_results(), get_user_preferences(), main(), Use Claude to analyze apartment data and extract top options, Display the top apartment options in a readable format (+3 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 818 - "Community 818"
 Cohesion: 0.08
@@ -9482,16 +9928,16 @@ Cohesion: 0.08
 Nodes (25): Accessibility Checks, Console Checks, Edge Cases, Known Limitations (Phase 6.0 Beta), Malformed Data, Missing Data Files, Network Tab Inspection, Performance Baseline (+17 more)
 
 ### Community 845 - "Community 845"
-Cohesion: 0.23
-Nodes (11): BLOCKED_PATHS_EXACT, BLOCKED_PATHS_PREFIXES, createActionId(), createMindMaintenancePreviewQueueFromFindings(), isPathBlocked(), mapFindingToAction(), MindMaintenancePreviewAction, MindMaintenancePreviewActionKind (+3 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 846 - "Community 846"
-Cohesion: 0.30
-Nodes (10): finalizeTikTokPublish(), InitResult, initTikTokUpload(), publishToTikTok(), ReqHandle, ResHandle, TikTokPublishRequest, TikTokPublishResult (+2 more)
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
 
 ### Community 847 - "Community 847"
-Cohesion: 0.29
-Nodes (8): formatDuration(), GSTACK_DEV_DIR, HEARTBEAT_PATH, HeartbeatData, PARTIAL_PATH, PartialData, renderDashboard(), showTail
+Cohesion: 0.09
+Nodes (28): defaultLogger, defaultMetrics, LogEntry, LogLevel, Metric, MetricFilter, collector, sessionRunnerSrc (+20 more)
 
 ### Community 848 - "Community 848"
 Cohesion: 0.08
@@ -9594,8 +10040,8 @@ Cohesion: 0.08
 Nodes (26): additionalProperties, properties, required, type, const, type, const, type (+18 more)
 
 ### Community 873 - "Community 873"
-Cohesion: 0.11
-Nodes (19): minLength, type, minLength, type, enum, type, additionalProperties, properties (+11 more)
+Cohesion: 0.08
+Nodes (26): items, type, minLength, type, minLength, type, enum, type (+18 more)
 
 ### Community 874 - "Community 874"
 Cohesion: 0.08
@@ -9637,6 +10083,10 @@ Nodes (24): Cloudflare API Access, Create Tunnel, cURL, cURL, cURL, cURL, cURL, 
 Cohesion: 0.08
 Nodes (24): AI & Machine Learning, Cloudflare Platform Skill, Compute & Runtime, Developer Tools, Feature Flags, "I need AI/ML", "I need analytics/metrics data", "I need feature flags" (+16 more)
 
+### Community 884 - "Community 884"
+Cohesion: 0.06
+Nodes (35): audioKey, assetsJson, inferredS3, publishJson, statusJson, narrationKey, thumbnailKey, videoKey (+27 more)
+
 ### Community 885 - "Community 885"
 Cohesion: 0.08
 Nodes (24): bin, brain-agent, dependencies, pg, @types/pg, description, devDependencies, tsx (+16 more)
@@ -9646,7 +10096,7 @@ Cohesion: 0.08
 Nodes (24): BuildFlow Staging Status Report, Created, Current Blockers, Device Registration Endpoint, Executive Summary, Files Changed, Health Check Results (Latest), High-Risk Tests (Only if Needed) (+16 more)
 
 ### Community 887 - "Community 887"
-Cohesion: 0.20
+Cohesion: 0.19
 Nodes (4): FirecrawlClientTest, Builder, EnabledIfEnvironmentVariable, Test
 
 ### Community 888 - "Community 888"
@@ -9746,8 +10196,8 @@ Cohesion: 0.24
 Nodes (20): download_object(), fail(), info(), object_exists(), optional_object(), pass(), print_expected_artifacts(), require_cmd() (+12 more)
 
 ### Community 912 - "Community 912"
-Cohesion: 0.27
-Nodes (9): entry(), missingImplementationGates, readVideoDesignProviderEnablementReadinessIndex(), readVideoDesignProviderEnablementReadinessIndexEntry(), requiredPlanningSurfaces, safety, BrainCoreVideoDesignProviderEnablementReadinessIndex, BrainCoreVideoDesignProviderEnablementReadinessIndexEntry (+1 more)
+Cohesion: 0.08
+Nodes (17): AsyncV1CrawlWatcher, Initiate a crawl job and return a CrawlWatcher to monitor the job via WebSocket., Response from crawling operations., A class to watch and handle crawl job events via WebSocket connection.      Attr, Listens for incoming WebSocket messages and handles them.          Args:, Adds an event handler function for a specific event type.          Args:, Handles incoming WebSocket messages based on their type.          Args:, Handle errors from async API responses with detailed error messages.          Ar (+9 more)
 
 ### Community 913 - "Community 913"
 Cohesion: 0.08
@@ -9774,8 +10224,8 @@ Cohesion: 0.08
 Nodes (25): description, enum, type, description, enum, type, description, enum (+17 more)
 
 ### Community 919 - "Community 919"
-Cohesion: 0.09
-Nodes (22): minLength, type, $ref, minLength, type, properties, created_at, execution_boundary (+14 more)
+Cohesion: 0.08
+Nodes (25): minLength, type, $ref, minLength, type, properties, created_at, execution_boundary (+17 more)
 
 ### Community 920 - "Community 920"
 Cohesion: 0.08
@@ -9879,7 +10329,7 @@ Nodes (25): const, type, const, type, const, type, const, type (+17 more)
 
 ### Community 945 - "Community 945"
 Cohesion: 0.08
-Nodes (25): enum, type, $ref, minLength, type, properties, dry_run_design_review_state, execution_boundary (+17 more)
+Nodes (26): minLength, type, enum, type, $ref, minLength, type, properties (+18 more)
 
 ### Community 946 - "Community 946"
 Cohesion: 0.08
@@ -9890,8 +10340,8 @@ Cohesion: 0.08
 Nodes (25): const, type, const, type, const, type, const, type (+17 more)
 
 ### Community 948 - "Community 948"
-Cohesion: 0.09
-Nodes (22): $ref, minLength, type, properties, execution_boundary, project_id, report_scope, runtime_activation_dry_run_review_id (+14 more)
+Cohesion: 0.08
+Nodes (25): $ref, minLength, type, properties, execution_boundary, project_id, report_scope, runtime_activation_dry_run_contract_id (+17 more)
 
 ### Community 949 - "Community 949"
 Cohesion: 0.08
@@ -9931,7 +10381,7 @@ Nodes (25): properties, const, type, const, type, const, type, const (+17 more)
 
 ### Community 958 - "Community 958"
 Cohesion: 0.08
-Nodes (25): const, type, const, type, const, type, const, type (+17 more)
+Nodes (26): const, type, const, type, const, type, const, type (+18 more)
 
 ### Community 959 - "Community 959"
 Cohesion: 0.08
@@ -9947,7 +10397,7 @@ Nodes (25): const, type, const, type, const, type, const, type (+17 more)
 
 ### Community 962 - "Community 962"
 Cohesion: 0.09
-Nodes (22): minLength, type, $ref, $ref, minLength, type, properties, created_at (+14 more)
+Nodes (22): minLength, type, $ref, $ref, minLength, type, minLength, type (+14 more)
 
 ### Community 963 - "Community 963"
 Cohesion: 0.08
@@ -9959,7 +10409,7 @@ Nodes (25): properties, const, type, const, type, const, type, const (+17 more)
 
 ### Community 965 - "Community 965"
 Cohesion: 0.08
-Nodes (25): const, type, const, type, const, type, const, type (+17 more)
+Nodes (26): const, type, const, type, const, type, contains_raw_payload, contains_raw_response (+18 more)
 
 ### Community 966 - "Community 966"
 Cohesion: 0.08
@@ -9975,7 +10425,7 @@ Nodes (25): $ref, minLength, type, $ref, minLength, type, properties, candidate_
 
 ### Community 969 - "Community 969"
 Cohesion: 0.09
-Nodes (23): raw_payload_retrieved, raw_response_retrieved, real_upload_still_blocked, retrieval_controls, retrieves_summary_only, runtime_callable_retrieved, secret_material_retrieved, const (+15 more)
+Nodes (23): raw_payload_retrieved, raw_response_retrieved, real_upload_still_blocked, retrieval_contract_only, retrieval_controls, runtime_callable_retrieved, secret_material_retrieved, const (+15 more)
 
 ### Community 970 - "Community 970"
 Cohesion: 0.08
@@ -9983,7 +10433,7 @@ Nodes (25): real_upload_still_blocked, runtime_invocation_disabled, store_artifa
 
 ### Community 971 - "Community 971"
 Cohesion: 0.08
-Nodes (25): enum, type, platform_api_calls_allowed, render_allowed, source_media_access_requested, source_media_copy_allowed, source_media_mutation_allowed, source_media_read_only (+17 more)
+Nodes (26): enum, type, platform_api_calls_allowed, render_allowed, source_media_copy_allowed, source_media_mutation_allowed, source_media_policy, source_media_read_only (+18 more)
 
 ### Community 972 - "Community 972"
 Cohesion: 0.08
@@ -9996,6 +10446,10 @@ Nodes (25): type, type, type, additionalProperties, properties, required, type, 
 ### Community 974 - "Community 974"
 Cohesion: 0.08
 Nodes (25): type, type, type, type, additionalProperties, properties, required, type (+17 more)
+
+### Community 976 - "Community 976"
+Cohesion: 0.06
+Nodes (32): 1. Full, 1. Preflight, 2. Critical Rebuild, 2. Full, 3. Hook, 3. Update, 4. Critical Rebuild, 4. Watch (+24 more)
 
 ### Community 977 - "Community 977"
 Cohesion: 0.08
@@ -10030,12 +10484,12 @@ Cohesion: 0.08
 Nodes (23): Arq CLI Skill, Automation: Pause during intensive task, Automation: Schedule daily backup, Command Discovery, Common Patterns, Credential Management, Decision Rationale, Deep Links (+15 more)
 
 ### Community 985 - "Community 985"
-Cohesion: 0.18
-Nodes (21): asRecord(), AwsVideoDashboard(), CompactPublishResultCard(), containsInternalOverlayTerms(), errorMessage(), GenerationArtifactsCard(), getMonotonicJobStatus(), isReadyToPublish() (+13 more)
+Cohesion: 0.09
+Nodes (32): AwsVideoSelection, TimeoutMonitorSnapshot, useAwsVideoSelection(), actionErrorSummary(), asRecord(), AwsVideoDashboard(), CompactPublishResultCard(), containsInternalOverlayTerms() (+24 more)
 
 ### Community 986 - "Community 986"
-Cohesion: 0.27
-Nodes (9): dashboardHighlights, entry(), operatorWarnings, readVideoProviderImplementationReadinessDashboardSummary(), readVideoProviderImplementationReadinessDashboardSummaryEntry(), safety, BrainCoreVideoProviderImplementationReadinessDashboardSummary, BrainCoreVideoProviderImplementationReadinessDashboardSummaryEntry (+1 more)
+Cohesion: 0.06
+Nodes (30): aiGenerated, audioKey, audioProvider, audioSourceKey, finalVideo, generationMode, imageGenerated, imageGenerationKey (+22 more)
 
 ### Community 987 - "Community 987"
 Cohesion: 0.08
@@ -10498,12 +10952,12 @@ Cohesion: 0.09
 Nodes (23): const, type, const, type, const, type, const, type (+15 more)
 
 ### Community 1102 - "Community 1102"
-Cohesion: 0.08
-Nodes (26): additionalProperties, properties, required, type, const, type, const, type (+18 more)
+Cohesion: 0.09
+Nodes (23): additionalProperties, properties, required, type, const, type, const, type (+15 more)
 
 ### Community 1103 - "Community 1103"
-Cohesion: 0.08
-Nodes (26): const, type, const, type, direct_upload_allowed, max_upload_attempts, real_upload_execution_allowed, resumable_upload_allowed (+18 more)
+Cohesion: 0.09
+Nodes (23): const, type, const, type, direct_upload_allowed, max_upload_attempts, real_upload_execution_allowed, resumable_upload_allowed (+15 more)
 
 ### Community 1104 - "Community 1104"
 Cohesion: 0.09
@@ -10522,8 +10976,8 @@ Cohesion: 0.09
 Nodes (23): enum, type, $ref, minLength, type, minLength, type, properties (+15 more)
 
 ### Community 1108 - "Community 1108"
-Cohesion: 0.11
-Nodes (19): const, type, const, type, activation_contract_only, contains_secret_material, real_upload_still_blocked, runtime_invocation_disabled (+11 more)
+Cohesion: 0.09
+Nodes (23): const, type, const, type, activation_contract_only, contains_raw_response, real_upload_still_blocked, report_controls (+15 more)
 
 ### Community 1109 - "Community 1109"
 Cohesion: 0.09
@@ -10754,12 +11208,12 @@ Cohesion: 0.09
 Nodes (22): const, type, const, type, const, type, const, type (+14 more)
 
 ### Community 1166 - "Community 1166"
-Cohesion: 0.10
-Nodes (20): description, type, const, description, type, description, type, description (+12 more)
+Cohesion: 0.09
+Nodes (22): description, type, description, type, description, type, description, type (+14 more)
 
 ### Community 1167 - "Community 1167"
 Cohesion: 0.09
-Nodes (22): enum, type, enum, type, format, type, enum, type (+14 more)
+Nodes (22): enum, type, format, type, enum, type, pattern, type (+14 more)
 
 ### Community 1168 - "Community 1168"
 Cohesion: 0.09
@@ -10882,16 +11336,16 @@ Cohesion: 0.09
 Nodes (22): const, type, const, type, const, type, properties, contains_raw_payload (+14 more)
 
 ### Community 1198 - "Community 1198"
-Cohesion: 0.09
-Nodes (22): minLength, type, $ref, enum, type, $ref, minLength, type (+14 more)
+Cohesion: 0.08
+Nodes (25): $ref, enum, type, $ref, minLength, type, properties, design_scope (+17 more)
 
 ### Community 1199 - "Community 1199"
 Cohesion: 0.09
 Nodes (22): $ref, minLength, type, properties, execution_boundary, project_id, render_plan_id, review_scope (+14 more)
 
 ### Community 1200 - "Community 1200"
-Cohesion: 0.09
-Nodes (22): const, type, const, type, const, type, properties, contains_raw_response (+14 more)
+Cohesion: 0.11
+Nodes (19): const, type, const, type, properties, contains_runtime_callable, dry_run_executed_now, ready_for_real_upload_now (+11 more)
 
 ### Community 1201 - "Community 1201"
 Cohesion: 0.09
@@ -10907,11 +11361,11 @@ Nodes (22): $ref, minLength, type, properties, execution_boundary, platform, rea
 
 ### Community 1204 - "Community 1204"
 Cohesion: 0.09
-Nodes (22): const, type, const, type, const, type, const, type (+14 more)
+Nodes (22): const, type, const, type, const, type, properties, contains_raw_response (+14 more)
 
 ### Community 1205 - "Community 1205"
-Cohesion: 0.09
-Nodes (22): $ref, minLength, type, minLength, type, properties, execution_boundary, platform (+14 more)
+Cohesion: 0.08
+Nodes (25): $ref, minLength, type, minLength, type, properties, execution_boundary, platform (+17 more)
 
 ### Community 1206 - "Community 1206"
 Cohesion: 0.09
@@ -10950,8 +11404,8 @@ Cohesion: 0.09
 Nodes (22): $ref, $ref, minLength, type, minLength, type, properties, execution_boundary (+14 more)
 
 ### Community 1215 - "Community 1215"
-Cohesion: 0.09
-Nodes (22): $ref, $ref, minLength, type, properties, decision_scope, execution_boundary, platform (+14 more)
+Cohesion: 0.08
+Nodes (25): minLength, type, $ref, $ref, minLength, type, minLength, type (+17 more)
 
 ### Community 1216 - "Community 1216"
 Cohesion: 0.09
@@ -10963,7 +11417,7 @@ Nodes (22): type, type, properties, entry_id, entry_kind, raw_payload_present, r
 
 ### Community 1218 - "Community 1218"
 Cohesion: 0.09
-Nodes (22): $ref, minLength, type, minLength, type, minLength, type, properties (+14 more)
+Nodes (22): $ref, minLength, type, minLength, type, properties, execution_boundary, noop_runtime_stub_id (+14 more)
 
 ### Community 1219 - "Community 1219"
 Cohesion: 0.09
@@ -11275,7 +11729,7 @@ Nodes (21): type, type, const, type, const, type, additionalProperties, properti
 
 ### Community 1296 - "Community 1296"
 Cohesion: 0.10
-Nodes (21): description, pattern, type, description, format, type, description, enum (+13 more)
+Nodes (21): description, pattern, type, description, pattern, type, description, format (+13 more)
 
 ### Community 1297 - "Community 1297"
 Cohesion: 0.10
@@ -11474,8 +11928,8 @@ Cohesion: 0.10
 Nodes (19): Contents, Iterate deliberately, Structure, API-controlled params, Avoiding artifacts, Camera & composition, Character continuity, Constraints & invariants (+11 more)
 
 ### Community 1346 - "Community 1346"
-Cohesion: 0.10
-Nodes (19): author, description, keywords, license, name, private, scripts, models:sync:bedrock (+11 more)
+Cohesion: 0.07
+Nodes (26): author, description, keywords, license, name, private, scripts, graphify:preflight (+18 more)
 
 ### Community 1347 - "Community 1347"
 Cohesion: 0.10
@@ -11547,7 +12001,7 @@ Nodes (20): const, type, operator_kill_switch_required, real_upload_still_blocke
 
 ### Community 1364 - "Community 1364"
 Cohesion: 0.10
-Nodes (20): const, type, operator_kill_switch_required, raw_payload_storage_allowed, real_upload_still_blocked, safe_stub_only, safety_controls, single_upload_limit (+12 more)
+Nodes (20): const, type, operator_kill_switch_required, raw_payload_storage_allowed, raw_response_storage_allowed, real_upload_still_blocked, safety_controls, single_upload_limit (+12 more)
 
 ### Community 1365 - "Community 1365"
 Cohesion: 0.10
@@ -11563,7 +12017,7 @@ Nodes (20): description, items, type, description, items, type, type, blocking_r
 
 ### Community 1368 - "Community 1368"
 Cohesion: 0.10
-Nodes (20): description, type, description, type, description, enum, type, description (+12 more)
+Nodes (20): description, type, description, type, description, type, properties, dry_run (+12 more)
 
 ### Community 1369 - "Community 1369"
 Cohesion: 0.10
@@ -11622,8 +12076,8 @@ Cohesion: 0.12
 Nodes (20): items, type, items, minItems, type, additionalProperties, minLength, required (+12 more)
 
 ### Community 1383 - "Community 1383"
-Cohesion: 0.12
-Nodes (17): const, type, additionalProperties, properties, required, type, const, type (+9 more)
+Cohesion: 0.06
+Nodes (30): aiGenerated, audioKey, audioProvider, audioSourceKey, finalVideo, generationMode, imageGenerated, imageGenerationKey (+22 more)
 
 ### Community 1384 - "Community 1384"
 Cohesion: 0.10
@@ -11651,11 +12105,11 @@ Nodes (20): description, pattern, type, description, pattern, type, properties, 
 
 ### Community 1390 - "Community 1390"
 Cohesion: 0.09
-Nodes (22): const, type, const, type, const, type, contains_raw_payload, contains_secret_material (+14 more)
+Nodes (22): const, type, const, type, const, type, contains_raw_payload, contains_raw_response (+14 more)
 
 ### Community 1391 - "Community 1391"
-Cohesion: 0.10
-Nodes (20): readiness_only, real_upload_still_blocked, report_controls, runtime_invocation_disabled, runtime_wiring_implemented, safe_report_only, const, type (+12 more)
+Cohesion: 0.11
+Nodes (19): const, type, contains_raw_payload, readiness_only, real_upload_still_blocked, runtime_invocation_disabled, runtime_wiring_implemented, safe_report_only (+11 more)
 
 ### Community 1392 - "Community 1392"
 Cohesion: 0.10
@@ -11682,8 +12136,8 @@ Cohesion: 0.11
 Nodes (18): Azure Complete Cost Breakdown — All Services, Combined Budget Analysis, Current Month (April 2026), Days Remaining & Budget Runway, Key Findings, Month-to-Date (April 1-12, 2026) — 12 Days into Month, Month-to-Date (April 1-12, 2026) — 12 Days into Month, Per-Subscription Grant Allocation (+10 more)
 
 ### Community 1398 - "Community 1398"
-Cohesion: 0.26
-Nodes (15): chooseBest(), DEFAULT_STATE_DIR, ensureDir(), FeedbackRecommendation, FeedbackStore, FeedbackSummary, getFeedbackPath(), PublishOutcomeRecord (+7 more)
+Cohesion: 0.07
+Nodes (28): aiGenerated, audioKey, audioProvider, audioSourceKey, generationMode, imageGenerated, imageGenerationKey, imageModelId (+20 more)
 
 ### Community 1399 - "Community 1399"
 Cohesion: 0.11
@@ -12066,8 +12520,8 @@ Cohesion: 0.11
 Nodes (19): type, allowed_source_reference_summary, source_checks_required, source_inventory_required, source_media_access_requested, source_media_mutation_allowed, source_media_policy, enum (+11 more)
 
 ### Community 1494 - "Community 1494"
-Cohesion: 0.12
-Nodes (16): minLength, type, minLength, type, $ref, properties, controlled_runtime_activation_final_review_id, created_at (+8 more)
+Cohesion: 0.11
+Nodes (19): minLength, type, minLength, type, minLength, type, $ref, minLength (+11 more)
 
 ### Community 1495 - "Community 1495"
 Cohesion: 0.11
@@ -12082,12 +12536,12 @@ Cohesion: 0.11
 Nodes (19): enum, type, minLength, type, minLength, type, $ref, properties (+11 more)
 
 ### Community 1498 - "Community 1498"
-Cohesion: 0.11
-Nodes (19): minLength, type, minLength, type, $ref, enum, type, properties (+11 more)
+Cohesion: 0.12
+Nodes (16): minLength, type, minLength, type, $ref, enum, type, properties (+8 more)
 
 ### Community 1499 - "Community 1499"
 Cohesion: 0.12
-Nodes (16): $ref, minLength, type, $ref, minLength, type, properties, boundary_scope (+8 more)
+Nodes (16): $ref, minLength, type, $ref, enum, type, minLength, type (+8 more)
 
 ### Community 1500 - "Community 1500"
 Cohesion: 0.11
@@ -12195,7 +12649,7 @@ Nodes (19): const, type, const, type, properties, const, type, contains_raw_resp
 
 ### Community 1526 - "Community 1526"
 Cohesion: 0.11
-Nodes (19): minLength, type, $ref, $ref, minLength, type, properties, created_at (+11 more)
+Nodes (19): minLength, type, $ref, $ref, properties, created_at, execution_boundary, final_summary_scope (+11 more)
 
 ### Community 1527 - "Community 1527"
 Cohesion: 0.11
@@ -12598,8 +13052,8 @@ Cohesion: 0.11
 Nodes (17): Current Capabilities, Dashboard Boundary, Executive Summary, Explicitly Disabled Capabilities, First Real Private Upload Readiness, Go / No-Go Checklist, Idempotency and Lifecycle Status, Known Limitations (+9 more)
 
 ### Community 1627 - "Community 1627"
-Cohesion: 0.09
-Nodes (32): get_version(), Dynamically set version, RuntimeError, get_gradle_version(), get_js_version(), get_maven_central_version(), get_npm_version(), get_pypi_version() (+24 more)
+Cohesion: 0.11
+Nodes (30): RuntimeError, get_gradle_version(), get_js_version(), get_maven_central_version(), get_npm_version(), get_pypi_version(), get_python_version(), is_version_incremented() (+22 more)
 
 ### Community 1628 - "Community 1628"
 Cohesion: 0.11
@@ -12623,7 +13077,7 @@ Nodes (17): author, description, devDependencies, artillery, license, name, brac
 
 ### Community 1633 - "Community 1633"
 Cohesion: 0.11
-Nodes (18): minLength, type, minLength, type, properties, pattern, type, minLength (+10 more)
+Nodes (18): minLength, type, minLength, type, properties, pattern, type, type (+10 more)
 
 ### Community 1634 - "Community 1634"
 Cohesion: 0.12
@@ -12647,7 +13101,7 @@ Nodes (18): enum, type, generated_by, provenance, source_real_upload_executor_ad
 
 ### Community 1639 - "Community 1639"
 Cohesion: 0.11
-Nodes (19): items, type, type, blocking_reasons, ready_for_real_upload, ready_for_real_upload_execution_design_review, real_upload_readiness_assessed, validation (+11 more)
+Nodes (18): const, type, credentials_accessed, ready_for_real_upload, ready_for_real_upload_execution_design_review, real_upload_readiness_assessed, upload_allowed, validation (+10 more)
 
 ### Community 1640 - "Community 1640"
 Cohesion: 0.11
@@ -12786,8 +13240,8 @@ Cohesion: 0.27
 Nodes (8): blockers, expectedDisabledFlags, forbiddenCapabilities, forbiddenPatterns, indexedModules, safety, BrainCoreVideoProviderSafetyRegressionIndex, BrainCoreVideoProviderSafetyRegressionIndexResponse
 
 ### Community 1675 - "Community 1675"
-Cohesion: 0.07
-Nodes (59): extractHeaderHtmlChunk(), findHeaderStart(), stripNoise(), enhanceBrandingWithLLM(), isDebugBrandingEnabled(), CONFIDENCE_THRESHOLDS, detectLogoVariants(), detectRepeatedLogos() (+51 more)
+Cohesion: 0.12
+Nodes (16): black20, black50, black80, blackBg, blackOnBlack, blackOnNearTransparent, blackOnSemiTransparent, blackOnTransparent (+8 more)
 
 ### Community 1676 - "Community 1676"
 Cohesion: 0.12
@@ -13354,8 +13808,8 @@ Cohesion: 0.12
 Nodes (16): Anti-Patterns, Cloudflare Sandbox SDK, Code Interpreter (Recommended for AI), Core Patterns, Detailed References, Execute Commands, Extending the Dockerfile, File Operations (+8 more)
 
 ### Community 1817 - "Community 1817"
-Cohesion: 0.36
-Nodes (5): GeminiResult, ParsedGeminiJSONL, parseGeminiJSONL(), runGeminiSkill(), FIXTURE_LINES
+Cohesion: 0.07
+Nodes (28): aiGenerated, audioKey, audioProvider, audioSourceKey, generationMode, imageGenerated, imageGenerationKey, imageModelId (+20 more)
 
 ### Community 1818 - "Community 1818"
 Cohesion: 0.12
@@ -13470,8 +13924,8 @@ Cohesion: 0.12
 Nodes (17): type, generated_by, provenance, source_final_render_execution_request_id, source_manifest_id, source_output_directory_approval_id, source_production_render_request_id, source_source_media_inventory_id (+9 more)
 
 ### Community 1846 - "Community 1846"
-Cohesion: 0.11
-Nodes (19): properties, const, type, const, type, final_review_required, operator_kill_switch_required, real_upload_still_blocked (+11 more)
+Cohesion: 0.12
+Nodes (17): additionalProperties, properties, required, type, const, type, const, type (+9 more)
 
 ### Community 1847 - "Community 1847"
 Cohesion: 0.12
@@ -14102,8 +14556,8 @@ Cohesion: 0.12
 Nodes (16): const, type, properties, const, type, boundary_request_only, operator_kill_switch_required, real_upload_still_blocked (+8 more)
 
 ### Community 2004 - "Community 2004"
-Cohesion: 0.10
-Nodes (20): const, type, const, type, candidate_reviewed, operator_kill_switch_required, real_upload_still_blocked, review_controls (+12 more)
+Cohesion: 0.12
+Nodes (16): const, type, const, type, candidate_reviewed, operator_kill_switch_required, real_upload_still_blocked, review_only (+8 more)
 
 ### Community 2005 - "Community 2005"
 Cohesion: 0.12
@@ -14111,7 +14565,7 @@ Nodes (16): const, type, const, type, const, type, properties, contains_raw_payl
 
 ### Community 2006 - "Community 2006"
 Cohesion: 0.12
-Nodes (16): minLength, type, $ref, properties, created_at, execution_boundary, report_scope, safe_report_state (+8 more)
+Nodes (16): minLength, type, $ref, minLength, type, properties, created_at, execution_boundary (+8 more)
 
 ### Community 2007 - "Community 2007"
 Cohesion: 0.12
@@ -14122,8 +14576,8 @@ Cohesion: 0.12
 Nodes (16): $ref, minLength, type, minLength, type, $ref, properties, candidate_scope (+8 more)
 
 ### Community 2009 - "Community 2009"
-Cohesion: 0.12
-Nodes (16): const, type, const, type, final_boundary_reviewed, operator_kill_switch_required, real_upload_still_blocked, review_only (+8 more)
+Cohesion: 0.10
+Nodes (20): const, type, const, type, final_boundary_reviewed, operator_kill_switch_required, real_upload_still_blocked, review_controls (+12 more)
 
 ### Community 2010 - "Community 2010"
 Cohesion: 0.12
@@ -14170,8 +14624,8 @@ Cohesion: 0.12
 Nodes (16): const, type, properties, implemented_now, result_id, result_kind, result_state, runtime_executed_now (+8 more)
 
 ### Community 2021 - "Community 2021"
-Cohesion: 0.12
-Nodes (16): $ref, minLength, type, properties, execution_boundary, project_id, real_runtime_stub_boundary_request_id, render_plan_id (+8 more)
+Cohesion: 0.15
+Nodes (13): $ref, minLength, type, properties, execution_boundary, project_id, real_runtime_stub_boundary_request_id, request_scope (+5 more)
 
 ### Community 2022 - "Community 2022"
 Cohesion: 0.12
@@ -14231,7 +14685,7 @@ Nodes (16): description, format, type, description, enum, type, description, pat
 
 ### Community 2036 - "Community 2036"
 Cohesion: 0.12
-Nodes (16): description, enum, type, description, type, description, pattern, type (+8 more)
+Nodes (16): description, enum, type, description, type, description, enum, type (+8 more)
 
 ### Community 2037 - "Community 2037"
 Cohesion: 0.12
@@ -14279,7 +14733,7 @@ Nodes (16): type, type, enum, type, properties, check_id, check_kind, check_stat
 
 ### Community 2048 - "Community 2048"
 Cohesion: 0.12
-Nodes (16): minLength, type, $ref, minLength, type, minLength, type, properties (+8 more)
+Nodes (16): minLength, type, $ref, properties, created_at, execution_boundary, report_scope, runtime_stub_retrieval_contract_id (+8 more)
 
 ### Community 2049 - "Community 2049"
 Cohesion: 0.12
@@ -14495,7 +14949,7 @@ Nodes (14): Codex, Gemini CLI, or Cursor, Docs, gstack, Install — 30 seconds, 
 
 ### Community 2102 - "Community 2102"
 Cohesion: 0.13
-Nodes (14): Builder Ethos, Codex, Codex→Claude reverse buddy check skill, Completeness, Completeness metrics dashboard, Deployment health tracking (retro + browse), First-time Search Before Building intro, Retro (+6 more)
+Nodes (14): Builder Ethos, Codex, Codex→Claude reverse buddy check skill, Completeness, Completeness metrics dashboard, Deployment health tracking (retro + browse), Design docs → Supabase team store sync, First-time Search Before Building intro (+6 more)
 
 ### Community 2103 - "Community 2103"
 Cohesion: 0.11
@@ -14888,6 +15342,10 @@ Nodes (15): type, type, local_output_review_validated, platform_upload_request_v
 ### Community 2200 - "Community 2200"
 Cohesion: 0.13
 Nodes (15): type, generated_by, provenance, source_final_render_execution_request_id, source_local_output_review_id, source_production_render_spike_result_id, source_render_plan_id, additionalProperties (+7 more)
+
+### Community 2201 - "Community 2201"
+Cohesion: 0.07
+Nodes (28): Acceptance criteria, AI assistant usage, Canonical outputs, Code-only AST update policy, Critical semantic rebuild policy, Current decision, Full semantic build policy, Goals (+20 more)
 
 ### Community 2202 - "Community 2202"
 Cohesion: 0.12
@@ -15742,8 +16200,8 @@ Cohesion: 0.15
 Nodes (12): BuildFlow Production Cutover Plan: Local Tunnel → Dokploy Relay, ⚠️ CRITICAL PREREQUISITES, Current-State Architecture, Device Token Management, Executive Summary, Local Agent Configuration, Next Actions (After Plan Review), Production Device Token Generation (+4 more)
 
 ### Community 2415 - "Community 2415"
-Cohesion: 0.15
-Nodes (4): Builder, Executor, FirecrawlHttpClient, OkHttpClient
+Cohesion: 0.07
+Nodes (16): Tests for _contains_recursive_ref method in V1FirecrawlApp., Test schema with no recursive references., Test schema with simple recursive reference., Test schema with indirect recursive reference., Test schema with recursive reference in array items., Test empty schema returns False., Test None input returns False., TestV1RecursiveRefDetection (+8 more)
 
 ### Community 2416 - "Community 2416"
 Cohesion: 0.15
@@ -15954,8 +16412,8 @@ Cohesion: 0.15
 Nodes (12): Decision, Exact phrase: ProChat OS, Filing strategy, Naming fallback options, Preliminary findings, ProChat OS Trademark Research, Recommended positioning to reduce risk, Recommended trademark classes to review with counsel (+4 more)
 
 ### Community 2468 - "Community 2468"
-Cohesion: 0.40
-Nodes (6): SearchData, List, Map, Object, Override, String
+Cohesion: 0.08
+Nodes (16): Tests for _detect_recursive_schema method in V1FirecrawlApp., Test detection of $ref., Test detection of $defs., Test detection of definitions (alternative to $defs)., Test schema with no recursive patterns., Test with None input., Test with non-dict input., TestV1DetectRecursiveSchema (+8 more)
 
 ### Community 2469 - "Community 2469"
 Cohesion: 0.15
@@ -16310,8 +16768,8 @@ Cohesion: 0.15
 Nodes (13): type, type, enum, type, const, type, properties, check_id (+5 more)
 
 ### Community 2557 - "Community 2557"
-Cohesion: 0.15
-Nodes (13): minLength, type, $ref, $ref, minLength, type, properties, controlled_runtime_activation_dry_run_result_id (+5 more)
+Cohesion: 0.12
+Nodes (16): minLength, type, $ref, $ref, minLength, type, minLength, type (+8 more)
 
 ### Community 2558 - "Community 2558"
 Cohesion: 0.15
@@ -18778,8 +19236,8 @@ Cohesion: 0.18
 Nodes (11): operator_review, checklist_acknowledged, credential_boundary_acknowledged, decision_note_summary, dry_run_boundary_acknowledged, platform_boundary_acknowledged, reviewed_by_label, understands_future_separate_real_upload_phase_required (+3 more)
 
 ### Community 3174 - "Community 3174"
-Cohesion: 0.25
-Nodes (10): Colors, extract_company_info(), main(), poll_firecrawl_result(), Use requests to call Firecrawl's extract endpoint with selected URLs., Poll Firecrawl API to get the extraction result., Search Google using SerpAPI and return top results., Use Gemini 2.0 Flash to select URLs from SERP results.     Returns a list of URL (+2 more)
+Cohesion: 0.10
+Nodes (26): Colors, extract_company_info(), main(), poll_firecrawl_result(), Use requests to call Firecrawl's extract endpoint with selected URLs., Poll Firecrawl API to get the extraction result., Search Google using SerpAPI and return top results., Use Gemini 2.0 Flash to select URLs from SERP results.     Returns a list of URL (+18 more)
 
 ### Community 3175 - "Community 3175"
 Cohesion: 0.25
@@ -18826,8 +19284,8 @@ Cohesion: 0.27
 Nodes (3): BrowserCreateResponse, Override, String
 
 ### Community 3186 - "Community 3186"
-Cohesion: 0.20
-Nodes (5): BrowserDeleteResponse, Integer, Long, Override, String
+Cohesion: 0.08
+Nodes (12): Without preference metadata, selector uses default priority order., preferred_providers reorders providers to put preferred first., disallowed_providers removes a provider from eligibility., allowed_providers creates a whitelist; only those can be selected., preferred_models reorders model selection., disallowed_models removes a specific model option, provider skipped if no viable, allowed_models restricts to specific models only., ordered policy (default) falls back if preferred unavailable. (+4 more)
 
 ### Community 3187 - "Community 3187"
 Cohesion: 0.18
@@ -20719,7 +21177,7 @@ Nodes (8): scheme, type, components, securitySchemes, openapi, security, bearerA
 
 ### Community 3659 - "Community 3659"
 Cohesion: 0.22
-Nodes (9): 2.1 Register Production Device Tokens, 2.2 Register Token with Production Relay, 2.3 Save Production Device Configuration, 5.1 Full Production Verification, 5.2 Monitor Key Metrics, 5.3 Phase 5 Success Criteria, Cutover Phases, Phase 2: Register Production Device Tokens (+1 more)
+Nodes (9): 2.1 Register Production Device Tokens, 2.2 Register Token with Production Relay, 2.3 Save Production Device Configuration, 3.1 Test Production Device Token, 3.2 Test Local Agent Connection to Production Relay (Optional, Early Testing), 3.3 Phase 3 Success Criteria, Cutover Phases, Phase 2: Register Production Device Tokens (+1 more)
 
 ### Community 3660 - "Community 3660"
 Cohesion: 0.22
@@ -20758,8 +21216,8 @@ Cohesion: 0.22
 Nodes (8): Configuration, Context Mode MCP, Install, Package, Runtime locations (outside repo, never commit), Source, Verify, What it does
 
 ### Community 3669 - "Community 3669"
-Cohesion: 0.39
-Nodes (6): getVoStudioPool(), _injectVoStudioPoolForTesting(), MigrationResult, MIGRATIONS_DIR, MODULE_DIR, runMigrations()
+Cohesion: 0.13
+Nodes (19): getBrainRepoRoot(), MODULE_DIR, getVoStudioPool(), _injectVoStudioPoolForTesting(), MigrationResult, MIGRATIONS_DIR, MODULE_DIR, runMigrations() (+11 more)
 
 ### Community 3670 - "Community 3670"
 Cohesion: 0.22
@@ -22022,8 +22480,8 @@ Cohesion: 0.25
 Nodes (7): Context, Gotchas, MLX Pipeline Memory Safety (Apple Silicon), The approach, The fix, The insight, When this applies
 
 ### Community 3985 - "Community 3985"
-Cohesion: 0.03
-Nodes (88): cancel_batch_scrape(), _fetch_all_batch_pages_async(), get_batch_scrape_errors(), get_batch_scrape_status(), get_batch_scrape_status_page(), _parse_batch_scrape_documents(), _parse_batch_scrape_status_response(), _prepare() (+80 more)
+Cohesion: 0.33
+Nodes (5): authError, endTime, socketHangUpError, successResponse, timeoutError
 
 ### Community 3986 - "Community 3986"
 Cohesion: 0.25
@@ -23365,10 +23823,6 @@ Nodes (6): AI Writes Code But Not Businesses, Hook, Solution, Call to Action, In
 Cohesion: 0.29
 Nodes (6): Call to Action (55-60 seconds), Hook (0-5 seconds), Metadata, Application (50-55 seconds), Body (5-50 seconds), Does Baptism Save?
 
-### Community 4321 - "Community 4321"
-Cohesion: 0.19
-Nodes (9): Block, data_type_to_string(), XlsxProvider, pass, name, Z, j, ge() (+1 more)
-
 ### Community 4322 - "Community 4322"
 Cohesion: 0.29
 Nodes (7): Phase 1: Initialize, Phase 2: Authenticate (if needed), Phase 3: Orient, Phase 4: Explore, Phase 5: Document, Phase 6: Wrap Up, Workflow
@@ -23850,8 +24304,8 @@ Cohesion: 0.29
 Nodes (6): additionalProperties, $id, required, $schema, title, type
 
 ### Community 4442 - "Community 4442"
-Cohesion: 0.29
-Nodes (6): additionalProperties, $id, required, $schema, title, type
+Cohesion: 0.08
+Nodes (24): aiGenerated, audioSourceKey, createdAt, description, generatedBy, generationMode, imageGenerated, jobId (+16 more)
 
 ### Community 4443 - "Community 4443"
 Cohesion: 0.29
@@ -24634,8 +25088,8 @@ Cohesion: 0.33
 Nodes (5): bugs, fixture, max_false_positives, minimum_detection, total_bugs
 
 ### Community 4638 - "Community 4638"
-Cohesion: 0.40
-Nodes (5): get_firecrawl_news_data(), NewsData, NewsItem, Save the scraped news data to a JSON file with the current date in the filename., save_firecrawl_news_data()
+Cohesion: 0.08
+Nodes (24): aiGenerated, audioSourceKey, createdAt, description, generatedBy, generationMode, imageGenerated, jobId (+16 more)
 
 ### Community 4639 - "Community 4639"
 Cohesion: 0.53
@@ -27146,8 +27600,8 @@ Cohesion: 0.50
 Nodes (4): Completed Tasks, Exit Criteria Met, Goal, Phase 0: Architecture Lock and Preservation (COMPLETE)
 
 ### Community 5281 - "Community 5281"
-Cohesion: 0.50
-Nodes (3): Contents, Rule, Tools
+Cohesion: 0.40
+Nodes (4): Contents, Graphify orchestration, Rule, Tools
 
 ### Community 5282 - "Community 5282"
 Cohesion: 0.50
@@ -27198,8 +27652,8 @@ Cohesion: 0.50
 Nodes (4): additionalProperties, required, type, candidate_controls
 
 ### Community 5294 - "Community 5294"
-Cohesion: 0.50
-Nodes (4): review_controls, additionalProperties, required, type
+Cohesion: 0.08
+Nodes (24): aiGenerated, audioSourceKey, createdAt, description, generatedBy, generationMode, imageGenerated, jobId (+16 more)
 
 ### Community 5295 - "Community 5295"
 Cohesion: 0.25
@@ -27326,16 +27780,16 @@ Cohesion: 0.50
 Nodes (4): scheduled_for, description, format, type
 
 ### Community 5326 - "Community 5326"
-Cohesion: 0.50
-Nodes (4): schema_version, description, enum, type
+Cohesion: 0.08
+Nodes (24): aiGenerated, audioSourceKey, createdAt, description, generatedBy, generationMode, imageGenerated, jobId (+16 more)
 
 ### Community 5327 - "Community 5327"
 Cohesion: 0.50
 Nodes (4): description, pattern, type, command_manifest_id
 
 ### Community 5328 - "Community 5328"
-Cohesion: 0.50
-Nodes (4): description, format, type, created_at
+Cohesion: 0.08
+Nodes (25): default, type, $ref, default, type, const, type, default (+17 more)
 
 ### Community 5329 - "Community 5329"
 Cohesion: 0.50
@@ -27350,12 +27804,12 @@ Cohesion: 0.50
 Nodes (4): description, pattern, type, mock_result_id
 
 ### Community 5332 - "Community 5332"
-Cohesion: 0.50
-Nodes (4): description, pattern, type, project_id
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5333 - "Community 5333"
-Cohesion: 0.50
-Nodes (4): real_execution_gate_id, description, pattern, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5334 - "Community 5334"
 Cohesion: 0.50
@@ -27414,8 +27868,8 @@ Cohesion: 0.50
 Nodes (4): schema_version, description, enum, type
 
 ### Community 5348 - "Community 5348"
-Cohesion: 0.50
-Nodes (4): additionalProperties, required, type, activation_scope
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5349 - "Community 5349"
 Cohesion: 0.50
@@ -27430,8 +27884,8 @@ Cohesion: 0.50
 Nodes (4): additionalProperties, required, type, checklist_scope
 
 ### Community 5352 - "Community 5352"
-Cohesion: 0.50
-Nodes (4): description, pattern, type, approval_id
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5353 - "Community 5353"
 Cohesion: 0.50
@@ -27446,8 +27900,8 @@ Cohesion: 0.50
 Nodes (4): render_plan_id, description, pattern, type
 
 ### Community 5356 - "Community 5356"
-Cohesion: 0.50
-Nodes (4): schema_version, description, enum, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5357 - "Community 5357"
 Cohesion: 0.50
@@ -27570,8 +28024,8 @@ Cohesion: 0.50
 Nodes (4): description, enum, type, plan_state
 
 ### Community 5387 - "Community 5387"
-Cohesion: 0.50
-Nodes (4): description, enum, type, platform
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5388 - "Community 5388"
 Cohesion: 0.50
@@ -27594,8 +28048,8 @@ Cohesion: 0.29
 Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
 
 ### Community 5393 - "Community 5393"
-Cohesion: 0.50
-Nodes (4): review_controls, additionalProperties, required, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5394 - "Community 5394"
 Cohesion: 0.29
@@ -27642,8 +28096,8 @@ Cohesion: 0.50
 Nodes (4): additionalProperties, required, type, closeout_controls
 
 ### Community 5405 - "Community 5405"
-Cohesion: 0.50
-Nodes (4): review_controls, additionalProperties, required, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5406 - "Community 5406"
 Cohesion: 0.50
@@ -27658,8 +28112,8 @@ Cohesion: 0.50
 Nodes (4): additionalProperties, required, type, checklist_controls
 
 ### Community 5409 - "Community 5409"
-Cohesion: 0.50
-Nodes (4): review_controls, additionalProperties, required, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5410 - "Community 5410"
 Cohesion: 0.50
@@ -27678,8 +28132,8 @@ Cohesion: 0.50
 Nodes (4): store_controls, additionalProperties, required, type
 
 ### Community 5414 - "Community 5414"
-Cohesion: 0.50
-Nodes (4): maximum, minimum, type, max_upload_attempts
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5415 - "Community 5415"
 Cohesion: 0.50
@@ -28298,8 +28752,8 @@ Cohesion: 0.67
 Nodes (3): render_plan_id, minLength, type
 
 ### Community 5624 - "Community 5624"
-Cohesion: 0.67
-Nodes (3): schema_version, const, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5625 - "Community 5625"
 Cohesion: 0.67
@@ -28394,8 +28848,8 @@ Cohesion: 0.67
 Nodes (3): enum, type, dry_run_state
 
 ### Community 5648 - "Community 5648"
-Cohesion: 0.67
-Nodes (3): minLength, type, project_id
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5649 - "Community 5649"
 Cohesion: 0.67
@@ -28654,8 +29108,8 @@ Cohesion: 0.67
 Nodes (3): minLength, type, project_id
 
 ### Community 5713 - "Community 5713"
-Cohesion: 0.67
-Nodes (3): raw_response_storage_allowed, const, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5714 - "Community 5714"
 Cohesion: 0.67
@@ -28842,8 +29296,8 @@ Cohesion: 0.67
 Nodes (3): enum, type, env_access_allowed
 
 ### Community 5760 - "Community 5760"
-Cohesion: 0.67
-Nodes (3): enum, type, ffmpeg_execution_allowed
+Cohesion: 0.08
+Nodes (23): aiGenerated, audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms (+15 more)
 
 ### Community 5761 - "Community 5761"
 Cohesion: 0.67
@@ -28858,16 +29312,16 @@ Cohesion: 0.67
 Nodes (3): pattern, type, production_render_request_id
 
 ### Community 5764 - "Community 5764"
-Cohesion: 0.67
-Nodes (3): schema_version, enum, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5765 - "Community 5765"
-Cohesion: 0.67
-Nodes (3): source_media_inventory_id, pattern, type
+Cohesion: 0.08
+Nodes (23): aiGenerated, audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms (+15 more)
 
 ### Community 5766 - "Community 5766"
-Cohesion: 0.67
-Nodes (3): source_media_read_allowed, enum, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5767 - "Community 5767"
 Cohesion: 0.33
@@ -28990,8 +29444,8 @@ Cohesion: 0.67
 Nodes (3): pattern, type, production_render_request_id
 
 ### Community 5797 - "Community 5797"
-Cohesion: 0.67
-Nodes (3): pattern, type, project_id
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5798 - "Community 5798"
 Cohesion: 0.67
@@ -29006,8 +29460,8 @@ Cohesion: 0.67
 Nodes (3): real_runtime_stub_boundary_contract_id, minLength, type
 
 ### Community 5801 - "Community 5801"
-Cohesion: 0.67
-Nodes (3): real_runtime_stub_boundary_request_id, minLength, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5802 - "Community 5802"
 Cohesion: 0.40
@@ -29086,8 +29540,8 @@ Cohesion: 0.67
 Nodes (3): real_upload_readiness_assessment_id, minLength, type
 
 ### Community 5821 - "Community 5821"
-Cohesion: 0.67
-Nodes (3): const, type, media_read_enabled_now
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5822 - "Community 5822"
 Cohesion: 0.67
@@ -29230,8 +29684,8 @@ Cohesion: 0.67
 Nodes (3): runtime_activation_dry_run_contract_id, minLength, type
 
 ### Community 5858 - "Community 5858"
-Cohesion: 0.67
-Nodes (3): runtime_activation_dry_run_design_id, minLength, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5860 - "Community 5860"
 Cohesion: 0.67
@@ -29254,8 +29708,8 @@ Cohesion: 0.67
 Nodes (3): schema_version, const, type
 
 ### Community 5865 - "Community 5865"
-Cohesion: 0.50
-Nodes (4): 3.1 Test Production Device Token, 3.2 Test Local Agent Connection to Production Relay (Optional, Early Testing), 3.3 Phase 3 Success Criteria, Phase 3: Pre-Cutover Testing (Parallel Testing with Staging)
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5866 - "Community 5866"
 Cohesion: 0.50
@@ -29270,8 +29724,8 @@ Cohesion: 0.67
 Nodes (3): render_plan_id, minLength, type
 
 ### Community 5869 - "Community 5869"
-Cohesion: 0.67
-Nodes (3): runtime_activation_dry_run_contract_id, minLength, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5870 - "Community 5870"
 Cohesion: 0.67
@@ -29314,16 +29768,16 @@ Cohesion: 0.67
 Nodes (3): minLength, type, created_at
 
 ### Community 5880 - "Community 5880"
-Cohesion: 0.67
-Nodes (3): ready_for_real_upload_now, const, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5881 - "Community 5881"
-Cohesion: 0.67
-Nodes (3): render_plan_id, minLength, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5882 - "Community 5882"
-Cohesion: 0.67
-Nodes (3): runtime_activation_readiness_review_id, minLength, type
+Cohesion: 0.08
+Nodes (23): categoryId, createdAt, description, generationMode, jobId, metadataQuality, descriptionLength, hasInternalTerms (+15 more)
 
 ### Community 5883 - "Community 5883"
 Cohesion: 0.67
@@ -29526,8 +29980,8 @@ Cohesion: 0.67
 Nodes (3): runtime_stub_completion_summary_id, minLength, type
 
 ### Community 5933 - "Community 5933"
-Cohesion: 0.67
-Nodes (3): schema_version, const, type
+Cohesion: 0.11
+Nodes (20): computeAllowedActions(), computeFinalizationState(), computeMissingRequirements(), ControlPlaneArtifactsView, ControlPlaneExecutionView, ControlPlaneFinalizationView, ControlPlaneMissingRequirement, ControlPlanePublishView (+12 more)
 
 ### Community 5934 - "Community 5934"
 Cohesion: 0.67
@@ -29582,8 +30036,8 @@ Cohesion: 0.67
 Nodes (3): minLength, type, created_at
 
 ### Community 5947 - "Community 5947"
-Cohesion: 0.67
-Nodes (3): runtime_invocation_disabled, const, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 5948 - "Community 5948"
 Cohesion: 0.67
@@ -29702,8 +30156,8 @@ Cohesion: 0.67
 Nodes (3): enum, type, manifest_state
 
 ### Community 5977 - "Community 5977"
-Cohesion: 0.67
-Nodes (3): minLength, type, platform
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 5978 - "Community 5978"
 Cohesion: 0.67
@@ -29714,16 +30168,16 @@ Cohesion: 0.67
 Nodes (3): runtime_stub_store_retrieval_safe_report_id, minLength, type
 
 ### Community 5980 - "Community 5980"
-Cohesion: 0.67
-Nodes (3): minLength, type, created_at
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 5981 - "Community 5981"
 Cohesion: 0.67
 Nodes (3): enum, type, decision_state
 
 ### Community 5982 - "Community 5982"
-Cohesion: 0.67
-Nodes (3): minLength, type, project_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 5983 - "Community 5983"
 Cohesion: 0.67
@@ -29810,8 +30264,8 @@ Cohesion: 0.67
 Nodes (3): retrieval_contract_state, enum, type
 
 ### Community 6004 - "Community 6004"
-Cohesion: 0.67
-Nodes (3): runtime_stub_retrieval_contract_id, minLength, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6005 - "Community 6005"
 Cohesion: 0.67
@@ -29834,8 +30288,8 @@ Cohesion: 0.50
 Nodes (4): sourceVideo, path, provider, source
 
 ### Community 6010 - "Community 6010"
-Cohesion: 0.67
-Nodes (3): runtime_stub_sequence_regression_report_id, minLength, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6011 - "Community 6011"
 Cohesion: 0.50
@@ -29918,16 +30372,16 @@ Cohesion: 0.67
 Nodes (3): render_plan_id, minLength, type
 
 ### Community 6031 - "Community 6031"
-Cohesion: 0.67
-Nodes (3): runtime_stub_retrieval_contract_id, minLength, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6032 - "Community 6032"
 Cohesion: 0.67
 Nodes (3): runtime_stub_store_id, minLength, type
 
 ### Community 6033 - "Community 6033"
-Cohesion: 0.67
-Nodes (3): runtime_stub_store_retrieval_safe_report_id, minLength, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6034 - "Community 6034"
 Cohesion: 0.67
@@ -29970,16 +30424,16 @@ Cohesion: 0.50
 Nodes (3): Prompt, Status, Make a video of somebody sitting behind the computer.
 
 ### Community 6044 - "Community 6044"
-Cohesion: 0.50
-Nodes (4): AttributesFormat, ChangeTrackingFormat, Format, JsonFormat
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6045 - "Community 6045"
 Cohesion: 0.50
 Nodes (4): description, maxLength, type, brand_voice
 
 ### Community 6046 - "Community 6046"
-Cohesion: 0.67
-Nodes (3): format, type, created_at
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6047 - "Community 6047"
 Cohesion: 0.67
@@ -29990,24 +30444,56 @@ Cohesion: 0.67
 Nodes (3): For Gemini-specific usage, For tool builders integrating new platform APIs, Standing Implementation Notes
 
 ### Community 6066 - "Community 6066"
-Cohesion: 0.50
-Nodes (4): additionalProperties, required, type, candidate_controls
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6075 - "Community 6075"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6077 - "Community 6077"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6079 - "Community 6079"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6080 - "Community 6080"
 Cohesion: 0.50
 Nodes (4): review_decision, additionalProperties, required, type
 
 ### Community 6082 - "Community 6082"
-Cohesion: 0.50
-Nodes (4): description, pattern, type, preflight_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6083 - "Community 6083"
 Cohesion: 0.50
 Nodes (4): stub_contract_controls, additionalProperties, required, type
 
+### Community 6084 - "Community 6084"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6088 - "Community 6088"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6089 - "Community 6089"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6090 - "Community 6090"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
 ### Community 6092 - "Community 6092"
-Cohesion: 0.50
-Nodes (4): report_controls, additionalProperties, required, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
+
+### Community 6095 - "Community 6095"
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6167 - "Community 6167"
 Cohesion: 0.50
@@ -30018,52 +30504,52 @@ Cohesion: 0.50
 Nodes (4): summary_controls, additionalProperties, required, type
 
 ### Community 6190 - "Community 6190"
-Cohesion: 0.50
-Nodes (4): source_media_policy, additionalProperties, required, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6199 - "Community 6199"
-Cohesion: 0.67
-Nodes (3): Design docs → Supabase team store sync, Office Hours / Design, /yc-prep skill
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6207 - "Community 6207"
-Cohesion: 0.67
-Nodes (3): rate_limits, additionalProperties, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6232 - "Community 6232"
-Cohesion: 0.67
-Nodes (3): pattern, type, command_manifest_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6263 - "Community 6263"
 Cohesion: 0.67
 Nodes (3): minLength, type, project_id
 
 ### Community 6264 - "Community 6264"
-Cohesion: 0.67
-Nodes (3): minLength, type, controlled_runtime_activation_candidate_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6275 - "Community 6275"
-Cohesion: 0.67
-Nodes (3): minLength, type, project_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6276 - "Community 6276"
 Cohesion: 0.67
 Nodes (3): safety_contract_state, enum, type
 
 ### Community 6277 - "Community 6277"
-Cohesion: 0.67
-Nodes (3): minLength, type, project_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6312 - "Community 6312"
-Cohesion: 0.67
-Nodes (3): enum, type, final_boundary_state
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6332 - "Community 6332"
 Cohesion: 0.67
 Nodes (3): source_media_copy_allowed, enum, type
 
 ### Community 6335 - "Community 6335"
-Cohesion: 0.67
-Nodes (3): review_state, enum, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6355 - "Community 6355"
 Cohesion: 0.67
@@ -30074,44 +30560,44 @@ Cohesion: 0.67
 Nodes (3): safe_report_state, enum, type
 
 ### Community 6357 - "Community 6357"
-Cohesion: 0.67
-Nodes (3): real_runtime_stub_boundary_contract_id, minLength, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6358 - "Community 6358"
-Cohesion: 0.67
-Nodes (3): description, type, approval_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6359 - "Community 6359"
-Cohesion: 0.67
-Nodes (3): description, type, gate_id
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6360 - "Community 6360"
-Cohesion: 0.67
-Nodes (3): runtime_activation_contract_review_id, minLength, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6361 - "Community 6361"
 Cohesion: 0.67
 Nodes (3): const, type, contains_runtime_callable
 
 ### Community 6362 - "Community 6362"
-Cohesion: 0.67
-Nodes (3): minLength, type, created_at
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6363 - "Community 6363"
-Cohesion: 0.67
-Nodes (3): real_upload_still_blocked, const, type
+Cohesion: 0.09
+Nodes (22): audioSourceKey, createdAt, description, generationMode, jobId, mediaSource, platforms, youtube (+14 more)
 
 ### Community 6364 - "Community 6364"
 Cohesion: 0.67
 Nodes (3): const, type, contains_raw_payload
 
 ### Community 6365 - "Community 6365"
-Cohesion: 0.67
-Nodes (3): runtime_activation_dry_run_design_review_id, minLength, type
+Cohesion: 0.09
+Nodes (22): Completed, Completed phases (June 7, 2026), Current completion estimate, Current operational state, Decision, Do not proceed yet with, Graphify Rollout Status, O1 — Profile contract/schema/examples (+14 more)
 
 ### Community 6366 - "Community 6366"
-Cohesion: 0.67
-Nodes (3): render_plan_id, minLength, type
+Cohesion: 0.09
+Nodes (21): 1. Repo profile reader, 2. Selector policy adapter, 3. Graphify command runner, 4. Output validator, 5. Refresh reporter, 6. Brain Core status surface, Acceptance criteria for Phase O1, First implementation slice (+13 more)
 
 ### Community 6367 - "Community 6367"
 Cohesion: 0.67
@@ -30126,8 +30612,8 @@ Cohesion: 0.67
 Nodes (3): runtime_activation_dry_run_design_safe_report_id, minLength, type
 
 ### Community 6370 - "Community 6370"
-Cohesion: 0.67
-Nodes (3): runtime_stub_archive_id, minLength, type
+Cohesion: 0.14
+Nodes (15): test_async_batch_start_and_status(), test_async_batch_wait_minimal(), test_async_batch_wait_with_all_params(), test_async_cancel_batch(), test_async_scrape_basic_formats(), test_async_scrape_invalid_url(), test_async_scrape_minimal(), test_async_scrape_with_all_params() (+7 more)
 
 ### Community 6371 - "Community 6371"
 Cohesion: 0.67
@@ -30150,20 +30636,20 @@ Cohesion: 0.67
 Nodes (3): render_plan_id, minLength, type
 
 ### Community 6376 - "Community 6376"
-Cohesion: 0.67
-Nodes (3): runtime_stub_manifest_id, minLength, type
+Cohesion: 0.18
+Nodes (20): brainRoot, checkGraphifyCommand(), defaultReportPaths(), examplesPath, executeGraphify(), executionPlan(), expectedOutputs(), getLastNChars() (+12 more)
 
 ### Community 6377 - "Community 6377"
-Cohesion: 0.67
-Nodes (3): retrieval_contract_only, const, type
+Cohesion: 0.11
+Nodes (21): default, type, default, enum, type, properties, default, type (+13 more)
 
 ### Community 6378 - "Community 6378"
 Cohesion: 0.67
 Nodes (3): runtime_invocation_disabled, const, type
 
 ### Community 6379 - "Community 6379"
-Cohesion: 0.67
-Nodes (3): runtime_stub_sequence_integrity_audit_id, minLength, type
+Cohesion: 0.18
+Nodes (18): ACTIONS_REGISTRY, APP_LIFECYCLE_RISK, BLOCKED_HUMAN_REVIEW, enrichActionWithReadiness(), FUTURE_HIGH_RISK, mapActionKindToApprovalRequestKind(), MIND_WRITE_RISK, SAFE_ZERO (+10 more)
 
 ### Community 6380 - "Community 6380"
 Cohesion: 0.67
@@ -30177,19 +30663,1723 @@ Nodes (3): runtime_stub_sequence_regression_report_id, minLength, type
 Cohesion: 0.67
 Nodes (3): schema_version, enum, type
 
+### Community 6383 - "Community 6383"
+Cohesion: 0.13
+Nodes (18): avgC, avgD, avgT, branchStats, detectionRates, e2eRuns, e2eTurns, EVAL_DIR (+10 more)
+
+### Community 6385 - "Community 6385"
+Cohesion: 0.10
+Nodes (19): Acceptance criteria, AI Model Selector Preference and Fallback Policy, Consumer contract, Consumer contract, Current selector behavior, Example: Graphify using the generic mechanism, Fallback policies, Graphify usage as one consumer (+11 more)
+
+### Community 6410 - "Community 6410"
+Cohesion: 0.12
+Nodes (20): items, type, uniqueItems, enum, minLength, type, items, minItems (+12 more)
+
+### Community 6411 - "Community 6411"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6412 - "Community 6412"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6413 - "Community 6413"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6414 - "Community 6414"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6415 - "Community 6415"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6416 - "Community 6416"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6417 - "Community 6417"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6418 - "Community 6418"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6419 - "Community 6419"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6420 - "Community 6420"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6421 - "Community 6421"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6422 - "Community 6422"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6423 - "Community 6423"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6424 - "Community 6424"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6425 - "Community 6425"
+Cohesion: 0.11
+Nodes (18): approval, approvedAt, approvedBy, notes, required, status, theologicalReviewRequired, channelId (+10 more)
+
+### Community 6426 - "Community 6426"
+Cohesion: 0.11
+Nodes (19): Detailed Phases, IB0 — Project Initialization & Configuration, IB10 — Insight Generation Engine (Basic), IB11 — Question Backlog & Hypothesis Tracking, IB12 — Concept Gap Detection & Suggestion, IB13 — Insight Dashboard & Reporting, IB14 — Unified Graph Query Interface, IB15 — Advanced Retrieval & Ranking (+11 more)
+
+### Community 6427 - "Community 6427"
+Cohesion: 0.18
+Nodes (15): test_crawl_params_request_validation(), test_async_active_crawls(), test_async_active_crawls_with_running_crawl(), test_async_cancel_crawl(), test_async_crawl_params_preview(), test_async_crawl_start_and_status(), test_async_crawl_with_all_params(), test_async_crawl_with_json_format_object() (+7 more)
+
+### Community 6428 - "Community 6428"
+Cohesion: 0.11
+Nodes (17): AWS Video Dashboard Stabilization Handoff, Brain Console Center dashboard, Brain Core backend, Current likely root causes still to inspect, Current situation, Dev/reset tooling, Do not forget, Immediate next step (+9 more)
+
+### Community 6429 - "Community 6429"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6430 - "Community 6430"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6431 - "Community 6431"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6432 - "Community 6432"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6433 - "Community 6433"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6434 - "Community 6434"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6435 - "Community 6435"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6436 - "Community 6436"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6437 - "Community 6437"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6438 - "Community 6438"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6439 - "Community 6439"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6440 - "Community 6440"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6441 - "Community 6441"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6442 - "Community 6442"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6443 - "Community 6443"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6444 - "Community 6444"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6445 - "Community 6445"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6446 - "Community 6446"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6447 - "Community 6447"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6448 - "Community 6448"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6449 - "Community 6449"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6450 - "Community 6450"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6451 - "Community 6451"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6452 - "Community 6452"
+Cohesion: 0.11
+Nodes (17): createdAt, jobId, media, audioKey, narrationScriptKey, overlayPlanKey, publishKey, sceneImageKeys (+9 more)
+
+### Community 6453 - "Community 6453"
+Cohesion: 0.14
+Nodes (10): Tests for _process_schema_with_validation method in V1FirecrawlApp., Test processing a valid schema., Test processing an invalid schema raises ValueError., Test processing a recursive schema., Test that non-recursive refs are resolved., Test processing container without schema key., Test processing non-dict container., Test processing with custom schema key. (+2 more)
+
+### Community 6454 - "Community 6454"
+Cohesion: 0.16
+Nodes (13): ControlPlaneSnapshot, isApproveReviewEnabled(), isPlaceholderSafe(), isReviewMediaComplete(), JobListItem, resolveJobId(), completeMedia, cpDisabled (+5 more)
+
+### Community 6455 - "Community 6455"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6456 - "Community 6456"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6457 - "Community 6457"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6458 - "Community 6458"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6459 - "Community 6459"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6460 - "Community 6460"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6461 - "Community 6461"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6462 - "Community 6462"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6463 - "Community 6463"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6464 - "Community 6464"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6465 - "Community 6465"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6466 - "Community 6466"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6467 - "Community 6467"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6468 - "Community 6468"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6469 - "Community 6469"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6470 - "Community 6470"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6471 - "Community 6471"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6472 - "Community 6472"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6473 - "Community 6473"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6474 - "Community 6474"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6475 - "Community 6475"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6476 - "Community 6476"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6477 - "Community 6477"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6478 - "Community 6478"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6479 - "Community 6479"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6480 - "Community 6480"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6481 - "Community 6481"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6482 - "Community 6482"
+Cohesion: 0.12
+Nodes (16): aiGenerated, audioSourceKey, currentStep, executionArn, generationMode, imageGenerated, mediaSource, partialAiGenerated (+8 more)
+
+### Community 6483 - "Community 6483"
+Cohesion: 0.12
+Nodes (16): createdAt, height, jobId, mimeType, previewKey, prompt, provider, source (+8 more)
+
+### Community 6484 - "Community 6484"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6485 - "Community 6485"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6486 - "Community 6486"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6487 - "Community 6487"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6488 - "Community 6488"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6489 - "Community 6489"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6490 - "Community 6490"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6491 - "Community 6491"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6492 - "Community 6492"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6493 - "Community 6493"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6494 - "Community 6494"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6495 - "Community 6495"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6496 - "Community 6496"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6497 - "Community 6497"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6498 - "Community 6498"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6499 - "Community 6499"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6500 - "Community 6500"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6501 - "Community 6501"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6502 - "Community 6502"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6503 - "Community 6503"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6504 - "Community 6504"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6505 - "Community 6505"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6506 - "Community 6506"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6507 - "Community 6507"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6508 - "Community 6508"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6509 - "Community 6509"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6510 - "Community 6510"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6511 - "Community 6511"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6512 - "Community 6512"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6513 - "Community 6513"
+Cohesion: 0.12
+Nodes (16): approval, notes, required, status, theologicalReviewRequired, channelId, createdAt, generatedBy (+8 more)
+
+### Community 6514 - "Community 6514"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6515 - "Community 6515"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6516 - "Community 6516"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6517 - "Community 6517"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6518 - "Community 6518"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6519 - "Community 6519"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6520 - "Community 6520"
+Cohesion: 0.12
+Nodes (15): createdAt, generatedImageKeys, jobId, modelId, promptHashes, provider, region, sceneCount (+7 more)
+
+### Community 6521 - "Community 6521"
+Cohesion: 0.12
+Nodes (15): brain-runtime, code-app, Example: code-app profile, Example: Mind profile, Graphify Profile Contract, JSON shape, mind-knowledge, mixed (+7 more)
+
+### Community 6522 - "Community 6522"
+Cohesion: 0.13
+Nodes (14): 1. Backend: `createJobFromPrompt` idempotency (video-orchestrator-provider.ts ~line 4702), 2. Backend: `GET /jobs/recent` bounded response (routes.ts ~line 2252), 3. Backend: review finalization state signal (video-orchestrator-provider.ts, getVideoReview ~line 2988), 4. Frontend: `createDraft` timeout → neutral (aws-video-dashboard.tsx), 5. Frontend: `jobs.isError` → amber status only, not red toast (aws-video-dashboard.tsx), 6. Frontend: ReviewCard `finalizationState` prop (aws-video-dashboard.tsx), 7. Frontend: `videoReviewSchema` update (braincore-schemas.ts), 8. Tests (video-orchestrator-finalization.test.ts) (+6 more)
+
+### Community 6523 - "Community 6523"
+Cohesion: 0.21
+Nodes (5): Builder, LocationConfig, Builder, List, String
+
+### Community 6524 - "Community 6524"
+Cohesion: 0.14
+Nodes (13): 1. Extend `TaskMetadata` (core.py:50), 2. Extend `_provider_allowed_for_metadata` (core.py:825), 3. Extend `select_provider` (core.py:844), 4. Extend `_pick_model` (core.py:766), 5. Extend `_pick_bedrock_model` (core.py:724), Context, File to create, Files to modify (+5 more)
+
+### Community 6525 - "Community 6525"
+Cohesion: 0.14
+Nodes (13): 1. brain-core: persist `clientActionId` in `topic.json`, 2. brain-console-center: add `clientActionId` to job schema, 3. brain-console-center: sessionStorage persistence + improved recovery, A. Add `TimeoutMonitorSnapshot` interface and `readTimeoutMonitor()` helper (before `AwsVideoDashboard`), B. Update `useState` initializers for timeout monitor state (lines ~867–879), C. Add a `useEffect` to write/clear sessionStorage (add after the existing "clear error toast" effect), Commit scope, Context (+5 more)
+
+### Community 6526 - "Community 6526"
+Cohesion: 0.53
+Nodes (11): DocxProvider, read_comments(), read_core_properties(), read_notes(), read_numbering(), read_relationships(), read_zip_text(), strip_bom() (+3 more)
+
+### Community 6527 - "Community 6527"
+Cohesion: 0.14
+Nodes (13): Acceptance criteria, Current state, Decision, Feature flags, Graphify Hook and Watch Plan, Guardrails, Hook mode, Non-goals (+5 more)
+
+### Community 6528 - "Community 6528"
+Cohesion: 0.14
+Nodes (13): aiContextMode, dashboardVisibility, exclude, graphifyStandardVersion, humanReadableFileGraph, modes, optionalOutputs, outputs (+5 more)
+
+### Community 6529 - "Community 6529"
+Cohesion: 0.14
+Nodes (14): minimum, type, const, type, maximum, minimum, type, enum (+6 more)
+
+### Community 6530 - "Community 6530"
+Cohesion: 0.31
+Nodes (11): attachSecurityCheck(), createBaseAgent(), getSecureDispatcherNoCookies(), InsecureConnectionError, isIPPrivate(), makeSecureDispatcher(), makeSecureDispatcherNoCookies(), secureDispatcher (+3 more)
+
+### Community 6531 - "Community 6531"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6532 - "Community 6532"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6533 - "Community 6533"
+Cohesion: 0.15
+Nodes (13): narrationKey, thumbnailKey, videoKey, publishableAssets, expectedKeys, missing, narrationKey, selectedSource (+5 more)
+
+### Community 6534 - "Community 6534"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6535 - "Community 6535"
+Cohesion: 0.15
+Nodes (13): narrationKey, thumbnailKey, videoKey, publishableAssets, expectedKeys, missing, narrationKey, selectedSource (+5 more)
+
+### Community 6536 - "Community 6536"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6537 - "Community 6537"
+Cohesion: 0.15
+Nodes (13): narrationKey, thumbnailKey, videoKey, publishableAssets, expectedKeys, missing, narrationKey, selectedSource (+5 more)
+
+### Community 6538 - "Community 6538"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6539 - "Community 6539"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6540 - "Community 6540"
+Cohesion: 0.15
+Nodes (13): narrationKey, thumbnailKey, videoKey, publishableAssets, expectedKeys, missing, narrationKey, selectedSource (+5 more)
+
+### Community 6541 - "Community 6541"
+Cohesion: 0.15
+Nodes (12): cards, createdAt, jobId, mode, provider, style, fontSize, position (+4 more)
+
+### Community 6542 - "Community 6542"
+Cohesion: 0.15
+Nodes (13): $defs, incrementalPolicy, selectorPolicy, watchPolicy, additionalProperties, required, type, additionalProperties (+5 more)
+
+### Community 6543 - "Community 6543"
+Cohesion: 0.17
+Nodes (11): AWS Video Dashboard Stabilization Plan, Definition of done, Facts observed, Non-goals for this stabilization, North star, Phase 1 — selected job and hydration safety, Phase 2 — effective control-plane snapshot, Phase 3 — remove legacy state from primary rendering (+3 more)
+
+### Community 6544 - "Community 6544"
+Cohesion: 0.17
+Nodes (11): Current Status, Decision, Documentation, Feature Flags, Graphify Hook and Watch Readiness, Profile Examples, Readiness Validation, Safety Model (+3 more)
+
+### Community 6545 - "Community 6545"
+Cohesion: 0.17
+Nodes (11): 1. Request counter + memory diagnostics in status payload, 2. Ensure `suggestedNextAction` in deadline params for all routes, 3. Tighten focused-read byte bounds in read-context route, 4. Update `docs/CUSTOM_GPT_INSTRUCTIONS.md`, 5. Update verifier with 3 new checks, 6. Update openapi.chatgpt.json descriptions, BuildFlow Runtime Stabilization Plan, Context (+3 more)
+
+### Community 6546 - "Community 6546"
+Cohesion: 0.17
+Nodes (11): Commit scope, Context, Files to Change, Implementation Plan, Plan: Fix Control-Plane Backend Contract, Step 1: Rewrite `video-orchestrator-control-plane.ts`, Step 2: Update `video-orchestrator-control-plane.test.ts`, Step 3: Update `braincore-schemas.ts` (+3 more)
+
+### Community 6547 - "Community 6547"
+Cohesion: 0.17
+Nodes (12): aiContextMode, dashboardVisibility, exclude, graphifyStandardVersion, humanReadableFileGraph, modes, optionalOutputs, outputs (+4 more)
+
+### Community 6548 - "Community 6548"
+Cohesion: 0.17
+Nodes (12): mind-knowledge, aiContextMode, dashboardVisibility, exclude, graphifyStandardVersion, humanReadableFileGraph, modes, optionalOutputs (+4 more)
+
+### Community 6549 - "Community 6549"
+Cohesion: 0.18
+Nodes (12): debounceMs, enabled, maxRunsPerHour, operation, postCheckout, postCommit, default, $ref (+4 more)
+
+### Community 6550 - "Community 6550"
+Cohesion: 0.18
+Nodes (10): Claude Code Prompt: Stabilize AWS Video Dashboard After Script Approval, Confirmed evidence from manual diagnostics, Constraints, Likely root causes to investigate, Manual verification commands, North Star behavior, Relevant files found by grep, Required implementation steps (+2 more)
+
+### Community 6551 - "Community 6551"
+Cohesion: 0.18
+Nodes (10): After Execution, Brain Repository Update, Future: Scheduler Candidates, Graphify Executable Update Guide, Key Safety Rules, Manual Commands, Mind Repository Update, References (+2 more)
+
+### Community 6552 - "Community 6552"
+Cohesion: 0.33
+Nodes (7): getEmbeddingModel(), cosineSimilarity(), getEmbedding(), performRanking(), links, linksWithContext, textToVector()
+
+### Community 6553 - "Community 6553"
+Cohesion: 0.18
+Nodes (10): dryRunPassed, jobId, youtubeDryRun, checkedAt, checkedBy, privacy, startedAt, status (+2 more)
+
+### Community 6554 - "Community 6554"
+Cohesion: 0.18
+Nodes (10): dryRunPassed, jobId, youtubeDryRun, checkedAt, checkedBy, privacy, startedAt, status (+2 more)
+
+### Community 6555 - "Community 6555"
+Cohesion: 0.18
+Nodes (10): dryRunPassed, jobId, youtubeDryRun, checkedAt, checkedBy, privacy, startedAt, status (+2 more)
+
+### Community 6556 - "Community 6556"
+Cohesion: 0.18
+Nodes (11): hookPolicy, additionalProperties, properties, required, type, const, type, const (+3 more)
+
+### Community 6557 - "Community 6557"
+Cohesion: 0.18
+Nodes (10): Acceptance criteria, Brain Core integration points, Current state, First candidate jobs, Graphify Scheduler Integration Plan, Jobs that remain blocked, Later executable jobs, O7 goal (+2 more)
+
+### Community 6558 - "Community 6558"
+Cohesion: 0.18
+Nodes (10): Acceptance criteria, Current state, Feature flag, First supported operations, Goal, Graphify Selector Integration Plan, Report fields, Required behavior (+2 more)
+
+### Community 6559 - "Community 6559"
+Cohesion: 0.20
+Nodes (9): 1. ReviewCard: Use Control-Plane Media When Available, 2. Execution & Artifacts Panels: Never Show Empty Objects, 3. Finalization Pending: Show Amber, Not Red, 4. Approve Review Button: Enabled from Control-Plane, 5. Old Endpoints: Debug Panels Only, AWS Video Control-Plane Refactor: Validation Assertions, Future Work, Refactor Requirements (+1 more)
+
+### Community 6560 - "Community 6560"
+Cohesion: 0.20
+Nodes (6): Mutation, QueryParams, app, server, wsClients, wss
+
+### Community 6561 - "Community 6561"
+Cohesion: 0.20
+Nodes (9): fallbackReason, fallbackUsed, generatedClipKeys, generatedFrameKeys, jobId, mode, provider, sceneCount (+1 more)
+
+### Community 6562 - "Community 6562"
+Cohesion: 0.20
+Nodes (9): fallbackReason, fallbackUsed, generatedClipKeys, generatedFrameKeys, jobId, mode, provider, sceneCount (+1 more)
+
+### Community 6563 - "Community 6563"
+Cohesion: 0.20
+Nodes (9): fallbackReason, fallbackUsed, generatedClipKeys, generatedFrameKeys, jobId, mode, provider, sceneCount (+1 more)
+
+### Community 6564 - "Community 6564"
+Cohesion: 0.22
+Nodes (6): afterCreate, beforeCreate, firstClientResult, list1, list2, serverResult
+
+### Community 6565 - "Community 6565"
+Cohesion: 0.42
+Nodes (4): FirecrawlLiveSiteTest, BeforeAll, EnabledIfEnvironmentVariable, Test
+
+### Community 6566 - "Community 6566"
+Cohesion: 0.22
+Nodes (9): imageGeneration, generatedImageKeys, key, modelId, promptHashes, provider, region, sceneCount (+1 more)
+
+### Community 6567 - "Community 6567"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6568 - "Community 6568"
+Cohesion: 0.22
+Nodes (9): imageGeneration, generatedImageKeys, key, modelId, promptHashes, provider, region, sceneCount (+1 more)
+
+### Community 6569 - "Community 6569"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6570 - "Community 6570"
+Cohesion: 0.22
+Nodes (9): imageGeneration, generatedImageKeys, key, modelId, promptHashes, provider, region, sceneCount (+1 more)
+
+### Community 6571 - "Community 6571"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6572 - "Community 6572"
+Cohesion: 0.22
+Nodes (9): imageGeneration, generatedImageKeys, key, modelId, promptHashes, provider, region, sceneCount (+1 more)
+
+### Community 6573 - "Community 6573"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6574 - "Community 6574"
+Cohesion: 0.22
+Nodes (9): imageGeneration, generatedImageKeys, key, modelId, promptHashes, provider, region, sceneCount (+1 more)
+
+### Community 6575 - "Community 6575"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6576 - "Community 6576"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6577 - "Community 6577"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6578 - "Community 6578"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6579 - "Community 6579"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6580 - "Community 6580"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6581 - "Community 6581"
+Cohesion: 0.22
+Nodes (9): imageGeneration, generatedImageKeys, key, modelId, promptHashes, provider, region, sceneCount (+1 more)
+
+### Community 6582 - "Community 6582"
+Cohesion: 0.22
+Nodes (8): createdAt, deterministic, jobId, prompt, providerName, scenes, targetDurationSeconds, title
+
+### Community 6583 - "Community 6583"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6584 - "Community 6584"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6585 - "Community 6585"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6586 - "Community 6586"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6587 - "Community 6587"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6588 - "Community 6588"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6589 - "Community 6589"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6590 - "Community 6590"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6591 - "Community 6591"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6592 - "Community 6592"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6593 - "Community 6593"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6594 - "Community 6594"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6595 - "Community 6595"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6596 - "Community 6596"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6597 - "Community 6597"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6598 - "Community 6598"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6599 - "Community 6599"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6600 - "Community 6600"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6601 - "Community 6601"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6602 - "Community 6602"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6603 - "Community 6603"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6604 - "Community 6604"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6605 - "Community 6605"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6606 - "Community 6606"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6607 - "Community 6607"
+Cohesion: 0.22
+Nodes (8): channelId, clientActionId, createdAt, description, jobId, source, title, topicId
+
+### Community 6608 - "Community 6608"
+Cohesion: 0.50
+Nodes (9): incrementalPolicy, incrementalPolicy, allowAstOnly, fallbackPolicy, preferLocalWhenSafe, qualityTier, selectionPolicy, taskType (+1 more)
+
+### Community 6609 - "Community 6609"
+Cohesion: 0.22
+Nodes (8): Definition of Done, Deliverables Summary, Executive Summary, Infinite Brain Runtime — Implementation Plan, Quality Gates, Recommendation, Sprint 6: Query & Discovery (Weeks 14–16), Timeline Summary
+
+### Community 6610 - "Community 6610"
+Cohesion: 0.22
+Nodes (9): Definition of Done, Deliverables, Go/No-Go Checkpoint, IB0: Configuration & Project Structure, IB1: Entity Changelog Infrastructure, IB2: Evidence Store & Source Linking, IB3: iOS Sync Coordination, Sprint 1: Foundation (Weeks 1–2) (+1 more)
+
+### Community 6611 - "Community 6611"
+Cohesion: 0.32
+Nodes (7): main(), parse_args(), safe_result_dict(), Any, int, Namespace, str
+
+### Community 6612 - "Community 6612"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6613 - "Community 6613"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6614 - "Community 6614"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6615 - "Community 6615"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6616 - "Community 6616"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6617 - "Community 6617"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6618 - "Community 6618"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6619 - "Community 6619"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6620 - "Community 6620"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6621 - "Community 6621"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6622 - "Community 6622"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6623 - "Community 6623"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6624 - "Community 6624"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6625 - "Community 6625"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6626 - "Community 6626"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6627 - "Community 6627"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6628 - "Community 6628"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6629 - "Community 6629"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6630 - "Community 6630"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6631 - "Community 6631"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6632 - "Community 6632"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6633 - "Community 6633"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6634 - "Community 6634"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6635 - "Community 6635"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6636 - "Community 6636"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6637 - "Community 6637"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6638 - "Community 6638"
+Cohesion: 0.25
+Nodes (7): approvals, script, jobId, approvedAt, approvedBy, notes, status
+
+### Community 6639 - "Community 6639"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6640 - "Community 6640"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6641 - "Community 6641"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6642 - "Community 6642"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6643 - "Community 6643"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6644 - "Community 6644"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6645 - "Community 6645"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6646 - "Community 6646"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6647 - "Community 6647"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6648 - "Community 6648"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6649 - "Community 6649"
+Cohesion: 0.25
+Nodes (7): channelId, createdAt, description, jobId, source, title, topicId
+
+### Community 6650 - "Community 6650"
+Cohesion: 0.54
+Nodes (8): criticalRebuildPolicy, criticalRebuildPolicy, fallbackPolicy, preferredModels, qualityTier, selectionPolicy, taskType, criticalRebuildPolicy
+
+### Community 6651 - "Community 6651"
+Cohesion: 0.54
+Nodes (8): initialBuildPolicy, initialBuildPolicy, fallbackPolicy, preferredModels, qualityTier, selectionPolicy, taskType, initialBuildPolicy
+
+### Community 6652 - "Community 6652"
+Cohesion: 0.25
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+
+### Community 6653 - "Community 6653"
+Cohesion: 0.25
+Nodes (8): Risk Mitigation per Sprint, Sprint 1 Risks, Sprint 2 Risks, Sprint 3 Risks, Sprint 4 Risks, Sprint 5 Risks, Sprint 6 Risks, Sprint 7 Risks
+
+### Community 6654 - "Community 6654"
+Cohesion: 0.25
+Nodes (8): Sprint 1 (Weeks 1–2): Foundation, Sprint 2 (Weeks 3–4): First Candidate, Sprint 3 (Weeks 5–7): Knowledge Maintenance, Sprint 4 (Weeks 8–10): Standardization & Quality, Sprint 5 (Weeks 11–13): Insights & Patterns, Sprint 6 (Weeks 14–16): Query & Discovery, Sprint 7 (Weeks 17–18): Integration & Continuous, Timeline & Milestones
+
+### Community 6655 - "Community 6655"
+Cohesion: 0.29
+Nodes (7): providers, narrationAudio, narrationScript, overlays, sceneImages, scenePlan, video
+
+### Community 6656 - "Community 6656"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6657 - "Community 6657"
+Cohesion: 0.29
+Nodes (7): providers, narrationAudio, narrationScript, overlays, sceneImages, scenePlan, video
+
+### Community 6658 - "Community 6658"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6659 - "Community 6659"
+Cohesion: 0.29
+Nodes (7): providers, narrationAudio, narrationScript, overlays, sceneImages, scenePlan, video
+
+### Community 6660 - "Community 6660"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6661 - "Community 6661"
+Cohesion: 0.29
+Nodes (7): providers, narrationAudio, narrationScript, overlays, sceneImages, scenePlan, video
+
+### Community 6662 - "Community 6662"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6663 - "Community 6663"
+Cohesion: 0.29
+Nodes (7): providers, narrationAudio, narrationScript, overlays, sceneImages, scenePlan, video
+
+### Community 6664 - "Community 6664"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6665 - "Community 6665"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6666 - "Community 6666"
+Cohesion: 0.29
+Nodes (7): providers, narrationAudio, narrationScript, overlays, sceneImages, scenePlan, video
+
+### Community 6667 - "Community 6667"
+Cohesion: 0.29
+Nodes (6): createdAt, imageModelId, imageRegion, jobId, provider, scenes
+
+### Community 6668 - "Community 6668"
+Cohesion: 0.57
+Nodes (7): hooks, hooks, enabled, operation, postCheckout, postCommit, hooks
+
+### Community 6669 - "Community 6669"
+Cohesion: 0.57
+Nodes (7): watch, watch, watch, debounceMs, enabled, maxRunsPerHour, operation
+
+### Community 6670 - "Community 6670"
+Cohesion: 0.29
+Nodes (7): Definition of Done, Deliverables, IB5: Relationship Inference & Scoring, IB6: Inbox Processing & Entity Creation, IB7: Version History Extraction & Indexing, Sprint 3: Knowledge Maintenance (Weeks 5–7), Testing Strategy
+
+### Community 6672 - "Community 6672"
+Cohesion: 0.29
+Nodes (6): additionalProperties, $id, required, $schema, title, type
+
+### Community 6673 - "Community 6673"
+Cohesion: 0.53
+Nodes (4): test_async_get_concurrency(), test_async_get_credit_usage(), test_async_get_queue_status(), test_async_get_token_usage()
+
+### Community 6674 - "Community 6674"
+Cohesion: 0.33
+Nodes (6): settings, cfgScale, height, quality, seed, width
+
+### Community 6675 - "Community 6675"
+Cohesion: 0.33
+Nodes (6): settings, cfgScale, height, quality, seed, width
+
+### Community 6676 - "Community 6676"
+Cohesion: 0.33
+Nodes (6): settings, cfgScale, height, quality, seed, width
+
+### Community 6677 - "Community 6677"
+Cohesion: 0.33
+Nodes (6): settings, cfgScale, height, quality, seed, width
+
+### Community 6678 - "Community 6678"
+Cohesion: 0.33
+Nodes (6): settings, cfgScale, height, quality, seed, width
+
+### Community 6679 - "Community 6679"
+Cohesion: 0.33
+Nodes (6): settings, cfgScale, height, quality, seed, width
+
+### Community 6681 - "Community 6681"
+Cohesion: 0.33
+Nodes (6): pattern, trackGeneratedArtifacts, default, items, type, uniqueItems
+
+### Community 6682 - "Community 6682"
+Cohesion: 0.33
+Nodes (6): Definition of Done, Deliverables, Go/No-Go Checkpoint, IB4: Entity Deduplication, Sprint 2: Soft-Launch Candidate (Weeks 3–4), Testing Strategy
+
+### Community 6683 - "Community 6683"
+Cohesion: 0.33
+Nodes (6): Definition of Done, Deliverables, IB8: Metadata Standardization, IB9: Relationship Audit & Repair, Sprint 4: Standardization & Quality (Weeks 8–10), Testing Strategy
+
+### Community 6684 - "Community 6684"
+Cohesion: 0.33
+Nodes (5): Executive Summary, Infinite Brain Runtime — Roadmap, Non-Negotiable User Experience Principles, Recommendation, Target Architecture
+
+### Community 6685 - "Community 6685"
+Cohesion: 0.33
+Nodes (6): Decision Gates & Checkpoints, Gate 1: Planning Approval, Gate 2: Foundation Readiness, Gate 3: Go/No-Go (Soft-Launch), Gate 4: Halfway Review, Gate 5: Launch Readiness
+
+### Community 6686 - "Community 6686"
+Cohesion: 0.33
+Nodes (6): Risk 1: iOS Sync Conflicts, Risk 2: Relationship Hallucination, Risk 3: Entity Explosion, Risk 4: Performance Degradation, Risk 5: Approval Gate Fatigue, Risk Mitigation
+
+### Community 6687 - "Community 6687"
+Cohesion: 0.73
+Nodes (5): loadJSON(), runAllTests(), testProfileExamplesHookWatchDisabled(), testProfileSchemaHookWatchDisabled(), testSchemaHookWatchAreOptional()
+
+### Community 6688 - "Community 6688"
+Cohesion: 0.40
+Nodes (4): Graphify Tools, Guarded execution, Manual orchestrator preflight, Safety
+
+### Community 6689 - "Community 6689"
+Cohesion: 0.40
+Nodes (5): narration, path, provider, source, voiceId
+
+### Community 6690 - "Community 6690"
+Cohesion: 0.40
+Nodes (5): narration, path, provider, source, voiceId
+
+### Community 6691 - "Community 6691"
+Cohesion: 0.40
+Nodes (5): assetsJson, inferredS3, publishJson, statusJson, checked
+
+### Community 6692 - "Community 6692"
+Cohesion: 0.40
+Nodes (5): narration, path, provider, source, voiceId
+
+### Community 6693 - "Community 6693"
+Cohesion: 0.40
+Nodes (5): source, assetsJson, inferredS3, publishJson, statusJson
+
+### Community 6694 - "Community 6694"
+Cohesion: 0.40
+Nodes (5): assetsJson, inferredS3, publishJson, statusJson, checked
+
+### Community 6695 - "Community 6695"
+Cohesion: 0.40
+Nodes (5): narration, path, provider, source, voiceId
+
+### Community 6696 - "Community 6696"
+Cohesion: 0.40
+Nodes (5): source, assetsJson, inferredS3, publishJson, statusJson
+
+### Community 6697 - "Community 6697"
+Cohesion: 0.40
+Nodes (5): assetsJson, inferredS3, publishJson, statusJson, checked
+
+### Community 6698 - "Community 6698"
+Cohesion: 0.40
+Nodes (5): narration, path, provider, source, voiceId
+
+### Community 6699 - "Community 6699"
+Cohesion: 0.40
+Nodes (5): source, assetsJson, inferredS3, publishJson, statusJson
+
+### Community 6700 - "Community 6700"
+Cohesion: 0.40
+Nodes (5): assetsJson, inferredS3, publishJson, statusJson, checked
+
+### Community 6701 - "Community 6701"
+Cohesion: 0.40
+Nodes (5): narration, path, provider, source, voiceId
+
+### Community 6702 - "Community 6702"
+Cohesion: 0.40
+Nodes (5): source, assetsJson, inferredS3, publishJson, statusJson
+
+### Community 6703 - "Community 6703"
+Cohesion: 0.40
+Nodes (5): Group A: Foundation (IB0–IB4), Group B: Knowledge Maintenance (IB5–IB9), Group C: Continuous Reasoning (IB10–IB13), Group D: Query & Discovery (IB14–IB17), Phase Groups
+
+### Community 6707 - "Community 6707"
+Cohesion: 0.50
+Nodes (4): 5.1 Full Production Verification, 5.2 Monitor Key Metrics, 5.3 Phase 5 Success Criteria, Phase 5: Verification and Stabilization
+
+### Community 6708 - "Community 6708"
+Cohesion: 0.50
+Nodes (4): sourceVideo, path, provider, source
+
+### Community 6709 - "Community 6709"
+Cohesion: 0.50
+Nodes (3): Make a short video about an Audi R8 driving through a rainy city at sunset., Prompt, Status
+
+### Community 6710 - "Community 6710"
+Cohesion: 0.50
+Nodes (4): sourceVideo, path, provider, source
+
+### Community 6711 - "Community 6711"
+Cohesion: 0.50
+Nodes (3): Make a short video about an Audi R8 driving through a rainy city at sunset., Prompt, Status
+
+### Community 6712 - "Community 6712"
+Cohesion: 0.50
+Nodes (4): sourceVideo, path, provider, source
+
+### Community 6713 - "Community 6713"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video of a growing tree.
+
+### Community 6714 - "Community 6714"
+Cohesion: 0.50
+Nodes (4): sourceVideo, path, provider, source
+
+### Community 6715 - "Community 6715"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video about a party on the street.
+
+### Community 6716 - "Community 6716"
+Cohesion: 0.50
+Nodes (3): Make a short video about an Audi R8 driving through a rainy city at sunset., Prompt, Status
+
+### Community 6717 - "Community 6717"
+Cohesion: 0.50
+Nodes (3): Make a short video about an Audi R8 driving through a rainy city at sunset., Prompt, Status
+
+### Community 6718 - "Community 6718"
+Cohesion: 0.50
+Nodes (3): Make a short video about an Audi R8 driving through a rainy city at sunset., Prompt, Status
+
+### Community 6719 - "Community 6719"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6720 - "Community 6720"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6721 - "Community 6721"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6722 - "Community 6722"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6723 - "Community 6723"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a short video of a Mercedes driving through a rainy city.
+
+### Community 6724 - "Community 6724"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a short video about an Audi R8 driving through a rainy city at sunset. timeout safety smoke 1780836237
+
+### Community 6725 - "Community 6725"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6726 - "Community 6726"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6727 - "Community 6727"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6728 - "Community 6728"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6729 - "Community 6729"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6730 - "Community 6730"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6731 - "Community 6731"
+Cohesion: 0.50
+Nodes (4): sourceVideo, path, provider, source
+
+### Community 6732 - "Community 6732"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a short video about a Mercedes driving through a rainy city. timeout-safe smoke 1780836633
+
+### Community 6733 - "Community 6733"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video of an apple falling from the tree.
+
+### Community 6734 - "Community 6734"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video of a bug.
+
+### Community 6735 - "Community 6735"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video of a house.
+
+### Community 6736 - "Community 6736"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, A video of a bed
+
+### Community 6737 - "Community 6737"
+Cohesion: 0.50
+Nodes (4): sourceVideo, path, provider, source
+
+### Community 6738 - "Community 6738"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video of a butterfly.
+
+### Community 6739 - "Community 6739"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6740 - "Community 6740"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6741 - "Community 6741"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6742 - "Community 6742"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6743 - "Community 6743"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6744 - "Community 6744"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6745 - "Community 6745"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a short video about a red fox running through a snowy forest at sunrise.
+
+### Community 6746 - "Community 6746"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6747 - "Community 6747"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6748 - "Community 6748"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6749 - "Community 6749"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6750 - "Community 6750"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6751 - "Community 6751"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6752 - "Community 6752"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Make a video of a box.
+
+### Community 6753 - "Community 6753"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6754 - "Community 6754"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6755 - "Community 6755"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6756 - "Community 6756"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6757 - "Community 6757"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6758 - "Community 6758"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6759 - "Community 6759"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6760 - "Community 6760"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6761 - "Community 6761"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6762 - "Community 6762"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6763 - "Community 6763"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6764 - "Community 6764"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6765 - "Community 6765"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6766 - "Community 6766"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6767 - "Community 6767"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6768 - "Community 6768"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6769 - "Community 6769"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6770 - "Community 6770"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6771 - "Community 6771"
+Cohesion: 0.50
+Nodes (3): A tree growing over time for dedup test, Prompt, Status
+
+### Community 6772 - "Community 6772"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test clientActionId dedup
+
+### Community 6773 - "Community 6773"
+Cohesion: 0.50
+Nodes (3): Prompt, Status, Test concurrent in-flight dedup
+
+### Community 6774 - "Community 6774"
+Cohesion: 0.50
+Nodes (4): minItems, type, uniqueItems, outputs
+
+### Community 6775 - "Community 6775"
+Cohesion: 0.50
+Nodes (4): default, type, uniqueItems, preferredModels
+
+### Community 6776 - "Community 6776"
+Cohesion: 0.50
+Nodes (4): default, type, uniqueItems, preferredProviders
+
+### Community 6777 - "Community 6777"
+Cohesion: 0.50
+Nodes (4): Definition of Done, Deliverables Summary, Sprint 5: Insights & Reporting (Weeks 11–13), Testing Strategy
+
+### Community 6778 - "Community 6778"
+Cohesion: 0.50
+Nodes (4): Functional Criteria, Operational Criteria, Quality Criteria, Success Criteria
+
+### Community 6779 - "Community 6779"
+Cohesion: 0.50
+Nodes (4): review_controls, additionalProperties, required, type
+
+### Community 6780 - "Community 6780"
+Cohesion: 0.50
+Nodes (4): const, description, type, dry_run
+
+### Community 6781 - "Community 6781"
+Cohesion: 0.50
+Nodes (4): description, enum, type, package_state
+
+### Community 6782 - "Community 6782"
+Cohesion: 0.50
+Nodes (4): description, enum, type, platform
+
+### Community 6783 - "Community 6783"
+Cohesion: 0.50
+Nodes (4): real_execution_approval_id, description, pattern, type
+
+### Community 6784 - "Community 6784"
+Cohesion: 0.50
+Nodes (4): schema_version, description, enum, type
+
+### Community 6785 - "Community 6785"
+Cohesion: 0.50
+Nodes (4): version_check_plan_id, description, pattern, type
+
+### Community 6786 - "Community 6786"
+Cohesion: 0.50
+Nodes (4): additionalProperties, required, type, execution_boundary
+
+### Community 6787 - "Community 6787"
+Cohesion: 0.50
+Nodes (4): description, enum, type, dry_run
+
+### Community 6788 - "Community 6788"
+Cohesion: 0.50
+Nodes (4): description, pattern, type, package_id
+
+### Community 6789 - "Community 6789"
+Cohesion: 0.50
+Nodes (4): description, pattern, type, preflight_id
+
+### Community 6790 - "Community 6790"
+Cohesion: 0.50
+Nodes (4): report_controls, additionalProperties, required, type
+
+### Community 6791 - "Community 6791"
+Cohesion: 0.50
+Nodes (4): upload_execution_boundary, additionalProperties, required, type
+
+### Community 6792 - "Community 6792"
+Cohesion: 0.67
+Nodes (3): Ship, Ship log — persistent record of /ship runs, Visual verification with screenshots in PR body
+
+### Community 6793 - "Community 6793"
+Cohesion: 0.67
+Nodes (3): Definition of Done, Deliverables Summary, Sprint 7: Integration & Continuous (Weeks 17–18)
+
+### Community 6794 - "Community 6794"
+Cohesion: 0.67
+Nodes (3): minLength, type, display_name
+
+### Community 6795 - "Community 6795"
+Cohesion: 0.67
+Nodes (3): schema_version, enum, type
+
+### Community 6796 - "Community 6796"
+Cohesion: 0.67
+Nodes (3): minLength, type, project_id
+
+### Community 6797 - "Community 6797"
+Cohesion: 0.67
+Nodes (3): runtime_activation_separate_commit_required, const, type
+
+### Community 6798 - "Community 6798"
+Cohesion: 0.67
+Nodes (3): single_upload_limit, const, type
+
+### Community 6799 - "Community 6799"
+Cohesion: 0.67
+Nodes (3): render_plan_id, minLength, type
+
+### Community 6800 - "Community 6800"
+Cohesion: 0.67
+Nodes (3): safe_stub_only, const, type
+
+### Community 6801 - "Community 6801"
+Cohesion: 0.67
+Nodes (3): schema_version, const, type
+
+### Community 6802 - "Community 6802"
+Cohesion: 0.67
+Nodes (3): schema_version, const, type
+
+### Community 6803 - "Community 6803"
+Cohesion: 0.67
+Nodes (3): render_plan_id, minLength, type
+
+### Community 6804 - "Community 6804"
+Cohesion: 0.67
+Nodes (3): format, type, created_at
+
+### Community 6805 - "Community 6805"
+Cohesion: 0.67
+Nodes (3): enum, type, execution_mode
+
+### Community 6806 - "Community 6806"
+Cohesion: 0.67
+Nodes (3): renderer_execution_allowed, enum, type
+
+### Community 6807 - "Community 6807"
+Cohesion: 0.67
+Nodes (3): source_media_mutation_allowed, enum, type
+
+### Community 6808 - "Community 6808"
+Cohesion: 0.67
+Nodes (3): review_mode, enum, type
+
+### Community 6809 - "Community 6809"
+Cohesion: 0.67
+Nodes (3): enum, type, approval_mode
+
+### Community 6810 - "Community 6810"
+Cohesion: 0.67
+Nodes (3): render_plan_id, minLength, type
+
+### Community 6811 - "Community 6811"
+Cohesion: 0.67
+Nodes (3): render_plan_id, minLength, type
+
+### Community 6812 - "Community 6812"
+Cohesion: 0.67
+Nodes (3): minLength, type, local_output_review_id
+
+### Community 6813 - "Community 6813"
+Cohesion: 0.67
+Nodes (3): minLength, type, project_id
+
+### Community 6814 - "Community 6814"
+Cohesion: 0.67
+Nodes (3): runtime_executed, const, type
+
+### Community 6815 - "Community 6815"
+Cohesion: 0.67
+Nodes (3): render_plan_id, minLength, type
+
+### Community 6816 - "Community 6816"
+Cohesion: 0.67
+Nodes (3): review_only, const, type
+
+### Community 6817 - "Community 6817"
+Cohesion: 0.67
+Nodes (3): runtime_activation_dry_run_design_review_id, minLength, type
+
+### Community 6818 - "Community 6818"
+Cohesion: 0.67
+Nodes (3): schema_version, const, type
+
+### Community 6819 - "Community 6819"
+Cohesion: 0.67
+Nodes (3): runtime_activation_dry_run_design_safe_report_id, minLength, type
+
+### Community 6820 - "Community 6820"
+Cohesion: 0.67
+Nodes (3): minLength, type, created_at
+
+### Community 6821 - "Community 6821"
+Cohesion: 0.67
+Nodes (3): const, type, contains_secret_material
+
+### Community 6822 - "Community 6822"
+Cohesion: 0.67
+Nodes (3): runtime_activation_readiness_contract_id, minLength, type
+
+### Community 6823 - "Community 6823"
+Cohesion: 0.67
+Nodes (3): minLength, type, project_id
+
+### Community 6824 - "Community 6824"
+Cohesion: 0.67
+Nodes (3): const, type, contains_raw_payload
+
+### Community 6825 - "Community 6825"
+Cohesion: 0.67
+Nodes (3): runtime_stub_release_candidate_id, minLength, type
+
+### Community 6826 - "Community 6826"
+Cohesion: 0.67
+Nodes (3): const, type, contains_raw_payload
+
+### Community 6827 - "Community 6827"
+Cohesion: 0.67
+Nodes (3): runtime_stub_manifest_id, minLength, type
+
+### Community 6828 - "Community 6828"
+Cohesion: 0.67
+Nodes (3): runtime_stub_next_phase_decision_record_id, minLength, type
+
+### Community 6829 - "Community 6829"
+Cohesion: 0.67
+Nodes (3): const, type, contains_runtime_callable
+
+### Community 6830 - "Community 6830"
+Cohesion: 0.67
+Nodes (3): runtime_stub_release_candidate_id, minLength, type
+
+### Community 6831 - "Community 6831"
+Cohesion: 0.67
+Nodes (3): minLength, type, project_id
+
+### Community 6832 - "Community 6832"
+Cohesion: 0.67
+Nodes (3): retrieves_summary_only, const, type
+
+### Community 6833 - "Community 6833"
+Cohesion: 0.67
+Nodes (3): runtime_stub_archive_final_summary_id, minLength, type
+
+### Community 6834 - "Community 6834"
+Cohesion: 0.67
+Nodes (3): schema_version, const, type
+
+### Community 6835 - "Community 6835"
+Cohesion: 0.67
+Nodes (3): minLength, type, noop_runtime_stub_id
+
+### Community 6836 - "Community 6836"
+Cohesion: 0.67
+Nodes (3): minLength, type, project_id
+
+### Community 6837 - "Community 6837"
+Cohesion: 0.67
+Nodes (3): source_media_access_requested, enum, type
+
+### Community 6838 - "Community 6838"
+Cohesion: 0.67
+Nodes (3): pattern, type, final_render_execution_request_id
+
 ## Knowledge Gaps
-- **57318 isolated node(s):** `id`, `generatedAt`, `source`, `status`, `approvalStoreEnabled` (+57313 more)
+- **62895 isolated node(s):** `id`, `generatedAt`, `source`, `status`, `approvalStoreEnabled` (+62890 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **333 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **338 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `main()` connect `Community 13` to `Community 4`, `Community 6`, `Community 136`, `Community 12`, `Community 3985`, `Community 19`, `Community 148`, `Community 20`, `Community 154`, `Community 155`, `Community 27`, `Community 157`, `Community 29`, `Community 421`, `Community 166`, `Community 169`, `Community 43`, `Community 44`, `Community 817`, `Community 50`, `Community 180`, `Community 53`, `Community 183`, `Community 56`, `Community 184`, `Community 187`, `Community 67`, `Community 70`, `Community 74`, `Community 202`, `Community 77`, `Community 1616`, `Community 209`, `Community 83`, `Community 214`, `Community 215`, `Community 216`, `Community 1627`, `Community 92`, `Community 94`, `Community 109`, `Community 110`, `Community 4207`, `Community 111`, `Community 121`, `Community 122`, `Community 127`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `extract()` connect `Community 20` to `Community 131`, `Community 4`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 13`, `Community 16`, `Community 18`, `Community 19`, `Community 22`, `Community 23`, `Community 27`, `Community 29`, `Community 163`, `Community 54`, `Community 182`, `Community 85`, `Community 734`, `Community 227`, `Community 110`, `Community 111`, `Community 639`?**
+- **Why does `main()` connect `Community 13` to `Community 0`, `Community 1`, `Community 6`, `Community 136`, `Community 10`, `Community 19`, `Community 148`, `Community 20`, `Community 23`, `Community 154`, `Community 155`, `Community 29`, `Community 157`, `Community 421`, `Community 166`, `Community 169`, `Community 44`, `Community 175`, `Community 50`, `Community 180`, `Community 53`, `Community 56`, `Community 187`, `Community 191`, `Community 67`, `Community 70`, `Community 74`, `Community 202`, `Community 77`, `Community 1616`, `Community 209`, `Community 83`, `Community 214`, `Community 215`, `Community 216`, `Community 1627`, `Community 92`, `Community 94`, `Community 3174`, `Community 104`, `Community 109`, `Community 4207`, `Community 112`, `Community 111`, `Community 121`, `Community 122`, `Community 127`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `Exception` connect `Community 110` to `Community 0`, `Community 193`, `Community 5`, `Community 102`, `Community 8`, `Community 10`, `Community 13`, `Community 365`, `Community 111`, `Community 912`, `Community 119`, `Community 215`, `Community 27`, `Community 158`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
-- **Why does `get_version()` connect `Community 8` to `Community 163`, `Community 10`, `Community 11`, `Community 80`, `Community 20`, `Community 54`, `Community 1627`, `Community 27`?**
+- **Why does `logger` connect `Community 20` to `Community 64`, `Community 3`, `Community 6`, `Community 7`, `Community 136`, `Community 10`, `Community 11`, `Community 141`, `Community 16`, `Community 29`, `Community 19`, `Community 22`, `Community 221`, `Community 61`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `main()` (e.g. with `expandUser()` and `RuntimeError`) actually correct?**
   _`main()` has 3 INFERRED edges - model-reasoned connections that need verification._
@@ -30198,4 +32388,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 63 inferred relationships involving `AsyncFirecrawlClient` (e.g. with `test_async_transport_used_no_threads()` and `test_event_loop_not_blocked()`) actually correct?**
   _`AsyncFirecrawlClient` has 63 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `id`, `generatedAt`, `source` to the rest of the system?**
-  _58294 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _63884 weakly-connected nodes found - possible documentation gaps or missing edges._

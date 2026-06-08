@@ -1,0 +1,44 @@
+{
+  "jobId": "prochat-prompt-1780848901843-test-concurrent-in-flight-dedu",
+  "sourcePrompt": "Test concurrent in-flight dedup",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "Test Concurrent In-Flight Dedup",
+  "description": "A short video about Test Concurrent In-Flight Dedup. Test concurrent in-flight dedup. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about Test Concurrent In-Flight Dedup. Test concurrent in-flight dedup. Created as a private preview for review before public release.",
+  "tags": [
+    "concurrent",
+    "in-flight",
+    "dedup",
+    "concurrent in-flight",
+    "in-flight dedup",
+    "short video",
+    "visual story",
+    "ai video"
+  ],
+  "searchKeywords": [
+    "concurrent",
+    "in-flight",
+    "dedup",
+    "concurrent in-flight",
+    "in-flight dedup",
+    "short video",
+    "visual story",
+    "ai video"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/exports/generated-001-final.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780848901843-test-concurrent-in-flight-dedu/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T16:15:53.648Z",
+  "updatedAt": "2026-06-07T16:15:53.648Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 31,
+    "tagCount": 8,
+    "descriptionLength": 148,
+    "hasInternalTerms": false
+  }
+}

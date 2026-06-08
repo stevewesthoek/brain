@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780842811046",
+  "status": "approved",
+  "title": "A video of a bed \n",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T14:33:31.046Z",
+  "updatedAt": "2026-06-07T14:35:05.258Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-07T14:35:05.258Z"
+  }
+}

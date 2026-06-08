@@ -1,0 +1,35 @@
+{
+  "jobId": "prochat-prompt-1780839684849-make-a-video-of-an-apple-falli",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T13:42:07.186Z",
+  "updatedAt": "2026-06-07T13:42:07.186Z",
+  "publishedAt": null,
+  "title": "An Apple Falling From the Tree",
+  "description": "A short video about An Apple Falling From the Tree. Make a video of an apple falling from the tree. Created as a private preview for review before public release.",
+  "tags": [
+    "an apple falling from the tree",
+    "apple",
+    "falling",
+    "tree",
+    "apple falling",
+    "falling tree",
+    "short video",
+    "visual story"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780839684849-make-a-video-of-an-apple-falli/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

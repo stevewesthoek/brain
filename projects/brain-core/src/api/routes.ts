@@ -2273,44 +2273,63 @@ export async function routeRequest(
       // ── Video Orchestrator: Operational Job API ──────────────────────────
       if (url.pathname === '/api/video-orchestrator/jobs/recent') {
         try {
+          // Parse query parameters: limit and optional search filter
+          const limitParam = url.searchParams.get('limit');
+          const parsedLimit = limitParam ? Math.min(200, Math.max(1, parseInt(limitParam, 10))) : 100;
+          const q = url.searchParams.get('q') ?? undefined;
+
           // Bounded timeout: return partial data fast instead of hanging on slow S3
           const RECENT_JOBS_TIMEOUT_MS = 7_000;
           const timeoutWarning = 'Recent jobs fetch timed out after 7s; showing last known good jobs. Retrying…';
           const result = await Promise.race([
-            getRecentVideoJobsResult(),
+            getRecentVideoJobsResult(parsedLimit, q),
             new Promise<RecentVideoJobsResult>((resolve) =>
-              setTimeout(() => resolve(
-                lastGoodRecentVideoJobsResult
-                  ? withRecentJobsTimeoutWarning(lastGoodRecentVideoJobsResult, timeoutWarning)
-                  : {
-                      ok: true,
-                      jobs: [],
-                      diagnostics: {
-                        repoRoot: '',
-                        jobsRoot: '',
-                        jobDirectoryExists: false,
-                        jobDirectoryReadable: false,
-                        localJobFolderCount: 0,
-                        localDiscoveredJobCount: 0,
-                        cwd: process.cwd(),
-                        modulePath: '',
-                        expectedCanonicalPath: 'projects/video-orchestrator/cloud/jobs',
-                        s3Bucket: '',
-                        s3Prefix: '',
-                        s3DiscoveryAttempted: false,
-                        s3DiscoveredJobCount: 0,
-                        hydratedJobCount: 0,
-                        skippedJobCount: 0,
-                        skippedJobs: [],
-                        warnings: [timeoutWarning, 'No cached recent jobs snapshot is available yet.'],
-                        error: null,
-                      },
+              setTimeout(() => {
+                if (lastGoodRecentVideoJobsResult) {
+                  // If a search filter is active, apply it to the cached result
+                  if (q) {
+                    const term = q.toLowerCase();
+                    const filtered = lastGoodRecentVideoJobsResult.jobs.filter((job) =>
+                      (job.jobId ?? '').toLowerCase().includes(term)
+                      || (job.title ?? '').toLowerCase().includes(term)
+                      || (job.channelId ?? '').toLowerCase().includes(term)
+                      || (job.status ?? '').toLowerCase().includes(term)
+                    );
+                    resolve(withRecentJobsTimeoutWarning({ ...lastGoodRecentVideoJobsResult, jobs: filtered }, timeoutWarning));
+                  } else {
+                    resolve(withRecentJobsTimeoutWarning(lastGoodRecentVideoJobsResult, timeoutWarning));
+                  }
+                } else {
+                  resolve({
+                    ok: true,
+                    jobs: [],
+                    diagnostics: {
+                      repoRoot: '',
+                      jobsRoot: '',
+                      jobDirectoryExists: false,
+                      jobDirectoryReadable: false,
+                      localJobFolderCount: 0,
+                      localDiscoveredJobCount: 0,
+                      cwd: process.cwd(),
+                      modulePath: '',
+                      expectedCanonicalPath: 'projects/video-orchestrator/cloud/jobs',
+                      s3Bucket: '',
+                      s3Prefix: '',
+                      s3DiscoveryAttempted: false,
+                      s3DiscoveredJobCount: 0,
+                      hydratedJobCount: 0,
+                      skippedJobCount: 0,
+                      skippedJobs: [],
+                      warnings: [timeoutWarning, 'No cached recent jobs snapshot is available yet.'],
+                      error: null,
                     },
-              ), RECENT_JOBS_TIMEOUT_MS)
+                  });
+                }
+              }, RECENT_JOBS_TIMEOUT_MS)
             ),
           ]);
 
-          if (result.ok && result.jobs.length > 0) {
+          if (result.ok && result.jobs.length > 0 && !q) {
             lastGoodRecentVideoJobsResult = result;
           }
 
@@ -2335,6 +2354,26 @@ export async function routeRequest(
               code: 'video_jobs_recent_unhandled_error',
               message: error instanceof Error ? error.message : 'Failed to fetch recent jobs',
             },
+          });
+        }
+        return;
+      }
+
+      // Direct job lookup by ID (used for frontend "open job ID" feature)
+      const directJobMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)$/.exec(url.pathname);
+      if (directJobMatch) {
+        try {
+          const jobId = decodeURIComponent(directJobMatch[1] ?? '');
+          const job = await getVideoJob(jobId);
+          if (!job) {
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+          } else {
+            sendJson(response, 200, { ok: true, data: job });
+          }
+        } catch (error) {
+          sendJson(response, 500, {
+            ok: false,
+            error: error instanceof Error ? error.message : 'Failed to fetch job',
           });
         }
         return;
@@ -2535,19 +2574,33 @@ export async function routeRequest(
 
       const jobControlPlaneMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/control-plane$/.exec(url.pathname);
       if (jobControlPlaneMatch) {
+        const startMs = Date.now();
         try {
           const jobId = decodeURIComponent(jobControlPlaneMatch[1] ?? '');
-          const controlPlane = await getVideoOrchestratorControlPlane(jobId);
+          // Use fast path for control-plane (read-only) to avoid expensive repairs
+          const controlPlane = await getVideoOrchestratorControlPlane(jobId, true);
+          const durationMs = Date.now() - startMs;
           if (!controlPlane) {
-            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}` });
+            sendJson(response, 404, { ok: false, error: `Job not found: ${jobId}`, diagnostics: { durationMs } });
           } else {
-            sendJson(response, 200, { ok: true, data: controlPlane });
+            sendJson(response, 200, { ok: true, data: controlPlane, diagnostics: { durationMs } });
           }
         } catch (error) {
-          sendJson(response, 500, {
-            ok: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch control-plane state',
-          });
+          const durationMs = Date.now() - startMs;
+          // If fast path times out after 1.5s, return degraded but valid response
+          if (durationMs > 1500) {
+            sendJson(response, 200, {
+              ok: false,
+              error: 'Control plane fetch timeout - degraded response',
+              diagnostics: { durationMs, timeout: true, degraded: true },
+            });
+          } else {
+            sendJson(response, 500, {
+              ok: false,
+              error: error instanceof Error ? error.message : 'Failed to fetch control-plane state',
+              diagnostics: { durationMs, timeout: durationMs > 2000 },
+            });
+          }
         }
         return;
       }

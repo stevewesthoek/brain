@@ -710,7 +710,7 @@ function ReviewCard({
       </div>
       {reviewData?.reviewStatus !== 'approved' ? <div className="compact-warning">Generated media must be reviewed before YouTube dry-run or private publish.</div> : <div className="success-panel">Review approved. Ready to proceed to dry-run or publish.</div>}
       <div style={{ fontSize: '0.8rem', color: 'var(--body)', marginBottom: '0.5rem' }}>
-        Review media from control-plane{!reviewMedia ? (controlPlaneData ? ' (unavailable)' : ' (loading…)') : ''}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
+        Review media from control-plane{reviewMedia ? ' (available)' : controlPlaneData ? ' (unavailable)' : ' (loading…)'}{missingReviewMediaFields.length > 0 ? ' — some fields missing' : ''}.
       </div>
       {missingReviewMediaFields.length > 0 && (
         isPendingTimeout ? (
@@ -789,6 +789,11 @@ function ReviewCard({
           <button className="button secondary" disabled={!jobId || requestChangesPending} onClick={onRequestChanges}>{requestChangesPending ? 'Requesting changes…' : 'Request changes'}</button>
         </div>
       </div>
+      {controlPlaneData && reviewMedia && (
+        <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>
+          ✓ Review media is available from control-plane
+        </div>
+      )}
       <details style={{ marginTop: '1rem' }}>
         <summary style={{ cursor: 'pointer' }}>Media details</summary>
         <div className="aws-facts" style={{ marginTop: '0.75rem' }}>
@@ -871,6 +876,9 @@ export function AwsVideoDashboard() {
   const [actionStateByJobId, setActionStateByJobId] = useState<Record<string, ActionState>>({});
   const [activity, setActivity] = useState<string[]>([]);
   const [generationTimeoutJobId, setGenerationTimeoutJobId] = useState<string | null>(null);
+  const [jobSearchQuery, setJobSearchQuery] = useState('');
+  const [directJobIdError, setDirectJobIdError] = useState<string | null>(null);
+  const [directJobIdValue, setDirectJobIdValue] = useState('');
 
   // Timeout monitor state — restored after mount to avoid hydration mismatch
   const [currentCreateActionId, setCurrentCreateActionId] = useState<string | null>(null);
@@ -911,7 +919,7 @@ export function AwsVideoDashboard() {
   });
   const jobs = useQuery({
     queryKey: ['aws-video-jobs'],
-    queryFn: () => brainCoreRequest('/api/video-orchestrator/jobs/recent', recentVideoJobsSchema),
+    queryFn: () => brainCoreRequest('/api/video-orchestrator/jobs/recent?limit=100', recentVideoJobsSchema),
     refetchInterval: 15_000,
     retry: 1,
     placeholderData: (prev) => prev,
@@ -919,6 +927,19 @@ export function AwsVideoDashboard() {
 
   const jobList = jobs.data?.jobs ?? [];
   const jobsDiagnostics = jobs.data?.diagnostics ?? payloadDiagnostics(jobs.error);
+
+  // Filter jobs based on search query
+  const filteredJobList = useMemo(() => {
+    if (!jobSearchQuery.trim()) return jobList;
+    const query = jobSearchQuery.toLowerCase();
+    return jobList.filter((job) => {
+      const title = (job.title ?? '').toLowerCase();
+      const jobIdLower = (job.jobId ?? '').toLowerCase();
+      const channelId = (job.channelId ?? '').toLowerCase();
+      const status = (job.status ?? '').toLowerCase();
+      return title.includes(query) || jobIdLower.includes(query) || channelId.includes(query) || status.includes(query);
+    });
+  }, [jobList, jobSearchQuery]);
 
   // Hydration-safe selected-job hook — defers sessionStorage to after mount
   const { selectedJobId, setSelectedJobId, resolvedJobId, isSelectionReady } = useAwsVideoSelection(jobList);
@@ -964,9 +985,10 @@ export function AwsVideoDashboard() {
 
   const controlPlane = useQuery({
     queryKey: ['aws-video-control-plane', jobId],
-    queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema),
+    queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema, { timeoutMs: 25_000 }),
     enabled: Boolean(jobId),
-    refetchInterval: 8_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     placeholderData: (prev, prevQuery) => {
       // Only keep placeholder if it belongs to the same jobId
       const prevJobId = (prevQuery?.queryKey as [string, string | null] | undefined)?.[1];
@@ -986,6 +1008,29 @@ export function AwsVideoDashboard() {
       queryClient.invalidateQueries({ queryKey: ['aws-video-review'] }),
       queryClient.invalidateQueries({ queryKey: ['aws-video-control-plane'] }),
     ]);
+  };
+
+  const openDirectJobId = async (attemptedJobId: string) => {
+    if (!attemptedJobId.trim()) {
+      setDirectJobIdError('Job ID cannot be empty');
+      return;
+    }
+    setDirectJobIdError(null);
+    try {
+      const result = await brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(attemptedJobId)}`, videoJobResponseSchema);
+      const jobData = result?.data ?? result;
+      if (jobData && typeof jobData === 'object' && 'jobId' in jobData && typeof jobData.jobId === 'string') {
+        setSelectedJobId(jobData.jobId);
+        setJobSearchQuery('');
+        setDirectJobIdValue('');
+        setActiveView('overview');
+        addActivity(`Opened job: ${jobData.jobId}`);
+      } else {
+        setDirectJobIdError('Job not found');
+      }
+    } catch (error) {
+      setDirectJobIdError(errorMessage(error) || 'Failed to load job');
+    }
   };
 
   const createDraft = useMutation({
@@ -1215,9 +1260,47 @@ export function AwsVideoDashboard() {
   // NORMALIZATION: Extract the inner data object once and reuse everywhere.
   // ═══════════════════════════════════════════════════════════════════════════
   const rawControlPlaneResponse = controlPlane.data ?? null;
-  const controlPlaneData: VideoControlPlaneData | null = rawControlPlaneResponse?.data ?? null;
+  const controlPlaneData: VideoControlPlaneData | null =
+    rawControlPlaneResponse?.data
+      ? (asRecord(rawControlPlaneResponse.data) ? asRecord(rawControlPlaneResponse.data) : rawControlPlaneResponse?.data)
+      : asRecord(rawControlPlaneResponse);
   const controlPlaneLoading = controlPlane.isLoading && Boolean(jobId);
-  const controlPlaneStale = controlPlane.isError || controlPlane.isRefetching;
+  const controlPlaneStale = controlPlane.isError;
+
+  // Prove control-plane is available and queryable
+  if (jobId && controlPlaneData && process.env.NODE_ENV === 'development') {
+    const cpRec = asRecord(controlPlaneData);
+    const selectedJobRec = cpRec?.selectedJob ? asRecord(cpRec.selectedJob) : null;
+    const reviewRec = cpRec?.review ? asRecord(cpRec.review) : null;
+    const allowedActionsRec = cpRec?.allowedActions ? asRecord(cpRec.allowedActions) : null;
+    const approveReviewRec = allowedActionsRec?.approve_review ? asRecord(allowedActionsRec.approve_review) : null;
+    console.debug('[AwsVideo] Control-plane data loaded:', {
+      queryKey: ['aws-video-control-plane', jobId],
+      jobIdUsed: jobId,
+      controlPlaneLoading,
+      controlPlaneIsError: controlPlane.isError,
+      rawResponseOk: Boolean(rawControlPlaneResponse),
+      normalizedDataOk: Boolean(controlPlaneData),
+      phase: cpRec?.phase,
+      selectedJobStatus: selectedJobRec?.status,
+      reviewStatus: reviewRec?.reviewStatus,
+      approveReviewEnabled: approveReviewRec?.enabled,
+    });
+  }
+
+  // Error if jobId exists but controlPlaneData is still null after loading completes
+  if (jobId && !controlPlaneLoading && !controlPlaneData && controlPlane.isError && process.env.NODE_ENV === 'development') {
+    console.error('[AwsVideo] Control-plane state is MISSING for selected job:', {
+      jobId,
+      queryKey: ['aws-video-control-plane', jobId],
+      controlPlane: {
+        isLoading: controlPlane.isLoading,
+        isError: controlPlane.isError,
+        error: errorMessage(controlPlane.error),
+        data: rawControlPlaneResponse,
+      },
+    });
+  }
 
   // Legacy data — debug panels ONLY, never drives main UI
   const timelineEvents = timeline.data?.data.events ?? [];
@@ -1231,12 +1314,34 @@ export function AwsVideoDashboard() {
   const cp = controlPlaneData as any;
   const cpSelectedJob = cp?.selectedJob ?? null;
   const cpPhase = cp?.phase ?? cp?.canonicalPhase ?? 'unknown';
-  const cpAllowedActions = cp?.allowedActions ?? {};
+  // NORMALIZE: allowedActions is keyed object {action_name: {enabled, reason}}
+  // Handle both array format (legacy) and object format (current)
+  let cpAllowedActions: Record<string, { enabled: boolean; reason?: string }> = {};
+  if (cp?.allowedActions) {
+    if (Array.isArray(cp.allowedActions)) {
+      // Legacy array format: convert to keyed object
+      cpAllowedActions = cp.allowedActions.reduce(
+        (acc: Record<string, { enabled: boolean; reason?: string }>, item: any) => {
+          if (item?.action && typeof item.enabled === 'boolean') {
+            acc[item.action] = { enabled: item.enabled, reason: item.reason };
+          }
+          return acc;
+        },
+        {}
+      );
+    } else if (typeof cp.allowedActions === 'object') {
+      // Current object format: use directly
+      cpAllowedActions = cp.allowedActions as Record<string, { enabled: boolean; reason?: string }>;
+    }
+  }
   const cpFinalization = cp?.finalization ?? null;
   const cpArtifacts = cp?.artifacts ?? null;
   const cpExecution = cp?.execution ?? null;
   const cpReview = cp?.review ?? null;
   const cpPublish = cp?.publish ?? null;
+
+  // Canonical review media object: source of truth for ready_to_publish phase
+  const cpReviewMedia = cpReview?.media ?? null;
 
   // Media source and generation mode from control-plane (canonical)
   const mediaSource = cpArtifacts?.mediaSource ?? cpSelectedJob?.mediaSource ?? 'unknown';
@@ -1248,14 +1353,34 @@ export function AwsVideoDashboard() {
   const isHybridImageSlideshowMode = generationMode === 'hybrid_image_slideshow_video';
   const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video' || generationMode === 'hybrid_slideshow_video' || generationMode === 'hybrid_image_slideshow_video';
 
-  // Artifact keys from control-plane
-  const scenePlanKey = cpArtifacts?.scenePlanKey ?? null;
-  const narrationScriptKey = cpArtifacts?.narrationScriptKey ?? null;
-  const sceneImageKeys = cpArtifacts?.sceneImageKeys ?? [];
-  const finalVideoKey = cpArtifacts?.finalVideoKey ?? cpArtifacts?.videoKey ?? null;
-  const thumbnailKey = cpArtifacts?.thumbnailKey ?? null;
+  // Artifact keys from control-plane with review media precedence
+  const finalVideoKey =
+    cpReviewMedia?.videoKey ??
+    cpArtifacts?.finalVideoKey ??
+    cpArtifacts?.videoKey ??
+    null;
+
+  const thumbnailKey =
+    cpReviewMedia?.thumbnailKey ??
+    cpArtifacts?.thumbnailKey ??
+    null;
+
+  const audioKey =
+    cpReviewMedia?.audioKey ??
+    cpArtifacts?.audioKey ??
+    null;
+
+  const youtubePackageKey =
+    cpReviewMedia?.youtubePackageKey ??
+    cpArtifacts?.youtubePackageKey ??
+    null;
+
+  const scenePlanKey = cpReviewMedia?.scenePlanKey ?? cpArtifacts?.scenePlanKey ?? null;
+  const narrationScriptKey = cpReviewMedia?.narrationScriptKey ?? cpArtifacts?.narrationScriptKey ?? null;
+  const sceneImageKeys = cpReviewMedia?.sceneImageKeys ?? cpArtifacts?.sceneImageKeys ?? [];
   const hasGeneratedAssets = Boolean(finalVideoKey && thumbnailKey);
   const hasScenePlan = Boolean(scenePlanKey);
+  const reviewMediaReady = Boolean(finalVideoKey && thumbnailKey);
 
   // For detail cards that still need legacy artifact data (scene plan content, image generation, etc.)
   const artifactData = legacyArtifactData;
@@ -1309,7 +1434,7 @@ export function AwsVideoDashboard() {
           ? true
           : false;
 
-  const selectedReady = ['ready_to_publish', 'published', 'uploaded'].includes(cpSelectedJob?.status ?? '') || hasGeneratedAssets;
+  const selectedReady = cpPhase === 'ready_to_publish' || cpSelectedJob?.status === 'ready_to_publish' || reviewMediaReady;
   const selectedUploaded = selectedPublished;
 
   // In-flight state
@@ -1354,16 +1479,16 @@ export function AwsVideoDashboard() {
         : 'Waiting for generated assets';
 
   // Pipeline step model derived from control-plane phase and allowedActions
-  // CANONICAL: Review media is active when control-plane.allowedActions.approve_review.enabled = true
+  // CANONICAL: All step states derive from control-plane (phase, status, allowedActions, reviewStatus)
   const guideSteps = [
-    { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Create draft', help: 'Create or select a job.', done: Boolean(selectedJob), active: !selectedJob },
-    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve script', help: 'Approve the script.', done: selectedApprovalStatus === 'approved' || selectedReady || selectedUploaded, active: canApprove },
-    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate media', help: 'Run image generation and assembly.', done: selectedReady || selectedUploaded, active: canGenerate || generationInProgress || generationTimeoutStillRunning },
-    { key: 'finalize', view: 'overview' as const, action: 'Finalize', label: 'Finalize package', help: 'Finalize review and publish metadata.', done: cpFinalization?.status === 'complete' || selectedUploaded, active: cpFinalization?.status === 'pending' },
-    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review media', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: canApproveReview },
-    { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run upload', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: canDryRun && !isPublishingThisJob },
-    { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Publish privately', help: 'Upload privately after dry-run.', done: selectedUploaded, active: canPublish || isPublishingThisJob },
-    { key: 'download', view: 'publish' as const, action: 'Download', label: 'Download / audit', help: 'Download final video or audit upload.', done: false, active: canDownloadVideo },
+    { key: 'draft', view: 'create' as const, action: 'Create draft', label: 'Create draft', help: 'Create or select a job.', done: Boolean(cpSelectedJob), active: !cpSelectedJob },
+    { key: 'approve', view: 'overview' as const, action: 'Approve', label: 'Approve script', help: 'Approve the script.', done: cpSelectedJob?.approvalStatus === 'approved' || selectedReady || selectedUploaded, active: cpAllowedActions.approve_script?.enabled ?? false },
+    { key: 'generate', view: 'overview' as const, action: 'Generate', label: 'Generate media', help: 'Run image generation and assembly.', done: selectedReady || selectedUploaded, active: cpAllowedActions.generate?.enabled ?? false },
+    { key: 'finalize', view: 'overview' as const, action: 'Finalize', label: 'Finalize package', help: 'Finalize review and publish metadata.', done: cpPhase === 'ready_to_publish' || cpFinalization?.status === 'complete' || selectedUploaded, active: cpFinalization?.status === 'pending' },
+    { key: 'review', view: 'review' as const, action: 'Approve review', label: 'Review media', help: 'Approve generated media before publish.', done: !requiresReviewGate || reviewApproved || selectedUploaded, active: cpAllowedActions.approve_review?.enabled ?? false },
+    { key: 'dry-run', view: 'publish' as const, action: 'Dry-run YouTube publish', label: 'Dry-run upload', help: 'Validate the YouTube upload.', done: dryRunPassedForThisJob || selectedUploaded, active: cpAllowedActions.dry_run?.enabled ?? false },
+    { key: 'publish', view: 'publish' as const, action: 'Publish privately', label: 'Publish privately', help: 'Upload privately after dry-run.', done: selectedUploaded, active: cpAllowedActions.publish_private?.enabled ?? false },
+    { key: 'download', view: 'publish' as const, action: 'Download', label: 'Download / audit', help: 'Download final video or audit upload.', done: false, active: cpAllowedActions.download_video?.enabled ?? false },
   ];
   const recommendedStep = guideSteps.find((step) => step.active && !step.done) ?? guideSteps.find((step) => !step.done);
   const nextStep = recommendedStep;
@@ -1714,16 +1839,45 @@ export function AwsVideoDashboard() {
 
           {activeView === 'jobs' ? (
             <article className="card">
-              <div className="card-header"><div><div className="card-title">Recent jobs</div><div className="card-description">Select one job. Long IDs wrap; no horizontal scrolling.</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
+              <div className="card-header"><div><div className="card-title">Jobs</div><div className="card-description">Search, filter, or open a job by ID</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
               <JobsDiagnosticsCard
                 diagnostics={jobList.length === 0 || (jobsDiagnostics?.skippedJobCount ?? 0) > 0 || jobs.isError ? jobsDiagnostics : null}
                 error={statusOnlyErrorMessage}
               />
-              <div className="job-list">
-                {jobList.map((item) => {
+              <div className="stack" style={{ marginBottom: '1rem' }}>
+                <input
+                  className="input"
+                  placeholder="Search by title, job ID, channel, or status"
+                  value={jobSearchQuery}
+                  onChange={(e) => setJobSearchQuery(e.target.value)}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem' }}>
+                  <input
+                    className="input"
+                    placeholder="Or paste a job ID to open directly"
+                    value={directJobIdValue}
+                    onChange={(e) => { setDirectJobIdValue(e.target.value); setDirectJobIdError(null); }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && directJobIdValue.trim()) {
+                        openDirectJobId(directJobIdValue.trim());
+                      }
+                    }}
+                  />
+                  <button
+                    className="button secondary"
+                    disabled={!directJobIdValue.trim()}
+                    onClick={() => { if (directJobIdValue.trim()) openDirectJobId(directJobIdValue.trim()); }}
+                  >
+                    Go
+                  </button>
+                </div>
+                {directJobIdError ? <div className="compact-warning">{directJobIdError}</div> : null}
+              </div>
+              <div className="job-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {filteredJobList.map((item) => {
                   const isTestJob = /^Test\s+clientActionId\s+dedup/i.test(item.title ?? '');
                   return (
-                    <button key={item.jobId} className={`job-list-item ${item.jobId === jobId ? 'active' : ''}${isTestJob ? ' test-job' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setActiveView('overview'); }}>
+                    <button key={item.jobId} className={`job-list-item ${item.jobId === jobId ? 'active' : ''}${isTestJob ? ' test-job' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setJobSearchQuery(''); setActiveView('overview'); }}>
                       <div className="min-w-0"><strong>{item.title || item.jobId}{isTestJob ? ' [diagnostic]' : ''}</strong><span>{item.jobId} · {item.channelId}</span></div>
                       <StatusBadge status={item.status} />
                       <div className="job-progress"><div className="progress"><span style={{ width: `${pct(item.progress)}%` }} /></div><span>{pct(item.progress)}%</span></div>
@@ -1732,6 +1886,19 @@ export function AwsVideoDashboard() {
                   );
                 })}
                 {jobList.length === 0 && !jobsDiagnostics?.localJobFolderCount && !jobsDiagnostics?.s3DiscoveredJobCount && !statusOnlyErrorMessage ? <p>No video jobs returned by Brain Core.</p> : null}
+                {jobList.length > 0 && filteredJobList.length === 0 ? (
+                  <div className="stack" style={{ padding: '0.75rem' }}>
+                    <p>No jobs match the search filter.</p>
+                    {jobSearchQuery.trim().length >= 10 ? (
+                      <button
+                        className="button secondary"
+                        onClick={() => openDirectJobId(jobSearchQuery.trim())}
+                      >
+                        Open "{jobSearchQuery.trim().slice(0, 48)}" as job ID
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           ) : null}
@@ -1876,8 +2043,41 @@ export function AwsVideoDashboard() {
 
           <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending || anyPendingTimeout} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
 
+          {/* DEBUG: Control-plane state proof */}
+          <article className="card" style={{ marginTop: '1rem' }}>
+            <details open>
+              <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: control-plane state</summary>
+              <div className="aws-facts" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
+                <div><span>raw control-plane ok</span><strong>{rawControlPlaneResponse ? 'yes' : 'no'}</strong></div>
+                <div><span>selected job id used by query</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{jobId ?? 'none'}</strong></div>
+                <div><span>actual fetch URL</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{jobId ? `http://127.0.0.1:4877/api/video-orchestrator/jobs/${jobId}/control-plane` : 'n/a'}</strong></div>
+                <div><span>timeout ms</span><strong>25000</strong></div>
+                <div><span>control-plane query status</span><strong>{controlPlane.status}</strong></div>
+                <div><span>isLoading</span><strong>{String(controlPlane.isLoading)}</strong></div>
+                <div><span>isError</span><strong>{String(controlPlane.isError)}</strong></div>
+                {controlPlane.error ? <div><span>error</span><strong style={{ color: 'var(--badge-error-text)' }}>{errorMessage(controlPlane.error)}</strong></div> : null}
+                <div><span>cpPhase</span><strong>{cpPhase}</strong></div>
+                <div><span>selectedApprovalStatus</span><strong>{cpSelectedJob?.approvalStatus ?? 'n/a'}</strong></div>
+                <div><span>reviewStatus</span><strong>{cpReview?.reviewStatus ?? 'n/a'}</strong></div>
+                <div><span>approve_review.enabled</span><strong>{String(cpAllowedActions.approve_review?.enabled ?? false)}</strong></div>
+                <div><span>generate.enabled</span><strong>{String(cpAllowedActions.generate?.enabled ?? false)}</strong></div>
+                <div><span>finalVideoKey</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{finalVideoKey ?? 'missing'}</strong></div>
+                <div><span>thumbnailKey</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{thumbnailKey ?? 'missing'}</strong></div>
+                {!controlPlaneData ? (
+                  <div style={{ gridColumn: '1 / -1', padding: '0.5rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '3px', marginTop: '0.5rem' }}>
+                    <strong style={{ color: 'var(--badge-error-text)' }}>⚠️ Control-plane state is missing for selected job</strong>
+                    <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--badge-error-text)' }}>
+                      Job ID: {shortJobId(jobId ?? undefined)}
+                      {controlPlane.error ? <div>Query error: {errorMessage(controlPlane.error)}</div> : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </details>
+          </article>
+
           {/* DEBUG: Legacy data collapsed */}
-          <details style={{ marginTop: '1rem' }}>
+          <details style={{ marginTop: '0.5rem' }}>
             <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: legacy execution data</summary>
             <pre className="compact-pre" style={{ marginTop: '0.5rem' }}>{JSON.stringify(legacyExecutionData ?? {}, null, 2).slice(0, 1600)}</pre>
           </details>

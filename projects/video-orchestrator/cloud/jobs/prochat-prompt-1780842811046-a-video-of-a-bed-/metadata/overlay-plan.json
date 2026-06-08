@@ -1,0 +1,49 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "provider": "deterministic-overlay",
+  "createdAt": "2026-06-07T14:40:26.472Z",
+  "mode": "hybrid_image_slideshow",
+  "title": "A Bed",
+  "style": {
+    "position": "lower-third",
+    "safeMargin": 64,
+    "fontSize": 44,
+    "titleFontSize": 58
+  },
+  "cards": [
+    {
+      "type": "intro",
+      "text": "A Bed",
+      "durationSeconds": 3
+    },
+    {
+      "type": "scene",
+      "sceneIndex": 1,
+      "text": "Scene 1",
+      "imageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-001.png",
+      "durationSeconds": 20
+    },
+    {
+      "type": "scene",
+      "sceneIndex": 2,
+      "text": "Scene 2",
+      "imageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-002.png",
+      "durationSeconds": 20
+    },
+    {
+      "type": "scene",
+      "sceneIndex": 3,
+      "text": "Scene 3",
+      "imageKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/images/scene-003.png",
+      "durationSeconds": 20
+    },
+    {
+      "type": "end",
+      "text": "Thanks for watching",
+      "durationSeconds": 3
+    }
+  ],
+  "warnings": [
+    "FFmpeg drawtext filter unavailable; overlay frames use generated images without baked text."
+  ]
+}

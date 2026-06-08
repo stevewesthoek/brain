@@ -1,0 +1,21 @@
+{
+  "jobId": "prochat-prompt-1780844790820-make-a-video-of-a-butterfly-",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780844790820",
+  "status": "approved",
+  "title": "Make a video of a butterfly. ",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T15:06:30.820Z",
+  "updatedAt": "2026-06-07T15:07:20.313Z",
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "theologicalReviewRequired": false,
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-07T15:07:20.313Z"
+  }
+}

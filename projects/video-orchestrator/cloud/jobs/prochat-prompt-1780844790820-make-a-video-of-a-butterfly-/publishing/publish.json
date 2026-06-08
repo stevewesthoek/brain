@@ -1,0 +1,35 @@
+{
+  "jobId": "prochat-prompt-1780844790820-make-a-video-of-a-butterfly-",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T15:59:33.391Z",
+  "updatedAt": "2026-06-07T15:59:33.391Z",
+  "publishedAt": null,
+  "title": "A Butterfly",
+  "description": "A short video about A Butterfly. Make a video of a butterfly. Created as a private preview for review before public release.",
+  "tags": [
+    "a butterfly",
+    "butterfly",
+    "scene",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/video-generated/generated-001.mp4",
+  "audioSourceKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/audio/narration.mp3",
+  "youtubePackageKey": "jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

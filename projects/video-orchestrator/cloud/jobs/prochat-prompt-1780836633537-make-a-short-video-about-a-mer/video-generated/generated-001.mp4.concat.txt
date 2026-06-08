@@ -1,0 +1,7 @@
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-001.mp4'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-002.mp4'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-003.mp4'
+duration 20
+file '/Users/Office/Repos/stevewesthoek/brain/projects/video-orchestrator/cloud/jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/motion/scene-003.mp4'

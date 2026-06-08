@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780836237901-make-a-short-video-about-an-au",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780836237901",
+  "status": "draft",
+  "title": "Make a short video about an Audi R8 driving through a rainy city at sunset. time",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780836237901-make-a-short-video-about-an-au/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T12:43:57.901Z",
+  "updatedAt": "2026-06-07T12:43:57.901Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by brain-console-center"
+  }
+}

@@ -1,0 +1,23 @@
+# Narration Script for "A video of a bed 
+"
+Generated: 2026-06-07T14:35:53.042Z
+Provider: deterministic-local
+Total Duration: 60s
+
+## Scene 1 (20s)
+Visual: A video of a bed 
+ — scene 1 of 3
+Narration: A video of a bed
+On-screen text: Scene 1
+
+## Scene 2 (20s)
+Visual: A video of a bed 
+ — scene 2 of 3
+Narration: Scene 2
+On-screen text: Scene 2
+
+## Scene 3 (20s)
+Visual: A video of a bed 
+ — scene 3 of 3
+Narration: Scene 3
+On-screen text: Scene 3

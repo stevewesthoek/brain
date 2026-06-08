@@ -1,0 +1,35 @@
+{
+  "jobId": "prochat-prompt-1780840337197-make-a-video-of-a-bug-",
+  "publishStatus": "pending",
+  "createdAt": "2026-06-07T13:52:37.279Z",
+  "updatedAt": "2026-06-07T13:52:37.279Z",
+  "publishedAt": null,
+  "title": "A Bug",
+  "description": "A short video about A Bug. Make a video of a bug. Created as a private preview for review before public release.",
+  "tags": [
+    "a bug",
+    "bug",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview",
+    "private preview"
+  ],
+  "videoKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/exports/generated-001-final.mp4",
+  "thumbnailKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/exports/thumbnail-001.jpg",
+  "mediaSource": "hybrid",
+  "generationMode": "hybrid_image_slideshow_video",
+  "videoSourceKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/video-generated/generated-001.mp4",
+  "audioSourceKey": null,
+  "youtubePackageKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/youtube-package.json",
+  "platforms": {
+    "youtube": {
+      "status": "pending",
+      "videoId": null,
+      "publishedAt": null,
+      "url": null,
+      "error": null
+    }
+  }
+}

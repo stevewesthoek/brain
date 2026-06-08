@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780851419769-make-a-short-video-about-a-red",
+  "channelId": "prochat",
+  "topicId": "prochat-prompt-1780851419769",
+  "status": "draft",
+  "title": "Make a short video about a red fox running through a snowy forest at sunrise.",
+  "targetDurationSeconds": 60,
+  "wordCount": 0,
+  "scriptKey": "jobs/prochat-prompt-1780851419769-make-a-short-video-about-a-red/scripts/script.md",
+  "generatedBy": "interactive-prompt",
+  "createdAt": "2026-06-07T16:56:59.769Z",
+  "updatedAt": "2026-06-07T16:56:59.769Z",
+  "approval": {
+    "required": true,
+    "status": "pending",
+    "theologicalReviewRequired": false,
+    "notes": "Draft created from prompt by brain-console-center"
+  }
+}

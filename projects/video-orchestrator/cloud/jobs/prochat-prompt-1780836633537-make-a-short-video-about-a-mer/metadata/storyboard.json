@@ -1,0 +1,63 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "provider": "aws-bedrock-nova-canvas",
+  "imageModelId": "amazon.nova-canvas-v1:0",
+  "imageRegion": "us-east-1",
+  "createdAt": "2026-06-07T12:54:48.239Z",
+  "scenes": [
+    {
+      "index": 1,
+      "originalVisualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 1 of 3",
+      "visualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 1 of 3",
+      "imageKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-001.png",
+      "finalImagePrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 1 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 1",
+      "promptHash": "e24997ce1edae8bb",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 42,
+      "generatedAt": "2026-06-07T12:54:59.544Z",
+      "durationSeconds": 20,
+      "narrationText": "Make a short video about a Mercedes driving through a rainy city.",
+      "onScreenText": "Scene 1"
+    },
+    {
+      "index": 2,
+      "originalVisualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 2 of 3",
+      "visualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 2 of 3",
+      "imageKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-002.png",
+      "finalImagePrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 2 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 2",
+      "promptHash": "ad7200155a12fd4f",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 43,
+      "generatedAt": "2026-06-07T12:55:10.303Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 2",
+      "onScreenText": "Scene 2"
+    },
+    {
+      "index": 3,
+      "originalVisualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 3 of 3",
+      "visualPrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 3 of 3",
+      "imageKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/images/scene-003.png",
+      "finalImagePrompt": "Make a short video about a Mercedes driving through a rainy city. timeout-safe s — scene 3 of 3. cinematic, family-friendly, non-violent, high detail, 16:9 composition. Composition should support readable on-screen text: Scene 3",
+      "promptHash": "c5d27809ce30338c",
+      "imageProvider": "aws-bedrock-nova-canvas",
+      "imageModelId": "amazon.nova-canvas-v1:0",
+      "imageRegion": "us-east-1",
+      "width": 1280,
+      "height": 720,
+      "seed": 44,
+      "generatedAt": "2026-06-07T12:55:19.321Z",
+      "durationSeconds": 20,
+      "narrationText": "Scene 3",
+      "onScreenText": "Scene 3"
+    }
+  ]
+}

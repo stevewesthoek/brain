@@ -1,0 +1,50 @@
+{
+  "jobId": "prochat-prompt-1780835613100-make-a-short-video-of-a-merced",
+  "sourcePrompt": "Make a short video of a Mercedes driving through a rainy city. ",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "A Mercedes Driving Through a Rainy City",
+  "description": "A short video about A Mercedes Driving Through a Rainy City. Make a short video of a Mercedes driving through a rainy city. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about A Mercedes Driving Through a Rainy City. Make a short video of a Mercedes driving through a rainy city. Created as a private pr…",
+  "tags": [
+    "a mercedes driving through a rainy city",
+    "mercedes",
+    "driving",
+    "through",
+    "rainy",
+    "city",
+    "mercedes driving",
+    "driving through",
+    "through rainy",
+    "rainy city",
+    "short"
+  ],
+  "searchKeywords": [
+    "a mercedes driving through a rainy city",
+    "mercedes",
+    "driving",
+    "through",
+    "rainy",
+    "city",
+    "mercedes driving",
+    "driving through",
+    "through rainy",
+    "rainy city",
+    "short"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/exports/generated-001-final.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780835613100-make-a-short-video-of-a-merced/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T12:34:34.679Z",
+  "updatedAt": "2026-06-07T12:34:34.679Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 39,
+    "tagCount": 11,
+    "descriptionLength": 186,
+    "hasInternalTerms": false
+  }
+}

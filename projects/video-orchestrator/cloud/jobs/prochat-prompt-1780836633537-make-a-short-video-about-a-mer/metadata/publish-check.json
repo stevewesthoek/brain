@@ -1,0 +1,13 @@
+{
+  "jobId": "prochat-prompt-1780836633537-make-a-short-video-about-a-mer",
+  "youtubeDryRun": {
+    "status": "passed",
+    "startedAt": "2026-06-07T13:03:33.411Z",
+    "checkedAt": "2026-06-07T13:03:44.516Z",
+    "checkedBy": "brain-console-center",
+    "privacy": "private",
+    "videoKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/generated-001-final.mp4",
+    "thumbnailKey": "jobs/prochat-prompt-1780836633537-make-a-short-video-about-a-mer/exports/thumbnail-001.jpg"
+  },
+  "dryRunPassed": true
+}

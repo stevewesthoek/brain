@@ -1,0 +1,19 @@
+{
+  "jobId": "prochat-prompt-1780842811046-a-video-of-a-bed-",
+  "thumbnailStatus": "generated",
+  "createdAt": "2026-06-07T14:42:08.164Z",
+  "updatedAt": "2026-06-07T14:42:08.164Z",
+  "provider": "selected-scene-image",
+  "source": {
+    "kind": "scene-image",
+    "key": null
+  },
+  "thumbnailKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/exports/thumbnail-001.jpg",
+  "previewKey": "jobs/prochat-prompt-1780842811046-a-video-of-a-bed-/exports/thumbnail-001.jpg",
+  "width": 1280,
+  "height": 720,
+  "mimeType": "image/jpeg",
+  "titleOverlay": null,
+  "prompt": null,
+  "warnings": []
+}

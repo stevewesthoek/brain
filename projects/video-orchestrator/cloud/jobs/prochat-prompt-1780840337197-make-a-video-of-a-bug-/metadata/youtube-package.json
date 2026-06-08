@@ -1,0 +1,44 @@
+{
+  "jobId": "prochat-prompt-1780840337197-make-a-video-of-a-bug-",
+  "sourcePrompt": "Make a video of a bug. ",
+  "generationMode": "hybrid_image_slideshow_video",
+  "title": "A Bug",
+  "description": "A short video about A Bug. Make a video of a bug. Created as a private preview for review before public release.",
+  "shortDescription": "A short video about A Bug. Make a video of a bug. Created as a private preview for review before public release.",
+  "tags": [
+    "a bug",
+    "bug",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview",
+    "private preview"
+  ],
+  "searchKeywords": [
+    "a bug",
+    "bug",
+    "short video",
+    "visual story",
+    "ai video",
+    "creative video",
+    "video preview",
+    "private preview"
+  ],
+  "categoryId": "22",
+  "privacyStatus": "private",
+  "thumbnailKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/exports/thumbnail-001.jpg",
+  "videoKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/exports/generated-001-final.mp4",
+  "scenePlanKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/scene-plan.json",
+  "narrationScriptKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/audio/narration-script.txt",
+  "youtubePackageKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/metadata/youtube-package.json",
+  "createdAt": "2026-06-07T13:52:34.430Z",
+  "updatedAt": "2026-06-07T13:52:34.430Z",
+  "metadataQuality": {
+    "warnings": [],
+    "titleLength": 5,
+    "tagCount": 8,
+    "descriptionLength": 112,
+    "hasInternalTerms": false
+  }
+}
