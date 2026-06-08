@@ -4126,34 +4126,108 @@ test('POST /api/infinite-brain/proposals/approvals rejects invalid decision', as
   assert.equal(body.code, 'invalid_decision', 'code must be invalid_decision');
 });
 
-test('POST /api/infinite-brain/proposals/approvals response includes safety invariants', async () => {
-  // This test verifies the response shape when a valid proposal exists
-  // (assuming a proposal exists or using mocked data)
-  // The key assertion is that any successful response includes:
-  // - applied: false
-  // - executionBlocked: true
-  // - writesToMind: false
+test('POST /api/infinite-brain/proposals/approvals exercise success path', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-approval-success');
+  const proposalsPath = path.join(testDir, 'proposals-latest.json');
+  const approvalsPath = path.join(testDir, 'proposal-approvals.json');
 
-  // Since we can't easily mock proposal data in this test framework,
-  // this test serves as a structural documentation of expected response
-  const expectedResponseShape = {
-    ok: true,
-    code: 'approval_recorded',
-    record: {
-      proposalId: 'string',
-      decision: 'approved' as const,
-      executionBlocked: true,
-      applied: false,
-    },
-    safety: {
-      applied: false,
-      executionBlocked: true,
-      writesToMind: false,
-    },
-  };
+  const previousProposalsPath = process.env.IBR_PROPOSALS_REPORT_PATH;
+  const previousApprovalsPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
 
-  // Verify the shape is what we expect
-  assert.equal(expectedResponseShape.record.executionBlocked, true, 'executionBlocked must be true');
-  assert.equal(expectedResponseShape.record.applied, false, 'applied must be false');
-  assert.equal(expectedResponseShape.safety.writesToMind, false, 'writesToMind must be false');
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+
+  // Write temp proposal report with one valid proposal
+  fs.writeFileSync(proposalsPath, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    totalProposals: 1,
+    proposals: [
+      {
+        proposalId: 'prop-test-valid',
+        category: 'atomization',
+        title: 'Test Proposal',
+        summary: 'This is a test proposal',
+        confidence: 0.95,
+        priority: 'high',
+        riskLevel: 'medium',
+        requiresApproval: true,
+        writesToMindIfApproved: false,
+        safetyMode: 'report-only',
+        status: 'proposed',
+      }
+    ]
+  }, null, 2));
+
+  process.env.IBR_PROPOSALS_REPORT_PATH = proposalsPath;
+  process.env.IBR_PROPOSAL_APPROVALS_PATH = approvalsPath;
+
+  try {
+    const request = createRequest({
+      method: 'POST',
+      url: '/api/infinite-brain/proposals/approvals',
+      remoteAddress: '127.0.0.1',
+    });
+
+    // Mock the request stream to provide JSON body
+    (request as any).on = (event: string, callback: (data?: unknown) => void) => {
+      if (event === 'data') {
+        callback(Buffer.from(JSON.stringify({
+          proposalId: 'prop-test-valid',
+          decision: 'approved',
+          decidedBy: 'test',
+          reason: 'test approval reason',
+        })));
+      } else if (event === 'end') {
+        callback();
+      }
+    };
+
+    const response = new MockResponse();
+    await routeRequest(request, response);
+
+    const body = JSON.parse(response.body) as {
+      ok: boolean;
+      code: string;
+      record: { proposalId: string; decision: string; executionBlocked: boolean; applied: boolean };
+      safety: { executionBlocked: boolean; applied: boolean; writesToMind: boolean };
+    };
+
+    // Assertions: HTTP 200
+    assert.equal(response.statusCode, 200);
+
+    // Assertions: response body structure
+    assert.equal(body.ok, true);
+    assert.equal(body.code, 'approval_recorded');
+    assert.equal(body.record.proposalId, 'prop-test-valid');
+    assert.equal(body.record.decision, 'approved');
+    assert.equal(body.record.executionBlocked, true);
+    assert.equal(body.record.applied, false);
+
+    // Assertions: safety invariants
+    assert.equal(body.safety.executionBlocked, true);
+    assert.equal(body.safety.applied, false);
+    assert.equal(body.safety.writesToMind, false);
+
+    // Assertions: verify approvals file was written
+    const approvalsContent = fs.readFileSync(approvalsPath, 'utf8');
+    const approvalsData = JSON.parse(approvalsContent) as { records: Array<{ proposalId: string; applied: boolean; executionBlocked: boolean }> };
+
+    assert.equal(Array.isArray(approvalsData.records), true);
+    assert.equal(approvalsData.records.length, 1);
+    assert.equal(approvalsData.records[0]?.proposalId, 'prop-test-valid');
+    assert.equal(approvalsData.records[0]?.applied, false);
+    assert.equal(approvalsData.records[0]?.executionBlocked, true);
+  } finally {
+    if (previousProposalsPath === undefined) {
+      delete process.env.IBR_PROPOSALS_REPORT_PATH;
+    } else {
+      process.env.IBR_PROPOSALS_REPORT_PATH = previousProposalsPath;
+    }
+    if (previousApprovalsPath === undefined) {
+      delete process.env.IBR_PROPOSAL_APPROVALS_PATH;
+    } else {
+      process.env.IBR_PROPOSAL_APPROVALS_PATH = previousApprovalsPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
 });
