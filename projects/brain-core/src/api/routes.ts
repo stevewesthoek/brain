@@ -27,6 +27,7 @@ import { generateOperatorApprovalRecord, writeOperatorApprovalRecord, readOperat
 import { generatePostWriteVerificationReport, writePostWriteVerificationReport, readPostWriteVerificationReport, readPostWriteVerificationSummary } from '../adapters/infinite-brain-post-write-verification.js';
 import { generateWriteManifest, writeWriteManifest, readWriteManifest } from '../adapters/infinite-brain-write-manifest.js';
 import { generateMetadataValidationReport, writeMetadataValidationReport, readMetadataValidationReport } from '../adapters/infinite-brain-metadata-writer-validation.js';
+import { generateMetadataPatchPreviewReport, writeMetadataPatchPreviewReport, readMetadataPatchPreviewReport } from '../adapters/infinite-brain-metadata-patch-preview.js';
 import { getOrchestrator, listOrchestrators } from '../adapters/orchestrators.js';
 import { getPipeline, listPipelines } from '../adapters/pipelines.js';
 import { getProject, listProjects } from '../adapters/projects.js';
@@ -2768,6 +2769,25 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Metadata Patch Preview (Fetch) ─────────────────────────
+      if (url.pathname === '/api/infinite-brain/metadata-patch-preview' && request.method === 'GET') {
+        const report = readMetadataPatchPreviewReport();
+        if (!report) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'metadata_patch_preview_missing',
+            message: 'No metadata patch preview report found. Generate one first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          report,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -2940,6 +2960,37 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         ok: false,
         code: 'metadata_writer_validation_write_failed',
         message: 'Failed to write metadata writer validation report',
+      });
+    }
+    return;
+  }
+
+  // ── Infinite Brain: Metadata Patch Preview (Generate) ────────────────────────
+  if (url.pathname === '/api/infinite-brain/metadata-patch-preview/generate') {
+    const report = generateMetadataPatchPreviewReport();
+    const success = writeMetadataPatchPreviewReport(report);
+
+    if (success) {
+      sendJson(response, 200, {
+        ok: true,
+        code: 'metadata_patch_preview_generated',
+        message: 'Metadata patch preview generated (preview-only, no writes)',
+        report,
+        safety: {
+          previewAvailable: false,
+          canWrite: false,
+          canWriteToMind: false,
+          writesToMind: false,
+          modifiesMind: false,
+          previewOnly: true,
+          reportOnly: true,
+        },
+      });
+    } else {
+      sendJson(response, 500, {
+        ok: false,
+        code: 'metadata_patch_preview_write_failed',
+        message: 'Failed to write metadata patch preview report',
       });
     }
     return;

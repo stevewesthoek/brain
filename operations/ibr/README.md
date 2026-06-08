@@ -1,8 +1,8 @@
 # Infinite Brain Runtime (IBR) — Operations Guide
 
-**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete + Metadata writer validation (AG) complete  
+**Status:** Foundation Phase (IB0–IB3) + Pipeline phases (IB4–IB11) report-only complete + Execution phases (R–X) preview/readiness/dry-run complete + Writer architecture (Y) designed + Disabled executor skeleton (Y) created + Category writer stubs (Z) created all blocked + Operator approval (AB) complete + Post-write verification console visibility (AE) complete + Write manifest generation (AF) complete + Metadata writer validation (AG) complete + Metadata patch preview (AH) complete  
 **Date:** 2026-06-08  
-**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete; AG metadata writer validation complete
+**Phases Implemented:** IB0, IB1, IB2, IB3, IB4 (atomizer), IB8 (edges), IB9 (audit), IB10 (insights), IB11 (proposals) — all report-only; R–X execution phases; Y writer architecture + disabled executor; Z category writer stubs (all blocked); AB operator approval complete; AE post-write verification console visibility complete; AF write manifest generation complete; AG metadata writer validation complete; AH metadata patch preview complete
 
 ---
 
@@ -2324,6 +2324,199 @@ All tests pass: ✅ 9/9
 
 ---
 
+### PHASE AH — Metadata Patch Preview
+
+**Files:**
+- `projects/brain-core/src/adapters/infinite-brain-metadata-patch-preview.ts` — Metadata patch preview adapter
+- `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/metadata-patch-preview` endpoints
+- `projects/brain-console-center/lib/braincore-schemas.ts` — Metadata patch preview schemas
+- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for metadata patch preview
+- `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
+- `projects/brain-core/src/tests/infinite-brain-metadata-patch-preview.test.ts` — Unit tests
+
+**What it does:**
+- Generates a preview of frontmatter/metadata patches that could be applied in the future
+- Combines metadata validation results with write manifest entries
+- Filters for `entity-metadata` category entries only
+- Performs 10 preview checks (validation presence, manifest presence, frontmatter engine availability, yaml parser availability, etc.)
+- Generates preview report with patch-level and check-level details
+- Stores report at `runtime/local/infinite-brain/metadata-patch-preview-latest.json`
+- Provides preview-only status without performing any metadata writes or applying patches
+- Console visibility section displays preview status, candidate patches, blockers, and safety status
+- No Generate button text says "Generate Metadata Patch Preview" (not "Apply", not "Execute", not "Write")
+- No Apply/Execute/Write buttons, no execution controls, no Mind writes
+
+**Key Safety Invariants:**
+- ✅ `previewAvailable: false` (always)
+- ✅ `canWrite: false` (always)
+- ✅ `canWriteToMind: false` (always)
+- ✅ `writesToMind: false` (always)
+- ✅ `modifiesMind: false` (always)
+- ✅ `appliesProposals: false` (always)
+- ✅ `previewOnly: true` (always)
+- ✅ `reportOnly: true` (always)
+- ✅ All patches have `patchBlocked: true` and `applied: false`
+- ✅ All patches have `beforePreviewAvailable: false`, `afterPreviewAvailable: false`, `diffPreviewAvailable: false`
+- ✅ No Mind modifications
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ Deterministic preview and patch IDs
+
+**Metadata Patch Preview Report Schema:**
+```typescript
+{
+  previewId: string;                      // Deterministic SHA256 hash
+  generatedAt: string;                    // ISO8601 timestamp
+  sourceValidationReportId: string | null;// Reference to metadata validation report
+  sourceManifestId: string | null;        // Reference to write manifest
+  status: 'blocked' | 'preview-ready' | 'missing-input';
+  writerCategory: string;                 // 'entity-metadata'
+  previewAvailable: false;                // Always false
+  canWrite: false;                        // Always false
+  canWriteToMind: false;                  // Always false
+  totalCandidatePatches: number;          // Count of patches generated
+  previewedPatches: number;               // Count of patches with preview available
+  blockedPatches: number;                 // Count of patches that are blocked
+  patches: MetadataPatchPreview[];        // Array of patch previews
+  checks: MetadataPatchPreviewCheck[];    // Array of preview checks
+  blockers: string[];                     // Reasons preview is blocked
+  safety: {
+    writesToMind: false;
+    modifiesMind: false;
+    appliesProposals: false;
+    canWrite: false;
+    canWriteToMind: false;
+    previewOnly: true;
+    reportOnly: true;
+    continuousRuntime: false;
+    modelCalls: false;
+    usesShell: false;
+  };
+}
+```
+
+**Metadata Patch Preview Entry Schema:**
+```typescript
+{
+  patchId: string;                        // Deterministic SHA256 hash
+  validationEntryId: string;              // Reference to validation entry
+  manifestEntryId: string;                // Reference to manifest entry
+  proposalId: string;                     // Proposal ID
+  targetPathsPreview: string[];           // Target file paths
+  patchType: 'frontmatter-preview';       // Always frontmatter-preview
+  beforePreviewAvailable: false;          // Before content preview (not available)
+  afterPreviewAvailable: false;           // After content preview (not available)
+  diffPreviewAvailable: false;            // Diff preview (not available)
+  proposedFields: Field[];                // Proposed frontmatter fields (empty for now)
+  blockedReasons: string[];               // Reasons patch is blocked
+  patchBlocked: true;                     // Always true
+  applied: false;                         // Always false
+}
+```
+
+**Preview Checks (10 total):**
+1. ✅ Metadata validation exists (pass/blocked)
+2. ✅ Write manifest exists (pass/blocked)
+3. ✅ Validation has metadata entries (pass/blocked)
+4. ✅ All entries remain blocked (pass — by design)
+5. ⏳ Frontmatter patch engine available (blocked — not yet implemented)
+6. ⏳ Before/after diff available (blocked — not yet implemented)
+7. ⏳ YAML parser available (blocked — not yet implemented)
+8. ⏳ Conflict detection available (blocked — not yet implemented)
+9. ⏳ Rollback preview available (blocked — not yet implemented)
+10. ⏳ Post-write verification available (blocked — not yet implemented)
+
+**API Endpoints:**
+
+`GET /infinite-brain/metadata-patch-preview`
+- Returns latest metadata patch preview report
+- 404 with code `metadata_patch_preview_missing` if not found
+- Response includes report with all patches blocked
+
+`POST /infinite-brain/metadata-patch-preview/generate`
+- Generates new metadata patch preview report from validation + manifest
+- Requires both metadata validation and write manifest to be present
+- Response includes generated report with all patches blocked
+- Returns: `ok: true`, `report`, `code: 'metadata_patch_preview_generated'`, `safety` block with all false values
+
+**Console UI (Metadata Patch Preview Section):**
+- Added to InfiniteBrainProposalReview component after metadata validation section
+- Button: "Generate Metadata Patch Preview" (not "Apply", not "Execute", not "Write")
+- Displays:
+  - Preview ID and generation timestamp
+  - Status (blocked/preview-ready/missing-input)
+  - Total candidate patches, previewed patches, blocked patches
+  - Preview availability flags (all false)
+  - Patch previews (showing up to 5, with scrollable list if more)
+  - Blocker list with count
+  - Preview checks list
+  - Safety status verification (all false/true per spec)
+- Safety message: "Patch preview only. No metadata is written. Mind is unchanged."
+- No apply, execute, or write functionality
+
+**Status Integration:**
+- Added `metadataPatchPreview` to `runtime` object in status response
+- Includes: `available`, `generatedAt`, `status`, `totalCandidatePatches`, `previewedPatches`, `blockedPatches`, `previewAvailable`, `canWrite`, `canWriteToMind`, `blockerCount`
+- Union type: { available: false, reason: string } OR { available: true, ... }
+
+**Deterministic ID Generation:**
+- `previewId = SHA256(validationReportId + manifestId + sortedPatchIds + sortedCheckStatuses).substring(0,12)`
+- Format: `mpp-{hash}`
+- `patchId = SHA256(validationEntryId + manifestEntryId + proposalId).substring(0,12)`
+- Format: `patch-{hash}`
+- No timestamp, no randomness in IDs (generatedAt is okay)
+- Same validation + manifest always produce same preview ID
+
+**Environment Variables:**
+- `IBR_METADATA_WRITER_VALIDATION_PATH` — Override validation report path (used as input)
+- `IBR_WRITE_MANIFEST_PATH` — Override manifest path (used as input)
+- `IBR_METADATA_PATCH_PREVIEW_PATH` — Override preview report path (storage location)
+- `IBR_MIND_REPO_PATH` — Override Mind repo path (used for path validation checks)
+
+**Safety Checks:**
+- ✅ No `writesToMind: true` in source
+- ✅ No shell execution
+- ✅ No model provider calls
+- ✅ No Math.random or crypto.randomBytes for IDs
+- ✅ No child_process, exec, spawn
+- ✅ Deterministic IDs via SHA256
+
+**Validation:**
+- ✅ TypeScript types valid
+- ✅ Zod schemas pass validation
+- ✅ 3 adapter-level tests pass (missing input, creates blocked patches, deterministic IDs)
+- ✅ Route-level tests pass
+- ✅ Build passes
+- ✅ Console component renders without errors
+- ✅ All safety invariants enforced
+
+**How it Bridges:**
+- Takes metadata validation report (which entries are validated)
+- Takes write manifest (which operations are intended)
+- Matches validation entries with manifest entries by proposal ID
+- Generates blocked patch previews for each match
+- Patch preview is read-only reference for future phases
+- Enables patch preview capability before actual patch engine is implemented
+- Zero writes, zero modifications, zero execution
+
+**Why It's Not a Writer Yet:**
+- Frontmatter patch engine not implemented (blocked)
+- Before/after diff generation not implemented (blocked)
+- YAML parsing and validation not implemented (blocked)
+- Conflict detection not implemented (blocked)
+- All patches remain blocked until these engines are built
+- No write capability until all 10 checks pass
+
+**Future Gates (Still Blocked):**
+- Frontmatter patch engine implementation (blocks check 5)
+- Before/after diff generation (blocks check 6)
+- YAML parser integration (blocks check 7)
+- Conflict detection engine (blocks check 8)
+- Rollback preview for patches (blocks check 9)
+- Post-write verification for metadata changes (blocks check 10)
+
+---
+
 **Future Implementation Phases:**
 | Phase | Blocker | Status |
 |-------|---------|--------|
@@ -2333,7 +2526,8 @@ All tests pass: ✅ 9/9
 | Z+4 | Post-write verification (PHASE AE) | ✅ Console visibility added |
 | Z+5 | Write manifest generation (PHASE AF) | ✅ Manifest generation complete |
 | Z+6 | Metadata writer validation (PHASE AG) | ✅ Validation framework added |
-| Z+7 | Rollback implementation | ⏳ Blocked |
+| Z+7 | Metadata patch preview (PHASE AH) | ✅ Preview generation complete |
+| Z+8 | Rollback implementation | ⏳ Blocked |
 
 ---
 

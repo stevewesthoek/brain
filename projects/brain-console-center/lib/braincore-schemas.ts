@@ -1348,12 +1348,110 @@ const infiniteBrainMetadataValidationSchema = z.union([
   }),
 ]);
 
+const infiniteBrainMetadataPatchPreviewSafetySchema = z.object({
+  writesToMind: z.literal(false),
+  modifiesMind: z.literal(false),
+  appliesProposals: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  previewOnly: z.literal(true),
+  reportOnly: z.literal(true),
+  continuousRuntime: z.literal(false),
+  modelCalls: z.literal(false),
+  usesShell: z.literal(false),
+});
+
+const infiniteBrainMetadataPatchPreviewCheckSchema = z.object({
+  checkId: z.string(),
+  label: z.string(),
+  status: z.enum(['pass', 'fail', 'blocked', 'not-applicable']),
+  reason: z.string(),
+});
+
+const infiniteBrainMetadataPatchPreviewFieldSchema = z.object({
+  fieldName: z.string(),
+  currentValue: z.string().optional(),
+  proposedValue: z.string().optional(),
+  hasConflict: z.boolean(),
+  conflictReason: z.string().optional(),
+});
+
+const infiniteBrainMetadataPatchPreviewEntrySchema = z.object({
+  patchId: z.string(),
+  validationEntryId: z.string(),
+  manifestEntryId: z.string(),
+  proposalId: z.string(),
+  targetPathsPreview: z.array(z.string()),
+  patchType: z.literal('frontmatter-preview'),
+  beforePreviewAvailable: z.literal(false),
+  afterPreviewAvailable: z.literal(false),
+  diffPreviewAvailable: z.literal(false),
+  proposedFields: z.array(infiniteBrainMetadataPatchPreviewFieldSchema),
+  blockedReasons: z.array(z.string()),
+  patchBlocked: z.literal(true),
+  applied: z.literal(false),
+});
+
+export const infiniteBrainMetadataPatchPreviewRecordSchema = z.object({
+  previewId: z.string(),
+  generatedAt: z.string(),
+  sourceValidationReportId: z.string().nullable(),
+  sourceManifestId: z.string().nullable(),
+  status: z.enum(['blocked', 'preview-ready', 'missing-input']),
+  writerCategory: z.string(),
+  previewAvailable: z.literal(false),
+  canWrite: z.literal(false),
+  canWriteToMind: z.literal(false),
+  totalCandidatePatches: z.number(),
+  previewedPatches: z.number(),
+  blockedPatches: z.number(),
+  patches: z.array(infiniteBrainMetadataPatchPreviewEntrySchema),
+  checks: z.array(infiniteBrainMetadataPatchPreviewCheckSchema),
+  blockers: z.array(z.string()),
+  safety: infiniteBrainMetadataPatchPreviewSafetySchema,
+});
+
+export const infiniteBrainMetadataPatchPreviewResponseSchema = z.object({
+  ok: z.literal(true),
+  report: infiniteBrainMetadataPatchPreviewRecordSchema,
+});
+
+export const infiniteBrainMetadataPatchPreviewGenerateResponseSchema = z.object({
+  ok: z.literal(true),
+  code: z.literal('metadata_patch_preview_generated'),
+  message: z.string(),
+  report: infiniteBrainMetadataPatchPreviewRecordSchema,
+  safety: infiniteBrainMetadataPatchPreviewSafetySchema,
+});
+
+const infiniteBrainMetadataPatchPreviewSchema = z.union([
+  z.object({
+    available: z.literal(false),
+    reason: z.string(),
+  }),
+  z.object({
+    available: z.literal(true),
+    generatedAt: z.string(),
+    status: z.enum(['blocked', 'preview-ready', 'missing-input']),
+    totalCandidatePatches: z.number(),
+    previewedPatches: z.number(),
+    blockedPatches: z.number(),
+    previewAvailable: z.literal(false),
+    canWrite: z.literal(false),
+    canWriteToMind: z.literal(false),
+    blockerCount: z.number(),
+  }),
+]);
+
 export type InfiniteBrainWriteManifestRecord = z.infer<typeof infiniteBrainWriteManifestRecordSchema>;
 export type InfiniteBrainWriteManifestResponse = z.infer<typeof infiniteBrainWriteManifestResponseSchema>;
 export type InfiniteBrainWriteManifestGenerateResponse = z.infer<typeof infiniteBrainWriteManifestGenerateResponseSchema>;
 export type InfiniteBrainMetadataValidationRecord = z.infer<typeof infiniteBrainMetadataValidationRecordSchema>;
 export type InfiniteBrainMetadataValidationResponse = z.infer<typeof infiniteBrainMetadataValidationResponseSchema>;
 export type InfiniteBrainMetadataValidationGenerateResponse = z.infer<typeof infiniteBrainMetadataValidationGenerateResponseSchema>;
+export type InfiniteBrainMetadataPatchPreviewRecord = z.infer<typeof infiniteBrainMetadataPatchPreviewRecordSchema>;
+export type InfiniteBrainMetadataPatchPreviewResponse = z.infer<typeof infiniteBrainMetadataPatchPreviewResponseSchema>;
+export type InfiniteBrainMetadataPatchPreviewGenerateResponse = z.infer<typeof infiniteBrainMetadataPatchPreviewGenerateResponseSchema>;
 
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
@@ -1370,6 +1468,7 @@ export const infiniteBrainStatusSchema = z.object({
     postWriteVerification: infiniteBrainPostWriteVerificationSchema,
     writeManifest: infiniteBrainWriteManifestSchema,
     metadataValidation: infiniteBrainMetadataValidationSchema,
+    metadataPatchPreview: infiniteBrainMetadataPatchPreviewSchema,
     pipeline: infiniteBrainPipelineSchema,
   }),
   changelog: z.unknown().optional(),

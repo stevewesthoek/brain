@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { brainCoreRequest, postBrainCoreAction } from '../lib/braincore-client';
-import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord } from '../lib/braincore-schemas';
+import { infiniteBrainProposalsResponseSchema, infiniteBrainProposalApprovalDecisionResponseSchema, infiniteBrainApplicationPlanGenerateResponseSchema, infiniteBrainApplicationPlanSummaryResponseSchema, infiniteBrainExecutionReadinessFullReportSchema, infiniteBrainExecutorDryRunGenerateResponseSchema, infiniteBrainExecutorDryRunSummaryResponseSchema, infiniteBrainExecutorDryRunReportSchema, infiniteBrainOperatorApprovalResponseSchema, infiniteBrainOperatorApprovalRecordIntentRequestSchema, infiniteBrainPostWriteVerificationResponseSchema, infiniteBrainPostWriteVerificationGenerateResponseSchema, infiniteBrainWriteManifestResponseSchema, infiniteBrainWriteManifestGenerateResponseSchema, infiniteBrainMetadataValidationResponseSchema, infiniteBrainMetadataValidationGenerateResponseSchema, infiniteBrainMetadataPatchPreviewResponseSchema, infiniteBrainMetadataPatchPreviewGenerateResponseSchema, type InfiniteBrainProposal, type InfiniteBrainProposalApprovalDecisionResponse, type InfiniteBrainExecutionReadinessCheck, type InfiniteBrainOperatorApprovalRecord, type InfiniteBrainPostWriteVerificationRecord, type InfiniteBrainWriteManifestRecord, type InfiniteBrainMetadataValidationRecord, type InfiniteBrainMetadataPatchPreviewRecord } from '../lib/braincore-schemas';
 
 interface ApplicationPlanPreview {
   ok: boolean;
@@ -62,6 +62,11 @@ export function InfiniteBrainProposalReview() {
   const [generatingMetadataValidation, setGeneratingMetadataValidation] = useState(false);
   const [metadataValidationError, setMetadataValidationError] = useState<string | null>(null);
   const [metadataValidationSuccess, setMetadataValidationSuccess] = useState<string | null>(null);
+  const [metadataPatchPreviewRecord, setMetadataPatchPreviewRecord] = useState<InfiniteBrainMetadataPatchPreviewRecord | null>(null);
+  const [metadataPatchPreviewLoading, setMetadataPatchPreviewLoading] = useState(true);
+  const [generatingMetadataPatchPreview, setGeneratingMetadataPatchPreview] = useState(false);
+  const [metadataPatchPreviewError, setMetadataPatchPreviewError] = useState<string | null>(null);
+  const [metadataPatchPreviewSuccess, setMetadataPatchPreviewSuccess] = useState<string | null>(null);
 
   async function fetchPostWriteVerification() {
     try {
@@ -105,6 +110,22 @@ export function InfiniteBrainProposalReview() {
     }
   }
 
+  async function fetchMetadataPatchPreview() {
+    try {
+      const data = await brainCoreRequest(
+        '/infinite-brain/metadata-patch-preview',
+        infiniteBrainMetadataPatchPreviewResponseSchema
+      );
+      if (data.ok && data.report) {
+        setMetadataPatchPreviewRecord(data.report);
+      }
+    } catch {
+      // Not found is okay, we'll let the user generate one
+    } finally {
+      setMetadataPatchPreviewLoading(false);
+    }
+  }
+
   async function fetchOperatorApproval() {
     try {
       const data = await brainCoreRequest('/infinite-brain/operator-approval', z.object({
@@ -141,6 +162,7 @@ export function InfiniteBrainProposalReview() {
     fetchPostWriteVerification();
     fetchWriteManifest();
     fetchMetadataValidation();
+    fetchMetadataPatchPreview();
   }, []);
 
   async function handleSubmitDecision(e: React.FormEvent) {
@@ -293,6 +315,32 @@ export function InfiniteBrainProposalReview() {
       setMetadataValidationError(err instanceof Error ? err.message : 'Failed to generate validation report');
     } finally {
       setGeneratingMetadataValidation(false);
+    }
+  }
+
+  async function handleGenerateMetadataPatchPreview() {
+    setGeneratingMetadataPatchPreview(true);
+    setMetadataPatchPreviewError(null);
+    setMetadataPatchPreviewSuccess(null);
+
+    try {
+      const result = await postBrainCoreAction(
+        '/infinite-brain/metadata-patch-preview/generate',
+        infiniteBrainMetadataPatchPreviewGenerateResponseSchema,
+        {}
+      );
+
+      if (result.ok) {
+        setMetadataPatchPreviewRecord(result.report);
+        setMetadataPatchPreviewSuccess('Metadata patch preview generated');
+        await fetchMetadataPatchPreview();
+      } else {
+        setMetadataPatchPreviewError('Failed to generate metadata patch preview');
+      }
+    } catch (err) {
+      setMetadataPatchPreviewError(err instanceof Error ? err.message : 'Failed to generate patch preview');
+    } finally {
+      setGeneratingMetadataPatchPreview(false);
     }
   }
 
@@ -917,6 +965,131 @@ export function InfiniteBrainProposalReview() {
           className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
         >
           {generatingMetadataValidation ? 'Generating Report...' : 'Generate Metadata Writer Validation'}
+        </button>
+      </div>
+
+      {/* Metadata Patch Preview Section */}
+      <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 space-y-3">
+        <div>
+          <h3 className="font-semibold text-purple-900">Metadata Patch Preview</h3>
+          <p className="text-xs text-purple-700 mt-1">
+            Generates a preview of frontmatter patches that could be applied. Preview-only status display.
+          </p>
+          <div className="mt-2 text-xs text-purple-700 space-y-0.5">
+            <p>✓ Patch preview only. No metadata is written</p>
+            <p>✓ Mind is unchanged</p>
+            <p>✓ All patches remain blocked</p>
+            <p>✓ Safety: previewAvailable = false, canWrite = false, canWriteToMind = false</p>
+          </div>
+        </div>
+
+        {metadataPatchPreviewRecord && (
+          <div className="p-3 bg-white border border-purple-200 rounded space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-purple-900">Preview ID:</p>
+              <p className="text-xs text-purple-800 font-mono">{metadataPatchPreviewRecord.previewId}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-purple-700">Status</p>
+                <p className="font-semibold text-purple-900 capitalize">{metadataPatchPreviewRecord.status}</p>
+              </div>
+              <div>
+                <p className="text-purple-700">Generated</p>
+                <p className="font-semibold text-purple-900">{new Date(metadataPatchPreviewRecord.generatedAt).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-purple-700">Total Candidate Patches</p>
+                <p className="font-semibold text-purple-900">{metadataPatchPreviewRecord.totalCandidatePatches}</p>
+              </div>
+              <div>
+                <p className="text-purple-700">Previewed Patches</p>
+                <p className="font-semibold text-purple-900">{metadataPatchPreviewRecord.previewedPatches}</p>
+              </div>
+              <div>
+                <p className="text-purple-700">Blocked Patches</p>
+                <p className="font-semibold text-purple-900">{metadataPatchPreviewRecord.blockedPatches}</p>
+              </div>
+              <div>
+                <p className="text-purple-700">Preview Available</p>
+                <p className="font-semibold text-purple-900">{metadataPatchPreviewRecord.previewAvailable ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+
+            {metadataPatchPreviewRecord.blockers.length > 0 && (
+              <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                <p className="text-xs font-semibold text-amber-900 mb-1">Blockers ({metadataPatchPreviewRecord.blockers.length}):</p>
+                <ul className="text-xs text-amber-800 space-y-0.5">
+                  {metadataPatchPreviewRecord.blockers.map((blocker: string, i: number) => (
+                    <li key={i}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {metadataPatchPreviewRecord.patches.length > 0 && (
+              <div className="p-2 bg-slate-50 rounded border border-slate-200">
+                <p className="text-xs font-semibold text-slate-900 mb-2">Patch Previews (showing {Math.min(5, metadataPatchPreviewRecord.patches.length)}):</p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {metadataPatchPreviewRecord.patches.slice(0, 5).map((patch: any) => (
+                    <div key={patch.patchId} className="p-2 bg-white border border-slate-300 rounded text-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold text-slate-900">{patch.manifestEntryId}</p>
+                          <p className="text-slate-600">Proposal: {patch.proposalId}</p>
+                          <p className="text-slate-500">Patch: {patch.patchId.substring(0, 12)}...</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">
+                            Patch Blocked
+                          </span>
+                        </div>
+                      </div>
+                      {patch.targetPathsPreview.length > 0 && (
+                        <p className="text-slate-600 mt-1">Targets: {patch.targetPathsPreview.join(', ')}</p>
+                      )}
+                      {patch.blockedReasons.length > 0 && (
+                        <div className="mt-1 text-slate-500">
+                          <span className="text-xs">Blocked: {patch.blockedReasons.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="p-2 bg-cyan-50 rounded border border-cyan-200">
+              <p className="text-xs font-semibold text-cyan-900 mb-1">Safety Status:</p>
+              <div className="text-xs text-cyan-800 space-y-0.5">
+                <p>• Preview Only: {metadataPatchPreviewRecord.safety.previewOnly ? 'Yes' : 'No'}</p>
+                <p>• Report Only: {metadataPatchPreviewRecord.safety.reportOnly ? 'Yes' : 'No'}</p>
+                <p>• Writes to Mind: {metadataPatchPreviewRecord.safety.writesToMind ? 'Yes' : 'No'}</p>
+                <p>• Modifies Mind: {metadataPatchPreviewRecord.safety.modifiesMind ? 'Yes' : 'No'}</p>
+                <p>• Can Write to Mind: {metadataPatchPreviewRecord.safety.canWriteToMind ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {metadataPatchPreviewError && (
+          <div className="p-2 bg-red-50 rounded border border-red-200">
+            <p className="text-xs text-red-700">{metadataPatchPreviewError}</p>
+          </div>
+        )}
+
+        {metadataPatchPreviewSuccess && (
+          <div className="p-2 bg-green-50 rounded border border-green-200">
+            <p className="text-xs text-green-700">{metadataPatchPreviewSuccess}</p>
+          </div>
+        )}
+
+        <button
+          onClick={handleGenerateMetadataPatchPreview}
+          disabled={generatingMetadataPatchPreview}
+          className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold text-sm hover:bg-purple-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition"
+        >
+          {generatingMetadataPatchPreview ? 'Generating Preview...' : 'Generate Metadata Patch Preview'}
         </button>
       </div>
     </div>

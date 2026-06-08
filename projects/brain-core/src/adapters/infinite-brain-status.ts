@@ -14,6 +14,7 @@ import { readOperatorApprovalSummary } from './infinite-brain-operator-approval.
 import { readPostWriteVerificationSummary } from './infinite-brain-post-write-verification.js';
 import { readWriteManifestSummary } from './infinite-brain-write-manifest.js';
 import { readMetadataValidationSummary } from './infinite-brain-metadata-writer-validation.js';
+import { readMetadataPatchPreviewSummary } from './infinite-brain-metadata-patch-preview.js';
 
 const RUNTIME_DIR = path.resolve(process.cwd(), '../..', 'runtime/local/infinite-brain');
 
@@ -617,11 +618,34 @@ function getMetadataValidationStatus() {
   };
 }
 
+function getMetadataPatchPreviewStatus() {
+  const summary = readMetadataPatchPreviewSummary();
+  if (!summary.available) {
+    return {
+      available: false,
+      reason: 'Metadata patch preview report not found. Generate one first.',
+    };
+  }
+
+  return {
+    available: true,
+    generatedAt: summary.generatedAt,
+    status: summary.status,
+    totalCandidatePatches: summary.totalCandidatePatches,
+    previewedPatches: summary.previewedPatches,
+    blockedPatches: summary.blockedPatches,
+    previewAvailable: summary.previewAvailable,
+    canWrite: summary.canWrite,
+    canWriteToMind: summary.canWriteToMind,
+    blockerCount: summary.blockerCount,
+  };
+}
+
 /**
  * Get full Infinite Brain status
  */
 export async function getInfiniteBrainStatus() {
-  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, postWriteVerification, writeManifest, metadataValidation, pipeline, changelogStats, evidenceStats] = await Promise.all([
+  const [atomizer, classifier, edges, relationshipAudit, insights, proposals, proposalApprovals, applicationPlan, executionReadiness, executorDryRun, iosSyncSafety, operatorApproval, postWriteVerification, writeManifest, metadataValidation, metadataPatchPreview, pipeline, changelogStats, evidenceStats] = await Promise.all([
     getAtomizerStatus(),
     getClassifierStatus(),
     getEdgeInferenceStatus(),
@@ -637,6 +661,7 @@ export async function getInfiniteBrainStatus() {
     Promise.resolve(getPostWriteVerificationStatus()),
     Promise.resolve(getWriteManifestStatus()),
     Promise.resolve(getMetadataValidationStatus()),
+    Promise.resolve(getMetadataPatchPreviewStatus()),
     getPipelineStatus(),
     getChangelogStats(),
     getEvidenceStats(),
@@ -660,6 +685,7 @@ export async function getInfiniteBrainStatus() {
       postWriteVerification,
       writeManifest,
       metadataValidation,
+      metadataPatchPreview,
       pipeline,
     },
     infrastructure: {
