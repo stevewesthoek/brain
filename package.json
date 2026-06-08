@@ -16,7 +16,8 @@
     "graphify:update:brain:execute": "node tools/graphify/run-graphify-orchestrator.mjs --repo . --profile brain-runtime --operation update --execute",
     "graphify:update:mind:execute": "node tools/graphify/run-graphify-orchestrator.mjs --repo ../mind --profile mind-knowledge --operation update --execute",
     "ibr:atomizer:dry-run": "node tools/infinite-brain/atomizer-dry-run.mjs",
-    "ibr:classify:dry-run": "node tools/infinite-brain/entity-classifier-dry-run.mjs"
+    "ibr:classify:dry-run": "node tools/infinite-brain/entity-classifier-dry-run.mjs",
+    "ibr:edges:dry-run": "node tools/infinite-brain/edge-inference-dry-run.mjs"
   },
   "keywords": [
     "claude",
