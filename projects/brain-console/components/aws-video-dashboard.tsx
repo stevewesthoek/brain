@@ -13,6 +13,7 @@ import { AwsVideoControlPlaneDebugPanel } from '@/components/aws-video/aws-video
 import { AwsVideoPublishDiagnosticsCard } from '@/components/aws-video/aws-video-publish-diagnostics-card';
 import { AwsVideoReviewCard } from '@/components/aws-video/aws-video-review-card';
 import { AwsVideoPipelineFlow } from '@/components/aws-video/aws-video-pipeline-flow';
+import { AwsVideoActivityPanel } from '@/components/aws-video/aws-video-activity-panel';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -1605,10 +1606,10 @@ export function AwsVideoDashboard() {
           ) : null}
 
           {activeView === 'activity' ? (
-            <div className="grid split-panels">
-              <article className="card"><div className="card-title">Timeline</div><div className="timeline">{timelineEvents.map((event, index) => <div className="timeline-item" key={`${event.step}-${index}`}><div className="split"><strong>{event.step}</strong><StatusBadge status={event.status} /></div><div className="meta">{event.timestamp ? timeAgo(event.timestamp) : 'unknown time'}</div><p>{event.message}</p></div>)}{timelineEvents.length === 0 ? <p>No timeline events.</p> : null}</div></article>
-              <article className="card"><div className="card-title">Activity</div><div className="stack">{activity.map((item) => <div className="meta no-margin" key={item}>{item}</div>)}{activity.length === 0 ? <p>No local dashboard activity yet.</p> : null}</div></article>
-            </div>
+            <AwsVideoActivityPanel
+              timelineEvents={timelineEvents}
+              activity={activity}
+            />
           ) : null}
         </main>
 
