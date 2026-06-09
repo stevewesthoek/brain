@@ -15,7 +15,7 @@
       "timeout_connect_sec": 3,
       "timeout_inference_sec": 120,
       "schedule_preference": "any",
-      "preferred_models": ["qwen2.5:14b", "qwen2.5:32b", "llama3.1:8b", "gemma4:12b", "gemma4:e4b"]
+      "preferred_models": ["qwen2.5:14b", "qwen2.5:32b", "llama3.1:8b", "gemma4:12b-mlx", "gemma4:e4b"]
     },
     {
       "id": "ollama-m1",
@@ -31,7 +31,7 @@
       "timeout_connect_sec": 5,
       "timeout_inference_sec": 180,
       "schedule_preference": "batch_window",
-      "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b", "gemma4:e4b", "gemma4:12b"],
+      "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b", "gemma4:e4b", "gemma4:12b-mlx"],
       "notes": "M1 MacBook on Thunderbolt Bridge. 2-3x slower than M4 Pro. Prefer for batch/overnight tasks."
     },
     {

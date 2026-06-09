@@ -5,14 +5,14 @@ REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-7200}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
 GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-ollama}"
-GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-gemma4:12b}"
+GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-gemma4:12b-mlx}"
 GRAPHIFY_TOKEN_BUDGET="${GRAPHIFY_TOKEN_BUDGET:-4000}"
 OLLAMA_API_KEY="${OLLAMA_API_KEY:-ollama}"
 GRAPHIFY_OLLAMA_NUM_CTX="${GRAPHIFY_OLLAMA_NUM_CTX:-8192}"
 GRAPHIFY_OLLAMA_KEEP_ALIVE="${GRAPHIFY_OLLAMA_KEEP_ALIVE:-30}"
 GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
 GRAPHIFY_API_TIMEOUT="${GRAPHIFY_API_TIMEOUT:-900}"
-GRAPHIFY_NO_VIZ="${GRAPHIFY_NO_VIZ:-1}"
+GRAPHIFY_NO_VIZ="${GRAPHIFY_NO_VIZ:-0}"
 SCHEDULER_CUTOFF_HOUR="${SCHEDULER_CUTOFF_HOUR:-7}"
 
 timestamp() {
@@ -42,7 +42,7 @@ discover_repos() {
   done | sort -u
 }
 
-build_graphify_cmd() {
+build_extract_cmd() {
   local repo="$1"
   local -a cmd=(
     "$GRAPHIFY_BIN" extract "$repo"
@@ -51,6 +51,15 @@ build_graphify_cmd() {
     --max-concurrency "$GRAPHIFY_MAX_CONCURRENCY"
     --api-timeout "$GRAPHIFY_API_TIMEOUT"
   )
+  if [[ "${GRAPHIFY_NO_VIZ:-0}" == "1" ]]; then
+    cmd+=(--no-viz)
+  fi
+  printf '%s\n' "${cmd[@]}"
+}
+
+build_cluster_cmd() {
+  local repo="$1"
+  local -a cmd=("$GRAPHIFY_BIN" cluster-only "$repo" --backend "$GRAPHIFY_BACKEND")
   if [[ "${GRAPHIFY_NO_VIZ:-0}" == "1" ]]; then
     cmd+=(--no-viz)
   fi
@@ -126,37 +135,32 @@ while IFS= read -r repo; do
 
   graph_json="$repo/graphify-out/graph.json"
   start_ts="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
-
-  # Build the command array from current settings
-  readarray -t graphify_cmd < <(build_graphify_cmd "$repo")
-
+  phase="first-build"
   if [[ -f "$graph_json" ]]; then
-    log "updating repo=$repo backend=$GRAPHIFY_BACKEND model=$GRAPHIFY_MODEL token-budget=$GRAPHIFY_TOKEN_BUDGET concurrency=$GRAPHIFY_MAX_CONCURRENCY timeout=$GRAPHIFY_API_TIMEOUT graph_json=exists"
-    if run_graphify "$repo" "${graphify_cmd[@]}"; then
-      end_ts="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
-      updates=$((updates + 1))
-      log "updated repo=$repo started=$start_ts ended=$end_ts exit=0"
-      log_outputs "$repo"
-    else
-      rc="$?"
-      end_ts="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
-      failed=$((failed + 1))
-      log "failed repo=$repo phase=update started=$start_ts ended=$end_ts exit=$rc"
-    fi
-    continue
+    phase="update"
   fi
 
-  log "first-build repo=$repo backend=$GRAPHIFY_BACKEND model=$GRAPHIFY_MODEL token-budget=$GRAPHIFY_TOKEN_BUDGET concurrency=$GRAPHIFY_MAX_CONCURRENCY timeout=$GRAPHIFY_API_TIMEOUT graph_json=missing"
-  if run_graphify "$repo" "${graphify_cmd[@]}"; then
+  readarray -t extract_cmd < <(build_extract_cmd "$repo")
+  readarray -t cluster_cmd < <(build_cluster_cmd "$repo")
+
+  log "$phase repo=$repo backend=$GRAPHIFY_BACKEND model=$GRAPHIFY_MODEL token-budget=$GRAPHIFY_TOKEN_BUDGET concurrency=$GRAPHIFY_MAX_CONCURRENCY timeout=$GRAPHIFY_API_TIMEOUT graph_json=$([[ -f "$graph_json" ]] && echo exists || echo missing)"
+
+  if run_graphify "$repo" "${extract_cmd[@]}" && run_graphify "$repo" "${cluster_cmd[@]}"; then
     end_ts="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
-    first_builds=$((first_builds + 1))
-    log "extracted repo=$repo started=$start_ts ended=$end_ts exit=0"
+    if [[ "$phase" == "first-build" ]]; then
+      first_builds=$((first_builds + 1))
+      log "extracted repo=$repo started=$start_ts ended=$end_ts exit=0"
+    else
+      updates=$((updates + 1))
+      log "updated repo=$repo started=$start_ts ended=$end_ts exit=0"
+    fi
     log_outputs "$repo"
   else
     rc="$?"
     end_ts="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
     failed=$((failed + 1))
-    log "failed repo=$repo phase=first-build started=$start_ts ended=$end_ts exit=$rc"
+    log "failed repo=$repo phase=$phase started=$start_ts ended=$end_ts exit=$rc"
+    log_outputs "$repo"
   fi
 done < <(discover_repos)
 
