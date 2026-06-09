@@ -5,6 +5,7 @@ BRAIN_CORE_PORT=4877
 CONSOLE_CENTER_PORT=4881
 BRAIN_CORE_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-core"
 CONSOLE_CENTER_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-console"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Allow mode override: ./script.sh hybrid_storyboard
 GENERATION_MODE="${1:-hybrid_tts}"
@@ -167,6 +168,17 @@ while [ $RETRY -lt $RETRIES ]; do
     fi
   fi
 done
+
+# Step 7: Materialize dev publish assets for fixture job
+echo ""
+echo "Step 7: Materializing dev publish assets for fixture job..."
+MATERIALIZE_SCRIPT="$SCRIPTS_DIR/materialize-dev-publish-assets.sh"
+FIXTURE_JOB="prochat-prompt-1780856968989-make-a-video-of-a-box-"
+if bash "$MATERIALIZE_SCRIPT" "$FIXTURE_JOB"; then
+  echo "  Dev publish assets ready"
+else
+  echo "  Warning: asset materialization failed (dry-run will remain disabled until assets are available)"
+fi
 
 # Summary
 echo ""
