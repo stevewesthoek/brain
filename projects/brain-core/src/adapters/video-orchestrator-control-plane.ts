@@ -440,7 +440,7 @@ export async function getVideoOrchestratorControlPlane(
     },
     publish: {
       status: jobData?.publishing?.status ?? null,
-      dryRunStatus: jobData?.publishing?.dryRunStatus ?? null,
+      dryRunStatus: jobData?.publishing?.dryRunStatus ?? (publishCheckStatus?.youtubeDryRun?.status ?? null),
       uploadStatus: jobData?.publishing?.uploadStatus ?? null,
       quotaStatus: jobData?.publishing?.quotaStatus ?? null,
       videoId: jobData?.publishing?.videoId ?? null,
