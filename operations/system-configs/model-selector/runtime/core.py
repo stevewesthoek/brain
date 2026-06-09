@@ -959,10 +959,15 @@ class ModelSelector:
                 p["priority"],
             ))
 
-        # Apply preferred provider ordering (stable sort preserves existing relative order)
+        # Apply preferred provider ordering: honor the caller-supplied list order.
+        # Use the index position within preferred_providers so that, e.g.,
+        # ["claude-bedrock", "ollama-m4pro"] always puts claude-bedrock first,
+        # regardless of global priority numbers. Non-preferred providers rank after
+        # all preferred ones. Prior sorts (priority, batch window) are used as a
+        # tiebreaker within the non-preferred tail via Python's stable sort guarantee.
         if task_metadata.preferred_providers:
-            pref_set = set(task_metadata.preferred_providers)
-            eligible.sort(key=lambda p: 0 if p["id"] in pref_set else 1)
+            pref_order = {pid: i for i, pid in enumerate(task_metadata.preferred_providers)}
+            eligible.sort(key=lambda p: pref_order.get(p["id"], len(task_metadata.preferred_providers)))
 
         # Apply ordered_strict filter if requested (restrict to preferred providers only)
         fallback_policy = task_metadata.fallback_policy or "selector_default"

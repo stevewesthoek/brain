@@ -321,5 +321,88 @@ class TestPreferencePolicy(unittest.TestCase):
         self.assertEqual(result.provider_id, "ollama-local")
 
 
+    def test_preferred_providers_order_honored_over_global_priority(self):
+        """preferred_providers list order must be honored, even when a listed provider has
+        a higher global priority number (lower precedence) than another listed provider.
+
+        Regression test for the Graphify Bedrock-before-Ollama bug:
+        ollama-m4pro has priority=2 (higher precedence) than claude-bedrock (priority=5).
+        When preferred_providers=["claude-bedrock", "ollama-local"], claude-bedrock must
+        be selected first because it appears first in the list — not because of global priority.
+        """
+        # Use a fresh providers config where ollama-local has lower priority number (higher
+        # precedence) than claude-bedrock, mirroring the real ollama-m4pro (2) vs
+        # claude-bedrock (5) configuration.
+        providers = {
+            "providers": [
+                {
+                    "id": "ollama-local",
+                    "type": "openai-compatible",
+                    "base_url": "http://127.0.0.1:11434/v1",
+                    "cost_per_1k_tokens": 0.0,
+                    "priority": 2,  # lower number = higher default precedence
+                    "capabilities": ["text/medium", "graphify_semantic_backend"],
+                    "preferred_models": ["qwen2.5:14b"],
+                },
+                {
+                    "id": "claude-bedrock",
+                    "type": "bedrock",
+                    "cost_per_1k_tokens": 0.0,
+                    "priority": 5,  # higher number = lower default precedence
+                    "capabilities": ["text/medium", "graphify_semantic_backend"],
+                    "models": ["bedrock-model-portfolio"],
+                },
+            ]
+        }
+        bedrock_models = {
+            "models": [
+                {
+                    "id": "haiku-test",
+                    "model_id": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+                    "label": "Claude Haiku (test)",
+                    "capabilities": ["text/medium"],
+                    "enabled": True,
+                    "quality_score": 0.7,
+                    "priority": 10,
+                    "region": "us-east-1",
+                    "price_input_per_1m": 0.25,
+                    "price_output_per_1m": 1.25,
+                }
+            ]
+        }
+        import core as _core  # noqa: F811
+        _core.PROVIDERS_PATH.write_text(json.dumps(providers, indent=2))
+        _core.BEDROCK_MODELS_PATH.write_text(json.dumps(bedrock_models, indent=2))
+
+        selector = _core.ModelSelector()
+        selector._check_health = lambda provider: True
+        selector._provider_models["ollama-local"] = ["qwen2.5:14b"]
+        # Make Bedrock model appear accessible without a real AWS probe
+        selector._bedrock_access_status = lambda model: {"available": True, "checked_at": 0}
+
+        # Without preferred_providers: ollama-local wins (priority 2 < 5)
+        result_default = selector.select(
+            "text_task",
+            input_token_count=1000,
+            urgent=True,
+        )
+        self.assertEqual(result_default.provider_id, "ollama-local",
+                         "Without preferred_providers, lower priority number should win")
+
+        # With preferred_providers listing claude-bedrock first: claude-bedrock must win
+        # even though its global priority number is higher (lower default precedence).
+        result_preferred = selector.select(
+            "text_task",
+            input_token_count=1000,
+            urgent=True,
+            task_metadata=_core.TaskMetadata(
+                preferred_providers=["claude-bedrock", "ollama-local"],
+            ),
+        )
+        self.assertEqual(result_preferred.provider_id, "claude-bedrock",
+                         "claude-bedrock must be selected first when listed first in preferred_providers, "
+                         "regardless of its higher global priority number")
+
+
 if __name__ == "__main__":
     unittest.main()
