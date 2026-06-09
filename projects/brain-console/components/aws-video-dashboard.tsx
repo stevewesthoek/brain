@@ -9,6 +9,7 @@ import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { useAwsVideoSelection } from '@/components/aws-video/use-aws-video-selection';
 import { useAwsVideoControlPlane } from '@/components/aws-video/use-aws-video-control-plane';
+import { AwsVideoControlPlaneDebugPanel } from '@/components/aws-video/aws-video-control-plane-debug-panel';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -2062,37 +2063,24 @@ export function AwsVideoDashboard() {
           <article className="card"><div className="card-title">Request changes</div><textarea className="textarea compact-textarea" placeholder="Requested changes" value={changeRequest} onChange={(event) => setChangeRequest(event.target.value)} /><button className="button secondary full-width" disabled={!jobId || changeRequest.trim().length < 4 || requestChanges.isPending || anyPendingTimeout} onClick={() => { if (jobId) requestChanges.mutate({ jobIdArg: jobId }); }}>Request changes</button></article>
 
           {/* DEBUG: Control-plane state proof */}
-          <article className="card" style={{ marginTop: '1rem' }}>
-            <details open>
-              <summary style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>Debug: control-plane state</summary>
-              <div className="aws-facts" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
-                <div><span>raw control-plane ok</span><strong>{rawControlPlaneResponse ? 'yes' : 'no'}</strong></div>
-                <div><span>selected job id used by query</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{jobId ?? 'none'}</strong></div>
-                <div><span>actual fetch URL</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{controlPlaneHook.fetchUrl ?? 'n/a'}</strong></div>
-                <div><span>timeout ms</span><strong>{controlPlaneHook.timeoutMs}</strong></div>
-                <div><span>control-plane query status</span><strong>{controlPlane.status}</strong></div>
-                <div><span>isLoading</span><strong>{String(controlPlane.isLoading)}</strong></div>
-                <div><span>isError</span><strong>{String(controlPlane.isError)}</strong></div>
-                {controlPlane.error ? <div><span>error</span><strong style={{ color: 'var(--badge-error-text)' }}>{errorMessage(controlPlane.error)}</strong></div> : null}
-                <div><span>cpPhase</span><strong>{cpPhase}</strong></div>
-                <div><span>selectedApprovalStatus</span><strong>{cpSelectedJob?.approvalStatus ?? 'n/a'}</strong></div>
-                <div><span>reviewStatus</span><strong>{cpReview?.reviewStatus ?? 'n/a'}</strong></div>
-                <div><span>approve_review.enabled</span><strong>{String(cpAllowedActions.approve_review?.enabled ?? false)}</strong></div>
-                <div><span>generate.enabled</span><strong>{String(cpAllowedActions.generate?.enabled ?? false)}</strong></div>
-                <div><span>finalVideoKey</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{finalVideoKey ?? 'missing'}</strong></div>
-                <div><span>thumbnailKey</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{thumbnailKey ?? 'missing'}</strong></div>
-                {!controlPlaneData ? (
-                  <div style={{ gridColumn: '1 / -1', padding: '0.5rem', backgroundColor: 'var(--badge-error-bg)', border: '1px solid var(--badge-error-border)', borderRadius: '3px', marginTop: '0.5rem' }}>
-                    <strong style={{ color: 'var(--badge-error-text)' }}>⚠️ Control-plane state is missing for selected job</strong>
-                    <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--badge-error-text)' }}>
-                      Job ID: {shortJobId(jobId ?? undefined)}
-                      {controlPlane.error ? <div>Query error: {errorMessage(controlPlane.error)}</div> : null}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </details>
-          </article>
+          <AwsVideoControlPlaneDebugPanel
+            rawControlPlaneOk={Boolean(rawControlPlaneResponse)}
+            jobId={jobId}
+            fetchUrl={controlPlaneHook.fetchUrl}
+            timeoutMs={controlPlaneHook.timeoutMs}
+            queryStatus={controlPlane.status}
+            isLoading={controlPlane.isLoading}
+            isError={controlPlane.isError}
+            error={controlPlane.error}
+            cpPhase={cpPhase}
+            selectedApprovalStatus={cpSelectedJob?.approvalStatus ?? 'n/a'}
+            reviewStatus={cpReview?.reviewStatus ?? 'n/a'}
+            approveReviewEnabled={cpAllowedActions.approve_review?.enabled ?? false}
+            generateEnabled={cpAllowedActions.generate?.enabled ?? false}
+            finalVideoKey={finalVideoKey}
+            thumbnailKey={thumbnailKey}
+            controlPlaneDataMissing={!controlPlaneData}
+          />
 
           {/* Status polling diagnostics — shown only on error */}
           {statusOnlyErrorMessage ? (
