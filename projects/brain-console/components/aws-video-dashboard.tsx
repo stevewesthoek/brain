@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
+import { FilePlus2, RefreshCw } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
 import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJobsDiagnostics } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { useAwsVideoControlPlane } from '@/components/aws-video/use-aws-video-co
 import { AwsVideoControlPlaneDebugPanel } from '@/components/aws-video/aws-video-control-plane-debug-panel';
 import { AwsVideoPublishDiagnosticsCard } from '@/components/aws-video/aws-video-publish-diagnostics-card';
 import { AwsVideoReviewCard } from '@/components/aws-video/aws-video-review-card';
+import { AwsVideoPipelineFlow } from '@/components/aws-video/aws-video-pipeline-flow';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -1416,27 +1417,22 @@ export function AwsVideoDashboard() {
                 ) : <p>Select or create a job to start.</p>}
               </article>
 
-              <article className="card">
-                <div className="card-title">Pipeline flow</div>
-                <div className="pipeline-flow">
-                  {guideSteps.map((step, index) => (
-                    <div className="pipeline-step" key={step.key}>
-                      <div className="pipeline-index">{index + 1}</div>
-                      <div className="min-w-0">
-                        <strong>{step.label}</strong>
-                        <span>{step.done ? 'complete' : step.active ? 'active' : 'waiting'}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="pipeline-actions">
-                  <button className={recommendedStep?.key === 'draft' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
-                  <button className={recommendedStep?.key === 'approve' ? 'button next-action' : 'button'} disabled={!canApprove || approve.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve script</button>
-                  <button className={recommendedStep?.key === 'generate' ? 'button next-action' : 'button'} disabled={!canGenerate || generate.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
-                  <button className={recommendedStep?.key === 'review' ? 'button next-action' : 'button'} disabled={!canApproveReview || approveReview.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); approveReview.mutate({ jobIdArg: jobId, notes: undefined }); } }}><CheckCircle2 size={16} /> Approve review</button>
-                  <button className={recommendedStep?.view === 'publish' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
-                </div>
-              </article>
+              <AwsVideoPipelineFlow
+                guideSteps={guideSteps}
+                recommendedStepKey={recommendedStep?.key ?? null}
+                anyPendingTimeout={anyPendingTimeout}
+                canApprove={canApprove}
+                canGenerate={canGenerate}
+                canApproveReview={canApproveReview}
+                isApprovePending={approve.isPending}
+                isGeneratePending={generate.isPending}
+                isApproveReviewPending={approveReview.isPending}
+                onCreateDraft={() => setActiveView('create')}
+                onApprove={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}
+                onGenerate={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}
+                onApproveReview={() => { if (jobId) { beginAction(); approveReview.mutate({ jobIdArg: jobId, notes: undefined }); } }}
+                onPublishStep={() => setActiveView('publish')}
+              />
 
               {hasScenePlan ? <ScenePlanCard artifactData={artifactData} /> : null}
               {isHybridImageSlideshowMode ? <StoryboardCard artifactData={artifactData} /> : null}
