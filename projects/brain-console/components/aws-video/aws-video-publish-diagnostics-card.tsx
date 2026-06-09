@@ -221,7 +221,10 @@ export function AwsVideoPublishDiagnosticsCard({
   // Reset confirmation when the selected job changes
   useEffect(() => { setConfirmingPublish(false); }, [jobId]);
 
+  const publishDisabled = !canPublish || isPublishingThisJob || quotaExceeded || anyPendingTimeout;
+
   const handlePublishClick = () => {
+    if (publishDisabled) return;
     if (!confirmingPublish) {
       setConfirmingPublish(true);
       return;
@@ -297,7 +300,7 @@ export function AwsVideoPublishDiagnosticsCard({
             <span style={{ fontSize: '0.875rem', color: 'var(--foreground)' }}>This will upload the video to YouTube as private. Continue?</span>
             <button
               className="button danger-button"
-              disabled={isPublishingThisJob}
+              disabled={publishDisabled}
               onClick={handlePublishClick}
             >
               Yes, publish privately
@@ -307,7 +310,7 @@ export function AwsVideoPublishDiagnosticsCard({
         ) : (
           <button
             className={recommendedStepKey === 'publish' ? 'button next-action' : 'button danger-button'}
-            disabled={!canPublish || isPublishingThisJob || quotaExceeded || anyPendingTimeout}
+            disabled={publishDisabled}
             onClick={handlePublishClick}
           >
             {isPublishPending ? 'Publishing privately…' : 'Publish privately'}
