@@ -603,7 +603,11 @@ function ReviewCard({
                 src={`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?ts=${encodeURIComponent(reviewData?.updatedAt ?? reviewMedia.thumbnailKey ?? '')}`}
                 alt={`Generated thumbnail: ${reviewMedia.thumbnailKey}`}
                 style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid var(--border)' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }}
               />
+              <div hidden style={{ padding: '0.75rem', backgroundColor: 'var(--muted)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
+                Thumbnail not available locally. Use the terminal command below to preview from S3.
+              </div>
             </div>
             <button
               className="button small"
@@ -1790,8 +1794,9 @@ export function AwsVideoDashboard() {
                 </div>
                 <div className="pipeline-actions">
                   <button className={recommendedStep?.key === 'draft' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('create')}><FilePlus2 size={16} /> Create draft</button>
-                  <button className={recommendedStep?.key === 'approve' ? 'button next-action' : 'button'} disabled={!canApprove || approve.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve</button>
+                  <button className={recommendedStep?.key === 'approve' ? 'button next-action' : 'button'} disabled={!canApprove || approve.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); approve.mutate({ jobIdArg: jobId }); } }}><CheckCircle2 size={16} /> Approve script</button>
                   <button className={recommendedStep?.key === 'generate' ? 'button next-action' : 'button'} disabled={!canGenerate || generate.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); generate.mutate({ jobIdArg: jobId }); } }}><Wand2 size={16} /> Generate</button>
+                  <button className={recommendedStep?.key === 'review' ? 'button next-action' : 'button'} disabled={!canApproveReview || approveReview.isPending || anyPendingTimeout} onClick={() => { if (jobId) { beginAction(); approveReview.mutate({ jobIdArg: jobId, notes: undefined }); } }}><CheckCircle2 size={16} /> Approve review</button>
                   <button className={recommendedStep?.view === 'publish' ? 'button next-action' : 'button secondary'} onClick={() => setActiveView('publish')}><Youtube size={16} /> Publish step</button>
                 </div>
               </article>

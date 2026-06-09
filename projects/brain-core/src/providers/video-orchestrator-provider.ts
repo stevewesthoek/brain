@@ -3129,6 +3129,16 @@ async function getReviewOverlayBlockers(jobId: string, media: VideoReviewMedia):
   return [];
 }
 
+function getEssentialReviewMediaMissing(media: VideoReviewMedia): string[] {
+  const missing: string[] = [];
+  if (!media.scenePlanKey) missing.push('scenePlanKey');
+  if (!media.narrationScriptKey) missing.push('narrationScriptKey');
+  if (!media.audioKey) missing.push('audioKey');
+  if (!media.videoKey) missing.push('videoKey');
+  if (!media.thumbnailKey) missing.push('thumbnailKey');
+  return missing;
+}
+
 export async function approveVideoReview(
   jobId: string,
   input: { reviewedBy?: unknown; notes?: unknown },
@@ -3140,9 +3150,23 @@ export async function approveVideoReview(
     return { ok: false, code: 'invalid_body', error: 'reviewedBy is required.', jobId };
   }
 
-  // Always finalize before approval to ensure media is complete and aligned with canonical artifacts
+  // Read existing review media first — if essential fields are already present, approval should succeed
+  const existingReview = await readReviewJson(jobId);
+  const existingMedia = existingReview?.media ?? null;
+  const existingEssentialComplete = existingMedia && getEssentialReviewMediaMissing(existingMedia).length === 0;
+
+  // Attempt finalization opportunistically to repair/enrich metadata
   const finalized = await finalizeAwsVideoPublishPackage(jobId);
-  if (!finalized.ok) {
+
+  let mediaToApprove: VideoReviewMedia;
+  if (finalized.ok) {
+    mediaToApprove = finalized.media;
+  } else if (existingEssentialComplete) {
+    // Finalization failed (files missing on disk/S3) but existing review media has all essential fields.
+    // Invariant: control-plane approve_review.enabled=true => POST /review/approve succeeds.
+    console.warn(`[approveVideoReview] Finalization failed for ${jobId} (${finalized.error}), using existing review media (essential fields complete)`);
+    mediaToApprove = existingMedia;
+  } else {
     return {
       ok: false,
       code: 'review_media_incomplete',
@@ -3152,26 +3176,23 @@ export async function approveVideoReview(
     };
   }
 
-  const mediaToApprove = finalized.media;
-  const missing = getMissingReviewMediaFields(mediaToApprove);
-  const overlayBlockers = await getReviewOverlayBlockers(jobId, mediaToApprove);
-
-  if (missing.length > 0) {
+  // Only check essential media fields (aligned with control-plane approve_review.enabled logic)
+  const essentialMissing = getEssentialReviewMediaMissing(mediaToApprove);
+  if (essentialMissing.length > 0) {
     return {
       ok: false,
       code: 'review_media_incomplete',
-      error: `Cannot approve review: missing required media fields: ${missing.join(', ')}`,
+      error: `Cannot approve review: missing essential media fields: ${essentialMissing.join(', ')}`,
       jobId,
-      details: { missing, finalizedMedia: finalized.media, repaired: finalized.repaired },
+      details: { missing: essentialMissing },
     } as unknown as VideoReviewError;
   }
 
-  // Overlay plan issues are warnings only, not blockers for review approval
+  const overlayBlockers = await getReviewOverlayBlockers(jobId, mediaToApprove);
   if (overlayBlockers.length > 0) {
     console.warn(`[approveVideoReview] Motion layer warnings for ${jobId}: ${overlayBlockers.join(', ')} (non-blocking)`);
   }
 
-  const existingReview = await readReviewJson(jobId);
   const current = existingReview ?? await getOrCreateReview(jobId);
   if (!current) {
     return { ok: false, code: 'review_not_found', error: 'Review metadata not found for job.', jobId };
