@@ -255,6 +255,42 @@ The orchestrator should validate the chosen outputs carefully because mixed repo
 }
 ```
 
+## How exclude patterns are applied
+
+The `exclude` array in a profile is **declarative metadata only**. It is validated by the orchestrator
+but is NOT automatically passed to the Graphify CLI as command-line flags (Graphify CLI does not expose
+`--exclude` flags as of v0.8.36).
+
+### Actual scan scoping: `.graphifyignore`
+
+Graphify reads a `.graphifyignore` file at the repo root (gitignore syntax). If absent, it falls
+back to `.gitignore`. The `.graphifyignore` file is the authoritative scan scope control.
+
+Each consuming repo SHOULD maintain a `.graphifyignore` that:
+1. Explicitly excludes runtime/generated/cache directories that are large or irrelevant
+2. Excludes embedded third-party codebases (e.g. `tools/firecrawl/` in Brain)
+3. Excludes large data files that cause semantic chunk overflow
+4. Mirrors the declarative `exclude` list from the profile for traceability
+
+Why `.graphifyignore` instead of relying on `.gitignore`:
+- `.gitignore` only covers git-tracked exclusions; large disk-only paths may not be in `.gitignore`
+- `.graphifyignore` makes Graphify scope explicit and independent of git workflow
+- Graphify gives `.graphifyignore` priority over `.gitignore` (per their spec)
+
+### Chunk overflow root cause
+
+Graphify packs files into semantic chunks with a default 60k token budget per chunk. If individual
+files exceed this budget (or the prompt overhead + file content exceeds the LLM context window),
+Graphify bisects the chunk recursively to depth 3. If a chunk of 1 file still overflows, it is
+dropped with a warning.
+
+The most common causes in Brain/Mind repos:
+- Large data files (model-prices.ts: 22k lines, n8n backup JSON: 17k lines/export × many copies)
+- AI session JSONL files leaking through gitignore if Graphify's pattern matching differs
+- Embedded vendored codebases not excluded from the graph scope
+
+The fix is a comprehensive `.graphifyignore` that scopes the scan to authored content only.
+
 ## Validation rules
 
 The future orchestrator must reject a profile when:

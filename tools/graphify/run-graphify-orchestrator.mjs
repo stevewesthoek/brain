@@ -545,6 +545,12 @@ async function executeGraphify(repoRoot, profile, selectorResult) {
   let endedAt = null;
   let adapterResult = null;
 
+  // Apply profile-level token budget if specified.
+  // tokenBudget controls per-chunk token packing (default 60000).
+  // Lower values (e.g. 20000) produce smaller chunks that are less likely to
+  // overflow the LLM context window for large repos with big files.
+  const tokenBudget = profile.tokenBudget ?? null;
+
   try {
     const env = { ...process.env };
 
@@ -568,13 +574,15 @@ async function executeGraphify(repoRoot, profile, selectorResult) {
     }
 
     Object.assign(env, adapterResult.env);
-
     const graphifyArgs = ['.', '--update', ...adapterResult.args];
+    if (tokenBudget !== null && Number.isInteger(tokenBudget) && tokenBudget > 0) {
+      graphifyArgs.push('--token-budget', String(tokenBudget));
+    }
     const result = spawnSync('graphify', graphifyArgs, {
       cwd: repoRoot,
       stdio: ['pipe', 'pipe', 'pipe'],
       encoding: 'utf8',
-      timeout: 300000,
+      timeout: 900000,
       env,
     });
 
@@ -614,7 +622,7 @@ async function executeGraphify(repoRoot, profile, selectorResult) {
     stdoutTail,
     stderrTail,
     adapterResult,
-    graphifyCommand: adapterResult?.ok ? `graphify . --update ${adapterResult.args.join(' ')}` : null,
+    graphifyCommand: adapterResult?.ok ? `graphify . --update ${[...adapterResult.args, ...(tokenBudget ? ['--token-budget', String(tokenBudget)] : [])].join(' ')}` : null,
     validation: {
       graphJsonValid,
       reportExists,

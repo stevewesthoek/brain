@@ -39,6 +39,29 @@ runtime/local/graphify/orchestrator-latest.json
 runtime/local/graphify/orchestrator-latest.md
 ```
 
+## Scan scoping: `.graphifyignore`
+
+Graphify reads a `.graphifyignore` file at the repo root (gitignore syntax). If absent,
+it falls back to `.gitignore`. The `.graphifyignore` is the primary scan scope control.
+
+The Brain repo ships `.graphifyignore` at its root to:
+- Exclude embedded third-party codebases (`tools/firecrawl/`: 1171 files)
+- Exclude AI runtime data (Claude projects/sessions, Codex sessions/cache, worktrees)
+- Exclude n8n backup archives (repeated large JSON exports)
+- Exclude Python/Node build artifacts that gitignore might miss
+
+The Mind repo ships `.graphifyignore` at its root to:
+- Exclude Obsidian plugin JS bundles (compiled artifacts)
+- Exclude `.obsidian/` runtime state directories
+- Exclude daily notes (ephemeral, high-churn)
+
+**Important:** The `exclude` array in a Graphify profile (`.graphify-profile.json` or the
+`operations/specs/graphify-profile.examples.json` examples) is **declarative metadata only**.
+It is validated by the orchestrator but is NOT passed to the Graphify CLI as flags.
+The `.graphifyignore` file is what actually controls the scan.
+
+See `operations/specs/graphify-profile-contract.md` for the full explanation.
+
 ## Safety
 
 The first implementation slice is report-only. It must not:

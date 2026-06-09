@@ -79,6 +79,12 @@
         "minLength": 1
       }
     },
+    "tokenBudget": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 200000,
+      "description": "Per-chunk token packing budget passed to Graphify CLI as --token-budget. Default is 60000. Lower values (e.g. 20000) produce smaller chunks to prevent context overflow for repos with large files (e.g. big SKILL.md files). Passed as --token-budget <N> to graphify CLI."
+    },
     "trackGeneratedArtifacts": {
       "type": "array",
       "uniqueItems": true,
