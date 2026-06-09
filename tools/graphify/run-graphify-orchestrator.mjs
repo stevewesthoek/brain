@@ -225,36 +225,40 @@ function checkGraphifyCommand() {
 function selectorRequestFromPolicy(policy) {
   if (!policy) return null;
 
+  const taskType = policy.taskType ?? 'graphify_incremental_update';
+  const qualityTier = policy.qualityTier ?? 'efficient';
+  const selectionPolicy = policy.selectionPolicy ?? 'selector_default';
+  const fallbackPolicy = policy.fallbackPolicy ?? 'selector_default';
+  const preferredModels = policy.preferredModels ?? [];
+  const preferredProviders = policy.preferredProviders ?? [];
+
   return {
-    taskType: policy.taskType ?? null,
+    taskType,
     inputTokenCount: 0,
     urgent: false,
     previousFailures: [],
-    qualityTier: policy.qualityTier ?? null,
-    selectionPolicy: policy.selectionPolicy ?? null,
-    fallbackPolicy: policy.fallbackPolicy ?? 'selector_default',
     taskMetadata: {
-      quality_tier: policy.qualityTier ?? null,
-      preferred_models: policy.preferredModels ?? [],
-      preferred_providers: policy.preferredProviders ?? [],
-      fallback_policy: policy.fallbackPolicy ?? 'selector_default',
-      selection_policy: policy.selectionPolicy ?? null,
+      quality_tier: qualityTier,
+      preferred_models: preferredModels,
+      preferred_providers: preferredProviders,
+      fallback_policy: fallbackPolicy,
+      selection_policy: selectionPolicy,
     },
   };
 }
 
 function selectorResolutionPlan(operation, selectorRequest) {
-  const resolutionEnabled = process.env.GRAPHIFY_ORCHESTRATOR_ENABLE_SELECTOR_RESOLUTION === 'true';
-  const resolutionSupported = ['full', 'critical-rebuild'].includes(operation);
+  // Selector resolution is always enabled for semantic operations (full, critical-rebuild, update).
+  // The GRAPHIFY_ORCHESTRATOR_ENABLE_SELECTOR_RESOLUTION flag is deprecated and no longer used.
+  // Selector resolution happens automatically when execution is enabled and a selector request is defined.
+  const resolutionSupported = ['full', 'critical-rebuild', 'update'].includes(operation);
   const resolutionRequested = Boolean(selectorRequest && resolutionSupported);
 
   return {
     resolutionRequested,
-    resolutionEnabled,
-    status: !resolutionRequested ? 'skipped' : resolutionEnabled ? 'ready' : 'blocked',
-    blockedReason: resolutionRequested && !resolutionEnabled
-      ? 'Selector resolution disabled. Set GRAPHIFY_ORCHESTRATOR_ENABLE_SELECTOR_RESOLUTION=true to enable.'
-      : null,
+    resolutionEnabled: resolutionRequested,
+    status: !resolutionRequested ? 'skipped' : 'ready',
+    blockedReason: null,
     request: selectorRequest,
     selectedProvider: null,
     selectedModel: null,
@@ -318,6 +322,7 @@ function executionPlan(profile, operation, executeRequested) {
 
   plan.plannedOnly = false;
   plan.runsGraphify = true;
+  plan.callsAiModelSelector = Boolean(plan.selector?.resolutionRequested);
   plan.writesTargetRepo = true;
   return plan;
 }
@@ -496,7 +501,7 @@ async function resolveSelector(selectorPlan, profileName) {
   };
 }
 
-async function executeGraphify(repoRoot, profile) {
+async function executeGraphify(repoRoot, profile, selectorResult) {
   const startedAt = new Date();
   let stdout = '';
   let stderr = '';
@@ -504,11 +509,23 @@ async function executeGraphify(repoRoot, profile) {
   let endedAt = null;
 
   try {
+    const env = { ...process.env };
+
+    // Pass selected model/provider to Graphify if available
+    if (selectorResult?.status === 'ok' && selectorResult?.selectedModel) {
+      env.GRAPHIFY_SELECTED_MODEL = selectorResult.selectedModel;
+      env.GRAPHIFY_SELECTED_PROVIDER = selectorResult.selectedProvider ?? '';
+      if (selectorResult.baseUrl) {
+        env.GRAPHIFY_API_BASE_URL = selectorResult.baseUrl;
+      }
+    }
+
     const result = spawnSync('graphify', ['.', '--update'], {
       cwd: repoRoot,
       stdio: ['pipe', 'pipe', 'pipe'],
       encoding: 'utf8',
       timeout: 300000,
+      env,
     });
 
     stdout = result.stdout ?? '';
@@ -578,7 +595,7 @@ async function main() {
 
   let executionResult = null;
   if (!plan.plannedOnly && args.operation === 'update') {
-    executionResult = await executeGraphify(repoRoot, loadedProfile.profile);
+    executionResult = await executeGraphify(repoRoot, loadedProfile.profile, selector);
   }
 
   const outputs = expectedOutputs(repoRoot, loadedProfile.profile);

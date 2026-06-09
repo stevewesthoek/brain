@@ -59,7 +59,7 @@ PY
 
 selector_payload() {
   local tokens="$1"
-  printf '{"task_type":%s,"input_token_count":%s,"urgent":true,"local_only":true}' \
+  printf '{"task_type":%s,"input_token_count":%s,"urgent":true}' \
     "$(json_escape "$TASK_TYPE")" \
     "$tokens"
 }
@@ -80,14 +80,23 @@ from urllib.parse import urlparse
 data = json.loads(sys.argv[1])
 if data.get("deferred"):
     raise SystemExit(2)
-provider = data.get("provider_id", "")
+provider_id = data.get("provider_id", "")
+provider_type = data.get("provider_type", "")
 model = data.get("model", "")
 base_url = data.get("base_url", "")
-if not provider or not model:
+api_key = data.get("api_key")
+if not provider_id or not model:
     raise SystemExit(1)
 parsed = urlparse(base_url)
 host = f"{parsed.scheme or 'http'}://{parsed.netloc}" if parsed.netloc else ""
-print(json.dumps({"provider_id": provider, "model": model, "ollama_host": host}))
+print(json.dumps({
+    "provider_id": provider_id,
+    "provider_type": provider_type,
+    "model": model,
+    "base_url": base_url,
+    "api_key": api_key,
+    "ollama_host": host
+}))
 PY
 }
 
@@ -139,16 +148,28 @@ unload_ollama_model() {
 
 run_repo_command() {
   local repo="$1"
-  shift
-  python3 - "$REPO_TIMEOUT_SECONDS" "$repo" "$@" <<'PY'
+  local env_vars="$2"
+  shift 2
+  python3 - "$REPO_TIMEOUT_SECONDS" "$repo" "$env_vars" "$@" <<'PY'
 import os
 import subprocess
 import sys
+import json
 
 timeout = int(sys.argv[1])
 repo = sys.argv[2]
-cmd = sys.argv[3:]
+env_vars_json = sys.argv[3]
+cmd = sys.argv[4:]
 env = os.environ.copy()
+
+# Merge custom environment variables
+if env_vars_json:
+    try:
+        custom_env = json.loads(env_vars_json)
+        env.update(custom_env)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
 try:
     os.nice(15)
 except OSError:
@@ -227,27 +248,41 @@ while IFS= read -r repo; do
     continue
   fi
 
-  provider="$(selection_value "$selection" provider_id)"
+  provider_id="$(selection_value "$selection" provider_id)"
+  provider_type="$(selection_value "$selection" provider_type)"
   model="$(selection_value "$selection" model)"
+  base_url="$(selection_value "$selection" base_url)"
+  api_key="$(selection_value "$selection" api_key)"
   ollama_host="$(selection_value "$selection" ollama_host)"
-  log "extracting repo=$repo provider=$provider model=$model"
+  log "extracting repo=$repo provider=$provider_id provider_type=$provider_type model=$model"
 
-  if [[ -n "$ollama_host" ]]; then
-    export OLLAMA_HOST="$ollama_host"
-  else
-    unset OLLAMA_HOST
+  # Build backend-specific arguments
+  backend_args="--model $model"
+  env_vars="{}"
+
+  if [[ "$provider_type" == "openai-compatible" ]] || [[ -n "$base_url" ]]; then
+    backend_args="$backend_args --backend openai-compatible --api-base $base_url"
+    if [[ -n "$api_key" && "$api_key" != "null" ]]; then
+      env_vars="{\"OPENAI_API_KEY\": \"$api_key\"}"
+    fi
   fi
-  if run_repo_command "$repo" "$GRAPHIFY_BIN" extract "$repo" --backend ollama --model "$model" --out "$repo"; then
+
+  if run_repo_command "$repo" "$env_vars" "$GRAPHIFY_BIN" extract "$repo" $backend_args --out "$repo"; then
     first_builds=$((first_builds + 1))
-    report_selector_outcome report-success "$provider" "$model"
-    unload_ollama_model "$model"
-    log "extracted repo=$repo provider=$provider model=$model"
+    report_selector_outcome report-success "$provider_id" "$model"
+    # Clean up Ollama models if they were used
+    if [[ "$provider_type" == "openai-compatible" ]] && [[ -z "$base_url" ]]; then
+      unload_ollama_model "$model"
+    fi
+    log "extracted repo=$repo provider=$provider_id model=$model"
   else
     rc="$?"
     failed=$((failed + 1))
-    report_selector_outcome report-failure "$provider" "$model" "graphify_failed" "graphify extract exited $rc"
-    unload_ollama_model "$model"
-    log "failed repo=$repo phase=extract exit_code=$rc provider=$provider model=$model"
+    report_selector_outcome report-failure "$provider_id" "$model" "graphify_failed" "graphify extract exited $rc"
+    if [[ "$provider_type" == "openai-compatible" ]] && [[ -z "$base_url" ]]; then
+      unload_ollama_model "$model"
+    fi
+    log "failed repo=$repo phase=extract exit_code=$rc provider=$provider_id model=$model"
   fi
 done < <(discover_repos)
 
