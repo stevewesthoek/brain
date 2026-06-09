@@ -291,6 +291,24 @@ The most common causes in Brain/Mind repos:
 
 The fix is a comprehensive `.graphifyignore` that scopes the scan to authored content only.
 
+## Chunk size control: `tokenBudget`
+
+The `tokenBudget` field (optional integer) is passed to Graphify CLI as `--token-budget <N>`.
+It controls the maximum token size of each semantic extraction chunk.
+
+Default (when absent): 60,000 tokens per chunk. This is suitable for most repos but may
+cause context overflow for repos with large individual files (skill SKILL.md at 22k+ tokens,
+large TypeScript source files at 50-76k tokens).
+
+For Brain repo: `tokenBudget: 30000` is recommended. With ~2000 average file tokens:
+- ~15 files per chunk on average
+- ~137 total chunks for 2055 files
+- Each chunk ≤ 30k tokens + single oversized files get their own chunk
+- Total extraction time: ~685s (fits in 1800s orchestrator timeout)
+
+The Brain repo uses Opus 4.6 (200k context). Single-file chunks of up to 76k tokens fit
+comfortably (76k + 297 system + 16384 output = ~93k, well under 200k).
+
 ## Validation rules
 
 The future orchestrator must reject a profile when:
