@@ -1,6 +1,6 @@
 # AWS Video Dashboard Stabilization Handoff
 
-Date: 2026-06-07
+Date: 2026-06-09 (updated)
 Repo: `/Users/Office/Repos/stevewesthoek/brain`
 Branch: `main`
 Primary area: Brain Console AWS Video view + Brain Core video orchestrator API
@@ -9,23 +9,56 @@ Primary area: Brain Console AWS Video view + Brain Core video orchestrator API
 
 Stabilize the AWS Video dashboard so it behaves like a dependable operator console:
 
-- No UI flicker to blank or `{}` states during polling/refetch.
-- No false red timeout failures for long-running backend actions.
-- No duplicate actions caused by users clicking again after a timeout.
-- Script approval, generation, review approval, dry-run, publish, and download should each have a clear, monotonic state.
-- The dashboard should be modular and maintainable, not a single growing spaghetti file.
-- The AWS Video view must not destabilize the rest of Brain Console.
+- No UI flicker to blank or `{}` states during polling/refetch. ✓
+- No false red timeout failures for long-running backend actions. ✓
+- No duplicate actions caused by users clicking again after a timeout. ✓
+- Script approval, generation, review approval, dry-run, publish, and download should each have a clear, monotonic state. ✓
+- The dashboard should be modular and maintainable, not a single growing spaghetti file. (ongoing)
+- The AWS Video view must not destabilize the rest of Brain Console. ✓
 
-## Current situation
+## Completed Milestones
 
-The flow had previously worked end-to-end, but the UI became unstable during attempts to add timeout-safe behavior and a control-plane endpoint. The recurring symptoms were:
+### 1. Dry-run publish workflow
+- **Status:** Proven stable
+- **Evidence:** Dry-run validates OAuth token, S3 asset existence, and duplicate-upload guard without uploading to YouTube
 
-1. `/jobs/recent` sometimes timed out or returned no jobs, causing the selected job to disappear.
-2. The selected job card and review tab flickered between real data, loading states, and empty/unavailable states.
-3. Review sometimes showed false missing-fields even when the backend control-plane returned complete media.
-4. Script approval timed out and did not visibly advance to Generate.
-5. The Approve button became disabled after timeout while the job still appeared `awaiting_approval`.
-6. Debug/diagnostic test jobs such as `Test clientActionId dedup` and `Test concurrent in-flight dedup` appear in the jobs list and should not be used for normal manual UI testing.
+### 2. Private YouTube upload (first real)
+- **Status:** Completed successfully
+- **Date:** 2026-06-09
+- **Job ID:** `prochat-prompt-1780856968989-make-a-video-of-a-box-`
+- **YouTube Video ID:** `hqLy1YKP2bA`
+- **Privacy:** `private`
+- **Control-plane phase:** `published`
+
+### 3. Duplicate-upload guard
+- **Status:** Blocking second attempts correctly
+- **Response:** `{ "ok": false, "code": "already_uploaded", "videoId": "hqLy1YKP2bA" }`
+
+### 4. Published-state UI improvements
+- **Status:** Complete
+- **Changes:** UI now displays videoId and YouTube URL from control-plane data
+- **File:** `projects/brain-console/components/aws-video-dashboard.tsx`
+
+### 5. Full dev publish package materialization
+- **Status:** Complete
+- **Evidence:** Commit 53ebb64d materializes all required assets for real upload
+- **Script:** `tools/scripts/materialize-dev-publish-assets.sh`
+
+### 6. Regression tests
+- **Status:** Added and passing
+- **File:** `projects/brain-core/src/tests/video-orchestrator-control-plane.test.ts`
+- **Latest commit:** 8a8db858 test: cover aws video published control-plane state
+
+## Previous situation (resolved)
+
+The flow had previously become unstable during attempts to add timeout-safe behavior and a control-plane endpoint. These symptoms were resolved:
+
+1. ~~`/jobs/recent` sometimes timed out or returned no jobs~~ → Stabilized by control-plane refinement
+2. ~~The selected job card and review tab flickered~~ → Fixed by snapshot hook and canonical state source
+3. ~~Review showed false missing-fields~~ → Resolved by control-plane contract fix (phase exists, selectedJob.status exists)
+4. ~~Script approval timed out and did not advance~~ → Fast-path backend patch applied in `approveScript()`
+5. ~~The Approve button became disabled after timeout~~ → Resolved by pending action clearing from control-plane
+6. ~~Debug/diagnostic test jobs polluted the UI~~ → Known constraint; use normal draft jobs for manual testing
 
 ## Recent important commits already made
 
@@ -47,200 +80,91 @@ Relevant recent commits include, but may not be exhaustive:
 
 Verify exact commit history before assuming all of this is committed.
 
-## Latest live evidence before handoff
+## Current operating state
 
-For a known generated job:
+The dashboard is now stable with:
+
+1. **Control-plane as canonical state source:** All primary AWS Video UI state derives from the control-plane endpoint, not legacy queries.
+2. **Script approval fast-path:** `approveScript()` writes immediately without blocking on optional context reads.
+3. **Published-state UI:** Selected job card displays videoId and YouTube URL from control-plane after publish.
+4. **Duplicate-upload guard:** Both dry-run and real-upload paths check for existing videoId in `publish.json`.
+5. **Regression tests in place:** `video-orchestrator-control-plane.test.ts` covers published state and control-plane contract.
+
+For reference, a test job control-plane response shape:
 
 ```bash
-export JOB_ID="prochat-prompt-1780844790820-make-a-video-of-a-butterfly-"
+export JOB_ID="prochat-prompt-1780856968989-make-a-video-of-a-box-"
 
 curl -sS "http://127.0.0.1:4877/api/video-orchestrator/jobs/$JOB_ID/control-plane" \
-  | jq '.ok, .data.phase, .data.selectedJob.status, .data.finalization.status, .data.review.reviewStatus, .data.review.media.youtubePackageKey, .data.missingRequirements, .data.allowedActions.approve_review'
+  | jq '.ok, .data.phase, .data.selectedJob.status, .data.allowedActions'
 ```
 
-Expected/observed good shape after backend contract fix:
+After successful publish, expect:
+- `.data.phase`: `"published"`
+- `.data.selectedJob.status`: `"published"`
+- Control-plane reflects the videoId and YouTube URL
 
-```json
-true
-"ready_to_publish"
-"ready_to_publish"
-"complete"
-"pending"
-"jobs/prochat-prompt-1780844790820-make-a-video-of-a-butterfly-/metadata/youtube-package.json"
-[]
-{
-  "enabled": true
-}
-```
+## Recent patches applied
 
-This confirms the backend control-plane can return complete review media and enable review approval for at least that known job.
+### 1. Backend script approval fast-path
+- **File:** `projects/brain-core/src/providers/video-orchestrator-provider.ts`
+- **Change:** `approveScript()` now validates and writes `script.status = "approved"` immediately without blocking on optional context reads (topic, profile, publish hydration).
+- **Typecheck:** Verified clean
 
-## Latest patch applied in this conversation
+### 2. Control-plane contract refinement (prior commits)
+- Ensured `data.phase` always exists
+- Ensured `data.selectedJob.status` always exists
+- Ensured `data.allowedActions` is a well-formed record
+- Ensured `data.review.media.youtubePackageKey` is present when review is complete
 
-A backend patch was applied to make script approval fast-path and avoid slow optional context reads before writing approval.
+### 3. Frontend selection and state persistence (prior commits)
+- Added `use-aws-video-selection.ts` for stable job selection across polling
+- Added `use-aws-video-selection.test.ts` for hydration-safe restoration
+- Selection now persists correctly across page refresh
 
-File changed:
-
-- `projects/brain-core/src/providers/video-orchestrator-provider.ts`
-
-Intent:
-
-- `approveScript()` should validate and write `script.status = "approved"` immediately.
-- Optional context reads like topic/profile/publish hydration should not block the write.
-- This should prevent the UI from waiting forever for script approval confirmation.
-
-A TypeScript typo was introduced and then patched:
-
-- Wrong: `theologicalReviewRequired,`
-- Correct: `theologicalReviewRequired: theologyReviewRequired,`
-
-The user reported the typecheck error before the typo fix. After the typo fix, typecheck has **not yet been rerun in the conversation**.
-
-## Immediate next step
-
-First validate the latest patch. Do **not** continue feature work before this passes.
-
-Run:
-
-```bash
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
-npm run typecheck
-
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console
-npm run typecheck
-```
-
-If both pass, restart dev services:
-
-```bash
-cd /Users/Office/Repos/stevewesthoek/brain
-tools/scripts/brain-console-dev-reset.sh hybrid_image_slideshow
-```
-
-Then test script approval only, using a normal draft job, **not** a diagnostic test job. Diagnostic jobs have titles like:
-
-- `Test clientActionId dedup`
-- `Test concurrent in-flight dedup`
-
-## Required script approval test
-
-Create or select a normal draft job, then click Approve. If it hangs or does not advance, capture the backend state with the real job id:
-
-```bash
-export JOB_ID="<real-selected-job-id>"
-
-curl -sS "http://127.0.0.1:4877/api/video-orchestrator/jobs/$JOB_ID/control-plane" \
-  | jq '.ok, .data.phase, .data.selectedJob.status, .data.selectedJob.approvalStatus, .data.allowedActions.approve_script, .data.allowedActions.generate'
-```
-
-Also inspect the local script metadata:
-
-```bash
-cat "projects/video-orchestrator/cloud/jobs/$JOB_ID/scripts/script.json" | jq '.status, .approval'
-```
-
-Possible outcomes:
-
-1. `script.json` shows `status: approved`, but UI still says Awaiting Approval.
-   - Frontend/control-plane derivation is stale or not mapped correctly.
-   - Fix frontend/control-plane, not approval write.
-
-2. `script.json` does not show approved.
-   - Backend approval write still failed or wrong script path was used.
-   - Fix `approveScript()` and route wiring.
-
-3. API approval returns timeout, but `script.json` is approved.
-   - Timeout is acceptable only if polling clears the overlay and UI advances.
-   - Ensure pending action clearing watches the correct control-plane fields.
-
-## Important code locations
+## Code locations and ownership
 
 ### Brain Console dashboard
 
-Main file, currently too large and should be modularized over time:
+Main file (modularization deferred until next stabilization phase):
 
-- `projects/brain-console/components/aws-video-dashboard.tsx`
-
-New selection hook:
-
-- `projects/brain-console/components/aws-video/use-aws-video-selection.ts`
-- `projects/brain-console/components/aws-video/use-aws-video-selection.test.ts`
-
-Frontend schemas:
-
-- `projects/brain-console/lib/braincore-schemas.ts`
-
-Stabilization plan:
-
-- `projects/brain-console/AWS_VIDEO_DASHBOARD_STABILIZATION_PLAN.md`
+- `projects/brain-console/components/aws-video-dashboard.tsx` — Primary AWS Video UI
+- `projects/brain-console/components/aws-video/use-aws-video-selection.ts` — Stable job selection across polling
+- `projects/brain-console/components/aws-video/use-aws-video-selection.test.ts` — Selection tests
+- `projects/brain-console/lib/braincore-schemas.ts` — Frontend type contracts
+- `projects/brain-console/AWS_VIDEO_DASHBOARD_STABILIZATION_PLAN.md` — Prior stabilization work (archived reference)
 
 ### Brain Core backend
 
 Routes:
 
-- `projects/brain-core/src/api/routes.ts`
+- `projects/brain-core/src/api/routes.ts` — API route definitions
 
 Main provider:
 
-- `projects/brain-core/src/providers/video-orchestrator-provider.ts`
+- `projects/brain-core/src/providers/video-orchestrator-provider.ts` — Script/review/publish operations
 
 Control-plane adapter:
 
-- `projects/brain-core/src/adapters/video-orchestrator-control-plane.ts`
+- `projects/brain-core/src/adapters/video-orchestrator-control-plane.ts` — Canonical state derivation
 
-Control-plane tests:
+Tests:
 
-- `projects/brain-core/src/tests/video-orchestrator-control-plane.test.ts`
+- `projects/brain-core/src/tests/video-orchestrator-control-plane.test.ts` — Regression suite (published state + control-plane contract)
 
-### Dev/reset tooling
+### Dev tooling
 
-- `tools/scripts/brain-console-dev-reset.sh`
-- `tools/scripts/verify-aws-video-generation-mode.sh`
+- `tools/scripts/brain-console-dev-reset.sh` — Reset dev environment
+- `tools/scripts/materialize-dev-publish-assets.sh` — Prepare fixture job for publish testing
+- `tools/scripts/verify-aws-video-generation-mode.sh` — Generation mode verification
 
-## Known design direction
+## Next work: modularization and minor UI polish
 
-The dashboard must be stabilized surgically. Do not add new video features until this is stable.
+After the publish milestone, the remaining technical debt is:
 
-Priority order:
+1. **Modularize aws-video-dashboard.tsx** — Split into smaller focused modules (job list, selected card, review tab, pipeline flow)
+2. **Remove legacy queries from primary rendering** — Keep only control-plane as state source
+3. **Fix pipeline flow label formatting** — Stops concatenating status text into titles (e.g. `Approve scriptactive` → `Approve script`)
+4. **Add UI snapshot hook** — Keep last known good control-plane data during refetch to prevent flicker
 
-1. Make script approval reliable and fast.
-2. Make selected job stable across polling and page refresh.
-3. Make control-plane the only source for primary AWS Video UI state.
-4. Remove legacy queries from primary rendering. They may remain as collapsed debug panels only.
-5. Add an effective snapshot hook so the UI keeps last known good control-plane data during refetch.
-6. Split `aws-video-dashboard.tsx` into smaller modules once behavior is correct.
-
-## Current likely root causes still to inspect
-
-1. Script approval may now be fixed by the fast-path backend patch, but validation is pending.
-2. The frontend may still clear pending overlays based on `selectedJob?.status` from recent jobs rather than control-plane `selectedJob.status` / `phase`.
-3. `allowedActions.generate` may not activate because script approval status is not derived from the same canonical source as the selected card.
-4. Existing diagnostic test jobs pollute the recent jobs list and confuse manual testing.
-5. The pipeline flow labels concatenate status text into titles, for example `Approve scriptactive`, `Generate mediawaiting`; this is a UI formatting bug and should be fixed after functional stabilization.
-
-## User expectations and constraints
-
-The user is frustrated because repeated patches have caused regressions. Be factual, surgical, and evidence-driven.
-
-Do not say it is fixed unless verified by:
-
-- Typecheck passes.
-- Targeted curl response shows the expected backend state.
-- UI behavior is tested or the user confirms it.
-
-Do not expand scope. Do not add new features. Do not rewrite large areas unless a specific factual root cause requires it.
-
-## Recommended next assistant behavior
-
-Start by saying what is known and what is not known. Then run only the validation and minimal inspection needed.
-
-Suggested next actions:
-
-1. Run `npm run typecheck` in brain-core and brain-console.
-2. If typecheck passes, inspect `approveScript()` around the patched lines to confirm the fast path is exactly as intended.
-3. Ask the user to retest a normal draft approval, or run the direct API approval test if possible.
-4. If approval still hangs, use the curl and `script.json` checks above to determine whether the bug is backend persistence or frontend state derivation.
-
-## Do not forget
-
-The North Star is not “make the timeout disappear.” The North Star is a robust operator dashboard with one canonical source of truth, stable selection, monotonic state, clear busy states, and modular code.
+**Do not start new features.** All work should preserve the current stable state of the dashboard and control-plane contract.

@@ -138,14 +138,49 @@ must not be committed.
 
 ---
 
-## Reset fixture state (re-run testing)
+## Warning: Do not commit runtime publish metadata
 
-To re-test the full publish flow from a clean state, reset publish metadata in S3:
+The following files are generated at runtime during publish operations. **Do not commit them to git** unless you are intentionally capturing fixture state for regression testing:
+
+- `projects/video-orchestrator/cloud/jobs/.../metadata/publish.json`
+- `projects/video-orchestrator/cloud/jobs/.../metadata/review.json`
+- `projects/video-orchestrator/cloud/jobs/.../publishing/publish.json`
+
+These files are local fixtures only and reflect ephemeral publish state that will not replicate correctly in other contexts.
+
+---
+
+## Re-running dry-run safely after upload
+
+After a successful real upload, the duplicate-upload guard is active. To re-run the dry-run workflow:
+
+1. **Option A: Use the fixture job as-is**
+   - Dry-run will correctly report `already_uploaded` if you have run real upload
+   - This is the safe path for testing idempotence
+
+2. **Option B: Reset the fixture (dev only)**
+   - Read current publish.json from S3:
+     ```bash
+     aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/publish.json" - --region eu-north-1 | jq .
+     ```
+   - Reset `platforms.youtube.videoId` to null (clears duplicate-upload guard)
+   - **Only do this on the dev fixture** — never on production jobs
+
+---
+
+## Fixture state verification
+
+After running any publish operation, verify the fixture state:
 
 ```bash
-# Read current publish.json
-aws s3 cp "s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/publish.json" - --region eu-north-1 | jq .
+# 1. Check local metadata
+cat "projects/video-orchestrator/cloud/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/metadata/publish.json" | jq '.platforms.youtube'
 
-# Reset platforms.youtube.videoId to null (clears duplicate-upload guard)
-# Only do this on the dev fixture — never on production jobs.
+# 2. Check control-plane reflection
+curl -sS "http://127.0.0.1:4877/api/video-orchestrator/jobs/prochat-prompt-1780856968989-make-a-video-of-a-box-/control-plane" \
+  | jq '.data.phase, .data.selectedJob.status'
+
+# 3. Expected published state
+# - phase: "published"
+# - selectedJob.status: "published"
 ```
