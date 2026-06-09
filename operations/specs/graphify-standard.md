@@ -7,21 +7,24 @@ Graphify uses the stock upstream CLI. No Brain wrappers. No AI Model Selector.
 | Setting | Value |
 |---------|-------|
 | Backend | `bedrock` |
-| Model | `us.anthropic.claude-opus-4-6-v1` |
+| Model | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | Token budget | `15000` |
 
 Auth: ambient AWS credentials (`AWS_PROFILE` / `AWS_REGION`).
+
+**Why Sonnet instead of Opus?**
+Opus was replaced by Sonnet due to Bedrock daily token throttling. Sonnet is reliable for semantic graph extraction and runs within daily quota. Opus may be used for manual premium runs by overriding `GRAPHIFY_MODEL`, but is not the standard nightly model.
 
 ## Commands
 
 ```bash
 # Brain knowledge graph
 npm run graphify:brain
-# → graphify extract . --backend bedrock --model us.anthropic.claude-opus-4-6-v1 --token-budget 15000
+# → graphify extract . --backend bedrock --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 --token-budget 15000
 
 # Mind knowledge graph
 npm run graphify:mind
-# → cd ../mind && graphify extract . --backend bedrock --model us.anthropic.claude-opus-4-6-v1 --token-budget 15000
+# → cd ../mind && graphify extract . --backend bedrock --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 --token-budget 15000
 
 # Callflow exports (after graph.json exists)
 npm run graphify:brain:callflow
@@ -45,7 +48,7 @@ Graphify reads `.graphifyignore` at the repo root (gitignore syntax). This is th
 ## Nightly scheduler
 
 `tools/scripts/graphify-nightly.sh` runs during off-hours (before 07:00 Lisbon):
-- First build: `graphify extract <repo> --backend bedrock --model us.anthropic.claude-opus-4-6-v1 --token-budget 15000`
+- First build: `graphify extract <repo> --backend bedrock --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 --token-budget 15000`
 - Refresh: same command when `graphify-out/graph.json` already exists
 - Logs: start/end time, repo path, exit code, output file presence
 - Does not commit generated outputs

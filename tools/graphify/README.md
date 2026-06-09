@@ -9,10 +9,13 @@ Graphify uses the stock upstream CLI directly. No Brain wrappers, no AI Model Se
 | Setting | Value |
 |---------|-------|
 | Backend | `bedrock` |
-| Model | `us.anthropic.claude-opus-4-6-v1` |
+| Model | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | Token budget | `15000` |
 
 Auth: ambient AWS credentials (`AWS_PROFILE` / `AWS_REGION`).
+
+**Why Sonnet instead of Opus?**
+Opus was replaced by Sonnet due to Bedrock daily token throttling. Sonnet is reliable for semantic graph extraction and runs within daily quota. Opus may be used for manual premium runs by overriding `GRAPHIFY_MODEL`, but is not the standard nightly model.
 
 ## Standard commands
 
@@ -52,7 +55,7 @@ Graphify reads `.graphifyignore` at the repo root (gitignore syntax). This is th
 
 - If `graphify-out/graph.json` does not exist: runs first graph generation (`graphify extract`).
 - If it exists: refreshes the graph (`graphify extract`).
-- Same fixed command for every repo: `graphify extract <repo> --backend bedrock --model us.anthropic.claude-opus-4-6-v1 --token-budget 15000`.
+- Same fixed command for every repo: `graphify extract <repo> --backend bedrock --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 --token-budget 15000`.
 - Logs start/end time, repo path, exit code, and output file presence.
 - Does not commit generated outputs.
 - Scheduler stops starting new repos after the cutoff hour but finishes any in-progress repo.
