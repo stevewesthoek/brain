@@ -148,9 +148,15 @@ function JobsDiagnosticsCard({
 function PublishDiagnosticsCard({
   artifactData,
   errorDetails,
+  cpVideoKey,
+  cpThumbnailKey,
+  cpPublishKey,
 }: {
   artifactData: Record<string, unknown> | null | undefined;
   errorDetails?: Record<string, unknown> | null;
+  cpVideoKey?: string | null;
+  cpThumbnailKey?: string | null;
+  cpPublishKey?: string | null;
 }) {
   const publishable = asRecord(artifactData?.publishableAssets);
   const checked = asRecord(publishable?.checked) ?? asRecord(errorDetails?.checked);
@@ -161,11 +167,15 @@ function PublishDiagnosticsCard({
       ? errorDetails.missing
       : [];
 
+  const resolvedVideoKey = cpVideoKey ?? stringField(selectedSource, 'videoKey');
+  const resolvedThumbnailKey = cpThumbnailKey ?? stringField(selectedSource, 'thumbnailKey');
+  const hasPublishJson = cpPublishKey ? true : (checked?.publishJson ? true : false);
+
   return (
     <div className="publish-guard">
-      <div><span>publish.json</span><strong>{checked?.publishJson ? 'present' : 'missing'}</strong></div>
-      <div><span>videoKey</span><strong>{stringField(selectedSource, 'videoKey') ?? 'not resolved'}</strong></div>
-      <div><span>thumbnailKey</span><strong>{stringField(selectedSource, 'thumbnailKey') ?? 'not resolved'}</strong></div>
+      <div><span>publish.json</span><strong>{hasPublishJson ? 'present' : 'missing'}</strong></div>
+      <div><span>videoKey</span><strong>{resolvedVideoKey ?? 'not resolved'}</strong></div>
+      <div><span>thumbnailKey</span><strong>{resolvedThumbnailKey ?? 'not resolved'}</strong></div>
       <div><span>missing</span><strong>{missing.length ? missing.join(', ') : 'none'}</strong></div>
     </div>
   );
@@ -1601,6 +1611,18 @@ export function AwsVideoDashboard() {
     }
   }, [jobId, backendDryRunStatus, pendingActionByJobId]);
 
+  // Staleness TTL: clear pending dry_run if stuck > 3 minutes without terminal status
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'dry_run') return;
+    const timer = setTimeout(() => {
+      if (pendingActionByJobId[jobId] === 'dry_run') {
+        clearPendingAction(jobId);
+        addActivity(`Dry-run pending state cleared after timeout for ${jobId}`);
+      }
+    }, 180_000);
+    return () => clearTimeout(timer);
+  }, [jobId, pendingActionByJobId]);
+
   // Poll-based clearing of pending actions: publish
   useEffect(() => {
     if (!jobId || pendingActionByJobId[jobId] !== 'publish') return;
@@ -1960,7 +1982,7 @@ export function AwsVideoDashboard() {
                 <div><span>videoKey</span><strong>{cpArtifacts?.videoKey ?? cpArtifacts?.finalVideoKey ?? 'unknown'}</strong></div>
                 <div><span>audioKey</span><strong>{cpArtifacts?.audioKey ?? 'unknown'}</strong></div>
               </div>
-              <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} />
+              <PublishDiagnosticsCard artifactData={artifactData} errorDetails={publishErrorDetails} cpVideoKey={finalVideoKey} cpThumbnailKey={thumbnailKey} cpPublishKey={(cpReviewMedia?.publishKey as string | undefined) ?? null} />
               {!selectedReady ? anyPendingTimeout ? <div className="compact-info">Waiting for job state… Action is still processing in Brain Core. Refresh is safe.</div> : <div className="compact-warning">This job is not ready to publish. Complete approval and generation first.</div> : null}
               {cpFinalization?.status === 'pending' ? <div className="compact-warning">Finalizing publish package…</div> : null}
               {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}

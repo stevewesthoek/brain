@@ -1517,7 +1517,8 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
   // For generated-media jobs: check review gate BEFORE expensive asset resolution
   if (shouldRequireReviewGate(generationMode_early)) {
-    const review = await getOrCreateReview(jobId);
+    // Dry-run: lightweight check (read only), skip expensive finalization in getOrCreateReview
+    const review = options.dryRun ? await readReviewJson(jobId) : await getOrCreateReview(jobId);
     if (!review || review.reviewStatus !== 'approved') {
       const reviewStatus = review?.reviewStatus ?? 'pending';
       return {
@@ -1531,6 +1532,93 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
           reviewKey: `jobs/${jobId}/metadata/review.json`,
         },
       };
+    }
+  }
+
+  // Dry-run fast path: skip heavy finalization/resolution, validate only publish-critical keys
+  if (options.dryRun) {
+    const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+    const canonicalThumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+    const [videoExists, thumbExists] = await Promise.all([
+      fileExists(join(getVideoOrchestratorRoot(), canonicalVideoKey)).then(ok => ok || checkS3ObjectExists(S3_BUCKET, canonicalVideoKey, AWS_REGION)),
+      fileExists(join(getVideoOrchestratorRoot(), canonicalThumbnailKey)).then(ok => ok || checkS3ObjectExists(S3_BUCKET, canonicalThumbnailKey, AWS_REGION)),
+    ]);
+    const dryRunMissing: string[] = [];
+    if (!videoExists) dryRunMissing.push(canonicalVideoKey);
+    if (!thumbExists) dryRunMissing.push(canonicalThumbnailKey);
+    if (dryRunMissing.length > 0) {
+      return {
+        ok: false,
+        jobId,
+        dryRun: true,
+        code: 'publish_assets_missing',
+        error: `Dry-run validation failed: missing ${dryRunMissing.join(', ')}`,
+        details: { missing: dryRunMissing },
+      };
+    }
+    // Publish metadata: read existing or use initial
+    let publishJson = publishJson_initial ?? {};
+    if (!publishJson.videoKey) publishJson = { ...publishJson, videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey };
+    const generationMode = typeof publishJson.generationMode === 'string' ? publishJson.generationMode : null;
+
+    if (isGeneratedMediaGenerationMode(generationMode)) {
+      const assetValidation = validateGeneratedMediaPublishAssets({
+        generationMode,
+        videoKey: canonicalVideoKey,
+        thumbnailKey: canonicalThumbnailKey,
+        jobId,
+      });
+      if (!assetValidation.valid) {
+        return {
+          ok: false,
+          jobId,
+          dryRun: true,
+          code: 'generated_media_publish_assets_invalid',
+          error: `Generated-media mode requires valid generated assets: ${assetValidation.reason}`,
+          details: { generationMode, videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey, reason: assetValidation.reason },
+        };
+      }
+    }
+
+    const platforms = publishJson.platforms as Record<string, unknown> | undefined;
+    const youtube = platforms?.youtube as Record<string, unknown> | undefined;
+    const existingVideoId = typeof youtube?.videoId === 'string' ? youtube.videoId : null;
+    const youtubeStatus = typeof youtube?.status === 'string' ? youtube.status : null;
+    if (existingVideoId || youtubeStatus === 'uploaded' || youtubeStatus === 'published') {
+      return { ok: false, jobId, dryRun: true, code: 'already_uploaded', error: 'YouTube upload already exists for this job', videoId: existingVideoId, url: typeof youtube?.url === 'string' ? youtube.url : null };
+    }
+
+    const scriptPath = join(getVideoOrchestratorRoot(), 'scripts', 'youtube-upload-local.sh');
+    const args = [scriptPath, jobId, '--dry-run'];
+    const dryRunStartedAt = new Date().toISOString();
+    try {
+      const publishCheckRunning: PublishCheckMetadata = {
+        jobId,
+        youtubeDryRun: { status: 'running', startedAt: dryRunStartedAt, checkedBy: 'brain-console', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        dryRunPassed: false,
+      };
+      await writePublishCheckJson(jobId, publishCheckRunning);
+    } catch (_) { /* non-fatal */ }
+
+    try {
+      const { stdout, stderr } = await execFileAsync('bash', args, { timeout: 30000 });
+      const now = new Date().toISOString();
+      const publishCheckPassed: PublishCheckMetadata = {
+        jobId,
+        youtubeDryRun: { status: 'passed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', privacy: 'private', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        dryRunPassed: true,
+      };
+      await writePublishCheckJson(jobId, publishCheckPassed);
+      return { ok: true, jobId, dryRun: true, videoId: null, url: null, stdout: stdout.slice(-4000), stderr: stderr.slice(-2000) };
+    } catch (scriptError: any) {
+      const now = new Date().toISOString();
+      const publishCheckFailed: PublishCheckMetadata = {
+        jobId,
+        youtubeDryRun: { status: 'failed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        dryRunPassed: false,
+      };
+      await writePublishCheckJson(jobId, publishCheckFailed).catch(() => {});
+      return { ok: false, jobId, dryRun: true, code: 'dry_run_script_failed', error: scriptError.message ?? 'Dry-run script failed', details: { stderr: scriptError.stderr?.slice?.(-2000) ?? '' } };
     }
   }
 
@@ -1660,7 +1748,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
   }
 
   try {
-    const { stdout, stderr } = await execFileAsync('bash', args, { timeout: options.dryRun ? 120000 : 1800000 });
+    const { stdout, stderr } = await execFileAsync('bash', args, { timeout: options.dryRun ? 30000 : 1800000 });
     const updatedPublishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
     const updatedYoutube = ((updatedPublishJson?.platforms as Record<string, unknown> | undefined)?.youtube as Record<string, unknown> | undefined) ?? youtube;
     const result: ControlledYouTubePublishResult = {

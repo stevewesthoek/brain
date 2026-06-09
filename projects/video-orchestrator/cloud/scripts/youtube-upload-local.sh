@@ -381,25 +381,35 @@ THUMBNAIL_FILE="$TMP_DIR/thumbnail.jpg"
 
 if [ "$RETRY_THUMBNAIL" != true ]; then
     # Step 5: Download video and thumbnail to /tmp
-    echo "[5/8] Downloading assets to /tmp..."
+    # Dry-run: skip large file downloads — HEAD checks already confirmed existence
+    if [ "$DRY_RUN" = true ]; then
+        echo "[5/8] Skipping asset download (dry-run mode — S3 HEAD verified above)"
+        mkdir -p "$TMP_DIR"
+        VIDEO_FILE=""
+        THUMBNAIL_FILE="$TMP_DIR/thumbnail.jpg"
+        echo -e "${GREEN}✓ Assets verified via HEAD (download skipped for dry-run)${NC}"
+        echo ""
+    else
+        echo "[5/8] Downloading assets to /tmp..."
 
-    mkdir -p "$TMP_DIR"
+        mkdir -p "$TMP_DIR"
 
-    VIDEO_FILE="$TMP_DIR/video.mp4"
-    THUMBNAIL_FILE="$TMP_DIR/thumbnail.jpg"
+        VIDEO_FILE="$TMP_DIR/video.mp4"
+        THUMBNAIL_FILE="$TMP_DIR/thumbnail.jpg"
 
-    aws s3 cp "s3://$BUCKET/$VIDEO_KEY" "$VIDEO_FILE" --region eu-north-1 > /dev/null
-    echo "✓ Video downloaded: $VIDEO_FILE"
+        aws s3 cp "s3://$BUCKET/$VIDEO_KEY" "$VIDEO_FILE" --region eu-north-1 > /dev/null
+        echo "✓ Video downloaded: $VIDEO_FILE"
 
-    aws s3 cp "s3://$BUCKET/$THUMBNAIL_KEY" "$THUMBNAIL_FILE" --region eu-north-1 > /dev/null
-    echo "✓ Thumbnail downloaded: $THUMBNAIL_FILE"
+        aws s3 cp "s3://$BUCKET/$THUMBNAIL_KEY" "$THUMBNAIL_FILE" --region eu-north-1 > /dev/null
+        echo "✓ Thumbnail downloaded: $THUMBNAIL_FILE"
 
-    # Get file sizes
-    VIDEO_SIZE=$(du -h "$VIDEO_FILE" | cut -f1)
-    THUMBNAIL_SIZE=$(du -h "$THUMBNAIL_FILE" | cut -f1)
+        # Get file sizes
+        VIDEO_SIZE=$(du -h "$VIDEO_FILE" | cut -f1)
+        THUMBNAIL_SIZE=$(du -h "$THUMBNAIL_FILE" | cut -f1)
 
-    echo -e "${GREEN}✓ Assets ready ($VIDEO_SIZE video, $THUMBNAIL_SIZE thumbnail)${NC}"
-    echo ""
+        echo -e "${GREEN}✓ Assets ready ($VIDEO_SIZE video, $THUMBNAIL_SIZE thumbnail)${NC}"
+        echo ""
+    fi
 
     # Step 6: Prepare upload metadata
     echo "[6/8] Preparing upload metadata..."
