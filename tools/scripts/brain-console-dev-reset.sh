@@ -169,15 +169,31 @@ while [ $RETRY -lt $RETRIES ]; do
   fi
 done
 
-# Step 7: Materialize dev publish assets for fixture job
+# Step 7: Materialize dev publish assets for fixture job (required for hybrid_image_slideshow dry-run)
 echo ""
 echo "Step 7: Materializing dev publish assets for fixture job..."
 MATERIALIZE_SCRIPT="$SCRIPTS_DIR/materialize-dev-publish-assets.sh"
 FIXTURE_JOB="prochat-prompt-1780856968989-make-a-video-of-a-box-"
-if bash "$MATERIALIZE_SCRIPT" "$FIXTURE_JOB"; then
-  echo "  Dev publish assets ready"
+
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+  if ! bash "$MATERIALIZE_SCRIPT" "$FIXTURE_JOB"; then
+    echo ""
+    echo "❌ Error: Asset materialization failed (required for hybrid_image_slideshow dry-run testing)"
+    echo "   Donor job: $FIXTURE_DONOR"
+    echo "   Target job: $FIXTURE_JOB"
+    echo "   Bucket: prochat-video-dev-909439522876-eu-north-1-an"
+    echo "   Region: eu-north-1"
+    echo "   Verify AWS credentials and S3 access, then re-run this script."
+    exit 1
+  fi
+  echo "  ✅ Dev publish assets materialized and ready for dry-run testing"
 else
-  echo "  Warning: asset materialization failed (dry-run will remain disabled until assets are available)"
+  if bash "$MATERIALIZE_SCRIPT" "$FIXTURE_JOB"; then
+    echo "  ✅ Dev publish assets materialized"
+  else
+    echo "  ⚠️  Warning: asset materialization failed (optional for $GENERATION_MODE mode)"
+    echo "     Dry-run fixture testing will be skipped until assets are available."
+  fi
 fi
 
 # Summary

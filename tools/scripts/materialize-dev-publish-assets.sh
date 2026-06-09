@@ -21,17 +21,31 @@ TARGET_THUMB="jobs/${FIXTURE_JOB}/exports/thumbnail-001.jpg"
 
 # --- S3 copy ---
 echo "Step 1: Copying assets in S3..."
+echo "  Bucket: $BUCKET | Region: $REGION"
+
 if aws s3api head-object --bucket "$BUCKET" --key "$TARGET_VIDEO" --region "$REGION" &>/dev/null; then
   echo "  S3 video already present, skipping"
 else
-  aws s3 cp "s3://$BUCKET/$DONOR_VIDEO" "s3://$BUCKET/$TARGET_VIDEO" --region "$REGION"
+  if ! aws s3 cp "s3://$BUCKET/$DONOR_VIDEO" "s3://$BUCKET/$TARGET_VIDEO" --region "$REGION"; then
+    echo "❌ Error: Failed to copy video from S3"
+    echo "  Source: s3://$BUCKET/$DONOR_VIDEO"
+    echo "  Target: s3://$BUCKET/$TARGET_VIDEO"
+    echo "  Check AWS credentials and S3 permissions."
+    exit 1
+  fi
   echo "  S3 video copied"
 fi
 
 if aws s3api head-object --bucket "$BUCKET" --key "$TARGET_THUMB" --region "$REGION" &>/dev/null; then
   echo "  S3 thumbnail already present, skipping"
 else
-  aws s3 cp "s3://$BUCKET/$DONOR_THUMB" "s3://$BUCKET/$TARGET_THUMB" --region "$REGION"
+  if ! aws s3 cp "s3://$BUCKET/$DONOR_THUMB" "s3://$BUCKET/$TARGET_THUMB" --region "$REGION"; then
+    echo "❌ Error: Failed to copy thumbnail from S3"
+    echo "  Source: s3://$BUCKET/$DONOR_THUMB"
+    echo "  Target: s3://$BUCKET/$TARGET_THUMB"
+    echo "  Check AWS credentials and S3 permissions."
+    exit 1
+  fi
   echo "  S3 thumbnail copied"
 fi
 echo ""
@@ -42,14 +56,26 @@ TARGET_EXPORTS_DIR="$JOBS_ROOT/$FIXTURE_JOB/exports"
 mkdir -p "$TARGET_EXPORTS_DIR"
 
 if [ ! -f "$TARGET_EXPORTS_DIR/generated-001-final.mp4" ]; then
-  aws s3 cp "s3://$BUCKET/$TARGET_VIDEO" "$TARGET_EXPORTS_DIR/generated-001-final.mp4" --region "$REGION"
+  if ! aws s3 cp "s3://$BUCKET/$TARGET_VIDEO" "$TARGET_EXPORTS_DIR/generated-001-final.mp4" --region "$REGION"; then
+    echo "❌ Error: Failed to download video to local filesystem"
+    echo "  Source: s3://$BUCKET/$TARGET_VIDEO"
+    echo "  Target: $TARGET_EXPORTS_DIR/generated-001-final.mp4"
+    echo "  Check AWS credentials and local disk permissions."
+    exit 1
+  fi
   echo "  Local video written"
 else
   echo "  Local video already present, skipping"
 fi
 
 if [ ! -f "$TARGET_EXPORTS_DIR/thumbnail-001.jpg" ]; then
-  aws s3 cp "s3://$BUCKET/$TARGET_THUMB" "$TARGET_EXPORTS_DIR/thumbnail-001.jpg" --region "$REGION"
+  if ! aws s3 cp "s3://$BUCKET/$TARGET_THUMB" "$TARGET_EXPORTS_DIR/thumbnail-001.jpg" --region "$REGION"; then
+    echo "❌ Error: Failed to download thumbnail to local filesystem"
+    echo "  Source: s3://$BUCKET/$TARGET_THUMB"
+    echo "  Target: $TARGET_EXPORTS_DIR/thumbnail-001.jpg"
+    echo "  Check AWS credentials and local disk permissions."
+    exit 1
+  fi
   echo "  Local thumbnail written"
 else
   echo "  Local thumbnail already present, skipping"
@@ -60,6 +86,7 @@ echo "Assets materialized. Next steps:"
 echo "  1. Approve review via API or UI (dry-run unlocks only after approval)"
 echo "     curl -X POST http://127.0.0.1:4877/api/video-orchestrator/jobs/$FIXTURE_JOB/review/approve"
 echo "  2. Then POST dry-run:"
-echo "     curl -s -X POST http://127.0.0.1:4877/api/video-orchestrator/jobs/$FIXTURE_JOB/publish \\"
-echo "       -H 'Content-Type: application/json' \\"
-echo "       -d '{\"dryRun\":true}' | python3 -m json.tool"
+echo "     curl -sS -X POST \\"
+echo "       'http://127.0.0.1:4877/api/video-orchestrator/jobs/$FIXTURE_JOB/publish/youtube/dry-run' \\"
+echo "       -H 'content-type: application/json' \\"
+echo "       -d '{}' | jq '.'"
