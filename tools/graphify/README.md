@@ -9,7 +9,7 @@ Graphify uses the stock upstream CLI directly. No Brain wrappers, no AI Model Se
 | Setting | Value |
 |---------|-------|
 | Backend | `ollama` (local — no paid API) |
-| Model | `gemma3:12b` |
+| Model | `gemma4:12b` |
 | Token budget | `4000` |
 | Ollama context | `8192` |
 | Concurrency | `1` |
@@ -20,8 +20,8 @@ No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
 ## Prerequisites
 
 ```bash
-ollama pull gemma3:12b
-ollama list | grep gemma3
+ollama pull gemma4:12b
+ollama list | grep gemma4
 graphify --help
 ```
 

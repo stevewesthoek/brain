@@ -8,7 +8,7 @@ No orchestrator, no AI Model Selector, no paid backend.
 | Setting | Value |
 |---------|-------|
 | Backend | `ollama` (local — no paid API) |
-| Model | `gemma3:12b` |
+| Model | `gemma4:12b` |
 | Token budget | `4000` |
 | Ollama context | `8192` |
 | Concurrency | `1` |
@@ -19,8 +19,8 @@ No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
 ## Prerequisites
 
 ```bash
-ollama pull gemma3:12b
-ollama list | grep gemma3
+ollama pull gemma4:12b
+ollama list | grep gemma4
 graphify --help
 ```
 
@@ -36,7 +36,7 @@ npm run graphify:brain
 
 Equivalent to:
 ```bash
-OLLAMA_MODEL=gemma3:12b GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
+OLLAMA_MODEL=gemma4:12b GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
   graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 --no-viz
 ```
 
@@ -48,7 +48,7 @@ npm run graphify:mind
 
 Equivalent to:
 ```bash
-cd ../mind && OLLAMA_MODEL=gemma3:12b GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
+cd ../mind && OLLAMA_MODEL=gemma4:12b GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
   graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 --no-viz
 ```
 
@@ -84,5 +84,5 @@ ollama list
 
 **Model not found** — Pull the model:
 ```bash
-ollama pull gemma3:12b
+ollama pull gemma4:12b
 ```

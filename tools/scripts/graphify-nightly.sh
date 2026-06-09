@@ -5,8 +5,9 @@ REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-7200}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
 GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-ollama}"
-GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-gemma3:12b}"
+GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-gemma4:12b}"
 GRAPHIFY_TOKEN_BUDGET="${GRAPHIFY_TOKEN_BUDGET:-4000}"
+OLLAMA_API_KEY="${OLLAMA_API_KEY:-ollama}"
 GRAPHIFY_OLLAMA_NUM_CTX="${GRAPHIFY_OLLAMA_NUM_CTX:-8192}"
 GRAPHIFY_OLLAMA_KEEP_ALIVE="${GRAPHIFY_OLLAMA_KEEP_ALIVE:-30}"
 GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
@@ -59,6 +60,7 @@ build_graphify_cmd() {
 run_graphify() {
   local repo="$1"
   shift
+  OLLAMA_API_KEY="$OLLAMA_API_KEY" \
   OLLAMA_MODEL="$GRAPHIFY_MODEL" \
   GRAPHIFY_OLLAMA_NUM_CTX="$GRAPHIFY_OLLAMA_NUM_CTX" \
   GRAPHIFY_OLLAMA_KEEP_ALIVE="$GRAPHIFY_OLLAMA_KEEP_ALIVE" \
@@ -93,6 +95,11 @@ log_outputs() {
 
 if ! command -v "$GRAPHIFY_BIN" >/dev/null 2>&1; then
   log "graphify unavailable path=$GRAPHIFY_BIN"
+  exit 1
+fi
+
+if [[ "$GRAPHIFY_BACKEND" != "ollama" ]]; then
+  log "refusing non-local backend=$GRAPHIFY_BACKEND — Graphify is local-only and must use Ollama"
   exit 1
 fi
 
