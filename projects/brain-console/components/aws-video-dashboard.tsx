@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FilePlus2, RefreshCw } from 'lucide-react';
+import { FilePlus2 } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
 import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJobsDiagnostics } from '@/lib/braincore-schemas';
 import { StatusBadge } from '@/components/status-badge';
@@ -14,6 +14,7 @@ import { AwsVideoReviewCard } from '@/components/aws-video/aws-video-review-card
 import { AwsVideoPipelineFlow } from '@/components/aws-video/aws-video-pipeline-flow';
 import { AwsVideoActivityPanel } from '@/components/aws-video/aws-video-activity-panel';
 import { AwsVideoJobSelector } from '@/components/aws-video/aws-video-job-selector';
+import { AwsVideoDashboardHeader } from '@/components/aws-video/aws-video-dashboard-header';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -1270,43 +1271,17 @@ export function AwsVideoDashboard() {
           </div>
         </div>
       ) : null}
-      <section className="aws-hero">
-        <div className="min-w-0">
-          <div className="eyebrow">AWS Video Pipeline</div>
-          <h1>Video operations</h1>
-          <p>Brain Console is the active dashboard. Follow the pipeline left to right: draft, approve, generate, review, dry-run, then private YouTube upload.</p>
-        </div>
-        <div className="aws-hero-actions">
-          <StatusBadge status={jobs.isError ? 'error' : status.isError ? 'warning' : 'fresh'} label={jobs.isError ? 'partial error' : status.isError ? 'status stale' : 'online'} />
-          <button className="button secondary" onClick={() => void invalidateVideo()}><RefreshCw size={16} /> Refresh</button>
-        </div>
-      </section>
-
-      <section className="aws-metrics">
-        <div><span>Runtime mode</span><strong>{stringField(status.data?.data, 'generationModeRuntime') ?? (status.isLoading && !status.data ? 'loading' : stringField(asRecord(selectedJob), 'mediaSource') === 'hybrid' ? 'hybrid' : stringField(asRecord(selectedJob), 'mediaSource') === 'fixture' ? 'fixture' : 'unknown')}</strong></div>
-        <div><span>Jobs</span><strong>{counts.total}</strong></div>
-        <div><span>Pending</span><strong>{counts.pending}</strong></div>
-        <div><span>Active</span><strong>{counts.active}</strong></div>
-        <div><span>Published</span><strong>{counts.published}</strong></div>
-        <div><span>Selected</span><strong>{selectedUploaded ? 'uploaded' : selectedJob?.status?.replaceAll('_', ' ') ?? 'none'}</strong></div>
-      </section>
-
-      <section className="pipeline-guide" aria-label="AWS Video pipeline guide">
-        <div className="pipeline-next">
-          <span>Next action</span>
-          <strong>{nextStep ? nextStep.label : 'Complete'}</strong>
-          <p>{nextStep ? `${nextStep.help} Press “${nextStep.action}”.` : 'This job has completed the visible pipeline.'}</p>
-        </div>
-        <div className="pipeline-steps">
-          {guideSteps.map((step, index) => (
-            <div key={step.label} className={step.done ? 'done' : step === recommendedStep ? 'recommended' : step.active ? 'active' : ''}>
-              <span>{index + 1}</span>
-              <strong>{step.label}</strong>
-              <p>{step.help}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <AwsVideoDashboardHeader
+        jobsIsError={jobs.isError}
+        statusIsError={status.isError}
+        onRefresh={() => void invalidateVideo()}
+        runtimeMode={stringField(status.data?.data, 'generationModeRuntime') ?? (status.isLoading && !status.data ? 'loading' : stringField(asRecord(selectedJob), 'mediaSource') === 'hybrid' ? 'hybrid' : stringField(asRecord(selectedJob), 'mediaSource') === 'fixture' ? 'fixture' : 'unknown')}
+        counts={counts}
+        selectedUploaded={selectedUploaded}
+        selectedJobStatus={selectedJob?.status}
+        guideSteps={guideSteps}
+        recommendedStepKey={recommendedStep?.key ?? null}
+      />
 
       <section className="aws-workspace">
         <nav className="aws-subnav" aria-label="AWS Video subviews">
