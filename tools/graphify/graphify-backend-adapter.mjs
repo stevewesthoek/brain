@@ -3,17 +3,45 @@
  *
  * Maps AI Model Selector results to Graphify CLI arguments.
  * Never allows silent fallback to any default backend.
+ *
+ * Registered providers (ai-providers.json): ollama-m4pro, ollama-m1, whisper-m4pro,
+ * whisper-m1, codex-cli, claude-bedrock.
+ *
+ * Graphify-compatible providers: claude-bedrock, ollama-m4pro, ollama-m1.
+ * Excluded: codex-cli (no Graphify CLI backend), whisper-m4pro, whisper-m1 (audio-only).
+ *
+ * Adapter mapping:
+ *   claude-bedrock  → --backend bedrock  (uses AWS_PROFILE / AWS_REGION / AWS_DEFAULT_REGION)
+ *                     NOTE: model is "bedrock-model-portfolio" which is not a concrete model ID.
+ *                     Graphify will use its own Bedrock model selection unless --model is provided.
+ *                     Do NOT pass --model with this provider unless a concrete model ID is available.
+ *   ollama-m4pro    → --backend ollama + OLLAMA_BASE_URL=http://localhost:11434
+ *   ollama-m1       → --backend ollama + OLLAMA_BASE_URL=http://192.168.2.2:11434
+ *
+ * Graphify extract --backend valid values: gemini|kimi|claude|openai|deepseek|ollama|bedrock
+ * Ollama host override: OLLAMA_BASE_URL environment variable.
+ * Bedrock auth: AWS_PROFILE, AWS_REGION, or AWS_DEFAULT_REGION environment variables.
  */
 
+// Backends confirmed in Graphify CLI source (v0.8.36):
 const GRAPHIFY_BACKENDS = ['azure', 'bedrock', 'claude', 'claude-cli', 'deepseek', 'gemini', 'kimi', 'ollama', 'openai'];
 
+// Provider ID → Graphify backend name.
+// Only registered providers in ai-providers.json are mapped here.
+// "openai" is NOT a registered provider — do not add it.
 const PROVIDER_TO_BACKEND = {
-  'ollama': 'ollama',
-  'ollama-local': 'ollama',
-  'openai': 'openai',
-  'openai-compatible': 'openai',
+  // Registered: claude-bedrock
   'claude-bedrock': 'bedrock',
   'bedrock': 'bedrock',
+  // Registered: ollama-m4pro, ollama-m1
+  'ollama-m4pro': 'ollama',
+  'ollama-m1': 'ollama',
+  // Generic ollama aliases (type-based fallback)
+  'ollama': 'ollama',
+  'ollama-local': 'ollama',
+  // openai-compatible type maps to openai backend (for unknown future providers, not current registered ones)
+  'openai-compatible': 'openai',
+  // Other potential providers (not currently registered)
   'azure-openai': 'azure',
   'azure': 'azure',
   'gemini': 'gemini',
@@ -24,10 +52,19 @@ const PROVIDER_TO_BACKEND = {
   'kimi': 'kimi',
 };
 
+// Providers that are explicitly rejected for Graphify use.
 const UNSUPPORTED_PROVIDERS = new Set([
-  'codex-cli',
+  'codex-cli',   // CLI-only tool, no Graphify backend integration
   'codex',
   'github-copilot',
+  'whisper-m4pro',   // audio transcription only
+  'whisper-m1',      // audio transcription only
+]);
+
+// Known Bedrock model IDs that are portfolio aliases, not concrete model IDs.
+// When the selector returns one of these, --model is omitted to let Graphify choose.
+const BEDROCK_PORTFOLIO_IDS = new Set([
+  'bedrock-model-portfolio',
 ]);
 
 export function classifyGraphifyProviderSupport(selectorResult) {
@@ -78,12 +115,21 @@ export function buildGraphifyBackendArgs(selectorResult) {
 
   args.push('--backend', classification.backend);
 
-  if (model) {
+  // For Bedrock: skip portfolio alias model IDs — let Graphify use its own selection.
+  // For Ollama: model is passed via --model.
+  // For other backends: pass model if available.
+  const isBedrock = classification.backend === 'bedrock';
+  const isPortfolioAlias = BEDROCK_PORTFOLIO_IDS.has(model);
+
+  if (model && !(isBedrock && isPortfolioAlias)) {
     args.push('--model', model);
   }
 
-  if (baseUrl && ['openai', 'ollama', 'azure'].includes(classification.backend)) {
-    args.push('--api-base', baseUrl);
+  // Ollama host override: use OLLAMA_BASE_URL (Graphify reads this env var).
+  // The --api-base flag is not exposed in graphify extract; use env var instead.
+  if (classification.backend === 'ollama') {
+    const ollamaHost = baseUrl || (classification.providerId === 'ollama-m1' ? 'http://192.168.2.2:11434' : 'http://localhost:11434');
+    env.OLLAMA_BASE_URL = ollamaHost;
   }
 
   if (apiKey && apiKey !== 'null') {
@@ -94,6 +140,7 @@ export function buildGraphifyBackendArgs(selectorResult) {
     } else if (classification.backend === 'claude') {
       env.ANTHROPIC_API_KEY = apiKey;
     }
+    // Bedrock uses AWS_PROFILE / AWS_REGION from the environment — no key injection needed here.
   }
 
   return {
@@ -114,7 +161,7 @@ export function buildGraphifyExecutionPlan({ operation, repoRoot, selectorResult
     return {
       canExecute: false,
       error: backendResult.error,
-      recommendation: 'Re-run the AI Model Selector with a Graphify-compatible provider constraint (e.g. required_capability: graphify_semantic_backend). Supported: openai, gemini, claude, bedrock, ollama, deepseek, kimi, azure.',
+      recommendation: 'Re-run the AI Model Selector with a Graphify-compatible provider constraint (e.g. required_capability: graphify_semantic_backend). Registered compatible providers: claude-bedrock (bedrock backend), ollama-m4pro (ollama backend), ollama-m1 (ollama backend). Excluded: codex-cli (no Graphify backend), whisper-m4pro, whisper-m1 (audio-only).',
     };
   }
 

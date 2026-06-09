@@ -59,9 +59,10 @@ PY
 
 selector_payload() {
   local tokens="$1"
-  # Preferences: OpenAI gpt-5.5 first, then Claude Opus 4.6 via Bedrock,
-  # then fall back to selector default ranking. Only Graphify-compatible providers.
-  printf '{"task_type":%s,"input_token_count":%s,"urgent":true,"task_metadata":{"quality_tier":"highest","preferred_providers":["openai","claude-bedrock"],"preferred_models":["gpt-5.5","us.anthropic.claude-opus-4-6-v1"],"fallback_policy":"ordered_then_selector_default"}}' \
+  # Preferences: claude-bedrock first (Graphify bedrock backend), then ollama-m4pro,
+  # then ollama-m1 as final fallback. "openai" is NOT a registered provider — excluded.
+  # codex-cli is excluded: no Graphify CLI backend integration.
+  printf '{"task_type":%s,"input_token_count":%s,"urgent":true,"task_metadata":{"quality_tier":"highest","preferred_providers":["claude-bedrock","ollama-m4pro","ollama-m1"],"preferred_models":["us.anthropic.claude-opus-4-6-v1"],"fallback_policy":"ordered_then_selector_default"}}' \
     "$(json_escape "$TASK_TYPE")" \
     "$tokens"
 }
@@ -247,15 +248,10 @@ while IFS= read -r repo; do
     api_key="$(selection_value "$selection" api_key)"
     log "extracting repo=$repo provider=$provider_id provider_type=$provider_type model=$model phase=update"
 
-    backend_args="--model $model"
+    # graphify update is AST-only (no LLM needed) — no --backend args required.
+    # The selector was called only to gate whether a safe local model is available.
+    backend_args=""
     env_vars="{}"
-
-    if [[ "$provider_type" == "openai-compatible" ]] || [[ -n "$base_url" ]]; then
-      backend_args="$backend_args --backend openai-compatible --api-base $base_url"
-      if [[ -n "$api_key" && "$api_key" != "null" ]]; then
-        env_vars="{\"OPENAI_API_KEY\": \"$api_key\"}"
-      fi
-    fi
 
     log "updating repo=$repo"
     if run_repo_command "$repo" "$env_vars" "$GRAPHIFY_BIN" update "$repo" $backend_args; then
@@ -294,22 +290,29 @@ while IFS= read -r repo; do
   ollama_host="$(selection_value "$selection" ollama_host)"
   log "extracting repo=$repo provider=$provider_id provider_type=$provider_type model=$model"
 
-  # Build backend-specific arguments
-  backend_args="--model $model"
+  # Build backend-specific arguments for graphify extract.
+  # Valid --backend values: gemini|kimi|claude|openai|deepseek|ollama|bedrock
+  # Registered providers: claude-bedrock → bedrock; ollama-m4pro / ollama-m1 → ollama
+  # "openai-compatible" is a provider_type, not a Graphify backend name — use "ollama" instead.
+  backend_args=""
   env_vars="{}"
 
-  if [[ "$provider_type" == "openai-compatible" ]] || [[ -n "$base_url" ]]; then
-    backend_args="$backend_args --backend openai-compatible --api-base $base_url"
-    if [[ -n "$api_key" && "$api_key" != "null" ]]; then
-      env_vars="{\"OPENAI_API_KEY\": \"$api_key\"}"
-    fi
+  if [[ "$provider_type" == "bedrock" ]] || [[ "$provider_id" == "claude-bedrock" ]]; then
+    # Bedrock: no --model (selector returns portfolio alias, not a concrete model ID).
+    # Auth via AWS_PROFILE / AWS_REGION in the ambient environment.
+    backend_args="--backend bedrock"
+  elif [[ "$provider_type" == "openai-compatible" ]] || [[ "$provider_id" == "ollama-m4pro" ]] || [[ "$provider_id" == "ollama-m1" ]]; then
+    # Ollama: use OLLAMA_BASE_URL env var (Graphify reads this, not --api-base).
+    ollama_host_url="${base_url:-http://localhost:11434}"
+    backend_args="--backend ollama --model $model"
+    env_vars="{\"OLLAMA_BASE_URL\": \"$ollama_host_url\"}"
   fi
 
   if run_repo_command "$repo" "$env_vars" "$GRAPHIFY_BIN" extract "$repo" $backend_args --out "$repo"; then
     first_builds=$((first_builds + 1))
     report_selector_outcome report-success "$provider_id" "$model"
-    # Clean up Ollama models if they were used
-    if [[ "$provider_type" == "openai-compatible" ]] && [[ -z "$base_url" ]]; then
+    # Clean up Ollama models after use
+    if [[ "$provider_type" == "openai-compatible" ]] || [[ "$provider_id" == "ollama-m4pro" ]] || [[ "$provider_id" == "ollama-m1" ]]; then
       unload_ollama_model "$model"
     fi
     log "extracted repo=$repo provider=$provider_id model=$model"
@@ -317,7 +320,7 @@ while IFS= read -r repo; do
     rc="$?"
     failed=$((failed + 1))
     report_selector_outcome report-failure "$provider_id" "$model" "graphify_failed" "graphify extract exited $rc"
-    if [[ "$provider_type" == "openai-compatible" ]] && [[ -z "$base_url" ]]; then
+    if [[ "$provider_type" == "openai-compatible" ]] || [[ "$provider_id" == "ollama-m4pro" ]] || [[ "$provider_id" == "ollama-m1" ]]; then
       unload_ollama_model "$model"
     fi
     log "failed repo=$repo phase=extract exit_code=$rc provider=$provider_id model=$model"

@@ -16,16 +16,16 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["openai", "claude-bedrock"],
-        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        "preferredProviders": ["claude-bedrock", "ollama-m4pro", "ollama-m1"],
+        "preferredModels": ["us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "criticalRebuildPolicy": {
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["openai", "claude-bedrock"],
-        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        "preferredProviders": ["claude-bedrock", "ollama-m4pro", "ollama-m1"],
+        "preferredModels": ["us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "incrementalPolicy": {
@@ -78,16 +78,16 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["openai", "claude-bedrock"],
-        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        "preferredProviders": ["claude-bedrock", "ollama-m4pro", "ollama-m1"],
+        "preferredModels": ["us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "criticalRebuildPolicy": {
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["openai", "claude-bedrock"],
-        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        "preferredProviders": ["claude-bedrock", "ollama-m4pro", "ollama-m1"],
+        "preferredModels": ["us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "incrementalPolicy": {
@@ -145,16 +145,16 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["openai", "claude-bedrock"],
-        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        "preferredProviders": ["claude-bedrock", "ollama-m4pro", "ollama-m1"],
+        "preferredModels": ["us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "criticalRebuildPolicy": {
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["openai", "claude-bedrock"],
-        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
+        "preferredProviders": ["claude-bedrock", "ollama-m4pro", "ollama-m1"],
+        "preferredModels": ["us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "incrementalPolicy": {
