@@ -32,7 +32,7 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-skip_dirs = {'.git', 'node_modules', '.next', 'dist', 'build', '.venv', 'venv', '__pycache__', 'graphify-out', '.graphify-out'}
+skip_dirs = {'.git', 'node_modules', '.next', 'dist', 'build', '.venv', 'venv', '__pycache__', 'graphify-out'}
 extensions = {
     '.py', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.go', '.rs', '.java', '.kt',
     '.swift', '.md', '.mdx', '.json', '.yaml', '.yml', '.toml', '.sh', '.sql'
@@ -198,7 +198,7 @@ while IFS= read -r repo; do
     continue
   fi
 
-  graph_json="$repo/.graphify-out/graph.json"
+  graph_json="$repo/graphify-out/graph.json"
 
   if [[ -f "$graph_json" ]]; then
     log "updating repo=$repo"

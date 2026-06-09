@@ -13,51 +13,82 @@ MODE_UPPER=$(echo "$GENERATION_MODE" | sed 's/_/ /g' | sed 's/^./\U&/g')
 echo "🔧 Brain Console + Core Dev Reset ($MODE_UPPER Mode)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Step 1: Kill listeners on ports 4877 and 4881
-echo ""
-echo "Step 1: Freeing ports $BRAIN_CORE_PORT and $CONSOLE_CENTER_PORT..."
+free_port() {
+  local PORT="$1"
+  local ATTEMPT=1
+  local PIDS=""
 
-for PORT in $BRAIN_CORE_PORT $CONSOLE_CENTER_PORT; do
-  PIDS=$(lsof -ti :$PORT 2>/dev/null || true)
+  while [ "$ATTEMPT" -le 8 ]; do
+    PIDS=$(lsof -nP -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)
+    if [ -z "$PIDS" ]; then
+      echo "  ✅ Port $PORT is free"
+      return 0
+    fi
+
+    echo "  Attempt $ATTEMPT: killing listeners on port $PORT: $PIDS"
+    echo "$PIDS" | xargs kill -TERM 2>/dev/null || true
+    sleep 0.5
+
+    PIDS=$(lsof -nP -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)
+    if [ -n "$PIDS" ]; then
+      echo "  Attempt $ATTEMPT: force-killing listeners on port $PORT: $PIDS"
+      echo "$PIDS" | xargs kill -9 2>/dev/null || true
+    fi
+
+    sleep 0.75
+    ATTEMPT=$((ATTEMPT + 1))
+  done
+
+  PIDS=$(lsof -nP -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)
   if [ -n "$PIDS" ]; then
-    echo "  Killing processes listening on port $PORT: $PIDS"
-    echo "$PIDS" | xargs kill -9 2>/dev/null || true
-    sleep 1
+    echo "  ❌ Error: Port $PORT is still in use by:"
+    lsof -nP -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true
+    return 1
   fi
-done
 
-# Step 2: Kill stale dev processes
+  echo "  ✅ Port $PORT is free"
+}
+
+kill_stale_dev_processes() {
+  local PATTERN="$1"
+  local LABEL="$2"
+  local PIDS=""
+
+  PIDS=$(pgrep -f "$PATTERN" 2>/dev/null || true)
+  if [ -n "$PIDS" ]; then
+    echo "  Killing stale $LABEL processes: $PIDS"
+    echo "$PIDS" | xargs kill -TERM 2>/dev/null || true
+    sleep 0.5
+    PIDS=$(pgrep -f "$PATTERN" 2>/dev/null || true)
+    if [ -n "$PIDS" ]; then
+      echo "  Force-killing stale $LABEL processes: $PIDS"
+      echo "$PIDS" | xargs kill -9 2>/dev/null || true
+    fi
+  fi
+}
+
+# Step 1: Kill stale dev processes first so npm/tsx/next parents cannot respawn listeners
 echo ""
-echo "Step 2: Killing stale repo dev processes..."
+echo "Step 1: Killing stale repo dev processes..."
 
-# Kill brain-core dev processes
-BRAIN_CORE_PIDS=$(pgrep -f "brain-core.*npm.*dev\|brain-core.*tsx\|brain-core.*next.*dev" 2>/dev/null || true)
-if [ -n "$BRAIN_CORE_PIDS" ]; then
-  echo "  Killing Brain Core dev processes: $BRAIN_CORE_PIDS"
-  echo "$BRAIN_CORE_PIDS" | xargs kill -9 2>/dev/null || true
-fi
-
-# Kill brain-console dev processes
-CENTER_PIDS=$(pgrep -f "brain-console.*npm.*dev\|brain-console.*tsx\|brain-console.*next.*dev" 2>/dev/null || true)
-if [ -n "$CENTER_PIDS" ]; then
-  echo "  Killing Brain Console dev processes: $CENTER_PIDS"
-  echo "$CENTER_PIDS" | xargs kill -9 2>/dev/null || true
-fi
+kill_stale_dev_processes "projects/brain-core|brain-core.*npm.*dev|brain-core.*tsx|brain-core.*next.*dev|/tmp/brain-core-hybrid.log" "Brain Core"
+kill_stale_dev_processes "projects/brain-console|brain-console.*npm.*dev|brain-console.*tsx|brain-console.*next.*dev|brain-console-center.*npm.*dev|brain-console-center.*next.*dev|/tmp/brain-console.log" "Brain Console"
 
 sleep 1
+
+# Step 2: Free listeners on ports 4877 and 4881
+echo ""
+echo "Step 2: Freeing ports $BRAIN_CORE_PORT and $CONSOLE_CENTER_PORT..."
+
+free_port "$BRAIN_CORE_PORT"
+free_port "$CONSOLE_CENTER_PORT"
 
 # Step 3: Verify ports are free
 echo ""
 echo "Step 3: Verifying ports are free..."
 
-for PORT in $BRAIN_CORE_PORT $CONSOLE_CENTER_PORT; do
-  if lsof -ti :$PORT >/dev/null 2>&1; then
-    echo "  ❌ Error: Port $PORT is still in use. Try: lsof -ti :$PORT | xargs kill -9"
-    exit 1
-  else
-    echo "  ✅ Port $PORT is free"
-  fi
-done
+free_port "$BRAIN_CORE_PORT"
+free_port "$CONSOLE_CENTER_PORT"
 
 # Step 4: Start Brain Core with specified generation mode
 echo ""

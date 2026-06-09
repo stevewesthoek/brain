@@ -39,7 +39,7 @@ tsx-*/
 ai/models/bedrock-models.generated.json
 
 # Graphify generated output
-.graphify-out/
+graphify-out/
 
 # Tool and infra state we do not want in Git
 operations/system-configs/docker/
@@ -174,8 +174,8 @@ operations/security-auto-approvals.log
 .web-profiles/
 
 # Next.js build artifacts and cache
-projects/brain-console-center/.next/
-projects/brain-console-center/tsconfig.tsbuildinfo
+projects/brain-console/.next/
+projects/brain-console/tsconfig.tsbuildinfo
 
 # Video orchestrator runtime job artifacts
 projects/video-orchestrator/cloud/jobs/

@@ -37,12 +37,12 @@
       "exclude": [
         ".git/**",
         ".obsidian/**",
-        ".graphify-out/cache/**"
+        "graphify-out/cache/**"
       ],
       "trackGeneratedArtifacts": [
-        ".graphify-out/GRAPH_REPORT.md",
-        ".graphify-out/graph.json",
-        ".graphify-out/graph.html"
+        "graphify-out/GRAPH_REPORT.md",
+        "graphify-out/graph.json",
+        "graphify-out/graph.html"
       ],
       "dashboardVisibility": true,
       "humanReadableFileGraph": true,
@@ -105,9 +105,9 @@
         "runtime/local/**"
       ],
       "trackGeneratedArtifacts": [
-        ".graphify-out/GRAPH_REPORT.md",
-        ".graphify-out/graph.json",
-        ".graphify-out/graph.html"
+        "graphify-out/GRAPH_REPORT.md",
+        "graphify-out/graph.json",
+        "graphify-out/graph.html"
       ],
       "dashboardVisibility": true,
       "humanReadableFileGraph": true,
@@ -169,9 +169,9 @@
         ".cache/**"
       ],
       "trackGeneratedArtifacts": [
-        ".graphify-out/GRAPH_REPORT.md",
-        ".graphify-out/graph.json",
-        ".graphify-out/graph.html"
+        "graphify-out/GRAPH_REPORT.md",
+        "graphify-out/graph.json",
+        "graphify-out/graph.html"
       ],
       "dashboardVisibility": true,
       "humanReadableFileGraph": true,

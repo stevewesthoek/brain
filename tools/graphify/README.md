@@ -46,7 +46,7 @@ The first implementation slice is report-only. It must not:
 - run Graphify;
 - write to consuming repos;
 - modify `.graphify-profile.json`;
-- modify `.graphify-out/`;
+- modify `graphify-out/`;
 - hardcode model fallback logic;
 - bypass AI Model Selector.
 
