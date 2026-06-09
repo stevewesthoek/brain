@@ -59,9 +59,9 @@ PY
 
 selector_payload() {
   local tokens="$1"
-  # Preferences: Codex 5.5 (gpt-5.5 on codex-cli) first, then Claude Opus 4.6 via Bedrock,
-  # then fall back to selector default ranking.  Model IDs match the actual selector registry.
-  printf '{"task_type":%s,"input_token_count":%s,"urgent":true,"task_metadata":{"quality_tier":"highest","preferred_providers":["codex-cli","claude-bedrock"],"preferred_models":["gpt-5.5","us.anthropic.claude-opus-4-6-v1"],"fallback_policy":"ordered_then_selector_default"}}' \
+  # Preferences: OpenAI gpt-5.5 first, then Claude Opus 4.6 via Bedrock,
+  # then fall back to selector default ranking. Only Graphify-compatible providers.
+  printf '{"task_type":%s,"input_token_count":%s,"urgent":true,"task_metadata":{"quality_tier":"highest","preferred_providers":["openai","claude-bedrock"],"preferred_models":["gpt-5.5","us.anthropic.claude-opus-4-6-v1"],"fallback_policy":"ordered_then_selector_default"}}' \
     "$(json_escape "$TASK_TYPE")" \
     "$tokens"
 }

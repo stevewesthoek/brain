@@ -16,7 +16,7 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredProviders": ["openai", "claude-bedrock"],
         "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
@@ -24,7 +24,7 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredProviders": ["openai", "claude-bedrock"],
         "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
@@ -78,7 +78,7 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredProviders": ["openai", "claude-bedrock"],
         "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
@@ -86,7 +86,7 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredProviders": ["openai", "claude-bedrock"],
         "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
@@ -145,7 +145,7 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredProviders": ["openai", "claude-bedrock"],
         "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
@@ -153,7 +153,7 @@
         "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredProviders": ["openai", "claude-bedrock"],
         "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },

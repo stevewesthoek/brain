@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { buildGraphifyBackendArgs, classifyGraphifyProviderSupport } from './graphify-backend-adapter.mjs';
 
 const brainRoot = resolve(new URL('../..', import.meta.url).pathname);
 const examplesPath = resolve(brainRoot, 'operations/specs/graphify-profile.examples.json');
@@ -393,6 +394,26 @@ function toMarkdown(report) {
     lines.push('', `Blocked: ${report.execution.blockedReason}`);
   }
 
+  if (report.execution.adapterResult) {
+    lines.push('');
+    lines.push('## Backend Adapter');
+    lines.push('');
+    if (report.execution.adapterResult.ok) {
+      lines.push(`Status: mapped`);
+      lines.push(`Backend: ${report.execution.adapterResult.backend}`);
+      lines.push(`Model: ${report.execution.adapterResult.model}`);
+      lines.push(`Provider: ${report.execution.adapterResult.providerId}`);
+      if (report.execution.adapterResult.baseUrl) lines.push(`Base URL: ${report.execution.adapterResult.baseUrl}`);
+      lines.push(`CLI args: ${report.execution.adapterResult.args.join(' ')}`);
+    } else {
+      lines.push(`Status: rejected`);
+      lines.push(`Error: ${report.execution.adapterResult.error}`);
+    }
+    if (report.execution.graphifyCommand) {
+      lines.push(`Full command: ${report.execution.graphifyCommand}`);
+    }
+  }
+
   if (report.execution.startedAt) {
     lines.push('');
     lines.push('## Execution Result');
@@ -522,20 +543,34 @@ async function executeGraphify(repoRoot, profile, selectorResult) {
   let stderr = '';
   let exitCode = 1;
   let endedAt = null;
+  let adapterResult = null;
 
   try {
     const env = { ...process.env };
 
-    // Pass selected model/provider to Graphify if available
-    if (selectorResult?.status === 'ok' && selectorResult?.selectedModel) {
-      env.GRAPHIFY_SELECTED_MODEL = selectorResult.selectedModel;
-      env.GRAPHIFY_SELECTED_PROVIDER = selectorResult.selectedProvider ?? '';
-      if (selectorResult.baseUrl) {
-        env.GRAPHIFY_API_BASE_URL = selectorResult.baseUrl;
-      }
+    // Use the backend adapter to map selector result to Graphify CLI args
+    adapterResult = buildGraphifyBackendArgs(selectorResult);
+
+    if (!adapterResult.ok) {
+      stderr = `Backend adapter rejected selector result: ${adapterResult.error}`;
+      endedAt = new Date();
+      return {
+        exitCode: 1,
+        startedAt: startedAt.toISOString(),
+        endedAt: endedAt.toISOString(),
+        durationMs: endedAt.getTime() - startedAt.getTime(),
+        stdoutTail: '',
+        stderrTail: stderr,
+        adapterResult,
+        graphifyCommand: null,
+        validation: { graphJsonValid: false, reportExists: false, allValid: false },
+      };
     }
 
-    const result = spawnSync('graphify', ['.', '--update'], {
+    Object.assign(env, adapterResult.env);
+
+    const graphifyArgs = ['.', '--update', ...adapterResult.args];
+    const result = spawnSync('graphify', graphifyArgs, {
       cwd: repoRoot,
       stdio: ['pipe', 'pipe', 'pipe'],
       encoding: 'utf8',
@@ -578,6 +613,8 @@ async function executeGraphify(repoRoot, profile, selectorResult) {
     durationMs,
     stdoutTail,
     stderrTail,
+    adapterResult,
+    graphifyCommand: adapterResult?.ok ? `graphify . --update ${adapterResult.args.join(' ')}` : null,
     validation: {
       graphJsonValid,
       reportExists,
@@ -623,9 +660,11 @@ async function main() {
         ? 'selector-failed'
         : selector?.status === 'blocked'
           ? 'selector-blocked'
-          : executionResult?.exitCode && executionResult.exitCode !== 0
-            ? 'failed'
-            : 'ok';
+          : executionResult?.adapterResult && !executionResult.adapterResult.ok
+            ? 'adapter-unsupported'
+            : executionResult?.exitCode && executionResult.exitCode !== 0
+              ? 'failed'
+              : 'ok';
 
   const report = {
     status,
