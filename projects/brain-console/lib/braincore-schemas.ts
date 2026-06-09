@@ -387,6 +387,16 @@ const controlPlaneAllowedActionSchema = z.object({
   reason: z.string().optional(),
 }).passthrough();
 
+const controlPlaneSelectedJobSchema = z.object({
+  jobId: z.string(),
+  title: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+  approvalStatus: z.string().nullable().optional(),
+  mediaSource: z.string().nullable().optional(),
+  generationMode: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+}).passthrough();
+
 export const videoControlPlaneSchema = z.object({
   ok: z.boolean().optional(),
   data: z.object({
@@ -397,7 +407,7 @@ export const videoControlPlaneSchema = z.object({
     phaseStatus: z.string(),
     progress: z.number().nullable().optional(),
     phase: z.string().optional(),
-    selectedJob: z.string().nullable().optional(),
+    selectedJob: controlPlaneSelectedJobSchema.nullable().optional(),
     selectedApprovalStatus: z.string().nullable().optional(),
     execution: z.object({
       status: z.string().nullable(),

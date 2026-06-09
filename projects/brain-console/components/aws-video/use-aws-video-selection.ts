@@ -48,6 +48,19 @@ function readTimeoutMonitorSnapshot(): TimeoutMonitorSnapshot | null {
   }
 }
 
+const DIAGNOSTIC_JOB_PATTERNS = [
+  'test-clientactionid-dedup',
+  'test-concurrent-in-flight-dedu',
+  'test clientactionid dedup',
+  'test concurrent in-flight dedup',
+];
+
+function isDiagnosticJob(job: { jobId: string; title?: string }): boolean {
+  const id = job.jobId.toLowerCase();
+  const title = ('title' in job && typeof (job as any).title === 'string') ? (job as any).title.toLowerCase() : '';
+  return DIAGNOSTIC_JOB_PATTERNS.some(p => id.includes(p) || title.includes(p));
+}
+
 /**
  * Hydration-safe selected-job hook for the AWS Video dashboard.
  *
@@ -58,6 +71,7 @@ function readTimeoutMonitorSnapshot(): TimeoutMonitorSnapshot | null {
  * - jobList may provide an initial default ONLY after hydration AND if no persisted selection exists.
  * - /jobs/recent changes never clear or replace an existing selectedJobId.
  * - Explicit calls to setSelectedJobId persist immediately.
+ * - Diagnostic/test jobs are never auto-selected as the default.
  */
 export function useAwsVideoSelection(jobList: { jobId: string }[]): AwsVideoSelection {
   const [selectedJobId, setSelectedJobIdRaw] = useState<string | null>(null);
@@ -89,20 +103,22 @@ export function useAwsVideoSelection(jobList: { jobId: string }[]): AwsVideoSele
     setIsSelectionReady(true);
   }, []);
 
-  // After hydration: if no persisted selection was found, pick jobList[0] as default
+  // After hydration: if no persisted selection was found, pick first non-diagnostic job
   useEffect(() => {
     if (!isSelectionReady) return;
     if (selectedJobId) return;
-    if (jobList.length > 0) {
-      setSelectedJobId(jobList[0].jobId);
+    const firstNormal = jobList.find(j => !isDiagnosticJob(j));
+    if (firstNormal) {
+      setSelectedJobId(firstNormal.jobId);
     }
   }, [isSelectionReady, selectedJobId, jobList, setSelectedJobId]);
 
   // resolvedJobId: stable identity for queries.
   // Before hydration: null (no queries fire, UI shows loading).
-  // After hydration: selectedJobId or jobList[0] fallback.
+  // After hydration: selectedJobId or first non-diagnostic job fallback.
+  const firstNormalJob = jobList.find(j => !isDiagnosticJob(j));
   const resolvedJobId = isSelectionReady
-    ? selectedJobId ?? jobList[0]?.jobId ?? null
+    ? selectedJobId ?? firstNormalJob?.jobId ?? null
     : null;
 
   return { selectedJobId, setSelectedJobId, resolvedJobId, isSelectionReady };

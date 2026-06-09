@@ -18,13 +18,27 @@ function assert(condition: boolean, label: string): void {
 
 // --- Pure logic extracted from hook contract ---
 
+const DIAGNOSTIC_JOB_PATTERNS = [
+  'test-clientactionid-dedup',
+  'test-concurrent-in-flight-dedu',
+  'test clientactionid dedup',
+  'test concurrent in-flight dedup',
+];
+
+function isDiagnosticJob(job: { jobId: string; title?: string }): boolean {
+  const id = job.jobId.toLowerCase();
+  const title = ('title' in job && typeof (job as any).title === 'string') ? (job as any).title.toLowerCase() : '';
+  return DIAGNOSTIC_JOB_PATTERNS.some(p => id.includes(p) || title.includes(p));
+}
+
 function resolveJobId(
   selectedJobId: string | null,
   isSelectionReady: boolean,
   jobList: { jobId: string }[]
 ): string | null {
   if (!isSelectionReady) return null;
-  return selectedJobId ?? jobList[0]?.jobId ?? null;
+  const firstNormal = jobList.find(j => !isDiagnosticJob(j));
+  return selectedJobId ?? firstNormal?.jobId ?? null;
 }
 
 // --- Test: Hydration starts in stable no-browser-storage state ---
@@ -110,6 +124,31 @@ const firstClientResult = resolveJobId(null, false, [{ jobId: 'server-job' }]);
 assert(
   serverResult === firstClientResult && serverResult === null,
   'server and first client render produce same null resolvedJobId'
+);
+
+// --- Test: Diagnostic/test jobs are never auto-selected ---
+
+assert(
+  resolveJobId(null, true, [
+    { jobId: 'prochat-prompt-test-concurrent-in-flight-dedu' },
+    { jobId: 'prochat-prompt-normal-job' },
+  ]) === 'prochat-prompt-normal-job',
+  'diagnostic job skipped, first normal job auto-selected'
+);
+
+assert(
+  resolveJobId(null, true, [
+    { jobId: 'prochat-prompt-test-clientactionid-dedup' },
+  ]) === null,
+  'only diagnostic jobs = null (no valid default)'
+);
+
+assert(
+  resolveJobId('prochat-prompt-test-concurrent-in-flight-dedu', true, [
+    { jobId: 'prochat-prompt-test-concurrent-in-flight-dedu' },
+    { jobId: 'normal-job' },
+  ]) === 'prochat-prompt-test-concurrent-in-flight-dedu',
+  'explicit user selection of diagnostic job is preserved (user chose it manually)'
 );
 
 // --- Summary ---

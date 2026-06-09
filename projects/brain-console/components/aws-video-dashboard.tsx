@@ -987,10 +987,12 @@ export function AwsVideoDashboard() {
     queryKey: ['aws-video-control-plane', jobId],
     queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema, { timeoutMs: 25_000 }),
     enabled: Boolean(jobId),
+    staleTime: 10_000,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
+    retry: 2,
+    retryDelay: 1000,
     placeholderData: (prev, prevQuery) => {
-      // Only keep placeholder if it belongs to the same jobId
       const prevJobId = (prevQuery?.queryKey as [string, string | null] | undefined)?.[1];
       if (prevJobId && prevJobId === jobId) return prev;
       return undefined;
@@ -1288,19 +1290,14 @@ export function AwsVideoDashboard() {
     });
   }
 
-  // Error if jobId exists but controlPlaneData is still null after loading completes
-  if (jobId && !controlPlaneLoading && !controlPlaneData && controlPlane.isError && process.env.NODE_ENV === 'development') {
-    console.error('[AwsVideo] Control-plane state is MISSING for selected job:', {
-      jobId,
-      queryKey: ['aws-video-control-plane', jobId],
-      controlPlane: {
-        isLoading: controlPlane.isLoading,
-        isError: controlPlane.isError,
-        error: errorMessage(controlPlane.error),
-        data: rawControlPlaneResponse,
-      },
-    });
-  }
+  // Missing control-plane is surfaced in the debug panel.
+  // useEffect avoids triggering the Next.js red dev overlay during render.
+  useEffect(() => {
+    if (!jobId || controlPlaneLoading || controlPlaneData || !controlPlane.isError) return;
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[AwsVideo] Control-plane unavailable for job:', jobId, errorMessage(controlPlane.error));
+    }
+  }, [jobId, controlPlaneLoading, controlPlaneData, controlPlane.isError, controlPlane.error]);
 
   // Legacy data — debug panels ONLY, never drives main UI
   const timelineEvents = timeline.data?.data.events ?? [];
@@ -1393,7 +1390,9 @@ export function AwsVideoDashboard() {
   const slideshowGenerated = artifactData?.slideshowGenerated === true;
   const generatedVideoKey = cpArtifacts?.videoKey ?? cpArtifacts?.finalVideoKey ?? null;
 
-  // Selected job — from control-plane
+  // Selected job — from control-plane ONLY for actionable state.
+  // When control-plane is unavailable, selectedJob is null so action buttons disable.
+  // List data is display-only context, never drives workflow actions.
   const selectedJob = cpSelectedJob
     ? {
         jobId: cpSelectedJob.jobId,
@@ -1406,9 +1405,10 @@ export function AwsVideoDashboard() {
         progress: (typeof cp?.progress === 'number' ? cp.progress : 0) ?? 0,
         currentStep: cpExecution?.localStep ?? null,
       }
-    : selected
-      ? { ...selected, progress: (typeof selected.progress === 'number' ? selected.progress : 0) ?? 0, currentStep: null }
-      : null;
+    : null;
+
+  // Display-only context from /jobs/recent (for job card title when CP loading)
+  const listDisplayJob = selected;
 
   // Action state per job
   const actionState = jobId ? actionStateByJobId[jobId] : undefined;
@@ -1761,11 +1761,15 @@ export function AwsVideoDashboard() {
                     </div>
                   </>
                 ) : jobId && controlPlaneLoading ? (
-                  <div className="compact-info">Loading selected job…</div>
+                  <div className="compact-info">
+                    Loading control-plane state…
+                    {listDisplayJob ? <p style={{ marginTop: '0.25rem', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{listDisplayJob.title ?? shortJobId(jobId)} (from job list, non-canonical)</p> : null}
+                  </div>
                 ) : jobId && controlPlane.isError ? (
                   <div className="compact-error">
-                    <strong>Failed to load job data</strong>
+                    <strong>Control-plane unavailable</strong>
                     <p>Job ID: {shortJobId(jobId)}</p>
+                    <p style={{ fontSize: '0.8rem' }}>Actions are disabled until control-plane responds.</p>
                     <button className="button secondary" onClick={() => void controlPlane.refetch()}>Retry</button>
                   </div>
                 ) : <p>Select or create a job to start.</p>}
