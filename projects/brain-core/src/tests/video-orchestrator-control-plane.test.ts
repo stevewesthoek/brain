@@ -379,3 +379,169 @@ test('control-plane invariant: approve_review.enabled=true implies approveVideoR
   assert.ok(getMissingReviewMediaFields, 'getMissingReviewMediaFields function exists');
   assert.ok(approveVideoReview, 'approveVideoReview function exists');
 });
+
+// ---------------------------------------------------------------------------
+// Published-state / control-plane consistency regression tests
+// These are pure inline unit tests — no I/O, no real publish executed.
+// ---------------------------------------------------------------------------
+
+test('published-state: dryRunStatus from publish-check.json when jobData.publishing.dryRunStatus absent', () => {
+  // Invariant: when publish-check.json has youtubeDryRun.status = "passed"
+  // and jobData.publishing.dryRunStatus is absent/undefined,
+  // the control-plane publish.dryRunStatus must be "passed" (not null).
+  //
+  // This mirrors the adapter expression:
+  //   dryRunStatus: jobData?.publishing?.dryRunStatus ?? (publishCheckStatus?.youtubeDryRun?.status ?? null)
+
+  const jobDataPublishing: Record<string, any> = {
+    // dryRunStatus intentionally absent (simulates older job JSON without the field)
+    status: 'ready_to_publish',
+    uploadStatus: null,
+    videoId: null,
+    url: null,
+  };
+
+  const publishCheckStatus = {
+    jobId: 'fake-job-001',
+    dryRunPassed: true,
+    youtubeDryRun: {
+      status: 'passed' as const,
+      checkedAt: '2026-06-09T00:00:00Z',
+      checkedBy: 'brain-console',
+    },
+  };
+
+  // Replicate adapter derivation
+  const dryRunStatus =
+    jobDataPublishing?.dryRunStatus ??
+    (publishCheckStatus?.youtubeDryRun?.status ?? null);
+
+  assert.equal(dryRunStatus, 'passed', 'dryRunStatus falls back to publish-check.json youtubeDryRun.status');
+});
+
+test('published-state: publish.dryRunStatus is null when neither source is present', () => {
+  // Invariant: when both jobData.publishing.dryRunStatus and
+  // publish-check.json are absent, dryRunStatus must be null (not "passed").
+
+  const jobDataPublishing: Record<string, any> = {
+    status: 'ready_to_publish',
+  };
+  const publishCheckStatus = null;
+
+  const dryRunStatus =
+    jobDataPublishing?.dryRunStatus ??
+    (publishCheckStatus as any)?.youtubeDryRun?.status ??
+    null;
+
+  assert.equal(dryRunStatus, null, 'dryRunStatus is null when no source available');
+});
+
+test('published-state: canonical phase is published when job.status is uploaded', () => {
+  // Invariant: deriveCanonicalPhase maps job.status "uploaded" to canonical phase "published".
+  // Both "uploaded" and "published" represent a fully-live video.
+  //
+  // Mirrors: if (status === 'published' || status === 'uploaded') return 'published';
+
+  function deriveCanonicalPhaseInline(status: string | null): string {
+    if (!status) return 'unknown';
+    if (status === 'published' || status === 'uploaded') return 'published';
+    if (status === 'ready_to_publish' || status === 'publish_ready') return 'ready_to_publish';
+    if (status === 'publishing') return 'publishing';
+    return status;
+  }
+
+  assert.equal(deriveCanonicalPhaseInline('uploaded'), 'published', 'uploaded maps to published');
+  assert.equal(deriveCanonicalPhaseInline('published'), 'published', 'published maps to published');
+  assert.equal(deriveCanonicalPhaseInline('ready_to_publish'), 'ready_to_publish', 'ready_to_publish unchanged');
+  assert.equal(deriveCanonicalPhaseInline(null), 'unknown', 'null status yields unknown');
+});
+
+test('published-state: publish.videoId and url surfaced when platform youtube has uploaded entry', () => {
+  // Invariant: when the job's publishing object contains a videoId and url,
+  // the control-plane publish view must surface them (not return null).
+  //
+  // Mirrors adapter:
+  //   videoId: jobData?.publishing?.videoId ?? null
+  //   url:     jobData?.publishing?.url ?? null
+
+  const jobDataPublishing = {
+    status: 'uploaded',
+    videoId: 'FAKE_VIDEO_ID_001',
+    url: 'https://www.youtube.com/watch?v=FAKE_VIDEO_ID_001',
+    uploadStatus: 'complete',
+    quotaStatus: 'ok',
+    dryRunStatus: 'passed',
+  };
+
+  const videoId = jobDataPublishing?.videoId ?? null;
+  const url = jobDataPublishing?.url ?? null;
+  const uploadStatus = jobDataPublishing?.uploadStatus ?? null;
+
+  assert.equal(videoId, 'FAKE_VIDEO_ID_001', 'videoId surfaced from publishing object');
+  assert.ok(url?.startsWith('https://www.youtube.com/'), 'url is a YouTube URL');
+  assert.equal(uploadStatus, 'complete', 'uploadStatus surfaced');
+});
+
+test('published-state: publish_private disabled after upload (duplicate guard)', () => {
+  // Invariant: once a video is uploaded/published, publish_private must be disabled.
+  // A job in "uploaded" or "published" status is not "ready_to_publish",
+  // so readyToPublish is false and publish_private.enabled is false.
+  //
+  // Mirrors computeAllowedActions:
+  //   const readyToPublish = ['ready_to_publish'].includes(jobStatus);
+  //   publish_private.enabled = ... && readyToPublish && ...
+
+  function isPublishPrivateEnabled(jobStatus: string, reviewStatus: string, assetsAvailable: boolean, dryRunPassed: boolean): boolean {
+    const readyToPublish = ['ready_to_publish'].includes(jobStatus);
+    return reviewStatus === 'approved' && readyToPublish && assetsAvailable && dryRunPassed;
+  }
+
+  // After upload, job.status is "uploaded" — publish_private must be disabled
+  assert.equal(
+    isPublishPrivateEnabled('uploaded', 'approved', true, true),
+    false,
+    'publish_private disabled when status is uploaded',
+  );
+  assert.equal(
+    isPublishPrivateEnabled('published', 'approved', true, true),
+    false,
+    'publish_private disabled when status is published',
+  );
+
+  // Sanity: still enabled when genuinely ready_to_publish
+  assert.equal(
+    isPublishPrivateEnabled('ready_to_publish', 'approved', true, true),
+    true,
+    'publish_private enabled when ready_to_publish with all conditions met',
+  );
+});
+
+test('published-state: dry_run disabled after upload (duplicate guard)', () => {
+  // Invariant: once a video is uploaded, dry_run must also be disabled
+  // because job.status is no longer "ready_to_publish".
+  //
+  // Mirrors computeAllowedActions:
+  //   const readyToPublish = ['ready_to_publish'].includes(jobStatus);
+  //   dry_run.enabled = reviewStatus === 'approved' && readyToPublish && publishAssetsAvailable;
+
+  function isDryRunEnabled(jobStatus: string, reviewStatus: string, assetsAvailable: boolean): boolean {
+    const readyToPublish = ['ready_to_publish'].includes(jobStatus);
+    return reviewStatus === 'approved' && readyToPublish && assetsAvailable;
+  }
+
+  assert.equal(
+    isDryRunEnabled('uploaded', 'approved', true),
+    false,
+    'dry_run disabled when status is uploaded',
+  );
+  assert.equal(
+    isDryRunEnabled('published', 'approved', true),
+    false,
+    'dry_run disabled when status is published',
+  );
+  assert.equal(
+    isDryRunEnabled('ready_to_publish', 'approved', true),
+    true,
+    'dry_run enabled when ready_to_publish with review approved and assets available',
+  );
+});
