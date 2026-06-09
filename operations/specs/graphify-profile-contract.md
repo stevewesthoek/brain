@@ -51,14 +51,14 @@ No consuming repo should add this file until the orchestrator can validate it.
     "taskType": "graphify_semantic_full_build",
     "qualityTier": "highest",
     "selectionPolicy": "ordered_premium",
-    "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+    "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
     "fallbackPolicy": "ordered_then_selector_default"
   },
   "criticalRebuildPolicy": {
     "taskType": "graphify_semantic_critical_rebuild",
     "qualityTier": "highest",
     "selectionPolicy": "ordered_premium",
-    "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+    "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
     "fallbackPolicy": "ordered_then_selector_default"
   },
   "incrementalPolicy": {
@@ -191,14 +191,14 @@ The orchestrator should validate the chosen outputs carefully because mixed repo
     "taskType": "graphify_semantic_full_build",
     "qualityTier": "highest",
     "selectionPolicy": "ordered_premium",
-    "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+    "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
     "fallbackPolicy": "ordered_then_selector_default"
   },
   "criticalRebuildPolicy": {
     "taskType": "graphify_semantic_critical_rebuild",
     "qualityTier": "highest",
     "selectionPolicy": "ordered_premium",
-    "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+    "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
     "fallbackPolicy": "ordered_then_selector_default"
   },
   "incrementalPolicy": {
@@ -230,14 +230,14 @@ The orchestrator should validate the chosen outputs carefully because mixed repo
     "taskType": "graphify_semantic_full_build",
     "qualityTier": "highest",
     "selectionPolicy": "ordered_premium",
-    "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+    "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
     "fallbackPolicy": "ordered_then_selector_default"
   },
   "criticalRebuildPolicy": {
     "taskType": "graphify_semantic_critical_rebuild",
     "qualityTier": "highest",
     "selectionPolicy": "ordered_premium",
-    "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+    "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
     "fallbackPolicy": "ordered_then_selector_default"
   },
   "incrementalPolicy": {

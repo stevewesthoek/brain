@@ -59,7 +59,9 @@ PY
 
 selector_payload() {
   local tokens="$1"
-  printf '{"task_type":%s,"input_token_count":%s,"urgent":true}' \
+  # Preferences: Codex 5.5 (gpt-5.5 on codex-cli) first, then Claude Opus 4.6 via Bedrock,
+  # then fall back to selector default ranking.  Model IDs match the actual selector registry.
+  printf '{"task_type":%s,"input_token_count":%s,"urgent":true,"task_metadata":{"quality_tier":"highest","preferred_providers":["codex-cli","claude-bedrock"],"preferred_models":["gpt-5.5","us.anthropic.claude-opus-4-6-v1"],"fallback_policy":"ordered_then_selector_default"}}' \
     "$(json_escape "$TASK_TYPE")" \
     "$tokens"
 }
@@ -222,13 +224,49 @@ while IFS= read -r repo; do
   graph_json="$repo/graphify-out/graph.json"
 
   if [[ -f "$graph_json" ]]; then
+    # Update path: always call selector before graphify update (no bypass).
+    if (( safe_model_unavailable == 1 )); then
+      log "skipping repo=$repo reason=no_safe_local_model_cached phase=update"
+      skipped=$((skipped + 1))
+      continue
+    fi
+
+    tokens="$(estimate_tokens "$repo")"
+    log "selecting model repo=$repo task=$TASK_TYPE tokens=$tokens phase=update"
+    if ! selection="$(select_graphify_model "$tokens")"; then
+      safe_model_unavailable=1
+      skipped=$((skipped + 1))
+      log "skipping repo=$repo reason=no_safe_local_model phase=update"
+      continue
+    fi
+
+    provider_id="$(selection_value "$selection" provider_id)"
+    provider_type="$(selection_value "$selection" provider_type)"
+    model="$(selection_value "$selection" model)"
+    base_url="$(selection_value "$selection" base_url)"
+    api_key="$(selection_value "$selection" api_key)"
+    log "extracting repo=$repo provider=$provider_id provider_type=$provider_type model=$model phase=update"
+
+    backend_args="--model $model"
+    env_vars="{}"
+
+    if [[ "$provider_type" == "openai-compatible" ]] || [[ -n "$base_url" ]]; then
+      backend_args="$backend_args --backend openai-compatible --api-base $base_url"
+      if [[ -n "$api_key" && "$api_key" != "null" ]]; then
+        env_vars="{\"OPENAI_API_KEY\": \"$api_key\"}"
+      fi
+    fi
+
     log "updating repo=$repo"
-    if run_repo_command "$repo" "$GRAPHIFY_BIN" update "$repo"; then
+    if run_repo_command "$repo" "$env_vars" "$GRAPHIFY_BIN" update "$repo" $backend_args; then
       updates=$((updates + 1))
-      log "updated repo=$repo"
+      report_selector_outcome report-success "$provider_id" "$model"
+      log "updated repo=$repo provider=$provider_id model=$model"
     else
+      rc="$?"
       failed=$((failed + 1))
-      log "failed repo=$repo phase=update"
+      report_selector_outcome report-failure "$provider_id" "$model" "graphify_failed" "graphify update exited $rc"
+      log "failed repo=$repo phase=update exit_code=$rc provider=$provider_id model=$model"
     fi
     continue
   fi

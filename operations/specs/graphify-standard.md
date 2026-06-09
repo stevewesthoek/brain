@@ -199,8 +199,8 @@ Initial full semantic graph builds must request the highest-quality approved pol
 task_type: graphify_semantic_full_build
 quality_tier: highest
 preferred_models:
-  - codex-5.5-xhigh
-  - bedrock-opus
+  - gpt-5.5
+  - us.anthropic.claude-opus-4-6-v1
 fallback_policy: ordered
 local_only: false
 ```

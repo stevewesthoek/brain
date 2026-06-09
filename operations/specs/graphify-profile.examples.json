@@ -13,21 +13,23 @@
       "outputs": ["report", "json", "html"],
       "optionalOutputs": [],
       "initialBuildPolicy": {
-        "taskType": "graphify_semantic_full_build",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "criticalRebuildPolicy": {
-        "taskType": "graphify_semantic_critical_rebuild",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "incrementalPolicy": {
-        "taskType": "graphify_incremental_update",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "efficient",
         "selectionPolicy": "selector_default",
         "preferLocalWhenSafe": true,
@@ -73,21 +75,23 @@
       "outputs": ["report", "json", "html"],
       "optionalOutputs": ["callflow-html", "architecture-html"],
       "initialBuildPolicy": {
-        "taskType": "graphify_semantic_full_build",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "criticalRebuildPolicy": {
-        "taskType": "graphify_semantic_critical_rebuild",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "incrementalPolicy": {
-        "taskType": "graphify_incremental_update",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "efficient",
         "selectionPolicy": "selector_default",
         "preferLocalWhenSafe": true,
@@ -138,21 +142,23 @@
       "outputs": ["report", "json", "html"],
       "optionalOutputs": ["callflow-html"],
       "initialBuildPolicy": {
-        "taskType": "graphify_semantic_full_build",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "criticalRebuildPolicy": {
-        "taskType": "graphify_semantic_critical_rebuild",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "highest",
         "selectionPolicy": "ordered_premium",
-        "preferredModels": ["codex-5.5-xhigh", "bedrock-opus"],
+        "preferredProviders": ["codex-cli", "claude-bedrock"],
+        "preferredModels": ["gpt-5.5", "us.anthropic.claude-opus-4-6-v1"],
         "fallbackPolicy": "ordered_then_selector_default"
       },
       "incrementalPolicy": {
-        "taskType": "graphify_incremental_update",
+        "taskType": "codebase_semantic_graph",
         "qualityTier": "efficient",
         "selectionPolicy": "selector_default",
         "preferLocalWhenSafe": true,

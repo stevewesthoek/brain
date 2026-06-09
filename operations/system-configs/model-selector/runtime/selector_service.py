@@ -105,11 +105,30 @@ class SelectorHandler(BaseHTTPRequestHandler):
                 _json_response(self, 400, {"error": "task_type is required"})
                 return
 
-            # Build task_metadata based on local_only flag
+            # Build task_metadata from request body.
+            # local_only is a legacy convenience shorthand and overrides external/offline constraints.
+            task_metadata_body = body.get("task_metadata", {}) if isinstance(body.get("task_metadata"), dict) else {}
             if local_only:
-                task_metadata = TaskMetadata(external_provider_disallowed=True, offline=True)
+                task_metadata = TaskMetadata(
+                    external_provider_disallowed=True,
+                    offline=True,
+                )
             else:
-                task_metadata = TaskMetadata()
+                task_metadata = TaskMetadata(
+                    sensitive=bool(task_metadata_body.get("sensitive", False)),
+                    private=bool(task_metadata_body.get("private", False)),
+                    offline=bool(task_metadata_body.get("offline", False)),
+                    external_provider_disallowed=bool(task_metadata_body.get("external_provider_disallowed", False)),
+                    quality_tier=task_metadata_body.get("quality_tier") or None,
+                    preferred_models=list(task_metadata_body.get("preferred_models") or []),
+                    preferred_providers=list(task_metadata_body.get("preferred_providers") or []),
+                    allowed_models=list(task_metadata_body.get("allowed_models") or []),
+                    disallowed_models=list(task_metadata_body.get("disallowed_models") or []),
+                    allowed_providers=list(task_metadata_body.get("allowed_providers") or []),
+                    disallowed_providers=list(task_metadata_body.get("disallowed_providers") or []),
+                    fallback_policy=task_metadata_body.get("fallback_policy") or None,
+                    selection_policy=task_metadata_body.get("selection_policy") or None,
+                )
 
             try:
                 result = _selector.select(
