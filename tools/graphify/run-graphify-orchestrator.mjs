@@ -582,7 +582,7 @@ async function executeGraphify(repoRoot, profile, selectorResult) {
       cwd: repoRoot,
       stdio: ['pipe', 'pipe', 'pipe'],
       encoding: 'utf8',
-      timeout: 900000,
+      timeout: 1800000,
       env,
     });
 
