@@ -1492,6 +1492,8 @@ export function AwsVideoDashboard() {
               cpVideoKey={finalVideoKey}
               cpThumbnailKey={thumbnailKey}
               cpPublishKey={(cpReviewMedia?.publishKey as string | undefined) ?? null}
+              cpPublishVideoId={cpPublish?.videoId ?? null}
+              cpPublishUrl={cpPublish?.url ?? null}
               recommendedStepKey={recommendedStep?.key ?? null}
               dryRunResult={youtubeDryRun.data}
               uploadResult={youtubePublish.data}

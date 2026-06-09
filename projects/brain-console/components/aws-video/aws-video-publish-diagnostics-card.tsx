@@ -67,6 +67,8 @@ export interface AwsVideoPublishDiagnosticsCardProps {
   cpThumbnailKey: string | null | undefined;
   cpPublishKey: string | null | undefined;
   recommendedStepKey: string | null | undefined;
+  cpPublishVideoId: string | null | undefined;
+  cpPublishUrl: string | null | undefined;
   dryRunResult?: Record<string, unknown> | null;
   uploadResult?: Record<string, unknown> | null;
   actionState?: ActionState;
@@ -206,6 +208,8 @@ export function AwsVideoPublishDiagnosticsCard({
   cpVideoKey,
   cpThumbnailKey,
   cpPublishKey,
+  cpPublishVideoId,
+  cpPublishUrl,
   recommendedStepKey,
   dryRunResult,
   uploadResult,
@@ -286,7 +290,21 @@ export function AwsVideoPublishDiagnosticsCard({
       />
       {!selectedReady ? anyPendingTimeout ? <div className="compact-info">Waiting for job state… Action is still processing in Brain Core. Refresh is safe.</div> : <div className="compact-warning">This job is not ready to publish. Complete approval and generation first.</div> : null}
       {cpFinalizationPending ? <div className="compact-warning">Finalizing publish package…</div> : null}
-      {selectedPublished && !isPublishingThisJob ? <div className="success-panel">This job is already uploaded to YouTube. Duplicate upload is blocked.</div> : null}
+      {selectedPublished && !isPublishingThisJob ? (
+        <div className="success-panel">
+          <div>Uploaded to YouTube — duplicate upload is blocked.</div>
+          {(cpPublishVideoId ?? actionState?.videoId) ? (
+            <div style={{ marginTop: '0.25rem', fontSize: '0.875rem' }}>
+              <strong>Video ID:</strong> {cpPublishVideoId ?? actionState?.videoId}
+            </div>
+          ) : null}
+          {(cpPublishUrl ?? actionState?.url) ? (
+            <div style={{ marginTop: '0.25rem', fontSize: '0.875rem' }}>
+              <a href={cpPublishUrl ?? actionState?.url} target="_blank" rel="noopener noreferrer">{cpPublishUrl ?? actionState?.url}</a>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="pipeline-actions">
         <button
           className={recommendedStepKey === 'dry-run' ? 'button next-action' : 'button secondary'}
