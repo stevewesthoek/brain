@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { StatusBadge } from '@/components/status-badge';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -215,6 +216,22 @@ export function AwsVideoPublishDiagnosticsCard({
   isDryRunPending,
   isPublishPending,
 }: AwsVideoPublishDiagnosticsCardProps) {
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
+
+  // Reset confirmation when the selected job changes
+  useEffect(() => { setConfirmingPublish(false); }, [jobId]);
+
+  const handlePublishClick = () => {
+    if (!confirmingPublish) {
+      setConfirmingPublish(true);
+      return;
+    }
+    setConfirmingPublish(false);
+    onPublish();
+  };
+
+  const handlePublishCancel = () => setConfirmingPublish(false);
+
   return (
     <article className="card publish-panel aws-publish-card">
       <div className="card-header compact-header">
@@ -275,13 +292,27 @@ export function AwsVideoPublishDiagnosticsCard({
         >
           {isDryRunPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}
         </button>
-        <button
-          className={recommendedStepKey === 'publish' ? 'button next-action' : 'button danger-button'}
-          disabled={!canPublish || isPublishingThisJob || quotaExceeded || anyPendingTimeout}
-          onClick={onPublish}
-        >
-          {isPublishPending ? 'Publishing privately…' : 'Publish privately'}
-        </button>
+        {confirmingPublish ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--foreground)' }}>This will upload the video to YouTube as private. Continue?</span>
+            <button
+              className="button danger-button"
+              disabled={isPublishingThisJob}
+              onClick={handlePublishClick}
+            >
+              Yes, publish privately
+            </button>
+            <button className="button secondary" onClick={handlePublishCancel}>Cancel</button>
+          </div>
+        ) : (
+          <button
+            className={recommendedStepKey === 'publish' ? 'button next-action' : 'button danger-button'}
+            disabled={!canPublish || isPublishingThisJob || quotaExceeded || anyPendingTimeout}
+            onClick={handlePublishClick}
+          >
+            {isPublishPending ? 'Publishing privately…' : 'Publish privately'}
+          </button>
+        )}
         {finalVideoAvailable ? (
           <button className="button secondary" onClick={onDownload}>Download final MP4</button>
         ) : null}
