@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilePlus2, RefreshCw } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
 import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJobsDiagnostics } from '@/lib/braincore-schemas';
-import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { useAwsVideoSelection } from '@/components/aws-video/use-aws-video-selection';
 import { useAwsVideoControlPlane } from '@/components/aws-video/use-aws-video-control-plane';
@@ -14,6 +13,7 @@ import { AwsVideoPublishDiagnosticsCard } from '@/components/aws-video/aws-video
 import { AwsVideoReviewCard } from '@/components/aws-video/aws-video-review-card';
 import { AwsVideoPipelineFlow } from '@/components/aws-video/aws-video-pipeline-flow';
 import { AwsVideoActivityPanel } from '@/components/aws-video/aws-video-activity-panel';
+import { AwsVideoJobSelector } from '@/components/aws-video/aws-video-job-selector';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -120,36 +120,6 @@ function isQuotaExceededResult(error: unknown, result?: Record<string, unknown> 
   return payload.code === 'youtube_quota_exceeded';
 }
 
-
-function JobsDiagnosticsCard({
-  diagnostics,
-  error,
-}: {
-  diagnostics: Partial<VideoJobsDiagnostics> | null | undefined;
-  error?: string | null;
-}) {
-  if (!diagnostics && !error) return null;
-
-  return (
-    <div className="compact-error">
-      <strong>AWS Video job diagnostics</strong>
-      {error ? <p>{error}</p> : null}
-      {diagnostics ? (
-        <div className="aws-facts">
-          <div><span>jobsRoot</span><strong>{diagnostics.jobsRoot || 'not available'}</strong></div>
-          <div><span>local folders</span><strong>{diagnostics.localJobFolderCount ?? 0}</strong></div>
-          <div><span>local IDs</span><strong>{diagnostics.localDiscoveredJobCount ?? 0}</strong></div>
-          <div><span>hydrated</span><strong>{diagnostics.hydratedJobCount ?? 0}</strong></div>
-          <div><span>skipped</span><strong>{diagnostics.skippedJobCount ?? 0}</strong></div>
-          <div><span>S3 fallback</span><strong>{diagnostics.s3DiscoveryAttempted ? `yes (${diagnostics.s3DiscoveredJobCount ?? 0})` : 'no'}</strong></div>
-        </div>
-      ) : null}
-      {diagnostics?.error ? <p>Error: {diagnostics.error}</p> : null}
-      {diagnostics?.warnings?.length ? <pre className="compact-pre">{diagnostics.warnings.join('\n')}</pre> : null}
-      {diagnostics?.skippedJobs?.length ? <pre className="compact-pre">{JSON.stringify(diagnostics.skippedJobs.slice(0, 8), null, 2)}</pre> : null}
-    </div>
-  );
-}
 
 function PublishDiagnosticsCard({
   artifactData,
@@ -1481,69 +1451,23 @@ export function AwsVideoDashboard() {
           ) : null}
 
           {activeView === 'jobs' ? (
-            <article className="card">
-              <div className="card-header"><div><div className="card-title">Jobs</div><div className="card-description">Search, filter, or open a job by ID</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
-              <JobsDiagnosticsCard
-                diagnostics={jobList.length === 0 || (jobsDiagnostics?.skippedJobCount ?? 0) > 0 || jobs.isError ? jobsDiagnostics : null}
-                error={jobs.isError ? errorMessage(jobs.error) : null}
-              />
-              <div className="stack" style={{ marginBottom: '1rem' }}>
-                <input
-                  className="input"
-                  placeholder="Search by title, job ID, channel, or status"
-                  value={jobSearchQuery}
-                  onChange={(e) => setJobSearchQuery(e.target.value)}
-                />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.5rem' }}>
-                  <input
-                    className="input"
-                    placeholder="Or paste a job ID to open directly"
-                    value={directJobIdValue}
-                    onChange={(e) => { setDirectJobIdValue(e.target.value); setDirectJobIdError(null); }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && directJobIdValue.trim()) {
-                        openDirectJobId(directJobIdValue.trim());
-                      }
-                    }}
-                  />
-                  <button
-                    className="button secondary"
-                    disabled={!directJobIdValue.trim()}
-                    onClick={() => { if (directJobIdValue.trim()) openDirectJobId(directJobIdValue.trim()); }}
-                  >
-                    Go
-                  </button>
-                </div>
-                {directJobIdError ? <div className="compact-warning">{directJobIdError}</div> : null}
-              </div>
-              <div className="job-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                {filteredJobList.map((item) => {
-                  const isTestJob = /^Test\s+clientActionId\s+dedup/i.test(item.title ?? '');
-                  return (
-                    <button key={item.jobId} className={`job-list-item ${item.jobId === jobId ? 'active' : ''}${isTestJob ? ' test-job' : ''}`} onClick={() => { setSelectedJobId(item.jobId); setJobSearchQuery(''); setActiveView('overview'); }}>
-                      <div className="min-w-0"><strong>{item.title || item.jobId}{isTestJob ? ' [diagnostic]' : ''}</strong><span>{item.jobId} · {item.channelId}</span></div>
-                      <StatusBadge status={item.status} />
-                      <div className="job-progress"><div className="progress"><span style={{ width: `${pct(item.progress)}%` }} /></div><span>{pct(item.progress)}%</span></div>
-                      <span className="meta no-margin">{item.updatedAt ? timeAgo(item.updatedAt) : 'unknown'}</span>
-                    </button>
-                  );
-                })}
-                {jobList.length === 0 && !jobsDiagnostics?.localJobFolderCount && !jobsDiagnostics?.s3DiscoveredJobCount && !statusOnlyErrorMessage ? <p>No video jobs returned by Brain Core.</p> : null}
-                {jobList.length > 0 && filteredJobList.length === 0 ? (
-                  <div className="stack" style={{ padding: '0.75rem' }}>
-                    <p>No jobs match the search filter.</p>
-                    {jobSearchQuery.trim().length >= 10 ? (
-                      <button
-                        className="button secondary"
-                        onClick={() => openDirectJobId(jobSearchQuery.trim())}
-                      >
-                        Open "{jobSearchQuery.trim().slice(0, 48)}" as job ID
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            </article>
+            <AwsVideoJobSelector
+              jobsIsError={jobs.isError}
+              jobsDiagnostics={jobsDiagnostics}
+              jobsErrorMessage={jobs.isError ? errorMessage(jobs.error) : null}
+              jobSearchQuery={jobSearchQuery}
+              setJobSearchQuery={setJobSearchQuery}
+              directJobIdValue={directJobIdValue}
+              setDirectJobIdValue={setDirectJobIdValue}
+              directJobIdError={directJobIdError}
+              setDirectJobIdError={setDirectJobIdError}
+              onOpenDirectJobId={openDirectJobId}
+              filteredJobList={filteredJobList}
+              jobsTotal={jobList.length}
+              resolvedJobId={jobId}
+              onSelectJob={(id) => { setSelectedJobId(id); setJobSearchQuery(''); setActiveView('overview'); }}
+              statusErrorMessage={statusOnlyErrorMessage}
+            />
           ) : null}
 
           {activeView === 'create' ? (
