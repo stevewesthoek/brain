@@ -115,13 +115,23 @@ export function buildGraphifyBackendArgs(selectorResult) {
 
   args.push('--backend', classification.backend);
 
-  // For Bedrock: skip portfolio alias model IDs — let Graphify use its own selection.
+  // For Bedrock: portfolio alias model IDs are not concrete Graphify model IDs.
+  // Use GRAPHIFY_BEDROCK_MODEL env var to override Graphify's EOL default.
+  // Verified active model (2026-06-09): us.anthropic.claude-3-5-haiku-20241022-v1:0
   // For Ollama: model is passed via --model.
   // For other backends: pass model if available.
   const isBedrock = classification.backend === 'bedrock';
   const isPortfolioAlias = BEDROCK_PORTFOLIO_IDS.has(model);
 
-  if (model && !(isBedrock && isPortfolioAlias)) {
+  if (isBedrock) {
+    // Do not pass --model for bedrock — use GRAPHIFY_BEDROCK_MODEL instead.
+    // Graphify's bedrock default (anthropic.claude-3-5-sonnet-20241022-v2:0) is EOL.
+    // Set the env var to a verified active model unless the caller already has it set.
+    const graphifyBedrockModel = isPortfolioAlias
+      ? 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
+      : model;
+    env.GRAPHIFY_BEDROCK_MODEL = graphifyBedrockModel;
+  } else if (model) {
     args.push('--model', model);
   }
 

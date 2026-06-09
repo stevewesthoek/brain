@@ -298,9 +298,12 @@ while IFS= read -r repo; do
   env_vars="{}"
 
   if [[ "$provider_type" == "bedrock" ]] || [[ "$provider_id" == "claude-bedrock" ]]; then
-    # Bedrock: no --model (selector returns portfolio alias, not a concrete model ID).
-    # Auth via AWS_PROFILE / AWS_REGION in the ambient environment.
+    # Bedrock: no --model flag (selector returns portfolio alias, not a concrete model ID).
+    # Override Graphify's EOL default via GRAPHIFY_BEDROCK_MODEL.
+    # Verified active model (2026-06-09): us.anthropic.claude-3-5-haiku-20241022-v1:0
+    # Auth via AWS_REGION / AWS_PROFILE in the ambient environment.
     backend_args="--backend bedrock"
+    env_vars="{\"GRAPHIFY_BEDROCK_MODEL\": \"us.anthropic.claude-3-5-haiku-20241022-v1:0\"}"
   elif [[ "$provider_type" == "openai-compatible" ]] || [[ "$provider_id" == "ollama-m4pro" ]] || [[ "$provider_id" == "ollama-m1" ]]; then
     # Ollama: use OLLAMA_BASE_URL env var (Graphify reads this, not --api-base).
     ollama_host_url="${base_url:-http://localhost:11434}"

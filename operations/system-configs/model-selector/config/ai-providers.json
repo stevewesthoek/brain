@@ -91,7 +91,8 @@
       "timeout_inference_sec": 300,
       "schedule_preference": "any",
       "models": ["bedrock-model-portfolio"],
-      "notes": "Cost-quality Bedrock portfolio. Cheap capable models are tried before premium Claude fallbacks. No direct Anthropic API use."
+      "graphify_model": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+      "notes": "Cost-quality Bedrock portfolio. Cheap capable models are tried before premium Claude fallbacks. No direct Anthropic API use. graphify_model is the concrete model ID verified active via list-inference-profiles (2026-06-09) for use with GRAPHIFY_BEDROCK_MODEL env var."
     }
   ]
 }
