@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, FilePlus2, RefreshCw, Wand2, Youtube } from 'lucide-react';
 import { BRAIN_CORE_URL, BrainCoreError, brainCoreRequest, postBrainCoreAction } from '@/lib/braincore-client';
-import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, videoControlPlaneSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview, type VideoControlPlaneData } from '@/lib/braincore-schemas';
+import { recentVideoJobsSchema, videoActionResultSchema, videoArtifactsResponseSchema, videoExecutionResponseSchema, videoJobResponseSchema, videoReviewSchema, videoStatusSchema, videoTimelineResponseSchema, youtubePublishResultSchema, type VideoJob, type VideoJobsDiagnostics, type VideoReview } from '@/lib/braincore-schemas';
 import { timeAgo } from '@/lib/utils';
 import { StatusBadge } from '@/components/status-badge';
 import { useAwsVideoSelection } from '@/components/aws-video/use-aws-video-selection';
+import { useAwsVideoControlPlane } from '@/components/aws-video/use-aws-video-control-plane';
 
 const GENERATE_TIMEOUT_MS = 120_000;
 type AwsVideoView = 'overview' | 'jobs' | 'create' | 'review' | 'publish' | 'activity';
@@ -1001,21 +1002,8 @@ export function AwsVideoDashboard() {
     refetchInterval: 15_000,
   });
 
-  const controlPlane = useQuery({
-    queryKey: ['aws-video-control-plane', jobId],
-    queryFn: () => brainCoreRequest(`/api/video-orchestrator/jobs/${encodeURIComponent(jobId ?? '')}/control-plane`, videoControlPlaneSchema, { timeoutMs: 25_000 }),
-    enabled: Boolean(jobId),
-    staleTime: 10_000,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
-    retry: 2,
-    retryDelay: 1000,
-    placeholderData: (prev, prevQuery) => {
-      const prevJobId = (prevQuery?.queryKey as [string, string | null] | undefined)?.[1];
-      if (prevJobId && prevJobId === jobId) return prev;
-      return undefined;
-    },
-  });
+  const controlPlaneHook = useAwsVideoControlPlane(jobId);
+  const controlPlane = controlPlaneHook.query;
 
   const invalidateVideo = async () => {
     await Promise.all([
@@ -1276,16 +1264,11 @@ export function AwsVideoDashboard() {
   // ═══════════════════════════════════════════════════════════════════════════
   // CONTROL PLANE IS THE SOLE SOURCE OF TRUTH FOR MAIN UI STATE
   // Legacy queries are kept for debug panels only.
-  // Use keepPreviousData semantics: keep last good CP data while refetching.
-  // NORMALIZATION: Extract the inner data object once and reuse everywhere.
   // ═══════════════════════════════════════════════════════════════════════════
-  const rawControlPlaneResponse = controlPlane.data ?? null;
-  const controlPlaneData: VideoControlPlaneData | null =
-    rawControlPlaneResponse?.data
-      ? (asRecord(rawControlPlaneResponse.data) ? asRecord(rawControlPlaneResponse.data) : rawControlPlaneResponse?.data)
-      : asRecord(rawControlPlaneResponse);
-  const controlPlaneLoading = controlPlane.isLoading && Boolean(jobId);
-  const controlPlaneStale = controlPlane.isError;
+  const rawControlPlaneResponse = controlPlaneHook.rawResponse;
+  const controlPlaneData = controlPlaneHook.data;
+  const controlPlaneLoading = controlPlaneHook.isLoading && Boolean(jobId);
+  const controlPlaneStale = controlPlaneHook.isError;
 
   // Prove control-plane is available and queryable
   if (jobId && controlPlaneData && process.env.NODE_ENV === 'development') {
@@ -2085,8 +2068,8 @@ export function AwsVideoDashboard() {
               <div className="aws-facts" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
                 <div><span>raw control-plane ok</span><strong>{rawControlPlaneResponse ? 'yes' : 'no'}</strong></div>
                 <div><span>selected job id used by query</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{jobId ?? 'none'}</strong></div>
-                <div><span>actual fetch URL</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{jobId ? `http://127.0.0.1:4877/api/video-orchestrator/jobs/${jobId}/control-plane` : 'n/a'}</strong></div>
-                <div><span>timeout ms</span><strong>25000</strong></div>
+                <div><span>actual fetch URL</span><strong style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{controlPlaneHook.fetchUrl ?? 'n/a'}</strong></div>
+                <div><span>timeout ms</span><strong>{controlPlaneHook.timeoutMs}</strong></div>
                 <div><span>control-plane query status</span><strong>{controlPlane.status}</strong></div>
                 <div><span>isLoading</span><strong>{String(controlPlane.isLoading)}</strong></div>
                 <div><span>isError</span><strong>{String(controlPlane.isError)}</strong></div>
