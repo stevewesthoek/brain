@@ -930,6 +930,10 @@ export function AwsVideoDashboard() {
     queryKey: ['aws-video-status'],
     queryFn: () => brainCoreRequest('/api/video-orchestrator/status', videoStatusSchema),
     refetchInterval: 10_000,
+    staleTime: 30_000,
+    retry: 1,
+    retryDelay: 2000,
+    placeholderData: (prev) => prev,
   });
   const jobs = useQuery({
     queryKey: ['aws-video-jobs'],
@@ -1535,13 +1539,11 @@ export function AwsVideoDashboard() {
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const quotaExceeded = cpPublish?.quotaStatus === 'exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
   const finalVideoAvailable = Boolean(finalVideoKey);
-  const visibleErrorMessage = statusOnlyErrorMessage ?? actionErrorMessage;
+  const visibleErrorMessage = actionErrorMessage;
   const visibleErrorSummary = quotaExceeded
     ? 'YouTube upload quota reached'
-    : statusOnlyErrorMessage
-      ? 'Brain Core request failed'
-      : actionErrorSummary(actionError) ?? 'Action failed';
-  const visibleErrorDetails = statusOnlyErrorMessage ?? actionErrorMessage;
+    : actionErrorSummary(actionError) ?? 'Action failed';
+  const visibleErrorDetails = actionErrorMessage;
   const showErrorToast = Boolean(!anyPendingTimeout && !quotaExceeded && visibleErrorMessage && visibleErrorMessage !== dismissedError);
 
   const counts = {
@@ -1674,8 +1676,7 @@ export function AwsVideoDashboard() {
           <div className="toast error-toast">
             <div className="toast-content">
               <strong>{visibleErrorSummary}</strong>
-              {statusOnlyErrorMessage ? <p>{statusOnlyErrorMessage}</p> : null}
-              {!statusOnlyErrorMessage && visibleErrorDetails ? (
+              {visibleErrorDetails ? (
                 <details className="toast-details">
                   <summary>Show details</summary>
                   <pre>{visibleErrorDetails}</pre>
@@ -1693,7 +1694,7 @@ export function AwsVideoDashboard() {
           <p>Brain Console is the active dashboard. Follow the pipeline left to right: draft, approve, generate, review, dry-run, then private YouTube upload.</p>
         </div>
         <div className="aws-hero-actions">
-          <StatusBadge status={status.isError || jobs.isError ? 'error' : 'fresh'} label={status.isError || jobs.isError ? 'partial error' : 'online'} />
+          <StatusBadge status={jobs.isError ? 'error' : status.isError ? 'warning' : 'fresh'} label={jobs.isError ? 'partial error' : status.isError ? 'status stale' : 'online'} />
           <button className="button secondary" onClick={() => void invalidateVideo()}><RefreshCw size={16} /> Refresh</button>
         </div>
       </section>
@@ -1876,7 +1877,7 @@ export function AwsVideoDashboard() {
               <div className="card-header"><div><div className="card-title">Jobs</div><div className="card-description">Search, filter, or open a job by ID</div></div><StatusBadge status={jobs.isError ? 'error' : 'fresh'} /></div>
               <JobsDiagnosticsCard
                 diagnostics={jobList.length === 0 || (jobsDiagnostics?.skippedJobCount ?? 0) > 0 || jobs.isError ? jobsDiagnostics : null}
-                error={statusOnlyErrorMessage}
+                error={jobs.isError ? errorMessage(jobs.error) : null}
               />
               <div className="stack" style={{ marginBottom: '1rem' }}>
                 <input
@@ -2109,6 +2110,13 @@ export function AwsVideoDashboard() {
               </div>
             </details>
           </article>
+
+          {/* Status polling diagnostics — shown only on error */}
+          {statusOnlyErrorMessage ? (
+            <div className="compact-warning" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
+              Status poll: {statusOnlyErrorMessage}
+            </div>
+          ) : null}
 
           {/* DEBUG: Legacy data collapsed */}
           <details style={{ marginTop: '0.5rem' }}>
