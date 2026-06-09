@@ -1,158 +1,66 @@
 # Graphify Executable Update Guide
 
-This document explains how to manually run controlled Graphify update operations on Brain and Mind repositories.
+Graphify uses the stock upstream CLI directly with a fixed Bedrock Opus configuration.
+No orchestrator, no AI Model Selector, no backend adapter.
 
-## Key Safety Rules
+## Fixed configuration
 
-- **Guarded execution:** All update operations require the `GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true` environment variable
-- **Incremental only:** Only `--operation update` can execute. Full and critical-rebuild remain blocked.
-- **Feature-flagged:** The environment variable is a kill switch. Never set it globally; only for specific commands.
-- **Manual only:** Do not automate these commands until the scheduler candidates are explicitly enabled by the user.
+| Setting | Value |
+|---------|-------|
+| Backend | `bedrock` |
+| Model | `us.anthropic.claude-opus-4-6-v1` |
+| Token budget | `15000` |
 
-## Manual Commands
+## Commands
 
-### Brain Repository Update
-
-Preview the update plan (no execution):
-
-```bash
-npm run graphify:preflight:brain
-```
-
-Execute the update (requires environment variable):
+### Brain
 
 ```bash
-GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true npm run graphify:update:brain:execute
+npm run graphify:brain
 ```
 
-The `blocked` variant shows what WOULD run (for safety verification):
+Equivalent to:
+```bash
+graphify extract . --backend bedrock --model us.anthropic.claude-opus-4-6-v1 --token-budget 15000
+```
+
+### Mind
 
 ```bash
-npm run graphify:update:brain:blocked
+npm run graphify:mind
 ```
 
-### Mind Repository Update
+Equivalent to:
+```bash
+cd ../mind && graphify extract . --backend bedrock --model us.anthropic.claude-opus-4-6-v1 --token-budget 15000
+```
 
-Preview the update plan (no execution):
+### Callflow exports (after graph.json exists)
 
 ```bash
-npm run graphify:preflight:mind
+npm run graphify:brain:callflow
+npm run graphify:mind:callflow
 ```
 
-Execute the update (requires environment variable):
+## Output
 
-```bash
-GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true npm run graphify:update:mind:execute
+```
+graphify-out/graph.json
+graphify-out/graph.html
+graphify-out/GRAPH_REPORT.md
 ```
 
-The `blocked` variant shows what WOULD run (for safety verification):
-
-```bash
-npm run graphify:update:mind:blocked
-```
-
-## After Execution
-
-1. **Inspect runtime reports:**
-   - Brain: `runtime/local/graphify/brain-runtime-latest.json` and `.md`
-   - Mind: `runtime/local/graphify/mind-knowledge-latest.json` and `.md`
-
-2. **Verify safety fields:**
-   ```json
-   {
-     "execution": {
-       "operation": "update",
-       "runsGraphify": true,
-       "targetRepo": ".",
-       "status": "ok"
-     },
-     "safety": {
-       "writesTargetRepo": true,
-       "callsAiModelSelector": false,
-       "callsExternalApiWithoutAuth": false,
-       "modifiesSourceFiles": false,
-       "modifiesConfigFiles": false
-     },
-     "outputValidation": {
-       "status": "ok",
-       "requiredCount": 3,
-       "availableCount": 3
-     }
-   }
-   ```
-
-3. **Check git status:**
-   - Only `graphify-out/` artifacts should be modified
-   - No source files should change
-   - No config files should change
-
-4. **Commit decision:**
-   - Generated `graphify-out/` files are tracked by default (per profile)
-   - If tracking is disabled, generated files are intentionally not committed
-   - Source orchestrator or docs changes are committed separately
-
-## Workflow
-
-For most runs, you will:
-
-1. Run preflight to plan
-2. Run blocked update to verify
-3. Run execute update with the environment variable
-4. Inspect reports
-5. Decide whether to commit artifacts
-6. Move to scheduler candidates if stable
-
-## Future: Scheduler Candidates
-
-Once manual execution is stable and tested, scheduler candidates will become available:
-
-```bash
-npm run graphify:update:brain:scheduled   # Requires approval
-npm run graphify:update:mind:scheduled    # Requires approval
-```
-
-These will require:
-
-- Approval through the Brain Core scheduler UI
-- The same `GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true` environment variable
-- Explicit opt-in through the AI Model Selector
+`graphify-out/` is generated output and must not be committed.
 
 ## Troubleshooting
 
-**"command not found: graphify"**
-
-The `graphify` CLI must be installed and available on `$PATH`. Install it with:
+**"command not found: graphify"** — Install the CLI:
 
 ```bash
-npm install -g @khulnasoft/graphify
-# or
-brew install khulnasoft/graphify/graphify
+npm install -g graphifyy
 ```
 
-**"GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION is not set"**
-
-The update was blocked because the environment variable was not provided. This is intentional—run with:
-
+**Auth errors** — Ensure AWS credentials are configured:
 ```bash
-GRAPHIFY_ORCHESTRATOR_ENABLE_EXECUTION=true npm run graphify:update:brain:execute
+aws sts get-caller-identity
 ```
-
-**"profile validation failed"**
-
-The orchestrator could not find or validate the profile. Check:
-
-```bash
-# Brain: should find brain-runtime example profile
-npm run graphify:preflight:brain
-
-# Mind: should find mind-knowledge example profile
-npm run graphify:preflight:mind
-```
-
-If profiles are missing, update `operations/specs/graphify-profile.examples.json`.
-
-## References
-
-- `operations/specs/graphify-execution-guardrails.md` — Execution safety boundary
-- `operations/specs/graphify-standard.md` — Graphify operating standard
-- `tools/graphify/run-graphify-orchestrator.mjs` — Orchestrator implementation

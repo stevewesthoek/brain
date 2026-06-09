@@ -9,7 +9,7 @@
       "api_key": null,
       "cost_per_1k_tokens": 0.0,
       "priority": 2,
-      "capabilities": ["text/small", "text/medium", "text/large", "image/analyze", "graphify_semantic_backend"],
+      "capabilities": ["text/small", "text/medium", "text/large", "image/analyze"],
       "max_context_tokens": 128000,
       "health_check": { "endpoint": "http://localhost:11434/api/tags", "method": "GET", "expect_status": 200 },
       "timeout_connect_sec": 3,
@@ -25,7 +25,7 @@
       "api_key": null,
       "cost_per_1k_tokens": 0.0,
       "priority": 3,
-      "capabilities": ["text/small", "text/medium", "graphify_semantic_backend"],
+      "capabilities": ["text/small", "text/medium"],
       "max_context_tokens": 32768,
       "health_check": { "endpoint": "http://192.168.2.2:11434/api/tags", "method": "GET", "expect_status": 200 },
       "timeout_connect_sec": 5,
@@ -75,7 +75,6 @@
       "timeout_inference_sec": 300,
       "schedule_preference": "any",
       "models": ["gpt-5.4-mini", "gpt-5.4", "gpt-5.5"],
-      "health_check": { "binary_exists": "codex" },
       "notes": "Local Codex CLI routing under the ChatGPT subscription. No OpenAI API use."
     },
     {
@@ -84,15 +83,14 @@
       "type": "bedrock",
       "cost_per_1k_tokens": 0.0,
       "priority": 5,
-      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch", "graphify_semantic_backend"],
+      "capabilities": ["text/small", "text/medium", "text/large", "text/review", "text/large-context-batch"],
       "max_context_tokens": 200000,
       "health_check": { "binary_exists": "aws" },
       "timeout_connect_sec": 5,
       "timeout_inference_sec": 300,
       "schedule_preference": "any",
       "models": ["bedrock-model-portfolio"],
-      "graphify_model": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-      "notes": "Cost-quality Bedrock portfolio. Cheap capable models are tried before premium Claude fallbacks. No direct Anthropic API use. graphify_model is the concrete model ID verified active via list-inference-profiles (2026-06-09) for use with GRAPHIFY_BEDROCK_MODEL env var."
+      "notes": "Cost-quality Bedrock portfolio. Cheap capable models are tried before premium Claude fallbacks. No direct Anthropic API use."
     }
   ]
 }
