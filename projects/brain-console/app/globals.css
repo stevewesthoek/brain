@@ -1311,6 +1311,12 @@ tr:last-child td {
   color: var(--background);
 }
 
+.pipeline-step .min-w-0 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .pipeline-next {
   display: flex;
   align-items: center;
