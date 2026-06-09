@@ -269,11 +269,26 @@ function selectorResolutionPlan(operation, selectorRequest) {
   };
 }
 
-function executionPlan(profile, operation, executeRequested) {
+function executionPlan(profile, operation, executeRequested, repoRoot) {
+  // Detect first generation: if graph.json doesn't exist, use initialBuildPolicy instead of incrementalPolicy
+  let selectedPolicy = null;
+  if (operation === 'update') {
+    const graphJsonPath = resolve(repoRoot, 'graphify-out/graph.json');
+    const isFirstGeneration = !existsSync(graphJsonPath);
+    selectedPolicy = isFirstGeneration ? profile.initialBuildPolicy ?? null : profile.incrementalPolicy ?? null;
+  } else {
+    const policyByOperation = {
+      preflight: null,
+      full: profile.initialBuildPolicy ?? null,
+      'critical-rebuild': profile.criticalRebuildPolicy ?? null,
+    };
+    selectedPolicy = policyByOperation[operation] ?? null;
+  }
+
   const policyByOperation = {
     preflight: null,
     full: profile.initialBuildPolicy ?? null,
-    update: profile.incrementalPolicy ?? null,
+    update: selectedPolicy,
     'critical-rebuild': profile.criticalRebuildPolicy ?? null,
   };
 
@@ -587,7 +602,7 @@ async function main() {
   const reportJsonPath = args.reportJson ?? reportDefaults.json;
   const reportMarkdownPath = args.reportMarkdown ?? reportDefaults.markdown;
   const errors = validateProfile(loadedProfile.profile);
-  const plan = executionPlan(loadedProfile.profile, args.operation, args.execute);
+  const plan = executionPlan(loadedProfile.profile, args.operation, args.execute, repoRoot);
   const selector = errors.length === 0
     ? await resolveSelector(plan.selector, loadedProfile.profile.profile ?? args.profile)
     : plan.selector;
