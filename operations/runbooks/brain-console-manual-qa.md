@@ -1,18 +1,18 @@
-# Brain Console Center Manual QA Runbook
+# Brain Console Manual QA Runbook
 
 **Status:** ready for first browser QA pass  
-**Dashboard:** Brain Console Center  
+**Dashboard:** Brain Console  
 **Port:** `4881`  
 **Brain Core:** `http://localhost:4877`  
 **Related docs:**
 
-- `docs/system/brain-console-center-roadmap.md`
-- `docs/system/brain-console-center-implementation-plan.md`
-- `docs/system/brain-console-center-phase-1-parity-checklist.md`
+- `docs/system/brain-console-roadmap.md`
+- `docs/system/brain-console-implementation-plan.md`
+- `docs/system/brain-console-phase-1-parity-checklist.md`
 
 ## Purpose
 
-This runbook verifies that Brain Console Center is operational in the browser after Phase 1 build validation.
+This runbook verifies that Brain Console is operational in the browser after Phase 1 build validation.
 
 Build validation proves the app compiles. Manual QA proves it is usable as a local operations dashboard.
 
@@ -28,7 +28,7 @@ npm start
 In another terminal:
 
 ```bash
-cd projects/brain-console-center
+cd projects/brain-console
 npm run dev
 ```
 
@@ -43,7 +43,7 @@ http://localhost:4881
 Before testing dashboard behavior:
 
 - [ ] Brain Core responds at `http://localhost:4877/status`.
-- [ ] Brain Console Center opens at `http://localhost:4881`.
+- [ ] Brain Console opens at `http://localhost:4881`.
 - [ ] Topbar shows Brain Core as online.
 - [ ] No browser console errors appear on initial page load.
 - [ ] Navigation works on desktop width.
@@ -147,7 +147,7 @@ Restart Brain Core and verify:
 Date:
 Tester:
 Brain Core commit:
-Brain Console Center commit:
+Brain Console commit:
 Browser:
 Result: pass / partial / fail
 

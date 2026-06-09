@@ -3,7 +3,7 @@
 Date: 2026-06-07
 Repo: `/Users/Office/Repos/stevewesthoek/brain`
 Branch: `main`
-Primary area: Brain Console Center AWS Video view + Brain Core video orchestrator API
+Primary area: Brain Console AWS Video view + Brain Core video orchestrator API
 
 ## North Star
 
@@ -14,7 +14,7 @@ Stabilize the AWS Video dashboard so it behaves like a dependable operator conso
 - No duplicate actions caused by users clicking again after a timeout.
 - Script approval, generation, review approval, dry-run, publish, and download should each have a clear, monotonic state.
 - The dashboard should be modular and maintainable, not a single growing spaghetti file.
-- The AWS Video view must not destabilize the rest of Brain Console Center.
+- The AWS Video view must not destabilize the rest of Brain Console.
 
 ## Current situation
 
@@ -106,7 +106,7 @@ Run:
 cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
 npm run typecheck
 
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center
+cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console
 npm run typecheck
 ```
 
@@ -114,7 +114,7 @@ If both pass, restart dev services:
 
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain
-tools/scripts/brain-console-center-dev-reset.sh hybrid_image_slideshow
+tools/scripts/brain-console-dev-reset.sh hybrid_image_slideshow
 ```
 
 Then test script approval only, using a normal draft job, **not** a diagnostic test job. Diagnostic jobs have titles like:
@@ -155,24 +155,24 @@ Possible outcomes:
 
 ## Important code locations
 
-### Brain Console Center dashboard
+### Brain Console dashboard
 
 Main file, currently too large and should be modularized over time:
 
-- `projects/brain-console-center/components/aws-video-dashboard.tsx`
+- `projects/brain-console/components/aws-video-dashboard.tsx`
 
 New selection hook:
 
-- `projects/brain-console-center/components/aws-video/use-aws-video-selection.ts`
-- `projects/brain-console-center/components/aws-video/use-aws-video-selection.test.ts`
+- `projects/brain-console/components/aws-video/use-aws-video-selection.ts`
+- `projects/brain-console/components/aws-video/use-aws-video-selection.test.ts`
 
 Frontend schemas:
 
-- `projects/brain-console-center/lib/braincore-schemas.ts`
+- `projects/brain-console/lib/braincore-schemas.ts`
 
 Stabilization plan:
 
-- `projects/brain-console-center/AWS_VIDEO_DASHBOARD_STABILIZATION_PLAN.md`
+- `projects/brain-console/AWS_VIDEO_DASHBOARD_STABILIZATION_PLAN.md`
 
 ### Brain Core backend
 
@@ -194,7 +194,7 @@ Control-plane tests:
 
 ### Dev/reset tooling
 
-- `tools/scripts/brain-console-center-dev-reset.sh`
+- `tools/scripts/brain-console-dev-reset.sh`
 - `tools/scripts/verify-aws-video-generation-mode.sh`
 
 ## Known design direction
@@ -236,7 +236,7 @@ Start by saying what is known and what is not known. Then run only the validatio
 
 Suggested next actions:
 
-1. Run `npm run typecheck` in brain-core and brain-console-center.
+1. Run `npm run typecheck` in brain-core and brain-console.
 2. If typecheck passes, inspect `approveScript()` around the patched lines to confirm the fast path is exactly as intended.
 3. Ask the user to retest a normal draft approval, or run the direct API approval test if possible.
 4. If approval still hangs, use the curl and `script.json` checks above to determine whether the bug is backend persistence or frontend state derivation.

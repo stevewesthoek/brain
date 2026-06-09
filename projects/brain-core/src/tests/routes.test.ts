@@ -261,7 +261,7 @@ test('GET /capabilities returns manifest with executable actions disabled', asyn
   assert.equal(body.mindWorkspace.remainingKnownDirtyCategories.includes('.obsidian/community-plugins.json'), true);
   assert.equal(body.brainConsole.scaffoldStatus, 'validated');
   assert.equal(body.brainConsole.installedInMindVault, false);
-  assert.equal(body.brainConsole.projectPath, 'projects/brain-console-center');
+  assert.equal(body.brainConsole.projectPath, 'projects/brain-console');
   assert.equal(body.brainConsole.packageStatus, 'buildable');
   assert.equal(body.brainConsole.manualInstallRequired, true);
   assert.equal(body.executionGate.executionEnabled, false);

@@ -91,7 +91,7 @@ Required report fields:
 
 ### 6. Brain Core status surface
 
-Expose read-only status through Brain Core for Brain Console Center.
+Expose read-only status through Brain Core for Brain Console.
 
 Do not add run buttons until approval/action policy exists.
 
@@ -127,7 +127,7 @@ Produce standard refresh reports and status files.
 
 Expose report summaries through Brain Core.
 
-### Phase O6 — Brain Console Center visibility
+### Phase O6 — Brain Console visibility
 
 Add read-only dashboard cards for repo graph freshness and last run status.
 

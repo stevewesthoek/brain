@@ -10,7 +10,7 @@ Use the /goal and the /code orchestrator skills, but keep the scope tight: fix t
 
 ## User-visible symptom
 
-In Brain Console Center, a normal AWS video job titled **“Make a video of a box.”** can be script-approved successfully. The overlay appears, approval is persisted, and the job card changes to approved. But the dashboard still behaves incorrectly:
+In Brain Console, a normal AWS video job titled **“Make a video of a box.”** can be script-approved successfully. The overlay appears, approval is persisted, and the job card changes to approved. But the dashboard still behaves incorrectly:
 
 - The Approve button returns disabled/greyed out.
 - The Generate button does not activate.
@@ -70,7 +70,7 @@ Observed distilled output:
     "status": "approved",
     "theologicalReviewRequired": false,
     "notes": null,
-    "approvedBy": "brain-console-center",
+    "approvedBy": "brain-console",
     "approvedAt": "2026-06-07T19:59:56.683Z"
   },
   "approvedAt": null,
@@ -190,7 +190,7 @@ projects/brain-core/src/adapters/video-orchestrator-control-plane.ts
 projects/brain-core/src/api/routes.ts
 projects/brain-core/src/tests/video-orchestrator-control-plane.test.ts
 projects/brain-core/src/tests/video-orchestrator-finalization.test.ts
-projects/brain-console-center/src/** related AWS video dashboard hooks/components
+projects/brain-console/src/** related AWS video dashboard hooks/components
 ```
 
 Important grep hits:
@@ -278,7 +278,7 @@ npm run typecheck
 ```
 
 ```bash
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center
+cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-console
 npm run typecheck
 ```
 
@@ -298,7 +298,7 @@ After restarting dev services:
 
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain
-tools/scripts/brain-console-center-dev-reset.sh hybrid_image_slideshow
+tools/scripts/brain-console-dev-reset.sh hybrid_image_slideshow
 ```
 
 Then:

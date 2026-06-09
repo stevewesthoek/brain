@@ -452,7 +452,7 @@ notebooklm auth check --test  # Confirm passes
 - **NotebookLM CLI:** `operations/runbooks/notebooklm-cli.md`
 - **Credentials:** `operations/accounts/credentials-index.md` (NotebookLM section)
 - **Brain Core API:** `projects/brain-core/README.md`
-- **Brain Console:** `projects/brain-console-center/README.md`
+- **Brain Console:** `projects/brain-console/README.md`
 
 ---
 

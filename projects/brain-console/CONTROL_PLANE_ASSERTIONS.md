@@ -128,7 +128,7 @@ When validating the refactor:
    - [ ] Dashboard behavior unchanged (only debug panel affected)
 
 4. **Typecheck & Build:**
-   - [ ] `npm run typecheck` in both brain-console-center and brain-core passes
+   - [ ] `npm run typecheck` in both brain-console and brain-core passes
    - [ ] No TypeScript errors related to control-plane data access
 
 ---

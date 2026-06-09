@@ -1,14 +1,14 @@
-# Brain Console Center
+# Brain Console
 
 **Status:** Phase 1 implemented and build-validated  
 **Role:** single leading local operations dashboard for Brain  
 **Port:** `4881`  
 **Data source:** Brain Core API only
 
-Brain Console Center is the fourth and final dashboard direction for the `brain` repo.
+Brain Console is the fourth and final dashboard direction for the `brain` repo.
 
 ```text
-Brain Console Center → Brain Core API → runtime/job/config sources
+Brain Console → Brain Core API → runtime/job/config sources
 ```
 
 Legacy dashboards are reference-only.
@@ -16,7 +16,7 @@ Legacy dashboards are reference-only.
 ## Run
 
 ```bash
-cd projects/brain-console-center
+cd projects/brain-console
 npm install
 npm run dev
 ```
@@ -41,11 +41,11 @@ NEXT_PUBLIC_BRAIN_CORE_URL=http://localhost:4877 npm run dev
 
 ## Architecture and design rules
 
-Read these before changing Brain Console Center UI or API contracts:
+Read these before changing Brain Console UI or API contracts:
 
 ```text
-docs/system/brain-console-center-architecture.md
-docs/system/brain-console-center-design-system.md
+docs/system/brain-console-architecture.md
+docs/system/brain-console-design-system.md
 ```
 
 ## Phase 1 surfaces
@@ -64,8 +64,8 @@ docs/system/brain-console-center-design-system.md
 Before changing the UI or operational contracts, read:
 
 ```text
-docs/system/brain-console-center-architecture.md
-docs/system/brain-console-center-design-system.md
+docs/system/brain-console-architecture.md
+docs/system/brain-console-design-system.md
 ```
 
 The dashboard follows a shadcnblocks admin-dashboard style: compact shell, left navigation, page tabs, bounded cards, clear status states, and no overlapping controls.
@@ -108,7 +108,7 @@ Do not use the older `/changes` path.
 See:
 
 ```text
-docs/system/brain-console-center-phase-1-parity-checklist.md
+docs/system/brain-console-phase-1-parity-checklist.md
 ```
 
 
@@ -118,5 +118,5 @@ docs/system/brain-console-center-phase-1-parity-checklist.md
 Before importing the next legacy-dashboard feature slice, run:
 
 ```text
-operations/runbooks/brain-console-center-manual-qa.md
+operations/runbooks/brain-console-manual-qa.md
 ```

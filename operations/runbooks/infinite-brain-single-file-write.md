@@ -228,7 +228,7 @@ The following files are generated at runtime and must **never be committed to gi
 | Verification report | `runtime/local/infinite-brain/metadata-write-verification-latest.json` | Report | ✅ Ignored |
 | Rollback applied report | `runtime/local/infinite-brain/metadata-write-rollback-applied-latest.json` | Report | ✅ Ignored |
 | Runtime cache | `projects/runtime/` | Cache | ✅ Ignored |
-| Build cache | `projects/brain-console-center/.next/` | Cache | ✅ Ignored |
+| Build cache | `projects/brain-console/.next/` | Cache | ✅ Ignored |
 
 All runtime outputs are properly gitignored. Do not manually stage or commit any of these files.
 

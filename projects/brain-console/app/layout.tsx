@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Brain Console Center',
+  title: 'Brain Console',
   description: 'Single leading local operations dashboard for Brain.',
 };
 

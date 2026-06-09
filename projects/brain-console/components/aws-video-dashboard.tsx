@@ -1661,7 +1661,7 @@ export function AwsVideoDashboard() {
         <div className="min-w-0">
           <div className="eyebrow">AWS Video Pipeline</div>
           <h1>Video operations</h1>
-          <p>Brain Console Center is the active dashboard. Follow the pipeline left to right: draft, approve, generate, review, dry-run, then private YouTube upload.</p>
+          <p>Brain Console is the active dashboard. Follow the pipeline left to right: draft, approve, generate, review, dry-run, then private YouTube upload.</p>
         </div>
         <div className="aws-hero-actions">
           <StatusBadge status={status.isError || jobs.isError ? 'error' : 'fresh'} label={status.isError || jobs.isError ? 'partial error' : 'online'} />

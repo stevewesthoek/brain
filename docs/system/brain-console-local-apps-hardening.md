@@ -1,8 +1,8 @@
-# Brain Console Center Local Apps Hardening
+# Brain Console Local Apps Hardening
 
 **Date:** 2026-06-04  
 **Status:** UI compacted; registry extended; safe metadata surfaced; backend guarantees partially implemented  
-**Surface:** `projects/brain-console-center/app/local-apps`  
+**Surface:** `projects/brain-console/app/local-apps`  
 **Backend:** Brain Core Local Apps orchestrator
 
 ## What changed
@@ -32,7 +32,7 @@ The canonical local app registry was extended with:
 
 ```text
 Brain Core API        → brain-core-api        → port 4877
-Brain Console Center  → brain-console-center  → port 4881
+Brain Console        → brain-console         → port 4881
 ```
 
 ## Current validation
@@ -42,8 +42,8 @@ Validated after the Local Apps UI, registry, and metadata-contract changes:
 ```text
 ✓ operations/infrastructure/local-apps.json is valid JSON
 ✓ projects/brain-core typecheck passes
-✓ projects/brain-console-center typecheck passes
-✓ projects/brain-console-center production build passes
+✓ projects/brain-console typecheck passes
+✓ projects/brain-console production build passes
 ```
 
 ## Current Brain Core guarantees already present
@@ -88,11 +88,11 @@ Required backend gaps:
    - Stop should stop required containers where safe.
    - Action results should report container health transitions.
 
-5. **Brain Console Center restart orchestration**
-   - Restarting Brain Console Center from its own UI requires a supervisor outside the browser/web process.
+5. **Brain Console restart orchestration**
+   - Restarting Brain Console from its own UI requires a supervisor outside the browser/web process.
    - Brain Core can expose a safe composite action that restarts:
      - Brain Core API
-     - Brain Console Center dev server
+     - Brain Console dev server
    - The UI should call that orchestrated action and then poll both ports until healthy.
 
 6. **Registry-level lifecycle strategy flags**

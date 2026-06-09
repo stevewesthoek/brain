@@ -62,7 +62,7 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
     brainConsole: {
       scaffoldStatus: 'validated',
       installedInMindVault: false,
-      projectPath: 'projects/brain-console-center',
+      projectPath: 'projects/brain-console',
       packageStatus: 'buildable',
       manualInstallRequired: true,
     },

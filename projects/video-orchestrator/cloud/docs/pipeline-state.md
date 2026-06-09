@@ -6,7 +6,7 @@
 
 The AWS Video control plane works end to end:
 
-- Brain Console Center can trigger the pipeline.
+- Brain Console can trigger the pipeline.
 - Brain Core can start AWS Step Functions.
 - MediaConvert final assembly succeeds.
 - Brain Core can repair the publish contract.
@@ -227,7 +227,7 @@ During review phase: converts first scene PNG to JPEG, writes `thumbnail.json` m
 - Source: `jobs/<jobId>/images/scene-001.png` (Nova Canvas 1280×720)
 - Output: `jobs/<jobId>/exports/thumbnail-001.jpg` (JPEG, 1280×720)
 - Metadata: `jobs/<jobId>/metadata/thumbnail.json` ({thumbnailStatus, provider, source, width, height, ...})
-- UI: Brain Console Center Review tab shows thumbnail preview with copy-to-preview command
+- UI: Brain Console Review tab shows thumbnail preview with copy-to-preview command
 
 **Deterministic overlay generation:**
 
@@ -274,29 +274,29 @@ Titan Image is not the selected provider. It is visible in some regions, but is 
 - Does not animate still images into motion footage
 - Does not use fixture video as the final source
 
-The publish contract for generated-media modes includes `jobs/<jobId>/metadata/review.json`. Use the Brain Console Center review tab to approve generated media before dry-run or private upload. The verifier supports `--require-review-approved`.
+The publish contract for generated-media modes includes `jobs/<jobId>/metadata/review.json`. Use the Brain Console review tab to approve generated media before dry-run or private upload. The verifier supports `--require-review-approved`.
 
 ## Dev Environment Reset
 
-To restart Brain Core and Brain Console Center with hybrid mode enabled:
+To restart Brain Core and Brain Console with hybrid mode enabled:
 
 ```bash
-bash tools/scripts/brain-console-center-dev-reset.sh
-bash tools/scripts/brain-console-center-dev-reset.sh hybrid_slideshow
-bash tools/scripts/brain-console-center-dev-reset.sh hybrid_image_slideshow
+bash tools/scripts/brain-console-dev-reset.sh
+bash tools/scripts/brain-console-dev-reset.sh hybrid_slideshow
+bash tools/scripts/brain-console-dev-reset.sh hybrid_image_slideshow
 ```
 
 This script:
-1. Kills stale processes on ports 4877 (Brain Core) and 4881 (Brain Console Center)
+1. Kills stale processes on ports 4877 (Brain Core) and 4881 (Brain Console)
 2. Ensures ports are free
 3. Starts Brain Core with `AWS_VIDEO_GENERATION_MODE=hybrid`
-4. Starts Brain Console Center
+4. Starts Brain Console
 5. Health-checks both endpoints
 6. Prints log file paths and test commands
 
 **Logs:**
 - Brain Core: `/tmp/brain-core-hybrid.log`
-- Brain Console Center: `/tmp/brain-console-center.log`
+- Brain Console: `/tmp/brain-console.log`
 
 **Test hybrid output:**
 ```bash

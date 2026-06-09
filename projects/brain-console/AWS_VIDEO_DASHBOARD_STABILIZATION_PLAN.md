@@ -2,7 +2,7 @@
 
 ## North star
 
-The Brain Console Center must stay lean, modular, maintainable, and view-independent. The AWS Video view must not become a monolithic dashboard or affect unrelated Brain Console Center views. It must consume standardized modules and expose a clear operator workflow without flicker, contradictory state, or hidden legacy fallbacks.
+The Brain Console must stay lean, modular, maintainable, and view-independent. The AWS Video view must not become a monolithic dashboard or affect unrelated Brain Console views. It must consume standardized modules and expose a clear operator workflow without flicker, contradictory state, or hidden legacy fallbacks.
 
 The AWS Video operator UI must satisfy this invariant:
 
@@ -82,7 +82,7 @@ Suggested module boundaries:
 
 Acceptance:
 - The current large AWS Video component is reduced, with view-model logic moved into small modules.
-- Other Brain Console Center views are untouched.
+- Other Brain Console views are untouched.
 
 ### Phase 5 — UI regression coverage
 
@@ -100,7 +100,7 @@ Required tests:
 
 - Do not add new video-generation features.
 - Do not add EventBridge or Step Functions architecture changes yet.
-- Do not redesign the entire Brain Console Center.
+- Do not redesign the entire Brain Console.
 - Do not touch unrelated views.
 - Do not hide real backend failures.
 - Do not replace the current tech stack as part of this slice.

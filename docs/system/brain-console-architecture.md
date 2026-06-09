@@ -1,7 +1,7 @@
-# Brain Console Center Architecture
+# Brain Console Architecture
 
 **Status:** active implementation reference  
-**Dashboard:** `projects/brain-console-center`  
+**Dashboard:** `projects/brain-console`  
 **Primary UI pattern:** shadcn/shadcnblocks-style admin dashboard  
 **Backend boundary:** Brain Core API only  
 **Default port:** `4881`  
@@ -9,15 +9,15 @@
 
 ## Canonical role
 
-Brain Console Center is the single leading operations dashboard for the Brain repo.
+Brain Console is the single leading operations dashboard for the Brain repo.
 
 Legacy dashboards are reference-only:
 
-New dashboard feature work belongs in Brain Console Center and must be backed by Brain Core API contracts.
+New dashboard feature work belongs in Brain Console and must be backed by Brain Core API contracts.
 
 ## Tech stack
 
-Brain Console Center uses:
+Brain Console uses:
 
 - Next.js App Router
 - React
@@ -53,7 +53,7 @@ Do not build long vertical dashboards when a tabbed or paged view is more approp
 
 ## Layout rules
 
-All Brain Console Center pages must follow these rules:
+All Brain Console pages must follow these rules:
 
 1. **No accidental overlap**
    - Cards may not cover pagination.
@@ -127,17 +127,17 @@ Brain Core owns lifecycle safety:
 - database/container phase handling where modeled
 - action readiness and action result reporting
 
-Brain Console Center only renders the state and invokes Brain Core actions.
+Brain Console only renders the state and invokes Brain Core actions.
 
 ## Validation
 
-Before marking any Brain Console Center change complete, run:
+Before marking any Brain Console change complete, run:
 
 ```bash
 cd projects/brain-core
 npm run typecheck
 
-cd ../brain-console-center
+cd ../brain-console
 npm run typecheck
 npm run build
 ```
@@ -148,9 +148,9 @@ A UI-only change may skip Brain Core typecheck only when it does not touch Brain
 
 Related docs:
 
-- `docs/system/brain-console-center-roadmap.md`
-- `docs/system/brain-console-center-design-system.md`
-- `docs/system/brain-console-center-implementation-plan.md`
-- `docs/system/brain-console-center-phase-1-parity-checklist.md`
-- `docs/system/brain-console-center-local-apps-hardening.md`
-- `operations/runbooks/brain-console-center-manual-qa.md`
+- `docs/system/brain-console-roadmap.md`
+- `docs/system/brain-console-design-system.md`
+- `docs/system/brain-console-implementation-plan.md`
+- `docs/system/brain-console-phase-1-parity-checklist.md`
+- `docs/system/brain-console-local-apps-hardening.md`
+- `operations/runbooks/brain-console-manual-qa.md`

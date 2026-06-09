@@ -534,4 +534,4 @@ Until all phases complete, `canExecute` remains false and all execution endpoint
 - Executor Dry-Run: `projects/brain-core/src/adapters/infinite-brain-proposal-executor-dry-run.ts`
 - Entity Changelog: `projects/brain-core/src/adapters/infinite-brain/entity-changelog.ts`
 - Evidence Store: (Future phase)
-- Console UI: `projects/brain-console-center/components/infinite-brain-proposal-review.tsx`
+- Console UI: `projects/brain-console/components/infinite-brain-proposal-review.tsx`

@@ -88,7 +88,7 @@ Updated three key sections:
 - **Recommended Model Install:** Added install commands for both nodes + future candidates section
 - **Provider Registry Example:** Updated preferred_models in ollama-m4pro and ollama-m1 examples
 
-### 6. Brain Console Center
+### 6. Brain Console
 
 **Status:** No code changes required
 
@@ -232,7 +232,7 @@ Expected output: One of `qwen2.5:14b`, `gemma4:12b`, or `gemma4:e4b`.
 | `operations/system-configs/model-selector/tests/test_gemma4_support.py` | NEW test file, 14 tests | Validation |
 | `operations/system-configs/model-selector/README.md` | Gemma 4 section + verification commands | Documentation |
 | `projects/brain-core/docs/ai-model-selector-architecture.md` | Updated hardware inventory, install, examples | Architecture docs |
-| `projects/brain-console-center/*` | No changes needed | Dashboard auto-renders Gemma models |
+| `projects/brain-console/*` | No changes needed | Dashboard auto-renders Gemma models |
 
 ---
 
@@ -270,7 +270,7 @@ Expected output: One of `qwen2.5:14b`, `gemma4:12b`, or `gemma4:e4b`.
 ## Notes
 
 - Ollama remains the local inference server (not a replacement for Ollama)
-- Brain Console Center represents models automatically via selector health matrix — no UI code changes
+- Brain Console represents models automatically via selector health matrix — no UI code changes
 - M1 prefers gemma4:e4b due to memory constraints; 12B is fallback
 - No direct OpenAI API or Anthropic API use in selector
 - Runtime config must be copied to ~/.config/video-orchestrator after changes

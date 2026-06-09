@@ -538,7 +538,7 @@ const DEFAULT_ALLOWLISTED_TEST_PATH = path.resolve(
 brain/
 ├── projects/                               [source code + project docs]
 │   ├── brain-core/                         [Infinite Brain + controller]
-│   ├── brain-console-center/               [UI dashboard]
+│   ├── brain-console/               [UI dashboard]
 │   └── ...
 ├── ai/                                     [skills, prompts, orchestrators]
 │   └── skills/
@@ -975,7 +975,7 @@ grep "\.graphify-out" .gitignore mind/.gitignore  # Should find patterns
 | IBR verification | `npm run ibr:verify` | Passed: 11/11 |
 | IBR rollback | `npm run ibr:rollback` | Success message |
 | IBR typecheck | `npm run typecheck` | No type errors |
-| Brain Console typecheck | `cd brain/projects/brain-console-center && npm run typecheck 2>&1` | No errors if project exists |
+| Brain Console typecheck | `cd brain/projects/brain-console && npm run typecheck 2>&1` | No errors if project exists |
 | Test suite | `npm run test` | All tests pass |
 | Git status | `git status --short` | No uncommitted changes (except ignored patterns) |
 | Graphify paths | `grep -r "graphify-out" brain/.gitignore mind/.gitignore` | Entries present |

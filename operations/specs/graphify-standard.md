@@ -244,7 +244,7 @@ Responsibilities:
 - run Graphify full/update/export commands;
 - regenerate visual outputs;
 - write refresh reports;
-- expose status to Brain Core and Brain Console Center;
+- expose status to Brain Core and Brain Console;
 - never write generated artifacts to repo root;
 - never mutate source files unless an explicit approved migration requires it.
 
@@ -348,7 +348,7 @@ A repo is Graphify-ready when:
 6. Apply profiles to Mind and Brain.
 7. Validate on one code-app repo.
 8. Roll out to other project/application repos.
-9. Add Brain Console Center status.
+9. Add Brain Console status.
 10. Add scheduled refresh only after manual refresh is stable.
 
 ## Safety rules

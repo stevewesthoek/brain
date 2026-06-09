@@ -91,7 +91,7 @@ Brain Core must not own:
 
 Brain Console is the human control plane for Steve's computer.
 
-Brain Console Center is the primary control-plane UI in `brain`. It keeps execution inside `brain` and consumes Brain Core API surfaces for all operational state and actions.
+Brain Console is the primary control-plane UI in `brain`. It keeps execution inside `brain` and consumes Brain Core API surfaces for all operational state and actions.
 
 It owns:
 

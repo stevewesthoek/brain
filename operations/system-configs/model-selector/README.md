@@ -113,7 +113,7 @@ Brain Core exposes the same matrix for dashboards at:
 GET http://127.0.0.1:4877/ai-model-selector/health-matrix
 ```
 
-Brain Console Center consumes Brain Core. It does not probe providers directly.
+Brain Console consumes Brain Core. It does not probe providers directly.
 
 ## Local Resource Guard
 

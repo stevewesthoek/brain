@@ -28,7 +28,7 @@ for global behavior, identity, and safety.
 
 ## Current projects
 
-- `brain-console-center/` — planned single leading local operations dashboard for Brain, backed by Brain Core API; see `docs/system/brain-console-center-roadmap.md`
+- `brain-console/` — planned single leading local operations dashboard for Brain, backed by Brain Core API; see `docs/system/brain-console-roadmap.md`
 - `brain-core/` — local API and safety boundary for Brain operational data/actions
 - `cedula/` — Paraguay residency / cédula onboarding project with funnel, planning, and meeting notes
 

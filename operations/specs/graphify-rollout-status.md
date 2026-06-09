@@ -99,7 +99,7 @@ Complete.
 
 Status:
 
-- Brain Console Center overview shows Graphify runtime status;
+- Brain Console overview shows Graphify runtime status;
 - Console reads `GET /graphify/status`;
 - Console displays output validation, selector status, and safety flags.
 

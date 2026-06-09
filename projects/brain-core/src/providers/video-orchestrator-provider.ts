@@ -1646,7 +1646,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
         youtubeDryRun: {
           status: 'running',
           startedAt: dryRunStartedAt,
-          checkedBy: 'brain-console-center',
+          checkedBy: 'brain-console',
           videoKey: resolved.videoKey,
           thumbnailKey: resolved.thumbnailKey,
         },
@@ -1690,7 +1690,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
           status: 'passed',
           startedAt: dryRunStartedAt,
           checkedAt: now,
-          checkedBy: 'brain-console-center',
+          checkedBy: 'brain-console',
           privacy: 'private',
           videoKey: resolved.videoKey,
           thumbnailKey: resolved.thumbnailKey,
@@ -1712,7 +1712,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
             ...updatedPublishJson,
             dryRunPassed: true,
             dryRunCheckedAt: now,
-            dryRunCheckedBy: 'brain-console-center',
+            dryRunCheckedBy: 'brain-console',
           };
 
           const publishJsonPath = getJobMetadataPath(jobId, 'publish.json');
@@ -1745,7 +1745,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
             status: 'failed',
             startedAt: dryRunStartedAt,
             checkedAt: now,
-            checkedBy: 'brain-console-center',
+            checkedBy: 'brain-console',
             error: outputError.message.slice(-500),
             code: 'youtube_upload_script_failed',
           },
@@ -3682,7 +3682,7 @@ export async function generateApprovedScript(
     approvals: {
       script: {
         status: 'approved',
-        approvedBy: approval.approvedBy || input.requestedBy || 'brain-console-center',
+        approvedBy: approval.approvedBy || input.requestedBy || 'brain-console',
         approvedAt: approval.approvedAt || new Date().toISOString(),
         notes: approval.notes || null,
       },

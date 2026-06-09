@@ -25,7 +25,7 @@ This document inventories the existing Brain runtime infrastructure, Mind vault 
 2. **Action Registry** (`adapters/actions.ts`) — Task registration and tracking
 3. **Execution Plans** (`adapters/execution-plans.ts`) — Plan definitions with safety candidates
 4. **Approval Store** (`adapters/approval-store.ts`) — Persistent approval tracking
-5. **Brain Console** (`projects/brain-console-center/`) — Web UI for status and control
+5. **Brain Console** (`projects/brain-console/`) — Web UI for status and control
 
 **Current capabilities:**
 - ✅ Approval gate model for guarded execution

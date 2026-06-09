@@ -1,13 +1,13 @@
-# Brain Console Center Design System
+# Brain Console Design System
 
 **Status:** active UI contract  
-**Dashboard:** `projects/brain-console-center`  
+**Dashboard:** `projects/brain-console`  
 **Primary reference:** shadcnblocks admin-dashboard style  
 **UI stack:** Next.js, React, TypeScript, Tailwind-style CSS, shadcn/ui conventions, TanStack Query, Zod
 
 ## Purpose
 
-Brain Console Center is an operational dashboard. Its UI must optimize for dense, readable control surfaces rather than marketing-page scale.
+Brain Console is an operational dashboard. Its UI must optimize for dense, readable control surfaces rather than marketing-page scale.
 
 The design direction is based on the shadcnblocks admin dashboard pattern:
 
@@ -122,16 +122,16 @@ Local Apps merges local mutation state with Brain Core `/local-apps/actions/stat
 Important files:
 
 ```text
-projects/brain-console-center/components/shell.tsx
-projects/brain-console-center/components/local-apps-dashboard.tsx
-projects/brain-console-center/app/globals.css
-projects/brain-console-center/lib/braincore-schemas.ts
+projects/brain-console/components/shell.tsx
+projects/brain-console/components/local-apps-dashboard.tsx
+projects/brain-console/app/globals.css
+projects/brain-console/lib/braincore-schemas.ts
 ```
 
 Validation:
 
 ```bash
-cd projects/brain-console-center
+cd projects/brain-console
 npm run typecheck
 npm run build
 
@@ -141,7 +141,7 @@ npm run typecheck
 
 ## Change policy
 
-Before changing Brain Console Center UI:
+Before changing Brain Console UI:
 
 1. Read this document.
 2. Keep the shadcnblocks admin-dashboard density model.

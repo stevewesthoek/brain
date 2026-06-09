@@ -47,7 +47,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="brand">
           <div className="brand-mark" aria-hidden="true" />
           <div>
-            <div className="brand-title">Brain Console Center</div>
+            <div className="brand-title">Brain Console</div>
             <div className="brand-subtitle">Local operations command surface</div>
           </div>
         </div>

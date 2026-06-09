@@ -4,13 +4,13 @@ set -e
 BRAIN_CORE_PORT=4877
 CONSOLE_CENTER_PORT=4881
 BRAIN_CORE_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-core"
-CONSOLE_CENTER_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center"
+CONSOLE_CENTER_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-console"
 
 # Allow mode override: ./script.sh hybrid_storyboard
 GENERATION_MODE="${1:-hybrid_tts}"
 
 MODE_UPPER=$(echo "$GENERATION_MODE" | sed 's/_/ /g' | sed 's/^./\U&/g')
-echo "🔧 Brain Console Center + Core Dev Reset ($MODE_UPPER Mode)"
+echo "🔧 Brain Console + Core Dev Reset ($MODE_UPPER Mode)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Step 1: Kill listeners on ports 4877 and 4881
@@ -37,10 +37,10 @@ if [ -n "$BRAIN_CORE_PIDS" ]; then
   echo "$BRAIN_CORE_PIDS" | xargs kill -9 2>/dev/null || true
 fi
 
-# Kill brain-console-center dev processes
-CENTER_PIDS=$(pgrep -f "brain-console-center.*npm.*dev\|brain-console-center.*tsx\|brain-console-center.*next.*dev" 2>/dev/null || true)
+# Kill brain-console dev processes
+CENTER_PIDS=$(pgrep -f "brain-console.*npm.*dev\|brain-console.*tsx\|brain-console.*next.*dev" 2>/dev/null || true)
 if [ -n "$CENTER_PIDS" ]; then
-  echo "  Killing Brain Console Center dev processes: $CENTER_PIDS"
+  echo "  Killing Brain Console dev processes: $CENTER_PIDS"
   echo "$CENTER_PIDS" | xargs kill -9 2>/dev/null || true
 fi
 
@@ -90,13 +90,13 @@ BRAIN_CORE_PID=$!
 echo "  Brain Core PID: $BRAIN_CORE_PID"
 sleep 3
 
-# Step 5: Start Brain Console Center
+# Step 5: Start Brain Console
 echo ""
-echo "Step 5: Starting Brain Console Center on port $CONSOLE_CENTER_PORT..."
+echo "Step 5: Starting Brain Console on port $CONSOLE_CENTER_PORT..."
 cd "$CONSOLE_CENTER_DIR"
-npm run dev > /tmp/brain-console-center.log 2>&1 &
+npm run dev > /tmp/brain-console.log 2>&1 &
 CONSOLE_CENTER_PID=$!
-echo "  Brain Console Center PID: $CONSOLE_CENTER_PID"
+echo "  Brain Console PID: $CONSOLE_CENTER_PID"
 sleep 4
 
 # Step 6: Health check
@@ -124,15 +124,15 @@ RETRIES=5
 RETRY=0
 while [ $RETRY -lt $RETRIES ]; do
   if curl -fsS "http://localhost:$CONSOLE_CENTER_PORT/aws-video" >/dev/null 2>&1; then
-    echo "  ✅ Brain Console Center is healthy"
+    echo "  ✅ Brain Console is healthy"
     break
   else
     RETRY=$((RETRY + 1))
     if [ $RETRY -lt $RETRIES ]; then
-      echo "  ⏳ Waiting for Brain Console Center to start... (attempt $RETRY/$RETRIES)"
+      echo "  ⏳ Waiting for Brain Console to start... (attempt $RETRY/$RETRIES)"
       sleep 2
     else
-      echo "  ⚠️  Brain Console Center timed out, but services may still be starting"
+      echo "  ⚠️  Brain Console timed out, but services may still be starting"
     fi
   fi
 done
@@ -143,7 +143,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "✅ Dev environment reset complete!"
 echo ""
 echo "📍 Brain Core URL: http://127.0.0.1:$BRAIN_CORE_PORT"
-echo "📍 Brain Console Center URL: http://localhost:$CONSOLE_CENTER_PORT/aws-video"
+echo "📍 Brain Console URL: http://localhost:$CONSOLE_CENTER_PORT/aws-video"
 echo ""
 echo "⚙️  Configuration:"
 echo "   Generation Mode: $GENERATION_MODE"
@@ -156,7 +156,7 @@ fi
 echo ""
 echo "🔍 Logs:"
 echo "   Brain Core: tail -f /tmp/brain-core-hybrid.log"
-echo "   Brain Console Center: tail -f /tmp/brain-console-center.log"
+echo "   Brain Console: tail -f /tmp/brain-console.log"
 echo ""
 TEST_LABEL=$(echo "$GENERATION_MODE" | tr '_' ' ')
 echo "🧪 Test $TEST_LABEL mode:"

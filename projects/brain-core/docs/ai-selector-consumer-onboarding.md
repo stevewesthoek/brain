@@ -21,7 +21,7 @@ Brain Core read-only surface:
 GET http://127.0.0.1:4877/ai-model-selector/health-matrix
 ```
 
-Brain Console Center reads the Brain Core endpoint. Automation and services that need a route call the selector directly.
+Brain Console reads the Brain Core endpoint. Automation and services that need a route call the selector directly.
 
 ## Selection Request
 
@@ -115,4 +115,4 @@ Consumers use the matrix for observability only. Routing still goes through `POS
 
 The selector owns provider health, model availability, fallback order, circuit breakers, Bedrock access cache, and outcome learning.
 
-Brain Core exposes read-only selector state for dashboards. Brain Console Center visualizes Brain Core data. Neither Brain Core nor Brain Console Center performs provider probes or provider ranking.
+Brain Core exposes read-only selector state for dashboards. Brain Console visualizes Brain Core data. Neither Brain Core nor Brain Console performs provider probes or provider ranking.

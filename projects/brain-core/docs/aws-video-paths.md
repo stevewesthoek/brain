@@ -24,7 +24,7 @@ Canonical remote AWS Video storage:
 s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/
 ```
 
-Brain Console Center calls Brain Core.
+Brain Console calls Brain Core.
 
 ## Resolver Rules
 
@@ -40,7 +40,7 @@ Never create AWS Video jobs under:
 
 ```text
 projects/brain-core/jobs
-projects/brain-console-center/jobs
+projects/brain-console/jobs
 ```
 
 ## Diagnostics

@@ -107,11 +107,11 @@ Brain Core must not become a strategy document, dashboard renderer, broad shell 
 
 ## Brain Console implementation role
 
-Brain Console is the human control plane. Brain Console Center is the canonical implementation path in the `brain` repo.
+Brain Console is the human control plane. Brain Console is the canonical implementation path in the `brain` repo.
 
 Brain Console consumes Brain Core and visualizes/control surfaces through approved API endpoints. It should not read or mutate repo files directly from the browser. Brain Core remains the API boundary for operational truth, approvals, auditability, safety checks, and controlled actions.
 
-Brain Console Center may show:
+Brain Console may show:
 
 - system health
 - readiness
@@ -123,7 +123,7 @@ Brain Console Center may show:
 - Video Orchestrator cloud lane
 - controlled actions where Brain Core explicitly permits them
 
-The first Brain Console Center migration target is the AWS Video operational dashboard only. Do not migrate every legacy dashboard surface before the video workflow is proven.
+The first Brain Console migration target is the AWS Video operational dashboard only. Do not migrate every legacy dashboard surface before the video workflow is proven.
 
 Brain Console must not be treated as the product itself, and it must not duplicate canonical strategy from `mind`.
 

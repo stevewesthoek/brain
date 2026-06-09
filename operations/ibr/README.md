@@ -366,8 +366,8 @@ cat runtime/local/infinite-brain/atomizer-latest.md
 - `package.json` script: `ibr:proposals:dry-run`
 - `tools/infinite-brain/run-report-only-pipeline.mjs` — Integrated in pipeline step 6
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Schema extension
-- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — UI display
+- `projects/brain-console/lib/braincore-schemas.ts` — Schema extension
+- `projects/brain-console/components/infinite-brain-dashboard.tsx` — UI display
 
 **What it does:**
 - Reads all prior reports (atomizer, classifier, edges, audit, insights)
@@ -528,8 +528,8 @@ npm run typecheck 2>&1 | head -20
 - `tools/infinite-brain/relationship-audit-dry-run.mjs` — Audit analysis tool
 - `package.json` script: `ibr:relationships:audit`
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Schema extension
-- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — UI display
+- `projects/brain-console/lib/braincore-schemas.ts` — Schema extension
+- `projects/brain-console/components/infinite-brain-dashboard.tsx` — UI display
 
 **What it does:**
 - Evaluates health of inferred edges from IB8 edge inference
@@ -614,8 +614,8 @@ cat runtime/local/infinite-brain/relationship-audit-latest.md
 - `projects/brain-core/src/adapters/infinite-brain-proposal-approval-store.ts` — Approval store adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST endpoints
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Zod schema
-- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — UI display
+- `projects/brain-console/lib/braincore-schemas.ts` — Zod schema
+- `projects/brain-console/components/infinite-brain-dashboard.tsx` — UI display
 
 **What it does:**
 - Records approval decisions for Infinite Brain proposals (no execution)
@@ -722,8 +722,8 @@ curl -X POST http://localhost:3000/infinite-brain/proposals/approvals \
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain-proposal-application-planner.ts` — Planner adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST endpoints for application plan
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Zod schema for application plan
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — Application plan preview UI
+- `projects/brain-console/lib/braincore-schemas.ts` — Zod schema for application plan
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — Application plan preview UI
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
 - `projects/brain-core/src/tests/routes.test.ts` — Route tests
 
@@ -851,7 +851,7 @@ curl http://localhost:3000/api/infinite-brain/proposals/application-plan/summary
 ### PHASE U — Execution Readiness Console Visibility
 
 **Files:**
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — InfiniteBrainExecutionReadiness component
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — InfiniteBrainExecutionReadiness component
 - `operations/ibr/README.md` — This documentation
 
 **What it does:**
@@ -983,8 +983,8 @@ Response:
 ### PHASE V — Detailed Readiness Checks in Console
 
 **Files:**
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Full readiness report schema
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — Enhanced component with checks display
+- `projects/brain-console/lib/braincore-schemas.ts` — Full readiness report schema
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — Enhanced component with checks display
 - `operations/ibr/README.md` — This documentation
 
 **What it does:**
@@ -1132,8 +1132,8 @@ Static guidance for known blockers:
 - `projects/brain-core/src/adapters/infinite-brain-proposal-executor-dry-run.ts` (NEW)
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` (MODIFIED)
 - `projects/brain-core/src/api/routes.ts` (MODIFIED)
-- `projects/brain-console-center/lib/braincore-schemas.ts` (MODIFIED)
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` (MODIFIED)
+- `projects/brain-console/lib/braincore-schemas.ts` (MODIFIED)
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` (MODIFIED)
 - `operations/ibr/README.md` (This documentation)
 
 **What it does:**
@@ -1280,8 +1280,8 @@ When all 10 readiness checks pass AND explicit operator approval is recorded:
 ### PHASE X — Executor Dry-Run Operations Console Visibility
 
 **Files:**
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` (MODIFIED)
-- `projects/brain-console-center/lib/braincore-schemas.ts` (NO CHANGE — schemas already exist)
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` (MODIFIED)
+- `projects/brain-console/lib/braincore-schemas.ts` (NO CHANGE — schemas already exist)
 - `operations/ibr/README.md` (This documentation)
 
 **What it does:**
@@ -1699,8 +1699,8 @@ All tests pass: ✅ 9/9
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain-operator-approval.ts` — Operator approval adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/operator-approval` endpoints
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Operator approval schemas
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI for recording approval
+- `projects/brain-console/lib/braincore-schemas.ts` — Operator approval schemas
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — UI for recording approval
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
 - `projects/brain-core/src/adapters/infinite-brain-proposal-execution-readiness.ts` — Readiness check 9 update
 - `projects/brain-core/src/tests/infinite-brain-operator-approval.test.ts` — Unit tests
@@ -1825,8 +1825,8 @@ All tests pass: ✅ 9/9
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain-post-write-verification.ts` — Post-write verification adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/post-write-verification` endpoints
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Post-write verification schemas
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for post-write verification display
+- `projects/brain-console/lib/braincore-schemas.ts` — Post-write verification schemas
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — UI section for post-write verification display
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
 - `projects/brain-core/src/adapters/infinite-brain-proposal-execution-readiness.ts` — Readiness check 11 update
 - `projects/brain-core/src/tests/infinite-brain-post-write-verification.test.ts` — Unit tests
@@ -1980,8 +1980,8 @@ All tests pass: ✅ 9/9
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain-write-manifest.ts` — Write manifest adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/write-manifest` endpoints
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Write manifest schemas
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for write manifest display
+- `projects/brain-console/lib/braincore-schemas.ts` — Write manifest schemas
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — UI section for write manifest display
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
 - `projects/brain-core/src/adapters/infinite-brain-post-write-verification.ts` — Post-write verification check 2 update
 - `projects/brain-core/src/tests/infinite-brain-write-manifest.test.ts` — Unit tests
@@ -2153,8 +2153,8 @@ All tests pass: ✅ 9/9
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain-metadata-writer-validation.ts` — Metadata validation adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/metadata-writer-validation` endpoints
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Metadata validation schemas
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for metadata validation
+- `projects/brain-console/lib/braincore-schemas.ts` — Metadata validation schemas
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — UI section for metadata validation
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
 - `projects/brain-core/src/tests/infinite-brain-metadata-writer-validation.test.ts` — Unit tests
 
@@ -2329,8 +2329,8 @@ All tests pass: ✅ 9/9
 **Files:**
 - `projects/brain-core/src/adapters/infinite-brain-metadata-patch-preview.ts` — Metadata patch preview adapter
 - `projects/brain-core/src/api/routes.ts` — GET/POST `/infinite-brain/metadata-patch-preview` endpoints
-- `projects/brain-console-center/lib/braincore-schemas.ts` — Metadata patch preview schemas
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — UI section for metadata patch preview
+- `projects/brain-console/lib/braincore-schemas.ts` — Metadata patch preview schemas
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — UI section for metadata patch preview
 - `projects/brain-core/src/adapters/infinite-brain-status.ts` — Status integration
 - `projects/brain-core/src/tests/infinite-brain-metadata-patch-preview.test.ts` — Unit tests
 
@@ -2706,9 +2706,9 @@ All tests pass: ✅ 16/16
 ### PHASE O2 — Proposal Review UI (Decision-Record-Only)
 
 **Files:**
-- `projects/brain-console-center/components/infinite-brain-proposal-review.tsx` — React component
+- `projects/brain-console/components/infinite-brain-proposal-review.tsx` — React component
 - `projects/brain-core/src/api/routes.ts` — GET `/infinite-brain/proposals` endpoint
-- `projects/brain-console-center/components/infinite-brain-dashboard.tsx` — Integration
+- `projects/brain-console/components/infinite-brain-dashboard.tsx` — Integration
 - `projects/brain-core/src/tests/routes.test.ts` — Focused route tests
 
 **What it does:**

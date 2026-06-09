@@ -7,7 +7,7 @@ export default function SettingsPage() {
         <div>
           <div className="eyebrow">Settings</div>
           <h1>Console configuration</h1>
-          <p>Brain Console Center is intentionally thin. Operational state and actions belong to Brain Core.</p>
+          <p>Brain Console is intentionally thin. Operational state and actions belong to Brain Core.</p>
         </div>
       </section>
 
@@ -30,7 +30,7 @@ export default function SettingsPage() {
 
       <section className="card">
         <div className="card-title">Legacy dashboard policy</div>
-        <p>Brain Console Obsidian and Brain Console Web are legacy references only. New dashboard work belongs in Brain Console Center and must consume Brain Core API surfaces.</p>
+        <p>Brain Console Obsidian and Brain Console Web are legacy references only. New dashboard work belongs in Brain Console and must consume Brain Core API surfaces.</p>
       </section>
     </div>
   );

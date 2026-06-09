@@ -2,7 +2,7 @@
 
 **Status:** active Brain Core control-plane note
 
-Brain Core is the API runtime for AWS Video operations. Brain Console Center is the active UI.
+Brain Core is the API runtime for AWS Video operations. Brain Console is the active UI.
 
 ## Generation Modes
 
@@ -61,7 +61,7 @@ Prompt-derived metadata with fixture media. Brain Core generates a deterministic
 - Writes `audio/narration-script.txt` locally + S3
 - Still copies fixture audio/video
 - Title gets `[PIPELINE PROOF]` prefix
-- Brain Console Center shows hybrid-specific banner and scene plan card
+- Brain Console shows hybrid-specific banner and scene plan card
 
 **What it does NOT do:**
 - Does not synthesize audio (narration.mp3 is fixture)
@@ -106,7 +106,7 @@ Prompt-derived metadata with TTS narration and fixture video. Brain Core generat
 - Writes audio to both local and S3
 - Still uses fixture video for assembly
 - Title gets `[PIPELINE PROOF]` prefix (final video is still fixture)
-- Brain Console Center shows TTS provider and voice info
+- Brain Console shows TTS provider and voice info
 - Shows scene plan, narration script, and generated audio artifacts
 
 **What it does:**
@@ -163,7 +163,7 @@ Prompt-derived metadata with TTS narration, generated storyboard images, and fix
 - Writes scene images to `jobs/<jobId>/images/scene-NNN.svg`
 - Still uses fixture video for final assembly
 - Title gets `[PIPELINE PROOF]` prefix
-- Brain Console Center shows storyboard provider, image count, and scene cards
+- Brain Console shows storyboard provider, image count, and scene cards
 
 **What it does:**
 - Generates prompt-derived scene plan
@@ -278,7 +278,7 @@ During the review phase, Brain Core automatically generates a canonical YouTube 
 - Output: `jobs/<jobId>/exports/thumbnail-001.jpg` (1280x720 JPEG)
 - Metadata: `jobs/<jobId>/metadata/thumbnail.json` (thumbnailStatus, provider, dimensions)
 - Integration: YouTube package gets `thumbnailKey` pre-populated with canonical path
-- UI: Brain Console Center shows thumbnail preview in Review tab with copy-to-preview command
+- UI: Brain Console shows thumbnail preview in Review tab with copy-to-preview command
 
 **Deterministic overlay generation:**
 
@@ -390,7 +390,7 @@ jobs/<jobId>/metadata/publish-check.json  # after dry-run starts
 }
 ```
 
-Brain Console Center exposes:
+Brain Console exposes:
 
 - `GET /api/video-orchestrator/jobs/:jobId/review`
 - `POST /api/video-orchestrator/jobs/:jobId/review/approve`
@@ -443,29 +443,29 @@ Hybrid TTS mode lets you:
 
 ## Dev Environment Reset
 
-To restart Brain Core and Brain Console Center with a specific generation mode:
+To restart Brain Core and Brain Console with a specific generation mode:
 
 ```bash
 # Default: hybrid_tts mode
-bash tools/scripts/brain-console-center-dev-reset.sh
+bash tools/scripts/brain-console-dev-reset.sh
 
 # Or specify a different mode
-bash tools/scripts/brain-console-center-dev-reset.sh hybrid_storyboard
-bash tools/scripts/brain-console-center-dev-reset.sh hybrid_slideshow
-bash tools/scripts/brain-console-center-dev-reset.sh hybrid_image_slideshow
+bash tools/scripts/brain-console-dev-reset.sh hybrid_storyboard
+bash tools/scripts/brain-console-dev-reset.sh hybrid_slideshow
+bash tools/scripts/brain-console-dev-reset.sh hybrid_image_slideshow
 ```
 
 This script:
-1. Kills stale processes on ports 4877 (Brain Core) and 4881 (Brain Console Center)
+1. Kills stale processes on ports 4877 (Brain Core) and 4881 (Brain Console)
 2. Ensures ports are free
 3. Starts Brain Core with specified `AWS_VIDEO_GENERATION_MODE` (default: hybrid_tts)
-4. Starts Brain Console Center
+4. Starts Brain Console
 5. Health-checks both endpoints
 6. Prints log file paths and test commands
 
 **Logs:**
 - Brain Core: `/tmp/brain-core-hybrid.log`
-- Brain Console Center: `/tmp/brain-console-center.log`
+- Brain Console: `/tmp/brain-console.log`
 
 **Test generation mode output:**
 ```bash

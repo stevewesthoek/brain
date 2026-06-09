@@ -42,6 +42,6 @@ Define the default routing policy for Brain:
 
 - The selector exposes `POST /select` for routing and `GET /health/matrix` for provider/model health.
 - Brain Core exposes `GET /ai-model-selector/health-matrix` as the read-only dashboard surface.
-- Brain Console Center reads selector health through Brain Core.
+- Brain Console reads selector health through Brain Core.
 - Consumers must not implement provider probes, model ranking, or fallback order outside the selector.
 - Brain Core may display selector state, but it must not replace selector routing.

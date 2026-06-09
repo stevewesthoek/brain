@@ -365,8 +365,8 @@
     "notes": "Brain Core API runs on port 4877. Start is managed by Brain Core when launched from Local Apps; stop is available only for Brain Core-managed process records until a dedicated safe stop helper is added."
   },
   {
-    "name": "Brain Console Center",
-    "repoPath": "/Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center",
+    "name": "Brain Console",
+    "repoPath": "/Users/Office/Repos/stevewesthoek/brain/projects/brain-console",
     "port": 4881,
     "appPort": 4881,
     "url": "http://localhost:4881",
@@ -379,7 +379,7 @@
     "stopCommand": null,
     "restart": null,
     "restartCommand": null,
-    "description": "Brain Console Center leading local operations dashboard",
+    "description": "Brain Console leading local operations dashboard",
     "databaseEngine": null,
     "databaseServiceName": null,
     "dockerContainerName": null,
@@ -412,11 +412,11 @@
     "databaseName": null,
     "databaseUser": null,
     "startupTimeoutMs": 30000,
-    "notes": "Primary API consumed by Brain Console Center. Stop support should be implemented through a safe Brain Core-managed process record before enabling stop from the dashboard."
+    "notes": "Primary API consumed by Brain Console. Stop support should be implemented through a safe Brain Core-managed process record before enabling stop from the dashboard."
   },
   {
-    "name": "Brain Console Center",
-    "repoPath": "/Users/Office/Repos/stevewesthoek/brain/projects/brain-console-center",
+    "name": "Brain Console",
+    "repoPath": "/Users/Office/Repos/stevewesthoek/brain/projects/brain-console",
     "port": 4881,
     "appPort": 4881,
     "url": "http://localhost:4881",
@@ -429,7 +429,7 @@
     "stopCommand": null,
     "restart": null,
     "restartCommand": null,
-    "description": "Brain Console Center local operations dashboard",
+    "description": "Brain Console local operations dashboard",
     "databaseEngine": null,
     "databaseServiceName": null,
     "dockerContainerName": null,

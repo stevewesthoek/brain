@@ -209,7 +209,7 @@ test('finalize, get review, and approve share the same canonical media contract'
     assert.deepEqual(reviewBeforeApprove.review.media, canonicalMedia);
 
     const approved = await approveVideoReview(jobId, {
-      reviewedBy: 'brain-console-center',
+      reviewedBy: 'brain-console',
       notes: 'approval smoke',
     });
     assert.equal(approved.ok, true);
@@ -555,7 +555,7 @@ test('execution endpoint resilience: getVideoJobExecutionStatus returns base str
       approval: {
         required: true,
         status: 'approved',
-        approvedBy: 'brain-console-center',
+        approvedBy: 'brain-console',
         approvedAt: new Date().toISOString(),
       },
     }, null, 2));
