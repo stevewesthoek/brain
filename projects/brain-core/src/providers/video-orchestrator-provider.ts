@@ -2195,6 +2195,31 @@ async function writePublishCheckJson(jobId: string, publishCheck: PublishCheckMe
   ]);
 }
 
+export async function checkPublishAssetsAvailable(jobId: string, localOnly: boolean = false): Promise<boolean> {
+  const videoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  const root = getVideoOrchestratorRoot();
+  const [videoLocal, thumbLocal] = await Promise.all([
+    fileExists(join(root, videoKey)),
+    fileExists(join(root, thumbnailKey)),
+  ]);
+  if (videoLocal && thumbLocal) return true;
+  if (localOnly) return false;
+  const [videoS3, thumbS3] = await Promise.all([
+    videoLocal ? Promise.resolve(true) : checkS3ObjectExists(S3_BUCKET, videoKey, AWS_REGION),
+    thumbLocal ? Promise.resolve(true) : checkS3ObjectExists(S3_BUCKET, thumbnailKey, AWS_REGION),
+  ]);
+  return videoS3 && thumbS3;
+}
+
+export async function readPublishCheckStatus(jobId: string): Promise<PublishCheckMetadata | null> {
+  const raw = await readLocalJobMetadataJson(jobId, 'publish-check.json');
+  if (!raw || typeof raw !== 'object') return null;
+  const record = raw as Record<string, unknown>;
+  if (typeof record.dryRunPassed !== 'boolean') return null;
+  return record as unknown as PublishCheckMetadata;
+}
+
 function parseReviewRecord(value: unknown, jobId: string): VideoReviewMetadata | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;

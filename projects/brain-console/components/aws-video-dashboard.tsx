@@ -1482,15 +1482,18 @@ export function AwsVideoDashboard() {
   const canPublish = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && dryRunPassedForThisJob && (cpAllowedActions.publish_private?.enabled ?? false));
   const canDownloadVideo = cpAllowedActions.download_video?.enabled ?? false;
 
+  const dryRunDisabledReason = cpAllowedActions.dry_run?.reason;
   const publishReadinessLabel = selectedUploaded
     ? 'Already uploaded'
     : requiresReviewGate && !reviewApproved
       ? `Review ${reviewStatus}`
     : canDryRun
       ? 'Ready for dry-run'
-      : hasGeneratedAssets
-        ? 'Generated assets available'
-        : 'Waiting for generated assets';
+      : dryRunDisabledReason
+        ? dryRunDisabledReason
+        : hasGeneratedAssets
+          ? 'Generated assets available'
+          : 'Waiting for generated assets';
 
   // Pipeline step model derived from control-plane phase and allowedActions
   // CANONICAL: All step states derive from control-plane (phase, status, allowedActions, reviewStatus)

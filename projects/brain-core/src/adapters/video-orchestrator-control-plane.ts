@@ -4,6 +4,8 @@ import {
   getVideoJobExecutionStatus,
   getVideoReview,
   getVideoJobTimeline,
+  checkPublishAssetsAvailable,
+  readPublishCheckStatus,
   type VideoReviewMedia,
   type VideoReviewResponse,
 } from '../providers/video-orchestrator-provider.js';
@@ -139,6 +141,8 @@ function computeAllowedActions(
   reviewData: Record<string, any> | null,
   reviewMedia: VideoReviewMedia | null,
   artifacts: Record<string, any> | null,
+  publishAssetsAvailable: boolean,
+  dryRunPassed: boolean,
 ): Record<string, { enabled: boolean; reason: string | undefined }> {
   const jobStatus = job?.status ?? 'unknown';
   const approvalStatus = job?.approval?.status ?? 'pending';
@@ -153,6 +157,8 @@ function computeAllowedActions(
   );
 
   const videoAvailable = !!(artifacts?.videoKey || artifacts?.finalVideoKey);
+
+  const readyToPublish = ['ready_to_publish'].includes(jobStatus);
 
   return {
     approve_script: {
@@ -175,22 +181,28 @@ function computeAllowedActions(
             : undefined,
     },
     dry_run: {
-      enabled: reviewStatus === 'approved' && ['ready_to_publish'].includes(jobStatus),
+      enabled: reviewStatus === 'approved' && readyToPublish && publishAssetsAvailable,
       reason:
         reviewStatus !== 'approved'
           ? 'Awaiting review approval'
-          : !['ready_to_publish'].includes(jobStatus)
+          : !readyToPublish
             ? 'Not ready to publish'
-            : undefined,
+            : !publishAssetsAvailable
+              ? 'Final video/thumbnail assets not available locally or in S3'
+              : undefined,
     },
     publish_private: {
-      enabled: reviewStatus === 'approved' && jobStatus === 'ready_to_publish',
+      enabled: reviewStatus === 'approved' && readyToPublish && publishAssetsAvailable && dryRunPassed,
       reason:
         reviewStatus !== 'approved'
           ? 'Awaiting review approval'
-          : jobStatus !== 'ready_to_publish'
+          : !readyToPublish
             ? 'Not ready to publish'
-            : undefined,
+            : !publishAssetsAvailable
+              ? 'Final video/thumbnail assets not available locally or in S3'
+              : !dryRunPassed
+                ? 'Dry-run must pass before private publish'
+                : undefined,
     },
     download_video: {
       enabled: videoAvailable,
@@ -345,8 +357,14 @@ export async function getVideoOrchestratorControlPlane(
   const executionAvailable = isExecutionAvailable(jobData, executionData);
   const artifactsAvailable = isArtifactsAvailable(artifactsData);
 
+  const [publishAssetsAvailable, publishCheckStatus] = await Promise.all([
+    checkPublishAssetsAvailable(jobId, fastPath),
+    readPublishCheckStatus(jobId),
+  ]);
+  const dryRunPassed = publishCheckStatus?.dryRunPassed === true;
+
   const finalization = computeFinalizationState(artifactsData, reviewMedia);
-  const allowedActions = computeAllowedActions(jobData, reviewData, reviewMedia, artifactsData);
+  const allowedActions = computeAllowedActions(jobData, reviewData, reviewMedia, artifactsData, publishAssetsAvailable, dryRunPassed);
   const missingRequirements = computeMissingRequirements(reviewMedia);
 
   const warnings: string[] = [];

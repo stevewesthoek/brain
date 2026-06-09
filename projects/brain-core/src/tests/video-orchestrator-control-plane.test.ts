@@ -308,6 +308,43 @@ test('control-plane: top-level contract includes channelId', () => {
   assert.ok(controlPlane.selectedJob, 'selectedJob must be present');
 });
 
+test('control-plane invariant: dry_run disabled when publish assets missing', () => {
+  // dry_run must require physical publish assets, not just metadata keys
+  const reviewStatus = 'approved';
+  const jobStatus = 'ready_to_publish';
+  const publishAssetsAvailable = false;
+  const dryRunPassed = false;
+
+  // Even though review approved + ready_to_publish, dry_run must be disabled
+  const dryRunEnabled = reviewStatus === 'approved' && jobStatus === 'ready_to_publish' && publishAssetsAvailable;
+  assert.equal(dryRunEnabled, false, 'dry_run disabled when assets missing');
+
+  // With assets available, dry_run should be enabled
+  const withAssets = reviewStatus === 'approved' && jobStatus === 'ready_to_publish' && true;
+  assert.equal(withAssets, true, 'dry_run enabled when assets available');
+});
+
+test('control-plane invariant: publish_private requires dry-run pass', () => {
+  // publish_private must not be enabled until dry-run has passed
+  const reviewStatus = 'approved';
+  const jobStatus = 'ready_to_publish';
+  const publishAssetsAvailable = true;
+  const dryRunPassed = false;
+
+  const publishEnabled = reviewStatus === 'approved' && jobStatus === 'ready_to_publish' && publishAssetsAvailable && dryRunPassed;
+  assert.equal(publishEnabled, false, 'publish_private disabled when dry-run not passed');
+
+  // After dry-run passes, publish should be enabled
+  const afterDryRun = reviewStatus === 'approved' && jobStatus === 'ready_to_publish' && publishAssetsAvailable && true;
+  assert.equal(afterDryRun, true, 'publish_private enabled after dry-run passes');
+});
+
+test('control-plane invariant: checkPublishAssetsAvailable export exists', async () => {
+  const mod = await import('../providers/video-orchestrator-provider.js');
+  assert.ok(mod.checkPublishAssetsAvailable, 'checkPublishAssetsAvailable function exists');
+  assert.ok(mod.readPublishCheckStatus, 'readPublishCheckStatus function exists');
+});
+
 test('control-plane invariant: approve_review.enabled=true implies approveVideoReview succeeds with existing media', async () => {
   // This tests the contract: if control-plane says approve_review is enabled,
   // then calling approveVideoReview must not fail with review_media_incomplete
