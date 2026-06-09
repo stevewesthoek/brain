@@ -1,18 +1,30 @@
 # Graphify Executable Update Guide
 
-Graphify uses the stock upstream CLI directly with a fixed Bedrock Sonnet configuration.
-No orchestrator, no AI Model Selector, no backend adapter.
-
-**Why Sonnet instead of Opus?**
-Opus was replaced by Sonnet due to Bedrock daily token throttling. Sonnet is reliable for semantic graph extraction and runs within daily quota. For manual premium runs, override `GRAPHIFY_MODEL=us.anthropic.claude-opus-4-6-v1` on the command line — but not for nightly standard runs.
+Graphify uses the stock upstream CLI directly with a local Ollama configuration.
+No orchestrator, no AI Model Selector, no paid backend.
 
 ## Fixed configuration
 
 | Setting | Value |
 |---------|-------|
-| Backend | `bedrock` |
-| Model | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
-| Token budget | `15000` |
+| Backend | `ollama` (local — no paid API) |
+| Model | `gemma3:12b` |
+| Token budget | `4000` |
+| Ollama context | `8192` |
+| Concurrency | `1` |
+| API timeout | `900` seconds |
+
+No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
+
+## Prerequisites
+
+```bash
+ollama pull gemma3:12b
+ollama list | grep gemma3
+graphify --help
+```
+
+Ollama must be running locally before any Graphify command.
 
 ## Commands
 
@@ -24,7 +36,8 @@ npm run graphify:brain
 
 Equivalent to:
 ```bash
-graphify extract . --backend bedrock --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 --token-budget 15000
+OLLAMA_MODEL=gemma3:12b GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
+  graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 --no-viz
 ```
 
 ### Mind
@@ -35,7 +48,8 @@ npm run graphify:mind
 
 Equivalent to:
 ```bash
-cd ../mind && graphify extract . --backend bedrock --model us.anthropic.claude-sonnet-4-5-20250929-v1:0 --token-budget 15000
+cd ../mind && OLLAMA_MODEL=gemma3:12b GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
+  graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 --no-viz
 ```
 
 ### Callflow exports (after graph.json exists)
@@ -48,9 +62,9 @@ npm run graphify:mind:callflow
 ## Output
 
 ```
-graphify-out/graph.json
-graphify-out/graph.html
-graphify-out/GRAPH_REPORT.md
+graphify-out/graph.json                 — queryable graph data
+graphify-out/.graphify_analysis.json    — raw analysis data
+graphify-out/graph.html                 — interactive visualization (only when --no-viz is not passed)
 ```
 
 `graphify-out/` is generated output and must not be committed.
@@ -63,7 +77,12 @@ graphify-out/GRAPH_REPORT.md
 npm install -g graphifyy
 ```
 
-**Auth errors** — Ensure AWS credentials are configured:
+**"ollama unavailable"** — Ensure Ollama is installed and running:
 ```bash
-aws sts get-caller-identity
+ollama list
+```
+
+**Model not found** — Pull the model:
+```bash
+ollama pull gemma3:12b
 ```
