@@ -205,5 +205,122 @@ class TestLocalOnlySelection(unittest.TestCase):
         self.assertEqual(selector._pick_model(provider, task_spec), "")
 
 
+class TestMindProjectDecompositionTaskType(unittest.TestCase):
+    """Confirm mind_project_decomposition is a registered task type and resolves locally."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.config_dir = self.root / "config"
+        self.state_dir = self.root / "state"
+        self.log_dir = self.root / "logs"
+        self.config_dir.mkdir()
+        self.state_dir.mkdir()
+        self.log_dir.mkdir()
+
+        self.old_paths = {
+            "CONFIG_DIR": core.CONFIG_DIR,
+            "STATE_DIR": core.STATE_DIR,
+            "LOG_DIR": core.LOG_DIR,
+            "PROVIDERS_PATH": core.PROVIDERS_PATH,
+            "TASK_TYPES_PATH": core.TASK_TYPES_PATH,
+            "SELECTOR_CONFIG_PATH": core.SELECTOR_CONFIG_PATH,
+            "BEDROCK_MODELS_PATH": core.BEDROCK_MODELS_PATH,
+            "RATE_LIMITS_PATH": core.RATE_LIMITS_PATH,
+            "CB_STATE_PATH": core.CB_STATE_PATH,
+            "BEDROCK_ACCESS_PATH": core.BEDROCK_ACCESS_PATH,
+            "BEDROCK_OUTCOMES_PATH": core.BEDROCK_OUTCOMES_PATH,
+            "AUDIT_LOG_PATH": core.AUDIT_LOG_PATH,
+        }
+        core.CONFIG_DIR = self.config_dir
+        core.STATE_DIR = self.state_dir
+        core.LOG_DIR = self.log_dir
+        core.PROVIDERS_PATH = self.config_dir / "ai-providers.json"
+        core.TASK_TYPES_PATH = self.config_dir / "ai-task-types.json"
+        core.SELECTOR_CONFIG_PATH = self.config_dir / "ai-selector-config.json"
+        core.BEDROCK_MODELS_PATH = self.config_dir / "ai-bedrock-models.json"
+        core.RATE_LIMITS_PATH = self.state_dir / "rate-limits.json"
+        core.CB_STATE_PATH = self.state_dir / "circuit-breakers.json"
+        core.BEDROCK_ACCESS_PATH = self.state_dir / "bedrock-model-access.json"
+        core.BEDROCK_OUTCOMES_PATH = self.state_dir / "bedrock-model-outcomes.json"
+        core.AUDIT_LOG_PATH = self.log_dir / "ai-selections.jsonl"
+
+        providers = {
+            "providers": [
+                {
+                    "id": "claude-bedrock",
+                    "type": "bedrock",
+                    "cost_per_1k_tokens": 0.0,
+                    "priority": 1,
+                    "capabilities": ["text/medium"],
+                    "models": ["bedrock-model-portfolio"],
+                },
+                {
+                    "id": "ollama-local",
+                    "type": "openai-compatible",
+                    "base_url": "http://127.0.0.1:11434/v1",
+                    "cost_per_1k_tokens": 0.0,
+                    "priority": 2,
+                    "capabilities": ["text/medium"],
+                    "preferred_models": ["qwen2.5:14b"],
+                },
+            ]
+        }
+        # Use the real task types file so mind_project_decomposition registration is verified
+        real_task_types = (
+            Path(__file__).resolve().parents[1] / "config" / "ai-task-types.json"
+        )
+        core.TASK_TYPES_PATH.write_text(real_task_types.read_text())
+        core.PROVIDERS_PATH.write_text(json.dumps(providers, indent=2))
+        core.SELECTOR_CONFIG_PATH.write_text(
+            json.dumps({"batch_window": {"start_hour": 1, "end_hour": 7}, "prefer_defer_over_paid": False}, indent=2)
+        )
+        core.BEDROCK_MODELS_PATH.write_text(json.dumps({"models": []}, indent=2))
+
+    def tearDown(self):
+        for name, value in self.old_paths.items():
+            setattr(core, name, value)
+        self.tmp.cleanup()
+
+    def test_mind_project_decomposition_is_registered(self):
+        selector = core.ModelSelector()
+        self.assertIn("mind_project_decomposition", selector._task_types)
+
+    def test_mind_project_decomposition_local_only_resolves_without_keyerror(self):
+        selector = core.ModelSelector()
+        selector._check_health = lambda provider: provider["id"] == "ollama-local"
+        selector._provider_models["ollama-local"] = ["qwen2.5:14b"]
+
+        result = selector.select(
+            "mind_project_decomposition",
+            input_token_count=2000,
+            urgent=False,
+            task_metadata=core.TaskMetadata(
+                offline=True,
+                external_provider_disallowed=True,
+            ),
+        )
+
+        self.assertEqual(result.provider_id, "ollama-local")
+        self.assertEqual(result.model, "qwen2.5:14b")
+
+    def test_mind_project_decomposition_excludes_external_providers(self):
+        selector = core.ModelSelector()
+        selector._check_health = lambda provider: True
+        selector._provider_models["ollama-local"] = ["qwen2.5:14b"]
+
+        result = selector.select(
+            "mind_project_decomposition",
+            input_token_count=2000,
+            urgent=False,
+            task_metadata=core.TaskMetadata(
+                offline=True,
+                external_provider_disallowed=True,
+            ),
+        )
+
+        self.assertNotEqual(result.provider_id, "claude-bedrock")
+
+
 if __name__ == "__main__":
     unittest.main()

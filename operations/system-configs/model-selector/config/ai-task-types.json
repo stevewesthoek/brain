@@ -149,6 +149,17 @@
       "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
       "notes": "Mind Steward capture classification. Must be called with local_only=true and must use local OpenAI-compatible providers only."
     },
+    "mind_project_decomposition": {
+      "capability": "text/medium",
+      "typical_input_tokens": 6000,
+      "typical_output_tokens": 1500,
+      "latency_tolerance": "batch",
+      "local_viable": true,
+      "local_required": true,
+      "min_local_model_params": "7B",
+      "preferred_local_models": ["qwen2.5:14b", "gemma4:12b", "gemma4:e4b"],
+      "notes": "Mind project decomposition into atomic tasks. Handles private/offline Mind vault content. Must be called with local_only=true."
+    },
     "codebase_semantic_graph": {
       "capability": "text/large",
       "typical_input_tokens": 50000,

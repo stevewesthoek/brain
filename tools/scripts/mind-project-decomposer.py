@@ -282,7 +282,7 @@ Return only valid JSON. No explanation, no markdown fences."""
         sel_resp = requests.post(
             f"{AI_SELECTOR_URL}/select",
             json={
-                "task_type": "text/small",
+                "task_type": "mind_project_decomposition",
                 "local_only": True,
                 "input_token_count": len(prompt) // 4,
             },
