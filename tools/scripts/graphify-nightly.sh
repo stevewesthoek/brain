@@ -199,9 +199,6 @@ while IFS= read -r repo; do
   fi
 
   graph_json="$repo/.graphify-out/graph.json"
-  if [[ ! -f "$graph_json" ]]; then
-    graph_json="$repo/graphify-out/graph.json"
-  fi
 
   if [[ -f "$graph_json" ]]; then
     log "updating repo=$repo"

@@ -128,8 +128,8 @@ function validateProfile(profile) {
     errors.push('trackGeneratedArtifacts must be an array when provided');
   } else {
     for (const artifact of tracked) {
-      if (typeof artifact !== 'string' || (!artifact.startsWith('graphify-out/') && !artifact.startsWith('.graphify-out/'))) {
-        errors.push(`tracked artifact must live under graphify-out/ or .graphify-out/: ${artifact}`);
+      if (typeof artifact !== 'string' || !artifact.startsWith('.graphify-out/')) {
+        errors.push(`tracked artifact must live under .graphify-out/ (canonical hidden path): ${artifact}`);
       }
     }
   }
@@ -174,7 +174,7 @@ function expectedOutputs(repoRoot, profile) {
 
   return outputs.map(relativePath => ({
     path: relativePath,
-    exists: existsSync(resolve(repoRoot, relativePath)) || existsSync(resolve(repoRoot, relativePath.replace('.graphify-out', 'graphify-out'))),
+    exists: existsSync(resolve(repoRoot, relativePath)),
   }));
 }
 
@@ -523,12 +523,8 @@ async function executeGraphify(repoRoot, profile) {
   const stdoutTail = getLastNChars(stdout, 2000);
   const stderrTail = getLastNChars(stderr, 2000);
 
-  const graphJsonPath = existsSync(resolve(repoRoot, '.graphify-out/graph.json'))
-    ? resolve(repoRoot, '.graphify-out/graph.json')
-    : resolve(repoRoot, 'graphify-out/graph.json');
-  const reportPath = existsSync(resolve(repoRoot, '.graphify-out/GRAPH_REPORT.md'))
-    ? resolve(repoRoot, '.graphify-out/GRAPH_REPORT.md')
-    : resolve(repoRoot, 'graphify-out/GRAPH_REPORT.md');
+  const graphJsonPath = resolve(repoRoot, '.graphify-out/graph.json');
+  const reportPath = resolve(repoRoot, '.graphify-out/GRAPH_REPORT.md');
 
   let graphJsonValid = false;
   if (exitCode === 0 && existsSync(graphJsonPath)) {
