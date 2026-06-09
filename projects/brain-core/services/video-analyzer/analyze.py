@@ -154,10 +154,20 @@ def extract_transcript(youtube_url):
     log(f"Adding YouTube source: {youtube_url}")
     code, out, err = run_cmd([NOTEBOOKLM_BIN, 'source', 'add', youtube_url, '--json'])
     if code != 0:
-        return None, f"Failed to add source: {err}"
+        # Try to parse JSON from stdout (NotebookLM may return error as JSON even on non-zero exit)
+        try:
+            error_data = json.loads(out)
+            error_msg = error_data.get('message', str(error_data))
+            return None, f"Failed to add source: {error_msg}"
+        except:
+            return None, f"Failed to add source: {err or out or 'Unknown error'}"
 
     try:
         data = json.loads(out)
+        # Check for error in response
+        if data.get('error'):
+            error_msg = data.get('message', str(data))
+            return None, f"NotebookLM API error: {error_msg}"
         # Try nested structure first (source.id), then top-level (id)
         source_id = data.get('source', {}).get('id') or data.get('id')
         if not source_id:
