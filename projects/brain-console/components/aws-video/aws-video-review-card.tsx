@@ -166,33 +166,29 @@ export function AwsVideoReviewCard({
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }}
               />
               <div hidden style={{ padding: '0.75rem', backgroundColor: 'var(--muted)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
-                Thumbnail not available locally. Use the terminal command below to preview from S3.
+                Thumbnail preview is not ready in the dashboard yet. Refresh after generation completes; if this remains visible, the publish package is incomplete or the thumbnail endpoint could not load the asset.
               </div>
             </div>
-            <button
-              className="button small"
-              onClick={() => {
-                const cmd = `aws s3 cp "s3://${bucket}/${reviewMedia.thumbnailKey}" - --region ${region} | open -a Preview -f`;
-                navigator.clipboard.writeText(cmd);
-                alert('Copy command to preview thumbnail:\n' + cmd);
-              }}
-              style={{ marginBottom: '0.5rem' }}
-            >
-              Copy preview command
-            </button>
             <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
-              Use this command in terminal to preview the thumbnail in your Mac Preview app.
+              The dashboard previews thumbnails through Brain Core; no terminal command is required.
             </div>
           </div>
         </details>
       )}
       {reviewMedia?.videoKey ? (
         <div style={{ marginBottom: '1rem' }}>
-          <button className="button secondary" onClick={() => downloadFinalVideo(jobId)}>
+          <button
+            className="button secondary"
+            onClick={() => downloadFinalVideo(jobId)}
+            disabled={finalizationState !== 'complete'}
+            title={finalizationState === 'complete' ? 'Download the final MP4' : 'Final MP4 download unlocks after the publish package is complete.'}
+          >
             Download final MP4
           </button>
           <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)', marginTop: '0.35rem' }}>
-            Use this when YouTube upload quota is reached or to inspect video quality locally.
+            {finalizationState === 'complete'
+              ? 'Use this when YouTube upload quota is reached or to inspect video quality locally.'
+              : 'Final MP4 is not available until generation and publish-package finalization complete.'}
           </div>
         </div>
       ) : null}

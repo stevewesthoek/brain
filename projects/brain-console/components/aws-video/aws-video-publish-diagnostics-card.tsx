@@ -225,7 +225,9 @@ export function AwsVideoPublishDiagnosticsCard({
   // Reset confirmation when the selected job changes
   useEffect(() => { setConfirmingPublish(false); }, [jobId]);
 
-  const publishDisabled = !canPublish || isPublishingThisJob || quotaExceeded || anyPendingTimeout;
+  const packageIncomplete = cpFinalizationPending || !finalVideoAvailable;
+  const dryRunDisabled = !canDryRun || packageIncomplete || isDryRunPending || anyPendingTimeout;
+  const publishDisabled = !canPublish || packageIncomplete || isPublishingThisJob || quotaExceeded || anyPendingTimeout;
 
   const handlePublishClick = () => {
     if (publishDisabled) return;
@@ -290,6 +292,7 @@ export function AwsVideoPublishDiagnosticsCard({
       />
       {!selectedReady ? anyPendingTimeout ? <div className="compact-info">Waiting for job state… Action is still processing in Brain Core. Refresh is safe.</div> : <div className="compact-warning">This job is not ready to publish. Complete approval and generation first.</div> : null}
       {cpFinalizationPending ? <div className="compact-warning">Finalizing publish package…</div> : null}
+      {packageIncomplete && !cpFinalizationPending ? <div className="compact-warning">Publish package is incomplete. Dry-run, private publish, and final MP4 download unlock after the final video and thumbnail are available.</div> : null}
       {selectedPublished && !isPublishingThisJob ? (
         <div className="success-panel">
           <div>Uploaded to YouTube — duplicate upload is blocked.</div>
@@ -308,7 +311,7 @@ export function AwsVideoPublishDiagnosticsCard({
       <div className="pipeline-actions">
         <button
           className={recommendedStepKey === 'dry-run' ? 'button next-action' : 'button secondary'}
-          disabled={!canDryRun || isDryRunPending || isPublishingThisJob || anyPendingTimeout}
+          disabled={dryRunDisabled || isPublishingThisJob}
           onClick={onDryRun}
         >
           {isDryRunPending ? 'Running dry-run…' : 'Dry-run YouTube publish'}
@@ -334,9 +337,14 @@ export function AwsVideoPublishDiagnosticsCard({
             {isPublishPending ? 'Publishing privately…' : 'Publish privately'}
           </button>
         )}
-        {finalVideoAvailable ? (
-          <button className="button secondary" onClick={onDownload}>Download final MP4</button>
-        ) : null}
+        <button
+          className="button secondary"
+          onClick={onDownload}
+          disabled={packageIncomplete}
+          title={packageIncomplete ? 'Final MP4 download unlocks after the publish package is complete.' : 'Download the final MP4'}
+        >
+          Download final MP4
+        </button>
       </div>
       <p className="meta no-margin">
         {requiresReviewGate

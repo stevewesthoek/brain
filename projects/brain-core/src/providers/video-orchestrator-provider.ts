@@ -586,7 +586,13 @@ async function resolveVideoKeyForDownload(jobId: string): Promise<ResolveDownloa
       ok: false,
       code: finalized.code,
       error: finalized.error,
-      details: finalized.details ?? { missing: finalized.missing },
+      details: {
+        ...(finalized.details ?? {}),
+        missing: finalized.missing,
+        jobId,
+        generationMode,
+        packageComplete: false,
+      },
     };
   }
 
@@ -1331,23 +1337,29 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   return result;
 }
 
-export async function getVideoJobThumbnail(jobId: string): Promise<{ success: false } | { success: true; data: Buffer; mimeType: string }> {
-  if (!isValidJobId(jobId)) return { success: false };
+export async function getVideoJobThumbnail(jobId: string): Promise<{ success: false; code: string; error: string; details?: unknown } | { success: true; data: Buffer; mimeType: string }> {
+  if (!isValidJobId(jobId)) {
+    return { success: false, code: 'invalid_job_id', error: 'Invalid jobId' };
+  }
 
-  // Try to resolve thumbnail from artifacts
   const resolved = await resolvePublishableAssets(jobId);
-  if (!resolved.thumbnailKey) return { success: false };
+  if (!resolved.thumbnailKey) {
+    return {
+      success: false,
+      code: 'thumbnail_not_ready',
+      error: 'Thumbnail is not ready because the publish package is incomplete.',
+      details: { jobId, missing: resolved.missing, expectedKeys: resolved.expectedKeys },
+    };
+  }
 
-  // Try local file first
   const localThumbnailPath = join(getVideoOrchestratorRoot(), resolved.thumbnailKey);
   try {
     const data = await readFile(localThumbnailPath);
     return { success: true, data, mimeType: 'image/jpeg' };
   } catch {
-    // Local file doesn't exist, try S3
+    // Local file does not exist; fall through to S3 proxy fetch.
   }
 
-  // Try S3
   try {
     const { stdout } = await execFileAsync('aws', [
       's3', 'cp',
@@ -1356,14 +1368,24 @@ export async function getVideoJobThumbnail(jobId: string): Promise<{ success: fa
       '--region', AWS_REGION,
       '--no-cli-pager',
     ], { timeout: S3_PUBLISH_ASSET_TIMEOUT_MS, encoding: 'buffer' as any });
-    if (Buffer.isBuffer(stdout)) {
+    if (Buffer.isBuffer(stdout) && stdout.length > 0) {
       return { success: true, data: stdout, mimeType: 'image/jpeg' };
     }
-  } catch {
-    // S3 fetch failed
+  } catch (error) {
+    return {
+      success: false,
+      code: 'thumbnail_fetch_failed',
+      error: error instanceof Error ? error.message : 'Thumbnail could not be loaded from local storage or S3.',
+      details: { jobId, thumbnailKey: resolved.thumbnailKey, localPath: localThumbnailPath, bucket: S3_BUCKET, region: AWS_REGION },
+    };
   }
 
-  return { success: false };
+  return {
+    success: false,
+    code: 'thumbnail_empty',
+    error: 'Thumbnail loaded from S3 but no image bytes were returned.',
+    details: { jobId, thumbnailKey: resolved.thumbnailKey },
+  };
 }
 
 export async function resolveDownloadableVideo(jobId: string): Promise<ResolveDownloadableVideoResult> {

@@ -2452,8 +2452,8 @@ export async function routeRequest(
           const jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
           const result = await getVideoJobThumbnail(jobId);
           if (!result.success) {
-            response.writeHead(404, { 'Content-Type': 'application/json' });
-            response.end(JSON.stringify({ ok: false, error: `Thumbnail not found for job: ${jobId}` }));
+            response.writeHead(result.code === 'invalid_job_id' ? 400 : 404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+            response.end(JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null }));
           } else {
             response.writeHead(200, {
               'Content-Type': result.mimeType,
