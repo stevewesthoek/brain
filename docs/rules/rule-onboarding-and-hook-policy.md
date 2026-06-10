@@ -107,6 +107,8 @@ Current deterministic coverage includes:
 
 ## Initial Hook Candidate Backlog
 
+The detailed Phase 2 registry lives at `docs/rules/hook-candidate-registry.md`.
+
 These candidates were identified from `/code`, global Claude instructions, and current Brain repo state. They should be implemented incrementally, with tests/examples.
 
 | Candidate | Source rule | Determinism | Recommended level | Notes |
