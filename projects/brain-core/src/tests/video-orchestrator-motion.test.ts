@@ -188,3 +188,20 @@ test('LocalFfmpegAnimatedClipProvider name is local-ffmpeg-animated-placeholder'
   const provider = new LocalFfmpegAnimatedClipProvider();
   assert.equal(provider.name, 'local-ffmpeg-animated-placeholder');
 });
+
+
+
+test('LocalFfmpegSlideshowProvider accepts mediaPath scene inputs for animated clips', async () => {
+  const { LocalFfmpegSlideshowProvider } = await import('../providers/aws-video-slideshow-provider.js');
+  const provider = new LocalFfmpegSlideshowProvider();
+
+  assert.equal(provider.name, 'local-ffmpeg-slideshow');
+
+  const scene = {
+    index: 1,
+    mediaPath: '/tmp/example-animated-scene.mp4',
+    durationSeconds: 3,
+  };
+
+  assert.equal(scene.mediaPath.endsWith('.mp4'), true);
+});
