@@ -21,6 +21,7 @@ skills/
 5. New vendor/custom skills should be registered in `docs/skills/skill-index.md`; add a symlink in `active/` only when the skill is intentionally default-active.
 6. Orchestrators such as `code` may use dormant source skills automatically from the registry and source docs. Example: `custom/greploop` remains dormant but is part of `/code`'s automatic review-fix-review workflow.
 7. Do not store tool-internal config, caches, or runtime state here.
+8. Before adding permanent rules to a skill, classify them with `docs/rules/rule-onboarding-and-hook-policy.md`. Deterministic command/path/diff rules should move to hooks or CI when feasible; skills should keep task-specific workflow knowledge and judgment rules.
 
 ## Design Skill Routing
 

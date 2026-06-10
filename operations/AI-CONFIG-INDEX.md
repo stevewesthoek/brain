@@ -58,7 +58,11 @@
 
 ---
 
-### 2. Skills Registry — Orchestrators & Specialized Tools
+### 2a. Rule Onboarding and Hook Policy — Deterministic Rules Outside Context
+**File:** `docs/rules/rule-onboarding-and-hook-policy.md`  
+**What:** Canonical process for classifying every new rule as hook, CI/test, skill, orchestrator rule, runbook, or memory before adding it to always-on prompts. Deterministic command/path/diff rules should become hooks when feasible; judgment-based rules stay in orchestrators such as `/code`.
+
+### 2b. Skills Registry — Orchestrators & Specialized Tools
 **File:** `ai/skills/` with active/dormant registry at `docs/skills/skill-index.md`  
 **Structure:**
 - `active/` — Symlinks only (the default exported skill surface all AIs read)
