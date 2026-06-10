@@ -109,13 +109,21 @@ if printf '%s' "$CMD" | grep -qE 'git[[:space:]]+reset[[:space:]]+--hard|git[[:s
   ask "History or working-tree destructive git command detected. Confirm before discarding work."
 fi
 
+if printf '%s' "$CMD_LOWER" | grep -qE '\bgit[[:space:]]+clean[[:space:]]+.*-[a-z]*f[a-z]*d|\bgit[[:space:]]+branch[[:space:]]+-d|\bgit[[:space:]]+tag[[:space:]]+-d|\bgit[[:space:]]+push[[:space:]].*--delete' 2>/dev/null; then
+  ask "Destructive git cleanup/delete command detected. Confirm the target and recovery path before proceeding."
+fi
+
+if printf '%s' "$CMD_LOWER" | grep -qE '\bdocker([[:space:]]+compose)?[[:space:]]+.*down[[:space:]].*-v|\bdocker[[:space:]]+system[[:space:]]+prune\b' 2>/dev/null; then
+  ask "Docker volume/system cleanup detected. Confirm this will not remove needed local state or data volumes."
+fi
+
 # 2. Deployments and remote infra mutations.
 if printf '%s' "$CMD_LOWER" | grep -qE '\b(wrangler[[:space:]]+deploy|vercel([[:space:]].*)?[[:space:]]+deploy|flyctl?[[:space:]]+deploy|netlify[[:space:]]+deploy|terraform[[:space:]]+(apply|destroy)|pulumi[[:space:]]+(up|destroy)|kubectl[[:space:]]+(apply|delete|scale|rollout[[:space:]]+restart|set[[:space:]]+image)|helm[[:space:]]+(upgrade|install|uninstall|rollback)|dokploy(-cli)?[[:space:]].*\bdeploy\b|npm[[:space:]]+publish|cargo[[:space:]]+publish|gh[[:space:]]+release[[:space:]]+create)\b' 2>/dev/null; then
   ask "Deployment or infrastructure mutation detected. Confirm target environment and rollback before proceeding."
 fi
 
 # 3. Database mutations against non-local or unclear targets.
-if [ "$is_local_db_command" != true ] && printf '%s' "$CMD_LOWER" | grep -qE '\b(supabase[[:space:]]+db[[:space:]]+push|supabase[[:space:]]+migration|prisma[[:space:]]+migrate[[:space:]]+deploy|prisma[[:space:]]+migrate[[:space:]]+reset|drizzle-kit[[:space:]]+push|alembic[[:space:]]+upgrade|rails[[:space:]]+db:migrate|knex[[:space:]]+migrate:latest|sequelize[[:space:]]+db:migrate|pg_restore|createdb|dropdb)\b' 2>/dev/null; then
+if [ "$is_local_db_command" != true ] && printf '%s' "$CMD_LOWER" | grep -qE '\b(supabase[[:space:]]+db[[:space:]]+(push|reset)|supabase[[:space:]]+migration|prisma[[:space:]]+migrate[[:space:]]+deploy|prisma[[:space:]]+migrate[[:space:]]+reset|drizzle-kit[[:space:]]+(push|drop)|alembic[[:space:]]+upgrade|rails[[:space:]]+db:migrate|knex[[:space:]]+migrate:latest|sequelize[[:space:]]+db:migrate|pg_restore|createdb|dropdb)\b' 2>/dev/null; then
   ask "Database migration or mutation command detected. Confirm environment, rollback path, and data risk first."
 fi
 

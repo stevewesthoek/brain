@@ -222,10 +222,11 @@ embedded.provisionprofile
 
 | Field | Value |
 |---|---|
-| Status | `candidate` |
+| Status | `implemented` |
 | Existing hook | `operations/system-configs/claude/hooks/check-risky-command.sh` |
 | Determinism | High |
 | Initial level | `ask` |
+| Implemented in | Expanded destructive git, Docker cleanup, Supabase reset, and Drizzle drop patterns in `operations/system-configs/claude/hooks/check-risky-command.sh` |
 
 **Add/verify command patterns:**
 
