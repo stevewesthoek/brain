@@ -68,6 +68,10 @@
 **File:** `ai/policy/code-orchestration.md`  
 **What:** Canonical natural-language routing contract for coding work across Claude Code, Codex CLI, Gemini CLI, and IDE/agent surfaces. Defines intent routing, runtime roles, dormant subskill routing, autonomous progress rules, review-fix-review loop boundaries, and deterministic safety layer separation.
 
+### 2a.2. Capability Discovery Policy — Registry-Driven Tool/Skill Lookup
+**File:** `ai/policy/capability-discovery.md`  
+**What:** Canonical AI-agnostic lookup order for active skills, dormant skill profiles, CLI tools, config indexes, runbooks, and installation decisions. Keeps exhaustive capability lists in registries instead of always-on prompts.
+
 ### 2b. Skills Registry — Orchestrators & Specialized Tools
 **File:** `ai/skills/` with active/dormant registry at `docs/skills/skill-index.md`  
 **Structure:**
