@@ -655,32 +655,6 @@ export async function resolvePublishableAssets(jobId: string): Promise<Publishab
     inferGeneratedS3Artifacts(jobId, S3_PUBLISH_ASSET_TIMEOUT_MS),
   ]);
 
-  // If assets.json has complete publishableAssets, trust them directly (already validated or inferred)
-  const assetsPub = assetsJson ? (assetsJson as Record<string, unknown>).publishableAssets as Record<string, unknown> | undefined : undefined;
-  const hasCompleteAssetsPub = Boolean(
-    assetsPub &&
-    stringValue(assetsPub.videoKey) &&
-    stringValue(assetsPub.thumbnailKey)
-  );
-
-  if (hasCompleteAssetsPub && assetsPub) {
-    // Use existing publishableAssets from assets.json directly (already validated)
-    return {
-      videoKey: stringValue(assetsPub.videoKey),
-      thumbnailKey: stringValue(assetsPub.thumbnailKey),
-      narrationKey: stringValue(assetsPub.narrationKey),
-      source: { publishJson: false, assetsJson: true, statusJson: false, inferredS3: false },
-      selectedSource: {
-        videoKey: 'assetsJson',
-        thumbnailKey: 'assetsJson',
-        narrationKey: stringValue(assetsPub.narrationKey) ? 'assetsJson' : null,
-      },
-      missing: [],
-      checked: { publishJson: publishJson !== null, assetsJson: true, statusJson: statusJson !== null, inferredS3: false },
-      expectedKeys,
-    };
-  }
-
   const checked = {
     publishJson: publishJson !== null,
     assetsJson: assetsJson !== null,
@@ -2415,6 +2389,31 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
     'jobs/' + jobId + '/metadata/publish.json',
     'jobs/' + jobId + '/metadata/review.json',
   ];
+
+  const repairableMetadataKeys = new Set([
+    `jobs/${jobId}/metadata/youtube-package.json`,
+    `jobs/${jobId}/metadata/publish.json`,
+    `jobs/${jobId}/metadata/review.json`,
+  ]);
+  const prerequisiteKeys = requiredKeys.filter((key) => !repairableMetadataKeys.has(key));
+  const prerequisiteChecks = await Promise.all(prerequisiteKeys.map(async (key) => {
+    const local = await fileExists(join(getVideoOrchestratorRoot(), key));
+    if (local) return { key, exists: true };
+    return { key, exists: await checkS3ObjectExists(S3_BUCKET, key, AWS_REGION) };
+  }));
+  const missingPrerequisites = prerequisiteChecks.filter((item) => !item.exists).map((item) => item.key);
+  if (missingPrerequisites.length > 0) {
+    return {
+      ok: false,
+      code: 'publish_package_incomplete',
+      error: `Publish package incomplete; missing: ${missingPrerequisites.join(', ')}`,
+      missing: missingPrerequisites,
+      details: {
+        repaired: [],
+        stage: 'pre_repair_prerequisite_check',
+      },
+    };
+  }
 
   const repaired: string[] = [];
   const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
