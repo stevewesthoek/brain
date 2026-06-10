@@ -40,7 +40,7 @@ When the intent is IMPROVE, never refactor without running `/graphify` first. Bl
 For any change touching more than one file, lock in a plan before writing code. Use `/plan-eng-review` for existing code analysis, `/autoplan` for large features with design docs. A plan prevents scope creep and regrets.
 
 ### Law 3: Gate Before Shipping
-Always run `/review` before PR creation. No exceptions. If `/careful` is triggered (destructive ops detected), pause and confirm with user. This is non-negotiable.
+Always run `/review` before PR creation. No exceptions. Deterministic shipping/destructive-command confirmations are enforced by Claude hooks; `/code` keeps the judgment rule: interpret review results, stop on blocking findings, and only proceed when the user intent and evidence are clear.
 
 ### Law 3a: Loop Only When Review Findings Need Autonomous Fixes
 Use dormant `/greploop` automatically when the user asks for review findings to be fixed without manual bridging, or when a review gate finds concrete fixable issues and the user's intent is to keep improving until clean. Do not use it for single obvious fixes, architecture-level redesign, non-code reviews, or contradictory review findings. GrepLoop is a bounded review-fix-review loop, not a general refactor license.
@@ -394,14 +394,9 @@ Invoke `/ship`:
 
 ### G3. For production / destructive ops
 
-If the diff involves:
-- Production code
-- Database migrations
-- Destructive operations (delete, drop, etc.)
+If the diff involves production code, database migrations, or destructive operations, preserve a conservative shipping posture: use `/careful` for judgment-heavy risk review, and rely on Claude hooks for deterministic command confirmations such as destructive git cleanup, deploys, risky database mutations, and generated/runtime artifact staging.
 
-Auto-activate `/careful` guardrails BEFORE running `/ship`:
-
-> "This involves production / destructive ops. Use /careful to warn before any dangerous commands."
+> "This involves production / destructive ops. Use /careful for risk review before shipping."
 
 ---
 
