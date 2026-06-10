@@ -69,10 +69,10 @@ Avoid using Gemini for:
 
 ## Integrations (Shared AI-Agnostic + Gemini-Specific)
 
-**Shared with Claude and Codex** (51 AI-agnostic skills + 18+ CLIs):
-All skills listed in CLAUDE.md Integrations section are available to you. See `brain/CLAUDE.md` for complete list.
+**Shared with Claude and Codex:**
+Discover shared skills, dormant profiles, CLIs, and runbooks through `brain/ai/policy/capability-discovery.md`, `brain/docs/skills/skill-index.md`, `brain/docs/skills/profiles/`, `brain/operations/CLI-MANIFEST.md`, and `brain/operations/AI-CONFIG-INDEX.md`.
 
-Use `/skill-name` to invoke any skill. For CLIs, call directly via bash.
+Use active `/skill-name` entries directly when available. For dormant skills, consult the source docs/profile before activation. For CLIs, call directly via bash after checking the manifest when needed.
 
 **Optional standalone agent surfaces:**
 - `omp` / Oh My Pi is available as a separate terminal AI coding agent, like Cursor, Kiro, Antigravity, Claude Code, Codex, and Gemini. It is an optional manual runtime/evaluation harness only. Do not use it to replace AI Model Selector, Brain skills, shared memory, or routing policy. Canonical boundaries are documented in `brain/operations/runbooks/omp-optional-agent.md`.
