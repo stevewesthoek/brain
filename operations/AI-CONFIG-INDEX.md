@@ -60,6 +60,8 @@
 
 ### 2a. Rule Onboarding and Hook Policy — Deterministic Rules Outside Context
 **File:** `docs/rules/rule-onboarding-and-hook-policy.md`  
+**Registry:** `docs/rules/hook-candidate-registry.md`  
+**Behavior examples:** `operations/system-configs/claude/hooks/tests/README.md`  
 **What:** Canonical process for classifying every new rule as hook, CI/test, skill, orchestrator rule, runbook, or memory before adding it to always-on prompts. Deterministic command/path/diff rules should become hooks when feasible; judgment-based rules stay in orchestrators such as `/code`.
 
 ### 2b. Skills Registry — Orchestrators & Specialized Tools

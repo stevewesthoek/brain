@@ -91,6 +91,9 @@ Current known hook files:
 
 ```text
 operations/system-configs/claude/hooks/auto-handoff.sh
+operations/system-configs/claude/hooks/check-active-skill-surface.sh
+operations/system-configs/claude/hooks/check-generated-stage.sh
+operations/system-configs/claude/hooks/check-review-before-ship.sh
 operations/system-configs/claude/hooks/check-risky-command.sh
 operations/system-configs/claude/hooks/check-sensitive-edit.sh
 operations/system-configs/claude/hooks/inject-handoff.sh
@@ -99,8 +102,11 @@ operations/system-configs/claude/hooks/ledger-writer-hook.sh
 
 Current deterministic coverage includes:
 
-- confirmation for recursive deletes, force pushes, destructive git reset/checkout, deployments, and infrastructure mutations;
-- confirmation for edits to credential-like files, `.env` files, and global AI configuration files;
+- confirmation for recursive deletes, force pushes, destructive git reset/checkout, destructive git cleanup/delete, Docker volume/system cleanup, deployments, infrastructure mutations, and risky database mutations;
+- confirmation for edits to credential-like files, `.env` files, signing/certificate material, local cluster/Docker credentials, and global AI configuration files;
+- confirmation before broad staging or committing generated/runtime artifacts;
+- confirmation before raw writes/copies/symlink activation under `ai/skills/active/`;
+- confirmation before shipping, publishing, PR creation, or deploy commands without local review evidence;
 - handoff injection/automation and ledger writing hooks.
 
 ---

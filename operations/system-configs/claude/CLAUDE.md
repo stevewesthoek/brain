@@ -16,10 +16,7 @@ Skills live in `brain/ai/skills/` with three directories:
 - `vendors/` — third-party skill sources (e.g. `vendors/gstack/`)
 - `custom/` — first-party skill sources
 
-When installing a new skill:
-1. Place the source in `vendors/<vendor>/` or `custom/`.
-2. Create a symlink in `active/` pointing to the source (e.g. `ln -s ../vendors/gstack/foo active/foo`).
-3. Never put raw skill folders directly in `active/`.
+When installing or activating a skill, follow `ai/skills/README.md` and `docs/skills/skill-index.md`. Keep source in `vendors/<vendor>/` or `custom/`; `active/` is the exported surface. Deterministic mistakes around raw active-skill writes/copies/symlinks are guarded by `check-active-skill-surface.sh`.
 
 # Cross-repo operating context: brain + mind
 
