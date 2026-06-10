@@ -30,7 +30,8 @@ export function inferGenerationModeForPublishGate(input: {
 export function isGeneratedMediaGenerationMode(generationMode: string | null | undefined): boolean {
   return generationMode === 'hybrid_storyboard_fixture_video'
     || generationMode === 'hybrid_slideshow_video'
-    || generationMode === 'hybrid_image_slideshow_video';
+    || generationMode === 'hybrid_image_slideshow_video'
+    || generationMode === 'hybrid_animated_video';
 }
 
 /**
@@ -73,7 +74,7 @@ export function publishGateDecision(input: {
 
 /**
  * Validate generated-media mode publish assets.
- * For hybrid_slideshow_video and hybrid_image_slideshow_video, ensure:
+ * For generated modes (hybrid_slideshow_video, hybrid_image_slideshow_video, hybrid_animated_video), ensure:
  * - videoKey does not point to fixture (jobs/test-001)
  * - thumbnailKey exists and points to generated location
  * - videoKey must point to jobs/<jobId>/exports/ or jobs/<jobId>/video-generated/
@@ -91,8 +92,8 @@ export function validateGeneratedMediaPublishAssets(input: {
   const videoKey = input.videoKey;
   const thumbnailKey = input.thumbnailKey;
 
-  // Only validate hybrid_slideshow_video and hybrid_image_slideshow_video
-  if (mode !== 'hybrid_slideshow_video' && mode !== 'hybrid_image_slideshow_video') {
+  // Only validate generated-media modes.
+  if (mode !== 'hybrid_slideshow_video' && mode !== 'hybrid_image_slideshow_video' && mode !== 'hybrid_animated_video') {
     // Other modes (fixture/hybrid_tts, etc.) can use any key
     return { valid: true };
   }
