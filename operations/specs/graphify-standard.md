@@ -2,7 +2,27 @@
 
 Graphify uses the stock upstream CLI. No Brain wrappers. No AI Model Selector. No paid API.
 
-## Default operating model
+## Canonical scheduler
+
+The canonical scheduler is the **Office Nightly Scheduler**.
+
+All recurring automation jobs belong in the Office Nightly Scheduler. Do not create separate LaunchAgents, cron jobs, ProBot jobs, or standalone schedulers for Graphify.
+
+Graphify is one job inside the Office Nightly Scheduler:
+
+```text
+Scheduler: Office Nightly Scheduler
+Scheduler script: tools/scripts/office-nightly-scheduler.sh
+Scheduler LaunchAgent: operations/system-configs/launchagents/com.office.nightly-scheduler.plist
+Dashboard: Brain Console
+Job label: Graphify Nightly
+Job id: graphify-nightly
+Job implementation: tools/scripts/graphify-nightly.sh
+```
+
+ProBot is deprecated and must not be used for scheduler ownership or dashboard wiring.
+
+## Default Graphify operating model
 
 Graphify is an automatic, nightly, phased refinement system for every Git repo under `/Users/Office/Repos`.
 
@@ -13,7 +33,7 @@ The standard is fast-first, then deeper every night:
 3. **Pass 3 — papers/images/office refinement**: add PDFs, images, and office files while still skipping audio/video.
 4. **Pass 4 — deep refinement**: run the broadest/deepest refinement pass.
 
-The scheduler iterates phases `1 2 3 4` for existing repos and newly discovered repos. New repos get a fast usable graph first, then progressively richer graphs on later passes. Generated outputs are never committed.
+The Office Nightly Scheduler calls `tools/scripts/graphify-nightly.sh`, and that script iterates phases `1 2 3 4` for existing repos and newly discovered repos. New repos get a fast usable graph first, then progressively richer graphs on later passes. Generated outputs are never committed.
 
 ## Fixed backend
 
@@ -29,53 +49,35 @@ The scheduler iterates phases `1 2 3 4` for existing repos and newly discovered 
 
 No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
 
-## Automatic nightly scheduler
+## Automatic nightly execution
 
-Install or repair the automatic scheduler from the Brain repo:
+Install, repair, or inspect the central Office Nightly Scheduler only. Do not install a separate Graphify LaunchAgent.
+
+Verify the central scheduler LaunchAgent:
+
+```bash
+launchctl print gui/$(id -u) | grep -i office.nightly || true
+ls -lah ~/Library/LaunchAgents | grep -i office.nightly || true
+grep -R "office-nightly-scheduler.sh" ~/Library/LaunchAgents /Library/LaunchAgents 2>/dev/null || true
+```
+
+Verify the Graphify job is registered in Brain Console data:
+
+```bash
+grep -R "graphify-nightly" \
+  projects/brain-core/src/adapters \
+  tools/scripts/office-nightly-scheduler.sh \
+  tools/scripts/render-office-scheduler-report.sh
+```
+
+Run the central scheduler manually when needed:
 
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain
-chmod +x tools/scripts/graphify-nightly.sh tools/scripts/install-graphify-nightly-launch-agent.sh
-tools/scripts/install-graphify-nightly-launch-agent.sh
+tools/scripts/office-nightly-scheduler.sh
 ```
 
-The installer creates a user LaunchAgent:
-
-```text
-~/Library/LaunchAgents/com.office.graphify-nightly.plist
-```
-
-It runs daily at `01:15` local time by default and calls:
-
-```text
-/Users/Office/Repos/stevewesthoek/brain/tools/scripts/graphify-nightly.sh
-```
-
-Logs are written to:
-
-```text
-~/Library/Logs/graphify-nightly/stdout.log
-~/Library/Logs/graphify-nightly/stderr.log
-```
-
-Verify automatic scheduling:
-
-```bash
-launchctl print gui/$(id -u)/com.office.graphify-nightly
-launchctl print gui/$(id -u) | grep -i graphify || true
-grep -R "graphify-nightly.sh" ~/Library/LaunchAgents /Library/LaunchAgents 2>/dev/null || true
-```
-
-## Manual commands
-
-Manual commands should follow the same fast-first standard. For a repo that needs an immediate usable graph, use Pass 1 first.
-
-```bash
-cd /path/to/repo
-GRAPHIFY_PHASES=1 /Users/Office/Repos/stevewesthoek/brain/tools/scripts/graphify-nightly.sh
-```
-
-For a full local refinement cycle across all repos:
+Run only the Graphify job manually when debugging:
 
 ```bash
 cd /Users/Office/Repos/stevewesthoek/brain
@@ -97,7 +99,7 @@ graphify-out/graph.html                 — interactive visualization, generated
 
 ## Scan scoping
 
-The scheduler writes a managed `.graphifyignore` in each repo for the active phase. This is intentional. It makes every repo follow the same fast-first/refine-later policy automatically.
+The Graphify job writes a managed `.graphifyignore` in each repo for the active phase. This is intentional. It makes every repo follow the same fast-first/refine-later policy automatically.
 
 The base exclusions always remove generated output and runtime/build noise:
 
@@ -129,8 +131,9 @@ coverage/
 
 - Do not actively edit a repo while Graphify is scanning that same repo.
 - Commit or stash work before a clean graph run when possible.
-- The scheduler refuses non-Ollama backends.
-- The scheduler keeps `max-concurrency=1` for local model stability.
+- The Office Nightly Scheduler is the only scheduler owner.
+- The Graphify job refuses non-Ollama backends.
+- The Graphify job keeps `max-concurrency=1` for local model stability.
 - Passes 1–3 skip labels to finish quickly and reliably.
 - Pass 4 is the only deep/label-oriented refinement pass.
-- The scheduler stops starting new work after the cutoff hour but finishes any in-progress repo.
+- The Office Nightly Scheduler controls ordering so local machine load stays bounded.
