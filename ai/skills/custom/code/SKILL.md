@@ -59,6 +59,22 @@ Do exactly what was asked. An IMPROVE request on one module doesn't mean touchin
 
 ---
 
+## Self-Orchestration Loop
+
+Use this compact loop for every coding request, regardless of runtime surface:
+
+1. **Classify** intent and scope from the user's natural language.
+2. **Select** the smallest reliable workflow and supporting skill/source docs from `docs/skills/skill-index.md`.
+3. **Gather** only the context needed for the next safe decision; use graph/search/review tools when they reduce risk.
+4. **Act** autonomously on local, reversible, in-scope steps.
+5. **Validate** with the smallest meaningful local check when code/config changed.
+6. **Review/loop** only when findings are concrete, fixable, and in scope; route through dormant `greploop` only for bounded review-fix-review.
+7. **Stop or hand off** when scope is ambiguous, risk becomes high, context exceeds the current runtime, or unresolved review/validation findings remain.
+
+Keep user-facing updates outcome-focused: what changed, what evidence was used, what validation ran, and what remains.
+
+---
+
 ## Step 0: Classify Intent (No Intake Question)
 
 No intake question needed. Classify directly from the user's message.
