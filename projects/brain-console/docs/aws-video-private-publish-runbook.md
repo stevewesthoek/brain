@@ -25,6 +25,7 @@ jobs/<jobId>/metadata/scene-plan.json
 jobs/<jobId>/audio/narration-script.txt
 jobs/<jobId>/audio/narration.mp3
 jobs/<jobId>/metadata/overlay-plan.json          (hybrid_image_slideshow_video mode)
+jobs/<jobId>/animated/scene-NNN.mp4               (hybrid_animated_video local placeholder clips)
 jobs/<jobId>/video-generated/generated-001.mp4
 jobs/<jobId>/exports/generated-001-final.mp4
 jobs/<jobId>/exports/thumbnail-001.jpg
@@ -35,6 +36,8 @@ jobs/<jobId>/metadata/review.json                (written by finalize; approval 
 
 The dry-run fast path checks only `exports/generated-001-final.mp4` and `exports/thumbnail-001.jpg`.
 The real publish path calls `finalizeAwsVideoPublishPackage` which checks all keys above.
+
+`hybrid_animated_video` currently uses `local-ffmpeg-animated-placeholder` to create deterministic per-scene clips from still images. This proves the animated clip pipeline and publish contract, but it is not yet a real external image-to-video model provider.
 
 ---
 

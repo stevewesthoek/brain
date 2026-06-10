@@ -49,6 +49,14 @@ Stabilize the AWS Video dashboard so it behaves like a dependable operator conso
 - **File:** `projects/brain-core/src/tests/video-orchestrator-control-plane.test.ts`
 - **Latest commit:** 8a8db858 test: cover aws video published control-plane state
 
+### 7. Animated-video expansion scaffold
+- **Status:** Local placeholder path wired; real image-to-video model provider still future work
+- **Mode:** `hybrid_animated_video`
+- **Provider:** `local-ffmpeg-animated-placeholder`
+- **Contract:** scene image → `jobs/<jobId>/animated/scene-NNN.mp4` → stitched final MP4 → private publish flow
+- **Important distinction:** this proves the animated clip pipeline shape with deterministic ffmpeg zoompan clips; it is not yet true model-generated animation.
+- **Recent commits:** `4d103f62`, `2821f42c`, `aa12cfbb`, `eef5e3d4`, `a51479f9`
+
 ## Previous situation (resolved)
 
 The flow had previously become unstable during attempts to add timeout-safe behavior and a control-plane endpoint. These symptoms were resolved:
