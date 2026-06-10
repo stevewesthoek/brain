@@ -23,13 +23,15 @@ Use all three engines in the same session when workload warrants it.
 
 ## Mandatory: Universal capability installation
 
-**Before installing ANY new capability (skill, CLI, or MCP server), use `/brain-universal-capability-install`.**
+**Before installing ANY new capability (skill, CLI, or MCP server), apply `brain/ai/policy/capability-discovery.md` first.**
 
-This is non-negotiable. The pattern: Install once globally, configure all three engines (CLAUDE.md, AGENTS.md, GEMINI.md) simultaneously, commit together.
+If no existing skill, dormant profile, CLI, config, hook, runbook, or policy fits, then use `/brain-universal-capability-install`.
+
+This is non-negotiable. The pattern: discover first; install only when needed; install once globally; configure all three engines (CLAUDE.md, AGENTS.md, GEMINI.md) simultaneously; commit together.
 
 Why: NotebookLM was installed in Codex config but not Claude. This prevents asymmetric capabilities where one engine has a tool but the others don't.
 
-When: Whenever you hear "install X", "add Y skill", "set up Z MCP", immediately ask to run the skill first.
+When: Whenever you hear "install X", "add Y skill", "set up Z MCP", first search the registries from the capability discovery policy. If nothing fits, run the universal capability installation workflow.
 
 **After activating or installing any skill**, do NOT assume skill installation is complete until the sync check passes:
 ```bash
