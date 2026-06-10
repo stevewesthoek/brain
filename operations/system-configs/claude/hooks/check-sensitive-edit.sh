@@ -53,7 +53,7 @@ case "$TARGET_LOWER" in
 esac
 
 case "$TARGET_LOWER" in
-  */.env|*/.env.*)
+  .env|.env.*|*/.env|*/.env.*)
     case "$TARGET_LOWER" in
       *.env.example|*.env.sample|*.env.template)
         allow
