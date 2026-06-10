@@ -42,11 +42,12 @@ The check exit code tells you if sync succeeded (0) or failed (1). Only proceed 
 ## If you are the entry point (no Claude orchestrating)
 
 When the user starts a session directly in Codex rather than Claude:
-- You are the orchestrator for this session. Apply the full routing policy yourself.
+- You are the orchestrator for this session. Apply `brain/ai/policy/routing.md` and, for coding work, `brain/ai/policy/code-orchestration.md`.
+- Treat `/code` as the conceptual entry point for coding work even when the literal Claude skill runtime is not active: classify intent, preserve scope, use dormant skill source docs/registries, review before shipping, and separate deterministic checks into hooks/CI/manual gates.
 - Escalate your own tiers automatically: low → standard → max as needed.
 - For large-context tasks (>100k tokens): call `gemini-review.sh` (Flash) to preprocess first, then act on the summary.
-- For tasks requiring persistent memory, cross-repo context, or full iterative editing: tell the user to switch to Claude Code and resume the session there.
-- For everything else: handle it directly, escalating tiers as needed. You can complete any task within your scope.
+- For tasks requiring persistent memory, cross-repo context, architecture across multiple systems, or long iterative editing: prepare a handoff and tell the user to switch to Claude Code or the appropriate orchestrating surface.
+- For isolated reviews, focused patches, validation, and well-scoped implementation: handle it directly, escalating tiers as needed.
 
 ## Your role in the system
 
