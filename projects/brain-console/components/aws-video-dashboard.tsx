@@ -950,7 +950,8 @@ export function AwsVideoDashboard() {
   const isHybridStoryboardMode = generationMode === 'hybrid_storyboard_fixture_video';
   const isHybridSlideshowMode = generationMode === 'hybrid_slideshow_video';
   const isHybridImageSlideshowMode = generationMode === 'hybrid_image_slideshow_video';
-  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video' || generationMode === 'hybrid_slideshow_video' || generationMode === 'hybrid_image_slideshow_video';
+  const isHybridAnimatedVideoMode = generationMode === 'hybrid_animated_video';
+  const isFixtureMedia = mediaSource === 'fixture' || mediaSource === 'hybrid' || generationMode === 'fixture_assembly' || generationMode === 'hybrid_scene_plan_fixture_media' || generationMode === 'hybrid_tts_fixture_video' || generationMode === 'hybrid_storyboard_fixture_video' || generationMode === 'hybrid_slideshow_video' || generationMode === 'hybrid_image_slideshow_video' || generationMode === 'hybrid_animated_video';
 
   // Artifact keys from control-plane with review media precedence
   const finalVideoKey =
@@ -1045,7 +1046,7 @@ export function AwsVideoDashboard() {
   const selectedApprovalStatus = cpSelectedJob?.approvalStatus ?? 'pending';
   const reviewStatus = cpReview?.reviewStatus ?? 'pending';
   const reviewApproved = reviewStatus === 'approved';
-  const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video'].includes(generationMode);
+  const requiresReviewGate = ['hybrid_storyboard_fixture_video', 'hybrid_slideshow_video', 'hybrid_image_slideshow_video', 'hybrid_animated_video'].includes(generationMode);
 
   // Finalization from control-plane
   const finalizationState = cpFinalization?.status ?? null;
