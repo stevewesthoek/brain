@@ -205,3 +205,36 @@ test('LocalFfmpegSlideshowProvider accepts mediaPath scene inputs for animated c
 
   assert.equal(scene.mediaPath.endsWith('.mp4'), true);
 });
+
+
+
+test('finalizeAwsVideoPublishPackage rejects incomplete packages before repairing ready metadata', async () => {
+  const jobId = `motion-incomplete-${Date.now()}`;
+  const jobRoot = await setupMotionJob(jobId);
+  try {
+    await writeFile(join(jobRoot, 'metadata', 'assets.json'), JSON.stringify({
+      jobId,
+      generationMode: 'hybrid_image_slideshow_video',
+      publishableAssets: {
+        videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+        thumbnailKey: `jobs/${jobId}/exports/thumbnail-001.jpg`,
+        narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+        missing: [],
+      },
+    }, null, 2));
+
+    const finalized = await finalizeAwsVideoPublishPackage(jobId);
+    assert.equal(finalized.ok, false);
+    if (!finalized.ok) {
+      assert.equal(finalized.code, 'publish_package_incomplete');
+      assert.equal(finalized.details?.stage, 'pre_repair_prerequisite_check');
+      assert.deepEqual(finalized.details?.repaired, []);
+      assert.ok(finalized.missing.includes(`jobs/${jobId}/metadata/overlay-plan.json`));
+      assert.ok(finalized.missing.includes(`jobs/${jobId}/video-generated/generated-001.mp4`));
+      assert.ok(finalized.missing.includes(`jobs/${jobId}/exports/generated-001-final.mp4`));
+      assert.ok(finalized.missing.includes(`jobs/${jobId}/exports/thumbnail-001.jpg`));
+    }
+  } finally {
+    await rm(jobRoot, { recursive: true, force: true });
+  }
+});
