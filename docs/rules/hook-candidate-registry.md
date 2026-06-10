@@ -6,6 +6,8 @@
 
 **Policy:** Use `docs/rules/rule-onboarding-and-hook-policy.md` before adding, changing, or enforcing a hook candidate.
 
+**Behavior tests:** Use `operations/system-configs/claude/hooks/tests/README.md` for allow/ask examples before tightening enforcement.
+
 ---
 
 ## Candidate Status Values
