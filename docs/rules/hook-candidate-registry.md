@@ -139,14 +139,15 @@ Edit docs/skills/skill-index.md
 
 | Field | Value |
 |---|---|
-| Status | `candidate` |
+| Status | `implemented` |
 | Source rule | `/code` Law 3: review before PR creation or shipping. |
 | Determinism | Medium-high |
 | Destination | Hook, possibly CI too |
-| Proposed hook | `operations/system-configs/claude/hooks/check-review-before-ship.sh` |
+| Implemented hook | `operations/system-configs/claude/hooks/check-review-before-ship.sh` |
 | Event/matcher | `PreToolUse` / `Bash` |
 | Initial level | `ask` |
 | False-positive risk | Medium |
+| Implemented in | `operations/system-configs/claude/settings.json` Bash PreToolUse hook chain |
 
 **Trigger command examples:**
 
