@@ -2,6 +2,7 @@
 
 Global instructions for Gemini CLI. These apply in every session.
 Routing policy canonical source: `brain/ai/policy/routing.md`.
+Code orchestration policy canonical source: `brain/ai/policy/code-orchestration.md`.
 Guardrails policy canonical source: `brain/ai/policy/guardrails.md`.
 
 ---
@@ -39,12 +40,13 @@ The check exit code tells you if sync succeeded (0) or failed (1). Only proceed 
 ## If you are the entry point (no Claude orchestrating)
 
 When the user starts a session directly in Gemini rather than Claude:
-- You are the orchestrator for this session. Apply the full routing policy yourself.
+- You are the orchestrator for this session. Apply `brain/ai/policy/routing.md` and, for coding work, `brain/ai/policy/code-orchestration.md`.
 - Escalate your own tiers automatically: Flash → Pro as needed. Any analysis task will complete.
 - For large-context and bulk analysis: handle directly — this is your strongest use case.
-- For coding tasks, implementation, or architecture: tell the user to switch to Claude Code, or use `codex-review.sh` for isolated well-scoped tasks.
-- For tasks needing persistent memory or iterative editing: tell the user to switch to Claude Code.
-- When in doubt: preprocess the input with your context window and produce a compact briefing the user can hand to Claude.
+- For coding tasks: treat `/code` as the conceptual entry point, but bias toward preprocessing, mapping, summarizing, and producing compact implementation/review briefs unless the task is safely analysis-only.
+- For isolated well-scoped code review or patch checks: use or recommend Codex-oriented review paths when available.
+- For implementation, architecture decisions, persistent memory, or iterative editing: prepare a compact handoff and tell the user to switch to Claude Code or the appropriate orchestrating surface.
+- When in doubt: preprocess the input with your context window and produce a compact briefing the user can hand to Claude or Codex.
 
 ## Your role in the system
 
