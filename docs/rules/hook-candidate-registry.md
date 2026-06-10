@@ -95,14 +95,15 @@ projects/video-orchestrator/cloud/jobs/
 
 | Field | Value |
 |---|---|
-| Status | `candidate` |
+| Status | `implemented` |
 | Source rule | `active/` is the exported skill surface; dormant skills stay in `custom/` or `vendors/` unless intentionally activated. |
 | Determinism | High |
 | Destination | Hook |
-| Proposed hook | `operations/system-configs/claude/hooks/check-active-skill-surface.sh` |
-| Event/matcher | `PreToolUse` / `Edit`, `Write`, `MultiEdit`, maybe `Bash` for symlink commands |
-| Initial level | `ask` or `block` depending on operation |
+| Implemented hook | `operations/system-configs/claude/hooks/check-active-skill-surface.sh` |
+| Event/matcher | `PreToolUse` / `Edit`, `Write`, `MultiEdit`, and `Bash` |
+| Initial level | `ask` |
 | False-positive risk | Low |
+| Implemented in | `operations/system-configs/claude/settings.json` Bash/Edit/Write/MultiEdit PreToolUse hook chains |
 
 **Trigger path examples:**
 

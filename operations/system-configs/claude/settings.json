@@ -31,6 +31,10 @@
           {
             "type": "command",
             "command": "bash /Users/Office/.claude/hooks/check-generated-stage.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-active-skill-surface.sh"
           }
         ]
       },
@@ -40,6 +44,10 @@
           {
             "type": "command",
             "command": "bash /Users/Office/.claude/hooks/check-sensitive-edit.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-active-skill-surface.sh"
           }
         ]
       },
@@ -49,6 +57,10 @@
           {
             "type": "command",
             "command": "bash /Users/Office/.claude/hooks/check-sensitive-edit.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-active-skill-surface.sh"
           }
         ]
       },
@@ -58,6 +70,10 @@
           {
             "type": "command",
             "command": "bash /Users/Office/.claude/hooks/check-sensitive-edit.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /Users/Office/.claude/hooks/check-active-skill-surface.sh"
           }
         ]
       }
