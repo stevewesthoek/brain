@@ -273,8 +273,40 @@ run_phase() {
   log "$label extract repo=$repo model=$GRAPHIFY_MODEL token-budget=$token_budget"
   run_graphify "$repo" "${extract_cmd[@]}"
 
+  local graph_before_cluster="$repo/graphify-out/graph.json"
+  local graph_before_hash="missing"
+  if [[ -f "$graph_before_cluster" ]]; then
+    graph_before_hash="$(shasum -a 256 "$graph_before_cluster" | awk '{print $1}')"
+  fi
+
+  local cluster_log="$repo/graphify-out/.scheduler/${label}-cluster.log"
   log "$label cluster repo=$repo viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
-  run_graphify "$repo" "${cluster_cmd[@]}"
+  if run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+    if grep -q "Refusing to overwrite" "$cluster_log"; then
+      log "$label cluster refused graph overwrite; rebuilding phase from clean graphify-out repo=$repo"
+      rm -rf "$repo/graphify-out"
+      mkdir -p "$repo/graphify-out/.scheduler"
+      write_graphifyignore_for_phase "$repo" "$phase"
+      run_graphify "$repo" "${extract_cmd[@]}"
+      graph_before_hash="$(shasum -a 256 "$repo/graphify-out/graph.json" | awk '{print $1}')"
+      run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2)
+      if grep -q "Refusing to overwrite" "$cluster_log"; then
+        log "$label cluster still refused graph overwrite after clean rebuild repo=$repo"
+        return 1
+      fi
+    fi
+  else
+    return 1
+  fi
+
+  if [[ -f "$graph_before_cluster" ]]; then
+    local graph_after_hash
+    graph_after_hash="$(shasum -a 256 "$graph_before_cluster" | awk '{print $1}')"
+    if [[ "$graph_after_hash" == "$graph_before_hash" ]]; then
+      log "$label cluster did not update graph.json hash repo=$repo"
+      return 1
+    fi
+  fi
 
   printf '%s\n' "$phase" > "$repo/graphify-out/.scheduler/last-successful-phase"
   printf '%s\n' "$(timestamp)" > "$repo/graphify-out/.scheduler/last-successful-phase-at"
