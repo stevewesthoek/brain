@@ -4497,6 +4497,7 @@ export async function generateApprovedScript(
         outputVideoPath,
         scenes: slideshowScenes.map((scene) => ({
           index: scene.index,
+          mediaPath: scene.imagePath,
           imagePath: scene.imagePath,
           durationSeconds: scene.durationSeconds,
         })),

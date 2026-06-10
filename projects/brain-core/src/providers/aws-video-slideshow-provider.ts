@@ -16,11 +16,20 @@ export class LocalFfmpegSlideshowProvider {
     const lines: string[] = [];
 
     for (const scene of input.scenes) {
-      lines.push(`file '${scene.imagePath.replace(/'/g, "'\\''")}'`);
+      const sceneMediaPath = scene.mediaPath ?? scene.imagePath;
+      if (!sceneMediaPath) {
+        throw new Error(`slideshow_assembly_failed: scene ${scene.index} is missing mediaPath`);
+      }
+      lines.push(`file '${sceneMediaPath.replace(/'/g, "'\\''")}'`);
       lines.push(`duration ${Math.max(1, scene.durationSeconds)}`);
     }
     if (input.scenes.length > 0) {
-      lines.push(`file '${input.scenes[input.scenes.length - 1]!.imagePath.replace(/'/g, "'\\''")}'`);
+      const finalScene = input.scenes[input.scenes.length - 1]!;
+      const finalSceneMediaPath = finalScene.mediaPath ?? finalScene.imagePath;
+      if (!finalSceneMediaPath) {
+        throw new Error(`slideshow_assembly_failed: scene ${finalScene.index} is missing mediaPath`);
+      }
+      lines.push(`file '${finalSceneMediaPath.replace(/'/g, "'\\''")}'`);
     }
 
     await writeFile(concatFilePath, `${lines.join('\n')}\n`, 'utf-8');

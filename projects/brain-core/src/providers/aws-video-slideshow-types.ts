@@ -1,6 +1,13 @@
 export interface SlideshowSceneInput {
   index: number;
-  imagePath: string;
+  /**
+   * Local media source for this scene. This can be a still image or a pre-rendered video clip.
+   */
+  mediaPath?: string;
+  /**
+   * Backward-compatible alias for older slideshow/image callers.
+   */
+  imagePath?: string;
   durationSeconds: number;
 }
 
