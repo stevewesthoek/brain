@@ -30,7 +30,7 @@ Graphify is an automatic, nightly, phased refinement system for every Git repo u
 
 The standard is fast-first, then deeper every night:
 
-1. **Pass 1 — fast code/config graph**: skip docs, papers, images, office files, audio/video, deep mode, and labels. Always produce usable `graph.json`, `GRAPH_REPORT.md`, and `graph.html` as quickly as possible.
+1. **Pass 1 — fast code/config graph**: skip docs, papers, images, office files, audio/video, and deep mode, but keep community labels so the graph is immediately human-readable. Always produce usable `graph.json`, `GRAPH_REPORT.md`, and `graph.html` as quickly as possible.
 2. **Pass 2 — docs/Markdown refinement**: add Markdown/docs while still skipping papers, images, office files, and media.
 3. **Pass 3 — papers/images/office refinement**: add PDFs, images, and office files while still skipping audio/video.
 4. **Pass 4 — deep refinement**: run the broadest/deepest refinement pass.

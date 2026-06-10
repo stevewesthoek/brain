@@ -266,7 +266,7 @@ run_phase() {
     "--backend=$GRAPHIFY_BACKEND"
   )
 
-  if [[ "$phase" != "4" ]]; then
+  if [[ "$phase" == "2" || "$phase" == "3" ]]; then
     cluster_cmd+=(--no-label)
   fi
 
