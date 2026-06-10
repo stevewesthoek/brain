@@ -54,10 +54,10 @@ test('generation modes: fixture and hybrid modes are fully implemented', () => {
   }
 });
 
-test('generation modes: hybrid_animated_video is planned but not yet implemented', () => {
-  // This mode is registered in the type and env var router but returns
-  // animated_video_provider_not_configured from generateApprovedScript.
-  // It documents the contract for the next phase of implementation.
+test('generation modes: hybrid_animated_video is scaffolded with local placeholder provider', () => {
+  // Phase B: AnimatedClipProvider interface + LocalFfmpegAnimatedClipProvider added.
+  // hybrid_animated_video routes through storyboard/image generation then generates
+  // per-scene animated clips using the local ffmpeg placeholder provider.
   const plannedMode = 'hybrid_animated_video';
   assert.ok(EXPECTED_GENERATION_MODES.includes(plannedMode), 'hybrid_animated_video is registered');
 
@@ -116,5 +116,43 @@ test('generation modes: manifest mode name alignment', () => {
       EXPECTED_MANIFEST_GENERATION_MODES.includes(manifestMode as any),
       `${manifestMode} must be in EXPECTED_MANIFEST_GENERATION_MODES`,
     );
+  }
+});
+
+test('generation modes: AnimatedClipProvider interface contract', async () => {
+  // Verify the types file exports AnimatedClipProvider and AnimatedClipProviderInput.
+  const types = await import('../providers/aws-video-generation-types.js');
+  // Types are compile-time only — verify by importing AnimatedClipProviderInput shape via assignment.
+  // If this compiles, the interface is exported correctly.
+  const input: import('../providers/aws-video-generation-types.js').AnimatedClipProviderInput = {
+    jobId: 'test-001',
+    imagePath: '/tmp/scene-001.png',
+    outputClipPath: '/tmp/scene-001.mp4',
+    durationSeconds: 3,
+    sceneIndex: 0,
+    width: 1280,
+    height: 720,
+  };
+  assert.equal(input.jobId, 'test-001');
+  assert.equal(input.outputClipPath, '/tmp/scene-001.mp4');
+});
+
+test('generation modes: LocalFfmpegAnimatedClipProvider has correct provider name', async () => {
+  const { LocalFfmpegAnimatedClipProvider } = await import('../providers/aws-video-animated-clip-provider.js');
+  const provider = new LocalFfmpegAnimatedClipProvider();
+  assert.equal(provider.name, 'local-ffmpeg-animated-placeholder');
+});
+
+test('generation modes: animated clip output path follows jobs/<jobId>/animated/scene-NNN.mp4 contract', () => {
+  const jobId = 'test-animated-001';
+  const sceneCount = 3;
+  const animatedClipKeys = Array.from({ length: sceneCount }, (_, index) =>
+    `jobs/${jobId}/animated/scene-${String(index + 1).padStart(3, '0')}.mp4`
+  );
+
+  for (const [index, key] of animatedClipKeys.entries()) {
+    assert.ok(key.startsWith(`jobs/${jobId}/animated/`), `clip key must be scoped to job animated dir`);
+    assert.ok(key.endsWith('.mp4'), `clip key must be an mp4 path`);
+    assert.ok(key.includes(`scene-${String(index + 1).padStart(3, '0')}`), `clip key must include padded scene number`);
   }
 });

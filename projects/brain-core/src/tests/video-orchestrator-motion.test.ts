@@ -155,3 +155,36 @@ test('finalizeAwsVideoPublishPackage keeps canonical publish package intact', as
     await rm(jobRoot, { recursive: true, force: true });
   }
 });
+
+test('LocalFfmpegAnimatedClipProvider generates a clip to the animated/ path', async () => {
+  const { LocalFfmpegAnimatedClipProvider } = await import('../providers/aws-video-animated-clip-provider.js');
+  const jobId = `animated-clip-${Date.now()}`;
+  const jobRoot = await setupMotionJob(jobId);
+  try {
+    const provider = new LocalFfmpegAnimatedClipProvider();
+    const animatedDir = join(jobRoot, 'animated');
+    await mkdir(animatedDir, { recursive: true });
+    const outputClipPath = join(animatedDir, 'scene-001.mp4');
+    const result = await provider.generateClip({
+      jobId,
+      imagePath: join(jobRoot, 'images', 'scene-001.png'),
+      outputClipPath,
+      durationSeconds: 3,
+      sceneIndex: 0,
+      width: 1280,
+      height: 720,
+    });
+    assert.equal(result.clipPath, outputClipPath);
+    // Verify the clip was created on disk
+    const { access } = await import('node:fs/promises');
+    await access(outputClipPath); // throws if file doesn't exist
+  } finally {
+    await rm(jobRoot, { recursive: true, force: true });
+  }
+});
+
+test('LocalFfmpegAnimatedClipProvider name is local-ffmpeg-animated-placeholder', async () => {
+  const { LocalFfmpegAnimatedClipProvider } = await import('../providers/aws-video-animated-clip-provider.js');
+  const provider = new LocalFfmpegAnimatedClipProvider();
+  assert.equal(provider.name, 'local-ffmpeg-animated-placeholder');
+});

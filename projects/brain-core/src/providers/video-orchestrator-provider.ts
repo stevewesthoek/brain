@@ -9,6 +9,7 @@ import { DeterministicScenePlanningProvider } from './aws-video-scene-planner.js
 import { PollyTTSProvider } from './aws-video-polly-provider.js';
 import { DeterministicStoryboardProvider } from './aws-video-storyboard-provider.js';
 import { LocalFfmpegSlideshowProvider } from './aws-video-slideshow-provider.js';
+import { LocalFfmpegAnimatedClipProvider } from './aws-video-animated-clip-provider.js';
 import { containsInternalOverlayTerms, DeterministicOverlayProvider, type OverlayPlan } from './aws-video-overlay-provider.js';
 import {
   AwsBedrockImageProvider,
@@ -2783,7 +2784,7 @@ async function requireExecutable(name: string, code: string): Promise<string> {
   }
 }
 
-async function createMotionClipFromSceneImage(input: {
+export async function createMotionClipFromSceneImage(input: {
   ffmpegPath: string;
   imagePath: string;
   outputClipPath: string;
@@ -3644,15 +3645,6 @@ export async function generateApprovedScript(
     };
   }
 
-  if (generationMode === 'hybrid_animated_video') {
-    return {
-      ok: false,
-      code: 'animated_video_provider_not_configured',
-      message: 'Animated video generation is not yet implemented. This mode is reserved for a future image-to-video model provider (e.g. Nova Reel, Runway, Pika). Use hybrid_image_slideshow for the current best local generation path.',
-      jobId,
-    };
-  }
-
   // All validations passed, generation can proceed
   // Create job directory structure
   const jobRoot = join(getVideoOrchestratorRoot(), 'jobs', jobId);
@@ -3683,8 +3675,23 @@ export async function generateApprovedScript(
   const isHybridStoryboardMode = generationMode === 'hybrid_storyboard';
   const isHybridSlideshowMode = generationMode === 'hybrid_slideshow';
   const isHybridImageSlideshowMode = generationMode === 'hybrid_image_slideshow';
-  const usesTtsNarration = isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode;
-  const modeMetadata = isHybridImageSlideshowMode
+  const isHybridAnimatedVideoMode = generationMode === 'hybrid_animated_video';
+  const usesTtsNarration = isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode;
+  const modeMetadata = isHybridAnimatedVideoMode
+    ? {
+        mediaSource: 'hybrid' as const,
+        generationMode: 'hybrid_animated_video' as const,
+        videoSourceKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
+        audioSourceKey: `jobs/${jobId}/audio/narration.mp3`,
+        providerName: 'hybrid-animated-video-ffmpeg',
+        aiGenerated: false,
+        partialAiGenerated: true,
+        ttsGenerated: true,
+        storyboardGenerated: true,
+        imageGenerated: true,
+        slideshowGenerated: true,
+      }
+    : isHybridImageSlideshowMode
     ? {
         mediaSource: 'hybrid' as const,
         generationMode: 'hybrid_image_slideshow_video' as const,
@@ -3854,7 +3861,7 @@ export async function generateApprovedScript(
   // Step 2.5 (Hybrid, Hybrid TTS, and Hybrid Storyboard): Generate scene plan and narration script from prompt
   let scenePlanKey: string | undefined;
   let narrationScriptKey: string | undefined;
-  const usesPromptDerivedPlanning = isHybridMode || isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode;
+  const usesPromptDerivedPlanning = isHybridMode || isHybridTTSMode || isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode;
   if (usesPromptDerivedPlanning) {
     const scenePlanner = new DeterministicScenePlanningProvider();
     try {
@@ -4075,6 +4082,7 @@ export async function generateApprovedScript(
   let motionFrameKeys: string[] = [];
   let motionFallbackUsed = false;
   let motionFallbackReason: string | null = null;
+  let animatedClipKeys: string[] = [];
   let imageGenerationSettings: {
     width: number;
     height: number;
@@ -4097,7 +4105,7 @@ export async function generateApprovedScript(
     generatedAt?: string;
   }> = [];
 
-  if ((isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode) && scenePlanKey && narrationScriptKey) {
+  if ((isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode) && scenePlanKey && narrationScriptKey) {
     const configuredImageProvider: AwsVideoImageProviderName | null = isHybridImageSlideshowMode
       ? getConfiguredImageProvider()
       : 'deterministic-placeholder';
@@ -4359,6 +4367,31 @@ export async function generateApprovedScript(
       imageProvider = storyboardProvider.name;
       if (configuredImageProvider) imageProvider = configuredImageProvider;
 
+      if (isHybridAnimatedVideoMode && sceneImageKeys.length > 0 && scenePlanContent) {
+        const animatedDir = join(jobRoot, 'animated');
+        await mkdir(animatedDir, { recursive: true });
+        const animatedClipProvider = new LocalFfmpegAnimatedClipProvider();
+        const clipWidth = imageGenerationSettings?.width ?? 1280;
+        const clipHeight = imageGenerationSettings?.height ?? 720;
+        for (const [index, scene] of scenePlanContent.scenes.entries()) {
+          const sceneNumber = index + 1;
+          const sourceKey = sceneImageKeys[index] ?? `jobs/${jobId}/images/scene-${String(sceneNumber).padStart(3, '0')}.png`;
+          const sourcePath = join(jobRoot, sourceKey.replace(/^jobs\/[^/]+\//, ''));
+          const clipKey = `jobs/${jobId}/animated/scene-${String(sceneNumber).padStart(3, '0')}.mp4`;
+          const outputClipPath = join(animatedDir, `scene-${String(sceneNumber).padStart(3, '0')}.mp4`);
+          await animatedClipProvider.generateClip({
+            jobId,
+            imagePath: sourcePath,
+            outputClipPath,
+            durationSeconds: scene.durationSeconds,
+            sceneIndex: index,
+            width: clipWidth,
+            height: clipHeight,
+          });
+          animatedClipKeys.push(clipKey);
+        }
+      }
+
       // Update status: Storyboard complete
       await updateProgressStatus('storyboard_complete', {
         imageProvider,
@@ -4383,7 +4416,7 @@ export async function generateApprovedScript(
 
   // Step 4: Assemble the final video.
   const videoKey = `jobs/${jobId}/video-generated/generated-001.mp4`;
-  if (isHybridSlideshowMode || isHybridImageSlideshowMode) {
+  if (isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode) {
     await updateProgressStatus('slideshow_started', { videoKey });
     try {
       const slideshowProvider = new LocalFfmpegSlideshowProvider();
@@ -4447,6 +4480,14 @@ export async function generateApprovedScript(
           ...scene,
           imagePath: join(jobRoot, 'motion', `scene-${String(index + 1).padStart(3, '0')}.mp4`),
           imageKey: motionClipKeys[index] ?? scene.imageKey,
+        }));
+      }
+
+      if (isHybridAnimatedVideoMode && animatedClipKeys.length > 0) {
+        slideshowScenes = slideshowScenes.map((scene, index) => ({
+          ...scene,
+          imagePath: join(jobRoot, 'animated', `scene-${String(index + 1).padStart(3, '0')}.mp4`),
+          imageKey: animatedClipKeys[index] ?? scene.imageKey,
         }));
       }
 
@@ -4637,6 +4678,42 @@ export async function generateApprovedScript(
         : 'Scene images are generated by an image model; final video is slideshow assembly, not motion-video generation.',
       ...(overlayPlanContent?.warnings ?? []),
     ];
+  } else if (isHybridAnimatedVideoMode && narrationScriptKey && storyboardKey) {
+    assetsJson.scenePlanKey = scenePlanKey;
+    assetsJson.narrationScriptKey = narrationScriptKey;
+    assetsJson.audioKey = narrationKey;
+    assetsJson.audioSourceKey = narrationKey;
+    assetsJson.audioProvider = audioProvider;
+    assetsJson.voiceId = voiceId;
+    assetsJson.storyboardKey = storyboardKey;
+    assetsJson.sceneImageKeys = sceneImageKeys;
+    assetsJson.imageProvider = imageProvider;
+    assetsJson.videoProvider = 'local-ffmpeg-animated-placeholder';
+    assetsJson.videoKey = videoKey;
+    assetsJson.animatedClipKeys = animatedClipKeys;
+    assetsJson.ttsGenerated = true;
+    assetsJson.storyboardGenerated = true;
+    assetsJson.imageGenerated = true;
+    assetsJson.slideshowGenerated = true;
+    assetsJson.narration = {
+      path: narrationKey,
+      source: 'tts',
+      provider: audioProvider,
+      voiceId,
+    };
+    assetsJson.sourceVideo = {
+      path: videoKey,
+      source: 'animated-clips',
+      provider: 'local-ffmpeg-animated-placeholder',
+    };
+    assetsJson.providers = {
+      scenePlan: 'deterministic-local',
+      narrationScript: 'deterministic-local',
+      narrationAudio: 'aws-polly',
+      sceneImages: imageProvider,
+      video: 'local-ffmpeg-animated-placeholder',
+    };
+    assetsJson.warnings = ['Animated video mode: per-scene clips generated by local-ffmpeg-animated-placeholder (deterministic zoompan). Replace provider for real image-to-video model clips.'];
   } else if (isHybridSlideshowMode && narrationScriptKey && storyboardKey) {
     assetsJson.scenePlanKey = scenePlanKey;
     assetsJson.narrationScriptKey = narrationScriptKey;

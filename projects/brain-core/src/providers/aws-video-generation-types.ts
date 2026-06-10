@@ -74,3 +74,18 @@ export interface GenerationManifest {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AnimatedClipProviderInput {
+  jobId: string;
+  imagePath: string;
+  outputClipPath: string;
+  durationSeconds: number;
+  sceneIndex: number;
+  width: number;
+  height: number;
+}
+
+export interface AnimatedClipProvider {
+  name: string;
+  generateClip(input: AnimatedClipProviderInput): Promise<{ clipPath: string }>;
+}
