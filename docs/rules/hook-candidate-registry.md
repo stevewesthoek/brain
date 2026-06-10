@@ -38,14 +38,15 @@ Start new hooks at `warn` or `ask` unless the false-positive risk is proven low.
 
 | Field | Value |
 |---|---|
-| Status | `candidate` |
+| Status | `implemented` |
 | Source rule | Do not accidentally commit generated/runtime junk. Stage exact intended paths. |
 | Determinism | High |
 | Destination | Hook |
-| Proposed hook | `operations/system-configs/claude/hooks/check-generated-stage.sh` |
+| Implemented hook | `operations/system-configs/claude/hooks/check-generated-stage.sh` |
 | Event/matcher | `PreToolUse` / `Bash` |
 | Initial level | `ask`, with `block` possible for hard generated paths later |
 | False-positive risk | Low-medium |
+| Implemented in | `operations/system-configs/claude/settings.json` Bash PreToolUse hook chain |
 
 **Trigger examples:**
 
