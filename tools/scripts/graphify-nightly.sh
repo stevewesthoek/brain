@@ -285,18 +285,14 @@ run_phase() {
     return 1
   fi
 
-  if [[ "$phase" == "1" ]]; then
-    log "$label atomic first pass completed without separate cluster-only repo=$repo"
-  else
-    log "$label cluster repo=$repo viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
-    if ! run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
-      return 1
-    fi
+  log "$label cluster repo=$repo viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
+  if ! run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+    return 1
+  fi
 
-    if grep -q "Refusing to overwrite" "$cluster_log"; then
-      log "$label cluster produced unsafe graph overwrite warning repo=$repo"
-      return 1
-    fi
+  if grep -q "Refusing to overwrite" "$cluster_log"; then
+    log "$label cluster produced unsafe graph overwrite warning repo=$repo"
+    return 1
   fi
 
   local required_output
