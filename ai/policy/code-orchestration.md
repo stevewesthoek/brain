@@ -64,6 +64,23 @@ Dormant means not default-active, not unavailable. Locate dormant skills through
 
 ---
 
+## Decision Shortcuts
+
+Use this table for fast routing before opening long workflow docs.
+
+| Signal | Next action | Stop / handoff when |
+|---|---|---|
+| User asks to explain architecture, dependencies, or flow | Map/query first, then summarize | The answer requires repo-wide context the current runtime cannot hold. |
+| User asks to refactor or improve quality | Map before touching; plan if multi-file | Scope expands beyond the requested module or review finds architectural risk. |
+| User reports a bug or failing test | Reproduce/localize, patch smallest root cause, validate | Failure cannot be reproduced, target environment is unclear, or validation fails twice. |
+| User asks for review or safety check | Review diff/code; report findings by severity | Findings require broad redesign or product judgment outside scope. |
+| User asks to fix review findings | Fix only concrete in-scope findings; re-review | Findings are vague, contradictory, subjective, or outside requested scope. |
+| User asks to ship, push, publish, or deploy | Review gate first, then ship workflow | No review evidence, blocking findings remain, or target environment is risky/unclear. |
+| Task touches credentials, data, infra, generated artifacts, or destructive commands | Use guardrails/hooks/CI/manual confirmation as available | Environment or blast radius is unclear. |
+| Task is huge, cross-repo, or long-running | Prepare a scoped plan or handoff | The current runtime lacks context, tool support, or safe execution budget. |
+
+---
+
 ## Autonomous Progress Rules
 
 The system should proceed without asking when the next step is local, reversible, and clearly inside the requested scope:
