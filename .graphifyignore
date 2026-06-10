@@ -1,123 +1,30 @@
-# .graphifyignore — Brain repo
-#
-# Narrows Graphify's scan to Brain-authored infrastructure only.
-# Graphify reads this file (prefers it over .gitignore) per gitignore spec.
-#
-# Why a separate .graphifyignore?
-# Brain contains AI consumer runtime state (claude projects/sessions,
-# codex sessions/cache/state, worktrees with binaries), embedded third-party
-# codebases (firecrawl: 1171 files), and large data files that cause Graphify
-# semantic chunk overflow even after git-tracked filters.
-# The brain-runtime profile `exclude` list is declarative metadata only
-# (not passed to Graphify CLI). This file is Graphify's actual scan scope.
-#
-# Design: broad exclusions for known heavy/runtime directories, leaving only
-# Brain-authored: ai/skills/, tools/ (excl. firecrawl), operations/specs/,
-# operations/runbooks/, operations/standards/, docs/, projects/ (excl. dist).
-
-# ── VCS & OS ──────────────────────────────────────────────────────────────
+# Version control / dependencies
 .git/
-.DS_Store
-**/.DS_Store
-
-# ── Build / compiled artifacts ────────────────────────────────────────────
 node_modules/
 **/node_modules/
-dist/
-build/
-.next/
-**/.next/
-coverage/
-node-compile-cache/
-**/node-compile-cache/
 
-# ── Python environments & caches ──────────────────────────────────────────
-.venv/
-**/.venv/
-**/.venv*/
-**/venv/
-**/env/
-**/__pycache__/
-**/*.pyc
-**/.pytest_cache/
-**/.mypy_cache/
-**/.ruff_cache/
-
-# ── Graphify output (canonical output path, never input) ──────────────────
+# Graphify generated output — never scan your own graph/report/html/cache
 graphify-out/
 .graphify-out/
 
-# ── Brain runtime scratch ─────────────────────────────────────────────────
-runtime/
-projects/runtime/
+# Local AI/runtime state
 .ai/
-.buildflow/
-.gstack/
-
-# ── Claude local runtime (worktrees, session state, caches) ───────────────
-# .claude/ at repo root contains agent worktrees with large binaries.
 .claude/
+.local/
+.gstack/
+.pytest_cache/
+__pycache__/
+**/__pycache__/
 
-# ── AI consumer system configs — EXCLUDE ENTIRELY ─────────────────────────
-# operations/system-configs/ contains runtime state, credentials, session
-# data, and tool configs for Claude, Codex, Gemini, Kiro, Cursor, Antigravity.
-# These are not Brain source code. Only operations/system-configs/model-selector/
-# source code is worth graphing, but its venv/runtime is huge.
-# Excluding all of system-configs reduces file count by ~1200+ files and
-# prevents large runtime JSON (codex state 498KB, models_cache 140KB) from
-# causing semantic chunk overflow.
-operations/system-configs/
+# Build/test/generated output
+.next/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.DS_Store
+**/.DS_Store
 
-# ── n8n backup archives (repeated identical JSON exports) ─────────────────
-# Historical backups add 100k+ lines of identical JSON without graph value.
-operations/automations/n8n/n8n_backup/
-
-# ── Embedded third-party codebase (firecrawl) ─────────────────────────────
-# tools/firecrawl is a vendored fork (~1171 files, 49MB).
-# It is not Brain-authored infrastructure. Graphify it separately if needed.
-tools/firecrawl/
-
-# ── Project build artifacts ────────────────────────────────────────────────
-projects/brain-core/dist/
-projects/brain-core/runtime/
-# brain-core test files are very large (8k+ lines each) and cause individual
-# chunk overflow at 200k context. Exclude tests from the graph scope.
-projects/brain-core/src/tests/
-projects/model-router/dist/
-projects/video-orchestrator/cloud/jobs/
-projects/says-the-bible/production/output/
-projects/says-the-bible/production/input/assets/brownnoise.wav
-# Cedula meeting transcripts are very large (30-50k tokens each) and are
-# raw captured text, not Brain infrastructure. Exclude from graph scope.
-projects/cedula/meetings/transcripts/
-
-# ── Local tool state ──────────────────────────────────────────────────────
+# Local tool caches
 .wrangler/
 **/.wrangler/
-.obsidian/
-.web-profiles/
-operations/security-auto-approvals.log
-
-# ── Reports directory (large archived text files) ─────────────────────────
-operations/reports/
-
-# ── Package lock files (large, no graph value) ────────────────────────────
-**/package-lock.json
-**/yarn.lock
-**/pnpm-lock.yaml
-
-# ── AI model cache (generated, regenerable) ───────────────────────────────
-ai/models/bedrock-models.generated.json
-
-# ── Test artifact directories (leaked temp dirs) ──────────────────────────
-brain-core-i7-9-*/
-brain-core-script-approval-*/
-tt-ig-test-*/
-vo-pub-test-*/
-vo-pub-ig-test-*/
-vo-pub-ig-local-*/
-vo-pub-cred-test-*/
-tsx-*/
-
-# ── Image examples (binary, no semantic value) ────────────────────────────
-ai/skills/custom/taste-skill/examples/
