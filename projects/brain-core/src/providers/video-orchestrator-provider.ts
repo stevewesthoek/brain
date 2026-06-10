@@ -97,6 +97,7 @@ function getAwsVideoGenerationMode(): GenerationMode {
   if (mode === 'hybrid_storyboard') return 'hybrid_storyboard';
   if (mode === 'hybrid_slideshow') return 'hybrid_slideshow';
   if (mode === 'hybrid_image_slideshow') return 'hybrid_image_slideshow';
+  if (mode === 'hybrid_animated_video') return 'hybrid_animated_video';
   if (mode === 'hybrid_tts') return 'hybrid_tts';
   if (mode === 'hybrid') return 'hybrid';
   return 'fixture';
@@ -3639,6 +3640,15 @@ export async function generateApprovedScript(
       ok: false,
       code: 'ai_generation_provider_not_configured',
       message: 'AI video generation provider is not configured. Use AWS_VIDEO_GENERATION_MODE=hybrid for prompt-derived scene planning with fixture media, or configure a real provider.',
+      jobId,
+    };
+  }
+
+  if (generationMode === 'hybrid_animated_video') {
+    return {
+      ok: false,
+      code: 'animated_video_provider_not_configured',
+      message: 'Animated video generation is not yet implemented. This mode is reserved for a future image-to-video model provider (e.g. Nova Reel, Runway, Pika). Use hybrid_image_slideshow for the current best local generation path.',
       jobId,
     };
   }
