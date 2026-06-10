@@ -99,8 +99,8 @@ cd "$BRAIN_CORE_DIR"
 mkdir -p /tmp
 export AWS_VIDEO_GENERATION_MODE="$GENERATION_MODE"
 
-# Configure image provider defaults for hybrid_image_slideshow mode
-if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+# Configure image provider defaults for generated image/video modes
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ] || [ "$GENERATION_MODE" = "hybrid_animated_video" ]; then
   export AWS_VIDEO_IMAGE_PROVIDER="${AWS_VIDEO_IMAGE_PROVIDER:-aws-bedrock-nova-canvas}"
   export AWS_VIDEO_IMAGE_MODEL_ID="${AWS_VIDEO_IMAGE_MODEL_ID:-amazon.nova-canvas-v1:0}"
   export AWS_VIDEO_IMAGE_REGION="${AWS_VIDEO_IMAGE_REGION:-us-east-1}"
@@ -112,7 +112,7 @@ if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
 
   # Preflight check: ensure required vars are set
   if [ -z "$AWS_VIDEO_IMAGE_PROVIDER" ] || [ -z "$AWS_VIDEO_IMAGE_MODEL_ID" ] || [ -z "$AWS_VIDEO_IMAGE_REGION" ]; then
-    echo "  ❌ Error: hybrid_image_slideshow requires AWS_VIDEO_IMAGE_PROVIDER, AWS_VIDEO_IMAGE_MODEL_ID, and AWS_VIDEO_IMAGE_REGION"
+    echo "  ❌ Error: $GENERATION_MODE requires AWS_VIDEO_IMAGE_PROVIDER, AWS_VIDEO_IMAGE_MODEL_ID, and AWS_VIDEO_IMAGE_REGION"
     exit 1
   fi
 fi
@@ -206,7 +206,7 @@ echo "📍 Brain Console URL: http://localhost:$CONSOLE_CENTER_PORT/aws-video"
 echo ""
 echo "⚙️  Configuration:"
 echo "   Generation Mode: $GENERATION_MODE"
-if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ] || [ "$GENERATION_MODE" = "hybrid_animated_video" ]; then
   echo "   Image Provider: $AWS_VIDEO_IMAGE_PROVIDER"
   echo "   Image Model: $AWS_VIDEO_IMAGE_MODEL_ID"
   echo "   Image Region: $AWS_VIDEO_IMAGE_REGION"
@@ -226,9 +226,10 @@ if [ "$GENERATION_MODE" = "hybrid_storyboard" ]; then
   echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/storyboard.json' - --region eu-north-1 | jq"
   echo "   aws s3 ls 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/images/' --region eu-north-1"
 fi
-if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ]; then
+if [ "$GENERATION_MODE" = "hybrid_image_slideshow" ] || [ "$GENERATION_MODE" = "hybrid_animated_video" ]; then
   echo "   aws s3 ls 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/exports/' --region eu-north-1"
-  echo "   (Look for scene PNGs and final MP4)"
+  echo "   aws s3 ls 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/animated/' --region eu-north-1"
+  echo "   (Look for scene PNGs, animated clips when enabled, and final MP4)"
 fi
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/audio/narration.mp3' - --region eu-north-1 | file -"
 echo "   aws s3 cp 's3://prochat-video-dev-909439522876-eu-north-1-an/jobs/\$JOB_ID/metadata/assets.json' - --region eu-north-1 | jq '.audioProvider, .voiceId, .imageProvider'"
