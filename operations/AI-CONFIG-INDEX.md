@@ -64,6 +64,10 @@
 **Behavior examples:** `operations/system-configs/claude/hooks/tests/README.md`  
 **What:** Canonical process for classifying every new rule as hook, CI/test, skill, orchestrator rule, runbook, or memory before adding it to always-on prompts. Deterministic command/path/diff rules should become hooks when feasible; judgment-based rules stay in orchestrators such as `/code`.
 
+### 2a.1. Code Orchestration Policy — AI-Agnostic Coding Workflow
+**File:** `ai/policy/code-orchestration.md`  
+**What:** Canonical natural-language routing contract for coding work across Claude Code, Codex CLI, Gemini CLI, and IDE/agent surfaces. Defines intent routing, runtime roles, dormant subskill routing, autonomous progress rules, review-fix-review loop boundaries, and deterministic safety layer separation.
+
 ### 2b. Skills Registry — Orchestrators & Specialized Tools
 **File:** `ai/skills/` with active/dormant registry at `docs/skills/skill-index.md`  
 **Structure:**

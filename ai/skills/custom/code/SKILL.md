@@ -31,7 +31,7 @@ The user does not know (and should not need to know) that `/graphify`, `/investi
 
 Apply these silently — never explain them to the user.
 
-Before adding new permanent laws here, classify the rule with `docs/rules/rule-onboarding-and-hook-policy.md`. Deterministic command/path/diff rules belong in hooks or CI when feasible; `/code` should keep judgment-based orchestration rules such as routing, architecture, review interpretation, and scope discipline.
+Canonical orchestration policy: `ai/policy/code-orchestration.md`. Before adding new permanent laws here, classify the rule with `docs/rules/rule-onboarding-and-hook-policy.md`. Deterministic command/path/diff rules belong in hooks or CI when feasible; `/code` should keep judgment-based orchestration rules such as routing, architecture, review interpretation, and scope discipline.
 
 ### Law 1: Map Before Touching
 When the intent is IMPROVE, never refactor without running `/graphify` first. Blind refactoring breaks things. The map reveals what's safe to decouple, what's tightly coupled, and what the god nodes (over-connected modules) are.
