@@ -40,7 +40,7 @@ npm run graphify:brain:callflow
 npm run graphify:mind:callflow
 ```
 
-The graph scripts run `graphify extract` and then `graphify cluster-only` so `GRAPH_REPORT.md` and `graph.html` are produced alongside `graph.json`.
+The graph scripts run `graphify extract` and then `graphify cluster-only` with `GRAPHIFY_VIZ_NODE_LIMIT=30000` so `GRAPH_REPORT.md` and `graph.html` are produced alongside `graph.json`.
 
 ## Output
 
@@ -48,7 +48,7 @@ The graph scripts run `graphify extract` and then `graphify cluster-only` so `GR
 graphify-out/graph.json                 — queryable graph data
 graphify-out/.graphify_analysis.json    — raw analysis data
 graphify-out/GRAPH_REPORT.md            — cluster/community report
-graphify-out/graph.html                 — interactive visualization
+graphify-out/graph.html                 — interactive visualization, generated when `GRAPHIFY_VIZ_NODE_LIMIT` is high enough
 ```
 
 `graphify-out/` is generated output. Do not commit it.
@@ -60,7 +60,7 @@ Graphify reads `.graphifyignore` at the repo root (gitignore syntax). This is th
 ## Nightly scheduler
 
 `tools/scripts/graphify-nightly.sh` runs during off-hours (before 07:00 Lisbon):
-- First build: runs `graphify extract <repo> --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900`, then `graphify cluster-only <repo> --backend ollama` when `graphify-out/graph.json` is missing
+- First build: runs `graphify extract <repo> --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900`, then `GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only <repo> --backend=ollama` when `graphify-out/graph.json` is missing
 - Refresh: same extract + cluster-only command pair when `graphify-out/graph.json` already exists
 - Uses only Ollama with `gemma4:12b-mlx` — no paid API, no Bedrock, no AI Model Selector
 - Refuses any non-Ollama backend

@@ -40,7 +40,7 @@ Equivalent to:
 OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
   graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
 OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
-  graphify cluster-only . --backend ollama
+  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=ollama
 ```
 
 ### Mind
@@ -54,7 +54,7 @@ Equivalent to:
 cd ../mind && OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
   graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
 OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
-  graphify cluster-only . --backend ollama
+  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=ollama
 ```
 
 ### Callflow exports (after graph.json exists)
@@ -70,7 +70,7 @@ npm run graphify:mind:callflow
 graphify-out/graph.json                 — queryable graph data
 graphify-out/.graphify_analysis.json    — raw analysis data
 graphify-out/GRAPH_REPORT.md            — cluster/community report
-graphify-out/graph.html                 — interactive visualization
+graphify-out/graph.html                 — interactive visualization, generated when `GRAPHIFY_VIZ_NODE_LIMIT` is high enough
 ```
 
 `graphify-out/` is generated output and must not be committed.

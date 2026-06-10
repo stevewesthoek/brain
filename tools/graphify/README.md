@@ -44,7 +44,7 @@ npm run graphify:brain:callflow
 npm run graphify:mind:callflow
 ```
 
-The Brain/Mind graph scripts run `graphify extract` and then `graphify cluster-only` so the normal graph outputs, report, and HTML are created.
+The Brain/Mind graph scripts run `graphify extract` and then `graphify cluster-only` with `GRAPHIFY_VIZ_NODE_LIMIT=30000` so the normal graph outputs, report, and HTML are created.
 
 ## Output
 
@@ -54,7 +54,7 @@ All output lands in `graphify-out/` at the repo root:
 graphify-out/graph.json                   — queryable graph data
 graphify-out/.graphify_analysis.json      — raw analysis data
 graphify-out/GRAPH_REPORT.md              — community/report summary from cluster-only
-graphify-out/graph.html                   — interactive visualization
+graphify-out/graph.html                   — interactive visualization, generated when `GRAPHIFY_VIZ_NODE_LIMIT` is high enough
 ```
 
 `graphify-out/` is generated output and must not be committed.
@@ -67,7 +67,7 @@ Graphify reads `.graphifyignore` at the repo root (gitignore syntax). This is th
 
 `tools/scripts/graphify-nightly.sh` iterates all repos under `~/Repos` during off-hours (before 07:00 Lisbon time):
 
-- If `graphify-out/graph.json` does not exist: runs first graph generation (`graphify extract`) and report/HTML generation (`graphify cluster-only`).
+- If `graphify-out/graph.json` does not exist: runs first graph generation (`graphify extract`) and report/HTML generation (`graphify cluster-only` with `GRAPHIFY_VIZ_NODE_LIMIT=30000`).
 - If it exists: refreshes the graph with the same extract + cluster-only flow.
 - Uses only Ollama with `gemma4:12b-mlx` — no paid API, no Bedrock, no Sonnet, no Opus, no Anthropic model IDs, no AI Model Selector.
 - Refuses non-Ollama backends to prevent accidental paid API usage.

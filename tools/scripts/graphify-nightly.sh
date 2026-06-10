@@ -13,6 +13,7 @@ GRAPHIFY_OLLAMA_KEEP_ALIVE="${GRAPHIFY_OLLAMA_KEEP_ALIVE:-30}"
 GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
 GRAPHIFY_API_TIMEOUT="${GRAPHIFY_API_TIMEOUT:-900}"
 GRAPHIFY_NO_VIZ="${GRAPHIFY_NO_VIZ:-0}"
+GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-30000}"
 SCHEDULER_CUTOFF_HOUR="${SCHEDULER_CUTOFF_HOUR:-7}"
 
 timestamp() {
@@ -46,7 +47,7 @@ build_extract_cmd() {
   local repo="$1"
   local -a cmd=(
     "$GRAPHIFY_BIN" extract "$repo"
-    --backend "$GRAPHIFY_BACKEND"
+    "--backend=$GRAPHIFY_BACKEND"
     --token-budget "$GRAPHIFY_TOKEN_BUDGET"
     --max-concurrency "$GRAPHIFY_MAX_CONCURRENCY"
     --api-timeout "$GRAPHIFY_API_TIMEOUT"
@@ -59,7 +60,7 @@ build_extract_cmd() {
 
 build_cluster_cmd() {
   local repo="$1"
-  local -a cmd=("$GRAPHIFY_BIN" cluster-only "$repo" --backend "$GRAPHIFY_BACKEND")
+  local -a cmd=("$GRAPHIFY_BIN" cluster-only "$repo" "--backend=$GRAPHIFY_BACKEND")
   if [[ "${GRAPHIFY_NO_VIZ:-0}" == "1" ]]; then
     cmd+=(--no-viz)
   fi
@@ -73,6 +74,7 @@ run_graphify() {
   OLLAMA_MODEL="$GRAPHIFY_MODEL" \
   GRAPHIFY_OLLAMA_NUM_CTX="$GRAPHIFY_OLLAMA_NUM_CTX" \
   GRAPHIFY_OLLAMA_KEEP_ALIVE="$GRAPHIFY_OLLAMA_KEEP_ALIVE" \
+  GRAPHIFY_VIZ_NODE_LIMIT="$GRAPHIFY_VIZ_NODE_LIMIT" \
   python3 - "$REPO_TIMEOUT_SECONDS" "$repo" "$@" <<'PY'
 import os
 import subprocess
