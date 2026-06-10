@@ -249,12 +249,14 @@ run_phase() {
     --token-budget "$token_budget"
     --max-concurrency "$GRAPHIFY_MAX_CONCURRENCY"
     --api-timeout "$GRAPHIFY_API_TIMEOUT"
-    --no-cluster
-    --no-viz
   )
 
   if [[ "$phase" == "1" ]]; then
+    # Pass 1 is atomic: Graphify creates graph.json, GRAPH_REPORT.md, and graph.html
+    # in one fast code/config pass, with labels, avoiding cluster-only node-count drift.
     extract_cmd+=(--max-workers "$GRAPHIFY_AST_WORKERS")
+  else
+    extract_cmd+=(--no-cluster --no-viz)
   fi
 
   if [[ "$phase" == "4" ]]; then
@@ -270,43 +272,40 @@ run_phase() {
     cluster_cmd+=(--no-label)
   fi
 
-  log "$label extract repo=$repo model=$GRAPHIFY_MODEL token-budget=$token_budget"
-  run_graphify "$repo" "${extract_cmd[@]}"
-
-  local graph_before_cluster="$repo/graphify-out/graph.json"
-  local graph_before_hash="missing"
-  if [[ -f "$graph_before_cluster" ]]; then
-    graph_before_hash="$(shasum -a 256 "$graph_before_cluster" | awk '{print $1}')"
-  fi
-
+  local extract_log="$repo/graphify-out/.scheduler/${label}-extract.log"
   local cluster_log="$repo/graphify-out/.scheduler/${label}-cluster.log"
-  log "$label cluster repo=$repo viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
-  if run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
-    if grep -q "Refusing to overwrite" "$cluster_log"; then
-      log "$label cluster refused graph overwrite; rebuilding phase from clean graphify-out repo=$repo"
-      rm -rf "$repo/graphify-out"
-      mkdir -p "$repo/graphify-out/.scheduler"
-      write_graphifyignore_for_phase "$repo" "$phase"
-      run_graphify "$repo" "${extract_cmd[@]}"
-      graph_before_hash="$(shasum -a 256 "$repo/graphify-out/graph.json" | awk '{print $1}')"
-      run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2)
-      if grep -q "Refusing to overwrite" "$cluster_log"; then
-        log "$label cluster still refused graph overwrite after clean rebuild repo=$repo"
-        return 1
-      fi
-    fi
-  else
+
+  log "$label extract repo=$repo model=$GRAPHIFY_MODEL token-budget=$token_budget"
+  if ! run_graphify "$repo" "${extract_cmd[@]}" > >(tee "$extract_log") 2> >(tee -a "$extract_log" >&2); then
     return 1
   fi
 
-  if [[ -f "$graph_before_cluster" ]]; then
-    local graph_after_hash
-    graph_after_hash="$(shasum -a 256 "$graph_before_cluster" | awk '{print $1}')"
-    if [[ "$graph_after_hash" == "$graph_before_hash" ]]; then
-      log "$label cluster did not update graph.json hash repo=$repo"
+  if grep -q "Refusing to overwrite" "$extract_log"; then
+    log "$label extract produced unsafe graph overwrite warning repo=$repo"
+    return 1
+  fi
+
+  if [[ "$phase" == "1" ]]; then
+    log "$label atomic first pass completed without separate cluster-only repo=$repo"
+  else
+    log "$label cluster repo=$repo viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
+    if ! run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+      return 1
+    fi
+
+    if grep -q "Refusing to overwrite" "$cluster_log"; then
+      log "$label cluster produced unsafe graph overwrite warning repo=$repo"
       return 1
     fi
   fi
+
+  local required_output
+  for required_output in graphify-out/graph.json graphify-out/GRAPH_REPORT.md graphify-out/graph.html; do
+    if [[ ! -f "$repo/$required_output" ]]; then
+      log "$label missing required output repo=$repo file=$required_output"
+      return 1
+    fi
+  done
 
   printf '%s\n' "$phase" > "$repo/graphify-out/.scheduler/last-successful-phase"
   printf '%s\n' "$(timestamp)" > "$repo/graphify-out/.scheduler/last-successful-phase-at"
