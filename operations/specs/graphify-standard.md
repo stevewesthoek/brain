@@ -6,7 +6,9 @@ Graphify uses the stock upstream CLI. No Brain wrappers. No AI Model Selector. N
 
 The canonical scheduler is the **Office Nightly Scheduler**.
 
-All recurring automation jobs belong in the Office Nightly Scheduler. Do not create separate LaunchAgents, cron jobs, ProBot jobs, or standalone schedulers for Graphify.
+All recurring automation jobs belong in the Office Nightly Scheduler. Do not create separate LaunchAgents, cron jobs, or standalone schedulers for Graphify.
+
+Every new recurring automation job must be added to the Office Nightly Scheduler job chain. The Office Nightly Scheduler is the single central scheduler for job ordering, machine-load control, status reporting, and Brain Console visibility.
 
 Graphify is one job inside the Office Nightly Scheduler:
 
