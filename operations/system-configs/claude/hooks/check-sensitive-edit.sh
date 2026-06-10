@@ -47,7 +47,7 @@ case "$TARGET_LOWER" in
 esac
 
 case "$TARGET_LOWER" in
-  *"/.ssh/"*|*"id_rsa"*|*"id_ed25519"*|*.pem|*.key|*"auth.json"*|*"credentials.json"*|*"/.aws/credentials"*|*"application_default_credentials.json"*|*.npmrc|*.pypirc|*"oauth_creds"*|*"oauth-creds"*|*"_accounts.json"*|*"client_secret"*)
+  *"/.ssh/"*|*"id_rsa"*|*"id_ed25519"*|*.pem|*.key|*.p12|*.cer|*.crt|*"auth.json"*|*"credentials.json"*|*"/.aws/credentials"*|*"application_default_credentials.json"*|*.npmrc|*.pypirc|*"oauth_creds"*|*"oauth-creds"*|*"_accounts.json"*|*"client_secret"*|*"embedded.provisionprofile"*|*.mobileprovision|*"/.kube/config"*|*"/.docker/config.json"*|*"token"*|*"secret"*|*"private"*|*"credential"*|*"keychain"*)
     ask "Editing a sensitive credentials file detected. Confirm before changing secret-bearing material."
     ;;
 esac

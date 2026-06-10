@@ -189,10 +189,11 @@ explicit user confirmation
 
 | Field | Value |
 |---|---|
-| Status | `candidate` |
+| Status | `implemented` |
 | Existing hook | `operations/system-configs/claude/hooks/check-sensitive-edit.sh` |
 | Determinism | High |
 | Initial level | `ask` |
+| Implemented in | Expanded path patterns in `operations/system-configs/claude/hooks/check-sensitive-edit.sh` |
 
 **Add candidate path patterns:**
 
