@@ -3298,10 +3298,17 @@ export async function approveVideoReview(
   if (finalized.ok) {
     mediaToApprove = finalized.media;
   } else if (existingEssentialComplete) {
-    // Finalization failed (files missing on disk/S3) but existing review media has all essential fields.
-    // Invariant: control-plane approve_review.enabled=true => POST /review/approve succeeds.
-    console.warn(`[approveVideoReview] Finalization failed for ${jobId} (${finalized.error}), using existing review media (essential fields complete)`);
-    mediaToApprove = existingMedia;
+    return {
+      ok: false,
+      code: 'review_media_incomplete',
+      error: finalized.error,
+      jobId,
+      details: {
+        missing: finalized.missing,
+        ...(finalized.details ?? {}),
+        reason: 'Existing review media contains keys, but finalization could not verify the actual package assets.',
+      },
+    };
   } else {
     return {
       ok: false,
