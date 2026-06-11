@@ -170,14 +170,38 @@ EOF
     1)
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 1: fast code/config graph only.
-# Skip semantic-heavy docs, papers, images, office files, and media.
+# Phase 1: fast code graph only.
+# Skip semantic-heavy docs, config manifests, workflows, generated metadata, papers, images, office files, and media.
 *.md
 **/*.md
 *.mdx
 **/*.mdx
 docs/
 **/docs/
+*.yml
+**/*.yml
+*.yaml
+**/*.yaml
+*.json
+**/*.json
+*.jsonc
+**/*.jsonc
+*.toml
+**/*.toml
+*.xml
+**/*.xml
+*.txt
+**/*.txt
+*.csv
+**/*.csv
+*.lock
+**/*.lock
+package-lock.json
+**/package-lock.json
+pnpm-lock.yaml
+**/pnpm-lock.yaml
+yarn.lock
+**/yarn.lock
 EOF
       append_media_exclusions "$repo"
       ;;
