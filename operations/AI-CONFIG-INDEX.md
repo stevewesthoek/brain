@@ -72,6 +72,10 @@
 **File:** `ai/policy/capability-discovery.md`  
 **What:** Canonical AI-agnostic lookup order for active skills, dormant skill profiles, CLI tools, config indexes, runbooks, and installation decisions. Keeps exhaustive capability lists in registries instead of always-on prompts.
 
+### 2a.3. Handoff and Parallel Briefs Policy — AI-Agnostic Runtime Handoffs
+**File:** `ai/policy/handoff-and-parallel-briefs.md`  
+**What:** Canonical compact brief contract for passing work between Claude Code, Codex CLI, Gemini CLI, and IDE/agent surfaces. Defines when to hand off, standard brief shape, parallel-reader contract, runtime roles, anti-bloat rules, and stop conditions.
+
 ### 2b. Skills Registry — Orchestrators & Specialized Tools
 **File:** `ai/skills/` with active/dormant registry at `docs/skills/skill-index.md`  
 **Structure:**
