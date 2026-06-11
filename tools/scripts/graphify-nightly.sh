@@ -153,7 +153,7 @@ EOF
     2)
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 2: add Markdown/docs, still skip papers/images/office/media.
+# Pass 2: add Markdown/docs incrementally, still skip papers/images/office/media.
 *.pdf
 **/*.pdf
 *.png
@@ -183,6 +183,17 @@ EOF
 *.wav
 **/*.wav
 EOF
+      if [[ "${GRAPHIFY_PHASE2_DOC_SCOPE:-root}" == "root" ]]; then
+        cat >> "$repo/.graphifyignore" <<'EOF'
+
+# Pass 2 default scope: root-level Markdown only.
+# This keeps docs refinement fast and lets deeper docs wait for later explicit passes.
+docs/
+**/docs/
+*/**/*.md
+*/**/*.mdx
+EOF
+      fi
       ;;
     3)
       cat >> "$repo/.graphifyignore" <<'EOF'
