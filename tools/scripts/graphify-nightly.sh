@@ -5,7 +5,15 @@ REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-7200}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
 GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-ollama}"
-GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-gemma4:12b-mlx}"
+
+# GRAPHIFY_MODEL remains a manual override. When it is not set, each phase chooses
+# the smallest useful model for that phase.
+GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-}"
+GRAPHIFY_FAST_MODEL="${GRAPHIFY_FAST_MODEL:-gemma4:e4b-mlx}"
+GRAPHIFY_DOCS_FAST_MODEL="${GRAPHIFY_DOCS_FAST_MODEL:-$GRAPHIFY_FAST_MODEL}"
+GRAPHIFY_REFINED_MODEL="${GRAPHIFY_REFINED_MODEL:-gemma4:12b-mlx}"
+GRAPHIFY_DEEP_MODEL="${GRAPHIFY_DEEP_MODEL:-$GRAPHIFY_REFINED_MODEL}"
+
 OLLAMA_API_KEY="${OLLAMA_API_KEY:-ollama}"
 GRAPHIFY_OLLAMA_NUM_CTX="${GRAPHIFY_OLLAMA_NUM_CTX:-8192}"
 GRAPHIFY_OLLAMA_KEEP_ALIVE="${GRAPHIFY_OLLAMA_KEEP_ALIVE:-30}"
@@ -13,11 +21,16 @@ GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
 GRAPHIFY_API_TIMEOUT="${GRAPHIFY_API_TIMEOUT:-900}"
 GRAPHIFY_AST_WORKERS="${GRAPHIFY_AST_WORKERS:-12}"
 GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-30000}"
-GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2 3 4}"
+
+# Default nightly work is intentionally light. Heavier phases are available for
+# explicit manual runs or targeted repos.
+GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2a}"
 GRAPHIFY_FAST_TOKEN_BUDGET="${GRAPHIFY_FAST_TOKEN_BUDGET:-2500}"
-GRAPHIFY_DOCS_TOKEN_BUDGET="${GRAPHIFY_DOCS_TOKEN_BUDGET:-${GRAPHIFY_PHASE2_TOKEN_BUDGET:-1500}}"
-GRAPHIFY_MEDIA_TOKEN_BUDGET="${GRAPHIFY_MEDIA_TOKEN_BUDGET:-3000}"
-GRAPHIFY_DEEP_TOKEN_BUDGET="${GRAPHIFY_DEEP_TOKEN_BUDGET:-4000}"
+GRAPHIFY_DOCS_README_TOKEN_BUDGET="${GRAPHIFY_DOCS_README_TOKEN_BUDGET:-${GRAPHIFY_PHASE2_TOKEN_BUDGET:-1000}}"
+GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET="${GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET:-1200}"
+GRAPHIFY_MEDIA_TOKEN_BUDGET="${GRAPHIFY_MEDIA_TOKEN_BUDGET:-2000}"
+GRAPHIFY_DEEP_TOKEN_BUDGET="${GRAPHIFY_DEEP_TOKEN_BUDGET:-3000}"
+GRAPHIFY_MIN_NODE_RETENTION_PERCENT="${GRAPHIFY_MIN_NODE_RETENTION_PERCENT:-80}"
 SCHEDULER_CUTOFF_HOUR="${SCHEDULER_CUTOFF_HOUR:-7}"
 
 timestamp() {
@@ -41,10 +54,54 @@ check_scheduler_cutoff() {
 discover_repos() {
   local root
   for root in $REPO_ROOTS; do
-    if [[ -d "$root" ]]; then
-      find "$root" -maxdepth 5 -name .git -type d 2>/dev/null | sed 's#/.git$##'
+    if [[ -d "$root/.git" || -f "$root/.git" ]]; then
+      printf '%s\n' "$root"
+    elif [[ -d "$root" ]]; then
+      find "$root" -maxdepth 5 -name .git -type d \
+        -not -path '*/.claude/*' \
+        -not -path '*/node_modules/*' \
+        -not -path '*/graphify-out/*' \
+        -not -path '*/.tmp/*' \
+        -not -path '*/tmp/*' \
+        -not -path '*/backup/*' \
+        -not -path '*/backups/*' \
+        2>/dev/null | sed 's#/.git$##'
     fi
   done | sort -u
+}
+
+append_media_exclusions() {
+  local repo="$1"
+  cat >> "$repo/.graphifyignore" <<'EOF'
+*.pdf
+**/*.pdf
+*.png
+**/*.png
+*.jpg
+**/*.jpg
+*.jpeg
+**/*.jpeg
+*.webp
+**/*.webp
+*.gif
+**/*.gif
+*.svg
+**/*.svg
+*.docx
+**/*.docx
+*.xlsx
+**/*.xlsx
+*.pptx
+**/*.pptx
+*.mp3
+**/*.mp3
+*.mp4
+**/*.mp4
+*.mov
+**/*.mov
+*.wav
+**/*.wav
+EOF
 }
 
 write_graphifyignore_for_phase() {
@@ -54,6 +111,7 @@ write_graphifyignore_for_phase() {
 # Managed by Brain Graphify scheduler.
 # Version control / dependencies
 .git/
+**/.git/
 node_modules/
 **/node_modules/
 
@@ -112,7 +170,7 @@ EOF
     1)
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 1: fast code/config graph only.
+# Phase 1: fast code/config graph only.
 # Skip semantic-heavy docs, papers, images, office files, and media.
 *.md
 **/*.md
@@ -120,75 +178,15 @@ EOF
 **/*.mdx
 docs/
 **/docs/
-*.pdf
-**/*.pdf
-*.png
-**/*.png
-*.jpg
-**/*.jpg
-*.jpeg
-**/*.jpeg
-*.webp
-**/*.webp
-*.gif
-**/*.gif
-*.svg
-**/*.svg
-*.docx
-**/*.docx
-*.xlsx
-**/*.xlsx
-*.pptx
-**/*.pptx
-*.mp3
-**/*.mp3
-*.mp4
-**/*.mp4
-*.mov
-**/*.mov
-*.wav
-**/*.wav
 EOF
+      append_media_exclusions "$repo"
       ;;
-    2)
+    2|2a)
+      append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 2: add Markdown/docs incrementally, still skip papers/images/office/media.
-*.pdf
-**/*.pdf
-*.png
-**/*.png
-*.jpg
-**/*.jpg
-*.jpeg
-**/*.jpeg
-*.webp
-**/*.webp
-*.gif
-**/*.gif
-*.svg
-**/*.svg
-*.docx
-**/*.docx
-*.xlsx
-**/*.xlsx
-*.pptx
-**/*.pptx
-*.mp3
-**/*.mp3
-*.mp4
-**/*.mp4
-*.mov
-**/*.mov
-*.wav
-**/*.wav
-EOF
-      case "${GRAPHIFY_PHASE2_DOC_SCOPE:-readme}" in
-        readme)
-          cat >> "$repo/.graphifyignore" <<'EOF'
-
-# Pass 2 default scope: README-style root Markdown only.
-# This keeps docs refinement fast and lets deeper docs wait for later explicit passes.
+# Phase 2a: README-style root Markdown only.
+# This is the default docs refinement lane.
 docs/
 **/docs/
 *.md
@@ -202,29 +200,33 @@ docs/
 !readme.md
 !Readme.md
 EOF
-          ;;
-        root)
-          cat >> "$repo/.graphifyignore" <<'EOF'
+      ;;
+    2b)
+      append_media_exclusions "$repo"
+      cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 2 root scope: all root-level Markdown, no nested Markdown/docs folders.
-docs/
-**/docs/
-*/**/*.md
-*/**/*.mdx
+# Phase 2b: limited docs batch.
+# Include README-style files and first-level docs/*.md only.
+*.md
+**/*.md
+*.mdx
+**/*.mdx
+!README.md
+!README.mdx
+!README-*.md
+!README_*.md
+!readme.md
+!Readme.md
+!docs/
+!docs/*.md
+!docs/*.mdx
 EOF
-          ;;
-        full)
-          ;;
-        *)
-          log "unknown GRAPHIFY_PHASE2_DOC_SCOPE=${GRAPHIFY_PHASE2_DOC_SCOPE:-} repo=$repo"
-          return 1
-          ;;
-      esac
       ;;
     3)
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 3: add papers/images/office files, still skip audio/video.
+# Phase 3: richer selected-repo refinement.
+# Include docs, papers, images, and office files; still skip audio/video.
 *.mp3
 **/*.mp3
 *.mp4
@@ -235,10 +237,10 @@ EOF
 **/*.wav
 EOF
       ;;
-    4)
+    4|5)
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 4: full/deep refinement. Only base generated/runtime/build exclusions apply.
+# Phase 5: rare full/deep refinement. Only base generated/runtime/build exclusions apply.
 EOF
       ;;
     *)
@@ -250,29 +252,66 @@ EOF
 
 phase_label() {
   case "$1" in
-    1) printf 'pass1-fast-code' ;;
-    2) printf 'pass2-docs-markdown' ;;
-    3) printf 'pass3-papers-images' ;;
-    4) printf 'pass4-deep-refinement' ;;
-    *) printf 'pass%s' "$1" ;;
+    1) printf 'phase1-fast-code' ;;
+    2|2a) printf 'phase2a-readme-docs' ;;
+    2b) printf 'phase2b-limited-docs' ;;
+    3) printf 'phase3-rich-refinement' ;;
+    4|5) printf 'phase5-deep-refinement' ;;
+    *) printf 'phase%s' "$1" ;;
   esac
 }
 
 phase_token_budget() {
   case "$1" in
     1) printf '%s' "$GRAPHIFY_FAST_TOKEN_BUDGET" ;;
-    2) printf '%s' "$GRAPHIFY_DOCS_TOKEN_BUDGET" ;;
+    2|2a) printf '%s' "$GRAPHIFY_DOCS_README_TOKEN_BUDGET" ;;
+    2b) printf '%s' "$GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET" ;;
     3) printf '%s' "$GRAPHIFY_MEDIA_TOKEN_BUDGET" ;;
-    4) printf '%s' "$GRAPHIFY_DEEP_TOKEN_BUDGET" ;;
+    4|5) printf '%s' "$GRAPHIFY_DEEP_TOKEN_BUDGET" ;;
     *) printf '%s' "$GRAPHIFY_FAST_TOKEN_BUDGET" ;;
   esac
 }
 
+phase_model() {
+  if [[ -n "$GRAPHIFY_MODEL" ]]; then
+    printf '%s' "$GRAPHIFY_MODEL"
+    return 0
+  fi
+  case "$1" in
+    1) printf '%s' "$GRAPHIFY_FAST_MODEL" ;;
+    2|2a) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
+    2b) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
+    3) printf '%s' "$GRAPHIFY_REFINED_MODEL" ;;
+    4|5) printf '%s' "$GRAPHIFY_DEEP_MODEL" ;;
+    *) printf '%s' "$GRAPHIFY_FAST_MODEL" ;;
+  esac
+}
+
+graph_node_count() {
+  local graph_path="$1"
+  if [[ ! -f "$graph_path" ]]; then
+    printf '0'
+    return 0
+  fi
+  python3 - "$graph_path" <<'PY'
+import json
+import sys
+try:
+    with open(sys.argv[1], 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    nodes = data.get('nodes', [])
+    print(len(nodes) if isinstance(nodes, list) else 0)
+except Exception:
+    print(0)
+PY
+}
+
 run_graphify() {
   local repo="$1"
-  shift
+  local model="$2"
+  shift 2
   OLLAMA_API_KEY="$OLLAMA_API_KEY" \
-  OLLAMA_MODEL="$GRAPHIFY_MODEL" \
+  OLLAMA_MODEL="$model" \
   GRAPHIFY_OLLAMA_NUM_CTX="$GRAPHIFY_OLLAMA_NUM_CTX" \
   GRAPHIFY_OLLAMA_KEEP_ALIVE="$GRAPHIFY_OLLAMA_KEEP_ALIVE" \
   GRAPHIFY_VIZ_NODE_LIMIT="$GRAPHIFY_VIZ_NODE_LIMIT" \
@@ -293,16 +332,60 @@ raise SystemExit(result.returncode)
 PY
 }
 
+prepare_phase_graph_state() {
+  local repo="$1"
+  local phase="$2"
+  local label="$3"
+  local graph_path="$repo/graphify-out/graph.json"
+  local snapshot_path="$repo/graphify-out/.scheduler/pre-${label}-graph.json"
+
+  if [[ "$phase" == "1" || ! -f "$graph_path" ]]; then
+    printf '0:%s\n' "$snapshot_path"
+    return 0
+  fi
+
+  cp "$graph_path" "$snapshot_path"
+  local previous_nodes
+  previous_nodes="$(graph_node_count "$graph_path")"
+
+  # Wider phases rebuild the current scope from cache instead of relying on
+  # Graphify incremental mode to merge changed ignore rules correctly.
+  rm -f \
+    "$repo/graphify-out/graph.json" \
+    "$repo/graphify-out/GRAPH_REPORT.md" \
+    "$repo/graphify-out/graph.html" \
+    "$repo/graphify-out/.graphify_analysis.json"
+
+  printf '%s:%s\n' "$previous_nodes" "$snapshot_path"
+}
+
+restore_phase_graph_snapshot() {
+  local repo="$1"
+  local snapshot_path="$2"
+  if [[ -f "$snapshot_path" ]]; then
+    cp "$snapshot_path" "$repo/graphify-out/graph.json"
+  fi
+}
+
 run_phase() {
   local repo="$1"
   local phase="$2"
   local label
   local token_budget
+  local model
   label="$(phase_label "$phase")"
   token_budget="$(phase_token_budget "$phase")"
+  model="$(phase_model "$phase")"
 
   mkdir -p "$repo/graphify-out/.scheduler"
   write_graphifyignore_for_phase "$repo" "$phase"
+
+  local phase_state
+  local previous_nodes
+  local snapshot_path
+  phase_state="$(prepare_phase_graph_state "$repo" "$phase" "$label")"
+  previous_nodes="${phase_state%%:*}"
+  snapshot_path="${phase_state#*:}"
 
   local -a extract_cmd=(
     "$GRAPHIFY_BIN" extract "$repo"
@@ -313,14 +396,12 @@ run_phase() {
   )
 
   if [[ "$phase" == "1" ]]; then
-    # Pass 1 is atomic: Graphify creates graph.json, GRAPH_REPORT.md, and graph.html
-    # in one fast code/config pass, with labels, avoiding cluster-only node-count drift.
     extract_cmd+=(--max-workers "$GRAPHIFY_AST_WORKERS")
   else
     extract_cmd+=(--no-cluster --no-viz)
   fi
 
-  if [[ "$phase" == "4" ]]; then
+  if [[ "$phase" == "4" || "$phase" == "5" ]]; then
     extract_cmd+=(--mode deep)
   fi
 
@@ -329,30 +410,34 @@ run_phase() {
     "--backend=$GRAPHIFY_BACKEND"
   )
 
-  if [[ "$phase" == "2" || "$phase" == "3" ]]; then
+  if [[ "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" || "$phase" == "3" ]]; then
     cluster_cmd+=(--no-label)
   fi
 
   local extract_log="$repo/graphify-out/.scheduler/${label}-extract.log"
   local cluster_log="$repo/graphify-out/.scheduler/${label}-cluster.log"
 
-  log "$label extract repo=$repo model=$GRAPHIFY_MODEL token-budget=$token_budget"
-  if ! run_graphify "$repo" "${extract_cmd[@]}" > >(tee "$extract_log") 2> >(tee -a "$extract_log" >&2); then
+  log "$label extract repo=$repo model=$model token-budget=$token_budget"
+  if ! run_graphify "$repo" "$model" "${extract_cmd[@]}" > >(tee "$extract_log") 2> >(tee -a "$extract_log" >&2); then
+    restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
   fi
 
   if grep -q "Refusing to overwrite" "$extract_log"; then
     log "$label extract produced unsafe graph overwrite warning repo=$repo"
+    restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
   fi
 
-  log "$label cluster repo=$repo viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
-  if ! run_graphify "$repo" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+  log "$label cluster repo=$repo model=$model viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
+  if ! run_graphify "$repo" "$model" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+    restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
   fi
 
   if grep -q "Refusing to overwrite" "$cluster_log"; then
     log "$label cluster produced unsafe graph overwrite warning repo=$repo"
+    restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
   fi
 
@@ -360,9 +445,22 @@ run_phase() {
   for required_output in graphify-out/graph.json graphify-out/GRAPH_REPORT.md graphify-out/graph.html; do
     if [[ ! -f "$repo/$required_output" ]]; then
       log "$label missing required output repo=$repo file=$required_output"
+      restore_phase_graph_snapshot "$repo" "$snapshot_path"
       return 1
     fi
   done
+
+  if (( previous_nodes > 0 )); then
+    local new_nodes
+    local min_nodes
+    new_nodes="$(graph_node_count "$repo/graphify-out/graph.json")"
+    min_nodes=$(( previous_nodes * GRAPHIFY_MIN_NODE_RETENTION_PERCENT / 100 ))
+    if (( new_nodes < min_nodes )); then
+      log "$label refused suspicious graph shrink repo=$repo previous_nodes=$previous_nodes new_nodes=$new_nodes min_nodes=$min_nodes"
+      restore_phase_graph_snapshot "$repo" "$snapshot_path"
+      return 1
+    fi
+  fi
 
   printf '%s\n' "$phase" > "$repo/graphify-out/.scheduler/last-successful-phase"
   printf '%s\n' "$(timestamp)" > "$repo/graphify-out/.scheduler/last-successful-phase-at"
@@ -395,7 +493,8 @@ if ! command -v ollama >/dev/null 2>&1; then
   exit 1
 fi
 
-log "graphify-nightly phased start backend=$GRAPHIFY_BACKEND model=$GRAPHIFY_MODEL phases='$GRAPHIFY_PHASES' max-concurrency=$GRAPHIFY_MAX_CONCURRENCY api-timeout=$GRAPHIFY_API_TIMEOUT"
+model_summary="override=${GRAPHIFY_MODEL:-none} fast=$GRAPHIFY_FAST_MODEL docs=$GRAPHIFY_DOCS_FAST_MODEL refined=$GRAPHIFY_REFINED_MODEL deep=$GRAPHIFY_DEEP_MODEL"
+log "graphify-nightly phased start backend=$GRAPHIFY_BACKEND models=[$model_summary] phases='$GRAPHIFY_PHASES' max-concurrency=$GRAPHIFY_MAX_CONCURRENCY api-timeout=$GRAPHIFY_API_TIMEOUT"
 
 repos=0
 phases_ok=0
