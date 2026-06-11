@@ -7,8 +7,10 @@ BRAIN_CORE_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-core"
 CONSOLE_CENTER_DIR="/Users/Office/Repos/stevewesthoek/brain/projects/brain-console"
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Allow mode override: ./script.sh hybrid_storyboard
-GENERATION_MODE="${1:-hybrid_tts}"
+# Allow mode override: ./script.sh hybrid_animated_video
+# Default to generated image slideshow so manual dashboard tests exercise real media assembly,
+# not the legacy hybrid_tts fixture-video proof mode.
+GENERATION_MODE="${1:-hybrid_image_slideshow}"
 
 MODE_UPPER=$(echo "$GENERATION_MODE" | sed 's/_/ /g' | sed 's/^./\U&/g')
 echo "🔧 Brain Console + Core Dev Reset ($MODE_UPPER Mode)"
