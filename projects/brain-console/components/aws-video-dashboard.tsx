@@ -1119,9 +1119,11 @@ export function AwsVideoDashboard() {
   const statusOnlyError = status.error;
   const statusOnlyErrorMessage = errorMessage(statusOnlyError);
   const refreshSafeTimeoutErrors = [createDraft.error, approve.error, approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
+  const generatedArtifactsArrived = Boolean(hasGeneratedAssets || finalVideoKey || thumbnailKey || cpArtifacts?.finalVideoKey || cpArtifacts?.thumbnailKey);
+  const generationError = isTimeoutError(generate.error) && generatedArtifactsArrived ? null : generate.error;
   const actionError = [approve.error, requestChanges.error, approveReview.error, requestReviewChanges.error, youtubeDryRun.error, youtubePublish.error, createDraft.error]
     .filter((error) => !(isTimeoutError(error) && refreshSafeTimeoutErrors.includes(error)))
-    .find(Boolean) ?? (pendingActionForSelectedJob === 'generate' || generationTimeoutStillRunning ? null : generate.error);
+    .find(Boolean) ?? (pendingActionForSelectedJob === 'generate' || generationTimeoutStillRunning ? null : generationError);
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const quotaExceeded = cpPublish?.quotaStatus === 'exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);

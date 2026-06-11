@@ -262,7 +262,11 @@ export function AwsVideoPublishDiagnosticsCard({
       </div>
       {requiresReviewGate && !reviewApproved ? <div className="compact-warning">Review gate is enforced for generated media. Dry-run and private publish stay disabled until review is approved.</div> : null}
       {quotaExceeded ? <div className="compact-warning">YouTube upload quota reached. The video is ready; download the MP4 or try private publish again after quota resets.</div> : null}
-      {reviewApproved && requiresReviewGate ? <div className="success-panel">Review approved. Dry-run is now enabled.</div> : null}
+      {reviewApproved && requiresReviewGate ? (
+        <div className={canDryRun ? 'success-panel' : 'compact-info'}>
+          {canDryRun ? 'Review approved. Dry-run is now enabled.' : 'Review approved. Waiting for final package verification before dry-run.'}
+        </div>
+      ) : null}
       {dryRunRunning ? <div className="compact-info">Dry-run is running... Page refresh is safe; state persists in publish-check.json.</div> : null}
       {dryRunFailed ? <div className="compact-error">Dry-run failed. Check logs below or re-run.</div> : null}
       {isHybridImageSlideshowMode
