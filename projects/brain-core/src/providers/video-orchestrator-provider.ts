@@ -4444,6 +4444,8 @@ export async function generateApprovedScript(
 
   // Step 4: Assemble the final video.
   const videoKey = `jobs/${jobId}/video-generated/generated-001.mp4`;
+  const finalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
   if (isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode) {
     await updateProgressStatus('slideshow_started', { videoKey });
     try {
@@ -4538,8 +4540,8 @@ export async function generateApprovedScript(
         '--no-cli-pager',
       ]);
 
-      const finalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
       const finalVideoPath = join(jobRoot, 'exports', 'generated-001-final.mp4');
+      const thumbnailPath = join(jobRoot, 'exports', 'thumbnail-001.jpg');
       await mkdir(join(jobRoot, 'exports'), { recursive: true });
       await copyFile(outputVideoPath, finalVideoPath);
       await execFileAsync('aws', [
@@ -4550,6 +4552,19 @@ export async function generateApprovedScript(
         '--no-cli-pager',
         '--content-type', 'video/mp4',
       ]);
+
+      const thumbnailSourcePath = slideshowScenes[0]?.imagePath ?? join(jobRoot, 'images', 'scene-001.png');
+      if (thumbnailSourcePath && await fileExists(thumbnailSourcePath)) {
+        await generateThumbnailFromImage(thumbnailSourcePath, thumbnailPath);
+        await execFileAsync('aws', [
+          's3', 'cp',
+          thumbnailPath,
+          `s3://${S3_BUCKET}/${thumbnailKey}`,
+          '--region', AWS_REGION,
+          '--no-cli-pager',
+          '--content-type', 'image/jpeg',
+        ]);
+      }
 
       await updateProgressStatus('slideshow_complete', {
         videoProvider: slideshowAssembly.provider,
@@ -4658,7 +4673,9 @@ export async function generateApprovedScript(
     assetsJson.imageProvider = imageProvider;
     if (imageModelId) assetsJson.imageModelId = imageModelId;
     assetsJson.videoProvider = 'local-ffmpeg-slideshow';
-    assetsJson.videoKey = videoKey;
+    assetsJson.videoKey = finalVideoKey;
+    assetsJson.thumbnailKey = thumbnailKey;
+    assetsJson.finalVideo = { path: finalVideoKey, source: 'slideshow-export', provider: 'local-ffmpeg-slideshow' };
     assetsJson.motionGenerated = motionClipKeys.length > 0 && !motionFallbackUsed;
     assetsJson.motionProvider = 'local-ffmpeg-motion';
     assetsJson.motionPlanKey = motionPlanKey;
@@ -4769,7 +4786,9 @@ export async function generateApprovedScript(
     assetsJson.sceneImageKeys = sceneImageKeys;
     assetsJson.imageProvider = imageProvider;
     assetsJson.videoProvider = 'local-ffmpeg-slideshow';
-    assetsJson.videoKey = videoKey;
+    assetsJson.videoKey = finalVideoKey;
+    assetsJson.thumbnailKey = thumbnailKey;
+    assetsJson.finalVideo = { path: finalVideoKey, source: 'slideshow-export', provider: 'local-ffmpeg-slideshow' };
     assetsJson.motionGenerated = false;
     assetsJson.motionProvider = 'local-ffmpeg-motion';
     assetsJson.motionPlanKey = motionPlanKey ?? null;
@@ -5006,6 +5025,16 @@ export async function generateApprovedScript(
     if (!finalized.ok) {
       console.warn(`[generateApprovedScript] Finalization warnings for ${jobId}: ${finalized.error}`);
       // Non-fatal: finalization warnings don't block generation trigger
+    } else {
+      await updateProgressStatus('review_ready', {
+        status: 'ready_to_review',
+        finalVideoKey: finalized.media.videoKey,
+        thumbnailKey: finalized.media.thumbnailKey,
+        publishKey: finalized.media.publishKey,
+        youtubePackageKey: finalized.media.youtubePackageKey,
+        reviewStatus: finalized.review?.reviewStatus ?? 'pending',
+        packageComplete: true,
+      });
     }
   } catch (err) {
     return {
