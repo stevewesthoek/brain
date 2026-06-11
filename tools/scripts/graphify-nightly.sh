@@ -494,22 +494,30 @@ prepare_phase_graph_state() {
   local graph_path="$repo/graphify-out/graph.json"
   local snapshot_path="$repo/graphify-out/.scheduler/pre-${label}-graph.json"
 
-  if [[ "$phase" == "1" || ! -f "$graph_path" ]]; then
+  if [[ "$phase" == "1" ]]; then
     printf '0:%s\n' "$snapshot_path"
     return 0
+  fi
+
+  if [[ ! -f "$graph_path" ]]; then
+    log "$label requires existing Phase 1 graph repo=$repo file=graphify-out/graph.json"
+    return 1
   fi
 
   cp "$graph_path" "$snapshot_path"
   local previous_nodes
   previous_nodes="$(graph_node_count "$graph_path")"
 
-  # Wider phases rebuild the current scope from cache instead of relying on
-  # Graphify incremental mode to merge changed ignore rules correctly.
-  rm -f \
-    "$repo/graphify-out/graph.json" \
-    "$repo/graphify-out/GRAPH_REPORT.md" \
-    "$repo/graphify-out/graph.html" \
-    "$repo/graphify-out/.graphify_analysis.json"
+  # Phase 2a is an overlay/refinement pass: keep the Phase 1 graph in place so
+  # README context can merge into it. Wider phases rebuild their current scope
+  # from cache to avoid stale ignore-rule merges.
+  if [[ "$phase" != "2" && "$phase" != "2a" ]]; then
+    rm -f \
+      "$repo/graphify-out/graph.json" \
+      "$repo/graphify-out/GRAPH_REPORT.md" \
+      "$repo/graphify-out/graph.html" \
+      "$repo/graphify-out/.graphify_analysis.json"
+  fi
 
   printf '%s:%s\n' "$previous_nodes" "$snapshot_path"
 }
