@@ -183,17 +183,43 @@ EOF
 *.wav
 **/*.wav
 EOF
-      if [[ "${GRAPHIFY_PHASE2_DOC_SCOPE:-root}" == "root" ]]; then
-        cat >> "$repo/.graphifyignore" <<'EOF'
+      case "${GRAPHIFY_PHASE2_DOC_SCOPE:-readme}" in
+        readme)
+          cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Pass 2 default scope: root-level Markdown only.
+# Pass 2 default scope: README-style root Markdown only.
 # This keeps docs refinement fast and lets deeper docs wait for later explicit passes.
+docs/
+**/docs/
+*.md
+**/*.md
+*.mdx
+**/*.mdx
+!README.md
+!README.mdx
+!README-*.md
+!README_*.md
+!readme.md
+!Readme.md
+EOF
+          ;;
+        root)
+          cat >> "$repo/.graphifyignore" <<'EOF'
+
+# Pass 2 root scope: all root-level Markdown, no nested Markdown/docs folders.
 docs/
 **/docs/
 */**/*.md
 */**/*.mdx
 EOF
-      fi
+          ;;
+        full)
+          ;;
+        *)
+          log "unknown GRAPHIFY_PHASE2_DOC_SCOPE=${GRAPHIFY_PHASE2_DOC_SCOPE:-} repo=$repo"
+          return 1
+          ;;
+      esac
       ;;
     3)
       cat >> "$repo/.graphifyignore" <<'EOF'
