@@ -76,6 +76,10 @@
 **File:** `ai/policy/handoff-and-parallel-briefs.md`  
 **What:** Canonical compact brief contract for passing work between Claude Code, Codex CLI, Gemini CLI, and IDE/agent surfaces. Defines when to hand off, standard brief shape, parallel-reader contract, runtime roles, anti-bloat rules, and stop conditions.
 
+### 2a.4. Context Loading Order Policy — AI-Agnostic Prompt/Context Order
+**File:** `ai/policy/context-loading-order.md`  
+**What:** Canonical load order for guardrails, routing, task orchestration, capability discovery, handoff briefs, rule/hook policy, active skills, dormant registries, and repo/task evidence. Keeps runtime configs aligned without copying long policy bodies.
+
 ### 2b. Skills Registry — Orchestrators & Specialized Tools
 **File:** `ai/skills/` with active/dormant registry at `docs/skills/skill-index.md`  
 **Structure:**
