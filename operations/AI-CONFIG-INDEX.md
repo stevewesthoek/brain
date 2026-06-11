@@ -283,7 +283,7 @@ notebooklm --version
 | **CLI Registry** | `operations/CLI-MANIFEST.md` |
 | **Skills** | `ai/skills/` (active/, vendors/, custom/) |
 | **Policies** | `ai/policy/{routing.md, guardrails.md}` |
-| **Runbooks** | `operations/runbooks/` (notebooklm.md, codex-cli-access.md, etc.) |
+| **Runbooks** | `operations/runbooks/` (including `anthropic-inspired-ai-system-checkpoint.md` and `handoff-brief-templates.md`) |
 | **Decision Log** | `operations/decision-log.md` (all major decisions) |
 | **Memory** | `~/.brain/memory/` (shared across all AIs) |
 | **Instructions** | `CLAUDE.md`, `00-start-here.md`, `00-current-context.md` |
