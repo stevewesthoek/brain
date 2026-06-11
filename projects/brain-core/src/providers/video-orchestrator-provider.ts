@@ -1,4 +1,4 @@
-import { access, readFile, writeFile, mkdir, readdir, mkdtemp, rm } from 'node:fs/promises';
+import { access, copyFile, readFile, writeFile, mkdir, readdir, mkdtemp, rm } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { dirname, join } from 'node:path';
@@ -4537,9 +4537,24 @@ export async function generateApprovedScript(
         '--region', AWS_REGION,
         '--no-cli-pager',
       ]);
+
+      const finalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
+      const finalVideoPath = join(jobRoot, 'exports', 'generated-001-final.mp4');
+      await mkdir(join(jobRoot, 'exports'), { recursive: true });
+      await copyFile(outputVideoPath, finalVideoPath);
+      await execFileAsync('aws', [
+        's3', 'cp',
+        finalVideoPath,
+        `s3://${S3_BUCKET}/${finalVideoKey}`,
+        '--region', AWS_REGION,
+        '--no-cli-pager',
+        '--content-type', 'video/mp4',
+      ]);
+
       await updateProgressStatus('slideshow_complete', {
         videoProvider: slideshowAssembly.provider,
         videoKey,
+        finalVideoKey,
         sceneImageCount: sceneImageKeys.length,
         ...(motionPlanKey ? { motionPlanKey } : {}),
         ...(motionClipKeys.length > 0 ? { motionClipCount: motionClipKeys.length } : {}),
