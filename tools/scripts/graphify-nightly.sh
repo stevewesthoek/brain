@@ -272,7 +272,12 @@ phase_token_budget() {
   esac
 }
 
-phase_model() {
+model_available() {
+  local model="$1"
+  ollama list 2>/dev/null | awk 'NR > 1 {print $1}' | grep -Fxq "$model"
+}
+
+phase_model_candidate() {
   if [[ -n "$GRAPHIFY_MODEL" ]]; then
     printf '%s' "$GRAPHIFY_MODEL"
     return 0
@@ -285,6 +290,28 @@ phase_model() {
     4|5) printf '%s' "$GRAPHIFY_DEEP_MODEL" ;;
     *) printf '%s' "$GRAPHIFY_FAST_MODEL" ;;
   esac
+}
+
+phase_model() {
+  local phase="$1"
+  local candidate
+  candidate="$(phase_model_candidate "$phase")"
+
+  if model_available "$candidate"; then
+    printf '%s' "$candidate"
+    return 0
+  fi
+
+  if [[ -n "$GRAPHIFY_MODEL" ]]; then
+    return 1
+  fi
+
+  if model_available "$GRAPHIFY_REFINED_MODEL"; then
+    printf '%s' "$GRAPHIFY_REFINED_MODEL"
+    return 0
+  fi
+
+  return 1
 }
 
 graph_node_count() {
