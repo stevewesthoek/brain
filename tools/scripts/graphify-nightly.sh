@@ -461,7 +461,7 @@ run_phase() {
     "--backend=$GRAPHIFY_BACKEND"
   )
 
-  if [[ "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" || "$phase" == "3" ]]; then
+  if [[ "$phase" == "1" || "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" || "$phase" == "3" ]]; then
     cluster_cmd+=(--no-label)
   fi
 
