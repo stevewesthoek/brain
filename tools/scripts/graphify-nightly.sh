@@ -174,8 +174,12 @@ EOF
 
 # Phase 1: fast code graph only.
 # Skip semantic-heavy docs, config manifests, workflows, generated metadata, papers, images, office files, media, and generated/vendor/runtime noise.
+operations/system-configs/
+**/system-configs/
 operations/system-configs/**/shell_snapshots/
 **/shell_snapshots/
+operations/system-configs/**/shell-snapshots/
+**/shell-snapshots/
 operations/system-configs/**/plugins/cache/
 **/plugins/cache/
 operations/system-configs/**/plugins/marketplaces/
@@ -184,6 +188,10 @@ operations/system-configs/**/vendor_imports/
 **/vendor_imports/
 **/vendor/
 **/vendors/
+tools/firecrawl/
+**/tools/firecrawl/
+tools/google-ads/
+**/tools/google-ads/
 **/.cache/
 **/cache/
 **/.next/
