@@ -156,9 +156,10 @@ Example:
 
 ```text
 User: "Make a video package for TikTok and YouTube."
-Active skill: video
+Default route: capability discovery finds the video profile.
+Profile skill: video
 Dormant subskills: ffmpeg, viral-flow, stable-diffusion-local, wave-local
-Action: video orchestrator reads the index/profile docs and routes to the needed sub-capabilities.
+Action: load the video profile intentionally, then let the video orchestrator route to needed sub-capabilities.
 ```
 
 ---
