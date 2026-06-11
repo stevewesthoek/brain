@@ -530,6 +530,58 @@ restore_phase_graph_snapshot() {
   fi
 }
 
+merge_phase_graph_overlay() {
+  local repo="$1"
+  local snapshot_path="$2"
+  local overlay_path="$repo/graphify-out/graph.json"
+  python3 - "$snapshot_path" "$overlay_path" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+base_path = Path(sys.argv[1])
+overlay_path = Path(sys.argv[2])
+base = json.loads(base_path.read_text())
+overlay = json.loads(overlay_path.read_text())
+
+base_nodes = base.get("nodes", []) if isinstance(base.get("nodes", []), list) else []
+overlay_nodes = overlay.get("nodes", []) if isinstance(overlay.get("nodes", []), list) else []
+base_edges = base.get("links", base.get("edges", []))
+overlay_edges = overlay.get("links", overlay.get("edges", []))
+base_edges = base_edges if isinstance(base_edges, list) else []
+overlay_edges = overlay_edges if isinstance(overlay_edges, list) else []
+
+nodes = {str(n.get("id")): n for n in base_nodes if n.get("id") is not None}
+for n in overlay_nodes:
+    nid = n.get("id")
+    if nid is not None:
+        nodes[str(nid)] = n
+
+seen_edges = set()
+merged_edges = []
+for e in base_edges + overlay_edges:
+    if not isinstance(e, dict):
+        continue
+    s = e.get("source", e.get("from"))
+    t = e.get("target", e.get("to"))
+    rel = e.get("relation", e.get("type", ""))
+    key = (str(s), str(t), str(rel))
+    if key in seen_edges:
+        continue
+    seen_edges.add(key)
+    merged_edges.append(e)
+
+base["nodes"] = list(nodes.values())
+if "links" in base:
+    base["links"] = merged_edges
+else:
+    base["edges"] = merged_edges
+
+overlay_path.write_text(json.dumps(base, ensure_ascii=False, indent=2))
+print(f"merged phase overlay graph nodes={len(nodes)} edges={len(merged_edges)}")
+PY
+}
+
 generate_readable_graph_html() {
   local repo="$1"
   local node_limit="$2"
@@ -716,6 +768,11 @@ run_phase() {
     log "$label extract produced unsafe graph overwrite warning repo=$repo"
     restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
+  fi
+
+  if [[ "$phase" == "2" || "$phase" == "2a" ]]; then
+    log "$label merging README overlay into Phase 1 graph repo=$repo"
+    merge_phase_graph_overlay "$repo" "$snapshot_path" | tee -a "$extract_log"
   fi
 
   local cluster_viz_node_limit="$GRAPHIFY_VIZ_NODE_LIMIT"
