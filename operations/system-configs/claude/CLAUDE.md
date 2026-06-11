@@ -5,6 +5,7 @@
 Never use `mcp__claude-in-chrome__*` tools or raw `WebFetch` for research.
 Canonical guardrails policy: `brain/ai/policy/guardrails.md`.
 Canonical capability discovery policy: `brain/ai/policy/capability-discovery.md`. Use registries before relying on long inline tool/skill lists or installing new capabilities.
+Canonical handoff and parallel-briefs policy: `brain/ai/policy/handoff-and-parallel-briefs.md`. Use compact evidence briefs when passing work between Claude, Codex, Gemini, or IDE/agent surfaces.
 Canonical rule onboarding and hook policy: `brain/docs/rules/rule-onboarding-and-hook-policy.md`. New permanent rules must be classified there before being added to always-on context; deterministic command/path/diff rules should become hooks or CI when feasible.
 
 Default active skills: `/code`, `/research`, `/memory`, `/review`, `/qa`, `/handoff`, `/careful`. Discover dormant skills, domain profiles, CLIs, and runbooks through `brain/ai/policy/capability-discovery.md`, `brain/docs/skills/skill-index.md`, `brain/docs/skills/profiles/`, `brain/operations/CLI-MANIFEST.md`, and `brain/operations/AI-CONFIG-INDEX.md` instead of relying on exhaustive inline lists.

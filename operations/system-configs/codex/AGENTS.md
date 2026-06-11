@@ -4,6 +4,7 @@ Global instructions for Codex CLI. These apply in every session.
 Routing policy canonical source: `brain/ai/policy/routing.md`.
 Code orchestration policy canonical source: `brain/ai/policy/code-orchestration.md`.
 Capability discovery policy canonical source: `brain/ai/policy/capability-discovery.md`.
+Handoff and parallel-briefs policy canonical source: `brain/ai/policy/handoff-and-parallel-briefs.md`.
 Guardrails policy canonical source: `brain/ai/policy/guardrails.md`.
 
 ---
