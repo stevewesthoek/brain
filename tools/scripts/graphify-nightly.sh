@@ -173,7 +173,39 @@ EOF
       cat >> "$repo/.graphifyignore" <<'EOF'
 
 # Phase 1: fast code graph only.
-# Skip semantic-heavy docs, config manifests, workflows, generated metadata, papers, images, office files, and media.
+# Skip semantic-heavy docs, config manifests, workflows, generated metadata, papers, images, office files, media, and generated/vendor/runtime noise.
+operations/system-configs/**/shell_snapshots/
+**/shell_snapshots/
+operations/system-configs/**/plugins/cache/
+**/plugins/cache/
+operations/system-configs/**/plugins/marketplaces/
+**/plugins/marketplaces/
+operations/system-configs/**/vendor_imports/
+**/vendor_imports/
+**/vendor/
+**/vendors/
+**/.cache/
+**/cache/
+**/.next/
+**/dist/
+**/build/
+**/coverage/
+*.bundle.js
+**/*.bundle.js
+*.bundle.mjs
+**/*.bundle.mjs
+*.min.js
+**/*.min.js
+*.d.ts
+**/*.d.ts
+*.d.mts
+**/*.d.mts
+*.d.cts
+**/*.d.cts
+*.snap
+**/*.snap
+*.snapshot
+**/*.snapshot
 *.md
 **/*.md
 *.mdx
@@ -420,6 +452,132 @@ restore_phase_graph_snapshot() {
   fi
 }
 
+generate_readable_graph_html() {
+  local repo="$1"
+  local node_limit="$2"
+  python3 - "$repo" "$node_limit" <<'PY'
+import collections
+import html
+import json
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1])
+limit = int(sys.argv[2])
+out_dir = repo / "graphify-out"
+graph_path = out_dir / "graph.json"
+html_path = out_dir / "graph.html"
+report_path = out_dir / "GRAPH_REPORT.md"
+
+data = json.loads(graph_path.read_text())
+nodes = data.get("nodes", [])
+edges = data.get("links", data.get("edges", []))
+
+node_by_id = {str(n.get("id")): n for n in nodes if n.get("id") is not None}
+degree = collections.Counter()
+for e in edges:
+    s = str(e.get("source", e.get("from", "")))
+    t = str(e.get("target", e.get("to", "")))
+    if s in node_by_id and t in node_by_id:
+        degree[s] += 1
+        degree[t] += 1
+
+for n in nodes:
+    nid = str(n.get("id"))
+    n["_degree"] = int(n.get("degree", degree.get(nid, 0)) or 0)
+
+communities = collections.defaultdict(list)
+for n in nodes:
+    communities[str(n.get("community", "unclustered"))].append(n)
+
+community_rows = []
+for cid, items in communities.items():
+    top = sorted(items, key=lambda n: n.get("_degree", 0), reverse=True)[:8]
+    files = collections.Counter(n.get("source_file", "") for n in items if n.get("source_file"))
+    community_rows.append((
+        len(items), cid,
+        ", ".join(html.escape(str(n.get("label", n.get("id", "")))) for n in top[:5]),
+        ", ".join(html.escape(f) for f, _ in files.most_common(3)),
+    ))
+community_rows.sort(reverse=True)
+
+top_nodes = sorted(nodes, key=lambda n: n.get("_degree", 0), reverse=True)[:limit]
+file_counts = collections.Counter(n.get("source_file", "") for n in nodes if n.get("source_file"))
+kind_counts = collections.Counter(n.get("file_type", "unknown") for n in nodes)
+
+# Human overview graph: aggregate the full machine graph by community so graph.html
+# remains visual without rendering tens of thousands of symbol-level nodes.
+top_community_ids = [cid for _, cid, _, _ in community_rows[:80]]
+top_community_set = set(top_community_ids)
+community_size = {cid: len(items) for cid, items in communities.items()}
+community_edge_counts = collections.Counter()
+for e in edges:
+    s = str(e.get("source", e.get("from", "")))
+    t = str(e.get("target", e.get("to", "")))
+    sn = node_by_id.get(s)
+    tn = node_by_id.get(t)
+    if not sn or not tn:
+        continue
+    sc = str(sn.get("community", "unclustered"))
+    tc = str(tn.get("community", "unclustered"))
+    if sc == tc or sc not in top_community_set or tc not in top_community_set:
+        continue
+    community_edge_counts[tuple(sorted((sc, tc)))] += 1
+
+width, height, cx, cy, radius = 1120, 760, 560, 380, 310
+positions = {}
+count = max(1, len(top_community_ids))
+for i, cid in enumerate(top_community_ids):
+    import math
+    angle = (2 * math.pi * i / count) - math.pi / 2
+    positions[cid] = (cx + radius * math.cos(angle), cy + radius * math.sin(angle))
+
+max_size = max([community_size.get(cid, 1) for cid in top_community_ids] or [1])
+max_edge = max(community_edge_counts.values() or [1])
+svg_edges = []
+for (a, b), weight in community_edge_counts.most_common(220):
+    ax, ay = positions[a]
+    bx, by = positions[b]
+    stroke = 0.5 + 4.0 * (weight / max_edge)
+    svg_edges.append(f"<line x1='{ax:.1f}' y1='{ay:.1f}' x2='{bx:.1f}' y2='{by:.1f}' stroke='#334155' stroke-width='{stroke:.2f}' opacity='0.42'><title>{html.escape(a)} ↔ {html.escape(b)}: {weight} edges</title></line>")
+svg_nodes = []
+for cid in top_community_ids:
+    x, y = positions[cid]
+    size = community_size.get(cid, 1)
+    r = 8 + 26 * (size / max_size) ** 0.5
+    label = f"C{cid} · {size}"
+    svg_nodes.append(f"<g><circle cx='{x:.1f}' cy='{y:.1f}' r='{r:.1f}' fill='#38bdf8' opacity='0.82'><title>Community {html.escape(cid)} · {size} nodes</title></circle><text x='{x:.1f}' y='{y + r + 13:.1f}' text-anchor='middle' fill='#cbd5e1' font-size='11'>{html.escape(label)}</text></g>")
+svg_graph = f"<svg viewBox='0 0 {width} {height}' role='img' aria-label='Community overview graph'>{''.join(svg_edges)}{''.join(svg_nodes)}</svg>"
+
+summary = ""
+if report_path.exists():
+    for line in report_path.read_text(errors="ignore").splitlines()[:40]:
+        summary += f"<div>{html.escape(line)}</div>"
+
+css = """
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;margin:0;background:#10131a;color:#e8edf2}
+main{max-width:1280px;margin:0 auto;padding:24px} h1,h2{margin:18px 0 10px} .card{background:#171b24;border:1px solid #2a3140;border-radius:10px;padding:16px;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:13px} th,td{border-bottom:1px solid #2a3140;padding:8px;text-align:left;vertical-align:top} th{color:#aab4c0} code{color:#aad1ff}.muted{color:#94a3b8}.pill{display:inline-block;padding:3px 8px;border:1px solid #384256;border-radius:999px;margin:2px;color:#cbd5e1} svg{width:100%;height:620px;background:#0b1020;border:1px solid #263044;border-radius:10px}
+"""
+
+def rows(items):
+    return "\n".join(items)
+
+html_doc = f"""<!doctype html><html><head><meta charset='utf-8'><title>Graphify readable index</title><style>{css}</style></head><body><main>
+<h1>Graphify readable index</h1>
+<div class='card'><b>Full machine graph preserved:</b> <code>graph.json</code><br><b>Readable HTML sample:</b> top {len(top_nodes)} nodes by degree from {len(nodes)} total nodes and {len(edges)} edges.</div>
+<div class='card'><h2>Summary</h2>{summary}</div>
+<div class='card'><h2>Community overview graph</h2><p class='muted'>Aggregated from the full graph.json: top {len(top_community_ids)} communities, up to 220 strongest cross-community links. The full symbol graph remains in graph.json for LLM use.</p>{svg_graph}</div>
+<div class='card'><h2>Node types</h2>{''.join(f"<span class='pill'>{html.escape(str(k))}: {v}</span>" for k,v in kind_counts.most_common())}</div>
+<div class='card'><h2>Largest communities</h2><table><tr><th>Size</th><th>Community</th><th>Representative nodes</th><th>Common files</th></tr>{rows(f"<tr><td>{size}</td><td>{html.escape(cid)}</td><td>{tops}</td><td>{files}</td></tr>" for size,cid,tops,files in community_rows[:200])}</table></div>
+<div class='card'><h2>Top files</h2><table><tr><th>Nodes</th><th>File</th></tr>{rows(f"<tr><td>{count}</td><td>{html.escape(path)}</td></tr>" for path,count in file_counts.most_common(200))}</table></div>
+<div class='card'><h2>Top connected nodes</h2><table><tr><th>Degree</th><th>Label</th><th>Type</th><th>Community</th><th>Source</th></tr>{rows(f"<tr><td>{n.get('_degree',0)}</td><td>{html.escape(str(n.get('label', n.get('id',''))))}</td><td>{html.escape(str(n.get('file_type','')))}</td><td>{html.escape(str(n.get('community','')))}</td><td>{html.escape(str(n.get('source_file','')))}</td></tr>" for n in top_nodes)}</table></div>
+</main></body></html>"""
+html_path.write_text(html_doc)
+print(f"wrote readable fallback graph.html nodes={len(nodes)} edges={len(edges)} sampled={len(top_nodes)}")
+PY
+}
+
 run_phase() {
   local repo="$1"
   local phase="$2"
@@ -497,6 +655,11 @@ run_phase() {
     log "$label cluster produced unsafe graph overwrite warning repo=$repo"
     restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
+  fi
+
+  if [[ ! -f "$repo/graphify-out/graph.html" ]] && grep -q "Skipped graph.html" "$cluster_log"; then
+    log "$label generating readable fallback graph.html repo=$repo node-limit=$cluster_viz_node_limit"
+    generate_readable_graph_html "$repo" "$cluster_viz_node_limit" | tee -a "$cluster_log"
   fi
 
   local required_output
