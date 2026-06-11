@@ -1038,8 +1038,8 @@ export function AwsVideoDashboard() {
           : false;
 
   const packageComplete = cpFinalization?.status === 'complete';
-  const finalMediaVerified = packageComplete && Boolean(finalVideoKey && thumbnailKey);
-  const selectedReady = finalMediaVerified && (cpPhase === 'ready_to_publish' || cpSelectedJob?.status === 'ready_to_publish' || reviewMediaReady);
+  const finalMediaVerified = Boolean(finalVideoKey && thumbnailKey && (packageComplete || cpReview?.reviewStatus === 'approved' || cpPublish?.videoKey || cpArtifacts?.publishableAssets?.missing?.length === 0));
+  const selectedReady = finalMediaVerified && (cpPhase === 'ready_to_publish' || cpSelectedJob?.status === 'ready_to_publish' || reviewMediaReady || cpReview?.reviewStatus === 'approved');
   const selectedUploaded = selectedPublished;
 
   // In-flight state
