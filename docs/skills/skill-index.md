@@ -6,7 +6,7 @@ This index preserves existing skill names. It does not rename, delete, or merge 
 
 ---
 
-## Core Always-On Orchestrators
+## Core Orchestrators and Routed Skills
 
 | Skill | Role | Default Active | Profile | Notes |
 |---|---|---:|---|---|
