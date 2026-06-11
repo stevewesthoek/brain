@@ -528,3 +528,12 @@ Then monitor: `vo jobs --limit 5`
 **Reasoning:** Gemini free-tier can absorb high-volume draft generation before consuming local compute or paid Bedrock budget. Local Ollama remains mandatory first for sensitive, private, offline, external-provider-disallowed, or high-control review payloads, and becomes the default fallback when Gemini is exhausted, rate-limited, unhealthy, or fails quality checks.
 
 **Impact:** VO strategy, roadmap, selector onboarding, agent orchestrator architecture, AI selector architecture, and implementation plan docs must describe quota-aware Gemini routing. The selector must track Gemini RPM/TPM/RPD budgets, daily reset state, 429/quota exhaustion, health failures, and quality-gate fallbacks. Direct OpenAI API and direct Anthropic API calls remain forbidden.
+
+
+
+- Date: 2026-06-11 (AI System Context Reduction)
+- Decision: Adopted an AI-agnostic Brain architecture that routes rules, coding orchestration, capability lookup, handoffs, and context ordering through canonical policies and runbooks instead of growing always-on prompts.
+- Context: Brain's Claude/Codex/Gemini system needed to preserve one standard way of working while reducing prompt bloat, preventing asymmetric capability installs, keeping deterministic rules out of context, and making cross-runtime work resumable without full conversation dumps.
+- Impact: Added and indexed canonical policies for rule onboarding/hooks, code orchestration, capability discovery, handoff/parallel briefs, and context-loading order. Added hook guards for generated/runtime staging, active skill surface, review-before-ship, sensitive edits, and risky commands. Kept the default active skill profile to seven skills: code, research, memory, review, qa, handoff, careful. Left GrepLoop dormant. Added `operations/runbooks/anthropic-inspired-ai-system-checkpoint.md` as the compact implementation checkpoint.
+- Rationale: Stable AI behavior should come from modular policies, registries, deterministic hooks, and compact evidence briefs rather than giant runtime prompts or hidden chat memory.
+- Rollback: Revert the Step 1–5 policy/runbook/runtime-reference commits listed in `operations/runbooks/anthropic-inspired-ai-system-checkpoint.md`; remove the checkpoint runbook and central index references if the system returns to inline prompt-managed behavior.
