@@ -18,7 +18,7 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | User asks about | Search first | Then search |
 |---|---|---|
 | How brain works | `AGENTS.md`, `00-start-here.md`, `README.md` | `CLAUDE.md` |
-| Current AI-system context | `00-current-context.md` | `operations/decision-log.md` |
+| Current AI-system context | `00-current-context.md`, `operations/runbooks/anthropic-inspired-ai-system-checkpoint.md` | `operations/decision-log.md` |
 | Skills/orchestrators | `docs/skills/skill-index.md`, `ai/skills/` | `docs/skills/skill-loading-architecture.md` |
 | Active skill profiles | `docs/skills/profiles/` | `tools/scripts/switch-skill-profile.mjs` |
 | Claude Code global behavior | `operations/system-configs/claude/CLAUDE.md` | `operations/system-configs/claude/README.md` |
