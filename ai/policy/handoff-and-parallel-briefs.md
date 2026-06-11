@@ -44,7 +44,11 @@ Do not hand off merely to create process. Use it only when it reduces context lo
 
 ## Standard Brief Shape
 
-Use this compact structure unless a specific skill/runbook requires another format:
+Use this compact structure unless a specific skill/runbook requires another format.
+
+Copy/paste templates live at `operations/runbooks/handoff-brief-templates.md`.
+
+Use this compact structure:
 
 ```text
 Goal: <user outcome>
