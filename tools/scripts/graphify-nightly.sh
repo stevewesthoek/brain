@@ -61,6 +61,30 @@ node_modules/
 graphify-out/
 .graphify-out/
 
+# Scheduler safety: skip generated, temporary, archived, and nested-worktree noise.
+.tmp/
+**/.tmp/
+tmp/
+**/tmp/
+logs/
+**/logs/
+runtime/
+**/runtime/
+archive/
+**/archive/
+archives/
+**/archives/
+backup/
+**/backup/
+backups/
+**/backups/
+vendor/
+**/vendor/
+vendors/
+**/vendors/
+*.log
+**/*.log
+
 # Local AI/runtime state
 .ai/
 .claude/
@@ -372,3 +396,6 @@ log "graphify-nightly phased complete repos=$repos phases_ok=$phases_ok skipped=
 if (( failed > 0 )); then
   exit 1
 fi
+
+# Cutoff/skipped work is not a failed Graphify run. The next scheduler window resumes.
+exit 0
