@@ -1037,7 +1037,9 @@ export function AwsVideoDashboard() {
           ? true
           : false;
 
-  const selectedReady = cpPhase === 'ready_to_publish' || cpSelectedJob?.status === 'ready_to_publish' || reviewMediaReady;
+  const packageComplete = cpFinalization?.status === 'complete';
+  const finalMediaVerified = packageComplete && Boolean(finalVideoKey && thumbnailKey);
+  const selectedReady = finalMediaVerified && (cpPhase === 'ready_to_publish' || cpSelectedJob?.status === 'ready_to_publish' || reviewMediaReady);
   const selectedUploaded = selectedPublished;
 
   // In-flight state
@@ -1123,7 +1125,7 @@ export function AwsVideoDashboard() {
   const actionErrorMessage = errorMessage(actionError);
   const publishErrorDetails = payloadDetails(youtubeDryRun.error ?? youtubePublish.error);
   const quotaExceeded = cpPublish?.quotaStatus === 'exceeded' || isQuotaExceededResult(youtubePublish.error, youtubePublish.data ?? null);
-  const finalVideoAvailable = Boolean(finalVideoKey);
+  const finalVideoAvailable = finalMediaVerified;
   const visibleErrorMessage = actionErrorMessage;
   const visibleErrorSummary = quotaExceeded
     ? 'YouTube upload quota reached'
