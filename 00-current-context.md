@@ -7,7 +7,7 @@ Agents should read this early when working on AI infrastructure, skills, configs
 ## Status
 
 ```yaml
-status: draft
+status: current
 last_reviewed: 2026-06-11
 owner: Steve Westhoek
 purpose: Keep AI sessions oriented on the Brain repo without loading the whole repo.
