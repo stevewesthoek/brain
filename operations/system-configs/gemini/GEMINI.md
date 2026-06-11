@@ -1,6 +1,7 @@
 # GEMINI.md — Global Gemini Instructions
 
 Global instructions for Gemini CLI. These apply in every session.
+Context loading order canonical source: `brain/ai/policy/context-loading-order.md`.
 Routing policy canonical source: `brain/ai/policy/routing.md`.
 Code orchestration policy canonical source: `brain/ai/policy/code-orchestration.md`.
 Capability discovery policy canonical source: `brain/ai/policy/capability-discovery.md`.

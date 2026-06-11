@@ -3,6 +3,7 @@
 **DEFAULT WEB RESEARCH TOOL:** Use `/firecrawl` (local: `http://localhost:3055`) for ALL web search, scraping, and research. It replaces `/browse` and `WebFetch`. Works with Claude Code, Codex, and Gemini.
 
 Never use `mcp__claude-in-chrome__*` tools or raw `WebFetch` for research.
+Canonical context loading order: `brain/ai/policy/context-loading-order.md`.
 Canonical guardrails policy: `brain/ai/policy/guardrails.md`.
 Canonical capability discovery policy: `brain/ai/policy/capability-discovery.md`. Use registries before relying on long inline tool/skill lists or installing new capabilities.
 Canonical handoff and parallel-briefs policy: `brain/ai/policy/handoff-and-parallel-briefs.md`. Use compact evidence briefs when passing work between Claude, Codex, Gemini, or IDE/agent surfaces.
