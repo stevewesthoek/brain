@@ -49,12 +49,10 @@ They should:
 
 The default active skill set is intentionally compact.
 
-Always-on orchestrators include broad entry points such as:
+Default active orchestrators are intentionally limited to:
 
 ```text
 code
-design
-video
 research
 memory
 review
@@ -63,7 +61,7 @@ handoff
 careful
 ```
 
-Domain-specific or deeper skills should live in profiles and source folders without bloating the default active set.
+Domain-specific or deeper skills, including design and video, should live in profiles and source folders without bloating the default active set.
 
 Key docs:
 
