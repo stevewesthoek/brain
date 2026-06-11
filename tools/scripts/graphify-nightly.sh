@@ -21,6 +21,8 @@ GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
 GRAPHIFY_API_TIMEOUT="${GRAPHIFY_API_TIMEOUT:-900}"
 GRAPHIFY_AST_WORKERS="${GRAPHIFY_AST_WORKERS:-12}"
 GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-30000}"
+# Keep graph.json complete for LLM/retrieval use, but keep Phase 1 graph.html human-readable.
+GRAPHIFY_PHASE1_VIZ_NODE_LIMIT="${GRAPHIFY_PHASE1_VIZ_NODE_LIMIT:-2500}"
 
 # Default nightly work is intentionally light. Heavier phases are available for
 # explicit manual runs or targeted repos.
@@ -480,8 +482,13 @@ run_phase() {
     return 1
   fi
 
-  log "$label cluster repo=$repo model=$model viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
-  if ! run_graphify "$repo" "$model" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+  local cluster_viz_node_limit="$GRAPHIFY_VIZ_NODE_LIMIT"
+  if [[ "$phase" == "1" ]]; then
+    cluster_viz_node_limit="$GRAPHIFY_PHASE1_VIZ_NODE_LIMIT"
+  fi
+
+  log "$label cluster repo=$repo model=$model viz-limit=$cluster_viz_node_limit"
+  if ! GRAPHIFY_VIZ_NODE_LIMIT="$cluster_viz_node_limit" run_graphify "$repo" "$model" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
     restore_phase_graph_snapshot "$repo" "$snapshot_path"
     return 1
   fi
