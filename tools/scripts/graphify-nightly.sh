@@ -488,9 +488,15 @@ EOF
 *.mdx
 **/*.mdx
 !/operations/runbooks/
-!/operations/runbooks/*.md
+!/operations/runbooks/*graphify*.md
+!/operations/runbooks/*Graphify*.md
+!/operations/runbooks/*scheduler*.md
+!/operations/runbooks/*Scheduler*.md
 !/operations/specs/
-!/operations/specs/*.md
+!/operations/specs/*graphify*.md
+!/operations/specs/*Graphify*.md
+!/operations/specs/*scheduler*.md
+!/operations/specs/*Scheduler*.md
 !/adr/
 !/adr/*.md
 !/ADRs/
