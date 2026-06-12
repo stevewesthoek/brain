@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
-REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-7200}"
+REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-1800}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
 GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-ollama}"
 
@@ -25,9 +25,10 @@ GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-30000}"
 GRAPHIFY_PHASE1_VIZ_NODE_LIMIT="${GRAPHIFY_PHASE1_VIZ_NODE_LIMIT:-2500}"
 
 # Office nightly phase order for all repos. The cutoff decides how far a session gets:
-# Phase 1 clean code baseline; 2a root README overlay; 2b bounded docs overlay;
-# Phase 3 richer refinement; Phase 4 deep refinement.
-GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2a 2b 3 4}"
+# Phase 1 clean code baseline; Phase 2 root README overlay; Phase 3 bounded docs overlay;
+# Phase 4 focused runbooks/specs/ADR overlay; Phase 5 community naming/readability;
+# Phase 6 rare deep refinement.
+GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2 3 4 5 6}"
 GRAPHIFY_FAST_TOKEN_BUDGET="${GRAPHIFY_FAST_TOKEN_BUDGET:-2500}"
 GRAPHIFY_DOCS_README_TOKEN_BUDGET="${GRAPHIFY_DOCS_README_TOKEN_BUDGET:-${GRAPHIFY_PHASE2_TOKEN_BUDGET:-1000}}"
 GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET="${GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET:-1200}"
@@ -248,11 +249,11 @@ yarn.lock
 EOF
       append_media_exclusions "$repo"
       ;;
-    2|2a)
+    2)
       append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 2a: README-style root Markdown only.
+# Phase 2: README-style root Markdown only.
 # This is the default docs refinement lane. It intentionally skips code so it refines the existing Phase 1 graph instead of re-scanning the repo.
 *.py
 **/*.py
@@ -330,11 +331,11 @@ docs/
 !/Readme.md
 EOF
       ;;
-    2b)
+    3)
       append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 2b: limited docs batch.
+# Phase 3: limited docs batch.
 # Include root README-style files plus first-level docs/*.md only.
 # Skip code/config so this stays a short overlay pass instead of re-scanning the repo.
 *.py
@@ -414,11 +415,11 @@ EOF
 !/docs/*.mdx
 EOF
       ;;
-    3)
+    4)
       append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 3: bounded high-value documentation/spec overlay.
+# Phase 4: focused Graphify/scheduler runbooks/specs/ADR overlay.
 # Include root README, first-level docs, runbooks, specs, and ADR-style decision docs only.
 # Skip code/config/media so this remains an iterative overlay pass, not a full repo crawl.
 *.py
@@ -503,11 +504,17 @@ EOF
 !/ADRs/*.md
 EOF
       ;;
-    4)
+    5)
+      cat >> "$repo/.graphifyignore" <<'EOF'
+
+# Phase 5: community naming/readability only. Extraction is skipped for this phase.
+EOF
+      ;;
+    6)
       append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 4: bounded deep refinement overlay.
+# Phase 6: bounded deep refinement overlay.
 # Include deeper docs/specs/runbooks/ADR markdown only. No code/config/media full crawl.
 *.py
 **/*.py
@@ -603,11 +610,12 @@ EOF
 
 phase_label() {
   case "$1" in
-    1) printf 'phase1-fast-code' ;;
-    2|2a) printf 'phase2a-readme-docs' ;;
-    2b) printf 'phase2b-limited-docs' ;;
-    3) printf 'phase3-rich-refinement' ;;
-    4) printf 'phase4-deep-refinement' ;;
+    1) printf 'phase1-code-baseline' ;;
+    2) printf 'phase2-readme-overlay' ;;
+    3) printf 'phase3-limited-docs-overlay' ;;
+    4) printf 'phase4-focused-refinement' ;;
+    5) printf 'phase5-community-labels' ;;
+    6) printf 'phase6-deep-refinement' ;;
     *) printf 'phase%s' "$1" ;;
   esac
 }
@@ -615,10 +623,11 @@ phase_label() {
 phase_token_budget() {
   case "$1" in
     1) printf '%s' "$GRAPHIFY_FAST_TOKEN_BUDGET" ;;
-    2|2a) printf '%s' "$GRAPHIFY_DOCS_README_TOKEN_BUDGET" ;;
-    2b) printf '%s' "$GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET" ;;
-    3) printf '%s' "$GRAPHIFY_MEDIA_TOKEN_BUDGET" ;;
-    4) printf '%s' "$GRAPHIFY_DEEP_TOKEN_BUDGET" ;;
+    2) printf '%s' "$GRAPHIFY_DOCS_README_TOKEN_BUDGET" ;;
+    3) printf '%s' "$GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET" ;;
+    4) printf '%s' "$GRAPHIFY_MEDIA_TOKEN_BUDGET" ;;
+    5) printf '%s' "$GRAPHIFY_FAST_TOKEN_BUDGET" ;;
+    6) printf '%s' "$GRAPHIFY_DEEP_TOKEN_BUDGET" ;;
     *) printf '%s' "$GRAPHIFY_FAST_TOKEN_BUDGET" ;;
   esac
 }
@@ -635,10 +644,11 @@ phase_model_candidate() {
   fi
   case "$1" in
     1) printf '%s' "$GRAPHIFY_FAST_MODEL" ;;
-    2|2a) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
-    2b) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
-    3) printf '%s' "$GRAPHIFY_REFINED_MODEL" ;;
-    4) printf '%s' "$GRAPHIFY_DEEP_MODEL" ;;
+    2) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
+    3) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
+    4) printf '%s' "$GRAPHIFY_REFINED_MODEL" ;;
+    5) printf '%s' "$GRAPHIFY_REFINED_MODEL" ;;
+    6) printf '%s' "$GRAPHIFY_DEEP_MODEL" ;;
     *) printf '%s' "$GRAPHIFY_FAST_MODEL" ;;
   esac
 }
@@ -973,7 +983,7 @@ run_phase() {
     extract_cmd+=(--no-cluster --no-viz)
   fi
 
-  if [[ "$phase" == "4" ]]; then
+  if [[ "$phase" == "6" ]]; then
     extract_cmd+=(--mode deep)
   fi
 
@@ -982,12 +992,35 @@ run_phase() {
     "--backend=$GRAPHIFY_BACKEND"
   )
 
-  if [[ "$phase" == "1" || "$phase" == "2" || "$phase" == "2a" ]]; then
+  if [[ "$phase" == "1" || "$phase" == "2" || "$phase" == "3" || "$phase" == "4" ]]; then
     cluster_cmd+=(--no-label)
   fi
 
   local extract_log="$repo/graphify-out/.scheduler/${label}-extract.log"
   local cluster_log="$repo/graphify-out/.scheduler/${label}-cluster.log"
+
+  if [[ "$phase" == "5" ]]; then
+    log "$label community labeling repo=$repo model=$model viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
+    if ! run_graphify "$repo" "$model" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
+      restore_phase_graph_snapshot "$repo" "$snapshot_path"
+      return 1
+    fi
+    if grep -q "Refusing to overwrite" "$cluster_log"; then
+      log "$label cluster produced unsafe graph overwrite warning repo=$repo"
+      restore_phase_graph_snapshot "$repo" "$snapshot_path"
+      return 1
+    fi
+    for required_output in graphify-out/graph.json graphify-out/GRAPH_REPORT.md graphify-out/graph.html; do
+      if [[ ! -f "$repo/$required_output" ]]; then
+        log "$label missing required output repo=$repo file=$required_output"
+        restore_phase_graph_snapshot "$repo" "$snapshot_path"
+        return 1
+      fi
+    done
+    printf '%s\n' "$phase" > "$repo/graphify-out/.scheduler/last-successful-phase"
+    printf '%s\n' "$(timestamp)" > "$repo/graphify-out/.scheduler/last-successful-phase-at"
+    return 0
+  fi
 
   log "$label extract repo=$repo model=$model token-budget=$token_budget"
   if ! run_graphify "$repo" "$model" "${extract_cmd[@]}" > >(tee "$extract_log") 2> >(tee -a "$extract_log" >&2); then
@@ -1001,7 +1034,7 @@ run_phase() {
     return 1
   fi
 
-  if [[ "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" || "$phase" == "3" || "$phase" == "4" ]]; then
+  if [[ "$phase" == "2" || "$phase" == "3" || "$phase" == "4" || "$phase" == "6" ]]; then
     log "$label merging docs overlay into existing graph repo=$repo"
     merge_phase_graph_overlay "$repo" "$snapshot_path" | tee -a "$extract_log"
   fi
@@ -1096,9 +1129,9 @@ done < <(discover_repos)
 repos="${#discovered_repos[@]}"
 
 # Run phase-major, not repo-major: complete Phase 1 for every repo before any
-# repo advances to Phase 2a, then complete 2a for every repo before 2b, and so on.
-# This keeps all repos fresh at the highest-priority phase before spending time
-# on deeper refinement.
+# repo advances to Phase 2, then complete Phase 2 for every repo before Phase 3,
+# and so on. This keeps all repos fresh at the highest-priority phase before
+# spending time on deeper refinement.
 for phase in $GRAPHIFY_PHASES; do
   for repo in "${discovered_repos[@]}"; do
     [[ -n "$repo" ]] || continue
