@@ -3712,13 +3712,13 @@ export async function generateApprovedScript(
         generationMode: 'hybrid_animated_video' as const,
         videoSourceKey: `jobs/${jobId}/video-generated/generated-001.mp4`,
         audioSourceKey: `jobs/${jobId}/audio/narration.mp3`,
-        providerName: 'hybrid-animated-video-ffmpeg',
-        aiGenerated: false,
-        partialAiGenerated: true,
+        providerName: 'aws-bedrock-nova-reel',
+        aiGenerated: true,
+        partialAiGenerated: false,
         ttsGenerated: true,
-        storyboardGenerated: true,
-        imageGenerated: true,
-        slideshowGenerated: true,
+        storyboardGenerated: false,
+        imageGenerated: false,
+        slideshowGenerated: false,
       }
     : isHybridImageSlideshowMode
     ? {
@@ -4137,7 +4137,8 @@ export async function generateApprovedScript(
     generatedAt?: string;
   }> = [];
 
-  if ((isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode) && scenePlanKey && narrationScriptKey) {
+  const useLocalAnimatedFallback = process.env.AWS_VIDEO_ANIMATED_FALLBACK === 'local-ffmpeg';
+  if ((isHybridStoryboardMode || isHybridSlideshowMode || isHybridImageSlideshowMode || (isHybridAnimatedVideoMode && useLocalAnimatedFallback)) && scenePlanKey && narrationScriptKey) {
     const configuredImageProvider: AwsVideoImageProviderName | null = isHybridImageSlideshowMode
       ? getConfiguredImageProvider()
       : 'deterministic-placeholder';
@@ -4487,6 +4488,23 @@ export async function generateApprovedScript(
           });
         }
       }
+      if (isHybridAnimatedVideoMode && !novaReelResult) {
+        const message = animatedVideoFallbackReason
+          ? `Nova Reel video generation failed and slideshow fallback is disabled: ${animatedVideoFallbackReason}`
+          : 'Nova Reel video generation did not produce a result and slideshow fallback is disabled.';
+        await writeFailedStatus('nova_reel_required', message, {
+          provider: 'aws-bedrock-nova-reel',
+          fallbackAllowed: false,
+          hint: 'Fix Nova Reel configuration/permissions/model access instead of falling back to slideshow.',
+        });
+        return {
+          ok: false,
+          code: 'nova_reel_required',
+          message,
+          jobId,
+        };
+      }
+
       const slideshowProvider = new LocalFfmpegSlideshowProvider();
       const scenePlanPath = join(metadataDir, 'scene-plan.json');
       const scenePlanData = JSON.parse(await readFile(scenePlanPath, 'utf-8')) as ScenePlan;
