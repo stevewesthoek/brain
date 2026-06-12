@@ -434,7 +434,11 @@ run_graphify_nightly() {
     return 0
   fi
 
-  command="$(printf '%q >> %q 2>&1' "$graphify_script" "$graphify_log")"
+  # Graphify default for all repos:
+  #   Phase 1  = clean fast code graph; excludes docs/config/generated/vendor/runtime noise.
+  #   Phase 2a = root README overlay; requires Phase 1 graph and merges non-destructively.
+  # Heavier phases such as 2b/3/5 are manual or targeted runs, not the Office nightly default.
+  command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2a}" "$graphify_script" "$graphify_log")"
   run_job "graphify-nightly" "$timeout_seconds" "$command" "$graphify_log"
 }
 
