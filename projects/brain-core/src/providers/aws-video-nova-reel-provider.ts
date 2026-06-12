@@ -37,7 +37,7 @@ export class BedrockNovaReelVideoProvider {
 
   async generateVideo(input: BedrockNovaReelVideoProviderInput): Promise<BedrockNovaReelVideoProviderOutput> {
     const awsPath = await this.requireExecutable('aws');
-    const modelId = process.env.AWS_VIDEO_NOVA_REEL_MODEL_ID || 'amazon.nova-reel-v1:0';
+    const modelId = process.env.AWS_VIDEO_NOVA_REEL_MODEL_ID || 'amazon.nova-reel-v1:1';
     const region = process.env.AWS_VIDEO_BEDROCK_REGION || input.region;
     const durationSeconds = this.parseDurationSeconds();
     const fps = 24;
