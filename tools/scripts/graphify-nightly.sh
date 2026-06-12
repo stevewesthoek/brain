@@ -24,9 +24,10 @@ GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-30000}"
 # Keep graph.json complete for LLM/retrieval use, but keep Phase 1 graph.html human-readable.
 GRAPHIFY_PHASE1_VIZ_NODE_LIMIT="${GRAPHIFY_PHASE1_VIZ_NODE_LIMIT:-2500}"
 
-# Default nightly work is intentionally light. Heavier phases are available for
-# explicit manual runs or targeted repos.
-GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2a}"
+# Office nightly phase order for all repos. The cutoff decides how far a session gets:
+# Phase 1 clean code baseline; 2a root README overlay; 2b bounded docs overlay;
+# Phase 3 richer refinement; Phase 4 deep refinement.
+GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2a 2b 3 4}"
 GRAPHIFY_FAST_TOKEN_BUDGET="${GRAPHIFY_FAST_TOKEN_BUDGET:-2500}"
 GRAPHIFY_DOCS_README_TOKEN_BUDGET="${GRAPHIFY_DOCS_README_TOKEN_BUDGET:-${GRAPHIFY_PHASE2_TOKEN_BUDGET:-1000}}"
 GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET="${GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET:-1200}"
@@ -428,10 +429,10 @@ EOF
 **/*.wav
 EOF
       ;;
-    4|5)
+    4)
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 5: rare full/deep refinement. Only base generated/runtime/build exclusions apply.
+# Phase 4: deep refinement. Only base generated/runtime/build exclusions apply.
 EOF
       ;;
     *)
@@ -447,7 +448,7 @@ phase_label() {
     2|2a) printf 'phase2a-readme-docs' ;;
     2b) printf 'phase2b-limited-docs' ;;
     3) printf 'phase3-rich-refinement' ;;
-    4|5) printf 'phase5-deep-refinement' ;;
+    4) printf 'phase4-deep-refinement' ;;
     *) printf 'phase%s' "$1" ;;
   esac
 }
@@ -458,7 +459,7 @@ phase_token_budget() {
     2|2a) printf '%s' "$GRAPHIFY_DOCS_README_TOKEN_BUDGET" ;;
     2b) printf '%s' "$GRAPHIFY_DOCS_LIMITED_TOKEN_BUDGET" ;;
     3) printf '%s' "$GRAPHIFY_MEDIA_TOKEN_BUDGET" ;;
-    4|5) printf '%s' "$GRAPHIFY_DEEP_TOKEN_BUDGET" ;;
+    4) printf '%s' "$GRAPHIFY_DEEP_TOKEN_BUDGET" ;;
     *) printf '%s' "$GRAPHIFY_FAST_TOKEN_BUDGET" ;;
   esac
 }
@@ -478,7 +479,7 @@ phase_model_candidate() {
     2|2a) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
     2b) printf '%s' "$GRAPHIFY_DOCS_FAST_MODEL" ;;
     3) printf '%s' "$GRAPHIFY_REFINED_MODEL" ;;
-    4|5) printf '%s' "$GRAPHIFY_DEEP_MODEL" ;;
+    4) printf '%s' "$GRAPHIFY_DEEP_MODEL" ;;
     *) printf '%s' "$GRAPHIFY_FAST_MODEL" ;;
   esac
 }
@@ -833,8 +834,8 @@ run_phase() {
     return 1
   fi
 
-  if [[ "$phase" == "2" || "$phase" == "2a" ]]; then
-    log "$label merging README overlay into Phase 1 graph repo=$repo"
+  if [[ "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" ]]; then
+    log "$label merging docs overlay into existing graph repo=$repo"
     merge_phase_graph_overlay "$repo" "$snapshot_path" | tee -a "$extract_log"
   fi
 

@@ -434,11 +434,13 @@ run_graphify_nightly() {
     return 0
   fi
 
-  # Graphify default for all repos:
+  # Graphify default for all repos, in priority order. The scheduler cutoff decides how far this session gets:
   #   Phase 1  = clean fast code graph; excludes docs/config/generated/vendor/runtime noise.
   #   Phase 2a = root README overlay; requires Phase 1 graph and merges non-destructively.
-  # Heavier phases such as 2b/3/5 are manual or targeted runs, not the Office nightly default.
-  command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2a}" "$graphify_script" "$graphify_log")"
+  #   Phase 2b = bounded first-level docs overlay; merges non-destructively.
+  #   Phase 3  = richer refinement if earlier phases are current and time remains.
+  #   Phase 4  = deep refinement if all earlier phases are current and time remains.
+  command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2a 2b 3 4}" "$graphify_script" "$graphify_log")"
   run_job "graphify-nightly" "$timeout_seconds" "$command" "$graphify_log"
 }
 
