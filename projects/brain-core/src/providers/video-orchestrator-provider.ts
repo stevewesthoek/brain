@@ -10,6 +10,7 @@ import { PollyTTSProvider } from './aws-video-polly-provider.js';
 import { DeterministicStoryboardProvider } from './aws-video-storyboard-provider.js';
 import { LocalFfmpegSlideshowProvider } from './aws-video-slideshow-provider.js';
 import { LocalFfmpegAnimatedClipProvider } from './aws-video-animated-clip-provider.js';
+import { BedrockNovaReelVideoProvider, type BedrockNovaReelVideoProviderOutput } from './aws-video-nova-reel-provider.js';
 import { containsInternalOverlayTerms, DeterministicOverlayProvider, type OverlayPlan } from './aws-video-overlay-provider.js';
 import {
   AwsBedrockImageProvider,
@@ -4111,6 +4112,9 @@ export async function generateApprovedScript(
   let motionFallbackUsed = false;
   let motionFallbackReason: string | null = null;
   let animatedClipKeys: string[] = [];
+  let novaReelResult: BedrockNovaReelVideoProviderOutput | null = null;
+  let animatedVideoFallbackUsed = false;
+  let animatedVideoFallbackReason: string | null = null;
   let imageGenerationSettings: {
     width: number;
     height: number;
@@ -4395,7 +4399,7 @@ export async function generateApprovedScript(
       imageProvider = storyboardProvider.name;
       if (configuredImageProvider) imageProvider = configuredImageProvider;
 
-      if (isHybridAnimatedVideoMode && sceneImageKeys.length > 0 && scenePlanContent) {
+      if (isHybridAnimatedVideoMode && process.env.AWS_VIDEO_ANIMATED_FALLBACK === 'local-ffmpeg' && sceneImageKeys.length > 0 && scenePlanContent) {
         const animatedDir = join(jobRoot, 'animated');
         await mkdir(animatedDir, { recursive: true });
         const animatedClipProvider = new LocalFfmpegAnimatedClipProvider();
@@ -4449,9 +4453,41 @@ export async function generateApprovedScript(
   if (isHybridSlideshowMode || isHybridImageSlideshowMode || isHybridAnimatedVideoMode) {
     await updateProgressStatus('slideshow_started', { videoKey });
     try {
-      const slideshowProvider = new LocalFfmpegSlideshowProvider();
       const outputVideoPath = join(jobRoot, 'video-generated', 'generated-001.mp4');
       await mkdir(join(jobRoot, 'video-generated'), { recursive: true });
+      if (isHybridAnimatedVideoMode) {
+        await updateProgressStatus('nova_reel_started', { videoKey, provider: 'aws-bedrock-nova-reel' });
+        try {
+          const novaReelProvider = new BedrockNovaReelVideoProvider();
+          novaReelResult = await novaReelProvider.generateVideo({
+            jobId,
+            scenePlan: JSON.parse(await readFile(join(metadataDir, 'scene-plan.json'), 'utf-8')) as ScenePlan,
+            outputVideoPath,
+            bucket: S3_BUCKET,
+            region: AWS_REGION,
+            outputPrefix: `jobs/${jobId}/video-generated/nova-reel`,
+          });
+          await updateProgressStatus('nova_reel_complete', {
+            videoKey,
+            provider: novaReelResult.provider,
+            modelId: novaReelResult.modelId,
+            invocationArn: novaReelResult.invocationArn,
+            sourceVideoKey: novaReelResult.sourceVideoKey,
+          });
+        } catch (err) {
+          animatedVideoFallbackUsed = process.env.AWS_VIDEO_ANIMATED_FALLBACK === 'local-ffmpeg';
+          animatedVideoFallbackReason = err instanceof Error ? err.message : String(err);
+          if (!animatedVideoFallbackUsed) {
+            throw err;
+          }
+          await updateProgressStatus('nova_reel_fallback_started', {
+            videoKey,
+            provider: 'local-ffmpeg-animated-placeholder',
+            reason: animatedVideoFallbackReason,
+          });
+        }
+      }
+      const slideshowProvider = new LocalFfmpegSlideshowProvider();
       const scenePlanPath = join(metadataDir, 'scene-plan.json');
       const scenePlanData = JSON.parse(await readFile(scenePlanPath, 'utf-8')) as ScenePlan;
       let slideshowScenes = scenePlanData.scenes.map((scene, index) => ({
@@ -4521,17 +4557,19 @@ export async function generateApprovedScript(
         }));
       }
 
-      const slideshowAssembly = await slideshowProvider.assembleSlideshow({
-        jobId,
-        narrationPath: join(audioDir, 'narration.mp3'),
-        outputVideoPath,
-        scenes: slideshowScenes.map((scene) => ({
-          index: scene.index,
-          mediaPath: scene.imagePath,
-          imagePath: scene.imagePath,
-          durationSeconds: scene.durationSeconds,
-        })),
-      });
+      const slideshowAssembly = novaReelResult
+        ? { provider: novaReelResult.provider, outputVideoPath: novaReelResult.videoPath, sceneCount: scenePlanData.scenes.length }
+        : await slideshowProvider.assembleSlideshow({
+          jobId,
+          narrationPath: join(audioDir, 'narration.mp3'),
+          outputVideoPath,
+          scenes: slideshowScenes.map((scene) => ({
+            index: scene.index,
+            mediaPath: scene.imagePath,
+            imagePath: scene.imagePath,
+            durationSeconds: scene.durationSeconds,
+          })),
+        });
       await execFileAsync('aws', [
         's3', 'cp',
         outputVideoPath,
@@ -4749,13 +4787,29 @@ export async function generateApprovedScript(
     assetsJson.storyboardKey = storyboardKey;
     assetsJson.sceneImageKeys = sceneImageKeys;
     assetsJson.imageProvider = imageProvider;
-    assetsJson.videoProvider = 'local-ffmpeg-animated-placeholder';
-    assetsJson.videoKey = videoKey;
+    assetsJson.videoProvider = novaReelResult?.provider ?? 'local-ffmpeg-animated-placeholder';
+    assetsJson.videoKey = finalVideoKey;
+    assetsJson.thumbnailKey = thumbnailKey;
+    assetsJson.finalVideo = { path: finalVideoKey, source: novaReelResult ? 'bedrock-nova-reel' : 'animated-fallback-export', provider: novaReelResult?.provider ?? 'local-ffmpeg-animated-placeholder' };
     assetsJson.animatedClipKeys = animatedClipKeys;
+    assetsJson.novaReel = novaReelResult ? {
+      modelId: novaReelResult.modelId,
+      invocationArn: novaReelResult.invocationArn,
+      s3OutputUri: novaReelResult.s3OutputUri,
+      sourceVideoKey: novaReelResult.sourceVideoKey,
+      durationSeconds: novaReelResult.durationSeconds,
+      fps: novaReelResult.fps,
+      dimension: novaReelResult.dimension,
+      seed: novaReelResult.seed,
+    } : null;
+    assetsJson.animatedVideoFallbackUsed = animatedVideoFallbackUsed;
+    assetsJson.animatedVideoFallbackReason = animatedVideoFallbackReason;
+    assetsJson.aiGenerated = Boolean(novaReelResult);
+    assetsJson.partialAiGenerated = true;
     assetsJson.ttsGenerated = true;
     assetsJson.storyboardGenerated = true;
     assetsJson.imageGenerated = true;
-    assetsJson.slideshowGenerated = true;
+    assetsJson.slideshowGenerated = !novaReelResult;
     assetsJson.narration = {
       path: narrationKey,
       source: 'tts',
@@ -4763,18 +4817,20 @@ export async function generateApprovedScript(
       voiceId,
     };
     assetsJson.sourceVideo = {
-      path: videoKey,
-      source: 'animated-clips',
-      provider: 'local-ffmpeg-animated-placeholder',
+      path: novaReelResult?.sourceVideoKey ?? videoKey,
+      source: novaReelResult ? 'bedrock-nova-reel' : 'animated-clips-fallback',
+      provider: novaReelResult?.provider ?? 'local-ffmpeg-animated-placeholder',
     };
     assetsJson.providers = {
       scenePlan: 'deterministic-local',
       narrationScript: 'deterministic-local',
       narrationAudio: 'aws-polly',
       sceneImages: imageProvider,
-      video: 'local-ffmpeg-animated-placeholder',
+      video: novaReelResult?.provider ?? 'local-ffmpeg-animated-placeholder',
     };
-    assetsJson.warnings = ['Animated video mode: per-scene clips generated by local-ffmpeg-animated-placeholder (deterministic zoompan). Replace provider for real image-to-video model clips.'];
+    assetsJson.warnings = novaReelResult
+      ? ['Animated video mode: primary video generated by Amazon Bedrock Nova Reel.']
+      : ['Animated video mode: Nova Reel failed and explicit local-ffmpeg fallback was used.'];
   } else if (isHybridSlideshowMode && narrationScriptKey && storyboardKey) {
     assetsJson.scenePlanKey = scenePlanKey;
     assetsJson.narrationScriptKey = narrationScriptKey;
