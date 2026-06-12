@@ -4631,14 +4631,19 @@ export async function generateApprovedScript(
         ...(motionClipKeys.length > 0 ? { motionClipCount: motionClipKeys.length } : {}),
       });
     } catch (err) {
-      const message = `Failed to assemble slideshow video: ${err instanceof Error ? err.message : String(err)}`;
-      await writeFailedStatus('slideshow_failed', message, {
+      const isAnimatedFailure = isHybridAnimatedVideoMode;
+      const message = isAnimatedFailure
+        ? `Failed to generate Nova Reel video: ${err instanceof Error ? err.message : String(err)}`
+        : `Failed to assemble slideshow video: ${err instanceof Error ? err.message : String(err)}`;
+      await writeFailedStatus(isAnimatedFailure ? 'nova_reel_failed' : 'slideshow_failed', message, {
         videoKey,
-        videoProvider: 'local-ffmpeg-slideshow',
+        videoProvider: isAnimatedFailure ? 'aws-bedrock-nova-reel' : 'local-ffmpeg-slideshow',
       });
-      const code = err instanceof Error && err.message.includes('slideshow_assembly_not_available')
-        ? 'slideshow_assembly_not_available'
-        : 'slideshow_assembly_failed';
+      const code = isAnimatedFailure
+        ? 'nova_reel_failed'
+        : err instanceof Error && err.message.includes('slideshow_assembly_not_available')
+          ? 'slideshow_assembly_not_available'
+          : 'slideshow_assembly_failed';
       return {
         ok: false,
         code,

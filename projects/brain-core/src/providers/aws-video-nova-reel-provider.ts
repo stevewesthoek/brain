@@ -117,12 +117,17 @@ export class BedrockNovaReelVideoProvider {
     const sceneBeats = scenePlan.scenes
       .map(scene => `Scene ${scene.index + 1}: ${scene.visualPrompt}. Narration intent: ${scene.narrationText}`)
       .join('\n');
+    const compactBeats = scenePlan.scenes
+      .map(scene => scene.narrationText || scene.visualPrompt)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
     return [
-      `Create a cinematic, realistic HD video titled: ${title}`,
-      'Use real motion, camera movement, temporal continuity, natural lighting, and coherent subject identity across shots.',
-      'Avoid text overlays, captions, watermarks, logos, or UI elements inside the video image.',
-      sceneBeats,
-    ].join('\n\n').slice(0, 4000);
+      `Cinematic realistic HD video: ${title}.`,
+      'Show real motion, natural camera movement, temporal continuity, natural light, and coherent subject identity.',
+      'No captions, no watermarks, no logos, no UI text.',
+      compactBeats,
+    ].join(' ').replace(/\s+/g, ' ').trim().slice(0, 512);
   }
 
   private async waitForCompletion(awsPath: string, invocationArn: string, region: string): Promise<Record<string, unknown>> {
