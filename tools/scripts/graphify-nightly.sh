@@ -718,7 +718,8 @@ prepare_phase_graph_state() {
   local phase="$2"
   local label="$3"
   local graph_path="$repo/graphify-out/graph.json"
-  local snapshot_path="$repo/graphify-out/.scheduler/pre-${label}-graph.json"
+  local snapshot_dir="$repo/graphify-out/.scheduler/pre-${label}-outputs"
+  local snapshot_path="$snapshot_dir/graph.json"
 
   if [[ "$phase" == "1" ]]; then
     printf '0:%s\n' "$snapshot_path"
@@ -730,7 +731,12 @@ prepare_phase_graph_state() {
     return 1
   fi
 
+  rm -rf "$snapshot_dir"
+  mkdir -p "$snapshot_dir"
   cp "$graph_path" "$snapshot_path"
+  [[ -f "$repo/graphify-out/graph.html" ]] && cp "$repo/graphify-out/graph.html" "$snapshot_dir/graph.html"
+  [[ -f "$repo/graphify-out/GRAPH_REPORT.md" ]] && cp "$repo/graphify-out/GRAPH_REPORT.md" "$snapshot_dir/GRAPH_REPORT.md"
+  [[ -f "$repo/graphify-out/.graphify_analysis.json" ]] && cp "$repo/graphify-out/.graphify_analysis.json" "$snapshot_dir/.graphify_analysis.json"
   local previous_nodes
   previous_nodes="$(graph_node_count "$graph_path")"
 
@@ -742,8 +748,19 @@ prepare_phase_graph_state() {
 restore_phase_graph_snapshot() {
   local repo="$1"
   local snapshot_path="$2"
-  if [[ -f "$snapshot_path" ]]; then
-    cp "$snapshot_path" "$repo/graphify-out/graph.json"
+  local snapshot_dir
+  snapshot_dir="$(dirname "$snapshot_path")"
+  if [[ -f "$snapshot_dir/graph.json" ]]; then
+    cp "$snapshot_dir/graph.json" "$repo/graphify-out/graph.json"
+  fi
+  if [[ -f "$snapshot_dir/graph.html" ]]; then
+    cp "$snapshot_dir/graph.html" "$repo/graphify-out/graph.html"
+  fi
+  if [[ -f "$snapshot_dir/GRAPH_REPORT.md" ]]; then
+    cp "$snapshot_dir/GRAPH_REPORT.md" "$repo/graphify-out/GRAPH_REPORT.md"
+  fi
+  if [[ -f "$snapshot_dir/.graphify_analysis.json" ]]; then
+    cp "$snapshot_dir/.graphify_analysis.json" "$repo/graphify-out/.graphify_analysis.json"
   fi
 }
 
@@ -959,7 +976,7 @@ run_phase() {
     extract_cmd+=(--no-cluster --no-viz)
   fi
 
-  if [[ "$phase" == "4" || "$phase" == "5" ]]; then
+  if [[ "$phase" == "4" ]]; then
     extract_cmd+=(--mode deep)
   fi
 
