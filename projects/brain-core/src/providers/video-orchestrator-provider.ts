@@ -4638,7 +4638,27 @@ export async function generateApprovedScript(
       const finalVideoPath = join(jobRoot, 'exports', 'generated-001-final.mp4');
       const thumbnailPath = join(jobRoot, 'exports', 'thumbnail-001.jpg');
       await mkdir(join(jobRoot, 'exports'), { recursive: true });
-      await copyFile(outputVideoPath, finalVideoPath);
+      if (novaReelResult) {
+        await updateProgressStatus('audio_mux_started', {
+          provider: 'ffmpeg',
+          videoKey,
+          audioKey: narrationKey,
+          finalVideoKey,
+        });
+        await execFileAsync('ffmpeg', [
+          '-y',
+          '-i', outputVideoPath,
+          '-i', join(audioDir, 'narration.mp3'),
+          '-map', '0:v:0',
+          '-map', '1:a:0',
+          '-c:v', 'copy',
+          '-c:a', 'aac',
+          '-shortest',
+          finalVideoPath,
+        ], { timeout: 120_000 });
+      } else {
+        await copyFile(outputVideoPath, finalVideoPath);
+      }
       await execFileAsync('aws', [
         's3', 'cp',
         finalVideoPath,

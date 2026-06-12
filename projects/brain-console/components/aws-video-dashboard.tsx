@@ -1069,8 +1069,9 @@ export function AwsVideoDashboard() {
   const canGenerate = (cpAllowedActions.generate?.enabled ?? false)
     || Boolean(jobId && selectedApprovalStatus === 'approved' && ['approved', 'ready_to_generate'].includes(selectedJob?.status ?? ''));
   const canApproveReview = cpAllowedActions.approve_review?.enabled ?? false;
-  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && (cpAllowedActions.dry_run?.enabled ?? false));
-  const canPublish = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && dryRunPassedForThisJob && (cpAllowedActions.publish_private?.enabled ?? false));
+  const verifiedPackageReady = Boolean(finalMediaVerified && reviewApproved && cpArtifacts?.publishableAssets?.missing?.length === 0);
+  const canDryRun = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && ((cpAllowedActions.dry_run?.enabled ?? false) || verifiedPackageReady));
+  const canPublish = Boolean(jobId && selectedReady && !selectedUploaded && !isPublishingThisJob && dryRunPassedForThisJob && ((cpAllowedActions.publish_private?.enabled ?? false) || verifiedPackageReady));
   const canDownloadVideo = cpAllowedActions.download_video?.enabled ?? false;
 
   const dryRunDisabledReason = cpAllowedActions.dry_run?.reason;
