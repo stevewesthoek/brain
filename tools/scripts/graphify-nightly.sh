@@ -1057,7 +1057,11 @@ run_phase() {
       return 1
     fi
     apply_readable_community_names "$repo" | tee -a "$cluster_log"
-    generate_readable_graph_html "$repo" "$GRAPHIFY_VIZ_NODE_LIMIT" | tee -a "$cluster_log"
+    # Keep Graphify's interactive graph.html when cluster-only produced one. Only fall
+    # back to the static readable index if graph.html is missing.
+    if [[ ! -f "$repo/graphify-out/graph.html" ]]; then
+      generate_readable_graph_html "$repo" "$GRAPHIFY_VIZ_NODE_LIMIT" | tee -a "$cluster_log"
+    fi
     for required_output in graphify-out/graph.json graphify-out/GRAPH_REPORT.md graphify-out/graph.html; do
       if [[ ! -f "$repo/$required_output" ]]; then
         log "$label missing required output repo=$repo file=$required_output"
