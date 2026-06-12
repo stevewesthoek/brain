@@ -1156,7 +1156,12 @@ export function AwsVideoDashboard() {
         addActivity(`Draft created: ${matched.jobId}`);
         setActiveView('overview');
       }
-      // clientActionId known but not yet visible in list — keep overlay locked
+      // clientActionId known but not yet visible in list — avoid trapping the UI forever.
+      if (jobList.length > 0) {
+        setCreateDraftTimedOut(false);
+        setCurrentCreateActionId(null);
+        addActivity('Draft creation did not return a new job; overlay reset. Create draft can be retried.');
+      }
       return;
     }
 

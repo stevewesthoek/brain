@@ -15,6 +15,7 @@ export interface BedrockNovaReelVideoProviderInput {
   region: string;
   outputPrefix: string;
   prompt?: string;
+  onProgress?: (progress: { invocationArn: string; status: string; elapsedSeconds: number }) => Promise<void>;
 }
 
 export interface BedrockNovaReelVideoProviderOutput {
@@ -81,7 +82,7 @@ export class BedrockNovaReelVideoProvider {
       const invocationArn = start.stdout.trim();
       if (!invocationArn) throw new Error('nova_reel_missing_invocation_arn');
 
-      const completed = await this.waitForCompletion(awsPath, invocationArn, region);
+      const completed = await this.waitForCompletion(awsPath, invocationArn, region, input.onProgress);
       const completedOutputUri = this.readS3OutputUri(completed) || s3OutputUri;
       const completedVideoKey = `${completedOutputUri.replace(/^s3:\/\/[^/]+\//, '').replace(/\/$/, '')}/output.mp4`;
 
@@ -130,9 +131,14 @@ export class BedrockNovaReelVideoProvider {
     ].join(' ').replace(/\s+/g, ' ').trim().slice(0, 512);
   }
 
-  private async waitForCompletion(awsPath: string, invocationArn: string, region: string): Promise<Record<string, unknown>> {
-    const pollSeconds = Number(process.env.AWS_VIDEO_NOVA_REEL_POLL_SECONDS || 15);
-    const timeoutSeconds = Number(process.env.AWS_VIDEO_NOVA_REEL_TIMEOUT_SECONDS || 1500);
+  private async waitForCompletion(
+    awsPath: string,
+    invocationArn: string,
+    region: string,
+    onProgress?: (progress: { invocationArn: string; status: string; elapsedSeconds: number }) => Promise<void>,
+  ): Promise<Record<string, unknown>> {
+    const pollSeconds = Number(process.env.AWS_VIDEO_NOVA_REEL_POLL_SECONDS || 10);
+    const timeoutSeconds = Number(process.env.AWS_VIDEO_NOVA_REEL_TIMEOUT_SECONDS || 480);
     const startedAt = Date.now();
 
     while (Date.now() - startedAt < timeoutSeconds * 1000) {
@@ -145,6 +151,8 @@ export class BedrockNovaReelVideoProvider {
       ], { timeout: 30_000 });
       const parsed = JSON.parse(statusResult.stdout) as Record<string, unknown>;
       const status = String(parsed.status ?? parsed.Status ?? '');
+      const elapsedSeconds = Math.round((Date.now() - startedAt) / 1000);
+      if (onProgress) await onProgress({ invocationArn, status, elapsedSeconds });
       if (status === 'Completed') return parsed;
       if (status === 'Failed') {
         const failureMessage = String(parsed.failureMessage ?? parsed.FailureMessage ?? 'Nova Reel async invocation failed');
@@ -153,7 +161,7 @@ export class BedrockNovaReelVideoProvider {
       await new Promise(resolve => setTimeout(resolve, pollSeconds * 1000));
     }
 
-    throw new Error(`nova_reel_timeout: ${invocationArn}`);
+    throw new Error(`nova_reel_timeout_after_${timeoutSeconds}s: ${invocationArn}`);
   }
 
   private readS3OutputUri(response: Record<string, unknown>): string | null {
