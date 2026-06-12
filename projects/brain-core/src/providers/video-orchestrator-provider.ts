@@ -3357,6 +3357,36 @@ export async function approveVideoReview(
   try {
     const writeStart = Date.now();
     await writeReviewJson(jobId, approved);
+    const publishJson = await readJobMetadataJson(jobId, 'publish.json') as Record<string, unknown> | null;
+    if (publishJson) {
+      const reviewedPublishJson = {
+        ...publishJson,
+        publishBlocked: false,
+        reviewStatus: 'approved',
+        packageComplete: true,
+        videoKey: mediaToApprove.videoKey,
+        thumbnailKey: mediaToApprove.thumbnailKey,
+        audioKey: mediaToApprove.audioKey,
+        updatedAt: now,
+      };
+      await writeFile(join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata', 'publish.json'), JSON.stringify(reviewedPublishJson, null, 2) + '\n', 'utf-8');
+      await writeFile(join(getVideoOrchestratorRoot(), 'jobs', jobId, 'publishing', 'publish.json'), JSON.stringify(reviewedPublishJson, null, 2) + '\n', 'utf-8').catch(() => undefined);
+      await writeS3MetadataJson(jobId, 'publish.json', reviewedPublishJson);
+    }
+    const statusPath = getJobMetadataPath(jobId, 'status.json');
+    const statusJson = await readOptionalJson(statusPath) as Record<string, unknown> | null;
+    const readyStatusJson = {
+      ...(statusJson ?? {}),
+      status: 'ready_to_publish',
+      currentStep: 'ready_to_publish',
+      updatedAt: now,
+      reviewStatus: 'approved',
+      packageComplete: true,
+      finalVideoKey: mediaToApprove.videoKey,
+      thumbnailKey: mediaToApprove.thumbnailKey,
+    };
+    await writeFile(statusPath, JSON.stringify(readyStatusJson, null, 2) + '\n', 'utf-8');
+    await writeS3MetadataJson(jobId, 'status.json', readyStatusJson);
     const writeDurationMs = Date.now() - writeStart;
     console.log(`[video-review] approve persisted jobId=${jobId} durationMs=${writeDurationMs}`);
   } catch {
