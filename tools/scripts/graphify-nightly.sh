@@ -1073,7 +1073,7 @@ run_phase() {
     extract_cmd+=(--no-cluster --no-viz)
   fi
 
-  if [[ "$phase" == "6" ]]; then
+  if [[ "$phase" == "6" && "${GRAPHIFY_PHASE6_DEEP_MODE:-0}" == "1" ]]; then
     extract_cmd+=(--mode deep)
   fi
 
