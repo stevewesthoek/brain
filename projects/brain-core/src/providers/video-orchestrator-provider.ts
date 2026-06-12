@@ -4497,6 +4497,15 @@ export async function generateApprovedScript(
             bucket: S3_BUCKET,
             region: AWS_REGION,
             outputPrefix: `jobs/${jobId}/video-generated/nova-reel`,
+            onProgress: async (progress) => {
+              await updateProgressStatus('nova_reel_waiting', {
+                provider: 'aws-bedrock-nova-reel',
+                invocationArn: progress.invocationArn,
+                bedrockStatus: progress.status,
+                elapsedSeconds: progress.elapsedSeconds,
+                videoKey,
+              });
+            },
           });
           await updateProgressStatus('nova_reel_complete', {
             videoKey,
