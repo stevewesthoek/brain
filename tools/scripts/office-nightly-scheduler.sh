@@ -434,13 +434,16 @@ run_graphify_nightly() {
     return 0
   fi
 
-  # Graphify default for all repos, in priority order. The scheduler cutoff decides how far this session gets:
-  #   Phase 1  = clean fast code graph; excludes docs/config/generated/vendor/runtime noise.
-  #   Phase 2a = root README overlay; requires Phase 1 graph and merges non-destructively.
-  #   Phase 2b = bounded first-level docs overlay; merges non-destructively.
-  #   Phase 3  = richer refinement if earlier phases are current and time remains.
-  #   Phase 4  = deep refinement if all earlier phases are current and time remains.
-  command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2a 2b 3 4}" "$graphify_script" "$graphify_log")"
+  # Central Graphify path: always run the phased scheduler, never ad-hoc full-repo crawls.
+  # The Graphify scheduler runs phase-major across repos: Phase 1 for every repo,
+  # then Phase 2 for every repo, and so on. The cutoff decides how far the session gets.
+  #   Phase 1 = clean code baseline
+  #   Phase 2 = root README overlay
+  #   Phase 3 = bounded first-level docs overlay
+  #   Phase 4 = focused Graphify/scheduler/runbook/spec/ADR refinement
+  #   Phase 5 = community naming/readability post-process
+  #   Phase 6 = rare deep refinement
+  command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2 3 4 5 6}" "$graphify_script" "$graphify_log")"
   run_job "graphify-nightly" "$timeout_seconds" "$command" "$graphify_log"
 }
 
