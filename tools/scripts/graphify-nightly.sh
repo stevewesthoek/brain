@@ -823,6 +823,52 @@ print(f"merged phase overlay graph nodes={len(nodes)} edges={len(merged_edges)}"
 PY
 }
 
+apply_readable_community_names() {
+  local repo="$1"
+  python3 - "$repo/graphify-out/graph.json" <<'PY'
+import json, re, sys
+from collections import Counter, defaultdict
+from pathlib import Path
+path = Path(sys.argv[1])
+data = json.loads(path.read_text())
+nodes = data.get('nodes', []) if isinstance(data.get('nodes', []), list) else []
+stop = set('the and for with from this that into using file files code node nodes script function class component page app lib src index main init utils helper test tests community'.split())
+def words(value):
+    text = re.sub(r'[._/\\:-]+', ' ', str(value or ''))
+    for word in re.findall(r'[A-Za-z][A-Za-z0-9]{2,}', text):
+        lower = word.lower()
+        if lower not in stop:
+            yield lower
+def title(counter):
+    terms = [term for term, _ in counter.most_common(4)]
+    return ' '.join(term.capitalize() for term in terms) if terms else 'General Graph Cluster'
+by_community = defaultdict(list)
+for node in nodes:
+    cid = node.get('community')
+    if cid is not None:
+        by_community[str(cid)].append(node)
+names = {}
+for cid, group in by_community.items():
+    weighted = Counter()
+    for node in group:
+        weight = max(1, min(int(node.get('degree') or node.get('_degree') or 1), 12))
+        for term in words(node.get('source_file')):
+            weighted[term] += weight * 2
+        for term in words(node.get('label')):
+            weighted[term] += weight
+        for term in words(node.get('file_type')):
+            weighted[term] += 1
+    names[cid] = title(weighted)
+for node in nodes:
+    cid = node.get('community')
+    if cid is not None:
+        node['community_name'] = names.get(str(cid), f'Community {cid}')
+data.setdefault('graph', {})['community_names'] = names
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+print(f'applied deterministic community names communities={len(names)}')
+PY
+}
+
 generate_readable_graph_html() {
   local repo="$1"
   local node_limit="$2"
@@ -1010,6 +1056,8 @@ run_phase() {
       restore_phase_graph_snapshot "$repo" "$snapshot_path"
       return 1
     fi
+    apply_readable_community_names "$repo" | tee -a "$cluster_log"
+    generate_readable_graph_html "$repo" "$GRAPHIFY_VIZ_NODE_LIMIT" | tee -a "$cluster_log"
     for required_output in graphify-out/graph.json graphify-out/GRAPH_REPORT.md graphify-out/graph.html; do
       if [[ ! -f "$repo/$required_output" ]]; then
         log "$label missing required output repo=$repo file=$required_output"
