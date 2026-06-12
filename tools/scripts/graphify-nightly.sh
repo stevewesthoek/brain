@@ -734,17 +734,8 @@ prepare_phase_graph_state() {
   local previous_nodes
   previous_nodes="$(graph_node_count "$graph_path")"
 
-  # Phase 2a is an overlay/refinement pass: keep the Phase 1 graph in place so
-  # README context can merge into it. Wider phases rebuild their current scope
-  # from cache to avoid stale ignore-rule merges.
-  if [[ "$phase" != "2" && "$phase" != "2a" ]]; then
-    rm -f \
-      "$repo/graphify-out/graph.json" \
-      "$repo/graphify-out/GRAPH_REPORT.md" \
-      "$repo/graphify-out/graph.html" \
-      "$repo/graphify-out/.graphify_analysis.json"
-  fi
-
+  # Phases after Phase 1 are overlay/refinement passes: keep the existing graph
+  # in place, snapshot it, and merge phase output back before clustering.
   printf '%s:%s\n' "$previous_nodes" "$snapshot_path"
 }
 
