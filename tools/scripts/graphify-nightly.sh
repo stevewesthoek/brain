@@ -869,6 +869,36 @@ print(f'applied deterministic community names communities={len(names)}')
 PY
 }
 
+apply_readable_community_names_to_html() {
+  local repo="$1"
+  python3 - "$repo/graphify-out/graph.json" "$repo/graphify-out/graph.html" <<'PY'
+import html
+import json
+import re
+import sys
+from pathlib import Path
+
+graph_path = Path(sys.argv[1])
+html_path = Path(sys.argv[2])
+if not graph_path.exists() or not html_path.exists():
+    print("skipped html community name injection missing graph/html")
+    raise SystemExit(0)
+
+data = json.loads(graph_path.read_text())
+names = data.get("graph", {}).get("community_names", {})
+if not isinstance(names, dict) or not names:
+    print("skipped html community name injection no community_names")
+    raise SystemExit(0)
+
+text = html_path.read_text(errors="ignore")
+for cid, name in sorted(names.items(), key=lambda item: len(str(item[0])), reverse=True):
+    safe = html.escape(str(name))
+    text = re.sub(rf"Community {re.escape(str(cid))}(?![0-9])", safe, text)
+html_path.write_text(text)
+print(f"injected community names into graph.html communities={len(names)}")
+PY
+}
+
 generate_readable_graph_html() {
   local repo="$1"
   local node_limit="$2"
@@ -1057,6 +1087,7 @@ run_phase() {
       return 1
     fi
     apply_readable_community_names "$repo" | tee -a "$cluster_log"
+    apply_readable_community_names_to_html "$repo" | tee -a "$cluster_log"
     # Keep Graphify's interactive graph.html when cluster-only produced one. Only fall
     # back to the static readable index if graph.html is missing.
     if [[ ! -f "$repo/graphify-out/graph.html" ]]; then
