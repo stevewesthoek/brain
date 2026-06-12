@@ -1,6 +1,6 @@
 # Graphify Nightly — Phased Knowledge Graph Maintenance
 
-**Status:** Active and validated through Phase 5  
+**Status:** Active six-phase workflow; Phases 1–5 validated, Phase 6 bounded for validation  
 **Last updated:** 2026-06-12  
 **Coordinator:** `tools/scripts/office-nightly-scheduler.sh`  
 **Canonical entry point:** `tools/scripts/graphify-nightly.sh`
@@ -47,7 +47,7 @@ The old `2a` / `2b` names are retired. The validated numeric phases are:
 | 3 | Limited docs overlay | Bounded first-level docs overlay merged into the existing graph | Validated |
 | 4 | Focused refinement | Narrow Graphify/scheduler/runbook/spec/ADR overlay | Validated |
 | 5 | Community naming/readability | Recluster current graph, apply deterministic community names, inject names into interactive `graph.html` | Validated |
-| 6 | Deep refinement | Rare deep pass for later manual testing; not part of the validated normal path yet | Optional |
+| 6 | Bounded deep refinement | Generic high-signal docs pass: README plus architecture/design/standard/runbook/spec/ADR/decision-style Markdown, non-recursive where possible | Active, bounded |
 
 Validated means the phase has been run successfully on `brain` with bounded runtime and non-destructive graph preservation.
 
