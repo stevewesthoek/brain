@@ -921,18 +921,24 @@ phases_ok=0
 skipped=0
 failed=0
 
-while IFS= read -r repo; do
-  [[ -n "$repo" ]] || continue
-  repos=$((repos + 1))
+mapfile -t discovered_repos < <(discover_repos)
+repos="${#discovered_repos[@]}"
 
-  log "repo start path=$repo graph-present=$([[ -f "$repo/graphify-out/graph.json" ]] && printf yes || printf no)"
+# Run phase-major, not repo-major: complete Phase 1 for every repo before any
+# repo advances to Phase 2a, then complete 2a for every repo before 2b, and so on.
+# This keeps all repos fresh at the highest-priority phase before spending time
+# on deeper refinement.
+for phase in $GRAPHIFY_PHASES; do
+  for repo in "${discovered_repos[@]}"; do
+    [[ -n "$repo" ]] || continue
 
-  for phase in $GRAPHIFY_PHASES; do
     if ! check_scheduler_cutoff; then
-      log "skipping remaining phases repo=$repo reason=scheduler_cutoff"
+      log "skipping remaining work phase=$(phase_label "$phase") reason=scheduler_cutoff"
       skipped=$((skipped + 1))
-      break
+      break 2
     fi
+
+    log "repo phase start path=$repo phase=$(phase_label "$phase") graph-present=$([[ -f "$repo/graphify-out/graph.json" ]] && printf yes || printf no)"
 
     if run_phase "$repo" "$phase"; then
       phases_ok=$((phases_ok + 1))
@@ -940,12 +946,10 @@ while IFS= read -r repo; do
       log_outputs "$repo"
     else
       failed=$((failed + 1))
-      log "phase failed repo=$repo phase=$(phase_label "$phase") — continuing to next repo"
-      break
+      log "phase failed repo=$repo phase=$(phase_label "$phase") — continuing with next repo at same phase"
     fi
   done
-
-done < <(discover_repos)
+done
 
 log "graphify-nightly phased complete repos=$repos phases_ok=$phases_ok skipped=$skipped failed=$failed"
 
