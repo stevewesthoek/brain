@@ -1089,8 +1089,12 @@ run_phase() {
   local extract_log="$repo/graphify-out/.scheduler/${label}-extract.log"
   local cluster_log="$repo/graphify-out/.scheduler/${label}-cluster.log"
 
-  if [[ "$phase" == "5" ]]; then
-    log "$label community labeling repo=$repo model=$model viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
+  if [[ "$phase" == "5" || ( "$phase" == "6" && "${GRAPHIFY_PHASE6_EXTRACT:-0}" != "1" ) ]]; then
+    if [[ "$phase" == "6" ]]; then
+      log "$label bounded validation/relabeling repo=$repo model=$model viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT extraction=disabled"
+    else
+      log "$label community labeling repo=$repo model=$model viz-limit=$GRAPHIFY_VIZ_NODE_LIMIT"
+    fi
     if ! run_graphify "$repo" "$model" "${cluster_cmd[@]}" > >(tee "$cluster_log") 2> >(tee -a "$cluster_log" >&2); then
       restore_phase_graph_snapshot "$repo" "$snapshot_path"
       return 1
