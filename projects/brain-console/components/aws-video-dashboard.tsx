@@ -460,25 +460,41 @@ interface TimeoutMonitorSnapshot {
   currentCreateActionId: string | null;
   preTimeoutJobIds: string[];
   selectedJobId: string | null;
+  savedAt: string | null;
 }
 
 const TIMEOUT_MONITOR_KEY = 'aws-video-timeout-monitor';
+const TIMEOUT_MONITOR_MAX_AGE_MS = 2 * 60 * 1000;
+const EMPTY_TIMEOUT_MONITOR: TimeoutMonitorSnapshot = {
+  pendingActionByJobId: {},
+  createDraftTimedOut: false,
+  currentCreateActionId: null,
+  preTimeoutJobIds: [],
+  selectedJobId: null,
+  savedAt: null,
+};
 
 function readTimeoutMonitor(): TimeoutMonitorSnapshot {
   try {
     const raw = sessionStorage.getItem(TIMEOUT_MONITOR_KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<TimeoutMonitorSnapshot>;
+      const savedAtMs = typeof p.savedAt === 'string' ? new Date(p.savedAt).getTime() : NaN;
+      if (!Number.isFinite(savedAtMs) || Date.now() - savedAtMs > TIMEOUT_MONITOR_MAX_AGE_MS) {
+        sessionStorage.removeItem(TIMEOUT_MONITOR_KEY);
+        return EMPTY_TIMEOUT_MONITOR;
+      }
       return {
         pendingActionByJobId: p.pendingActionByJobId ?? {},
         createDraftTimedOut: p.createDraftTimedOut ?? false,
         currentCreateActionId: p.currentCreateActionId ?? null,
         preTimeoutJobIds: p.preTimeoutJobIds ?? [],
         selectedJobId: p.selectedJobId ?? null,
+        savedAt: p.savedAt ?? null,
       };
     }
   } catch { /* ignore parse/storage errors */ }
-  return { pendingActionByJobId: {}, createDraftTimedOut: false, currentCreateActionId: null, preTimeoutJobIds: [], selectedJobId: null };
+  return EMPTY_TIMEOUT_MONITOR;
 }
 
 export function AwsVideoDashboard() {
@@ -854,6 +870,7 @@ export function AwsVideoDashboard() {
           currentCreateActionId,
           preTimeoutJobIds,
           selectedJobId,
+          savedAt: new Date().toISOString(),
         };
         sessionStorage.setItem(TIMEOUT_MONITOR_KEY, JSON.stringify(snapshot));
       } else {
