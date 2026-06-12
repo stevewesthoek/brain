@@ -176,24 +176,13 @@ EOF
 
 # Phase 1: fast code graph only.
 # Skip semantic-heavy docs, config manifests, workflows, generated metadata, papers, images, office files, media, and generated/vendor/runtime noise.
-operations/system-configs/
-**/system-configs/
-operations/system-configs/**/shell_snapshots/
 **/shell_snapshots/
-operations/system-configs/**/shell-snapshots/
 **/shell-snapshots/
-operations/system-configs/**/plugins/cache/
 **/plugins/cache/
-operations/system-configs/**/plugins/marketplaces/
 **/plugins/marketplaces/
-operations/system-configs/**/vendor_imports/
 **/vendor_imports/
 **/vendor/
 **/vendors/
-tools/firecrawl/
-**/tools/firecrawl/
-tools/google-ads/
-**/tools/google-ads/
 **/.cache/
 **/cache/
 **/.next/
@@ -419,9 +408,9 @@ EOF
       append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 4: focused Graphify/scheduler runbooks/specs/ADR overlay.
-# Include root README, first-level docs, runbooks, specs, and ADR-style decision docs only.
-# Skip code/config/media so this remains an iterative overlay pass, not a full repo crawl.
+# Phase 4: focused high-signal docs overlay.
+# Include generic root/index, architecture, design, standard, runbook, spec, ADR, and decision-style docs only.
+# Skip code/config/media so this remains an iterative overlay pass, not a repo-specific crawl.
 *.py
 **/*.py
 *.ts
@@ -488,16 +477,29 @@ EOF
 **/*.md
 *.mdx
 **/*.mdx
-!/operations/runbooks/
-!/operations/runbooks/*graphify*.md
-!/operations/runbooks/*Graphify*.md
-!/operations/runbooks/*scheduler*.md
-!/operations/runbooks/*Scheduler*.md
-!/operations/specs/
-!/operations/specs/*graphify*.md
-!/operations/specs/*Graphify*.md
-!/operations/specs/*scheduler*.md
-!/operations/specs/*Scheduler*.md
+!/README.md
+!/README.mdx
+!/README-*.md
+!/README_*.md
+!/docs/
+!/docs/*architecture*.md
+!/docs/*Architecture*.md
+!/docs/*design*.md
+!/docs/*Design*.md
+!/docs/*standard*.md
+!/docs/*Standard*.md
+!/docs/*runbook*.md
+!/docs/*Runbook*.md
+!/docs/*spec*.md
+!/docs/*Spec*.md
+!/docs/*decision*.md
+!/docs/*Decision*.md
+!/docs/*adr*.md
+!/docs/*ADR*.md
+!/runbooks/
+!/runbooks/*.md
+!/specs/
+!/specs/*.md
 !/adr/
 !/adr/*.md
 !/ADRs/
@@ -582,11 +584,6 @@ EOF
 **/*.md
 *.mdx
 **/*.mdx
-!/README.md
-!/README.mdx
-!/README-*.md
-!/README_*.md
-!/docs/
 # Generic bounded deep docs: high-signal index, architecture, design, standard,
 # runbook, spec, ADR, and decision documents only. Avoid recursive all-docs crawls.
 !/README.md
@@ -604,16 +601,18 @@ EOF
 !/docs/*Runbook*.md
 !/docs/*spec*.md
 !/docs/*Spec*.md
+!/docs/*decision*.md
+!/docs/*Decision*.md
 !/docs/*adr*.md
 !/docs/*ADR*.md
-!/operations/runbooks/
-!/operations/runbooks/*.md
-!/operations/specs/
-!/operations/specs/*.md
-!/adr/
-!/adr/*.md
-!/ADRs/
-!/ADRs/*.md
+!**/runbooks/
+!**/runbooks/*.md
+!**/specs/
+!**/specs/*.md
+!**/adr/
+!**/adr/*.md
+!**/ADRs/
+!**/ADRs/*.md
 EOF
       ;;
     *)

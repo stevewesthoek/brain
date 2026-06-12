@@ -45,9 +45,9 @@ The old `2a` / `2b` names are retired. The validated numeric phases are:
 | 1 | Code baseline | Clean code graph; excludes docs/config/generated/vendor/runtime noise | Validated |
 | 2 | README overlay | Root README-only overlay merged into the existing graph | Validated |
 | 3 | Limited docs overlay | Bounded first-level docs overlay merged into the existing graph | Validated |
-| 4 | Focused refinement | Narrow Graphify/scheduler/runbook/spec/ADR overlay | Validated |
+| 4 | Focused refinement | Generic high-signal docs overlay: README plus first-level architecture/design/standard/runbook/spec/ADR/decision-style Markdown | Validated |
 | 5 | Community naming/readability | Recluster current graph, apply deterministic community names, inject names into interactive `graph.html` | Validated |
-| 6 | Bounded deep refinement | Generic high-signal docs pass: README plus architecture/design/standard/runbook/spec/ADR/decision-style Markdown, non-recursive where possible | Active, bounded |
+| 6 | Bounded deep refinement | Generic high-signal docs pass: README plus architecture/design/standard/runbook/spec/ADR/decision-style Markdown and conventional runbooks/specs/ADR folders | Active, bounded |
 
 Validated means the phase has been run successfully on `brain` with bounded runtime and non-destructive graph preservation.
 
