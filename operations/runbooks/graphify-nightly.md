@@ -1,6 +1,6 @@
 # Graphify Nightly — Phased Knowledge Graph Maintenance
 
-**Status:** Active six-phase workflow; Phases 1–5 validated, Phase 6 bounded for validation  
+**Status:** Active six-phase baseline; Phases 1–6 validated as the normal bounded workflow  
 **Last updated:** 2026-06-12  
 **Coordinator:** `tools/scripts/office-nightly-scheduler.sh`  
 **Canonical entry point:** `tools/scripts/graphify-nightly.sh`
@@ -72,7 +72,7 @@ Phase 2: docs fast model
 Phase 3: docs fast model
 Phase 4: refined model
 Phase 5: refined model, but only for cluster-only/readability work
-Phase 6: deep model
+Phase 6: refined model for bounded final validation; deep extraction only when explicitly enabled
 ```
 
 ---

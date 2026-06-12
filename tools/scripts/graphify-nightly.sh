@@ -629,7 +629,7 @@ phase_label() {
     3) printf 'phase3-limited-docs-overlay' ;;
     4) printf 'phase4-focused-refinement' ;;
     5) printf 'phase5-community-labels' ;;
-    6) printf 'phase6-deep-refinement' ;;
+    6) printf 'phase6-final-validation' ;;
     *) printf 'phase%s' "$1" ;;
   esac
 }

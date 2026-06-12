@@ -440,9 +440,9 @@ run_graphify_nightly() {
   #   Phase 1 = clean code baseline
   #   Phase 2 = root README overlay
   #   Phase 3 = bounded first-level docs overlay
-  #   Phase 4 = focused Graphify/scheduler/runbook/spec/ADR refinement
+  #   Phase 4 = focused high-signal docs refinement
   #   Phase 5 = community naming/readability post-process
-  #   Phase 6 = rare deep refinement
+  #   Phase 6 = bounded final validation
   command="$(printf 'GRAPHIFY_PHASES=%q %q >> %q 2>&1' "${GRAPHIFY_PHASES:-1 2 3 4 5 6}" "$graphify_script" "$graphify_log")"
   run_job "graphify-nightly" "$timeout_seconds" "$command" "$graphify_log"
 }
