@@ -7,6 +7,8 @@
 
 Graphify has one supported operating model in this repo: use the phased nightly scheduler. Do not run ad-hoc full-repo Graphify crawls as the normal workflow. The phased system keeps each pass bounded, preserves existing graph outputs between overlay phases, and lets the nightly cutoff decide how far the maintenance window gets.
 
+Graphify also has one supported consumption model: use `docs/system/graphify-context-standard.md`. LLMs, IDE assistants, terminal CLIs, and agent runners should treat Graphify artifacts as the low-token repo map for broad context, then verify with exact source reads before patching.
+
 ---
 
 ## One Way of Working
