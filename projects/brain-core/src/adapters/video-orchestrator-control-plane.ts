@@ -148,13 +148,14 @@ function computeAllowedActions(
   const approvalStatus = job?.approval?.status ?? 'pending';
   const reviewStatus = reviewData?.reviewStatus ?? null;
 
-  const mediaComplete = !!(
+  const metadataComplete = !!(
     reviewMedia?.videoKey &&
     reviewMedia?.thumbnailKey &&
     reviewMedia?.scenePlanKey &&
     reviewMedia?.narrationScriptKey &&
     reviewMedia?.audioKey
   );
+  const mediaComplete = metadataComplete && publishAssetsAvailable;
 
   const videoAvailable = !!(artifacts?.videoKey || artifacts?.finalVideoKey);
 
