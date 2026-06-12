@@ -44,8 +44,9 @@ export class BedrockNovaReelVideoProvider {
     const dimension = '1280x720';
     const seed = this.parseSeed(input.jobId);
     const prompt = input.prompt?.trim() || this.buildPrompt(input.scenePlan);
-    const s3OutputUri = `s3://${input.bucket}/${input.outputPrefix.replace(/\/$/, '')}`;
-    const sourceVideoKey = `${input.outputPrefix.replace(/\/$/, '')}/output.mp4`;
+    const outputPrefix = input.outputPrefix.replace(/^\/+|\/+$/g, '');
+    const s3OutputUri = `s3://${input.bucket}/${outputPrefix}/`;
+    const sourceVideoKey = `${outputPrefix}/output.mp4`;
 
     await mkdir(dirname(input.outputVideoPath), { recursive: true });
     const tempDir = await mkdtemp(join(tmpdir(), `nova-reel-${input.jobId}-`));
