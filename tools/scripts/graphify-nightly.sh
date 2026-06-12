@@ -415,24 +415,186 @@ EOF
 EOF
       ;;
     3)
+      append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 3: richer selected-repo refinement.
-# Include docs, papers, images, and office files; still skip audio/video.
-*.mp3
-**/*.mp3
-*.mp4
-**/*.mp4
-*.mov
-**/*.mov
-*.wav
-**/*.wav
+# Phase 3: bounded high-value documentation/spec overlay.
+# Include root README, first-level docs, runbooks, specs, and ADR-style decision docs only.
+# Skip code/config/media so this remains an iterative overlay pass, not a full repo crawl.
+*.py
+**/*.py
+*.ts
+**/*.ts
+*.tsx
+**/*.tsx
+*.js
+**/*.js
+*.jsx
+**/*.jsx
+*.mjs
+**/*.mjs
+*.cjs
+**/*.cjs
+*.sh
+**/*.sh
+*.sql
+**/*.sql
+*.php
+**/*.php
+*.go
+**/*.go
+*.rs
+**/*.rs
+*.java
+**/*.java
+*.rb
+**/*.rb
+*.swift
+**/*.swift
+*.kt
+**/*.kt
+*.kts
+**/*.kts
+*.css
+**/*.css
+*.scss
+**/*.scss
+*.html
+**/*.html
+*.vue
+**/*.vue
+*.svelte
+**/*.svelte
+*.yml
+**/*.yml
+*.yaml
+**/*.yaml
+*.json
+**/*.json
+*.jsonc
+**/*.jsonc
+*.toml
+**/*.toml
+*.xml
+**/*.xml
+*.txt
+**/*.txt
+*.csv
+**/*.csv
+*.lock
+**/*.lock
+*.md
+**/*.md
+*.mdx
+**/*.mdx
+!/README.md
+!/README.mdx
+!/README-*.md
+!/README_*.md
+!/docs/
+!/docs/*.md
+!/docs/*.mdx
+!/operations/runbooks/
+!/operations/runbooks/*.md
+!/operations/specs/
+!/operations/specs/*.md
+!/projects/*/docs/
+!/projects/*/docs/*.md
+!/adr/
+!/adr/*.md
+!/ADRs/
+!/ADRs/*.md
 EOF
       ;;
     4)
+      append_media_exclusions "$repo"
       cat >> "$repo/.graphifyignore" <<'EOF'
 
-# Phase 4: deep refinement. Only base generated/runtime/build exclusions apply.
+# Phase 4: bounded deep refinement overlay.
+# Include deeper docs/specs/runbooks/ADR markdown only. No code/config/media full crawl.
+*.py
+**/*.py
+*.ts
+**/*.ts
+*.tsx
+**/*.tsx
+*.js
+**/*.js
+*.jsx
+**/*.jsx
+*.mjs
+**/*.mjs
+*.cjs
+**/*.cjs
+*.sh
+**/*.sh
+*.sql
+**/*.sql
+*.php
+**/*.php
+*.go
+**/*.go
+*.rs
+**/*.rs
+*.java
+**/*.java
+*.rb
+**/*.rb
+*.swift
+**/*.swift
+*.kt
+**/*.kt
+*.kts
+**/*.kts
+*.css
+**/*.css
+*.scss
+**/*.scss
+*.html
+**/*.html
+*.vue
+**/*.vue
+*.svelte
+**/*.svelte
+*.yml
+**/*.yml
+*.yaml
+**/*.yaml
+*.json
+**/*.json
+*.jsonc
+**/*.jsonc
+*.toml
+**/*.toml
+*.xml
+**/*.xml
+*.txt
+**/*.txt
+*.csv
+**/*.csv
+*.lock
+**/*.lock
+*.md
+**/*.md
+*.mdx
+**/*.mdx
+!/README.md
+!/README.mdx
+!/README-*.md
+!/README_*.md
+!/docs/
+!/docs/**/*.md
+!/docs/**/*.mdx
+!/operations/runbooks/
+!/operations/runbooks/**/*.md
+!/operations/specs/
+!/operations/specs/**/*.md
+!/projects/*/docs/
+!/projects/*/docs/**/*.md
+!/adr/
+!/adr/**/*.md
+!/ADRs/
+!/ADRs/**/*.md
 EOF
       ;;
     *)
@@ -834,7 +996,7 @@ run_phase() {
     return 1
   fi
 
-  if [[ "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" ]]; then
+  if [[ "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" || "$phase" == "3" || "$phase" == "4" ]]; then
     log "$label merging docs overlay into existing graph repo=$repo"
     merge_phase_graph_overlay "$repo" "$snapshot_path" | tee -a "$extract_log"
   fi
