@@ -1083,7 +1083,11 @@ phases_ok=0
 skipped=0
 failed=0
 
-mapfile -t discovered_repos < <(discover_repos)
+discovered_repos=()
+while IFS= read -r repo; do
+  [[ -n "$repo" ]] || continue
+  discovered_repos+=("$repo")
+done < <(discover_repos)
 repos="${#discovered_repos[@]}"
 
 # Run phase-major, not repo-major: complete Phase 1 for every repo before any
