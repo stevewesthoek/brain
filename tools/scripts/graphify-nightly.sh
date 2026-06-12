@@ -487,19 +487,10 @@ EOF
 **/*.md
 *.mdx
 **/*.mdx
-!/README.md
-!/README.mdx
-!/README-*.md
-!/README_*.md
-!/docs/
-!/docs/*.md
-!/docs/*.mdx
 !/operations/runbooks/
 !/operations/runbooks/*.md
 !/operations/specs/
 !/operations/specs/*.md
-!/projects/*/docs/
-!/projects/*/docs/*.md
 !/adr/
 !/adr/*.md
 !/ADRs/
@@ -985,7 +976,7 @@ run_phase() {
     "--backend=$GRAPHIFY_BACKEND"
   )
 
-  if [[ "$phase" == "1" || "$phase" == "2" || "$phase" == "2a" || "$phase" == "2b" || "$phase" == "3" ]]; then
+  if [[ "$phase" == "1" || "$phase" == "2" || "$phase" == "2a" ]]; then
     cluster_cmd+=(--no-label)
   fi
 
