@@ -24,10 +24,10 @@ GRAPHIFY_VIZ_NODE_LIMIT="${GRAPHIFY_VIZ_NODE_LIMIT:-30000}"
 # Keep graph.json complete for LLM/retrieval use, but keep Phase 1 graph.html human-readable.
 GRAPHIFY_PHASE1_VIZ_NODE_LIMIT="${GRAPHIFY_PHASE1_VIZ_NODE_LIMIT:-2500}"
 
-# Office nightly phase order for all repos. The cutoff decides how far a session gets:
-# Phase 1 clean code baseline; Phase 2 root README overlay; Phase 3 bounded docs overlay;
-# Phase 4 focused runbooks/specs/ADR overlay; Phase 5 community naming/readability;
-# Phase 6 rare deep refinement.
+# Canonical Office nightly phase order for all repositories. The cutoff decides how far a session gets:
+# Phase 1 code baseline; Phase 2 README overlay; Phase 3 limited docs overlay;
+# Phase 4 focused high-signal docs refinement; Phase 5 community naming/readability;
+# Phase 6 bounded final validation.
 GRAPHIFY_PHASES="${GRAPHIFY_PHASES:-1 2 3 4 5 6}"
 GRAPHIFY_FAST_TOKEN_BUDGET="${GRAPHIFY_FAST_TOKEN_BUDGET:-2500}"
 GRAPHIFY_DOCS_README_TOKEN_BUDGET="${GRAPHIFY_DOCS_README_TOKEN_BUDGET:-${GRAPHIFY_PHASE2_TOKEN_BUDGET:-1000}}"
