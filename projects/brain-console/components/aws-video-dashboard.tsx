@@ -1254,6 +1254,19 @@ export function AwsVideoDashboard() {
     }
   }, [jobId, selectedUploaded, selectedJob?.status, cpPublish?.quotaStatus, pendingActionByJobId]);
 
+  // Staleness TTL: release a timed-out publish overlay and local upload lock after 3 minutes.
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'publish') return;
+    const timer = setTimeout(() => {
+      if (pendingActionByJobId[jobId] === 'publish') {
+        clearPendingAction(jobId);
+        updateActionState(jobId, { uploadStartedAt: undefined });
+        addActivity(`Publish pending state cleared after timeout for ${jobId}`);
+      }
+    }, 180_000);
+    return () => clearTimeout(timer);
+  }, [jobId, pendingActionByJobId]);
+
   // Clear stale client errors once canonical backend state proves the action completed.
   useEffect(() => {
     if (selectedApprovalStatus === 'approved' && approve.isError) approve.reset();
