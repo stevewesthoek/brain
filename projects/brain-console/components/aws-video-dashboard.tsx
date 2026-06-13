@@ -1038,7 +1038,8 @@ export function AwsVideoDashboard() {
   const backendDryRunPassed = backendDryRunStatus === 'passed';
   const backendDryRunRunning = backendDryRunStatus === 'running';
   const backendDryRunFailed = backendDryRunStatus === 'failed';
-  const dryRunPassedForThisJob = (actionState?.dryRunPassed ?? backendDryRunPassed) && !actionState?.uploadStartedAt;
+  const uploadLockActive = Boolean(actionState?.uploadStartedAt && (Date.now() - new Date(actionState.uploadStartedAt).getTime()) < 60_000);
+  const dryRunPassedForThisJob = (actionState?.dryRunPassed ?? backendDryRunPassed) && !uploadLockActive;
   const dryRunRunning = !dryRunPassedForThisJob && (youtubeDryRun.isPending || backendDryRunRunning);
   const dryRunFailed = !dryRunPassedForThisJob && !dryRunRunning && backendDryRunFailed;
 
@@ -1060,7 +1061,7 @@ export function AwsVideoDashboard() {
   const selectedUploaded = selectedPublished;
 
   // In-flight state
-  const isPublishingThisJob = youtubePublish.isPending || (actionState?.uploadStartedAt ? (Date.now() - new Date(actionState.uploadStartedAt).getTime()) < 60000 : false);
+  const isPublishingThisJob = youtubePublish.isPending || uploadLockActive;
 
   const selectedApprovalStatus = cpSelectedJob?.approvalStatus ?? 'pending';
   const reviewStatus = cpReview?.reviewStatus ?? 'pending';
