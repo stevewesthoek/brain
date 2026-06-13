@@ -1226,6 +1226,19 @@ export function AwsVideoDashboard() {
     }
   }, [jobId, reviewStatus, pendingActionByJobId]);
 
+  // Staleness TTL: release quick approval actions if no backend confirmation arrives.
+  useEffect(() => {
+    if (!jobId || !['approve_script', 'approve_review'].includes(pendingActionByJobId[jobId] ?? '')) return;
+    const pendingApproval = pendingActionByJobId[jobId];
+    const timer = setTimeout(() => {
+      if (pendingActionByJobId[jobId] === pendingApproval) {
+        clearPendingAction(jobId);
+        addActivity(`${pendingApproval === 'approve_script' ? 'Script' : 'Review'} approval pending state cleared after timeout for ${jobId}`);
+      }
+    }, 120_000);
+    return () => clearTimeout(timer);
+  }, [jobId, pendingActionByJobId]);
+
   // Poll-based clearing of pending actions: dry_run
   useEffect(() => {
     if (!jobId || pendingActionByJobId[jobId] !== 'dry_run') return;
