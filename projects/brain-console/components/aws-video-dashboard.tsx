@@ -1253,6 +1253,15 @@ export function AwsVideoDashboard() {
     }
   }, [jobId, selectedUploaded, selectedJob?.status, cpPublish?.quotaStatus, pendingActionByJobId]);
 
+  // Clear stale client errors once canonical backend state proves the action completed.
+  useEffect(() => {
+    if (selectedApprovalStatus === 'approved' && approve.isError) approve.reset();
+    if (finalMediaVerified && generate.isError) generate.reset();
+    if (reviewApproved && approveReview.isError) approveReview.reset();
+    if (backendDryRunPassed && youtubeDryRun.isError) youtubeDryRun.reset();
+    if (selectedUploaded && youtubePublish.isError) youtubePublish.reset();
+  }, [selectedApprovalStatus, finalMediaVerified, reviewApproved, backendDryRunPassed, selectedUploaded, approve.isError, generate.isError, approveReview.isError, youtubeDryRun.isError, youtubePublish.isError]);
+
   // DEV ASSERTION: When controlPlane is available, verify it is driving the main UI state
   useEffect(() => {
     if (!jobId || !controlPlaneData || process.env.NODE_ENV !== 'development') return;
