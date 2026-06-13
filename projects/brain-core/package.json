@@ -23,6 +23,7 @@
     "test:mind-maintenance-loader-stale": "npm run build && node --test dist/tests/mind-maintenance-pilot-loader-stale.test.js",
     "test:mind-maintenance-completed-active": "npm run build && node --test dist/tests/mind-maintenance-completed-active.test.js",
     "test:mind-maintenance-source-gap": "npm run build && node --test dist/tests/mind-maintenance-source-gap.test.js",
+    "test:mind-maintenance-report-builder": "npm run build && node --test dist/tests/mind-maintenance-pilot-report-builder.test.js",
     "test:local-app-actions-live": "npm run build && node scripts/test-local-app-actions-live.mjs",
     "ci": "npm run typecheck && npm test"
   },
