@@ -159,7 +159,8 @@ function computeAllowedActions(
 
   const videoAvailable = !!(artifacts?.videoKey || artifacts?.finalVideoKey);
 
-  const readyToPublish = ['ready_to_publish'].includes(jobStatus);
+  const readyToPublish = ['ready_to_publish'].includes(jobStatus)
+    || (reviewStatus === 'approved' && publishAssetsAvailable);
 
   return {
     approve_script: {
