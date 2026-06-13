@@ -1135,7 +1135,10 @@ export function AwsVideoDashboard() {
                 : null;
 
   const statusOnlyError = status.error;
-  const statusOnlyErrorMessage = errorMessage(statusOnlyError);
+  const statusHasUsableData = Boolean(status.data);
+  const statusOnlyErrorMessage = status.isLoading || (status.isFetching && statusHasUsableData)
+    ? null
+    : errorMessage(statusOnlyError);
   const refreshSafeTimeoutErrors = [createDraft.error, approve.error, approveReview.error, youtubeDryRun.error, youtubePublish.error].filter(isTimeoutError);
   const generatedArtifactsArrived = Boolean(hasGeneratedAssets || finalVideoKey || thumbnailKey || cpArtifacts?.finalVideoKey || cpArtifacts?.thumbnailKey);
   const generationError = isTimeoutError(generate.error) && generatedArtifactsArrived ? null : generate.error;
