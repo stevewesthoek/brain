@@ -64,6 +64,16 @@ GRAPHIFY_REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-1800}"
 
 Each repository phase is capped at about 30 minutes by default. Phase 5 is expected to finish quickly because it does not extract, scan docs, or call an LLM.
 
+Phase outcomes are classified explicitly:
+
+- `phases_ok`: phase completed and required outputs were validated.
+- `empty`: repository had no eligible content for that phase; this is non-fatal.
+- `deferred`: the bounded phase timeout was reached; the process group is terminated, prior outputs are restored, and the next repository continues.
+- `skipped`: remaining work was not started because the nightly cutoff was reached.
+- `failed`: a genuine command, output-validation, unsafe-overwrite, or graph-integrity failure occurred.
+
+Only `failed` makes the Graphify nightly command exit non-zero. Empty repositories, bounded timeouts, and the scheduler cutoff are reported accurately without turning the whole nightly run red.
+
 Model defaults:
 
 ```text
