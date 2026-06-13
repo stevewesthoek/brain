@@ -2450,7 +2450,8 @@ export async function routeRequest(
       if (jobThumbnailMatch) {
         try {
           const jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
-          const result = await getVideoJobThumbnail(jobId);
+          const requestedThumbnailKey = url.searchParams.get('key');
+          const result = await getVideoJobThumbnail(jobId, requestedThumbnailKey);
           if (!result.success) {
             response.writeHead(result.code === 'invalid_job_id' ? 400 : 404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
             response.end(JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null }));
