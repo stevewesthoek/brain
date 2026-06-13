@@ -807,19 +807,18 @@ restore_phase_graph_snapshot() {
   local repo="$1"
   local snapshot_path="$2"
   local snapshot_dir
+  local output
   snapshot_dir="$(dirname "$snapshot_path")"
-  if [[ -f "$snapshot_dir/graph.json" ]]; then
-    cp "$snapshot_dir/graph.json" "$repo/graphify-out/graph.json"
-  fi
-  if [[ -f "$snapshot_dir/graph.html" ]]; then
-    cp "$snapshot_dir/graph.html" "$repo/graphify-out/graph.html"
-  fi
-  if [[ -f "$snapshot_dir/GRAPH_REPORT.md" ]]; then
-    cp "$snapshot_dir/GRAPH_REPORT.md" "$repo/graphify-out/GRAPH_REPORT.md"
-  fi
-  if [[ -f "$snapshot_dir/.graphify_analysis.json" ]]; then
-    cp "$snapshot_dir/.graphify_analysis.json" "$repo/graphify-out/.graphify_analysis.json"
-  fi
+
+  # Restore the exact pre-phase output set. If an output did not exist before the
+  # phase, remove any partial file created before a timeout or failure.
+  for output in graph.json graph.html GRAPH_REPORT.md .graphify_analysis.json; do
+    if [[ -f "$snapshot_dir/$output" ]]; then
+      cp "$snapshot_dir/$output" "$repo/graphify-out/$output"
+    else
+      rm -f "$repo/graphify-out/$output"
+    fi
+  done
 }
 
 merge_phase_graph_overlay() {
