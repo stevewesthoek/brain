@@ -3,7 +3,7 @@ import { BRAIN_CORE_URL, brainCoreRequest } from '@/lib/braincore-client';
 import { videoControlPlaneSchema, type VideoControlPlaneData } from '@/lib/braincore-schemas';
 
 const CONTROL_PLANE_TIMEOUT_MS = 25_000;
-const CONTROL_PLANE_REFETCH_INTERVAL = 30_000;
+const CONTROL_PLANE_REFETCH_INTERVAL = 5_000;
 
 export { CONTROL_PLANE_TIMEOUT_MS as AWS_VIDEO_CONTROL_PLANE_TIMEOUT_MS };
 
