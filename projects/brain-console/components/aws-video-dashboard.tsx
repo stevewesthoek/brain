@@ -1178,12 +1178,7 @@ export function AwsVideoDashboard() {
         addActivity(`Draft created: ${matched.jobId}`);
         setActiveView('overview');
       }
-      // clientActionId known but not yet visible in list — avoid trapping the UI forever.
-      if (jobList.length > 0) {
-        setCreateDraftTimedOut(false);
-        setCurrentCreateActionId(null);
-        addActivity('Draft creation did not return a new job; overlay reset. Create draft can be retried.');
-      }
+      // clientActionId is known but not visible yet; keep polling until it appears or the TTL expires.
       return;
     }
 
@@ -1197,6 +1192,18 @@ export function AwsVideoDashboard() {
       setActiveView('overview');
     }
   }, [createDraftTimedOut, jobList, preTimeoutJobIds, createDraft.isPending, currentCreateActionId]);
+
+  // Staleness TTL: release draft creation recovery after two minutes without a matching job.
+  useEffect(() => {
+    if (!createDraftTimedOut || createDraft.isPending) return;
+    const timer = setTimeout(() => {
+      setCreateDraftTimedOut(false);
+      setCurrentCreateActionId(null);
+      setPreTimeoutJobIds([]);
+      addActivity('Draft creation pending state cleared after timeout. Creating a new draft is safe.');
+    }, 120_000);
+    return () => clearTimeout(timer);
+  }, [createDraftTimedOut, createDraft.isPending, currentCreateActionId]);
 
   // Poll-based clearing of pending actions: approve_script
   useEffect(() => {
