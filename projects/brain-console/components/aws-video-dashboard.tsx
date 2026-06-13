@@ -1217,6 +1217,19 @@ export function AwsVideoDashboard() {
     }
   }, [jobId, selectedJob?.status, pendingActionByJobId, generationTimeoutJobId, finalMediaVerified, reviewStatus]);
 
+  // Staleness TTL: release the generation overlay after 10 minutes without terminal evidence.
+  useEffect(() => {
+    if (!jobId || pendingActionByJobId[jobId] !== 'generate') return;
+    const timer = setTimeout(() => {
+      if (pendingActionByJobId[jobId] === 'generate') {
+        clearPendingAction(jobId);
+        if (generationTimeoutJobId === jobId) setGenerationTimeoutJobId(null);
+        addActivity(`Generation pending state cleared after timeout for ${jobId}; backend work may still continue.`);
+      }
+    }, 600_000);
+    return () => clearTimeout(timer);
+  }, [jobId, pendingActionByJobId, generationTimeoutJobId]);
+
   // Poll-based clearing of pending actions: approve_review
   useEffect(() => {
     if (!jobId || pendingActionByJobId[jobId] !== 'approve_review') return;
