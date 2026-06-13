@@ -719,8 +719,10 @@ run_graphify() {
   GRAPHIFY_VIZ_NODE_LIMIT="$GRAPHIFY_VIZ_NODE_LIMIT" \
   python3 - "$REPO_TIMEOUT_SECONDS" "$repo" "$@" <<'PY'
 import os
+import signal
 import subprocess
 import sys
+import time
 
 timeout = int(sys.argv[1])
 repo = sys.argv[2]
@@ -729,8 +731,45 @@ try:
     os.nice(15)
 except OSError:
     pass
-result = subprocess.run(cmd, cwd=repo, timeout=timeout)
-raise SystemExit(result.returncode)
+
+process = subprocess.Popen(cmd, cwd=repo, start_new_session=True)
+try:
+    raise SystemExit(process.wait(timeout=timeout))
+except subprocess.TimeoutExpired:
+    print(
+        f"[graphify scheduler] timeout after {timeout}s; terminating process group pid={process.pid}",
+        file=sys.stderr,
+        flush=True,
+    )
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+
+    deadline = time.monotonic() + 10
+    while process.poll() is None and time.monotonic() < deadline:
+        time.sleep(0.2)
+
+    if process.poll() is None:
+        print(
+            f"[graphify scheduler] process group did not exit after SIGTERM; sending SIGKILL pid={process.pid}",
+            file=sys.stderr,
+            flush=True,
+        )
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        print(
+            f"[graphify scheduler] warning: process pid={process.pid} still not reaped after SIGKILL",
+            file=sys.stderr,
+            flush=True,
+        )
+    raise SystemExit(124)
 PY
 }
 
@@ -742,27 +781,25 @@ prepare_phase_graph_state() {
   local snapshot_dir="$repo/graphify-out/.scheduler/pre-${label}-outputs"
   local snapshot_path="$snapshot_dir/graph.json"
 
-  if [[ "$phase" == "1" ]]; then
-    printf '0:%s\n' "$snapshot_path"
-    return 0
-  fi
-
-  if [[ ! -f "$graph_path" ]]; then
+  if [[ "$phase" != "1" && ! -f "$graph_path" ]]; then
     log "$label requires existing Phase 1 graph repo=$repo file=graphify-out/graph.json"
     return 1
   fi
 
   rm -rf "$snapshot_dir"
   mkdir -p "$snapshot_dir"
-  cp "$graph_path" "$snapshot_path"
-  [[ -f "$repo/graphify-out/graph.html" ]] && cp "$repo/graphify-out/graph.html" "$snapshot_dir/graph.html"
-  [[ -f "$repo/graphify-out/GRAPH_REPORT.md" ]] && cp "$repo/graphify-out/GRAPH_REPORT.md" "$snapshot_dir/GRAPH_REPORT.md"
-  [[ -f "$repo/graphify-out/.graphify_analysis.json" ]] && cp "$repo/graphify-out/.graphify_analysis.json" "$snapshot_dir/.graphify_analysis.json"
-  local previous_nodes
-  previous_nodes="$(graph_node_count "$graph_path")"
 
-  # Phases after Phase 1 are overlay/refinement passes: keep the existing graph
-  # in place, snapshot it, and merge phase output back before clustering.
+  local previous_nodes=0
+  if [[ -f "$graph_path" ]]; then
+    cp "$graph_path" "$snapshot_path"
+    [[ -f "$repo/graphify-out/graph.html" ]] && cp "$repo/graphify-out/graph.html" "$snapshot_dir/graph.html"
+    [[ -f "$repo/graphify-out/GRAPH_REPORT.md" ]] && cp "$repo/graphify-out/GRAPH_REPORT.md" "$snapshot_dir/GRAPH_REPORT.md"
+    [[ -f "$repo/graphify-out/.graphify_analysis.json" ]] && cp "$repo/graphify-out/.graphify_analysis.json" "$snapshot_dir/.graphify_analysis.json"
+    previous_nodes="$(graph_node_count "$graph_path")"
+  fi
+
+  # Every phase snapshots existing outputs before risky work. Overlay phases merge
+  # their temporary graph back into this snapshot; Phase 1 restores it on failure.
   printf '%s:%s\n' "$previous_nodes" "$snapshot_path"
 }
 
@@ -1126,6 +1163,14 @@ run_phase() {
   log "$label extract repo=$repo model=$model token-budget=$token_budget"
   if ! run_graphify "$repo" "$model" "${extract_cmd[@]}" > >(tee "$extract_log") 2> >(tee -a "$extract_log" >&2); then
     restore_phase_graph_snapshot "$repo" "$snapshot_path"
+    if grep -q "\[graphify scheduler\] timeout after" "$extract_log"; then
+      log "$label deferred after bounded timeout repo=$repo timeout=${REPO_TIMEOUT_SECONDS}s"
+      return 124
+    fi
+    if grep -Eq "graph is empty — extraction produced no nodes|found 0 code, 0 docs, 0 papers, 0 images" "$extract_log"; then
+      log "$label skipped empty repo=$repo reason=no-eligible-content"
+      return 20
+    fi
     return 1
   fi
 
@@ -1220,6 +1265,8 @@ log "graphify-nightly phased start backend=$GRAPHIFY_BACKEND models=[$model_summ
 repos=0
 phases_ok=0
 skipped=0
+empty=0
+deferred=0
 failed=0
 
 discovered_repos=()
@@ -1243,24 +1290,36 @@ for phase in $GRAPHIFY_PHASES; do
       break 2
     fi
 
-    log "repo phase start path=$repo phase=$(phase_label "$phase") graph-present=$([[ -f "$repo/graphify-out/graph.json" ]] && printf yes || printf no)"
+    label="$(phase_label "$phase")"
+    extract_log="$repo/graphify-out/.scheduler/${label}-extract.log"
+    cluster_log="$repo/graphify-out/.scheduler/${label}-cluster.log"
+    log "repo phase start path=$repo phase=$label graph-present=$([[ -f "$repo/graphify-out/graph.json" ]] && printf yes || printf no)"
 
     if run_phase "$repo" "$phase"; then
       phases_ok=$((phases_ok + 1))
-      log "phase ok repo=$repo phase=$(phase_label "$phase")"
+      log "phase ok repo=$repo phase=$label"
       log_outputs "$repo"
     else
-      failed=$((failed + 1))
-      log "phase failed repo=$repo phase=$(phase_label "$phase") — continuing with next repo at same phase"
+      phase_status=$?
+      if [[ "$phase_status" -eq 124 ]] || grep -qs "\[graphify scheduler\] timeout after" "$extract_log" "$cluster_log"; then
+        deferred=$((deferred + 1))
+        log "phase deferred repo=$repo phase=$label reason=bounded-timeout timeout=${REPO_TIMEOUT_SECONDS}s — continuing with next repo at same phase"
+      elif [[ "$phase_status" -eq 20 ]] || grep -Eqs "graph is empty — extraction produced no nodes|found 0 code, 0 docs, 0 papers, 0 images" "$extract_log"; then
+        empty=$((empty + 1))
+        log "phase skipped repo=$repo phase=$label reason=no-eligible-content — continuing with next repo at same phase"
+      else
+        failed=$((failed + 1))
+        log "phase failed repo=$repo phase=$label status=$phase_status — continuing with next repo at same phase"
+      fi
     fi
   done
 done
 
-log "graphify-nightly phased complete repos=$repos phases_ok=$phases_ok skipped=$skipped failed=$failed"
+log "graphify-nightly phased complete repos=$repos phases_ok=$phases_ok skipped=$skipped empty=$empty deferred=$deferred failed=$failed"
 
 if (( failed > 0 )); then
   exit 1
 fi
 
-# Cutoff/skipped work is not a failed Graphify run. The next scheduler window resumes.
+# Cutoff, empty repositories, and bounded timeouts are expected non-fatal outcomes.
 exit 0
