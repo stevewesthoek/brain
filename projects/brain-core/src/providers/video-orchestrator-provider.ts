@@ -1360,10 +1360,15 @@ export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?
     };
   }
 
+  const thumbnailMimeType = /\.png$/i.test(thumbnailKey)
+    ? 'image/png'
+    : /\.webp$/i.test(thumbnailKey)
+      ? 'image/webp'
+      : 'image/jpeg';
   const localThumbnailPath = join(getVideoOrchestratorRoot(), thumbnailKey);
   try {
     const data = await readFile(localThumbnailPath);
-    return { success: true, data, mimeType: 'image/jpeg' };
+    return { success: true, data, mimeType: thumbnailMimeType };
   } catch {
     // Local file does not exist; fall through to S3 proxy fetch.
   }
@@ -1377,7 +1382,7 @@ export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?
       '--no-cli-pager',
     ], { timeout: S3_PUBLISH_ASSET_TIMEOUT_MS, encoding: 'buffer' as any });
     if (Buffer.isBuffer(stdout) && stdout.length > 0) {
-      return { success: true, data: stdout, mimeType: 'image/jpeg' };
+      return { success: true, data: stdout, mimeType: thumbnailMimeType };
     }
   } catch (error) {
     return {
