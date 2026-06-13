@@ -1205,11 +1205,13 @@ export function AwsVideoDashboard() {
   // Poll-based clearing of pending actions: generate
   useEffect(() => {
     if (!jobId || pendingActionByJobId[jobId] !== 'generate') return;
-    if (['ready_to_publish', 'failed', 'published'].includes(selectedJob?.status ?? '')) {
+    const generationFinished = finalMediaVerified || ['ready_to_publish', 'failed', 'published'].includes(selectedJob?.status ?? '');
+    if (generationFinished) {
       clearPendingAction(jobId);
       if (generationTimeoutJobId === jobId) setGenerationTimeoutJobId(null);
+      if (finalMediaVerified && reviewStatus !== 'approved') setActiveView('review');
     }
-  }, [jobId, selectedJob?.status, pendingActionByJobId, generationTimeoutJobId]);
+  }, [jobId, selectedJob?.status, pendingActionByJobId, generationTimeoutJobId, finalMediaVerified, reviewStatus]);
 
   // Poll-based clearing of pending actions: approve_review
   useEffect(() => {
