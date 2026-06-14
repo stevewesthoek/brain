@@ -313,6 +313,17 @@ export async function routeRequest(
     return;
   }
 
+  const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
+  if (thumbnailPathMatch && method !== 'GET' && method !== 'HEAD') {
+    response.writeHead(405, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'Allow': 'GET, HEAD',
+    });
+    response.end(JSON.stringify({ ok: false, code: 'method_not_allowed', error: 'Use GET or HEAD to load the thumbnail.' }));
+    return;
+  }
+
   if (method === 'POST') {
     try {
       await routePostRequest(url, request, response);

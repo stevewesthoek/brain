@@ -20,6 +20,7 @@
     "ibr:verify": "node scripts/dev/verify-metadata-write.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
+    "test:thumbnail-route": "tsx --test src/tests/video-orchestrator-thumbnail-route.test.ts",
     "test:mind-maintenance-schema": "npm run build && node --test dist/tests/mind-maintenance-report-schema.test.js",
     "test:mind-maintenance-loader-stale": "npm run build && node --test dist/tests/mind-maintenance-pilot-loader-stale.test.js",
     "test:mind-maintenance-completed-active": "npm run build && node --test dist/tests/mind-maintenance-completed-active.test.js",
