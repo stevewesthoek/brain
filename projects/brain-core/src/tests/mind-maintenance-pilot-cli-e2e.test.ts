@@ -155,3 +155,116 @@ test('compiled CLI refuses an unenabled run before creating reports', async (con
   await assert.rejects(stat(path.join(mindRoot, 'system/reports/maintenance-latest.json')));
   await assert.rejects(stat(path.join(mindRoot, 'system/reports/maintenance-latest.md')));
 });
+
+
+
+
+test('compiled CLI records and replaces a finding decision in a temporary Mind fixture', async (context) => {
+  const mindRoot = await createCommittedMindFixture();
+  context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+
+  const created = await runCli([
+    'record-decision',
+    '--mind-root',
+    mindRoot,
+    '--finding-id',
+    'finding-stale-page-router-00-current-context-001',
+    '--deduplication-key',
+    'stale-page:router/00-current-context.md:review_after',
+    '--source-report',
+    'mind-maintenance-20260614T103145Z',
+    '--source-commit',
+    'c60f7f8',
+    '--reviewer',
+    'Steve Westhoek',
+    '--reviewed-at',
+    '2026-06-14T11:04:45.000Z',
+    '--decision',
+    'accepted',
+    '--reason',
+    'The review date elapsed and the page requires review.',
+    '--next-action',
+    'Review the page.',
+  ]);
+
+  assert.equal(created.exitCode, 0, created.stderr);
+  assert.equal(created.stderr, '');
+  const createdOutput = JSON.parse(created.stdout) as {
+    ok: boolean;
+    status: string;
+    operation: string;
+    decisionPath: string;
+    decisionCount: number;
+  };
+  assert.deepEqual(
+    {
+      ok: createdOutput.ok,
+      status: createdOutput.status,
+      operation: createdOutput.operation,
+      decisionCount: createdOutput.decisionCount,
+    },
+    { ok: true, status: 'recorded', operation: 'created', decisionCount: 1 },
+  );
+
+  const decisionPath = path.join(mindRoot, 'system/reports/maintenance-decisions.json');
+  assert.equal(createdOutput.decisionPath, decisionPath);
+
+  const replaced = await runCli([
+    'record-decision',
+    '--mind-root',
+    mindRoot,
+    '--finding-id',
+    'finding-stale-page-router-00-current-context-002',
+    '--deduplication-key',
+    'stale-page:router/00-current-context.md:review_after',
+    '--source-report',
+    'mind-maintenance-20260701T090000Z',
+    '--source-commit',
+    'def5678',
+    '--reviewer',
+    'Steve Westhoek',
+    '--reviewed-at',
+    '2026-06-14T11:05:45.000Z',
+    '--decision',
+    'dismissed',
+    '--reason',
+    'The content is intentionally retained for this review window.',
+    '--suppression-until',
+    '2026-07-14',
+  ]);
+
+  assert.equal(replaced.exitCode, 0, replaced.stderr);
+  assert.equal(replaced.stderr, '');
+  const replacedOutput = JSON.parse(replaced.stdout) as {
+    operation: string;
+    replacedFindingId: string | null;
+    decisionCount: number;
+  };
+  assert.equal(replacedOutput.operation, 'replaced');
+  assert.equal(
+    replacedOutput.replacedFindingId,
+    'finding-stale-page-router-00-current-context-001',
+  );
+  assert.equal(replacedOutput.decisionCount, 1);
+
+  const document = JSON.parse(await readFile(decisionPath, 'utf8')) as {
+    decisions: Array<{
+      findingId: string;
+      decision: string;
+      suppressionUntil: string | null;
+    }>;
+  };
+  assert.deepEqual(document.decisions, [{
+    findingId: 'finding-stale-page-router-00-current-context-002',
+    deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+    sourceReportId: 'mind-maintenance-20260701T090000Z',
+    sourceCommit: 'def5678',
+    reviewedBy: 'Steve Westhoek',
+    reviewedAt: '2026-06-14T11:05:45.000Z',
+    decision: 'dismissed',
+    reason: 'The content is intentionally retained for this review window.',
+    nextAction: '',
+    resolutionRef: null,
+    suppressionUntil: '2026-07-14',
+  }]);
+});

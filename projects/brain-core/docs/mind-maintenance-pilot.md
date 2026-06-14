@@ -148,3 +148,73 @@ The fields mean:
 - `suppressed`: findings moved to `suppressedFindings` by an active dismissal.
 
 These statistics describe decision application only. They do not authorize source edits or imply that unmatched decisions should be removed automatically.
+
+
+
+
+## Record a finding decision
+
+Decision recording is an explicit write to:
+
+```text
+system/reports/maintenance-decisions.json
+```
+
+Build first, then run one of the following commands from `projects/brain-core`.
+
+### Accept a finding
+
+Accepted findings remain visible in later reports and require a next action.
+
+```bash
+npm run build
+node dist/bin/mind-maintenance-pilot.js record-decision \
+  --mind-root /absolute/path/to/mind \
+  --finding-id finding-stale-page-router-00-current-context-001 \
+  --deduplication-key stale-page:router/00-current-context.md:review_after \
+  --source-report mind-maintenance-20260614T103145Z \
+  --source-commit c60f7f8 \
+  --reviewer "Steve Westhoek" \
+  --reviewed-at 2026-06-14T11:04:45.000Z \
+  --decision accepted \
+  --reason "The review date elapsed and the page requires review." \
+  --next-action "Review the page and refresh only outdated sections."
+```
+
+### Dismiss and temporarily suppress a finding
+
+Dismissed findings may include a suppression date. Suppression is inclusive through that date; recurrence reopens afterward.
+
+```bash
+node dist/bin/mind-maintenance-pilot.js record-decision \
+  --mind-root /absolute/path/to/mind \
+  --finding-id finding-source-gap-strategy-001 \
+  --deduplication-key source-gap:wiki/organisations/prochat/brand/prochat-os-strategy.md:market-position \
+  --source-report mind-maintenance-20260614T103145Z \
+  --source-commit c60f7f8 \
+  --reviewer "Steve Westhoek" \
+  --reviewed-at 2026-06-14T11:10:00.000Z \
+  --decision dismissed \
+  --reason "This statement is an intentional strategic position, not an external factual claim." \
+  --suppression-until 2026-07-14
+```
+
+### Resolve a finding
+
+Resolved findings require a durable reference to the approved action or review that completed the work. A later recurrence opens as a new visible finding.
+
+```bash
+node dist/bin/mind-maintenance-pilot.js record-decision \
+  --mind-root /absolute/path/to/mind \
+  --finding-id finding-stale-page-router-00-current-context-001 \
+  --deduplication-key stale-page:router/00-current-context.md:review_after \
+  --source-report mind-maintenance-20260614T103145Z \
+  --source-commit c60f7f8 \
+  --reviewer "Steve Westhoek" \
+  --reviewed-at 2026-06-14T11:15:00.000Z \
+  --decision resolved \
+  --reason "The page was reviewed and its freshness metadata was updated." \
+  --resolution-ref mind:b77f203
+```
+
+Recording a decision creates or replaces the entry with the same `deduplicationKey`. The command rejects older review timestamps, conflicting finding IDs, invalid decision-specific options, and invalid existing decision files. Review Git status and commit the decision file separately after each approved write.
