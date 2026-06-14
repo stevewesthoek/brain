@@ -32,6 +32,7 @@
     "test:mind-maintenance-pilot-cli": "npm run build && node --test dist/tests/mind-maintenance-pilot-cli.test.js",
     "test:mind-maintenance-pilot-cli-e2e": "npm run build && node --test dist/tests/mind-maintenance-pilot-cli-e2e.test.js",
     "test:mind-maintenance-pilot-all": "npm run build && node --test dist/tests/mind-maintenance-*.test.js",
+    "test:mind-maintenance-finding-decisions": "npm run build && node --test dist/tests/mind-maintenance-finding-decision-store.test.js",
     "test:local-app-actions-live": "npm run build && node scripts/test-local-app-actions-live.mjs",
     "ci": "npm run typecheck && npm test"
   },
