@@ -202,3 +202,94 @@ test('preserves structured detector failures in the completed report', async (co
   assert.equal(result.detectorErrors, 1);
   assert.equal(result.findingsTotal, 1);
 });
+
+
+
+
+test('loads persisted dismissal decisions without modifying the decision file', async (context) => {
+  const mindRoot = await createMindFixture();
+  context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+
+  const decisionPath = path.join(mindRoot, 'system/reports/maintenance-decisions.json');
+  await mkdir(path.dirname(decisionPath), { recursive: true });
+  const decisionContent = `${JSON.stringify({
+    schemaVersion: '1.0',
+    sourceRepo: 'mind',
+    updatedAt: '2026-06-13T11:30:00.000Z',
+    decisions: [{
+      findingId: 'finding-stale-page-router-00-current-context-001',
+      deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+      sourceReportId: 'mind-maintenance-20260613T110000Z',
+      sourceCommit: 'previous1',
+      reviewedBy: 'Steve Westhoek',
+      reviewedAt: '2026-06-13T11:30:00.000Z',
+      decision: 'dismissed',
+      reason: 'The content is intentionally retained for this review window.',
+      nextAction: '',
+      resolutionRef: null,
+      suppressionUntil: '2026-07-01',
+    }],
+  }, null, 2)}\n`;
+  await writeFile(decisionPath, decisionContent, 'utf8');
+
+  const result = await runMindMaintenancePilot({
+    enabled: true,
+    mindRoot,
+    sourceCommit: 'abc1234',
+    generatedAt: '2026-06-13T12:00:00Z',
+    listChangedPaths: changedPathSequence(
+      [],
+      [
+        'system/reports/maintenance-latest.json',
+        'system/reports/maintenance-latest.md',
+      ],
+    ),
+  });
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.findingsTotal, 0);
+
+  const report = JSON.parse(
+    await readFile(path.join(mindRoot, 'system/reports/maintenance-latest.json'), 'utf8'),
+  ) as {
+    findings: unknown[];
+    suppressedFindings: Array<{ status: string; suppressionUntil: string | null }>;
+    summary: { findingsSuppressed: number };
+  };
+  assert.equal(report.findings.length, 0);
+  assert.equal(report.suppressedFindings[0]?.status, 'dismissed');
+  assert.equal(report.suppressedFindings[0]?.suppressionUntil, '2026-07-01');
+  assert.equal(report.summary.findingsSuppressed, 1);
+  assert.equal(await readFile(decisionPath, 'utf8'), decisionContent);
+});
+
+test('returns a structured failure for an invalid decision file without writing reports', async (context) => {
+  const mindRoot = await createMindFixture();
+  context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+
+  const decisionPath = path.join(mindRoot, 'system/reports/maintenance-decisions.json');
+  await mkdir(path.dirname(decisionPath), { recursive: true });
+  await writeFile(decisionPath, '{ invalid json', 'utf8');
+
+  const result = await runMindMaintenancePilot({
+    enabled: true,
+    mindRoot,
+    sourceCommit: 'abc1234',
+    generatedAt: '2026-06-13T12:00:00Z',
+    listChangedPaths: changedPathSequence([]),
+  });
+
+  assert.equal(result.ok, false);
+  if (result.ok) assert.fail('Expected decision-load-failed result.');
+  assert.equal(result.status, 'decision-load-failed');
+  assert.match(result.error, /invalid JSON/i);
+  await assert.rejects(
+    readFile(path.join(mindRoot, 'system/reports/maintenance-latest.json'), 'utf8'),
+    { code: 'ENOENT' },
+  );
+  await assert.rejects(
+    readFile(path.join(mindRoot, 'system/reports/maintenance-latest.md'), 'utf8'),
+    { code: 'ENOENT' },
+  );
+});

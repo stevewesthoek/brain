@@ -1,3 +1,6 @@
+import {
+  loadMaintenanceFindingDecisionDocument,
+} from './finding-decision-file.js';
 import { loadMindMaintenancePilotDataset } from './pilot-file-loader.js';
 import {
   buildMindMaintenancePilotReport,
@@ -41,7 +44,7 @@ export interface MindMaintenancePilotRunnerSuccess {
 
 export interface MindMaintenancePilotRunnerFailure {
   ok: false;
-  status: 'disabled' | 'integrity-failed';
+  status: 'disabled' | 'decision-load-failed' | 'integrity-failed';
   mode: 'report-only';
   reportId?: string;
   sourceCommit: string;
@@ -70,6 +73,14 @@ function findNewlyChangedPaths(
   return [...normalizeChangedPaths(after)].filter((changedPath) => !beforeSet.has(changedPath));
 }
 
+function canonicalGeneratedAt(value: string): string {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    throw new Error(`Mind maintenance pilot requires an ISO generatedAt timestamp: ${value}`);
+  }
+  return new Date(timestamp).toISOString();
+}
+
 export async function runMindMaintenancePilot(
   input: MindMaintenancePilotRunnerInput,
 ): Promise<MindMaintenancePilotRunnerResult> {
@@ -88,10 +99,27 @@ export async function runMindMaintenancePilot(
   const dataset = await loadMindMaintenancePilotDataset(input.mindRoot);
   const beforeIntegrity = await captureMindMaintenanceIntegritySnapshot(dataset);
 
+  let decisionDocument;
+  try {
+    decisionDocument = await loadMaintenanceFindingDecisionDocument(input.mindRoot, {
+      whenMissingUpdatedAt: canonicalGeneratedAt(input.generatedAt),
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      status: 'decision-load-failed',
+      mode: 'report-only',
+      sourceCommit: input.sourceCommit,
+      error: error instanceof Error ? error.message : String(error),
+      nextAction: 'Repair or remove the invalid maintenance decision file before rerunning.',
+    };
+  }
+
   const buildInput: MindMaintenancePilotBuildInput = {
     dataset,
     sourceCommit: input.sourceCommit,
     generatedAt: input.generatedAt,
+    decisionDocument,
     ...(input.generatedBy === undefined ? {} : { generatedBy: input.generatedBy }),
     ...(input.sourceGapCandidates === undefined
       ? {}
