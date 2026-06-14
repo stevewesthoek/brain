@@ -2448,24 +2448,33 @@ export async function routeRequest(
 
       const jobThumbnailMatch = /^\/api\/video-orchestrator\/jobs\/([^/]+)\/thumbnail$/.exec(url.pathname);
       if (jobThumbnailMatch) {
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          response.writeHead(405, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'Allow': 'GET, HEAD',
+          });
+          response.end(JSON.stringify({ ok: false, code: 'method_not_allowed', error: 'Use GET or HEAD to load the thumbnail.' }));
+          return;
+        }
         try {
           const jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
           const requestedThumbnailKey = url.searchParams.get('key');
           const result = await getVideoJobThumbnail(jobId, requestedThumbnailKey);
           if (!result.success) {
             response.writeHead(result.code === 'invalid_job_id' ? 400 : 404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-            response.end(JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null }));
+            response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null }));
           } else {
             response.writeHead(200, {
               'Content-Type': result.mimeType,
               'Content-Length': String(result.data.length),
               'Cache-Control': 'no-store',
             });
-            response.end(result.data as unknown as string);
+            response.end(request.method === 'HEAD' ? undefined : result.data as unknown as string);
           }
         } catch (error) {
-          response.writeHead(500, { 'Content-Type': 'application/json' });
-          response.end(JSON.stringify({
+          response.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+          response.end(request.method === 'HEAD' ? undefined : JSON.stringify({
             ok: false,
             error: error instanceof Error ? error.message : 'Failed to fetch job thumbnail',
           }));
