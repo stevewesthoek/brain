@@ -44,6 +44,13 @@ function createDependencies(
       filesConsidered: 5,
       findingsTotal: 1,
       detectorErrors: 0,
+      decisionStatistics: {
+        loaded: 1,
+        matched: 1,
+        unmatched: 0,
+        accepted: 1,
+        suppressed: 0,
+      },
       reports: [
         '/resolved/mind/system/reports/maintenance-latest.json',
         '/resolved/mind/system/reports/maintenance-latest.md',
@@ -132,6 +139,13 @@ test('resolves the Mind root and HEAD commit, then prints successful JSON to std
         filesConsidered: 5,
         findingsTotal: 1,
         detectorErrors: 0,
+        decisionStatistics: {
+          loaded: 1,
+          matched: 1,
+          unmatched: 0,
+          accepted: 1,
+          suppressed: 0,
+        },
         reports: ['/report.json', '/report.md'],
         sourceFilesChanged: 0,
         integrity: {

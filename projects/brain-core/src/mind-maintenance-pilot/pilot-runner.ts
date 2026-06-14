@@ -27,6 +27,14 @@ export interface MindMaintenancePilotRunnerInput {
   listChangedPaths: () => Promise<readonly string[]>;
 }
 
+export interface MindMaintenanceDecisionStatistics {
+  loaded: number;
+  matched: number;
+  unmatched: number;
+  accepted: number;
+  suppressed: number;
+}
+
 export interface MindMaintenancePilotRunnerSuccess {
   ok: true;
   status: 'completed';
@@ -36,6 +44,7 @@ export interface MindMaintenancePilotRunnerSuccess {
   filesConsidered: 5;
   findingsTotal: number;
   detectorErrors: number;
+  decisionStatistics: MindMaintenanceDecisionStatistics;
   reports: [string, string];
   sourceFilesChanged: 0;
   integrity: MindMaintenanceIntegrityResult;
@@ -127,7 +136,7 @@ export async function runMindMaintenancePilot(
     ...(input.detectorErrors === undefined ? {} : { detectorErrors: input.detectorErrors }),
   };
 
-  const { report } = buildMindMaintenancePilotReport(buildInput);
+  const { report, unmatchedDecisions } = buildMindMaintenancePilotReport(buildInput);
   const writeResult = await writeMindMaintenanceLatestReports({ dataset, report });
 
   const afterIntegrity = await captureMindMaintenanceIntegritySnapshot(dataset);
@@ -161,6 +170,13 @@ export async function runMindMaintenancePilot(
     filesConsidered: 5,
     findingsTotal: report.summary.findingsTotal,
     detectorErrors: report.summary.detectorErrors,
+    decisionStatistics: {
+      loaded: decisionDocument.decisions.length,
+      matched: decisionDocument.decisions.length - unmatchedDecisions.length,
+      unmatched: unmatchedDecisions.length,
+      accepted: report.summary.findingsAccepted,
+      suppressed: report.summary.findingsSuppressed,
+    },
     reports: [writeResult.jsonPath, writeResult.markdownPath],
     sourceFilesChanged: 0,
     integrity,
