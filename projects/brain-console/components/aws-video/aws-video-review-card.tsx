@@ -163,7 +163,28 @@ export function AwsVideoReviewCard({
                 src={`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?key=${encodeURIComponent(reviewMedia.thumbnailKey)}&ts=${encodeURIComponent(reviewData?.updatedAt ?? reviewMedia.thumbnailKey ?? '')}`}
                 alt={`Generated thumbnail: ${reviewMedia.thumbnailKey}`}
                 style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid var(--border)' }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.removeAttribute('hidden'); }}
+                onError={(event) => {
+                  const image = event.currentTarget;
+                  const retryCount = Number(image.dataset.retryCount ?? '0');
+                  if (retryCount < 3) {
+                    const nextRetryCount = retryCount + 1;
+                    image.dataset.retryCount = String(nextRetryCount);
+                    window.setTimeout(() => {
+                      if (!image.isConnected) return;
+                      const retryUrl = new URL(image.src);
+                      retryUrl.searchParams.set('retry', `${Date.now()}-${nextRetryCount}`);
+                      image.src = retryUrl.toString();
+                    }, nextRetryCount * 2_000);
+                    return;
+                  }
+                  image.style.display = 'none';
+                  image.nextElementSibling?.removeAttribute('hidden');
+                }}
+                onLoad={(event) => {
+                  const image = event.currentTarget;
+                  image.style.display = '';
+                  image.nextElementSibling?.setAttribute('hidden', '');
+                }}
               />
               <div hidden style={{ padding: '0.75rem', backgroundColor: 'var(--muted)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
                 Thumbnail preview is not ready in the dashboard yet. Refresh after generation completes; if this remains visible, the publish package is incomplete or the thumbnail endpoint could not load the asset.
