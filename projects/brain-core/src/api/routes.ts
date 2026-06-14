@@ -2459,7 +2459,7 @@ export async function routeRequest(
             response.writeHead(200, {
               'Content-Type': result.mimeType,
               'Content-Length': String(result.data.length),
-              'Cache-Control': 'public, max-age=3600',
+              'Cache-Control': 'no-store',
             });
             response.end(result.data as unknown as string);
           }
