@@ -160,6 +160,7 @@ export function AwsVideoReviewCard({
             </div>
             <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
               <img
+                key={`${jobId}:${reviewMedia.thumbnailKey}:${reviewData?.updatedAt ?? ''}`}
                 src={`${BRAIN_CORE_URL}/api/video-orchestrator/jobs/${encodeURIComponent(jobId)}/thumbnail?key=${encodeURIComponent(reviewMedia.thumbnailKey)}&ts=${encodeURIComponent(reviewData?.updatedAt ?? reviewMedia.thumbnailKey ?? '')}`}
                 alt={`Generated thumbnail: ${reviewMedia.thumbnailKey}`}
                 style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '4px', border: '1px solid var(--border)' }}
