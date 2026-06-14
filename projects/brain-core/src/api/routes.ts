@@ -301,11 +301,12 @@ export async function routeRequest(
 
   const method = request.method || 'GET';
   const url = new URL(request.url || '/', 'http://127.0.0.1');
+  const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
 
   if (method === 'OPTIONS') {
     response.writeHead(204, {
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'GET, POST, OPTIONS',
+      'access-control-allow-methods': thumbnailPathMatch ? 'GET, HEAD, OPTIONS' : 'GET, POST, OPTIONS',
       'access-control-allow-headers': 'content-type',
       'access-control-max-age': '86400',
     });
@@ -313,7 +314,6 @@ export async function routeRequest(
     return;
   }
 
-  const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
   if (thumbnailPathMatch && method !== 'GET' && method !== 'HEAD') {
     response.writeHead(405, {
       'Content-Type': 'application/json; charset=utf-8',

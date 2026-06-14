@@ -86,3 +86,21 @@ test('thumbnail GET returns a no-store JSON error for an invalid job ID', async 
     details: null,
   });
 });
+
+
+
+
+test('thumbnail OPTIONS advertises GET, HEAD, and OPTIONS only', async () => {
+  const response = new MockResponse();
+
+  await routeRequest(
+    createRequest('OPTIONS'),
+    response as unknown as ServerResponse,
+  );
+
+  assert.equal(response.statusCode, 204);
+  assert.equal(response.headers['access-control-allow-origin'], '*');
+  assert.equal(response.headers['access-control-allow-methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(response.headers['access-control-allow-headers'], 'content-type');
+  assert.equal(response.body, '');
+});
