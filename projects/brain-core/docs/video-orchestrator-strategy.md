@@ -2,7 +2,7 @@
 
 **Document type:** Architecture strategy and guardrails  
 **Status:** Active  
-**Last updated:** 2026-05-24 (documentation clarity and Gemini-first routing policy)
+**Last updated:** 2026-06-14 (current AI Model Selector provider policy)
 **Platform architecture:** `brain/docs/platform-architecture.md`  
 **Research validated:** NotebookLM research report `/tmp/vo-research-report.md` (2026-05-22)
 
@@ -36,7 +36,6 @@ This strategy is grounded in primary/current docs and local research. Platform b
 
 | Area | Verified fact used by VO | Source |
 |------|--------------------------|--------|
-| Gemini routing | Gemini API rate limits are evaluated across RPM, TPM, and RPD; exceeding any limit triggers a rate-limit error. VO must track all three before selecting Gemini. | Google AI Gemini API rate limits, accessed 2026-05-24: `https://ai.google.dev/gemini-api/docs/rate-limits` |
 | YouTube quota | YouTube Data API projects default to 10,000 quota units/day, reset at midnight Pacific Time; `videos.insert` costs 1,600 units. VO must budget uploads before queueing publish jobs. | YouTube Data API quota costs, accessed 2026-05-24: `https://developers.google.com/youtube/v3/determine_quota_cost` |
 | Pipeline UI | Airflow exposes overview, grid/status heatmap, graph/dependencies, runs, tasks, events, logs, and details. VO Pipeline UI should borrow this operational shape without copying Airflow. | Apache Airflow UI docs, accessed 2026-05-24: `https://airflow.apache.org/docs/apache-airflow/stable/ui.html` |
 | Run observability | Dagster run details expose timing, errors, structured event logs, raw logs, and re-execution context. VO run views must show stage timing, errors, logs, and retry context. | Dagster UI docs, accessed 2026-05-24: `https://master.dagster.dagster-docs.io/concepts/webserver/ui` |
@@ -75,7 +74,7 @@ These are non-negotiable. Any implementation decision that violates a guardrail 
 
 9. **Manual fallback always exists** — Every completed job produces a self-contained Manual Fallback Package: a directory with final video files (absolute paths), SRT/VTT subtitles, and a JSON block of all platform metadata. A human can upload manually from this package with zero system involvement if all automation fails.
 
-10. **Gemini free-tier first, privacy-gated** — All AI generation tasks (metadata, thumbnails, summaries) route through the AI Model Selector. Eligible non-sensitive, high-volume text tasks try Gemini free-tier first and must be tracked against RPM/TPM/RPD budgets. When Gemini is exhausted, rate-limited, unhealthy, or fails quality checks, the selector falls back to local Ollama on the Mac Mini M4 Pro and MacBook M1. Local Ollama is mandatory first for sensitive, private, offline, or external-provider-disallowed payloads. Codex CLI is the next quality/escalation tier because it uses the ChatGPT subscription surface rather than a direct API bill. Amazon Bedrock Claude is the paid fallback. Direct OpenAI API and direct Anthropic API calls are forbidden.
+10. **Approved AI Model Selector provider policy** — AI-dependent work must use approved execution surfaces and selector routes. Claude Code via Amazon Bedrock is supported. Codex CLI is supported. Approved AI Model Selector routes are supported. Gemini is disabled and is not part of the current stack. Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable. Provider selection must continue to respect privacy, sensitivity, credential, cost, and approval boundaries.
 
 11. **Read-first Console** — Brain Console surfaces are read-only shared-control surfaces until the underlying package, approval, quota, and idempotency records exist. Mutation buttons can be added only after the matching read model, audit event, approval policy, and tests exist. Project-specific scripting, SEO strategy, and thumbnail design belong in the project repo, not in VO Console pages.
 

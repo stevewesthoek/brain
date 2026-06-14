@@ -2,7 +2,7 @@
 
 **Document type:** Executable implementation plan  
 **Status:** Active  
-**Last updated:** 2026-05-24 (strategy alignment and Gemini-first routing policy)
+**Last updated:** 2026-06-14 (current AI Model Selector provider policy; Gemini disabled)
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
 **Strategy reference:** `video-orchestrator-strategy.md`  
 **AI Selector architecture:** `ai-model-selector-architecture.md`
@@ -11,13 +11,20 @@
 
 ## Completion Status
 
-**Policy update 2026-05-24:** This plan originally documented local-first routing. The accepted current policy is Gemini free-tier first for eligible non-sensitive text tasks, then local Ollama, then Codex CLI, then Amazon Bedrock. Local remains first for sensitive, private, offline, external-provider-disallowed, and high-control review payloads. Future selector implementation slices must add Gemini provider registration, RPM/TPM/RPD quota state, and fallback-on-429 behavior before treating the policy as fully implemented.
+**Current AI Model Selector provider policy:**
+- Claude Code via Amazon Bedrock is supported.
+- Codex CLI is supported.
+- Approved AI Model Selector routes are supported.
+- Gemini is disabled and is not part of the current stack.
+- Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
+
+The historical Gemini-first Phase 0.5R work below is retained only as implementation history and is not the active provider policy.
 
 | Sprint | Phase | Status |
 |--------|-------|--------|
 | Sprint 0A — AI Selector v1 | Phase 0.5 | ✅ Complete |
 | Sprint 0B — Dual-Node + Resilience | Phase 0.6 | ✅ Complete |
-| Sprint 0D — Gemini-First Selector Policy | Phase 0.5R | ✅ Complete |
+| Sprint 0D — Historical Gemini-First Selector Policy | Phase 0.5R | ⛔ Superseded; Gemini disabled |
 | Sprint 0C — Brain Agent Orchestrator | Phase 0.7 | ⏳ Continue after selector policy alignment |
 | Sprint 0E — Normalized VO Studio Read Model | Phase 0.8 | ✅ Complete |
 | Sprint 0F — Brain Console VO Shell | Phase 0.9 | ✅ Complete |
@@ -54,104 +61,16 @@ Default verification:
 
 ---
 
-## Sprint 0D: Gemini-First Selector Policy (Phase 0.5R) 🔲 Active Next
+## Sprint 0D: Historical Gemini-First Selector Policy (Phase 0.5R) ⛔ Superseded
 
-**Purpose:** Align the implemented AI Model Selector with the accepted strategy: Gemini free-tier first for eligible non-sensitive text tasks; local Ollama first for sensitive/private/offline tasks and Gemini fallback; Codex CLI next; Bedrock last.
+This historical experiment is no longer an active implementation requirement. Gemini is disabled and is not part of the current stack. Historical provider registration, quota-ledger behavior, and Gemini-first routing tests have been removed from the active plan to avoid implying current support.
 
-**Boundary:** Selector config, selector core, selector tests, selector docs only. Do not change Brain Console UI, publishing adapters, VO prompts, platform accounts, or worker publishing behavior.
-
-### Task 0D-A — Provider registry record ✅
-**Allowed files:**
-- `~/.config/video-orchestrator/ai-providers.json`
-- selector fixture/test files if present
-- `projects/brain-core/docs/ai-model-selector-architecture.md` if implementation details differ from docs
-
-**Implemented:**
-- Added `gemini-free` provider with provider type, API key env name, text capabilities, privacy classification, and priority ahead of local for eligible non-sensitive text.
-- Kept direct OpenAI API and direct Anthropic API absent.
-- Added Gemini provider-type health handling based on credential presence without burning API quota.
-- Ensured provider listing exposes `api_key_env` only and does not print API key values.
-- Fixed local Ollama fallback model ordering so text tasks prefer configured text models over whichever Ollama model appears first in `/api/tags`.
-
-**Tests/verification:**
-- `ai-select --providers` shows Gemini capability/status and no API key value.
-- Focused selector tests prove Gemini-first selection when `GEMINI_API_KEY` exists, local fallback when it does not, and secret-safe provider health output.
-
-**Did not do:**
-- Do not call Gemini for real generation.
-- Do not edit Brain Console.
-- Do not change publishing behavior.
-
-### Task 0D-B — Gemini quota ledger ✅
-**Allowed files:**
-- `~/.local/video-orchestrator/services/model-selector/core.py`
-- selector state/test files
-
-**Implemented:**
-- Persist RPM, TPM, RPD usage and reset metadata.
-- Treat any exhausted dimension as provider-unavailable.
-- Record quota decisions in the selector audit log.
-- Reserve quota on Gemini selection so repeated picks respect the same local state.
-- Fall back to local when Gemini is quota-exhausted.
-
-**Tests/verification:**
-- Test quota-available selects Gemini for eligible text.
-- Test RPM exhausted falls back to local.
-- Test RPD exhausted falls back to local.
-- Test TPM exhausted falls back to local.
-- Test reservation increments the quota state for selected Gemini calls.
-
-**Do not do:**
-- Do not hardcode model-specific rate numbers in code. Limits must come from config because Google changes tiers and model limits.
-
-### Task 0D-C — Privacy eligibility gate ✅
-**Allowed files:**
-- selector task metadata/config files
-- selector core/tests
-- selector client docs if request fields change
-
-**Implemented:**
-- Added TaskMetadata dataclass with sensitivity/privacy flags: sensitive, private, offline, external_provider_disallowed
-- Updated select_provider() to accept task_metadata parameter
-- Added privacy gate logic: skip Gemini when any privacy flag is True
-- Preserved local-first behavior for privacy-restricted tasks
-- Updated SelectionResult to include task_metadata
-
-**Tests/verification:**
-- ✅ Sensitive metadata task selects local even when Gemini quota is available
-- ✅ Private metadata task selects local
-- ✅ Offline metadata task selects local
-- ✅ External-disallowed metadata task selects local
-- ✅ Non-sensitive metadata task selects Gemini when quota is available
-- ✅ Multiple privacy flags work correctly
-- ✅ None task_metadata allows Gemini (backward compatible)
-- ✅ Result includes task_metadata for audit/observability
-
-### Task 0D-D — Failure fallback policy & test suite ✅
-**Allowed files:**
-- selector core/tests
-
-**Implemented:**
-- Fallback ladder verified: Gemini → Local → Codex → Bedrock
-- Codex selected when local is circuit-broken
-- Local selected before Codex when healthy
-- Gemini preferred when quota available
-- Direct OpenAI/Anthropic APIs never selected (policy rejection)
-- Provider order respects priority and policy, not cost
-- Comprehensive 10-test fallback ladder suite
-
-**Tests/verification:**
-- ✅ Codex selected after local circuit-breaks
-- ✅ Local before Codex when healthy
-- ✅ Gemini before local when both healthy + quota available
-- ✅ Codex skipped when local available
-- ✅ Full fallback chain: Gemini → Local → Codex (no missing steps)
-- ✅ Direct OpenAI provider rejected even if in config
-- ✅ Direct Anthropic provider rejected even if in config
-- ✅ Policy order enforced regardless of cost budget
-- ✅ Result reason reflects fallback chain decisions
-
-**Sprint 0D done when:** ✅ `ai-select --task metadata_generation` proves all paths (Gemini-selected, local-privacy-selected, local-quota-fallback, Codex fallback, provider rejection) through 23 deterministic unit tests (13 privacy gate + 10 fallback ladder) without exposing secrets.
+**Current provider policy:**
+- Claude Code via Amazon Bedrock is supported.
+- Codex CLI is supported.
+- Approved AI Model Selector routes are supported.
+- Gemini is disabled and is not part of the current stack.
+- Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
 
 ---
 

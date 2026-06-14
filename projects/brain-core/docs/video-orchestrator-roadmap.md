@@ -2,7 +2,7 @@
 
 **Document type:** Phased roadmap  
 **Status:** Active  
-**Last updated:** 2026-05-24 (next-phase implementation + thumbnail studio + winner-driven thumbnail replacement)
+**Last updated:** 2026-06-14 (next-phase implementation + thumbnail studio + winner-driven thumbnail replacement)
 **Strategy reference:** `video-orchestrator-strategy.md`
 
 ---
@@ -19,7 +19,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 
 ---
 
-## Current State (as of 2026-05-24)
+## Current State (as of 2026-06-14)
 
 **Working:**
 - Job queue with normalize, compose, subtitle, thumbnail, metadata, post, multi_post, render, and screen_record job types
@@ -28,7 +28,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - Brain Console: Accounts & Credentials tab (all STB/infra credentials set)
 - Worker LaunchAgent running, picks up jobs automatically
 - Backend VO pipeline through Phase 5: composition, subtitles, thumbnails, metadata, analytics feedback, and approval gate
-- AI Model Selector running at `localhost:4890`; Phase 0.5R policy complete: Gemini free-tier first for eligible non-sensitive text tasks, local Ollama first for sensitive/private/offline tasks, Codex CLI next, Bedrock paid fallback. Provider registry, quota ledger, and privacy gate all implemented and tested.
+- AI Model Selector running at `localhost:4890`; current approved provider policy supports Claude Code via Amazon Bedrock, Codex CLI, and approved selector routes. Gemini is disabled and is not part of the current stack. Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
 
 **Current active gap:**
 - The next-phase implementation plan is complete.
@@ -45,7 +45,7 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 
 The next work must proceed in this order:
 
-1. ✅ **Policy lock & Selector policy implementation:** Phase 0.5R complete. Gemini free-tier as eligible provider, quota ledger, privacy gate, fallback behavior, all tested.
+1. ✅ **Policy lock & Selector policy implementation:** Approved routes support Claude Code via Amazon Bedrock, Codex CLI, and the AI Model Selector. Gemini is disabled. Direct Anthropic and OpenAI API routes remain disallowed where applicable.
 2. **Normalized read model:** Expose VO Project, Account, Pipeline Profile, Content Item, Package, and Analytics Summary read APIs with fixtures (Phase 0.8).
 3. **Brain Console read-first shell:** Build shared health, usage, approvals, and pipeline visibility from read APIs (Phase 0.9).
 4. **Approval-gated project workflows:** Add content item creation, thumbnail generation, metadata approval, package queueing, and posting target queueing in project repos, with shared processing handled by Brain Core (Phase 1W).
@@ -67,70 +67,46 @@ The next work must proceed in this order:
 ---
 
 ## Phase 0.5 — AI Model Selector (v1) ✅ Complete
-> Free-tier-first, privacy-gated AI routing for all generation tasks
+> Approved, privacy-aware routing for AI-dependent work
 
-**Goal:** Every AI-dependent module calls one unified selector, never an LLM API directly. Gemini free-tier is preferred first for eligible non-sensitive text tasks; local models are first for sensitive/offline/private payloads and the fallback when Gemini is exhausted; Codex CLI is the subscription-backed escalation tier; Amazon Bedrock Claude is the paid fallback.
+**Goal:** Every AI-dependent module uses an approved execution surface or selector route rather than an unapproved direct model API. Claude Code via Amazon Bedrock is supported. Codex CLI is supported. Approved AI Model Selector routes are supported. Gemini is disabled and is not part of the current stack. Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
 
 **Naming clarity:** The AI Model Selector (`localhost:4890`) is NOT the same as Mind Steward (TypeScript Brain Core project). They are completely different. AI Model Selector = LLM routing engine.
 
-**Inference stack decision:** Ollama is the inference server on both machines. LM Studio is not used for serving — only optionally for downloading model files on M4 Pro.
-
 ### 0.5.1 Config files
-- [x] `~/.config/video-orchestrator/ai-providers.json` — providers registered
-- [x] `~/.config/video-orchestrator/ai-task-types.json` — 7 task types defined
-- [x] `~/.config/video-orchestrator/ai-selector-config.json` — batch window, defer config
+- [x] `~/.config/video-orchestrator/ai-providers.json` — approved providers registered
+- [x] `~/.config/video-orchestrator/ai-task-types.json` — task types defined
+- [x] `~/.config/video-orchestrator/ai-selector-config.json` — routing and defer configuration
 
 ### 0.5.2 Selector service
 - [x] `~/.local/video-orchestrator/services/model-selector/selector_service.py` — live at `localhost:4890`
-- [x] `core.py` — full selection algorithm with health, rate-limit, context, and local model gates
-- [x] `client.py` — Python client helper (stdlib only, no httpx required)
-- [x] Rate limit state persisted to `~/.local/video-orchestrator/state/rate-limits.json`
+- [x] `core.py` — selection algorithm with health, context, privacy, and provider gates
+- [x] `client.py` — Python client helper
 - [x] Audit log at `~/.local/video-orchestrator/logs/ai-selections.jsonl`
 - [x] LaunchAgent `com.office.ai-model-selector` running (KeepAlive, RunAtLoad)
 
 ### 0.5.3 CLI shim + TypeScript client
-- [x] `~/.local/bin/ai-select` — bash/curl wrapper, usable from any shell or AI agent
+- [x] `~/.local/bin/ai-select` — wrapper usable from approved shells and agents
 - [x] `brain-core/src/adapters/ai-model-selector.ts` — TypeScript client for Node.js apps
-- [x] Brain Console VO view: AI selector health chip (running/stopped, current provider)
+- [x] Brain Console VO view: AI selector health chip
 
 ### 0.5.4 Platform architecture doc
 - [x] `brain/docs/platform-architecture.md` — canonical scaffold standard for all projects
 
-**Deliverable:** ✅ `ai-select --task metadata_generation` returns a routing decision. Current v1/v2 implementation routes across local Ollama, Codex CLI, and Amazon Bedrock. The accepted 2026-05-24 policy adds Gemini free-tier ahead of local for eligible non-sensitive text tasks, keeps local first for sensitive/offline/private payloads, and keeps direct OpenAI API and direct Anthropic API invalid.
+**Deliverable:** ✅ `ai-select --task metadata_generation` returns an approved routing decision without exposing secrets.
 
 ---
 
-## Phase 0.5R — Gemini-First Selector Policy ✅ Complete
-> Bring the implemented selector into alignment with the accepted 2026-05-24 strategy
+## Phase 0.5R — Historical Gemini-First Selector Policy ⛔ Superseded
 
-**Goal:** Gemini free-tier is the first provider only for eligible non-sensitive text tasks. Local Ollama remains first for sensitive/private/offline/external-disallowed tasks and is the fallback when Gemini is exhausted, rate-limited, unhealthy, or fails quality checks.
+This phase is retained only as historical context. Gemini is disabled and is not part of the current stack. Its provider registration, quota ledger, and fallback tests are not active policy requirements.
 
-**Boundary:** This phase changes selector config/behavior and tests only. It does not change VO generation prompts, Brain Console UI, publishing adapters, or platform scheduling.
-
-### 0.5R.1 Provider registry
-- [x] Add `gemini-free` provider to `ai-providers.json` with provider type, API key env name, text capabilities, privacy classification, and priority ahead of local for eligible tasks
-- [x] Keep direct OpenAI API and direct Anthropic API absent from the provider registry
-- [x] Verify `ai-select --providers` redacts secrets and shows Gemini health/capability status without printing API keys
-
-### 0.5R.2 Quota and rate-limit state
-- [x] Persist Gemini RPM, TPM, RPD usage and reset metadata in selector state
-- [x] Treat exceeding any Gemini limit as provider-unavailable for that selection
-- [x] Fall back to local on Gemini 429, quota exhaustion, health failure, timeout, malformed response, or quality-gate failure
-
-### 0.5R.3 Privacy and task eligibility
-- [x] Extend task metadata with sensitivity/privacy flags (TaskMetadata dataclass)
-- [x] Route sensitive/private/offline/external-disallowed payloads to local before Gemini
-- [x] Add tests proving Gemini is skipped when privacy policy disallows external execution
-
-### 0.5R.4 Selector tests ✅
-- [x] Gemini selected for eligible non-sensitive metadata generation while quota remains
-- [x] Local selected when Gemini quota is exhausted
-- [x] Local selected when task is sensitive/private/offline
-- [x] Codex selected only after Gemini/local are unavailable or insufficient
-- [x] Direct OpenAI/direct Anthropic providers are rejected if present in config
-- [x] Full fallback ladder tested (Gemini → Local → Codex → Bedrock)
-
-**Exit criterion:** ✅ `ai-select --task metadata_generation` returns Gemini for eligible non-sensitive input with available quota, returns local for sensitive/offline or Gemini-exhausted input, and 23-test suite covers all paths (13 privacy gate + 10 fallback ladder) without exposing secrets.
+**Current policy:**
+- Claude Code via Amazon Bedrock is supported.
+- Codex CLI is supported.
+- Approved AI Model Selector routes are supported.
+- Gemini is disabled and is not part of the current stack.
+- Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
 
 ---
 
