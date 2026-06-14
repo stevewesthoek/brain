@@ -183,7 +183,9 @@ export function toMaintenanceReviewRecord(
     reviewedAt: decision.reviewedAt,
     decision: decision.decision,
     reason: decision.reason,
-    nextAction: decision.nextAction,
+    nextAction:
+      decision.nextAction
+      || (decision.decision === 'dismissed' ? 'No action while suppression is active.' : ''),
     resolutionRef: decision.resolutionRef,
   };
 }

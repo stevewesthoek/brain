@@ -201,3 +201,127 @@ test('rejects empty source commits and invalid timestamps', () => {
     /generatedAt timestamp/i,
   );
 });
+
+
+
+
+test('applies an accepted persisted decision and recalculates summary counts', () => {
+  const decisionDocument = {
+    schemaVersion: '1.0',
+    sourceRepo: 'mind',
+    updatedAt: '2026-06-13T12:00:00.000Z',
+    decisions: [{
+      findingId: 'finding-stale-page-router-00-current-context-001',
+      deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+      sourceReportId: 'mind-maintenance-20260613T110000Z',
+      sourceCommit: 'previous1',
+      reviewedBy: 'Steve Westhoek',
+      reviewedAt: '2026-06-13T11:30:00.000Z',
+      decision: 'accepted',
+      reason: 'The review date elapsed and the page requires review.',
+      nextAction: 'Review the page.',
+      resolutionRef: null,
+      suppressionUntil: null,
+    }],
+  } satisfies import('../mind-maintenance-pilot/finding-decision-store.js').MaintenanceFindingDecisionDocument;
+
+  const result = buildMindMaintenancePilotReport({
+    dataset: createDataset(),
+    sourceCommit: 'abc1234',
+    generatedAt: '2026-06-13T12:00:00Z',
+    decisionDocument,
+  });
+
+  assert.equal(result.report.summary.findingsTotal, 1);
+  assert.equal(result.report.summary.findingsOpen, 0);
+  assert.equal(result.report.summary.findingsAccepted, 1);
+  assert.equal(result.report.summary.findingsSuppressed, 0);
+  assert.equal(result.report.findings[0]?.status, 'accepted');
+  assert.equal(result.report.findings[0]?.review?.decision, 'accepted');
+  assert.deepEqual(result.unmatchedDecisions, []);
+});
+
+test('moves dismissed findings into suppression and keeps report counts aligned', () => {
+  const decisionDocument = {
+    schemaVersion: '1.0',
+    sourceRepo: 'mind',
+    updatedAt: '2026-06-13T12:00:00.000Z',
+    decisions: [{
+      findingId: 'finding-stale-page-router-00-current-context-001',
+      deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+      sourceReportId: 'mind-maintenance-20260613T110000Z',
+      sourceCommit: 'previous1',
+      reviewedBy: 'Steve Westhoek',
+      reviewedAt: '2026-06-13T11:30:00.000Z',
+      decision: 'dismissed',
+      reason: 'The content is intentionally retained.',
+      nextAction: '',
+      resolutionRef: null,
+      suppressionUntil: '2026-07-01',
+    }],
+  } satisfies import('../mind-maintenance-pilot/finding-decision-store.js').MaintenanceFindingDecisionDocument;
+
+  const result = buildMindMaintenancePilotReport({
+    dataset: createDataset(),
+    sourceCommit: 'abc1234',
+    generatedAt: '2026-06-13T12:00:00Z',
+    decisionDocument,
+  });
+
+  assert.equal(result.report.summary.findingsTotal, 0);
+  assert.equal(result.report.summary.findingsOpen, 0);
+  assert.equal(result.report.summary.findingsDismissed, 0);
+  assert.equal(result.report.summary.findingsSuppressed, 1);
+  assert.equal(result.report.findings.length, 0);
+  assert.equal(result.report.suppressedFindings[0]?.status, 'dismissed');
+});
+
+test('reopens resolved recurrence and exposes unmatched historical decisions', () => {
+  const decisionDocument = {
+    schemaVersion: '1.0',
+    sourceRepo: 'mind',
+    updatedAt: '2026-06-13T12:00:00.000Z',
+    decisions: [
+      {
+        findingId: 'finding-stale-page-router-00-current-context-001',
+        deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+        sourceReportId: 'mind-maintenance-20260601T110000Z',
+        sourceCommit: 'previous1',
+        reviewedBy: 'Steve Westhoek',
+        reviewedAt: '2026-06-01T11:30:00.000Z',
+        decision: 'resolved',
+        reason: 'The page was reviewed previously.',
+        nextAction: '',
+        resolutionRef: 'mind:old1234',
+        suppressionUntil: null,
+      },
+      {
+        findingId: 'finding-source-gap-unused-001',
+        deduplicationKey: 'source-gap:wiki/unused.md:claim',
+        sourceReportId: 'mind-maintenance-20260601T110000Z',
+        sourceCommit: 'previous1',
+        reviewedBy: 'Steve Westhoek',
+        reviewedAt: '2026-06-01T11:30:00.000Z',
+        decision: 'dismissed',
+        reason: 'Historical decision for a finding not present in this run.',
+        nextAction: '',
+        resolutionRef: null,
+        suppressionUntil: null,
+      },
+    ],
+  } satisfies import('../mind-maintenance-pilot/finding-decision-store.js').MaintenanceFindingDecisionDocument;
+
+  const result = buildMindMaintenancePilotReport({
+    dataset: createDataset(),
+    sourceCommit: 'abc1234',
+    generatedAt: '2026-06-13T12:00:00Z',
+    decisionDocument,
+  });
+
+  assert.equal(result.report.summary.findingsTotal, 1);
+  assert.equal(result.report.summary.findingsOpen, 1);
+  assert.equal(result.report.findings[0]?.status, 'open');
+  assert.equal(result.report.findings[0]?.review, null);
+  assert.equal(result.unmatchedDecisions.length, 1);
+  assert.equal(result.unmatchedDecisions[0]?.findingId, 'finding-source-gap-unused-001');
+});

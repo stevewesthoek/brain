@@ -1,4 +1,9 @@
 import { detectCompletedActiveFinding } from './completed-active-detector.js';
+import { applyMaintenanceFindingDecisions } from './finding-decision-applier.js';
+import type {
+  MaintenanceFindingDecision,
+  MaintenanceFindingDecisionDocument,
+} from './finding-decision-store.js';
 import {
   MIND_MAINTENANCE_PILOT_CONFIG,
   MIND_MAINTENANCE_PILOT_FILES,
@@ -27,12 +32,14 @@ export interface MindMaintenancePilotBuildInput {
   generatedBy?: string;
   sourceGapCandidates?: Partial<Record<MindMaintenancePilotFile, readonly SourceGapCandidate[]>>;
   detectorErrors?: readonly MaintenanceDetectorError[];
+  decisionDocument?: MaintenanceFindingDecisionDocument;
 }
 
 export interface MindMaintenancePilotBuildResult {
   report: MaintenanceReport;
   ambiguousSourceGapCandidates: SourceGapCandidate[];
   excludedSourceGapCandidates: SourceGapCandidate[];
+  unmatchedDecisions: MaintenanceFindingDecision[];
 }
 
 function reportDateFromTimestamp(value: string): string {
@@ -118,19 +125,19 @@ export function buildMindMaintenancePilotReport(
   const reportDate = reportDateFromTimestamp(input.generatedAt);
   const errors = [...(input.detectorErrors ?? [])];
   const detectors = createDetectorMap(errors);
-  const findings: MaintenanceFinding[] = [];
+  const detectedFindings: MaintenanceFinding[] = [];
   const ambiguousSourceGapCandidates: SourceGapCandidate[] = [];
   const excludedSourceGapCandidates: SourceGapCandidate[] = [];
 
   for (const file of input.dataset.files) {
     if (detectors['stale-page'].status !== 'failed') {
       const finding = detectStalePageFinding({ file, reportDate });
-      if (finding) findings.push(finding);
+      if (finding) detectedFindings.push(finding);
     }
 
     if (detectors['completed-but-active'].status !== 'failed') {
       const finding = detectCompletedActiveFinding({ file, reportDate });
-      if (finding) findings.push(finding);
+      if (finding) detectedFindings.push(finding);
     }
 
     if (detectors['source-gap'].status !== 'failed') {
@@ -139,13 +146,26 @@ export function buildMindMaintenancePilotReport(
         reportDate,
         candidates: input.sourceGapCandidates?.[file.path] ?? [],
       });
-      findings.push(...result.findings);
+      detectedFindings.push(...result.findings);
       ambiguousSourceGapCandidates.push(...result.ambiguousCandidates);
       excludedSourceGapCandidates.push(...result.excludedCandidates);
     }
   }
 
-  const suppressedFindings: MaintenanceFinding[] = [];
+  const decisionApplication = input.decisionDocument
+    ? applyMaintenanceFindingDecisions({
+        findings: detectedFindings,
+        decisions: input.decisionDocument,
+        reportDate,
+      })
+    : {
+        findings: detectedFindings,
+        suppressedFindings: [] as MaintenanceFinding[],
+        unmatchedDecisions: [] as MaintenanceFindingDecision[],
+      };
+
+  const findings = decisionApplication.findings;
+  const suppressedFindings = decisionApplication.suppressedFindings;
   const report: MaintenanceReport = {
     schemaVersion: '1.0',
     reportId: createReportId(input.generatedAt),
@@ -186,5 +206,6 @@ export function buildMindMaintenancePilotReport(
     report,
     ambiguousSourceGapCandidates,
     excludedSourceGapCandidates,
+    unmatchedDecisions: decisionApplication.unmatchedDecisions,
   };
 }
