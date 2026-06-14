@@ -104,3 +104,36 @@ test('thumbnail OPTIONS advertises GET, HEAD, and OPTIONS only', async () => {
   assert.equal(response.headers['access-control-allow-headers'], 'content-type');
   assert.equal(response.body, '');
 });
+
+
+
+
+test('thumbnail not-ready responses preserve GET and HEAD semantics', async () => {
+  const jobId = 'thumbnail-not-ready-regression-20260614';
+  const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail`;
+
+  const getResponse = new MockResponse();
+  await routeRequest(
+    createRequest('GET', url),
+    getResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(getResponse.statusCode, 404);
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  const getPayload = JSON.parse(getResponse.body) as Record<string, unknown>;
+  assert.equal(getPayload.ok, false);
+  assert.equal(getPayload.code, 'thumbnail_not_ready');
+  assert.equal(getPayload.error, 'Thumbnail is not ready because the publish package is incomplete.');
+
+  const headResponse = new MockResponse();
+  await routeRequest(
+    createRequest('HEAD', url),
+    headResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(headResponse.statusCode, 404);
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.equal(headResponse.body, '');
+});
