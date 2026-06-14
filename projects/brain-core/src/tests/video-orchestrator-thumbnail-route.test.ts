@@ -18,10 +18,13 @@ class MockResponse {
   }
 }
 
-function createRequest(method: string): IncomingMessage {
+function createRequest(
+  method: string,
+  url = '/api/video-orchestrator/jobs/test-job/thumbnail?key=jobs%2Ftest-job%2Fthumbnail.jpg',
+): IncomingMessage {
   return {
     method,
-    url: '/api/video-orchestrator/jobs/test-job/thumbnail?key=jobs%2Ftest-job%2Fthumbnail.jpg',
+    url,
     socket: { remoteAddress: '127.0.0.1' },
   } as IncomingMessage;
 }
@@ -43,4 +46,21 @@ test('thumbnail route rejects unsupported methods with explicit endpoint semanti
     code: 'method_not_allowed',
     error: 'Use GET or HEAD to load the thumbnail.',
   });
+});
+
+
+
+
+test('thumbnail HEAD suppresses the error body for an invalid job ID', async () => {
+  const response = new MockResponse();
+
+  await routeRequest(
+    createRequest('HEAD', '/api/video-orchestrator/jobs/invalid%20job/thumbnail'),
+    response as unknown as ServerResponse,
+  );
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.headers['Cache-Control'], 'no-store');
+  assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.equal(response.body, '');
 });

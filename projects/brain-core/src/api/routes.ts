@@ -346,8 +346,8 @@ export async function routeRequest(
     return;
   }
 
-  const isVideoDownloadHead = method === 'HEAD' && /^\/api\/video-orchestrator\/jobs\/[^/]+\/video$/.test(url.pathname);
-  if (method !== 'GET' && !isVideoDownloadHead) {
+  const isSupportedMediaHead = method === 'HEAD' && /^\/api\/video-orchestrator\/jobs\/[^/]+\/(?:video|thumbnail)$/.test(url.pathname);
+  if (method !== 'GET' && !isSupportedMediaHead) {
     sendJson(response, 405, {
       error: {
         code: 'method_not_allowed',
