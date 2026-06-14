@@ -64,3 +64,25 @@ test('thumbnail HEAD suppresses the error body for an invalid job ID', async () 
   assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(response.body, '');
 });
+
+
+
+
+test('thumbnail GET returns a no-store JSON error for an invalid job ID', async () => {
+  const response = new MockResponse();
+
+  await routeRequest(
+    createRequest('GET', '/api/video-orchestrator/jobs/invalid%20job/thumbnail'),
+    response as unknown as ServerResponse,
+  );
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.headers['Cache-Control'], 'no-store');
+  assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.deepEqual(JSON.parse(response.body), {
+    ok: false,
+    code: 'invalid_job_id',
+    error: 'Invalid jobId',
+    details: null,
+  });
+});
