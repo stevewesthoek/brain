@@ -183,6 +183,7 @@ export function AwsVideoReviewCard({
                 }}
                 onLoad={(event) => {
                   const image = event.currentTarget;
+                  delete image.dataset.retryCount;
                   image.style.display = '';
                   image.nextElementSibling?.setAttribute('hidden', '');
                 }}
