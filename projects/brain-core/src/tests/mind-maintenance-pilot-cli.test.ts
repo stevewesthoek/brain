@@ -175,9 +175,26 @@ test('resolves the Mind root and HEAD commit, then prints successful JSON to std
   assert.equal(receivedInput?.generatedAt, '2026-06-13T12:00:00.000Z');
   assert.equal(captured.stderr.length, 0);
 
-  const output = JSON.parse(captured.stdout.join('')) as { ok: boolean; reportId: string };
+  const output = JSON.parse(captured.stdout.join('')) as {
+    ok: boolean;
+    reportId: string;
+    decisionStatistics: {
+      loaded: number;
+      matched: number;
+      unmatched: number;
+      accepted: number;
+      suppressed: number;
+    };
+  };
   assert.equal(output.ok, true);
   assert.equal(output.reportId, 'mind-maintenance-20260613T120000Z');
+  assert.deepEqual(output.decisionStatistics, {
+    loaded: 1,
+    matched: 1,
+    unmatched: 0,
+    accepted: 1,
+    suppressed: 0,
+  });
 });
 
 test('honors explicit source commit and timestamp overrides', async () => {

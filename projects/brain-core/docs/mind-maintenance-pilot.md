@@ -99,3 +99,52 @@ If only the two report outputs were created and the run must be discarded, remov
 4. Compare findings with the exact evidence paths and locations.
 5. Accept, dismiss, or leave findings open through a separate human review process.
 6. Prepare any content change as a separate exact-path proposal with explicit approval.
+
+
+
+
+## Persisted finding decisions
+
+The report-only pilot may read one optional decision file from the Mind repository:
+
+```text
+system/reports/maintenance-decisions.json
+```
+
+The file is validated before report generation and is never modified by a report run. A missing file is treated as an empty decision document. Invalid JSON or an invalid decision document stops the run with `decision-load-failed` before either latest report is written.
+
+Each stored decision is matched to a detected finding by `deduplicationKey`:
+
+- `accepted` keeps the finding visible and attaches the review record.
+- `dismissed` suppresses recurrence through `suppressionUntil`, inclusively.
+- An expired dismissal reopens as a visible finding.
+- A resolved condition that recurs reopens rather than inheriting the previous resolution.
+- Decisions with no matching finding remain stored and are reported as unmatched statistics.
+
+Decision writes are a separate explicit operation. Report generation remains read-only with respect to the decision file and all Mind source content.
+
+## CLI decision statistics
+
+A successful `mind-maintenance-pilot run` result includes:
+
+```json
+{
+  "decisionStatistics": {
+    "loaded": 0,
+    "matched": 0,
+    "unmatched": 0,
+    "accepted": 0,
+    "suppressed": 0
+  }
+}
+```
+
+The fields mean:
+
+- `loaded`: decisions present in the validated decision document.
+- `matched`: loaded decisions whose deduplication key matched a finding in this run.
+- `unmatched`: loaded decisions with no matching finding in this run.
+- `accepted`: visible report findings carrying an accepted decision.
+- `suppressed`: findings moved to `suppressedFindings` by an active dismissal.
+
+These statistics describe decision application only. They do not authorize source edits or imply that unmatched decisions should be removed automatically.
