@@ -2462,7 +2462,12 @@ export async function routeRequest(
           const requestedThumbnailKey = url.searchParams.get('key');
           const result = await getVideoJobThumbnail(jobId, requestedThumbnailKey);
           if (!result.success) {
-            response.writeHead(result.code === 'invalid_job_id' ? 400 : 404, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+            const statusCode = result.code === 'invalid_job_id'
+              ? 400
+              : result.code === 'thumbnail_not_ready'
+                ? 404
+                : 502;
+            response.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
             response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null }));
           } else {
             response.writeHead(200, {
