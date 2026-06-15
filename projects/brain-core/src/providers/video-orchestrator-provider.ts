@@ -1338,12 +1338,24 @@ export async function getVideoJobArtifacts(jobId: string): Promise<Record<string
   return result;
 }
 
+type ThumbnailPublishableAssetsResolution = Pick<PublishableAssetsResolution, 'thumbnailKey' | 'missing' | 'expectedKeys'>;
+
+type ThumbnailPublishableAssetsResolver = (jobId: string) => Promise<ThumbnailPublishableAssetsResolution>;
+
+let resolveThumbnailPublishableAssets: ThumbnailPublishableAssetsResolver = resolvePublishableAssets;
+
+export function setVideoJobThumbnailPublishableAssetsResolverForTesting(
+  resolver: ThumbnailPublishableAssetsResolver | null,
+): void {
+  resolveThumbnailPublishableAssets = resolver ?? resolvePublishableAssets;
+}
+
 export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?: string | null): Promise<{ success: false; code: string; error: string; details?: unknown } | { success: true; data: Buffer; mimeType: string }> {
   if (!isValidJobId(jobId)) {
     return { success: false, code: 'invalid_job_id', error: 'Invalid jobId' };
   }
 
-  const resolved = await resolvePublishableAssets(jobId);
+  const resolved = await resolveThumbnailPublishableAssets(jobId);
   const safeRequestedThumbnailKey = requestedThumbnailKey
     && requestedThumbnailKey.startsWith(`jobs/${jobId}/`)
     && !requestedThumbnailKey.split('/').includes('..')

@@ -108,7 +108,19 @@ test('thumbnail OPTIONS advertises GET, HEAD, and OPTIONS only', async () => {
 
 
 
-test('thumbnail not-ready responses preserve GET and HEAD semantics', async () => {
+test('thumbnail not-ready responses preserve GET and HEAD semantics', async (t) => {
+  const { setVideoJobThumbnailPublishableAssetsResolverForTesting } = await import('../providers/video-orchestrator-provider.js');
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async (jobId) => ({
+    thumbnailKey: null,
+    missing: ['thumbnailKey'],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: `jobs/${jobId}/exports/thumbnail-001.jpg`,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  t.after(() => setVideoJobThumbnailPublishableAssetsResolverForTesting(null));
+
   const jobId = 'thumbnail-not-ready-regression-20260614';
   const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail`;
 
