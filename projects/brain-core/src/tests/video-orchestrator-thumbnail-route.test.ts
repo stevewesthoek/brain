@@ -885,3 +885,68 @@ test('thumbnail keys with URL delimiters or encoded separators fall back to cano
     assert.equal(headResponse.body, '');
   }
 });
+
+
+
+
+test('thumbnail keys with ASCII control characters fall back to canonical', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-control-character-regression-20260615';
+  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.jpg`;
+  const thumbnailBytes = Buffer.from([6, 5, 4, 3]);
+  let loadedKey: string | null = null;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: canonicalKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: canonicalKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
+    loadedKey = thumbnailKey;
+    return thumbnailBytes;
+  });
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const queryValues = [
+    `jobs/${jobId}/exports/thumbnail%0Drequested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%0Arequested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%09requested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%7Frequested.jpg`,
+  ];
+
+  for (const queryValue of queryValues) {
+    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${queryValue}`;
+
+    loadedKey = null;
+    const getResponse = new MockResponse();
+    await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
+
+    assert.equal(getResponse.statusCode, 200);
+    assert.equal(getResponse.headers['Content-Type'], 'image/jpeg');
+    assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
+    assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+    assert.equal(loadedKey, canonicalKey);
+    assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
+
+    loadedKey = null;
+    const headResponse = new MockResponse();
+    await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
+
+    assert.equal(headResponse.statusCode, 200);
+    assert.equal(headResponse.headers['Content-Type'], 'image/jpeg');
+    assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
+    assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+    assert.equal(loadedKey, canonicalKey);
+    assert.equal(headResponse.body, '');
+  }
+});
