@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import {
+  MIND_MAINTENANCE_DECISION_PATH,
   loadMaintenanceFindingDecisionDocument,
   writeMaintenanceFindingDecisionDocument,
 } from '../mind-maintenance-pilot/finding-decision-file.js';
@@ -50,12 +51,31 @@ export interface MindMaintenanceRecordDecisionCliResult {
   decisionCount: number;
 }
 
-export interface MindMaintenancePilotCliResult {
-  exitCode: 0 | 1 | 2;
-  result?: MindMaintenancePilotRunnerResult | MindMaintenanceRecordDecisionCliResult;
+export interface MindMaintenanceDecisionSummaryCliResult {
+  ok: true;
+  status: 'decision-summary';
+  mode: 'read-only';
+  decisionPath: string;
+  schemaVersion: string;
+  sourceRepo: 'mind';
+  updatedAt: string;
+  decisionCount: number;
+  counts: {
+    accepted: number;
+    dismissed: number;
+    resolved: number;
+  };
 }
 
-type CliCommand = 'run' | 'record-decision';
+export interface MindMaintenancePilotCliResult {
+  exitCode: 0 | 1 | 2;
+  result?:
+    | MindMaintenancePilotRunnerResult
+    | MindMaintenanceRecordDecisionCliResult
+    | MindMaintenanceDecisionSummaryCliResult;
+}
+
+type CliCommand = 'run' | 'record-decision' | 'validate-decisions';
 
 interface ParsedArguments {
   command: CliCommand;
@@ -80,6 +100,7 @@ interface ParsedArguments {
 const USAGE = [
   'Usage:',
   '  mind-maintenance-pilot run --enable-report-only --mind-root <path> [options]',
+  '  mind-maintenance-pilot validate-decisions --mind-root <path>',
   '  mind-maintenance-pilot record-decision --mind-root <path> --finding-id <id> --deduplication-key <key> --source-report <id> --source-commit <hash> --reviewer <name> --reviewed-at <iso> --decision <accepted|dismissed|resolved> --reason <text> [decision options]',
   '',
   'Run options:',
@@ -113,8 +134,8 @@ function parseArguments(args: readonly string[]): ParsedArguments {
   }
 
   const command = args[0];
-  if (command !== 'run' && command !== 'record-decision') {
-    throw new Error('The supported commands are "run" and "record-decision".');
+  if (command !== 'run' && command !== 'record-decision' && command !== 'validate-decisions') {
+    throw new Error('The supported commands are "run", "validate-decisions", and "record-decision".');
   }
 
   const parsed: ParsedArguments = {
@@ -170,6 +191,27 @@ function parseArguments(args: readonly string[]): ParsedArguments {
     if (argument === '--next-action') parsed.nextAction = value;
     if (argument === '--resolution-ref') parsed.resolutionRef = value;
     if (argument === '--suppression-until') parsed.suppressionUntil = value;
+  }
+
+  if (command === 'validate-decisions') {
+    const unsupported = [
+      parsed.sourceCommit,
+      parsed.generatedAt,
+      parsed.generatedBy,
+      parsed.findingId,
+      parsed.deduplicationKey,
+      parsed.sourceReportId,
+      parsed.reviewer,
+      parsed.reviewedAt,
+      parsed.decision,
+      parsed.reason,
+      parsed.nextAction,
+      parsed.resolutionRef,
+      parsed.suppressionUntil,
+    ].some((value) => value !== undefined);
+    if (unsupported) {
+      throw new Error('validate-decisions accepts only --mind-root.');
+    }
   }
 
   return parsed;
@@ -317,6 +359,36 @@ async function runRecordDecision(
   };
 }
 
+async function runValidateDecisions(
+  parsed: ParsedArguments,
+  dependencies: MindMaintenancePilotCliDependencies,
+): Promise<MindMaintenanceDecisionSummaryCliResult> {
+  if (!parsed.mindRoot?.trim()) {
+    throw new Error('--mind-root is required for validate-decisions.');
+  }
+
+  const mindRoot = dependencies.resolveMindRoot(parsed.mindRoot);
+  const loadDecisionDocument = dependencies.loadDecisionDocument
+    ?? loadMaintenanceFindingDecisionDocument;
+  const document = await loadDecisionDocument(mindRoot, {
+    whenMissingUpdatedAt: dependencies.now().toISOString(),
+  });
+  const counts = { accepted: 0, dismissed: 0, resolved: 0 };
+  for (const decision of document.decisions) counts[decision.decision] += 1;
+
+  return {
+    ok: true,
+    status: 'decision-summary',
+    mode: 'read-only',
+    decisionPath: path.join(mindRoot, MIND_MAINTENANCE_DECISION_PATH),
+    schemaVersion: document.schemaVersion,
+    sourceRepo: document.sourceRepo,
+    updatedAt: document.updatedAt,
+    decisionCount: document.decisions.length,
+    counts,
+  };
+}
+
 export async function runMindMaintenancePilotCli(
   args: readonly string[],
   io: MindMaintenancePilotCliIo,
@@ -334,6 +406,23 @@ export async function runMindMaintenancePilotCli(
   if (parsed.help) {
     io.stdout(`${USAGE}\n`);
     return { exitCode: 0 };
+  }
+
+  if (parsed.command === 'validate-decisions') {
+    try {
+      const result = await runValidateDecisions(parsed, dependencies);
+      io.stdout(`${JSON.stringify(result, null, 2)}\n`);
+      return { exitCode: 0, result };
+    } catch (error) {
+      io.stderr(`${JSON.stringify({
+        ok: false,
+        status: 'decision-summary-failed',
+        mode: 'read-only',
+        error: error instanceof Error ? error.message : String(error),
+        nextAction: 'Repair or remove the invalid maintenance decision file before retrying validation.',
+      }, null, 2)}\n`);
+      return { exitCode: 1 };
+    }
   }
 
   if (parsed.command === 'record-decision') {
