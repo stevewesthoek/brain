@@ -2482,7 +2482,15 @@ export async function routeRequest(
             }));
             return;
           }
-          const requestedThumbnailKey = url.searchParams.get('key');
+          const rawRequestedThumbnailKey = /(?:^|[?&])key=([^&#]*)/.exec(request.url ?? '')?.[1];
+          let requestedThumbnailKey = url.searchParams.get('key');
+          if (rawRequestedThumbnailKey !== undefined) {
+            try {
+              decodeURIComponent(rawRequestedThumbnailKey.replace(/\+/g, ' '));
+            } catch {
+              requestedThumbnailKey = null;
+            }
+          }
           const result = await getVideoJobThumbnail(jobId, requestedThumbnailKey);
           if (!result.success) {
             const statusCode = result.code === 'invalid_job_id'
