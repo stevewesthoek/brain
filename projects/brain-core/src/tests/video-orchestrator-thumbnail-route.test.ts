@@ -16,6 +16,8 @@ class MockResponse {
     this.statusCode = statusCode;
     this.headers = { ...this.headers, ...(headers ?? {}) };
     assert.equal(this.headers['Access-Control-Allow-Origin'], '*');
+    assert.equal(this.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+    assert.equal(this.headers['Access-Control-Allow-Headers'], 'content-type');
   }
 
   end(chunk?: string): void {

@@ -304,6 +304,8 @@ export async function routeRequest(
   const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
   if (thumbnailPathMatch) {
     response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    response.setHeader('Access-Control-Allow-Headers', 'content-type');
   }
 
   if (method === 'OPTIONS') {
