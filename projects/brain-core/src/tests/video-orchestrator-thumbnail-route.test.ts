@@ -356,3 +356,59 @@ test('thumbnail requested-key validation selects only safe same-job image keys',
     assert.equal(loadedKey, canonicalKey);
   }
 });
+
+
+
+
+test('thumbnail MIME selection follows canonical and accepted requested key extensions', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-mime-regression-20260615';
+  let canonicalKey = `jobs/${jobId}/exports/thumbnail.jpg`;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: canonicalKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: canonicalKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async () => Buffer.from([1, 2, 3]));
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const cases = [
+    { source: 'canonical', key: `jobs/${jobId}/exports/canonical.JPG`, expected: 'image/jpeg' },
+    { source: 'canonical', key: `jobs/${jobId}/exports/canonical.jpeg`, expected: 'image/jpeg' },
+    { source: 'canonical', key: `jobs/${jobId}/exports/canonical.PNG`, expected: 'image/png' },
+    { source: 'canonical', key: `jobs/${jobId}/exports/canonical.WebP`, expected: 'image/webp' },
+    { source: 'requested', key: `jobs/${jobId}/exports/requested.jpg`, expected: 'image/jpeg' },
+    { source: 'requested', key: `jobs/${jobId}/exports/requested.JPEG`, expected: 'image/jpeg' },
+    { source: 'requested', key: `jobs/${jobId}/exports/requested.png`, expected: 'image/png' },
+    { source: 'requested', key: `jobs/${jobId}/exports/requested.WEBP`, expected: 'image/webp' },
+  ] as const;
+
+  for (const testCase of cases) {
+    canonicalKey = testCase.source === 'canonical'
+      ? testCase.key
+      : `jobs/${jobId}/exports/fallback.jpg`;
+    const query = testCase.source === 'requested'
+      ? `?key=${encodeURIComponent(testCase.key)}`
+      : '';
+    const response = new MockResponse();
+
+    await routeRequest(
+      createRequest('GET', `/api/video-orchestrator/jobs/${jobId}/thumbnail${query}`),
+      response as unknown as ServerResponse,
+    );
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers['Content-Type'], testCase.expected);
+  }
+});
