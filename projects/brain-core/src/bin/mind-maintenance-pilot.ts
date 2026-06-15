@@ -439,13 +439,16 @@ async function runValidateDecisions(
     (decision) => !matchedKeys.has(decision.deduplicationKey),
   );
 
-  return {
+  const result = {
     ...summary,
     latestReportPath: path.join(mindRoot, MIND_MAINTENANCE_LATEST_REPORT_PATH),
     latestReportId: report.reportId,
+    matchedDecisionCount: document.decisions.length - unmatchedDecisions.length,
     unmatchedDecisionCount: unmatchedDecisions.length,
     unmatchedDecisions,
   };
+
+  return result;
 }
 
 export async function runMindMaintenancePilotCli(

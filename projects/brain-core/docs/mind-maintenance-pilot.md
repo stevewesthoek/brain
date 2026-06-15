@@ -329,6 +329,7 @@ With `--list-unmatched`, successful JSON adds these fields:
 
 - `latestReportPath`: canonical path to `system/reports/maintenance-latest.json` under the supplied Mind root.
 - `latestReportId`: validated `reportId` from the latest report.
+- `matchedDecisionCount`: compact total of persisted decisions represented by visible or suppressed findings in that report, derived as `decisionCount - unmatchedDecisionCount`.
 - `unmatchedDecisionCount`: compact total of persisted decisions not represented by visible or suppressed findings in that report.
 - `unmatchedDecisions`: complete persisted decision records not represented by visible or suppressed findings in that report.
 
