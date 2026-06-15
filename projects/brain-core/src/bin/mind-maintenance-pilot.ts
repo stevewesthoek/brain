@@ -82,6 +82,10 @@ export interface MindMaintenanceDecisionSummaryCliResult {
   };
   decisionCoverageStatus?: 'complete' | 'partial' | 'empty';
   decisionCoverageSummary?: string;
+  decisionCoverageAction?:
+    | 'No coverage action required; there are no persisted decisions.'
+    | 'No coverage action required; all persisted decisions match the latest report.'
+    | 'Review unmatched persisted decisions against the latest report.';
   unmatchedDecisions?: MaintenanceFindingDecision[];
 }
 
@@ -472,6 +476,13 @@ async function runValidateDecisions(
     : decisionCoverageStatus === 'complete'
       ? `All ${decisionCoverage.total} persisted decisions match the latest report.`
       : `${decisionCoverage.matched} of ${decisionCoverage.total} persisted decisions match the latest report; ${decisionCoverage.unmatched} unmatched.`;
+  const decisionCoverageAction: NonNullable<
+    MindMaintenanceDecisionSummaryCliResult['decisionCoverageAction']
+  > = decisionCoverageStatus === 'empty'
+    ? 'No coverage action required; there are no persisted decisions.'
+    : decisionCoverageStatus === 'complete'
+      ? 'No coverage action required; all persisted decisions match the latest report.'
+      : 'Review unmatched persisted decisions against the latest report.';
 
   const result = {
     ...summary,
@@ -482,6 +493,7 @@ async function runValidateDecisions(
     decisionCoverage,
     decisionCoverageStatus,
     decisionCoverageSummary,
+    decisionCoverageAction,
     unmatchedDecisions,
   };
 

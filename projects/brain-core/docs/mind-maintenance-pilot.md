@@ -353,6 +353,14 @@ The status is descriptive and read-only. It does not change decision state, impl
 
 The placeholders are replaced with the validated integer totals from `decisionCoverage`. The summary is deterministic, descriptive, and read-only.
 
+`decisionCoverageAction` is derived from `decisionCoverageStatus` using this exact wording contract:
+
+- `empty`: `No coverage action required; there are no persisted decisions.`
+- `complete`: `No coverage action required; all persisted decisions match the latest report.`
+- `partial`: `Review unmatched persisted decisions against the latest report.`
+
+The action is advisory and read-only. It does not mutate decisions, reports, or source files, and it does not imply that unmatched decisions are invalid or should be removed.
+
 An empty `unmatchedDecisions` array means every persisted decision is represented in the latest report context. It does not mean every decision is still operationally relevant or requires no review.
 
 If the latest report is missing, malformed, or fails schema validation, the command exits with code `1`, writes `status: decision-summary-failed` to stderr, and performs no writes. Inspect or regenerate `system/reports/maintenance-latest.json`, confirm the report is valid and stable, then rerun the command. Do not edit the latest report merely to force a decision match; regenerate it through the report-only workflow when appropriate.
