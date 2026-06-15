@@ -167,7 +167,16 @@ test('returns integrity-failed when the run introduces an unexpected changed pat
   if (result.ok || result.status !== 'integrity-failed') return;
   assert.equal(result.integrity?.ok, false);
   assert.deepEqual(result.integrity?.unexpectedChangedPaths, ['wiki/unexpected-change.md']);
-  assert.match(result.nextAction, /Inspect integrity failures/i);
+  if (result.integrity?.changedSourcePaths.includes(
+    'system/reports/maintenance-decisions.json',
+  )) {
+    assert.match(result.error, /decision file changed during a report-only run/i);
+    assert.match(result.nextAction, /maintenance-decisions\.json/i);
+    assert.match(result.nextAction, /discard the generated reports/i);
+  } else {
+    assert.match(result.error, /protected source change/i);
+    assert.match(result.nextAction, /Inspect integrity failures/i);
+  }
 });
 
 test('preserves structured detector failures in the completed report', async (context) => {
@@ -357,5 +366,14 @@ test('returns integrity-failed when the decision file mutates during a report-on
     'system/reports/maintenance-decisions.json',
   ]);
   assert.deepEqual(result.integrity?.unexpectedChangedPaths, []);
-  assert.match(result.nextAction, /Inspect integrity failures/i);
+  if (result.integrity?.changedSourcePaths.includes(
+    'system/reports/maintenance-decisions.json',
+  )) {
+    assert.match(result.error, /decision file changed during a report-only run/i);
+    assert.match(result.nextAction, /maintenance-decisions\.json/i);
+    assert.match(result.nextAction, /discard the generated reports/i);
+  } else {
+    assert.match(result.error, /protected source change/i);
+    assert.match(result.nextAction, /Inspect integrity failures/i);
+  }
 });

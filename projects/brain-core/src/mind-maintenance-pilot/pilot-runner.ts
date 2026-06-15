@@ -149,6 +149,10 @@ export async function runMindMaintenancePilot(
   );
 
   if (!integrity.ok) {
+    const decisionFileChanged = integrity.changedSourcePaths.includes(
+      'system/reports/maintenance-decisions.json',
+    );
+
     return {
       ok: false,
       status: 'integrity-failed',
@@ -156,8 +160,12 @@ export async function runMindMaintenancePilot(
       reportId: report.reportId,
       sourceCommit: report.sourceCommit,
       integrity,
-      error: 'Mind maintenance pilot introduced or observed a protected source change.',
-      nextAction: 'Inspect integrity failures before treating the generated reports as valid.',
+      error: decisionFileChanged
+        ? 'Mind maintenance decision file changed during a report-only run.'
+        : 'Mind maintenance pilot introduced or observed a protected source change.',
+      nextAction: decisionFileChanged
+        ? 'Inspect system/reports/maintenance-decisions.json and discard the generated reports until the unexpected mutation is understood.'
+        : 'Inspect integrity failures before treating the generated reports as valid.',
     };
   }
 
