@@ -1384,6 +1384,8 @@ export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?
   const safeRequestedThumbnailKey = requestedThumbnailKey
     && requestedThumbnailKey.startsWith(`jobs/${jobId}/`)
     && !requestedThumbnailKey.split('/').includes('..')
+    && !requestedThumbnailKey.includes('\\')
+    && !requestedThumbnailKey.includes('\0')
     && /\.(?:jpe?g|png|webp)$/i.test(requestedThumbnailKey)
       ? requestedThumbnailKey
       : null;
