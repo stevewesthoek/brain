@@ -299,3 +299,40 @@ Field meanings:
 - `counts`: totals grouped by accepted, dismissed, and resolved state.
 
 Invalid JSON or schema violations return exit code `1` with `status: decision-summary-failed` on stderr. Repair or remove the invalid decision file before retrying. This command is diagnostic only and never records, replaces, or deletes decisions.
+
+
+
+
+### List decisions unmatched by the latest report
+
+Add `--list-unmatched` to compare validated persisted decisions with the validated latest maintenance report:
+
+```bash
+node dist/bin/mind-maintenance-pilot.js validate-decisions \
+  --mind-root /absolute/path/to/mind \
+  --list-unmatched
+```
+
+The command remains strictly read-only. It does not run detectors, resolve Git state, inspect the working tree, write reports, record decisions, or modify either input file.
+
+Matching semantics:
+
+1. Load and validate `system/reports/maintenance-decisions.json`.
+2. Load and validate `system/reports/maintenance-latest.json`.
+3. Collect every `deduplicationKey` from both `findings` and `suppressedFindings` in the latest report.
+4. Return each persisted decision whose `deduplicationKey` is absent from that combined set.
+5. Preserve the persisted decision order in `unmatchedDecisions`.
+
+A decision matched by either a visible finding or a suppressed finding is not listed as unmatched. Matching is based only on the stable `deduplicationKey`; finding IDs, report IDs, review timestamps, and decision state do not change the match result.
+
+With `--list-unmatched`, successful JSON adds these fields:
+
+- `latestReportPath`: canonical path to `system/reports/maintenance-latest.json` under the supplied Mind root.
+- `latestReportId`: validated `reportId` from the latest report.
+- `unmatchedDecisions`: complete persisted decision records not represented by visible or suppressed findings in that report.
+
+An empty `unmatchedDecisions` array means every persisted decision is represented in the latest report context. It does not mean every decision is still operationally relevant or requires no review.
+
+If the latest report is missing, malformed, or fails schema validation, the command exits with code `1`, writes `status: decision-summary-failed` to stderr, and performs no writes. Inspect or regenerate `system/reports/maintenance-latest.json`, confirm the report is valid and stable, then rerun the command. Do not edit the latest report merely to force a decision match; regenerate it through the report-only workflow when appropriate.
+
+For both decision-file and latest-report failures, compare the affected file with its reviewed Git version before repair. Accept the result only after a successful read-only rerun, and verify both input files remain unchanged.
