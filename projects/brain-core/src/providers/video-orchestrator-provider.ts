@@ -1387,6 +1387,7 @@ export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?
     && !requestedThumbnailKey.includes('\\')
     && !requestedThumbnailKey.includes('\0')
     && !/[\x00-\x1f\x7f]/.test(requestedThumbnailKey)
+    && !/[\u200B-\u200F\u2028-\u202E\u2060-\u206F\uFEFF]/.test(requestedThumbnailKey)
     && !/[#?&=]/.test(requestedThumbnailKey)
     && !/%(?:2f|5c)/i.test(requestedThumbnailKey)
     && /\.(?:jpe?g|png|webp)$/i.test(requestedThumbnailKey)

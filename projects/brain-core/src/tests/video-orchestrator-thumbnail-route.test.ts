@@ -950,3 +950,71 @@ test('thumbnail keys with ASCII control characters fall back to canonical', asyn
     assert.equal(headResponse.body, '');
   }
 });
+
+
+
+
+test('thumbnail keys with invisible Unicode controls fall back to canonical', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-unicode-control-regression-20260615';
+  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.webp`;
+  const thumbnailBytes = Buffer.from([8, 7, 6, 5]);
+  let loadedKey: string | null = null;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: canonicalKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: canonicalKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
+    loadedKey = thumbnailKey;
+    return thumbnailBytes;
+  });
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const queryValues = [
+    `jobs/${jobId}/exports/thumbnail%E2%80%A8requested.webp`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%A9requested.webp`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%AErequested.webp`,
+    `jobs/${jobId}/exports/thumbnail%E2%81%A6requested.webp`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%8Brequested.webp`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%8Drequested.webp`,
+    `jobs/${jobId}/exports/thumbnail%EF%BB%BFrequested.webp`,
+  ];
+
+  for (const queryValue of queryValues) {
+    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${queryValue}`;
+
+    loadedKey = null;
+    const getResponse = new MockResponse();
+    await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
+
+    assert.equal(getResponse.statusCode, 200);
+    assert.equal(getResponse.headers['Content-Type'], 'image/webp');
+    assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
+    assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+    assert.equal(loadedKey, canonicalKey);
+    assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
+
+    loadedKey = null;
+    const headResponse = new MockResponse();
+    await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
+
+    assert.equal(headResponse.statusCode, 200);
+    assert.equal(headResponse.headers['Content-Type'], 'image/webp');
+    assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
+    assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+    assert.equal(loadedKey, canonicalKey);
+    assert.equal(headResponse.body, '');
+  }
+});
