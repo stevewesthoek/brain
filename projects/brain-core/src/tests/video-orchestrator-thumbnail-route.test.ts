@@ -295,3 +295,64 @@ test('thumbnail empty byte results map to thumbnail_empty', async (t) => {
   assert.equal(payload.code, 'thumbnail_empty');
   assert.equal(payload.error, 'Thumbnail loaded from S3 but no image bytes were returned.');
 });
+
+
+
+
+test('thumbnail requested-key validation selects only safe same-job image keys', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-requested-key-regression-20260615';
+  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.jpg`;
+  let loadedKey: string | null = null;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: canonicalKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: canonicalKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
+    loadedKey = thumbnailKey;
+    return Buffer.from([1]);
+  });
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const validRequestedKeys = [
+    `jobs/${jobId}/exports/requested.jpg`,
+    `jobs/${jobId}/exports/requested.png`,
+    `jobs/${jobId}/exports/requested.webp`,
+  ];
+  for (const requestedKey of validRequestedKeys) {
+    loadedKey = null;
+    const response = new MockResponse();
+    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(requestedKey)}`;
+    await routeRequest(createRequest('GET', url), response as unknown as ServerResponse);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(loadedKey, requestedKey);
+  }
+
+  const rejectedRequestedKeys = [
+    'jobs/another-job/exports/requested.jpg',
+    `jobs/${jobId}/../another-job/requested.png`,
+    `jobs/${jobId}/exports/requested.gif`,
+  ];
+  for (const requestedKey of rejectedRequestedKeys) {
+    loadedKey = null;
+    const response = new MockResponse();
+    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(requestedKey)}`;
+    await routeRequest(createRequest('GET', url), response as unknown as ServerResponse);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(loadedKey, canonicalKey);
+  }
+});
