@@ -255,3 +255,47 @@ Operator steps:
 7. Accept the reports only when the rerun returns `ok: true`, `sourceFilesChanged: 0`, and no integrity failures.
 
 A report-only run never authorizes decision-file writes. Decision changes belong to the explicit `record-decision` workflow and should be reviewed and committed separately.
+
+
+
+
+## Validate and summarize decisions read-only
+
+Use `validate-decisions` to validate the canonical decision document and inspect aggregate counts without running detectors, reading Git status, writing reports, or modifying the decision file.
+
+```bash
+npm run build
+node dist/bin/mind-maintenance-pilot.js validate-decisions \
+  --mind-root /absolute/path/to/mind
+```
+
+The command accepts only `--mind-root`. A missing decision file is treated as an empty valid document. A valid result is emitted as JSON on stdout:
+
+```json
+{
+  "ok": true,
+  "status": "decision-summary",
+  "mode": "read-only",
+  "decisionPath": "/absolute/path/to/mind/system/reports/maintenance-decisions.json",
+  "schemaVersion": "1.0",
+  "sourceRepo": "mind",
+  "updatedAt": "2026-06-15T09:00:00.000Z",
+  "decisionCount": 3,
+  "counts": {
+    "accepted": 1,
+    "dismissed": 1,
+    "resolved": 1
+  }
+}
+```
+
+Field meanings:
+
+- `decisionPath`: canonical decision-file path resolved under the supplied Mind root.
+- `schemaVersion`: validated decision-document schema version.
+- `sourceRepo`: expected repository identity, always `mind` for this workflow.
+- `updatedAt`: document update timestamp, or the validation timestamp for a missing file treated as empty.
+- `decisionCount`: total validated decisions.
+- `counts`: totals grouped by accepted, dismissed, and resolved state.
+
+Invalid JSON or schema violations return exit code `1` with `status: decision-summary-failed` on stderr. Repair or remove the invalid decision file before retrying. This command is diagnostic only and never records, replaces, or deletes decisions.
