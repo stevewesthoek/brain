@@ -714,3 +714,184 @@ freshness_risk: high
   assert.equal(await readFile(decisionPath, 'utf8'), decisionBefore);
   assert.equal(await readFile(reportPath, 'utf8'), reportBefore);
 });
+
+
+
+
+test('derives empty, complete, and partial decision coverage statuses', async () => {
+  const decision = (findingId: string, deduplicationKey: string, minute: string) => ({
+    findingId,
+    deduplicationKey,
+    sourceReportId: 'status-report',
+    sourceCommit: 'abc1234',
+    reviewedBy: 'Steve Westhoek',
+    reviewedAt: `2026-06-15T11:${minute}:00.000Z`,
+    decision: 'accepted' as const,
+    reason: 'Coverage status fixture.',
+    nextAction: 'Review the finding.',
+    resolutionRef: null,
+    suppressionUntil: null,
+  });
+  const scenarios = [
+    {
+      name: 'empty',
+      decisions: [],
+      findings: [],
+      suppressedFindings: [],
+      expected: 'empty',
+    },
+    {
+      name: 'complete',
+      decisions: [decision('complete-a', 'complete:a', '01')],
+      findings: [{ deduplicationKey: 'complete:a' }],
+      suppressedFindings: [],
+      expected: 'complete',
+    },
+    {
+      name: 'partial',
+      decisions: [
+        decision('partial-a', 'partial:a', '02'),
+        decision('partial-b', 'partial:b', '03'),
+      ],
+      findings: [],
+      suppressedFindings: [{ deduplicationKey: 'partial:a' }],
+      expected: 'partial',
+    },
+  ] as const;
+
+  for (const scenario of scenarios) {
+    const captured = createIo();
+    const result = await runMindMaintenancePilotCli(
+      ['validate-decisions', '--mind-root', `/mind/${scenario.name}`, '--list-unmatched'],
+      captured.io,
+      createDependencies({
+        loadDecisionDocument: async () => ({
+          schemaVersion: '1.0',
+          sourceRepo: 'mind',
+          updatedAt: '2026-06-15T11:30:00.000Z',
+          decisions: [...scenario.decisions],
+        }),
+        loadLatestReport: async () => ({
+          reportId: `mind-maintenance-status-${scenario.name}`,
+          findings: [...scenario.findings],
+          suppressedFindings: [...scenario.suppressedFindings],
+        } as never),
+      }),
+    );
+
+    assert.equal(result.exitCode, 0, scenario.name);
+    assert.equal(captured.stderr.length, 0, scenario.name);
+    const output = JSON.parse(captured.stdout.join('')) as {
+      decisionCoverageStatus: 'complete' | 'partial' | 'empty';
+    };
+    assert.equal(output.decisionCoverageStatus, scenario.expected, scenario.name);
+  }
+});
+
+test('compiled CLI reports partial decision coverage status without modifying inputs', async (context) => {
+  const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-decision-coverage-status-'));
+  context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+  const pilotFiles = [
+    'router/00-current-context.md',
+    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'live/dashboard.md',
+    'system/automation-roadmap.md',
+  ] as const;
+  const contents: Record<(typeof pilotFiles)[number], string> = {
+    'router/00-current-context.md': `---
+status: review-needed
+last_reviewed: 2026-05-22
+review_after: 2026-06-05
+freshness_risk: high
+---
+# Current Context
+`,
+    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
+  };
+  for (const relativePath of pilotFiles) {
+    const absolutePath = path.join(mindRoot, relativePath);
+    await mkdir(path.dirname(absolutePath), { recursive: true });
+    await writeFile(absolutePath, contents[relativePath], 'utf8');
+  }
+  await writeFile(path.join(mindRoot, 'kanban.md'), '# Kanban\n', 'utf8');
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  await promisify(execFile)('git', ['-C', mindRoot, 'init', '--quiet']);
+
+  const reportRun = await runCompiledCli([
+    'run',
+    '--enable-report-only',
+    '--mind-root',
+    mindRoot,
+    '--source-commit',
+    'abc1234',
+    '--generated-at',
+    '2026-06-15T11:00:00Z',
+  ]);
+  assert.equal(reportRun.exitCode, 0, reportRun.stderr);
+
+  const reportPath = path.join(mindRoot, 'system/reports/maintenance-latest.json');
+  const reportBefore = await readFile(reportPath, 'utf8');
+  const report = JSON.parse(reportBefore) as {
+    reportId: string;
+    findings: Array<{ deduplicationKey: string }>;
+  };
+  const matchedKey = report.findings[0]?.deduplicationKey;
+  assert.ok(matchedKey);
+
+  const decisionPath = path.join(mindRoot, 'system/reports/maintenance-decisions.json');
+  const decisionBefore = `${JSON.stringify({
+    schemaVersion: '1.0',
+    sourceRepo: 'mind',
+    updatedAt: '2026-06-15T11:30:00.000Z',
+    decisions: [
+      {
+        findingId: 'status-matched',
+        deduplicationKey: matchedKey,
+        sourceReportId: report.reportId,
+        sourceCommit: 'abc1234',
+        reviewedBy: 'Steve Westhoek',
+        reviewedAt: '2026-06-15T11:10:00.000Z',
+        decision: 'accepted',
+        reason: 'Current finding.',
+        nextAction: 'Review it.',
+        resolutionRef: null,
+        suppressionUntil: null,
+      },
+      {
+        findingId: 'status-unmatched',
+        deduplicationKey: 'historical:status',
+        sourceReportId: 'older-report',
+        sourceCommit: 'def5678',
+        reviewedBy: 'Steve Westhoek',
+        reviewedAt: '2026-06-15T11:20:00.000Z',
+        decision: 'accepted',
+        reason: 'Historical finding.',
+        nextAction: 'Review whether it remains relevant.',
+        resolutionRef: null,
+        suppressionUntil: null,
+      },
+    ],
+  }, null, 2)}\n`;
+  await writeFile(decisionPath, decisionBefore, 'utf8');
+
+  const result = await runCompiledCli([
+    'validate-decisions',
+    '--mind-root',
+    mindRoot,
+    '--list-unmatched',
+  ]);
+
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  const output = JSON.parse(result.stdout) as {
+    decisionCoverageStatus: 'complete' | 'partial' | 'empty';
+  };
+  assert.equal(output.decisionCoverageStatus, 'partial');
+  assert.equal(await readFile(decisionPath, 'utf8'), decisionBefore);
+  assert.equal(await readFile(reportPath, 'utf8'), reportBefore);
+});

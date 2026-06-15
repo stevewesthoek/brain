@@ -332,9 +332,18 @@ With `--list-unmatched`, successful JSON adds these fields:
 - `matchedDecisionCount`: compact total of persisted decisions represented by visible or suppressed findings in that report, derived as `decisionCount - unmatchedDecisionCount`.
 - `unmatchedDecisionCount`: compact total of persisted decisions not represented by visible or suppressed findings in that report.
 - `decisionCoverage`: compact coverage summary with `total`, `matched`, `unmatched`, and `matchedPercent` values.
+- `decisionCoverageStatus`: compact classification derived from `decisionCoverage`.
 - `unmatchedDecisions`: complete persisted decision records not represented by visible or suppressed findings in that report.
 
 `decisionCoverage.matchedPercent` is calculated as `(matched / total) * 100` and rounded to at most two decimal places. When there are zero persisted decisions, coverage is defined as `{ total: 0, matched: 0, unmatched: 0, matchedPercent: 100 }`; an empty decision set is fully covered because there are no unmatched decisions.
+
+`decisionCoverageStatus` is derived only from the validated coverage totals:
+
+- `empty` when `decisionCoverage.total === 0`.
+- `complete` when `decisionCoverage.total > 0` and `decisionCoverage.unmatched === 0`.
+- `partial` when `decisionCoverage.unmatched > 0`.
+
+The status is descriptive and read-only. It does not change decision state, imply that unmatched decisions should be removed, or replace review of the underlying decision records.
 
 An empty `unmatchedDecisions` array means every persisted decision is represented in the latest report context. It does not mean every decision is still operationally relevant or requires no review.
 

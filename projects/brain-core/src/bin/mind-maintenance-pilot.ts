@@ -80,6 +80,7 @@ export interface MindMaintenanceDecisionSummaryCliResult {
     unmatched: number;
     matchedPercent: number;
   };
+  decisionCoverageStatus?: 'complete' | 'partial' | 'empty';
   unmatchedDecisions?: MaintenanceFindingDecision[];
 }
 
@@ -452,18 +453,28 @@ async function runValidateDecisions(
     ? 100
     : Number(((matchedDecisionCount / document.decisions.length) * 100).toFixed(2));
 
+  const decisionCoverage = {
+    total: document.decisions.length,
+    matched: matchedDecisionCount,
+    unmatched: unmatchedDecisionCount,
+    matchedPercent,
+  };
+  const decisionCoverageStatus: NonNullable<
+    MindMaintenanceDecisionSummaryCliResult['decisionCoverageStatus']
+  > = decisionCoverage.total === 0
+    ? 'empty'
+    : decisionCoverage.unmatched === 0
+      ? 'complete'
+      : 'partial';
+
   const result = {
     ...summary,
     latestReportPath: path.join(mindRoot, MIND_MAINTENANCE_LATEST_REPORT_PATH),
     latestReportId: report.reportId,
     matchedDecisionCount,
     unmatchedDecisionCount,
-    decisionCoverage: {
-      total: document.decisions.length,
-      matched: matchedDecisionCount,
-      unmatched: unmatchedDecisionCount,
-      matchedPercent,
-    },
+    decisionCoverage,
+    decisionCoverageStatus,
     unmatchedDecisions,
   };
 
