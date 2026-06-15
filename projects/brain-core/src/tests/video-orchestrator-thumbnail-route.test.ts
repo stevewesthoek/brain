@@ -202,3 +202,96 @@ test('thumbnail success responses preserve GET and HEAD semantics', async (t) =>
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
   assert.equal(headResponse.body, '');
 });
+
+
+
+
+test('thumbnail loader failures preserve GET and HEAD error semantics', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-loader-failure-regression-20260615';
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async () => {
+    throw new Error('simulated thumbnail load failure');
+  });
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail`;
+  const getResponse = new MockResponse();
+  await routeRequest(
+    createRequest('GET', url),
+    getResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(getResponse.statusCode, 502);
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  const getPayload = JSON.parse(getResponse.body) as Record<string, unknown>;
+  assert.equal(getPayload.ok, false);
+  assert.equal(getPayload.code, 'thumbnail_fetch_failed');
+  assert.equal(getPayload.error, 'simulated thumbnail load failure');
+
+  const headResponse = new MockResponse();
+  await routeRequest(
+    createRequest('HEAD', url),
+    headResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(headResponse.statusCode, 502);
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.equal(headResponse.body, '');
+});
+
+test('thumbnail empty byte results map to thumbnail_empty', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-empty-regression-20260615';
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.webp`;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async () => null);
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const response = new MockResponse();
+  await routeRequest(
+    createRequest('GET', `/api/video-orchestrator/jobs/${jobId}/thumbnail`),
+    response as unknown as ServerResponse,
+  );
+
+  assert.equal(response.statusCode, 502);
+  assert.equal(response.headers['Cache-Control'], 'no-store');
+  assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
+  const payload = JSON.parse(response.body) as Record<string, unknown>;
+  assert.equal(payload.ok, false);
+  assert.equal(payload.code, 'thumbnail_empty');
+  assert.equal(payload.error, 'Thumbnail loaded from S3 but no image bytes were returned.');
+});
