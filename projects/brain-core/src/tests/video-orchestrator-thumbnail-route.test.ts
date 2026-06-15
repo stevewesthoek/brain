@@ -8,9 +8,14 @@ class MockResponse {
   headers: Record<string, string> = {};
   body = '';
 
+  setHeader(name: string, value: string | number | readonly string[]): void {
+    this.headers[name] = Array.isArray(value) ? value.join(', ') : String(value);
+  }
+
   writeHead(statusCode: number, headers?: Record<string, string>): void {
     this.statusCode = statusCode;
-    this.headers = headers ?? {};
+    this.headers = { ...this.headers, ...(headers ?? {}) };
+    assert.equal(this.headers['Access-Control-Allow-Origin'], '*');
   }
 
   end(chunk?: string): void {
@@ -99,7 +104,7 @@ test('thumbnail OPTIONS advertises GET, HEAD, and OPTIONS only', async () => {
   );
 
   assert.equal(response.statusCode, 204);
-  assert.equal(response.headers['access-control-allow-origin'], '*');
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
   assert.equal(response.headers['access-control-allow-methods'], 'GET, HEAD, OPTIONS');
   assert.equal(response.headers['access-control-allow-headers'], 'content-type');
   assert.equal(response.body, '');

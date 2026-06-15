@@ -302,10 +302,13 @@ export async function routeRequest(
   const method = request.method || 'GET';
   const url = new URL(request.url || '/', 'http://127.0.0.1');
   const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
+  if (thumbnailPathMatch) {
+    response.setHeader('Access-Control-Allow-Origin', '*');
+  }
 
   if (method === 'OPTIONS') {
     response.writeHead(204, {
-      'access-control-allow-origin': '*',
+      'Access-Control-Allow-Origin': '*',
       'access-control-allow-methods': thumbnailPathMatch ? 'GET, HEAD, OPTIONS' : 'GET, POST, OPTIONS',
       'access-control-allow-headers': 'content-type',
       'access-control-max-age': '86400',
