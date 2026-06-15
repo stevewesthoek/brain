@@ -278,3 +278,98 @@ test('prints dependency failures as structured JSON and exits one', async () => 
   assert.equal(output.status, 'failed');
   assert.equal(output.error, 'not a git repository');
 });
+
+
+
+
+test('prints decision-load-failed as structured JSON on stderr', async () => {
+  const captured = createIo();
+  const result = await runMindMaintenancePilotCli(
+    ['run', '--enable-report-only', '--mind-root', 'mind'],
+    captured.io,
+    createDependencies({
+      runPilot: async (input) => ({
+        ok: false,
+        status: 'decision-load-failed',
+        mode: 'report-only',
+        sourceCommit: input.sourceCommit,
+        error: 'Mind maintenance decision file contains invalid JSON.',
+        nextAction: 'Repair or remove the invalid maintenance decision file before rerunning.',
+      }),
+    }),
+  );
+
+  assert.equal(result.exitCode, 1);
+  assert.equal(captured.stdout.length, 0);
+  const output = JSON.parse(captured.stderr.join('')) as {
+    ok: boolean;
+    status: string;
+    mode: string;
+    sourceCommit: string;
+    error: string;
+    nextAction: string;
+  };
+  assert.deepEqual(output, {
+    ok: false,
+    status: 'decision-load-failed',
+    mode: 'report-only',
+    sourceCommit: 'resolved-commit',
+    error: 'Mind maintenance decision file contains invalid JSON.',
+    nextAction: 'Repair or remove the invalid maintenance decision file before rerunning.',
+  });
+});
+
+test('prints decision-file integrity failure as structured JSON on stderr', async () => {
+  const captured = createIo();
+  const result = await runMindMaintenancePilotCli(
+    ['run', '--enable-report-only', '--mind-root', 'mind'],
+    captured.io,
+    createDependencies({
+      runPilot: async (input) => ({
+        ok: false,
+        status: 'integrity-failed',
+        mode: 'report-only',
+        reportId: 'mind-maintenance-20260615T050000Z',
+        sourceCommit: input.sourceCommit,
+        integrity: {
+          ok: false,
+          changedSourcePaths: ['system/reports/maintenance-decisions.json'],
+          allowedOutputPaths: [
+            'system/reports/maintenance-latest.json',
+            'system/reports/maintenance-latest.md',
+          ],
+          unexpectedChangedPaths: [],
+        },
+        error: 'Mind maintenance decision file changed during a report-only run.',
+        nextAction: 'Inspect system/reports/maintenance-decisions.json and discard the generated reports until the unexpected mutation is understood.',
+      }),
+    }),
+  );
+
+  assert.equal(result.exitCode, 1);
+  assert.equal(captured.stdout.length, 0);
+  const output = JSON.parse(captured.stderr.join('')) as {
+    ok: boolean;
+    status: string;
+    error: string;
+    nextAction: string;
+    integrity: {
+      changedSourcePaths: string[];
+      unexpectedChangedPaths: string[];
+    };
+  };
+  assert.equal(output.ok, false);
+  assert.equal(output.status, 'integrity-failed');
+  assert.equal(
+    output.error,
+    'Mind maintenance decision file changed during a report-only run.',
+  );
+  assert.equal(
+    output.nextAction,
+    'Inspect system/reports/maintenance-decisions.json and discard the generated reports until the unexpected mutation is understood.',
+  );
+  assert.deepEqual(output.integrity.changedSourcePaths, [
+    'system/reports/maintenance-decisions.json',
+  ]);
+  assert.deepEqual(output.integrity.unexpectedChangedPaths, []);
+});

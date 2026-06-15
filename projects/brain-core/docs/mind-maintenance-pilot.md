@@ -218,3 +218,40 @@ node dist/bin/mind-maintenance-pilot.js record-decision \
 ```
 
 Recording a decision creates or replaces the entry with the same `deduplicationKey`. The command rejects older review timestamps, conflicting finding IDs, invalid decision-specific options, and invalid existing decision files. Review Git status and commit the decision file separately after each approved write.
+
+
+
+
+## Recover from decision-file failures
+
+### `decision-load-failed`
+
+This status means the pilot could not parse or validate `system/reports/maintenance-decisions.json`. The run stops before writing either latest report.
+
+Operator steps:
+
+1. Stop and do not retry the report run unchanged.
+2. Inspect `system/reports/maintenance-decisions.json` for malformed JSON, schema violations, duplicate finding IDs, duplicate deduplication keys, invalid timestamps, or decision-specific field errors.
+3. Compare the file with the last reviewed Git version before making any correction.
+4. Repair the decision file explicitly, or remove it only when the intended state is an empty decision document and that removal is approved.
+5. Review `git diff -- system/reports/maintenance-decisions.json`.
+6. Rerun the report-only command.
+7. Treat the rerun as valid only when it returns `ok: true`.
+
+Do not copy or reconstruct decisions from generated reports without reviewing the original decision history.
+
+### Decision-file `integrity-failed`
+
+This status means `system/reports/maintenance-decisions.json` changed between the runner's before-and-after integrity snapshots. The generated reports must not be trusted, even when their files were written successfully.
+
+Operator steps:
+
+1. Stop and discard the generated `maintenance-latest.json` and `maintenance-latest.md` outputs from that run after confirming they are the only outputs being removed.
+2. Inspect `git status` and `git diff -- system/reports/maintenance-decisions.json` to identify the unexpected creation, deletion, or content mutation.
+3. Determine which process or operator changed the decision file during the report run.
+4. Restore or approve the intended decision-file state through a separate explicit decision operation.
+5. Confirm no unrelated Mind changes are reverted or cleaned.
+6. Rerun the report-only command from a stable working tree.
+7. Accept the reports only when the rerun returns `ok: true`, `sourceFilesChanged: 0`, and no integrity failures.
+
+A report-only run never authorizes decision-file writes. Decision changes belong to the explicit `record-decision` workflow and should be reviewed and committed separately.
