@@ -510,3 +510,207 @@ freshness_risk: high
   assert.equal(await readFile(decisionPath, 'utf8'), decisionBefore);
   assert.equal(await readFile(reportPath, 'utf8'), reportBefore);
 });
+
+
+
+
+test('reports partial, full, and zero-decision coverage consistently', async () => {
+  const createDecision = (findingId: string, deduplicationKey: string, index: number) => ({
+    findingId,
+    deduplicationKey,
+    sourceReportId: 'report-coverage',
+    sourceCommit: 'abc1234',
+    reviewedBy: 'Steve Westhoek',
+    reviewedAt: `2026-06-15T10:${String(index).padStart(2, '0')}:00.000Z`,
+    decision: 'accepted' as const,
+    reason: 'Coverage fixture.',
+    nextAction: 'Review the finding.',
+    resolutionRef: null,
+    suppressionUntil: null,
+  });
+  const scenarios = [
+    {
+      name: 'partial',
+      decisions: [
+        createDecision('partial-a', 'partial:a', 0),
+        createDecision('partial-b', 'partial:b', 1),
+        createDecision('partial-c', 'partial:c', 2),
+      ],
+      visible: ['partial:a'],
+      suppressed: ['partial:b'],
+      expected: { total: 3, matched: 2, unmatched: 1, matchedPercent: 66.67 },
+    },
+    {
+      name: 'full',
+      decisions: [
+        createDecision('full-a', 'full:a', 3),
+        createDecision('full-b', 'full:b', 4),
+      ],
+      visible: ['full:a'],
+      suppressed: ['full:b'],
+      expected: { total: 2, matched: 2, unmatched: 0, matchedPercent: 100 },
+    },
+    {
+      name: 'zero',
+      decisions: [],
+      visible: [],
+      suppressed: [],
+      expected: { total: 0, matched: 0, unmatched: 0, matchedPercent: 100 },
+    },
+  ] as const;
+
+  for (const scenario of scenarios) {
+    const captured = createIo();
+    const result = await runMindMaintenancePilotCli(
+      ['validate-decisions', '--mind-root', `/mind/${scenario.name}`, '--list-unmatched'],
+      captured.io,
+      createDependencies({
+        loadDecisionDocument: async () => ({
+          schemaVersion: '1.0',
+          sourceRepo: 'mind',
+          updatedAt: '2026-06-15T10:30:00.000Z',
+          decisions: [...scenario.decisions],
+        }),
+        loadLatestReport: async () => ({
+          reportId: `mind-maintenance-${scenario.name}`,
+          findings: scenario.visible.map((deduplicationKey) => ({ deduplicationKey })),
+          suppressedFindings: scenario.suppressed.map((deduplicationKey) => ({ deduplicationKey })),
+        } as never),
+      }),
+    );
+
+    assert.equal(result.exitCode, 0, scenario.name);
+    assert.equal(captured.stderr.length, 0, scenario.name);
+    const output = JSON.parse(captured.stdout.join('')) as {
+      matchedDecisionCount: number;
+      unmatchedDecisionCount: number;
+      decisionCoverage: {
+        total: number;
+        matched: number;
+        unmatched: number;
+        matchedPercent: number;
+      };
+    };
+    assert.deepEqual(output.decisionCoverage, scenario.expected, scenario.name);
+    assert.equal(output.matchedDecisionCount, scenario.expected.matched, scenario.name);
+    assert.equal(output.unmatchedDecisionCount, scenario.expected.unmatched, scenario.name);
+  }
+});
+
+test('compiled CLI reports decision coverage without changing either input file', async (context) => {
+  const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-decision-coverage-'));
+  context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+  const pilotFiles = [
+    'router/00-current-context.md',
+    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'live/dashboard.md',
+    'system/automation-roadmap.md',
+  ] as const;
+  const contents: Record<(typeof pilotFiles)[number], string> = {
+    'router/00-current-context.md': `---
+status: review-needed
+last_reviewed: 2026-05-22
+review_after: 2026-06-05
+freshness_risk: high
+---
+# Current Context
+`,
+    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
+  };
+  for (const relativePath of pilotFiles) {
+    const absolutePath = path.join(mindRoot, relativePath);
+    await mkdir(path.dirname(absolutePath), { recursive: true });
+    await writeFile(absolutePath, contents[relativePath], 'utf8');
+  }
+  await writeFile(path.join(mindRoot, 'kanban.md'), '# Kanban\n', 'utf8');
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  await promisify(execFile)('git', ['-C', mindRoot, 'init', '--quiet']);
+
+  const reportRun = await runCompiledCli([
+    'run',
+    '--enable-report-only',
+    '--mind-root',
+    mindRoot,
+    '--source-commit',
+    'abc1234',
+    '--generated-at',
+    '2026-06-15T10:00:00Z',
+  ]);
+  assert.equal(reportRun.exitCode, 0, reportRun.stderr);
+
+  const reportPath = path.join(mindRoot, 'system/reports/maintenance-latest.json');
+  const reportBefore = await readFile(reportPath, 'utf8');
+  const report = JSON.parse(reportBefore) as {
+    reportId: string;
+    findings: Array<{ deduplicationKey: string }>;
+  };
+  const matchedKey = report.findings[0]?.deduplicationKey;
+  assert.ok(matchedKey);
+
+  const decisionPath = path.join(mindRoot, 'system/reports/maintenance-decisions.json');
+  const decisionBefore = `${JSON.stringify({
+    schemaVersion: '1.0',
+    sourceRepo: 'mind',
+    updatedAt: '2026-06-15T10:30:00.000Z',
+    decisions: [
+      {
+        findingId: 'coverage-matched',
+        deduplicationKey: matchedKey,
+        sourceReportId: report.reportId,
+        sourceCommit: 'abc1234',
+        reviewedBy: 'Steve Westhoek',
+        reviewedAt: '2026-06-15T10:10:00.000Z',
+        decision: 'accepted',
+        reason: 'Current finding.',
+        nextAction: 'Review it.',
+        resolutionRef: null,
+        suppressionUntil: null,
+      },
+      {
+        findingId: 'coverage-unmatched',
+        deduplicationKey: 'historical:coverage',
+        sourceReportId: 'older-report',
+        sourceCommit: 'def5678',
+        reviewedBy: 'Steve Westhoek',
+        reviewedAt: '2026-06-15T10:20:00.000Z',
+        decision: 'accepted',
+        reason: 'Historical finding.',
+        nextAction: 'Review whether it remains relevant.',
+        resolutionRef: null,
+        suppressionUntil: null,
+      },
+    ],
+  }, null, 2)}\n`;
+  await writeFile(decisionPath, decisionBefore, 'utf8');
+
+  const result = await runCompiledCli([
+    'validate-decisions',
+    '--mind-root',
+    mindRoot,
+    '--list-unmatched',
+  ]);
+
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.equal(result.stderr, '');
+  const output = JSON.parse(result.stdout) as {
+    decisionCoverage: {
+      total: number;
+      matched: number;
+      unmatched: number;
+      matchedPercent: number;
+    };
+  };
+  assert.deepEqual(output.decisionCoverage, {
+    total: 2,
+    matched: 1,
+    unmatched: 1,
+    matchedPercent: 50,
+  });
+  assert.equal(await readFile(decisionPath, 'utf8'), decisionBefore);
+  assert.equal(await readFile(reportPath, 'utf8'), reportBefore);
+});

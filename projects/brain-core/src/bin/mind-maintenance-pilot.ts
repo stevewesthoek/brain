@@ -72,7 +72,14 @@ export interface MindMaintenanceDecisionSummaryCliResult {
   };
   latestReportPath?: string;
   latestReportId?: string;
+  matchedDecisionCount?: number;
   unmatchedDecisionCount?: number;
+  decisionCoverage?: {
+    total: number;
+    matched: number;
+    unmatched: number;
+    matchedPercent: number;
+  };
   unmatchedDecisions?: MaintenanceFindingDecision[];
 }
 
@@ -439,12 +446,24 @@ async function runValidateDecisions(
     (decision) => !matchedKeys.has(decision.deduplicationKey),
   );
 
+  const unmatchedDecisionCount = unmatchedDecisions.length;
+  const matchedDecisionCount = document.decisions.length - unmatchedDecisionCount;
+  const matchedPercent = document.decisions.length === 0
+    ? 100
+    : Number(((matchedDecisionCount / document.decisions.length) * 100).toFixed(2));
+
   const result = {
     ...summary,
     latestReportPath: path.join(mindRoot, MIND_MAINTENANCE_LATEST_REPORT_PATH),
     latestReportId: report.reportId,
-    matchedDecisionCount: document.decisions.length - unmatchedDecisions.length,
-    unmatchedDecisionCount: unmatchedDecisions.length,
+    matchedDecisionCount,
+    unmatchedDecisionCount,
+    decisionCoverage: {
+      total: document.decisions.length,
+      matched: matchedDecisionCount,
+      unmatched: unmatchedDecisionCount,
+      matchedPercent,
+    },
     unmatchedDecisions,
   };
 
