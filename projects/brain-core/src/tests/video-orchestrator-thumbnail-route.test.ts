@@ -694,3 +694,63 @@ test('thumbnail whitespace-only key queries fall back to the canonical key', asy
   assert.equal(loadedKey, canonicalKey);
   assert.equal(headResponse.body, '');
 });
+
+
+
+
+test('thumbnail keys with surrounding whitespace fall back to the canonical key', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-surrounding-whitespace-regression-20260615';
+  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.jpg`;
+  const requestedKey = `jobs/${jobId}/exports/thumbnail-requested.png`;
+  const thumbnailBytes = Buffer.from([4, 3, 2, 1]);
+  let loadedKey: string | null = null;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: canonicalKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: canonicalKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
+    loadedKey = thumbnailKey;
+    return thumbnailBytes;
+  });
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const getResponse = new MockResponse();
+  await routeRequest(
+    createRequest('GET', `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(` ${requestedKey}`)}`),
+    getResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(getResponse.statusCode, 200);
+  assert.equal(getResponse.headers['Content-Type'], 'image/jpeg');
+  assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(loadedKey, canonicalKey);
+  assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
+
+  loadedKey = null;
+  const headResponse = new MockResponse();
+  await routeRequest(
+    createRequest('HEAD', `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(`${requestedKey} `)}`),
+    headResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(headResponse.statusCode, 200);
+  assert.equal(headResponse.headers['Content-Type'], 'image/jpeg');
+  assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(loadedKey, canonicalKey);
+  assert.equal(headResponse.body, '');
+});
