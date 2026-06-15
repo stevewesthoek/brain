@@ -293,3 +293,69 @@ test('returns a structured failure for an invalid decision file without writing 
     { code: 'ENOENT' },
   );
 });
+
+
+
+
+test('returns integrity-failed when the decision file mutates during a report-only run', async (context) => {
+  const mindRoot = await createMindFixture();
+  context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+  const { writeFileSync } = await import('node:fs');
+  const decisionPath = path.join(mindRoot, 'system/reports/maintenance-decisions.json');
+  await mkdir(path.dirname(decisionPath), { recursive: true });
+  await writeFile(
+    decisionPath,
+    `${JSON.stringify({
+      schemaVersion: '1.0',
+      sourceRepo: 'mind',
+      updatedAt: '2026-06-13T11:30:00.000Z',
+      decisions: [],
+    }, null, 2)}\n`,
+    'utf8',
+  );
+
+  const input: Parameters<typeof runMindMaintenancePilot>[0] = {
+    enabled: true,
+    mindRoot,
+    sourceCommit: 'abc1234',
+    generatedAt: '2026-06-13T12:00:00Z',
+    listChangedPaths: changedPathSequence(
+      [],
+      [
+        'system/reports/maintenance-latest.json',
+        'system/reports/maintenance-latest.md',
+      ],
+    ),
+  };
+  let mutated = false;
+  Object.defineProperty(input, 'sourceGapCandidates', {
+    enumerable: true,
+    get: () => {
+      if (!mutated) {
+        mutated = true;
+        writeFileSync(
+          decisionPath,
+          `${JSON.stringify({
+            schemaVersion: '1.0',
+            sourceRepo: 'mind',
+            updatedAt: '2026-06-13T11:45:00.000Z',
+            decisions: [],
+          }, null, 2)}\n`,
+        );
+      }
+      return undefined;
+    },
+  });
+
+  const result = await runMindMaintenancePilot(input);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 'integrity-failed');
+  if (result.ok || result.status !== 'integrity-failed') return;
+  assert.equal(result.integrity?.ok, false);
+  assert.deepEqual(result.integrity?.changedSourcePaths, [
+    'system/reports/maintenance-decisions.json',
+  ]);
+  assert.deepEqual(result.integrity?.unexpectedChangedPaths, []);
+  assert.match(result.nextAction, /Inspect integrity failures/i);
+});
