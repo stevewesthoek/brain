@@ -81,6 +81,7 @@ export interface MindMaintenanceDecisionSummaryCliResult {
     matchedPercent: number;
   };
   decisionCoverageStatus?: 'complete' | 'partial' | 'empty';
+  decisionCoverageSummary?: string;
   unmatchedDecisions?: MaintenanceFindingDecision[];
 }
 
@@ -466,6 +467,11 @@ async function runValidateDecisions(
     : decisionCoverage.unmatched === 0
       ? 'complete'
       : 'partial';
+  const decisionCoverageSummary = decisionCoverageStatus === 'empty'
+    ? 'No persisted decisions to match.'
+    : decisionCoverageStatus === 'complete'
+      ? `All ${decisionCoverage.total} persisted decisions match the latest report.`
+      : `${decisionCoverage.matched} of ${decisionCoverage.total} persisted decisions match the latest report; ${decisionCoverage.unmatched} unmatched.`;
 
   const result = {
     ...summary,
@@ -475,6 +481,7 @@ async function runValidateDecisions(
     unmatchedDecisionCount,
     decisionCoverage,
     decisionCoverageStatus,
+    decisionCoverageSummary,
     unmatchedDecisions,
   };
 

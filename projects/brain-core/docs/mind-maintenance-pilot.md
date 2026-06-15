@@ -345,6 +345,14 @@ With `--list-unmatched`, successful JSON adds these fields:
 
 The status is descriptive and read-only. It does not change decision state, imply that unmatched decisions should be removed, or replace review of the underlying decision records.
 
+`decisionCoverageSummary` is derived from `decisionCoverage` and `decisionCoverageStatus` using this exact wording contract:
+
+- `empty`: `No persisted decisions to match.`
+- `complete`: `All {total} persisted decisions match the latest report.`
+- `partial`: `{matched} of {total} persisted decisions match the latest report; {unmatched} unmatched.`
+
+The placeholders are replaced with the validated integer totals from `decisionCoverage`. The summary is deterministic, descriptive, and read-only.
+
 An empty `unmatchedDecisions` array means every persisted decision is represented in the latest report context. It does not mean every decision is still operationally relevant or requires no review.
 
 If the latest report is missing, malformed, or fails schema validation, the command exits with code `1`, writes `status: decision-summary-failed` to stderr, and performs no writes. Inspect or regenerate `system/reports/maintenance-latest.json`, confirm the report is valid and stable, then rerun the command. Do not edit the latest report merely to force a decision match; regenerate it through the report-only workflow when appropriate.
