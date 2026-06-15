@@ -1350,6 +1350,31 @@ export function setVideoJobThumbnailPublishableAssetsResolverForTesting(
   resolveThumbnailPublishableAssets = resolver ?? resolvePublishableAssets;
 }
 
+type ThumbnailBytesLoader = (localThumbnailPath: string, thumbnailKey: string) => Promise<Buffer | null>;
+
+async function loadVideoJobThumbnailBytes(localThumbnailPath: string, thumbnailKey: string): Promise<Buffer | null> {
+  try {
+    return await readFile(localThumbnailPath);
+  } catch {
+    // Local file does not exist; fall through to S3 proxy fetch.
+  }
+
+  const { stdout } = await execFileAsync('aws', [
+    's3', 'cp',
+    `s3://${S3_BUCKET}/${thumbnailKey}`,
+    '-',
+    '--region', AWS_REGION,
+    '--no-cli-pager',
+  ], { timeout: S3_PUBLISH_ASSET_TIMEOUT_MS, encoding: 'buffer' as any });
+  return Buffer.isBuffer(stdout) && stdout.length > 0 ? stdout : null;
+}
+
+let loadThumbnailBytes: ThumbnailBytesLoader = loadVideoJobThumbnailBytes;
+
+export function setVideoJobThumbnailBytesLoaderForTesting(loader: ThumbnailBytesLoader | null): void {
+  loadThumbnailBytes = loader ?? loadVideoJobThumbnailBytes;
+}
+
 export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?: string | null): Promise<{ success: false; code: string; error: string; details?: unknown } | { success: true; data: Buffer; mimeType: string }> {
   if (!isValidJobId(jobId)) {
     return { success: false, code: 'invalid_job_id', error: 'Invalid jobId' };
@@ -1379,22 +1404,9 @@ export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?
       : 'image/jpeg';
   const localThumbnailPath = join(getVideoOrchestratorRoot(), thumbnailKey);
   try {
-    const data = await readFile(localThumbnailPath);
-    return { success: true, data, mimeType: thumbnailMimeType };
-  } catch {
-    // Local file does not exist; fall through to S3 proxy fetch.
-  }
-
-  try {
-    const { stdout } = await execFileAsync('aws', [
-      's3', 'cp',
-      `s3://${S3_BUCKET}/${thumbnailKey}`,
-      '-',
-      '--region', AWS_REGION,
-      '--no-cli-pager',
-    ], { timeout: S3_PUBLISH_ASSET_TIMEOUT_MS, encoding: 'buffer' as any });
-    if (Buffer.isBuffer(stdout) && stdout.length > 0) {
-      return { success: true, data: stdout, mimeType: thumbnailMimeType };
+    const data = await loadThumbnailBytes(localThumbnailPath, thumbnailKey);
+    if (data) {
+      return { success: true, data, mimeType: thumbnailMimeType };
     }
   } catch (error) {
     return {

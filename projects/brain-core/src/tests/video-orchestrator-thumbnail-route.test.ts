@@ -149,3 +149,56 @@ test('thumbnail not-ready responses preserve GET and HEAD semantics', async (t) 
   assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(headResponse.body, '');
 });
+
+
+
+
+test('thumbnail success responses preserve GET and HEAD semantics', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-success-regression-20260615';
+  const thumbnailKey = `jobs/${jobId}/exports/thumbnail-001.png`;
+  const thumbnailBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async () => thumbnailBytes);
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail`;
+  const getResponse = new MockResponse();
+  await routeRequest(
+    createRequest('GET', url),
+    getResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(getResponse.statusCode, 200);
+  assert.equal(getResponse.headers['Content-Type'], 'image/png');
+  assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
+
+  const headResponse = new MockResponse();
+  await routeRequest(
+    createRequest('HEAD', url),
+    headResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(headResponse.statusCode, 200);
+  assert.equal(headResponse.headers['Content-Type'], 'image/png');
+  assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(headResponse.body, '');
+});
