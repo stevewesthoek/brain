@@ -412,3 +412,37 @@ test('thumbnail MIME selection follows canonical and accepted requested key exte
     assert.equal(response.headers['Content-Type'], testCase.expected);
   }
 });
+
+
+
+
+test('thumbnail malformed encoded job IDs return invalid_job_id for GET and HEAD', async () => {
+  const url = '/api/video-orchestrator/jobs/%E0%A4%A/thumbnail';
+
+  const getResponse = new MockResponse();
+  await routeRequest(
+    createRequest('GET', url),
+    getResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(getResponse.statusCode, 400);
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.deepEqual(JSON.parse(getResponse.body), {
+    ok: false,
+    code: 'invalid_job_id',
+    error: 'Invalid jobId',
+    details: null,
+  });
+
+  const headResponse = new MockResponse();
+  await routeRequest(
+    createRequest('HEAD', url),
+    headResponse as unknown as ServerResponse,
+  );
+
+  assert.equal(headResponse.statusCode, 400);
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.equal(headResponse.body, '');
+});

@@ -2469,7 +2469,19 @@ export async function routeRequest(
           return;
         }
         try {
-          const jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
+          let jobId: string;
+          try {
+            jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
+          } catch {
+            response.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+            response.end(request.method === 'HEAD' ? undefined : JSON.stringify({
+              ok: false,
+              code: 'invalid_job_id',
+              error: 'Invalid jobId',
+              details: null,
+            }));
+            return;
+          }
           const requestedThumbnailKey = url.searchParams.get('key');
           const result = await getVideoJobThumbnail(jobId, requestedThumbnailKey);
           if (!result.success) {
