@@ -2516,11 +2516,13 @@ export async function routeRequest(
             });
             response.end(request.method === 'HEAD' ? undefined : result.data as unknown as string);
           }
-        } catch (error) {
+        } catch {
           response.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
           response.end(request.method === 'HEAD' ? undefined : JSON.stringify({
             ok: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch job thumbnail',
+            code: 'thumbnail_request_failed',
+            error: 'Failed to fetch job thumbnail.',
+            details: null,
           }));
         }
         return;

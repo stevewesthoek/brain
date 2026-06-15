@@ -783,3 +783,43 @@ test('unsafe requested thumbnail keys fall back to the canonical key', async (t)
 
 
 
+
+
+
+
+test('thumbnail resolver failures return stable GET and HEAD responses without leaking details', async (t) => {
+  const { setVideoJobThumbnailPublishableAssetsResolverForTesting } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-resolver-failure-regression-20260615';
+  const internalMessage = 'sensitive resolver failure details';
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => {
+    throw new Error(internalMessage);
+  });
+  t.after(() => {
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail`;
+
+  const getResponse = new MockResponse();
+  await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
+
+  assert.equal(getResponse.statusCode, 500);
+  assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.deepEqual(JSON.parse(getResponse.body), {
+    ok: false,
+    code: 'thumbnail_request_failed',
+    error: 'Failed to fetch job thumbnail.',
+    details: null,
+  });
+  assert.equal(getResponse.body.includes(internalMessage), false);
+
+  const headResponse = new MockResponse();
+  await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
+
+  assert.equal(headResponse.statusCode, 500);
+  assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(headResponse.body, '');
+});
