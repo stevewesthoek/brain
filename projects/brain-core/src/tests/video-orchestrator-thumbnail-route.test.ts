@@ -507,3 +507,60 @@ test('thumbnail malformed requested keys fall back to canonical GET and HEAD suc
   assert.equal(loadedKey, canonicalKey);
   assert.equal(headResponse.body, '');
 });
+
+
+
+
+test('thumbnail duplicate key queries use only the first value', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+  const jobId = 'thumbnail-duplicate-key-regression-20260615';
+  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.jpg`;
+  const safeFirstKey = `jobs/${jobId}/exports/thumbnail-first.png`;
+  const safeLaterKey = `jobs/${jobId}/exports/thumbnail-later.webp`;
+  const thumbnailBytes = Buffer.from([1, 2, 3]);
+  let loadedKey: string | null = null;
+
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: canonicalKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: canonicalKey,
+      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
+    loadedKey = thumbnailKey;
+    return thumbnailBytes;
+  });
+  t.after(() => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  });
+
+  const safeFirstUrl = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(safeFirstKey)}&key=${encodeURIComponent(safeLaterKey)}`;
+  const getResponse = new MockResponse();
+  await routeRequest(createRequest('GET', safeFirstUrl), getResponse as unknown as ServerResponse);
+
+  assert.equal(getResponse.statusCode, 200);
+  assert.equal(getResponse.headers['Content-Type'], 'image/png');
+  assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
+  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(loadedKey, safeFirstKey);
+  assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
+
+  loadedKey = null;
+  const unsafeFirstUrl = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent('jobs/another-job/thumbnail.jpg')}&key=${encodeURIComponent(safeLaterKey)}`;
+  const headResponse = new MockResponse();
+  await routeRequest(createRequest('HEAD', unsafeFirstUrl), headResponse as unknown as ServerResponse);
+
+  assert.equal(headResponse.statusCode, 200);
+  assert.equal(headResponse.headers['Content-Type'], 'image/jpeg');
+  assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
+  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
+  assert.equal(loadedKey, canonicalKey);
+  assert.equal(headResponse.body, '');
+});

@@ -303,9 +303,12 @@ export async function routeRequest(
   const url = new URL(request.url || '/', 'http://127.0.0.1');
   const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
   if (thumbnailPathMatch) {
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'content-type');
+    const headerResponse = response as ServerResponse & {
+      setHeader(name: string, value: string): void;
+    };
+    headerResponse.setHeader('Access-Control-Allow-Origin', '*');
+    headerResponse.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    headerResponse.setHeader('Access-Control-Allow-Headers', 'content-type');
   }
 
   if (method === 'OPTIONS') {
