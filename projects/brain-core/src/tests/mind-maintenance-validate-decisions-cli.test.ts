@@ -315,6 +315,7 @@ test('lists only persisted decisions unmatched by visible or suppressed latest-r
   const output = JSON.parse(captured.stdout.join('')) as {
     latestReportPath: string;
     latestReportId: string;
+    unmatchedDecisionCount: number;
     unmatchedDecisions: Array<{ findingId: string; deduplicationKey: string }>;
   };
   assert.equal(
@@ -322,6 +323,7 @@ test('lists only persisted decisions unmatched by visible or suppressed latest-r
     path.join(path.resolve('/mind'), 'system/reports/maintenance-latest.json'),
   );
   assert.equal(output.latestReportId, 'mind-maintenance-20260615T090000Z');
+  assert.equal(output.unmatchedDecisionCount, 2);
   assert.deepEqual(
     output.unmatchedDecisions.map(({ findingId, deduplicationKey }) => ({
       findingId,
@@ -480,9 +482,11 @@ freshness_risk: high
   assert.equal(result.stderr, '');
   const output = JSON.parse(result.stdout) as {
     latestReportId: string;
+    unmatchedDecisionCount: number;
     unmatchedDecisions: Array<{ findingId: string; deduplicationKey: string }>;
   };
   assert.equal(output.latestReportId, report.reportId);
+  assert.equal(output.unmatchedDecisionCount, 2);
   assert.deepEqual(
     output.unmatchedDecisions.map(({ findingId, deduplicationKey }) => ({
       findingId,

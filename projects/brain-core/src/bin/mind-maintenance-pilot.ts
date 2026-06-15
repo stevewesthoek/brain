@@ -72,6 +72,7 @@ export interface MindMaintenanceDecisionSummaryCliResult {
   };
   latestReportPath?: string;
   latestReportId?: string;
+  unmatchedDecisionCount?: number;
   unmatchedDecisions?: MaintenanceFindingDecision[];
 }
 
@@ -434,13 +435,16 @@ async function runValidateDecisions(
       .map((finding) => finding.deduplicationKey),
   );
 
+  const unmatchedDecisions = document.decisions.filter(
+    (decision) => !matchedKeys.has(decision.deduplicationKey),
+  );
+
   return {
     ...summary,
     latestReportPath: path.join(mindRoot, MIND_MAINTENANCE_LATEST_REPORT_PATH),
     latestReportId: report.reportId,
-    unmatchedDecisions: document.decisions.filter(
-      (decision) => !matchedKeys.has(decision.deduplicationKey),
-    ),
+    unmatchedDecisionCount: unmatchedDecisions.length,
+    unmatchedDecisions,
   };
 }
 
