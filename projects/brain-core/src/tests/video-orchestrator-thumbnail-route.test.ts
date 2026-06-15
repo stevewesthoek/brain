@@ -698,12 +698,12 @@ test('thumbnail whitespace-only key queries fall back to the canonical key', asy
 
 
 
-test('thumbnail keys with surrounding whitespace fall back to the canonical key', async (t) => {
+test('unsafe requested thumbnail keys fall back to the canonical key', async (t) => {
   const {
     setVideoJobThumbnailBytesLoaderForTesting,
     setVideoJobThumbnailPublishableAssetsResolverForTesting,
   } = await import('../providers/video-orchestrator-provider.js');
-  const jobId = 'thumbnail-surrounding-whitespace-regression-20260615';
+  const jobId = 'thumbnail-unsafe-key-regression-20260615';
   const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.jpg`;
   const requestedKey = `jobs/${jobId}/exports/thumbnail-requested.png`;
   const thumbnailBytes = Buffer.from([4, 3, 2, 1]);
@@ -727,129 +727,12 @@ test('thumbnail keys with surrounding whitespace fall back to the canonical key'
     setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
   });
 
-  const getResponse = new MockResponse();
-  await routeRequest(
-    createRequest('GET', `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(` ${requestedKey}`)}`),
-    getResponse as unknown as ServerResponse,
-  );
-
-  assert.equal(getResponse.statusCode, 200);
-  assert.equal(getResponse.headers['Content-Type'], 'image/jpeg');
-  assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
-  assert.equal(getResponse.headers['Cache-Control'], 'no-store');
-  assert.equal(loadedKey, canonicalKey);
-  assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
-
-  loadedKey = null;
-  const headResponse = new MockResponse();
-  await routeRequest(
-    createRequest('HEAD', `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${encodeURIComponent(`${requestedKey} `)}`),
-    headResponse as unknown as ServerResponse,
-  );
-
-  assert.equal(headResponse.statusCode, 200);
-  assert.equal(headResponse.headers['Content-Type'], 'image/jpeg');
-  assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
-  assert.equal(headResponse.headers['Cache-Control'], 'no-store');
-  assert.equal(loadedKey, canonicalKey);
-  assert.equal(headResponse.body, '');
-});
-
-
-
-
-test('thumbnail keys with backslashes or null characters fall back to the canonical key', async (t) => {
-  const {
-    setVideoJobThumbnailBytesLoaderForTesting,
-    setVideoJobThumbnailPublishableAssetsResolverForTesting,
-  } = await import('../providers/video-orchestrator-provider.js');
-  const jobId = 'thumbnail-special-character-regression-20260615';
-  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.webp`;
-  const thumbnailBytes = Buffer.from([7, 6, 5, 4]);
-  let loadedKey: string | null = null;
-
-  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
-    thumbnailKey: canonicalKey,
-    missing: [],
-    expectedKeys: {
-      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
-      thumbnailKey: canonicalKey,
-      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
-    },
-  }));
-  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
-    loadedKey = thumbnailKey;
-    return thumbnailBytes;
-  });
-  t.after(() => {
-    setVideoJobThumbnailBytesLoaderForTesting(null);
-    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
-  });
-
-  const queryValues = [
+  const unsafeQueryValues = [
+    encodeURIComponent(` ${requestedKey}`),
+    encodeURIComponent(`${requestedKey} `),
     `jobs/${jobId}/exports\\thumbnail-requested.jpg`,
     `jobs/${jobId}/exports%5Cthumbnail-requested.png`,
     `jobs/${jobId}/exports/thumbnail%00requested.webp`,
-  ];
-
-  for (const queryValue of queryValues) {
-    loadedKey = null;
-    const getResponse = new MockResponse();
-    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${queryValue}`;
-    await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
-
-    assert.equal(getResponse.statusCode, 200);
-    assert.equal(getResponse.headers['Content-Type'], 'image/webp');
-    assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
-    assert.equal(getResponse.headers['Cache-Control'], 'no-store');
-    assert.equal(loadedKey, canonicalKey);
-    assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
-
-    loadedKey = null;
-    const headResponse = new MockResponse();
-    await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
-
-    assert.equal(headResponse.statusCode, 200);
-    assert.equal(headResponse.headers['Content-Type'], 'image/webp');
-    assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
-    assert.equal(headResponse.headers['Cache-Control'], 'no-store');
-    assert.equal(loadedKey, canonicalKey);
-    assert.equal(headResponse.body, '');
-  }
-});
-
-
-
-
-test('thumbnail keys with URL delimiters or encoded separators fall back to canonical', async (t) => {
-  const {
-    setVideoJobThumbnailBytesLoaderForTesting,
-    setVideoJobThumbnailPublishableAssetsResolverForTesting,
-  } = await import('../providers/video-orchestrator-provider.js');
-  const jobId = 'thumbnail-url-syntax-regression-20260615';
-  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.png`;
-  const thumbnailBytes = Buffer.from([5, 4, 3, 2]);
-  let loadedKey: string | null = null;
-
-  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
-    thumbnailKey: canonicalKey,
-    missing: [],
-    expectedKeys: {
-      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
-      thumbnailKey: canonicalKey,
-      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
-    },
-  }));
-  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
-    loadedKey = thumbnailKey;
-    return thumbnailBytes;
-  });
-  t.after(() => {
-    setVideoJobThumbnailBytesLoaderForTesting(null);
-    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
-  });
-
-  const queryValues = [
     `jobs/${jobId}/exports/thumbnail%23fragment.jpg`,
     `jobs/${jobId}/exports/thumbnail%3Fvariant.png`,
     `jobs/${jobId}/exports/thumbnail%26other.webp`,
@@ -857,80 +740,25 @@ test('thumbnail keys with URL delimiters or encoded separators fall back to cano
     `jobs/${jobId}/exports%252Fthumbnail.jpg`,
     `jobs/${jobId}/exports%252fthumbnail.png`,
     `jobs/${jobId}/exports%255Cthumbnail.webp`,
-  ];
-
-  for (const queryValue of queryValues) {
-    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${queryValue}`;
-
-    loadedKey = null;
-    const getResponse = new MockResponse();
-    await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
-
-    assert.equal(getResponse.statusCode, 200);
-    assert.equal(getResponse.headers['Content-Type'], 'image/png');
-    assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
-    assert.equal(getResponse.headers['Cache-Control'], 'no-store');
-    assert.equal(loadedKey, canonicalKey);
-    assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
-
-    loadedKey = null;
-    const headResponse = new MockResponse();
-    await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
-
-    assert.equal(headResponse.statusCode, 200);
-    assert.equal(headResponse.headers['Content-Type'], 'image/png');
-    assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
-    assert.equal(headResponse.headers['Cache-Control'], 'no-store');
-    assert.equal(loadedKey, canonicalKey);
-    assert.equal(headResponse.body, '');
-  }
-});
-
-
-
-
-test('thumbnail keys with ASCII control characters fall back to canonical', async (t) => {
-  const {
-    setVideoJobThumbnailBytesLoaderForTesting,
-    setVideoJobThumbnailPublishableAssetsResolverForTesting,
-  } = await import('../providers/video-orchestrator-provider.js');
-  const jobId = 'thumbnail-control-character-regression-20260615';
-  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.jpg`;
-  const thumbnailBytes = Buffer.from([6, 5, 4, 3]);
-  let loadedKey: string | null = null;
-
-  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
-    thumbnailKey: canonicalKey,
-    missing: [],
-    expectedKeys: {
-      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
-      thumbnailKey: canonicalKey,
-      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
-    },
-  }));
-  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
-    loadedKey = thumbnailKey;
-    return thumbnailBytes;
-  });
-  t.after(() => {
-    setVideoJobThumbnailBytesLoaderForTesting(null);
-    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
-  });
-
-  const queryValues = [
     `jobs/${jobId}/exports/thumbnail%0Drequested.jpg`,
     `jobs/${jobId}/exports/thumbnail%0Arequested.jpg`,
     `jobs/${jobId}/exports/thumbnail%09requested.jpg`,
     `jobs/${jobId}/exports/thumbnail%7Frequested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%A8requested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%A9requested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%AErequested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%E2%81%A6requested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%8Brequested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%E2%80%8Drequested.jpg`,
+    `jobs/${jobId}/exports/thumbnail%EF%BB%BFrequested.jpg`,
   ];
 
-  for (const queryValue of queryValues) {
+  for (const queryValue of unsafeQueryValues) {
     const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${queryValue}`;
 
     loadedKey = null;
     const getResponse = new MockResponse();
     await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
-
     assert.equal(getResponse.statusCode, 200);
     assert.equal(getResponse.headers['Content-Type'], 'image/jpeg');
     assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
@@ -941,7 +769,6 @@ test('thumbnail keys with ASCII control characters fall back to canonical', asyn
     loadedKey = null;
     const headResponse = new MockResponse();
     await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
-
     assert.equal(headResponse.statusCode, 200);
     assert.equal(headResponse.headers['Content-Type'], 'image/jpeg');
     assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
@@ -954,67 +781,3 @@ test('thumbnail keys with ASCII control characters fall back to canonical', asyn
 
 
 
-test('thumbnail keys with invisible Unicode controls fall back to canonical', async (t) => {
-  const {
-    setVideoJobThumbnailBytesLoaderForTesting,
-    setVideoJobThumbnailPublishableAssetsResolverForTesting,
-  } = await import('../providers/video-orchestrator-provider.js');
-  const jobId = 'thumbnail-unicode-control-regression-20260615';
-  const canonicalKey = `jobs/${jobId}/exports/thumbnail-canonical.webp`;
-  const thumbnailBytes = Buffer.from([8, 7, 6, 5]);
-  let loadedKey: string | null = null;
-
-  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
-    thumbnailKey: canonicalKey,
-    missing: [],
-    expectedKeys: {
-      videoKey: `jobs/${jobId}/exports/generated-001-final.mp4`,
-      thumbnailKey: canonicalKey,
-      narrationKey: `jobs/${jobId}/audio/narration.mp3`,
-    },
-  }));
-  setVideoJobThumbnailBytesLoaderForTesting(async (_localPath, thumbnailKey) => {
-    loadedKey = thumbnailKey;
-    return thumbnailBytes;
-  });
-  t.after(() => {
-    setVideoJobThumbnailBytesLoaderForTesting(null);
-    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
-  });
-
-  const queryValues = [
-    `jobs/${jobId}/exports/thumbnail%E2%80%A8requested.webp`,
-    `jobs/${jobId}/exports/thumbnail%E2%80%A9requested.webp`,
-    `jobs/${jobId}/exports/thumbnail%E2%80%AErequested.webp`,
-    `jobs/${jobId}/exports/thumbnail%E2%81%A6requested.webp`,
-    `jobs/${jobId}/exports/thumbnail%E2%80%8Brequested.webp`,
-    `jobs/${jobId}/exports/thumbnail%E2%80%8Drequested.webp`,
-    `jobs/${jobId}/exports/thumbnail%EF%BB%BFrequested.webp`,
-  ];
-
-  for (const queryValue of queryValues) {
-    const url = `/api/video-orchestrator/jobs/${jobId}/thumbnail?key=${queryValue}`;
-
-    loadedKey = null;
-    const getResponse = new MockResponse();
-    await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
-
-    assert.equal(getResponse.statusCode, 200);
-    assert.equal(getResponse.headers['Content-Type'], 'image/webp');
-    assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
-    assert.equal(getResponse.headers['Cache-Control'], 'no-store');
-    assert.equal(loadedKey, canonicalKey);
-    assert.deepEqual(getResponse.body as unknown, thumbnailBytes);
-
-    loadedKey = null;
-    const headResponse = new MockResponse();
-    await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
-
-    assert.equal(headResponse.statusCode, 200);
-    assert.equal(headResponse.headers['Content-Type'], 'image/webp');
-    assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
-    assert.equal(headResponse.headers['Cache-Control'], 'no-store');
-    assert.equal(loadedKey, canonicalKey);
-    assert.equal(headResponse.body, '');
-  }
-});

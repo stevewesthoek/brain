@@ -1375,24 +1375,30 @@ export function setVideoJobThumbnailBytesLoaderForTesting(loader: ThumbnailBytes
   loadThumbnailBytes = loader ?? loadVideoJobThumbnailBytes;
 }
 
+function isSafeRequestedThumbnailKey(jobId: string, requestedThumbnailKey: string | null | undefined): requestedThumbnailKey is string {
+  return Boolean(
+    requestedThumbnailKey
+      && requestedThumbnailKey.startsWith(`jobs/${jobId}/`)
+      && !requestedThumbnailKey.split('/').includes('..')
+      && !requestedThumbnailKey.includes('\\')
+      && !requestedThumbnailKey.includes('\0')
+      && !/[\x00-\x1f\x7f]/.test(requestedThumbnailKey)
+      && !/[\u200B-\u200F\u2028-\u202E\u2060-\u206F\uFEFF]/.test(requestedThumbnailKey)
+      && !/[#?&=]/.test(requestedThumbnailKey)
+      && !/%(?:2f|5c)/i.test(requestedThumbnailKey)
+      && /\.(?:jpe?g|png|webp)$/i.test(requestedThumbnailKey)
+  );
+}
+
 export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?: string | null): Promise<{ success: false; code: string; error: string; details?: unknown } | { success: true; data: Buffer; mimeType: string }> {
   if (!isValidJobId(jobId)) {
     return { success: false, code: 'invalid_job_id', error: 'Invalid jobId' };
   }
 
   const resolved = await resolveThumbnailPublishableAssets(jobId);
-  const safeRequestedThumbnailKey = requestedThumbnailKey
-    && requestedThumbnailKey.startsWith(`jobs/${jobId}/`)
-    && !requestedThumbnailKey.split('/').includes('..')
-    && !requestedThumbnailKey.includes('\\')
-    && !requestedThumbnailKey.includes('\0')
-    && !/[\x00-\x1f\x7f]/.test(requestedThumbnailKey)
-    && !/[\u200B-\u200F\u2028-\u202E\u2060-\u206F\uFEFF]/.test(requestedThumbnailKey)
-    && !/[#?&=]/.test(requestedThumbnailKey)
-    && !/%(?:2f|5c)/i.test(requestedThumbnailKey)
-    && /\.(?:jpe?g|png|webp)$/i.test(requestedThumbnailKey)
-      ? requestedThumbnailKey
-      : null;
+  const safeRequestedThumbnailKey = isSafeRequestedThumbnailKey(jobId, requestedThumbnailKey)
+    ? requestedThumbnailKey
+    : null;
   const thumbnailKey = safeRequestedThumbnailKey ?? resolved.thumbnailKey;
   if (!thumbnailKey) {
     return {
