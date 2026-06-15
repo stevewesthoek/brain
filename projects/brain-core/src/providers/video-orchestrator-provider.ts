@@ -1390,6 +1390,13 @@ function isSafeRequestedThumbnailKey(jobId: string, requestedThumbnailKey: strin
   );
 }
 
+export function isSafeRequestedThumbnailKeyForTesting(
+  jobId: string,
+  requestedThumbnailKey: string | null | undefined,
+): boolean {
+  return isSafeRequestedThumbnailKey(jobId, requestedThumbnailKey);
+}
+
 export async function getVideoJobThumbnail(jobId: string, requestedThumbnailKey?: string | null): Promise<{ success: false; code: string; error: string; details?: unknown } | { success: true; data: Buffer; mimeType: string }> {
   if (!isValidJobId(jobId)) {
     return { success: false, code: 'invalid_job_id', error: 'Invalid jobId' };
