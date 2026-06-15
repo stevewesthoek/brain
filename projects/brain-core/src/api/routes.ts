@@ -2481,13 +2481,18 @@ export async function routeRequest(
           try {
             jobId = decodeURIComponent(jobThumbnailMatch[1] ?? '');
           } catch {
-            response.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-            response.end(request.method === 'HEAD' ? undefined : JSON.stringify({
+            const body = JSON.stringify({
               ok: false,
               code: 'invalid_job_id',
               error: 'Invalid jobId',
               details: null,
-            }));
+            });
+            response.writeHead(400, {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Content-Length': String(Buffer.byteLength(body)),
+              'Cache-Control': 'no-store',
+            });
+            response.end(request.method === 'HEAD' ? undefined : body);
             return;
           }
           const rawRequestedThumbnailKey = /(?:^|[?&])key=([^&#]*)/.exec(request.url ?? '')?.[1];
@@ -2506,8 +2511,13 @@ export async function routeRequest(
               : result.code === 'thumbnail_not_ready'
                 ? 404
                 : 502;
-            response.writeHead(statusCode, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-            response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null }));
+            const body = JSON.stringify({ ok: false, code: result.code, error: result.error, details: result.details ?? null });
+            response.writeHead(statusCode, {
+              'Content-Type': 'application/json; charset=utf-8',
+              'Content-Length': String(Buffer.byteLength(body)),
+              'Cache-Control': 'no-store',
+            });
+            response.end(request.method === 'HEAD' ? undefined : body);
           } else {
             response.writeHead(200, {
               'Content-Type': result.mimeType,
@@ -2517,13 +2527,18 @@ export async function routeRequest(
             response.end(request.method === 'HEAD' ? undefined : result.data as unknown as string);
           }
         } catch {
-          response.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-          response.end(request.method === 'HEAD' ? undefined : JSON.stringify({
+          const body = JSON.stringify({
             ok: false,
             code: 'thumbnail_request_failed',
             error: 'Failed to fetch job thumbnail.',
             details: null,
-          }));
+          });
+          response.writeHead(500, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Length': String(Buffer.byteLength(body)),
+            'Cache-Control': 'no-store',
+          });
+          response.end(request.method === 'HEAD' ? undefined : body);
         }
         return;
       }

@@ -823,3 +823,96 @@ test('thumbnail resolver failures return stable GET and HEAD responses without l
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
   assert.equal(headResponse.body, '');
 });
+
+
+
+
+test('thumbnail error GET and HEAD responses share byte-accurate representation headers', async (t) => {
+  const {
+    setVideoJobThumbnailBytesLoaderForTesting,
+    setVideoJobThumbnailPublishableAssetsResolverForTesting,
+  } = await import('../providers/video-orchestrator-provider.js');
+
+  const resetThumbnailSeams = () => {
+    setVideoJobThumbnailBytesLoaderForTesting(null);
+    setVideoJobThumbnailPublishableAssetsResolverForTesting(null);
+  };
+  t.after(resetThumbnailSeams);
+
+  const assertErrorPair = async (url: string, expectedStatus: number) => {
+    const getResponse = new MockResponse();
+    await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
+
+    const headResponse = new MockResponse();
+    await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
+
+    assert.equal(getResponse.statusCode, expectedStatus);
+    assert.equal(headResponse.statusCode, expectedStatus);
+    assert.notEqual(getResponse.body, '');
+    assert.equal(headResponse.body, '');
+    assert.equal(getResponse.headers['Content-Length'], String(Buffer.byteLength(getResponse.body)));
+
+    for (const headerName of [
+      'Content-Type',
+      'Content-Length',
+      'Cache-Control',
+      'Access-Control-Allow-Origin',
+      'Access-Control-Allow-Methods',
+      'Access-Control-Allow-Headers',
+    ]) {
+      assert.equal(headResponse.headers[headerName], getResponse.headers[headerName], headerName);
+    }
+  };
+
+  resetThumbnailSeams();
+  await assertErrorPair('/api/video-orchestrator/jobs/invalid%20job/thumbnail', 400);
+
+  const notReadyJobId = 'thumbnail-error-headers-not-ready-20260615';
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: null,
+    missing: ['thumbnailKey'],
+    expectedKeys: {
+      videoKey: `jobs/${notReadyJobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: `jobs/${notReadyJobId}/exports/thumbnail-001.jpg`,
+      narrationKey: `jobs/${notReadyJobId}/audio/narration.mp3`,
+    },
+  }));
+  await assertErrorPair(`/api/video-orchestrator/jobs/${notReadyJobId}/thumbnail`, 404);
+
+  const loaderFailureJobId = 'thumbnail-error-headers-loader-failure-20260615';
+  const loaderFailureKey = `jobs/${loaderFailureJobId}/exports/thumbnail-001.jpg`;
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: loaderFailureKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${loaderFailureJobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: loaderFailureKey,
+      narrationKey: `jobs/${loaderFailureJobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async () => {
+    throw new Error('loader failure');
+  });
+  await assertErrorPair(`/api/video-orchestrator/jobs/${loaderFailureJobId}/thumbnail`, 502);
+
+  const emptyThumbnailJobId = 'thumbnail-error-headers-empty-20260615';
+  const emptyThumbnailKey = `jobs/${emptyThumbnailJobId}/exports/thumbnail-001.png`;
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => ({
+    thumbnailKey: emptyThumbnailKey,
+    missing: [],
+    expectedKeys: {
+      videoKey: `jobs/${emptyThumbnailJobId}/exports/generated-001-final.mp4`,
+      thumbnailKey: emptyThumbnailKey,
+      narrationKey: `jobs/${emptyThumbnailJobId}/audio/narration.mp3`,
+    },
+  }));
+  setVideoJobThumbnailBytesLoaderForTesting(async () => null);
+  await assertErrorPair(`/api/video-orchestrator/jobs/${emptyThumbnailJobId}/thumbnail`, 502);
+
+  const resolverFailureJobId = 'thumbnail-error-headers-resolver-failure-20260615';
+  setVideoJobThumbnailBytesLoaderForTesting(null);
+  setVideoJobThumbnailPublishableAssetsResolverForTesting(async () => {
+    throw new Error('resolver failure');
+  });
+  await assertErrorPair(`/api/video-orchestrator/jobs/${resolverFailureJobId}/thumbnail`, 500);
+});
