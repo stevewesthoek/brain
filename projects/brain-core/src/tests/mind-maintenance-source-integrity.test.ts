@@ -141,3 +141,80 @@ test('rejects snapshots from different Mind roots', async (context) => {
     /same Mind repository root/i,
   );
 });
+
+
+
+
+test('detects maintenance decision file mutation', async (context) => {
+  const dataset = await createFixture();
+  context.after(async () => rm(dataset.mindRoot, { recursive: true, force: true }));
+  const decisionPath = path.join(
+    dataset.mindRoot,
+    'system/reports/maintenance-decisions.json',
+  );
+  await mkdir(path.dirname(decisionPath), { recursive: true });
+  await writeFile(decisionPath, '{"version":1}\n', 'utf8');
+
+  const before = await captureMindMaintenanceIntegritySnapshot(dataset);
+  await writeFile(decisionPath, '{"version":2}\n', 'utf8');
+  const after = await captureMindMaintenanceIntegritySnapshot(dataset);
+  const result = compareMindMaintenanceIntegritySnapshots(before, after, []);
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.changedSourcePaths, [
+    'system/reports/maintenance-decisions.json',
+  ]);
+});
+
+test('detects maintenance decision file creation during a report run', async (context) => {
+  const dataset = await createFixture();
+  context.after(async () => rm(dataset.mindRoot, { recursive: true, force: true }));
+  const decisionPath = path.join(
+    dataset.mindRoot,
+    'system/reports/maintenance-decisions.json',
+  );
+
+  const before = await captureMindMaintenanceIntegritySnapshot(dataset);
+  await mkdir(path.dirname(decisionPath), { recursive: true });
+  await writeFile(decisionPath, '{"version":1}\n', 'utf8');
+  const after = await captureMindMaintenanceIntegritySnapshot(dataset);
+  const result = compareMindMaintenanceIntegritySnapshots(before, after, []);
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.changedSourcePaths, [
+    'system/reports/maintenance-decisions.json',
+  ]);
+});
+
+test('detects maintenance decision file deletion during a report run', async (context) => {
+  const dataset = await createFixture();
+  context.after(async () => rm(dataset.mindRoot, { recursive: true, force: true }));
+  const decisionPath = path.join(
+    dataset.mindRoot,
+    'system/reports/maintenance-decisions.json',
+  );
+  await mkdir(path.dirname(decisionPath), { recursive: true });
+  await writeFile(decisionPath, '{"version":1}\n', 'utf8');
+
+  const before = await captureMindMaintenanceIntegritySnapshot(dataset);
+  await unlink(decisionPath);
+  const after = await captureMindMaintenanceIntegritySnapshot(dataset);
+  const result = compareMindMaintenanceIntegritySnapshots(before, after, []);
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.changedSourcePaths, [
+    'system/reports/maintenance-decisions.json',
+  ]);
+});
+
+test('treats an absent maintenance decision file as unchanged across snapshots', async (context) => {
+  const dataset = await createFixture();
+  context.after(async () => rm(dataset.mindRoot, { recursive: true, force: true }));
+
+  const before = await captureMindMaintenanceIntegritySnapshot(dataset);
+  const after = await captureMindMaintenanceIntegritySnapshot(dataset);
+  const result = compareMindMaintenanceIntegritySnapshots(before, after, []);
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.changedSourcePaths, []);
+});
