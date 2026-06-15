@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile as execFileCallback } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
@@ -20,8 +21,11 @@ import {
   runMindMaintenancePilot,
   type MindMaintenancePilotRunnerResult,
 } from '../mind-maintenance-pilot/pilot-runner.js';
+import { assertValidMaintenanceReport } from '../mind-maintenance-pilot/report-schema-validator.js';
+import type { MaintenanceReport } from '../mind-maintenance-pilot/types.js';
 
 const execFile = promisify(execFileCallback);
+const MIND_MAINTENANCE_LATEST_REPORT_PATH = 'system/reports/maintenance-latest.json';
 
 export interface MindMaintenancePilotCliIo {
   stdout: (message: string) => void;
@@ -35,6 +39,7 @@ export interface MindMaintenancePilotCliDependencies {
   listChangedPaths: (mindRoot: string) => Promise<readonly string[]>;
   runPilot: typeof runMindMaintenancePilot;
   loadDecisionDocument?: typeof loadMaintenanceFindingDecisionDocument;
+  loadLatestReport?: (mindRoot: string) => Promise<MaintenanceReport>;
   writeDecisionDocument?: typeof writeMaintenanceFindingDecisionDocument;
   recordDecision?: typeof recordMaintenanceFindingDecision;
 }
@@ -65,6 +70,9 @@ export interface MindMaintenanceDecisionSummaryCliResult {
     dismissed: number;
     resolved: number;
   };
+  latestReportPath?: string;
+  latestReportId?: string;
+  unmatchedDecisions?: MaintenanceFindingDecision[];
 }
 
 export interface MindMaintenancePilotCliResult {
@@ -80,6 +88,7 @@ type CliCommand = 'run' | 'record-decision' | 'validate-decisions';
 interface ParsedArguments {
   command: CliCommand;
   enabled: boolean;
+  listUnmatched: boolean;
   mindRoot?: string;
   sourceCommit?: string;
   generatedAt?: string;
@@ -100,13 +109,16 @@ interface ParsedArguments {
 const USAGE = [
   'Usage:',
   '  mind-maintenance-pilot run --enable-report-only --mind-root <path> [options]',
-  '  mind-maintenance-pilot validate-decisions --mind-root <path>',
+  '  mind-maintenance-pilot validate-decisions --mind-root <path> [--list-unmatched]',
   '  mind-maintenance-pilot record-decision --mind-root <path> --finding-id <id> --deduplication-key <key> --source-report <id> --source-commit <hash> --reviewer <name> --reviewed-at <iso> --decision <accepted|dismissed|resolved> --reason <text> [decision options]',
   '',
   'Run options:',
   '  --source-commit <hash>  Override the Mind HEAD commit.',
   '  --generated-at <iso>    Override the generated timestamp.',
   '  --generated-by <name>   Override the report generator identity.',
+  '',
+  'Validation options:',
+  '  --list-unmatched       List decisions not represented by findings in maintenance-latest.json.',
   '',
   'Decision options:',
   '  --next-action <text>       Required for accepted decisions.',
@@ -130,7 +142,7 @@ function parseDecision(value: string): MaintenanceDecisionValue {
 
 function parseArguments(args: readonly string[]): ParsedArguments {
   if (args.includes('--help')) {
-    return { command: 'run', enabled: false, help: true };
+    return { command: 'run', enabled: false, listUnmatched: false, help: true };
   }
 
   const command = args[0];
@@ -141,6 +153,7 @@ function parseArguments(args: readonly string[]): ParsedArguments {
   const parsed: ParsedArguments = {
     command,
     enabled: false,
+    listUnmatched: false,
     help: false,
   };
 
@@ -150,6 +163,14 @@ function parseArguments(args: readonly string[]): ParsedArguments {
     if (argument === '--enable-report-only') {
       if (command !== 'run') throw new Error('--enable-report-only is only valid for run.');
       parsed.enabled = true;
+      continue;
+    }
+
+    if (argument === '--list-unmatched') {
+      if (command !== 'validate-decisions') {
+        throw new Error('--list-unmatched is only valid for validate-decisions.');
+      }
+      parsed.listUnmatched = true;
       continue;
     }
 
@@ -210,7 +231,7 @@ function parseArguments(args: readonly string[]): ParsedArguments {
       parsed.suppressionUntil,
     ].some((value) => value !== undefined);
     if (unsupported) {
-      throw new Error('validate-decisions accepts only --mind-root.');
+      throw new Error('validate-decisions accepts only --mind-root and --list-unmatched.');
     }
   }
 
@@ -261,6 +282,21 @@ async function defaultListChangedPaths(mindRoot: string): Promise<readonly strin
   return paths;
 }
 
+async function defaultLoadLatestReport(mindRoot: string): Promise<MaintenanceReport> {
+  const reportPath = path.join(mindRoot, MIND_MAINTENANCE_LATEST_REPORT_PATH);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(reportPath, 'utf8'));
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error(`Mind maintenance latest report contains invalid JSON: ${reportPath}`);
+    }
+    throw error;
+  }
+  assertValidMaintenanceReport(parsed);
+  return parsed;
+}
+
 const defaultDependencies: MindMaintenancePilotCliDependencies = {
   now: () => new Date(),
   resolveMindRoot: (value) => path.resolve(value),
@@ -268,6 +304,7 @@ const defaultDependencies: MindMaintenancePilotCliDependencies = {
   listChangedPaths: defaultListChangedPaths,
   runPilot: runMindMaintenancePilot,
   loadDecisionDocument: loadMaintenanceFindingDecisionDocument,
+  loadLatestReport: defaultLoadLatestReport,
   writeDecisionDocument: writeMaintenanceFindingDecisionDocument,
   recordDecision: recordMaintenanceFindingDecision,
 };
@@ -376,7 +413,7 @@ async function runValidateDecisions(
   const counts = { accepted: 0, dismissed: 0, resolved: 0 };
   for (const decision of document.decisions) counts[decision.decision] += 1;
 
-  return {
+  const summary: MindMaintenanceDecisionSummaryCliResult = {
     ok: true,
     status: 'decision-summary',
     mode: 'read-only',
@@ -386,6 +423,24 @@ async function runValidateDecisions(
     updatedAt: document.updatedAt,
     decisionCount: document.decisions.length,
     counts,
+  };
+
+  if (!parsed.listUnmatched) return summary;
+
+  const loadLatestReport = dependencies.loadLatestReport ?? defaultLoadLatestReport;
+  const report = await loadLatestReport(mindRoot);
+  const matchedKeys = new Set(
+    [...report.findings, ...report.suppressedFindings]
+      .map((finding) => finding.deduplicationKey),
+  );
+
+  return {
+    ...summary,
+    latestReportPath: path.join(mindRoot, MIND_MAINTENANCE_LATEST_REPORT_PATH),
+    latestReportId: report.reportId,
+    unmatchedDecisions: document.decisions.filter(
+      (decision) => !matchedKeys.has(decision.deduplicationKey),
+    ),
   };
 }
 
@@ -419,7 +474,7 @@ export async function runMindMaintenancePilotCli(
         status: 'decision-summary-failed',
         mode: 'read-only',
         error: error instanceof Error ? error.message : String(error),
-        nextAction: 'Repair or remove the invalid maintenance decision file before retrying validation.',
+        nextAction: 'Repair the invalid maintenance decision or latest report file before retrying validation.',
       }, null, 2)}\n`);
       return { exitCode: 1 };
     }
