@@ -18,6 +18,7 @@ class MockResponse {
     assert.equal(this.headers['Access-Control-Allow-Origin'], '*');
     assert.equal(this.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
     assert.equal(this.headers['Access-Control-Allow-Headers'], 'content-type');
+    assert.equal(this.headers['X-Content-Type-Options'], 'nosniff');
   }
 
   end(chunk?: string): void {
