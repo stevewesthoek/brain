@@ -52,9 +52,13 @@ The historical build order below is complete and remains preserved in the phase 
 4. ✅ **Approval-gated project workflows (Phase 1W)** — complete.
 5. ✅ **Adapter expansion (Phase 6)** — complete.
 
-**Authorized next milestone:** None.
+**Authorized next milestone:** Productionize the first non-YouTube direct publishing path, using TikTok as the proving target.
 
-Do not begin additional implementation work until this section is updated with exactly one prioritized milestone, one owner boundary, and one measurable exit criterion.
+**Owner boundary:** Brain Core platform publishing adapter layer, platform capability/config records, and focused adapter contract tests only. No Brain Console redesign, project-specific publishing logic, credential UI expansion, or unrelated pipeline changes.
+
+**Measurable exit criterion:** An approved production package resolves a TikTok posting target to `direct` only when credentials, scopes, upload limits, quota/capability checks, approval, and idempotency all pass. Otherwise it deterministically resolves to the existing n8n or manual-package fallback without duplicate posting. Focused adapter contract tests cover both direct and fallback outcomes.
+
+Do not begin work outside this milestone until the roadmap is explicitly updated with a new prioritized milestone, owner boundary, and measurable exit criterion.
 
 ---
 
