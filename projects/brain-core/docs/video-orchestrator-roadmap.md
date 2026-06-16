@@ -31,25 +31,30 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - AI Model Selector running at `localhost:4890`; current approved provider policy supports Claude Code via Amazon Bedrock, Codex CLI, and approved selector routes. Gemini is disabled and is not part of the current stack. Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
 
 **Current active gap:**
-- The next-phase implementation plan is complete.
-- Remaining roadmap work lives in later phases only.
+- The ordered implementation milestones recorded in this roadmap are complete.
+- No new implementation milestone is currently authorized.
+- Further code work requires an explicit product-prioritization decision and a roadmap update naming one measurable next milestone before implementation begins.
 
 **Remaining VO product gaps:**
-- Hardening roadmap items are implemented; only future extensions or doc refinements remain if desired
-- Test & Compare remains manual via YouTube Studio until/if YouTube exposes a public developer API
-- Multi-platform publishing expansion beyond the current direct adapters and n8n fallback
+- Test & Compare remains manual via YouTube Studio until/if YouTube exposes a public developer API.
+- Multi-platform publishing can expand beyond the current direct adapters and n8n fallback when explicitly prioritized.
+- Future reliability, UX, or documentation refinements should be added as named roadmap milestones before implementation.
 
 ---
 
 ## Build Order From Here
 
-The next work must proceed in this order:
+The historical build order below is complete and remains preserved in the phase sections as completion evidence:
 
-1. ✅ **Policy lock & Selector policy implementation:** Approved routes support Claude Code via Amazon Bedrock, Codex CLI, and the AI Model Selector. Gemini is disabled. Direct Anthropic and OpenAI API routes remain disallowed where applicable.
-2. **Normalized read model:** Expose VO Project, Account, Pipeline Profile, Content Item, Package, and Analytics Summary read APIs with fixtures (Phase 0.8).
-3. **Brain Console read-first shell:** Build shared health, usage, approvals, and pipeline visibility from read APIs (Phase 0.9).
-4. **Approval-gated project workflows:** Add content item creation, thumbnail generation, metadata approval, package queueing, and posting target queueing in project repos, with shared processing handled by Brain Core (Phase 1W).
-5. **Adapter expansion:** Enable direct publishing per platform only after account capability checks and manual fallback parity exist (Phase 6).
+1. ✅ **Policy lock & Selector policy implementation** — complete.
+2. ✅ **Normalized read model (Phase 0.8)** — complete.
+3. ✅ **Brain Console read-first shell (Phase 0.9)** — complete.
+4. ✅ **Approval-gated project workflows (Phase 1W)** — complete.
+5. ✅ **Adapter expansion (Phase 6)** — complete.
+
+**Authorized next milestone:** None.
+
+Do not begin additional implementation work until this section is updated with exactly one prioritized milestone, one owner boundary, and one measurable exit criterion.
 
 ---
 
