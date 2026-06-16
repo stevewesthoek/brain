@@ -39,22 +39,25 @@ function createRequest(
 }
 
 test('thumbnail route rejects unsupported methods with explicit endpoint semantics', async () => {
-  const response = new MockResponse();
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+    const response = new MockResponse();
 
-  await routeRequest(
-    createRequest('POST'),
-    response as unknown as ServerResponse,
-  );
+    await routeRequest(
+      createRequest(method),
+      response as unknown as ServerResponse,
+    );
 
-  assert.equal(response.statusCode, 405);
-  assert.equal(response.headers.Allow, 'GET, HEAD');
-  assert.equal(response.headers['Cache-Control'], 'no-store');
-  assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
-  assert.deepEqual(JSON.parse(response.body), {
-    ok: false,
-    code: 'method_not_allowed',
-    error: 'Use GET or HEAD to load the thumbnail.',
-  });
+    assert.equal(response.statusCode, 405, method);
+    assert.equal(response.headers.Allow, 'GET, HEAD', method);
+    assert.equal(response.headers['Cache-Control'], 'no-store', method);
+    assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8', method);
+    assert.equal(response.headers['Content-Length'], String(Buffer.byteLength(response.body)), method);
+    assert.deepEqual(JSON.parse(response.body), {
+      ok: false,
+      code: 'method_not_allowed',
+      error: 'Use GET or HEAD to load the thumbnail.',
+    });
+  }
 });
 
 

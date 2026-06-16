@@ -325,12 +325,14 @@ export async function routeRequest(
   }
 
   if (thumbnailPathMatch && method !== 'GET' && method !== 'HEAD') {
+    const body = JSON.stringify({ ok: false, code: 'method_not_allowed', error: 'Use GET or HEAD to load the thumbnail.' });
     response.writeHead(405, {
       'Content-Type': 'application/json; charset=utf-8',
+      'Content-Length': String(Buffer.byteLength(body)),
       'Cache-Control': 'no-store',
       'Allow': 'GET, HEAD',
     });
-    response.end(JSON.stringify({ ok: false, code: 'method_not_allowed', error: 'Use GET or HEAD to load the thumbnail.' }));
+    response.end(body);
     return;
   }
 
