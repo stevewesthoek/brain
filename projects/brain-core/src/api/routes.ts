@@ -310,6 +310,7 @@ export async function routeRequest(
     headerResponse.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     headerResponse.setHeader('Access-Control-Allow-Headers', 'content-type');
     headerResponse.setHeader('X-Content-Type-Options', 'nosniff');
+    headerResponse.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 
   if (method === 'OPTIONS') {
