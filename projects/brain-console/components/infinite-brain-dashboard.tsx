@@ -3,13 +3,24 @@
 import { useEffect, useState } from 'react';
 
 import { brainCoreRequest } from '../lib/braincore-client';
-import { infiniteBrainStatusSchema, type InfiniteBrainStatus } from '../lib/braincore-schemas';
+import {
+  infiniteBrainStatusSchema,
+  mindMaintenanceLatestResponseSchema,
+  mindStewardSchedulerStatusSchema,
+  type InfiniteBrainStatus,
+  type MindMaintenanceLatestResponse,
+  type MindStewardSchedulerStatus,
+} from '../lib/braincore-schemas';
 import { InfiniteBrainProposalReview } from './infinite-brain-proposal-review';
 
 export function InfiniteBrainDashboard() {
   const [status, setStatus] = useState<InfiniteBrainStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [maintenanceStatus, setMaintenanceStatus] = useState<MindStewardSchedulerStatus | null>(null);
+  const [maintenanceLatest, setMaintenanceLatest] = useState<MindMaintenanceLatestResponse | null>(null);
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+  const mindRoot = process.env.NEXT_PUBLIC_MIND_ROOT?.trim() ?? '';
 
   useEffect(() => {
     async function fetchStatus() {
@@ -29,6 +40,37 @@ export function InfiniteBrainDashboard() {
     const interval = setInterval(fetchStatus, 30000); // Refresh every 30s
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    async function fetchMaintenance() {
+      try {
+        const schedulerStatus = await brainCoreRequest(
+          '/scheduler/mind-steward/status',
+          mindStewardSchedulerStatusSchema,
+        );
+        setMaintenanceStatus(schedulerStatus);
+
+        if (!mindRoot) {
+          setMaintenanceLatest(null);
+          setMaintenanceError('Set NEXT_PUBLIC_MIND_ROOT to load the latest maintenance report.');
+          return;
+        }
+
+        const latest = await brainCoreRequest(
+          `/api/mind-maintenance/latest?mindRoot=${encodeURIComponent(mindRoot)}`,
+          mindMaintenanceLatestResponseSchema,
+        );
+        setMaintenanceLatest(latest);
+        setMaintenanceError(null);
+      } catch (err) {
+        setMaintenanceError(err instanceof Error ? err.message : 'Failed to load Mind maintenance data');
+      }
+    }
+
+    fetchMaintenance();
+    const interval = setInterval(fetchMaintenance, 30000);
+    return () => clearInterval(interval);
+  }, [mindRoot]);
 
   if (loading) {
     return (
@@ -81,6 +123,34 @@ export function InfiniteBrainDashboard() {
           <p className="text-xs font-semibold text-yellow-900">Mind Write Readiness</p>
           <p className="text-xs text-yellow-700 mt-1">Status: {status.readiness.mindWriteReady ? '✓ Ready' : '✗ Blocked'}</p>
           <p className="text-xs text-yellow-700">{status.readiness.reason}</p>
+        </div>
+      </div>
+
+      {/* Mind Maintenance */}
+      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+        <h3 className="font-semibold text-slate-900">Mind Maintenance</h3>
+        <div className="mt-2 text-sm text-slate-700 space-y-1">
+          <p>
+            Scheduler status: <strong>{maintenanceStatus?.status ?? 'loading'}</strong>
+          </p>
+          <p>
+            Runtime reports: <strong>{maintenanceStatus?.availableCount ?? 0}</strong> / {maintenanceStatus?.reportCount ?? 4}
+          </p>
+          {maintenanceLatest ? (
+            <>
+              <p>Latest report: <strong>{maintenanceLatest.report.reportId}</strong></p>
+              <p>Generated: <strong>{new Date(maintenanceLatest.report.generatedAt).toLocaleString()}</strong></p>
+              <p>Findings: <strong>{maintenanceLatest.report.summary.findingsTotal}</strong> ({maintenanceLatest.report.summary.findingsOpen} open)</p>
+              <p>Detector errors: <strong>{maintenanceLatest.report.summary.detectorErrors}</strong></p>
+              <p>Source files changed: <strong>{maintenanceLatest.report.safety.sourceFilesChanged}</strong></p>
+              <div className="mt-2 flex items-center gap-1 text-xs">
+                <span className={`inline-block w-2 h-2 rounded-full ${maintenanceLatest.report.noWritePerformed ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                <span>Report-only: {maintenanceLatest.report.noWritePerformed ? 'Yes' : 'No'}</span>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-slate-500 mt-2">{maintenanceError ?? 'Latest maintenance report is loading.'}</p>
+          )}
         </div>
       </div>
 

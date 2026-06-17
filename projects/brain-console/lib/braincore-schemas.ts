@@ -1659,6 +1659,49 @@ export type InfiniteBrainMetadataWriterDryRunReport = z.infer<typeof infiniteBra
 export type InfiniteBrainMetadataWriterDryRunResponse = z.infer<typeof infiniteBrainMetadataWriterDryRunResponseSchema>;
 export type InfiniteBrainMetadataWriterDryRunGenerateResponse = z.infer<typeof infiniteBrainMetadataWriterDryRunGenerateResponseSchema>;
 
+export const mindMaintenanceFindingSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.string(),
+  paths: z.array(z.string()),
+  confidence: z.number(),
+  risk: z.string(),
+  recommendedAction: z.string(),
+  requiresApproval: z.literal(true),
+  noWritePerformed: z.literal(true),
+});
+
+export const mindMaintenanceLatestResponseSchema = z.object({
+  ok: z.literal(true),
+  mode: z.literal('read-only'),
+  report: z.object({
+    reportId: z.string(),
+    generatedAt: z.string(),
+    generatedBy: z.string(),
+    mode: z.literal('report-only'),
+    sourceRepo: z.literal('mind'),
+    sourceCommit: z.string(),
+    summary: z.object({
+      filesConsidered: z.number(),
+      findingsTotal: z.number(),
+      findingsOpen: z.number(),
+      findingsAccepted: z.number(),
+      findingsDismissed: z.number(),
+      findingsResolved: z.number(),
+      findingsSuppressed: z.number(),
+      detectorErrors: z.number(),
+    }),
+    findings: z.array(mindMaintenanceFindingSchema),
+    safety: z.object({
+      sourceFilesChanged: z.number(),
+      noWritePerformed: z.literal(true),
+    }).passthrough(),
+    noWritePerformed: z.literal(true),
+  }).passthrough(),
+});
+
+export type MindMaintenanceLatestResponse = z.infer<typeof mindMaintenanceLatestResponseSchema>;
+
 export const infiniteBrainStatusSchema = z.object({
   timestamp: z.string(),
   runtime: z.object({

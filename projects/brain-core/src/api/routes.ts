@@ -301,6 +301,24 @@ export async function routeRequest(
 
   const method = request.method || 'GET';
   const url = new URL(request.url || '/', 'http://127.0.0.1');
+
+  if (url.pathname === '/api/video-orchestrator/thumbnails/approve' && method !== 'POST') {
+    const body = JSON.stringify({ error: 'Method not allowed' });
+    response.writeHead(405, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'content-type',
+      'X-Content-Type-Options': 'nosniff',
+      'Cross-Origin-Resource-Policy': 'cross-origin',
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Length': String(Buffer.byteLength(body)),
+      'Cache-Control': 'no-store',
+      'Allow': 'POST',
+    });
+    response.end(body);
+    return;
+  }
+
   const thumbnailPathMatch = /^\/api\/video-orchestrator\/jobs\/[^/]+\/thumbnail$/.test(url.pathname);
   if (thumbnailPathMatch) {
     const headerResponse = response as ServerResponse & {
@@ -721,6 +739,37 @@ export async function routeRequest(
     case '/scheduler/mind-steward/status':
       sendJson(response, 200, getMindStewardSchedulerStatus());
       return;
+    case '/api/mind-maintenance/latest': {
+      const mindRootValue = url.searchParams.get('mindRoot')?.trim() ?? '';
+      if (!mindRootValue) {
+        sendJson(response, 400, {
+          ok: false,
+          code: 'missing_mind_root',
+          message: 'mindRoot query parameter is required and must be non-empty.',
+        });
+        return;
+      }
+
+      const { defaultDependencies } = await import('../bin/mind-maintenance-pilot.js');
+      const mindRoot = defaultDependencies.resolveMindRoot(mindRootValue);
+      const loadLatestReport = defaultDependencies.loadLatestReport;
+      if (!loadLatestReport) {
+        sendJson(response, 503, {
+          ok: false,
+          code: 'latest_report_loader_unavailable',
+          message: 'Mind maintenance latest-report loader is unavailable.',
+        });
+        return;
+      }
+
+      const report = await loadLatestReport(mindRoot);
+      sendJson(response, 200, {
+        ok: true,
+        mode: 'read-only',
+        report,
+      });
+      return;
+    }
     case '/graphify/status':
       sendJson(response, 200, getGraphifyStatus());
       return;
@@ -2933,6 +2982,86 @@ export async function routeRequest(
 }
 
 async function routePostRequest(url: URL, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (url.pathname === '/api/mind-maintenance/run') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    if (!body) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_body',
+        message: 'Request body must be valid JSON.',
+      });
+      return;
+    }
+
+    if (body.enabled !== true) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'report_only_enablement_required',
+        message: 'Set enabled to true for one explicit report-only maintenance run.',
+      });
+      return;
+    }
+
+    const mindRoot = typeof body.mindRoot === 'string' ? body.mindRoot.trim() : '';
+    const sourceCommit = typeof body.sourceCommit === 'string' && body.sourceCommit.trim()
+      ? body.sourceCommit.trim()
+      : undefined;
+    const generatedAt = typeof body.generatedAt === 'string' && body.generatedAt.trim()
+      ? body.generatedAt.trim()
+      : undefined;
+    const ambiguousSemanticChecks = typeof body.ambiguousSemanticChecks === 'number'
+      ? body.ambiguousSemanticChecks
+      : 0;
+
+    if (!mindRoot) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'missing_mind_root',
+        message: 'mindRoot is required and must be non-empty.',
+      });
+      return;
+    }
+
+    if (!Number.isInteger(ambiguousSemanticChecks) || ambiguousSemanticChecks < 0) {
+      sendJson(response, 400, {
+        ok: false,
+        code: 'invalid_ambiguous_semantic_checks',
+        message: 'ambiguousSemanticChecks must be a non-negative integer.',
+      });
+      return;
+    }
+
+    const { routeMindMaintenanceJob } = await import('../adapters/mind-maintenance-routing.js');
+    const routed = await routeMindMaintenanceJob({
+      enabled: true,
+      mindRoot,
+      ambiguousSemanticChecks,
+      ...(sourceCommit ? { sourceCommit } : {}),
+      ...(generatedAt ? { generatedAt } : {}),
+    });
+
+    sendJson(response, routed.result.ok ? 200 : 409, routed);
+    return;
+  }
+
+  // ── VO Studio: Approve Thumbnail ──────────────────────────────────────────
+  if (url.pathname === '/api/video-orchestrator/thumbnails/approve') {
+    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
+    const approveReq: {
+      projectId: string;
+      contentItemId: string;
+      variantId: string;
+    } = {
+      projectId: (body?.projectId as string) ?? '',
+      contentItemId: (body?.contentItemId as string) ?? '',
+      variantId: (body?.variantId as string) ?? '',
+    };
+
+    const result = approveThumbnailRequest(approveReq);
+    sendJson(response, result.ok ? 202 : 400, result);
+    return;
+  }
+
   // ── Infinite Brain: Operator Approval Record (Record Intent) ──────────────
   if (url.pathname === '/api/infinite-brain/operator-approval/record') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
@@ -4218,13 +4347,30 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
   if (url.pathname === '/api/video-orchestrator/content-items/create') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
-    const result = createContentItemRequest({
+    const createReq: {
+      projectId: string;
+      title: string;
+      description: string;
+      sourceAudioPath?: string;
+      backgroundImagePath?: string;
+      sourceVideoPath?: string;
+    } = {
       projectId: (body?.projectId as string) ?? '',
       title: (body?.title as string) ?? '',
       description: (body?.description as string) ?? '',
-      sourceAudioPath: (body?.sourceAudioPath as string) ?? '',
-      backgroundImagePath: (body?.backgroundImagePath as string) ?? '',
-    });
+    };
+
+    if (body?.sourceAudioPath !== undefined) {
+      createReq.sourceAudioPath = body.sourceAudioPath as string;
+    }
+    if (body?.backgroundImagePath !== undefined) {
+      createReq.backgroundImagePath = body.backgroundImagePath as string;
+    }
+    if (body?.sourceVideoPath !== undefined) {
+      createReq.sourceVideoPath = body.sourceVideoPath as string;
+    }
+
+    const result = createContentItemRequest(createReq);
     sendJson(response, result.ok ? 202 : 400, result);
     return;
   }
@@ -4236,6 +4382,7 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       contentItemId: string;
       title?: string;
       description?: string;
+      sourceVideoPath?: string | null;
     } = {
       projectId: (body?.projectId as string) ?? '',
       contentItemId: (body?.contentItemId as string) ?? '',
@@ -4246,6 +4393,9 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     }
     if (body?.description !== undefined) {
       updateReq.description = body.description as string;
+    }
+    if (body?.sourceVideoPath !== undefined) {
+      updateReq.sourceVideoPath = body.sourceVideoPath as string | null;
     }
 
     const result = updateContentItemRequest(updateReq);
@@ -4305,25 +4455,48 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
       thumbReq.boldText = body.boldText as string;
     }
 
-    const result = generateThumbnailRequest(thumbReq);
-    sendJson(response, result.ok ? 202 : 400, result);
-    return;
-  }
+    const approvalResult = generateThumbnailRequest(thumbReq);
+    if (!approvalResult.ok) {
+      sendJson(response, 400, approvalResult);
+      return;
+    }
 
-  if (url.pathname === '/api/video-orchestrator/thumbnails/approve') {
-    const body = (await readJsonBody(request)) as Record<string, unknown> | null;
-    const approveReq: {
-      projectId: string;
-      contentItemId: string;
-      variantId: string;
-    } = {
-      projectId: (body?.projectId as string) ?? '',
-      contentItemId: (body?.contentItemId as string) ?? '',
-      variantId: (body?.variantId as string) ?? '',
-    };
+    const queueResult = await thumbnailQueue.queueThumbnail({
+      episode_id: thumbReq.contentItemId,
+      title: (body?.title as string) ?? thumbReq.boldText ?? thumbReq.contentItemId,
+      template_definition: (body?.template_definition as Record<string, any>) ?? {
+        name: thumbReq.templateId ?? 'default',
+      },
+      color_scheme: (body?.color_scheme as Record<string, any>) ?? {
+        _name: 'default',
+      },
+      background_image_url: (body?.background_image_url as string) ?? '',
+      platform: 'youtube',
+    });
 
-    const result = approveThumbnailRequest(approveReq);
-    sendJson(response, result.ok ? 202 : 400, result);
+    const variants = (queueResult.variants ?? []).slice(0, 2).map((variant, index) => ({
+      contentItemId: thumbReq.contentItemId,
+      variantId: index === 0 ? 'variant_a' : 'variant_b',
+      path: variant.url,
+      metadata: {
+        sourceVariantId: variant.variant_id,
+        confidenceScore: variant.confidence_score,
+        dimensions: variant.dimensions,
+        format: variant.format,
+      },
+    }));
+
+    const statusCode = queueResult.status === 'failed' ? 500 : queueResult.status === 'completed' ? 200 : 202;
+    sendJson(response, statusCode, {
+      ...approvalResult,
+      generation: {
+        jobId: queueResult.job_id,
+        status: queueResult.status,
+        contentItemId: thumbReq.contentItemId,
+        variants,
+        error: queueResult.error_message,
+      },
+    });
     return;
   }
 
