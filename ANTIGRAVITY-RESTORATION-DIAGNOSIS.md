@@ -7,6 +7,21 @@
 
 ---
 
+## CRITICAL DISCOVERY: Antigravity Changed Its Config Path
+
+**Antigravity app version changed its internal directory structure:**
+
+```
+OLD CONFIG PATH: ~/Library/Application Support/Antigravity/User/
+NEW CONFIG PATH: ~/Library/Application Support/Antigravity/Antigravity/User/
+```
+
+The app now stores config inside a nested `Antigravity/` subfolder. When restored settings were placed in the old location, Antigravity couldn't find them because it was looking in the new location.
+
+**Fix applied:** Copied all settings, keybindings, and databases to the NEW location.
+
+---
+
 ## What Happened
 
 ### 1. Repository Move
@@ -132,6 +147,31 @@ Files restored:
 - `state.vscdb` (920KB) - Main VSCode database
 - `state.vscdb.backup` (920KB) - Backup database
 - `storage.json` (96KB) - Extension state
+
+### ✅ Step 5: CRITICAL FIX — Copy to NEW Antigravity Config Path
+
+**DISCOVERY:** Antigravity changed its config directory from `Antigravity/User/` to `Antigravity/Antigravity/User/`.
+
+When settings were restored to the old location, Antigravity couldn't find them because it was looking in the NEW location.
+
+**Fix applied:**
+```bash
+# Copy to new location
+cp ~/Library/Application\ Support/Antigravity/User/settings.json \
+   ~/Library/Application\ Support/Antigravity/Antigravity/User/settings.json
+
+cp ~/Library/Application\ Support/Antigravity/User/keybindings.json \
+   ~/Library/Application\ Support/Antigravity/Antigravity/User/keybindings.json
+
+cp -r ~/Library/Application\ Support/Antigravity/User/globalStorage/* \
+   ~/Library/Application\ Support/Antigravity/Antigravity/User/globalStorage/
+
+# Update MCP symlink to new location
+ln -sfn /Users/Office/Repos/stevewesthoek/brain/operations/system-configs/antigravity/User/mcp.json \
+   ~/Library/Application\ Support/Antigravity/Antigravity/User/mcp.json
+```
+
+**Result:** Antigravity now finds ALL config in the correct location
 
 ---
 
