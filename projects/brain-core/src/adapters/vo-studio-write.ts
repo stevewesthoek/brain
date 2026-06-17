@@ -1,14 +1,16 @@
 import { requestAction } from './actions.js';
 import { createVOApproval } from './vo-studio-approval-store.js';
 import { generateVideoOrchestratorMetadata } from './video-orchestrator-metadata-generator.js';
+import { readVOStudioContentItem } from './video-orchestrator-studio-model.js';
 import type { ContentItem } from '../types/vo-studio.js';
 
 export interface CreateContentItemRequest {
   projectId: string;
   title: string;
   description: string;
-  sourceAudioPath: string;
-  backgroundImagePath: string;
+  sourceAudioPath?: string;
+  backgroundImagePath?: string;
+  sourceVideoPath?: string;
 }
 
 export interface CreateContentItemResponse {
@@ -27,6 +29,9 @@ export function createContentItemRequest(
   request: CreateContentItemRequest,
 ): CreateContentItemResponse {
   const errors: string[] = [];
+  const sourceVideoPath = request.sourceVideoPath?.trim() || '';
+  const sourceAudioPath = request.sourceAudioPath?.trim() || '';
+  const backgroundImagePath = request.backgroundImagePath?.trim() || '';
 
   if (!request.projectId?.trim()) {
     errors.push('projectId is required');
@@ -34,11 +39,11 @@ export function createContentItemRequest(
   if (!request.title?.trim()) {
     errors.push('title is required');
   }
-  if (!request.sourceAudioPath?.trim()) {
-    errors.push('sourceAudioPath is required');
+  if (!sourceVideoPath && !sourceAudioPath) {
+    errors.push('sourceVideoPath or sourceAudioPath is required');
   }
-  if (!request.backgroundImagePath?.trim()) {
-    errors.push('backgroundImagePath is required');
+  if (!sourceVideoPath && !backgroundImagePath) {
+    errors.push('backgroundImagePath is required for the legacy audio/image contract');
   }
 
   if (errors.length > 0) {
@@ -53,8 +58,9 @@ export function createContentItemRequest(
   const voApproval = createVOApproval('content', request.projectId, {
     title: request.title,
     description: request.description,
-    sourceAudioPath: request.sourceAudioPath,
-    backgroundImagePath: request.backgroundImagePath,
+    sourceAudioPath,
+    backgroundImagePath,
+    sourceVideoPath: sourceVideoPath || null,
   });
 
   const contentItemId = generateContentItemId();
@@ -66,8 +72,9 @@ export function createContentItemRequest(
     title: request.title,
     description: request.description || '',
     status: 'queued',
-    sourceAudioPath: request.sourceAudioPath,
-    backgroundImagePath: request.backgroundImagePath,
+    sourceAudioPath,
+    backgroundImagePath,
+    sourceVideoPath: sourceVideoPath || null,
     durationSec: null,
     language: 'en',
     createdAt: now,
@@ -106,6 +113,7 @@ export interface UpdateContentItemRequest {
   contentItemId: string;
   title?: string;
   description?: string;
+  sourceVideoPath?: string | null;
 }
 
 export interface UpdateContentItemResponse {
@@ -137,6 +145,9 @@ export function updateContentItemRequest(
   if (request.description !== undefined && typeof request.description !== 'string') {
     errors.push('description must be a string');
   }
+  if (request.sourceVideoPath !== undefined && request.sourceVideoPath !== null && !request.sourceVideoPath.trim()) {
+    errors.push('sourceVideoPath cannot be empty');
+  }
 
   if (errors.length > 0) {
     return {
@@ -149,6 +160,9 @@ export function updateContentItemRequest(
   const updatePayload: Record<string, unknown> = { contentItemId: request.contentItemId };
   if (request.title !== undefined) updatePayload.title = request.title;
   if (request.description !== undefined) updatePayload.description = request.description;
+  if (request.sourceVideoPath !== undefined) {
+    updatePayload.sourceVideoPath = request.sourceVideoPath?.trim() || null;
+  }
   const voApproval = createVOApproval('content', request.projectId, updatePayload);
 
   const now = new Date().toISOString();
@@ -160,6 +174,7 @@ export function updateContentItemRequest(
     status: 'queued',
     sourceAudioPath: '',
     backgroundImagePath: '',
+    sourceVideoPath: request.sourceVideoPath?.trim() || null,
     durationSec: null,
     language: 'en',
     createdAt: now,
@@ -310,32 +325,29 @@ export function approveThumbnailRequest(
     };
   }
 
-  const approvalId = `approval-thumbnail-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-  const result = requestAction('custom-thumbnail-approve');
-
-  if (!result.accepted) {
-    return {
-      ok: false,
-      error: result.message,
-    };
-  }
+  const approval = createVOApproval(
+    'thumbnail',
+    request.projectId.trim(),
+    {
+      contentItemId: request.contentItemId.trim(),
+      variantId: request.variantId.trim(),
+      requiredBefore: 'youtube_publish',
+    },
+  );
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: approval.id,
+      status: approval.status,
+    },
     preview: {
       approval: {
-        id: approvalId,
+        id: approval.id,
         type: 'thumbnail',
-        contentItemId: request.contentItemId,
-        variantId: request.variantId,
-        status: 'pending_approval',
+        contentItemId: request.contentItemId.trim(),
+        variantId: request.variantId.trim(),
+        status: approval.status,
       },
     },
   };
@@ -395,8 +407,25 @@ export async function generateMetadataRequest(
     };
   }
 
-  // Phase 1W: create a VO-specific approval record before committing the write.
-  const metaPayload: Record<string, unknown> = { contentItemId: request.contentItemId };
+  const contentItem = readVOStudioContentItem(request.contentItemId.trim());
+  if (!contentItem) {
+    return {
+      ok: false,
+      error: `contentItemId not found: ${request.contentItemId.trim()}`,
+    };
+  }
+  if (contentItem.projectId !== request.projectId.trim()) {
+    return {
+      ok: false,
+      error: 'contentItemId does not belong to projectId',
+    };
+  }
+
+  // Phase 1W: generate YouTube metadata from the canonical moving-video content item.
+  const metaPayload: Record<string, unknown> = {
+    contentItemId: contentItem.id,
+    targetPlatform: 'youtube',
+  };
   if (request.templateId !== undefined) metaPayload.templateId = request.templateId;
   const result = requestAction('custom-metadata-generate');
 
@@ -408,8 +437,11 @@ export async function generateMetadataRequest(
   }
 
   const metadata = await generateVideoOrchestratorMetadata({
-    projectId: request.projectId,
-    contentItemId: request.contentItemId,
+    projectId: contentItem.projectId,
+    contentItemId: contentItem.id,
+    title: contentItem.title,
+    description: contentItem.canonicalSource,
+    targetPlatforms: ['youtube'],
     ...(request.templateId !== undefined ? { templateId: request.templateId } : {}),
   });
 
@@ -486,32 +518,30 @@ export function approveMetadataRequest(
     };
   }
 
-  const approvalId = `approval-metadata-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-  const result = requestAction('custom-metadata-approve');
-
-  if (!result.accepted) {
-    return {
-      ok: false,
-      error: result.message,
-    };
-  }
+  const approval = createVOApproval(
+    'metadata',
+    request.projectId.trim(),
+    {
+      contentItemId: request.contentItemId.trim(),
+      variantId: request.variantId.trim(),
+      requiredBefore: 'youtube_publish',
+      targetPlatform: 'youtube',
+    },
+  );
 
   return {
     ok: true,
-    ...(result.approval && {
-      approval: {
-        id: result.approval.id,
-        status: result.approval.status,
-      },
-    }),
+    approval: {
+      id: approval.id,
+      status: approval.status,
+    },
     preview: {
       approval: {
-        id: approvalId,
+        id: approval.id,
         type: 'metadata',
-        contentItemId: request.contentItemId,
-        variantId: request.variantId,
-        status: 'pending_approval',
+        contentItemId: request.contentItemId.trim(),
+        variantId: request.variantId.trim(),
+        status: approval.status,
       },
     },
   };

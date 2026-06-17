@@ -2,17 +2,23 @@
 
 **Document ID:** IBR-ROADMAP-001  
 **Date:** 2026-06-07  
-**Status:** Planning (ready for review and approval)
+**Status:** Active — foundational bridge and report-only maintenance implemented; Phase 0B reconciliation in progress
 
 ## Executive Summary
 
-This roadmap outlines 18 phases (IB0–IB17) to evolve the Brain system from today's isolated automation islands into a Unified Knowledge Graph Runtime (UKGR). The runtime will maintain entities, relationships, and insights autonomously while preserving Steve's intentionality through approval gates and operator control.
+This roadmap sequences 18 phases (IB0–IB17) for evolving Brain's existing automation foundations into a Unified Knowledge Graph Runtime (UKGR). Implementation did not begin from zero: Brain Core, scheduler visibility, Mind Steward report-only workflows, Graphify, the bounded Mind maintenance pilot, decision handling, and approval-oriented safety boundaries already exist.
 
-**Timeline:** 4 months (IB0–IB17), ready to start after planning approval
+The current task is Phase 0B: reconcile roadmap state, implementation contracts, and automated drift checks before adding the next runtime capability. The next code phase after Phase 0B is a persistent Brain-owned inbox queue with idempotency, throttling, recovery state, operator visibility, and no Mind content writes.
 
-**Risk level:** Medium (depends on successful scheduler integration; no breaking changes to existing systems)
+**Timeline:** Phase-gated. Dates are estimates only and must not override acceptance criteria or safety boundaries.
 
-**Go/no-go decision point:** End of IB4 (after foundation hardening and first soft-launch candidate)
+**Risk level:** Medium. Scheduler, queue, approval, recovery, and cross-repo contract alignment must remain proven before write-capable or continuous behavior is enabled.
+
+**Go/no-go decision point:** Before any approved durable Mind write and again before any continuous watcher.
+
+## Canonical philosophy
+
+Read `operations/specs/infinite-brain-philosophy.md` first. It is the shared philosophy contract for Infinite Brain across Brain and Mind.
 
 ## Non-Negotiable User Experience Principles
 

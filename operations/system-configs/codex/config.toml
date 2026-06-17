@@ -140,6 +140,12 @@ trust_level = "trusted"
 [projects."/Users/Office/Repos/prochattools/saas/fala"]
 trust_level = "trusted"
 
+[projects."/Users/Office/Repos/prochattools/saas/prochat-qa-memory/prochat-qa-memory"]
+trust_level = "trusted"
+
+[projects."/Users/Office/Repos/vendors/nexu-io/open-design"]
+trust_level = "trusted"
+
 [tui.model_availability_nux]
 "gpt-5.5" = 4
 

@@ -9,7 +9,7 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "model": "opus",
+  "model": "haiku",
   "hooks": {
     "PreToolUse": [
       {
@@ -156,6 +156,7 @@
       }
     }
   },
+  "effortLevel": "high",
   "autoCompactWindow": 200000,
   "autoDreamEnabled": true,
   "skipDangerousModePermissionPrompt": true,

@@ -12,6 +12,51 @@ export type InfiniteBrainWriterCategory =
   | 'task-extraction'
   | 'cleanup';
 
+export interface InfiniteBrainWikiSingleFileWriteInput {
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  targetPath: string;
+  expectedBeforeHash: string;
+  newContent: string;
+  allowedSections: string[];
+  contentIntent: string;
+  operator: string;
+  reason: string;
+  manualSingleWriteConfirm: boolean;
+  mindRoot: string;
+}
+
+export interface InfiniteBrainWikiSingleFileWriteReport {
+  writeId: string;
+  generatedAt: string;
+  status: 'blocked' | 'applied' | 'failed';
+  targetPath: string;
+  changedPaths: string[];
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  beforeContentHash: string | null;
+  afterContentHash: string | null;
+  rollbackId: string | null;
+  rollbackSnapshotPath: string | null;
+  writeReportPath: string | null;
+  blockers: string[];
+  singleFileOnly: true;
+  exactPathOnly: true;
+  atomicWrite: boolean;
+  wroteToMind: boolean;
+  applied: boolean;
+}
+
 export interface InfiniteBrainWriterInput {
   dryRunId: string;
   dryRunReportPath?: string;
@@ -22,6 +67,7 @@ export interface InfiniteBrainWriterInput {
     proposalId: string;
     targetPathsPreview: string[];
   }>;
+  wikiWrite?: InfiniteBrainWikiSingleFileWriteInput;
 }
 
 export interface InfiniteBrainWriterPrecondition {

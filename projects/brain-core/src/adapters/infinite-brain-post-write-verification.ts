@@ -177,12 +177,76 @@ function performPostWriteVerificationChecks(
       : 'Mind repo path not found or not accessible',
   });
 
-  // Check 4: expectedTargetPathsResolvable
+  // Check 4+: exact-path wiki approval and manifest scope
+  const wikiEntries = writeManifest?.entries.filter(entry => entry.category === 'wiki-writing') ?? [];
+  const exactPathsValid = wikiEntries.length > 0 && wikiEntries.every(entry =>
+    entry.exactPathApprovalValid === true
+    && entry.targetPathsPreview.length > 0
+    && entry.targetPathsPreview.every(targetPath =>
+      targetPath.startsWith('wiki/')
+      && !targetPath.endsWith('/')
+      && !targetPath.includes('*')
+      && !targetPath.includes('..')
+    )
+  );
   checks.push({
     checkId: `check-${checkIndex++}`,
-    label: 'Expected target paths resolvable',
-    status: 'blocked',
-    reason: 'Target path resolution requires expected write manifest. Blocked until implemented.',
+    label: 'Exact approved wiki target paths are valid',
+    status: exactPathsValid ? 'pass' : 'blocked',
+    reason: exactPathsValid
+      ? 'Every wiki manifest entry has a validated exact repository-relative file path.'
+      : 'A wiki manifest entry is missing valid exact-path approval or contains a broad/invalid path.',
+  });
+
+  const beforeHashesPresent = wikiEntries.length > 0 && wikiEntries.every(entry =>
+    entry.targetPathsPreview.every(targetPath =>
+      entry.wouldCreateFiles
+        ? Object.prototype.hasOwnProperty.call(entry.expectedBeforeHashes, targetPath)
+          && entry.expectedBeforeHashes[targetPath] === null
+        : typeof entry.expectedBeforeHashes[targetPath] === 'string'
+          && entry.expectedBeforeHashes[targetPath]!.length > 0
+    )
+  );
+  checks.push({
+    checkId: `check-${checkIndex++}`,
+    label: 'Expected before-state hashes are present',
+    status: beforeHashesPresent ? 'pass' : 'blocked',
+    reason: beforeHashesPresent
+      ? 'Every approved wiki target has the required before-state expectation.'
+      : 'An approved wiki target is missing its required before-state hash or create sentinel.',
+  });
+
+  const approvalsCurrent = wikiEntries.length > 0 && wikiEntries.every(entry =>
+    typeof entry.approvalId === 'string'
+    && entry.approvalId.length > 0
+    && typeof entry.sourceCommit === 'string'
+    && entry.sourceCommit.length > 0
+    && typeof entry.approvedBy === 'string'
+    && entry.approvedBy.length > 0
+    && typeof entry.expiresAt === 'string'
+    && !Number.isNaN(Date.parse(entry.expiresAt))
+    && Date.parse(entry.expiresAt) > Date.now()
+  );
+  checks.push({
+    checkId: `check-${checkIndex++}`,
+    label: 'Approval provenance is complete and unexpired',
+    status: approvalsCurrent ? 'pass' : 'blocked',
+    reason: approvalsCurrent
+      ? 'Approval ID, source commit, approver, and current expiry are present for every wiki entry.'
+      : 'Approval provenance is incomplete or at least one approval has expired.',
+  });
+
+  const noUnapprovedPaths = wikiEntries.length > 0 && wikiEntries.every(entry => {
+    const approvedPaths = new Set(Object.keys(entry.expectedBeforeHashes));
+    return entry.targetPathsPreview.every(targetPath => approvedPaths.has(targetPath));
+  });
+  checks.push({
+    checkId: `check-${checkIndex++}`,
+    label: 'No unapproved wiki paths are present',
+    status: noUnapprovedPaths ? 'pass' : 'blocked',
+    reason: noUnapprovedPaths
+      ? 'Every intended wiki path is represented in the exact approval payload.'
+      : 'The manifest contains a wiki target not represented in the exact approval payload.',
   });
 
   // Check 5: frontmatterValidationAvailable

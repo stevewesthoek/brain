@@ -1,5 +1,5 @@
 # Narration Script for "make a video of a bird"
-Generated: 2026-06-05T14:21:23.670Z
+Generated: 2026-06-11T14:35:13.717Z
 Provider: deterministic-local
 Total Duration: 60s
 

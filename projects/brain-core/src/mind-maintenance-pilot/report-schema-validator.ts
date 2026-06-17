@@ -130,7 +130,9 @@ function validateFinding(
     pushIssue(issues, `${path}.paths`, 'must contain at least one exact path');
   } else {
     for (const findingPath of value.paths) {
-      if (!PILOT_FILES.includes(findingPath as (typeof PILOT_FILES)[number])) {
+      const isPilotPath = PILOT_FILES.includes(findingPath as (typeof PILOT_FILES)[number]);
+      const isCapturePromotionPath = value.type === 'capture-promotion' && findingPath.startsWith('capture/');
+      if (!isPilotPath && !isCapturePromotionPath) {
         pushIssue(issues, `${path}.paths`, `contains path outside the pilot boundary: ${findingPath}`);
       }
     }

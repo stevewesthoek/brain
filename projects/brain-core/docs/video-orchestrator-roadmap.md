@@ -31,34 +31,43 @@ This roadmap must flow from `video-orchestrator-strategy.md`.
 - AI Model Selector running at `localhost:4890`; current approved provider policy supports Claude Code via Amazon Bedrock, Codex CLI, and approved selector routes. Gemini is disabled and is not part of the current stack. Direct Anthropic API and direct OpenAI API calls remain disallowed where applicable.
 
 **Current active gap:**
-- The ordered implementation milestones recorded in this roadmap are complete.
-- No new implementation milestone is currently authorized.
-- Further code work requires an explicit product-prioritization decision and a roadmap update naming one measurable next milestone before implementation begins.
+- The moving-video-to-YouTube workflow is not yet complete end to end.
+- YouTube OAuth2 direct upload exists, but the approval-gated path from moving-video input through package queueing and direct YouTube posting still requires ordered completion and verification.
+- Sprint 1W is the only authorized implementation milestone until this workflow is tested and confirmed complete by the operator.
 
 **Remaining VO product gaps:**
+- Complete the approval-gated moving-video workflow through direct YouTube publishing.
 - Test & Compare remains manual via YouTube Studio until/if YouTube exposes a public developer API.
-- Multi-platform publishing can expand beyond the current direct adapters and n8n fallback when explicitly prioritized.
-- Future reliability, UX, or documentation refinements should be added as named roadmap milestones before implementation.
+- Multi-platform expansion is deferred until the moving-video-to-YouTube workflow is complete and explicitly re-authorized.
 
 ---
 
 ## Build Order From Here
 
-The historical build order below is complete and remains preserved in the phase sections as completion evidence:
+The build order preserves completed foundations while identifying the single current implementation milestone:
 
 1. ✅ **Policy lock & Selector policy implementation** — complete.
 2. ✅ **Normalized read model (Phase 0.8)** — complete.
 3. ✅ **Brain Console read-first shell (Phase 0.9)** — complete.
-4. ✅ **Approval-gated project workflows (Phase 1W)** — complete.
-5. ✅ **Adapter expansion (Phase 6)** — complete.
+4. ⏳ **Moving-video-to-YouTube approval workflow (Phase 1W)** — current and in progress.
+5. 🔲 **Further multi-platform expansion (Phase 6)** — deferred/future until Phase 1W is tested and operator-confirmed complete.
 
-**Authorized next milestone:** Productionize the first non-YouTube direct publishing path, using TikTok as the proving target.
+**Authorized next milestone:** Complete Sprint 1W for the moving-video-to-YouTube workflow.
 
-**Owner boundary:** Brain Core platform publishing adapter layer, platform capability/config records, and focused adapter contract tests only. No Brain Console redesign, project-specific publishing logic, credential UI expansion, or unrelated pipeline changes.
+**Owner boundary:** Brain Core approval, package, posting-target, and YouTube publishing flow, plus the minimum Brain Console controls required by the ordered Sprint 1W tasks. No slideshow generation, non-YouTube adapter expansion, unrelated hardening, or broad UI redesign.
 
-**Measurable exit criterion:** An approved production package resolves a TikTok posting target to `direct` only when credentials, scopes, upload limits, quota/capability checks, approval, and idempotency all pass. Otherwise it deterministically resolves to the existing n8n or manual-package fallback without duplicate posting. Focused adapter contract tests cover both direct and fallback outcomes.
+**Ordered execution:**
+1. ✅ Task 1W-B audit completed against Tasks 1W-A through 1W-I.
+2. ⏳ Task 1W-C is the first genuinely missing task and is next: add real moving-video intake and source updates without slideshow generation.
 
-Do not begin work outside this milestone until the roadmap is explicitly updated with a new prioritized milestone, owner boundary, and measurable exit criterion.
+**Historical Phase 6 labeling:** All completion statements and checkmarks in both `Historical Phase 6 Evidence` sections are unverified historical plan records pending focused verification. They are not active authorization.
+3. Validate Task 1W-C with its focused tests and required build checks.
+4. Review the result against the roadmap and implementation plan.
+5. Mark the task complete only after operator confirmation, then proceed to the next task.
+
+**Measurable exit criterion:** A real moving-video content item can proceed through required thumbnail and metadata approvals, package and YouTube posting-target queueing, and one idempotent direct YouTube upload using the existing OAuth2 adapter, with complete audit history and deterministic failure reporting. The workflow is not complete until focused tests pass and the operator confirms the verified result.
+
+Do not begin work outside this milestone until the roadmap is explicitly updated and approved.
 
 ---
 
@@ -267,12 +276,12 @@ This phase is retained only as historical context. Gemini is disabled and is not
 
 ---
 
-## Phase 1W — Approval-Gated Studio Writes ✅ Complete
-> Add writes only after read models and Console shell are stable
+## Phase 1W — Moving-Video-to-YouTube Approval Workflow ⏳ Current
+> Complete the approval-gated path from real moving-video input through direct YouTube publishing
 
-**Goal:** Prevent unauthorized writes by requiring operator approval before content/package changes are committed. Phase 1W gates the write-side: UI approval panel, decision handlers, and audit trail.
+**Goal:** Prevent unauthorized publishing by requiring explicit thumbnail and metadata approvals before package queueing and direct YouTube upload.
 
-**Status:** All 5 tasks complete. Approvals working end-to-end: create write → approval record → queue → operator decides → next stage.
+**Status:** In progress. Task 1W-B audit is complete. Task 1W-A is implemented for the legacy audio-plus-image contract. Task 1W-C real moving-video intake and source update is complete and operator-confirmed. Task 1W-D thumbnail variants is complete with focused validation passing. Task 1W-E explicit thumbnail approval is complete with canonical persistence, active POST routing, a correct 405 contract, VO Studio write tests 67/67, thumbnail route tests 20/20, and typecheck passing. Task 1W-F YouTube metadata generation is complete: it resolves the canonical moving-video item, generates YouTube-only title, description, tags, and hashtags, rejects missing/cross-project items, and passed VO Studio write tests 69/69. Task 1W-G canonical YouTube metadata approval is complete and passed its focused persistence suite 6/6. Task 1W-H package queue, approval gates, idempotency, and direct OAuth2 YouTube upload is current; Task 1W-I remains incomplete until focused validation and operator confirmation.
 
 ### 1W.1 ApprovalQueuePanel integration ✅
 - [x] ApprovalQueuePanel integrated into VOShell; "Approvals" tab visible
@@ -407,7 +416,7 @@ This phase is retained only as historical context. Gemini is disabled and is not
 
 ---
 
-## Phase 6 — Direct Publishing Adapters ✅ Complete
+## Historical Phase 6 Evidence — Direct Publishing Adapters 📋 Audit pending
 > Multi-platform publishing with capability checks and fallback
 
 **Goal:** Publish videos directly to YouTube, TikTok, Instagram with automatic n8n fallback if direct fails.
@@ -543,7 +552,7 @@ This phase is retained only as historical context. Gemini is disabled and is not
 
 ---
 
-## Phase 6 — Multi-Platform Full Stack ✅ Complete
+## Historical Phase 6 Evidence — Multi-Platform Full Stack 📋 Audit pending
 > Facebook, Pinterest, TikTok, Instagram via n8n + platform-specific metadata
 
 **Goal:** A single `vo queue pipeline` command produces and publishes to all connected platforms.
@@ -661,24 +670,24 @@ This queues: normalize → subtitle → compose → thumbnail → metadata → m
 ## Phase Sequencing (Updated)
 
 ```
-Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R ✅ → Phase 0.7 ✅ → Phase 0.8 ✅ → Phase 0.9 ✅ → Phase 1W ✅ → Phase 2W ✅ → Phase 6 ✅
-Foundation   Selector v1    Dual-node    Gemini policy   Agents        Read model   Console UI   Studio writes Approval adv. Direct publish
+Phase 0 ✅ → Phase 0.5 ✅ → Phase 0.6 ✅ → Phase 0.5R ✅ → Phase 0.7 ✅ → Phase 0.8 ✅ → Phase 0.9 ✅ → Phase 1W ⏳
+Foundation   Selector v1    Dual-node    Gemini policy   Agents        Read model   Console UI   Moving-video-to-YouTube workflow
 
-Phase 10 ✅ → Phase 11 ✅ → Phase Next ✅ → Phase 3+ 🔲
-Webhooks/Analytics  Brain Console integration   Wire real providers+UI phases   Hardening & expansion
+Phase 2W ✅ → Phase 6 🔲
+Approval advances complete   Further multi-platform expansion deferred/future
 
-Current: Phase Next and the Brain Console AI selector health chip have been completed. The Brain Console now stays focused on shared health/usage and shared orchestration visibility. Ready for future roadmap work.
+Current: Phase 1W is the sole authorized implementation focus. Existing approval and publishing components must be audited against Tasks 1W-B through 1W-I, completed where missing, tested in order, and operator-confirmed before the phase is marked complete.
 
 Phase 0.7 is complete.
-Phase 1-5 next-phase implementation items are complete.
-Later roadmap phases remain open.
+Phase 1-5 processing foundations are implementation evidence, not proof that the end-to-end moving-video-to-YouTube workflow is complete.
+Later roadmap work remains blocked until Phase 1W completion and explicit authorization.
 ```
 
 ---
 
 ## Immediate Next Steps
 
-**Next session:** Roadmap work is complete except for the blocked external YouTube Test & Compare API dependency. Resume only if YouTube exposes a public developer API or if the roadmap is extended with new product work.
+**Next session:** Execute Task 1W-B only: audit Tasks 1W-A through 1W-I against the current codebase, correct their documented status, and identify the first genuinely missing moving-video-to-YouTube task. Do not begin implementation until the audit is reviewed and operator-approved.
 
 **Session handoff:** `SESSION-HANDOFF-2026-05-24.md` — context snapshot. `CODEX-NEXT-SESSION-PROMPT.md` — Codex pickup script.
 

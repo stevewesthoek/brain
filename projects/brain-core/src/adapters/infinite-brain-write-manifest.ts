@@ -31,6 +31,17 @@ export interface WriteManifestEntry {
   operationType: string;
   intendedAction: string;
   targetPathsPreview: string[];
+  approvalId: string | null;
+  sourceReportId: string | null;
+  sourceCommit: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  expiresAt: string | null;
+  expectedBeforeHashes: Record<string, string | null>;
+  allowedSections: Record<string, string[]>;
+  contentIntent: string | null;
+  exactPathApprovalValid: boolean;
+  exactPathApprovalErrors: string[];
   contentPreviewAvailable: boolean;
   contentPreviewHash: string | null;
   wouldCreateFiles: boolean;
@@ -150,6 +161,21 @@ function convertDryRunOperationsToManifestEntries(
   for (const op of dryRunOps) {
     const entryId = generateEntryId(op.operationId, op.operationType, op.category);
 
+    const exactPathApprovalErrors = Array.isArray(op.exactPathApprovalErrors)
+      ? op.exactPathApprovalErrors.filter((error: unknown): error is string => typeof error === 'string')
+      : [];
+    const exactPathApprovalValid = op.exactPathApprovalValid === true && exactPathApprovalErrors.length === 0;
+    const validationRequired = op.validationChecks?.map((c: any) => c.label) || [];
+
+    if (op.category === 'wiki-writing') {
+      validationRequired.push(
+        'target-path-match',
+        'before-hash-match',
+        'approval-not-expired',
+        'no-unapproved-paths-changed',
+      );
+    }
+
     entries.push({
       entryId,
       operationId: op.operationId,
@@ -158,6 +184,21 @@ function convertDryRunOperationsToManifestEntries(
       operationType: op.operationType,
       intendedAction: `${op.operationType} in ${op.category}`,
       targetPathsPreview: op.targetPathsPreview || [],
+      approvalId: typeof op.approvalId === 'string' ? op.approvalId : null,
+      sourceReportId: typeof op.sourceReportId === 'string' ? op.sourceReportId : null,
+      sourceCommit: typeof op.sourceCommit === 'string' ? op.sourceCommit : null,
+      approvedBy: typeof op.approvedBy === 'string' ? op.approvedBy : null,
+      approvedAt: typeof op.approvedAt === 'string' ? op.approvedAt : null,
+      expiresAt: typeof op.expiresAt === 'string' ? op.expiresAt : null,
+      expectedBeforeHashes: op.expectedBeforeHashes && typeof op.expectedBeforeHashes === 'object'
+        ? op.expectedBeforeHashes
+        : {},
+      allowedSections: op.allowedSections && typeof op.allowedSections === 'object'
+        ? op.allowedSections
+        : {},
+      contentIntent: typeof op.contentIntent === 'string' ? op.contentIntent : null,
+      exactPathApprovalValid,
+      exactPathApprovalErrors,
       contentPreviewAvailable: false,
       contentPreviewHash: null,
       wouldCreateFiles: op.operationType.toLowerCase().includes('create') || false,
@@ -166,7 +207,7 @@ function convertDryRunOperationsToManifestEntries(
       wouldMoveFiles: op.wouldMoveFiles || false,
       requiresRollbackPlan: op.wouldDeleteFiles || op.wouldMoveFiles || false,
       rollbackPreview: op.rollbackPreview || '',
-      validationRequired: op.validationChecks?.map((c: any) => c.label) || [],
+      validationRequired,
       writeBlocked: true,
       applied: false,
     });

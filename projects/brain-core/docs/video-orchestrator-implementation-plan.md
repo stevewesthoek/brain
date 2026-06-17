@@ -33,7 +33,7 @@ The historical Gemini-first Phase 0.5R work below is retained only as implementa
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
 | Sprint 4 — SEO Metadata | Phase 4 | ✅ Complete (UI carry-over) |
 | Sprint 5 — Analytics | Phase 5 | ✅ Complete (UI carry-over) |
-| Sprint 6 — Approval-Gated Studio Writes | Phase 1W | ⏳ In progress |
+| Sprint 6 — Moving-Video-to-YouTube Approval Workflow | Phase 1W | ⏳ In progress |
 | Sprint 7 — Multi-Platform | Phase 6 | 🔲 Future |
 | Sprint 8 — Hardening | Phase 7 | 🔲 Future |
 
@@ -613,61 +613,109 @@ Show:
 
 ---
 
-## Sprint 6: Approval-Gated Studio Writes (Phase 1W) ⏳
+## Sprint 6: Moving-Video-to-YouTube Approval Workflow (Phase 1W) ⏳ Current
 
-**Purpose:** Add controlled write actions to Brain Console, one at a time, with explicit approval and idempotency.
+**Purpose:** Complete one end-to-end workflow for real moving-video inputs through approval, packaging, queueing, and direct YouTube upload.
 
-**Boundary:** Each write action is a Brain Core adapter, route, and tests only. Brain Console UI is a separate task per action.
+**Boundary:** Execute only the ordered Phase 1W tasks needed for the moving-video-to-YouTube path. Brain Core adapters, routes, audit records, focused tests, and the minimum Brain Console controls required by each task are allowed. Slideshow generation, non-YouTube adapters, unrelated hardening, broad UI redesign, and opportunistic cleanup are out of scope.
 
-### Task 1W-A — Create Content Item ✅
+**Execution rule:** Work on one task at a time. Before implementation, confirm its current code status and allowed files. After implementation, run the documented focused validation, review the result against this plan and the roadmap, and wait for operator confirmation before marking it complete or starting the next task.
+
+### Task 1W-A — Create Content Item 📋 Legacy contract implemented
+
+**Status:** Implemented for the existing audio-plus-image content contract only; it does not yet register a real moving-video source.
 
 **Scope:** Small, self-contained Brain Core write. Validation, approval routing, unique ID generation.
 
 **Files:**
-- Add `projects/brain-core/src/adapters/vo-studio-write.ts`
-- Add `projects/brain-core/src/tests/vo-studio-write.test.ts`
-- Update `projects/brain-core/src/api/routes.ts` (add POST route)
+- `projects/brain-core/src/adapters/vo-studio-write.ts`
+- `projects/brain-core/src/tests/vo-studio-write.test.ts`
+- `projects/brain-core/src/api/routes.ts`
 
-**Implement:**
-- Export `createContentItemRequest()` function
-- Input: projectId, title, description, sourceAudioPath, backgroundImagePath
-- Validate: projectId, title, sourceAudioPath, backgroundImagePath required
-- Output: approval summary + content item preview
-- Route request through existing approval system with kind `custom-content-item-create`
-- Generate unique content item IDs with timestamp + random suffix
+**Implemented contract:** `POST /api/video-orchestrator/content-items/create` validates input, creates an approval record, and returns an approval ID plus preview using `sourceAudioPath` and `backgroundImagePath`.
+
+### Task 1W-B — Audit Tasks 1W-A Through 1W-I Against Current Code ✅ Complete
+
+**Status:** Audit complete. Task 1W-C is the first genuinely missing moving-video-to-YouTube implementation task.
+
+**Output:** A factual status table for Tasks 1W-A through 1W-I, exact file evidence, focused validation commands, and the first genuinely missing implementation task. No code changes.
+
+### Task 1W-C — Moving-Video Intake and Content Update ✅ Complete
+
+**Status:** Implemented, focused validation passed with 66/66 tests, and operator-confirmed. Real moving-video sources can be registered and updated through the approval boundary without slideshow inputs while preserving the legacy audio/image contract.
+
+Confirm that a real moving-video source can be selected or registered without slideshow generation, and that required content metadata can be updated through the approval boundary.
+
+### Task 1W-D — Generate Thumbnail Variants ✅ Technically complete; operator confirmation pending
+
+**Status:** The repo-owned FFmpeg worker generates two real 1280×720 JPEG artifacts, the adapter validates JPEG structure and dimensions before accepting them, and the approval-gated route attaches the first two outputs as `variant_a` and `variant_b` to the moving-video content item. Focused validation passed: thumbnail queue 5/5, thumbnail route 19/19, and TypeScript typecheck. Awaiting operator confirmation before advancing to Task 1W-E.
+
+**Implementation:**
+
+**Worker Contract** — CLI entry point: `~/.local/video-orchestrator/worker/cli_thumbnail_designer_basic.py`
+- Input: JSON on stdin with schema: `{episode_id, title, background_image_url, template_definition, color_scheme, platform?}`
+- Output: JSON on stdout with schema: `{status: "completed"|"failed", job_id, episode_id, variants: [{variant_id, url, confidence_score, ...}], error_message?}`
+- Exit code: 0 on success, 1 on failure
+- Guarantees:
+  - Two real JPEG image files generated per request
+  - Files created at `~/.local/video-orchestrator/artifacts/thumbnails/{episode_id}_v{N}.jpg`
+  - Files verified to exist before returning success
+  - No synthetic S3 URLs returned
+
+**TypeScript Adapter** — `src/adapters/thumbnail-queue.ts`
+- `invokePythonDesigner()` spawns the CLI with proper IPC
+- Sends JSON request via stdin (no shell interpolation)
+- Captures stdout/stderr separately
+- Enforces 60-second timeout
+- Validates exit code
+- Parses and validates JSON response
+- Verifies artifact files exist before accepting response
+- Requires minimum 2 real variants with valid file paths
+- Maps first two variants to `variant_a` and `variant_b`
+- Preserves `contentItemId` association
 
 **Tests:**
-- ✅ Accepts valid input and returns approval preview
-- ✅ Rejects missing projectId
-- ✅ Rejects missing title  
-- ✅ Rejects missing sourceAudioPath
-- ✅ Rejects missing backgroundImagePath
-- ✅ Allows empty description
-- ✅ Preview has correct structure and defaults
-- ✅ Generated IDs are unique
-- ✅ Reports all validation errors
+- `npm run test:thumbnail-route` — 19 tests pass, including live thumbnail generation
+- `npx tsx --test src/tests/thumbnail-queue.test.ts` — 2 focused unit tests pass
+- `npm run typecheck` — passes
 
-**Done:** `npm run build && npm test` pass (700/700 tests). POST `/api/video-orchestrator/content-items/create` accepts JSON, validates, routes through approval system, returns 202 Accepted with approval ID and preview.
+**Verification:** Real JPEG files created at `~/.local/video-orchestrator/artifacts/thumbnails/` with valid file headers. Files associated with moving-video `contentItemId`. Approval workflow gated before YouTube publishing.
 
----
+### Task 1W-E — Approve Thumbnail ✅ Complete
 
-### Task 1W-B — Brain Console: Create Content Item UI
+Record an explicit, auditable thumbnail approval required before YouTube publishing.
 
-**Scope:** Brain Console UI panel for content item creation. Not yet started.
+**Status:** Complete. `approveThumbnailRequest()` persists a canonical `thumbnail` approval containing `projectId`, `contentItemId`, `variantId`, and `requiredBefore: 'youtube_publish'`. `/api/video-orchestrator/thumbnails/approve` is reachable through the active POST router, rejects non-POST methods with a correct `405` contract, and no duplicate unreachable handler remains.
 
-### Task 1W-C — Update Content Item Brief/Script
+**Verification:** VO Studio write tests 67/67 passed, thumbnail route tests 20/20 passed, and TypeScript typecheck passed.
 
-### Task 1W-D — Generate Thumbnail Variants
+### Task 1W-F — Generate Metadata ✅ Complete
 
-### Task 1W-E — Approve Thumbnail
+Generate the YouTube title, description, and related metadata for the approved moving-video package.
 
-### Task 1W-F — Generate Metadata
+**Status:** Complete. Metadata generation now resolves the canonical moving-video content item, rejects missing and cross-project items deterministically, uses the item title and canonical source, targets YouTube only, and returns populated YouTube title, description, tags, hashtags, and a single `youtube` platform entry.
 
-### Task 1W-G — Approve Metadata
+**Verification:** `npm run test:vo-studio-write` passed 69/69 tests, including canonical moving-video metadata generation, YouTube-only output, populated metadata fields, and deterministic missing/cross-project failures. Typecheck remains blocked only by an unrelated existing error in `src/adapters/infinite-brain-proposal-application-planner.ts`.
 
-### Task 1W-H — Queue Package & Posting Targets
+### Task 1W-G — Approve Metadata ✅ Complete
 
-**Sprint 1W done when:** A content item can move from creation to approved package with complete audit history and no autonomous publishing.
+Record an explicit, auditable metadata approval required before YouTube publishing.
+
+**Status:** Complete. `approveMetadataRequest()` now persists a canonical `metadata` approval containing `contentItemId`, `variantId`, `requiredBefore: 'youtube_publish'`, and `targetPlatform: 'youtube'`. The response returns the persisted approval ID and canonical `pending` status.
+
+**Verification:** `npm run test:metadata-approval` passed 6/6 focused tests, covering valid approval creation, canonical persistence, required YouTube publish gating, validation failures, and unique approval IDs.
+
+### Task 1W-H — Queue Package and YouTube Posting Target 📋 Implementation evidence; verification pending
+
+Create the final production package, queue exactly one YouTube posting target, enforce idempotency, and invoke the existing OAuth2 direct-upload adapter only after all required approvals pass.
+
+### Task 1W-I — End-to-End Verification and Operator Confirmation 🔲 Incomplete
+
+Run the focused tests and required builds, verify deterministic failure reporting and complete audit history, then perform one operator-confirmed moving-video-to-YouTube workflow. Do not mark Sprint 1W complete without operator confirmation.
+
+**Required order:** 1W-B → 1W-C → 1W-D → 1W-E → 1W-F → 1W-G → 1W-H → 1W-I.
+
+**Sprint 1W done when:** One real moving-video content item proceeds through required thumbnail and metadata approvals, package creation, one idempotent YouTube posting target, and direct YouTube upload through the existing OAuth2 adapter, with complete audit history, passing focused validation, and operator confirmation.
 
 ---
 
@@ -910,9 +958,9 @@ CLI command: `ab-check [--dry-run]`
 
 ---
 
-## Sprint 6: Brain Console UI (Later) 🔲
+## Historical Brain Console UI Carry-Over (Later) 🔲
 
-All backend modules are complete. The following UI panels need to be built in `brain-console-obsidian/src/view.ts`:
+Historical plan records backend modules as implemented, but current-code status remains audit pending under Task 1W-B. The following UI panels remain historical carry-over items in `brain-console-obsidian/src/view.ts`:
 
 ### Task 21 — Thumbnail studio panel
 - Template library: show available templates from `thumbnail-templates.json`

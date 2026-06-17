@@ -198,3 +198,107 @@ test('readWriteManifestSummary returns available false when manifest missing', (
     }
   }
 });
+
+
+
+
+test('wiki manifest entries preserve exact-path approval provenance and required checks', () => {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'write-manifest-test-wiki-approval-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+
+  writeFileSync(dryRunPath, JSON.stringify({
+    reportId: 'dry-run-wiki-1',
+    status: 'dry-run-ready',
+    operations: [
+      {
+        operationId: 'op-wiki-1',
+        proposalId: 'proposal-wiki-1',
+        category: 'wiki-writing',
+        operationType: 'update',
+        targetPathsPreview: ['wiki/example.md'],
+        approvalId: 'mind-approval-20260617-test',
+        sourceReportId: 'report-1',
+        sourceCommit: '0123456789abcdef0123456789abcdef01234567',
+        approvedBy: 'human-reviewer',
+        approvedAt: '2026-06-17T12:00:00Z',
+        expiresAt: '2026-06-18T12:00:00Z',
+        expectedBeforeHashes: { 'wiki/example.md': 'a'.repeat(64) },
+        allowedSections: { 'wiki/example.md': ['Approved section'] },
+        contentIntent: 'Replace only the approved section.',
+        exactPathApprovalValid: true,
+        exactPathApprovalErrors: [],
+        validationChecks: [],
+      },
+    ],
+  }));
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+
+    const manifest = generateWriteManifest();
+    const entry = manifest.entries[0];
+
+    assert(entry);
+    assert.equal(entry.approvalId, 'mind-approval-20260617-test');
+    assert.equal(entry.sourceReportId, 'report-1');
+    assert.equal(entry.sourceCommit, '0123456789abcdef0123456789abcdef01234567');
+    assert.equal(entry.approvedBy, 'human-reviewer');
+    assert.equal(entry.exactPathApprovalValid, true);
+    assert.deepEqual(entry.expectedBeforeHashes, { 'wiki/example.md': 'a'.repeat(64) });
+    assert.deepEqual(entry.allowedSections, { 'wiki/example.md': ['Approved section'] });
+    assert(entry.validationRequired.includes('target-path-match'));
+    assert(entry.validationRequired.includes('before-hash-match'));
+    assert(entry.validationRequired.includes('approval-not-expired'));
+    assert(entry.validationRequired.includes('no-unapproved-paths-changed'));
+    assert.equal(entry.writeBlocked, true);
+    assert.equal(entry.applied, false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) {
+      process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    } else {
+      delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+    }
+  }
+});
+
+test('wiki manifest entries preserve exact-path approval errors and remain blocked', () => {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'write-manifest-test-wiki-invalid-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+
+  writeFileSync(dryRunPath, JSON.stringify({
+    reportId: 'dry-run-wiki-invalid',
+    operations: [
+      {
+        operationId: 'op-wiki-invalid',
+        proposalId: 'proposal-wiki-invalid',
+        category: 'wiki-writing',
+        operationType: 'update',
+        targetPathsPreview: ['wiki/'],
+        exactPathApprovalValid: false,
+        exactPathApprovalErrors: ['invalid-wiki-target:wiki/'],
+      },
+    ],
+  }));
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+
+    const entry = generateWriteManifest().entries[0];
+
+    assert(entry);
+    assert.equal(entry.exactPathApprovalValid, false);
+    assert.deepEqual(entry.exactPathApprovalErrors, ['invalid-wiki-target:wiki/']);
+    assert.equal(entry.writeBlocked, true);
+    assert.equal(entry.applied, false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) {
+      process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    } else {
+      delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+    }
+  }
+});

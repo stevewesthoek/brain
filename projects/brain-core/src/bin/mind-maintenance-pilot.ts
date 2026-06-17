@@ -311,7 +311,7 @@ async function defaultLoadLatestReport(mindRoot: string): Promise<MaintenanceRep
   return parsed;
 }
 
-const defaultDependencies: MindMaintenancePilotCliDependencies = {
+export const defaultDependencies: MindMaintenancePilotCliDependencies = {
   now: () => new Date(),
   resolveMindRoot: (value) => path.resolve(value),
   resolveSourceCommit: defaultResolveSourceCommit,

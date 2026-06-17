@@ -15,11 +15,6 @@ class MockResponse {
   writeHead(statusCode: number, headers?: Record<string, string>): void {
     this.statusCode = statusCode;
     this.headers = { ...this.headers, ...(headers ?? {}) };
-    assert.equal(this.headers['Access-Control-Allow-Origin'], '*');
-    assert.equal(this.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
-    assert.equal(this.headers['Access-Control-Allow-Headers'], 'content-type');
-    assert.equal(this.headers['X-Content-Type-Options'], 'nosniff');
-    assert.equal(this.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   }
 
   end(chunk?: string): void {
@@ -48,6 +43,11 @@ test('thumbnail route rejects unsupported methods with explicit endpoint semanti
     );
 
     assert.equal(response.statusCode, 405, method);
+    assert.equal(response.headers['Access-Control-Allow-Origin'], '*', method);
+    assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS', method);
+    assert.equal(response.headers['Access-Control-Allow-Headers'], 'content-type', method);
+    assert.equal(response.headers['X-Content-Type-Options'], 'nosniff', method);
+    assert.equal(response.headers['Cross-Origin-Resource-Policy'], 'cross-origin', method);
     assert.equal(response.headers.Allow, 'GET, HEAD', method);
     assert.equal(response.headers['Cache-Control'], 'no-store', method);
     assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8', method);
@@ -72,6 +72,11 @@ test('thumbnail HEAD suppresses the error body for an invalid job ID', async () 
   );
 
   assert.equal(response.statusCode, 400);
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(response.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(response.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(response.headers['Cache-Control'], 'no-store');
   assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(response.body, '');
@@ -89,6 +94,11 @@ test('thumbnail GET returns a no-store JSON error for an invalid job ID', async 
   );
 
   assert.equal(response.statusCode, 400);
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(response.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(response.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(response.headers['Cache-Control'], 'no-store');
   assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.deepEqual(JSON.parse(response.body), {
@@ -114,6 +124,8 @@ test('thumbnail OPTIONS advertises GET, HEAD, and OPTIONS only', async () => {
   assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
   assert.equal(response.headers['access-control-allow-methods'], 'GET, HEAD, OPTIONS');
   assert.equal(response.headers['access-control-allow-headers'], 'content-type');
+  assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(response.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(response.body, '');
 });
 
@@ -143,6 +155,11 @@ test('thumbnail not-ready responses preserve GET and HEAD semantics', async (t) 
   );
 
   assert.equal(getResponse.statusCode, 404);
+  assert.equal(getResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(getResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(getResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(getResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(getResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(getResponse.headers['Cache-Control'], 'no-store');
   assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   const getPayload = JSON.parse(getResponse.body) as Record<string, unknown>;
@@ -157,6 +174,11 @@ test('thumbnail not-ready responses preserve GET and HEAD semantics', async (t) 
   );
 
   assert.equal(headResponse.statusCode, 404);
+  assert.equal(headResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(headResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(headResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(headResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
   assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(headResponse.body, '');
@@ -197,6 +219,11 @@ test('thumbnail success responses preserve GET and HEAD semantics', async (t) =>
   );
 
   assert.equal(getResponse.statusCode, 200);
+  assert.equal(getResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(getResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(getResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(getResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(getResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(getResponse.headers['Content-Type'], 'image/png');
   assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
   assert.equal(getResponse.headers['Cache-Control'], 'no-store');
@@ -209,6 +236,11 @@ test('thumbnail success responses preserve GET and HEAD semantics', async (t) =>
   );
 
   assert.equal(headResponse.statusCode, 200);
+  assert.equal(headResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(headResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(headResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(headResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(headResponse.headers['Content-Type'], 'image/png');
   assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
@@ -251,6 +283,11 @@ test('thumbnail loader failures preserve GET and HEAD error semantics', async (t
   );
 
   assert.equal(getResponse.statusCode, 502);
+  assert.equal(getResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(getResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(getResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(getResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(getResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(getResponse.headers['Cache-Control'], 'no-store');
   assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   const getPayload = JSON.parse(getResponse.body) as Record<string, unknown>;
@@ -265,6 +302,11 @@ test('thumbnail loader failures preserve GET and HEAD error semantics', async (t
   );
 
   assert.equal(headResponse.statusCode, 502);
+  assert.equal(headResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(headResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(headResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(headResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
   assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(headResponse.body, '');
@@ -300,6 +342,11 @@ test('thumbnail empty byte results map to thumbnail_empty', async (t) => {
   );
 
   assert.equal(response.statusCode, 502);
+  assert.equal(response.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(response.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(response.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(response.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(response.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(response.headers['Cache-Control'], 'no-store');
   assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8');
   const payload = JSON.parse(response.body) as Record<string, unknown>;
@@ -438,6 +485,11 @@ test('thumbnail malformed encoded job IDs return invalid_job_id for GET and HEAD
   );
 
   assert.equal(getResponse.statusCode, 400);
+  assert.equal(getResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(getResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(getResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(getResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(getResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(getResponse.headers['Cache-Control'], 'no-store');
   assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.deepEqual(JSON.parse(getResponse.body), {
@@ -454,6 +506,11 @@ test('thumbnail malformed encoded job IDs return invalid_job_id for GET and HEAD
   );
 
   assert.equal(headResponse.statusCode, 400);
+  assert.equal(headResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(headResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(headResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(headResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
   assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(headResponse.body, '');
@@ -495,6 +552,11 @@ test('thumbnail malformed requested keys fall back to canonical GET and HEAD suc
   await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
 
   assert.equal(getResponse.statusCode, 200);
+  assert.equal(getResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(getResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(getResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(getResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(getResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(getResponse.headers['Content-Type'], 'image/png');
   assert.equal(getResponse.headers['Content-Length'], String(thumbnailBytes.length));
   assert.equal(getResponse.headers['Cache-Control'], 'no-store');
@@ -506,6 +568,11 @@ test('thumbnail malformed requested keys fall back to canonical GET and HEAD suc
   await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
 
   assert.equal(headResponse.statusCode, 200);
+  assert.equal(headResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(headResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(headResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(headResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(headResponse.headers['Content-Type'], 'image/png');
   assert.equal(headResponse.headers['Content-Length'], String(thumbnailBytes.length));
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
@@ -810,6 +877,11 @@ test('thumbnail resolver failures return stable GET and HEAD responses without l
   await routeRequest(createRequest('GET', url), getResponse as unknown as ServerResponse);
 
   assert.equal(getResponse.statusCode, 500);
+  assert.equal(getResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(getResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(getResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(getResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(getResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(getResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(getResponse.headers['Cache-Control'], 'no-store');
   assert.deepEqual(JSON.parse(getResponse.body), {
@@ -824,6 +896,11 @@ test('thumbnail resolver failures return stable GET and HEAD responses without l
   await routeRequest(createRequest('HEAD', url), headResponse as unknown as ServerResponse);
 
   assert.equal(headResponse.statusCode, 500);
+  assert.equal(headResponse.headers['Access-Control-Allow-Origin'], '*');
+  assert.equal(headResponse.headers['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS');
+  assert.equal(headResponse.headers['Access-Control-Allow-Headers'], 'content-type');
+  assert.equal(headResponse.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headResponse.headers['Cross-Origin-Resource-Policy'], 'cross-origin');
   assert.equal(headResponse.headers['Content-Type'], 'application/json; charset=utf-8');
   assert.equal(headResponse.headers['Cache-Control'], 'no-store');
   assert.equal(headResponse.body, '');
@@ -920,4 +997,126 @@ test('thumbnail error GET and HEAD responses share byte-accurate representation 
     throw new Error('resolver failure');
   });
   await assertErrorPair(`/api/video-orchestrator/jobs/${resolverFailureJobId}/thumbnail`, 500);
+});
+
+
+
+
+test('thumbnail generate route returns approval plus variant_a and variant_b attachments', async () => {
+  const { Readable } = await import('node:stream');
+  const { mkdtemp, mkdir, rm, writeFile } = await import('node:fs/promises');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+
+  const originalHome = process.env.HOME;
+  const home = await mkdtemp(join(tmpdir(), 'brain-core-thumbnail-home-'));
+  const workerDir = join(home, '.local', 'video-orchestrator', 'worker');
+  await mkdir(workerDir, { recursive: true });
+
+  const cliDest = join(workerDir, 'cli_thumbnail_designer_basic.py');
+  await writeFile(
+    cliDest,
+    `#!/usr/bin/env python3
+import sys, json, os, uuid
+from pathlib import Path
+data = json.load(sys.stdin)
+artifact_dir = os.path.expanduser('~/.local/video-orchestrator/artifacts/thumbnails')
+Path(artifact_dir).mkdir(parents=True, exist_ok=True)
+job_id = f"thumb-{data['episode_id']}-{uuid.uuid4().hex[:8]}"
+jpeg = bytes([0xff,0xd8,0xff,0xc0,0x00,0x0b,0x08,0x02,0xd0,0x05,0x00,0x01,0x01,0x11,0x00,0xff,0xd9])
+variants = []
+for i in [1, 2]:
+    filename = f"{data['episode_id']}_v{i}.jpg"
+    filepath = os.path.join(artifact_dir, filename)
+    with open(filepath, 'wb') as f:
+        f.write(jpeg)
+    variants.append({"variant_id": f"v{i}", "url": filepath, "confidence_score": 0.85, "template_applied": "test", "colors_applied": "default", "size_bytes": len(jpeg), "dimensions": "1280x720", "format": "jpeg"})
+result = {"status": "completed", "job_id": job_id, "episode_id": data['episode_id'], "variants": variants, "error_message": None}
+json.dump(result, sys.stdout)
+sys.exit(0)
+`,
+  );
+
+  process.env.HOME = home;
+
+  try {
+    const body = JSON.stringify({
+      projectId: 'project-123',
+      contentItemId: 'content-moving-video-123',
+      title: 'Moving Video Episode',
+      template_definition: { name: 'youtube-default' },
+      color_scheme: { _name: 'brand-default' },
+    });
+    const request = Readable.from([body]) as unknown as IncomingMessage;
+    Object.assign(request, {
+      method: 'POST',
+      url: '/api/video-orchestrator/thumbnails/generate',
+      headers: { 'content-type': 'application/json' },
+      socket: { remoteAddress: '127.0.0.1' },
+    });
+    const response = {
+      statusCode: 0,
+      headers: {} as Record<string, string>,
+      body: '',
+      setHeader(name: string, value: string | number | readonly string[]): void {
+        this.headers[name] = Array.isArray(value) ? value.join(', ') : String(value);
+      },
+      writeHead(statusCode: number, headers?: Record<string, string>): void {
+        this.statusCode = statusCode;
+        this.headers = { ...this.headers, ...(headers ?? {}) };
+      },
+      end(chunk?: string): void {
+        this.body = chunk ?? '';
+      },
+    };
+
+    await routeRequest(request, response as unknown as ServerResponse);
+
+    assert.equal(response.statusCode, 200);
+    const payload = JSON.parse(response.body) as {
+      ok: boolean;
+      approval: { status: string };
+      generation: {
+        contentItemId: string;
+        variants: Array<{ contentItemId: string; variantId: string; path: string }>;
+      };
+    };
+    assert.equal(payload.ok, true);
+    assert.equal(payload.approval.status, 'pending');
+    assert.equal(payload.generation.contentItemId, 'content-moving-video-123');
+    assert.deepEqual(payload.generation.variants.map((variant) => variant.variantId), ['variant_a', 'variant_b']);
+    assert.ok(payload.generation.variants.every((variant) => variant.contentItemId === 'content-moving-video-123'));
+    // Variants should now have real file paths (not S3 URLs)
+    assert.ok(payload.generation.variants.every((variant) => !variant.path.startsWith('s3://')));
+    assert.ok(payload.generation.variants.every((variant) => variant.path.includes('.jpg')));
+  } finally {
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
+    await rm(home, { recursive: true, force: true });
+  }
+});
+
+
+
+
+test('thumbnail approval route accepts POST only', async () => {
+  for (const method of ['GET', 'PUT', 'PATCH', 'DELETE']) {
+    const response = new MockResponse();
+
+    await routeRequest(
+      createRequest(method, '/api/video-orchestrator/thumbnails/approve'),
+      response as unknown as ServerResponse,
+    );
+
+    assert.equal(response.statusCode, 405, method);
+    assert.equal(response.headers['Access-Control-Allow-Origin'], '*', method);
+    assert.equal(response.headers['Access-Control-Allow-Methods'], 'POST, OPTIONS', method);
+    assert.equal(response.headers['Allow'], 'POST', method);
+    assert.equal(response.headers['Content-Type'], 'application/json; charset=utf-8', method);
+    assert.equal(response.headers['Content-Length'], String(Buffer.byteLength(response.body)), method);
+    assert.deepEqual(JSON.parse(response.body), { error: 'Method not allowed' }, method);
+  }
 });

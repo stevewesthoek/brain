@@ -2,18 +2,20 @@
   "jobId": "prochat-prompt-1780840337197-make-a-video-of-a-bug-",
   "channelId": "prochat",
   "topicId": "prochat-prompt-1780840337197",
-  "status": "draft",
+  "status": "approved",
   "title": "Make a video of a bug. ",
   "targetDurationSeconds": 60,
   "wordCount": 0,
   "scriptKey": "jobs/prochat-prompt-1780840337197-make-a-video-of-a-bug-/scripts/script.md",
   "generatedBy": "interactive-prompt",
   "createdAt": "2026-06-07T13:52:17.197Z",
-  "updatedAt": "2026-06-07T13:52:17.197Z",
+  "updatedAt": "2026-06-12T16:35:18.288Z",
   "approval": {
     "required": true,
-    "status": "pending",
+    "status": "approved",
     "theologicalReviewRequired": false,
-    "notes": "Draft created from prompt by brain-console-center"
+    "notes": null,
+    "approvedBy": "brain-console-center",
+    "approvedAt": "2026-06-12T16:35:18.288Z"
   }
 }

@@ -294,7 +294,7 @@ test('approveThumbnailRequest accepts valid approval', () => {
   assert.equal(result.approval.status, 'pending');
   assert.ok(result.preview);
   assert.equal(result.preview!.approval!.type, 'thumbnail');
-  assert.equal(result.preview!.approval!.status, 'pending_approval');
+  assert.equal(result.preview!.approval!.status, 'pending');
 });
 
 test('approveThumbnailRequest rejects missing projectId', () => {
@@ -349,10 +349,10 @@ test('approveThumbnailRequest approval has unique IDs', () => {
   );
 });
 
-test('generateMetadataRequest accepts valid metadata request', async () => {
+test('generateMetadataRequest generates YouTube metadata from the canonical moving-video content item', async () => {
   const result = await generateMetadataRequest({
-    projectId: 'project-123',
-    contentItemId: 'content-abc123',
+    projectId: 'says-the-bible',
+    contentItemId: 'content-stb-story-052',
   });
 
   assert.equal(result.ok, true);
@@ -360,15 +360,19 @@ test('generateMetadataRequest accepts valid metadata request', async () => {
   assert.match(result.approval.id, /^approval-/);
   assert.equal(result.approval.status, 'pending');
   assert.ok(result.preview);
-  assert.ok(result.preview!.job);
   assert.equal(result.preview!.job!.type, 'metadata');
   assert.equal(result.preview!.job!.status, 'pending_approval');
+  assert.equal(result.preview!.metadata!.youtubeTitle, 'Genesis: Creation Story');
+  assert.ok(result.preview!.metadata!.youtubeDescription.length > 0);
+  assert.ok(result.preview!.metadata!.youtubeTags.length > 0);
+  assert.ok(result.preview!.metadata!.hashtags.length > 0);
+  assert.deepEqual(Object.keys(result.preview!.metadata!.platforms), ['youtube']);
 });
 
-test('generateMetadataRequest accepts optional templateId', async () => {
+test('generateMetadataRequest accepts optional templateId for the YouTube item', async () => {
   const result = await generateMetadataRequest({
-    projectId: 'project-123',
-    contentItemId: 'content-abc123',
+    projectId: 'says-the-bible',
+    contentItemId: 'content-stb-story-052',
     templateId: 'default-template',
   });
 
@@ -379,7 +383,7 @@ test('generateMetadataRequest accepts optional templateId', async () => {
 test('generateMetadataRequest rejects missing projectId', async () => {
   const result = await generateMetadataRequest({
     projectId: '',
-    contentItemId: 'content-abc123',
+    contentItemId: 'content-stb-story-052',
   });
 
   assert.equal(result.ok, false);
@@ -388,7 +392,7 @@ test('generateMetadataRequest rejects missing projectId', async () => {
 
 test('generateMetadataRequest rejects missing contentItemId', async () => {
   const result = await generateMetadataRequest({
-    projectId: 'project-123',
+    projectId: 'says-the-bible',
     contentItemId: '',
   });
 
@@ -396,15 +400,35 @@ test('generateMetadataRequest rejects missing contentItemId', async () => {
   assert.match(result.error!, /contentItemId is required/);
 });
 
+test('generateMetadataRequest rejects an unknown content item deterministically', async () => {
+  const result = await generateMetadataRequest({
+    projectId: 'says-the-bible',
+    contentItemId: 'content-missing',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'contentItemId not found: content-missing');
+});
+
+test('generateMetadataRequest rejects a content item from another project', async () => {
+  const result = await generateMetadataRequest({
+    projectId: 'other-project',
+    contentItemId: 'content-stb-story-052',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'contentItemId does not belong to projectId');
+});
+
 test('generateMetadataRequest job has unique IDs', async () => {
   const result1 = await generateMetadataRequest({
-    projectId: 'project-123',
-    contentItemId: 'content-abc123',
+    projectId: 'says-the-bible',
+    contentItemId: 'content-stb-story-052',
   });
 
   const result2 = await generateMetadataRequest({
-    projectId: 'project-123',
-    contentItemId: 'content-abc123',
+    projectId: 'says-the-bible',
+    contentItemId: 'content-stb-story-052',
   });
 
   assert.notEqual(
@@ -426,7 +450,45 @@ test('approveMetadataRequest accepts valid approval', () => {
   assert.equal(result.approval.status, 'pending');
   assert.ok(result.preview);
   assert.equal(result.preview!.approval!.type, 'metadata');
-  assert.equal(result.preview!.approval!.status, 'pending_approval');
+  assert.equal(result.preview!.approval!.status, 'pending');
+});
+
+test('approveMetadataRequest persists an auditable YouTube metadata approval', async () => {
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const { readPendingVOApprovals } = await import('../adapters/vo-studio-approval-store.js');
+
+  const originalApprovalsPath = process.env.VO_APPROVALS_PATH;
+  const tempDir = await mkdtemp(join(tmpdir(), 'brain-core-metadata-approval-'));
+  process.env.VO_APPROVALS_PATH = join(tempDir, 'approvals.json');
+
+  try {
+    const result = approveMetadataRequest({
+      projectId: 'says-the-bible',
+      contentItemId: 'content-stb-story-052',
+      variantId: 'metadata-youtube-001',
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(result.approval);
+    assert.equal(result.approval.status, 'pending');
+
+    const approvals = readPendingVOApprovals('says-the-bible');
+    assert.equal(approvals.length, 1);
+    assert.equal(approvals[0]?.id, result.approval.id);
+    assert.equal(approvals[0]?.type, 'metadata');
+    assert.deepEqual(approvals[0]?.requestPayload, {
+      contentItemId: 'content-stb-story-052',
+      variantId: 'metadata-youtube-001',
+      requiredBefore: 'youtube_publish',
+      targetPlatform: 'youtube',
+    });
+  } finally {
+    if (originalApprovalsPath === undefined) delete process.env.VO_APPROVALS_PATH;
+    else process.env.VO_APPROVALS_PATH = originalApprovalsPath;
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test('approveMetadataRequest rejects missing projectId', () => {
@@ -829,4 +891,90 @@ test('batchPublishRequest rejects packageIds with empty strings', () => {
 
   assert.equal(result.ok, false);
   assert.match(result.error!, /packageIds\[1\] is required/);
+});
+
+
+
+
+test('createContentItemRequest accepts a real moving-video source without slideshow inputs', () => {
+  const result = createContentItemRequest({
+    projectId: 'project-123',
+    title: 'Moving Video Episode',
+    description: 'A real moving-video source',
+    sourceVideoPath: '/videos/episode-1.mp4',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.equal(result.approval.status, 'pending');
+  assert.ok(result.preview);
+  assert.equal(result.preview.contentItem.sourceVideoPath, '/videos/episode-1.mp4');
+  assert.equal(result.preview.contentItem.sourceAudioPath, '');
+  assert.equal(result.preview.contentItem.backgroundImagePath, '');
+});
+
+test('updateContentItemRequest accepts a moving-video source through approval', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-123',
+    sourceVideoPath: '/videos/replacement.mp4',
+  });
+
+  assert.equal(result.ok, true);
+  assert.ok(result.approval);
+  assert.equal(result.approval.status, 'pending');
+  assert.ok(result.preview);
+  assert.equal(result.preview.contentItem.sourceVideoPath, '/videos/replacement.mp4');
+});
+
+test('updateContentItemRequest rejects an empty moving-video source', () => {
+  const result = updateContentItemRequest({
+    projectId: 'project-123',
+    contentItemId: 'content-123',
+    sourceVideoPath: '   ',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /sourceVideoPath cannot be empty/);
+  assert.equal(result.approval, undefined);
+});
+
+
+
+
+test('approveThumbnailRequest persists an auditable thumbnail approval required before YouTube publishing', async () => {
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const { readPendingVOApprovals } = await import('../adapters/vo-studio-approval-store.js');
+
+  const originalApprovalsPath = process.env.VO_APPROVALS_PATH;
+  const tempDir = await mkdtemp(join(tmpdir(), 'brain-core-thumbnail-approval-'));
+  process.env.VO_APPROVALS_PATH = join(tempDir, 'approvals.json');
+
+  try {
+    const result = approveThumbnailRequest({
+      projectId: 'project-1we',
+      contentItemId: 'content-moving-video-1',
+      variantId: 'variant_a',
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(result.approval);
+    assert.equal(result.approval.status, 'pending');
+
+    const approvals = readPendingVOApprovals('project-1we');
+    assert.equal(approvals.length, 1);
+    assert.equal(approvals[0]?.id, result.approval.id);
+    assert.equal(approvals[0]?.type, 'thumbnail');
+    assert.deepEqual(approvals[0]?.requestPayload, {
+      contentItemId: 'content-moving-video-1',
+      variantId: 'variant_a',
+      requiredBefore: 'youtube_publish',
+    });
+  } finally {
+    if (originalApprovalsPath === undefined) delete process.env.VO_APPROVALS_PATH;
+    else process.env.VO_APPROVALS_PATH = originalApprovalsPath;
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });

@@ -118,6 +118,7 @@ export interface ContentItem {
   status: JobStatus;
   sourceAudioPath: string;
   backgroundImagePath: string;
+  sourceVideoPath?: string | null;
   durationSec: number | null;
   language: string;
   createdAt: string;

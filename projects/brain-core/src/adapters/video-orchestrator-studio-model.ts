@@ -187,6 +187,10 @@ export function readVOStudioContentItems(): BrainCoreVOStudioListResponse<BrainC
   return response('video-orchestrator-content-items', contentItems, { total: contentItems.length, packagePreview: contentItems.filter((item) => item.status === 'package-preview').length }, 'Keep one canonical source per content item and generate platform variants from templates.');
 }
 
+export function readVOStudioContentItem(id: string): BrainCoreVOStudioContentItem | undefined {
+  return contentItems.find((item) => item.id === id);
+}
+
 export function readVOStudioPackage(id: string): BrainCoreVOStudioProductionPackage | undefined {
   return productionPackages.find((pkg) => pkg.id === id || pkg.contentItemId === id);
 }

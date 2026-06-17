@@ -140,6 +140,12 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
       mutationRequired: false,
     },
     {
+      id: 'mind-maintenance-report-only',
+      name: 'Mind maintenance report-only review',
+      status: reportStatus,
+      mutationRequired: false,
+    },
+    {
       id: 'mind-steward-inbox-dry-run',
       name: 'Mind Steward inbox dry-run report',
       status: inboxReportStatus,

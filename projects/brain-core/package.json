@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "test:vo-studio-write": "tsx --test src/tests/vo-studio-write.test.ts",
+    "test:metadata-approval": "tsx --test --test-name-pattern=approveMetadataRequest src/tests/vo-studio-write.test.ts",
     "test:thumbnail-queue": "tsx --test src/tests/thumbnail-queue.test.ts",
     "test:thumbnail-route": "tsx --test src/tests/video-orchestrator-thumbnail-route.test.ts",
     "test:thumbnail-key-safety": "tsx --test src/tests/video-orchestrator-thumbnail-key-safety.test.ts",

@@ -31,6 +31,17 @@ export interface ProposalApplicationPlanStep {
   proposedAction: string;
   sourcePaths: string[];
   targetPathsPreview: string[];
+  approvalId: string | null;
+  sourceReportId: string | null;
+  sourceCommit: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  expiresAt: string | null;
+  expectedBeforeHashes: Record<string, string | null>;
+  allowedSections: Record<string, string[]>;
+  contentIntent: string | null;
+  exactPathApprovalValid: boolean;
+  exactPathApprovalErrors: string[];
   wouldWriteToMind: boolean;
   requiresApproval: boolean;
   executionBlocked: boolean;
@@ -78,9 +89,27 @@ export interface ProposalRecord {
   [key: string]: unknown;
 }
 
+export interface ProposalApprovalTarget {
+  path: string;
+  expectedBeforeHash: string | null;
+  destinationPath: string | null;
+  allowedSections: string[];
+  contentIntent: string;
+}
+
 export interface ProposalApprovalRecord {
   proposalId: string;
   decision: 'approved' | 'rejected' | 'needs-review';
+  approvalId?: string;
+  sourceReportId?: string | null;
+  sourceRepo?: 'mind';
+  sourceCommit?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  expiresAt?: string;
+  action?: 'create' | 'update' | 'move' | 'archive' | 'supersede' | 'add-source-reference';
+  targets?: ProposalApprovalTarget[];
+  reason?: string;
   [key: string]: unknown;
 }
 
@@ -196,13 +225,65 @@ function createRollbackPreview(category: string, targetPaths: string[]): string 
   }
 }
 
+export function validateExactPathWikiApproval(
+  proposal: ProposalRecord,
+  approvalRecord: ProposalApprovalRecord,
+  now: Date = new Date(),
+): string[] {
+  const errors: string[] = [];
+  const targets = approvalRecord.targets ?? [];
+
+  if (proposal.category !== 'wiki-writing') errors.push('proposal-category-must-be-wiki-writing');
+  if (approvalRecord.decision !== 'approved') errors.push('approval-decision-must-be-approved');
+  if (!approvalRecord.approvalId?.trim()) errors.push('approval-id-required');
+  if (approvalRecord.sourceRepo !== 'mind') errors.push('source-repo-must-be-mind');
+  if (!approvalRecord.sourceCommit?.trim()) errors.push('source-commit-required');
+  if (!approvalRecord.approvedBy?.trim()) errors.push('approved-by-required');
+  if (!approvalRecord.approvedAt || Number.isNaN(Date.parse(approvalRecord.approvedAt))) errors.push('valid-approved-at-required');
+  if (!approvalRecord.expiresAt || Number.isNaN(Date.parse(approvalRecord.expiresAt))) {
+    errors.push('valid-expires-at-required');
+  } else if (Date.parse(approvalRecord.expiresAt) <= now.getTime()) {
+    errors.push('approval-expired');
+  }
+  if (!['create', 'update', 'add-source-reference'].includes(approvalRecord.action ?? '')) {
+    errors.push('wiki-action-must-be-create-update-or-add-source-reference');
+  }
+  if (targets.length === 0) errors.push('at-least-one-target-required');
+
+  for (const target of targets) {
+    const normalized = target.path.replace(/\\/g, '/');
+    if (!normalized.startsWith('wiki/') || normalized.endsWith('/') || normalized.includes('*') || normalized.includes('..')) {
+      errors.push(`invalid-wiki-target:${target.path}`);
+    }
+    if (approvalRecord.action !== 'create' && !target.expectedBeforeHash?.trim()) {
+      errors.push(`expected-before-hash-required:${target.path}`);
+    }
+    if (approvalRecord.action === 'create' && target.expectedBeforeHash !== null) {
+      errors.push(`create-target-before-hash-must-be-null:${target.path}`);
+    }
+    if (target.destinationPath !== null) errors.push(`destination-path-not-allowed-for-wiki-update:${target.path}`);
+    if (!target.contentIntent?.trim()) errors.push(`content-intent-required:${target.path}`);
+  }
+
+  return errors;
+}
+
 function createApplicationPlanStep(
   proposal: ProposalRecord,
   approvalRecord: ProposalApprovalRecord,
   index: number
 ): ProposalApplicationPlanStep {
   const sourcePaths = proposal.sourcePaths || [];
-  const targetPaths = createCategoryPreviewPaths(proposal.category, proposal);
+  const approvalTargets = approvalRecord.targets ?? [];
+  const targetPaths = approvalTargets.map(target => target.path);
+  const exactPathApprovalErrors = validateExactPathWikiApproval(proposal, approvalRecord);
+  const exactPathApprovalValid = exactPathApprovalErrors.length === 0;
+  const expectedBeforeHashes = Object.fromEntries(
+    approvalTargets.map(target => [target.path, target.expectedBeforeHash]),
+  );
+  const allowedSections = Object.fromEntries(
+    approvalTargets.map(target => [target.path, target.allowedSections]),
+  );
   const wouldWriteToMind = proposal.writesToMindIfApproved === true;
 
   return {
@@ -212,6 +293,17 @@ function createApplicationPlanStep(
     proposedAction: proposal.proposedAction || proposal.title || '',
     sourcePaths,
     targetPathsPreview: targetPaths,
+    approvalId: approvalRecord.approvalId ?? null,
+    sourceReportId: approvalRecord.sourceReportId ?? null,
+    sourceCommit: approvalRecord.sourceCommit ?? null,
+    approvedBy: approvalRecord.approvedBy ?? null,
+    approvedAt: approvalRecord.approvedAt ?? null,
+    expiresAt: approvalRecord.expiresAt ?? null,
+    expectedBeforeHashes,
+    allowedSections,
+    contentIntent: approvalTargets.length === 1 ? approvalTargets[0]?.contentIntent ?? null : null,
+    exactPathApprovalValid,
+    exactPathApprovalErrors,
     wouldWriteToMind,
     requiresApproval: true,
     executionBlocked: true,
@@ -220,7 +312,9 @@ function createApplicationPlanStep(
     rollbackPlanPreview: createRollbackPreview(proposal.category, targetPaths),
     riskLevel: (proposal.riskLevel as 'low' | 'medium' | 'high') || 'low',
     confidence: proposal.confidence as number || 0.5,
-    reason: `Proposal approved: ${proposal.category}`,
+    reason: exactPathApprovalValid
+      ? 'Exact-path wiki approval validated; execution remains blocked pending manifest and verification gates.'
+      : `Exact-path wiki approval invalid: ${exactPathApprovalErrors.join(', ')}`,
   };
 }
 

@@ -1,4 +1,12 @@
 import { detectCompletedActiveFinding } from './completed-active-detector.js';
+import {
+  detectContradictionFindings,
+  type ContradictionCandidate,
+} from './contradiction-detector.js';
+import {
+  detectCapturePromotionFindings,
+  type CapturePromotionCandidate,
+} from './capture-promotion-detector.js';
 import { applyMaintenanceFindingDecisions } from './finding-decision-applier.js';
 import type {
   MaintenanceFindingDecision,
@@ -31,6 +39,8 @@ export interface MindMaintenancePilotBuildInput {
   generatedAt: string;
   generatedBy?: string;
   sourceGapCandidates?: Partial<Record<MindMaintenancePilotFile, readonly SourceGapCandidate[]>>;
+  contradictionCandidates?: readonly ContradictionCandidate[];
+  capturePromotionCandidates?: readonly CapturePromotionCandidate[];
   detectorErrors?: readonly MaintenanceDetectorError[];
   decisionDocument?: MaintenanceFindingDecisionDocument;
 }
@@ -69,6 +79,67 @@ function assertDatasetBoundary(dataset: LoadedMindMaintenancePilotDataset): void
   }
 }
 
+function normalizeDuplicateContent(content: string): string {
+  const withoutFrontmatter = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
+  return withoutFrontmatter
+    .replace(/^#\s+.+$/m, '')
+    .replace(/<!--([\s\S]*?)-->/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function detectDuplicatePageFindings(
+  files: LoadedMindMaintenancePilotDataset['files'],
+  reportDate: string,
+): MaintenanceFinding[] {
+  const byContent = new Map<string, typeof files>();
+
+  for (const file of files) {
+    const normalized = normalizeDuplicateContent(file.content);
+    if (normalized.length < 120) continue;
+    const group = byContent.get(normalized) ?? [];
+    byContent.set(normalized, [...group, file]);
+  }
+
+  return [...byContent.values()]
+    .filter((group) => group.length > 1)
+    .map((group, index) => {
+      const paths = group.map((file) => file.path).sort();
+      const fingerprint = paths.join('|').replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 96);
+
+      return {
+        id: `finding-duplicate-candidate-${fingerprint || index + 1}`,
+        type: 'duplicate-candidate',
+        status: 'open',
+        created: reportDate,
+        sourceRepo: 'mind',
+        scope: 'bounded five-file maintenance pilot',
+        paths,
+        trigger: 'Two or more pilot pages have the same normalized substantive Markdown content.',
+        matchedEvidence: group.map((file) => ({
+          path: file.path,
+          location: 'full page after frontmatter and title normalization',
+          summary: 'Normalized substantive content matches another page in the bounded pilot dataset.',
+        })),
+        comparisonEvidence: group.map((file) => ({
+          path: file.path,
+          location: 'full page',
+          summary: `Candidate duplicate page: ${file.path}`,
+        })),
+        uncertainty: 'Exact normalized content match is strong evidence of duplication, but a human must choose the canonical page and preservation action.',
+        confidence: 0.98,
+        risk: 'low',
+        recommendedAction: 'Review the matching pages, choose the canonical page, preserve useful links and history, and approve any merge or supersession explicitly.',
+        requiresApproval: true,
+        noWritePerformed: true,
+        deduplicationKey: `duplicate-candidate:${paths.join('|')}`,
+        suppressionUntil: null,
+        review: null,
+      } satisfies MaintenanceFinding;
+    });
+}
+
 function createDetectorMap(errors: readonly MaintenanceDetectorError[]): MaintenanceDetectorMap {
   const failed = new Set(errors.map((error) => error.detector));
 
@@ -85,9 +156,18 @@ function createDetectorMap(errors: readonly MaintenanceDetectorError[]): Mainten
       enabled: true,
       status: failed.has('source-gap') ? 'failed' : 'completed',
     },
-    'duplicate-candidate': { enabled: false, status: 'disabled' },
-    'contradiction-candidate': { enabled: false, status: 'disabled' },
-    'capture-promotion': { enabled: false, status: 'disabled' },
+    'duplicate-candidate': {
+      enabled: true,
+      status: failed.has('duplicate-candidate') ? 'failed' : 'completed',
+    },
+    'contradiction-candidate': {
+      enabled: true,
+      status: failed.has('contradiction-candidate') ? 'failed' : 'completed',
+    },
+    'capture-promotion': {
+      enabled: true,
+      status: failed.has('capture-promotion') ? 'failed' : 'completed',
+    },
   };
 }
 
@@ -150,6 +230,25 @@ export function buildMindMaintenancePilotReport(
       ambiguousSourceGapCandidates.push(...result.ambiguousCandidates);
       excludedSourceGapCandidates.push(...result.excludedCandidates);
     }
+  }
+
+  if (detectors['duplicate-candidate'].status !== 'failed') {
+    detectedFindings.push(...detectDuplicatePageFindings(input.dataset.files, reportDate));
+  }
+
+  if (detectors['contradiction-candidate'].status !== 'failed') {
+    detectedFindings.push(...detectContradictionFindings({
+      dataset: input.dataset,
+      reportDate,
+      candidates: input.contradictionCandidates ?? [],
+    }));
+  }
+
+  if (detectors['capture-promotion'].status !== 'failed') {
+    detectedFindings.push(...detectCapturePromotionFindings({
+      reportDate,
+      candidates: input.capturePromotionCandidates ?? [],
+    }));
   }
 
   const decisionApplication = input.decisionDocument

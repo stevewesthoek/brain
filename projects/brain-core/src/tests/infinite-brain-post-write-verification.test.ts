@@ -154,3 +154,126 @@ test('readPostWriteVerificationSummary returns blocked values when report missin
     }
   }
 });
+
+
+
+
+test('post-write verification passes exact-path wiki approval checks for a valid manifest', () => {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const originalManifestEnv = process.env.IBR_WRITE_MANIFEST_PATH;
+  const originalMindEnv = process.env.IBR_MIND_REPO_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'post-write-verification-wiki-valid-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+  const manifestPath = path.join(tempDir, 'manifest.json');
+  const mindPath = path.join(tempDir, 'mind');
+
+  writeFileSync(dryRunPath, JSON.stringify({ reportId: 'dry-run-wiki-valid' }));
+  writeFileSync(manifestPath, JSON.stringify({
+    manifestId: 'manifest-wiki-valid',
+    generatedAt: '2026-06-17T12:00:00Z',
+    sourceDryRunReportId: 'dry-run-wiki-valid',
+    status: 'manifest-ready',
+    writeEnabled: false,
+    canWriteToMind: false,
+    totalOperations: 1,
+    totalManifestEntries: 1,
+    blockers: [],
+    safety: {},
+    entries: [{
+      entryId: 'entry-wiki-valid',
+      operationId: 'op-wiki-valid',
+      proposalId: 'proposal-wiki-valid',
+      category: 'wiki-writing',
+      operationType: 'update',
+      intendedAction: 'update in wiki-writing',
+      targetPathsPreview: ['wiki/example.md'],
+      approvalId: 'mind-approval-valid',
+      sourceReportId: 'report-1',
+      sourceCommit: '0123456789abcdef0123456789abcdef01234567',
+      approvedBy: 'human-reviewer',
+      approvedAt: '2026-06-17T12:00:00Z',
+      expiresAt: '2099-06-18T12:00:00Z',
+      expectedBeforeHashes: { 'wiki/example.md': 'a'.repeat(64) },
+      allowedSections: { 'wiki/example.md': ['Approved section'] },
+      contentIntent: 'Update only the approved section.',
+      exactPathApprovalValid: true,
+      exactPathApprovalErrors: [],
+      contentPreviewAvailable: false,
+      contentPreviewHash: null,
+      wouldCreateFiles: false,
+      wouldModifyFiles: true,
+      wouldDeleteFiles: false,
+      wouldMoveFiles: false,
+      requiresRollbackPlan: false,
+      rollbackPreview: '',
+      validationRequired: [],
+      writeBlocked: true,
+      applied: false
+    }]
+  }));
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+    process.env.IBR_WRITE_MANIFEST_PATH = manifestPath;
+    process.env.IBR_MIND_REPO_PATH = mindPath;
+
+    const report = generatePostWriteVerificationReport();
+    const checks = new Map(report.checks.map(check => [check.label, check.status]));
+
+    assert.equal(checks.get('Exact approved wiki target paths are valid'), 'pass');
+    assert.equal(checks.get('Expected before-state hashes are present'), 'pass');
+    assert.equal(checks.get('Approval provenance is complete and unexpired'), 'pass');
+    assert.equal(checks.get('No unapproved wiki paths are present'), 'pass');
+    assert.equal(report.canExecute, false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    else delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+    if (originalManifestEnv) process.env.IBR_WRITE_MANIFEST_PATH = originalManifestEnv;
+    else delete process.env.IBR_WRITE_MANIFEST_PATH;
+    if (originalMindEnv) process.env.IBR_MIND_REPO_PATH = originalMindEnv;
+    else delete process.env.IBR_MIND_REPO_PATH;
+  }
+});
+
+test('post-write verification blocks invalid or unapproved wiki paths', () => {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const originalManifestEnv = process.env.IBR_WRITE_MANIFEST_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'post-write-verification-wiki-invalid-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+  const manifestPath = path.join(tempDir, 'manifest.json');
+
+  writeFileSync(dryRunPath, JSON.stringify({ reportId: 'dry-run-wiki-invalid' }));
+  writeFileSync(manifestPath, JSON.stringify({
+    manifestId: 'manifest-wiki-invalid', generatedAt: '2026-06-17T12:00:00Z', sourceDryRunReportId: 'dry-run-wiki-invalid',
+    status: 'manifest-ready', writeEnabled: false, canWriteToMind: false, totalOperations: 1, totalManifestEntries: 1,
+    blockers: [], safety: {}, entries: [{
+      entryId: 'entry-invalid', operationId: 'op-invalid', proposalId: 'proposal-invalid', category: 'wiki-writing',
+      operationType: 'update', intendedAction: 'update in wiki-writing', targetPathsPreview: ['wiki/'],
+      approvalId: null, sourceReportId: null, sourceCommit: null, approvedBy: null, approvedAt: null,
+      expiresAt: '2020-01-01T00:00:00Z', expectedBeforeHashes: {}, allowedSections: {}, contentIntent: null,
+      exactPathApprovalValid: false, exactPathApprovalErrors: ['invalid-wiki-target:wiki/'], contentPreviewAvailable: false,
+      contentPreviewHash: null, wouldCreateFiles: false, wouldModifyFiles: true, wouldDeleteFiles: false,
+      wouldMoveFiles: false, requiresRollbackPlan: false, rollbackPreview: '', validationRequired: [], writeBlocked: true, applied: false
+    }]
+  }));
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+    process.env.IBR_WRITE_MANIFEST_PATH = manifestPath;
+
+    const report = generatePostWriteVerificationReport();
+    const checks = new Map(report.checks.map(check => [check.label, check.status]));
+
+    assert.equal(checks.get('Exact approved wiki target paths are valid'), 'blocked');
+    assert.equal(checks.get('Expected before-state hashes are present'), 'blocked');
+    assert.equal(checks.get('Approval provenance is complete and unexpired'), 'blocked');
+    assert.equal(checks.get('No unapproved wiki paths are present'), 'blocked');
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    else delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+    if (originalManifestEnv) process.env.IBR_WRITE_MANIFEST_PATH = originalManifestEnv;
+    else delete process.env.IBR_WRITE_MANIFEST_PATH;
+  }
+});

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@_davideast/stitch-mcp", "proxy", "--transport", "stdio"],
+      "env": {
+        "DOTENV_CONFIG_QUIET": "true",
+        "STITCH_API_KEY": "gcloud-adc"
+      }
+    }
+  }
+}

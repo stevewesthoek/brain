@@ -363,3 +363,78 @@ function readClaudeCodeVersion(): string | undefined {
     return undefined;
   }
 }
+
+
+
+
+export interface AiModelSelectionRequest {
+  task: string;
+  capability: string;
+  complexity: 'low' | 'medium' | 'high';
+  sensitivity: 'low' | 'medium' | 'high';
+  maxLatencyMs?: number;
+}
+
+export interface AiModelSelectionResult {
+  ok: boolean;
+  selectedModel: string | null;
+  provider: string | null;
+  reason: string;
+}
+
+export async function selectAiModel(
+  request: AiModelSelectionRequest,
+): Promise<AiModelSelectionResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${SELECTOR_URL}/select`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        selectedModel: null,
+        provider: null,
+        reason: `AI Model Selector returned HTTP ${response.status}.`,
+      };
+    }
+
+    const payload = await response.json() as Record<string, unknown>;
+    const selectedModel = typeof payload.model === 'string'
+      ? payload.model
+      : typeof payload.modelId === 'string'
+        ? payload.modelId
+        : null;
+    const provider = typeof payload.provider === 'string'
+      ? payload.provider
+      : typeof payload.providerId === 'string'
+        ? payload.providerId
+        : null;
+
+    return {
+      ok: selectedModel !== null,
+      selectedModel,
+      provider,
+      reason: typeof payload.reason === 'string'
+        ? payload.reason
+        : selectedModel
+          ? 'AI Model Selector returned a model.'
+          : 'AI Model Selector response did not include a model.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      selectedModel: null,
+      provider: null,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
