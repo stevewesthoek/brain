@@ -451,12 +451,32 @@ test('GET /scheduler/latest-run reads mind-steward runtime report when configure
 
 test('GET /scheduler/jobs returns placeholder mind-steward jobs', async () => {
   const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
-  const body = JSON.parse(response.body) as { jobs: Array<{ id: string; mutationRequired: boolean; status: string }> };
+  const body = JSON.parse(response.body) as {
+    jobs: Array<{
+      id: string;
+      mutationRequired: boolean;
+      status: string;
+      manualSuccessRequired: boolean;
+      manualSuccessProven: boolean;
+      schedulerEligible: boolean;
+      schedulerEnabled: boolean;
+      blockers: string[];
+      safety: { createsSchedulerJob: boolean; startsBackgroundDaemon: boolean; writesToMind: boolean };
+    }>;
+  };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.jobs.length, 13);
+  assert.equal(body.jobs.length, 15);
   assert.equal(body.jobs[0]?.id, 'mind-compile-loop');
   assert.equal(typeof body.jobs[0]?.mutationRequired, 'boolean');
+  assert.equal(body.jobs.every((job) => job.manualSuccessRequired === true), true);
+  assert.equal(body.jobs.every((job) => job.manualSuccessProven === false), true);
+  assert.equal(body.jobs.every((job) => job.schedulerEligible === false), true);
+  assert.equal(body.jobs.every((job) => job.schedulerEnabled === false), true);
+  assert.equal(body.jobs.every((job) => job.safety.createsSchedulerJob === false), true);
+  assert.equal(body.jobs.every((job) => job.safety.startsBackgroundDaemon === false), true);
+  assert.equal(body.jobs.every((job) => job.safety.writesToMind === false), true);
+  assert.equal(body.jobs.find((job) => job.id === 'mind-steward-dry-run')?.blockers.includes('manualOnDemandSuccessRequiredBeforeScheduling'), true);
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-dry-run'), true);
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-inbox-dry-run'), true);
   assert.equal(body.jobs.some((job) => job.id === 'mind-steward-inbox-classifier-dry-run'), true);
@@ -480,11 +500,48 @@ test('GET /scheduler/jobs reports mind-steward dry-run ok status when runtime re
 
   try {
     const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
-    const body = JSON.parse(response.body) as { jobs: Array<{ id: string; status: string }> };
+    const body = JSON.parse(response.body) as { jobs: Array<{ id: string; status: string; manualSuccessProven: boolean; schedulerEligible: boolean; schedulerEnabled: boolean; blockers: string[] }> };
     const mindStewardJob = body.jobs.find((job) => job.id === 'mind-steward-dry-run');
 
     assert.equal(response.statusCode, 200);
     assert.equal(mindStewardJob?.status, 'ok');
+    assert.equal(mindStewardJob?.manualSuccessProven, false);
+    assert.equal(mindStewardJob?.schedulerEligible, false);
+    assert.equal(mindStewardJob?.schedulerEnabled, false);
+    assert.equal(mindStewardJob?.blockers.includes('manualOnDemandSuccessRequiredBeforeScheduling'), true);
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /scheduler/jobs marks report-only job eligible after manual on-demand success evidence', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-scheduler-manual-success-route');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(reportPath, JSON.stringify({ status: 'success', trigger: 'on-demand', manualSuccess: true }));
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/jobs' });
+    const body = JSON.parse(response.body) as {
+      jobs: Array<{ id: string; status: string; manualSuccessProven: boolean; schedulerEligible: boolean; schedulerEnabled: boolean; blockers: string[] }>;
+    };
+    const mindStewardJob = body.jobs.find((job) => job.id === 'mind-steward-dry-run');
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(mindStewardJob?.status, 'ok');
+    assert.equal(mindStewardJob?.manualSuccessProven, true);
+    assert.equal(mindStewardJob?.schedulerEligible, true);
+    assert.equal(mindStewardJob?.schedulerEnabled, false);
+    assert.deepEqual(mindStewardJob?.blockers, []);
   } finally {
     if (previousReportPath === undefined) {
       delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
@@ -574,6 +631,590 @@ test('GET /scheduler/jobs reports mind-steward inbox queue dry-run ok status whe
     }
     fs.rmSync(testDir, { recursive: true, force: true });
   }
+});
+
+test('GET /scheduler/mind-steward/latest-run returns read-only latest run view', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-mind-steward-latest-run-view');
+  const reportPath = path.join(testDir, 'latest.json');
+  const previousReportPath = process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(path.join(testDir, 'inbox-latest.json'), JSON.stringify({
+    status: 'success',
+    message: 'Inbox dry-run succeeded.',
+    writesToMind: false,
+    executableActions: false,
+    endedAtLisbon: '2026-06-18T12:03:00+01:00',
+  }));
+  fs.writeFileSync(reportPath, JSON.stringify({
+    status: 'success',
+    message: 'Mind Steward dry-run succeeded.',
+    writesToMind: false,
+    executableActions: false,
+    endedAtLisbon: '2026-06-18T12:00:00+01:00',
+  }));
+  process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = reportPath;
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/scheduler/mind-steward/latest-run' });
+    const body = JSON.parse(response.body) as {
+      status: string;
+      latestRun: { key: string; latestRunStatus: string } | null;
+      safety: { readOnly: boolean; writesToMind: boolean; movesCaptures: boolean; writesKanban: boolean; createsSchedulerJob: boolean };
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.status, 'available');
+    assert.equal(body.latestRun?.key, 'inbox');
+    assert.equal(body.latestRun?.latestRunStatus, 'ok');
+    assert.equal(body.safety.readOnly, true);
+    assert.equal(body.safety.writesToMind, false);
+    assert.equal(body.safety.movesCaptures, false);
+    assert.equal(body.safety.writesKanban, false);
+    assert.equal(body.safety.createsSchedulerJob, false);
+  } finally {
+    if (previousReportPath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH;
+    } else {
+      process.env.BRAIN_CORE_MIND_STEWARD_REPORT_PATH = previousReportPath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /scheduler/mind-steward/failed-items and /recovery expose Brain-owned queue failures only', async () => {
+  const testDir = path.join(process.cwd(), '.buildflow-test-mind-steward-runtime-views');
+  const statePath = path.join(testDir, 'inbox-queue-state.json');
+  const previousStatePath = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_STATE_PATH;
+
+  fs.rmSync(testDir, { recursive: true, force: true });
+  fs.mkdirSync(testDir, { recursive: true });
+  fs.writeFileSync(statePath, `${JSON.stringify({
+    schemaVersion: '1.0',
+    queueId: 'mind-inbox-queue-test',
+    generatedAt: '2026-06-18T12:02:00.000Z',
+    source: 'brain-runtime',
+    mindRoot: path.join(testDir, 'mind'),
+    inboxPath: path.join(testDir, 'mind', 'capture', 'inbox'),
+    status: 'ready',
+    settings: {
+      maxConcurrentJobs: 1,
+      maxFilesPerRun: 3,
+      debounceSeconds: 30,
+      maxRetries: 1,
+      largeFileThresholdMb: 2,
+      minimumSecondsBetweenRuns: 300,
+      localOnly: true,
+    },
+    items: [
+      {
+        id: 'mind-inbox-failed-item',
+        path: 'capture/inbox/failed.md',
+        status: 'failed',
+        sizeBytes: 12,
+        contentSha256: 'a'.repeat(64),
+        modifiedAt: '2026-06-18T11:59:00.000Z',
+        firstSeenAt: '2026-06-18T12:00:00.000Z',
+        lastCheckedAt: '2026-06-18T12:02:00.000Z',
+        attemptCount: 2,
+        lastError: 'classifier_timeout',
+        nextRetryAfter: null,
+        failureRoute: 'brain-runtime-queue-status',
+        largeFile: false,
+        selectedForSample: false,
+        selectorStatus: 'failed',
+      },
+    ],
+    summary: {
+      total: 1,
+      pending: 0,
+      blocked: 0,
+      failed: 1,
+      selectedForSample: 0,
+      largeFile: 0,
+      done: 0,
+    },
+    blockers: [],
+    safety: {
+      writesToMind: false,
+      movesCaptures: false,
+      deletesCaptures: false,
+      writesKanban: false,
+      stateOwnedBy: 'brain',
+      statePath,
+    },
+  }, null, 2)}\n`);
+  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_STATE_PATH = statePath;
+
+  try {
+    const failedResponse = await exercise({ method: 'GET', url: '/scheduler/mind-steward/failed-items' });
+    const failedBody = JSON.parse(failedResponse.body) as {
+      status: string;
+      failedItemCount: number;
+      items: Array<{ path: string; status: string; attemptCount: number; maxRetries: number; failureRoute: string }>;
+      safety: { writesToMind: boolean; movesCaptures: boolean; deletesCaptures: boolean; writesKanban: boolean };
+    };
+    const recoveryResponse = await exercise({ method: 'GET', url: '/scheduler/mind-steward/recovery' });
+    const recoveryBody = JSON.parse(recoveryResponse.body) as {
+      status: string;
+      recoveryItemCount: number;
+      items: Array<{ path: string; controls: Array<{ mode: string; requiresApproval: boolean; writesToMind: boolean }>; safety: { canAutoFix: boolean } }>;
+      safety: { canAutoFix: boolean; requiresApprovalForRetry: boolean; writesToMind: boolean; movesCaptures: boolean; writesKanban: boolean };
+    };
+
+    assert.equal(failedResponse.statusCode, 200);
+    assert.equal(failedBody.status, 'available');
+    assert.equal(failedBody.failedItemCount, 1);
+    assert.equal(failedBody.items[0]?.path, 'capture/inbox/failed.md');
+    assert.equal(failedBody.items[0]?.attemptCount, 2);
+    assert.equal(failedBody.items[0]?.maxRetries, 1);
+    assert.equal(failedBody.items[0]?.failureRoute, 'brain-runtime-queue-status');
+    assert.equal(failedBody.safety.writesToMind, false);
+    assert.equal(failedBody.safety.movesCaptures, false);
+    assert.equal(failedBody.safety.deletesCaptures, false);
+    assert.equal(failedBody.safety.writesKanban, false);
+
+    assert.equal(recoveryResponse.statusCode, 200);
+    assert.equal(recoveryBody.status, 'available');
+    assert.equal(recoveryBody.recoveryItemCount, 1);
+    assert.equal(recoveryBody.items[0]?.path, 'capture/inbox/failed.md');
+    assert.equal(recoveryBody.items[0]?.safety.canAutoFix, false);
+    assert.equal(recoveryBody.items[0]?.controls.every(control => control.writesToMind === false), true);
+    assert.equal(recoveryBody.items[0]?.controls.some(control => control.mode === 'approval-request' && control.requiresApproval === true), true);
+    assert.equal(recoveryBody.safety.canAutoFix, false);
+    assert.equal(recoveryBody.safety.requiresApprovalForRetry, true);
+    assert.equal(recoveryBody.safety.writesToMind, false);
+    assert.equal(recoveryBody.safety.movesCaptures, false);
+    assert.equal(recoveryBody.safety.writesKanban, false);
+  } finally {
+    if (previousStatePath === undefined) {
+      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_STATE_PATH;
+    } else {
+      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_STATE_PATH = previousStatePath;
+    }
+    fs.rmSync(testDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /scheduler/graphify/refresh-plan returns plan-only Graphify schedule recommendations', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/graphify/refresh-plan' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    candidateCount: number;
+    items: Array<{ workflowKind: string; schedulerEnabled: boolean; safety: { reportOnly: boolean; writesToMind: boolean; writesTargetRepo: boolean; runsGraphifyNow: boolean; createsSchedulerJob: boolean } }>;
+    safety: { planOnly: boolean; reportOnly: boolean; writesToMind: boolean; writesTargetRepo: boolean; runsGraphifyNow: boolean; createsSchedulerJob: boolean; startsBackgroundDaemon: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'graphify-refresh-schedule');
+  assert.equal(body.candidateCount, 2);
+  assert.equal(body.items.some(item => item.workflowKind === 'scheduler-run-graphify-preflight-mind'), true);
+  assert.equal(body.items.some(item => item.workflowKind === 'scheduler-run-graphify-preflight-brain'), true);
+  assert.equal(body.items.every(item => item.schedulerEnabled === false), true);
+  assert.equal(body.items.every(item => item.safety.reportOnly === true), true);
+  assert.equal(body.items.every(item => item.safety.writesToMind === false), true);
+  assert.equal(body.items.every(item => item.safety.writesTargetRepo === false), true);
+  assert.equal(body.items.every(item => item.safety.runsGraphifyNow === false), true);
+  assert.equal(body.items.every(item => item.safety.createsSchedulerJob === false), true);
+  assert.equal(body.safety.planOnly, true);
+  assert.equal(body.safety.reportOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.writesTargetRepo, false);
+  assert.equal(body.safety.runsGraphifyNow, false);
+  assert.equal(body.safety.createsSchedulerJob, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+});
+
+test('GET /scheduler/mind-maintenance/report-only-plan returns pre-write maintenance schedule gate', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/mind-maintenance/report-only-plan' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    schedulerJobId: string;
+    requestEndpoint: string;
+    latestReport: { available: boolean; mode: string | null; noWritePerformed: boolean };
+    schedulerEnabled: boolean;
+    safety: {
+      planOnly: boolean;
+      reportOnly: boolean;
+      writesToMind: boolean;
+      writesReportsNow: boolean;
+      executesMaintenanceNow: boolean;
+      createsSchedulerJob: boolean;
+      startsBackgroundDaemon: boolean;
+      requiresApprovalForWrites: boolean;
+      mustRunBeforeApprovedWrites: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'mind-maintenance-report-only-schedule');
+  assert.equal(body.schedulerJobId, 'mind-maintenance-report-only');
+  assert.equal(body.requestEndpoint, '/api/mind-maintenance/run');
+  assert.equal(body.schedulerEnabled, false);
+  assert.equal(body.safety.planOnly, true);
+  assert.equal(body.safety.reportOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.writesReportsNow, false);
+  assert.equal(body.safety.executesMaintenanceNow, false);
+  assert.equal(body.safety.createsSchedulerJob, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.requiresApprovalForWrites, true);
+  assert.equal(body.safety.mustRunBeforeApprovedWrites, true);
+});
+
+test('GET /scheduler/continuous-processing/selection returns disabled continuous workflow selection', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/selection' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    selectedWorkflowKind: string;
+    selectedSchedulerJobId: string;
+    selectedCount: number;
+    continuousEnabled: boolean;
+    watcherEnabled: boolean;
+    workflows: Array<{ selected: boolean; workflowKind: string; continuousEnabled: boolean; watcherEnabled: boolean }>;
+    safety: {
+      planOnly: boolean;
+      readOnly: boolean;
+      continuousEnabled: boolean;
+      watcherEnabled: boolean;
+      startsBackgroundDaemon: boolean;
+      runsWorkflowNow: boolean;
+      writesToMind: boolean;
+      movesCaptures: boolean;
+      deletesCaptures: boolean;
+      writesKanban: boolean;
+      basicMindUseRequiresContinuousProcessing: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-workflow-selection');
+  assert.equal(body.selectedWorkflowKind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+  assert.equal(body.selectedSchedulerJobId, 'mind-steward-inbox-queue-dry-run');
+  assert.equal(body.selectedCount, 1);
+  assert.equal(body.workflows.filter(workflow => workflow.selected).length, 1);
+  assert.equal(body.workflows.find(workflow => workflow.selected)?.workflowKind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+  assert.equal(body.workflows.every(workflow => workflow.continuousEnabled === false), true);
+  assert.equal(body.workflows.every(workflow => workflow.watcherEnabled === false), true);
+  assert.equal(body.continuousEnabled, false);
+  assert.equal(body.watcherEnabled, false);
+  assert.equal(body.safety.planOnly, true);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.continuousEnabled, false);
+  assert.equal(body.safety.watcherEnabled, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.runsWorkflowNow, false);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.movesCaptures, false);
+  assert.equal(body.safety.deletesCaptures, false);
+  assert.equal(body.safety.writesKanban, false);
+  assert.equal(body.safety.basicMindUseRequiresContinuousProcessing, false);
+});
+
+test('GET /scheduler/continuous-processing/stability returns read-only stability view without executing anything', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/stability' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    debounceSeconds: number | null;
+    totalCount: number;
+    stableCount: number;
+    debouncingCount: number;
+    selectedStableCount: number;
+    blockers: string[];
+    safety: {
+      readOnly: boolean;
+      writesToMind: boolean;
+      movesCaptures: boolean;
+      deletesCaptures: boolean;
+      writesKanban: boolean;
+      createsSchedulerJob: boolean;
+      startsBackgroundDaemon: boolean;
+      runsWorkflowNow: boolean;
+      watcherEnabled: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-stability-view');
+  assert.equal(body.source, 'brain-runtime-queue-state');
+  assert.equal(typeof body.totalCount, 'number');
+  assert.equal(typeof body.stableCount, 'number');
+  assert.equal(typeof body.debouncingCount, 'number');
+  assert.equal(typeof body.selectedStableCount, 'number');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.movesCaptures, false);
+  assert.equal(body.safety.deletesCaptures, false);
+  assert.equal(body.safety.writesKanban, false);
+  assert.equal(body.safety.createsSchedulerJob, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.runsWorkflowNow, false);
+  assert.equal(body.safety.watcherEnabled, false);
+});
+
+test('GET /simplification-review returns read-only simplification review', async () => {
+  const response = await exercise({ method: 'GET', url: '/simplification-review' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    folderStructure: {
+      topLevelFolderCount: number;
+      topLevelFolders: string[];
+      observedMaximumDepth: number;
+      directoryCountByDepth: Record<string, number>;
+      deepestPaths: string[];
+      scanComplete: boolean;
+      unreadablePaths: string[];
+      recommendedMaximumUsefulDepth: number | null;
+      recommendationStatus: string;
+      recommendationBlockers: string[];
+    };
+    navigation: { homeExists: boolean; brokenLinkCount: number };
+    inboxAge: { status: string; captureCount: number | null; source: string; blockers: string[] };
+    maintenanceBacklog: { status: string; unresolvedFindingCount: number | null; source: string[]; measuredAt: string; blockers: string[] };
+    safety: { readOnly: boolean; writesToMind: boolean; deletesFiles: boolean; archivesFiles: boolean };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'simplification-review-view');
+  assert.equal(body.source, 'mind-filesystem-scan');
+  assert(body.folderStructure.topLevelFolderCount >= 1);
+  assert(Array.isArray(body.folderStructure.topLevelFolders));
+  assert(body.folderStructure.observedMaximumDepth >= 1);
+  assert.equal(typeof body.folderStructure.directoryCountByDepth, 'object');
+  assert(Array.isArray(body.folderStructure.deepestPaths));
+  assert.equal(typeof body.folderStructure.scanComplete, 'boolean');
+  assert(Array.isArray(body.folderStructure.unreadablePaths));
+  assert.equal(body.folderStructure.recommendedMaximumUsefulDepth, null);
+  assert.equal(body.folderStructure.recommendationStatus, 'insufficient-evidence');
+  assert(body.folderStructure.recommendationBlockers.length > 0);
+  assert.equal(typeof body.navigation.homeExists, 'boolean');
+  assert.equal(typeof body.navigation.brokenLinkCount, 'number');
+  assert.equal(typeof body.inboxAge.status, 'string');
+  assert(body.inboxAge.captureCount === null || typeof body.inboxAge.captureCount === 'number');
+  assert(typeof body.inboxAge.source === 'string');
+  assert(Array.isArray(body.inboxAge.blockers));
+  assert.equal(typeof body.maintenanceBacklog.status, 'string');
+  assert(body.maintenanceBacklog.unresolvedFindingCount === null || typeof body.maintenanceBacklog.unresolvedFindingCount === 'number');
+  assert(Array.isArray(body.maintenanceBacklog.source));
+  assert.equal(typeof body.maintenanceBacklog.measuredAt, 'string');
+  assert(Array.isArray(body.maintenanceBacklog.blockers));
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.deletesFiles, false);
+  assert.equal(body.safety.archivesFiles, false);
+});
+
+test('GET /scheduler/continuous-processing/disable-recovery returns read-only disable/recovery procedure', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/disable-recovery' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    killSwitchEnabled: boolean;
+    killSwitchFlagName: string;
+    continuousProcessingEnabled: boolean;
+    watcherEnabled: boolean;
+    disableProcedure: { steps: Array<{ order: number; reversible: boolean }>; immediateEffect: string };
+    recoveryProcedure: { steps: Array<{ order: number; requiresApproval: boolean }>; dataIntegrity: string };
+    safety: {
+      readOnly: boolean;
+      writesToMind: boolean;
+      disablesContinuousProcessing: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-disable-recovery-view');
+  assert.equal(body.source, 'brain-core-documentation');
+  assert.equal(body.killSwitchFlagName, 'BRAIN_CORE_EXECUTION_KILL_SWITCH');
+  assert.equal(body.continuousProcessingEnabled, false);
+  assert.equal(body.watcherEnabled, false);
+  assert(body.disableProcedure.steps.length >= 2);
+  assert(body.recoveryProcedure.steps.length >= 2);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.disablesContinuousProcessing, false);
+});
+
+test('GET /scheduler/continuous-processing/measurement returns read-only measurement view', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/measurement' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    generatedAt: string;
+    safety: {
+      readOnly: boolean;
+      writesToMind: boolean;
+      startsBackgroundDaemon: boolean;
+      collectsMetricsAutomatically: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-measurement-view');
+  assert.equal(body.source, 'brain-runtime-queue-state');
+  assert.equal(typeof body.generatedAt, 'string');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.collectsMetricsAutomatically, false);
+});
+
+test('GET /scheduler/continuous-processing/large-file-fallback returns read-only large-file fallback view', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/large-file-fallback' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    largeFileThresholdMb: number | null;
+    largeFileCount: number;
+    nightlyFallbackEnabled: boolean;
+    nightlyFallbackScheduled: boolean;
+    safety: {
+      readOnly: boolean;
+      writesToMind: boolean;
+      startsBackgroundDaemon: boolean;
+      schedulesNightlyJob: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-large-file-fallback-view');
+  assert.equal(body.source, 'brain-runtime-queue-state');
+  assert.equal(typeof body.largeFileCount, 'number');
+  assert.equal(body.nightlyFallbackEnabled, false);
+  assert.equal(body.nightlyFallbackScheduled, false);
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.schedulesNightlyJob, false);
+});
+
+test('GET /scheduler/continuous-processing/large-file-fallback/plan returns plan-only nightly fallback plan', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/large-file-fallback/plan' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    maxFilesPerNightlyRun: number;
+    nightlyWindow: string;
+    featureFlagEnabled: boolean;
+    killSwitchEnabled: boolean;
+    manualSuccessRequired: boolean;
+    schedulerEnabled: boolean;
+    eligibleCount: number;
+    safety: {
+      planOnly: boolean;
+      writesToMind: boolean;
+      runsWorkflowNow: boolean;
+      createsSchedulerJob: boolean;
+      startsBackgroundDaemon: boolean;
+      requiresFeatureFlag: boolean;
+      honorsKillSwitch: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'large-file-nightly-fallback-plan');
+  assert.equal(body.source, 'brain-core-scheduler-plan');
+  assert.equal(typeof body.maxFilesPerNightlyRun, 'number');
+  assert(body.maxFilesPerNightlyRun > 0);
+  assert.equal(typeof body.nightlyWindow, 'string');
+  assert.equal(body.featureFlagEnabled, false);
+  assert.equal(body.manualSuccessRequired, true);
+  assert.equal(body.schedulerEnabled, false);
+  assert.equal(body.safety.planOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.runsWorkflowNow, false);
+  assert.equal(body.safety.createsSchedulerJob, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.requiresFeatureFlag, true);
+  assert.equal(body.safety.honorsKillSwitch, true);
+});
+
+test('GET /scheduler/continuous-processing/failure-buffer returns read-only failure buffer view', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/failure-buffer' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    maxRetries: number | null;
+    failureBufferPauseThreshold: number;
+    exhaustedCount: number;
+    retryPendingCount: number;
+    totalFailureBufferCount: number;
+    shouldPauseContinuousProcessing: boolean;
+    blockers: string[];
+    safety: {
+      readOnly: boolean;
+      writesToMind: boolean;
+      startsBackgroundDaemon: boolean;
+      clearsFailureBuffer: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-failure-buffer-view');
+  assert.equal(body.source, 'brain-runtime-queue-state');
+  assert.equal(typeof body.exhaustedCount, 'number');
+  assert.equal(typeof body.retryPendingCount, 'number');
+  assert.equal(typeof body.totalFailureBufferCount, 'number');
+  assert.equal(typeof body.shouldPauseContinuousProcessing, 'boolean');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.clearsFailureBuffer, false);
+});
+
+test('GET /scheduler/continuous-processing/concurrency returns read-only concurrency cap view', async () => {
+  const response = await exercise({ method: 'GET', url: '/scheduler/continuous-processing/concurrency' });
+  const body = JSON.parse(response.body) as {
+    id: string;
+    status: string;
+    source: string;
+    maxConcurrentJobs: number | null;
+    runningJobs: number;
+    availableSlots: number;
+    capReached: boolean;
+    capBlocking: boolean;
+    blockers: string[];
+    safety: {
+      readOnly: boolean;
+      writesToMind: boolean;
+      movesCaptures: boolean;
+      deletesCaptures: boolean;
+      writesKanban: boolean;
+      createsSchedulerJob: boolean;
+      startsBackgroundDaemon: boolean;
+      runsWorkflowNow: boolean;
+      watcherEnabled: boolean;
+      modifiesConcurrencyAtRuntime: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.id, 'continuous-processing-concurrency-view');
+  assert.equal(body.source, 'brain-runtime-queue-state');
+  assert.equal(typeof body.runningJobs, 'number');
+  assert.equal(typeof body.availableSlots, 'number');
+  assert.equal(typeof body.capReached, 'boolean');
+  assert.equal(typeof body.capBlocking, 'boolean');
+  assert.equal(body.safety.readOnly, true);
+  assert.equal(body.safety.writesToMind, false);
+  assert.equal(body.safety.movesCaptures, false);
+  assert.equal(body.safety.deletesCaptures, false);
+  assert.equal(body.safety.writesKanban, false);
+  assert.equal(body.safety.createsSchedulerJob, false);
+  assert.equal(body.safety.startsBackgroundDaemon, false);
+  assert.equal(body.safety.runsWorkflowNow, false);
+  assert.equal(body.safety.watcherEnabled, false);
+  assert.equal(body.safety.modifiesConcurrencyAtRuntime, false);
 });
 
 test('GET /local-apps returns registered local app list including Fala', async () => {
@@ -1564,7 +2205,7 @@ test('GET /execution/plans returns the future first execution candidate', async 
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.plans.length, 15);
+  assert.equal(body.plans.length, 16);
   assert.equal(body.plans[0]?.kind, 'scheduler-run-mind-steward-dry-run');
   assert.equal(body.plans[1]?.kind, 'scheduler-run-mind-steward-inbox-dry-run');
   assert.equal(body.plans[2]?.kind, 'scheduler-run-mind-steward-inbox-classifier-dry-run');
@@ -1608,6 +2249,99 @@ test('GET /execution/plans includes Infinite Brain report-only pipeline candidat
   assert.equal(infiniteBrainPlan.writesToMind, false);
   assert.equal(infiniteBrainPlan.externalSideEffects, false);
   assert.equal(infiniteBrainPlan.executed, false);
+});
+
+test('GET /execution/on-demand-runs lists approval-only workflow requests', async () => {
+  const response = await exercise({ method: 'GET', url: '/execution/on-demand-runs' });
+  const body = JSON.parse(response.body) as {
+    runs: Array<{
+      kind: string;
+      requestEndpoint: string;
+      schedulerRequired: boolean;
+      scheduled: boolean;
+      willRunImmediately: boolean;
+      safety: {
+        writesToMind: boolean;
+        externalSideEffects: boolean;
+        createsSchedulerJob: boolean;
+        startsBackgroundDaemon: boolean;
+      };
+    }>;
+  };
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(body.runs.length, 16);
+  assert.equal(
+    body.runs.some(run =>
+      run.kind === 'scheduler-run-mind-steward-inbox-queue-dry-run'
+      && run.requestEndpoint === '/execution/on-demand-runs/scheduler-run-mind-steward-inbox-queue-dry-run/request'),
+    true,
+  );
+  assert.equal(body.runs.every(run => run.schedulerRequired === false), true);
+  assert.equal(body.runs.every(run => run.scheduled === false), true);
+  assert.equal(body.runs.every(run => run.willRunImmediately === false), true);
+  assert.equal(body.runs.every(run => run.safety.writesToMind === false), true);
+  assert.equal(body.runs.every(run => run.safety.externalSideEffects === false), true);
+  assert.equal(body.runs.every(run => run.safety.createsSchedulerJob === false), true);
+  assert.equal(body.runs.every(run => run.safety.startsBackgroundDaemon === false), true);
+});
+
+test('POST /execution/on-demand-runs/:kind/request creates approval without scheduling or executing', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/execution/on-demand-runs/scheduler-run-mind-steward-inbox-queue-dry-run/request',
+  });
+  const body = JSON.parse(response.body) as {
+    approval: { kind: string; status: string };
+    preview: { wouldExecute: boolean; writesToMind: boolean };
+    policy: { executionEnabled: boolean };
+    executed: boolean;
+    onDemandRun: {
+      kind: string;
+      schedulerRequired: boolean;
+      scheduled: boolean;
+      willRunImmediately: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 202);
+  assert.equal(body.approval.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
+  assert.equal(body.approval.status, 'pending');
+  assert.equal(body.preview.wouldExecute, false);
+  assert.equal(body.preview.writesToMind, false);
+  assert.equal(body.policy.executionEnabled, false);
+  assert.equal(body.executed, false);
+  assert.equal(body.onDemandRun.schedulerRequired, false);
+  assert.equal(body.onDemandRun.scheduled, false);
+  assert.equal(body.onDemandRun.willRunImmediately, false);
+});
+
+test('POST /execution/on-demand-runs/:kind/request blocks unknown workflows', async () => {
+  const response = await exercise({
+    method: 'POST',
+    url: '/execution/on-demand-runs/scheduler-run-unknown-workflow/request',
+  });
+  const body = JSON.parse(response.body) as {
+    accepted: boolean;
+    executed: boolean;
+    approval?: { kind: string };
+    message: string;
+    onDemandRun: {
+      kind: string;
+      schedulerRequired: boolean;
+      scheduled: boolean;
+      willRunImmediately: boolean;
+    };
+  };
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(body.accepted, false);
+  assert.equal(body.executed, false);
+  assert.equal(body.approval, undefined);
+  assert.equal(body.message.includes('Unsupported on-demand workflow kind'), true);
+  assert.equal(body.onDemandRun.schedulerRequired, false);
+  assert.equal(body.onDemandRun.scheduled, false);
+  assert.equal(body.onDemandRun.willRunImmediately, false);
 });
 
 test('GET /execution/mind-preview-policy returns preview-only policy metadata', async () => {
@@ -1833,6 +2567,9 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
     mindStewardInboxQueueDryRunExecutionFlagName?: string;
     candidateCount: number;
     readyCandidateCount: number;
+    workflowFeatureFlags: Array<{ workflowId: string; flagName: string; enabled: boolean }>;
+    featureFlaggedWorkflowCount: number;
+    enabledWorkflowFeatureFlagCount: number;
     blockers: string[];
     writesToMind: boolean;
     executableActions: boolean;
@@ -1848,8 +2585,18 @@ test('GET /execution/readiness returns execution disabled and blockers with the 
   assert.equal(body.mindStewardInboxClassifierDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION');
   assert.equal(body.mindStewardInboxQueueDryRunExecutionFlagEnabled, false);
   assert.equal(body.mindStewardInboxQueueDryRunExecutionFlagName, 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION');
-  assert.equal(body.candidateCount, 4);
+  assert.equal(body.candidateCount, 16);
   assert.equal(body.readyCandidateCount, 0);
+  assert.equal(body.featureFlaggedWorkflowCount, 16);
+  assert.equal(body.enabledWorkflowFeatureFlagCount, 0);
+  assert.equal(body.workflowFeatureFlags.length, 16);
+  assert.equal(
+    body.workflowFeatureFlags.some((flag: { workflowId: string; flagName: string; enabled: boolean }) =>
+      flag.workflowId === 'scheduler-run-graphify-preflight-mind'
+      && flag.flagName === 'BRAIN_CORE_ENABLE_GRAPHIFY_PREFLIGHT_MIND_EXECUTION'
+      && flag.enabled === false),
+    true,
+  );
   assert.equal(body.writesToMind, false);
   assert.equal(body.executableActions, false);
   assert.equal(body.blockers.includes('execution feature flag disabled'), true);
@@ -1947,6 +2694,38 @@ test('GET /execution/readiness reports the feature flag when enabled but keeps e
       delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
     } else {
       process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
+    }
+  }
+});
+
+test('GET /execution/readiness reports active execution kill switch', async () => {
+  const previousKillSwitch = process.env.BRAIN_CORE_EXECUTION_KILL_SWITCH;
+  process.env.BRAIN_CORE_EXECUTION_KILL_SWITCH = 'true';
+
+  try {
+    const response = await exercise({ method: 'GET', url: '/execution/readiness' });
+    const body = JSON.parse(response.body) as {
+      executionEnabled: boolean;
+      killSwitch: { flagName: string; enabled: boolean; blocksOnDemandRequests: boolean; blocksApprovedExecution: boolean };
+      blockers: string[];
+      writesToMind: boolean;
+      executableActions: boolean;
+    };
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.executionEnabled, false);
+    assert.equal(body.killSwitch.flagName, 'BRAIN_CORE_EXECUTION_KILL_SWITCH');
+    assert.equal(body.killSwitch.enabled, true);
+    assert.equal(body.killSwitch.blocksOnDemandRequests, true);
+    assert.equal(body.killSwitch.blocksApprovedExecution, true);
+    assert.equal(body.blockers.includes('execution kill switch enabled'), true);
+    assert.equal(body.writesToMind, false);
+    assert.equal(body.executableActions, false);
+  } finally {
+    if (previousKillSwitch === undefined) {
+      delete process.env.BRAIN_CORE_EXECUTION_KILL_SWITCH;
+    } else {
+      process.env.BRAIN_CORE_EXECUTION_KILL_SWITCH = previousKillSwitch;
     }
   }
 });
@@ -2144,7 +2923,7 @@ test('roadmap POST targets create approval requests without executing', async ()
   }
 });
 
-test('approved Graphify scheduler candidates execute safe report wrappers', async () => {
+test('approved Graphify scheduler candidates are blocked without workflow feature flags', async () => {
   const testDir = path.join(process.cwd(), '.buildflow-test-graphify-action-execution');
   const storePath = path.join(testDir, 'approvals.json');
   const auditPath = path.join(testDir, 'approval-audit.jsonl');
@@ -2155,6 +2934,8 @@ test('approved Graphify scheduler candidates execute safe report wrappers', asyn
   fs.mkdirSync(testDir, { recursive: true });
   process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
   process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
+  delete process.env.BRAIN_CORE_ENABLE_GRAPHIFY_PREFLIGHT_MIND_EXECUTION;
+  delete process.env.BRAIN_CORE_ENABLE_GRAPHIFY_UPDATE_BRAIN_BLOCKED_EXECUTION;
 
   const cases = [
     {
@@ -2178,24 +2959,22 @@ test('approved Graphify scheduler candidates execute safe report wrappers', asyn
       const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
       const approvalBody = JSON.parse(approvalResponse.body) as {
         approval: { status: string };
-        execution: { status: string; command: string; outputPath: string; exitCode: number; writesToMind: boolean; externalSideEffects: boolean };
+        execution: { status: string; command: string; outputPath?: string; exitCode?: number; message: string; writesToMind: boolean; externalSideEffects: boolean };
         executed: boolean;
       };
-      const reportPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
 
       assert.equal(requestResponse.statusCode, 202);
       assert.equal(requestBody.approval.kind, item.kind);
       assert.equal(requestBody.executed, false);
       assert.equal(approvalResponse.statusCode, 200);
       assert.equal(approvalBody.approval.status, 'approved');
-      assert.equal(approvalBody.executed, true);
-      assert.equal(approvalBody.execution.status, 'ok');
+      assert.equal(approvalBody.executed, false);
+      assert.equal(approvalBody.execution.status, 'blocked');
       assert.equal(approvalBody.execution.command, item.command);
-      assert.equal(approvalBody.execution.outputPath, item.outputPath);
-      assert.equal(approvalBody.execution.exitCode, 0);
+      assert.equal(approvalBody.execution.outputPath, undefined);
+      assert.equal(approvalBody.execution.message.endsWith(' is not true.'), true);
       assert.equal(approvalBody.execution.writesToMind, false);
       assert.equal(approvalBody.execution.externalSideEffects, false);
-      assert.equal(fs.existsSync(reportPath), true);
     }
   } finally {
     if (previousStorePath === undefined) {

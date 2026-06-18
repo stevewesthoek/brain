@@ -9,6 +9,7 @@ const CANDIDATE_KINDS = [
   'scheduler-run-mind-steward-inbox-dry-run',
   'scheduler-run-mind-steward-inbox-classifier-dry-run',
   'scheduler-run-mind-steward-inbox-queue-dry-run',
+  'scheduler-run-mind-steward-large-file-nightly-fallback',
   'scheduler-run-graphify-preflight-mind',
   'scheduler-run-graphify-preflight-brain',
   'scheduler-run-graphify-update-mind-blocked',
@@ -25,6 +26,76 @@ const MIND_STEWARD_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_
 const MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION';
 const MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG = 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
+const EXECUTION_KILL_SWITCH_FLAG = 'BRAIN_CORE_EXECUTION_KILL_SWITCH';
+const WORKFLOW_FEATURE_FLAG_DEFINITIONS: Record<BrainCoreExecutionCandidateKind, {
+  flagName: string;
+  mode: 'report-only' | 'blocked-until-implementation';
+}> = {
+  'scheduler-run-mind-steward-dry-run': {
+    flagName: MIND_STEWARD_DRY_RUN_EXECUTION_FLAG,
+    mode: 'report-only',
+  },
+  'scheduler-run-mind-steward-inbox-dry-run': {
+    flagName: MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG,
+    mode: 'report-only',
+  },
+  'scheduler-run-mind-steward-inbox-classifier-dry-run': {
+    flagName: MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG,
+    mode: 'report-only',
+  },
+  'scheduler-run-mind-steward-inbox-queue-dry-run': {
+    flagName: MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG,
+    mode: 'report-only',
+  },
+  'scheduler-run-mind-steward-large-file-nightly-fallback': {
+    flagName: 'BRAIN_CORE_ENABLE_LARGE_FILE_NIGHTLY_FALLBACK_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-preflight-mind': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_PREFLIGHT_MIND_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-preflight-brain': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_PREFLIGHT_BRAIN_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-update-mind-blocked': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_UPDATE_MIND_BLOCKED_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-update-brain-blocked': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_UPDATE_BRAIN_BLOCKED_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-update-mind': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_UPDATE_MIND_EXECUTION',
+    mode: 'blocked-until-implementation',
+  },
+  'scheduler-run-graphify-update-brain': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_UPDATE_BRAIN_EXECUTION',
+    mode: 'blocked-until-implementation',
+  },
+  'scheduler-run-graphify-full-brain-selector-preview': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_FULL_BRAIN_SELECTOR_PREVIEW_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-full-mind-selector-preview': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_FULL_MIND_SELECTOR_PREVIEW_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-critical-rebuild-brain-selector-preview': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_CRITICAL_REBUILD_BRAIN_SELECTOR_PREVIEW_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-graphify-critical-rebuild-mind-selector-preview': {
+    flagName: 'BRAIN_CORE_ENABLE_GRAPHIFY_CRITICAL_REBUILD_MIND_SELECTOR_PREVIEW_EXECUTION',
+    mode: 'report-only',
+  },
+  'scheduler-run-infinite-brain-report-only-pipeline': {
+    flagName: 'BRAIN_CORE_ENABLE_INFINITE_BRAIN_REPORT_ONLY_PIPELINE_EXECUTION',
+    mode: 'report-only',
+  },
+};
 
 const MIND_PREVIEW_ALLOWED_TARGETS = [
   'router/current.md',
@@ -71,20 +142,24 @@ const MIND_PREVIEW_REQUIRED_GATES = [
 
 export type BrainCoreExecutionCandidateKind = typeof CANDIDATE_KINDS[number];
 
+function isFlagEnabled(flagName: string): boolean {
+  return process.env[flagName]?.trim().toLowerCase() === 'true';
+}
+
 export function isMindStewardDryRunExecutionFlagEnabled(): boolean {
-  return process.env[MIND_STEWARD_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+  return isFlagEnabled(MIND_STEWARD_DRY_RUN_EXECUTION_FLAG);
 }
 
 export function isMindStewardInboxDryRunExecutionFlagEnabled(): boolean {
-  return process.env[MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+  return isFlagEnabled(MIND_STEWARD_INBOX_DRY_RUN_EXECUTION_FLAG);
 }
 
 export function isMindStewardInboxClassifierDryRunExecutionFlagEnabled(): boolean {
-  return process.env[MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+  return isFlagEnabled(MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION_FLAG);
 }
 
 export function isMindStewardInboxQueueDryRunExecutionFlagEnabled(): boolean {
-  return process.env[MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG]?.trim().toLowerCase() === 'true';
+  return isFlagEnabled(MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG);
 }
 
 export function getMindStewardDryRunExecutionFlagName(): typeof MIND_STEWARD_DRY_RUN_EXECUTION_FLAG {
@@ -103,12 +178,58 @@ export function getMindStewardInboxQueueDryRunExecutionFlagName(): typeof MIND_S
   return MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION_FLAG;
 }
 
+export function isExecutionKillSwitchEnabled(): boolean {
+  return isFlagEnabled(EXECUTION_KILL_SWITCH_FLAG);
+}
+
+export function getExecutionKillSwitchFlagName(): typeof EXECUTION_KILL_SWITCH_FLAG {
+  return EXECUTION_KILL_SWITCH_FLAG;
+}
+
+export function getExecutionKillSwitch() {
+  return {
+    flagName: EXECUTION_KILL_SWITCH_FLAG,
+    enabled: isExecutionKillSwitchEnabled(),
+    blocksOnDemandRequests: true,
+    blocksApprovedExecution: true,
+    blocksSchedulerEligibility: true,
+    writesToMind: false,
+  } as const;
+}
+
+export function getWorkflowFeatureFlag(kind: BrainCoreExecutionCandidateKind) {
+  const definition = WORKFLOW_FEATURE_FLAG_DEFINITIONS[kind];
+  return {
+    workflowId: kind,
+    flagName: definition.flagName,
+    enabled: isFlagEnabled(definition.flagName),
+    requiredForExecution: true,
+    defaultEnabled: false,
+    mode: definition.mode,
+    writesToMind: false,
+    externalSideEffects: false,
+  } as const;
+}
+
+export function getWorkflowFeatureFlagForKind(kind: string) {
+  return isExecutionCandidateKind(kind) ? getWorkflowFeatureFlag(kind) : undefined;
+}
+
+export function listWorkflowFeatureFlags() {
+  return CANDIDATE_KINDS.map(getWorkflowFeatureFlag);
+}
+
+export function isWorkflowFeatureFlagEnabled(kind: string): boolean {
+  return getWorkflowFeatureFlagForKind(kind)?.enabled === true;
+}
+
 export function listExecutionPlans(): BrainCoreExecutionPlan[] {
   return [
     createMindStewardDryRunPlan(),
     createMindStewardInboxDryRunPlan(),
     createMindStewardInboxClassifierDryRunPlan(),
     createMindStewardInboxQueueDryRunPlan(),
+    createLargeFileNightlyFallbackPlan(),
     createGraphifyPlan(
       'scheduler-run-graphify-preflight-mind',
       'Run report-only Graphify preflight for Mind.',
@@ -172,6 +293,9 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
   const mindStewardInboxDryRunExecutionFlagEnabled = isMindStewardInboxDryRunExecutionFlagEnabled();
   const mindStewardInboxClassifierDryRunExecutionFlagEnabled = isMindStewardInboxClassifierDryRunExecutionFlagEnabled();
   const mindStewardInboxQueueDryRunExecutionFlagEnabled = isMindStewardInboxQueueDryRunExecutionFlagEnabled();
+  const workflowFeatureFlags = listWorkflowFeatureFlags();
+  const enabledWorkflowFeatureFlagCount = workflowFeatureFlags.filter(flag => flag.enabled).length;
+  const killSwitch = getExecutionKillSwitch();
   const blockers = [
     'durable approval store not proven for this request',
     'durable audit not proven for this request',
@@ -180,12 +304,16 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
     'rollback drill not performed',
   ];
 
-  if (!mindStewardDryRunExecutionFlagEnabled) {
+  if (enabledWorkflowFeatureFlagCount === 0) {
     blockers.unshift('execution feature flag disabled');
+  }
+  if (killSwitch.enabled) {
+    blockers.unshift('execution kill switch enabled');
   }
 
   return {
     executionEnabled: false,
+    killSwitch,
     mindStewardDryRunExecutionFlagEnabled,
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
     mindStewardInboxDryRunExecutionFlagEnabled,
@@ -196,6 +324,9 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
     mindStewardInboxQueueDryRunExecutionFlagName: getMindStewardInboxQueueDryRunExecutionFlagName(),
     candidateCount: listExecutionPlans().length,
     readyCandidateCount: 0,
+    workflowFeatureFlags,
+    featureFlaggedWorkflowCount: workflowFeatureFlags.length,
+    enabledWorkflowFeatureFlagCount,
     blockers,
     writesToMind: false,
     executableActions: false,
@@ -204,6 +335,10 @@ export function getExecutionReadiness(): BrainCoreExecutionReadiness {
 
 export function getExecutionCandidateKinds(): BrainCoreExecutionCandidateKind[] {
   return [...CANDIDATE_KINDS];
+}
+
+function isExecutionCandidateKind(kind: string): kind is BrainCoreExecutionCandidateKind {
+  return CANDIDATE_KINDS.includes(kind as BrainCoreExecutionCandidateKind);
 }
 
 export function getExecutionPlanPreview(kind: string): string | undefined {
@@ -239,6 +374,7 @@ function createMindStewardDryRunPlan(): BrainCoreExecutionPlan {
   return {
     kind: 'scheduler-run-mind-steward-dry-run',
     candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag('scheduler-run-mind-steward-dry-run'),
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
@@ -285,6 +421,7 @@ function createMindStewardInboxDryRunPlan(): BrainCoreExecutionPlan {
   return {
     kind: 'scheduler-run-mind-steward-inbox-dry-run',
     candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag('scheduler-run-mind-steward-inbox-dry-run'),
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
@@ -327,6 +464,7 @@ function createMindStewardInboxClassifierDryRunPlan(): BrainCoreExecutionPlan {
   return {
     kind: 'scheduler-run-mind-steward-inbox-classifier-dry-run',
     candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag('scheduler-run-mind-steward-inbox-classifier-dry-run'),
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
@@ -377,6 +515,7 @@ function createMindStewardInboxQueueDryRunPlan(): BrainCoreExecutionPlan {
   return {
     kind: 'scheduler-run-mind-steward-inbox-queue-dry-run',
     candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag('scheduler-run-mind-steward-inbox-queue-dry-run'),
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
@@ -419,7 +558,46 @@ function createMindStewardInboxQueueDryRunPlan(): BrainCoreExecutionPlan {
   };
 }
 
-
+function createLargeFileNightlyFallbackPlan(): BrainCoreExecutionPlan {
+  return {
+    kind: 'scheduler-run-mind-steward-large-file-nightly-fallback',
+    candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag('scheduler-run-mind-steward-large-file-nightly-fallback'),
+    executionEnabled: false,
+    mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
+    mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
+    wouldExecute: false,
+    executed: false,
+    riskLevel: 'low',
+    writesToMind: false,
+    externalSideEffects: false,
+    requiresApproval: true,
+    requiresDurableApprovalStore: true,
+    requiresDurableAudit: true,
+    requiresRollbackPlan: true,
+    rollbackPlan: 'Remove generated runtime/local/mind-steward large-file report files if needed; no Mind content is changed.',
+    summary: 'Report-only large-file nightly fallback candidate. Processes blocked large files in a bounded nightly window without continuous processing.',
+    mindPreviewPolicy: {
+      status: 'preview-only',
+      firstProposedAction: 'mind-steward-update-current-context',
+      firstProposedTarget: 'router/current.md',
+      writesToMind: false,
+      externalSideEffects: false,
+      applyRouteEnabled: false,
+      allowedTargets: [...MIND_PREVIEW_ALLOWED_TARGETS],
+      blockedPrefixes: [...MIND_PREVIEW_BLOCKED_PREFIXES],
+      requiredGates: [...MIND_PREVIEW_REQUIRED_GATES],
+    },
+    steps: [
+      {
+        id: 'inspect-large-file-queue',
+        description: 'Build report-only large-file nightly fallback plan from blocked queue items',
+        commandPreview: 'GET /scheduler/continuous-processing/large-file-fallback/plan',
+        willRunNow: false,
+      },
+    ],
+  };
+}
 
 function createGraphifyPlan(
   kind: BrainCoreExecutionPlan['kind'],
@@ -429,6 +607,7 @@ function createGraphifyPlan(
   return {
     kind,
     candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag(kind),
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),
@@ -469,6 +648,7 @@ function createInfiniteBrainPipeline(): BrainCoreExecutionPlan {
   return {
     kind: 'scheduler-run-infinite-brain-report-only-pipeline',
     candidate: true,
+    workflowFeatureFlag: getWorkflowFeatureFlag('scheduler-run-infinite-brain-report-only-pipeline'),
     executionEnabled: false,
     mindStewardDryRunExecutionFlagEnabled: isMindStewardDryRunExecutionFlagEnabled(),
     mindStewardDryRunExecutionFlagName: getMindStewardDryRunExecutionFlagName(),

@@ -5,9 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { classifyRequestedKind } from './action-allowlist.js';
 import {
   getExecutionPlanPreview,
+  getExecutionKillSwitch,
+  getWorkflowFeatureFlagForKind,
   isMindStewardDryRunExecutionFlagEnabled,
   isMindStewardInboxClassifierDryRunExecutionFlagEnabled,
   isMindStewardInboxQueueDryRunExecutionFlagEnabled,
+  isWorkflowFeatureFlagEnabled,
 } from './execution-plans.js';
 import {
   getApprovalStorePath,
@@ -481,6 +484,11 @@ function executeApprovedActionIfReady(record: BrainCoreApprovalRecord): BrainCor
     return undefined;
   }
 
+  const killSwitch = getExecutionKillSwitch();
+  if (killSwitch.enabled) {
+    return createBlockedExecutionSummary(getMindStewardExecutionCommand(record.kind), `${killSwitch.flagName} is true.`);
+  }
+
   if (!isMindStewardExecutionFlagEnabled(record.kind)) {
     return createBlockedExecutionSummary(
       getMindStewardExecutionCommand(record.kind),
@@ -592,6 +600,16 @@ function createBlockedExecutionSummary(
 
 function executeApprovedGraphifyAction(record: BrainCoreApprovalRecord): BrainCoreApprovalExecutionSummary {
   const command = getGraphifyExecutionCommand(record.kind);
+  const killSwitch = getExecutionKillSwitch();
+  if (killSwitch.enabled) {
+    return createBlockedExecutionSummary(command, `${killSwitch.flagName} is true.`);
+  }
+
+  const featureFlag = getWorkflowFeatureFlagForKind(record.kind);
+  if (!isWorkflowFeatureFlagEnabled(record.kind)) {
+    return createBlockedExecutionSummary(command, `${featureFlag?.flagName ?? 'workflow feature flag'} is not true.`);
+  }
+
   const store = readApprovalStore();
   if (!store.enabled || store.status !== 'available') {
     return createBlockedExecutionSummary(command, 'Durable approval store is not available.');

@@ -1562,6 +1562,29 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     readJobMetadataJson(jobId, 'assets.json') as Promise<Record<string, unknown> | null>,
   ]);
 
+  if (!options.dryRun) {
+    const requiredConfirmation = 'PUBLISH TO YOUTUBE';
+    if (options.confirmation?.trim() !== requiredConfirmation) {
+      return {
+        ok: false,
+        jobId,
+        dryRun: false,
+        code: 'publish_confirmation_required',
+        error: `Live YouTube publish requires exact confirmation: ${requiredConfirmation}`,
+      };
+    }
+
+    if (publishJson_initial?.dryRunPassed !== true) {
+      return {
+        ok: false,
+        jobId,
+        dryRun: false,
+        code: 'publish_dry_run_required',
+        error: 'A successful YouTube dry-run is required before live publish.',
+      };
+    }
+  }
+
   // Infer generation mode early for early review gate
   const generationMode_early = inferGenerationModeForPublishGate({
     publishJson: publishJson_initial,
@@ -5536,4 +5559,207 @@ export async function createJobFromPrompt(
   }
 
   return result;
+}
+
+
+
+
+export interface ApprovedContentProductionDispatchInput {
+  approvalId: string;
+  projectId: string;
+  title: string;
+  description?: string;
+  sourceVideoPath: string;
+}
+
+export interface ApprovedContentProductionDispatchResult {
+  ok: boolean;
+  jobId?: string;
+  executionArn?: string;
+  duplicate?: boolean;
+  error?: string;
+}
+
+export interface ApprovedContentProductionDispatchDependencies {
+  jobsRoot?: string;
+  persistMetadata?: (jobId: string, fileName: string, value: Record<string, unknown>) => Promise<void>;
+  startExecution?: (input: {
+    jobId: string;
+    sourceVideoKey: string;
+    mediaSource: 'uploaded-video';
+    generationMode: 'approved-source-video';
+  }) => Promise<string>;
+}
+
+let approvedContentDispatchTestDependencies: ApprovedContentProductionDispatchDependencies | null = null;
+
+export function setApprovedContentProductionDispatchDependenciesForTests(
+  dependencies: ApprovedContentProductionDispatchDependencies | null,
+): void {
+  approvedContentDispatchTestDependencies = dependencies;
+}
+
+/**
+ * Task 1W-I.1: create one canonical production job from an approved real-video
+ * content record and start the configured Step Functions execution.
+ */
+export async function dispatchApprovedMovingVideoContent(
+  input: ApprovedContentProductionDispatchInput,
+  dependencies: ApprovedContentProductionDispatchDependencies = {},
+): Promise<ApprovedContentProductionDispatchResult> {
+  dependencies = { ...(approvedContentDispatchTestDependencies ?? {}), ...dependencies };
+  const source = input.sourceVideoPath.trim();
+  const normalized = source.toLowerCase();
+
+  if (!source.startsWith(`s3://${S3_BUCKET}/`)) {
+    return { ok: false, error: 'sourceVideoPath must be an S3 object in the configured production bucket' };
+  }
+  if (normalized.includes('test-001') || normalized.includes('fixture') || normalized.includes('slideshow')) {
+    return { ok: false, error: 'fixture, test-001, and slideshow sources are not eligible for production dispatch' };
+  }
+  if (!input.approvalId || !input.projectId || !input.title.trim()) {
+    return { ok: false, error: 'approvalId, projectId, and title are required' };
+  }
+
+  const sourceVideoKey = source.slice(`s3://${S3_BUCKET}/`.length);
+  if (!sourceVideoKey || sourceVideoKey.endsWith('/')) {
+    return { ok: false, error: 'sourceVideoPath must identify one S3 video object' };
+  }
+
+  const safeApprovalId = input.approvalId.toLowerCase().replace(/[^a-z0-9._-]/g, '-').slice(0, 80);
+  const jobId = `approved-video-${safeApprovalId}`;
+  const jobsRoot = dependencies.jobsRoot ?? getVideoOrchestratorJobsRoot();
+  const metadataDir = join(jobsRoot, jobId, 'metadata');
+  const statusPath = join(metadataDir, 'status.json');
+  const persistMetadata = dependencies.persistMetadata ?? writeS3MetadataJson;
+
+  let existingStatus: Record<string, unknown> | null = null;
+  try {
+    existingStatus = JSON.parse(await readFile(statusPath, 'utf-8')) as Record<string, unknown>;
+  } catch {
+    existingStatus = null;
+  }
+  if (existingStatus) {
+    const executionArn = typeof existingStatus.executionArn === 'string' ? existingStatus.executionArn : null;
+    return {
+      ok: true,
+      jobId,
+      ...(executionArn ? { executionArn } : {}),
+      duplicate: true,
+    };
+  }
+
+  const now = new Date().toISOString();
+  const topic: Record<string, unknown> = {
+    jobId,
+    projectId: input.projectId,
+    title: input.title.trim(),
+    description: input.description?.trim() ?? '',
+    source: 'approved-moving-video-content',
+    approvalId: input.approvalId,
+    createdAt: now,
+  };
+  const script: Record<string, unknown> = {
+    jobId,
+    channelId: input.projectId,
+    topicId: `approved-content-${safeApprovalId}`,
+    status: 'approved',
+    title: input.title.trim(),
+    generatedBy: 'approved-moving-video-content',
+    createdAt: now,
+    updatedAt: now,
+    approval: {
+      required: true,
+      status: 'approved',
+      approvedBy: 'vo-content-approval',
+      approvedAt: now,
+      notes: `Bound to approval ${input.approvalId}`,
+      theologicalReviewRequired: false,
+    },
+  };
+  const assets: Record<string, unknown> = {
+    jobId,
+    mediaSource: 'uploaded-video',
+    generationMode: 'approved-source-video',
+    videoSourceKey: sourceVideoKey,
+    videoKey: sourceVideoKey,
+    sourceVideo: { path: sourceVideoKey, source: 'approved-upload', provider: 's3' },
+    aiGenerated: false,
+    slideshowGenerated: false,
+    fixtureUsed: false,
+    approvalId: input.approvalId,
+  };
+  const status: Record<string, unknown> = {
+    jobId,
+    status: 'dispatching',
+    currentStep: 'workflow_starting',
+    mediaSource: 'uploaded-video',
+    generationMode: 'approved-source-video',
+    videoSourceKey: sourceVideoKey,
+    approvalId: input.approvalId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await mkdir(metadataDir, { recursive: true });
+  await Promise.all([
+    writeFile(join(metadataDir, 'topic.json'), `${JSON.stringify(topic, null, 2)}\n`, 'utf-8'),
+    writeFile(join(metadataDir, 'script.json'), `${JSON.stringify(script, null, 2)}\n`, 'utf-8'),
+    writeFile(join(metadataDir, 'assets.json'), `${JSON.stringify(assets, null, 2)}\n`, 'utf-8'),
+    writeFile(statusPath, `${JSON.stringify(status, null, 2)}\n`, 'utf-8'),
+    persistMetadata(jobId, 'topic.json', topic),
+    persistMetadata(jobId, 'script.json', script),
+    persistMetadata(jobId, 'assets.json', assets),
+    persistMetadata(jobId, 'status.json', status),
+  ]);
+
+  let executionArn: string;
+  try {
+    executionArn = dependencies.startExecution
+      ? await dependencies.startExecution({
+          jobId,
+          sourceVideoKey,
+          mediaSource: 'uploaded-video',
+          generationMode: 'approved-source-video',
+        })
+      : (await execFileAsync('aws', [
+          'stepfunctions', 'start-execution',
+          '--state-machine-arn', STATE_MACHINE_ARN,
+          '--name', buildStepFunctionsExecutionName(jobId),
+          '--input', JSON.stringify({
+            jobId,
+            videoKey: sourceVideoKey,
+            sourceVideoKey,
+            mediaSource: 'uploaded-video',
+            generationMode: 'approved-source-video',
+          }),
+          '--region', AWS_REGION,
+          '--query', 'executionArn',
+          '--output', 'text',
+          '--no-cli-pager',
+        ])).stdout.trim();
+  } catch (error) {
+    const failedStatus: Record<string, unknown> = {
+      ...status,
+      status: 'failed',
+      currentStep: 'workflow_start_failed',
+      error: error instanceof Error ? error.message : String(error),
+      updatedAt: new Date().toISOString(),
+    };
+    await writeFile(statusPath, `${JSON.stringify(failedStatus, null, 2)}\n`, 'utf-8');
+    await persistMetadata(jobId, 'status.json', failedStatus);
+    return { ok: false, jobId, error: 'Failed to start configured Step Functions execution' };
+  }
+
+  const startedStatus: Record<string, unknown> = {
+    ...status,
+    status: 'processing',
+    currentStep: 'workflow_started',
+    executionArn,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeFile(statusPath, `${JSON.stringify(startedStatus, null, 2)}\n`, 'utf-8');
+  await persistMetadata(jobId, 'status.json', startedStatus);
+
+  return { ok: true, jobId, executionArn };
 }

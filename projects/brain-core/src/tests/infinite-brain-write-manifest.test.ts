@@ -226,6 +226,9 @@ test('wiki manifest entries preserve exact-path approval provenance and required
         expectedBeforeHashes: { 'wiki/example.md': 'a'.repeat(64) },
         allowedSections: { 'wiki/example.md': ['Approved section'] },
         contentIntent: 'Replace only the approved section.',
+        sourceReferences: [],
+        replaceSourceReferences: false,
+        sourceReferencesPreserved: true,
         exactPathApprovalValid: true,
         exactPathApprovalErrors: [],
         validationChecks: [],
@@ -251,6 +254,7 @@ test('wiki manifest entries preserve exact-path approval provenance and required
     assert(entry.validationRequired.includes('before-hash-match'));
     assert(entry.validationRequired.includes('approval-not-expired'));
     assert(entry.validationRequired.includes('no-unapproved-paths-changed'));
+    assert(entry.validationRequired.includes('source-reference-preserved'));
     assert.equal(entry.writeBlocked, true);
     assert.equal(entry.applied, false);
   } finally {
@@ -290,7 +294,10 @@ test('wiki manifest entries preserve exact-path approval errors and remain block
 
     assert(entry);
     assert.equal(entry.exactPathApprovalValid, false);
-    assert.deepEqual(entry.exactPathApprovalErrors, ['invalid-wiki-target:wiki/']);
+    assert.deepEqual(entry.exactPathApprovalErrors, [
+      'invalid-wiki-target:wiki/',
+      'source-reference-preservation-required',
+    ]);
     assert.equal(entry.writeBlocked, true);
     assert.equal(entry.applied, false);
   } finally {
@@ -300,5 +307,95 @@ test('wiki manifest entries preserve exact-path approval errors and remain block
     } else {
       delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
     }
+  }
+});
+
+
+
+
+test('write manifest propagates preserved source references and validation label', () => {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'write-manifest-source-reference-pass-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+  const sourceReferences = [{
+    path: 'sources/research/example.md',
+    location: '## Evidence',
+    summary: 'Supports the approved update.',
+  }];
+
+  writeFileSync(dryRunPath, JSON.stringify({
+    reportId: 'dry-run-source-reference-pass',
+    operations: [{
+      operationId: 'op-source-reference-pass',
+      proposalId: 'proposal-source-reference-pass',
+      category: 'wiki-writing',
+      operationType: 'update',
+      targetPathsPreview: ['wiki/example.md'],
+      expectedBeforeHashes: { 'wiki/example.md': 'a'.repeat(64) },
+      allowedSections: { 'wiki/example.md': ['Approved section'] },
+      contentIntent: 'Update only the approved section.',
+      exactPathApprovalValid: true,
+      exactPathApprovalErrors: [],
+      sourceReferences,
+      replaceSourceReferences: false,
+      sourceReferencesPreserved: true,
+      validationChecks: [],
+    }],
+  }));
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+    const manifest = generateWriteManifest();
+    const entry = manifest.entries[0];
+    assert(entry);
+    assert.deepEqual(entry.sourceReferences, sourceReferences);
+    assert.equal(entry.replaceSourceReferences, false);
+    assert.equal(entry.sourceReferencesPreserved, true);
+    assert(entry.validationRequired.includes('source-reference-preserved'));
+    assert.equal(entry.exactPathApprovalValid, true);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    else delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  }
+});
+
+test('write manifest blocks and invalidates failed source-reference preservation', () => {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'write-manifest-source-reference-fail-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+
+  writeFileSync(dryRunPath, JSON.stringify({
+    reportId: 'dry-run-source-reference-fail',
+    operations: [{
+      operationId: 'op-source-reference-fail',
+      proposalId: 'proposal-source-reference-fail',
+      category: 'wiki-writing',
+      operationType: 'update',
+      targetPathsPreview: ['wiki/example.md'],
+      expectedBeforeHashes: { 'wiki/example.md': 'a'.repeat(64) },
+      exactPathApprovalValid: true,
+      exactPathApprovalErrors: [],
+      sourceReferences: [],
+      replaceSourceReferences: false,
+      sourceReferencesPreserved: false,
+      validationChecks: [],
+    }],
+  }));
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+    const manifest = generateWriteManifest();
+    const entry = manifest.entries[0];
+    assert(entry);
+    assert.equal(entry.sourceReferencesPreserved, false);
+    assert.equal(entry.exactPathApprovalValid, false);
+    assert(entry.exactPathApprovalErrors.includes('source-reference-preservation-required'));
+    assert.equal(entry.writeBlocked, true);
+    assert.equal(entry.validationRequired.includes('source-reference-preserved'), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    else delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
   }
 });

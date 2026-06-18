@@ -277,3 +277,116 @@ test('post-write verification blocks invalid or unapproved wiki paths', () => {
     else delete process.env.IBR_WRITE_MANIFEST_PATH;
   }
 });
+
+
+
+
+function runSourceReferenceVerificationFixture(
+  entry: Record<string, unknown> | null,
+): ReturnType<typeof generatePostWriteVerificationReport> {
+  const originalDryRunEnv = process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+  const originalManifestEnv = process.env.IBR_WRITE_MANIFEST_PATH;
+  const originalMindEnv = process.env.IBR_MIND_REPO_PATH;
+  const tempDir = mkdtempSync(path.join('/tmp', 'post-write-source-reference-'));
+  const dryRunPath = path.join(tempDir, 'dry-run.json');
+  const manifestPath = path.join(tempDir, 'manifest.json');
+
+  writeFileSync(dryRunPath, JSON.stringify({ id: 'dry-run-source-reference', status: 'complete' }));
+  if (entry) {
+    writeFileSync(manifestPath, JSON.stringify({
+      manifestId: 'manifest-source-reference',
+      generatedAt: '2026-06-18T09:00:00Z',
+      sourceDryRunReportId: 'dry-run-source-reference',
+      status: 'manifest-ready',
+      writeEnabled: false,
+      canWriteToMind: false,
+      totalOperations: 1,
+      totalManifestEntries: 1,
+      entries: [entry],
+      blockers: [],
+      safety: {},
+    }));
+  }
+
+  try {
+    process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = dryRunPath;
+    process.env.IBR_WRITE_MANIFEST_PATH = entry ? manifestPath : path.join(tempDir, 'missing-manifest.json');
+    process.env.IBR_MIND_REPO_PATH = tempDir;
+    return generatePostWriteVerificationReport();
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+    if (originalDryRunEnv) process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH = originalDryRunEnv;
+    else delete process.env.IBR_PROPOSAL_EXECUTOR_DRY_RUN_PATH;
+    if (originalManifestEnv) process.env.IBR_WRITE_MANIFEST_PATH = originalManifestEnv;
+    else delete process.env.IBR_WRITE_MANIFEST_PATH;
+    if (originalMindEnv) process.env.IBR_MIND_REPO_PATH = originalMindEnv;
+    else delete process.env.IBR_MIND_REPO_PATH;
+  }
+}
+
+function sourceReferenceManifestEntry(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    entryId: 'entry-source-reference',
+    operationId: 'op-source-reference',
+    proposalId: 'proposal-source-reference',
+    category: 'wiki-writing',
+    operationType: 'update',
+    intendedAction: 'update in wiki-writing',
+    targetPathsPreview: ['wiki/example.md'],
+    approvalId: 'approval-source-reference',
+    sourceReportId: null,
+    sourceCommit: '0123456789abcdef0123456789abcdef01234567',
+    approvedBy: 'human-reviewer',
+    approvedAt: '2026-06-18T09:00:00Z',
+    expiresAt: '2099-06-18T12:00:00Z',
+    expectedBeforeHashes: { 'wiki/example.md': 'a'.repeat(64) },
+    allowedSections: { 'wiki/example.md': ['Approved section'] },
+    contentIntent: 'Update only the approved section.',
+    sourceReferences: [{
+      path: 'sources/research/example.md',
+      location: '## Evidence',
+      summary: 'Supports the approved update.',
+    }],
+    replaceSourceReferences: false,
+    sourceReferencesPreserved: true,
+    exactPathApprovalValid: true,
+    exactPathApprovalErrors: [],
+    contentPreviewAvailable: false,
+    contentPreviewHash: null,
+    wouldCreateFiles: false,
+    wouldModifyFiles: true,
+    wouldDeleteFiles: false,
+    wouldMoveFiles: false,
+    requiresRollbackPlan: false,
+    rollbackPreview: '',
+    validationRequired: ['source-reference-preserved'],
+    writeBlocked: true,
+    applied: false,
+    ...overrides,
+  };
+}
+
+test('post-write verification passes source-reference preservation with complete evidence', () => {
+  const report = runSourceReferenceVerificationFixture(sourceReferenceManifestEntry());
+  assert(report.checks.some(check =>
+    check.label === 'source-reference-preserved' && check.status === 'pass'
+  ));
+});
+
+test('post-write verification fails source-reference preservation when evidence is false', () => {
+  const report = runSourceReferenceVerificationFixture(sourceReferenceManifestEntry({
+    sourceReferencesPreserved: false,
+    exactPathApprovalValid: false,
+    validationRequired: [],
+  }));
+  assert(report.checks.some(check =>
+    check.label === 'source-reference-preserved' && check.status === 'fail'
+  ));
+});
+
+test('post-write verification blocks source-reference preservation without a manifest', () => {
+  const report = runSourceReferenceVerificationFixture(null);
+  assert(report.checks.some(check =>
+    check.label === 'source-reference-preserved' && check.status === 'blocked'
+  ));
+});

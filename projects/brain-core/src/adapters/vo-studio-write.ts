@@ -946,6 +946,9 @@ export function finalApprovalRequest(
 
 export interface PublishPackageRequest {
   packageId: string;
+  jobId: string;
+  postingTarget: PostingTarget;
+  confirmation: string;
   scheduleAt?: string;
 }
 
@@ -958,9 +961,10 @@ export interface PublishPackageResponse {
   preview?: {
     package: {
       id: string;
+      jobId: string;
       status: string;
+      postingTarget: PostingTarget;
       publishedAt?: string;
-      scheduledAt?: string;
     };
   };
   error?: string;
@@ -973,6 +977,23 @@ export function publishPackageRequest(
 
   if (!request.packageId?.trim()) {
     errors.push('packageId is required');
+  }
+  if (!request.jobId?.trim()) {
+    errors.push('jobId is required');
+  }
+  if (!request.postingTarget?.platformId?.trim()) {
+    errors.push('postingTarget.platformId is required');
+  } else if (request.postingTarget.platformId.trim() !== 'youtube') {
+    errors.push('postingTarget.platformId must be youtube');
+  }
+  if (!request.postingTarget?.accountId?.trim()) {
+    errors.push('postingTarget.accountId is required');
+  }
+  if (!request.confirmation?.trim()) {
+    errors.push('confirmation is required');
+  }
+  if (request.scheduleAt !== undefined) {
+    errors.push('scheduled publishing is not supported for the direct YouTube upload path');
   }
 
   if (errors.length > 0) {
@@ -994,22 +1015,23 @@ export function publishPackageRequest(
   const preview: {
     package: {
       id: string;
+      jobId: string;
       status: string;
+      postingTarget: PostingTarget;
       publishedAt?: string;
-      scheduledAt?: string;
     };
   } = {
     package: {
-      id: request.packageId,
-      status: request.scheduleAt ? 'scheduled' : 'publishing',
+      id: request.packageId.trim(),
+      jobId: request.jobId.trim(),
+      status: 'publishing',
+      postingTarget: {
+        platformId: 'youtube',
+        accountId: request.postingTarget.accountId.trim(),
+      },
+      publishedAt: new Date().toISOString(),
     },
   };
-
-  if (request.scheduleAt !== undefined) {
-    preview.package.scheduledAt = request.scheduleAt;
-  } else {
-    preview.package.publishedAt = new Date().toISOString();
-  }
 
   return {
     ok: true,

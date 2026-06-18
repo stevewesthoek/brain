@@ -705,13 +705,33 @@ Record an explicit, auditable metadata approval required before YouTube publishi
 
 **Verification:** `npm run test:metadata-approval` passed 6/6 focused tests, covering valid approval creation, canonical persistence, required YouTube publish gating, validation failures, and unique approval IDs.
 
-### Task 1W-H — Queue Package and YouTube Posting Target 📋 Implementation evidence; verification pending
+### Task 1W-H — Queue Package and YouTube Posting Target ✅ Complete
 
 Create the final production package, queue exactly one YouTube posting target, enforce idempotency, and invoke the existing OAuth2 direct-upload adapter only after all required approvals pass.
 
-### Task 1W-I — End-to-End Verification and Operator Confirmation 🔲 Incomplete
+**Status:** Complete. The package publish contract now requires a bound `jobId`, exactly one normalized YouTube posting target, a non-empty account ID, and explicit confirmation. Scheduled and non-YouTube publishing are rejected. The active package publish route invokes the existing `runControlledYouTubePublish()` path, preserving its approval gates, duplicate/idempotency checks, and shell-backed OAuth2 upload adapter.
+
+**Verification:** `npm run test:youtube-package-publish` passed 5/5 focused adapter tests. `npm run test:youtube-package-route` passed 2/2 focused route tests, proving YouTube-only validation and invocation of the controlled uploader for the bound job.
+
+### Task 1W-I — End-to-End Verification and Operator Confirmation 🟨 Verification complete; operator workflow pending
 
 Run the focused tests and required builds, verify deterministic failure reporting and complete audit history, then perform one operator-confirmed moving-video-to-YouTube workflow. Do not mark Sprint 1W complete without operator confirmation.
+
+**Automated verification:** `npm run test:phase-1w-e2e-focused` passed 44/44 tests. This includes cross-stage audit evidence linking thumbnail approval, YouTube metadata approval, and package approval to the same project/content item; deterministic review and asset-gate failures; approval-store timeout/escalation/duplicate-decision behavior; the package route invoking the controlled YouTube publisher for the bound job; rejection unless the live confirmation text is exactly `PUBLISH TO YOUTUBE`; and rejection unless a successful dry run has already persisted `dryRunPassed: true` for that job.
+
+**Verified blocker (2026-06-18):** The Phase 1W content intake route accepts a real `sourceVideoPath` and creates a pending content approval, but approving that record only updates the VO approval store. No content-specific commit handler was found that converts the approved moving-video `ContentItem` into a canonical Video Orchestrator job, writes the required job metadata, or starts the configured Amazon execution. The legacy `create-from-prompt` / approved-script generation path is fixture-backed and is not eligible for Task 1W-I. Do not mark the production milestone complete until the approved-content-to-production-job dispatch connection exists and one real workflow is operator-confirmed.
+
+### Task 1W-I.1 — Approved Moving-Video Content to Production Job Dispatch ⏳ In progress
+
+**Goal:** Connect an approved Phase 1W moving-video `ContentItem` to the existing production execution path without using fixture, slideshow, `test-001`, or `create-from-prompt` flows.
+
+**Required behavior:** On approval of a `content` record with a real `sourceVideoPath`, commit the canonical content item, create one canonical Video Orchestrator job with the required metadata and real moving-video `generationMode`/`mediaSource`, bind the real source video, and start the configured Amazon execution through the existing production adapter. Preserve idempotency and approval audit history. Do not redesign the Amazon pipeline, add platforms, or alter the YouTube uploader.
+
+**Allowed scope:** the VO content-approval commit handler, the smallest production-job creation/dispatch adapter or provider boundary, focused tests, and these two planning documents.
+
+**Done when:** one approved real moving-video content item produces a canonical production `jobId`, persisted source/status/assets metadata, and verified Amazon execution start with no fixture or slideshow markers. After that milestone, resume the remaining Task 1W-I thumbnail, metadata, package, dry-run, live-confirmation, and operator-confirmation sequence.
+
+**Remaining:** Complete Task 1W-I.1, then perform one real moving-video-to-YouTube upload with the configured YouTube account and record explicit operator confirmation. Sprint 1W remains open until that live workflow is confirmed.
 
 **Required order:** 1W-B → 1W-C → 1W-D → 1W-E → 1W-F → 1W-G → 1W-H → 1W-I.
 

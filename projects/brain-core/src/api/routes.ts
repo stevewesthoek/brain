@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { approveScript, approveVideoReview, getVideoOrchestratorStatus as getTopicIntelligence, getChannelTopics, getScript, getScriptsByChannel, isValidJobId, requestScriptChanges, requestVideoReviewChanges, generateApprovedScript, createJobFromPrompt, getRecentVideoJobsResult, getVideoJob, getVideoJobTimeline, getVideoJobArtifacts, getVideoJobExecutionStatus, getVideoReview, runControlledYouTubePublish, getVideoJobThumbnail, resolveDownloadableVideo } from '../providers/video-orchestrator-provider.js';
 import { decideApproval, getApprovalRecord, getApprovalStoreSummary, listApprovalAuditEvents, requestAction, getApprovalAuditEvents } from '../adapters/actions.js';
 import { getExecutionPlan, getExecutionReadiness, getMindPreviewPolicy, listExecutionPlans } from '../adapters/execution-plans.js';
+import { listOnDemandRuns, requestOnDemandRun } from '../adapters/on-demand-runs.js';
 import { listApprovals } from '../adapters/approvals.js';
 import { getCapabilities } from '../adapters/capabilities.js';
 import { listAgentCapabilities } from '../adapters/agent-capabilities.js';
@@ -91,7 +92,22 @@ import { listRuntimeReports } from '../adapters/runtime-reports.js';
 import { getAiModelSelectorStatus, getAiModelSelectorHealthMatrix, controlAiModelSelector } from '../adapters/ai-model-selector-service.js';
 import { listRepos } from '../adapters/repos.js';
 import { getGraphifyStatus } from '../adapters/graphify-status.js';
+import { getGraphifyRefreshSchedule } from '../adapters/graphify-refresh-schedule.js';
+import { getMindMaintenanceReportOnlySchedule } from '../adapters/mind-maintenance-schedule.js';
+import { getContinuousProcessingSelection } from '../adapters/continuous-processing-selection.js';
+import { getContinuousProcessingStabilityView } from '../adapters/continuous-processing-stability.js';
+import { getContinuousProcessingConcurrencyView } from '../adapters/continuous-processing-concurrency.js';
+import { getContinuousProcessingFailureBufferView } from '../adapters/continuous-processing-failure-buffer.js';
+import { getContinuousProcessingLargeFileFallbackView, getLargeFileNightlyFallbackPlan } from '../adapters/continuous-processing-large-file-fallback.js';
+import { getContinuousProcessingMeasurementView } from '../adapters/continuous-processing-measurement.js';
+import { getContinuousProcessingDisableRecoveryView } from '../adapters/continuous-processing-disable-recovery.js';
+import { getSimplificationReviewView } from '../adapters/simplification-review.js';
 import { getMindStewardSchedulerStatus, getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
+import {
+  getMindStewardLatestRunView,
+  listMindStewardFailedItemViews,
+  listMindStewardRecoveryViews,
+} from '../adapters/mind-steward-runtime-views.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
 
@@ -739,6 +755,15 @@ export async function routeRequest(
     case '/scheduler/mind-steward/status':
       sendJson(response, 200, getMindStewardSchedulerStatus());
       return;
+    case '/scheduler/mind-steward/latest-run':
+      sendJson(response, 200, getMindStewardLatestRunView());
+      return;
+    case '/scheduler/mind-steward/failed-items':
+      sendJson(response, 200, listMindStewardFailedItemViews());
+      return;
+    case '/scheduler/mind-steward/recovery':
+      sendJson(response, 200, listMindStewardRecoveryViews());
+      return;
     case '/api/mind-maintenance/latest': {
       const mindRootValue = url.searchParams.get('mindRoot')?.trim() ?? '';
       if (!mindRootValue) {
@@ -772,6 +797,39 @@ export async function routeRequest(
     }
     case '/graphify/status':
       sendJson(response, 200, getGraphifyStatus());
+      return;
+    case '/scheduler/graphify/refresh-plan':
+      sendJson(response, 200, getGraphifyRefreshSchedule());
+      return;
+    case '/scheduler/mind-maintenance/report-only-plan':
+      sendJson(response, 200, getMindMaintenanceReportOnlySchedule());
+      return;
+    case '/scheduler/continuous-processing/selection':
+      sendJson(response, 200, getContinuousProcessingSelection());
+      return;
+    case '/scheduler/continuous-processing/stability':
+      sendJson(response, 200, getContinuousProcessingStabilityView());
+      return;
+    case '/scheduler/continuous-processing/concurrency':
+      sendJson(response, 200, getContinuousProcessingConcurrencyView());
+      return;
+    case '/scheduler/continuous-processing/failure-buffer':
+      sendJson(response, 200, getContinuousProcessingFailureBufferView());
+      return;
+    case '/scheduler/continuous-processing/large-file-fallback':
+      sendJson(response, 200, getContinuousProcessingLargeFileFallbackView());
+      return;
+    case '/scheduler/continuous-processing/large-file-fallback/plan':
+      sendJson(response, 200, getLargeFileNightlyFallbackPlan());
+      return;
+    case '/scheduler/continuous-processing/measurement':
+      sendJson(response, 200, getContinuousProcessingMeasurementView());
+      return;
+    case '/scheduler/continuous-processing/disable-recovery':
+      sendJson(response, 200, getContinuousProcessingDisableRecoveryView());
+      return;
+    case '/simplification-review':
+      sendJson(response, 200, getSimplificationReviewView());
       return;
     case '/scheduler/jobs':
       sendJson(response, 200, { jobs: listSchedulerJobs() });
@@ -826,6 +884,9 @@ export async function routeRequest(
       return;
     case '/execution/plans':
       sendJson(response, 200, { plans: listExecutionPlans() });
+      return;
+    case '/execution/on-demand-runs':
+      sendJson(response, 200, { runs: listOnDemandRuns() });
       return;
     case '/execution/readiness':
       sendJson(response, 200, getExecutionReadiness());
@@ -2974,7 +3035,7 @@ export async function routeRequest(
       sendJson(response, 404, {
         error: {
           code: 'not_found',
-          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/platform-policies, /post-orchestrator/decommission-readiness, /post-orchestrator/operator-guidance, /post-orchestrator/manual-export/:eventId, /post-orchestrator/acceptance-checklist, /post-orchestrator/migration-parity, /post-orchestrator/roadmap-checkpoint, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /video-orchestrator/intake, /video-orchestrator/intake/:id, /video-orchestrator/research, /video-orchestrator/research/:id, /video-orchestrator/script, /video-orchestrator/script/:id, /video-orchestrator/asset-plan, /video-orchestrator/asset-plan/:id, /video-orchestrator/design-plan, /video-orchestrator/design-plan/:id, /video-orchestrator/voiceover-plan, /video-orchestrator/voiceover-plan/:id, /video-orchestrator/visuals-plan, /video-orchestrator/visuals-plan/:id, /video-orchestrator/assembly-plan, /video-orchestrator/assembly-plan/:id, /video-orchestrator/metadata-plan, /video-orchestrator/metadata-plan/:id, /video-orchestrator/publishing-prep, /video-orchestrator/publishing-prep/:id, /video-orchestrator/manual-export-package, /video-orchestrator/manual-export-package/:id, /video-orchestrator/production-gate, /video-orchestrator/render-export-policy, /video-orchestrator/approval-policy-design, /video-orchestrator/artifact-sandbox-design, /video-orchestrator/controlled-dry-run-design, /video-orchestrator/rollback-cleanup-checklist, /video-orchestrator/comparison-schema-design, /video-orchestrator/fixture-comparison-preview, /video-orchestrator/production-cutover-gate, /video-orchestrator/release-candidate-readiness, /video-orchestrator/operator-decision-queue, /video-orchestrator/controlled-execution-policy-boundary, /video-orchestrator/controlled-execution-readiness-index, /video-orchestrator/controlled-execution-approval-payload-schema, /video-orchestrator/controlled-execution-preflight-validator-schema, /video-orchestrator/controlled-execution-plan-stub, /video-orchestrator/roadmap-checkpoint, /video-orchestrator/controlled-execution-approval-request-design, /video-orchestrator/operator-review-packet, /video-orchestrator/preview-completion-index, /video-orchestrator/controlled-execution-preflight-checklist, /video-orchestrator/controlled-execution-risk-register, /video-orchestrator/controlled-execution-second-approval-policy, /video-orchestrator/controlled-execution-operator-identity-protocol, /video-orchestrator/controlled-execution-role-policy, /video-orchestrator/controlled-execution-first-approval-authority-policy, /video-orchestrator/controlled-execution-first-approval-audit-expiry-model, /video-orchestrator/controlled-execution-candidate-story-lock, /video-orchestrator/controlled-execution-preflight-evidence-hash-design, /video-orchestrator/controlled-execution-operator-decision-snapshot-design, /video-orchestrator/controlled-execution-runtime-sandbox-boundary-design, /video-orchestrator/controlled-execution-approval-review-audit-design, /video-orchestrator/controlled-execution-immutable-audit-trail-schema, /video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design, /video-orchestrator/controlled-execution-implementation-readiness-checkpoint, /video-orchestrator/controlled-execution-feature-flag-rollout-plan, /video-orchestrator/controlled-execution-approval-store-implementation-plan, /video-orchestrator/controlled-execution-first-approval-creation-implementation-plan, /video-orchestrator/controlled-execution-second-approval-creation-implementation-plan, /video-orchestrator/controlled-execution-validator-implementation-plan, /video-orchestrator/controlled-execution-execution-plan-implementation-plan, /video-orchestrator/controlled-execution-rollback-cleanup-implementation-plan, /video-orchestrator/controlled-execution-sandbox-provisioning-implementation-plan, /video-orchestrator/controlled-execution-sandbox-execution-implementation-plan, /video-orchestrator/controlled-execution-sandbox-teardown-recovery-implementation-plan, /video-orchestrator/controlled-execution-artifact-policy-implementation-plan, /video-orchestrator/controlled-execution-stb-protection-decommission-prevention-plan, /video-orchestrator/controlled-execution-implementation-completion-readiness-checkpoint, /video-orchestrator/controlled-execution-operator-ux-console-controls-implementation-plan, /video-orchestrator/controlled-execution-security-review-threat-modeling-implementation-plan, /video-orchestrator/controlled-execution-implementation-approval-packet-start-gate, /stb-video-migration/status, /stb-video/parity-matrix, /stb-video/dual-run-status, /stb-video/dual-run-evidence, /stb-video/controlled-dual-run-request, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /infra/scheduler, /local-apps, /local-apps/dashboard, /local-apps/action-readiness, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/mind-steward, /execution/plans, /execution/plans/:kind, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness, /infra/video-orchestrator/status, /infra/video-orchestrator/accounts, /infra/video-orchestrator/auth-status, /infra/video-orchestrator/jobs, /infra/video-orchestrator/posting-instructions/:jobId, /infra/video-orchestrator/normalize-history, /infra/video-orchestrator/manual-queue, /infra/video-orchestrator/worker-config.',
+          message: 'Route not found. Available routes: /status, /sessions, /skills, /repos, /orchestrators, /orchestrators/:id, /pipelines, /pipelines/:id, /projects, /platforms, /post-orchestrator/status, /post-orchestrator/contracts, /post-orchestrator/flows, /post-orchestrator/drafts, /post-orchestrator/events, /post-orchestrator/dry-run/:eventId, /post-orchestrator/integrations, /post-orchestrator/recovery, /post-orchestrator/platform-policies, /post-orchestrator/decommission-readiness, /post-orchestrator/operator-guidance, /post-orchestrator/manual-export/:eventId, /post-orchestrator/acceptance-checklist, /post-orchestrator/migration-parity, /post-orchestrator/roadmap-checkpoint, /post-orchestrator/pipeline/:eventId, /post-orchestrator/readiness/:eventId, /stb/status, /video-orchestrator/status, /video-orchestrator/intake, /video-orchestrator/intake/:id, /video-orchestrator/research, /video-orchestrator/research/:id, /video-orchestrator/script, /video-orchestrator/script/:id, /video-orchestrator/asset-plan, /video-orchestrator/asset-plan/:id, /video-orchestrator/design-plan, /video-orchestrator/design-plan/:id, /video-orchestrator/voiceover-plan, /video-orchestrator/voiceover-plan/:id, /video-orchestrator/visuals-plan, /video-orchestrator/visuals-plan/:id, /video-orchestrator/assembly-plan, /video-orchestrator/assembly-plan/:id, /video-orchestrator/metadata-plan, /video-orchestrator/metadata-plan/:id, /video-orchestrator/publishing-prep, /video-orchestrator/publishing-prep/:id, /video-orchestrator/manual-export-package, /video-orchestrator/manual-export-package/:id, /video-orchestrator/production-gate, /video-orchestrator/render-export-policy, /video-orchestrator/approval-policy-design, /video-orchestrator/artifact-sandbox-design, /video-orchestrator/controlled-dry-run-design, /video-orchestrator/rollback-cleanup-checklist, /video-orchestrator/comparison-schema-design, /video-orchestrator/fixture-comparison-preview, /video-orchestrator/production-cutover-gate, /video-orchestrator/release-candidate-readiness, /video-orchestrator/operator-decision-queue, /video-orchestrator/controlled-execution-policy-boundary, /video-orchestrator/controlled-execution-readiness-index, /video-orchestrator/controlled-execution-approval-payload-schema, /video-orchestrator/controlled-execution-preflight-validator-schema, /video-orchestrator/controlled-execution-plan-stub, /video-orchestrator/roadmap-checkpoint, /video-orchestrator/controlled-execution-approval-request-design, /video-orchestrator/operator-review-packet, /video-orchestrator/preview-completion-index, /video-orchestrator/controlled-execution-preflight-checklist, /video-orchestrator/controlled-execution-risk-register, /video-orchestrator/controlled-execution-second-approval-policy, /video-orchestrator/controlled-execution-operator-identity-protocol, /video-orchestrator/controlled-execution-role-policy, /video-orchestrator/controlled-execution-first-approval-authority-policy, /video-orchestrator/controlled-execution-first-approval-audit-expiry-model, /video-orchestrator/controlled-execution-candidate-story-lock, /video-orchestrator/controlled-execution-preflight-evidence-hash-design, /video-orchestrator/controlled-execution-operator-decision-snapshot-design, /video-orchestrator/controlled-execution-runtime-sandbox-boundary-design, /video-orchestrator/controlled-execution-approval-review-audit-design, /video-orchestrator/controlled-execution-immutable-audit-trail-schema, /video-orchestrator/controlled-execution-audit-compliance-evidence-packet-design, /video-orchestrator/controlled-execution-implementation-readiness-checkpoint, /video-orchestrator/controlled-execution-feature-flag-rollout-plan, /video-orchestrator/controlled-execution-approval-store-implementation-plan, /video-orchestrator/controlled-execution-first-approval-creation-implementation-plan, /video-orchestrator/controlled-execution-second-approval-creation-implementation-plan, /video-orchestrator/controlled-execution-validator-implementation-plan, /video-orchestrator/controlled-execution-execution-plan-implementation-plan, /video-orchestrator/controlled-execution-rollback-cleanup-implementation-plan, /video-orchestrator/controlled-execution-sandbox-provisioning-implementation-plan, /video-orchestrator/controlled-execution-sandbox-execution-implementation-plan, /video-orchestrator/controlled-execution-sandbox-teardown-recovery-implementation-plan, /video-orchestrator/controlled-execution-artifact-policy-implementation-plan, /video-orchestrator/controlled-execution-stb-protection-decommission-prevention-plan, /video-orchestrator/controlled-execution-implementation-completion-readiness-checkpoint, /video-orchestrator/controlled-execution-operator-ux-console-controls-implementation-plan, /video-orchestrator/controlled-execution-security-review-threat-modeling-implementation-plan, /video-orchestrator/controlled-execution-implementation-approval-packet-start-gate, /stb-video-migration/status, /stb-video/parity-matrix, /stb-video/dual-run-status, /stb-video/dual-run-evidence, /stb-video/controlled-dual-run-request, /agents, /agents/:id, /agent-runs, /agent-runs/:id, /agent-events, /approval-audit, /recovery, /recovery/:id, /actions, /actions/:id, /capabilities, /scheduler/status, /scheduler/latest-run, /scheduler/jobs, /infra/scheduler, /local-apps, /local-apps/dashboard, /local-apps/action-readiness, /video/status, /video/queue, /approvals, /approvals/:id, /approvals/store, /runtime/reports, /runtime/reports/mind-steward, /execution/plans, /execution/plans/:kind, /execution/on-demand-runs, /execution/mind-preview-policy, /execution/mind-previews, /execution/mind-previews/latest, /execution/mind-previews/:id, /execution/maintenance-previews, /execution/maintenance-previews/latest, /execution/maintenance-previews/:id, /execution/readiness, /infra/video-orchestrator/status, /infra/video-orchestrator/accounts, /infra/video-orchestrator/auth-status, /infra/video-orchestrator/jobs, /infra/video-orchestrator/posting-instructions/:jobId, /infra/video-orchestrator/normalize-history, /infra/video-orchestrator/manual-queue, /infra/video-orchestrator/worker-config.',
         },
       } satisfies BrainCoreErrorResponse);
       return;
@@ -4248,6 +4309,13 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     return;
   }
 
+  const onDemandRunMatch = /^\/execution\/on-demand-runs\/([^/]+)\/request$/.exec(url.pathname);
+  if (onDemandRunMatch) {
+    const result = requestOnDemandRun(onDemandRunMatch[1] ?? '');
+    sendJson(response, result.accepted ? 202 : 400, result);
+    return;
+  }
+
   const reviewApprovalMatch = /^\/post-orchestrator\/review-queue\/([^/]+)\/request-approval$/.exec(url.pathname);
   if (reviewApprovalMatch) {
     const result = requestPostDraftReviewApproval(decodeURIComponent(reviewApprovalMatch[1] ?? ''));
@@ -4661,19 +4729,32 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
   if (url.pathname === '/api/video-orchestrator/package/publish') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
-    const publishReq: {
-      packageId: string;
-      scheduleAt?: string;
-    } = {
+    const postingTargetRaw = (body?.postingTarget as Record<string, unknown> | undefined) ?? {};
+    const publishReq = {
       packageId: (body?.packageId as string) ?? '',
+      jobId: (body?.jobId as string) ?? '',
+      postingTarget: {
+        platformId: (postingTargetRaw.platformId as string) ?? '',
+        accountId: (postingTargetRaw.accountId as string) ?? '',
+      },
+      confirmation: (body?.confirmation as string) ?? '',
+      ...(body?.scheduleAt !== undefined ? { scheduleAt: body.scheduleAt as string } : {}),
     };
 
-    if (body?.scheduleAt !== undefined) {
-      publishReq.scheduleAt = body.scheduleAt as string;
+    const validation = publishPackageRequest(publishReq);
+    if (!validation.ok || !validation.preview) {
+      sendJson(response, 400, validation);
+      return;
     }
 
-    const result = publishPackageRequest(publishReq);
-    sendJson(response, result.ok ? 202 : 400, result);
+    const upload = await runControlledYouTubePublish(validation.preview.package.jobId, {
+      dryRun: false,
+      confirmation: publishReq.confirmation,
+    });
+    sendJson(response, upload.ok ? 200 : 400, {
+      ...upload,
+      package: validation.preview.package,
+    });
     return;
   }
 
@@ -4829,11 +4910,30 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
     const note = (body?.note as string | undefined) ?? (body?.reason as string | undefined);
     const result = decideVOApproval(approvalId, decision === 'approve' ? 'approved' : 'rejected', note);
-    sendJson(response, result.ok ? 200 : 422, {
-      ok: result.ok,
+
+    let dispatch: Awaited<ReturnType<typeof import('../providers/video-orchestrator-provider.js')['dispatchApprovedMovingVideoContent']>> | undefined;
+    if (result.ok && decision === 'approve' && result.approval?.type === 'content') {
+      const payload = result.approval.requestPayload;
+      const sourceVideoPath = typeof payload.sourceVideoPath === 'string' ? payload.sourceVideoPath : '';
+      if (sourceVideoPath) {
+        const { dispatchApprovedMovingVideoContent } = await import('../providers/video-orchestrator-provider.js');
+        dispatch = await dispatchApprovedMovingVideoContent({
+          approvalId: result.approval.id,
+          projectId: result.approval.projectId,
+          title: typeof payload.title === 'string' ? payload.title : '',
+          description: typeof payload.description === 'string' ? payload.description : '',
+          sourceVideoPath,
+        });
+      }
+    }
+
+    const ok = result.ok && (!dispatch || dispatch.ok);
+    sendJson(response, ok ? 200 : 422, {
+      ok,
       approvalId,
       decision,
       ...(result.error ? { error: result.error } : {}),
+      ...(dispatch ? { dispatch } : {}),
     });
     return;
   }
@@ -5262,7 +5362,7 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
   sendJson(response, 404, {
     error: {
       code: 'not_found',
-          message: 'POST route not found. Available POST routes: /actions/request, /ops/brain-core/restart, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject, /research/video-analyze.',
+          message: 'POST route not found. Available POST routes: /actions/request, /execution/on-demand-runs/:kind/request, /ops/brain-core/restart, /actions/:id/request-approval, /scheduler/jobs/:id/request-run, /skills/profile, /sessions/:id/resume, /local-apps/:id/start|stop|restart, /approvals/:id/approve, /approvals/:id/reject, /infra/video-orchestrator/jobs/:id/approve, /infra/video-orchestrator/jobs/:id/reject, /research/video-analyze.',
     },
   } satisfies BrainCoreErrorResponse);
 }

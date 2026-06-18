@@ -2,13 +2,51 @@
 
 **Document ID:** IBR-ROADMAP-001  
 **Date:** 2026-06-07  
-**Status:** Active — foundational bridge and report-only maintenance implemented; Phase 0B reconciliation in progress
+**Last updated:** 2026-06-18  
+**Status:** Current milestone complete — manual/report-only Infinite Brain runtime operational; future automation track deferred
+
+## Current Milestone Boundary (2026-06-18)
+
+### Complete — manual/report-only runtime
+
+The following capabilities are implemented, tested, and ready for use:
+
+- Brain Core service and nightly report infrastructure;
+- read-only Mind inspection via report-only Mind Steward workflows;
+- persistent Brain-owned inbox queue state with idempotency and content-hash tracking;
+- debounce, stability detection, and concurrency controls;
+- duplicate-prevention and retry/failure-buffer visibility;
+- approval and execution gates with kill switch;
+- bounded queue-state reconstruction with honest result metadata;
+- report-only/manual Mind use (all durable writes require explicit human approval);
+- disabled continuous runner by default (`continuousEnabled: false`, `watcherEnabled: false`);
+- scheduler planning and readiness surfaces;
+- phase-9 safety capabilities: stable-file detection, failure buffer, large-file nightly fallback plan.
+
+The current release is usable without continuous processing. No claim of black-box self-optimization is made. No LaunchAgent changes were made.
+
+### Future automation track — not required for current use
+
+The following capabilities are deferred and must not be treated as current:
+
+- auto-starting continuous runner;
+- approved real-Mind operational trial;
+- persisted pause/recovery state across process restarts;
+- automatic resume after failure;
+- scheduler integration for inbox-queue dry-run;
+- feedback learning and policy self-optimization;
+- Brain-to-Mind approved writes (beyond current bounded write adapters);
+- demonstrated time savings relative to manual processing.
+
+Continuous processing remains disabled. These items require separate approval, evidence of value, and explicit enablement before they may be activated.
+
+---
 
 ## Executive Summary
 
 This roadmap sequences 18 phases (IB0–IB17) for evolving Brain's existing automation foundations into a Unified Knowledge Graph Runtime (UKGR). Implementation did not begin from zero: Brain Core, scheduler visibility, Mind Steward report-only workflows, Graphify, the bounded Mind maintenance pilot, decision handling, and approval-oriented safety boundaries already exist.
 
-The current task is Phase 0B: reconcile roadmap state, implementation contracts, and automated drift checks before adding the next runtime capability. The next code phase after Phase 0B is a persistent Brain-owned inbox queue with idempotency, throttling, recovery state, operator visibility, and no Mind content writes.
+The foundational bridge and report-only maintenance infrastructure (queue state, debounce, retries, failure buffer, approval gates, kill switch, bounded reconstruction) is now complete. The system is usable today in manual/report-only mode. Phase IB0 and beyond address the UKGR ambition; they are not required for the current operational release.
 
 **Timeline:** Phase-gated. Dates are estimates only and must not override acceptance criteria or safety boundaries.
 

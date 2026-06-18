@@ -57,6 +57,141 @@ export interface InfiniteBrainWikiSingleFileWriteReport {
   applied: boolean;
 }
 
+export interface InfiniteBrainLiveStatusSingleFileWriteInput {
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  targetPath: string;
+  expectedBeforeHash: string;
+  newContent: string;
+  allowedSections: string[];
+  contentIntent: string;
+  operator: string;
+  reason: string;
+  manualSingleWriteConfirm: boolean;
+  mindRoot: string;
+}
+
+export interface InfiniteBrainLiveStatusSingleFileWriteReport {
+  writeId: string;
+  generatedAt: string;
+  status: 'blocked' | 'applied' | 'failed';
+  targetPath: string;
+  changedPaths: string[];
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  beforeContentHash: string | null;
+  afterContentHash: string | null;
+  rollbackId: string | null;
+  rollbackSnapshotPath: string | null;
+  writeReportPath: string | null;
+  blockers: string[];
+  singleFileOnly: true;
+  exactPathOnly: true;
+  atomicWrite: boolean;
+  wroteToMind: boolean;
+  applied: boolean;
+}
+
+export interface InfiniteBrainSupersedeArchiveMoveInput {
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  sourcePath: string;
+  destinationPath: string;
+  expectedSourceHash: string;
+  contradictionSummary: string;
+  supersessionReason: string;
+  operator: string;
+  manualSingleMoveConfirm: boolean;
+  mindRoot: string;
+}
+
+export interface InfiniteBrainSupersedeArchiveMoveReport {
+  moveId: string;
+  generatedAt: string;
+  status: 'blocked' | 'applied' | 'failed';
+  sourcePath: string;
+  destinationPath: string;
+  changedPaths: string[];
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  sourceContentHash: string | null;
+  destinationContentHash: string | null;
+  rollbackId: string | null;
+  rollbackMetadataPath: string | null;
+  moveReportPath: string | null;
+  blockers: string[];
+  exactPathsOnly: true;
+  singleFileOnly: true;
+  nonDeletingArchiveMove: true;
+  wroteToMind: boolean;
+  applied: boolean;
+}
+
+export interface InfiniteBrainSourceRoutingMoveInput {
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  sourcePath: string;
+  destinationPath: string;
+  expectedSourceHash: string;
+  routingReason: string;
+  sourceSummary: string;
+  operator: string;
+  manualSingleMoveConfirm: boolean;
+  mindRoot: string;
+}
+
+export interface InfiniteBrainSourceRoutingMoveReport {
+  moveId: string;
+  generatedAt: string;
+  status: 'blocked' | 'applied' | 'failed';
+  sourcePath: string;
+  destinationPath: string;
+  changedPaths: string[];
+  approvalId: string;
+  proposalId: string;
+  sourceReportId: string | null;
+  sourceCommit: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string;
+  sourceContentHash: string | null;
+  destinationContentHash: string | null;
+  rollbackId: string | null;
+  rollbackMetadataPath: string | null;
+  moveReportPath: string | null;
+  blockers: string[];
+  exactPathsOnly: true;
+  singleFileOnly: true;
+  sourcesDestinationOnly: true;
+  wroteToMind: boolean;
+  applied: boolean;
+}
+
 export interface InfiniteBrainWriterInput {
   dryRunId: string;
   dryRunReportPath?: string;
@@ -68,6 +203,9 @@ export interface InfiniteBrainWriterInput {
     targetPathsPreview: string[];
   }>;
   wikiWrite?: InfiniteBrainWikiSingleFileWriteInput;
+  liveStatusWrite?: InfiniteBrainLiveStatusSingleFileWriteInput;
+  supersedeArchiveMove?: InfiniteBrainSupersedeArchiveMoveInput;
+  sourceRoutingMove?: InfiniteBrainSourceRoutingMoveInput;
 }
 
 export interface InfiniteBrainWriterPrecondition {
@@ -151,4 +289,23 @@ export function createBlockedWriterResult(
     },
     generatedAt: new Date().toISOString(),
   };
+}
+
+
+
+
+export interface InfiniteBrainWikiSingleFileWriteReport {
+  auditLogPath?: string | null;
+}
+
+export interface InfiniteBrainLiveStatusSingleFileWriteReport {
+  auditLogPath?: string | null;
+}
+
+export interface InfiniteBrainSupersedeArchiveMoveReport {
+  auditLogPath?: string | null;
+}
+
+export interface InfiniteBrainSourceRoutingMoveReport {
+  auditLogPath?: string | null;
 }
