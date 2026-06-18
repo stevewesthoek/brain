@@ -40,6 +40,9 @@ export interface WriteManifestEntry {
   expectedBeforeHashes: Record<string, string | null>;
   allowedSections: Record<string, string[]>;
   contentIntent: string | null;
+  sourceReferences: Array<{ path: string; location: string; summary: string }>;
+  replaceSourceReferences: boolean;
+  sourceReferencesPreserved: boolean;
   exactPathApprovalValid: boolean;
   exactPathApprovalErrors: string[];
   contentPreviewAvailable: boolean;
@@ -164,8 +167,27 @@ function convertDryRunOperationsToManifestEntries(
     const exactPathApprovalErrors = Array.isArray(op.exactPathApprovalErrors)
       ? op.exactPathApprovalErrors.filter((error: unknown): error is string => typeof error === 'string')
       : [];
-    const exactPathApprovalValid = op.exactPathApprovalValid === true && exactPathApprovalErrors.length === 0;
+    const sourceReferences = Array.isArray(op.sourceReferences)
+      ? op.sourceReferences.filter((reference: unknown): reference is { path: string; location: string; summary: string } => {
+          if (!reference || typeof reference !== 'object') return false;
+          const candidate = reference as Record<string, unknown>;
+          return typeof candidate.path === 'string'
+            && typeof candidate.location === 'string'
+            && typeof candidate.summary === 'string';
+        })
+      : [];
+    const replaceSourceReferences = op.replaceSourceReferences === true;
+    const sourceReferencesPreserved = op.sourceReferencesPreserved === true;
+    if (!sourceReferencesPreserved && !exactPathApprovalErrors.includes('source-reference-preservation-required')) {
+      exactPathApprovalErrors.push('source-reference-preservation-required');
+    }
+    const exactPathApprovalValid = op.exactPathApprovalValid === true
+      && exactPathApprovalErrors.length === 0
+      && sourceReferencesPreserved;
     const validationRequired = op.validationChecks?.map((c: any) => c.label) || [];
+    if (sourceReferencesPreserved && !validationRequired.includes('source-reference-preserved')) {
+      validationRequired.push('source-reference-preserved');
+    }
 
     if (op.category === 'wiki-writing') {
       validationRequired.push(
@@ -197,6 +219,9 @@ function convertDryRunOperationsToManifestEntries(
         ? op.allowedSections
         : {},
       contentIntent: typeof op.contentIntent === 'string' ? op.contentIntent : null,
+      sourceReferences,
+      replaceSourceReferences,
+      sourceReferencesPreserved,
       exactPathApprovalValid,
       exactPathApprovalErrors,
       contentPreviewAvailable: false,

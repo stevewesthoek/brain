@@ -30,6 +30,8 @@
     "test:thumbnail-queue": "tsx --test src/tests/thumbnail-queue.test.ts",
     "test:thumbnail-route": "tsx --test src/tests/video-orchestrator-thumbnail-route.test.ts",
     "test:thumbnail-key-safety": "tsx --test src/tests/video-orchestrator-thumbnail-key-safety.test.ts",
+    "test:infinite-brain-writer-stubs:direct": "tsx --test src/tests/infinite-brain-writer-stubs.test.ts",
+    "test:source-reference-focused": "tsx --test src/tests/infinite-brain-proposal-application-planner.test.ts src/tests/infinite-brain-write-manifest.test.ts src/tests/infinite-brain-post-write-verification.test.ts && npm run typecheck",
     "test:mind-maintenance-schema": "npm run build && node --test dist/tests/mind-maintenance-report-schema.test.js",
     "test:mind-maintenance-loader-stale": "npm run build && node --test dist/tests/mind-maintenance-pilot-loader-stale.test.js",
     "test:mind-maintenance-completed-active": "npm run build && node --test dist/tests/mind-maintenance-completed-active.test.js",

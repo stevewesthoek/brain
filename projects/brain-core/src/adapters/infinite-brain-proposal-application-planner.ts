@@ -24,6 +24,12 @@ const APPROVALS_STORE_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-app
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
 
+export interface ProposalSourceReference {
+  path: string;
+  location: string;
+  summary: string;
+}
+
 export interface ProposalApplicationPlanStep {
   stepId: string;
   proposalId: string;
@@ -40,6 +46,9 @@ export interface ProposalApplicationPlanStep {
   expectedBeforeHashes: Record<string, string | null>;
   allowedSections: Record<string, string[]>;
   contentIntent: string | null;
+  sourceReferences: ProposalSourceReference[];
+  replaceSourceReferences: boolean;
+  sourceReferencesPreserved: boolean;
   exactPathApprovalValid: boolean;
   exactPathApprovalErrors: string[];
   wouldWriteToMind: boolean;
@@ -86,6 +95,7 @@ export interface ProposalRecord {
   confidence: number;
   riskLevel: string;
   writesToMindIfApproved?: boolean;
+  sourceReferences?: ProposalSourceReference[];
   [key: string]: unknown;
 }
 
@@ -109,6 +119,8 @@ export interface ProposalApprovalRecord {
   expiresAt?: string;
   action?: 'create' | 'update' | 'move' | 'archive' | 'supersede' | 'add-source-reference';
   targets?: ProposalApprovalTarget[];
+  sourceReferences?: ProposalSourceReference[];
+  replaceSourceReferences?: boolean;
   reason?: string;
   [key: string]: unknown;
 }
@@ -225,6 +237,33 @@ function createRollbackPreview(category: string, targetPaths: string[]): string 
   }
 }
 
+function sourceReferenceKey(reference: ProposalSourceReference): string {
+  return `${reference.path}\u0000${reference.location}\u0000${reference.summary}`;
+}
+
+function validateSourceReference(reference: ProposalSourceReference): string[] {
+  const errors: string[] = [];
+  const normalized = reference.path.replace(/\\/g, '/');
+  if (
+    reference.path.includes('\\') ||
+    path.posix.isAbsolute(normalized) ||
+    path.win32.isAbsolute(reference.path) ||
+    !normalized.startsWith('sources/') ||
+    normalized.endsWith('/') ||
+    !normalized.endsWith('.md') ||
+    normalized.includes('*') ||
+    normalized.includes('?') ||
+    normalized.includes('[') ||
+    normalized.includes(']') ||
+    normalized.split('/').some(segment => segment === '' || segment === '.' || segment === '..')
+  ) {
+    errors.push(`invalid-source-reference-path:${reference.path}`);
+  }
+  if (!reference.location?.trim()) errors.push(`source-reference-location-required:${reference.path}`);
+  if (!reference.summary?.trim()) errors.push(`source-reference-summary-required:${reference.path}`);
+  return errors;
+}
+
 export function validateExactPathWikiApproval(
   proposal: ProposalRecord,
   approvalRecord: ProposalApprovalRecord,
@@ -265,6 +304,22 @@ export function validateExactPathWikiApproval(
     if (!target.contentIntent?.trim()) errors.push(`content-intent-required:${target.path}`);
   }
 
+  const proposalReferences = proposal.sourceReferences ?? [];
+  const approvedReferences = approvalRecord.sourceReferences ?? [];
+  for (const reference of approvedReferences) errors.push(...validateSourceReference(reference));
+
+  if (!approvalRecord.replaceSourceReferences) {
+    const approvedReferenceKeys = new Set(approvedReferences.map(sourceReferenceKey));
+    for (const existingReference of proposalReferences) {
+      errors.push(...validateSourceReference(existingReference));
+      if (!approvedReferenceKeys.has(sourceReferenceKey(existingReference))) {
+        errors.push(`existing-source-reference-must-be-preserved:${existingReference.path}`);
+      }
+    }
+  } else if (approvedReferences.length === 0 && proposalReferences.length > 0) {
+    errors.push('replacement-source-references-required');
+  }
+
   return errors;
 }
 
@@ -284,6 +339,15 @@ function createApplicationPlanStep(
   const allowedSections = Object.fromEntries(
     approvalTargets.map(target => [target.path, target.allowedSections]),
   );
+  const sourceReferences = approvalRecord.sourceReferences ?? [];
+  const replaceSourceReferences = approvalRecord.replaceSourceReferences === true;
+  const sourceReferencesPreserved = !exactPathApprovalErrors.some(error =>
+    error.startsWith('invalid-source-reference-path:') ||
+    error.startsWith('source-reference-location-required:') ||
+    error.startsWith('source-reference-summary-required:') ||
+    error.startsWith('existing-source-reference-must-be-preserved:') ||
+    error === 'replacement-source-references-required'
+  );
   const wouldWriteToMind = proposal.writesToMindIfApproved === true;
 
   return {
@@ -302,6 +366,9 @@ function createApplicationPlanStep(
     expectedBeforeHashes,
     allowedSections,
     contentIntent: approvalTargets.length === 1 ? approvalTargets[0]?.contentIntent ?? null : null,
+    sourceReferences,
+    replaceSourceReferences,
+    sourceReferencesPreserved,
     exactPathApprovalValid,
     exactPathApprovalErrors,
     wouldWriteToMind,

@@ -11,10 +11,18 @@
  * - broad, multi-file, create, delete, move, and autonomous writes are rejected.
  */
 
-import fs from 'node:fs';
+import fs, {
+  closeSync,
+  fsyncSync,
+  lstatSync,
+  openSync,
+  realpathSync,
+  renameSync,
+} from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { createWriterAuditRecord, persistWriterAuditRecord } from './writer-audit-log.js';
 import {
   type InfiniteBrainWikiSingleFileWriteInput,
   type InfiniteBrainWikiSingleFileWriteReport,
@@ -62,7 +70,7 @@ function writeJsonAtomically(filePath: string, value: unknown): boolean {
   try {
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(tempPath, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx' });
-    fs.renameSync(tempPath, filePath);
+    renameSync(tempPath, filePath);
     return true;
   } catch {
     try {
@@ -118,15 +126,18 @@ function validateExactWikiPath(targetPath: string): string | null {
 
 function resolveExistingTarget(mindRoot: string, targetPath: string): { root: string; target: string } | null {
   try {
-    const root = fs.realpathSync(mindRoot);
+    const root = realpathSync(mindRoot);
     if (!fs.statSync(root).isDirectory()) return null;
 
     const candidate = path.resolve(root, ...targetPath.split('/'));
-    const target = fs.realpathSync(candidate);
+    const candidateStat = lstatSync(candidate);
+    if (!candidateStat.isFile() || candidateStat.isSymbolicLink()) return null;
+
+    const target = realpathSync(candidate);
     const relative = path.relative(root, target);
     if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
 
-    const stat = fs.lstatSync(target);
+    const stat = lstatSync(target);
     if (!stat.isFile() || stat.isSymbolicLink()) return null;
 
     return { root, target };
@@ -136,9 +147,32 @@ function resolveExistingTarget(mindRoot: string, targetPath: string): { root: st
 }
 
 function persistReport(report: InfiniteBrainWikiSingleFileWriteReport): InfiniteBrainWikiSingleFileWriteReport {
+  const auditLogPath = persistWriterAuditRecord(createWriterAuditRecord({
+    operationType: 'wiki-update',
+    operationId: report.writeId,
+    changedPaths: report.changedPaths,
+    beforeState: { [report.targetPath]: report.beforeContentHash },
+    afterState: { [report.targetPath]: report.afterContentHash },
+    approval: {
+      approvalId: report.approvalId,
+      proposalId: report.proposalId,
+      sourceReportId: report.sourceReportId,
+      sourceCommit: report.sourceCommit,
+      approvedBy: report.approvedBy,
+      approvedAt: report.approvedAt,
+      expiresAt: report.expiresAt,
+    },
+    result: {
+      status: report.status,
+      applied: report.applied,
+      wroteToMind: report.wroteToMind,
+      blockers: report.blockers,
+    },
+  }));
+  const reportWithAudit = { ...report, auditLogPath };
   const reportPath = getWriteReportPath();
-  const persisted = writeJsonAtomically(reportPath, { ...report, writeReportPath: reportPath });
-  return { ...report, writeReportPath: persisted ? reportPath : null };
+  const persisted = writeJsonAtomically(reportPath, { ...reportWithAudit, writeReportPath: reportPath });
+  return { ...reportWithAudit, writeReportPath: persisted ? reportPath : null };
 }
 
 function blockedReport(
@@ -274,14 +308,14 @@ export function runWikiWriterSingleFileWrite(
 
   try {
     const mode = fs.statSync(resolved.target).mode;
-    const descriptor = fs.openSync(tempPath, 'wx', mode);
+    const descriptor = openSync(tempPath, 'wx', mode);
     try {
       fs.writeFileSync(descriptor, input.newContent, 'utf8');
-      fs.fsyncSync(descriptor);
+      fsyncSync(descriptor);
     } finally {
-      fs.closeSync(descriptor);
+      closeSync(descriptor);
     }
-    fs.renameSync(tempPath, resolved.target);
+    renameSync(tempPath, resolved.target);
     atomicWrite = true;
   } catch {
     try {

@@ -20,10 +20,12 @@ export const READ_ENDPOINTS = [
   '/approvals',
   '/approvals/audit',
   '/capabilities',
+  '/execution/on-demand-runs',
 ] as const;
 
 export const APPROVAL_REQUEST_ENDPOINTS = [
   '/actions/request',
+  '/execution/on-demand-runs/:kind/request',
   '/scheduler/jobs/:id/request-run',
   '/skills/profile',
   '/sessions/:id/resume',
@@ -71,6 +73,9 @@ export function getCapabilities(): BrainCoreCapabilitySummary {
       mindStewardDryRunExecutionFlagEnabled: executionReadiness.mindStewardDryRunExecutionFlagEnabled,
       mindStewardDryRunExecutionFlagName: executionReadiness.mindStewardDryRunExecutionFlagName,
       candidateActionKinds: getExecutionCandidateKinds(),
+      workflowFeatureFlags: executionReadiness.workflowFeatureFlags,
+      featureFlaggedWorkflowCount: executionReadiness.featureFlaggedWorkflowCount,
+      enabledWorkflowFeatureFlagCount: executionReadiness.enabledWorkflowFeatureFlagCount,
       readinessEndpoint: '/execution/readiness',
       plansEndpoint: '/execution/plans',
       firstCandidate: 'scheduler-run-mind-steward-dry-run',

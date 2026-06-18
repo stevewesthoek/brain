@@ -1,0 +1,138 @@
+import { getExecutionKillSwitch } from './execution-plans.js';
+import type { BrainCoreContinuousProcessingDisableRecoveryView } from '../types/api.js';
+
+const SAFETY = {
+  readOnly: true,
+  writesToMind: false,
+  movesCaptures: false,
+  deletesCaptures: false,
+  writesKanban: false,
+  createsSchedulerJob: false,
+  startsBackgroundDaemon: false,
+  runsWorkflowNow: false,
+  watcherEnabled: false,
+  disablesContinuousProcessing: false,
+} as const;
+
+export function getContinuousProcessingDisableRecoveryView(): BrainCoreContinuousProcessingDisableRecoveryView {
+  const killSwitch = getExecutionKillSwitch();
+
+  return {
+    id: 'continuous-processing-disable-recovery-view',
+    status: 'available',
+    source: 'brain-core-documentation',
+    killSwitchEnabled: killSwitch.enabled,
+    killSwitchFlagName: 'BRAIN_CORE_EXECUTION_KILL_SWITCH',
+    continuousProcessingEnabled: false,
+    watcherEnabled: false,
+    disableProcedure: {
+      steps: [
+        {
+          order: 1,
+          action: 'Set environment variable BRAIN_CORE_EXECUTION_KILL_SWITCH=true',
+          effect: 'Prevents newly requested execution through verified gated boundaries: on-demand run requests, approved execution decisions, and scheduler job eligibility checks',
+          reversible: true,
+          mutatesState: true,
+          endpoint: null,
+          observableResult: 'getExecutionKillSwitch().enabled === true',
+        },
+        {
+          order: 2,
+          action: 'Verify kill switch via GET /execution/readiness',
+          effect: 'Confirms the kill switch blocker appears in readiness.blockers[]',
+          reversible: true,
+          mutatesState: false,
+          endpoint: '/execution/readiness',
+          observableResult: 'response.killSwitch.enabled === true and blockers includes "execution kill switch enabled"',
+        },
+        {
+          order: 3,
+          action: 'Unset workflow feature flag (ensure BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION is not "true")',
+          effect: 'Queue policy enforces queueWorkflowFeatureFlagRequired blocker independently of the kill switch',
+          reversible: true,
+          mutatesState: true,
+          endpoint: null,
+          observableResult: 'enforceMindStewardInboxQueuePolicy returns blocker "queueWorkflowFeatureFlagRequired"',
+        },
+        {
+          order: 4,
+          action: 'Verify via GET /scheduler/continuous-processing/selection',
+          effect: 'Confirms the workflow selection shows continuousEnabled: false and blocked',
+          reversible: true,
+          mutatesState: false,
+          endpoint: '/scheduler/continuous-processing/selection',
+          observableResult: 'response.continuousEnabled === false',
+        },
+      ],
+      immediateEffect: 'Prevents newly requested execution through the verified gated boundaries (on-demand requests, approved execution, scheduler eligibility). Does not cancel already running external work unless a separate cancellation mechanism exists. Does not itself modify Mind.',
+      dataIntegrity: 'Brain-owned queue state is preserved. Mind captures remain in capture/inbox/ unchanged. Queue state file is not deleted or modified by the kill switch.',
+    },
+    recoveryProcedure: {
+      steps: [
+        {
+          order: 1,
+          action: 'Review failed items via GET /scheduler/mind-steward/failed-items',
+          effect: 'Lists all exhausted queue items with error details',
+          requiresApproval: false,
+          mutatesState: false,
+          endpoint: '/scheduler/mind-steward/failed-items',
+          observableResult: 'response.failedItemCount and items[] array',
+          blockerIfUnavailable: 'requires Brain Core server running and queue state file present',
+        },
+        {
+          order: 2,
+          action: 'Review recovery guidance via GET /scheduler/mind-steward/recovery',
+          effect: 'Provides per-item safe next steps without auto-fixing',
+          requiresApproval: false,
+          mutatesState: false,
+          endpoint: '/scheduler/mind-steward/recovery',
+          observableResult: 'response.recoveryItemCount and per-item controls[]',
+          blockerIfUnavailable: 'requires Brain Core server running and queue state file present',
+        },
+        {
+          order: 3,
+          action: 'Request on-demand run for a specific workflow kind via POST /execution/on-demand-runs/:kind/request',
+          effect: 'Submits one request through the action/approval system — blocked if kill switch is active or workflow kind is unsupported',
+          requiresApproval: true,
+          mutatesState: true,
+          endpoint: '/execution/on-demand-runs/:kind/request',
+          observableResult: 'accepted === false while kill switch is enabled; accepted === false for unsupported workflow kind; accepted may be true for a supported workflow after kill switch is removed; executed remains false; separate approval and execution gates still apply',
+          blockerIfUnavailable: 'active kill switch; unsupported workflow kind; action request unavailable or blocked',
+        },
+        {
+          order: 4,
+          action: 'Remove BRAIN_CORE_EXECUTION_KILL_SWITCH=true',
+          effect: 'Removes the kill-switch blocker from execution boundaries. Does not by itself enable execution — feature flag, manual success evidence, and stability gates remain independent requirements',
+          requiresApproval: true,
+          mutatesState: true,
+          endpoint: null,
+          observableResult: 'getExecutionKillSwitch().enabled === false; on-demand requests may now be accepted for supported workflows; scheduler jobs still require manualSuccessProven, feature flag, and stability gates independently',
+          blockerIfUnavailable: null,
+        },
+        {
+          order: 5,
+          action: 'Decide whether to re-enable the workflow feature flag (e.g. BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION)',
+          effect: 'Re-enables one specific workflow execution gate. Does not enable scheduling or approve pending requests',
+          requiresApproval: true,
+          mutatesState: true,
+          endpoint: null,
+          observableResult: 'isWorkflowFeatureFlagEnabled(kind) === true for the specific workflow; other gates (manual success, stability, approval) remain independently required',
+          blockerIfUnavailable: null,
+        },
+        {
+          order: 6,
+          action: 'Verify remaining gates via GET /execution/readiness',
+          effect: 'Confirms which independent gates are still blocking execution eligibility after kill switch removal and feature flag decision',
+          requiresApproval: false,
+          mutatesState: false,
+          endpoint: '/execution/readiness',
+          observableResult: 'response.executionEnabled and response.blockers reflect the remaining independent gates (approval, audit, rollback)',
+          blockerIfUnavailable: 'requires Brain Core server running',
+        },
+      ],
+      dataIntegrity: 'The documentation view does not mutate state. GET review steps do not move or delete captures. The POST request records a gated request and returns executed:false. Any later approved execution is governed by its own safety and approval contracts. Brain queue state is not deleted by toggling the kill switch.',
+    },
+    blockers: [],
+    safety: SAFETY,
+  };
+}

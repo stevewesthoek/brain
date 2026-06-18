@@ -50,6 +50,730 @@ export interface BrainCoreSchedulerJobSummary {
   name: string;
   status: 'placeholder' | 'disabled' | 'unknown' | 'ok' | 'failed';
   mutationRequired: boolean;
+  workflowKind?: string;
+  manualSuccessRequired: true;
+  manualSuccessProven: boolean;
+  schedulerEligible: boolean;
+  schedulerEnabled: false;
+  blockers: string[];
+  safety: {
+    writesToMind: false;
+    createsSchedulerJob: false;
+    startsBackgroundDaemon: false;
+    requiresManualSuccessBeforeScheduling: true;
+  };
+}
+
+export interface BrainCoreMindStewardRuntimeViewSafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  startsBackgroundDaemon: false;
+  createsSchedulerJob: false;
+}
+
+export interface BrainCoreMindStewardLatestRunReportView {
+  key: 'dryRun' | 'inbox' | 'classifier' | 'queue';
+  fileName: string;
+  available: boolean;
+  latestRunStatus: 'ok' | 'failed' | 'unknown';
+  status: string;
+  message: string | null;
+  mode: string | null;
+  writesToMind: boolean;
+  executableActions: boolean;
+  endedAtLisbon: string | null;
+  durationSeconds: number | null;
+}
+
+export interface BrainCoreMindStewardLatestRunView {
+  id: 'mind-steward-latest-run-view';
+  status: 'available' | 'missing';
+  source: 'runtime/local/mind-steward';
+  reportCount: number;
+  availableCount: number;
+  latestRun: BrainCoreMindStewardLatestRunReportView | null;
+  reports: BrainCoreMindStewardLatestRunReportView[];
+  safety: BrainCoreMindStewardRuntimeViewSafety;
+}
+
+export interface BrainCoreMindStewardFailedItemView {
+  id: string;
+  path: string;
+  status: 'failed';
+  sizeBytes: number;
+  contentSha256: string;
+  modifiedAt: string | null;
+  firstSeenAt: string;
+  lastCheckedAt: string;
+  attemptCount: number;
+  maxRetries: number;
+  lastError: string | null;
+  nextRetryAfter: string | null;
+  failureRoute: 'brain-runtime-queue-status' | 'capture-failed-move-proposal-required' | null;
+  largeFile: boolean;
+  selectorStatus: 'unknown' | 'not-required' | 'blocked' | 'ready' | 'failed';
+  recoveryRequired: true;
+}
+
+export interface BrainCoreMindStewardFailedItemsView {
+  id: 'mind-steward-failed-items-view';
+  status: 'available' | 'missing';
+  source: 'brain-runtime-queue-state';
+  queueStatePath: string | null;
+  generatedAt: string | null;
+  failedItemCount: number;
+  items: BrainCoreMindStewardFailedItemView[];
+  blockers: string[];
+  safety: BrainCoreMindStewardRuntimeViewSafety;
+}
+
+export interface BrainCoreMindStewardRecoveryControlView {
+  id: 'review-source-capture' | 'request-approved-on-demand-queue-run' | 'capture-failed-move-proposal';
+  label: string;
+  mode: 'manual-review' | 'approval-request' | 'proposal-only';
+  requiresApproval: boolean;
+  writesToMind: false;
+  endpoint: string | null;
+}
+
+export interface BrainCoreMindStewardRecoveryItemView {
+  id: string;
+  failedItemId: string;
+  path: string;
+  severity: 'warning' | 'error';
+  failureRoute: 'brain-runtime-queue-status' | 'capture-failed-move-proposal-required' | null;
+  blocker: string;
+  nextSafeStep: string;
+  controls: BrainCoreMindStewardRecoveryControlView[];
+  safety: BrainCoreMindStewardRuntimeViewSafety & {
+    canAutoFix: false;
+    requiresApprovalForRetry: true;
+    proposalOnlyForCaptureMoves: true;
+  };
+}
+
+export interface BrainCoreMindStewardRecoveryView {
+  id: 'mind-steward-recovery-view';
+  status: 'available' | 'empty' | 'missing';
+  source: 'brain-runtime-queue-state';
+  queueStatePath: string | null;
+  generatedAt: string | null;
+  recoveryItemCount: number;
+  items: BrainCoreMindStewardRecoveryItemView[];
+  blockers: string[];
+  safety: BrainCoreMindStewardRuntimeViewSafety & {
+    canAutoFix: false;
+    requiresApprovalForRetry: true;
+    proposalOnlyForCaptureMoves: true;
+  };
+}
+
+export interface BrainCoreGraphifyRefreshScheduleSafety {
+  planOnly: true;
+  reportOnly: true;
+  writesToMind: false;
+  writesTargetRepo: false;
+  writesGeneratedGraphOutput: false;
+  runsGraphifyNow: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  requiresFeatureFlag: true;
+  requiresManualSuccessBeforeScheduling: true;
+  honorsKillSwitch: true;
+}
+
+export interface BrainCoreGraphifyRefreshScheduleItem {
+  id: 'graphify-refresh-mind-knowledge' | 'graphify-refresh-brain-runtime';
+  repo: 'mind' | 'brain';
+  reportKey: 'mindKnowledge' | 'brainRuntime';
+  workflowKind: Extract<
+    BrainCoreExecutionPlan['kind'],
+    'scheduler-run-graphify-preflight-mind' | 'scheduler-run-graphify-preflight-brain'
+  >;
+  schedulerJobId: 'graphify-preflight-mind' | 'graphify-preflight-brain';
+  commandPreview:
+    | 'bash tools/scripts/graphify-orchestrator-report.sh preflight-mind'
+    | 'bash tools/scripts/graphify-orchestrator-report.sh preflight-brain';
+  cadence: 'daily';
+  localWindow: '03:00-07:00 Europe/Lisbon';
+  scheduleRecommended: boolean;
+  usefulnessReason: 'reportMissing' | 'reportFailed' | 'reportStale' | 'timestampMissing' | 'reportFresh';
+  report: {
+    available: boolean;
+    status: string;
+    generatedAt: string | null;
+    ageHours: number | null;
+    stale: boolean;
+  };
+  featureFlag: BrainCoreWorkflowFeatureFlag | null;
+  schedulerEligible: boolean;
+  schedulerEnabled: false;
+  manualSuccessRequired: true;
+  manualSuccessProven: boolean;
+  blockers: string[];
+  safety: BrainCoreGraphifyRefreshScheduleSafety;
+}
+
+export interface BrainCoreGraphifyRefreshSchedule {
+  id: 'graphify-refresh-schedule';
+  status: 'schedule-recommended' | 'fresh';
+  generatedAt: string;
+  source: 'brain-core-scheduler-plan';
+  staleAfterHours: number;
+  candidateCount: number;
+  recommendedCount: number;
+  items: BrainCoreGraphifyRefreshScheduleItem[];
+  blockers: string[];
+  safety: BrainCoreGraphifyRefreshScheduleSafety;
+}
+
+export type BrainCoreMindMaintenanceReportOnlyScheduleReason =
+  | 'maintenanceReportMissing'
+  | 'maintenanceReportNotReportOnly'
+  | 'maintenanceReportNoWriteProofMissing'
+  | 'maintenanceDetectorErrorsVisible'
+  | 'maintenanceReportTimestampMissing'
+  | 'maintenanceReportStale'
+  | 'maintenanceSchedulerJobMissing'
+  | string;
+
+export interface BrainCoreMindMaintenanceReportOnlyScheduleSafety {
+  planOnly: true;
+  reportOnly: true;
+  writesToMind: false;
+  writesReportsNow: false;
+  executesMaintenanceNow: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  requiresApprovalForWrites: true;
+  mustRunBeforeApprovedWrites: true;
+}
+
+export interface BrainCoreMindMaintenanceReportOnlySchedule {
+  id: 'mind-maintenance-report-only-schedule';
+  status: 'schedule-recommended' | 'fresh';
+  generatedAt: string;
+  source: 'brain-core-scheduler-plan';
+  schedulerJobId: 'mind-maintenance-report-only';
+  requestEndpoint: '/api/mind-maintenance/run';
+  latestReportEndpoint: '/api/mind-maintenance/latest?mindRoot=<path>';
+  cadence: 'daily';
+  localWindow: '03:00-07:00 Europe/Lisbon';
+  staleAfterHours: number;
+  scheduleRecommended: boolean;
+  approvedWritesBlockedUntilFreshReport: boolean;
+  approvedWritesRequireHumanReview: boolean;
+  latestReport: {
+    available: boolean;
+    path: string;
+    reportId: string | null;
+    generatedAt: string | null;
+    mode: string | null;
+    noWritePerformed: boolean;
+    findingsOpen: number;
+    detectorErrors: number;
+    ageHours: number | null;
+  };
+  schedulerEligible: boolean;
+  schedulerEnabled: false;
+  manualSuccessRequired: true;
+  manualSuccessProven: boolean;
+  blockers: BrainCoreMindMaintenanceReportOnlyScheduleReason[];
+  safety: BrainCoreMindMaintenanceReportOnlyScheduleSafety;
+}
+
+export interface BrainCoreContinuousProcessingSelectionSafety {
+  planOnly: true;
+  readOnly: true;
+  continuousEnabled: false;
+  watcherEnabled: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  basicMindUseRequiresContinuousProcessing: false;
+  requiresKillSwitch: true;
+  requiresFeatureFlag: true;
+  requiresManualSuccess: true;
+  requiresQueueThrottlePolicy: true;
+  requiresHumanReviewForWrites: true;
+}
+
+export interface BrainCoreContinuousProcessingWorkflowSelection {
+  schedulerJobId: string;
+  workflowKind: string;
+  name: string;
+  selected: boolean;
+  status: 'selected' | 'not-selected';
+  reason: 'proven-inbox-queue-candidate' | 'not-first-continuous-candidate';
+  manualSuccessProven: boolean;
+  schedulerEligible: boolean;
+  schedulerEnabled: false;
+  continuousEnabled: false;
+  watcherEnabled: false;
+  featureFlag: BrainCoreWorkflowFeatureFlag | null;
+  blockers: string[];
+  requiredBeforeEnablement: string[];
+  safety: {
+    reportOnly: true;
+    writesToMind: false;
+    movesCaptures: false;
+    deletesCaptures: false;
+    writesKanban: false;
+    createsSchedulerJob: false;
+    startsBackgroundDaemon: false;
+    runsWorkflowNow: false;
+    requiresHumanReviewForWrites: true;
+  };
+}
+
+export interface BrainCoreContinuousProcessingSelection {
+  id: 'continuous-processing-workflow-selection';
+  status: 'selected' | 'selected-blocked';
+  generatedAt: string;
+  source: 'brain-core-continuous-processing-plan';
+  phase: 'Phase 9';
+  selectedWorkflowKind: 'scheduler-run-mind-steward-inbox-queue-dry-run' | string;
+  selectedSchedulerJobId: 'mind-steward-inbox-queue-dry-run' | string;
+  selectedCount: number;
+  candidateCount: number;
+  continuousReady: false;
+  continuousEnabled: false;
+  watcherEnabled: false;
+  requiredBeforeEnablement: string[];
+  selectionRationale: string[];
+  blockers: string[];
+  workflows: BrainCoreContinuousProcessingWorkflowSelection[];
+  safety: BrainCoreContinuousProcessingSelectionSafety;
+}
+
+export interface BrainCoreContinuousProcessingStabilitySafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+}
+
+export interface BrainCoreContinuousProcessingStabilityItem {
+  id: string;
+  path: string;
+  status: string;
+  sizeBytes: number;
+  modifiedAt: string | null;
+  stableFile: boolean;
+  stableAt: string | null;
+  debounceSeconds: number;
+  debounceUntil: string | null;
+  selectedForSample: boolean;
+  largeFile: boolean;
+  lastError: string | null;
+}
+
+export interface BrainCoreContinuousProcessingStabilityView {
+  id: 'continuous-processing-stability-view';
+  status: 'available' | 'missing';
+  source: 'brain-runtime-queue-state';
+  queueStatePath: string | null;
+  generatedAt: string | null;
+  debounceSeconds: number | null;
+  totalCount: number;
+  stableCount: number;
+  debouncingCount: number;
+  selectedStableCount: number;
+  items: BrainCoreContinuousProcessingStabilityItem[];
+  blockers: string[];
+  safety: BrainCoreContinuousProcessingStabilitySafety;
+}
+
+export interface BrainCoreContinuousProcessingConcurrencySafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+  modifiesConcurrencyAtRuntime: false;
+}
+
+export interface BrainCoreContinuousProcessingConcurrencyView {
+  id: 'continuous-processing-concurrency-view';
+  status: 'available' | 'missing';
+  source: 'brain-runtime-queue-state';
+  maxConcurrentJobs: number | null;
+  runningJobs: number;
+  availableSlots: number;
+  capReached: boolean;
+  capBlocking: boolean;
+  blockers: string[];
+  safety: BrainCoreContinuousProcessingConcurrencySafety;
+}
+
+export interface BrainCoreContinuousProcessingFailureBufferSafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+  clearsFailureBuffer: false;
+}
+
+export interface BrainCoreContinuousProcessingFailureBufferItem {
+  id: string;
+  path: string;
+  attemptCount: number;
+  maxRetries: number;
+  retriesExhausted: boolean;
+  lastError: string | null;
+  nextRetryAfter: string | null;
+  failureRoute: string | null;
+}
+
+export interface BrainCoreContinuousProcessingFailureBufferView {
+  id: 'continuous-processing-failure-buffer-view';
+  status: 'available' | 'missing';
+  source: 'brain-runtime-queue-state';
+  maxRetries: number | null;
+  failureBufferPauseThreshold: number;
+  exhaustedCount: number;
+  retryPendingCount: number;
+  totalFailureBufferCount: number;
+  shouldPauseContinuousProcessing: boolean;
+  items: BrainCoreContinuousProcessingFailureBufferItem[];
+  blockers: string[];
+  safety: BrainCoreContinuousProcessingFailureBufferSafety;
+}
+
+export interface BrainCoreContinuousProcessingDisableRecoverySafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+  disablesContinuousProcessing: false;
+}
+
+export interface BrainCoreContinuousProcessingDisableStep {
+  order: number;
+  action: string;
+  effect: string;
+  reversible: boolean;
+  mutatesState: boolean;
+  endpoint: string | null;
+  observableResult: string;
+}
+
+export interface BrainCoreContinuousProcessingRecoveryStep {
+  order: number;
+  action: string;
+  effect: string;
+  requiresApproval: boolean;
+  mutatesState: boolean;
+  endpoint: string | null;
+  observableResult: string;
+  blockerIfUnavailable: string | null;
+}
+
+export interface BrainCoreContinuousProcessingDisableProcedure {
+  steps: BrainCoreContinuousProcessingDisableStep[];
+  immediateEffect: string;
+  dataIntegrity: string;
+}
+
+export interface BrainCoreContinuousProcessingRecoveryProcedure {
+  steps: BrainCoreContinuousProcessingRecoveryStep[];
+  dataIntegrity: string;
+}
+
+export interface BrainCoreContinuousProcessingDisableRecoveryView {
+  id: 'continuous-processing-disable-recovery-view';
+  status: 'available';
+  source: 'brain-core-documentation';
+  killSwitchEnabled: boolean;
+  killSwitchFlagName: string;
+  continuousProcessingEnabled: boolean;
+  watcherEnabled: boolean;
+  disableProcedure: BrainCoreContinuousProcessingDisableProcedure;
+  recoveryProcedure: BrainCoreContinuousProcessingRecoveryProcedure;
+  blockers: string[];
+  safety: BrainCoreContinuousProcessingDisableRecoverySafety;
+}
+
+export interface BrainCoreContinuousProcessingMeasurementSafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+  collectsMetricsAutomatically: false;
+}
+
+export interface BrainCoreContinuousProcessingLatencyMeasurement {
+  oldestPendingAgeSeconds: number | null;
+  sampleCount: number;
+  source: string;
+  blockers: string[];
+}
+
+export interface BrainCoreContinuousProcessingMachineLoadMeasurement {
+  processRssBytes: number;
+  processHeapUsedBytes: number;
+  sampledAt: string;
+  source: string;
+  blockers: string[];
+}
+
+export interface BrainCoreContinuousProcessingReviewBurdenMeasurement {
+  pendingReviewCount: number;
+  failedNeedingReviewCount: number;
+  approvedCount: number | null;
+  rejectedCount: number | null;
+  pendingApprovalCount: number | null;
+  approvalStoreSource: string | null;
+  source: string;
+  blockers: string[];
+}
+
+export interface BrainCoreContinuousProcessingConfigurationMeasurement {
+  maxConcurrentJobs: number;
+  maxFilesPerRun: number;
+  maxRetries: number;
+  debounceSeconds: number;
+  minimumSecondsBetweenRuns: number;
+}
+
+export interface BrainCoreContinuousProcessingValueAssessment {
+  status: 'proven' | 'not-proven' | 'insufficient-evidence';
+  evidence: string[];
+  blockers: string[];
+}
+
+export interface BrainCoreContinuousProcessingMeasurementView {
+  id: 'continuous-processing-measurement-view';
+  status: 'available' | 'missing';
+  source: 'brain-runtime-queue-state';
+  generatedAt: string;
+  latency: BrainCoreContinuousProcessingLatencyMeasurement | null;
+  machineLoad: BrainCoreContinuousProcessingMachineLoadMeasurement | null;
+  reviewBurden: BrainCoreContinuousProcessingReviewBurdenMeasurement | null;
+  configuration: BrainCoreContinuousProcessingConfigurationMeasurement | null;
+  valueAssessment: BrainCoreContinuousProcessingValueAssessment;
+  blockers: string[];
+  safety: BrainCoreContinuousProcessingMeasurementSafety;
+}
+
+export interface BrainCoreContinuousProcessingLargeFileFallbackSafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+  schedulesNightlyJob: false;
+}
+
+export interface BrainCoreContinuousProcessingLargeFileItem {
+  id: string;
+  path: string;
+  sizeBytes: number;
+  status: string;
+  lastError: string | null;
+  firstSeenAt: string;
+}
+
+export interface BrainCoreContinuousProcessingLargeFileFallbackView {
+  id: 'continuous-processing-large-file-fallback-view';
+  status: 'available' | 'missing';
+  source: 'brain-runtime-queue-state';
+  largeFileThresholdMb: number | null;
+  largeFileCount: number;
+  blockedLargeFiles: BrainCoreContinuousProcessingLargeFileItem[];
+  nightlyFallbackEnabled: boolean;
+  nightlyFallbackScheduled: boolean;
+  blockers: string[];
+  safety: BrainCoreContinuousProcessingLargeFileFallbackSafety;
+}
+
+export interface BrainCoreLargeFileNightlyFallbackPlanSafety {
+  planOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  watcherEnabled: false;
+  requiresFeatureFlag: true;
+  requiresManualSuccessBeforeScheduling: true;
+  honorsKillSwitch: true;
+}
+
+export interface BrainCoreLargeFileNightlyFallbackPlanItem {
+  id: string;
+  path: string;
+  sizeBytes: number;
+  firstSeenAt: string;
+  eligible: boolean;
+  reason: string;
+}
+
+export interface BrainCoreLargeFileNightlyFallbackPlan {
+  id: 'large-file-nightly-fallback-plan';
+  status: 'plan-available' | 'no-eligible-files' | 'blocked';
+  source: 'brain-core-scheduler-plan';
+  generatedAt: string;
+  largeFileThresholdMb: number | null;
+  maxFilesPerNightlyRun: number;
+  nightlyWindow: string;
+  featureFlagName: string;
+  featureFlagEnabled: boolean;
+  killSwitchEnabled: boolean;
+  manualSuccessRequired: true;
+  manualSuccessProven: boolean;
+  schedulerEnabled: false;
+  eligibleCount: number;
+  eligibleFiles: BrainCoreLargeFileNightlyFallbackPlanItem[];
+  blockers: string[];
+  safety: BrainCoreLargeFileNightlyFallbackPlanSafety;
+}
+
+export interface BrainCoreSimplificationReviewSafety {
+  readOnly: true;
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  createsSchedulerJob: false;
+  startsBackgroundDaemon: false;
+  runsWorkflowNow: false;
+  deletesFiles: false;
+  archivesFiles: false;
+}
+
+export interface BrainCoreSimplificationReviewFolderStructure {
+  topLevelFolderCount: number;
+  topLevelFolders: string[];
+  totalDirectoryCount: number;
+  directoryCountByDepth: Record<number, number>;
+  observedMaximumDepth: number;
+  deepestPaths: string[];
+  scanComplete: boolean;
+  unreadablePaths: string[];
+  recommendedMaximumUsefulDepth: number | null;
+  recommendationStatus: 'supported' | 'insufficient-evidence';
+  recommendationEvidence: string[];
+  recommendationBlockers: string[];
+}
+
+export interface BrainCoreSimplificationReviewNavigation {
+  homeExists: boolean;
+  linksChecked: number;
+  brokenLinkCount: number;
+  brokenLinks: string[];
+}
+
+export interface BrainCoreSimplificationReviewInboxAge {
+  status: 'available' | 'missing' | 'blocked';
+  captureCount: number | null;
+  oldestAgeHours: number | null;
+  newestAgeHours: number | null;
+  validTimestampCount: number | null;
+  invalidTimestampCount: number | null;
+  source: string;
+  blockers: string[];
+}
+
+export interface BrainCoreSimplificationReviewMaintenanceBacklog {
+  status: 'available' | 'partial' | 'insufficient-evidence';
+  validFindingCount: number | null;
+  malformedFindingCount: number | null;
+  unresolvedFindingCount: number | null;
+  validDecisionCount: number | null;
+  malformedDecisionCount: number | null;
+  pendingDecisionCount: number | null;
+  failedFindingCount: number | null;
+  overdueMaintenanceCount: number | null;
+  source: string[];
+  measuredAt: string;
+  blockers: string[];
+}
+
+export interface BrainCoreSimplificationReviewFalsePositiveRate {
+  measured: boolean;
+  rate: number;
+  totalNegativeCases: number;
+  falsePositives: number;
+  source: string;
+}
+
+export interface BrainCoreSimplificationReviewApprovalVolume {
+  status: 'available' | 'partial' | 'insufficient-evidence';
+  persistenceConfigured: boolean;
+  configuredStorePath: string | null;
+  storeStatus: 'not-configured' | 'configured-missing' | 'configured-readable' | 'configured-malformed';
+  evidenceAvailability: 'none' | 'partial' | 'full';
+  totalRequestCount: number | null;
+  pendingCount: number | null;
+  approvedCount: number | null;
+  rejectedCount: number | null;
+  expiredCount: number | null;
+  malformedRecordCount: number | null;
+  source: string[];
+  measuredAt: string;
+  blockers: string[];
+}
+
+export interface BrainCoreSimplificationReviewView {
+  id: 'simplification-review-view';
+  status: 'available' | 'missing';
+  source: 'mind-filesystem-scan';
+  generatedAt: string;
+  folderStructure: BrainCoreSimplificationReviewFolderStructure;
+  navigation: BrainCoreSimplificationReviewNavigation;
+  inboxAge: BrainCoreSimplificationReviewInboxAge;
+  maintenanceBacklog: BrainCoreSimplificationReviewMaintenanceBacklog;
+  falsePositiveRate: BrainCoreSimplificationReviewFalsePositiveRate;
+  approvalVolume: BrainCoreSimplificationReviewApprovalVolume;
+  blockers: string[];
+  safety: BrainCoreSimplificationReviewSafety;
+}
+
+export interface BrainCoreExecutionKillSwitch {
+  flagName: 'BRAIN_CORE_EXECUTION_KILL_SWITCH';
+  enabled: boolean;
+  blocksOnDemandRequests: true;
+  blocksApprovedExecution: true;
+  blocksSchedulerEligibility: true;
+  writesToMind: false;
 }
 
 export interface BrainCoreAiModelSelectorHealthMatrixModel {
@@ -5245,6 +5969,9 @@ export interface BrainCoreCapabilitySummary {
     mindStewardInboxQueueDryRunExecutionFlagEnabled?: boolean;
     mindStewardInboxQueueDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
     candidateActionKinds: string[];
+    workflowFeatureFlags: BrainCoreWorkflowFeatureFlag[];
+    featureFlaggedWorkflowCount: number;
+    enabledWorkflowFeatureFlagCount: number;
     readinessEndpoint: '/execution/readiness';
     plansEndpoint: '/execution/plans';
     firstCandidate: 'scheduler-run-mind-steward-dry-run';
@@ -5394,12 +6121,24 @@ export interface BrainCoreMindPreviewPolicySummary {
   requiredGates: string[];
 }
 
+export interface BrainCoreWorkflowFeatureFlag {
+  workflowId: BrainCoreExecutionPlan['kind'];
+  flagName: string;
+  enabled: boolean;
+  requiredForExecution: true;
+  defaultEnabled: false;
+  mode: 'report-only' | 'blocked-until-implementation';
+  writesToMind: false;
+  externalSideEffects: false;
+}
+
 export interface BrainCoreExecutionPlan {
   kind:
     | 'scheduler-run-mind-steward-dry-run'
     | 'scheduler-run-mind-steward-inbox-dry-run'
     | 'scheduler-run-mind-steward-inbox-classifier-dry-run'
     | 'scheduler-run-mind-steward-inbox-queue-dry-run'
+    | 'scheduler-run-mind-steward-large-file-nightly-fallback'
     | 'scheduler-run-graphify-preflight-mind'
     | 'scheduler-run-graphify-preflight-brain'
     | 'scheduler-run-graphify-update-mind-blocked'
@@ -5412,6 +6151,7 @@ export interface BrainCoreExecutionPlan {
     | 'scheduler-run-graphify-critical-rebuild-mind-selector-preview'
     | 'scheduler-run-infinite-brain-report-only-pipeline';
   candidate: true;
+  workflowFeatureFlag: BrainCoreWorkflowFeatureFlag;
   executionEnabled: false;
   mindStewardDryRunExecutionFlagEnabled: boolean;
   mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
@@ -5434,6 +6174,34 @@ export interface BrainCoreExecutionPlan {
   summary: string;
   mindPreviewPolicy: BrainCoreMindPreviewPolicySummary;
   steps: BrainCoreExecutionPlanStep[];
+}
+
+export interface BrainCoreOnDemandRunSummary {
+  kind: BrainCoreExecutionPlan['kind'];
+  summary: string;
+  requestEndpoint: string;
+  approvalKind: BrainCoreExecutionPlan['kind'];
+  onDemand: true;
+  schedulerRequired: false;
+  scheduled: false;
+  willRunImmediately: false;
+  requiresApproval: true;
+  featureFlag: BrainCoreWorkflowFeatureFlag;
+  safety: {
+    writesToMind: false;
+    externalSideEffects: false;
+    createsSchedulerJob: false;
+    startsBackgroundDaemon: false;
+  };
+}
+
+export interface BrainCoreOnDemandRunRequestResult extends BrainCoreActionRequestResult {
+  onDemandRun: {
+    kind: string;
+    schedulerRequired: false;
+    scheduled: false;
+    willRunImmediately: false;
+  };
 }
 
 export interface BrainCoreMindPreviewPolicyDocument {
@@ -5502,6 +6270,7 @@ export interface BrainCoreMaintenancePreviewDetail extends BrainCoreMaintenanceP
 
 export interface BrainCoreExecutionReadiness {
   executionEnabled: false;
+  killSwitch: BrainCoreExecutionKillSwitch;
   mindStewardDryRunExecutionFlagEnabled: boolean;
   mindStewardDryRunExecutionFlagName: 'BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION';
   mindStewardInboxDryRunExecutionFlagEnabled?: boolean;
@@ -5512,6 +6281,9 @@ export interface BrainCoreExecutionReadiness {
   mindStewardInboxQueueDryRunExecutionFlagName?: 'BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION';
   candidateCount: number;
   readyCandidateCount: number;
+  workflowFeatureFlags: BrainCoreWorkflowFeatureFlag[];
+  featureFlaggedWorkflowCount: number;
+  enabledWorkflowFeatureFlagCount: number;
   blockers: string[];
   writesToMind: false;
   executableActions: false;
@@ -5660,6 +6432,20 @@ export interface BrainCoreRoutes {
   };
   '/scheduler/status': BrainCoreSchedulerStatus;
   '/scheduler/latest-run': BrainCoreSchedulerStatus;
+  '/scheduler/mind-steward/latest-run': BrainCoreMindStewardLatestRunView;
+  '/scheduler/mind-steward/failed-items': BrainCoreMindStewardFailedItemsView;
+  '/scheduler/mind-steward/recovery': BrainCoreMindStewardRecoveryView;
+  '/scheduler/graphify/refresh-plan': BrainCoreGraphifyRefreshSchedule;
+  '/scheduler/mind-maintenance/report-only-plan': BrainCoreMindMaintenanceReportOnlySchedule;
+  '/scheduler/continuous-processing/selection': BrainCoreContinuousProcessingSelection;
+  '/scheduler/continuous-processing/stability': BrainCoreContinuousProcessingStabilityView;
+  '/scheduler/continuous-processing/concurrency': BrainCoreContinuousProcessingConcurrencyView;
+  '/scheduler/continuous-processing/failure-buffer': BrainCoreContinuousProcessingFailureBufferView;
+  '/scheduler/continuous-processing/large-file-fallback': BrainCoreContinuousProcessingLargeFileFallbackView;
+  '/scheduler/continuous-processing/large-file-fallback/plan': BrainCoreLargeFileNightlyFallbackPlan;
+  '/scheduler/continuous-processing/measurement': BrainCoreContinuousProcessingMeasurementView;
+  '/scheduler/continuous-processing/disable-recovery': BrainCoreContinuousProcessingDisableRecoveryView;
+  '/simplification-review': BrainCoreSimplificationReviewView;
   '/scheduler/jobs': {
     jobs: BrainCoreSchedulerJobSummary[];
   };
@@ -5702,6 +6488,10 @@ export interface BrainCoreRoutes {
   '/execution/plans/:kind': {
     plan?: BrainCoreExecutionPlan;
   };
+  '/execution/on-demand-runs': {
+    runs: BrainCoreOnDemandRunSummary[];
+  };
+  '/execution/on-demand-runs/:kind/request': BrainCoreOnDemandRunRequestResult;
   '/orchestrators': {
     orchestrators: BrainCoreOrchestratorSummary[];
   };
@@ -10696,6 +11486,62 @@ export interface AgentOrchestratorPlanResponse {
 
 export interface AgentOrchestratorApprovalResponse {
   ok: true;
+}
+
+// ── Continuous Processing Service ────────────────────────────────────────────
+
+export interface BrainCoreContinuousProcessingServiceSafety {
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  localOnly: true;
+  disabledByDefault: true;
+  requiresFeatureFlag: true;
+  requiresKillSwitchOff: true;
+}
+
+export interface BrainCoreContinuousProcessingServiceStatus {
+  id: 'continuous-processing-service';
+  running: boolean;
+  enabled: boolean;
+  pollingIntervalMs: number;
+  iterationCount: number;
+  lastIterationAt: string | null;
+  lastRunAt: string | null;
+  runCount: number;
+  failureCount: number;
+  consecutiveFailures: number;
+  paused: boolean;
+  pausedReason: string | null;
+  safety: BrainCoreContinuousProcessingServiceSafety;
+}
+
+export interface BrainCoreQueueStateRecoverySafety {
+  writesToMind: false;
+  movesCaptures: false;
+  deletesCaptures: false;
+  writesKanban: false;
+  preservesDiagnosticEvidence: boolean;
+  reconstructsFromMindReadOnly: true;
+}
+
+export interface BrainCoreQueueStateRecoveryResult {
+  id: 'queue-state-recovery';
+  status: 'healthy' | 'reconstructed' | 'reconstruction-failed' | 'paused' | 'no-action-needed';
+  source: 'brain-runtime-queue-state';
+  malformedDetected: boolean;
+  malformedPreservedAt: string | null;
+  reconstructionAttempted: boolean;
+  reconstructionSucceeded: boolean;
+  reconstructionFailureCount: number;
+  paused: boolean;
+  pausedReason: string | null;
+  mindMutated: false;
+  capturesMoved: false;
+  capturesDeleted: false;
+  blockers: string[];
+  safety: BrainCoreQueueStateRecoverySafety;
 }
 
 // ── Video Orchestrator Metadata ───────────────────────────────────────────────

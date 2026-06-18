@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { getExecutionKillSwitch } from './execution-plans.js';
 import type { BrainCoreSchedulerJobSummary, BrainCoreSchedulerStatus } from '../types/api.js';
 
 interface MindStewardRuntimeReport {
@@ -9,6 +10,8 @@ interface MindStewardRuntimeReport {
   endedAtLisbon?: string;
   durationSeconds?: number;
   mode?: string;
+  trigger?: string;
+  manualSuccess?: boolean;
   writesToMind?: boolean;
   executableActions?: boolean;
 }
@@ -109,91 +112,127 @@ export function listSchedulerJobs(): BrainCoreSchedulerJobSummary[] {
   const infiniteBrainReportStatus = infiniteBrainReport ? toJobStatus(infiniteBrainReport.status) : 'placeholder';
 
   return [
-    {
+    withSchedulerManualSuccessGate({
       id: 'mind-compile-loop',
       name: 'Mind compile loop',
       status: 'placeholder',
       mutationRequired: true,
-    },
-    {
+    }),
+    withSchedulerManualSuccessGate({
       id: 'mind-memory-loop',
       name: 'Mind memory loop',
       status: 'placeholder',
       mutationRequired: true,
-    },
-    {
+    }),
+    withSchedulerManualSuccessGate({
       id: 'mind-hygiene-loop',
       name: 'Mind hygiene loop',
       status: 'placeholder',
       mutationRequired: true,
-    },
-    {
+    }),
+    withSchedulerManualSuccessGate({
       id: 'mind-drift-error-loop',
       name: 'Mind drift/error loop',
       status: 'placeholder',
       mutationRequired: false,
-    },
-    {
+    }),
+    withSchedulerManualSuccessGate({
       id: 'mind-steward-dry-run',
       name: 'Mind Steward dry-run report',
       status: reportStatus,
       mutationRequired: false,
-    },
-    {
+    }, report, 'scheduler-run-mind-steward-dry-run'),
+    withSchedulerManualSuccessGate({
       id: 'mind-maintenance-report-only',
       name: 'Mind maintenance report-only review',
       status: reportStatus,
       mutationRequired: false,
-    },
-    {
+    }, report, 'scheduler-run-mind-steward-dry-run'),
+    withSchedulerManualSuccessGate({
       id: 'mind-steward-inbox-dry-run',
       name: 'Mind Steward inbox dry-run report',
       status: inboxReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, inboxReport, 'scheduler-run-mind-steward-inbox-dry-run'),
+    withSchedulerManualSuccessGate({
       id: 'mind-steward-inbox-classifier-dry-run',
       name: 'Mind Steward inbox classifier dry-run report',
       status: inboxClassifierReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, inboxClassifierReport, 'scheduler-run-mind-steward-inbox-classifier-dry-run'),
+    withSchedulerManualSuccessGate({
       id: 'mind-steward-inbox-queue-dry-run',
       name: 'Mind Steward inbox queue dry-run report',
       status: inboxQueueReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, inboxQueueReport, 'scheduler-run-mind-steward-inbox-queue-dry-run'),
+    withSchedulerManualSuccessGate({
+      id: 'mind-steward-large-file-nightly-fallback',
+      name: 'Mind Steward large-file nightly fallback',
+      status: 'placeholder',
+      mutationRequired: false,
+    }, undefined, 'scheduler-run-mind-steward-large-file-nightly-fallback'),
+    withSchedulerManualSuccessGate({
       id: 'graphify-preflight-mind',
       name: 'Graphify Mind preflight report',
       status: graphifyMindReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, graphifyMindReport, 'scheduler-run-graphify-preflight-mind'),
+    withSchedulerManualSuccessGate({
       id: 'graphify-preflight-brain',
       name: 'Graphify Brain preflight report',
       status: graphifyBrainReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, graphifyBrainReport, 'scheduler-run-graphify-preflight-brain'),
+    withSchedulerManualSuccessGate({
       id: 'graphify-update-mind-blocked',
       name: 'Graphify Mind guarded update blocked report',
       status: graphifyMindReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, graphifyMindReport, 'scheduler-run-graphify-update-mind-blocked'),
+    withSchedulerManualSuccessGate({
       id: 'graphify-update-brain-blocked',
       name: 'Graphify Brain guarded update blocked report',
       status: graphifyBrainReportStatus,
       mutationRequired: false,
-    },
-    {
+    }, graphifyBrainReport, 'scheduler-run-graphify-update-brain-blocked'),
+    withSchedulerManualSuccessGate({
       id: 'infinite-brain-report-only-pipeline',
       name: 'Infinite Brain report-only pipeline',
       status: infiniteBrainReportStatus,
       mutationRequired: false,
-    },
+    }, infiniteBrainReport, 'scheduler-run-infinite-brain-report-only-pipeline'),
   ];
+}
+
+function withSchedulerManualSuccessGate(
+  job: Pick<BrainCoreSchedulerJobSummary, 'id' | 'name' | 'status' | 'mutationRequired'>,
+  report?: Pick<MindStewardRuntimeReport, 'status' | 'trigger' | 'manualSuccess'>,
+  workflowKind?: string,
+): BrainCoreSchedulerJobSummary {
+  const manualSuccessProven = Boolean(report && toJobStatus(report.status) === 'ok' && (report.manualSuccess === true || report.trigger === 'on-demand'));
+  const killSwitch = getExecutionKillSwitch();
+  const blockers: string[] = [];
+  if (killSwitch.enabled) blockers.push('executionKillSwitchEnabled');
+  if (!workflowKind) blockers.push('schedulerWorkflowNotMappedToOnDemandRun');
+  if (job.mutationRequired) blockers.push('schedulerJobRequiresFutureApprovedMutationPolicy');
+  if (!manualSuccessProven) blockers.push('manualOnDemandSuccessRequiredBeforeScheduling');
+
+  return {
+    ...job,
+    ...(workflowKind ? { workflowKind } : {}),
+    manualSuccessRequired: true,
+    manualSuccessProven,
+    schedulerEligible: blockers.length === 0,
+    schedulerEnabled: false,
+    blockers,
+    safety: {
+      writesToMind: false,
+      createsSchedulerJob: false,
+      startsBackgroundDaemon: false,
+      requiresManualSuccessBeforeScheduling: true,
+    },
+  };
 }
 
 function readMindStewardRuntimeReport(reportFileName: string): MindStewardRuntimeReport | undefined {
@@ -215,7 +254,7 @@ function readMindStewardRuntimeReport(reportFileName: string): MindStewardRuntim
   }
 }
 
-function readGraphifyRuntimeReport(reportFileName: string): { status?: string } | undefined {
+function readGraphifyRuntimeReport(reportFileName: string): { status?: string; trigger?: string; manualSuccess?: boolean } | undefined {
   const resolvedReportPath = path.resolve(process.cwd(), '../..', 'runtime/local/graphify', reportFileName);
 
   if (!fs.existsSync(resolvedReportPath)) {
@@ -223,7 +262,7 @@ function readGraphifyRuntimeReport(reportFileName: string): { status?: string } 
   }
 
   try {
-    return JSON.parse(fs.readFileSync(resolvedReportPath, 'utf8')) as { status?: string };
+    return JSON.parse(fs.readFileSync(resolvedReportPath, 'utf8')) as { status?: string; trigger?: string; manualSuccess?: boolean };
   } catch {
     return { status: 'failed' };
   }

@@ -125,3 +125,105 @@ test('allows create only when the before hash is null', () => {
 
   assert.deepEqual(errors, []);
 });
+
+
+
+
+test('accepts valid preserved source references', () => {
+  const reference = {
+    path: 'sources/research/example.md',
+    location: '## Evidence',
+    summary: 'Supports the approved wiki update.',
+  };
+  const proposalWithReference: ProposalRecord = { ...proposal, sourceReferences: [reference] };
+  const errors = validateExactPathWikiApproval(
+    proposalWithReference,
+    validApproval({ sourceReferences: [reference] }),
+    new Date('2026-06-17T13:00:00Z'),
+  );
+  assert.deepEqual(errors, []);
+});
+
+test('rejects invalid source-reference paths', () => {
+  const invalidPaths = [
+    'sources/',
+    'sources/**/*.md',
+    'sources/../wiki/example.md',
+    '/sources/example.md',
+    'sources\\example.md',
+    'wiki/example.md',
+    'sources/example.txt',
+  ];
+
+  for (const sourcePath of invalidPaths) {
+    const errors = validateExactPathWikiApproval(
+      proposal,
+      validApproval({
+        sourceReferences: [{
+          path: sourcePath,
+          location: '## Evidence',
+          summary: 'Supporting evidence.',
+        }],
+      }),
+      new Date('2026-06-17T13:00:00Z'),
+    );
+    assert(errors.includes(`invalid-source-reference-path:${sourcePath}`));
+  }
+});
+
+test('rejects source references with missing location or summary', () => {
+  const missingLocation = validateExactPathWikiApproval(
+    proposal,
+    validApproval({
+      sourceReferences: [{ path: 'sources/example.md', location: ' ', summary: 'Evidence.' }],
+    }),
+    new Date('2026-06-17T13:00:00Z'),
+  );
+  assert(missingLocation.includes('source-reference-location-required:sources/example.md'));
+
+  const missingSummary = validateExactPathWikiApproval(
+    proposal,
+    validApproval({
+      sourceReferences: [{ path: 'sources/example.md', location: '## Evidence', summary: ' ' }],
+    }),
+    new Date('2026-06-17T13:00:00Z'),
+  );
+  assert(missingSummary.includes('source-reference-summary-required:sources/example.md'));
+});
+
+test('rejects removal of an existing source reference without replacement approval', () => {
+  const existingReference = {
+    path: 'sources/existing.md',
+    location: 'lines 10-20',
+    summary: 'Existing supporting evidence.',
+  };
+  const errors = validateExactPathWikiApproval(
+    { ...proposal, sourceReferences: [existingReference] },
+    validApproval({ sourceReferences: [] }),
+    new Date('2026-06-17T13:00:00Z'),
+  );
+  assert(errors.includes('existing-source-reference-must-be-preserved:sources/existing.md'));
+});
+
+test('accepts explicitly approved replacement source references', () => {
+  const errors = validateExactPathWikiApproval(
+    {
+      ...proposal,
+      sourceReferences: [{
+        path: 'sources/old.md',
+        location: '## Old evidence',
+        summary: 'Previously approved evidence.',
+      }],
+    },
+    validApproval({
+      replaceSourceReferences: true,
+      sourceReferences: [{
+        path: 'sources/new.md',
+        location: '## New evidence',
+        summary: 'Explicit approved replacement evidence.',
+      }],
+    }),
+    new Date('2026-06-17T13:00:00Z'),
+  );
+  assert.deepEqual(errors, []);
+});

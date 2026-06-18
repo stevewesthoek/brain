@@ -9,6 +9,11 @@ export * from './writer-atomization.js';
 export * from './writer-metadata.js';
 export * from './writer-edges.js';
 export * from './writer-wiki.js';
+export * from './writer-live-status.js';
+export * from './writer-supersede-archive.js';
+export * from './writer-source-routing.js';
+export * from './writer-audit-log.js';
+export * from './writer-recovery-procedure.js';
 export * from './writer-tasks.js';
 export * from './writer-cleanup.js';
 

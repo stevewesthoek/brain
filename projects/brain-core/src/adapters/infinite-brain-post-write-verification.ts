@@ -179,6 +179,36 @@ function performPostWriteVerificationChecks(
 
   // Check 4+: exact-path wiki approval and manifest scope
   const wikiEntries = writeManifest?.entries.filter(entry => entry.category === 'wiki-writing') ?? [];
+  if (!manifestExists) {
+    checks.push({
+      checkId: `check-${checkIndex++}`,
+      label: 'source-reference-preserved',
+      status: 'blocked',
+      reason: 'Write manifest is unavailable, so source-reference preservation cannot be verified.',
+    });
+  } else if (wikiEntries.length === 0) {
+    checks.push({
+      checkId: `check-${checkIndex++}`,
+      label: 'source-reference-preserved',
+      status: 'blocked',
+      reason: 'No relevant wiki manifest entries are available for source-reference verification.',
+    });
+  } else {
+    for (const entry of wikiEntries) {
+      const preservationEvidencePresent = entry.sourceReferencesPreserved === true
+        && entry.validationRequired.includes('source-reference-preserved')
+        && entry.exactPathApprovalValid === true;
+      checks.push({
+        checkId: `check-${checkIndex++}`,
+        label: 'source-reference-preserved',
+        status: preservationEvidencePresent ? 'pass' : 'fail',
+        reason: preservationEvidencePresent
+          ? `Manifest entry ${entry.entryId} preserves its approved source references.`
+          : `Manifest entry ${entry.entryId} is missing valid source-reference preservation evidence.`,
+      });
+    }
+  }
+
   const exactPathsValid = wikiEntries.length > 0 && wikiEntries.every(entry =>
     entry.exactPathApprovalValid === true
     && entry.targetPathsPreview.length > 0
