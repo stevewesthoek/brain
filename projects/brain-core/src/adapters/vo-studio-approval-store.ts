@@ -137,7 +137,7 @@ export function decideVOApproval(
   approvalId: string,
   decision: 'approved' | 'rejected',
   note?: string,
-): { ok: boolean; error?: string } {
+): { ok: boolean; error?: string; approval?: VOApprovalRecord } {
   const records = readAllApprovals();
   const idx = records.findIndex((r) => r.id === approvalId);
 
@@ -169,7 +169,7 @@ export function decideVOApproval(
   };
 
   writeAllApprovals(records);
-  return { ok: true };
+  return { ok: true, approval: records[idx] };
 }
 
 /**

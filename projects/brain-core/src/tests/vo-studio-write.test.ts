@@ -816,39 +816,75 @@ test('finalApprovalRequest rejects missing packageId', () => {
   assert.match(result.error!, /packageId is required/);
 });
 
-test('publishPackageRequest accepts immediate publish', () => {
+test('publishPackageRequest accepts one immediate YouTube job target', () => {
   const result = publishPackageRequest({
     packageId: 'pkg-123',
+    jobId: 'job-moving-video-123',
+    postingTarget: { platformId: 'youtube', accountId: 'acct-stb-youtube' },
+    confirmation: 'publish approved moving video to YouTube',
   });
 
   assert.equal(result.ok, true);
   assert.ok(result.approval);
   assert.ok(result.preview);
   assert.equal(result.preview!.package!.status, 'publishing');
+  assert.equal(result.preview!.package!.jobId, 'job-moving-video-123');
+  assert.deepEqual(result.preview!.package!.postingTarget, {
+    platformId: 'youtube',
+    accountId: 'acct-stb-youtube',
+  });
   assert.ok(result.preview!.package!.publishedAt);
-  assert.equal(result.preview!.package!.scheduledAt, undefined);
 });
 
-test('publishPackageRequest accepts scheduled publish', () => {
-  const scheduledTime = new Date(Date.now() + 3600000).toISOString();
+test('publishPackageRequest rejects scheduled direct YouTube publishing', () => {
   const result = publishPackageRequest({
     packageId: 'pkg-123',
-    scheduleAt: scheduledTime,
+    jobId: 'job-moving-video-123',
+    postingTarget: { platformId: 'youtube', accountId: 'acct-stb-youtube' },
+    confirmation: 'publish approved moving video to YouTube',
+    scheduleAt: new Date(Date.now() + 3600000).toISOString(),
   });
 
-  assert.equal(result.ok, true);
-  assert.equal(result.preview!.package!.status, 'scheduled');
-  assert.equal(result.preview!.package!.scheduledAt, scheduledTime);
-  assert.equal(result.preview!.package!.publishedAt, undefined);
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /scheduled publishing is not supported/);
 });
 
 test('publishPackageRequest rejects missing packageId', () => {
   const result = publishPackageRequest({
     packageId: '',
+    jobId: 'job-moving-video-123',
+    postingTarget: { platformId: 'youtube', accountId: 'acct-stb-youtube' },
+    confirmation: 'publish approved moving video to YouTube',
   });
 
   assert.equal(result.ok, false);
   assert.match(result.error!, /packageId is required/);
+});
+
+test('publishPackageRequest rejects a non-YouTube target', () => {
+  const result = publishPackageRequest({
+    packageId: 'pkg-123',
+    jobId: 'job-moving-video-123',
+    postingTarget: { platformId: 'tiktok', accountId: 'acct-tiktok' },
+    confirmation: 'publish approved moving video',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /postingTarget.platformId must be youtube/);
+});
+
+test('publishPackageRequest rejects missing job, account, and confirmation binding', () => {
+  const result = publishPackageRequest({
+    packageId: 'pkg-123',
+    jobId: '',
+    postingTarget: { platformId: 'youtube', accountId: '' },
+    confirmation: '',
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.error!, /jobId is required/);
+  assert.match(result.error!, /postingTarget.accountId is required/);
+  assert.match(result.error!, /confirmation is required/);
 });
 
 test('batchPublishRequest accepts multiple packages', () => {
