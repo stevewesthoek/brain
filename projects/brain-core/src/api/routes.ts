@@ -4661,19 +4661,32 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
 
   if (url.pathname === '/api/video-orchestrator/package/publish') {
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
-    const publishReq: {
-      packageId: string;
-      scheduleAt?: string;
-    } = {
+    const postingTargetRaw = (body?.postingTarget as Record<string, unknown> | undefined) ?? {};
+    const publishReq = {
       packageId: (body?.packageId as string) ?? '',
+      jobId: (body?.jobId as string) ?? '',
+      postingTarget: {
+        platformId: (postingTargetRaw.platformId as string) ?? '',
+        accountId: (postingTargetRaw.accountId as string) ?? '',
+      },
+      confirmation: (body?.confirmation as string) ?? '',
+      ...(body?.scheduleAt !== undefined ? { scheduleAt: body.scheduleAt as string } : {}),
     };
 
-    if (body?.scheduleAt !== undefined) {
-      publishReq.scheduleAt = body.scheduleAt as string;
+    const validation = publishPackageRequest(publishReq);
+    if (!validation.ok || !validation.preview) {
+      sendJson(response, 400, validation);
+      return;
     }
 
-    const result = publishPackageRequest(publishReq);
-    sendJson(response, result.ok ? 202 : 400, result);
+    const upload = await runControlledYouTubePublish(validation.preview.package.jobId, {
+      dryRun: false,
+      confirmation: publishReq.confirmation,
+    });
+    sendJson(response, upload.ok ? 200 : 400, {
+      ...upload,
+      package: validation.preview.package,
+    });
     return;
   }
 
@@ -4829,11 +4842,30 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
     const body = (await readJsonBody(request)) as Record<string, unknown> | null;
     const note = (body?.note as string | undefined) ?? (body?.reason as string | undefined);
     const result = decideVOApproval(approvalId, decision === 'approve' ? 'approved' : 'rejected', note);
-    sendJson(response, result.ok ? 200 : 422, {
-      ok: result.ok,
+
+    let dispatch: Awaited<ReturnType<typeof import('../providers/video-orchestrator-provider.js')['dispatchApprovedMovingVideoContent']>> | undefined;
+    if (result.ok && decision === 'approve' && result.approval?.type === 'content') {
+      const payload = result.approval.requestPayload;
+      const sourceVideoPath = typeof payload.sourceVideoPath === 'string' ? payload.sourceVideoPath : '';
+      if (sourceVideoPath) {
+        const { dispatchApprovedMovingVideoContent } = await import('../providers/video-orchestrator-provider.js');
+        dispatch = await dispatchApprovedMovingVideoContent({
+          approvalId: result.approval.id,
+          projectId: result.approval.projectId,
+          title: typeof payload.title === 'string' ? payload.title : '',
+          description: typeof payload.description === 'string' ? payload.description : '',
+          sourceVideoPath,
+        });
+      }
+    }
+
+    const ok = result.ok && (!dispatch || dispatch.ok);
+    sendJson(response, ok ? 200 : 422, {
+      ok,
       approvalId,
       decision,
       ...(result.error ? { error: result.error } : {}),
+      ...(dispatch ? { dispatch } : {}),
     });
     return;
   }
