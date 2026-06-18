@@ -11,6 +11,7 @@
 | MCP Server | Status | Setup Location |
 |-----------|--------|-----------------|
 | **Google Stitch** | ✅ Active | `stitch/` — Centralized setup for all IDEs |
+| **Open Design** | 📋 TBD | TBD — needs architecture decision |
 
 ---
 

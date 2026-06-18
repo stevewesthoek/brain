@@ -213,8 +213,8 @@ See: `MASTER-MCP-SETUP.md` → "Adding a New MCP Server" checklist
 |-----------|--------|---|
 | Claude Code | ✅ Active | 2026-06-17 |
 | Codex | ✅ Active | 2026-06-17 |
-| Kiro | ⚠️ Pending | Setup needed |
-| Cursor | ⚠️ Pending | Setup needed |
+| Kiro | ✅ Automated | 2026-06-18 |
+| Cursor | ✅ Automated | 2026-06-18 |
 | Antigravity | ✅ Active | 2026-06-17 |
 | Gemini CLI | ✅ Active | Automatic |
 

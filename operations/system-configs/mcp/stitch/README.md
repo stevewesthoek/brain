@@ -8,14 +8,14 @@ Runtime auth state must stay in your home directory and must not be committed to
 
 ## Quick Status
 
-| Tool | Status | Config |
-|------|--------|--------|
-| **Claude Code** | ✅ Active | `~/.claude.json` (merge `claude-code-config.template.json`) |
-| **Codex** | ✅ Active | `~/.codex/config.toml` (in sync with `codex-config.template.toml`) |
-| **Kiro** | ✅ Active | `~/.kiro/settings.json` (merge `kiro-config.template.json`) |
-| **Cursor** | ✅ Active | `~/.cursor/settings.json` (merge `cursor-config.template.json`) |
-| **Antigravity** | ✅ Active | `~/Library/Application Support/Antigravity/User/mcp.json` (symlink to centralized ignored file) |
-| **Gemini CLI** | ✅ Active | Via context-mode (automatic, no config needed) |
+| Tool | Status | Config | Setup |
+|------|--------|--------|-------|
+| **Claude Code** | ✅ Active | `~/.claude.json` | Manual merge or run setup script |
+| **Codex** | ✅ Active | `~/.codex/config.toml` | Automatic (symlinked from brain) |
+| **Kiro** | ✅ Active | `~/.kiro/settings.json` | Automatic via setup script |
+| **Cursor** | ✅ Active | `~/.cursor/settings.json` | Automatic via setup script |
+| **Antigravity** | ✅ Active | `~/Library/Application Support/Antigravity/User/mcp.json` | Automatic via setup script (symlink) |
+| **Gemini CLI** | ✅ Active | `~/.gemini/config/mcp_config.json` | Automatic (already configured in brain) |
 
 ## Repo Contents
 

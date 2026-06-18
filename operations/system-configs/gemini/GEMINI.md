@@ -91,9 +91,9 @@ Use active `/skill-name` entries directly when available. For dormant skills, co
 - `/firecrawl` — Bulk web scraping (process 50+ URLs in one request via your 1M token context)
 - Large-context tasks (>100k tokens) — preprocess and compact for Claude
 
-**Not supported on Gemini:**
-- MCP servers — Gemini CLI does not use MCP architecture; use shared skills instead
-- Codex-specific tools (Stitch, OpenAI plugins) — not available in Gemini
+**MCP servers on Gemini:**
+- **Google Stitch MCP** — ✅ Available automatically via context-mode (no manual config needed)
+- Codex-specific tools (OpenAI plugins) — not available in Gemini
 - Real-time streaming (use Claude Code for interactive sessions)
 
 **Best practice:**

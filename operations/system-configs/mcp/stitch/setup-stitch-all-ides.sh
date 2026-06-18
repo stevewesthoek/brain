@@ -86,31 +86,53 @@ echo ""
 
 # 4. Kiro
 echo "📝 Step 4: Kiro (~/.kiro/settings.json)"
-if [ -f ~/.kiro/settings.json ]; then
-    STITCH_CONFIG=$(cat "$STITCH_DIR/kiro-config.template.json" | jq '.mcpServers.stitch')
-    if jq -e '.mcpServers.stitch' ~/.kiro/settings.json &>/dev/null; then
-        echo "  ✅ Stitch already in ~/.kiro/settings.json"
-    else
-        echo "  ⚙️  Adding Stitch to ~/.kiro/settings.json..."
-        merge_json ~/.kiro/settings.json "stitch" "$STITCH_CONFIG"
-    fi
+KIRO_CONFIG_DIR=~/.kiro
+if [ ! -d "$KIRO_CONFIG_DIR" ]; then
+    echo "  ⚠️  Kiro not installed yet (create it first, then re-run this script)"
+    echo "     Or manually add using Kiro UI: Settings → Extensions → MCP Servers"
 else
-    echo "  ⚠️  ~/.kiro/settings.json not found (create it in Kiro)"
+    if [ -f "$KIRO_CONFIG_DIR/settings.json" ]; then
+        STITCH_CONFIG=$(cat "$STITCH_DIR/kiro-config.template.json" | jq '.mcpServers.stitch')
+        if jq -e '.mcpServers.stitch' "$KIRO_CONFIG_DIR/settings.json" &>/dev/null; then
+            echo "  ✅ Stitch already in Kiro settings.json"
+        else
+            echo "  ⚙️  Adding Stitch to Kiro settings.json..."
+            merge_json "$KIRO_CONFIG_DIR/settings.json" "stitch" "$STITCH_CONFIG"
+        fi
+    else
+        # Create settings.json with Stitch config
+        echo "  ⚙️  Creating Kiro settings.json with Stitch..."
+        mkdir -p "$KIRO_CONFIG_DIR"
+        STITCH_CONFIG=$(cat "$STITCH_DIR/kiro-config.template.json")
+        echo "$STITCH_CONFIG" > "$KIRO_CONFIG_DIR/settings.json"
+        echo "  ✅ Kiro settings.json created with Stitch MCP"
+    fi
 fi
 echo ""
 
 # 5. Cursor
 echo "📝 Step 5: Cursor (~/.cursor/settings.json)"
-if [ -f ~/.cursor/settings.json ]; then
-    STITCH_CONFIG=$(cat "$STITCH_DIR/cursor-config.template.json" | jq '.mcpServers.stitch')
-    if jq -e '.mcpServers.stitch' ~/.cursor/settings.json &>/dev/null; then
-        echo "  ✅ Stitch already in ~/.cursor/settings.json"
-    else
-        echo "  ⚙️  Adding Stitch to ~/.cursor/settings.json..."
-        merge_json ~/.cursor/settings.json "stitch" "$STITCH_CONFIG"
-    fi
+CURSOR_CONFIG_DIR=~/.cursor
+if [ ! -d "$CURSOR_CONFIG_DIR" ]; then
+    echo "  ⚠️  Cursor not installed yet (create it first, then re-run this script)"
+    echo "     Or manually add using Cursor UI: Settings → Extensions → MCP Servers"
 else
-    echo "  ⚠️  ~/.cursor/settings.json not found (create it in Cursor)"
+    if [ -f "$CURSOR_CONFIG_DIR/settings.json" ]; then
+        STITCH_CONFIG=$(cat "$STITCH_DIR/cursor-config.template.json" | jq '.mcpServers.stitch')
+        if jq -e '.mcpServers.stitch' "$CURSOR_CONFIG_DIR/settings.json" &>/dev/null; then
+            echo "  ✅ Stitch already in Cursor settings.json"
+        else
+            echo "  ⚙️  Adding Stitch to Cursor settings.json..."
+            merge_json "$CURSOR_CONFIG_DIR/settings.json" "stitch" "$STITCH_CONFIG"
+        fi
+    else
+        # Create settings.json with Stitch config
+        echo "  ⚙️  Creating Cursor settings.json with Stitch..."
+        mkdir -p "$CURSOR_CONFIG_DIR"
+        STITCH_CONFIG=$(cat "$STITCH_DIR/cursor-config.template.json")
+        echo "$STITCH_CONFIG" > "$CURSOR_CONFIG_DIR/settings.json"
+        echo "  ✅ Cursor settings.json created with Stitch MCP"
+    fi
 fi
 echo ""
 

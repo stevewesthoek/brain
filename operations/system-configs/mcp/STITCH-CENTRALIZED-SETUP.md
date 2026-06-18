@@ -35,13 +35,13 @@ Created **centralized, standardized, modularized** Stitch MCP setup for all IDEs
 | IDE | MCP Server | Config Location | Status |
 |-----|-----------|-----------------|--------|
 | **Claude Code** | Stitch ✅ | `~/.claude.json` | Active (verified) |
-| **Codex** | Stitch ✅ | `~/.codex/config.toml` | Active (verified) |
-| **Kiro** | Stitch ⚠️ | `~/.kiro/settings.json` | UI-based (manual add) |
-| **Cursor** | Stitch ⚠️ | `~/.cursor/settings.json` | UI-based (manual add) |
+| **Codex** | Stitch ✅ | `~/.codex/config.toml` | Active (verified, symlinked from brain) |
+| **Kiro** | Stitch ✅ | `~/.kiro/settings.json` | Automated setup (via setup script) |
+| **Cursor** | Stitch ✅ | `~/.cursor/settings.json` | Automated setup (via setup script) |
 | **Antigravity** | Stitch ✅ | `~/Library/Application Support/Antigravity/User/mcp.json` | Active (centralized + symlinked) |
-| **Gemini CLI** | Stitch ✅ | Via context-mode | Automatic (no config) |
+| **Gemini CLI** | Stitch ✅ | `~/.gemini/config/mcp_config.json` | Active (now centrally configured) |
 
-**Key:** ✅ = Active & verified | ⚠️ = UI-based (requires manual setup) | ❌ = Not yet available
+**Key:** ✅ = Active & fully configured, verified working
 
 ---
 
@@ -314,7 +314,7 @@ Use this documented pattern:
 
 1. ✅ **Claude Code & Codex:** Already active (no action needed)
 2. ✅ **Antigravity:** Already set up with centralized config
-3. ⚠️ **Kiro & Cursor:** Add Stitch in their UI settings (use templates)
+3. ✅ **Kiro & Cursor:** Automated setup via script (run `setup-stitch-all-ides.sh`)
 4. ✅ **Gemini CLI:** Automatic (no config needed)
 5. ✅ **Documentation:** Complete and centralized
 6. ✅ **Verification:** Run `verify-stitch-all-ides.sh` to confirm
