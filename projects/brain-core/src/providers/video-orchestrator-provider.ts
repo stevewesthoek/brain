@@ -43,7 +43,7 @@ const VIDEO_FIXTURE_KEY = 'jobs/test-001/exports/sample-transcoded.mp4';
 const STEP_FUNCTIONS_EXECUTION_NAME_MAX = 80;
 const S3_DISCOVERY_LIMIT = 100;
 const S3_METADATA_TIMEOUT_MS = 1_200;
-const S3_HEAD_TIMEOUT_MS = 800;
+const S3_HEAD_TIMEOUT_MS = 3_000;
 const S3_PUBLISH_ASSET_TIMEOUT_MS = 10_000;
 const S3_VIDEO_DOWNLOAD_TIMEOUT_MS = 15_000;
 const RECENT_JOB_HYDRATION_CONCURRENCY = 3;
@@ -1663,6 +1663,25 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     const youtubeStatus = typeof youtube?.status === 'string' ? youtube.status : null;
     if (existingVideoId || youtubeStatus === 'uploaded' || youtubeStatus === 'published') {
       return { ok: false, jobId, dryRun: true, code: 'already_uploaded', error: 'YouTube upload already exists for this job', videoId: existingVideoId, url: typeof youtube?.url === 'string' ? youtube.url : null };
+    }
+
+    // For approved-video-* jobs, publish.json may not yet exist in S3 (the upload script requires it).
+    // Initialize it with a minimal pending record before calling the script.
+    if (!publishJson.videoKey) {
+      const initialPublish = {
+        jobId,
+        publishStatus: 'pending',
+        videoKey: canonicalVideoKey,
+        thumbnailKey: canonicalThumbnailKey,
+        platforms: {},
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+        await mkdir(metadataDir, { recursive: true });
+        await writeFile(join(metadataDir, 'publish.json'), `${JSON.stringify(initialPublish, null, 2)}\n`, 'utf-8');
+        await writeS3MetadataJson(jobId, 'publish.json', initialPublish as unknown as Record<string, unknown>);
+      } catch (_) { /* non-fatal: script will fail cleanly if S3 write fails */ }
     }
 
     const scriptPath = join(getVideoOrchestratorRoot(), 'scripts', 'youtube-upload-local.sh');

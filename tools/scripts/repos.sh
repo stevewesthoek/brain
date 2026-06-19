@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# repos — unified repo picker for Claude, Codex, and Gemini.
+# repos — unified repo picker for Claude, Codex, Gemini, and Qwen.
 # Invoked as the `repos` shell function (defined in ~/.zshrc).
 #
 # Step 1: pick AI tool with fzf.
@@ -9,6 +9,8 @@
 # Repo list is cached at ~/.claude/cache/repos.json and rescanned in the
 # background on every run to stay fresh. Usage timestamps are tracked in
 # ~/.claude/cache/repo_usage.json so recently opened repos float to the top.
+#
+# Qwen: Local terminal coding agent (Aider) with Qwen 3.6 27B MTP-accelerated.
 
 CACHE_FILE="$HOME/.claude/cache/repos.json"
 USAGE_FILE="$HOME/.claude/cache/repo_usage.json"
@@ -81,7 +83,7 @@ launch_claude() {
 }
 
 # Step 1: pick AI tool
-tool=$(printf "Claude\nCodex" | fzf \
+tool=$(printf "Claude\nCodex\nQwen" | fzf \
   --prompt="  open with: " \
   --height=10 \
   --layout=reverse \
@@ -123,4 +125,6 @@ if [[ "$tool" == "Claude" ]]; then
   launch_claude
 elif [[ "$tool" == "Codex" ]]; then
   exec codex
+elif [[ "$tool" == "Qwen" ]]; then
+  exec qwen
 fi

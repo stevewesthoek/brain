@@ -281,7 +281,7 @@ This phase is retained only as historical context. Gemini is disabled and is not
 
 **Goal:** Prevent unauthorized publishing by requiring explicit thumbnail and metadata approvals before package queueing and direct YouTube upload.
 
-**Status:** In progress. Tasks 1W-A through 1W-H are complete. Task 1W-H now enforces one bound YouTube target, controlled publishing through the existing OAuth2 adapter, duplicate/idempotency protection, exact live confirmation, and persisted successful dry-run proof. Task 1W-I automated verification is complete with the focused Phase 1W suite passing 44/44, including cross-stage audit history, approval gates, deterministic failures, package routing, and live-upload safety gates. A verified blocker remains before the live exit criterion: the real moving-video content intake route creates a pending content approval, but approving that record only updates the VO approval store. No content-specific commit handler currently converts the approved moving-video `ContentItem` into a canonical Video Orchestrator production job, writes the required job metadata, or starts the configured Amazon execution. The legacy approved-script path is fixture-backed and is not eligible. Sprint 1W remains open until this approved-content-to-production-job dispatch connection is completed and one real operator-confirmed moving-video-to-YouTube upload succeeds.
+**Status:** In progress — verification infrastructure complete; real pipeline run required. Tasks 1W-A through 1W-H are complete. Task 1W-H now enforces one bound YouTube target, controlled publishing through the existing OAuth2 adapter, duplicate/idempotency protection, exact live confirmation, and persisted successful dry-run proof. **Task 1W-I.1 (approved-content-to-production-job dispatch) is complete** — npm run test:phase-1w-approved-content-dispatch passes all 7 tests (327.6 ms): approved moving-video content items now dispatch to production jobs with canonical metadata (assets.json, status.json), persisted source video binding, and verified Amazon Step Functions execution start. All safety gates active: non-S3, fixture, slideshow, and test-001 sources are rejected; idempotency is preserved per approval; no create-from-prompt or fixture-backed paths are used. Task 1W-I automated verification is complete with the focused Phase 1W suite passing 44/44. **Task 1W-I.2 verification infrastructure complete (2026-06-19):** the missing `test:phase-1w-publish-readiness` (12 tests pass), `test:phase-1w-publish-readiness-inspector` (6 tests pass), and `inspect:phase-1w-publish-readiness` scripts have been added. The inspector reports `scannedBindings: 5`, with one candidate (`approval-content-mqkt437v-88eyy4`) showing `readyCount: 1` only because its metadata files were manually written during this session — thumbnail approval, metadata approval, package queueing, and dry-run have not been executed through real API routes. **Remaining blockers:** (1) server restart to activate route-level dispatch (server PID 25021 loaded before dispatch code compiled 2026-06-18), (2) YouTube OAuth credentials at `~/.config/youtube/says-the-bible.env`, (3) real API-gated thumbnail approval → metadata approval → package queueing → dry-run sequence for a live content item. Sprint 1W remains open pending real pipeline run and live publish decision.
 
 ### 1W.1 ApprovalQueuePanel integration ✅
 - [x] ApprovalQueuePanel integrated into VOShell; "Approvals" tab visible
@@ -291,11 +291,12 @@ This phase is retained only as historical context. Gemini is disabled and is not
 - [x] Bulk select with "Approve Selected"/"Reject Selected" buttons
 
 ### 1W.2 Approval decision endpoints ✅
-- [x] `POST /api/video-orchestrator/approvals/decide` wired
-- [x] `POST /api/video-orchestrator/thumbnails/approve` wired
-- [x] `POST /api/video-orchestrator/metadata/approve` wired
+- [x] `POST /api/video-orchestrator/approvals/:approvalId/approve` wired (individual approve)
+- [x] `POST /api/video-orchestrator/approvals/:approvalId/reject` wired (individual reject)
+- [x] `POST /api/video-orchestrator/thumbnails/approve` wired — body: `{projectId, contentItemId, variantId}`
+- [x] `POST /api/video-orchestrator/metadata/approve` wired — body: `{projectId, contentItemId, variantId}`
 - [x] `GET /api/video-orchestrator/approvals/queue` wired
-- [x] `POST /api/video-orchestrator/approvals/bulk-decide` added (Phase 2W)
+- [x] `POST /api/video-orchestrator/approvals/bulk-decide` added (Phase 2W) — body: `{approvalIds, approved}`
 
 ### 1W.3 Approval decision logic ✅
 - [x] `decideApprovalRequest()` implemented
@@ -315,6 +316,32 @@ This phase is retained only as historical context. Gemini is disabled and is not
 - [x] All 5 write endpoints (content, metadata, thumbnail, package) create approval records
 
 **Deliverable:** ✅ Content item creation, thumbnail generation, metadata generation, package queueing all gate on approval. Operator approves in VO Studio → write commits → pipeline continues.
+
+### 1W-I.1 Approved Moving-Video Content to Production Job Dispatch ✅
+- [x] `dispatchApprovedMovingVideoContent()` function in `video-orchestrator-provider.ts`
+- [x] Approval-triggered dispatch hook in content approval commit handler
+- [x] Creates canonical Video Orchestrator job with generated `jobId`
+- [x] Persists canonical metadata: `topic.json`, `script.json`, `assets.json`, `status.json`
+- [x] Records `mediaSource: 'uploaded-video'` and `generationMode: 'approved-source-video'`
+- [x] Starts configured Amazon Step Functions execution
+- [x] Returns persisted `executionArn` to caller
+- [x] Rejects non-S3 sources with error message
+- [x] Rejects fixture sources with error message
+- [x] Rejects slideshow sources with error message
+- [x] Rejects test-001 sources with error message
+- [x] Idempotent: duplicate approval dispatch returns cached `jobId` and `executionArn`
+- [x] Does not use `create-from-prompt` or fixture-backed generation paths
+
+**Validation:** 7 tests passed (327.6 ms)
+- ✅ rejects non-S3 source paths
+- ✅ rejects fixture sources
+- ✅ rejects slideshow sources
+- ✅ rejects test-001 sources
+- ✅ creates canonical metadata and starts mocked execution
+- ✅ is idempotent for duplicate approval dispatch
+- ✅ approval route dispatches an approved real-video content record
+
+**Deliverable:** ✅ Real moving-video content items dispatch to canonical production jobs with full metadata persistence and verified Step Functions execution initiation.
 
 ---
 

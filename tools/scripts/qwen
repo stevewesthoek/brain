@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# qwen-aider — Launch Aider with Qwen 3.6 27B (MTPLX-accelerated)
+#
+# Usage: qwen-aider [aider-flags]
+# Example: qwen-aider --subtree-only
+#
+# Requires MTPLX running on http://127.0.0.1:8000/v1
+
+set -euo pipefail
+
+# Check MTPLX health (with API key)
+if ! curl -sf -H "Authorization: Bearer mtplx-local" http://127.0.0.1:8000/health >/dev/null 2>&1; then
+  echo "Error: MTPLX not available at http://127.0.0.1:8000" >&2
+  echo "Start it with: launchctl bootstrap gui/\$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist" >&2
+  exit 1
+fi
+
+# Check aider installed
+if ! command -v aider >/dev/null 2>&1; then
+  echo "Error: aider not found. Install with: uv tool install aider-chat" >&2
+  exit 1
+fi
+
+# Launch aider with Qwen 3.6 27B
+exec aider \
+  --model openai/mtplx \
+  --openai-api-base http://127.0.0.1:8000/v1 \
+  --openai-api-key mtplx-local \
+  --no-show-model-warnings \
+  "$@"

@@ -1,7 +1,7 @@
 import { requestAction } from './actions.js';
 import { createVOApproval } from './vo-studio-approval-store.js';
 import { generateVideoOrchestratorMetadata } from './video-orchestrator-metadata-generator.js';
-import { readVOStudioContentItem } from './video-orchestrator-studio-model.js';
+import { readVOStudioContentItem, registerRuntimeContentItem, findRuntimeContentItem } from './video-orchestrator-studio-model.js';
 import type { ContentItem } from '../types/vo-studio.js';
 
 export interface CreateContentItemRequest {
@@ -89,6 +89,8 @@ export function createContentItemRequest(
       error: result.message,
     };
   }
+
+  registerRuntimeContentItem(contentItem);
 
   return {
     ok: true,
@@ -407,14 +409,18 @@ export async function generateMetadataRequest(
     };
   }
 
-  const contentItem = readVOStudioContentItem(request.contentItemId.trim());
-  if (!contentItem) {
+  const studioItem = readVOStudioContentItem(request.contentItemId.trim());
+  const runtimeItem = findRuntimeContentItem(request.contentItemId.trim());
+  const contentItemTitle = studioItem?.title ?? runtimeItem?.title;
+  const contentItemProjectId = studioItem?.projectId ?? runtimeItem?.projectId;
+  const contentItemId = studioItem?.id ?? runtimeItem?.id;
+  if (!contentItemId || !contentItemTitle || !contentItemProjectId) {
     return {
       ok: false,
       error: `contentItemId not found: ${request.contentItemId.trim()}`,
     };
   }
-  if (contentItem.projectId !== request.projectId.trim()) {
+  if (contentItemProjectId !== request.projectId.trim()) {
     return {
       ok: false,
       error: 'contentItemId does not belong to projectId',
@@ -423,7 +429,7 @@ export async function generateMetadataRequest(
 
   // Phase 1W: generate YouTube metadata from the canonical moving-video content item.
   const metaPayload: Record<string, unknown> = {
-    contentItemId: contentItem.id,
+    contentItemId: contentItemId,
     targetPlatform: 'youtube',
   };
   if (request.templateId !== undefined) metaPayload.templateId = request.templateId;
@@ -436,11 +442,12 @@ export async function generateMetadataRequest(
     };
   }
 
+  const canonicalSource = studioItem?.canonicalSource ?? runtimeItem?.description ?? '';
   const metadata = await generateVideoOrchestratorMetadata({
-    projectId: contentItem.projectId,
-    contentItemId: contentItem.id,
-    title: contentItem.title,
-    description: contentItem.canonicalSource,
+    projectId: contentItemProjectId,
+    contentItemId: contentItemId,
+    title: contentItemTitle,
+    description: canonicalSource,
     targetPlatforms: ['youtube'],
     ...(request.templateId !== undefined ? { templateId: request.templateId } : {}),
   });

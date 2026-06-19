@@ -9,6 +9,19 @@ import type {
   BrainCoreVOStudioProductionPackage,
   BrainCoreVOStudioProject,
 } from '../types/api.js';
+import type { ContentItem } from '../types/vo-studio.js';
+
+// Runtime registry for dynamically-created content items (created via API during server lifetime).
+// Separate from the static contentItems[] array which is seed/reference data only.
+const runtimeContentItems = new Map<string, ContentItem>();
+
+export function registerRuntimeContentItem(item: ContentItem): void {
+  runtimeContentItems.set(item.id, item);
+}
+
+export function findRuntimeContentItem(id: string): ContentItem | undefined {
+  return runtimeContentItems.get(id);
+}
 
 const generatedAt = (): string => new Date().toISOString();
 

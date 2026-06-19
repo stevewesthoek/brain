@@ -23,6 +23,19 @@ infer_channel_from_job_id() {
     case "$1" in
         prochat-*) echo "prochat" ;;
         says-the-bible-*) echo "says-the-bible" ;;
+        approved-video-*)
+            # Phase 1W: read projectId from topic.json if present
+            local script_dir
+            script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            local jobs_dir
+            jobs_dir="$(dirname "$script_dir")/jobs"
+            local topic_file="$jobs_dir/$1/metadata/topic.json"
+            if [ -f "$topic_file" ]; then
+                python3 -c "import json; d=json.load(open('$topic_file')); print(d.get('projectId',''))" 2>/dev/null || echo ""
+            else
+                echo ""
+            fi
+            ;;
         *) echo "" ;;
     esac
 }
@@ -153,11 +166,19 @@ trap cleanup EXIT
 echo "[1/8] Checking OAuth token..."
 
 if [ ! -f "$TOKEN_FILE" ]; then
-    echo -e "${RED}❌ ERROR: Token file not found: $TOKEN_FILE${NC}"
-    echo ""
-    echo "Run: scripts/youtube-auth-local.sh"
-    exit 1
-fi
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}⚠ [DRY-RUN] Token file not found — skipping OAuth check${NC}"
+        echo "  (Token is only required for live upload)"
+        # Set placeholder values for dry-run metadata steps
+        ACCESS_TOKEN="DRY_RUN_TOKEN"
+        REFRESH_TOKEN="DRY_RUN_REFRESH"
+    else
+        echo -e "${RED}❌ ERROR: Token file not found: $TOKEN_FILE${NC}"
+        echo ""
+        echo "Run: scripts/youtube-auth-local.sh"
+        exit 1
+    fi
+else
 
 ACCESS_TOKEN=$(jq -r '.access_token // empty' "$TOKEN_FILE" 2>/dev/null)
 REFRESH_TOKEN=$(jq -r '.refresh_token // empty' "$TOKEN_FILE" 2>/dev/null)
@@ -668,3 +689,5 @@ fi
 
 echo "Ready for: I-6.2c (Step Functions integration)"
 echo ""
+
+fi  # closes: if [ ! -f "$TOKEN_FILE" ] ... else

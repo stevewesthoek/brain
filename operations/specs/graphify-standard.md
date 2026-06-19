@@ -41,9 +41,9 @@ The Office Nightly Scheduler calls `tools/scripts/graphify-nightly.sh`, and that
 
 | Setting | Value |
 |---------|-------|
-| Backend | `ollama` (local — no paid API) |
-| Model | `gemma4:12b-mlx` |
-| Ollama context | `8192` |
+| Backend | `openai` (MTPLX local — no paid API) |
+| Model | `Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed` |
+| Endpoint | `http://127.0.0.1:8000/v1` |
 | Concurrency | `1` |
 | API timeout | `900` seconds |
 | HTML node limit | `30000` |
@@ -134,7 +134,7 @@ coverage/
 - Do not actively edit a repo while Graphify is scanning that same repo.
 - Commit or stash work before a clean graph run when possible.
 - The Office Nightly Scheduler is the only scheduler owner.
-- The Graphify job refuses non-Ollama backends.
+- The Graphify job refuses non-local backends (only `openai` with MTPLX or `ollama` allowed).
 - The Graphify job keeps `max-concurrency=1` for local model stability.
 - Passes 1–3 skip labels to finish quickly and reliably.
 - Pass 4 is the only deep/label-oriented refinement pass.

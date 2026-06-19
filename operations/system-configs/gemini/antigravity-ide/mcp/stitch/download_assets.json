@@ -1,0 +1,1 @@
+{"name":"download_assets","description":"Download screens and assets to a local directory","parameters":{"properties":{"outputDir":{"description":"Output directory","type":"string"},"projectId":{"description":"Project ID","type":"string"}},"required":["projectId","outputDir"],"type":"object"}}

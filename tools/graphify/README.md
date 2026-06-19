@@ -8,10 +8,10 @@ Graphify uses the stock upstream CLI directly. No Brain wrappers, no AI Model Se
 
 | Setting | Value |
 |---------|-------|
-| Backend | `ollama` (local — no paid API) |
-| Model | `gemma4:12b-mlx` |
+| Backend | `openai` (MTPLX local — no paid API) |
+| Model | `Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed` |
+| Endpoint | `http://127.0.0.1:8000/v1` |
 | Token budget | `4000` |
-| Ollama context | `8192` |
 | Concurrency | `1` |
 | API timeout | `900` seconds |
 
@@ -20,13 +20,11 @@ No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
 ## Prerequisites
 
 ```bash
-ollama pull gemma4:12b-mlx
-ollama list | grep gemma4
-ollama run gemma4:12b-mlx "Reply with OK only."
+curl http://127.0.0.1:8000/health
 graphify --help
 ```
 
-Ollama must be running locally before any Graphify command. The expected working server is the local Ollama app/CLI on `localhost:11434`.
+MTPLX must be running locally (LaunchAgent `com.office.mtplx`). It serves Qwen 3.6 27B with MTP acceleration.
 
 ## Standard commands
 
@@ -69,9 +67,9 @@ Graphify reads `.graphifyignore` at the repo root (gitignore syntax). This is th
 
 - If `graphify-out/graph.json` does not exist: runs first graph generation (`graphify extract`) and report/HTML generation (`graphify cluster-only` with `GRAPHIFY_VIZ_NODE_LIMIT=30000`).
 - If it exists: refreshes the graph with the same extract + cluster-only flow.
-- Uses only Ollama with `gemma4:12b-mlx` — no paid API, no Bedrock, no Sonnet, no Opus, no Anthropic model IDs, no AI Model Selector.
-- Refuses non-Ollama backends to prevent accidental paid API usage.
+- Uses MTPLX with Qwen 3.6 27B (MTP-accelerated) — no paid API, no Bedrock, no Sonnet, no Opus, no Anthropic model IDs, no AI Model Selector.
+- Refuses non-local backends to prevent accidental paid API usage.
 - Logs repo path, model, backend, token budget, max concurrency, API timeout, graph.json presence before run, exit code, and output file presence.
 - Does not commit generated outputs.
-- Fails clearly if Ollama or graphify is missing — does not attempt to start Ollama.
+- Fails clearly if MTPLX or graphify is missing.
 - Scheduler stops starting new repos after the cutoff hour but finishes any in-progress repo.

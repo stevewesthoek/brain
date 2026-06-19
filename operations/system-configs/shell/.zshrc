@@ -108,3 +108,6 @@ hash -r
 
 # opencode
 export PATH=/Users/Office/.opencode/bin:$PATH
+
+# Added by Antigravity IDE
+export PATH="/Users/Office/.antigravity-ide/antigravity-ide/bin:$PATH"

@@ -48,8 +48,8 @@ The AI Model Selector orchestrates inference across Gemini free-tier, two local 
 | `qwen2.5:32b` | 19.8 GB | Quality primary on M4 Pro when memory pressure is acceptable |
 | `qwen2.5:14b` | 8.5 GB | Fallback quality model, metadata generation |
 | `llama3.1:8b` | 5.0 GB | Fast tasks — headlines, keywords, small text |
-| `gemma4:12b` | ~8.0 GB | Medium tasks, alternative to llama3.1:8b |
-| `gemma4:e4b` | ~4.0 GB | Light fast tasks, expert-style architecture |
+| `gemma4:12b-mlx` | ~8.0 GB | Medium tasks — Ollama MLX accelerated |
+| `gemma4:e4b-mlx` | ~4.0 GB | Light fast tasks — Ollama MLX accelerated |
 | `bakllava:latest` | 4.7 GB | Existing local vision model, optional/manual use |
 
 ### MacBook M1 — Secondary inference node (always on)
@@ -67,8 +67,8 @@ The AI Model Selector orchestrates inference across Gemini free-tier, two local 
 | `qwen2.5:14b` | 8.5 GB | Primary on M1, batch overnight work |
 | `llama3.1:8b` | 5.0 GB | Fallback for medium tasks |
 | `llama3.2:3b` | 2.0 GB | Fast fallback for small tasks |
-| `gemma4:e4b` | ~4.0 GB | Light fast tasks, expert-style architecture |
-| `gemma4:12b` | ~8.0 GB | Medium tasks (conditional on memory pressure) |
+| `gemma4:e4b-mlx` | ~4.0 GB | Light fast tasks (Ollama MLX) |
+| `gemma4:12b-mlx` | ~8.0 GB | Medium tasks (Ollama MLX) |
 
 The M1 should generally run one model at a time. It is valuable because it adds parallel overnight throughput, not because it should carry heavy interactive work. Gemma 4 expert-style models (e4b) are preferred on M1 due to smaller footprint.
 
@@ -101,6 +101,26 @@ The M1 should generally run one model at a time. It is valuable because it adds 
 5. Verify from M4 Pro: `curl http://192.168.2.2:11434/api/tags`
 
 Once the bridge is up, the AI Selector on M4 Pro reaches M1 Ollama at `http://192.168.2.2:11434`.
+
+### MTPLX — Accelerated Local Inference (Qwen 3.6 27B)
+
+**MTPLX is the primary inference server for Graphify and local text tasks.** It serves Qwen 3.6 27B with Multi-Token Prediction acceleration (~1.6x faster than standard MLX autoregressive decoding). Same output distribution (exact rejection sampling), just faster.
+
+| Tool | Role | Where |
+|------|------|-------|
+| **MTPLX** | MTP-accelerated Qwen 3.6 27B, OpenAI-compatible API | M4 Pro only, `127.0.0.1:8000` |
+| **Ollama** | Gemma 4 MLX + Qwen 2.5 + Llama models | Both machines, `localhost:11434` |
+
+**Setup:**
+
+```bash
+brew install youssofal/mtplx/mtplx
+mtplx setup --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed --profile sustained --download --force
+launchctl load ~/Library/LaunchAgents/com.office.mtplx.plist
+curl http://127.0.0.1:8000/health
+```
+
+**LaunchAgent:** `~/Library/LaunchAgents/com.office.mtplx.plist`
 
 Codex CLI usage is plan-limited under the user's ChatGPT subscription, and Claude usage is via Amazon Bedrock. Both are modeled as providers inside `ai-providers.json`.
 

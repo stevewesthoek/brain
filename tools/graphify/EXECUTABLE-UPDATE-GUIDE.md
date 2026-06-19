@@ -1,16 +1,16 @@
 # Graphify Executable Update Guide
 
-Graphify uses the stock upstream CLI directly with a local Ollama configuration.
+Graphify uses the stock upstream CLI directly with MTPLX local inference (Qwen 3.6 27B MTP-accelerated).
 No orchestrator, no AI Model Selector, no paid backend.
 
 ## Fixed configuration
 
 | Setting | Value |
 |---------|-------|
-| Backend | `ollama` (local — no paid API) |
-| Model | `gemma4:12b-mlx` |
+| Backend | `openai` (MTPLX local — no paid API) |
+| Model | `Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed` |
+| Endpoint | `http://127.0.0.1:8000/v1` |
 | Token budget | `4000` |
-| Ollama context | `8192` |
 | Concurrency | `1` |
 | API timeout | `900` seconds |
 
@@ -19,13 +19,11 @@ No paid API is used. No Bedrock, no Sonnet, no Opus, no Anthropic cloud model.
 ## Prerequisites
 
 ```bash
-ollama pull gemma4:12b-mlx
-ollama list | grep gemma4
-ollama run gemma4:12b-mlx "Reply with OK only."
+curl http://127.0.0.1:8000/health
 graphify --help
 ```
 
-Ollama must be running locally before any Graphify command.
+MTPLX must be running locally (LaunchAgent `com.office.mtplx`).
 
 ## Commands
 
@@ -37,10 +35,10 @@ npm run graphify:brain
 
 Equivalent to:
 ```bash
-OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
-  graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
-OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
-  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=ollama
+OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
+  graphify extract . --backend openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
+OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
+  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed
 ```
 
 ### Mind
@@ -51,10 +49,10 @@ npm run graphify:mind
 
 Equivalent to:
 ```bash
-cd ../mind && OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
-  graphify extract . --backend ollama --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
-OLLAMA_API_KEY=ollama OLLAMA_MODEL=gemma4:12b-mlx GRAPHIFY_OLLAMA_NUM_CTX=8192 GRAPHIFY_OLLAMA_KEEP_ALIVE=30 \
-  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=ollama
+cd ../mind && OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
+  graphify extract . --backend openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed --token-budget 4000 --max-concurrency 1 --api-timeout 900 && \
+OPENAI_BASE_URL=http://127.0.0.1:8000/v1 OPENAI_API_KEY=none \
+  GRAPHIFY_VIZ_NODE_LIMIT=30000 graphify cluster-only . --backend=openai --model Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed
 ```
 
 ### Callflow exports (after graph.json exists)
@@ -83,13 +81,8 @@ graphify-out/graph.html                 — interactive visualization, generated
 uv tool install "graphifyy[ollama]" --force
 ```
 
-**"ollama unavailable"** — Ensure Ollama is installed and running:
+**"MTPLX unavailable"** — Ensure MTPLX is running:
 ```bash
-ollama list
-ollama run gemma4:12b-mlx "Reply with OK only."
-```
-
-**Model not found** — Pull the model:
-```bash
-ollama pull gemma4:12b-mlx
+curl http://127.0.0.1:8000/health
+launchctl load ~/Library/LaunchAgents/com.office.mtplx.plist
 ```

@@ -179,3 +179,4 @@ projects/brain-console/tsconfig.tsbuildinfo
 
 # Video orchestrator runtime job artifacts
 projects/video-orchestrator/cloud/jobs/
+.aider*

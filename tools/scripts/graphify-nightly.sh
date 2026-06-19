@@ -4,17 +4,18 @@ set -euo pipefail
 REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-1800}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
-GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-ollama}"
+GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-openai}"
 
 # GRAPHIFY_MODEL remains a manual override. When it is not set, each phase chooses
 # the smallest useful model for that phase.
 GRAPHIFY_MODEL="${GRAPHIFY_MODEL:-}"
-GRAPHIFY_FAST_MODEL="${GRAPHIFY_FAST_MODEL:-gemma4:e4b-mlx}"
+GRAPHIFY_FAST_MODEL="${GRAPHIFY_FAST_MODEL:-Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed}"
 GRAPHIFY_DOCS_FAST_MODEL="${GRAPHIFY_DOCS_FAST_MODEL:-$GRAPHIFY_FAST_MODEL}"
-GRAPHIFY_REFINED_MODEL="${GRAPHIFY_REFINED_MODEL:-gemma4:12b-mlx}"
+GRAPHIFY_REFINED_MODEL="${GRAPHIFY_REFINED_MODEL:-Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed}"
 GRAPHIFY_DEEP_MODEL="${GRAPHIFY_DEEP_MODEL:-$GRAPHIFY_REFINED_MODEL}"
 
-OLLAMA_API_KEY="${OLLAMA_API_KEY:-ollama}"
+OPENAI_BASE_URL="${OPENAI_BASE_URL:-http://127.0.0.1:8000/v1}"
+OPENAI_API_KEY="${OPENAI_API_KEY:-sk-proj-mtplx-local}"
 GRAPHIFY_OLLAMA_NUM_CTX="${GRAPHIFY_OLLAMA_NUM_CTX:-8192}"
 GRAPHIFY_OLLAMA_KEEP_ALIVE="${GRAPHIFY_OLLAMA_KEEP_ALIVE:-30}"
 GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
@@ -648,7 +649,7 @@ phase_token_budget() {
 
 model_available() {
   local model="$1"
-  ollama list 2>/dev/null | awk 'NR > 1 {print $1}' | grep -Fxq "$model"
+  curl -sf "${OPENAI_BASE_URL%/v1}/health" >/dev/null 2>&1
 }
 
 phase_model_candidate() {
@@ -712,8 +713,8 @@ run_graphify() {
   local repo="$1"
   local model="$2"
   shift 2
-  OLLAMA_API_KEY="$OLLAMA_API_KEY" \
-  OLLAMA_MODEL="$model" \
+  OPENAI_BASE_URL="$OPENAI_BASE_URL" \
+  OPENAI_API_KEY="$OPENAI_API_KEY" \
   GRAPHIFY_OLLAMA_NUM_CTX="$GRAPHIFY_OLLAMA_NUM_CTX" \
   GRAPHIFY_OLLAMA_KEEP_ALIVE="$GRAPHIFY_OLLAMA_KEEP_ALIVE" \
   GRAPHIFY_VIZ_NODE_LIMIT="$GRAPHIFY_VIZ_NODE_LIMIT" \
@@ -1248,14 +1249,16 @@ if ! command -v "$GRAPHIFY_BIN" >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ "$GRAPHIFY_BACKEND" != "ollama" ]]; then
-  log "refusing non-local backend=$GRAPHIFY_BACKEND — Graphify is local-only and must use Ollama"
+if [[ "$GRAPHIFY_BACKEND" != "openai" && "$GRAPHIFY_BACKEND" != "ollama" ]]; then
+  log "refusing non-local backend=$GRAPHIFY_BACKEND — Graphify is local-only"
   exit 1
 fi
 
-if ! command -v ollama >/dev/null 2>&1; then
-  log "ollama unavailable — Graphify requires a running Ollama instance"
-  exit 1
+if [[ "$GRAPHIFY_BACKEND" == "openai" ]]; then
+  if ! curl -sf "${OPENAI_BASE_URL%/v1}/health" >/dev/null 2>&1; then
+    log "MTPLX unavailable at $OPENAI_BASE_URL — start MTPLX or switch to ollama backend"
+    exit 1
+  fi
 fi
 
 model_summary="override=${GRAPHIFY_MODEL:-none} fast=$GRAPHIFY_FAST_MODEL docs=$GRAPHIFY_DOCS_FAST_MODEL refined=$GRAPHIFY_REFINED_MODEL deep=$GRAPHIFY_DEEP_MODEL"

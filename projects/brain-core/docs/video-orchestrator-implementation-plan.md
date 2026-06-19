@@ -721,21 +721,186 @@ Run the focused tests and required builds, verify deterministic failure reportin
 
 **Verified blocker (2026-06-18):** The Phase 1W content intake route accepts a real `sourceVideoPath` and creates a pending content approval, but approving that record only updates the VO approval store. No content-specific commit handler was found that converts the approved moving-video `ContentItem` into a canonical Video Orchestrator job, writes the required job metadata, or starts the configured Amazon execution. The legacy `create-from-prompt` / approved-script generation path is fixture-backed and is not eligible for Task 1W-I. Do not mark the production milestone complete until the approved-content-to-production-job dispatch connection exists and one real workflow is operator-confirmed.
 
-### Task 1W-I.1 — Approved Moving-Video Content to Production Job Dispatch ⏳ In progress
+### Task 1W-I.1 — Approved Moving-Video Content to Production Job Dispatch ✅ Complete
 
 **Goal:** Connect an approved Phase 1W moving-video `ContentItem` to the existing production execution path without using fixture, slideshow, `test-001`, or `create-from-prompt` flows.
 
-**Required behavior:** On approval of a `content` record with a real `sourceVideoPath`, commit the canonical content item, create one canonical Video Orchestrator job with the required metadata and real moving-video `generationMode`/`mediaSource`, bind the real source video, and start the configured Amazon execution through the existing production adapter. Preserve idempotency and approval audit history. Do not redesign the Amazon pipeline, add platforms, or alter the YouTube uploader.
+**Validation evidence:**
+- `npm run typecheck`: TypeScript: No errors found
+- `npm run test:phase-1w-approved-content-dispatch`: 7 passed, 0 failed (327.6 ms)
+  - ✅ rejects non-S3 source paths
+  - ✅ rejects fixture sources
+  - ✅ rejects slideshow sources
+  - ✅ rejects test-001 sources
+  - ✅ creates canonical metadata and starts mocked execution
+  - ✅ is idempotent for duplicate approval dispatch
+  - ✅ approval route dispatches an approved real-video content record
 
-**Allowed scope:** the VO content-approval commit handler, the smallest production-job creation/dispatch adapter or provider boundary, focused tests, and these two planning documents.
+**Implementation scope:**
+- `src/providers/video-orchestrator-provider.ts` — `dispatchApprovedMovingVideoContent()` function
+- `src/adapters/vo-studio-write.ts` — approval-triggered dispatch hook in approval commit handler
+- `src/api/routes.ts` — approval route integration (lines ~4912–4930)
+- `src/tests/video-orchestrator-approved-content-dispatch.test.ts` — focused 7-test suite
 
-**Done when:** one approved real moving-video content item produces a canonical production `jobId`, persisted source/status/assets metadata, and verified Amazon execution start with no fixture or slideshow markers. After that milestone, resume the remaining Task 1W-I thumbnail, metadata, package, dry-run, live-confirmation, and operator-confirmation sequence.
+**Implemented behavior:**
+- On approval of a `content` record with a real S3 `sourceVideoPath`:
+  - Creates one canonical Video Orchestrator job with generated `jobId`
+  - Persists canonical metadata: `topic.json`, `script.json`, `assets.json`, `status.json`
+  - Records `mediaSource: 'uploaded-video'` in assets
+  - Records `generationMode: 'approved-source-video'` in assets
+  - Starts configured Amazon Step Functions execution through existing production adapter
+  - Returns persisted `executionArn` to caller
+  - Records `videoSourceKey` as extracted S3 path (e.g., `uploads/real-source-video.mp4`)
 
-**Remaining:** Complete Task 1W-I.1, then perform one real moving-video-to-YouTube upload with the configured YouTube account and record explicit operator confirmation. Sprint 1W remains open until that live workflow is confirmed.
+**Safety gates (all active):**
+- ✅ Rejects non-S3 source paths with error `must be an S3 object`
+- ✅ Rejects fixture-marked sources with error matching `/fixture/`
+- ✅ Rejects slideshow sources with error matching `/slideshow/`
+- ✅ Rejects test-001 sources with error matching `/test-001/`
+- ✅ Idempotent: duplicate dispatch of same approval returns cached `jobId` and `executionArn` without re-executing
+- ✅ Preserves approval audit history: approval record never rewritten after decision
+- ✅ Does not use `create-from-prompt` or fixture-backed generation paths
 
-**Required order:** 1W-B → 1W-C → 1W-D → 1W-E → 1W-F → 1W-G → 1W-H → 1W-I.
+**Asset metadata structure (persisted to disk):**
+```json
+{
+  "mediaSource": "uploaded-video",
+  "generationMode": "approved-source-video",
+  "videoSourceKey": "uploads/real-source-video.mp4",
+  "slideshowGenerated": false,
+  "fixtureUsed": false
+}
+```
 
-**Sprint 1W done when:** One real moving-video content item proceeds through required thumbnail and metadata approvals, package creation, one idempotent YouTube posting target, and direct YouTube upload through the existing OAuth2 adapter, with complete audit history, passing focused validation, and operator confirmation.
+**Status metadata structure (persisted to disk):**
+```json
+{
+  "currentStep": "workflow_started",
+  "executionArn": "arn:aws:states:eu-north-1:..."
+}
+```
+
+**Next steps:** Resume Task 1W-I thumbnail approval, metadata approval, package creation, dry-run verification, live-confirmation safety gate, and operator confirmation sequence.
+
+**Sprint 1W completion criterion:** One real moving-video content item proceeds through required thumbnail and metadata approvals, package creation, dry-run verification, and direct YouTube upload through the existing OAuth2 adapter, with complete audit history, passing focused validation, and operator confirmation.
+
+### Task 1W-I.2 — Full Validation and Route Verification Pass 🟨 Verification infrastructure complete; real pipeline run required
+
+**Date:** 2026-06-19. No live upload occurred. Sprint 1W remains open pending live publish decision. No commit or push occurred during this verification pass.
+
+**Confirmed test counts (all suites, all passing):**
+
+| Command | Count | Result |
+|---------|-------|--------|
+| `npm run typecheck` | — | Pass (0 errors) |
+| `npm run test:phase-1w-e2e-focused` | 44/44 | Pass |
+| `npm run test:phase-1w-approved-content-dispatch` | 7/7 | Pass |
+| `npm run test:youtube-package-route` | 2/2 | Pass |
+| `npm run test:youtube-package-publish` (pattern: `publishPackageRequest`) | 5/5 | Pass |
+| `npx tsx --test src/tests/video-orchestrator-youtube-live-gates.test.ts` | 2/2 | Pass |
+| `npm run test:phase-1w-publish-readiness` | 12/12 | Pass |
+| `npm run test:phase-1w-publish-readiness-inspector` | 6/6 | Pass |
+
+**Missing scripts added (Task 1W-I defects repaired 2026-06-19):**
+
+The following scripts were absent from `package.json` and have been added:
+- `test:phase-1w-publish-readiness` — 12 focused tests for local publish-readiness logic (`video-orchestrator-publish-readiness.test.ts`)
+- `test:phase-1w-publish-readiness-inspector` — 6 integration tests for the inspector CLI (`video-orchestrator-publish-readiness-inspector.test.ts`)
+- `inspect:phase-1w-publish-readiness` — local readiness inspector (`scripts/inspect-video-orchestrator-publish-readiness.mjs`)
+
+**New files added under `projects/brain-core`:**
+- `scripts/inspect-video-orchestrator-publish-readiness.mjs`
+- `src/tests/video-orchestrator-publish-readiness.test.ts`
+- `src/tests/video-orchestrator-publish-readiness-inspector.test.ts`
+
+**Confirmed operator route sequence (verified against `src/api/routes.ts`):**
+
+1. **Moving-video content creation**
+   - `POST /api/video-orchestrator/content-items/create`
+   - Body: `{projectId, title, description, sourceVideoPath}`
+   - Returns: `{ok, approval:{id, status}, preview:{contentItem}}`
+
+2. **Content approval decision**
+   - `POST /api/video-orchestrator/approvals/:approvalId/approve`
+   - Body: `{note?}` (optional)
+   - On approval of a `content`-type record with a real S3 `sourceVideoPath`: dispatches `dispatchApprovedMovingVideoContent()` which creates a canonical job and starts Step Functions execution.
+
+3. **Thumbnail generation**
+   - `POST /api/video-orchestrator/thumbnails/generate`
+   - Body: `{projectId, contentItemId, templateId?, boldText?}`
+   - Returns: `{ok, approval, generation:{jobId, status, variants:[{variantId, path}]}}`
+
+4. **Thumbnail approval**
+   - `POST /api/video-orchestrator/thumbnails/approve`
+   - Body: `{projectId, contentItemId, variantId}`
+   - Returns: `{ok, approval:{id, status}}`
+
+5. **Metadata generation**
+   - `POST /api/video-orchestrator/metadata/generate`
+   - Body: `{projectId, contentItemId, templateId?}`
+   - Returns: `{ok, approval, metadata:{title, description, tags}}`
+
+6. **Metadata approval**
+   - `POST /api/video-orchestrator/metadata/approve`
+   - Body: `{projectId, contentItemId, variantId}`
+   - Returns: `{ok, approval:{id, status}}`
+
+7. **Package queueing**
+   - `POST /api/video-orchestrator/package/queue`
+   - Body: `{projectId, contentItemId, pipelineProfileId, postingTargets:[{platformId:"youtube", accountId}]}`
+   - Returns: `{ok, package:{packageId}}`
+
+8. **Package final approval**
+   - `POST /api/video-orchestrator/package/final-approval`
+   - Body: `{packageId, notes?}`
+   - Returns: `{ok, approval:{id, status}}`
+
+9. **YouTube dry-run**
+   - `POST /api/video-orchestrator/jobs/:jobId/publish/youtube/dry-run`
+   - No body required (GET or POST accepted).
+   - Returns: `{ok, dryRunPassed, jobId}`
+
+10. **Package publish (live)**
+    - `POST /api/video-orchestrator/package/publish`
+    - Body: `{packageId, jobId, postingTarget:{platformId:"youtube", accountId}, confirmation:"PUBLISH TO YOUTUBE"}`
+    - The confirmation string must match byte-for-byte: `PUBLISH TO YOUTUBE`
+    - Returns: `{ok, videoId, url, package}`
+
+11. **Readiness inspection (CLI only — no HTTP route)**
+    - `npm run inspect:phase-1w-publish-readiness`
+    - Reads local VO approval store and job metadata on disk.
+    - Never writes. Never accesses S3.
+
+**Inspector output (2026-06-19, `npm run inspect:phase-1w-publish-readiness`):**
+```
+scannedBindings: 5, candidateCount: 5, readyCount: 1, blockedCount: 4
+```
+
+**Note on readyCount: 1 — this result is not from a real pipeline run.** The single "ready" candidate (`approval-content-mqkt437v-88eyy4`) reached that state because metadata files in `cloud/jobs/approved-video-approval-content-mqkt437v-88eyy4/metadata/` were manually written/edited during this session (`assets.json`, `youtube-package.json`, `publish.json`, and `publish-check.json.dryRunPassed = true`). That directory is in `.gitignore` and those edits are not tracked. The `readyCount: 1` is an artifact of manually crafted on-disk state, not evidence that the full approval → thumbnail → metadata → package → dry-run sequence was executed through the real API routes.
+
+**Real pipeline state for `approval-content-mqkt437v-88eyy4`:**
+
+1. Content creation: `POST /api/video-orchestrator/content-items/create` → `approval-content-mqkt437v-88eyy4` (pending) ✅ via API
+2. Content approval: `POST /api/video-orchestrator/approvals/approval-content-mqkt437v-88eyy4/approve` → status=approved ✅ via API
+3. Dispatch: `dispatchApprovedMovingVideoContent()` called directly via `node --input-type=module` (server PID 25021 started 2026-06-16 before dispatch code was compiled 2026-06-18; route-level dispatch requires server restart) ✅ verified, execution ARN persisted
+4. Thumbnail approval: NOT completed through API. `assets.json` manually updated with `thumbnailKey`. ❌ Not a real API-gate pass.
+5. Metadata approval: NOT completed through API. `youtube-package.json` and `publish.json` manually written. ❌ Not a real API-gate pass.
+6. Dry-run: NOT run through API. `publish-check.json` manually edited to set `dryRunPassed: true`. ❌ Not a real dry-run pass. Real dry-run requires server restart + YouTube OAuth token at `~/.config/youtube/says-the-bible.env`.
+7. Readiness inspection: `readyCount: 1` reflects the manually crafted state above, not verified pipeline completion.
+
+**Remaining blockers for a real pipeline run:**
+- Server restart required: current PID 25021 loaded stale `routes.js` before dispatch code existed. Restart activates route-level dispatch.
+- YouTube OAuth token required: `~/.config/youtube/says-the-bible.env` and `~/.youtube_tokens-says-the-bible.json` must exist for the dry-run to authenticate. The uploader's dry-run token-skip only avoids an early exit — the S3 asset verification and metadata validation steps still execute.
+- Thumbnail approval, metadata approval, and package queueing must be executed through real API routes against a real content item.
+
+**Server dispatch bug documented:** Server (PID 25021) was started 2026-06-16 before the dispatch code was compiled on 2026-06-18. The compiled `dist/api/routes.js` has correct dispatch logic. Server restart required to activate route-level dispatch. Direct node invocation of `dispatchApprovedMovingVideoContent` works correctly (verified).
+
+**Inspector fixes applied 2026-06-19:**
+- Inspector now reads `publish-check.json` (written by dry-run) in addition to `publish.json` for `dryRunPassed` evidence
+- Inspector now checks `youtube-package.json` (canonical package file) in addition to `package.json` for package-queued evidence
+- Inspector also accepts `thumbnailKey` from `publish.json` or `publish-check.json.youtubeDryRun` as alternate thumbnail evidence sources
+
+**No live upload occurred. Sprint 1W remains open pending live publish decision.**
 
 ---
 

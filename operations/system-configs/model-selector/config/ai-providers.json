@@ -15,7 +15,7 @@
       "timeout_connect_sec": 3,
       "timeout_inference_sec": 120,
       "schedule_preference": "any",
-      "preferred_models": ["qwen2.5:14b", "qwen2.5:32b", "llama3.1:8b", "gemma4:12b-mlx", "gemma4:e4b"]
+      "preferred_models": ["gemma4:12b", "gemma4:e4b", "qwen2.5:14b", "qwen2.5:32b", "llama3.1:8b"]
     },
     {
       "id": "ollama-m1",
@@ -31,8 +31,25 @@
       "timeout_connect_sec": 5,
       "timeout_inference_sec": 180,
       "schedule_preference": "batch_window",
-      "preferred_models": ["qwen2.5:14b", "llama3.1:8b", "llama3.2:3b", "gemma4:e4b", "gemma4:12b-mlx"],
+      "preferred_models": ["gemma4:12b", "gemma4:e4b", "qwen2.5:14b", "llama3.1:8b", "llama3.2:3b"],
       "notes": "M1 MacBook on Thunderbolt Bridge. 2-3x slower than M4 Pro. Prefer for batch/overnight tasks."
+    },
+    {
+      "id": "mtplx-m4pro",
+      "label": "MTPLX Qwen 3.6 27B MTP (M4 Pro local)",
+      "type": "openai-compatible",
+      "base_url": "http://127.0.0.1:8000/v1",
+      "api_key": null,
+      "cost_per_1k_tokens": 0.0,
+      "priority": 1,
+      "capabilities": ["text/small", "text/medium", "text/large"],
+      "max_context_tokens": 128000,
+      "health_check": { "endpoint": "http://127.0.0.1:8000/health", "method": "GET", "expect_status": 200 },
+      "timeout_connect_sec": 3,
+      "timeout_inference_sec": 120,
+      "schedule_preference": "any",
+      "preferred_models": ["Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed"],
+      "notes": "MTPLX MTP-accelerated Qwen 3.6 27B. ~1.6x faster than standard MLX. Primary local model for graphify and text tasks."
     },
     {
       "id": "whisper-m4pro",
