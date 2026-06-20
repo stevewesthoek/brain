@@ -12,6 +12,8 @@
         <string>sustained</string>
         <string>--port</string>
         <string>8000</string>
+        <string>--api-key</string>
+        <string>sk-proj-mtplx-internal-000000</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
