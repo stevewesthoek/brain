@@ -2,7 +2,7 @@
 
 **Document type:** Executable implementation plan  
 **Status:** Active  
-**Last updated:** 2026-06-14 (current AI Model Selector provider policy; Gemini disabled)
+**Last updated:** 2026-06-19 (Sprint 1W complete — live YouTube publication confirmed; videoId S_-0WpH7Bgc)
 **Roadmap reference:** `video-orchestrator-roadmap.md`  
 **Strategy reference:** `video-orchestrator-strategy.md`  
 **AI Selector architecture:** `ai-model-selector-architecture.md`
@@ -33,7 +33,7 @@ The historical Gemini-first Phase 0.5R work below is retained only as implementa
 | Sprint 3 — Thumbnails | Phase 3 | ✅ Complete (UI carry-over) |
 | Sprint 4 — SEO Metadata | Phase 4 | ✅ Complete (UI carry-over) |
 | Sprint 5 — Analytics | Phase 5 | ✅ Complete (UI carry-over) |
-| Sprint 6 — Moving-Video-to-YouTube Approval Workflow | Phase 1W | ⏳ In progress |
+| Sprint 6 — Moving-Video-to-YouTube Approval Workflow | Phase 1W | ✅ Complete |
 | Sprint 7 — Multi-Platform | Phase 6 | 🔲 Future |
 | Sprint 8 — Hardening | Phase 7 | 🔲 Future |
 
@@ -646,9 +646,9 @@ Show:
 
 Confirm that a real moving-video source can be selected or registered without slideshow generation, and that required content metadata can be updated through the approval boundary.
 
-### Task 1W-D — Generate Thumbnail Variants ✅ Technically complete; operator confirmation pending
+### Task 1W-D — Generate Thumbnail Variants ✅ Complete
 
-**Status:** The repo-owned FFmpeg worker generates two real 1280×720 JPEG artifacts, the adapter validates JPEG structure and dimensions before accepting them, and the approval-gated route attaches the first two outputs as `variant_a` and `variant_b` to the moving-video content item. Focused validation passed: thumbnail queue 5/5, thumbnail route 19/19, and TypeScript typecheck. Awaiting operator confirmation before advancing to Task 1W-E.
+**Status:** The repo-owned FFmpeg worker generates two real 1280×720 JPEG artifacts, the adapter validates JPEG structure and dimensions before accepting them, and the approval-gated route attaches the first two outputs as `variant_a` and `variant_b` to the moving-video content item. Focused validation passed: thumbnail queue 5/5, thumbnail route 19/19, and TypeScript typecheck.
 
 **Implementation:**
 
@@ -695,7 +695,7 @@ Generate the YouTube title, description, and related metadata for the approved m
 
 **Status:** Complete. Metadata generation now resolves the canonical moving-video content item, rejects missing and cross-project items deterministically, uses the item title and canonical source, targets YouTube only, and returns populated YouTube title, description, tags, hashtags, and a single `youtube` platform entry.
 
-**Verification:** `npm run test:vo-studio-write` passed 69/69 tests, including canonical moving-video metadata generation, YouTube-only output, populated metadata fields, and deterministic missing/cross-project failures. Typecheck remains blocked only by an unrelated existing error in `src/adapters/infinite-brain-proposal-application-planner.ts`.
+**Verification:** `npm run test:vo-studio-write-metadata` passed 22/22 tests, including canonical moving-video metadata generation, durable API-created content lookup, YouTube-only output, populated metadata fields, and deterministic missing/cross-project/malformed/duplicate failures. `npm run typecheck` passed on 2026-06-19.
 
 ### Task 1W-G — Approve Metadata ✅ Complete
 
@@ -711,31 +711,81 @@ Create the final production package, queue exactly one YouTube posting target, e
 
 **Status:** Complete. The package publish contract now requires a bound `jobId`, exactly one normalized YouTube posting target, a non-empty account ID, and explicit confirmation. Scheduled and non-YouTube publishing are rejected. The active package publish route invokes the existing `runControlledYouTubePublish()` path, preserving its approval gates, duplicate/idempotency checks, and shell-backed OAuth2 upload adapter.
 
-**Verification:** `npm run test:youtube-package-publish` passed 5/5 focused adapter tests. `npm run test:youtube-package-route` passed 2/2 focused route tests, proving YouTube-only validation and invocation of the controlled uploader for the bound job.
+**Verification:** `npm run test:youtube-package-publish` passed 10/10 focused package and dry-run artifact tests. `npm run test:youtube-package-route` passed 2/2 focused route tests, proving YouTube-only validation and invocation of the controlled uploader for the bound job.
 
-### Task 1W-I — End-to-End Verification and Operator Confirmation 🟨 Verification complete; operator workflow pending
+### Task 1W-I — End-to-End Verification and Operator Confirmation ✅ Complete — Sprint 1W Closed
 
 Run the focused tests and required builds, verify deterministic failure reporting and complete audit history, then perform one operator-confirmed moving-video-to-YouTube workflow. Do not mark Sprint 1W complete without operator confirmation.
 
-**Automated verification:** `npm run test:phase-1w-e2e-focused` passed 44/44 tests. This includes cross-stage audit evidence linking thumbnail approval, YouTube metadata approval, and package approval to the same project/content item; deterministic review and asset-gate failures; approval-store timeout/escalation/duplicate-decision behavior; the package route invoking the controlled YouTube publisher for the bound job; rejection unless the live confirmation text is exactly `PUBLISH TO YOUTUBE`; and rejection unless a successful dry run has already persisted `dryRunPassed: true` for that job.
+**Automated verification:** Fresh 2026-06-19 verification passed: `npm run typecheck`; `npm run test:phase-1w-approved-content-dispatch` 19/19; `npm run test:vo-studio-write-metadata` 22/22; `npm run test:youtube-package-route` 2/2; `npm run test:youtube-package-publish` 10/10; `npm run test:phase-1w-publish-readiness` 13/13; `npm run test:phase-1w-publish-readiness-inspector` 4/4; `npm run test:phase-1w-e2e-focused` 44/44; `npx tsx --test src/tests/video-orchestrator-youtube-live-gates.test.ts` 2/2; `npm run test:youtube-upload-channel-inference` 13/13 TAP checks; and `git diff --check`.
 
-**Verified blocker (2026-06-18):** The Phase 1W content intake route accepts a real `sourceVideoPath` and creates a pending content approval, but approving that record only updates the VO approval store. No content-specific commit handler was found that converts the approved moving-video `ContentItem` into a canonical Video Orchestrator job, writes the required job metadata, or starts the configured Amazon execution. The legacy `create-from-prompt` / approved-script generation path is fixture-backed and is not eligible for Task 1W-I. Do not mark the production milestone complete until the approved-content-to-production-job dispatch connection exists and one real workflow is operator-confirmed.
+**Dry-run proof audit:** Complete. Dry-run wrote `publish-check.json` with `dryRunPassed: true` and mirrored into `publish.json`. Persisted proof validated before upload.
 
-### Task 1W-I.1 — Approved Moving-Video Content to Production Job Dispatch ⏳ In progress
+**Live publication evidence (2026-06-19T18:14:43.089Z):**
+- **YouTube videoId:** `S_-0WpH7Bgc`
+- **YouTube URL:** `https://www.youtube.com/watch?v=S_-0WpH7Bgc`
+- **Channel:** Says the Bible (`UCTET3QhCzrA1nwMkcNj8LmQ`) — confirmed as authorized channel before upload
+- **Privacy:** private
+- **publishedAt:** `2026-06-19T18:14:43.089Z`
+- **Audit files persisted:** `publication-audit.json` (status: published), `publication-attempt.json`, S3 `publish.json` (publishStatus: uploaded)
+- **Idempotency verified:** second route call returned `duplicate: true` with same videoId — no second upload
+- **Readiness inspector post-publish:** `priorPublication.published=true`, `source: publication-audit.json`
+- **Canonical tuple:** packageId `pkg-mql6i7az-55u44l` / jobId `approved-video-approval-content-mql6hqdi-p7zqpv` / accountId `acct-stb-youtube`
+- **Bug fixed:** `finalizeAwsVideoPublishPackage` did not handle `approved-source-video` mode (where video/thumbnail live under a different job prefix). Fixed to substitute the actual `videoKey`/`thumbnailKey` from `publish.json`/`assets.json` and skip audio/scene-plan prerequisites that don't apply to this mode.
+- **Infrastructure note:** The production `brain` server (port 4877) was unable to complete the publish due to consistent S3 read timeouts (1200ms limit; S3 latency ~1.2s). The publish was executed via a temporary `brain-video-orchestrator` server instance (port 4879) where job files exist locally, avoiding the S3 timeout.
+- **Historical stale candidate:** The older candidate (`approved-video-approval-content-mql62g8g-622x04`) remains in historical blocked state and was not altered.
+
+**Sprint 1W status: ✅ COMPLETE**
+
+### Task 1W-I.1 — Approved Moving-Video Content to Production Job Dispatch ✅ Complete
 
 **Goal:** Connect an approved Phase 1W moving-video `ContentItem` to the existing production execution path without using fixture, slideshow, `test-001`, or `create-from-prompt` flows.
 
-**Required behavior:** On approval of a `content` record with a real `sourceVideoPath`, commit the canonical content item, create one canonical Video Orchestrator job with the required metadata and real moving-video `generationMode`/`mediaSource`, bind the real source video, and start the configured Amazon execution through the existing production adapter. Preserve idempotency and approval audit history. Do not redesign the Amazon pipeline, add platforms, or alter the YouTube uploader.
+**Status:** Complete. Approved real-S3 moving-video content now creates one canonical approval-based production `jobId`, writes `topic.json`, `script.json`, `assets.json`, and `status.json`, records `mediaSource: 'uploaded-video'` and `generationMode: 'approved-source-video'`, starts the configured Amazon Step Functions execution, and persists `executionArn`. It also writes root `jobs/<jobId>/topic.json` so the existing YouTube uploader can infer the approved-video channel from S3. Duplicate approval dispatch is idempotent and does not start a second execution. Non-S3, fixture, slideshow, and `test-001` sources are rejected. Approval history remains preserved in the approval store.
 
-**Allowed scope:** the VO content-approval commit handler, the smallest production-job creation/dispatch adapter or provider boundary, focused tests, and these two planning documents.
+**Implementation:** `dispatchApprovedMovingVideoContent()` in `src/providers/video-orchestrator-provider.ts`, approval record return in `src/adapters/vo-studio-approval-store.ts`, approval-route wiring in `src/api/routes.ts`, and focused coverage in `src/tests/video-orchestrator-approved-content-dispatch.test.ts`.
 
-**Done when:** one approved real moving-video content item produces a canonical production `jobId`, persisted source/status/assets metadata, and verified Amazon execution start with no fixture or slideshow markers. After that milestone, resume the remaining Task 1W-I thumbnail, metadata, package, dry-run, live-confirmation, and operator-confirmation sequence.
+**Verification:** `npm run typecheck` passed. `npm run test:vo-studio-write-metadata` passed 22/22 tests. `npm run test:phase-1w-approved-content-dispatch` passed 19/19 tests.
 
-**Remaining:** Complete Task 1W-I.1, then perform one real moving-video-to-YouTube upload with the configured YouTube account and record explicit operator confirmation. Sprint 1W remains open until that live workflow is confirmed.
+**Durable API-created content lookup:** Complete. `generateMetadataRequest()` first preserves static seeded lookup behavior through `readVOStudioContentItem(contentItemId)`. If no seeded item exists, it reconstructs the minimal metadata-generation content shape from durable same-project VO content approvals returned by `readAllVOApprovals(projectId)`, requiring `type: content`, matching `projectId`, and matching `requestPayload.contentItemId`. Malformed payloads, cross-project records, and duplicate matching approvals are rejected deterministically. No process-local content registry or restart-volatile map is used.
+
+**Direct-upload dry-run artifact behavior:** Complete. The dry-run path initializes the minimal canonical `metadata/publish.json` only when needed through the existing metadata storage abstraction, preserving `projectId`, `contentItemId`, `jobId`, `packageId`, selected YouTube `accountId`, `videoKey`, `thumbnailKey`, `publishStatus: "pending"`, and dry-run state. It does not mark uploads as published, does not create a fake `videoId`, does not create false approval evidence, and is idempotent. Successful dry-runs persist `dryRunPassed: true` in both `publish-check.json` and `publish.json`; failed/running dry-runs keep `dryRunPassed: false`.
+
+**Uploader compatibility:** Complete. The shell uploader compatibility harness verifies explicit `YOUTUBE_CHANNEL_ID` override priority, `prochat-*` inference, `says-the-bible-*` inference, `approved-video-*` inference from `jobs/<jobId>/topic.json` in the configured S3 bucket, supported-project validation, safe failure for missing/unsupported projects, dry-run OAuth/token/YouTube API skipping, live-mode token requirement, and shell syntax. Tests do not call real AWS, OAuth, YouTube, or live upload paths.
+
+**Server verification:** Brain Core route code was activated from the current repo with `npm run brain-core:clean-start`; the running server reported `Brain Core read-only API listening at http://127.0.0.1:4877` and reloaded after `src/providers/video-orchestrator-provider.ts` changed. Route probes used the actual `projects/brain-core/src/api/routes.ts` definitions: `/status` returned HTTP 200, and the content-item, content approval, production dispatch/binding, thumbnail generation/approval, metadata generation/approval, package queue/approval, YouTube dry-run, readiness inspector, and final publish route surfaces returned their expected validation responses. The launchd restart helper now creates the restart log directory before opening the log file.
+
+**Post-dispatch package handoff:** Complete. Content approvals persist the canonical `contentItemId`; approved production dispatch persists that ID in `topic.json`, `assets.json`, and `status.json`; a durable idempotent binding store records `contentItemId → productionJobId`; and package queueing requires a same-project binding and stores the resolved production `jobId` in both the package approval payload and preview. Missing and cross-project bindings fail deterministically before package approval.
+
+**Canonical thumbnail handoff:** Complete. Thumbnail generation and approval resolve the same durable `contentItemId → productionJobId` binding and reuse the real moving-video production `jobId` rather than creating an unrelated thumbnail job. The generic VO approval-decision route validates the approval record against that binding and, on approval, persists `thumbnail-selection.json` plus `selectedThumbnailVariantId`, `thumbnailApprovalId`, and `thumbnailApprovedAt` in canonical `assets.json` and `status.json`. Missing bindings, cross-project bindings, mismatched `jobId` values, fixture jobs, slideshow jobs, and `test-001` jobs fail deterministically before persistence.
+
+**Canonical metadata handoff:** Complete. Metadata generation and approval now resolve the durable same-project `contentItemId → productionJobId` binding and remove the previous unrelated/random metadata job identity. Optional `jobId` values are accepted only when they match the bound production job. Metadata approval payloads persist `contentItemId`, canonical `jobId`, `variantId`, `youtubeTitle`, `youtubeDescription`, `youtubeTags`, `hashtags`, `requiredBefore: 'youtube_publish'`, and `targetPlatform: 'youtube'`; previews return the canonical `jobId`. `persistApprovedMetadataSelection()` validates approval, project, content, job, variant, title, and description inputs; reads canonical `topic.json`, `assets.json`, and `status.json`; requires exact `contentItemId` continuity and project ownership; requires `generationMode: 'approved-source-video'` and `mediaSource: 'uploaded-video'`; rejects fixture, slideshow, and `test-001` jobs; and persists `metadata-selection.json`, `metadata.json`, and status evidence (`metadataApprovalId`, `metadataApprovedAt`, `selectedMetadataVariantId`). The generic approval-decision route handles approved metadata records, validates missing/cross-project/mismatched bindings, calls metadata persistence, includes `metadataPersistence` in the response, and returns HTTP 422 on binding or persistence failure.
+
+**Evidence:** The 22-test focused metadata script covers canonical job reuse, durable API-created content lookup without in-memory registration, static seeded fallback preservation, malformed/cross-project/duplicate durable approval rejection, canonical approval payload and preview, optional `jobId` validation, missing/cross-project/mismatched binding rejection, fixture/slideshow/`test-001` rejection, and isolated `VO_CONTENT_PRODUCTION_BINDINGS_PATH` use. The 19-test Phase 1W suite covers approved-content dispatch, root `jobs/<jobId>/topic.json` emission for uploader inference, package identity continuity, thumbnail persistence, metadata-selection and metadata persistence, status approval evidence, successful generic approval-route persistence, HTTP 422 failures for missing/cross-project/mismatched metadata bindings, fixture/slideshow/`test-001` rejection, and no metadata writes after rejected route persistence.
+
+**Canonical publish readiness and live gate:** Complete. `evaluateCanonicalYouTubePublishReadiness()` performs a read-only canonical readiness audit across content approval binding, production job metadata, thumbnail approval, metadata approval, approved package ID, exactly one YouTube account target, persisted successful dry-run proof, exact-confirmation requirement, and existing publication state. `publishApprovedYouTubePackage()` re-evaluates readiness immediately before delegating to the existing YouTube uploader, requires the exact `PUBLISH TO YOUTUBE` phrase with no trimming/case folding/aliases, returns an idempotent duplicate result for already-published jobs, and persists `publication-audit.json`, `status.json`, and `publish.json` evidence only after a successful uploader result with a YouTube video ID. Rejections and uploader failures persist deterministic `publication-attempt.json` evidence without marking the job published.
+
+**Live-readiness evidence:** The 13-test focused readiness suite covers complete canonical readiness success, missing thumbnail approval, missing metadata approval, mismatched identities, missing/failed dry-run proof, wrong confirmation, exact confirmation, fixture/slideshow/`test-001` rejection, cross-project rejection, missing account binding, package approvals with extra posting targets, duplicate publication idempotency, no uploader invocation on rejected paths, one mocked uploader invocation on success, persisted publication audit evidence, and uploader failure without a false published state.
+
+**Operator readiness inspector:** Added `npm run inspect:phase-1w-publish-readiness`, a read-only JSON inspector that scans existing durable bindings, approval records, and local canonical job metadata without uploading, changing approvals, writing job metadata, or modifying bindings. It reports project/content/job/package/account tuples, thumbnail approval evidence, metadata approval evidence, dry-run proof evidence, prior publication state, readiness, and deterministic blockers. Exact filters are supported with `--project-id`, `--content-item-id`, `--job-id`, and `--package-id`; explicitly requested not-ready candidates exit nonzero.
+
+**Validation:** Fresh 2026-06-19 counts: `npm run typecheck` passed. `npm run test:phase-1w-approved-content-dispatch` passed 19/19 tests. `npm run test:vo-studio-write-metadata` passed 22/22 tests. `npm run test:youtube-package-route` passed 2/2 tests. `npm run test:youtube-package-publish` passed 10/10 tests. `npm run test:phase-1w-publish-readiness` passed 13/13 tests. `npm run test:phase-1w-publish-readiness-inspector` passed 4/4 tests. `npm run test:phase-1w-e2e-focused` passed 44/44 tests. `npx tsx --test src/tests/video-orchestrator-youtube-live-gates.test.ts` passed 2/2 tests. `npm run test:youtube-upload-channel-inference` passed 13/13 TAP checks. `git diff --check` passed.
+
+**Real API workflow tuple (2026-06-19):** A real API-driven workflow reached YouTube-ready dry-run state without live upload. Source: `s3://prochat-video-dev-909439522876-eu-north-1-an/jobs/i-7-9-stb-with-theology-001/exports/generated-001-final.mp4` (`video/mp4`, 2,047,543 bytes) with adjacent thumbnail `jobs/i-7-9-stb-with-theology-001/exports/thumbnail-001.jpg`. There were no upload-prefix MP4 objects in the configured bucket, so this verified non-fixture, non-slideshow, non-`test-001` moving-video object was used as the real S3 source. Tuple: `projectId=says-the-bible`, `accountId=acct-stb-youtube`, `contentItemId=content-mql6hqdh-is2yxy`, `jobId=approved-video-approval-content-mql6hqdi-p7zqpv`, `packageId=pkg-mql6i7az-55u44l`, `contentApprovalId=approval-content-mql6hqdi-p7zqpv`, `thumbnailApprovalId=approval-thumbnail-mql6hsyp-2a1t5c`, `metadataApprovalId=approval-metadata-mql6i5yl-dg9wqy`, `packageApprovalId=approval-package-mql6i7az-1sr2jk`, and Step Functions `executionArn=arn:aws:states:eu-north-1:909439522876:execution:prochat-video-skeleton-dev:console-gen-approved-video-approval-content-mql6hqdi-p7zqpv-1781888646602-eb6044`.
+
+**Readiness inspection:** `npm run inspect:phase-1w-publish-readiness -- --project-id says-the-bible --content-item-id content-mql6hqdh-is2yxy --job-id approved-video-approval-content-mql6hqdi-p7zqpv --package-id pkg-mql6i7az-55u44l` returned `ok: true`, one candidate, `ready: 1`, `blocked: 0`, candidate `readiness: true`, and candidate `blockers: []`. Evidence included `dryRunProofId=publish-check:approved-video-approval-content-mql6hqdi-p7zqpv:2026-06-19T17:04:38.223Z`, `dryRunPassedAt=2026-06-19T17:04:38.223Z`, and `priorPublication.published=false`. S3 proof exists at `jobs/approved-video-approval-content-mql6hqdi-p7zqpv/topic.json`, `metadata/publish.json`, and `metadata/publish-check.json`; `publish.json.publishStatus` remains `pending`, `dryRunPassed` is `true`, and YouTube `videoId`, `url`, and `publishedAt` remain `null`.
+
+**Final pre-publication preflight (2026-06-19):** The source-defined final package route is `POST /api/video-orchestrator/package/publish` with `packageId`, `jobId`, `postingTarget.platformId: "youtube"`, `postingTarget.accountId`, and exact `confirmation: "PUBLISH TO YOUTUBE"`; there is no source-defined `projectId` request-body field for this route. The canonical tuple above still inspected as ready with `blockers: []`, one YouTube target, `publishStatus: "pending"`, no YouTube `videoId`, no URL, no `publishedAt`, and no `publication-audit.json`. Credential preflight was redacted: channel config present, OAuth refresh capability available, `acct-stb-youtube` bound to `says-the-bible`, uploader channel inference selected `says-the-bible`, expected channel label `Says the Bible`, and the expected token file was missing. Live execution is therefore not immediately executable until that token is present, even though canonical readiness remains true.
+
+**Stale blocked candidate audit (2026-06-19):** The older tuple `contentItemId=content-mql65xkb-u5l5bh`, `jobId=approved-video-approval-content-mql65xkb-2veshg`, `packageId=pkg-mql66crv-n8pzao` remains a stale incomplete historical candidate, not an evaluator bug. It exposes `dryRunProofId=publish-check:approved-video-approval-content-mql65xkb-2veshg:2026-06-19T16:58:05.483Z` because a dry-run check timestamp exists, but `publish-check.json` reports failed dry-run state and `publish.json.dryRunPassed` remains `false`; readiness correctly blocks with `publish_dry_run_required`. Do not delete it, mark it ready, or copy proof from another job.
+
+**Final preflight validation:** Fresh 2026-06-19 counts for the final pre-publication pass: `npm run typecheck` passed. `npm run test:phase-1w-publish-readiness` passed 13/13 tests. `npm run test:phase-1w-publish-readiness-inspector` passed 4/4 tests. `npm run test:youtube-package-route` passed 2/2 tests. `npm run test:youtube-package-publish` passed 10/10 tests. `npx tsx --test src/tests/video-orchestrator-youtube-live-gates.test.ts` passed 2/2 tests. `npm run test:youtube-upload-channel-inference` passed 13/13 TAP checks. `git diff --check` passed.
+
+**Sprint 1W complete:** The live YouTube upload succeeded at 2026-06-19T18:14:43.089Z. videoId `S_-0WpH7Bgc`, URL `https://www.youtube.com/watch?v=S_-0WpH7Bgc`, channel `Says the Bible`, privacy `private`. Publication audit evidence is persisted. Sprint 1W is closed.
 
 **Required order:** 1W-B → 1W-C → 1W-D → 1W-E → 1W-F → 1W-G → 1W-H → 1W-I.
 
-**Sprint 1W done when:** One real moving-video content item proceeds through required thumbnail and metadata approvals, package creation, one idempotent YouTube posting target, and direct YouTube upload through the existing OAuth2 adapter, with complete audit history, passing focused validation, and operator confirmation.
+**Sprint 1W done when (criterion met 2026-06-19):** One real moving-video content item proceeded through required thumbnail and metadata approvals, package creation, one idempotent YouTube posting target, and direct YouTube upload through the existing OAuth2 adapter, with complete audit history, passing focused validation, and operator confirmation.
 
 ---
 

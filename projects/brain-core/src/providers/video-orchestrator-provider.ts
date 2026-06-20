@@ -28,6 +28,8 @@ import {
   type ReviewStatus,
 } from './video-orchestrator-publish-gate.js';
 import { buildYouTubePackage, type YouTubePackage } from './youtube-package-builder.js';
+import { readAllVOApprovals, type VOApprovalRecord } from '../adapters/vo-studio-approval-store.js';
+import { resolveVOContentProductionJob } from '../adapters/vo-content-production-binding-store.js';
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const EXPECTED_CANONICAL_JOBS_PATH = 'projects/video-orchestrator/cloud/jobs';
@@ -42,8 +44,8 @@ const NARRATION_FIXTURE_KEY = 'jobs/test-001/audio/narration.mp3';
 const VIDEO_FIXTURE_KEY = 'jobs/test-001/exports/sample-transcoded.mp4';
 const STEP_FUNCTIONS_EXECUTION_NAME_MAX = 80;
 const S3_DISCOVERY_LIMIT = 100;
-const S3_METADATA_TIMEOUT_MS = 1_200;
-const S3_HEAD_TIMEOUT_MS = 800;
+const S3_METADATA_TIMEOUT_MS = Number(process.env.S3_METADATA_TIMEOUT_MS ?? 5_000);
+const S3_HEAD_TIMEOUT_MS = Number(process.env.S3_HEAD_TIMEOUT_MS ?? 3_000);
 const S3_PUBLISH_ASSET_TIMEOUT_MS = 10_000;
 const S3_VIDEO_DOWNLOAD_TIMEOUT_MS = 15_000;
 const RECENT_JOB_HYDRATION_CONCURRENCY = 3;
@@ -433,19 +435,27 @@ async function readScriptMetadata(jobId: string): Promise<ScriptMetadata | null>
   }
 }
 
-async function readS3JobMetadataJson(jobId: string, fileName: string): Promise<unknown | null> {
-  if (!isValidJobId(jobId) || !/^[A-Za-z0-9._-]+\.json$/.test(fileName)) return null;
+async function readS3JobMetadataJson(jobId: string, fileName: string): Promise<{ data: unknown; source: 's3' | 'timeout' | 'missing' }> {
+  if (!isValidJobId(jobId) || !/^[A-Za-z0-9._-]+\.json$/.test(fileName)) return { data: null, source: 'missing' };
+  const s3Key = `s3://${S3_BUCKET}/jobs/${jobId}/metadata/${fileName}`;
   try {
     const { stdout } = await execFileAsync('aws', [
       's3', 'cp',
-      `s3://${S3_BUCKET}/jobs/${jobId}/metadata/${fileName}`,
+      s3Key,
       '-',
       '--region', AWS_REGION,
       '--no-cli-pager',
     ], { timeout: S3_METADATA_TIMEOUT_MS });
-    return JSON.parse(stdout);
-  } catch {
-    return null;
+    return { data: JSON.parse(stdout), source: 's3' };
+  } catch (error) {
+    const isTimeout = error instanceof Error && (error.message.includes('ETIMEDOUT') || error.message.includes('timed out') || (error as NodeJS.ErrnoException).code === 'ETIMEDOUT');
+    const isMissing = error instanceof Error && (error.message.includes('NoSuchKey') || error.message.includes('(404)'));
+    if (isTimeout) {
+      console.warn(`[readS3JobMetadataJson] S3 metadata timeout for ${s3Key} after ${S3_METADATA_TIMEOUT_MS}ms — artifact: jobs/${jobId}/metadata/${fileName}`);
+    } else if (!isMissing) {
+      console.warn(`[readS3JobMetadataJson] S3 read failed for ${s3Key}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return { data: null, source: isTimeout ? 'timeout' : 'missing' };
   }
 }
 
@@ -454,8 +464,12 @@ async function readLocalJobMetadataJson(jobId: string, fileName: string): Promis
 }
 
 async function readJobMetadataJson(jobId: string, fileName: string): Promise<unknown | null> {
-  const remote = await readS3JobMetadataJson(jobId, fileName);
+  const { data: remote, source } = await readS3JobMetadataJson(jobId, fileName);
   if (remote) return remote;
+  // On S3 timeout, do not silently fall back to unrelated local files — the local path
+  // may belong to a different repo checkout and would mask the S3 artifact. Return null
+  // so callers see a deterministic missing-artifact error rather than stale local state.
+  if (source === 'timeout') return null;
   return readLocalJobMetadataJson(jobId, fileName);
 }
 
@@ -638,6 +652,12 @@ function nestedPath(record: Record<string, unknown> | null, key: string): string
   return stringValue((value as Record<string, unknown>).path);
 }
 
+function adjacentThumbnailKeyForVideoKey(videoKey: string | null): string | null {
+  if (!videoKey) return null;
+  const match = /^(.*\/exports\/)generated-001-final\.mp4$/.exec(videoKey);
+  return match ? `${match[1]}thumbnail-001.jpg` : null;
+}
+
 async function firstExistingS3Key(candidates: Array<{ key: string | null; source: keyof PublishableAssetsResolution['source'] }>): Promise<{ key: string | null; source: keyof PublishableAssetsResolution['source'] | null }> {
   for (const candidate of candidates) {
     if (!candidate.key) continue;
@@ -668,17 +688,23 @@ export async function resolvePublishableAssets(jobId: string): Promise<Publishab
     statusJson: statusJson !== null,
     inferredS3: Boolean(inferred.finalVideo || inferred.thumbnail || inferred.narration),
   };
+  const assetsVideoKey = stringValue(assetsJson?.videoKey) ?? stringValue(assetsJson?.videoSourceKey);
+  const statusVideoKey = stringValue(statusJson?.finalVideoKey) ?? stringValue(statusJson?.videoKey) ?? stringValue(statusJson?.videoSourceKey);
+  const sourceAdjacentThumbnailKey = adjacentThumbnailKeyForVideoKey(assetsVideoKey ?? statusVideoKey);
 
   const video = await firstExistingS3Key([
     { key: stringValue(publishJson?.videoKey), source: 'publishJson' },
     { key: nestedPath(assetsJson, 'finalVideo'), source: 'assetsJson' },
-    { key: stringValue(statusJson?.finalVideoKey), source: 'statusJson' },
+    { key: assetsVideoKey, source: 'assetsJson' },
+    { key: statusVideoKey, source: 'statusJson' },
     { key: inferred.finalVideo ?? expectedKeys.videoKey, source: 'inferredS3' },
   ]);
   const thumbnail = await firstExistingS3Key([
     { key: stringValue(publishJson?.thumbnailKey), source: 'publishJson' },
     { key: nestedPath(assetsJson, 'thumbnail'), source: 'assetsJson' },
+    { key: stringValue(assetsJson?.thumbnailKey), source: 'assetsJson' },
     { key: stringValue(statusJson?.thumbnailKey), source: 'statusJson' },
+    { key: sourceAdjacentThumbnailKey, source: 'assetsJson' },
     { key: inferred.thumbnail ?? expectedKeys.thumbnailKey, source: 'inferredS3' },
   ]);
   const narration = await firstExistingS3Key([
@@ -1470,6 +1496,131 @@ async function writeS3MetadataJson(jobId: string, fileName: string, value: Recor
   }
 }
 
+async function writeJobMetadataJson(jobId: string, fileName: string, value: Record<string, unknown>): Promise<void> {
+  const metadataPath = getJobMetadataPath(jobId, fileName);
+  await mkdir(dirname(metadataPath), { recursive: true });
+  await writeFile(metadataPath, `${JSON.stringify(value, null, 2)}\n`, 'utf-8');
+  await writeS3MetadataJson(jobId, fileName, value);
+}
+
+async function writePublishArtifactJson(jobId: string, value: Record<string, unknown>): Promise<void> {
+  const content = `${JSON.stringify(value, null, 2)}\n`;
+  const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
+  const publishingDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'publishing');
+  await mkdir(metadataDir, { recursive: true });
+  await mkdir(publishingDir, { recursive: true });
+  await Promise.all([
+    writeFile(join(metadataDir, 'publish.json'), content, 'utf-8'),
+    writeFile(join(publishingDir, 'publish.json'), content, 'utf-8'),
+    writeS3MetadataJson(jobId, 'publish.json', value),
+  ]);
+}
+
+export interface ApprovedThumbnailSelectionInput {
+  approvalId: string;
+  projectId: string;
+  contentItemId: string;
+  jobId: string;
+  variantId: string;
+}
+
+export interface ApprovedThumbnailSelectionDependencies {
+  readMetadata?: (jobId: string, fileName: string) => Promise<Record<string, unknown> | null>;
+  persistMetadata?: (jobId: string, fileName: string, value: Record<string, unknown>) => Promise<void>;
+}
+
+let approvedThumbnailSelectionDependenciesForTests: ApprovedThumbnailSelectionDependencies | null = null;
+
+export function setApprovedThumbnailSelectionDependenciesForTests(
+  dependencies: ApprovedThumbnailSelectionDependencies | null,
+): void {
+  approvedThumbnailSelectionDependenciesForTests = dependencies;
+}
+
+export async function persistApprovedThumbnailSelection(
+  input: ApprovedThumbnailSelectionInput,
+  dependencies: ApprovedThumbnailSelectionDependencies = {},
+): Promise<{ ok: boolean; jobId: string; variantId?: string; error?: string }> {
+  const effectiveDependencies = {
+    ...(approvedThumbnailSelectionDependenciesForTests ?? {}),
+    ...dependencies,
+  };
+  const approvalId = input.approvalId.trim();
+  const projectId = input.projectId.trim();
+  const contentItemId = input.contentItemId.trim();
+  const jobId = input.jobId.trim();
+  const variantId = input.variantId.trim();
+  if (!approvalId || !projectId || !contentItemId || !jobId || !variantId) {
+    return { ok: false, jobId, error: 'approvalId, projectId, contentItemId, jobId, and variantId are required' };
+  }
+  if (!isValidJobId(jobId)) return { ok: false, jobId, error: 'Invalid jobId' };
+
+  const readMetadata = effectiveDependencies.readMetadata
+    ?? (async (boundJobId, fileName) => readJobMetadataJson(boundJobId, fileName) as Promise<Record<string, unknown> | null>);
+  const persistMetadata = effectiveDependencies.persistMetadata ?? writeJobMetadataJson;
+  const [topic, assets, status] = await Promise.all([
+    readMetadata(jobId, 'topic.json'),
+    readMetadata(jobId, 'assets.json'),
+    readMetadata(jobId, 'status.json'),
+  ]);
+  if (!topic || !assets || !status) {
+    return { ok: false, jobId, error: 'Canonical production metadata is incomplete for thumbnail approval' };
+  }
+
+  const metadataContentIds = [topic.contentItemId, assets.contentItemId, status.contentItemId]
+    .filter((value): value is string => typeof value === 'string');
+  if (metadataContentIds.length !== 3 || metadataContentIds.some((value) => value !== contentItemId)) {
+    return { ok: false, jobId, error: `contentItemId ${contentItemId} does not match canonical production metadata` };
+  }
+  if (typeof topic.projectId === 'string' && topic.projectId !== projectId) {
+    return { ok: false, jobId, error: `Production job ${jobId} is not owned by project ${projectId}` };
+  }
+
+  const sourceMarkers = [jobId, assets.videoSourceKey, assets.sourceVideoPath]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+  if (
+    assets.generationMode !== 'approved-source-video'
+    || assets.mediaSource !== 'uploaded-video'
+    || assets.fixtureUsed === true
+    || assets.slideshowGenerated === true
+    || sourceMarkers.includes('fixture')
+    || sourceMarkers.includes('slideshow')
+    || sourceMarkers.includes('test-001')
+  ) {
+    return { ok: false, jobId, error: `Production job ${jobId} is not eligible for real moving-video thumbnail approval` };
+  }
+
+  const approvedAt = new Date().toISOString();
+  const selection = {
+    jobId,
+    projectId,
+    contentItemId,
+    variantId,
+    approvalId,
+    approvedAt,
+    requiredBefore: 'youtube_publish',
+  };
+  await Promise.all([
+    persistMetadata(jobId, 'thumbnail-selection.json', selection),
+    persistMetadata(jobId, 'assets.json', {
+      ...assets,
+      selectedThumbnailVariantId: variantId,
+      thumbnailApprovalId: approvalId,
+      thumbnailApprovedAt: approvedAt,
+    }),
+    persistMetadata(jobId, 'status.json', {
+      ...status,
+      selectedThumbnailVariantId: variantId,
+      thumbnailApprovalId: approvalId,
+      thumbnailApprovedAt: approvedAt,
+    }),
+  ]);
+
+  return { ok: true, jobId, variantId };
+}
+
 async function writeS3JobFile(s3Key: string, content: string): Promise<void> {
   const tempDir = await mkdtemp(join(tmpdir(), 'brain-core-job-file-'));
   const fileName = s3Key.split('/').pop() || 'file';
@@ -1538,18 +1689,165 @@ async function repairPublishJson(jobId: string, publishJson: Record<string, unkn
     },
   };
 
-  const content = `${JSON.stringify(repaired, null, 2)}\n`;
-  const metadataDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'metadata');
-  const publishingDir = join(getVideoOrchestratorRoot(), 'jobs', jobId, 'publishing');
-  await mkdir(metadataDir, { recursive: true });
-  await mkdir(publishingDir, { recursive: true });
-  await Promise.all([
-    writeFile(join(metadataDir, 'publish.json'), content, 'utf-8'),
-    writeFile(join(publishingDir, 'publish.json'), content, 'utf-8'),
-    writeS3MetadataJson(jobId, 'publish.json', repaired),
-  ]);
+  await writePublishArtifactJson(jobId, repaired);
 
   return repaired;
+}
+
+export interface YouTubeDryRunPublishArtifactInput {
+  jobId: string;
+  videoKey: string;
+  thumbnailKey: string;
+  dryRunPassed?: boolean;
+  dryRunCheckedAt?: string;
+  dryRunCheckedBy?: string;
+}
+
+export interface YouTubeDryRunPublishArtifactDependencies {
+  readMetadata?: (jobId: string, fileName: string) => Promise<Record<string, unknown> | null>;
+  readApprovals?: (projectId?: string) => VOApprovalRecord[];
+  persistPublishArtifact?: (jobId: string, value: Record<string, unknown>) => Promise<void>;
+  now?: () => string;
+}
+
+function findSingleApprovedYouTubePackageForJob(input: {
+  approvals: VOApprovalRecord[];
+  jobId: string;
+  projectId?: string | null;
+  contentItemId?: string | null;
+}): { packageId: string | null; accountId: string | null } | null {
+  const matches = input.approvals
+    .filter((approval) => {
+      if (approval.type !== 'package' || approval.status !== 'approved') return false;
+      if (input.projectId && approval.projectId !== input.projectId) return false;
+      const payload = approval.requestPayload;
+      if (payload.jobId !== input.jobId) return false;
+      if (input.contentItemId && payload.contentItemId !== input.contentItemId) return false;
+      const postingTargets = Array.isArray(payload.postingTargets) ? payload.postingTargets : [];
+      if (postingTargets.length !== 1) return false;
+      const target = postingTargets[0];
+      if (!target || typeof target !== 'object') return false;
+      return (target as Record<string, unknown>).platformId === 'youtube';
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  if (matches.length !== 1) return null;
+  const payload = matches[0]?.requestPayload ?? {};
+  const postingTarget = Array.isArray(payload.postingTargets) ? payload.postingTargets[0] : null;
+  const targetRecord = postingTarget && typeof postingTarget === 'object'
+    ? postingTarget as Record<string, unknown>
+    : {};
+  return {
+    packageId: stringValue(payload.packageId),
+    accountId: stringValue(targetRecord.accountId),
+  };
+}
+
+export async function initializeYouTubeDryRunPublishArtifact(
+  input: YouTubeDryRunPublishArtifactInput,
+  dependencies: YouTubeDryRunPublishArtifactDependencies = {},
+): Promise<{ ok: true; initialized: boolean; publishJson: Record<string, unknown> } | { ok: false; code: string; error: string }> {
+  const jobId = input.jobId.trim();
+  const videoKey = input.videoKey.trim();
+  const thumbnailKey = input.thumbnailKey.trim();
+  if (!isValidJobId(jobId)) return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId' };
+  if (!videoKey || !thumbnailKey) {
+    return { ok: false, code: 'publish_assets_missing', error: 'videoKey and thumbnailKey are required for YouTube dry-run artifact initialization' };
+  }
+
+  const readMetadata = dependencies.readMetadata
+    ?? (async (boundJobId, fileName) => readJobMetadataJson(boundJobId, fileName) as Promise<Record<string, unknown> | null>);
+  const persistPublishArtifact = dependencies.persistPublishArtifact ?? writePublishArtifactJson;
+  const [publishJson, topicJson, statusJson, assetsJson, youtubePackageJson] = await Promise.all([
+    readMetadata(jobId, 'publish.json'),
+    readMetadata(jobId, 'topic.json'),
+    readMetadata(jobId, 'status.json'),
+    readMetadata(jobId, 'assets.json'),
+    readMetadata(jobId, 'youtube-package.json'),
+  ]);
+
+  const publishPlatforms = objectRecord(publishJson?.platforms);
+  const publishYoutube = objectRecord(publishPlatforms.youtube);
+  const projectId = stringValue(publishJson?.projectId)
+    ?? stringValue(topicJson?.projectId)
+    ?? stringValue(statusJson?.projectId)
+    ?? stringValue(assetsJson?.projectId);
+  const contentItemId = stringValue(publishJson?.contentItemId)
+    ?? stringValue(topicJson?.contentItemId)
+    ?? stringValue(statusJson?.contentItemId)
+    ?? stringValue(assetsJson?.contentItemId);
+  const approvals = dependencies.readApprovals
+    ? dependencies.readApprovals(projectId ?? undefined)
+    : readAllVOApprovals(projectId ?? undefined);
+  const approvedPackage = findSingleApprovedYouTubePackageForJob({
+    approvals,
+    jobId,
+    projectId,
+    contentItemId,
+  });
+  const now = dependencies.now?.() ?? new Date().toISOString();
+  const publishStatus = stringValue(publishJson?.publishStatus) ?? 'pending';
+  const canonicalYoutubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
+  const youtubePackageTags = stringArray(youtubePackageJson?.tags);
+  const publishTags = stringArray(publishJson?.tags);
+  const nextYoutube = {
+    ...publishYoutube,
+    status: stringValue(publishYoutube.status) ?? 'pending',
+    videoId: publishYoutube.videoId ?? null,
+    publishedAt: publishYoutube.publishedAt ?? null,
+    url: publishYoutube.url ?? null,
+    error: publishYoutube.error ?? null,
+    ...(approvedPackage?.accountId ? { accountId: approvedPackage.accountId } : {}),
+  };
+  const nextPublish: Record<string, unknown> = {
+    ...(publishJson ?? {}),
+    jobId,
+    ...(projectId ? { projectId } : {}),
+    ...(contentItemId ? { contentItemId } : {}),
+    ...(approvedPackage?.packageId ? { packageId: approvedPackage.packageId } : {}),
+    publishStatus,
+    createdAt: stringValue(publishJson?.createdAt) ?? now,
+    updatedAt: now,
+    publishedAt: publishJson?.publishedAt ?? null,
+    title: stringValue(youtubePackageJson?.title) ?? stringValue(publishJson?.title) ?? stringValue(topicJson?.title) ?? '',
+    description: stringValue(youtubePackageJson?.description) ?? stringValue(publishJson?.description) ?? stringValue(topicJson?.description) ?? '',
+    tags: youtubePackageTags.length > 0 ? youtubePackageTags : publishTags,
+    videoKey,
+    thumbnailKey,
+    mediaSource: stringValue(publishJson?.mediaSource) ?? stringValue(statusJson?.mediaSource) ?? stringValue(assetsJson?.mediaSource),
+    generationMode: stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode) ?? stringValue(assetsJson?.generationMode),
+    videoSourceKey: stringValue(publishJson?.videoSourceKey) ?? stringValue(statusJson?.videoSourceKey) ?? stringValue(assetsJson?.videoSourceKey),
+    audioSourceKey: stringValue(publishJson?.audioSourceKey) ?? stringValue(statusJson?.audioSourceKey) ?? stringValue(assetsJson?.audioSourceKey),
+    youtubePackageKey: canonicalYoutubePackageKey,
+    platforms: {
+      ...publishPlatforms,
+      youtube: nextYoutube,
+    },
+  };
+
+  if (input.dryRunPassed !== undefined) {
+    nextPublish.dryRunPassed = input.dryRunPassed;
+    if (input.dryRunPassed && input.dryRunCheckedAt) {
+      nextPublish.dryRunCheckedAt = input.dryRunCheckedAt;
+      nextPublish.dryRunCheckedBy = input.dryRunCheckedBy ?? 'brain-console';
+    } else if (!input.dryRunPassed) {
+      nextPublish.dryRunCheckedAt = input.dryRunCheckedAt ?? null;
+      nextPublish.dryRunCheckedBy = input.dryRunCheckedBy ?? 'brain-console';
+    }
+  }
+
+  const initialized = !publishJson
+    || stringValue(publishJson.videoKey) !== videoKey
+    || stringValue(publishJson.thumbnailKey) !== thumbnailKey
+    || publishJson.dryRunPassed !== nextPublish.dryRunPassed
+    || stringValue(publishJson.dryRunCheckedAt) !== stringValue(nextPublish.dryRunCheckedAt)
+    || stringValue(publishJson.youtubePackageKey) !== canonicalYoutubePackageKey;
+
+  if (initialized) {
+    await persistPublishArtifact(jobId, nextPublish);
+  }
+
+  return { ok: true, initialized, publishJson: nextPublish };
 }
 
 export async function runControlledYouTubePublish(jobId: string, options: { dryRun: boolean; confirmation?: string }): Promise<ControlledYouTubePublishResult> {
@@ -1564,7 +1862,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
   if (!options.dryRun) {
     const requiredConfirmation = 'PUBLISH TO YOUTUBE';
-    if (options.confirmation?.trim() !== requiredConfirmation) {
+    if (options.confirmation !== requiredConfirmation) {
       return {
         ok: false,
         jobId,
@@ -1614,15 +1912,12 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
 
   // Dry-run fast path: skip heavy finalization/resolution, validate only publish-critical keys
   if (options.dryRun) {
-    const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
-    const canonicalThumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
-    const [videoExists, thumbExists] = await Promise.all([
-      fileExists(join(getVideoOrchestratorRoot(), canonicalVideoKey)).then(ok => ok || checkS3ObjectExists(S3_BUCKET, canonicalVideoKey, AWS_REGION)),
-      fileExists(join(getVideoOrchestratorRoot(), canonicalThumbnailKey)).then(ok => ok || checkS3ObjectExists(S3_BUCKET, canonicalThumbnailKey, AWS_REGION)),
-    ]);
+    const resolved = await resolvePublishableAssets(jobId);
+    const dryRunVideoKey = resolved.videoKey ?? resolved.expectedKeys.videoKey;
+    const dryRunThumbnailKey = resolved.thumbnailKey ?? resolved.expectedKeys.thumbnailKey;
     const dryRunMissing: string[] = [];
-    if (!videoExists) dryRunMissing.push(canonicalVideoKey);
-    if (!thumbExists) dryRunMissing.push(canonicalThumbnailKey);
+    if (!resolved.videoKey) dryRunMissing.push(dryRunVideoKey);
+    if (!resolved.thumbnailKey) dryRunMissing.push(dryRunThumbnailKey);
     if (dryRunMissing.length > 0) {
       return {
         ok: false,
@@ -1633,16 +1928,40 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
         details: { missing: dryRunMissing },
       };
     }
-    // Publish metadata: read existing or use initial
-    let publishJson = publishJson_initial ?? {};
-    if (!publishJson.videoKey) publishJson = { ...publishJson, videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey };
+    let publishArtifact: Awaited<ReturnType<typeof initializeYouTubeDryRunPublishArtifact>>;
+    try {
+      publishArtifact = await initializeYouTubeDryRunPublishArtifact({
+        jobId,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
+      });
+    } catch (error) {
+      return {
+        ok: false,
+        jobId,
+        dryRun: true,
+        code: 'publish_artifact_initialization_failed',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+    if (!publishArtifact.ok) {
+      return {
+        ok: false,
+        jobId,
+        dryRun: true,
+        code: publishArtifact.code,
+        error: publishArtifact.error,
+      };
+    }
+
+    let publishJson = publishArtifact.publishJson;
     const generationMode = typeof publishJson.generationMode === 'string' ? publishJson.generationMode : null;
 
     if (isGeneratedMediaGenerationMode(generationMode)) {
       const assetValidation = validateGeneratedMediaPublishAssets({
         generationMode,
-        videoKey: canonicalVideoKey,
-        thumbnailKey: canonicalThumbnailKey,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
         jobId,
       });
       if (!assetValidation.valid) {
@@ -1652,7 +1971,7 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
           dryRun: true,
           code: 'generated_media_publish_assets_invalid',
           error: `Generated-media mode requires valid generated assets: ${assetValidation.reason}`,
-          details: { generationMode, videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey, reason: assetValidation.reason },
+          details: { generationMode, videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey, reason: assetValidation.reason },
         };
       }
     }
@@ -1671,10 +1990,19 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
     try {
       const publishCheckRunning: PublishCheckMetadata = {
         jobId,
-        youtubeDryRun: { status: 'running', startedAt: dryRunStartedAt, checkedBy: 'brain-console', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        youtubeDryRun: { status: 'running', startedAt: dryRunStartedAt, checkedBy: 'brain-console', videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey },
         dryRunPassed: false,
       };
       await writePublishCheckJson(jobId, publishCheckRunning);
+      const runningPublishArtifact = await initializeYouTubeDryRunPublishArtifact({
+        jobId,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
+        dryRunPassed: false,
+        dryRunCheckedAt: dryRunStartedAt,
+        dryRunCheckedBy: 'brain-console',
+      });
+      if (runningPublishArtifact.ok) publishJson = runningPublishArtifact.publishJson;
     } catch (_) { /* non-fatal */ }
 
     try {
@@ -1682,19 +2010,48 @@ export async function runControlledYouTubePublish(jobId: string, options: { dryR
       const now = new Date().toISOString();
       const publishCheckPassed: PublishCheckMetadata = {
         jobId,
-        youtubeDryRun: { status: 'passed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', privacy: 'private', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        youtubeDryRun: { status: 'passed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', privacy: 'private', videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey },
         dryRunPassed: true,
       };
       await writePublishCheckJson(jobId, publishCheckPassed);
-      return { ok: true, jobId, dryRun: true, videoId: null, url: null, stdout: stdout.slice(-4000), stderr: stderr.slice(-2000) };
+      const passedPublishArtifact = await initializeYouTubeDryRunPublishArtifact({
+        jobId,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
+        dryRunPassed: true,
+        dryRunCheckedAt: now,
+        dryRunCheckedBy: 'brain-console',
+      });
+      if (passedPublishArtifact.ok) publishJson = passedPublishArtifact.publishJson;
+      const dryRunResult: ControlledYouTubePublishResult = {
+        ok: true,
+        jobId,
+        dryRun: true,
+        videoId: null,
+        url: null,
+        dryRunPassed: true,
+        dryRunCheckedAt: now,
+        stdout: stdout.slice(-4000),
+        stderr: stderr.slice(-2000),
+      };
+      if (typeof publishJson.publishStatus === 'string') dryRunResult.publishStatus = publishJson.publishStatus;
+      return dryRunResult;
     } catch (scriptError: any) {
       const now = new Date().toISOString();
       const publishCheckFailed: PublishCheckMetadata = {
         jobId,
-        youtubeDryRun: { status: 'failed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', videoKey: canonicalVideoKey, thumbnailKey: canonicalThumbnailKey },
+        youtubeDryRun: { status: 'failed', startedAt: dryRunStartedAt, checkedAt: now, checkedBy: 'brain-console', videoKey: dryRunVideoKey, thumbnailKey: dryRunThumbnailKey },
         dryRunPassed: false,
       };
       await writePublishCheckJson(jobId, publishCheckFailed).catch(() => {});
+      await initializeYouTubeDryRunPublishArtifact({
+        jobId,
+        videoKey: dryRunVideoKey,
+        thumbnailKey: dryRunThumbnailKey,
+        dryRunPassed: false,
+        dryRunCheckedAt: now,
+        dryRunCheckedBy: 'brain-console',
+      }).catch(() => {});
       return { ok: false, jobId, dryRun: true, code: 'dry_run_script_failed', error: scriptError.message ?? 'Dry-run script failed', details: { stderr: scriptError.stderr?.slice?.(-2000) ?? '' } };
     }
   }
@@ -2477,19 +2834,34 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
 
   const generationMode = stringValue(assetsJson?.generationMode) ?? stringValue(publishJson?.generationMode) ?? stringValue(statusJson?.generationMode) ?? null;
   const isHybridImageSlideshow = generationMode === 'hybrid_image_slideshow_video';
-  const requiredKeys = [
-    'jobs/' + jobId + '/metadata/scene-plan.json',
-    'jobs/' + jobId + '/audio/narration-script.txt',
-    'jobs/' + jobId + '/audio/narration.mp3',
-    'jobs/' + jobId + '/metadata/assets.json',
-    ...(isHybridImageSlideshow ? ['jobs/' + jobId + '/metadata/overlay-plan.json'] : []),
-    'jobs/' + jobId + '/video-generated/generated-001.mp4',
-    'jobs/' + jobId + '/exports/generated-001-final.mp4',
-    'jobs/' + jobId + '/exports/thumbnail-001.jpg',
-    'jobs/' + jobId + '/metadata/youtube-package.json',
-    'jobs/' + jobId + '/metadata/publish.json',
-    'jobs/' + jobId + '/metadata/review.json',
-  ];
+  const isApprovedSourceVideo = generationMode === 'approved-source-video';
+
+  // For approved-source-video mode, the video/thumbnail live under the source job prefix (videoSourceKey/thumbnailKey),
+  // not under this job's canonical exports/ path. Skip audio/scene/generated-video prerequisites that don't apply.
+  const approvedVideoKey = stringValue(publishJson?.videoKey) ?? stringValue(assetsJson?.videoSourceKey) ?? stringValue(assetsJson?.videoKey);
+  const approvedThumbnailKey = stringValue(publishJson?.thumbnailKey) ?? stringValue(assetsJson?.thumbnailKey);
+  const requiredKeys = isApprovedSourceVideo
+    ? [
+        'jobs/' + jobId + '/metadata/assets.json',
+        ...(approvedVideoKey ? [approvedVideoKey] : ['jobs/' + jobId + '/exports/generated-001-final.mp4']),
+        ...(approvedThumbnailKey ? [approvedThumbnailKey] : ['jobs/' + jobId + '/exports/thumbnail-001.jpg']),
+        'jobs/' + jobId + '/metadata/youtube-package.json',
+        'jobs/' + jobId + '/metadata/publish.json',
+        'jobs/' + jobId + '/metadata/review.json',
+      ]
+    : [
+        'jobs/' + jobId + '/metadata/scene-plan.json',
+        'jobs/' + jobId + '/audio/narration-script.txt',
+        'jobs/' + jobId + '/audio/narration.mp3',
+        'jobs/' + jobId + '/metadata/assets.json',
+        ...(isHybridImageSlideshow ? ['jobs/' + jobId + '/metadata/overlay-plan.json'] : []),
+        'jobs/' + jobId + '/video-generated/generated-001.mp4',
+        'jobs/' + jobId + '/exports/generated-001-final.mp4',
+        'jobs/' + jobId + '/exports/thumbnail-001.jpg',
+        'jobs/' + jobId + '/metadata/youtube-package.json',
+        'jobs/' + jobId + '/metadata/publish.json',
+        'jobs/' + jobId + '/metadata/review.json',
+      ];
 
   const repairableMetadataKeys = new Set([
     `jobs/${jobId}/metadata/youtube-package.json`,
@@ -2517,8 +2889,13 @@ export async function finalizeAwsVideoPublishPackage(jobId: string): Promise<Fin
   }
 
   const repaired: string[] = [];
-  const canonicalVideoKey = `jobs/${jobId}/exports/generated-001-final.mp4`;
-  const canonicalThumbnailKey = `jobs/${jobId}/exports/thumbnail-001.jpg`;
+  // For approved-source-video, use the actual source video/thumbnail keys rather than the canonical job-scoped paths.
+  const canonicalVideoKey = isApprovedSourceVideo
+    ? (approvedVideoKey ?? `jobs/${jobId}/exports/generated-001-final.mp4`)
+    : `jobs/${jobId}/exports/generated-001-final.mp4`;
+  const canonicalThumbnailKey = isApprovedSourceVideo
+    ? (approvedThumbnailKey ?? `jobs/${jobId}/exports/thumbnail-001.jpg`)
+    : `jobs/${jobId}/exports/thumbnail-001.jpg`;
   const canonicalYoutubePackageKey = `jobs/${jobId}/metadata/youtube-package.json`;
   const canonicalPublishKey = `jobs/${jobId}/metadata/publish.json`;
   const canonicalReviewKey = `jobs/${jobId}/metadata/review.json`;
@@ -5566,6 +5943,7 @@ export async function createJobFromPrompt(
 
 export interface ApprovedContentProductionDispatchInput {
   approvalId: string;
+  contentItemId: string;
   projectId: string;
   title: string;
   description?: string;
@@ -5583,6 +5961,7 @@ export interface ApprovedContentProductionDispatchResult {
 export interface ApprovedContentProductionDispatchDependencies {
   jobsRoot?: string;
   persistMetadata?: (jobId: string, fileName: string, value: Record<string, unknown>) => Promise<void>;
+  persistJobFile?: (s3Key: string, content: string) => Promise<void>;
   startExecution?: (input: {
     jobId: string;
     sourceVideoKey: string;
@@ -5617,8 +5996,8 @@ export async function dispatchApprovedMovingVideoContent(
   if (normalized.includes('test-001') || normalized.includes('fixture') || normalized.includes('slideshow')) {
     return { ok: false, error: 'fixture, test-001, and slideshow sources are not eligible for production dispatch' };
   }
-  if (!input.approvalId || !input.projectId || !input.title.trim()) {
-    return { ok: false, error: 'approvalId, projectId, and title are required' };
+  if (!input.approvalId || !input.contentItemId?.trim() || !input.projectId || !input.title.trim()) {
+    return { ok: false, error: 'approvalId, contentItemId, projectId, and title are required' };
   }
 
   const sourceVideoKey = source.slice(`s3://${S3_BUCKET}/`.length);
@@ -5632,6 +6011,7 @@ export async function dispatchApprovedMovingVideoContent(
   const metadataDir = join(jobsRoot, jobId, 'metadata');
   const statusPath = join(metadataDir, 'status.json');
   const persistMetadata = dependencies.persistMetadata ?? writeS3MetadataJson;
+  const persistJobFile = dependencies.persistJobFile ?? writeS3JobFile;
 
   let existingStatus: Record<string, unknown> | null = null;
   try {
@@ -5657,6 +6037,7 @@ export async function dispatchApprovedMovingVideoContent(
     description: input.description?.trim() ?? '',
     source: 'approved-moving-video-content',
     approvalId: input.approvalId,
+    contentItemId: input.contentItemId,
     createdAt: now,
   };
   const script: Record<string, unknown> = {
@@ -5688,6 +6069,7 @@ export async function dispatchApprovedMovingVideoContent(
     slideshowGenerated: false,
     fixtureUsed: false,
     approvalId: input.approvalId,
+    contentItemId: input.contentItemId,
   };
   const status: Record<string, unknown> = {
     jobId,
@@ -5697,6 +6079,7 @@ export async function dispatchApprovedMovingVideoContent(
     generationMode: 'approved-source-video',
     videoSourceKey: sourceVideoKey,
     approvalId: input.approvalId,
+    contentItemId: input.contentItemId,
     createdAt: now,
     updatedAt: now,
   };
@@ -5711,6 +6094,7 @@ export async function dispatchApprovedMovingVideoContent(
     persistMetadata(jobId, 'script.json', script),
     persistMetadata(jobId, 'assets.json', assets),
     persistMetadata(jobId, 'status.json', status),
+    persistJobFile(`jobs/${jobId}/topic.json`, `${JSON.stringify(topic, null, 2)}\n`),
   ]);
 
   let executionArn: string;
@@ -5762,4 +6146,599 @@ export async function dispatchApprovedMovingVideoContent(
   await persistMetadata(jobId, 'status.json', startedStatus);
 
   return { ok: true, jobId, executionArn };
+}
+
+
+
+
+export interface ApprovedMetadataSelectionInput {
+  approvalId: string;
+  projectId: string;
+  contentItemId: string;
+  jobId: string;
+  variantId: string;
+  youtubeTitle: string;
+  youtubeDescription: string;
+  youtubeTags: string[];
+  hashtags: string[];
+}
+
+export interface ApprovedMetadataSelectionDependencies {
+  readMetadata?: (jobId: string, fileName: string) => Promise<Record<string, unknown> | null>;
+  persistMetadata?: (jobId: string, fileName: string, value: Record<string, unknown>) => Promise<void>;
+}
+
+let approvedMetadataSelectionDependenciesForTests: ApprovedMetadataSelectionDependencies | null = null;
+
+export function setApprovedMetadataSelectionDependenciesForTests(
+  dependencies: ApprovedMetadataSelectionDependencies | null,
+): void {
+  approvedMetadataSelectionDependenciesForTests = dependencies;
+}
+
+export async function persistApprovedMetadataSelection(
+  input: ApprovedMetadataSelectionInput,
+  dependencies: ApprovedMetadataSelectionDependencies = {},
+): Promise<{ ok: boolean; jobId: string; variantId?: string; error?: string }> {
+  const effectiveDependencies = {
+    ...(approvedMetadataSelectionDependenciesForTests ?? {}),
+    ...dependencies,
+  };
+  const approvalId = input.approvalId.trim();
+  const projectId = input.projectId.trim();
+  const contentItemId = input.contentItemId.trim();
+  const jobId = input.jobId.trim();
+  const variantId = input.variantId.trim();
+  const youtubeTitle = input.youtubeTitle.trim();
+  const youtubeDescription = input.youtubeDescription.trim();
+  const youtubeTags = input.youtubeTags.map((value) => value.trim()).filter(Boolean);
+  const hashtags = input.hashtags.map((value) => value.trim()).filter(Boolean);
+
+  if (!approvalId || !projectId || !contentItemId || !jobId || !variantId || !youtubeTitle || !youtubeDescription) {
+    return {
+      ok: false,
+      jobId,
+      error: 'approvalId, projectId, contentItemId, jobId, variantId, youtubeTitle, and youtubeDescription are required',
+    };
+  }
+  if (!isValidJobId(jobId)) return { ok: false, jobId, error: 'Invalid jobId' };
+
+  const readMetadata = effectiveDependencies.readMetadata
+    ?? (async (boundJobId, fileName) => readJobMetadataJson(boundJobId, fileName) as Promise<Record<string, unknown> | null>);
+  const persistMetadata = effectiveDependencies.persistMetadata ?? writeJobMetadataJson;
+  const [topic, assets, status] = await Promise.all([
+    readMetadata(jobId, 'topic.json'),
+    readMetadata(jobId, 'assets.json'),
+    readMetadata(jobId, 'status.json'),
+  ]);
+  if (!topic || !assets || !status) {
+    return { ok: false, jobId, error: 'Canonical production metadata is incomplete for metadata approval' };
+  }
+
+  const metadataContentIds = [topic.contentItemId, assets.contentItemId, status.contentItemId]
+    .filter((value): value is string => typeof value === 'string');
+  if (metadataContentIds.length !== 3 || metadataContentIds.some((value) => value !== contentItemId)) {
+    return { ok: false, jobId, error: `contentItemId ${contentItemId} does not match canonical production metadata` };
+  }
+  if (typeof topic.projectId === 'string' && topic.projectId !== projectId) {
+    return { ok: false, jobId, error: `Production job ${jobId} is not owned by project ${projectId}` };
+  }
+
+  const sourceMarkers = [jobId, assets.videoSourceKey, assets.sourceVideoPath]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+  if (
+    assets.generationMode !== 'approved-source-video'
+    || assets.mediaSource !== 'uploaded-video'
+    || assets.fixtureUsed === true
+    || assets.slideshowGenerated === true
+    || sourceMarkers.includes('fixture')
+    || sourceMarkers.includes('slideshow')
+    || sourceMarkers.includes('test-001')
+  ) {
+    return { ok: false, jobId, error: `Production job ${jobId} is not eligible for real moving-video metadata approval` };
+  }
+
+  const approvedAt = new Date().toISOString();
+  const selection = {
+    jobId,
+    projectId,
+    contentItemId,
+    variantId,
+    youtubeTitle,
+    youtubeDescription,
+    youtubeTags,
+    hashtags,
+    approvalId,
+    approvedAt,
+    requiredBefore: 'youtube_publish',
+  };
+
+  await Promise.all([
+    persistMetadata(jobId, 'metadata-selection.json', selection),
+    persistMetadata(jobId, 'metadata.json', {
+      ...selection,
+      targetPlatform: 'youtube',
+    }),
+    persistMetadata(jobId, 'status.json', {
+      ...status,
+      metadataApprovalId: approvalId,
+      metadataApprovedAt: approvedAt,
+      selectedMetadataVariantId: variantId,
+    }),
+  ]);
+
+  return { ok: true, jobId, variantId };
+}
+
+export const LIVE_YOUTUBE_CONFIRMATION_PHRASE = 'PUBLISH TO YOUTUBE';
+
+export interface CanonicalYouTubePublishReadinessInput {
+  jobId: string;
+  packageId: string;
+  accountId: string;
+}
+
+export interface CanonicalYouTubePublishReadinessEvidence {
+  projectId: string;
+  contentItemId: string;
+  jobId: string;
+  packageId: string;
+  thumbnailApprovalId: string;
+  thumbnailApprovedAt: string;
+  selectedThumbnailVariantId: string;
+  metadataApprovalId: string;
+  metadataApprovedAt: string;
+  selectedMetadataVariantId: string;
+  youtubeTitle: string;
+  youtubeDescription: string;
+  packageApprovalId: string;
+  packageApprovedAt: string;
+  accountId: string;
+  targetPlatform: 'youtube';
+  dryRunProofId: string;
+  dryRunPassedAt: string;
+  existingPublication: {
+    published: boolean;
+    videoId: string | null;
+    url: string | null;
+    publishedAt: string | null;
+    source: string | null;
+  };
+  exactConfirmationRequired: typeof LIVE_YOUTUBE_CONFIRMATION_PHRASE;
+}
+
+export type CanonicalYouTubePublishReadinessResult =
+  | { ok: true; evidence: CanonicalYouTubePublishReadinessEvidence }
+  | { ok: false; code: string; error: string; evidence?: Partial<CanonicalYouTubePublishReadinessEvidence> };
+
+export interface CanonicalYouTubePublishReadinessDependencies {
+  readMetadata?: (jobId: string, fileName: string) => Promise<Record<string, unknown> | null>;
+  readApprovals?: (projectId?: string) => VOApprovalRecord[];
+  resolveBinding?: typeof resolveVOContentProductionJob;
+}
+
+function objectRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : {};
+}
+
+function hasForbiddenProductionMarker(...values: unknown[]): boolean {
+  const normalized = values
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+  return normalized.includes('fixture') || normalized.includes('slideshow') || normalized.includes('test-001');
+}
+
+function findApprovedPackageApproval(input: {
+  approvals: VOApprovalRecord[];
+  jobId: string;
+  contentItemId: string;
+  packageId: string;
+  accountId: string;
+}): VOApprovalRecord | null {
+  return input.approvals.find((approval) => {
+    if (approval.type !== 'package' || approval.status !== 'approved') return false;
+    const payload = approval.requestPayload;
+    if (payload.jobId !== input.jobId || payload.contentItemId !== input.contentItemId) return false;
+    if (payload.packageId !== input.packageId) return false;
+    const postingTargets = Array.isArray(payload.postingTargets) ? payload.postingTargets : [];
+    if (postingTargets.length !== 1) return false;
+    const target = postingTargets[0];
+    if (!target || typeof target !== 'object') return false;
+    const targetRecord = target as Record<string, unknown>;
+    return targetRecord.platformId === 'youtube' && targetRecord.accountId === input.accountId;
+  }) ?? null;
+}
+
+export async function evaluateCanonicalYouTubePublishReadiness(
+  input: CanonicalYouTubePublishReadinessInput,
+  dependencies: CanonicalYouTubePublishReadinessDependencies = {},
+): Promise<CanonicalYouTubePublishReadinessResult> {
+  const jobId = input.jobId.trim();
+  const packageId = input.packageId.trim();
+  const accountId = input.accountId.trim();
+  if (!jobId || !packageId || !accountId) {
+    return { ok: false, code: 'publish_identity_required', error: 'jobId, packageId, and accountId are required' };
+  }
+  if (!isValidJobId(jobId)) {
+    return { ok: false, code: 'invalid_job_id', error: 'Invalid jobId' };
+  }
+  if (hasForbiddenProductionMarker(jobId)) {
+    return { ok: false, code: 'publish_ineligible_job', error: 'fixture, slideshow, and test-001 jobs are not eligible for live YouTube publish' };
+  }
+
+  const readMetadata = dependencies.readMetadata
+    ?? (async (boundJobId, fileName) => readJobMetadataJson(boundJobId, fileName) as Promise<Record<string, unknown> | null>);
+  const [topic, assets, status, thumbnailSelection, metadataSelection, metadataJson, publishJson, publishCheck, publicationAudit] = await Promise.all([
+    readMetadata(jobId, 'topic.json'),
+    readMetadata(jobId, 'assets.json'),
+    readMetadata(jobId, 'status.json'),
+    readMetadata(jobId, 'thumbnail-selection.json'),
+    readMetadata(jobId, 'metadata-selection.json'),
+    readMetadata(jobId, 'metadata.json'),
+    readMetadata(jobId, 'publish.json'),
+    readMetadata(jobId, 'publish-check.json'),
+    readMetadata(jobId, 'publication-audit.json'),
+  ]);
+
+  if (!topic || !assets || !status) {
+    return { ok: false, code: 'canonical_metadata_missing', error: 'topic.json, assets.json, and status.json are required before live publish' };
+  }
+
+  const projectId = stringValue(topic.projectId);
+  const contentItemId = stringValue(topic.contentItemId);
+  if (!projectId || !contentItemId) {
+    return { ok: false, code: 'canonical_identity_missing', error: 'Canonical projectId and contentItemId are required before live publish' };
+  }
+
+  const canonicalContentIds = [topic.contentItemId, assets.contentItemId, status.contentItemId]
+    .filter((value): value is string => typeof value === 'string');
+  if (canonicalContentIds.length !== 3 || canonicalContentIds.some((value) => value !== contentItemId)) {
+    return { ok: false, code: 'canonical_content_mismatch', error: 'Canonical topic/assets/status contentItemId values must match' };
+  }
+  if (stringValue(topic.jobId) && topic.jobId !== jobId) {
+    return { ok: false, code: 'canonical_job_mismatch', error: 'topic.json jobId does not match requested jobId' };
+  }
+  if (stringValue(assets.jobId) && assets.jobId !== jobId) {
+    return { ok: false, code: 'canonical_job_mismatch', error: 'assets.json jobId does not match requested jobId' };
+  }
+  if (stringValue(status.jobId) && status.jobId !== jobId) {
+    return { ok: false, code: 'canonical_job_mismatch', error: 'status.json jobId does not match requested jobId' };
+  }
+
+  if (
+    assets.generationMode !== 'approved-source-video'
+    || assets.mediaSource !== 'uploaded-video'
+    || assets.fixtureUsed === true
+    || assets.slideshowGenerated === true
+    || hasForbiddenProductionMarker(assets.videoSourceKey, assets.sourceVideoPath, assets.videoKey)
+  ) {
+    return { ok: false, code: 'publish_ineligible_job', error: 'Only real approved uploaded-video production jobs are eligible for live YouTube publish' };
+  }
+
+  const resolveBinding = dependencies.resolveBinding ?? resolveVOContentProductionJob;
+  const binding = resolveBinding(contentItemId, projectId);
+  if (!binding.ok || !binding.binding) {
+    return { ok: false, code: 'production_binding_missing', error: binding.error ?? `No production job binding found for contentItemId ${contentItemId}` };
+  }
+  if (binding.binding.productionJobId !== jobId) {
+    return { ok: false, code: 'production_binding_mismatch', error: `Bound production job ${binding.binding.productionJobId} does not match requested jobId ${jobId}` };
+  }
+
+  if (!thumbnailSelection) {
+    return { ok: false, code: 'thumbnail_approval_missing', error: 'Approved thumbnail selection is required before live YouTube publish' };
+  }
+  const thumbnailApprovalId = stringValue(thumbnailSelection.approvalId) ?? stringValue(status.thumbnailApprovalId);
+  const thumbnailApprovedAt = stringValue(thumbnailSelection.approvedAt) ?? stringValue(status.thumbnailApprovedAt);
+  const selectedThumbnailVariantId = stringValue(thumbnailSelection.variantId) ?? stringValue(status.selectedThumbnailVariantId);
+  if (
+    thumbnailSelection.jobId !== jobId
+    || thumbnailSelection.contentItemId !== contentItemId
+    || !thumbnailApprovalId
+    || !thumbnailApprovedAt
+    || !selectedThumbnailVariantId
+  ) {
+    return { ok: false, code: 'thumbnail_approval_invalid', error: 'Approved thumbnail selection must match the canonical job and content item' };
+  }
+
+  const selectedMetadata = metadataSelection ?? metadataJson;
+  if (!selectedMetadata) {
+    return { ok: false, code: 'metadata_approval_missing', error: 'Approved metadata selection is required before live YouTube publish' };
+  }
+  const metadataApprovalId = stringValue(selectedMetadata.approvalId) ?? stringValue(status.metadataApprovalId);
+  const metadataApprovedAt = stringValue(selectedMetadata.approvedAt) ?? stringValue(status.metadataApprovedAt);
+  const selectedMetadataVariantId = stringValue(selectedMetadata.variantId) ?? stringValue(status.selectedMetadataVariantId);
+  const youtubeTitle = stringValue(selectedMetadata.youtubeTitle);
+  const youtubeDescription = stringValue(selectedMetadata.youtubeDescription);
+  if (
+    selectedMetadata.jobId !== jobId
+    || selectedMetadata.contentItemId !== contentItemId
+    || !metadataApprovalId
+    || !metadataApprovedAt
+    || !selectedMetadataVariantId
+    || !youtubeTitle
+    || !youtubeDescription
+  ) {
+    return { ok: false, code: 'metadata_approval_invalid', error: 'Approved metadata selection must match the canonical job and include YouTube title and description' };
+  }
+
+  const readApprovals = dependencies.readApprovals ?? readAllVOApprovals;
+  const packageApproval = findApprovedPackageApproval({
+    approvals: readApprovals(projectId),
+    jobId,
+    contentItemId,
+    packageId,
+    accountId,
+  });
+  if (!packageApproval) {
+    return { ok: false, code: 'package_approval_missing', error: 'Approved package approval with one bound YouTube account is required before live publish' };
+  }
+
+  const publishDryRunPassed = publishJson?.dryRunPassed === true;
+  const dryRun = objectRecord(publishCheck?.youtubeDryRun);
+  const dryRunPassedAt = stringValue(dryRun.checkedAt) ?? stringValue(publishJson?.dryRunCheckedAt);
+  if (publishCheck?.dryRunPassed !== true || dryRun.status !== 'passed' || !dryRunPassedAt || !publishDryRunPassed) {
+    return { ok: false, code: 'publish_dry_run_required', error: 'A persisted successful YouTube dry-run proof is required before live publish' };
+  }
+
+  const publishPlatforms = objectRecord(publishJson?.platforms);
+  const publishYoutube = objectRecord(publishPlatforms.youtube);
+  const auditYoutube = objectRecord(publicationAudit?.youtube);
+  const auditStatus = stringValue(publicationAudit?.status);
+  const publishedByAudit = auditStatus === 'published' && !!stringValue(auditYoutube.videoId);
+  const publishedByPublishJson = !!stringValue(publishYoutube.videoId)
+    || publishYoutube.status === 'uploaded'
+    || publishYoutube.status === 'published';
+  const existingVideoId = stringValue(auditYoutube.videoId) ?? stringValue(publishYoutube.videoId);
+  const existingUrl = stringValue(auditYoutube.url) ?? stringValue(publishYoutube.url);
+  const existingPublishedAt = stringValue(publicationAudit?.publishedAt)
+    ?? stringValue(auditYoutube.publishedAt)
+    ?? stringValue(publishYoutube.publishedAt)
+    ?? stringValue(publishJson?.publishedAt);
+
+  return {
+    ok: true,
+    evidence: {
+      projectId,
+      contentItemId,
+      jobId,
+      packageId,
+      thumbnailApprovalId,
+      thumbnailApprovedAt,
+      selectedThumbnailVariantId,
+      metadataApprovalId,
+      metadataApprovedAt,
+      selectedMetadataVariantId,
+      youtubeTitle,
+      youtubeDescription,
+      packageApprovalId: packageApproval.id,
+      packageApprovedAt: packageApproval.decidedAt ?? packageApproval.requestedAt,
+      accountId,
+      targetPlatform: 'youtube',
+      dryRunProofId: `publish-check:${jobId}:${dryRunPassedAt}`,
+      dryRunPassedAt,
+      existingPublication: {
+        published: publishedByAudit || publishedByPublishJson,
+        videoId: existingVideoId,
+        url: existingUrl,
+        publishedAt: existingPublishedAt,
+        source: publishedByAudit ? 'publication-audit.json' : publishedByPublishJson ? 'publish.json' : null,
+      },
+      exactConfirmationRequired: LIVE_YOUTUBE_CONFIRMATION_PHRASE,
+    },
+  };
+}
+
+export interface ApprovedYouTubePackagePublishInput extends CanonicalYouTubePublishReadinessInput {
+  confirmation: string;
+}
+
+export interface ApprovedYouTubePackagePublishDependencies extends CanonicalYouTubePublishReadinessDependencies {
+  uploader?: (jobId: string, options: { dryRun: boolean; confirmation?: string }) => Promise<ControlledYouTubePublishResult>;
+  persistMetadata?: (jobId: string, fileName: string, value: Record<string, unknown>) => Promise<void>;
+}
+
+export interface ApprovedYouTubePackagePublishResult {
+  ok: boolean;
+  jobId: string;
+  packageId: string;
+  accountId: string;
+  code?: string;
+  error?: string;
+  duplicate?: boolean;
+  videoId?: string | null;
+  url?: string | null;
+  readiness?: CanonicalYouTubePublishReadinessResult;
+  upload?: ControlledYouTubePublishResult;
+  publicationAudit?: Record<string, unknown>;
+}
+
+async function persistPublicationAttempt(
+  input: {
+    jobId: string;
+    packageId: string;
+    accountId: string;
+    status: 'rejected' | 'failed';
+    code: string;
+    error: string;
+    readiness?: CanonicalYouTubePublishReadinessResult;
+    upload?: ControlledYouTubePublishResult;
+  },
+  persistMetadata: (jobId: string, fileName: string, value: Record<string, unknown>) => Promise<void>,
+): Promise<void> {
+  if (!isValidJobId(input.jobId)) return;
+  await persistMetadata(input.jobId, 'publication-attempt.json', {
+    jobId: input.jobId,
+    packageId: input.packageId,
+    accountId: input.accountId,
+    targetPlatform: 'youtube',
+    status: input.status,
+    code: input.code,
+    error: input.error,
+    attemptedAt: new Date().toISOString(),
+    confirmationMatched: false,
+    requiredConfirmation: LIVE_YOUTUBE_CONFIRMATION_PHRASE,
+    readiness: input.readiness?.ok === true ? input.readiness.evidence : input.readiness,
+    upload: input.upload,
+  });
+}
+
+export async function publishApprovedYouTubePackage(
+  input: ApprovedYouTubePackagePublishInput,
+  dependencies: ApprovedYouTubePackagePublishDependencies = {},
+): Promise<ApprovedYouTubePackagePublishResult> {
+  const jobId = input.jobId.trim();
+  const packageId = input.packageId.trim();
+  const accountId = input.accountId.trim();
+  const persistMetadata = dependencies.persistMetadata ?? writeJobMetadataJson;
+
+  if (input.confirmation !== LIVE_YOUTUBE_CONFIRMATION_PHRASE) {
+    const result = {
+      ok: false,
+      jobId,
+      packageId,
+      accountId,
+      code: 'publish_confirmation_required',
+      error: `Live YouTube publish requires exact confirmation: ${LIVE_YOUTUBE_CONFIRMATION_PHRASE}`,
+    };
+    await persistPublicationAttempt({ ...result, status: 'rejected' }, persistMetadata);
+    return result;
+  }
+
+  const readiness = await evaluateCanonicalYouTubePublishReadiness({ jobId, packageId, accountId }, dependencies);
+  if (!readiness.ok) {
+    const result = { ok: false, jobId, packageId, accountId, code: readiness.code, error: readiness.error, readiness };
+    await persistPublicationAttempt({ ...result, status: 'rejected' }, persistMetadata);
+    return result;
+  }
+
+  if (readiness.evidence.existingPublication.published) {
+    return {
+      ok: true,
+      jobId,
+      packageId,
+      accountId,
+      duplicate: true,
+      videoId: readiness.evidence.existingPublication.videoId,
+      url: readiness.evidence.existingPublication.url,
+      readiness,
+    };
+  }
+
+  const uploader = dependencies.uploader ?? runControlledYouTubePublish;
+  const upload = await uploader(jobId, { dryRun: false, confirmation: input.confirmation });
+  if (!upload.ok) {
+    const result = {
+      ok: false,
+      jobId,
+      packageId,
+      accountId,
+      code: upload.code ?? 'youtube_upload_failed',
+      error: upload.error ?? 'YouTube uploader failed',
+      readiness,
+      upload,
+    };
+    await persistPublicationAttempt({ ...result, status: 'failed' }, persistMetadata);
+    return result;
+  }
+  if (!upload.videoId) {
+    const result = {
+      ok: false,
+      jobId,
+      packageId,
+      accountId,
+      code: 'youtube_video_id_missing',
+      error: 'YouTube uploader succeeded without returning a videoId',
+      readiness,
+      upload,
+    };
+    await persistPublicationAttempt({ ...result, status: 'failed' }, persistMetadata);
+    return result;
+  }
+
+  const publishedAt = new Date().toISOString();
+  const publicationAudit: Record<string, unknown> = {
+    status: 'published',
+    jobId,
+    contentItemId: readiness.evidence.contentItemId,
+    packageId,
+    accountId,
+    targetPlatform: 'youtube',
+    youtube: {
+      videoId: upload.videoId,
+      url: upload.url ?? null,
+      publishedAt,
+    },
+    uploaderResult: upload,
+    confirmationMatched: true,
+    requiredConfirmation: LIVE_YOUTUBE_CONFIRMATION_PHRASE,
+    publishedAt,
+    dryRunProof: {
+      id: readiness.evidence.dryRunProofId,
+      passedAt: readiness.evidence.dryRunPassedAt,
+    },
+    thumbnailApproval: {
+      id: readiness.evidence.thumbnailApprovalId,
+      approvedAt: readiness.evidence.thumbnailApprovedAt,
+      variantId: readiness.evidence.selectedThumbnailVariantId,
+    },
+    metadataApproval: {
+      id: readiness.evidence.metadataApprovalId,
+      approvedAt: readiness.evidence.metadataApprovedAt,
+      variantId: readiness.evidence.selectedMetadataVariantId,
+    },
+  };
+
+  const [statusJson, publishJson] = await Promise.all([
+    (dependencies.readMetadata ?? (async (boundJobId, fileName) => readJobMetadataJson(boundJobId, fileName) as Promise<Record<string, unknown> | null>))(jobId, 'status.json'),
+    (dependencies.readMetadata ?? (async (boundJobId, fileName) => readJobMetadataJson(boundJobId, fileName) as Promise<Record<string, unknown> | null>))(jobId, 'publish.json'),
+  ]);
+  const publishPlatforms = objectRecord(publishJson?.platforms);
+  const publishYoutube = objectRecord(publishPlatforms.youtube);
+  await Promise.all([
+    persistMetadata(jobId, 'publication-audit.json', publicationAudit),
+    persistMetadata(jobId, 'status.json', {
+      ...(statusJson ?? {}),
+      jobId,
+      contentItemId: readiness.evidence.contentItemId,
+      youtubePublicationStatus: 'published',
+      youtubeVideoId: upload.videoId,
+      youtubePublicUrl: upload.url ?? null,
+      youtubePublishedAt: publishedAt,
+      updatedAt: publishedAt,
+    }),
+    persistMetadata(jobId, 'publish.json', {
+      ...(publishJson ?? {}),
+      jobId,
+      contentItemId: readiness.evidence.contentItemId,
+      publishStatus: 'uploaded',
+      publishedAt,
+      updatedAt: publishedAt,
+      platforms: {
+        ...publishPlatforms,
+        youtube: {
+          ...publishYoutube,
+          status: 'uploaded',
+          videoId: upload.videoId,
+          url: upload.url ?? null,
+          publishedAt,
+          accountId,
+        },
+      },
+    }),
+  ]);
+
+  return {
+    ok: true,
+    jobId,
+    packageId,
+    accountId,
+    videoId: upload.videoId,
+    url: upload.url ?? null,
+    readiness,
+    upload,
+    publicationAudit,
+  };
 }
