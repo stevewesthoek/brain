@@ -8,12 +8,11 @@
     <array>
         <string>/opt/homebrew/bin/mtplx</string>
         <string>quickstart</string>
-        <string>--model</string>
-        <string>Youssofal/Qwen3.6-27B-MTPLX-Optimized-Speed</string>
         <string>--profile</string>
-        <string>sustained</string>
+        <string>stable</string>
         <string>--port</string>
         <string>8000</string>
+        <string>--no-mtp</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
