@@ -9,10 +9,9 @@
         <string>/opt/homebrew/bin/mtplx</string>
         <string>quickstart</string>
         <string>--profile</string>
-        <string>stable</string>
+        <string>sustained</string>
         <string>--port</string>
         <string>8000</string>
-        <string>--no-mtp</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
