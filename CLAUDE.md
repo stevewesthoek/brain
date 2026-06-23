@@ -375,6 +375,22 @@ spark-cli team "Team Name"            # team info
 - Docker CLI commands work identically under OrbStack
 - Production uses self-hosted Supabase server on Tailscale (100.71.31.88) — not replicated locally
 
+## Local inference: MTPLX + Qwen 3.6 27B
+
+**MTPLX** is the local inference engine on this Mac. It accelerates Qwen 3.6 27B using native MTP (Multi-Token Prediction) speculative decoding on Apple Silicon.
+
+**Key constraints:**
+- Model + runtime requires ~21-22 GB unified memory (16.4 GB weights + 4-5 GB KV cache + buffers)
+- M4 Pro has 24 GB total; **MTPLX and Ollama cannot coexist** with large models
+- All entry points (`qwen`, `graphify-nightly`, graphify scripts) auto-stop Ollama before starting MTPLX
+
+**Entry points:**
+- Terminal coding: `qwen` (runs Aider with MTPLX backend)
+- Graphify extraction: Custom "mtplx" backend registered in `~/.graphify/providers.json`
+- Nightly scheduler: `graphify-nightly.sh` runs 6 graphify phases on MTPLX
+
+**See:** `operations/runbooks/mtplx-qwen-integration.md` for full setup, troubleshooting, and memory management.
+
 ## Symlink map (home → brain)
 
 | Home path | Target |
