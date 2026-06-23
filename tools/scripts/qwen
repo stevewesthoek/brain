@@ -8,11 +8,26 @@
 
 set -euo pipefail
 
-# Check MTPLX health (with API key)
-if ! curl -sf -H "Authorization: Bearer mtplx-local" http://127.0.0.1:8000/health >/dev/null 2>&1; then
-  echo "Error: MTPLX not available at http://127.0.0.1:8000" >&2
-  echo "Start it with: launchctl bootstrap gui/\$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist" >&2
-  exit 1
+# Stop Ollama to free memory for MTPLX (they can't coexist on 24GB)
+if pgrep -q -f "Ollama"; then
+  echo "Stopping Ollama to free memory for MTPLX..."
+  osascript -e 'quit app "Ollama"' 2>/dev/null || true
+  sleep 3
+fi
+
+# Check MTPLX health
+if ! curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+  echo "MTPLX not running, starting..." >&2
+  launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist 2>/dev/null || true
+  launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist 2>/dev/null || true
+  for i in $(seq 1 60); do
+    curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1 && break
+    sleep 2
+  done
+  if ! curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+    echo "Error: MTPLX failed to start. Check ~/.local/video-orchestrator/logs/mtplx.err" >&2
+    exit 1
+  fi
 fi
 
 # Check aider installed

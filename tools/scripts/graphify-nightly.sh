@@ -1258,9 +1258,28 @@ if [[ "$GRAPHIFY_BACKEND" != "openai" && "$GRAPHIFY_BACKEND" != "ollama" && "$GR
 fi
 
 if [[ "$GRAPHIFY_BACKEND" == "openai" || "$GRAPHIFY_BACKEND" == "mtplx" ]]; then
+  # Stop Ollama to free memory for MTPLX (they can't coexist on 24GB)
+  if pgrep -q -f "Ollama"; then
+    log "stopping Ollama to free memory for MTPLX..."
+    osascript -e 'quit app "Ollama"' 2>/dev/null || true
+    sleep 3
+  fi
+
   if ! curl -sf "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
-    log "MTPLX unavailable at http://127.0.0.1:8000 — start MTPLX or switch to ollama backend"
-    exit 1
+    log "MTPLX not running, attempting to start..."
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist 2>/dev/null || true
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist 2>/dev/null || true
+    # Wait for MTPLX to finish loading model
+    for i in $(seq 1 60); do
+      if curl -sf "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
+        break
+      fi
+      sleep 2
+    done
+    if ! curl -sf "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
+      log "MTPLX failed to start at http://127.0.0.1:8000 — check logs at ~/.local/video-orchestrator/logs/mtplx.err"
+      exit 1
+    fi
   fi
 fi
 
