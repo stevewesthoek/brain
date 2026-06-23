@@ -14,8 +14,6 @@
         <string>sustained</string>
         <string>--port</string>
         <string>8000</string>
-        <string>--api-key</string>
-        <string>mtplx-local</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
