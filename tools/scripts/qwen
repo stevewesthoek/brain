@@ -25,6 +25,6 @@ fi
 exec aider \
   --model openai/mtplx \
   --openai-api-base http://127.0.0.1:8000/v1 \
-  --openai-api-key mtplx-local \
+  --openai-api-key "sk-proj-mtplx-dummy-00000000000000000000" \
   --no-show-model-warnings \
   "$@"
