@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-1800}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
-GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-openai}"
+GRAPHIFY_BACKEND="${GRAPHIFY_BACKEND:-mtplx}"
 
 # GRAPHIFY_MODEL remains a manual override. When it is not set, each phase chooses
 # the smallest useful model for that phase.
@@ -16,6 +16,8 @@ GRAPHIFY_DEEP_MODEL="${GRAPHIFY_DEEP_MODEL:-$GRAPHIFY_REFINED_MODEL}"
 
 OPENAI_BASE_URL="${OPENAI_BASE_URL:-http://127.0.0.1:8000/v1}"
 OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+MTPLX_API_KEY="${MTPLX_API_KEY:-not-needed}"
+export MTPLX_API_KEY
 GRAPHIFY_OLLAMA_NUM_CTX="${GRAPHIFY_OLLAMA_NUM_CTX:-8192}"
 GRAPHIFY_OLLAMA_KEEP_ALIVE="${GRAPHIFY_OLLAMA_KEEP_ALIVE:-30}"
 GRAPHIFY_MAX_CONCURRENCY="${GRAPHIFY_MAX_CONCURRENCY:-1}"
@@ -715,6 +717,7 @@ run_graphify() {
   shift 2
   OPENAI_BASE_URL="$OPENAI_BASE_URL" \
   OPENAI_API_KEY="$OPENAI_API_KEY" \
+  MTPLX_API_KEY="$MTPLX_API_KEY" \
   GRAPHIFY_OLLAMA_NUM_CTX="$GRAPHIFY_OLLAMA_NUM_CTX" \
   GRAPHIFY_OLLAMA_KEEP_ALIVE="$GRAPHIFY_OLLAMA_KEEP_ALIVE" \
   GRAPHIFY_VIZ_NODE_LIMIT="$GRAPHIFY_VIZ_NODE_LIMIT" \
@@ -1249,14 +1252,14 @@ if ! command -v "$GRAPHIFY_BIN" >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ "$GRAPHIFY_BACKEND" != "openai" && "$GRAPHIFY_BACKEND" != "ollama" ]]; then
+if [[ "$GRAPHIFY_BACKEND" != "openai" && "$GRAPHIFY_BACKEND" != "ollama" && "$GRAPHIFY_BACKEND" != "mtplx" ]]; then
   log "refusing non-local backend=$GRAPHIFY_BACKEND — Graphify is local-only"
   exit 1
 fi
 
-if [[ "$GRAPHIFY_BACKEND" == "openai" ]]; then
-  if ! curl -sf "${OPENAI_BASE_URL%/v1}/health" >/dev/null 2>&1; then
-    log "MTPLX unavailable at $OPENAI_BASE_URL — start MTPLX or switch to ollama backend"
+if [[ "$GRAPHIFY_BACKEND" == "openai" || "$GRAPHIFY_BACKEND" == "mtplx" ]]; then
+  if ! curl -sf "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
+    log "MTPLX unavailable at http://127.0.0.1:8000 — start MTPLX or switch to ollama backend"
     exit 1
   fi
 fi

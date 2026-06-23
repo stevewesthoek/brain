@@ -47,23 +47,28 @@ qwen /path/to/file    # start with specific file
 ```
 
 ### 3. Graphify Backend
-**File:** `/Users/Office/Repos/stevewesthoek/buildflow/graphify-run.sh`
+**File:** `~/.graphify/providers.json`
 
-Uses **Ollama backend** (not MTPLX) because:
-- graphify's `openai-python` SDK does client-side validation on API keys
-- MTPLX's OpenAI-compatible endpoint tries to validate keys as real OpenAI keys
-- Ollama doesn't have this validation and works seamlessly
-
-```bash
-graphify extract . --backend ollama --model qwen2.5:32b
+Uses a **custom "mtplx" backend** registered in graphify's provider system:
+```json
+{
+  "mtplx": {
+    "base_url": "http://127.0.0.1:8000/v1",
+    "default_model": "mtplx",
+    "env_key": "MTPLX_API_KEY",
+    "pricing": {"input": 0.0, "output": 0.0},
+    "temperature": 0,
+    "vision": true
+  }
+}
 ```
 
-**Why not MTPLX for graphify?**
-- Technical: openai-python SDK validates key format before sending request
-- MTPLX's OpenAI endpoint validates against real OpenAI key format
-- Incompatible validation requirements → 401 errors
+**Usage:**
+```bash
+MTPLX_API_KEY="not-needed" graphify extract . --backend mtplx --model mtplx --token-budget 4000 --max-concurrency 1 --api-timeout 900
+```
 
-**Workaround:** Use Ollama's qwen2.5:32b which is fast enough and has no validation issues.
+**Key insight:** The `MTPLX_API_KEY` env var just needs a non-empty string (MTPLX doesn't validate it on localhost). The custom provider avoids the "openai" backend's hardcoded `https://api.openai.com/v1` base_url.
 
 ## File Locations
 
@@ -88,18 +93,19 @@ curl -s http://127.0.0.1:8000/health | jq '.model, .api_key_required'
 # Test qwen command
 qwen --version  # Should show aider version
 
-# Test graphify
+# Test graphify with MTPLX
 cd /path/to/repo
-graphify extract . --backend ollama --model qwen2.5:32b --token-budget 1000
+MTPLX_API_KEY="not-needed" graphify extract . --backend mtplx --model mtplx --token-budget 1000 --max-concurrency 1 --api-timeout 900
 ```
 
-## Key Decision: Ollama for Graphify, MTPLX for Terminal
+## Unified Backend: Everything Runs on MTPLX
 
-This split approach is intentional:
-- **Terminal coding (aider):** MTPLX Qwen 3.6 27B → Maximum speed (native MTP)
-- **Graphify:** Ollama qwen2.5 → No API key validation issues, sufficient performance
+All local AI tasks use the same MTPLX Qwen 3.6 27B Speed model:
+- **Terminal coding (aider):** `qwen` command → MTPLX
+- **Graphify extraction:** `--backend mtplx` → MTPLX
+- **Nightly scheduler:** All 6 phases → MTPLX
 
-Both run simultaneously without conflict. MTPLX stays on port 8000, Ollama on 11434.
+No Ollama needed. MTPLX on port 8000 is the single local inference engine.
 
 ## Troubleshooting
 
@@ -110,12 +116,14 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.office.mtplx.plist
 
 **MTPLX crashes with "Insufficient Memory"**
 - Only use Speed variant (16.4 GB), never Quality (30 GB)
-- Ensure OS has ≥8GB free memory
-- Check `top -o MEM` to see current usage
+- Ensure OS has ≥8GB free memory before starting MTPLX
+- Stop Ollama if running: `osascript -e 'quit app "Ollama"'`
+- Check memory: `memory_pressure | grep "free percentage"`
 
-**Graphify hangs**
-- Verify Ollama is running: `ollama list`
-- If qwen2.5:32b not loaded: `ollama pull qwen2.5:32b`
+**Graphify 401 errors**
+- Ensure `~/.graphify/providers.json` exists with the mtplx entry
+- Ensure `MTPLX_API_KEY` env var is set (any non-empty value)
+- Don't use `--backend openai` — use `--backend mtplx`
 
 **Qwen command returns usage text**
 - Verify MTPLX is running: `curl http://127.0.0.1:8000/health`
