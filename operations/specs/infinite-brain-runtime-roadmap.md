@@ -21,7 +21,8 @@ The following capabilities are implemented, tested, and ready for use:
 - report-only/manual Mind use (all durable writes require explicit human approval);
 - disabled continuous runner by default (`continuousEnabled: false`, `watcherEnabled: false`);
 - scheduler planning and readiness surfaces;
-- phase-9 safety capabilities: stable-file detection, failure buffer, large-file nightly fallback plan.
+- phase-9 safety capabilities: stable-file detection, failure buffer, large-file nightly fallback plan;
+- stale-page detector recall for the required freshness-metadata positive case validated by `test:mind-maintenance-loader-stale`, including Mind-style fenced YAML status blocks.
 
 The current release is usable without continuous processing. No claim of black-box self-optimization is made. No LaunchAgent changes were made.
 

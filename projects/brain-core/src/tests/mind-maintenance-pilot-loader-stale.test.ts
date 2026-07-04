@@ -14,13 +14,16 @@ async function createPilotFixture(): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-pilot-'));
 
   const contents: Record<(typeof MIND_MAINTENANCE_PILOT_FILES)[number], string> = {
-    'router/00-current-context.md': `---
+    'router/00-current-context.md': `# Current Context
+
+## Status
+
+\`\`\`yaml
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
 freshness_risk: high
----
-# Current Context
+\`\`\`
 `,
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
 
@@ -123,6 +126,37 @@ test('emits the expected stale finding for current context after review_after', 
     finding.deduplicationKey,
     'stale-page:router/00-current-context.md:review_after',
   );
+});
+
+test('detects stale freshness metadata inside Mind-style fenced yaml status blocks', () => {
+  const finding = detectStalePageFinding({
+    file: {
+      path: 'router/00-current-context.md',
+      absolutePath: '/tmp/mind/router/00-current-context.md',
+      content: `# Current Context
+
+## Status
+
+\`\`\`yaml
+status: current
+last_reviewed: 2026-06-14
+review_after: 2026-06-28
+freshness_risk: high
+\`\`\`
+`,
+    },
+    reportDate: '2026-07-04',
+  });
+
+  assert.ok(finding);
+  assert.equal(finding.type, 'stale-page');
+  assert.deepEqual(finding.paths, ['router/00-current-context.md']);
+  assert.equal(finding.risk, 'high');
+  assert.equal(finding.requiresApproval, true);
+  assert.equal(finding.noWritePerformed, true);
+  assert.equal(finding.trigger, 'review_after date has passed');
+  assert.match(finding.matchedEvidence[0]?.summary ?? '', /review_after is 2026-06-28/);
+  assert.match(finding.recommendedAction, /Review the page/);
 });
 
 test('does not mark future-review or metadata-free pages as stale', async (context) => {
