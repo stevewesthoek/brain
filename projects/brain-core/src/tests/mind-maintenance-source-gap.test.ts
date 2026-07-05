@@ -4,7 +4,7 @@ import { detectSourceGapFindings } from '../mind-maintenance-pilot/source-gap-de
 import type { LoadedMindMaintenancePilotFile } from '../mind-maintenance-pilot/pilot-file-loader.js';
 
 function createFile(
-  path: LoadedMindMaintenancePilotFile['path'] = 'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+  path: LoadedMindMaintenancePilotFile['path'] = 'wiki/organisations/prochat/brand/product-strategy.md',
 ): LoadedMindMaintenancePilotFile {
   return {
     path,
