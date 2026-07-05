@@ -51,7 +51,7 @@ From the Infinite Brain OS repo review:
 - Brain-owned Mind structural validator/report for required Mind surfaces, freshness metadata, Graphify output naming, maintenance pilot paths, and report outputs — implemented as a report-only Brain Core module/CLI on 2026-07-05;
 - lightweight session closeout receipts for significant AI/repo sessions, recording branch, commits, changed files, validation, remaining dirty state, decisions, and next task — implemented in Mind as `system/session-closeout-receipt-template.md` on 2026-07-05;
 - processed-capture receipts when inbox volume requires auditability from intake to ignored/summarized/promoted/task outcome — implemented in Mind as `system/processed-capture-receipt-template.md` on 2026-07-05;
-- `operations/system-configs/**` ownership audit to separate canonical config from generated adapter shims, live local machine state, logs, and machine-specific files.
+- `operations/system-configs/**` ownership audit to separate canonical config from generated adapter shims, live local machine state, logs, and machine-specific files — implemented as `operations/specs/runtime-system-config-ownership-audit.md` on 2026-07-05.
 
 From the OODA / Infinite Brain transcript review:
 
