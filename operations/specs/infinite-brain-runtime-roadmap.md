@@ -41,6 +41,27 @@ The following capabilities are deferred and must not be treated as current:
 
 Continuous processing remains disabled. These items require separate approval, evidence of value, and explicit enablement before they may be activated.
 
+### Post-plan improvement backlog — documentation first
+
+These items are approved for roadmap tracking only. They must be split into implementation-plan tasks before any code, automation, folder migration, or continuous behavior is built.
+
+From the Infinite Brain OS repo review:
+
+- Brain-owned Mind structural validator/report for required Mind surfaces, freshness metadata, Graphify output naming, maintenance pilot paths, and report outputs;
+- lightweight session closeout receipts for significant AI/repo sessions, recording branch, commits, changed files, validation, remaining dirty state, decisions, and next task;
+- processed-capture receipts when inbox volume requires auditability from intake to ignored/summarized/promoted/task outcome;
+- `operations/system-configs/**` ownership audit to separate canonical config from generated adapter shims, live local machine state, logs, and machine-specific files.
+
+From the OODA / Infinite Brain transcript review:
+
+- strengthen Mind as Brain's orientation layer through compact current-context, strategy, constraint, source-quality, active-project, and decision-principle briefs;
+- define an intake-disposition pattern before adding more ingestion automation: ignore/archive, deterministic action, knowledge proposal, task proposal, project update proposal, maintenance finding, or source-quality rejection;
+- add source-quality gates before promotion so external transcripts/newsletters/emails/meetings do not become durable Mind knowledge merely because they were ingested;
+- add a lightweight wager/verdict pattern for significant business or workflow changes, including expected improvement, measurement window, evidence source, later verdict, and follow-up action;
+- prefer routed model tiers: deterministic rules first, cheap model for simple classification, stronger model only for high-context or strategic orientation work.
+
+These are future report-only/design-first improvements. They do not authorize continuous processing, hidden loops, autonomous durable writes, or broad ingestion.
+
 ---
 
 ## Executive Summary
