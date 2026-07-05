@@ -57,7 +57,7 @@ From the OODA / Infinite Brain transcript review:
 
 - strengthen Mind as Brain's orientation layer through compact current-context, strategy, constraint, source-quality, active-project, and decision-principle briefs — implemented in Mind as `system/orientation-brief-template.md` on 2026-07-05;
 - define an intake-disposition pattern before adding more ingestion automation: ignore/archive, deterministic action, knowledge proposal, task proposal, project update proposal, maintenance finding, or source-quality rejection — implemented in Mind as `system/intake-disposition-pattern.md` on 2026-07-05;
-- add source-quality gates before promotion so external transcripts/newsletters/emails/meetings do not become durable Mind knowledge merely because they were ingested;
+- add source-quality gates before promotion so external transcripts/newsletters/emails/meetings do not become durable Mind knowledge merely because they were ingested — implemented in Mind as `system/source-quality-gates.md` on 2026-07-05;
 - add a lightweight wager/verdict pattern for significant business or workflow changes, including expected improvement, measurement window, evidence source, later verdict, and follow-up action;
 - prefer routed model tiers: deterministic rules first, cheap model for simple classification, stronger model only for high-context or strategic orientation work.
 
