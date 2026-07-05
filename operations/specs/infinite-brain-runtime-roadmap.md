@@ -22,7 +22,8 @@ The following capabilities are implemented, tested, and ready for use:
 - disabled continuous runner by default (`continuousEnabled: false`, `watcherEnabled: false`);
 - scheduler planning and readiness surfaces;
 - phase-9 safety capabilities: stable-file detection, failure buffer, large-file nightly fallback plan;
-- stale-page detector recall for the required freshness-metadata positive case validated by `test:mind-maintenance-loader-stale`, including Mind-style fenced YAML status blocks.
+- stale-page detector recall for the required freshness-metadata positive case validated by `test:mind-maintenance-loader-stale`, including Mind-style fenced YAML status blocks;
+- report-only Mind structural validator implemented as a Brain Core module/CLI (`mind-structure-validator`) with pass/warn/fail checks for required Mind surfaces, maintenance pilot paths, report outputs, freshness metadata, Graphify output naming, and generated/runtime truth boundaries.
 
 The current release is usable without continuous processing. No claim of black-box self-optimization is made. No LaunchAgent changes were made.
 
@@ -47,7 +48,7 @@ These items are approved for roadmap tracking only. They must be split into impl
 
 From the Infinite Brain OS repo review:
 
-- Brain-owned Mind structural validator/report for required Mind surfaces, freshness metadata, Graphify output naming, maintenance pilot paths, and report outputs;
+- Brain-owned Mind structural validator/report for required Mind surfaces, freshness metadata, Graphify output naming, maintenance pilot paths, and report outputs — implemented as a report-only Brain Core module/CLI on 2026-07-05;
 - lightweight session closeout receipts for significant AI/repo sessions, recording branch, commits, changed files, validation, remaining dirty state, decisions, and next task;
 - processed-capture receipts when inbox volume requires auditability from intake to ignored/summarized/promoted/task outcome;
 - `operations/system-configs/**` ownership audit to separate canonical config from generated adapter shims, live local machine state, logs, and machine-specific files.

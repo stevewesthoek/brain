@@ -6,7 +6,8 @@
   "description": "Local read-only Brain Core API for Obsidian-first machine state.",
   "bin": {
     "brain-agent": "dist/bin/brain-agent.js",
-    "mind-maintenance-pilot": "dist/bin/mind-maintenance-pilot.js"
+    "mind-maintenance-pilot": "dist/bin/mind-maintenance-pilot.js",
+    "mind-structure-validator": "dist/bin/mind-structure-validator.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -51,6 +52,7 @@
     "test:mind-maintenance-pilot-all": "npm run build && node --test dist/tests/mind-maintenance-*.test.js",
     "test:mind-maintenance-finding-decisions": "npm run build && node --test dist/tests/mind-maintenance-finding-decision-store.test.js",
     "test:mind-maintenance-finding-decision-file": "npm run build && node --test dist/tests/mind-maintenance-finding-decision-file.test.js",
+    "test:mind-structure-validator": "npm run build && node --test dist/tests/mind-structure-validator.test.js",
     "test:local-app-actions-live": "npm run build && node scripts/test-local-app-actions-live.mjs",
     "ci": "npm run typecheck && npm test"
   },
