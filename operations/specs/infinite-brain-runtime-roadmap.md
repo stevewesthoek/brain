@@ -49,7 +49,7 @@ These items are approved for roadmap tracking only. They must be split into impl
 From the Infinite Brain OS repo review:
 
 - Brain-owned Mind structural validator/report for required Mind surfaces, freshness metadata, Graphify output naming, maintenance pilot paths, and report outputs — implemented as a report-only Brain Core module/CLI on 2026-07-05;
-- lightweight session closeout receipts for significant AI/repo sessions, recording branch, commits, changed files, validation, remaining dirty state, decisions, and next task;
+- lightweight session closeout receipts for significant AI/repo sessions, recording branch, commits, changed files, validation, remaining dirty state, decisions, and next task — implemented in Mind as `system/session-closeout-receipt-template.md` on 2026-07-05;
 - processed-capture receipts when inbox volume requires auditability from intake to ignored/summarized/promoted/task outcome;
 - `operations/system-configs/**` ownership audit to separate canonical config from generated adapter shims, live local machine state, logs, and machine-specific files.
 
