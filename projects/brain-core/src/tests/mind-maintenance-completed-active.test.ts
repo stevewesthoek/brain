@@ -99,7 +99,7 @@ Status: active
 
 test('does not treat unrelated dates as completion evidence', () => {
   const file = createFile(
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'wiki/organisations/prochat/brand/product-strategy.md',
     `---
 status: current
 last_reviewed: 2026-06-13

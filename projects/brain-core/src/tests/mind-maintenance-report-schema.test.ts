@@ -66,7 +66,7 @@ function createValidReport(): MaintenanceReport {
     filesConsidered: [
       'router/00-current-context.md',
       'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-      'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+      'wiki/organisations/prochat/brand/product-strategy.md',
       'live/dashboard.md',
       'system/automation-roadmap.md',
     ],
@@ -129,7 +129,7 @@ test('rejects a finding emitted by a disabled detector', () => {
     id: 'finding-duplicate-001',
     type: 'duplicate-candidate',
     deduplicationKey:
-      'duplicate:live/projects/prochat-qa-memory/STRATEGY-PLAN.md:wiki/organisations/prochat/brand/prochat-os-strategy.md',
+      'duplicate:live/projects/prochat-qa-memory/STRATEGY-PLAN.md:wiki/organisations/prochat/brand/product-strategy.md',
   };
 
   assert.ok(issuePaths(report).includes('findings[0].type'));
@@ -190,7 +190,7 @@ test('accepts a structured detector error while preserving valid findings', () =
   report.errors = [
     {
       detector: 'source-gap',
-      path: 'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+      path: 'wiki/organisations/prochat/brand/product-strategy.md',
       errorType: 'timeout',
       summary: 'Source-gap semantic review exceeded its bounded execution time.',
       retryable: true,

@@ -376,7 +376,7 @@ test('compiled CLI lists unmatched decisions without changing decisions or lates
   const pilotFiles = [
     'router/00-current-context.md',
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'wiki/organisations/prochat/brand/product-strategy.md',
     'live/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
@@ -390,7 +390,7 @@ freshness_risk: high
 # Current Context
 `,
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
     'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
@@ -603,7 +603,7 @@ test('compiled CLI reports decision coverage without changing either input file'
   const pilotFiles = [
     'router/00-current-context.md',
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'wiki/organisations/prochat/brand/product-strategy.md',
     'live/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
@@ -617,7 +617,7 @@ freshness_risk: high
 # Current Context
 `,
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
     'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
@@ -794,7 +794,7 @@ test('compiled CLI reports partial decision coverage status without modifying in
   const pilotFiles = [
     'router/00-current-context.md',
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'wiki/organisations/prochat/brand/product-strategy.md',
     'live/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
@@ -808,7 +808,7 @@ freshness_risk: high
 # Current Context
 `,
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
     'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
@@ -975,7 +975,7 @@ test('compiled CLI renders the exact partial decision coverage summary without m
   const pilotFiles = [
     'router/00-current-context.md',
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'wiki/organisations/prochat/brand/product-strategy.md',
     'live/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
@@ -989,7 +989,7 @@ freshness_risk: high
 # Current Context
 `,
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
     'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
@@ -1159,7 +1159,7 @@ test('compiled CLI renders the exact partial decision coverage action without mo
   const pilotFiles = [
     'router/00-current-context.md',
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+    'wiki/organisations/prochat/brand/product-strategy.md',
     'live/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
@@ -1173,7 +1173,7 @@ freshness_risk: high
 # Current Context
 `,
     'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
     'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };

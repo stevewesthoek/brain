@@ -24,7 +24,7 @@ Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: medium
 `,
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': `# ProChat OS Strategy
+    'wiki/organisations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
 
 Status: current
 Last reviewed: 2026-06-13
@@ -191,7 +191,7 @@ test('preserves structured detector failures in the completed report', async (co
     detectorErrors: [
       {
         detector: 'source-gap',
-        path: 'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+        path: 'wiki/organisations/prochat/brand/product-strategy.md',
         errorType: 'timeout',
         summary: 'Source-gap semantic review exceeded its bounded execution time.',
         retryable: true,

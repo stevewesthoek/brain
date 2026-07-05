@@ -23,7 +23,7 @@ Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: medium
 `,
-    'wiki/organisations/prochat/brand/prochat-os-strategy.md': `# ProChat OS Strategy
+    'wiki/organisations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
 
 Status: current
 Last reviewed: 2026-06-13
@@ -81,7 +81,7 @@ test('builds the canonical in-memory five-file pilot report', () => {
 
 test('includes a valid source-gap finding and keeps summary counts aligned', () => {
   const dataset = createDataset();
-  const strategyPath = 'wiki/organisations/prochat/brand/prochat-os-strategy.md' as const;
+  const strategyPath = 'wiki/organisations/prochat/brand/product-strategy.md' as const;
   const result = buildMindMaintenancePilotReport({
     dataset,
     sourceCommit: 'abc1234',
@@ -111,7 +111,7 @@ test('includes a valid source-gap finding and keeps summary counts aligned', () 
 
 test('preserves ambiguous source-gap candidates without creating findings', () => {
   const dataset = createDataset();
-  const strategyPath = 'wiki/organisations/prochat/brand/prochat-os-strategy.md' as const;
+  const strategyPath = 'wiki/organisations/prochat/brand/product-strategy.md' as const;
   const result = buildMindMaintenancePilotReport({
     dataset,
     sourceCommit: 'abc1234',
@@ -144,7 +144,7 @@ test('marks detector failures explicitly while preserving other findings', () =>
     detectorErrors: [
       {
         detector: 'source-gap',
-        path: 'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+        path: 'wiki/organisations/prochat/brand/product-strategy.md',
         errorType: 'timeout',
         summary: 'Source-gap semantic review exceeded its bounded execution time.',
         retryable: true,

@@ -29,7 +29,7 @@ function createReport(): MaintenanceReport {
     filesConsidered: [
       'router/00-current-context.md',
       'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-      'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+      'wiki/organisations/prochat/brand/product-strategy.md',
       'live/dashboard.md',
       'system/automation-roadmap.md',
     ],
@@ -136,7 +136,7 @@ test('renders detector failures explicitly instead of presenting a clean result'
   report.errors = [
     {
       detector: 'source-gap',
-      path: 'wiki/organisations/prochat/brand/prochat-os-strategy.md',
+      path: 'wiki/organisations/prochat/brand/product-strategy.md',
       errorType: 'timeout',
       summary: 'Source-gap semantic review exceeded its bounded execution time.',
       retryable: true,
