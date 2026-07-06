@@ -72,9 +72,10 @@ These items are approved for roadmap tracking only. They extend the safe foundat
 - add a capture sensemaking proposal pipeline so client requests, feature ideas, bugs, future work, coding thoughts, meeting notes, and unstructured voice/text captures in `capture/inbox/` can be routed toward structured project/app/repo proposals;
 - add coding lessons learned capture so bug fixes, failed validations, architecture decisions, repo cleanups, and coding discoveries can become reviewed best-practice memory with source commits/files/validation evidence;
 - add a strategy drift and focus guardrail that compares new work, feature requests, task proposals, and coding plans against current strategy, priorities, constraints, and commitments, then emits report-only warnings when Steve may be drifting;
-- validate the two-repo Brain/Mind operating model so Brain remains the automation/runtime/tooling system, Mind remains the human truth/context system, and the bridge makes LLMs work for Steve rather than making Steve maintain machine structures.
+- validate the two-repo Brain/Mind operating model so Brain remains the automation/runtime/tooling system, Mind remains the human truth/context system, and the bridge makes LLMs work for Steve rather than making Steve maintain machine structures;
+- support the human-first Mind top-level folder redesign recorded in Mind at `system/top-level-folder-redesign-migration-plan.md`, including a full Brain + Mind path-reference inventory and updates to Save-to-Mind, Mind Steward, structure validator, approval/write gates, Brain Console, Graphify paths, IDE context paths, tests, and documentation before old folders are removed.
 
-All items start report-only or proposal-only. They do not authorize automatic durable writes, task edits, project updates, capture moves, continuous runners, or merging `brain` and `mind`.
+All items start report-only, proposal-only, or migration-planning only. They do not authorize automatic durable writes, task edits, project updates, capture moves, continuous runners, folder renames, or merging `brain` and `mind`.
 
 ---
 
