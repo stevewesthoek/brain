@@ -59,7 +59,7 @@ From the OODA / Infinite Brain transcript review:
 - define an intake-disposition pattern before adding more ingestion automation: ignore/archive, deterministic action, knowledge proposal, task proposal, project update proposal, maintenance finding, or source-quality rejection — implemented in Mind as `system/intake-disposition-pattern.md` on 2026-07-05;
 - add source-quality gates before promotion so external transcripts/newsletters/emails/meetings do not become durable Mind knowledge merely because they were ingested — implemented in Mind as `system/source-quality-gates.md` on 2026-07-05;
 - add a lightweight wager/verdict pattern for significant business or workflow changes, including expected improvement, measurement window, evidence source, later verdict, and follow-up action — implemented in Mind as `system/wager-verdict-pattern.md` on 2026-07-05;
-- prefer routed model tiers: deterministic rules first, cheap model for simple classification, stronger model only for high-context or strategic orientation work.
+- prefer routed model tiers: deterministic rules first, cheap model for simple classification, stronger model only for high-context or strategic orientation work — implemented in Mind through `system/intake-disposition-pattern.md` on 2026-07-05.
 
 These are future report-only/design-first improvements. They do not authorize continuous processing, hidden loops, autonomous durable writes, or broad ingestion.
 
