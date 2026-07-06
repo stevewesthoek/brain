@@ -245,6 +245,25 @@ test('Wiki single-file writer applies one exact approved path atomically', () =>
   }
 });
 
+test('Wiki single-file writer accepts a target knowledge path during Mind folder migration', () => {
+  const fixture = createWikiWriterFixture('wiki-writer-knowledge-target-');
+  const targetPath = 'knowledge/example.md';
+  const absoluteTargetPath = path.join(fixture.mindRoot, targetPath);
+  mkdirSync(path.dirname(absoluteTargetPath), { recursive: true });
+  writeFileSync(absoluteTargetPath, fixture.beforeContent);
+
+  try {
+    const report = runWikiWriterSingleFileWrite({ ...fixture.input, targetPath });
+
+    assert.equal(report.status, 'applied');
+    assert.deepEqual(report.changedPaths, [targetPath]);
+    assert.equal(readFileSync(absoluteTargetPath, 'utf8'), fixture.input.newContent);
+    assert.equal(readFileSync(fixture.absoluteTargetPath, 'utf8'), fixture.beforeContent);
+  } finally {
+    rmSync(fixture.tempDir, { recursive: true, force: true });
+  }
+});
+
 test('Wiki single-file writer rejects a before-hash mismatch without changing Mind', () => {
   const fixture = createWikiWriterFixture('wiki-writer-hash-mismatch-');
   const originalContent = readFileSync(fixture.absoluteTargetPath, 'utf8');

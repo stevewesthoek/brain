@@ -245,3 +245,40 @@ function pathNormalizePosix(value: string): string {
   }
   return parts.join('/');
 }
+
+
+
+export const MIND_PROJECT_WRITE_PREFIXES = ['projects/', 'live/'] as const;
+export const MIND_KNOWLEDGE_WRITE_PREFIXES = ['knowledge/', 'wiki/'] as const;
+export const MIND_RESOURCE_WRITE_PREFIXES = ['resources/', 'sources/'] as const;
+export const MIND_HISTORY_WRITE_PREFIXES = ['history/', 'archive/'] as const;
+export const MIND_ORGANIZATION_WRITE_PREFIXES = ['organizations/', 'wiki/organisations/'] as const;
+export const MIND_FAITH_WRITE_PREFIXES = [
+  'faith/',
+  'sources/research/bible/',
+  'sources/research/theology/',
+  'sources/research/apologetics/',
+] as const;
+
+export const MIND_DURABLE_WRITE_PREFIXES = [
+  ...MIND_PROJECT_WRITE_PREFIXES,
+  ...MIND_KNOWLEDGE_WRITE_PREFIXES,
+  ...MIND_RESOURCE_WRITE_PREFIXES,
+  ...MIND_HISTORY_WRITE_PREFIXES,
+  ...MIND_ORGANIZATION_WRITE_PREFIXES,
+  ...MIND_FAITH_WRITE_PREFIXES,
+] as const;
+
+export function normalizeExactMindMarkdownPathForPrefixes(
+  value: string,
+  prefixes: readonly string[],
+): string | null {
+  if (!value || value.includes('\\') || value.includes('\0')) return null;
+  if (!value.endsWith('.md') || value.endsWith('/')) return null;
+  if (!isSafeRelativeMindPath(value)) return null;
+  const normalized = pathNormalizePosix(value);
+  if (normalized !== value.replace(/\\/g, '/')) return null;
+  return prefixes.some(prefix => normalized.startsWith(prefix) && normalized.length > prefix.length)
+    ? normalized
+    : null;
+}

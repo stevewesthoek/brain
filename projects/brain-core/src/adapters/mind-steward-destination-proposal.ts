@@ -4,13 +4,28 @@
  * it blocks as material ambiguity without writing or executing outcomes.
  */
 
-import path from 'node:path';
 import crypto from 'node:crypto';
+import {
+  MIND_DURABLE_WRITE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../mind-paths.js';
 import type { NormalizedCaptureClassification } from './mind-steward-capture-classification.js';
 import type { MindStewardDuplicateSearchResult } from './mind-steward-duplicate-search.js';
 import type { MindStewardCaptureSourceRecord } from './mind-steward-capture-source-preservation.js';
 
-export type MindStewardDestinationKind = 'live' | 'wiki' | 'sources' | 'archive';
+export type MindStewardDestinationKind =
+  | 'projects'
+  | 'organizations'
+  | 'repos'
+  | 'people'
+  | 'faith'
+  | 'knowledge'
+  | 'resources'
+  | 'history'
+  | 'live'
+  | 'wiki'
+  | 'sources'
+  | 'archive';
 
 export interface MindStewardDestinationCandidate {
   kind: MindStewardDestinationKind;
@@ -56,27 +71,34 @@ export interface CreateDestinationProposalOptions {
   ambiguityDelta?: number;
 }
 
-const KIND_PREFIXES: Record<MindStewardDestinationKind, string> = {
-  live: 'live/',
-  wiki: 'wiki/',
-  sources: 'sources/',
-  archive: 'archive/',
-};
+function kindFromPath(destinationPath: string): MindStewardDestinationKind | null {
+  const firstSegment = destinationPath.split('/')[0];
+  if (!firstSegment) return null;
+  if (firstSegment === 'live') return 'live';
+  if (firstSegment === 'wiki') return 'wiki';
+  if (firstSegment === 'sources') return 'sources';
+  if (firstSegment === 'archive') return 'archive';
+  if (
+    firstSegment === 'projects'
+    || firstSegment === 'organizations'
+    || firstSegment === 'repos'
+    || firstSegment === 'people'
+    || firstSegment === 'faith'
+    || firstSegment === 'knowledge'
+    || firstSegment === 'resources'
+    || firstSegment === 'history'
+  ) return firstSegment;
+  return null;
+}
 
 function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
 function normalizeDestinationPath(kind: MindStewardDestinationKind, destinationPath: string): string | null {
-  const normalized = path.posix.normalize(destinationPath);
-  const prefix = KIND_PREFIXES[kind];
-  if (normalized !== destinationPath) return null;
-  if (!normalized.startsWith(prefix) || normalized.length <= prefix.length) return null;
-  if (!normalized.endsWith('.md')) return null;
-  if (normalized.includes('\0') || normalized.includes('*') || normalized.includes('?') || normalized.includes('[') || normalized.includes(']')) return null;
-  if (normalized.endsWith('/')) return null;
-  if (path.posix.isAbsolute(normalized)) return null;
-  return normalized;
+  const normalized = normalizeExactMindMarkdownPathForPrefixes(destinationPath, MIND_DURABLE_WRITE_PREFIXES);
+  if (!normalized) return null;
+  return kindFromPath(normalized) === kind ? normalized : null;
 }
 
 function normalizeConfidence(value: number): number | null {
@@ -103,12 +125,9 @@ function normalizeCandidate(candidate: MindStewardDestinationCandidate): MindSte
 function candidatesFromDuplicateSearch(duplicateSearch: MindStewardDuplicateSearchResult | null): MindStewardDestinationCandidate[] {
   if (!duplicateSearch?.matched) return [];
   return duplicateSearch.candidates
-    .filter(candidate => candidate.path.startsWith('live/')
-      || candidate.path.startsWith('wiki/')
-      || candidate.path.startsWith('sources/')
-      || candidate.path.startsWith('archive/'))
+    .filter(candidate => normalizeExactMindMarkdownPathForPrefixes(candidate.path, MIND_DURABLE_WRITE_PREFIXES) !== null)
     .map(candidate => {
-      const kind = candidate.path.split('/')[0] as MindStewardDestinationKind;
+      const kind = kindFromPath(candidate.path) as MindStewardDestinationKind;
       return {
         kind,
         destinationPath: candidate.path,

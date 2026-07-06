@@ -22,6 +22,12 @@ import fs, {
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import {
+  MIND_FAITH_WRITE_PREFIXES,
+  MIND_KNOWLEDGE_WRITE_PREFIXES,
+  MIND_ORGANIZATION_WRITE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../../mind-paths.js';
 import { createWriterAuditRecord, persistWriterAuditRecord } from './writer-audit-log.js';
 import {
   type InfiniteBrainWikiSingleFileWriteInput,
@@ -112,16 +118,11 @@ function createRollbackId(input: InfiniteBrainWikiSingleFileWriteInput, beforeHa
 }
 
 function validateExactWikiPath(targetPath: string): string | null {
-  if (!targetPath || targetPath.includes('\\') || targetPath.includes('\0')) return null;
-  if (path.posix.isAbsolute(targetPath) || path.win32.isAbsolute(targetPath)) return null;
-  if (!targetPath.startsWith('wiki/') || targetPath.endsWith('/')) return null;
-  if (!targetPath.endsWith('.md')) return null;
-  if (targetPath.includes('*') || targetPath.includes('?') || targetPath.includes('[') || targetPath.includes(']')) return null;
-
-  const segments = targetPath.split('/');
-  if (segments.some(segment => segment === '' || segment === '.' || segment === '..')) return null;
-
-  return segments.join('/');
+  return normalizeExactMindMarkdownPathForPrefixes(targetPath, [
+    ...MIND_KNOWLEDGE_WRITE_PREFIXES,
+    ...MIND_ORGANIZATION_WRITE_PREFIXES,
+    ...MIND_FAITH_WRITE_PREFIXES,
+  ]);
 }
 
 function resolveExistingTarget(mindRoot: string, targetPath: string): { root: string; target: string } | null {

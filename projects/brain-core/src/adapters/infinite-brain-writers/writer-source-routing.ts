@@ -8,6 +8,10 @@ import fs, { lstatSync, realpathSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import {
+  MIND_RESOURCE_WRITE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../../mind-paths.js';
 import { createWriterAuditRecord, persistWriterAuditRecord } from './writer-audit-log.js';
 import type {
   InfiniteBrainSourceRoutingMoveInput,
@@ -44,15 +48,8 @@ function writeJsonAtomically(filePath: string, value: unknown): boolean {
   }
 }
 
-function normalizeExactMarkdownPath(value: string, requiredPrefix?: string): string | null {
-  if (!value || value.includes('\\') || value.includes('\0')) return null;
-  if (path.posix.isAbsolute(value) || path.win32.isAbsolute(value)) return null;
-  if (value.endsWith('/') || !value.endsWith('.md')) return null;
-  if (requiredPrefix && !value.startsWith(requiredPrefix)) return null;
-  if (value.includes('*') || value.includes('?') || value.includes('[') || value.includes(']')) return null;
-  const segments = value.split('/');
-  if (segments.some(segment => segment === '' || segment === '.' || segment === '..')) return null;
-  return segments.join('/');
+function normalizeExactMarkdownPath(value: string, prefixes?: readonly string[]): string | null {
+  return normalizeExactMindMarkdownPathForPrefixes(value, prefixes ?? ['']);
 }
 
 function resolveRoot(mindRoot: string): string | null {
@@ -185,7 +182,7 @@ export function runSourceRoutingMove(
 ): InfiniteBrainSourceRoutingMoveReport {
   const blockers: string[] = [];
   const sourcePath = normalizeExactMarkdownPath(input.sourcePath);
-  const destinationPath = normalizeExactMarkdownPath(input.destinationPath, 'sources/');
+  const destinationPath = normalizeExactMarkdownPath(input.destinationPath, MIND_RESOURCE_WRITE_PREFIXES);
 
   if (!input.manualSingleMoveConfirm) blockers.push('manualSingleMoveConfirmRequired');
   if (!input.approvalId?.trim()) blockers.push('approvalIdRequired');
@@ -199,7 +196,7 @@ export function runSourceRoutingMove(
   if (!input.approvedAt || Number.isNaN(Date.parse(input.approvedAt))) blockers.push('validApprovedAtRequired');
   if (!input.expiresAt || Number.isNaN(Date.parse(input.expiresAt))) blockers.push('validExpiresAtRequired');
   else if (Date.parse(input.expiresAt) <= Date.now()) blockers.push('approvalExpired');
-  if (!sourcePath || sourcePath.startsWith('sources/')) blockers.push('invalidExactSourcePath');
+  if (!sourcePath || MIND_RESOURCE_WRITE_PREFIXES.some(prefix => sourcePath.startsWith(prefix))) blockers.push('invalidExactSourcePath');
   if (!destinationPath) blockers.push('invalidExactSourcesDestinationPath');
   if (sourcePath && destinationPath && sourcePath === destinationPath) blockers.push('sourceDestinationMustDiffer');
 

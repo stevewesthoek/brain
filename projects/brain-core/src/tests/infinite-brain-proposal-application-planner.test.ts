@@ -105,6 +105,35 @@ test('rejects expired approvals and update targets without a before hash', () =>
   assert(errors.includes('expected-before-hash-required:wiki/example.md'));
 });
 
+test('accepts target knowledge and faith paths during Mind folder migration', () => {
+  const approval = validApproval({
+    targets: [
+      {
+        path: 'knowledge/example.md',
+        expectedBeforeHash: 'a'.repeat(64),
+        destinationPath: null,
+        allowedSections: ['Approved section'],
+        contentIntent: 'Update reviewed knowledge.',
+      },
+      {
+        path: 'faith/studies/romans/overview.md',
+        expectedBeforeHash: 'b'.repeat(64),
+        destinationPath: null,
+        allowedSections: ['Approved section'],
+        contentIntent: 'Update reviewed faith study.',
+      },
+    ],
+  });
+
+  const errors = validateExactPathWikiApproval(
+    proposal,
+    approval,
+    new Date('2026-06-17T13:00:00Z'),
+  );
+
+  assert.deepEqual(errors, []);
+});
+
 test('allows create only when the before hash is null', () => {
   const approval = validApproval({
     action: 'create',

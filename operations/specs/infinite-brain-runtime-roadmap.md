@@ -87,6 +87,15 @@ Implementation handoff (2026-07-06):
 - Mind structure validator recognizes target folders/files and legacy fallbacks during migration, treating not-yet-created target-only paths as warnings rather than blockers.
 - Validation evidence: Brain Core build passed; `test:mind-structure-validator` passed 4/4; changed Mind Steward adapter tests passed 31/31.
 
+Implementation handoff slice 2 (2026-07-07):
+
+- Status: durable destination and approved-write compatibility implemented; no Mind folders were moved and Save-to-Mind write destination remains unchanged.
+- Destination proposals accept target and legacy durable path families: `projects/`/`live/`, `knowledge/`/`wiki/`, `resources/`/`sources/`, `history/`/`archive/`, `organizations/`/`wiki/organisations/`, and `faith/` plus legacy faith research roots.
+- Proposal application approval validation accepts target `knowledge/`, `organizations/`, and `faith/` content targets plus target `resources/` and legacy `sources/` source references while preserving exact-path approval requirements.
+- Writer guards now support compatible target/fallback prefixes: live-status accepts `projects/` and `live/`; wiki writer accepts `knowledge/`, `organizations/`, `faith/`, and `wiki/`; source-routing accepts `resources/` and `sources/`; supersede/archive accepts `history/` and `archive/`.
+- Post-write verification validates target and legacy exact content paths through the shared migration-compatible path helper.
+- Validation evidence: Brain Core build passed; planner/writer/reviewed-outcome tests passed 52/52; post-write verification tests passed 10/10; targeted security scan passed with no findings.
+
 ---
 
 ## Executive Summary

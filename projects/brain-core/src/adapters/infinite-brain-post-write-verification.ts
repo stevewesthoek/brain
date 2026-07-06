@@ -16,6 +16,12 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { readWriteManifest } from './infinite-brain-write-manifest.js';
 import { readMetadataWriteRollbackSnapshot } from './infinite-brain-metadata-write-rollback.js';
+import {
+  MIND_FAITH_WRITE_PREFIXES,
+  MIND_KNOWLEDGE_WRITE_PREFIXES,
+  MIND_ORGANIZATION_WRITE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../mind-paths.js';
 import { readMetadataWriterWriteReport } from './infinite-brain-writers/writer-metadata.js';
 
 const DEFAULT_POST_WRITE_VERIFICATION_RELATIVE_PATH = 'runtime/local/infinite-brain/post-write-verification-latest.json';
@@ -24,6 +30,11 @@ const DEFAULT_EXECUTOR_DRY_RUN_RELATIVE_PATH = 'runtime/local/infinite-brain/pro
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
 const DEFAULT_MIND_REPO_PATH = path.resolve(BRAIN_ROOT, '..', 'mind');
+const APPROVED_CONTENT_TARGET_PREFIXES = [
+  ...MIND_KNOWLEDGE_WRITE_PREFIXES,
+  ...MIND_ORGANIZATION_WRITE_PREFIXES,
+  ...MIND_FAITH_WRITE_PREFIXES,
+] as const;
 
 export interface PostWriteVerificationCheck {
   checkId: string;
@@ -213,10 +224,8 @@ function performPostWriteVerificationChecks(
     entry.exactPathApprovalValid === true
     && entry.targetPathsPreview.length > 0
     && entry.targetPathsPreview.every(targetPath =>
-      targetPath.startsWith('wiki/')
-      && !targetPath.endsWith('/')
-      && !targetPath.includes('*')
-      && !targetPath.includes('..')
+      normalizeExactMindMarkdownPathForPrefixes(targetPath, APPROVED_CONTENT_TARGET_PREFIXES) !== null
+
     )
   );
   checks.push({

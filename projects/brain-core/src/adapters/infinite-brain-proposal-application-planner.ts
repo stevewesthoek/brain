@@ -16,6 +16,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import {
+  MIND_FAITH_WRITE_PREFIXES,
+  MIND_KNOWLEDGE_WRITE_PREFIXES,
+  MIND_ORGANIZATION_WRITE_PREFIXES,
+  MIND_RESOURCE_WRITE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../mind-paths.js';
 
 const DEFAULT_PLAN_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-application-plan-latest.json';
 const PROPOSALS_REPORT_RELATIVE_PATH = 'runtime/local/infinite-brain/proposals-latest.json';
@@ -23,6 +30,15 @@ const APPROVALS_STORE_RELATIVE_PATH = 'runtime/local/infinite-brain/proposal-app
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
+const APPROVED_CONTENT_TARGET_PREFIXES = [
+  ...MIND_KNOWLEDGE_WRITE_PREFIXES,
+  ...MIND_ORGANIZATION_WRITE_PREFIXES,
+  ...MIND_FAITH_WRITE_PREFIXES,
+] as const;
+const APPROVED_SOURCE_REFERENCE_PREFIXES = [
+  ...MIND_RESOURCE_WRITE_PREFIXES,
+  ...MIND_FAITH_WRITE_PREFIXES,
+] as const;
 
 export interface ProposalSourceReference {
   path: string;
@@ -243,20 +259,7 @@ function sourceReferenceKey(reference: ProposalSourceReference): string {
 
 function validateSourceReference(reference: ProposalSourceReference): string[] {
   const errors: string[] = [];
-  const normalized = reference.path.replace(/\\/g, '/');
-  if (
-    reference.path.includes('\\') ||
-    path.posix.isAbsolute(normalized) ||
-    path.win32.isAbsolute(reference.path) ||
-    !normalized.startsWith('sources/') ||
-    normalized.endsWith('/') ||
-    !normalized.endsWith('.md') ||
-    normalized.includes('*') ||
-    normalized.includes('?') ||
-    normalized.includes('[') ||
-    normalized.includes(']') ||
-    normalized.split('/').some(segment => segment === '' || segment === '.' || segment === '..')
-  ) {
+  if (!normalizeExactMindMarkdownPathForPrefixes(reference.path, APPROVED_SOURCE_REFERENCE_PREFIXES)) {
     errors.push(`invalid-source-reference-path:${reference.path}`);
   }
   if (!reference.location?.trim()) errors.push(`source-reference-location-required:${reference.path}`);
@@ -290,8 +293,7 @@ export function validateExactPathWikiApproval(
   if (targets.length === 0) errors.push('at-least-one-target-required');
 
   for (const target of targets) {
-    const normalized = target.path.replace(/\\/g, '/');
-    if (!normalized.startsWith('wiki/') || normalized.endsWith('/') || normalized.includes('*') || normalized.includes('..')) {
+    if (!normalizeExactMindMarkdownPathForPrefixes(target.path, APPROVED_CONTENT_TARGET_PREFIXES)) {
       errors.push(`invalid-wiki-target:${target.path}`);
     }
     if (approvalRecord.action !== 'create' && !target.expectedBeforeHash?.trim()) {

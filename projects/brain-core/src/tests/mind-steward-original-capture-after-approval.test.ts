@@ -59,7 +59,7 @@ function destinationProposalFor(
   fixture: ReturnType<typeof createFixture>,
   kind: MindStewardDestinationKind,
 ) {
-  const pathByKind: Record<MindStewardDestinationKind, string> = {
+  const pathByKind: Partial<Record<MindStewardDestinationKind, string>> = {
     live: 'live/projects/prochat/offer.md',
     wiki: 'wiki/organisations/prochat/offer.md',
     sources: 'sources/research/prochat-offer.md',
@@ -72,7 +72,7 @@ function destinationProposalFor(
     candidates: [
       {
         kind,
-        destinationPath: pathByKind[kind],
+        destinationPath: pathByKind[kind]!,
         confidence: 0.92,
         rationale: `Reviewed destination for ${kind}.`,
         evidence: ['human-reviewed destination candidate'],
