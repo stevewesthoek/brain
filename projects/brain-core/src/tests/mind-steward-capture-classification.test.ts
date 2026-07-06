@@ -44,6 +44,27 @@ test('normalizes sampled classifier output into reviewable capture classificatio
   assert.equal(output.classifications[0]?.selectorModel, 'qwen2.5:14b');
 });
 
+test('normalizes sampled classifier output against human-first inbox/new when requested', () => {
+  const output = normalizeCaptureClassificationOutput({
+    status: 'ok',
+    selector: { status: 'selected' },
+    inbox: {
+      sampledFiles: [
+        {
+          name: 'capture-a.md',
+          preview: '# Capture A\n\nUseful raw idea.',
+        },
+      ],
+      skippedFiles: [],
+    },
+  }, new Date('2026-06-18T12:10:00Z'), { captureInboxPath: 'inbox/new' });
+
+  assert.equal(output.summary.readyForReview, 1);
+  assert.equal(output.classifications[0]?.capturePath, 'inbox/new/capture-a.md');
+  assert.equal(output.classifications[0]?.requiresApproval, true);
+  assert.equal(output.safety.writesToMind, false);
+});
+
 test('normalizes skipped classifier files as reviewable skipped records', () => {
   const output = normalizeCaptureClassificationOutput({
     job: 'mind-steward-inbox-classifier-dry-run',

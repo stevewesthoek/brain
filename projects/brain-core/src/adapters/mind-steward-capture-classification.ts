@@ -5,7 +5,7 @@
  */
 
 import crypto from 'node:crypto';
-import path from 'node:path';
+import { buildMindInboxCapturePath, MIND_LEGACY_PATHS } from '../mind-paths.js';
 
 export type NormalizedCaptureClassificationStatus = 'ready-for-review' | 'skipped' | 'blocked';
 
@@ -31,6 +31,10 @@ export interface NormalizedCaptureClassification {
     value: string;
   }>;
   blockers: string[];
+}
+
+export interface NormalizeCaptureClassificationOutputOptions {
+  captureInboxPath?: string;
 }
 
 export interface NormalizedCaptureClassificationOutput {
@@ -92,11 +96,8 @@ function asNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function safeCapturePath(name: string): string | null {
-  if (name.includes('/') || name.includes('\\') || name.includes('\0')) return null;
-  if (name === '.' || name === '..' || name.trim().length === 0) return null;
-  if (name.includes('*') || name.includes('?') || name.includes('[') || name.includes(']')) return null;
-  return path.posix.join('capture/inbox', name);
+function safeCapturePath(name: string, captureInboxPath: string = MIND_LEGACY_PATHS.captureInbox): string | null {
+  return buildMindInboxCapturePath(name, captureInboxPath);
 }
 
 function classificationId(capturePath: string | null, captureName: string, preview: string | null): string {
@@ -122,10 +123,11 @@ function summarizePreview(preview: string | null): string | null {
 function normalizeSampledFile(
   file: ClassifierDryRunFile,
   selector: ClassifierDryRunReport['selector'],
+  captureInboxPath: string,
 ): NormalizedCaptureClassification {
   const captureName = asString(file.name) ?? 'unknown';
   const preview = asString(file.preview);
-  const capturePath = safeCapturePath(captureName);
+  const capturePath = safeCapturePath(captureName, captureInboxPath);
   const blockers = capturePath ? [] : ['invalidCaptureName'];
   const selectorStatus = asString(selector?.status) ?? 'unknown';
 
@@ -151,9 +153,9 @@ function normalizeSampledFile(
   };
 }
 
-function normalizeSkippedFile(file: ClassifierDryRunFile): NormalizedCaptureClassification {
+function normalizeSkippedFile(file: ClassifierDryRunFile, captureInboxPath: string): NormalizedCaptureClassification {
   const captureName = asString(file.name) ?? 'unknown';
-  const capturePath = safeCapturePath(captureName);
+  const capturePath = safeCapturePath(captureName, captureInboxPath);
   const reason = asString(file.reason) ?? 'skipped';
   const error = asString(file.error);
   const blockers = [reason, ...(capturePath ? [] : ['invalidCaptureName'])];
@@ -186,6 +188,7 @@ function normalizeSkippedFile(file: ClassifierDryRunFile): NormalizedCaptureClas
 export function normalizeCaptureClassificationOutput(
   report: ClassifierDryRunReport,
   now: Date = new Date(),
+  options: NormalizeCaptureClassificationOutputOptions = {},
 ): NormalizedCaptureClassificationOutput {
   const sampledFiles = Array.isArray(report.inbox?.sampledFiles)
     ? report.inbox.sampledFiles as ClassifierDryRunFile[]
@@ -193,10 +196,11 @@ export function normalizeCaptureClassificationOutput(
   const skippedFiles = Array.isArray(report.inbox?.skippedFiles)
     ? report.inbox.skippedFiles as ClassifierDryRunFile[]
     : [];
+  const captureInboxPath = options.captureInboxPath ?? MIND_LEGACY_PATHS.captureInbox;
 
   const classifications = [
-    ...sampledFiles.map(file => normalizeSampledFile(file, report.selector)),
-    ...skippedFiles.map(normalizeSkippedFile),
+    ...sampledFiles.map(file => normalizeSampledFile(file, report.selector, captureInboxPath)),
+    ...skippedFiles.map(file => normalizeSkippedFile(file, captureInboxPath)),
   ];
 
   const topLevelBlockers: string[] = [];

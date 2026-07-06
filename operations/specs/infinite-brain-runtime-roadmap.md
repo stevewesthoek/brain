@@ -77,6 +77,16 @@ These items are approved for roadmap tracking only. They extend the safe foundat
 
 All items start report-only, proposal-only, or migration-planning only. They do not authorize automatic durable writes, task edits, project updates, capture moves, continuous runners, folder renames, or merging `brain` and `mind`.
 
+Implementation handoff (2026-07-06):
+
+- Status: first Brain compatibility slice implemented; no Mind folders were moved and Save-to-Mind write destination remains unchanged.
+- Added central path mapping: `projects/brain-core/src/mind-paths.ts`.
+- Mind Steward inbox queue now reads `inbox/new/` first when present, with `capture/inbox/` as fallback.
+- Capture classification can emit target `inbox/new/<file>` paths when explicitly requested while preserving the legacy default.
+- Capture source preservation accepts both `inbox/new/<file>` and `capture/inbox/<file>` as safe source paths.
+- Mind structure validator recognizes target folders/files and legacy fallbacks during migration, treating not-yet-created target-only paths as warnings rather than blockers.
+- Validation evidence: Brain Core build passed; `test:mind-structure-validator` passed 4/4; changed Mind Steward adapter tests passed 31/31.
+
 ---
 
 ## Executive Summary

@@ -7,6 +7,7 @@
 import fs, { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { isSafeMindInboxCapturePath } from '../mind-paths.js';
 import type { NormalizedCaptureClassification } from './mind-steward-capture-classification.js';
 
 export interface MindStewardCaptureSourceRecord {
@@ -75,18 +76,6 @@ function resolveMindRoot(mindRoot: string): string | null {
   }
 }
 
-function isSafeCaptureInboxPath(capturePath: string | null): capturePath is string {
-  if (!capturePath) return false;
-  const normalized = path.posix.normalize(capturePath);
-  return normalized === capturePath
-    && normalized.startsWith('capture/inbox/')
-    && normalized.length > 'capture/inbox/'.length
-    && !normalized.includes('\0')
-    && !normalized.includes('*')
-    && !normalized.includes('?')
-    && !path.posix.isAbsolute(normalized);
-}
-
 function createBlockedRecord(
   classification: NormalizedCaptureClassification,
   nowIso: string,
@@ -125,7 +114,7 @@ export function createCaptureSourcePreservationRecord(
   options: CreateCaptureSourceRecordOptions,
 ): MindStewardCaptureSourceRecord {
   const nowIso = (options.now ?? new Date()).toISOString();
-  if (!isSafeCaptureInboxPath(options.classification.capturePath)) {
+  if (!isSafeMindInboxCapturePath(options.classification.capturePath)) {
     return createBlockedRecord(options.classification, nowIso, ['invalidOrMissingCapturePath']);
   }
 

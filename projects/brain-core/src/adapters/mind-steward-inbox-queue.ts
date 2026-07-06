@@ -8,6 +8,7 @@ import fs, { chmodSync, lstatSync, realpathSync, renameSync } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { MIND_INBOX_NEW_CANDIDATES, MIND_TARGET_PATHS } from '../mind-paths.js';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BRAIN_ROOT = path.resolve(MODULE_DIR, '..', '..', '..', '..');
@@ -253,6 +254,21 @@ function summarize(items: MindStewardInboxQueueItem[]): MindStewardInboxQueueSta
   };
 }
 
+function resolveExistingInboxPath(mindRoot: string): { absolutePath: string; relativePath: string } | null {
+  for (const candidate of MIND_INBOX_NEW_CANDIDATES) {
+    const absolutePath = path.join(mindRoot, ...candidate.path.split('/'));
+    try {
+      const resolvedPath = realpathSync(absolutePath);
+      if (fs.statSync(resolvedPath).isDirectory()) {
+        return { absolutePath: resolvedPath, relativePath: candidate.path };
+      }
+    } catch {
+      // Try the next migration candidate.
+    }
+  }
+  return null;
+}
+
 function createBlockedState(
   mindRoot: string,
   inboxPath: string,
@@ -302,27 +318,29 @@ export function refreshMindStewardInboxQueue(
       throw new Error('not a directory');
     }
   } catch {
-    const state = createBlockedState(mindRoot, path.join(mindRoot, 'capture/inbox'), statePath, nowIso, settings, [
+    const state = createBlockedState(mindRoot, path.join(mindRoot, ...MIND_TARGET_PATHS.inboxNew.split('/')), statePath, nowIso, settings, [
       'mindRootUnavailable',
     ]);
     writeJsonAtomically(statePath, state);
     return state;
   }
 
-  const inboxPath = path.join(resolvedMindRoot, 'capture', 'inbox');
-  let resolvedInboxPath: string;
-  try {
-    resolvedInboxPath = realpathSync(inboxPath);
-    if (!fs.statSync(resolvedInboxPath).isDirectory()) {
-      throw new Error('not a directory');
-    }
-  } catch {
-    const state = createBlockedState(resolvedMindRoot, inboxPath, statePath, nowIso, settings, [
-      'captureInboxUnavailable',
-    ]);
+  const resolvedInbox = resolveExistingInboxPath(resolvedMindRoot);
+  if (!resolvedInbox) {
+    const state = createBlockedState(
+      resolvedMindRoot,
+      path.join(resolvedMindRoot, ...MIND_TARGET_PATHS.inboxNew.split('/')),
+      statePath,
+      nowIso,
+      settings,
+      ['mindInboxUnavailable'],
+    );
     writeJsonAtomically(statePath, state);
     return state;
   }
+
+  const inboxPath = path.join(resolvedMindRoot, ...resolvedInbox.relativePath.split('/'));
+  const resolvedInboxPath = resolvedInbox.absolutePath;
 
   const largeFileThresholdBytes = settings.largeFileThresholdMb * 1024 * 1024;
   const entries = fs.readdirSync(resolvedInboxPath, { withFileTypes: true })

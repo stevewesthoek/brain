@@ -4,6 +4,7 @@ import {
   MIND_MAINTENANCE_PILOT_FILES,
   MIND_MAINTENANCE_REPORT_OUTPUTS,
 } from '../mind-maintenance-pilot/pilot-file-loader.js';
+import { MIND_STRUCTURE_COMPATIBILITY_GROUPS } from '../mind-paths.js';
 
 export const MIND_STRUCTURE_VALIDATION_SCHEMA_VERSION = '1.0';
 export const MIND_STRUCTURE_VALIDATION_MODE = 'report-only';
@@ -63,12 +64,6 @@ export interface BuildMindStructureValidationReportInput {
 
 export const REQUIRED_MIND_STRUCTURE_PATHS: readonly MindStructureRequiredPath[] = [
   { path: 'home.md', kind: 'file', purpose: 'primary human user manual and navigation entry point' },
-  { path: 'kanban.md', kind: 'file', purpose: 'manual task source of truth' },
-  { path: 'wiki/log.md', kind: 'file', purpose: 'proposal and maintenance review surface' },
-  { path: 'router/00-current-context.md', kind: 'file', purpose: 'AI session current-context layer' },
-  { path: 'router/00-memory-map.md', kind: 'file', purpose: 'AI session retrieval map' },
-  { path: 'capture/inbox', kind: 'directory', purpose: 'Save-to-Mind unprocessed capture inbox' },
-  { path: 'capture/failed', kind: 'directory', purpose: 'failed capture routing target' },
 ] as const;
 
 const FRESHNESS_SCAN_PATHS = [
@@ -170,7 +165,7 @@ function extractFreshnessMetadata(content: string): Map<string, string> {
       continue;
     }
 
-    const match = /^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/.exec(line);
+    const match = line.match(/^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/);
     if (!match) continue;
 
     const rawKey = match[1];
@@ -214,6 +209,57 @@ async function checkRequiredPaths(mindRoot: string): Promise<MindStructureValida
         : `Required path exists but is a ${actualKind}, not a ${requiredPath.kind}.`,
       requiredPath.path,
       `Restore or intentionally migrate ${requiredPath.path} before relying on Infinite Brain workflows.`,
+    ));
+  }
+
+  return checks;
+}
+
+async function checkCompatibilityGroups(mindRoot: string): Promise<MindStructureValidationCheck[]> {
+  const checks: MindStructureValidationCheck[] = [];
+
+  for (const group of MIND_STRUCTURE_COMPATIBILITY_GROUPS) {
+    const found: Array<{ path: string; era: 'target' | 'legacy-fallback' }> = [];
+    for (const candidate of group.candidates) {
+      const actualKind = await pathKind(mindRoot, candidate.path);
+      if (actualKind === candidate.kind) {
+        found.push({ path: candidate.path, era: candidate.era });
+      }
+    }
+
+    const targetFound = found.find(item => item.era === 'target');
+    const fallbackFound = found.find(item => item.era === 'legacy-fallback');
+    if (targetFound) {
+      checks.push(check(
+        `required-path:${group.id}`,
+        'pass',
+        'required-path',
+        `Target Mind structure path exists for ${group.purpose}.`,
+        targetFound.path,
+        null,
+      ));
+      continue;
+    }
+
+    if (fallbackFound) {
+      checks.push(check(
+        `required-path:${group.id}`,
+        'warn',
+        'required-path',
+        `Legacy fallback exists for ${group.purpose}; target path is not active yet.`,
+        fallbackFound.path,
+        `Create or migrate to ${group.candidates[0]?.path ?? group.id} before removing legacy path support.`,
+      ));
+      continue;
+    }
+
+    checks.push(check(
+      `required-path:${group.id}`,
+      'warn',
+      'required-path',
+      `Target path is not active yet for ${group.purpose}, and no legacy fallback exists.`,
+      group.candidates[0]?.path ?? null,
+      `Create ${group.candidates[0]?.path ?? group.id} during the approved Mind folder migration before removing compatibility mode.`,
     ));
   }
 
@@ -439,6 +485,7 @@ export async function buildMindStructureValidationReport(
 
   const checks = [
     ...(await checkRequiredPaths(mindRoot)),
+    ...(await checkCompatibilityGroups(mindRoot)),
     ...(await checkMaintenancePilotPaths(mindRoot)),
     ...(await checkReportOutputs(mindRoot)),
     ...(await checkFreshnessMetadata(mindRoot)),

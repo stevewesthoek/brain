@@ -20,7 +20,7 @@ function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-function createClassification(name = 'capture-a.md') {
+function createClassification(name = 'capture-a.md', captureInboxPath = 'capture/inbox') {
   const output = normalizeCaptureClassificationOutput({
     status: 'ok',
     selector: { status: 'selected' },
@@ -33,7 +33,7 @@ function createClassification(name = 'capture-a.md') {
       ],
       skippedFiles: [],
     },
-  }, new Date('2026-06-18T12:00:00Z'));
+  }, new Date('2026-06-18T12:00:00Z'), { captureInboxPath });
   const classification = output.classifications[0];
   assert(classification);
   return classification;
@@ -70,6 +70,31 @@ test('preserves original capture source identity without writing or moving Mind 
     assert.equal(gate.status, 'ready');
     assert.equal(gate.canContinueCaptureReview, true);
     assert.equal(gate.safety.movesCaptures, false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('preserves human-first inbox/new capture source identity', () => {
+  const tempDir = mkdtempSync(path.join('/tmp', 'mind-capture-source-target-'));
+  const mindRoot = path.join(tempDir, 'mind');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'capture-a.md');
+  const content = '# Capture A\n\nOriginal human-first inbox source content.\n';
+  mkdirSync(path.dirname(capturePath), { recursive: true });
+  writeFileSync(capturePath, content);
+
+  try {
+    const classification = createClassification('capture-a.md', 'inbox/new');
+    const record = createCaptureSourcePreservationRecord({
+      mindRoot,
+      classification,
+      now: new Date('2026-06-18T12:05:00Z'),
+    });
+
+    assert.equal(record.status, 'preserved');
+    assert.equal(record.originalCapture.path, 'inbox/new/capture-a.md');
+    assert.equal(record.originalCapture.contentSha256, sha256(content));
+    assert.equal(readFileSync(capturePath, 'utf8'), content);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }

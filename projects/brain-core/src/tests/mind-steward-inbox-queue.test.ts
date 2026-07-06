@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   utimesSync,
@@ -77,6 +78,35 @@ test('persistent inbox queue writes Brain-owned state without changing Mind capt
     assert.equal(persisted?.items[0]?.firstSeenAt, state.items[0]?.firstSeenAt);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
+  }
+});
+
+test('persistent inbox queue reads human-first inbox/new before legacy capture/inbox', () => {
+  const tempDir = mkdtempSync(path.join('/tmp', 'mind-inbox-queue-target-'));
+  const mindRoot = path.join(tempDir, 'mind');
+  const targetInboxDir = path.join(mindRoot, 'inbox', 'new');
+  const legacyInboxDir = path.join(mindRoot, 'capture', 'inbox');
+  const statePath = path.join(tempDir, 'brain-runtime', 'mind-steward', 'inbox-queue-state.json');
+  const now = new Date('2026-06-18T12:00:00Z');
+  mkdirSync(targetInboxDir, { recursive: true });
+  mkdirSync(legacyInboxDir, { recursive: true });
+  const targetCapturePath = path.join(targetInboxDir, 'target-capture.md');
+  const legacyCapturePath = path.join(legacyInboxDir, 'legacy-capture.md');
+  writeFileSync(targetCapturePath, '# Target Capture\n');
+  writeFileSync(legacyCapturePath, '# Legacy Capture\n');
+  ageFile(targetCapturePath, 120, now);
+  ageFile(legacyCapturePath, 120, now);
+
+  try {
+    const state = refreshMindStewardInboxQueue({ mindRoot, statePath, now });
+
+    assert.equal(state.status, 'ready');
+    assert.equal(state.inboxPath, realpathSync(targetInboxDir));
+    assert.deepEqual(state.items.map(item => item.path), ['inbox/new/target-capture.md']);
+    assert.equal(readFileSync(targetCapturePath, 'utf8'), '# Target Capture\n');
+    assert.equal(readFileSync(legacyCapturePath, 'utf8'), '# Legacy Capture\n');
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
   }
 });
 
@@ -392,7 +422,7 @@ test('persistent inbox queue writes blocked Brain state when inbox is missing', 
     });
 
     assert.equal(state.status, 'blocked');
-    assert(state.blockers.includes('captureInboxUnavailable'));
+    assert(state.blockers.includes('mindInboxUnavailable'));
     assert.equal(state.safety.writesToMind, false);
     assert.equal(existsSync(statePath), true);
   } finally {

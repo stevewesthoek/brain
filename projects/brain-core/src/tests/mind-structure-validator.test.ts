@@ -16,7 +16,8 @@ async function createMindStructureFixture(): Promise<string> {
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-structure-validator-'));
 
   await writeFixtureFile(mindRoot, 'home.md', '# Home\n');
-  await writeFixtureFile(mindRoot, 'kanban.md', '# Kanban\n');
+  await writeFixtureFile(mindRoot, 'tasks.md', '# Tasks\n');
+  await writeFixtureFile(mindRoot, 'kanban.md', '# Kanban legacy fallback\n');
   await writeFixtureFile(mindRoot, 'wiki/log.md', '# Log\n');
   await writeFixtureFile(
     mindRoot,
@@ -34,6 +35,19 @@ freshness_risk: high
 `,
   );
   await writeFixtureFile(mindRoot, 'router/00-memory-map.md', '# Memory Map\n');
+  await mkdir(path.join(mindRoot, 'inbox/new'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'inbox/raw'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'inbox/processed'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'inbox/failed'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'projects'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'organizations'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'repos'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'people'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'faith'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'knowledge'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'resources'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'history'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'system/agent-context'), { recursive: true });
   await mkdir(path.join(mindRoot, 'capture/inbox'), { recursive: true });
   await mkdir(path.join(mindRoot, 'capture/failed'), { recursive: true });
   await mkdir(path.join(mindRoot, 'graphify-out'), { recursive: true });
@@ -92,10 +106,10 @@ test('builds a report-only pass report for a complete Mind structure fixture', a
   assert.ok(report.checks.some((check) => check.id === 'graphify-output:path-consistency' && check.status === 'pass'));
 });
 
-test('fails when required Mind startup paths are missing', async (context) => {
+test('fails when invariant Mind root paths are missing', async (context) => {
   const mindRoot = await createMindStructureFixture();
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
-  await rm(path.join(mindRoot, 'router/00-memory-map.md'), { force: true });
+  await rm(path.join(mindRoot, 'home.md'), { force: true });
 
   const report = await buildMindStructureValidationReport({
     mindRoot,
@@ -104,7 +118,7 @@ test('fails when required Mind startup paths are missing', async (context) => {
 
   assert.equal(report.status, 'fail');
   assert.ok(report.checks.some(
-    (check) => check.id === 'required-path:router/00-memory-map.md'
+    (check) => check.id === 'required-path:home.md'
       && check.status === 'fail'
       && check.message.includes('missing'),
   ));
