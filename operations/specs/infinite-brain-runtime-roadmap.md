@@ -63,6 +63,19 @@ From the OODA / Infinite Brain transcript review:
 
 These are future report-only/design-first improvements. They do not authorize continuous processing, hidden loops, autonomous durable writes, or broad ingestion.
 
+### Sensemaking and identity backlog — report-only first
+
+These items are approved for roadmap tracking only. They extend the safe foundation toward the experience Steve wants: Mind becomes more personal, connected, and useful each day while Brain finds relations, proposes structure, remembers lessons, and warns about strategy drift without silently rewriting Mind.
+
+- align coding-LLM Mind context entrypoints so terminal coding agents can retrieve Steve's identity, strategy, current context, active projects, best-practice memory, and Brain/Mind boundaries through compact pointers instead of full-vault loading;
+- add an active relation discovery report that scans selected Mind surfaces and proposes related notes, backlinks, duplicate/overlap candidates, recurring themes, contradictions, and missing source references with evidence and confidence;
+- add a capture sensemaking proposal pipeline so client requests, feature ideas, bugs, future work, coding thoughts, meeting notes, and unstructured voice/text captures in `capture/inbox/` can be routed toward structured project/app/repo proposals;
+- add coding lessons learned capture so bug fixes, failed validations, architecture decisions, repo cleanups, and coding discoveries can become reviewed best-practice memory with source commits/files/validation evidence;
+- add a strategy drift and focus guardrail that compares new work, feature requests, task proposals, and coding plans against current strategy, priorities, constraints, and commitments, then emits report-only warnings when Steve may be drifting;
+- validate the two-repo Brain/Mind operating model so Brain remains the automation/runtime/tooling system, Mind remains the human truth/context system, and the bridge makes LLMs work for Steve rather than making Steve maintain machine structures.
+
+All items start report-only or proposal-only. They do not authorize automatic durable writes, task edits, project updates, capture moves, continuous runners, or merging `brain` and `mind`.
+
 ---
 
 ## Executive Summary
