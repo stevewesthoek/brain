@@ -5,6 +5,13 @@
  */
 
 import crypto from 'node:crypto';
+import {
+  MIND_REVIEW_SURFACE_CANDIDATES,
+  MIND_TARGET_PATHS,
+  MIND_TASK_FILE_CANDIDATES,
+  isMindDecisionSourcePath,
+  isSafeMindInboxCapturePath,
+} from '../mind-paths.js';
 import type { MindStewardReviewedOutcome } from './mind-steward-reviewed-outcome.js';
 
 export interface MindStewardTaskProposalSourceLink {
@@ -21,8 +28,8 @@ export interface MindStewardTaskProposalOnlyRecord {
   title: string | null;
   summary: string | null;
   sourceLinks: MindStewardTaskProposalSourceLink[];
-  reviewSurface: 'wiki/log.md';
-  protectedKanbanPath: 'kanban.md';
+  reviewSurface: typeof MIND_REVIEW_SURFACE_CANDIDATES[number];
+  protectedKanbanPath: typeof MIND_TASK_FILE_CANDIDATES[number];
   proposalOnly: true;
   executionAllowed: false;
   blockers: string[];
@@ -47,17 +54,11 @@ function sha256(value: string): string {
 }
 
 function isSafeCaptureSource(path: string): boolean {
-  return path.startsWith('capture/inbox/')
-    && path.length > 'capture/inbox/'.length
-    && path.endsWith('.md')
-    && !path.includes('..')
-    && !path.includes('*')
-    && !path.includes('?')
-    && !path.includes('\\');
+  return isSafeMindInboxCapturePath(path) && path.endsWith('.md');
 }
 
 function isSafeDecisionSource(path: string): boolean {
-  return path === 'live/decisions.md';
+  return isMindDecisionSourcePath(path);
 }
 
 function normalizeSourceLinks(
@@ -122,8 +123,8 @@ export function createTaskProposalOnlyRecord(
     title,
     summary,
     sourceLinks: sourceLinkResult.links,
-    reviewSurface: 'wiki/log.md',
-    protectedKanbanPath: 'kanban.md',
+    reviewSurface: MIND_TARGET_PATHS.inboxProcessed,
+    protectedKanbanPath: MIND_TARGET_PATHS.tasks,
     proposalOnly: true,
     executionAllowed: false,
     blockers,

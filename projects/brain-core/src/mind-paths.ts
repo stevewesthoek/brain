@@ -310,3 +310,24 @@ export const MIND_GRAPH_OUTPUT_CANDIDATES = [
   MIND_LEGACY_PATHS.graphifyOut,
   MIND_LEGACY_PATHS.legacyGraphifyOut,
 ] as const;
+
+
+
+export const MIND_REVIEW_SURFACE_CANDIDATES = [
+  MIND_TARGET_PATHS.inboxProcessed,
+  MIND_LEGACY_PATHS.wikiLog,
+] as const;
+
+export const MIND_REJECTED_CAPTURE_REVIEW_SURFACE_CANDIDATES = [
+  MIND_TARGET_PATHS.inboxNew,
+  MIND_LEGACY_PATHS.captureInbox,
+] as const;
+
+export const MIND_DECISION_SOURCE_CANDIDATES = [
+  'knowledge/decisions.md',
+  'live/decisions.md',
+] as const;
+
+export function isMindDecisionSourcePath(value: string): value is typeof MIND_DECISION_SOURCE_CANDIDATES[number] {
+  return MIND_DECISION_SOURCE_CANDIDATES.includes(value as typeof MIND_DECISION_SOURCE_CANDIDATES[number]);
+}

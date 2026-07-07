@@ -140,7 +140,7 @@ export function detectSourceGapFindings(input: SourceGapDetectionInput): SourceG
       status: 'open',
       created: input.reportDate,
       sourceRepo: 'mind',
-      scope: input.file.path.startsWith('wiki/') ? 'durable-knowledge' : 'page',
+      scope: input.file.path.startsWith('knowledge/') || input.file.path.startsWith('wiki/') ? 'durable-knowledge' : 'page',
       paths: [input.file.path],
       trigger: 'high-impact externally factual current claim lacks provenance',
       matchedEvidence: [

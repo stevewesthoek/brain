@@ -189,7 +189,7 @@ export function detectCompletedActiveFinding(
     status: 'open',
     created: input.reportDate,
     sourceRepo: 'mind',
-    scope: input.file.path.startsWith('live/projects/') ? 'project' : 'navigation',
+    scope: input.file.path.startsWith('live/projects/') || input.file.path.startsWith('projects/') ? 'project' : 'navigation',
     paths: [input.file.path],
     trigger: 'active status conflicts with explicit completion or supersession metadata',
     matchedEvidence: [

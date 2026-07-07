@@ -65,7 +65,7 @@ export function getContinuousProcessingDisableRecoveryView(): BrainCoreContinuou
         },
       ],
       immediateEffect: 'Prevents newly requested execution through the verified gated boundaries (on-demand requests, approved execution, scheduler eligibility). Does not cancel already running external work unless a separate cancellation mechanism exists. Does not itself modify Mind.',
-      dataIntegrity: 'Brain-owned queue state is preserved. Mind captures remain in capture/inbox/ unchanged. Queue state file is not deleted or modified by the kill switch.',
+      dataIntegrity: 'Brain-owned queue state is preserved. Mind captures remain in inbox/new/ or legacy capture/inbox/ unchanged. Queue state file is not deleted or modified by the kill switch.',
     },
     recoveryProcedure: {
       steps: [

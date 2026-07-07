@@ -4,7 +4,7 @@
  *
  * Safety:
  * - one existing Markdown file only;
- * - target must be an exact repository-relative path under wiki/;
+ * - target must be an exact repository-relative path under knowledge/, faith/, organizations/, or legacy wiki/;
  * - approved before-state SHA-256 must match immediately before writing;
  * - rollback snapshot is persisted before the Mind file changes;
  * - write uses a temporary sibling file and atomic rename;

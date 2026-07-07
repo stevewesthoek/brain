@@ -84,7 +84,7 @@ export function getContinuousProcessingSelection(
     watcherEnabled: false,
     requiredBeforeEnablement: [...REQUIRED_BEFORE_ENABLEMENT],
     selectionRationale: [
-      'capture/inbox is the only documented on-arrival workflow for Phase 9',
+      'inbox/new is the target on-arrival workflow with capture/inbox retained as the legacy fallback for Phase 9',
       'the inbox queue dry-run already preserves Brain-owned runtime state',
       'the queue dry-run is report-only and preserves capture, Kanban, and Mind write boundaries',
       'all other scheduler workflows are scheduled/report or mutation candidates, not the first continuous runner',

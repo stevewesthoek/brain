@@ -221,9 +221,9 @@ function createCategoryPreviewPaths(
       return [];
     }
     case 'wiki-writing': {
-      // Preview: would create new wiki page
-      const title = (proposal.title || 'wiki').toLowerCase().replace(/\s+/g, '-');
-      return sourcePaths.map(p => `${path.dirname(p)}/wiki/${title}.md`);
+      // Preview: would create a target knowledge page while legacy wiki writes remain approval-gated elsewhere.
+      const title = (proposal.title || 'knowledge').toLowerCase().replace(/\s+/g, '-');
+      return [`knowledge/${title}.md`];
     }
     case 'task-extraction': {
       // Preview: would create task records (no file changes)
@@ -245,7 +245,7 @@ function createRollbackPreview(category: string, targetPaths: string[]): string 
     case 'cleanup':
       return `Restore cleaned-up entities/edges from backup`;
     case 'wiki-writing':
-      return `Delete created wiki page: ${targetPaths[0] || 'wiki/page.md'}`;
+      return `Delete created knowledge page: ${targetPaths[0] || 'knowledge/page.md'}`;
     case 'task-extraction':
       return `Remove extracted task records`;
     default:

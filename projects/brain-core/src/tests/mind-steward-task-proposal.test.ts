@@ -69,8 +69,8 @@ test('task generation remains proposal-only with Kanban writes disabled', () => 
       path: 'capture/inbox/task-capture.md',
       summary: 'Source capture for task proposal.',
     }]);
-    assert.equal(proposal.reviewSurface, 'wiki/log.md');
-    assert.equal(proposal.protectedKanbanPath, 'kanban.md');
+    assert.equal(proposal.reviewSurface, 'inbox/processed');
+    assert.equal(proposal.protectedKanbanPath, 'tasks.md');
     assert.equal(proposal.proposalOnly, true);
     assert.equal(proposal.executionAllowed, false);
     assert.equal(proposal.safety.writesToMind, false);
@@ -112,6 +112,41 @@ test('task proposal-only records can link to a reviewed decision source', () => 
       },
     ]);
     assert.equal(proposal.safety.writesKanban, false);
+  } finally {
+    rmSync(fixture.tempDir, { recursive: true, force: true });
+  }
+});
+
+test('task proposal-only records accept target inbox and decision source links', () => {
+  const fixture = createTaskOutcome();
+  try {
+    const proposal = createTaskProposalOnlyRecord({
+      outcome: {
+        ...fixture.outcome,
+        capturePath: 'inbox/new/task-capture.md',
+      },
+      sourceLinks: [
+        {
+          type: 'decision',
+          path: 'knowledge/decisions.md',
+          summary: 'Target decision source for task proposal.',
+        },
+      ],
+    });
+
+    assert.equal(proposal.status, 'ready');
+    assert.deepEqual(proposal.sourceLinks, [
+      {
+        type: 'capture',
+        path: 'inbox/new/task-capture.md',
+        summary: 'Source capture for task proposal.',
+      },
+      {
+        type: 'decision',
+        path: 'knowledge/decisions.md',
+        summary: 'Target decision source for task proposal.',
+      },
+    ]);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
   }

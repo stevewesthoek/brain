@@ -116,6 +116,15 @@ Implementation handoff slice 4 (2026-07-07):
 - Structure validator now prefers target `system/generated/graph/` while warning on legacy `graphify-out/` or `.graphify-out/` fallback paths.
 - Validation evidence: Brain Core build passed; preview/maintenance tests passed 31/31; route execution subset passed 23 relevant tests with 184 skipped by name filter; `test:mind-structure-validator` passed 4/4; targeted security scan passed with no findings.
 
+Implementation handoff final audit (2026-07-07):
+
+- Status: Brain Core active-source compatibility audit completed; no Mind folders were moved and Save-to-Mind write destination remains unchanged.
+- Audit note: `operations/specs/mind-folder-compatibility-final-audit-2026-07-07.md`.
+- Active-source scan scope: `projects/brain-core/src`; old path tokens searched included `capture/`, `live/`, `wiki/`, `sources/`, `archive/`, `kanban.md`, `router/`, and Graphify output paths.
+- Final scan classification: 601 total matches; 57 intentional compatibility fallback matches; 487 test-fixture matches; 45 reviewed/no-patch-required matches; 10 unrelated non-Mind-domain strings; 2 active compatibility behavior strings; no remaining active old-only blocker found.
+- Final patches made: task proposal source/review/task paths are target-first with legacy fallbacks; reviewed outcomes use target `inbox/` review surfaces; source-gap and completed-active detectors recognize target `knowledge/` and `projects/`; wiki-writing previews now propose `knowledge/<title>.md`; continuous-processing and writer text no longer describe old-only paths.
+- Validation evidence: Brain Core build passed; final-audit focused tests passed 36/36; targeted security scan passed with no findings.
+
 ---
 
 ## Executive Summary

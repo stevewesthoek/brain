@@ -5,6 +5,11 @@
  */
 
 import crypto from 'node:crypto';
+import {
+  MIND_REJECTED_CAPTURE_REVIEW_SURFACE_CANDIDATES,
+  MIND_REVIEW_SURFACE_CANDIDATES,
+  MIND_TARGET_PATHS,
+} from '../mind-paths.js';
 import type { NormalizedCaptureClassification } from './mind-steward-capture-classification.js';
 import type { MindStewardCaptureSourceRecord } from './mind-steward-capture-source-preservation.js';
 import type { MindStewardDestinationProposal, MindStewardDestinationKind } from './mind-steward-destination-proposal.js';
@@ -36,7 +41,8 @@ export interface MindStewardReviewedOutcome {
   capturePath: string | null;
   sourceRecordId: string | null;
   destinationPath: string | null;
-  reviewSurface: 'wiki/log.md' | 'capture/inbox';
+  reviewSurface: typeof MIND_REVIEW_SURFACE_CANDIDATES[number]
+    | typeof MIND_REJECTED_CAPTURE_REVIEW_SURFACE_CANDIDATES[number];
   approvedDestination: 'live' | 'wiki' | 'sources' | 'archive' | 'task-proposal' | 'inbox';
   taskProposal: MindStewardTaskProposalDraft | null;
   review: MindStewardReviewedOutcomeReview;
@@ -175,7 +181,9 @@ export function createReviewedCaptureOutcome(
     capturePath: options.classification.capturePath,
     sourceRecordId: options.sourceRecord?.recordId ?? null,
     destinationPath,
-    reviewSurface: options.outcome === 'reject-leave-in-inbox' ? 'capture/inbox' : 'wiki/log.md',
+    reviewSurface: options.outcome === 'reject-leave-in-inbox'
+      ? MIND_TARGET_PATHS.inboxNew
+      : MIND_TARGET_PATHS.inboxProcessed,
     approvedDestination: APPROVED_DESTINATION_BY_OUTCOME[options.outcome],
     taskProposal: options.outcome === 'create-task-proposal' ? options.taskProposal ?? null : null,
     review: options.review,

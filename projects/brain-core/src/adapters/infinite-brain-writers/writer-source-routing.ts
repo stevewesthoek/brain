@@ -1,6 +1,6 @@
 /**
  * Infinite Brain Source Routing Writer
- * Moves one explicitly approved existing Markdown file to one exact path under sources/.
+ * Moves one explicitly approved existing Markdown file to one exact path under resources/ or legacy sources/.
  * No overwrite, folder move, glob, symlink, or autonomous destination selection.
  */
 
