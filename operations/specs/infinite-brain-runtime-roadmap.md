@@ -96,6 +96,15 @@ Implementation handoff slice 2 (2026-07-07):
 - Post-write verification validates target and legacy exact content paths through the shared migration-compatible path helper.
 - Validation evidence: Brain Core build passed; planner/writer/reviewed-outcome tests passed 52/52; post-write verification tests passed 10/10; targeted security scan passed with no findings.
 
+Implementation handoff slice 3 (2026-07-07):
+
+- Status: remaining task/project compatibility implemented; no Mind folders were moved and Save-to-Mind write destination remains unchanged.
+- Canonical task records accept `tasks.md` and legacy `kanban.md` as the task source while preserving lossless round-trip, non-writing behavior.
+- Task write approval gate accepts exact approved `tasks.md` or legacy `kanban.md` targets and remains approval-only with `writesToMind: false` and `writesKanban: false`.
+- Project status suggestions accept target `projects/<...>.md` and legacy `live/projects/<...>.md` pages.
+- Completed-project archive suggestions accept target `projects/` and legacy `live/projects/` pages, proposing `history/projects/` for target project pages and `archive/projects/` for legacy project pages.
+- Validation evidence: Brain Core build passed; task/project compatibility tests passed 25/25; targeted security scan passed with no findings.
+
 ---
 
 ## Executive Summary

@@ -5,7 +5,10 @@
  */
 
 import crypto from 'node:crypto';
-import path from 'node:path';
+import {
+  MIND_PROJECT_PAGE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../mind-paths.js';
 
 export interface MindStewardProjectStatusFile {
   path: string;
@@ -65,15 +68,7 @@ function daysBetween(startDate: string, endDate: string): number {
 }
 
 function isSafeProjectPath(value: string): boolean {
-  const normalized = path.posix.normalize(value);
-  return normalized === value
-    && normalized.startsWith('live/projects/')
-    && normalized.length > 'live/projects/'.length
-    && normalized.endsWith('.md')
-    && !normalized.includes('\0')
-    && !normalized.includes('*')
-    && !normalized.includes('?')
-    && !path.posix.isAbsolute(normalized);
+  return normalizeExactMindMarkdownPathForPrefixes(value, MIND_PROJECT_PAGE_PREFIXES) !== null;
 }
 
 function parseMetadata(content: string): ParsedMetadata {
@@ -90,7 +85,7 @@ function parseMetadata(content: string): ParsedMetadata {
     }
     if (startsWithFrontmatter && frontmatterClosed) break;
     if (!startsWithFrontmatter && index > 40) break;
-    const match = /^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/.exec(line);
+    const match = line.match(/^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/);
     if (!match) continue;
     metadata[(match[1] ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_')] = (match[2] ?? '').trim().replace(/^['"]|['"]$/g, '');
   }

@@ -282,3 +282,13 @@ export function normalizeExactMindMarkdownPathForPrefixes(
     ? normalized
     : null;
 }
+
+
+
+export const MIND_TASK_FILE_CANDIDATES = [MIND_TARGET_PATHS.tasks, MIND_LEGACY_PATHS.kanban] as const;
+export const MIND_PROJECT_PAGE_PREFIXES = ['projects/', 'live/projects/'] as const;
+export const MIND_COMPLETED_PROJECT_ARCHIVE_PREFIXES = ['history/projects/', 'archive/projects/'] as const;
+
+export function isMindTaskFilePath(value: string): value is typeof MIND_TASK_FILE_CANDIDATES[number] {
+  return MIND_TASK_FILE_CANDIDATES.includes(value as typeof MIND_TASK_FILE_CANDIDATES[number]);
+}

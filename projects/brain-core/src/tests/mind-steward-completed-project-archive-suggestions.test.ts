@@ -28,6 +28,32 @@ completed_on: 2026-06-10
   assert.equal(report.safety.movesFiles, false);
 });
 
+test('completed project archive suggestions propose target history path for target projects path', () => {
+  const report = generateCompletedProjectArchiveSuggestions({
+    reportDate: '2026-06-18',
+    files: [
+      {
+        path: 'projects/prochat/qa-memory.md',
+        content: `---
+status: active
+completed_on: 2026-06-10
+---
+# QA Memory
+`,
+      },
+    ],
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.suggestions.length, 1);
+  assert.equal(report.suggestions[0]?.status, 'ready');
+  assert.equal(report.suggestions[0]?.activePath, 'projects/prochat/qa-memory.md');
+  assert.equal(report.suggestions[0]?.proposedArchivePath, 'history/projects/prochat/qa-memory.md');
+  assert.equal(report.suggestions[0]?.affectedSurface, 'projects');
+  assert.equal(report.suggestions[0]?.requiresApproval, true);
+  assert.equal(report.safety.movesFiles, false);
+});
+
 test('completed project archive suggestions honor safe explicit archive path', () => {
   const report = generateCompletedProjectArchiveSuggestions({
     reportDate: '2026-06-18',

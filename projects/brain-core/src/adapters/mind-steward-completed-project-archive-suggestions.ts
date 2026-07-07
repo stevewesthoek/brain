@@ -5,7 +5,11 @@
  */
 
 import crypto from 'node:crypto';
-import path from 'node:path';
+import {
+  MIND_COMPLETED_PROJECT_ARCHIVE_PREFIXES,
+  MIND_PROJECT_PAGE_PREFIXES,
+  normalizeExactMindMarkdownPathForPrefixes,
+} from '../mind-paths.js';
 
 export interface MindStewardCompletedProjectFile {
   path: string;
@@ -18,7 +22,7 @@ export interface MindStewardCompletedProjectArchiveSuggestion {
   activePath: string;
   proposedArchivePath: string | null;
   completionEvidence: string[];
-  affectedSurface: 'live/projects';
+  affectedSurface: 'projects' | 'live/projects';
   recommendation: 'archive-after-approval';
   requiresApproval: true;
   blockers: string[];
@@ -82,7 +86,7 @@ function parseMetadata(content: string): ParsedMetadataValue[] {
     }
     if (startsWithFrontmatter && frontmatterClosed) break;
     if (!startsWithFrontmatter && index > 40) break;
-    const match = /^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/.exec(line);
+    const match = line.match(/^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/);
     if (!match) continue;
     const key = normalizeKey(match[1] ?? '');
     const value = normalizeValue(match[2] ?? '');
@@ -96,25 +100,11 @@ function isTruthy(value: string): boolean {
 }
 
 function isSafeProjectPath(value: string): boolean {
-  const normalized = path.posix.normalize(value);
-  return normalized === value
-    && normalized.startsWith('live/projects/')
-    && normalized.length > 'live/projects/'.length
-    && normalized.endsWith('.md')
-    && !normalized.includes('*')
-    && !normalized.includes('?')
-    && !path.posix.isAbsolute(normalized);
+  return normalizeExactMindMarkdownPathForPrefixes(value, MIND_PROJECT_PAGE_PREFIXES) !== null;
 }
 
 function isSafeArchivePath(value: string): boolean {
-  const normalized = path.posix.normalize(value);
-  return normalized === value
-    && normalized.startsWith('archive/projects/')
-    && normalized.length > 'archive/projects/'.length
-    && normalized.endsWith('.md')
-    && !normalized.includes('*')
-    && !normalized.includes('?')
-    && !path.posix.isAbsolute(normalized);
+  return normalizeExactMindMarkdownPathForPrefixes(value, MIND_COMPLETED_PROJECT_ARCHIVE_PREFIXES) !== null;
 }
 
 function isActive(metadata: ParsedMetadataValue[]): boolean {
@@ -142,7 +132,12 @@ function explicitArchivePath(metadata: ParsedMetadataValue[]): string | null {
 }
 
 function defaultArchivePath(activePath: string): string {
+  if (activePath.startsWith('projects/')) return `history/projects/${activePath.slice('projects/'.length)}`;
   return `archive/projects/${activePath.slice('live/projects/'.length)}`;
+}
+
+function affectedSurface(activePath: string): MindStewardCompletedProjectArchiveSuggestion['affectedSurface'] {
+  return activePath.startsWith('projects/') ? 'projects' : 'live/projects';
 }
 
 function createSuggestion(
@@ -165,7 +160,7 @@ function createSuggestion(
     activePath: file.path,
     proposedArchivePath,
     completionEvidence: evidence,
-    affectedSurface: 'live/projects',
+    affectedSurface: affectedSurface(file.path),
     recommendation: 'archive-after-approval',
     requiresApproval: true,
     blockers,

@@ -4,6 +4,7 @@
  */
 
 import crypto from 'node:crypto';
+import { isMindTaskFilePath, MIND_TARGET_PATHS } from '../mind-paths.js';
 import type { KanbanRoundTripFixtureReport } from './mind-steward-kanban-round-trip-fixture.js';
 import type { MindStewardTaskProposalOnlyRecord } from './mind-steward-task-proposal.js';
 
@@ -29,7 +30,7 @@ export interface MindStewardTaskWriteApprovalGateReport {
   approvalRequired: true;
   proposalId: string | null;
   approvalId: string | null;
-  targetPath: 'kanban.md';
+  targetPath: string;
   blockers: string[];
   checks: Array<{
     name: string;
@@ -164,7 +165,7 @@ export function evaluateTaskWriteApprovalGate(
       checks,
       blockers,
       'target-path-exact',
-      approval.targetPath === 'kanban.md',
+      isMindTaskFilePath(approval.targetPath),
       `target=${approval.targetPath}`,
       'exactKanbanTargetRequired',
     );
@@ -218,7 +219,7 @@ export function evaluateTaskWriteApprovalGate(
     approvalRequired: true,
     proposalId: proposal.proposalId,
     approvalId: approval?.approvalId ?? null,
-    targetPath: 'kanban.md',
+    targetPath: approval?.targetPath ?? MIND_TARGET_PATHS.tasks,
     blockers,
     checks,
     safety: {

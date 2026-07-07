@@ -27,6 +27,30 @@ review_after: 2026-06-15
   assert.equal(report.safety.writesLiveProjects, false);
 });
 
+test('project status suggestions accept target projects path during migration', () => {
+  const report = generateProjectStatusReviewSuggestions({
+    reportDate: '2026-06-18',
+    files: [
+      {
+        path: 'projects/prochat/strategy.md',
+        content: `---
+status: active
+last_reviewed: 2026-06-01
+review_after: 2026-06-15
+---
+# Project
+`,
+      },
+    ],
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.suggestions.length, 1);
+  assert.equal(report.suggestions[0]?.projectPath, 'projects/prochat/strategy.md');
+  assert.equal(report.suggestions[0]?.reason, 'review-after-due');
+  assert.equal(report.suggestions[0]?.requiresApproval, true);
+});
+
 test('project status suggestions flag stale last_reviewed metadata', () => {
   const report = generateProjectStatusReviewSuggestions({
     reportDate: '2026-06-18',

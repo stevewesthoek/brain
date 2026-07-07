@@ -4,6 +4,9 @@
  */
 
 import crypto from 'node:crypto';
+import { isMindTaskFilePath, type MIND_TASK_FILE_CANDIDATES } from '../mind-paths.js';
+
+type MindTaskFilePath = typeof MIND_TASK_FILE_CANDIDATES[number];
 
 export interface KanbanExporterCard {
   column: string;
@@ -39,7 +42,7 @@ export interface MindStewardCanonicalSubtaskRecord {
 
 export interface MindStewardCanonicalTaskRecord {
   id: string;
-  source: 'kanban.md';
+  source: MindTaskFilePath;
   sourceLine: number;
   status: string;
   column: string;
@@ -99,19 +102,19 @@ function validateCard(card: KanbanExporterCard, index: number): string[] {
   return blockers;
 }
 
-function recordId(card: KanbanExporterCard): string {
+function recordId(source: MindTaskFilePath, card: KanbanExporterCard): string {
   return `task-${sha256(JSON.stringify({
-    source: 'kanban.md',
+    source,
     column: card.column,
     line: card.line,
     raw: card.raw,
   })).slice(0, 16)}`;
 }
 
-function toRecord(card: KanbanExporterCard): MindStewardCanonicalTaskRecord {
+function toRecord(source: MindTaskFilePath, card: KanbanExporterCard): MindStewardCanonicalTaskRecord {
   return {
-    id: recordId(card),
-    source: 'kanban.md',
+    id: recordId(source, card),
+    source,
     sourceLine: card.line,
     status: card.column,
     column: card.column,
@@ -147,7 +150,8 @@ export function defineLosslessCanonicalTaskRecords(
   exportData: KanbanExporterData,
 ): MindStewardCanonicalTaskRecordReport {
   const blockers: string[] = [];
-  if (exportData.source !== 'kanban.md') blockers.push('kanbanSourceRequired');
+  const source = isMindTaskFilePath(exportData.source) ? exportData.source : null;
+  if (!source) blockers.push('taskSourceRequired');
   for (const [index, card] of exportData.cards.entries()) {
     blockers.push(...validateCard(card, index));
   }
@@ -155,7 +159,7 @@ export function defineLosslessCanonicalTaskRecords(
   return {
     status: blockers.length === 0 ? 'ready' : 'blocked',
     source: exportData.source ?? null,
-    records: blockers.length === 0 ? exportData.cards.map(toRecord) : [],
+    records: blockers.length === 0 && source ? exportData.cards.map(card => toRecord(source, card)) : [],
     blockers,
     purpose: 'round-trip-validation-only',
     safety: {

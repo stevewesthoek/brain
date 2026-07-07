@@ -112,6 +112,24 @@ function approval(
   };
 }
 
+test('task write approval gate accepts explicit approval for target tasks.md without writing Mind', () => {
+  const proposal = taskProposal();
+  const roundTrip = roundTripReport();
+  const targetApproval = approval(proposal.proposalId, roundTrip.candidateMarkdown ?? '');
+  targetApproval.targetPath = 'tasks.md';
+  const report = evaluateTaskWriteApprovalGate({
+    proposal,
+    roundTripReport: roundTrip,
+    approval: targetApproval,
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.canRequestTaskWrite, true);
+  assert.equal(report.targetPath, 'tasks.md');
+  assert.equal(report.safety.writesToMind, false);
+  assert.equal(report.safety.writesKanban, false);
+});
+
 test('task write approval gate accepts explicit approval without writing Kanban', () => {
   const proposal = taskProposal();
   const roundTrip = roundTripReport();
@@ -150,7 +168,7 @@ test('task write approval gate blocks missing approval evidence', () => {
   assert.equal(report.safety.writesKanban, false);
 });
 
-test('task write approval gate blocks broad or non-Kanban task write targets', () => {
+test('task write approval gate blocks broad or non-task write targets', () => {
   const proposal = taskProposal();
   const roundTrip = roundTripReport();
   const report = evaluateTaskWriteApprovalGate({

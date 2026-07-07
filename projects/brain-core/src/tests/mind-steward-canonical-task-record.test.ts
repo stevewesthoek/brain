@@ -68,6 +68,16 @@ test('canonical task records preserve lossless Kanban card fields', () => {
   assert.equal(report.safety.createsDurableTaskFiles, false);
 });
 
+test('canonical task records accept target tasks.md during migration', () => {
+  const exportData = fixtureExport();
+  exportData.source = 'tasks.md';
+  const report = defineLosslessCanonicalTaskRecords(exportData);
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.source, 'tasks.md');
+  assert.equal(report.records[0]?.source, 'tasks.md');
+});
+
 test('canonical task record IDs are stable for identical exporter data', () => {
   const first = defineLosslessCanonicalTaskRecords(fixtureExport());
   const second = defineLosslessCanonicalTaskRecords(fixtureExport());
@@ -110,7 +120,7 @@ test('canonical task record definition blocks malformed exporter cards', () => {
   assert(report.blockers.includes('subtaskRawTextRequired:0:0'));
 });
 
-test('canonical task record definition blocks non-kanban sources', () => {
+test('canonical task record definition blocks non-task sources', () => {
   const exportData = fixtureExport();
   const report = defineLosslessCanonicalTaskRecords({
     ...exportData,
@@ -118,6 +128,6 @@ test('canonical task record definition blocks non-kanban sources', () => {
   });
 
   assert.equal(report.status, 'blocked');
-  assert(report.blockers.includes('kanbanSourceRequired'));
+  assert(report.blockers.includes('taskSourceRequired'));
   assert.equal(report.safety.replacesKanbanSourceOfTruth, false);
 });
