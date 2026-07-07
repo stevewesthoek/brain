@@ -4,7 +4,7 @@
  * Phase Z: DESTRUCTIVE OPERATIONS DISABLED, always returns blocked
  *
  * This writer is intentionally destructive and requires explicit per-item approval.
- * Archive-first approach: entities are moved to mind/99-archive/ before deletion.
+ * History-first approach: entities are moved to target history/ or legacy archive/ before deletion.
  * Cleanup writer is blocked until all safety gates are in place.
  */
 

@@ -38,11 +38,11 @@ The scan was limited to `projects/brain-core/src` to avoid generated/runtime and
 
 ```text
 total matches: 601
-compatibility fallback intentionally retained: 57 matches across 13 files
-reviewed no patch required: 45 matches across 7 files
-unrelated non-Mind-domain string: 10 matches across 3 files
-active compatibility behavior: 2 matches across 2 files
+compatibility fallback intentionally retained: 104 matches across 20 files
+unrelated non-Mind-domain string: 9 matches across 2 files
+historical docs/runbooks: 1 match across 1 file
 test fixtures: 487 matches across 46 files
+still-active dependency needing review: 0 matches
 ```
 
 ## Compatibility fixes applied during final audit

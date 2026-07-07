@@ -1,6 +1,6 @@
 /**
  * Lossless canonical task record candidate for Kanban round-trip validation.
- * This does not create durable task files or replace kanban.md.
+ * This does not create durable task files or replace tasks.md/legacy kanban.md.
  */
 
 import crypto from 'node:crypto';

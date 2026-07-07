@@ -583,7 +583,7 @@ function readMindStewardDefinition(): BrainCoreLocalAppDefinition | null {
     label: 'Mind Steward',
     description: report?.status === 'success'
       ? 'Brain Core runtime report indicates Mind Steward is operational.'
-      : 'AI steward for Mind vault: classifies captures, routes to live/, compiles to wiki/.',
+      : 'AI steward for Mind vault: classifies captures, routes to projects/resources, and prepares knowledge proposals.',
     category: 'brain-core',
     managed: Boolean(startCommand),
     services: [

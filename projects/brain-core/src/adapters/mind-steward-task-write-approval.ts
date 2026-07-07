@@ -1,6 +1,6 @@
 /**
  * Explicit approval gate for future Kanban task writes.
- * This validates approval evidence only; it never writes or replaces kanban.md.
+ * This validates approval evidence only; it never writes or replaces tasks.md/legacy kanban.md.
  */
 
 import crypto from 'node:crypto';
