@@ -36,14 +36,14 @@ test('Brain Core reads mind-steward previewId artifacts', () => {
       {
         previewId,
         actionKind: 'mind-steward-update-current-context',
-        targetPath: 'router/current.md',
+        targetPath: 'system/agent-context/current.md',
         operation: 'overwrite',
         oldHash: 'old-hash',
         newHash: 'new-hash',
         lineCountBefore: 2,
         lineCountAfter: 3,
         maxLines: 150,
-        unifiedDiff: '--- a/router/current.md\n+++ b/router/current.md\n@@ preview @@\n-old\n+new',
+        unifiedDiff: '--- a/system/agent-context/current.md\n+++ b/system/agent-context/current.md\n@@ preview @@\n-old\n+new',
         writesToMind: false,
         externalSideEffects: false,
         policyReasons: ['Target path is allowed for preview-only planning.'],
@@ -69,7 +69,7 @@ test('Brain Core reads mind-steward previewId artifacts', () => {
       assert.equal(summaries[0]?.externalSideEffects, false);
       assert.equal(latest?.id, previewId);
       assert.equal(detail?.id, previewId);
-      assert.equal(detail?.targetPath, 'router/current.md');
+      assert.equal(detail?.targetPath, 'system/agent-context/current.md');
       assert.equal(detail?.allowedRoot, true);
       assert.equal(detail?.blockedRoot, false);
       assert.equal(detail?.newHash, 'new-hash');

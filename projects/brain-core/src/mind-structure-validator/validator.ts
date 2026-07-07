@@ -4,7 +4,7 @@ import {
   MIND_MAINTENANCE_PILOT_FILES,
   MIND_MAINTENANCE_REPORT_OUTPUTS,
 } from '../mind-maintenance-pilot/pilot-file-loader.js';
-import { MIND_STRUCTURE_COMPATIBILITY_GROUPS } from '../mind-paths.js';
+import { MIND_GRAPH_OUTPUT_CANDIDATES, MIND_STRUCTURE_COMPATIBILITY_GROUPS } from '../mind-paths.js';
 
 export const MIND_STRUCTURE_VALIDATION_SCHEMA_VERSION = '1.0';
 export const MIND_STRUCTURE_VALIDATION_MODE = 'report-only';
@@ -403,8 +403,29 @@ async function checkFreshnessMetadata(mindRoot: string): Promise<MindStructureVa
 }
 
 async function checkGraphifyOutputPath(mindRoot: string): Promise<MindStructureValidationCheck[]> {
-  const graphifyOutKind = await pathKind(mindRoot, 'graphify-out');
-  const legacyGraphifyOutKind = await pathKind(mindRoot, '.graphify-out');
+  const [targetGraphKind, graphifyOutKind, legacyGraphifyOutKind] = await Promise.all(
+    MIND_GRAPH_OUTPUT_CANDIDATES.map(candidate => pathKind(mindRoot, candidate)),
+  );
+
+  if (targetGraphKind !== null) {
+    const legacyPaths = [
+      graphifyOutKind !== null ? 'graphify-out' : null,
+      legacyGraphifyOutKind !== null ? '.graphify-out' : null,
+    ].filter((value): value is string => value !== null);
+
+    return [check(
+      'graphify-output:path-consistency',
+      legacyPaths.length === 0 ? 'pass' : 'warn',
+      'graphify-output',
+      legacyPaths.length === 0
+        ? 'Graphify generated output uses target system/generated/graph/.'
+        : `Target graph output exists with legacy fallback output still present: ${legacyPaths.join(', ')}.`,
+      'system/generated/graph',
+      legacyPaths.length === 0
+        ? null
+        : 'Remove legacy generated graph output only after Graphify config and reports validate the target path.',
+    )];
+  }
 
   if (graphifyOutKind !== null && legacyGraphifyOutKind !== null) {
     return [check(
@@ -422,20 +443,20 @@ async function checkGraphifyOutputPath(mindRoot: string): Promise<MindStructureV
       'graphify-output:path-consistency',
       'warn',
       'graphify-output',
-      'Legacy .graphify-out/ exists without graphify-out/.',
+      'Legacy .graphify-out/ exists without target system/generated/graph/.',
       '.graphify-out',
-      'Confirm whether Graphify still writes the legacy path or migrate docs/config to graphify-out/.',
+      'Confirm whether Graphify still writes the legacy path or migrate docs/config to system/generated/graph/.',
     )];
   }
 
   if (graphifyOutKind !== null) {
     return [check(
       'graphify-output:path-consistency',
-      'pass',
+      'warn',
       'graphify-output',
-      'Graphify generated output uses graphify-out/.',
+      'Legacy graphify-out/ exists without target system/generated/graph/.',
       'graphify-out',
-      null,
+      'Migrate Graphify config/report docs to system/generated/graph/ before removing legacy output support.',
     )];
   }
 

@@ -13,7 +13,7 @@ const cliPath = fileURLToPath(new URL('../bin/mind-maintenance-pilot.js', import
 
 async function createCommittedMindFixture(): Promise<string> {
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-cli-e2e-'));
-  const contents: Record<(typeof MIND_MAINTENANCE_PILOT_FILES)[number], string> = {
+  const contents: Record<string, string> = {
     'router/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
@@ -43,7 +43,7 @@ Freshness risk: high
   for (const relativePath of MIND_MAINTENANCE_PILOT_FILES) {
     const absolutePath = path.join(mindRoot, relativePath);
     await mkdir(path.dirname(absolutePath), { recursive: true });
-    await writeFile(absolutePath, contents[relativePath], 'utf8');
+    await writeFile(absolutePath, contents[relativePath] ?? '', 'utf8');
   }
   await writeFile(path.join(mindRoot, 'kanban.md'), '# Kanban\n', 'utf8');
 

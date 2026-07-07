@@ -50,7 +50,7 @@ freshness_risk: high
   await mkdir(path.join(mindRoot, 'system/agent-context'), { recursive: true });
   await mkdir(path.join(mindRoot, 'capture/inbox'), { recursive: true });
   await mkdir(path.join(mindRoot, 'capture/failed'), { recursive: true });
-  await mkdir(path.join(mindRoot, 'graphify-out'), { recursive: true });
+  await mkdir(path.join(mindRoot, 'system/generated/graph'), { recursive: true });
 
   for (const pilotPath of MIND_MAINTENANCE_PILOT_FILES) {
     const content = pilotPath === 'router/00-current-context.md'
@@ -127,6 +127,7 @@ test('fails when invariant Mind root paths are missing', async (context) => {
 test('warns when only the legacy .graphify-out path exists', async (context) => {
   const mindRoot = await createMindStructureFixture();
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
+  await rm(path.join(mindRoot, 'system/generated/graph'), { recursive: true, force: true });
   await rm(path.join(mindRoot, 'graphify-out'), { recursive: true, force: true });
   await mkdir(path.join(mindRoot, '.graphify-out'), { recursive: true });
 

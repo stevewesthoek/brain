@@ -292,3 +292,21 @@ export const MIND_COMPLETED_PROJECT_ARCHIVE_PREFIXES = ['history/projects/', 'ar
 export function isMindTaskFilePath(value: string): value is typeof MIND_TASK_FILE_CANDIDATES[number] {
   return MIND_TASK_FILE_CANDIDATES.includes(value as typeof MIND_TASK_FILE_CANDIDATES[number]);
 }
+
+
+
+export const MIND_AGENT_CONTEXT_CURRENT_PATH_CANDIDATES = [
+  'system/agent-context/current.md',
+  'router/current.md',
+] as const;
+
+export const MIND_AGENT_CONTEXT_CURRENT_CONTEXT_CANDIDATES = [
+  'system/agent-context/00-current-context.md',
+  'router/00-current-context.md',
+] as const;
+
+export const MIND_GRAPH_OUTPUT_CANDIDATES = [
+  MIND_TARGET_PATHS.graphOutput,
+  MIND_LEGACY_PATHS.graphifyOut,
+  MIND_LEGACY_PATHS.legacyGraphifyOut,
+] as const;

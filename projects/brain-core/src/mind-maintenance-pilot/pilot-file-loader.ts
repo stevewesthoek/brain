@@ -1,15 +1,55 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-export const MIND_MAINTENANCE_PILOT_FILES = [
-  'router/00-current-context.md',
-  'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-  'wiki/organisations/prochat/brand/product-strategy.md',
-  'live/dashboard.md',
-  'system/automation-roadmap.md',
+export const MIND_MAINTENANCE_PILOT_FILE_GROUPS = [
+  {
+    id: 'current-context',
+    candidates: [
+      'system/agent-context/00-current-context.md',
+      'router/00-current-context.md',
+    ],
+  },
+  {
+    id: 'prochat-qa-memory-strategy',
+    candidates: [
+      'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+      'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    ],
+  },
+  {
+    id: 'prochat-product-strategy',
+    candidates: [
+      'organizations/prochat/brand/product-strategy.md',
+      'wiki/organisations/prochat/brand/product-strategy.md',
+    ],
+  },
+  {
+    id: 'dashboard',
+    candidates: [
+      'system/reports/dashboard.md',
+      'live/dashboard.md',
+    ],
+  },
+  {
+    id: 'automation-roadmap',
+    candidates: [
+      'system/automation-roadmap.md',
+    ],
+  },
 ] as const;
 
-export type MindMaintenancePilotFile = (typeof MIND_MAINTENANCE_PILOT_FILES)[number];
+export type MindMaintenancePilotFileGroup = (typeof MIND_MAINTENANCE_PILOT_FILE_GROUPS)[number];
+export type MindMaintenancePilotFileGroupId = MindMaintenancePilotFileGroup['id'];
+export type MindMaintenancePilotFile = MindMaintenancePilotFileGroup['candidates'][number];
+
+export const MIND_MAINTENANCE_TARGET_PILOT_FILES = MIND_MAINTENANCE_PILOT_FILE_GROUPS
+  .map(group => group.candidates[0]) as readonly MindMaintenancePilotFile[];
+
+export const MIND_MAINTENANCE_PILOT_FILES = MIND_MAINTENANCE_PILOT_FILE_GROUPS
+  .map(group => group.candidates[1] ?? group.candidates[0]) as readonly MindMaintenancePilotFile[];
+
+export const MIND_MAINTENANCE_COMPATIBLE_PILOT_FILES = MIND_MAINTENANCE_PILOT_FILE_GROUPS
+  .flatMap(group => [...group.candidates]) as readonly MindMaintenancePilotFile[];
 
 export const MIND_MAINTENANCE_REPORT_OUTPUTS = [
   'system/reports/maintenance-latest.json',
@@ -88,8 +128,14 @@ function resolvePilotPath(mindRoot: string, relativePath: MindMaintenancePilotFi
   return absolutePath;
 }
 
+export function mindMaintenancePilotGroupForPath(value: string): MindMaintenancePilotFileGroup | null {
+  return MIND_MAINTENANCE_PILOT_FILE_GROUPS.find(group =>
+    (group.candidates as readonly string[]).includes(value),
+  ) ?? null;
+}
+
 export function isMindMaintenancePilotFile(value: string): value is MindMaintenancePilotFile {
-  return MIND_MAINTENANCE_PILOT_FILES.includes(value as MindMaintenancePilotFile);
+  return mindMaintenancePilotGroupForPath(value) !== null;
 }
 
 export function assertMindMaintenancePilotFile(value: string): asserts value is MindMaintenancePilotFile {
@@ -98,28 +144,38 @@ export function assertMindMaintenancePilotFile(value: string): asserts value is 
   }
 }
 
+function assertExactlyOnePathPerPilotGroup(requestedPaths: readonly string[]): void {
+  if (requestedPaths.length !== MIND_MAINTENANCE_PILOT_FILE_GROUPS.length) {
+    throw new Error(
+      `Mind maintenance pilot must load exactly ${MIND_MAINTENANCE_PILOT_FILE_GROUPS.length} files.`,
+    );
+  }
+
+  const uniqueRequestedPaths = new Set(requestedPaths);
+  if (uniqueRequestedPaths.size !== MIND_MAINTENANCE_PILOT_FILE_GROUPS.length) {
+    throw new Error('Mind maintenance pilot paths must be unique.');
+  }
+
+  for (const requestedPath of requestedPaths) {
+    assertMindMaintenancePilotFile(requestedPath);
+  }
+
+  for (const group of MIND_MAINTENANCE_PILOT_FILE_GROUPS) {
+    const selected = requestedPaths.filter(requestedPath =>
+      (group.candidates as readonly string[]).includes(requestedPath),
+    );
+    if (selected.length !== 1) {
+      throw new Error(`Mind maintenance pilot must include exactly one path for group: ${group.id}`);
+    }
+  }
+}
+
 export async function loadMindMaintenancePilotDataset(
   mindRoot: string,
   requestedPaths: readonly string[] = MIND_MAINTENANCE_PILOT_FILES,
 ): Promise<LoadedMindMaintenancePilotDataset> {
   const resolvedMindRoot = assertAbsoluteMindRoot(mindRoot);
-
-  if (requestedPaths.length !== MIND_MAINTENANCE_PILOT_FILES.length) {
-    throw new Error(
-      `Mind maintenance pilot must load exactly ${MIND_MAINTENANCE_PILOT_FILES.length} files.`,
-    );
-  }
-
-  const uniqueRequestedPaths = new Set(requestedPaths);
-  if (uniqueRequestedPaths.size !== MIND_MAINTENANCE_PILOT_FILES.length) {
-    throw new Error('Mind maintenance pilot paths must be unique.');
-  }
-
-  for (const requiredPath of MIND_MAINTENANCE_PILOT_FILES) {
-    if (!uniqueRequestedPaths.has(requiredPath)) {
-      throw new Error(`Mind maintenance pilot is missing required path: ${requiredPath}`);
-    }
-  }
+  assertExactlyOnePathPerPilotGroup(requestedPaths);
 
   const files = await Promise.all(
     requestedPaths.map(async (requestedPath): Promise<LoadedMindMaintenancePilotFile> => {

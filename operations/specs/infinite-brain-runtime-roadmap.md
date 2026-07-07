@@ -105,6 +105,17 @@ Implementation handoff slice 3 (2026-07-07):
 - Completed-project archive suggestions accept target `projects/` and legacy `live/projects/` pages, proposing `history/projects/` for target project pages and `archive/projects/` for legacy project pages.
 - Validation evidence: Brain Core build passed; task/project compatibility tests passed 25/25; targeted security scan passed with no findings.
 
+Implementation handoff slice 4 (2026-07-07):
+
+- Status: remaining route/type/config/report compatibility surfaces updated; no Mind folders were moved and Save-to-Mind write destination remains unchanged.
+- Preview/execution policy now proposes target `system/agent-context/current.md` first while keeping legacy `router/current.md` allowed.
+- Maintenance pilot loader now supports one selected path per logical group, allowing target paths (`system/agent-context/`, `projects/`, `organizations/`, `system/reports/`) or legacy fallbacks (`router/`, `live/projects/`, `wiki/organisations/`, `live/dashboard.md`) without changing the default legacy dataset.
+- Maintenance report schema validation accepts target/fallback pilot files and target `inbox/` capture-promotion paths while remaining report-only.
+- Source-integrity checks now protect all compatible pilot files plus `tasks.md` and legacy `kanban.md` during report-only maintenance runs.
+- Stale-page and completed-active detectors recognize target current-context, project, and dashboard paths.
+- Structure validator now prefers target `system/generated/graph/` while warning on legacy `graphify-out/` or `.graphify-out/` fallback paths.
+- Validation evidence: Brain Core build passed; preview/maintenance tests passed 31/31; route execution subset passed 23 relevant tests with 184 skipped by name filter; `test:mind-structure-validator` passed 4/4; targeted security scan passed with no findings.
+
 ---
 
 ## Executive Summary

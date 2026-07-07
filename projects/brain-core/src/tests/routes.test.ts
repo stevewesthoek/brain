@@ -2224,10 +2224,11 @@ test('GET /execution/plans returns the future first execution candidate', async 
   assert.equal(body.plans[0]?.writesToMind, false);
   assert.equal(body.plans[0]?.mindPreviewPolicy.status, 'preview-only');
   assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedAction, 'mind-steward-update-current-context');
-  assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedTarget, 'router/current.md');
+  assert.equal(body.plans[0]?.mindPreviewPolicy.firstProposedTarget, 'system/agent-context/current.md');
   assert.equal(body.plans[0]?.mindPreviewPolicy.writesToMind, false);
   assert.equal(body.plans[0]?.mindPreviewPolicy.externalSideEffects, false);
   assert.equal(body.plans[0]?.mindPreviewPolicy.applyRouteEnabled, false);
+  assert.equal(body.plans[0]?.mindPreviewPolicy.allowedTargets.includes('system/agent-context/current.md'), true);
   assert.equal(body.plans[0]?.mindPreviewPolicy.allowedTargets.includes('router/current.md'), true);
   assert.equal(body.plans[0]?.mindPreviewPolicy.blockedPrefixes.includes('.obsidian/'), true);
   assert.equal(body.plans[0]?.mindPreviewPolicy.blockedPrefixes.includes('03-projects/'), true);
@@ -2362,10 +2363,11 @@ test('GET /execution/mind-preview-policy returns preview-only policy metadata', 
   assert.equal(response.statusCode, 200);
   assert.equal(body.status, 'preview-only');
   assert.equal(body.firstProposedAction, 'mind-steward-update-current-context');
-  assert.equal(body.firstProposedTarget, 'router/current.md');
+  assert.equal(body.firstProposedTarget, 'system/agent-context/current.md');
   assert.equal(body.applyRouteEnabled, false);
   assert.equal(body.writesToMind, false);
   assert.equal(body.externalSideEffects, false);
+  assert.equal(body.allowedTargets.includes('system/agent-context/current.md'), true);
   assert.equal(body.allowedTargets.includes('router/current.md'), true);
   assert.equal(body.blockedPrefixes.includes('.obsidian/'), true);
   assert.equal(body.blockedPrefixes.includes('01-inbox/'), true);

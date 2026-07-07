@@ -95,7 +95,7 @@ function parseMetadata(content: string): ParsedMetadataValue[] {
     if (startsWithFrontmatter && frontmatterClosed) break;
     if (!startsWithFrontmatter && index > 40) break;
 
-    const match = /^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/.exec(line);
+    const match = line.match(/^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/);
     if (!match) continue;
 
     const key = normalizeKey(match[1] ?? '');
@@ -117,8 +117,8 @@ function isTruthy(value: string): boolean {
 }
 
 function normalizeRisk(file: LoadedMindMaintenancePilotFile): MaintenanceRisk {
-  if (file.path === 'live/dashboard.md') return 'high';
-  if (file.path.startsWith('live/projects/')) return 'medium';
+  if (file.path === 'live/dashboard.md' || file.path === 'system/reports/dashboard.md') return 'high';
+  if (file.path.startsWith('live/projects/') || file.path.startsWith('projects/')) return 'medium';
   return 'low';
 }
 

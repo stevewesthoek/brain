@@ -11,19 +11,17 @@ import {
   type MaintenanceValidationIssue,
   type MaintenanceValidationResult,
 } from './types.js';
+import {
+  MIND_MAINTENANCE_COMPATIBLE_PILOT_FILES,
+  MIND_MAINTENANCE_PILOT_FILE_GROUPS,
+  MIND_MAINTENANCE_REPORT_OUTPUTS,
+  mindMaintenancePilotGroupForPath,
+  type MindMaintenancePilotFile,
+} from './pilot-file-loader.js';
 
-const PILOT_FILES = [
-  'router/00-current-context.md',
-  'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-  'wiki/organisations/prochat/brand/product-strategy.md',
-  'live/dashboard.md',
-  'system/automation-roadmap.md',
-] as const;
-
-const ALLOWED_OUTPUT_PATHS = [
-  'system/reports/maintenance-latest.json',
-  'system/reports/maintenance-latest.md',
-] as const;
+const PILOT_FILE_COUNT = MIND_MAINTENANCE_PILOT_FILE_GROUPS.length;
+const COMPATIBLE_PILOT_FILES = MIND_MAINTENANCE_COMPATIBLE_PILOT_FILES;
+const ALLOWED_OUTPUT_PATHS = MIND_MAINTENANCE_REPORT_OUTPUTS;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -130,8 +128,9 @@ function validateFinding(
     pushIssue(issues, `${path}.paths`, 'must contain at least one exact path');
   } else {
     for (const findingPath of value.paths) {
-      const isPilotPath = PILOT_FILES.includes(findingPath as (typeof PILOT_FILES)[number]);
-      const isCapturePromotionPath = value.type === 'capture-promotion' && findingPath.startsWith('capture/');
+      const isPilotPath = COMPATIBLE_PILOT_FILES.includes(findingPath as MindMaintenancePilotFile);
+      const isCapturePromotionPath = value.type === 'capture-promotion'
+        && (findingPath.startsWith('capture/') || findingPath.startsWith('inbox/'));
       if (!isPilotPath && !isCapturePromotionPath) {
         pushIssue(issues, `${path}.paths`, `contains path outside the pilot boundary: ${findingPath}`);
       }
@@ -236,8 +235,8 @@ function validateConfiguration(value: unknown, issues: MaintenanceValidationIssu
     return;
   }
 
-  if (!isNonNegativeInteger(value.maxFiles) || value.maxFiles !== PILOT_FILES.length) {
-    pushIssue(issues, 'configuration.maxFiles', `must equal ${PILOT_FILES.length}`);
+  if (!isNonNegativeInteger(value.maxFiles) || value.maxFiles !== PILOT_FILE_COUNT) {
+    pushIssue(issues, 'configuration.maxFiles', `must equal ${PILOT_FILE_COUNT}`);
   }
   if (!isNonNegativeInteger(value.maxFindingsPerDetector) || value.maxFindingsPerDetector < 1) {
     pushIssue(issues, 'configuration.maxFindingsPerDetector', 'must be a positive integer');
@@ -351,16 +350,19 @@ export function validateMaintenanceReport(value: unknown): MaintenanceValidation
   if (!isStringArray(value.filesConsidered)) {
     pushIssue(issues, 'filesConsidered', 'must be an array of non-empty strings');
   } else {
-    if (value.filesConsidered.length !== PILOT_FILES.length) {
-      pushIssue(issues, 'filesConsidered', `must contain exactly ${PILOT_FILES.length} files`);
+    if (value.filesConsidered.length !== PILOT_FILE_COUNT) {
+      pushIssue(issues, 'filesConsidered', `must contain exactly ${PILOT_FILE_COUNT} files`);
     }
-    for (const pilotFile of PILOT_FILES) {
-      if (!value.filesConsidered.includes(pilotFile)) {
-        pushIssue(issues, 'filesConsidered', `missing required pilot file ${pilotFile}`);
+    for (const group of MIND_MAINTENANCE_PILOT_FILE_GROUPS) {
+      const selected = value.filesConsidered.filter(candidate =>
+        (group.candidates as readonly string[]).includes(candidate),
+      );
+      if (selected.length !== 1) {
+        pushIssue(issues, 'filesConsidered', `must contain exactly one path for pilot group ${group.id}`);
       }
     }
     for (const candidate of value.filesConsidered) {
-      if (!PILOT_FILES.includes(candidate as (typeof PILOT_FILES)[number])) {
+      if (!mindMaintenancePilotGroupForPath(candidate)) {
         pushIssue(issues, 'filesConsidered', `contains path outside the pilot boundary: ${candidate}`);
       }
     }

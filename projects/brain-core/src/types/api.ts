@@ -6112,7 +6112,7 @@ export interface BrainCoreExecutionPlanStep {
 export interface BrainCoreMindPreviewPolicySummary {
   status: 'preview-only';
   firstProposedAction: 'mind-steward-update-current-context';
-  firstProposedTarget: 'router/current.md';
+  firstProposedTarget: 'system/agent-context/current.md' | 'router/current.md';
   writesToMind: false;
   externalSideEffects: false;
   applyRouteEnabled: false;
@@ -6212,7 +6212,7 @@ export interface BrainCoreMindPreviewPolicyDocument {
 export interface BrainCoreMindPreviewPolicy {
   status: 'preview-only';
   firstProposedAction: 'mind-steward-update-current-context';
-  firstProposedTarget: 'router/current.md';
+  firstProposedTarget: 'system/agent-context/current.md' | 'router/current.md';
   applyRouteEnabled: false;
   writesToMind: false;
   externalSideEffects: false;

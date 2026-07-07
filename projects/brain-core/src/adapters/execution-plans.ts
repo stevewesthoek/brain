@@ -97,15 +97,28 @@ const WORKFLOW_FEATURE_FLAG_DEFINITIONS: Record<BrainCoreExecutionCandidateKind,
   },
 };
 
+const MIND_PREVIEW_FIRST_TARGET = 'system/agent-context/current.md';
+
 const MIND_PREVIEW_ALLOWED_TARGETS = [
+  'system/agent-context/current.md',
   'router/current.md',
+  'inbox/new/',
   'capture/inbox/',
+  'inbox/failed/',
   'capture/failed/',
-  'live/tasks.md',
-  'live/projects.md',
-  'live/decisions.md',
+  'tasks.md',
+  'kanban.md',
+  'projects/',
+  'live/projects/',
+  'history/',
+  'archive/',
+  'resources/index.md',
   'sources/index.md',
+  'knowledge/index.md',
   'wiki/index.md',
+  'organizations/index.md',
+  'wiki/organisations/index.md',
+  'faith/index.md',
 ] as const;
 
 const MIND_PREVIEW_BLOCKED_PREFIXES = [
@@ -350,7 +363,7 @@ export function getMindPreviewPolicy(): BrainCoreMindPreviewPolicy {
   return {
     status: 'preview-only',
     firstProposedAction: 'mind-steward-update-current-context',
-    firstProposedTarget: 'router/current.md',
+    firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
     applyRouteEnabled: false,
     writesToMind: false,
     externalSideEffects: false,
@@ -392,7 +405,7 @@ function createMindStewardDryRunPlan(): BrainCoreExecutionPlan {
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,
@@ -441,7 +454,7 @@ function createMindStewardInboxDryRunPlan(): BrainCoreExecutionPlan {
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,
@@ -486,7 +499,7 @@ function createMindStewardInboxClassifierDryRunPlan(): BrainCoreExecutionPlan {
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,
@@ -539,7 +552,7 @@ function createMindStewardInboxQueueDryRunPlan(): BrainCoreExecutionPlan {
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,
@@ -580,7 +593,7 @@ function createLargeFileNightlyFallbackPlan(): BrainCoreExecutionPlan {
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,
@@ -625,7 +638,7 @@ function createGraphifyPlan(
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,
@@ -666,7 +679,7 @@ function createInfiniteBrainPipeline(): BrainCoreExecutionPlan {
     mindPreviewPolicy: {
       status: 'preview-only',
       firstProposedAction: 'mind-steward-update-current-context',
-      firstProposedTarget: 'router/current.md',
+      firstProposedTarget: MIND_PREVIEW_FIRST_TARGET,
       writesToMind: false,
       externalSideEffects: false,
       applyRouteEnabled: false,

@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   MIND_MAINTENANCE_PILOT_CONFIG,
   MIND_MAINTENANCE_PILOT_FILES,
+  MIND_MAINTENANCE_TARGET_PILOT_FILES,
   loadMindMaintenancePilotDataset,
 } from '../mind-maintenance-pilot/pilot-file-loader.js';
 import { detectStalePageFinding } from '../mind-maintenance-pilot/stale-page-detector.js';
@@ -13,7 +14,7 @@ import { detectStalePageFinding } from '../mind-maintenance-pilot/stale-page-det
 async function createPilotFixture(): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-pilot-'));
 
-  const contents: Record<(typeof MIND_MAINTENANCE_PILOT_FILES)[number], string> = {
+  const contents: Record<string, string> = {
     'router/00-current-context.md': `# Current Context
 
 ## Status
@@ -46,7 +47,7 @@ Freshness risk: high
   for (const relativePath of MIND_MAINTENANCE_PILOT_FILES) {
     const absolutePath = path.join(root, relativePath);
     await mkdir(path.dirname(absolutePath), { recursive: true });
-    await writeFile(absolutePath, contents[relativePath], 'utf8');
+    await writeFile(absolutePath, contents[relativePath] ?? '', 'utf8');
   }
 
   return root;
@@ -75,6 +76,26 @@ test('loads exactly the bounded five-file pilot dataset', async (context) => {
   assert.ok(dataset.files.every((file) => file.absolutePath.startsWith(root)));
 });
 
+test('loads the bounded five-file target-path pilot dataset during migration', async (context) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-target-pilot-'));
+  context.after(async () => rm(root, { recursive: true, force: true }));
+
+  for (const relativePath of MIND_MAINTENANCE_TARGET_PILOT_FILES) {
+    const absolutePath = path.join(root, relativePath);
+    await mkdir(path.dirname(absolutePath), { recursive: true });
+    await writeFile(absolutePath, `# ${relativePath}\n`, 'utf8');
+  }
+
+  const dataset = await loadMindMaintenancePilotDataset(root, MIND_MAINTENANCE_TARGET_PILOT_FILES);
+
+  assert.equal(dataset.files.length, 5);
+  assert.deepEqual(
+    dataset.files.map((file) => file.path),
+    [...MIND_MAINTENANCE_TARGET_PILOT_FILES],
+  );
+  assert.ok(dataset.files.every((file) => file.absolutePath.startsWith(root)));
+});
+
 test('rejects substituted, missing, duplicate, and relative-root datasets', async (context) => {
   const root = await createPilotFixture();
   context.after(async () => rm(root, { recursive: true, force: true }));
@@ -95,7 +116,7 @@ test('rejects substituted, missing, duplicate, and relative-root datasets', asyn
   await assert.rejects(
     loadMindMaintenancePilotDataset(root, [
       ...MIND_MAINTENANCE_PILOT_FILES.slice(0, 4),
-      MIND_MAINTENANCE_PILOT_FILES[0],
+      MIND_MAINTENANCE_PILOT_FILES[0]!,
     ]),
     /unique/i,
   );

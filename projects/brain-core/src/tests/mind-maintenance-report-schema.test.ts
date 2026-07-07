@@ -6,6 +6,7 @@ import {
   validateMaintenanceReport,
 } from '../mind-maintenance-pilot/report-schema-validator.js';
 import type { MaintenanceFinding, MaintenanceReport } from '../mind-maintenance-pilot/types.js';
+import { MIND_MAINTENANCE_TARGET_PILOT_FILES } from '../mind-maintenance-pilot/pilot-file-loader.js';
 
 function createStaleCurrentContextFinding(): MaintenanceFinding {
   return {
@@ -113,6 +114,18 @@ test('validates the canonical five-file stale-page fixture', () => {
   assert.equal(result.ok, true);
   assert.doesNotThrow(() => assertValidMaintenanceReport(report));
   assert.equal(isMaintenanceFinding(report.findings[0]), true);
+});
+
+test('validates target-path pilot files during Mind folder migration', () => {
+  const report = createValidReport();
+  report.filesConsidered = [...MIND_MAINTENANCE_TARGET_PILOT_FILES];
+  report.findings[0]!.paths = ['system/agent-context/00-current-context.md'];
+  report.findings[0]!.matchedEvidence[0]!.path = 'system/agent-context/00-current-context.md';
+  report.findings[0]!.deduplicationKey = 'stale-page:system/agent-context/00-current-context.md:review_after';
+
+  const result = validateMaintenanceReport(report);
+
+  assert.equal(result.ok, true);
 });
 
 test('rejects a finding without matched evidence', () => {

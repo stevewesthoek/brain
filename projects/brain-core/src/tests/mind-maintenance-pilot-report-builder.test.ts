@@ -7,7 +7,7 @@ import {
 } from '../mind-maintenance-pilot/pilot-file-loader.js';
 
 function createDataset(): LoadedMindMaintenancePilotDataset {
-  const contents: Record<(typeof MIND_MAINTENANCE_PILOT_FILES)[number], string> = {
+  const contents: Record<string, string> = {
     'router/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
@@ -50,7 +50,7 @@ Status: active
     files: MIND_MAINTENANCE_PILOT_FILES.map((filePath) => ({
       path: filePath,
       absolutePath: `/tmp/mind/${filePath}`,
-      content: contents[filePath],
+      content: contents[filePath] ?? '',
     })),
   };
 }

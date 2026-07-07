@@ -2,15 +2,16 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { MIND_MAINTENANCE_DECISION_PATH } from './finding-decision-file.js';
+import { MIND_TASK_FILE_CANDIDATES } from '../mind-paths.js';
 import {
-  MIND_MAINTENANCE_PILOT_FILES,
+  MIND_MAINTENANCE_COMPATIBLE_PILOT_FILES,
   MIND_MAINTENANCE_REPORT_OUTPUTS,
   type LoadedMindMaintenancePilotDataset,
 } from './pilot-file-loader.js';
 
 export const MIND_MAINTENANCE_INTEGRITY_PATHS = [
-  ...MIND_MAINTENANCE_PILOT_FILES,
-  'kanban.md',
+  ...MIND_MAINTENANCE_COMPATIBLE_PILOT_FILES,
+  ...MIND_TASK_FILE_CANDIDATES,
   MIND_MAINTENANCE_DECISION_PATH,
 ] as const;
 

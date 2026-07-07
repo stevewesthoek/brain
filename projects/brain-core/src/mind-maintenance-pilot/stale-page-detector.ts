@@ -1,4 +1,7 @@
-import type { LoadedMindMaintenancePilotFile } from './pilot-file-loader.js';
+import {
+  mindMaintenancePilotGroupForPath,
+  type LoadedMindMaintenancePilotFile,
+} from './pilot-file-loader.js';
 import type { MaintenanceFinding, MaintenanceRisk } from './types.js';
 
 interface FreshnessMetadata {
@@ -44,7 +47,7 @@ function parseMetadataLines(content: string): Map<string, string> {
     if (startsWithFrontmatter && frontmatterClosed) break;
     if (!startsWithFrontmatter && index > 40) break;
 
-    const match = /^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/.exec(line);
+    const match = line.match(/^\s*([A-Za-z][A-Za-z _-]*):\s*(.*?)\s*$/);
     if (!match) continue;
 
     const key = normalizeMetadataKey(match[1] ?? '');
@@ -113,7 +116,7 @@ export function detectStalePageFinding(input: StalePageDetectionInput): Maintena
     status: 'open',
     created: reportDate,
     sourceRepo: 'mind',
-    scope: file.path === 'router/00-current-context.md' ? 'system' : 'page',
+    scope: mindMaintenancePilotGroupForPath(file.path)?.id === 'current-context' ? 'system' : 'page',
     paths: [file.path],
     trigger: 'review_after date has passed',
     matchedEvidence: [
