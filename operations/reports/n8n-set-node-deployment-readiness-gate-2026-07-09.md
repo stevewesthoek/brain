@@ -367,3 +367,25 @@ $ cd /Users/Office/Repos/stevewesthoek/brain && git status --short
 *Validation: 13 JSON structure tests + 7 path simulation tests + 5 integrity checks = 25 checks PASS*  
 *Gate status: READY FOR DEPLOYMENT (approval required based on Dokploy env state)*  
 *Zero deployments performed, zero network calls made, zero routing changes active*
+
+---
+
+## Batch 8L: Dokploy Environment Verification — 2026-07-09
+
+**Batch 8L execution timestamp**: 2026-07-09  
+**Environment verification**: ✅ COMPLETED
+
+### Verification Result
+
+- **Method**: SSH to Dokploy + `docker inspect` on n8n container (read-only)
+- **Target container**: `455559609daa` (`apps-internal-n8n-cvjx2s-n8n-1`)
+- **`MIND_INBOX_PATH` status**: **NOT SET** (unset in environment)
+- **`N8N_BLOCK_ENV_ACCESS_IN_NODE`**: `false` (env access enabled)
+- **Risk classification**: 🟢 **LOW** — Fallback routing to `capture/inbox` active
+- **Deployment gate**: ✅ **APPROVED** — Safe to deploy with confidence in legacy routing
+
+### Verification Report
+
+Full details: `operations/reports/n8n-dokploy-env-verification-2026-07-09.md`
+
+**Conclusion:** `MIND_INBOX_PATH` is unset. Workflow will use `capture/inbox` fallback. No routing switch. Deployment is low-risk and approved.
