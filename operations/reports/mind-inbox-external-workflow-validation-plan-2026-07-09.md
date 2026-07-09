@@ -288,6 +288,18 @@ After Batch 8E, proceed with Batch 8F — controlled n8n write test, which DOES 
 - Controlled write test to `inbox/failed/` via n8n (requires credentials)
 - These are deferred to Batch 8F
 
+## Batch 8F — Controlled dry-run validation (2026-07-09)
+
+**Completed:** Batch 8F validated all updated scripts with fake Mind roots and n8n static simulation. See `operations/reports/mind-inbox-controlled-dry-run-validation-2026-07-09.md`.
+
+Key outcomes:
+- All three shell scenarios pass (target exists, fallback only, neither exists).
+- All three compile-loop scenarios pass (same three cases).
+- n8n static simulation passes for all four env patterns (unset, target, slashes, empty).
+- Small bug fixed: `resolve_inbox_dir` `return 1` caused `set -e` early exit; changed to `return 0`.
+- Improvement: added dynamic `inboxSource` field (`target`/`legacy-fallback`/`unavailable`) replacing static description.
+- No network calls, no n8n trigger, no Mind repo modification.
+
 ## Boundaries preserved in this validation
 
 - No implementation code was changed in the Brain repo.

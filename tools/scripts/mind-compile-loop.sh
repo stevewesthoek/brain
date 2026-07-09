@@ -33,7 +33,7 @@ resolve_inbox_dir() {
     return 0
   fi
   printf '%s\n' "${mind_dir}/capture/inbox"
-  return 1
+  return 0
 }
 
 MIND_DIR="${MIND_DIR:-$HOME/Repos/stevewesthoek/mind}"

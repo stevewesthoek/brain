@@ -29,6 +29,19 @@ json_escape() {
   printf '%s' "$value"
 }
 
+INBOX_SOURCE=""
+
+resolve_inbox_source() {
+  local mind_root="$1"
+  if [[ -d "${mind_root}/inbox/new" ]]; then
+    printf 'target'
+  elif [[ -d "${mind_root}/capture/inbox" ]]; then
+    printf 'legacy-fallback'
+  else
+    printf 'unavailable'
+  fi
+}
+
 resolve_inbox_dir() {
   local mind_root="$1"
   if [[ -d "${mind_root}/inbox/new" ]]; then
@@ -40,7 +53,7 @@ resolve_inbox_dir() {
     return 0
   fi
   printf '%s\n' "${mind_root}/capture/inbox"
-  return 1
+  return 0
 }
 
 REPO_ROOT="${MIND_STEWARD_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
@@ -49,7 +62,7 @@ JSON_OUTPUT="$OUTPUT_DIR/inbox-latest.json"
 MD_OUTPUT="$OUTPUT_DIR/inbox-latest.md"
 MIND_ROOT="${MIND_STEWARD_MIND_ROOT:-$(resolve_mind_root_fallback)}"
 INBOX_DIR="$(resolve_inbox_dir "$MIND_ROOT")"
-INBOX_SOURCE="resolved"
+INBOX_SOURCE="$(resolve_inbox_source "$MIND_ROOT")"
 STARTED_AT="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
 STARTED_EPOCH="$(date +%s)"
 STATUS="success"
@@ -141,7 +154,7 @@ cat > "$JSON_OUTPUT" <<JSON
   "executableActions": false,
   "mindRoot": "$(json_escape "$MIND_ROOT")",
   "inboxPath": "$(json_escape "$INBOX_DIR")",
-  "inboxResolvedFrom": "target inbox/new with fallback to capture/inbox",
+  "inboxSource": "$INBOX_SOURCE",
   "fileCount": $file_count,
   "sampleFiles": $sample_json,
   "largeFileThresholdMb": $LARGE_FILE_THRESHOLD_MB,
@@ -164,7 +177,7 @@ JSON
   printf -- '- Executable actions: false\n'
   printf -- '- Mind root: `%s`\n' "$MIND_ROOT"
   printf -- '- Inbox path: `%s`\n' "$INBOX_DIR"
-  printf -- '- Inbox resolution: target inbox/new with fallback to capture/inbox\n'
+  printf -- '- Inbox source: %s\n' "$INBOX_SOURCE"
   printf -- '- Files discovered: %s\n' "$file_count"
   printf -- '- Large-file threshold: %s MB (%s bytes)\n' "$LARGE_FILE_THRESHOLD_MB" "$LARGE_FILE_THRESHOLD_BYTES"
   printf '\n## Message\n\n%s\n' "$MESSAGE"
