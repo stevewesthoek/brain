@@ -1,7 +1,11 @@
-# n8n Inbox Routing Switch — Explicit Approval Gate — Batch 8N
+# n8n Inbox Routing Switch — Explicit Approval Gate — Batch 8O
+
+**Batch 8O Correction:** This report corrects Batch 8N inaccuracies in approval-gate path prefixes and folder counts.
+
+**Original header:** Batch 8N
 
 **Date:** 2026-07-09  
-**Batch:** 8N  
+**Batch:** 8O (correction of 8N)  
 **Executor:** Codex (Haiku)
 
 ## Summary
@@ -23,13 +27,13 @@ Workflow deployment completed in Batch 8M with routing preserved in legacy mode 
 
 ### Mind Folder State (Read-Only Count)
 ```
-capture/inbox      0 files
-inbox/new          0 files
-capture/failed     0 files
-inbox/failed       0 files
+capture/inbox      19 files (19 Markdown files — existing capture content)
+inbox/new          1 file (README.md only — target folder, scaffolding only)
+capture/failed     3 files (3 Markdown files — existing failed captures)
+inbox/failed       1 file (README.md only — target folder, scaffolding only)
 ```
 
-All folders exist; currently empty.
+Note: `inbox/new` and `inbox/failed` are target folders and currently contain only README scaffolding. Existing capture content remains in `capture/inbox` and `capture/failed`.
 
 ### Deployed Workflow (Read-Only Verification)
 - **Source file:** `operations/automations/n8n/workflows/mind-inbox.json`
@@ -48,7 +52,7 @@ All folders exist; currently empty.
 ### Current Deployed Routing State
 - **Dokploy env:** `MIND_INBOX_PATH=unset`
 - **Active fallback:** `capture/inbox` (legacy)
-- **Behavior:** All captures route to `wiki/capture/inbox/<timestamp>-<slug>.md`
+- **Behavior:** All captures route to `capture/inbox/<timestamp>-<slug>.md`
 
 ## Proposed Switch
 
@@ -59,7 +63,7 @@ MIND_INBOX_PATH=inbox/new
 ```
 
 ### Routing Impact After Switch
-- **New captures will route to:** `wiki/inbox/new/<timestamp>-<slug>.md`
+- **New captures will route to:** `inbox/new/<timestamp>-<slug>.md`
 - **Webhook path:** Unchanged — `mind-inbox`
 - **Workflow logic:** Unchanged
 - **Failure handling:** Not affected (not implemented in simple workflow)
@@ -123,7 +127,7 @@ After the exact approval statement is received and env is set:
    ```
 
 4. **Verify test file created:**
-   - File should exist at: `wiki/inbox/new/<timestamp>-batch-8n-approval-test.md`
+   - File should exist at: `inbox/new/<timestamp>-batch-8n-approval-test.md`
    - Read file to confirm metadata (no modification)
    - Record exact file path
 

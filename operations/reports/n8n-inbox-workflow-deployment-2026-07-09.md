@@ -100,11 +100,19 @@ Workflow deployment succeeded. Routing gate remains clear (`MIND_INBOX_PATH` uns
 
 ---
 
-## Batch 8N Follow-Up Note
+## Batch 8N & 8O Follow-Up Notes
 
-**Executed:** 2026-07-09  
+**Batch 8N executed:** 2026-07-09
 
 Batch 8N prepared explicit approval gate for routing switch without deploying or executing workflow. Approval gate report created at `operations/reports/n8n-inbox-routing-switch-approval-gate-2026-07-09.md`.
+
+**Batch 8O correction:** 2026-07-09
+
+Batch 8O corrected Batch 8N approval-gate path/count inaccuracies:
+- Corrected current routing path from `wiki/capture/inbox` to `capture/inbox`
+- Corrected target routing path from `wiki/inbox/new` to `inbox/new`
+- Verified actual Mind folder counts: `capture/inbox` (19 files), `inbox/new` (1 README.md), `capture/failed` (3 files), `inbox/failed` (1 README.md)
+- Confirmed wiki-prefixed inbox/capture paths do not exist in Mind
 
 Current state remains:
 - Routing: `capture/inbox` (legacy, via unset `MIND_INBOX_PATH`)
@@ -115,4 +123,4 @@ Gate is ready. Awaiting explicit operator approval before switching to `inbox/ne
 
 ---
 
-**Next batch:** Batch 8O — if approval received, execute routing switch, test, and validate.
+**Next batch:** Batch 8P — if approval received, execute routing switch, test, and validate.
