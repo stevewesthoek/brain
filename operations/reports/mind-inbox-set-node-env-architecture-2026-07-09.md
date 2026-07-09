@@ -31,7 +31,7 @@ Workflow files before edit:
 
 ## Mind read-only status
 
-- **Latest commit:** `c1b5f4a docs: record external Brain workflow validation plan`
+- **Latest commit:** `4da3e56 docs: prioritize Workbench stability strategy`
 - **Dirty paths:** `M wiki/log.md`, `?? Untitled.canvas`, `?? wiki/organisations/prochat/pitch-decks/`
 - **Mind status UNCHANGED** — no Mind files modified in this batch
 
