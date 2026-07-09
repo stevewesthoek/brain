@@ -66,13 +66,11 @@ export const MIND_FAILED_INBOX_CANDIDATES: readonly MindPathCandidate[] = [
     era: 'target',
     purpose: 'human-first failed or blocked capture processing surface',
   },
-  {
-    path: MIND_LEGACY_PATHS.captureFailed,
-    kind: 'directory',
-    era: 'legacy-fallback',
-    purpose: 'legacy failed capture routing target',
-  },
 ] as const;
+
+// Historical note: capture/failed was retired after Batch 8Y cleanup (2026-07-09).
+// Legacy path MIND_LEGACY_PATHS.captureFailed remains available for historical reference only.
+// Do not re-add as fallback; failure routing will migrate to inbox/failed in future batch.
 
 export const MIND_STRUCTURE_COMPATIBILITY_GROUPS: readonly MindPathCompatibilityGroup[] = [
   {
