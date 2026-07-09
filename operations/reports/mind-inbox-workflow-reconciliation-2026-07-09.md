@@ -152,14 +152,23 @@ All paths pass:
 - `operations/reports/mind-inbox-workflow-reconciliation-2026-07-09.md` — this report
 - `M operations/reports/mind-inbox-external-workflow-validation-plan-2026-07-09.md` — Batch 8H note added
 
-## Recommendation for Batch 8I
+## Batch 8I — n8n env-access verification plan (2026-07-09)
 
-Controlled env-access verification (no n8n trigger, no webhook):
+**Completed:** Batch 8I confirmed that `N8N_BLOCK_ENV_ACCESS_IN_NODE` is NOT present in any Brain repo config file (zero occurrences outside reports). Live Dokploy value was NOT verified (no network calls in this batch). See `operations/reports/n8n-env-access-verification-plan-2026-07-09.md`.
 
-1. Check Dokploy n8n env for `N8N_BLOCK_ENV_ACCESS_IN_NODE`
-2. If absent or `true`, verify security policy and consider setting to `false`
-3. Do NOT deploy the Set-node workflow architecture yet
-4. Do NOT trigger n8n or send webhook tests
-5. Do NOT route any captures to `inbox/new/`
-6. After `N8N_BLOCK_ENV_ACCESS_IN_NODE` is resolved, deploy the env-var workflow
-7. Then run a controlled offline test (static) before any live write test
+Key findings:
+- `$env` and `process.env` in Code nodes are blocked by n8n's Code-node sandbox.
+- `$env` in expression fields (HTTP headers, URLs) IS working (proven by `$env.GITHUB_MIND_PAT`).
+- `mind-inbox.json` cannot safely switch to `inbox/new` by env var alone with the current Code-node pattern.
+- Recommendation changed: **Option B** (Set node reading `$env.MIND_INBOX_PATH` via expression → pass to Code node) is now the strongly recommended architecture, as it side-steps the Code-node sandbox entirely.
+
+## Recommendation for Batch 8J
+
+Implement Option B — Set-node expression-`$env` architecture:
+
+1. Add a Set node between Webhook and Prepare Capture in `mind-inbox.json`.
+2. Set `inboxPrefix = {{ $env.MIND_INBOX_PATH || 'capture/inbox' }}` via expression.
+3. Simplify Prepare Capture Code node to read `$json.inboxPrefix` instead of `process.env.MIND_INBOX_PATH`.
+4. Deploy to n8n (requires `n8n-api.sh update-workflow`).
+5. Run controlled offline/static path simulation.
+6. Do NOT run live write test until static validation passes.
