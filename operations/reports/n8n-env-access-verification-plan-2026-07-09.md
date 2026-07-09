@@ -203,3 +203,16 @@ Reasons:
 
 After Batch 8J passes, the routing can be switched by:
 - Setting `MIND_INBOX_PATH=inbox/new` in Dokploy n8n env (already done from Batch 8G, now actually read by the workflow).
+
+### Batch 8J completion status
+
+**Implementation complete — Option B architecture verified:**
+- ✓ Set node `Resolve Inbox Path` wired correctly: `Webhook → Resolve Inbox Path → Prepare Capture`
+- ✓ Set node expression reads `$env.MIND_INBOX_PATH` with `capture/inbox` fallback
+- ✓ Code node reads `$json.inboxPrefix` — zero Code-node env access
+- ✓ Path sanitization: trim whitespace, remove leading/trailing slashes
+- ✓ All 32 static validation checks passed
+- ✓ Workflow JSON valid, node count 10, connections correct
+- ✓ No breaking changes; ready for Batch 8K deployment validation
+
+See `mind-inbox-set-node-env-architecture-2026-07-09.md` for implementation details.

@@ -172,3 +172,15 @@ Implement Option B — Set-node expression-`$env` architecture:
 4. Deploy to n8n (requires `n8n-api.sh update-workflow`).
 5. Run controlled offline/static path simulation.
 6. Do NOT run live write test until static validation passes.
+
+### Batch 8J completion status
+
+**Implementation complete:**
+- ✓ Set node `Resolve Inbox Path` now properly wired: `Webhook → Resolve Inbox Path → Prepare Capture`
+- ✓ Set node expression: `{{ ($env.MIND_INBOX_PATH || 'capture/inbox').trim().replace(/^\/+|\/+$/g, '') || 'capture/inbox' }}`
+- ✓ Prepare Capture Code node reads `raw.inboxPrefix` (ordinary JSON, no Code-node env access)
+- ✓ Path sanitization confirmed in both Set node and Code node (defense-in-depth)
+- ✓ All static validation checks passed (32 total: JSON, nodes, connections, expressions, fallbacks)
+- ✓ Workflow ready for Batch 8K deployment validation
+
+See `mind-inbox-set-node-env-architecture-2026-07-09.md` for full implementation report.
