@@ -21,7 +21,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "{\n  \"inboxPrefix\": \"={{ ($env.MIND_INBOX_PATH || 'capture/inbox').trim().replace(/^\\/+|\\/+$/g, '') || 'capture/inbox' }}\"\n}",
+        "jsonOutput": "{\n  \"inboxPrefix\": \"inbox/new\"\n}",
         "options": {
           "includeOtherFields": true
         }
@@ -37,7 +37,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const raw = $input.first().json;\nconst b = raw.body || raw;\nconst now = new Date();\nconst source = String(b.source || 'chatgpt');\nconst title = String(b.title || 'Untitled Capture');\nconst content = String(b.content || b.text || b.note || '');\nconst typeHint = b.type_hint ? String(b.type_hint) : '';\nconst sourceUrl = b.url || b.source_url || b.link || '';\nconst created = now.toISOString();\nconst date = created.slice(0, 10);\nconst compactStamp = created.replace(/[-:]/g, '').replace(/\\..+$/, '').replace('T', '-');\nconst slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'untitled-capture';\nconst inboxPrefix = (raw.inboxPrefix || 'capture/inbox').replace(/^\\/+|\\/+$/g, '') || 'capture/inbox';\nconst filepath = inboxPrefix + '/' + compactStamp + '-' + slug + '.md';\n\nreturn [{\n  json: {\n    source,\n    title,\n    content,\n    typeHint,\n    sourceUrl,\n    created,\n    date,\n    filepath,\n    queuedForClassification: true,\n    classifier: 'Mind Steward',\n  },\n}];\n"
+        "jsCode": "const raw = $input.first().json;\nconst b = raw.body || raw;\nconst now = new Date();\nconst source = String(b.source || 'chatgpt');\nconst title = String(b.title || 'Untitled Capture');\nconst content = String(b.content || b.text || b.note || '');\nconst typeHint = b.type_hint ? String(b.type_hint) : '';\nconst sourceUrl = b.url || b.source_url || b.link || '';\nconst created = now.toISOString();\nconst date = created.slice(0, 10);\nconst compactStamp = created.replace(/[-:]/g, '').replace(/\\..+$/, '').replace('T', '-');\nconst slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'untitled-capture';\nconst inboxPrefix = 'inbox/new';\nconst filepath = inboxPrefix + '/' + compactStamp + '-' + slug + '.md';\n\nreturn [{\n  json: {\n    source,\n    title,\n    content,\n    typeHint,\n    sourceUrl,\n    created,\n    date,\n    filepath,\n    queuedForClassification: true,\n    classifier: 'Mind Steward',\n  },\n}];\n"
       },
       "id": "prepare-capture",
       "name": "Prepare Capture",

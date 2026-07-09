@@ -157,3 +157,21 @@ Or use Dokploy env var approach:
 1. Set `MIND_INBOX_PATH=capture/inbox` (or unset it)
 2. Redeploy n8n
 3. Test routing
+
+## Batch 8Q: Source-of-Truth Reconciliation
+
+**Status:** ✅ RECONCILED
+
+Local Brain workflow source was updated to match live n8n hardcoded state:
+- resolve-inbox-path: Updated to output `{"inboxPrefix": "inbox/new"}`
+- prepare-capture: Updated to hardcode `const inboxPrefix = 'inbox/new';`
+- No new webhook sent
+- No workflow execution triggered
+- No Dokploy env changed
+- No n8n restart performed
+- No existing capture content moved
+- No .obsidian/app.json changed
+- No roadmap or implementation plan updated
+
+Local Mind: Batch 8P test file NOT found in local clone (expected, remote-only)
+Remote Mind: Verified via git ls-tree — file confirmed at `inbox/new/20260709-175104-batch-8p-routing-test-final-with-both-nodes-hardcoded-2026-07-09.md` in origin/main
