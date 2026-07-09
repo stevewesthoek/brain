@@ -100,4 +100,19 @@ Workflow deployment succeeded. Routing gate remains clear (`MIND_INBOX_PATH` uns
 
 ---
 
-**Next batch:** Batch 8N — perform controlled validation or prepare explicit routing-switch approval.
+## Batch 8N Follow-Up Note
+
+**Executed:** 2026-07-09  
+
+Batch 8N prepared explicit approval gate for routing switch without deploying or executing workflow. Approval gate report created at `operations/reports/n8n-inbox-routing-switch-approval-gate-2026-07-09.md`.
+
+Current state remains:
+- Routing: `capture/inbox` (legacy, via unset `MIND_INBOX_PATH`)
+- Deployment: Stable, no execution triggered
+- Mind: Read-only, unchanged
+
+Gate is ready. Awaiting explicit operator approval before switching to `inbox/new`.
+
+---
+
+**Next batch:** Batch 8O — if approval received, execute routing switch, test, and validate.
