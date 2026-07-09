@@ -243,6 +243,51 @@ After Batch 8E, proceed with Batch 8F — controlled n8n write test, which DOES 
 - Permission to write one test capture to `inbox/new/`
 - Permission to write one test failed-capture to `inbox/failed/`
 
+## Batch 8E — Shell script and n8n path update (2026-07-09)
+
+**Completed:** Batch 8E updated three Brain-side files to support target inbox paths while preserving legacy defaults.
+
+### Changes made
+
+**1. `tools/scripts/mind-steward-inbox-dry-run-report.sh`**
+- Before: `INBOX_DIR="$MIND_ROOT/capture/inbox"` — hardcoded legacy path
+- After: `INBOX_DIR="$(resolve_inbox_dir "$MIND_ROOT")"` — prioritises `inbox/new`, falls back to `capture/inbox`
+- Reports which path was selected (JSON `inboxResolvedFrom` field, Markdown `Inbox resolution` line)
+- If neither path exists, fails with clear message indicating both were tried
+
+**2. `tools/scripts/mind-compile-loop.sh`**
+- Before: `INBOX_DIR="${MIND_DIR}/capture/inbox"` — hardcoded legacy path
+- After: `INBOX_DIR="$(resolve_inbox_dir "$MIND_DIR")"` — prioritises `inbox/new`, falls back to `capture/inbox`
+- Proposal source path changed from `` `capture/inbox/${filename}` `` to `` `inbox/${filename}` ``
+- Proposal destination for resource/reference type changed from `sources/research/${slug}.md` to `resources/research/${slug}.md` (reflecting Mind Batch 7 resources migration)
+
+**3. `operations/automations/n8n/workflows/mind-inbox-fixed.json`**
+- Before: `const file = \`${isFailed ? 'capture/failed' : 'capture/inbox'}/${date}-${slug}.md\`` — hardcoded paths
+- After: env-var-driven path prefixes with legacy defaults:
+  ```javascript
+  const inboxPrefix = ($env.MIND_INBOX_PATH || 'capture/inbox').replace(/^\/+|\/+$/g, '') || 'capture/inbox';
+  const failedPrefix = ($env.MIND_FAILED_PATH || 'capture/failed').replace(/^\/+|\/+$/g, '') || 'capture/failed';
+  const file = `${isFailed ? failedPrefix : inboxPrefix}/${date}-${slug}.md`;
+  ```
+- Legacy defaults unchanged: `capture/inbox` and `capture/failed`
+- Sanitises leading/trailing slashes; rejects empty paths by falling back to legacy default
+- GitHub API URL, auth logic, webhook path, workflow id/name/active state unchanged
+
+### Validation performed
+- `bash -n` syntax check passed for both shell scripts
+- JSON parse check passed for n8n workflow
+- n8n code contains `MIND_INBOX_PATH`, `MIND_FAILED_PATH`, and legacy defaults `capture/inbox`, `capture/failed`
+- Webhook path `/mind-inbox` preserved
+- Workflow `id`, `name`, `active` state unchanged
+- No workflow was triggered
+- No network commands were run
+- No Mind repo files were changed
+
+### Remaining external test requirements
+- Controlled write test to `inbox/new/` via n8n (requires credentials)
+- Controlled write test to `inbox/failed/` via n8n (requires credentials)
+- These are deferred to Batch 8F
+
 ## Boundaries preserved in this validation
 
 - No implementation code was changed in the Brain repo.

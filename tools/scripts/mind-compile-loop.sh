@@ -22,12 +22,26 @@
 
 set -euo pipefail
 
+resolve_inbox_dir() {
+  local mind_dir="$1"
+  if [[ -d "${mind_dir}/inbox/new" ]]; then
+    printf '%s\n' "${mind_dir}/inbox/new"
+    return 0
+  fi
+  if [[ -d "${mind_dir}/capture/inbox" ]]; then
+    printf '%s\n' "${mind_dir}/capture/inbox"
+    return 0
+  fi
+  printf '%s\n' "${mind_dir}/capture/inbox"
+  return 1
+}
+
 MIND_DIR="${MIND_DIR:-$HOME/Repos/stevewesthoek/mind}"
-INBOX_DIR="${MIND_DIR}/capture/inbox"
+INBOX_DIR="$(resolve_inbox_dir "$MIND_DIR")"
 WIKI_LOG="${MIND_DIR}/wiki/log.md"
 
 if [[ ! -d "$INBOX_DIR" ]]; then
-  echo "Inbox not found: $INBOX_DIR"
+  echo "Inbox not found (tried inbox/new and capture/inbox): $MIND_DIR"
   exit 0
 fi
 
@@ -87,7 +101,7 @@ while IFS= read -r -d '' file; do
       ;;
     resource|reference)
       slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed 's/^-//;s/-$//')
-      proposed_dest="sources/research/${slug}.md"
+      proposed_dest="resources/research/${slug}.md"
       action_note="new research note"
       ;;
     *)
@@ -113,7 +127,7 @@ while IFS= read -r -d '' file; do
   esac
 
   proposals="${proposals}
-- ${today} — compile-suggest — **${title}** (${action_note}, confidence=${confidence}, src=${source}) → propose move \`capture/inbox/${filename}\` → \`${proposed_dest}\` — created ${created}"
+- ${today} — compile-suggest — **${title}** (${action_note}, confidence=${confidence}, src=${source}) → propose move \`inbox/${filename}\` → \`${proposed_dest}\` — created ${created}"
   proposed=$((proposed + 1))
 
 done < <(find "$INBOX_DIR" -maxdepth 1 -name "*.md" -print0 2>/dev/null)

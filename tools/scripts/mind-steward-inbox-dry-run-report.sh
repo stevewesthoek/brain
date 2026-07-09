@@ -29,12 +29,27 @@ json_escape() {
   printf '%s' "$value"
 }
 
+resolve_inbox_dir() {
+  local mind_root="$1"
+  if [[ -d "${mind_root}/inbox/new" ]]; then
+    printf '%s\n' "${mind_root}/inbox/new"
+    return 0
+  fi
+  if [[ -d "${mind_root}/capture/inbox" ]]; then
+    printf '%s\n' "${mind_root}/capture/inbox"
+    return 0
+  fi
+  printf '%s\n' "${mind_root}/capture/inbox"
+  return 1
+}
+
 REPO_ROOT="${MIND_STEWARD_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 OUTPUT_DIR="${MIND_STEWARD_RUNTIME_DIR:-$REPO_ROOT/runtime/local/mind-steward}"
 JSON_OUTPUT="$OUTPUT_DIR/inbox-latest.json"
 MD_OUTPUT="$OUTPUT_DIR/inbox-latest.md"
 MIND_ROOT="${MIND_STEWARD_MIND_ROOT:-$(resolve_mind_root_fallback)}"
-INBOX_DIR="$MIND_ROOT/capture/inbox"
+INBOX_DIR="$(resolve_inbox_dir "$MIND_ROOT")"
+INBOX_SOURCE="resolved"
 STARTED_AT="$(TZ=Europe/Lisbon date '+%Y-%m-%d %H:%M:%S %Z')"
 STARTED_EPOCH="$(date +%s)"
 STATUS="success"
@@ -58,7 +73,7 @@ if [[ ! -d "$MIND_ROOT" ]]; then
   EXIT_CODE=1
 elif [[ ! -d "$INBOX_DIR" ]]; then
   STATUS="failed"
-  MESSAGE="Mind inbox directory not found at $INBOX_DIR"
+  MESSAGE="Mind inbox directory not found (tried inbox/new and capture/inbox) at $MIND_ROOT"
   EXIT_CODE=1
 else
   while IFS= read -r file_path; do
@@ -126,6 +141,7 @@ cat > "$JSON_OUTPUT" <<JSON
   "executableActions": false,
   "mindRoot": "$(json_escape "$MIND_ROOT")",
   "inboxPath": "$(json_escape "$INBOX_DIR")",
+  "inboxResolvedFrom": "target inbox/new with fallback to capture/inbox",
   "fileCount": $file_count,
   "sampleFiles": $sample_json,
   "largeFileThresholdMb": $LARGE_FILE_THRESHOLD_MB,
@@ -148,6 +164,7 @@ JSON
   printf -- '- Executable actions: false\n'
   printf -- '- Mind root: `%s`\n' "$MIND_ROOT"
   printf -- '- Inbox path: `%s`\n' "$INBOX_DIR"
+  printf -- '- Inbox resolution: target inbox/new with fallback to capture/inbox\n'
   printf -- '- Files discovered: %s\n' "$file_count"
   printf -- '- Large-file threshold: %s MB (%s bytes)\n' "$LARGE_FILE_THRESHOLD_MB" "$LARGE_FILE_THRESHOLD_BYTES"
   printf '\n## Message\n\n%s\n' "$MESSAGE"
@@ -173,7 +190,7 @@ JSON
   fi
 
   printf '\n## Safety\n\n'
-  printf 'This scheduler report only inspects the Mind inbox and writes to Brain runtime/local/mind-steward/. It does not classify, move, delete, rename, rewrite, or queue Mind files.\n'
+  printf 'This scheduler report only inspects the Mind inbox (preferring inbox/new, falling back to capture/inbox) and writes to Brain runtime/local/mind-steward/. It does not classify, move, delete, rename, rewrite, or queue Mind files.\n'
 } > "$MD_OUTPUT"
 
 chmod 600 "$JSON_OUTPUT" "$MD_OUTPUT"
