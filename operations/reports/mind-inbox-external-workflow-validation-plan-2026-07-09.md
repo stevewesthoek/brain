@@ -284,9 +284,9 @@ After Batch 8E, proceed with Batch 8F — controlled n8n write test, which DOES 
 - No Mind repo files were changed
 
 ### Remaining external test requirements
-- Controlled write test to `inbox/new/` via n8n (requires credentials)
-- Controlled write test to `inbox/failed/` via n8n (requires credentials)
-- These are deferred to Batch 8F
+- Controlled write test to `inbox/new/` via n8n — COMPLETED in Batch 8G
+- Controlled write test to `inbox/failed/` via n8n — DEFERRED (requires Gemini-classify workflow or forced-failure mechanism)
+- These were deferred to Batch 8F, completed in Batch 8G
 
 ## Batch 8F — Controlled dry-run validation (2026-07-09)
 

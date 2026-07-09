@@ -1,0 +1,322 @@
+{
+  "name": "Save to Mind \u2014 Capture for Mind Steward",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mind-inbox",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "e26dfdb3-670d-4ea1-973b-694ec97347eb"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst b = raw.body || raw;\nconst now = new Date();\nconst source = String(b.source || 'chatgpt');\nconst title = String(b.title || 'Untitled Capture');\nconst content = String(b.content || b.text || b.note || '');\nconst typeHint = b.type_hint ? String(b.type_hint) : '';\nconst sourceUrl = b.url || b.source_url || b.link || '';\nconst created = now.toISOString();\nconst date = created.slice(0, 10);\nconst compactStamp = created.replace(/[-:]/g, '').replace(/\\..+$/, '').replace('T', '-');\nconst slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'untitled-capture';\nconst filepath = 'capture/inbox/' + compactStamp + '-' + slug + '.md';\n\nreturn [{\n  json: {\n    source,\n    title,\n    content,\n    typeHint,\n    sourceUrl,\n    created,\n    date,\n    filepath,\n    queuedForClassification: true,\n    classifier: 'Mind Steward',\n  },\n}];\n"
+      },
+      "id": "prepare-capture",
+      "name": "Prepare Capture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function utf8ToBase64(str) {\n  const bytes = [];\n  for (let i = 0; i < str.length; i++) {\n    let code = str.charCodeAt(i);\n    if (code < 0x80) { bytes.push(code); }\n    else if (code < 0x800) { bytes.push(0xc0 | (code >> 6)); bytes.push(0x80 | (code & 0x3f)); }\n    else if (code >= 0xd800 && code <= 0xdbff) {\n      i++;\n      const next = str.charCodeAt(i);\n      const fullCode = 0x10000 + (((code & 0x3ff) << 10) | (next & 0x3ff));\n      bytes.push(0xf0 | (fullCode >> 18));\n      bytes.push(0x80 | ((fullCode >> 12) & 0x3f));\n      bytes.push(0x80 | ((fullCode >> 6) & 0x3f));\n      bytes.push(0x80 | (fullCode & 0x3f));\n    } else {\n      bytes.push(0xe0 | (code >> 12));\n      bytes.push(0x80 | ((code >> 6) & 0x3f));\n      bytes.push(0x80 | (code & 0x3f));\n    }\n  }\n  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';\n  let output = '';\n  for (let i = 0; i < bytes.length; i += 3) {\n    const a = bytes[i], b = bytes[i + 1], c = bytes[i + 2];\n    output += chars[a >> 2];\n    output += chars[((a & 3) << 4) | ((b ?? 0) >> 4)];\n    output += b === undefined ? '=' : chars[((b & 15) << 2) | ((c ?? 0) >> 6)];\n    output += c === undefined ? '=' : chars[c & 63];\n  }\n  return output;\n}\n\nfunction yamlString(value) {\n  return JSON.stringify(String(value ?? ''));\n}\n\nconst capture = $('Prepare Capture').first().json;\nconst sourceLines = [];\nif (capture.sourceUrl) sourceLines.push('- URL: ' + capture.sourceUrl);\nif (capture.typeHint) sourceLines.push('- Type hint: ' + capture.typeHint);\nconst sourceBlock = sourceLines.length ? sourceLines.join('\\n') : '- Source: ' + capture.source;\n\nconst md = [\n  '---',\n  'type: capture',\n  'source: ' + yamlString(capture.source),\n  'status: queued',\n  'para_type: inbox',\n  'confidence: 0',\n  'signal_quality: 0',\n  'title: ' + yamlString(capture.title),\n  'created: ' + yamlString(capture.created),\n  'mind_steward_status: queued',\n  'mind_steward_local_only: true',\n  'mind_steward_task_type: mind_capture_classification',\n  '---',\n  '',\n  '# ' + capture.title,\n  '',\n  '## Source',\n  sourceBlock,\n  '',\n  '## Content',\n  capture.content,\n  '',\n].join('\\n');\n\nreturn [{\n  json: {\n    ...capture,\n    markdown: md,\n    base64: utf8ToBase64(md),\n  },\n}];"
+      },
+      "id": "build-inbox-note",
+      "name": "Build Inbox Note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.github.com/repos/stevewesthoek/mind/contents/' + $json.filepath + '?ref=main' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'token ' + $env.GITHUB_MIND_PAT }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-github-file",
+      "name": "Check Existing GitHub File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const processed = $('Build Inbox Note').first().json;\nconst current = $json;\n\nlet sha = undefined;\n\nif (current && current.sha && typeof current.sha === \"string\") {\n  sha = current.sha;\n}\n\nreturn [{\n  json: {\n    ...processed,\n    sha,\n    fileExists: Boolean(sha),\n  }\n}];"
+      },
+      "id": "handle-file-check",
+      "name": "Handle File Check Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"status\": \"saved\", \"result\": \"file_committed\", \"queued_for_classification\": true, \"classifier\": \"Mind Steward\" }",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.fileExists }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "file-exists-check",
+      "name": "File Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.github.com/repos/stevewesthoek/mind/contents/' + $json.filepath }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'token ' + $env.GITHUB_MIND_PAT }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ 'mind: capture \u2014 ' + $json.title }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $json.base64 }}"
+            },
+            {
+              "name": "branch",
+              "value": "main"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-to-github-create",
+      "name": "Save to GitHub - Create",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1328,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.github.com/repos/stevewesthoek/mind/contents/' + $json.filepath }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ 'token ' + $env.GITHUB_MIND_PAT }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ 'mind: update \u2014 ' + $json.title }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $json.base64 }}"
+            },
+            {
+              "name": "branch",
+              "value": "main"
+            },
+            {
+              "name": "sha",
+              "value": "={{ $json.sha }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-to-github-update",
+      "name": "Save to GitHub - Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1328,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Capture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing GitHub File": {
+      "main": [
+        [
+          {
+            "node": "Handle File Check Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle File Check Result": {
+      "main": [
+        [
+          {
+            "node": "File Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Exists?": {
+      "main": [
+        [
+          {
+            "node": "Save to GitHub - Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save to GitHub - Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to GitHub - Create": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to GitHub - Update": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Capture": {
+      "main": [
+        [
+          {
+            "node": "Build Inbox Note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Inbox Note": {
+      "main": [
+        [
+          {
+            "node": "Check Existing GitHub File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "tags": []
+}
