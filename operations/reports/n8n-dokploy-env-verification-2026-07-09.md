@@ -106,6 +106,15 @@ Full container env confirmed consistent with Dokploy Compose configuration.
 - ✅ Brain dirty status preserved (only generated/known files)
 - ✅ Mind read-only status preserved (no changes)
 
+## Batch 8M Deployment Follow-Up
+
+**Batch 8M executed 2026-07-09T16:28:20Z**
+
+- **Deployment status**: ✅ Workflow successfully deployed via n8n API
+- **Workflow version**: versionId `a419673f-2038-41e1-953d-ae38719c51cb`, counter 278
+- **Routing preserved**: Yes — `MIND_INBOX_PATH` remained unset, fallback to `capture/inbox` active
+- **Deployment report**: `operations/reports/n8n-inbox-workflow-deployment-2026-07-09.md`
+
 ## Notes
 
 - Dokploy API (`/project.all` and `/compose.all`) endpoints are documented and working for future env inspections
