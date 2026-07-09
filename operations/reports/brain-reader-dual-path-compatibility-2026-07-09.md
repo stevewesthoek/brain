@@ -101,7 +101,7 @@
   - mind-compile-loop.sh: Falls back to capture/inbox
   - Test file: Explicit test of fallback behavior
 
-### Path Resolution Order: ✅ DUAL-PATH WITH PREFERENCE
+### Path Resolution Order: ✅ FIRST-EXISTING (NOT SIMULTANEOUS)
 
 **Order of operations:**
 1. **Try inbox/new/** first (target, preferred)
@@ -109,15 +109,17 @@
 3. **Default to capture/inbox/** if neither found (safe default for scripts)
 
 **Behavior:**
-- Both paths are supported simultaneously in the same codebase
-- Brain readers do not move files; they read from whichever path exists
-- Preference is inbox/new, but capture/inbox is maintained for compatibility
-- No "first-existing-only" restriction; the queue logic iterates candidates
+- Brain readers use **first-existing** resolution, not simultaneous reading
+- The queue logic iterates MIND_INBOX_NEW_CANDIDATES and returns the FIRST directory found
+- When both paths exist, inbox/new is selected exclusively; capture/inbox is not simultaneously consumed
+- Brain readers do not move files; they read from the selected path only
+- Dual-path support exists only as a temporary compatibility safety net during migration
 
 **Evidence:**
 - mind-paths.ts MIND_INBOX_NEW_CANDIDATES (line 49-62): Array of candidates with era markings
-- mind-steward-inbox-queue.ts loop: `for (const candidate of MIND_INBOX_NEW_CANDIDATES) { ... try next ... }`
-- Test case: `'persistent inbox queue reads human-first inbox/new before legacy capture/inbox'`
+- mind-steward-inbox-queue.ts line 257-269: Loop returns first match, does not iterate all candidates
+- mind-steward-inbox-dry-run-report.sh: First checks inbox/new, returns immediately if found
+- Test case: `'persistent inbox queue reads human-first inbox/new before legacy capture/inbox'` confirms preference, not simultaneous reading
 
 ### Failure Routing Support: ⚠️ PARTIALLY IMPLEMENTED
 
@@ -141,29 +143,38 @@
 - **Risk:** Low — the actual code uses fallback logic, not hardcoded path
 - **Recommendation:** Comment could be updated to mention dual-path support, but is not a functional blocker
 
-## Recommendation for Historical capture/inbox Content
+## Operator Policy: No Permanent Dual-System
 
-**Strategy: LEAVE IN PLACE + DUAL-PATH PROCESSING**
+**The target system is inbox/new/. The capture/inbox/ folder is old-system residue.**
 
-Historical `capture/inbox/` captures (19 files, local count) should:
+Dual-path support exists only as a **temporary compatibility safety net** during the migration from capture/inbox to inbox/new. It is NOT the final operating model.
 
-1. **Remain in capture/inbox/** (do NOT move to inbox/new yet)
-   - All files remain where they are
-   - No content migration in this batch
+## Historical capture/inbox Content Strategy
 
-2. **Be processed by Brain readers via dual-path support** (NOW)
-   - Brain readers already support reading both paths
-   - No code changes needed
-   - Mind Steward inbox queue will consume both capture/inbox and inbox/new
+Historical `capture/inbox/` captures (28 files in local clone, including test captures; 19 original + 9 test) must be drained/cleaned in a controlled batch:
 
-3. **Prevent new captures from writing to capture/inbox** (CONFIRMED)
-   - Save-to-Mind webhook now writes only to inbox/new (Batch 8P hardcoding)
+1. **Current state: DO NOT process permanently via fallback**
+   - Historical files remain in capture/inbox
+   - No content migration happens automatically
+
+2. **Incoming captures go to inbox/new/ only** (CONFIRMED)
+   - Save-to-Mind webhook writes only to inbox/new (Batch 8P hardcoding)
    - capture/inbox receives no new saves
+   - inbox/new is now the active system
 
-4. **Plan future explicit migration batch** (LATER)
-   - After dual-path processing validates capture/inbox historical content
-   - Decide then: archive to history/, move to inbox/new, or delete
-   - Only after explicit approval and human review
+3. **Scheduled cleanup: controlled migration batch** (REQUIRED)
+   - After new system (inbox/new) is proven, historical capture/inbox content must be explicitly handled
+   - Inventory the 19 original files by status (processed vs unprocessed inbox items)
+   - Choose exact destination per file:
+     - Move to inbox/new/ if still unprocessed inbox items
+     - Archive to history/capture-inbox-historical/ if already processed
+     - Other handling as inventory review determines
+   - Execute migration only after explicit inventory and approval
+
+4. **Dual-path support role: temporary bridge only**
+   - Fallback to capture/inbox exists if inbox/new is unavailable (safety net)
+   - NOT intended for indefinite simultaneous operation
+   - Should be removed after cleanup batch validates all historical content
 
 ## Detailed Compatibility Evidence
 
@@ -222,13 +233,13 @@ Existing test case confirms behavior:
 
 ## Validation Summary
 
-✅ Brain readers fully support dual-path (inbox/new + capture/inbox)
-✅ inbox/new is preferred, capture/inbox is fallback
-✅ Both paths can be read simultaneously; no "first-only" restriction
-✅ Legacy capture/inbox files (19 local) are compatible with Brain logic
+✅ Brain readers support fallback to capture/inbox when inbox/new is absent
+✅ inbox/new is PREFERRED (first-existing resolution)
+✅ capture/inbox is FALLBACK ONLY (not simultaneous)
+✅ Legacy capture/inbox files (28 in local clone) are compatible as fallback
 ✅ No code gaps for success path routing
 ⚠️ Failure routing infrastructure exists but not yet active (separate future batch)
-✅ Shell scripts are dynamic, not hardcoded to old paths
+✅ Shell scripts are dynamic, first-existing, not hardcoded to old paths
 ✅ No stale hardcoded references that block functionality
 
 ## Statements
@@ -242,13 +253,17 @@ Existing test case confirms behavior:
 ✓ No workflow JSON changed
 ✓ No roadmap updated
 ✓ No implementation plan updated
-✓ Brain supports reading both inbox/new and capture/inbox simultaneously
+✓ Brain uses first-existing path resolution, not simultaneous reading
 ✓ inbox/new is preferred path for new captures
-✓ Historical capture/inbox content remains compatible with Brain readers
-✓ Future explicit migration batch can handle capture/inbox content after validation
+✓ inbox/new is now the active target system
+✓ capture/inbox is temporary fallback only, not final operating model
+✓ Historical capture/inbox content requires controlled cleanup batch (Batch 8U+)
+✓ Dual-path support is temporary bridge during migration, not permanent architecture
 
 ## Conclusion
 
-**Dual-path support is complete and ready.** Historical `capture/inbox/` captures (19 files) can remain in place and be processed by Brain readers without any code changes. The routing switch to `inbox/new/` (Batch 8P) is compatible with the existing Brain infrastructure.
+**Dual-path support provides a temporary compatibility safety net only.** The active system is now `inbox/new/` (Batch 8P). Historical `capture/inbox/` captures (28 in local, 19 original + 9 test) will be handled in a controlled cleanup batch after the new system is proven.
 
-No blocking issues found. Safe to proceed with Mind-side context as documented and Brain-side processing of both paths.
+Brain readers use first-existing path resolution: when both inbox/new and capture/inbox exist, inbox/new is selected and capture/inbox is not simultaneously consumed. Fallback support remains for safety, but the permanent operating model targets inbox/new only.
+
+No blocking issues for the success path. Ready for cleanup-readiness planning (Batch 8U).
