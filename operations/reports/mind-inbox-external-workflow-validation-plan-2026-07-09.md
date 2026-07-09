@@ -300,6 +300,17 @@ Key outcomes:
 - Improvement: added dynamic `inboxSource` field (`target`/`legacy-fallback`/`unavailable`) replacing static description.
 - No network calls, no n8n trigger, no Mind repo modification.
 
+## Batch 8H — Workflow reconciliation (2026-07-09)
+
+**Completed:** Batch 8H reconciled Brain workflow files. `mind-inbox-fixed.json` restored to committed Gemini-classify state. `mind-inbox.json` repaired with try/catch `process.env.MIND_INBOX_PATH` support. See `operations/reports/mind-inbox-workflow-reconciliation-2026-07-09.md`.
+
+Key outcomes:
+- `mind-inbox-fixed.json` restored from accidental overwrite (Batch 8G) to committed `443c498a` state.
+- `mind-inbox.json` now supports `MIND_INBOX_PATH` via `process.env` try/catch pattern.
+- Both files parse and validate statically.
+- n8n env-var access in Code nodes still unconfirmed; `N8N_BLOCK_ENV_ACCESS_IN_NODE` needs Dokploy check.
+- No n8n triggered, no network calls, no Mind modification.
+
 ## Boundaries preserved in this validation
 
 - No implementation code was changed in the Brain repo.
