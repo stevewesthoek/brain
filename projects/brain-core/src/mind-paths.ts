@@ -53,13 +53,11 @@ export const MIND_INBOX_NEW_CANDIDATES: readonly MindPathCandidate[] = [
     era: 'target',
     purpose: 'human-first universal dump zone for new captures',
   },
-  {
-    path: MIND_LEGACY_PATHS.captureInbox,
-    kind: 'directory',
-    era: 'legacy-fallback',
-    purpose: 'legacy Save-to-Mind unprocessed capture inbox',
-  },
 ] as const;
+
+// Historical note: capture/inbox was retired after Batch 8W cleanup (2026-07-09).
+// Legacy path MIND_LEGACY_PATHS.captureInbox remains available for historical reference only.
+// Do not re-add as fallback; all active content has been migrated to inbox/new.
 
 export const MIND_FAILED_INBOX_CANDIDATES: readonly MindPathCandidate[] = [
   {

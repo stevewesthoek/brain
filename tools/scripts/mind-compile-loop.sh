@@ -3,7 +3,7 @@
 #
 # Run nightly by office-nightly-scheduler.sh.
 #
-# Reads capture/inbox/, classifies each file by its frontmatter and content,
+# Reads inbox/new/, classifies each file by its frontmatter and content,
 # and appends proposed actions to wiki/log.md. Does NOT move, rename, or
 # modify any files. Human reviews and approves from wiki/log.md.
 #
@@ -28,20 +28,17 @@ resolve_inbox_dir() {
     printf '%s\n' "${mind_dir}/inbox/new"
     return 0
   fi
-  if [[ -d "${mind_dir}/capture/inbox" ]]; then
-    printf '%s\n' "${mind_dir}/capture/inbox"
-    return 0
-  fi
-  printf '%s\n' "${mind_dir}/capture/inbox"
-  return 0
+  # No fallback to capture/inbox; retired after Batch 8W cleanup (2026-07-09)
+  printf '%s\n' "unavailable"
+  return 1
 }
 
 MIND_DIR="${MIND_DIR:-$HOME/Repos/stevewesthoek/mind}"
 INBOX_DIR="$(resolve_inbox_dir "$MIND_DIR")"
 WIKI_LOG="${MIND_DIR}/wiki/log.md"
 
-if [[ ! -d "$INBOX_DIR" ]]; then
-  echo "Inbox not found (tried inbox/new and capture/inbox): $MIND_DIR"
+if [[ ! -d "$INBOX_DIR" ]] || [[ "$INBOX_DIR" == "unavailable" ]]; then
+  echo "Inbox not found (expected inbox/new): $MIND_DIR"
   exit 0
 fi
 

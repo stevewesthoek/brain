@@ -35,8 +35,6 @@ resolve_inbox_source() {
   local mind_root="$1"
   if [[ -d "${mind_root}/inbox/new" ]]; then
     printf 'target'
-  elif [[ -d "${mind_root}/capture/inbox" ]]; then
-    printf 'legacy-fallback'
   else
     printf 'unavailable'
   fi
@@ -48,12 +46,9 @@ resolve_inbox_dir() {
     printf '%s\n' "${mind_root}/inbox/new"
     return 0
   fi
-  if [[ -d "${mind_root}/capture/inbox" ]]; then
-    printf '%s\n' "${mind_root}/capture/inbox"
-    return 0
-  fi
-  printf '%s\n' "${mind_root}/capture/inbox"
-  return 0
+  # No fallback to capture/inbox; retired after Batch 8W cleanup (2026-07-09)
+  printf '%s\n' "unavailable"
+  return 1
 }
 
 REPO_ROOT="${MIND_STEWARD_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
