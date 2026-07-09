@@ -178,20 +178,47 @@ For each file, determine:
 ✅ No n8n triggered
 ✅ No roadmap or implementation plan files changed
 
-## Next: Batch 8V Direction
+## Batch 8V Completion: Inventory Complete
 
-**Batch 8V — Inventory old capture/inbox files for cleanup (NO MOVES, INVENTORY ONLY)**
+**Status:** ✅ COMPLETE — All 28 capture/inbox files inventoried and classified
+
+**Inventory Report:** `operations/reports/capture-inbox-cleanup-inventory-2026-07-09.md`
+
+**Inventory Results:**
+- 28 files inventoried (19 original + 9 test artifacts from Batch 8G/8P)
+- 11 files classified A_MOVE_TO_INBOX_NEW (active research/unprocessed)
+- 7 files classified B_ARCHIVE_TO_HISTORY (historical verification, processed)
+- 9 files classified C_DELETE_CANDIDATE (test artifacts, safe to delete)
+- 0 files requiring human review
+
+**Key Findings:**
+- 9 Batch 8G/8P test artifacts identified and marked for deletion
+- 3 duplicate captures identified (Karpathy "Second Brain", Rick Astley videos)
+- 2 historical verification tests marked for archival (already Mind Steward classified)
+- 11 active captures (AI agent research, development tools) ready for consolidation
+
+**Non-Actions Confirmed:**
+- No files moved in Batch 8V
+- No files deleted in Batch 8V
+- No files archived in Batch 8V
+- Inventory only; execution plan prepared but not executed
+
+## Next: Batch 8W Direction
+
+**Batch 8W — Convert inventory into executable cleanup plan (USER APPROVAL REQUIRED)**
 
 Tasks:
-1. Verify Brain latest commit from Batch 8U
-2. Read each of 19 original capture/inbox files
-3. Extract: filename, status/frontmatter, content brief
-4. Classify each: Option A (move to inbox/new), B (archive to history), or C (delete)
-5. Document classification rationale for each file
-6. Create cleanup-inventory-2026-07-09.md with all 19 files documented
-7. Do NOT move any files
-8. Do NOT delete any files
-9. Commit only the inventory document
-10. Wait for user approval before executing moves
+1. User reviews capture-inbox-cleanup-inventory-2026-07-09.md
+2. User confirms classifications and duplicate handling strategy
+3. User explicitly approves cleanup execution plan
+4. Create step-by-step execution document (one operation per file/commit)
+5. Do NOT execute any moves/deletes until user approval
 
-Expected outcome: Complete inventory enabling explicit execution plan for cleanup migrations.
+Expected approval gates:
+- User confirms 11 files should move to inbox/new
+- User confirms 7 files should archive to history
+- User confirms 9 test files should delete
+- User selects execution timeline (immediate vs phased)
+- Ready to execute only after explicit go-ahead
+
+Expected outcome: Approved execution plan ready for phased cleanup implementation.
