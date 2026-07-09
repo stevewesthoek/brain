@@ -183,20 +183,27 @@ No files require further human review. All files have been classified based on a
 ✅ No n8n triggered
 ✅ No operations performed on files
 
-## Next Steps: Batch 8W Direction
+## Batch 8W Execution: Cleanup Complete
 
-**Batch 8W — Convert inventory into executable cleanup plan**
+**Status:** ✅ COMPLETE — All 28 files migrated from legacy capture/inbox
 
-Tasks:
-1. Review this inventory (Batch 8V)
-2. Decide exact handling for each duplicate (keep one, archive/delete others)
-3. Get user approval on classification and proposed phases
-4. Create step-by-step execution document (one command per file, committed separately)
-5. Do NOT execute moves/deletes until plan is explicitly approved
+**Mind Execution Report:** `system/reports/capture-inbox-cleanup-execution-2026-07-09.md`
+**Mind Commit:** `c2d418b docs: clean legacy capture inbox`
 
-Expected approval gates:
-- User reviews inventory and confirms classifications
-- User explicitly approves cleanup plan
+**Files migrated:**
+- 9 files to inbox/new/ (active unprocessed captures)
+- 7 files to history/capture-inbox-historical/2026-07-09/ (historical evidence)
+- 2 files to history/capture-inbox-historical/2026-07-09/ (deduped duplicates)
+- 9 files to history/capture-inbox-quarantine/2026-07-09/ (test artifacts, NOT deleted)
+- 1 file to history/capture-inbox-review-required/2026-07-09/ (unclassified)
+
+**Result:** capture/inbox is now empty. Single-inbox migration complete.
+
+**Fulfillment of operator direction:**
+- ✓ No permanent deletion (test artifacts quarantined, not deleted)
+- ✓ All files accounted for and safely moved
+- ✓ Single-inbox system (inbox/new/) now active
+- ✓ Legacy capture/inbox cleanup finished, not planned indefinitely
 - User selects execution timeline (all-at-once vs phased)
 - Ready to execute only after explicit go-ahead
 

@@ -189,19 +189,33 @@ For each file, determine:
 - 11 files classified A_MOVE_TO_INBOX_NEW (active research/unprocessed)
 - 7 files classified B_ARCHIVE_TO_HISTORY (historical verification, processed)
 - 9 files classified C_DELETE_CANDIDATE (test artifacts, safe to delete)
-- 0 files requiring human review
-
-**Key Findings:**
-- 9 Batch 8G/8P test artifacts identified and marked for deletion
-- 3 duplicate captures identified (Karpathy "Second Brain", Rick Astley videos)
-- 2 historical verification tests marked for archival (already Mind Steward classified)
-- 11 active captures (AI agent research, development tools) ready for consolidation
+- 0 files requiring human review (1 unclassified file handled in Batch 8W)
 
 **Non-Actions Confirmed:**
 - No files moved in Batch 8V
 - No files deleted in Batch 8V
 - No files archived in Batch 8V
 - Inventory only; execution plan prepared but not executed
+
+## Batch 8W Execution: Cleanup Complete
+
+**Status:** ✅ COMPLETE — All legacy capture/inbox files migrated; single-inbox system active
+
+**Mind Execution Report:** `system/reports/capture-inbox-cleanup-execution-2026-07-09.md`
+**Mind Commit:** `c2d418b docs: clean legacy capture inbox`
+
+**Migration Results:**
+- 9 files moved to inbox/new/ (active unprocessed captures now in single target system)
+- 7 historical files archived to history/capture-inbox-historical/2026-07-09/
+- 2 deduped files archived to history/capture-inbox-historical/2026-07-09/
+- 9 test artifacts quarantined to history/capture-inbox-quarantine/2026-07-09/ (NOT deleted)
+- 1 unclassified file moved to history/capture-inbox-review-required/2026-07-09/
+
+**Key Achievement:**
+- capture/inbox/ now empty (no active capture files remain)
+- Single-inbox system established: inbox/new/ is sole target
+- All files safely preserved (no permanent deletions)
+- Brain path fallback for capture/inbox can now be retired or marked safety-only
 
 ## Next: Batch 8W Direction
 
