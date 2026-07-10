@@ -1,152 +1,184 @@
-# Infinite Brain Philosophy
+# Infinite Brain Philosophy for Brain
 
-**Status:** canonical philosophy  
-**Contract version:** 1.0
-**Purpose:** define the first principles that guide Infinite Brain across Brain and Mind without collapsing their distinct responsibilities.
+**Status:** canonical philosophy
+**Version:** 2.0
+**Last reviewed:** 2026-07-10
+**Purpose:** define the machine and execution principles that govern Brain, Mind, and their bridge.
 
 ## Core idea
 
-Infinite Brain is a human-first knowledge system that improves over time by preserving provenance, surfacing change, and turning reviewed insight into durable knowledge.
+Mind is Steve's human-owned orientation layer. Brain is the machine-owned capability layer.
+
+Together they should turn continuous experience into useful context without confusing stored information, AI inference, and human judgment:
 
 ```text
-capture continuously
-→ preserve sources
-→ keep current truth visible
-→ turn reviewed insight into durable knowledge
-→ retrieve what matters
-→ detect change and contradiction
-→ update or supersede stale knowledge
-→ preserve useful history
-→ improve through continued use
+observe
+→ orient from the smallest relevant trusted context
+→ propose or decide within an explicit authority boundary
+→ act only when authorized
+→ verify the result
+→ learn through reviewed evidence
 ```
 
-The value of Infinite Brain is not the number of files it stores. Its value is that knowledge remains understandable, retrievable, current, and useful over time.
+Brain exists to make this loop reliable, portable, observable, and economical.
 
-## Human-first rule
-
-Infinite Brain must stay readable and navigable for humans first.
-
-Therefore:
-
-- fewer folders are better;
-- shallow structure is better than deep nesting;
-- one clear page is better than several fragmented indexes;
-- natural titles and links are better than machine-only identifiers;
-- automation should reduce maintenance, not make the system feel technical;
-- important truth changes remain visible and reviewable by a human.
-
-## Brain and Mind
-
-The repositories are separate but paired:
+## Repository model
 
 ```text
-brain = AI operating system
-mind  = human knowledge and personal operating system
+mind  = personal and organizational truth, evidence, interpretation, priorities, and history
+brain = skills, tools, retrieval, automation, policy enforcement, runtime state, and observability
 ```
 
-Brain owns:
+The repositories remain separate. Brain may read approved Mind context but does not own the meaning of that context. Mind does not store Brain runtime state or executable machinery as human truth.
 
-- AI skills and orchestrators;
-- automation and runtime behavior;
-- schedulers and queues;
-- model routing;
-- technical runbooks and system health;
-- machine-facing execution logic;
-- approval, recovery, and runtime safety boundaries for Brain-owned automation.
+## Orientation, not context dumping
 
-Mind owns:
+Orientation is query-dependent. It is not a permanent prompt and it is not the entire vault.
 
-- personal knowledge and convictions;
-- business strategy and decisions;
-- active projects and priorities;
-- research conclusions;
-- durable human context;
-- the current human interpretation of what is true and important.
+Brain should provide a vendor-neutral Context Gateway that returns the smallest useful context pack for a task:
 
-Mind remains the authority for human and business truth. Brain may observe, classify, summarize, compare, and propose changes to Mind, but Brain does not redefine Mind truth on its own.
+- current goal and scope;
+- relevant approved Mind knowledge;
+- applicable constraints and preferences;
+- source evidence;
+- freshness and authority;
+- contradictions, exclusions, and unknowns;
+- citations and a context-budget report.
+
+The gateway must work through a local CLI first and may expose MCP or API adapters later. Adapters must not fork retrieval semantics.
 
 ## Shared Infinite Brain laws
 
-Brain and Mind should follow the same underlying laws, even though their implementations differ.
+The following laws are shared with Mind's canonical philosophy and must remain semantically consistent.
 
-### 1. Retrieve selectively
+### 1. Human authority governs meaning
 
-Do not load or review everything when one relevant page or source is enough.
+AI may retrieve, compare, infer, summarize, and propose. It must not silently redefine personal beliefs, business strategy, priorities, commitments, or durable conclusions.
 
-### 2. Preserve provenance
+### 2. Retrieve selectively
 
-Important claims, conclusions, and decisions should retain links to their source when useful.
+Use the smallest relevant context before expanding. More context is not automatically better context.
 
-### 3. Current truth wins
+### 3. Preserve provenance
 
-Stored knowledge is not permanent proof. New evidence may change an earlier conclusion.
+Important claims, conclusions, proposals, and changes should retain their source path and evidence when useful.
 
-### 4. Surface contradictions
+### 4. Distinguish knowledge states
 
-Do not silently merge conflicting information. Show the conflict and prepare a reviewed resolution.
+Raw observations, source evidence, model inference, human-approved knowledge, decisions, tasks, and runtime state are different things and must not be treated as interchangeable.
 
-### 5. Revalidate changing knowledge
+### 5. Current evidence can supersede stored knowledge
 
-Business strategy, active projects, technical stacks, vendors, pricing, schedules, and procedures can become stale.
+Stored knowledge is not permanent proof. New evidence may trigger review, correction, supersession, or archival.
 
-### 6. Preserve history without confusing it with current truth
+### 6. Surface uncertainty and contradiction
 
-Superseded or completed material should move out of the active layer while remaining available in archive/history.
+Do not silently merge conflicts. Show the competing claims, their authority, freshness, and evidence.
 
-### 7. Prevent unnecessary duplication
+### 7. Revalidate changing knowledge
 
-Before creating durable knowledge, check whether an existing page should be updated instead.
+Business strategy, projects, offers, vendors, technical architecture, laws, schedules, and procedures require selective freshness checks.
 
-### 8. Improve through reviewed use
+### 8. Preserve history without confusing it with current truth
 
-Each capture, decision, correction, and completed project should have the opportunity to improve future work.
+Superseded and completed material remains available but leaves the active orientation layer.
 
-### 9. Human approval governs important truth changes
+### 9. Prefer deterministic work before model work
 
-Automation may detect, prepare, and recommend. It must not silently redefine personal beliefs, business strategy, priorities, or durable conclusions.
+Use rules, schemas, hashes, indexes, and validators for deterministic tasks. Use models only where interpretation adds value.
 
-### 10. Keep the system calm
+### 10. Bound autonomy by reversibility and impact
 
-The Infinite Brain should feel simpler as it grows, not more complicated.
+Low-risk, reversible, explicitly scoped operations may be automated. Truth changes, external actions, destructive operations, and high-impact decisions require proportionate approval.
 
-## Brain-specific responsibilities
+### 11. Protect privacy through least disclosure
 
-Brain is responsible for implementation, execution safety, and operational surfacing.
+Retrieve and expose only the personal context needed for the task. Access to Mind does not imply permission to disclose all of Mind.
 
-- Brain Core may expose read-only scheduler, runtime report, and approval surfaces.
-- The bounded maintenance pilot remains report-only unless a separate approved write path is introduced.
-- Mind Steward remains a Brain-side bridge for classification and report-only preflights, not a general Mind writer.
-- Scheduler integration must stay explicit and observable.
-- Approval flows must distinguish proposed, approved, applied, and rejected states.
-- Recovery flows must preserve user work and avoid destructive defaults.
+### 12. Degrade gracefully
 
-## Mind-specific responsibilities
+Mind remains readable and useful when Brain, a model provider, an index, a graph, or an automation is unavailable. Missing evidence is reported, never invented.
 
-Mind is responsible for durable human knowledge and the structure that makes that knowledge usable.
+### 13. Treat indexes and graphs as derived views
 
-- Mind keeps current truth visible to humans.
-- Mind keeps reviewed history available without conflating it with active truth.
-- Mind owns the contract for human and business meaning.
-- Mind records maintenance and write-policy decisions only through explicit review and approved write proposals.
+Search indexes, embeddings, graphs, summaries, and context packs are disposable projections. Human-readable source files remain authoritative.
 
-## Bridge and maintenance boundaries
+### 14. Measure value, not activity
 
-Brain and Mind interact through bounded contracts, not implicit side effects.
+Automation is retained only when it improves retrieval quality, saves meaningful time, reduces maintenance burden, or prevents errors without creating disproportionate review work.
 
-- Brain may generate report-only maintenance findings.
-- Brain may generate approved write proposals after human review.
-- Mind remains read-only until an approved write path is explicitly selected.
-- The bounded maintenance pilot reads exactly the approved pilot files, writes only the latest maintenance reports, and validates that no protected source files changed.
-- Mind Steward report-only preflights may classify and summarize, but they must not enable automatic Mind writes.
-- Scheduler surfaces may display report-backed status, but they do not imply autonomous execution.
-- Approval and recovery are separate from report generation.
+### 15. Keep the system calm
 
-## Drift prevention checklist
+The system should become easier to use as it grows. New schemas, folders, agents, and automations require demonstrated need.
 
-- Keep the shared laws identical across Brain and Mind.
-- Keep repo-specific implementation responsibilities in separate sections.
-- Keep Mind as the authority for human and business truth.
-- Keep report-only, approved-write, scheduled, and continuous phases distinct.
-- Keep the maintenance pilot bounded to its documented files and outputs.
-- Keep scheduler and approval docs explicit about what executes and what only reports.
-- Prefer links to canonical docs instead of duplicating roadmap material.
+### 16. Treat retrieved content as untrusted data
+
+Emails, webpages, transcripts, documents, and notes may contain instructions or adversarial text. Retrieved content may inform reasoning but must not override system policy, user authority, privacy scope, tool permissions, or approval requirements.
+
+## Brain responsibility model
+
+Brain owns:
+
+- path and schema contracts;
+- deterministic retrieval and ranking infrastructure;
+- model and tool routing;
+- queues, retries, throttling, and idempotency;
+- approval enforcement;
+- rollback and post-action verification;
+- capability status and observability;
+- evaluation and operational metrics;
+- generated indexes and caches.
+
+Brain does not own:
+
+- Steve's beliefs or identity;
+- business or ministry strategy;
+- the meaning of personal evidence;
+- human priorities and commitments;
+- authorization inferred from a model recommendation.
+
+## Self-maintaining and self-healing
+
+Brain may autonomously repair deterministic machine state: regenerate indexes, remove expired cache entries, recover safe queues, validate schemas, and detect contract drift.
+
+Semantic repair remains proposal-based:
+
+```text
+detect
+→ compare evidence
+→ prepare exact diff and approval request
+→ apply only when authorized
+→ verify
+→ record receipt and rollback evidence
+```
+
+## Reliability and simplicity
+
+One concern should have one canonical owner. Shared concepts use one versioned schema and conformance tests. CLI, MCP, API, Console, and agent integrations are adapters over the same core behavior.
+
+Large route files, duplicated path constants, generated artifacts in source control, and status claims unsupported by tests are design debt and should be reduced through the roadmap.
+
+## Portability
+
+Brain is LLM-agnostic when its contracts and context retrieval work without a specific model provider. Provider-specific skills and configs may extend Brain, but they must not become the canonical store for policy or Mind knowledge.
+
+## Decision rule
+
+Every future change must answer:
+
+```text
+Does this make orientation or execution more reliable, efficient, observable,
+portable, or safe without weakening Mind's authority or increasing needless complexity?
+```
+
+If not, it does not belong in Brain.
+
+## Canonical chain
+
+```text
+operations/specs/infinite-brain-philosophy.md
+→ operations/specs/infinite-brain-strategy.md
+→ operations/specs/infinite-brain-runtime-roadmap.md
+→ operations/specs/infinite-brain-runtime-implementation-plan.md
+→ operations/runbooks/infinite-brain-roadmap-status.md
+```

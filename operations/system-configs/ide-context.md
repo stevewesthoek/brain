@@ -36,10 +36,10 @@ Use these for AI-system, tooling, config, skill, automation, model routing, guar
 Use these for personal, business, ministry, theology, strategy, project, task, resource, and research questions:
 
 ```text
-/Users/Office/Repos/stevewesthoek/mind/AGENTS.md
-/Users/Office/Repos/stevewesthoek/mind/00-start-here.md
-/Users/Office/Repos/stevewesthoek/mind/00-current-context.md
-/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/AGENTS.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-start-here.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-current-context.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-memory-map.md
 ```
 
 ## IDE Behavior Rule

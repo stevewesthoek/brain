@@ -2,6 +2,18 @@
 
 Private knowledge base and shared resource repo for Steve across local machines and IDE tools.
 
+## Infinite Brain canonical chain
+
+```text
+operations/specs/infinite-brain-philosophy.md
+→ operations/specs/infinite-brain-strategy.md
+→ operations/specs/infinite-brain-runtime-roadmap.md
+→ operations/specs/infinite-brain-runtime-implementation-plan.md
+→ operations/runbooks/infinite-brain-roadmap-status.md
+```
+
+Mind owns human meaning and the cross-repo priority order. Brain owns executable retrieval, capability, safety, and live status. See `/Users/Office/Repos/stevewesthoek/mind/system/mind-roadmap.md` and `/Users/Office/Repos/stevewesthoek/mind/system/brain-mind-bridge.md`.
+
 ## Purpose
 
 This repo holds:

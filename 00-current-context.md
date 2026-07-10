@@ -8,7 +8,7 @@ Agents should read this early when working on AI infrastructure, skills, configs
 
 ```yaml
 status: current
-last_reviewed: 2026-06-11
+last_reviewed: 2026-07-10
 owner: Steve Westhoek
 purpose: Keep AI sessions oriented on the Brain repo without loading the whole repo.
 ```
@@ -25,6 +25,10 @@ mind  = personal memory and knowledge system
 The `brain` repo contains AI infrastructure, shared skills, system configs, tooling, runbooks, operations docs, and automation logic.
 
 The `mind` repo contains Steve's personal knowledge, strategy, convictions, business/ministry context, projects, tasks, and research.
+
+The current Infinite Brain program uses seven priorities owned strategically by `/Users/Office/Repos/stevewesthoek/mind/system/mind-roadmap.md`. Brain's executable projection lives in `operations/specs/infinite-brain-runtime-roadmap.md`, and live capability truth lives only in `operations/runbooks/infinite-brain-roadmap-status.md`.
+
+Priority 1 is active: align all path/schema contracts and agent instructions with the cleaned Mind structure. The Context Gateway is planned, not active. Until it passes evaluation, use Mind's `system/agent-context/` entrypoints and targeted reads.
 
 ## Current Always-Available AI Context Decision
 
@@ -81,7 +85,7 @@ docs/skills/profiles/research.txt
 Research outputs should usually be saved to `mind`, not `brain`:
 
 ```text
-/Users/Office/Repos/stevewesthoek/mind/06-resources/research/
+/Users/Office/Repos/stevewesthoek/mind/resources/research/
 ```
 
 Brain holds the skills and runbooks that define how research works.

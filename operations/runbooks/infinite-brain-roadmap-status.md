@@ -1,185 +1,79 @@
-# Infinite Brain Roadmap Status
+# Infinite Brain Live Capability Status
 
-Last updated: 2026-06-08
+**Status:** canonical live status
+**Last verified:** 2026-07-10
+**Owner:** Brain operations
+**Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
-## Current status
-
-Infinite Brain is operational for one deliberately narrow capability: a controlled, operator-approved, single-file metadata write to an allowlisted Mind test file.
-
-This means the current phase is complete, but the broader Infinite Brain roadmap is not complete.
-
-## Completed phase
-
-### Single-file allowlisted metadata write
-
-Status: complete and activated.
-
-Completed capabilities:
-
-- Brain Core clean startup on fixed local port `4877`.
-- Health check for Brain Core startup.
-- Operator approval record before write.
-- iOS sync safety report before write.
-- Manual single-write confirmation.
-- Exact allowlisted target path enforcement.
-- Single-file metadata frontmatter write.
-- Rollback snapshot creation.
-- Rollback runner for the allowlisted test file.
-- Post-write verification runner.
-- Repeatability proof: verify, rollback, write, verify.
-- Operator runbook documentation.
-- Repo hygiene cleanup for generated artifacts.
-
-Current allowed Mind target:
+## Status vocabulary
 
 ```text
-/Users/Office/Repos/stevewesthoek/mind/system/InfiniteBrainWriteTest.md
+planned | implemented | tested | report-only | approval-gated | active | paused | retired
 ```
 
-Current allowed operation:
+This page reports reality. Roadmaps report order. Implementation plans report work.
+
+## Current summary
+
+The Mind/Brain system is usable as a human-first vault with report-only and narrowly approval-gated Brain capabilities. It does not yet provide a vendor-neutral Context Gateway, a full retrieval evaluation harness, general proposal application, or proven continuous automation value.
+
+## Capability table
+
+| Capability | State | Evidence | Limit |
+|---|---|---|---|
+| Mind human navigation and targeted agent reads | active | Mind entrypoints and primary global AI startup pointers use `system/agent-context/` | active runbooks/integration docs still contain retired paths |
+| Save-to-Mind success intake to `inbox/new/` | active | migration commits and folder contract | failure-path external workflow requires separate verification |
+| Brain Core Mind target-path model | tested | Brain Core typecheck passes; target-path tests exist | legacy constants/fixtures remain |
+| Mind Steward package | paused | typecheck fails in `src/cli/classify-captures.ts` | classifier hard-codes retired intake and writes unless dry-run is explicit |
+| Mind maintenance detection/reporting | report-only | adapters, tests, and reports exist | operational usefulness beyond bounded fixtures is unproven |
+| Infinite Brain single-file metadata writer | approval-gated | allowlist, approval, rollback, and verification implementation exists | one narrow metadata scope only |
+| General proposal application | planned | planner/dry-run components exist | not approved as a general write capability |
+| Context Gateway | planned | philosophy, strategy, bridge, and implementation tasks exist | no canonical runtime implementation |
+| Retrieval evaluation corpus/runner | planned | roadmap and task specification exist | no baseline runner yet |
+| Capability manifest/generated status | planned | status vocabulary and implementation tasks exist | this table is manually maintained until generator exists |
+| Continuous processing | paused | safety/queue components exist | disabled; value and review burden unproven |
+
+## Verification performed
+
+On 2026-07-10:
 
 ```text
-Controlled metadata frontmatter update on the single allowlisted test file only.
+brain-core: npm run typecheck → pass
+mind-steward: npm run typecheck → fail (TS2412 at src/cli/classify-captures.ts:25)
+mind graph: built from 534876aa, current HEAD 2d4676df → stale
+brain graph: built from ba1ddff3, current HEAD 9989b8b0 → stale
 ```
 
-## Not completed
+The existing graph reports include low-signal Obsidian plugin or unlabeled broad-repo modules and must not be treated as current architecture truth.
 
-The following capabilities are not finished and must not be treated as active:
+## Current blockers
 
-- Broad Mind repository writing.
-- Multi-file writes.
-- General-purpose metadata writing.
-- Proposal application.
-- Console Apply button.
-- Console Execute button.
-- Autonomous execution.
-- Long-running planner/writer loop.
-- Continuous runtime execution.
-- Model-provider-driven write execution.
-- Unbounded file selection.
+1. Active path/config documentation is not fully aligned with completed Mind migration.
+2. Mind Steward has duplicated legacy contracts and a failing typecheck.
+3. Context retrieval remains instruction-driven rather than one executable core.
+4. Retrieval quality lacks a representative ground-truth corpus.
+5. Capability state is not yet generated from a manifest and evidence commands.
+6. Meaningful time savings and maintenance reduction remain unproven.
+7. Brain Core's route dispatcher and generated/local state are larger than necessary.
 
-## Roadmap phases remaining
+## Next approved work
 
-### Phase 1: Second allowlisted test file
+Execute Priority 1 tasks from:
 
-Status: not started.
-
-Goal: prove the same write, verify, rollback, and repeatability loop against a second explicitly approved Mind file without broadening scope.
-
-Required constraints:
-
-- The second file must be explicitly allowlisted.
-- Non-allowlisted files must remain blocked.
-- No multi-file batch behavior.
-- No autonomous execution.
-
-### Phase 2: Formal write policy
-
-Status: not started.
-
-Goal: document and enforce how a file becomes eligible for write operations.
-
-Required outputs:
-
-- Allowlist policy.
-- Operator approval policy.
-- Rollback requirements.
-- Verification requirements.
-- Forbidden write categories.
-
-### Phase 3: Console read-only visibility
-
-Status: not started.
-
-Goal: expose write, rollback, and verification status in the Console without adding write controls.
-
-Allowed UI:
-
-- Read-only status panels.
-- Latest write report summary.
-- Latest rollback report summary.
-- Latest verification report summary.
-
-Forbidden UI:
-
-- Apply button.
-- Execute button.
-- Broad write controls.
-- Autonomous run controls.
-
-### Phase 4: Human-approved proposal apply path
-
-Status: not started.
-
-Goal: eventually support applying a proposal only after explicit operator approval, complete diff review, rollback proof, and verification gates.
-
-This phase is not safe until the write policy and Console visibility phases are complete.
-
-### Phase 5: Controlled multi-file operations
-
-Status: not started.
-
-Goal: support a small, explicit, human-approved batch only after rollback bundles, conflict checks, and per-file verification are proven.
-
-This phase is not currently approved.
-
-### Phase 6: Autonomous execution
-
-Status: not started.
-
-Goal: future-only. This requires substantially more safety infrastructure and should remain disabled.
-
-## Current operating commands
-
-Run from:
-
-```bash
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
+```text
+/Users/Office/Repos/stevewesthoek/mind/system/mind-implementation-plan.md
+/Users/Office/Repos/stevewesthoek/brain/operations/specs/infinite-brain-runtime-implementation-plan.md
 ```
 
-Start Brain Core:
+Do not activate broad Mind writes, continuous execution, or new external actions while Priority 1 is incomplete.
 
-```bash
-npm run brain-core:clean-start
-```
+## Update rule
 
-Verify latest write state:
+Until the capability manifest generator exists, update this page only when:
 
-```bash
-npm run ibr:verify
-```
+- an evidence command was run;
+- a capability state changed;
+- a blocker was confirmed or cleared;
+- the verification date is updated.
 
-Rollback the allowlisted test file:
-
-```bash
-npm run ibr:rollback
-```
-
-Run the single-file write test:
-
-```bash
-npm run ibr:single-file-write-test
-```
-
-## Definition of done for the current phase
-
-The current phase is done when all of the following remain true:
-
-- Brain Core starts cleanly on port `4877`.
-- The single-file write test succeeds.
-- Rollback restores the test file to the snapshot before-state.
-- Verification passes all checks.
-- The repo remains clean after runtime artifacts are ignored.
-- No broad write capability is introduced.
-- No autonomous execution is introduced.
-- No Mind files are committed to the Brain repo.
-
-This definition has been met.
-
-## Summary
-
-The Infinite Brain single-file write system is activated and operational within its narrow safety scope.
-
-The full Infinite Brain roadmap is not finished.
-
-Next approved work should be documentation, safety policy, read-only visibility, or a second explicitly allowlisted test file. It should not be broad autonomy, multi-file writing, or proposal application.
+Never promote `implemented` or `tested` to `active` without runtime evidence and the required approval boundary.

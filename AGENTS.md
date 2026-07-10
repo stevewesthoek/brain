@@ -47,6 +47,18 @@ brain changes the AI system.
 mind stores the personal/business/ministry knowledge used by the AI system.
 ```
 
+Efficient Mind startup:
+
+```text
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/AGENTS.md
+→ 00-start-here.md
+→ 00-current-context.md when current state matters
+→ 00-memory-map.md
+→ targeted domain reads only
+```
+
+The planned Context Gateway will become the preferred retrieval interface after it passes its evaluation and fallback gates. Until then, use the startup sequence above.
+
 ## Non-Negotiable Safety Rules
 
 Do not expose, print, commit, or move secrets:
@@ -108,7 +120,7 @@ When the user says:
 - "update Claude/Codex/Gemini behavior" → use `brain/operations/system-configs/`.
 - "what is my strategy?" → use `mind`.
 - "how should agents route this?" → use `brain` and possibly `mind`.
-- "research this" → use `/research`; save durable personal research in `mind/06-resources/research/` unless it is AI-system research.
+- "research this" → use `/research`; save durable personal research in `mind/resources/research/` or `mind/faith/resources/` unless it is AI-system research.
 
 ## Good AI Session Behavior
 

@@ -100,8 +100,16 @@ Do not store personal research or strategy in `brain` by default.
 Personal research belongs in:
 
 ```text
-/Users/Office/Repos/stevewesthoek/mind/06-resources/research/
+/Users/Office/Repos/stevewesthoek/mind/resources/research/
 ```
+
+Mind agent entrypoints live under:
+
+```text
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/
+```
+
+Read its `AGENTS.md`, start/current context as needed, and memory map before targeted Mind retrieval. Do not load the vault.
 
 AI-system research, skill documentation, tool runbooks, and automation docs belong in `brain`.
 

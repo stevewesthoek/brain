@@ -1,12 +1,32 @@
 # Platform Architecture — Scaffold Standard
 
-**Document type:** Platform architecture standard  
-**Status:** Active — canonical scaffold for all projects  
-**Last updated:** 2026-05-22 (added responsibility model, external app onboarding contract, FALA integration pattern)  
-**Owner:** Steve Westhoek  
+**Document type:** Platform architecture standard
+**Status:** Active — canonical scaffold for all projects
+**Last updated:** 2026-05-22 (added responsibility model, external app onboarding contract, FALA integration pattern)
+**Owner:** Steve Westhoek
 **Scope:** All projects in the brain/mind ecosystem (brain-core, FALA, video-orchestrator, cedula, and all future apps)
 
 ---
+
+## Mind–Brain operating model
+
+```text
+Mind source files
+  → Context Gateway (planned; deterministic core first)
+  → cited, privacy-scoped context pack
+  → AI reasoning or proposal
+  → validation and exact approval when required
+  → bounded Brain execution
+  → verification, receipt, and rollback evidence
+```
+
+Mind is authoritative for personal and organizational meaning. Brain is authoritative for retrieval, execution, and capability status. CLI, MCP, API, Console, and agent integrations must be thin adapters over one core contract; they must not maintain independent Mind path maps or retrieval policies.
+
+Canonical documents:
+
+- Mind philosophy and priority order: `/Users/Office/Repos/stevewesthoek/mind/system/`
+- Brain philosophy, strategy, roadmap, and implementation plan: `operations/specs/`
+- Live capability status: `operations/runbooks/infinite-brain-roadmap-status.md`
 
 ## Philosophy
 
@@ -469,7 +489,7 @@ curl -s http://localhost:4890/audit?task_type=metadata_generation  # filter by t
 
 ## Infrastructure
 
-**LaunchAgent:** `~/Library/LaunchAgents/com.office.ai-model-selector.plist`  
+**LaunchAgent:** `~/Library/LaunchAgents/com.office.ai-model-selector.plist`
 `RunAtLoad: true`, `KeepAlive: true` — starts on login, restarts on crash.
 
 **Restart:**

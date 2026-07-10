@@ -25,10 +25,10 @@ Use brain for AI-system questions:
 
 Use mind for personal, business, ministry, theology, project, task, resource, and research questions:
 
-/Users/Office/Repos/stevewesthoek/mind/AGENTS.md
-/Users/Office/Repos/stevewesthoek/mind/00-start-here.md
-/Users/Office/Repos/stevewesthoek/mind/00-current-context.md
-/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/AGENTS.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-start-here.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-current-context.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-memory-map.md
 
 ## Behavior Rule
 

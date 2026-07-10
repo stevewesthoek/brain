@@ -30,7 +30,7 @@ Use this before answering AI-system, tooling, skill, config, runbook, automation
 | Operational decisions | `operations/decision-log.md` | relevant runbook/spec |
 | Scripts/tools | `tools/README.md`, `tools/scripts/` | tool-specific folder |
 | Infrastructure/deploy | `operations/infrastructure/`, `operations/deploy/` | `operations/runbooks/` |
-| Personal strategy/research/tasks | `mind` repo, not brain | `/Users/Office/Repos/stevewesthoek/mind/00-memory-map.md` |
+| Personal strategy/research/tasks | `mind` repo, not brain | `/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-memory-map.md` |
 
 ## Skill Routing
 
@@ -97,10 +97,10 @@ Mind path:
 Mind entrypoints:
 
 ```text
-AGENTS.md
-00-start-here.md
-00-current-context.md
-00-memory-map.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/AGENTS.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-start-here.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-current-context.md
+/Users/Office/Repos/stevewesthoek/mind/system/agent-context/00-memory-map.md
 ```
 
 ## Natural Language Save Rules
@@ -111,9 +111,9 @@ AGENTS.md
 | "add a skill" | `ai/skills/custom/` or vendor source; profile docs; sync/check |
 | "document this workflow" | `operations/runbooks/` |
 | "record this architecture decision" | `operations/decision-log.md` after confirmation |
-| "save this personal research" | `mind/06-resources/research/` |
+| "save this personal research" | `mind/resources/research/` or `mind/faith/resources/` |
 | "remember this about me" | `mind`, not brain |
-| "create a task/project" | `mind/04-tasks/` or `mind/03-projects/` |
+| "create a task/project" | task authority in `mind/system/task-kanban-contract.md` or `mind/projects/` |
 
 ## Write Safety
 
