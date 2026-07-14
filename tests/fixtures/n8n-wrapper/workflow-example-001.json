@@ -1,0 +1,101 @@
+{
+  "id": "workflow-example-001",
+  "name": "Synthetic contract workflow",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true
+  },
+  "tags": [
+    {
+      "id": "tag-example-001",
+      "name": "synthetic"
+    }
+  ],
+  "shared": [
+    {
+      "projectId": "project-example-001",
+      "role": "workflow:owner"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node-webhook-example",
+      "name": "Synthetic Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "synthetic-route"
+      }
+    },
+    {
+      "id": "node-schedule-example",
+      "name": "Synthetic Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        160
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node-request-example",
+      "name": "Synthetic Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://service.invalid/resource"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credential-reference-example",
+          "name": "Synthetic credential reference"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Synthetic Webhook": {
+      "main": [
+        [
+          {
+            "node": "Synthetic Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Synthetic Schedule": {
+      "main": [
+        [
+          {
+            "node": "Synthetic Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

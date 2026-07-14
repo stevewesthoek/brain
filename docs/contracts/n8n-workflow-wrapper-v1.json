@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "n8n-workflow-wrapper",
+  "readOperation": "get-workflow",
+  "readArgv": [
+    "get-workflow",
+    "<workflowId>"
+  ],
+  "mutationOperation": "update-workflow",
+  "mutationArgv": [
+    "update-workflow",
+    "<workflowId>",
+    "-"
+  ],
+  "mutationHttpMethod": "PUT",
+  "mutationPathTemplate": "/workflows/{workflowId}",
+  "mutationPayloadTransport": "stdin",
+  "maximumPayloadBytes": 500000,
+  "maximumResponseBytes": 500000,
+  "defaultConnectTimeoutSeconds": 5,
+  "maximumConnectTimeoutSeconds": 30,
+  "defaultTotalTimeoutSeconds": 60,
+  "maximumTotalTimeoutSeconds": 300,
+  "automaticRetries": 0,
+  "maximumMutationRequestsPerInvocation": 1,
+  "followsRedirects": false,
+  "usesAmbientClientConfiguration": false,
+  "requiresHttps": true,
+  "classifications": [
+    "succeeded",
+    "definitively_failed",
+    "ambiguous",
+    "timed_out"
+  ],
+  "successRequiresMatchingWorkflowId": true,
+  "protectedFieldPolicy": "forward-validated-payload-unchanged",
+  "protectedDomains": [
+    "activation",
+    "settings",
+    "tags",
+    "sharing",
+    "credential-references",
+    "webhooks",
+    "schedules"
+  ],
+  "requiresReadbackAfterMutation": true,
+  "duplicateInvocationsAreIntrinsicallySafe": false,
+  "requiresExternalReplayProtection": true
+}
