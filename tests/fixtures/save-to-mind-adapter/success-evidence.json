@@ -1,0 +1,11 @@
+{
+  "contractVersion": 1,
+  "fixtureId": "b1-0a-success-fixture-20260714T120000Z",
+  "fixtureKind": "success",
+  "repositoryRelativePath": "inbox/new/b1-0a-success-fixture-20260714T120000Z.md",
+  "destination": "inbox/new",
+  "createdFileCount": 1,
+  "overwrite": false,
+  "retiredPathWrite": false,
+  "receiptId": "success-receipt-1"
+}

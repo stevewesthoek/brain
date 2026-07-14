@@ -2,9 +2,9 @@
   "updatedAt": "2026-04-17T20:15:28.734Z",
   "createdAt": "2026-04-10T21:01:15.366Z",
   "id": "FwP5INe9qoo1OwGC",
-  "name": "Save to Mind \u2014 Capture for Mind Steward",
+  "name": "Save to Mind — Capture for Mind Steward",
   "description": null,
-  "active": false,
+  "active": true,
   "isArchived": false,
   "nodes": [
     {
@@ -123,7 +123,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "{ \"status\": \"saved\", \"result\": \"file_committed\" }",
+        "responseBody": "{ \"status\": \"saved\", \"result\": \"file_committed\", \"queued_for_classification\": true, \"classifier\": \"Mind Steward\" }",
         "options": {}
       },
       "id": "respond-webhook",
@@ -177,7 +177,7 @@
           "parameters": [
             {
               "name": "message",
-              "value": "={{ 'mind: capture \u2014 ' + $json.title }}"
+              "value": "={{ 'mind: capture — ' + $json.title }}"
             },
             {
               "name": "content",
@@ -222,7 +222,7 @@
           "parameters": [
             {
               "name": "message",
-              "value": "={{ 'mind: update \u2014 ' + $json.title }}"
+              "value": "={{ 'mind: update — ' + $json.title }}"
             },
             {
               "name": "content",
@@ -606,7 +606,7 @@
             "parameters": [
               {
                 "name": "message",
-                "value": "={{ 'mind: capture \u2014 ' + $json.title }}"
+                "value": "={{ 'mind: capture — ' + $json.title }}"
               },
               {
                 "name": "content",
@@ -651,7 +651,7 @@
             "parameters": [
               {
                 "name": "message",
-                "value": "={{ 'mind: update \u2014 ' + $json.title }}"
+                "value": "={{ 'mind: update — ' + $json.title }}"
               },
               {
                 "name": "content",

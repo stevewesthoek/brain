@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "workflowId": "FwP5INe9qoo1OwGC",
+  "workflowName": "Save to Mind — Capture for Mind Steward",
+  "rollbackArtifact": "operations/reports/artifacts/b1-0a-live-workflow-rollback.json",
+  "rollbackSha256": "703f036d01a7854aa55b368f9f21fff4b93ec85b10c40d2d20405f68cd4e31dd",
+  "preserve": {
+    "active": false,
+    "settings": true,
+    "tags": true,
+    "sharing": true,
+    "credentials": true,
+    "webhookIdentity": true,
+    "schedules": true,
+    "githubWriteBoundary": true
+  },
+  "routing": {
+    "success": "inbox/new",
+    "failure": "inbox/failed",
+    "successEnv": "MIND_INBOX_PATH",
+    "failureEnv": "MIND_FAILED_PATH"
+  },
+  "candidateState": {
+    "repositoryCandidate": true,
+    "deploymentPlanned": "conditional",
+    "deployed": "unverified",
+    "observedCanonicalSuccessRouting": "stored-rollback-partial-evidence",
+    "observedCanonicalFailureRouting": "unverified",
+    "activation": "not_asserted",
+    "schedule": "not_asserted",
+    "liveVersion": "not_asserted",
+    "verified": false,
+    "paused": true,
+    "retired": false,
+    "b1_0a": "incomplete"
+  },
+  "retainedNodeChanges": [
+    {
+      "id": "handle-file-check",
+      "allowedFields": ["parameters"],
+      "liveNodeSha256": "fd9fd0e3d8c21b73f9cf0cb98b11bdead2f07132549b583fbfa006824b57f507",
+      "candidateNodeSha256": "0f20769f79fc42f4d4ba49629ff50d488e3157eeb76c5fa70132453a4039772c",
+      "liveParametersSha256": "d2fc3cca822baf4965d305ac6049f109239bb1b75359e4c10e7c990a74411a1f",
+      "candidateParametersSha256": "fbac32c394482d6d84b7c10c37a2431fee52d70d729f84a124b58dd0b95f4c9e"
+    },
+    {
+      "id": "respond-webhook",
+      "allowedFields": ["parameters"],
+      "liveNodeSha256": "086a0a14d40b7570ceb2d6c2d7248c49df2618c88b79beb4d5968e85de7400dd",
+      "candidateNodeSha256": "168fc31a61143ffbd27d5215a1ce5c78d990ca7a29a7686dd24314aff037fc67",
+      "liveParametersSha256": "6c4263ca0abe609266c3f7fb66ce2c570a7fb907406daedea707024a2d79fcb2",
+      "candidateParametersSha256": "94fc34b72a443fb2abd1ad6d4ebd77eb4c68f108729fbac6a28a32e732625269"
+    }
+  ],
+  "nodes": [
+    {"id":"webhook-trigger","name":"Webhook","type":"n8n-nodes-base.webhook","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":[],"outgoing":["Build Gemini Body"]},
+    {"id":"check-github-file","name":"Check Existing GitHub File","type":"n8n-nodes-base.httpRequest","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":["Build Processed Note"],"outgoing":["Handle File Check Result"]},
+    {"id":"handle-file-check","name":"Handle File Check Result","type":"n8n-nodes-base.code","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":["Check Existing GitHub File"],"outgoing":["File Exists?"]},
+    {"id":"file-exists-check","name":"File Exists?","type":"n8n-nodes-base.if","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":["Handle File Check Result"],"outgoing":["Save to GitHub - Create","Save to GitHub - Update"]},
+    {"id":"save-to-github-create","name":"Save to GitHub - Create","type":"n8n-nodes-base.httpRequest","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":["File Exists?"],"outgoing":["Respond"]},
+    {"id":"save-to-github-update","name":"Save to GitHub - Update","type":"n8n-nodes-base.httpRequest","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":["File Exists?"],"outgoing":["Respond"]},
+    {"id":"respond-webhook","name":"Respond","type":"n8n-nodes-base.respondToWebhook","transition":"retained","reason":"Preserve existing boundary node identity and behavior.","credentialsPresent":false,"incoming":["Save to GitHub - Create","Save to GitHub - Update"],"outgoing":[]},
+    {"id":"resolve-inbox-path","name":"Resolve Inbox Path","type":"n8n-nodes-base.set","transition":"removed","reason":"Replace legacy pre-processing chain with reviewed classification chain.","credentialsPresent":false,"incoming":["Webhook"],"outgoing":["Prepare Capture"]},
+    {"id":"prepare-capture","name":"Prepare Capture","type":"n8n-nodes-base.code","transition":"removed","reason":"Replace legacy pre-processing chain with reviewed classification chain.","credentialsPresent":false,"incoming":["Resolve Inbox Path"],"outgoing":["Build Inbox Note"]},
+    {"id":"build-inbox-note","name":"Build Inbox Note","type":"n8n-nodes-base.code","transition":"removed","reason":"Replace legacy pre-processing chain with reviewed classification chain.","credentialsPresent":false,"incoming":["Prepare Capture"],"outgoing":["Check Existing GitHub File"]},
+    {"id":"build-gemini-body","name":"Build Gemini Body","type":"n8n-nodes-base.code","transition":"added","reason":"Introduce reviewed classification and canonical routing behavior.","credentialsPresent":false,"incoming":["Webhook"],"outgoing":["Gemini Classify"]},
+    {"id":"gemini-classify","name":"Gemini Classify","type":"n8n-nodes-base.httpRequest","transition":"added","reason":"Introduce reviewed classification and canonical routing behavior.","credentialsPresent":false,"incoming":["Build Gemini Body"],"outgoing":["Build Processed Note"]},
+    {"id":"build-processed-note","name":"Build Processed Note","type":"n8n-nodes-base.code","transition":"added","reason":"Introduce reviewed classification and canonical routing behavior.","credentialsPresent":false,"incoming":["Gemini Classify"],"outgoing":["Check Existing GitHub File"]}
+  ],
+  "removedConnections": [
+    {"from":"Build Inbox Note","to":"Check Existing GitHub File","kind":"main","branch":0,"toIndex":0},
+    {"from":"Prepare Capture","to":"Build Inbox Note","kind":"main","branch":0,"toIndex":0},
+    {"from":"Resolve Inbox Path","to":"Prepare Capture","kind":"main","branch":0,"toIndex":0},
+    {"from":"Webhook","to":"Resolve Inbox Path","kind":"main","branch":0,"toIndex":0}
+  ],
+  "addedConnections": [
+    {"from":"Build Gemini Body","to":"Gemini Classify","kind":"main","branch":0,"toIndex":0},
+    {"from":"Build Processed Note","to":"Check Existing GitHub File","kind":"main","branch":0,"toIndex":0},
+    {"from":"Gemini Classify","to":"Build Processed Note","kind":"main","branch":0,"toIndex":0},
+    {"from":"Webhook","to":"Build Gemini Body","kind":"main","branch":0,"toIndex":0}
+  ],
+  "retainedConnections": [
+    {"from":"Check Existing GitHub File","to":"Handle File Check Result","kind":"main","branch":0,"toIndex":0},
+    {"from":"File Exists?","to":"Save to GitHub - Create","kind":"main","branch":1,"toIndex":0},
+    {"from":"File Exists?","to":"Save to GitHub - Update","kind":"main","branch":0,"toIndex":0},
+    {"from":"Handle File Check Result","to":"File Exists?","kind":"main","branch":0,"toIndex":0},
+    {"from":"Save to GitHub - Create","to":"Respond","kind":"main","branch":0,"toIndex":0},
+    {"from":"Save to GitHub - Update","to":"Respond","kind":"main","branch":0,"toIndex":0}
+  ],
+  "expectedPostDeployment": {
+    "nodeIds": ["build-gemini-body","build-processed-note","check-github-file","file-exists-check","gemini-classify","handle-file-check","respond-webhook","save-to-github-create","save-to-github-update","webhook-trigger"],
+    "connections": [
+      {"from":"Build Gemini Body","to":"Gemini Classify","kind":"main","branch":0,"toIndex":0},
+      {"from":"Build Processed Note","to":"Check Existing GitHub File","kind":"main","branch":0,"toIndex":0},
+      {"from":"Check Existing GitHub File","to":"Handle File Check Result","kind":"main","branch":0,"toIndex":0},
+      {"from":"File Exists?","to":"Save to GitHub - Create","kind":"main","branch":1,"toIndex":0},
+      {"from":"File Exists?","to":"Save to GitHub - Update","kind":"main","branch":0,"toIndex":0},
+      {"from":"Gemini Classify","to":"Build Processed Note","kind":"main","branch":0,"toIndex":0},
+      {"from":"Handle File Check Result","to":"File Exists?","kind":"main","branch":0,"toIndex":0},
+      {"from":"Save to GitHub - Create","to":"Respond","kind":"main","branch":0,"toIndex":0},
+      {"from":"Save to GitHub - Update","to":"Respond","kind":"main","branch":0,"toIndex":0},
+      {"from":"Webhook","to":"Build Gemini Body","kind":"main","branch":0,"toIndex":0}
+    ]
+  }
+}

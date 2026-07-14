@@ -1,0 +1,12 @@
+{
+  "contractVersion": 1,
+  "fixtureId": "b1-0a-failure-fixture-20260714T120000Z",
+  "fixtureKind": "failure",
+  "repositoryRelativePath": "inbox/failed/b1-0a-failure-fixture-20260714T120000Z.md",
+  "destination": "inbox/failed",
+  "createdFileCount": 1,
+  "overwrite": false,
+  "retiredPathWrite": false,
+  "failureStage": "gemini-classify",
+  "receiptId": "failure-receipt-1"
+}

@@ -1,0 +1,15 @@
+{
+  "contractVersion": 1,
+  "installationId": "brain-to-mind-b1-0a",
+  "kind": "installation-fixture-adapter",
+  "fixtureKinds": {
+    "success": "^b1-0a-success-fixture-[0-9]{8}T[0-9]{6}Z$",
+    "failure": "^b1-0a-failure-fixture-[0-9]{8}T[0-9]{6}Z$"
+  },
+  "implementation": "tools/n8n-save-to-mind-fixture-adapter.mjs",
+  "fixedRequest": { "method": "POST", "path": "/webhook/save-to-mind-fixture", "timeoutMs": 30000, "redirects": "error", "retries": 0, "maximumRequests": 1 },
+  "callerControl": { "content": false, "url": false, "method": false, "headers": false, "environment": false },
+  "replay": { "duplicateFixtureId": "reject-before-request", "automaticReplay": false, "overwrite": false },
+  "destinationEvidence": { "inspectOnly": ["inbox/new", "inbox/failed", "capture/inbox", "capture/failed"], "contentRead": false, "arbitraryPath": false, "allowedFields": ["fixtureId", "fixtureKind", "repositoryRelativePath", "destination", "createdFileCount", "overwrite", "retiredPathWrite", "failureStage", "timestamp", "hash", "receiptId"] },
+  "workbenchBinding": "No generic Workbench fixture-adapter pointer exists at CWFM-18; this is Brain-owned installation evidence only."
+}

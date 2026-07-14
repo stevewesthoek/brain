@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "kind": "n8n-controlled-topology-migration",
+  "workflow": {
+    "id": "FwP5INe9qoo1OwGC",
+    "canonicalizationVersion": 1,
+    "expectedLiveCanonicalSha256": "b08fddcc9cf70c02821fecc57f121e1eb6440857aa9bf49c74e2c24b1c0cca4b",
+    "candidateCanonicalSha256": "1a5664c507a3b141c1fe65700a1fb19d28c41edd281fc5a325cdd3295e2c7ff2",
+    "rollbackCanonicalSha256": "b08fddcc9cf70c02821fecc57f121e1eb6440857aa9bf49c74e2c24b1c0cca4b"
+  },
+  "artifacts": {
+    "candidatePath": "operations/automations/n8n/workflows/mind-inbox-controlled-deployment-v1.json",
+    "candidateSha256": "194ff9b6799709e3c7f649e9fcf875dcb067229973b42560fd1ad3a3060f82e1",
+    "rollbackPath": "operations/reports/artifacts/b1-0a-live-workflow-rollback.json",
+    "rollbackSha256": "703f036d01a7854aa55b368f9f21fff4b93ec85b10c40d2d20405f68cd4e31dd"
+  },
+  "invariants": {
+    "activation": "unchanged",
+    "settings": "unchanged",
+    "tags": "unchanged",
+    "sharing": "unchanged",
+    "credentials": "unchanged",
+    "webhooks": "unchanged",
+    "schedules": "unchanged"
+  },
+  "nodes": {
+    "add": [
+      {
+        "id": "build-gemini-body",
+        "name": "Build Gemini Body",
+        "type": "n8n-nodes-base.code",
+        "allowedParameterPointers": [
+          "/parameters/jsCode"
+        ]
+      },
+      {
+        "id": "gemini-classify",
+        "name": "Gemini Classify",
+        "type": "n8n-nodes-base.httpRequest",
+        "allowedParameterPointers": [
+          "/parameters/body",
+          "/parameters/contentType",
+          "/parameters/headerParameters/parameters",
+          "/parameters/method",
+          "/parameters/rawContentType",
+          "/parameters/sendBody",
+          "/parameters/sendHeaders",
+          "/parameters/url"
+        ]
+      },
+      {
+        "id": "build-processed-note",
+        "name": "Build Processed Note",
+        "type": "n8n-nodes-base.code",
+        "allowedParameterPointers": [
+          "/parameters/jsCode"
+        ]
+      }
+    ],
+    "remove": [
+      {
+        "id": "resolve-inbox-path"
+      },
+      {
+        "id": "prepare-capture"
+      },
+      {
+        "id": "build-inbox-note"
+      }
+    ],
+    "modify": [
+      {
+        "id": "handle-file-check",
+        "allowedJsonPointers": [
+          "/parameters/jsCode"
+        ]
+      }
+    ]
+  },
+  "connections": {
+    "add": [
+      {
+        "sourceNodeId": "build-gemini-body",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "gemini-classify",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "build-processed-note",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "check-github-file",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "gemini-classify",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "build-processed-note",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "webhook-trigger",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "build-gemini-body",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      }
+    ],
+    "remove": [
+      {
+        "sourceNodeId": "build-inbox-note",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "check-github-file",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "prepare-capture",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "build-inbox-note",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "resolve-inbox-path",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "prepare-capture",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "webhook-trigger",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "resolve-inbox-path",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      }
+    ]
+  },
+  "routes": {
+    "required": [
+      {
+        "sourceNodeId": "build-gemini-body",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "gemini-classify",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "build-processed-note",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "check-github-file",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "check-github-file",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "handle-file-check",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "file-exists-check",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "save-to-github-update",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "file-exists-check",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 1,
+        "targetNodeId": "save-to-github-create",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "gemini-classify",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "build-processed-note",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "handle-file-check",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "file-exists-check",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "save-to-github-create",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "respond-webhook",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "save-to-github-update",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "respond-webhook",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "webhook-trigger",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "build-gemini-body",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      }
+    ],
+    "forbidden": [
+      {
+        "sourceNodeId": "build-inbox-note",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "check-github-file",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "prepare-capture",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "build-inbox-note",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "resolve-inbox-path",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "prepare-capture",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      },
+      {
+        "sourceNodeId": "webhook-trigger",
+        "sourceOutput": "main",
+        "sourceOutputIndex": 0,
+        "targetNodeId": "resolve-inbox-path",
+        "targetInput": "main",
+        "targetInputIndex": 0
+      }
+    ]
+  }
+}
