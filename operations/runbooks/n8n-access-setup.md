@@ -42,16 +42,26 @@ Config file: `~/.config/n8n/.env`
 ```bash
 # n8n Self-Hosted at https://n8n.prochat.tools
 N8N_API_URL=https://n8n.prochat.tools/api/v1
-N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NTJiOGY2YS04YmNjLTQ3NDMtOTZiNi02NmZlMmMwMzAyYWYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzczMzU5MDM5fQ.gOCPmkpzZ9sbvOOp3-9vLOddi2E--G1_aP0QN7H5aH0
+N8N_API_KEY=<SET_IN_LOCAL_SECRET_STORE>
 N8N_WEBHOOK_URL=https://n8n.prochat.tools/webhook
 ```
+
+Credentials must be supplied from installation-local secret storage and injected
+only at runtime. Never commit an API key, token, authorization header, or populated
+secret-store file to this repository.
+
+**Credential remediation required:** a non-placeholder n8n API key was previously
+committed in this tracked runbook. Treat that key as compromised and rotate it
+before any further use. Removing the value from the current tree does not remove
+it from Git history; history remediation requires a separate, explicitly approved
+procedure and coordinated force-push.
 
 **To update the API key:**
 1. Log in to the self-hosted n8n instance at `https://n8n.prochat.tools`
 2. Go to **Settings** → **API**
 3. Generate or copy the API key
-4. Update `~/.config/n8n/.env` with the new key
-5. Verify with: `source ~/.config/n8n/.env && echo $N8N_API_KEY`
+4. Store the new key only in the installation-local secret store
+5. Verify presence without printing it: `test -n "${N8N_API_KEY:-}"`
 
 ---
 
@@ -182,6 +192,6 @@ npm install -g n8n@latest
 
 ---
 
-**Last Updated:** 2026-05-28  
-**CLI Version:** 2.22.5  
-**API Config:** `~/.config/n8n/.env` ✅ **FRESH**
+**Last Updated:** 2026-07-14
+**CLI Version:** 2.22.5
+**API Config:** installation-local secret storage
