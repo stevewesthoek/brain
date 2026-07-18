@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "workbench": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["<absolute-path-to-workbench-private>/packages/mcp/dist/server.js"],
+      "env": {
+        "WORKBENCH_MCP_CREDENTIAL_FILE": "<absolute-path-to-credential-file>",
+        "WORKBENCH_MCP_ALLOWED_TOOLS": "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand",
+        "WORKBENCH_MCP_ALLOWED_COMMAND_KINDS": "n8n_workflow_migration"
+      }
+    }
+  }
+}

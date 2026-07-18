@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "workbench": {
+      "type": "http",
+      "url": "http://localhost:3053",
+      "auth": {
+        "type": "bearer",
+        "token": "<workbench-credential-token>"
+      }
+    }
+  }
+}
