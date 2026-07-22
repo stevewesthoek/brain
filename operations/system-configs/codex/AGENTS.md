@@ -198,7 +198,7 @@ Local repos live at `~/Repos/` organized by GitHub account:
 - `prochatdemo/` — demo projects
 - `yeshuaacademy/` — Yeshua Academy projects
 
-Config symlinks: `~/.codex` → `brain/operations/system-configs/codex/`, `~/.gemini` → `brain/operations/system-configs/gemini/`
+Config paths: `~/.codex` is a real local runtime root with selected config-file symlinks into `brain/operations/system-configs/codex/`; `~/.gemini` → `brain/operations/system-configs/gemini/`
 
 Shared AI-agnostic skills live in `brain/ai/skills/`. For Ory authentication platform (PRIMARY), use the shared `/ory` skill at `brain/ai/skills/custom/ory/SKILL.md` — self-hosted on auth.prochat.tools, multi-domain auto-provisioning, full CLI automation.
 For Clerk CLI auth management (FALLBACK/legacy), use the shared `/clerk` skill at `brain/ai/skills/custom/clerk/SKILL.md`.

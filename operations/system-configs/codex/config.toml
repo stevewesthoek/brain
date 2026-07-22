@@ -6,7 +6,8 @@ personality = "pragmatic"
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
-notify = ["/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+# Codex-owned runtime assets stay under the short, real ~/.codex root.
+notify = ["/Users/Office/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 
 [mcp_servers.stitch]
 command = "npx"
@@ -159,7 +160,8 @@ trust_level = "trusted"
 [marketplaces.openai-bundled]
 last_updated = "2026-06-23T12:47:57Z"
 source_type = "local"
-source = "/Users/Office/Repos/stevewesthoek/brain/operations/system-configs/codex/.tmp/bundled-marketplaces/openai-bundled"
+# Bundled marketplace cache is machine state, not repository configuration.
+source = "/Users/Office/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
 last_updated = "2026-06-23T12:54:25Z"

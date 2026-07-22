@@ -198,6 +198,11 @@ Add to `.claude/hooks/` or as a startup script:
 
 ## Files Modified
 
+> Historical note (2026-07-22): the Codex whole-directory symlink below was
+> correct for this incident, but it is now superseded by the managed runtime
+> root in `operations/runbooks/codex-managed-runtime-root.md`. `~/.codex` must
+> now be real, with only durable config entries symlinked into Brain.
+
 ```
 ~/.claude → brain/operations/system-configs/claude (VERIFIED CORRECT)
 ~/.codex → brain/operations/system-configs/codex (VERIFIED CORRECT)

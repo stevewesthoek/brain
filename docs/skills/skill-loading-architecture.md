@@ -48,19 +48,21 @@ The repository previously had 119 active skill entries. This architecture keeps 
 - `tools/scripts/switch-skill-profile.mjs` — conservative profile switcher
 - `tools/scripts/sync-ai-skills.mjs` — existing exporter to Claude Code, Codex, Gemini, Cursor, Kiro, and Antigravity
 
-Codex has one extra sharp edge: it scans
-`operations/system-configs/codex/skills/` directly. That directory must contain
-only:
+Codex has one extra sharp edge: it scans the live `~/.codex/skills/` directory
+directly. The live directory must be real and contain only Codex-owned system
+skills plus the managed user export:
 
 ```text
-.system/  # Codex-owned system skills
-user -> ../../../../ai/skills/active
+.system/  # Codex-owned, machine-local system skills
+user -> /path/to/brain/ai/skills/active
 ```
 
-Do not install user, vendor, or curated skills as top-level directories under
-`operations/system-configs/codex/skills/`. Doing that bypasses the default
-profile and makes the skill default-active in every Codex session. Codex-only
-dormant skills belong outside the scanned root, currently under:
+`operations/system-configs/codex/skills/user` remains a repository projection
+used by skill synchronization checks; the managed-home linker creates the live
+`~/.codex/skills/user` link. Do not install user, vendor, or curated skills as
+other top-level directories in the live skills root. Doing that bypasses the
+default profile and makes the skill default-active in every Codex session.
+Codex-only dormant skills belong outside the scanned root, currently under:
 
 ```text
 operations/system-configs/codex/skills-dormant/

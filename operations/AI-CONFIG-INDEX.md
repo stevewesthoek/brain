@@ -19,6 +19,11 @@
 | **model-tracking.json** | Real-time model routing state | Auto-generated at `~/.claude/model-tracking.json` |
 
 ### Codex
+`~/.codex` is a real, machine-local runtime directory. Only the durable entries
+below are symlinked into Brain; authentication, sessions, databases, plugins,
+caches, and app-server sockets remain local. See
+`operations/runbooks/codex-managed-runtime-root.md`.
+
 | File | Purpose | Location |
 |------|---------|----------|
 | **config.toml** | Codex settings, model, plugins, trusted projects | `~/.codex/config.toml` → `brain/operations/system-configs/codex/config.toml` |

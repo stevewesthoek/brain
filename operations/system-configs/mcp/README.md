@@ -5,7 +5,7 @@ This directory is the canonical, centralized home for MCP server documentation a
 ## Goals
 - Keep MCP setup consistent across tools and repos.
 - Keep secrets and runtime tokens out of git.
-- Keep client behavior unchanged by using symlinks.
+- Keep client behavior unchanged by using managed config-file symlinks.
 
 ## Canonical locations
 - Server docs/templates: `operations/system-configs/mcp/<server>/`
@@ -33,7 +33,8 @@ Templates must never contain real tokens, API keys, or cookies.
 
 ## Symlink pattern
 - Codex:
-  - `~/.codex -> /path/to/brain/operations/system-configs/codex`
+  - `~/.codex` is a real local runtime directory
+  - `~/.codex/config.toml -> /path/to/brain/operations/system-configs/codex/config.toml`
   - Repo root `.codex -> ~/.codex` (local-only, ignored in each repo)
 - Antigravity:
   - `~/Library/Application Support/Antigravity/User/mcp.json`

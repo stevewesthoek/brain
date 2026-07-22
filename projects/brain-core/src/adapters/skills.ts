@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { BrainCoreSkillSummary } from '../types/api.js';
 
-const DEFAULT_SKILLS_DIR = '../../operations/system-configs/codex/skills';
+const DEFAULT_SKILLS_DIR = '../../ai/skills/active';
 
 export function listSkills(skillsDir = getSkillsDir()): BrainCoreSkillSummary[] {
   if (!fs.existsSync(skillsDir)) {
@@ -18,7 +18,13 @@ export function listSkills(skillsDir = getSkillsDir()): BrainCoreSkillSummary[] 
 
   return fs
     .readdirSync(skillsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => {
+      try {
+        return fs.statSync(path.join(skillsDir, entry.name)).isDirectory();
+      } catch {
+        return false;
+      }
+    })
     .map((entry) => {
       const skillPath = path.join(skillsDir, entry.name);
       const skillFilePath = path.join(skillPath, 'SKILL.md');

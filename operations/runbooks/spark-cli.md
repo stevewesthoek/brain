@@ -98,7 +98,7 @@ node tools/scripts/sync-ai-skills.mjs --check     # verify sync
 | Consumer | Sync Mode | Result |
 |----------|-----------|--------|
 | Claude Code | root-symlink | `~/.claude/skills` → `ai/skills/active` |
-| Codex | root-symlink | `~/.codex/skills/user` → `ai/skills/active` |
+| Codex | skills-directory symlink | `~/.codex/skills/user` → `ai/skills/active` |
 | Gemini CLI | root-symlink | `~/.gemini/skills` → `ai/skills/active` |
 | Cursor | root-symlink | `operations/system-configs/cursor/skills` → `ai/skills/active` |
 | Kiro | entry-symlinks | `~/.kiro/skills/spark` → `ai/skills/active/spark` |

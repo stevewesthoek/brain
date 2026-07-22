@@ -126,7 +126,7 @@ GET /runtime/reports/mind-steward
 
 Current `/sessions` scans optional directories configured by `BRAIN_CORE_SESSION_DIRS`, `CLAUDE_PROJECTS_DIR`, `CODEX_SESSIONS_DIR`, and `GEMINI_SESSIONS_DIR`. It recursively discovers session-like files, infers the tool from names/paths, adds age and intent labels, applies simple recency/intent scoring, and returns a placeholder when no readable session directory is configured.
 
-Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the default repo-local `operations/system-configs/codex/skills` path and reports folders containing `SKILL.md` as indexed.
+Current `/skills` indexes skill folders from `BRAIN_CORE_SKILLS_DIR` or the canonical repo-local `ai/skills/active` path, follows active skill symlinks, and reports folders containing `SKILL.md` as indexed.
 
 Current `/repos` reads `BRAIN_CORE_REPO_ALIASES` in `name:/absolute/path` format, reports whether each repo exists, and detects known handoff files without reading secrets or runtime logs.
 

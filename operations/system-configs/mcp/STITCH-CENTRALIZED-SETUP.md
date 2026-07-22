@@ -107,7 +107,7 @@ Uses **direct HTTP** with token headers
 
 ### 3. Symlink Pattern (Centralization)
 
-- **Codex:** Symlink `~/.codex` → `brain/operations/system-configs/codex`
+- **Codex:** Keep `~/.codex` real; symlink `~/.codex/config.toml` → `brain/operations/system-configs/codex/config.toml`
 - **Antigravity:** Symlink MCP config from centralized ignored file
   - Tracked: `brain/operations/system-configs/antigravity/mcp.template.json`
   - Runtime (ignored): `brain/operations/system-configs/antigravity/User/mcp.json`

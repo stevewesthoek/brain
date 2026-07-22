@@ -18,12 +18,15 @@ set -euo pipefail
 #   ~/.gemini                             -> $CONFIGS_DIR/gemini
 #   ~/.config/starship.toml               -> $CONFIGS_DIR/starship/starship.toml
 #   ~/.cursor                             -> $CONFIGS_DIR/cursor
-#   ~/.codex                              -> $CONFIGS_DIR/codex
+#   ~/.codex                              real local runtime directory
+#     managed files                       -> $CONFIGS_DIR/codex
 #   ~/.claude                             -> $CONFIGS_DIR/claude
 #
 # Usage:
 #   DRY_RUN=1 bash operations/scripts/brain-configs-link.sh    # preview
 #   bash operations/scripts/brain-configs-link.sh              # apply
+#   MIGRATE_CODEX_HOME=1 CONFIRM_CODEX_HOME_MIGRATION=1 \
+#     bash operations/scripts/brain-configs-link.sh             # guarded Codex migration
 ###############################################################################
 
 HOME_DIR="${HOME:-$PWD}"
@@ -265,14 +268,44 @@ ensure_dir "$CONFIGS_DIR/cursor"
 link_symlink "$HOME_DIR/.cursor" "$CONFIGS_DIR/cursor" "cursor"
 
 ###############################################################################
-# AI tool configs: ~/.codex ~/.claude
+# AI tool configs: managed ~/.codex + symlinked ~/.claude
 ###############################################################################
 say
-say "==> AI tool configs: ~/.codex ~/.claude (folders). (Gemini excluded.)"
+say "==> AI tool configs: managed ~/.codex + symlinked ~/.claude. (Gemini excluded.)"
 ensure_dir "$CONFIGS_DIR/codex"
 ensure_dir "$CONFIGS_DIR/claude"
 
-link_symlink "$HOME_DIR/.codex"  "$CONFIGS_DIR/codex"  "codex"
+CODEX_HOME_MANAGER="$SCRIPT_DIR/codex-home-managed-root.sh"
+CODEX_SETUP_PENDING=0
+if [ ! -x "$CODEX_HOME_MANAGER" ]; then
+  say "[ERROR] Codex home manager is missing or not executable: $CODEX_HOME_MANAGER"
+  exit 1
+fi
+
+if [ -L "$HOME_DIR/.codex" ]; then
+  if [ "${MIGRATE_CODEX_HOME:-0}" -eq 1 ]; then
+    DRY_RUN="$DRY_RUN" \
+      HOME="$HOME_DIR" \
+      BRAIN_REPO="$BRAIN_REPO" \
+      CODEX_HOME="$HOME_DIR/.codex" \
+      CONFIGS_DIR="$CONFIGS_DIR" \
+      BRAIN_AI_DIR="$BRAIN_AI_DIR" \
+      bash "$CODEX_HOME_MANAGER" migrate
+  else
+    say "[WARN] ~/.codex is still a whole-directory symlink. It was left untouched."
+    say "[WARN] Close Codex/ChatGPT, then run this script with MIGRATE_CODEX_HOME=1 and CONFIRM_CODEX_HOME_MIGRATION=1."
+    CODEX_SETUP_PENDING=1
+  fi
+else
+  DRY_RUN="$DRY_RUN" \
+    HOME="$HOME_DIR" \
+    BRAIN_REPO="$BRAIN_REPO" \
+    CODEX_HOME="$HOME_DIR/.codex" \
+    CONFIGS_DIR="$CONFIGS_DIR" \
+    BRAIN_AI_DIR="$BRAIN_AI_DIR" \
+    bash "$CODEX_HOME_MANAGER" repair
+fi
+
 link_symlink "$HOME_DIR/.claude" "$CONFIGS_DIR/claude" "claude"
 
 if [ -f "$HOME_DIR/.claude.json" ]; then
@@ -299,9 +332,22 @@ verify_link "$HOME_DIR/Library/Application Support/com.mitchellh.ghostty/config"
 verify_link "$HOME_DIR/.gemini"                                      "$CONFIGS_DIR/gemini"
 verify_link "$HOME_DIR/.config/starship.toml"                        "$CONFIGS_DIR/starship/starship.toml"
 verify_link "$HOME_DIR/.cursor"                                      "$CONFIGS_DIR/cursor"
-verify_link "$HOME_DIR/.codex"                                       "$CONFIGS_DIR/codex"
+if ! HOME="$HOME_DIR" \
+  BRAIN_REPO="$BRAIN_REPO" \
+  CODEX_HOME="$HOME_DIR/.codex" \
+  CONFIGS_DIR="$CONFIGS_DIR" \
+  BRAIN_AI_DIR="$BRAIN_AI_DIR" \
+  bash "$CODEX_HOME_MANAGER" check; then
+  say "[WARN] VERIFY Codex managed runtime root is not ready."
+  CODEX_SETUP_PENDING=1
+fi
 verify_link "$HOME_DIR/.claude"                                      "$CONFIGS_DIR/claude"
 
 say
 say "Next step:"
 say "  cd \"$BRAIN_REPO\" && git status"
+
+if [ "$CODEX_SETUP_PENDING" -ne 0 ]; then
+  say "[ERROR] Brain config linking finished with an unresolved Codex managed-root requirement."
+  exit 1
+fi

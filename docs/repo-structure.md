@@ -36,7 +36,7 @@ This document describes the intended structure and purpose of the Brain reposito
 | `.ai/` | **Session recovery state** (intentional, operational) | Contains `.ai/current.md` (session handoff), `.ai/decision-log.md` (durable decisions), `.ai/handoffs/` (milestone snapshots). Tracked in git for continuity. Do not move without updating handoff skill. See "Session Management" section above. |
 | `ai/` | **Shared AI skills, policies, agents, and prompts** | Tracked, durable infrastructure. See `ai/skills/` for active skill symlinks (should contain only symlinks, never raw skill folders). |
 | `docs/` | Documentation: architecture, guides, skill profiles, and archived reports | See `docs/repo-structure.md` (this file) |
-| `operations/` | Runbooks, standards, system configs, deploy docs, infrastructure, decision log | Critical: `operations/system-configs/` contains symlink targets for `~/.claude`, `~/.codex`, etc. |
+| `operations/` | Runbooks, standards, system configs, deploy docs, infrastructure, decision log | Critical: `operations/system-configs/` contains home symlink targets and the managed file targets inside the real `~/.codex` root. |
 | `tools/` | Utility scripts, workflow wrappers, and tool-specific documentation | See `tools/scripts/` for automated helpers |
 | `projects/` | Project-specific context, specifications, and execution documentation | Organized by project; each active project should have its own README |
 | `runtime/` | Runtime workspace notes, local support folders, and bootstrap helpers | Not canonical truth by default; use for temporary state and runtime pointers |
@@ -51,7 +51,7 @@ This document describes the intended structure and purpose of the Brain reposito
   - `CLAUDE.md` session lifecycle documentation
   - All AI agent AGENTS.md files (claude, codex, gemini)
   - Breaks session resume workflows if paths change.
-- `operations/system-configs/` — Contains 17 symlinks to home directory config. Moving breaks all tool integrations.
+- `operations/system-configs/` — Supplies home-directory symlink targets and Codex managed-file targets. Moving breaks tool integrations.
 - `ai/skills/active/` — Should contain only symlinks to `vendors/` or `custom/` skill sources, never raw skill folders.
 - `tools/scripts/` — Contains CLI automation and helper scripts.
 - `.github/` — Contains CI/CD and GitHub Actions configurations.

@@ -124,7 +124,7 @@ This audit will alert you to:
 ```
 ✓ Skill sync check passed
 ✓ Symlink exists: ~/.claude
-✓ Symlink exists: ~/.codex
+✓ Codex managed runtime root is valid
 ✓ File/dir exists: CLAUDE.md
 ✓ All commits pushed to origin/main
 ✓ Working tree clean

@@ -65,7 +65,6 @@ echo "=========================="
 
 SYMLINKS=(
     "~/.claude:operations/system-configs/claude"
-    "~/.codex:operations/system-configs/codex"
     "~/.gemini:operations/system-configs/gemini"
     "~/.kiro:operations/system-configs/kiro"
     "ai/skills/active/spark:../custom/spark"
@@ -87,6 +86,16 @@ for symlink_def in "${SYMLINKS[@]}"; do
         warn "Symlink not found locally (expected on non-Mac): $link"
     fi
 done
+
+if [ -x "operations/scripts/codex-home-managed-root.sh" ]; then
+    if bash operations/scripts/codex-home-managed-root.sh check; then
+        pass "Codex managed runtime root is valid"
+    else
+        fail "Codex managed runtime root is invalid - see operations/runbooks/codex-managed-runtime-root.md"
+    fi
+else
+    fail "Codex managed runtime root checker is missing"
+fi
 echo
 
 # ============================================

@@ -56,7 +56,7 @@ Symlink that activates the skill for distribution to all consumers.
 | Consumer | Skill Path | Sync Mode | Status |
 |----------|-----------|-----------|--------|
 | Claude Code | `~/.claude/skills/spark/SKILL.md` | root-symlink | ✅ Accessible |
-| Codex | `~/.codex/skills/user/spark/SKILL.md` | root-symlink | ✅ Accessible |
+| Codex | `~/.codex/skills/user/spark/SKILL.md` | skills-directory symlink | ✅ Accessible |
 | Gemini CLI | `~/.gemini/skills/spark/SKILL.md` | root-symlink | ✅ Accessible |
 | Cursor | `operations/system-configs/cursor/skills/spark/SKILL.md` | root-symlink | ✅ Accessible |
 | Kiro | `~/.kiro/skills/spark` | entry-symlinks | ✅ Symlink exists |

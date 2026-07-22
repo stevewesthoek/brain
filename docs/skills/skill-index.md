@@ -65,18 +65,21 @@ If a listed skill source does not exist yet, the switcher will fail rather than 
 
 ## Codex Root Skills
 
-Codex scans `operations/system-configs/codex/skills/` directly. That root is not
-a profile. To keep the default profile effective, it must contain only:
+Codex scans the live, machine-local `~/.codex/skills/` directory directly. That
+root is not a profile. To keep the default profile effective, it must contain
+only:
 
 ```text
 .system
 user
 ```
 
-Top-level skill directories in that path bypass `docs/skills/profiles/default.txt`
-and become active in every Codex session. Codex-only dormant skills are archived
-under `operations/system-configs/codex/skills-dormant/` until they are explicitly
-promoted or moved into the shared `ai/skills/` profile system.
+`user` is a managed symlink to `ai/skills/active`; `.system` is Codex-owned
+machine state. Other top-level skill directories bypass
+`docs/skills/profiles/default.txt` and become active in every Codex session.
+Codex-only dormant skills are archived under
+`operations/system-configs/codex/skills-dormant/` until explicitly promoted or
+moved into the shared `ai/skills/` profile system.
 
 ---
 

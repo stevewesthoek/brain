@@ -38,7 +38,7 @@ Claude config lives at:
 - `brain/ai/policy/routing.md` + `guardrails.md` (canonical shared policy)
 
 Codex config lives at:
-- `brain/operations/system-configs/codex/AGENTS.md` (symlinked from `~/.codex`)
+- `brain/operations/system-configs/codex/AGENTS.md` (symlinked as `~/.codex/AGENTS.md` inside the real local Codex runtime root)
 
 The policy files (`routing.md`, `guardrails.md`) are already shared — both configs reference them. That's the right pattern. For anything that can't be shared as a file reference, it must be duplicated manually and kept in sync.
 

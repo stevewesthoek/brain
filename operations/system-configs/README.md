@@ -4,14 +4,16 @@
 
 This folder holds synced tool configuration for Claude Code, Codex, Kiro, Cursor, shell, git, Ghostty, and Starship.
 
-Most subdirs here are the source behind home directory symlinks or other runtime config paths on this machine.
+Most subdirs here are the source behind home-directory symlinks or other runtime
+config paths on this machine. Codex is the managed-runtime-root exception:
+`~/.codex` is real and only selected files inside it point here.
 
-## Symlink map
+## Runtime path map
 
 | Subdir | Purpose / home path |
 |--------|---------------------|
 | `claude/` | `~/.claude` — Claude Code config, `CLAUDE.md`, skills symlink, MCP templates |
-| `codex/` | `~/.codex` — Codex config, skills, vendor imports |
+| `codex/` | Selected `~/.codex` entries — Codex config and managed skill exports; the runtime root itself is local |
 | `kiro/` | `~/.kiro` — Kiro config |
 | `cursor/` | Cursor IDE settings and skill overrides |
 | `shell/` | shell config (`.zshrc` source) |
@@ -29,7 +31,7 @@ Most subdirs here are the source behind home directory symlinks or other runtime
 Each subdir may contain a mix of:
 
 - Portable config — canonical, human-maintained, safe to edit
-- Intentionally synced state — runtime artifacts that are versioned by practical necessity (for example Codex skill imports, history files, SQLite state)
+- Intentionally synced state — normalized artifacts that have an explicit documented reason to be versioned
 - Machine state — present in the working tree but gitignored (logs, session data, auth tokens, caches)
 
 When reading this folder, prefer explicit portable config files. Do not mistake runtime artifacts for canonical reference material.
@@ -44,7 +46,7 @@ All AI/IDE consumers see the same active skill set from `ai/skills/active/` via 
 | Tool | Export Location | Mode | Symlink Target |
 |------|-----------------|------|---|
 | Claude Code | `claude/skills` | root symlink | `ai/skills/active` |
-| Codex | `codex/skills/user` | root symlink | `ai/skills/active` |
+| Codex | `codex/skills/user` (repo projection) and `~/.codex/skills/user` (live) | skills-directory symlink | `ai/skills/active` |
 | Gemini CLI | `gemini/skills` | root symlink | `ai/skills/active` |
 | Cursor | `cursor/skills` | root symlink | `ai/skills/active` |
 | Kiro | `kiro/skills` | per-skill entries | each active skill |
@@ -66,6 +68,17 @@ The `--check` command verifies that every active skill is visible at the top-lev
 - Local-only secrets: keep them in ignored overlay files such as `shell/.zshrc.local`, not in tracked config
 - Do not edit casually: SQLite files, `history.jsonl`, `auth.json`, `.tmp` folders, `log/` directories, session archives
 - Do not delete: anything that is a symlink target; see `brain/CLAUDE.md` under "Do not break"
+
+## Codex managed runtime root
+
+`~/.codex` must be a real, short directory because Codex creates macOS Unix
+sockets below it. The managed entries are `AGENTS.md`, `config.toml`, `RTK.md`,
+`rules/default.rules`, and `skills/user`. Sessions, authentication, databases,
+plugins, caches, Computer Use, system skills, and app-server state stay local.
+
+Use `operations/scripts/codex-home-managed-root.sh` to check, repair, migrate, or
+roll back the layout. See
+`operations/runbooks/codex-managed-runtime-root.md` for the guarded procedure.
 
 ## CLI Wrapper Pattern
 

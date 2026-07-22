@@ -141,7 +141,7 @@ This table is the contract. If a tool reads the docs and finds no pointer to a n
 - `operations/automations/` for workflow exports and higher-level automation
 - `operations/infrastructure/` for architecture and infra docs
 - `operations/deploy/` for real deployment configs only
-- `operations/system-configs/` for synced tool config and selected machine state — subdirs are the symlink targets for `~/.claude`, `~/.codex`, `~/.kiro`, `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml`. Each subdir is mixed-content: portable config, intentionally versioned state, and gitignored machine noise. See `operations/system-configs/README.md` for details.
+- `operations/system-configs/` for synced tool config and selected machine state — subdirs supply home symlink targets for Claude, Kiro, Ghostty, git, and Starship, plus the managed config-file targets inside the real local `~/.codex` runtime root. Each subdir is mixed-content: portable config, intentionally versioned state, and gitignored machine noise. See `operations/system-configs/README.md` for details.
 
 ### `runtime/`
 - runtime-specific workspace notes.
@@ -190,7 +190,7 @@ need to duplicate them under another workspace.
 
 Tool-native or vendor-managed skills should stay separate:
 - Cursor internal skills: `operations/system-configs/cursor/skills-cursor/`
-- Codex bundled/system skills: `operations/system-configs/codex/skills/.system/`
+- Codex bundled/system skills: live machine state under `~/.codex/skills/.system/`
 
 Rule of thumb:
 - shared business/domain skills → `ai/skills/`

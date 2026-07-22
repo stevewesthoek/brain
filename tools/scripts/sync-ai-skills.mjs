@@ -395,19 +395,19 @@ function validateActiveSkillReachability(activeSkills) {
 }
 
 /**
- * Codex scans operations/system-configs/codex/skills as a skill root. The only
- * allowed top-level entries there are Codex system skills and the profile-
- * controlled user symlink to ai/skills/active. Any other top-level skill bypasses
- * the shared profile architecture and becomes default-active in every Codex
- * session.
+ * Validate the repository projection used to build/check Codex skill exports.
+ * The live ~/.codex/skills directory is machine-local; the managed-home linker
+ * points its user entry directly to ai/skills/active. Keeping this projection
+ * constrained prevents future linkers or migrations from exporting additional
+ * default-active user skills by accident.
  */
-function validateCodexSkillsRoot() {
+function validateCodexRepositoryProjection() {
   const codexSkillsRoot = path.join(repoRoot, 'operations/system-configs/codex/skills');
   const allowedEntries = new Set(['.system', 'user']);
   const ignoredEntries = new Set(['.DS_Store']);
 
   if (!fs.existsSync(codexSkillsRoot)) {
-    return [`Codex skills root missing: ${path.relative(repoRoot, codexSkillsRoot)}`];
+    return [`Codex skills repository projection missing: ${path.relative(repoRoot, codexSkillsRoot)}`];
   }
 
   const violations = [];
@@ -417,7 +417,7 @@ function validateCodexSkillsRoot() {
     if (allowedEntries.has(entry.name) || ignoredEntries.has(entry.name)) continue;
 
     violations.push(
-      `Codex root skill bypasses default profile: operations/system-configs/codex/skills/${entry.name}`,
+      `Codex repository projection bypasses default profile: operations/system-configs/codex/skills/${entry.name}`,
     );
   }
 
@@ -487,7 +487,7 @@ function main() {
 
   // Validate Codex root does not contain profile-bypassing default skills.
   log('\n--- Codex Root Validation ---');
-  const codexRootViolations = validateCodexSkillsRoot();
+  const codexRootViolations = validateCodexRepositoryProjection();
   if (codexRootViolations.length > 0) {
     for (const violation of codexRootViolations) {
       error(violation);

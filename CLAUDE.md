@@ -396,7 +396,7 @@ spark-cli team "Team Name"            # team info
 | Home path | Target |
 |-----------|--------|
 | `~/.claude` | `operations/system-configs/claude/` |
-| `~/.codex` | `operations/system-configs/codex/` |
+| `~/.codex` | Real local runtime root; managed files point to `operations/system-configs/codex/` |
 | `~/.kiro` | `operations/system-configs/kiro/` |
 | `~/.config/starship.toml` | `operations/system-configs/starship/starship.toml` |
 | `~/.config/ghostty/config` | `operations/system-configs/ghostty/config` |
@@ -460,7 +460,7 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 ## Do not break
 
 **CRITICAL: Symlink-dependent folders (NEVER MOVE OR DELETE):**
-- `operations/system-configs/` (17 symlinks from home ~)
+- `operations/system-configs/` (home symlinks and Codex managed-file links)
 - `tools/scripts/sync-credentials.sh` (→ ~/.local/bin/sync-credentials)
 - `tools/n8n-api.sh` (→ ~/.local/bin/n8n-api)
 - `ai/skills/custom/apify/` (2 symlinks)
@@ -468,7 +468,7 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 
 **Symlinks map (home → machine-brain):**
 - `~/.claude` → `machine-brain/operations/system-configs/claude`
-- `~/.codex` → `machine-brain/operations/system-configs/codex`
+- `~/.codex` is a real local directory; its managed config files point into `machine-brain/operations/system-configs/codex`
 - `~/.kiro` → `machine-brain/operations/system-configs/kiro`
 - `~/.config/ghostty/config`, `~/.config/git/ignore`, `~/.config/starship.toml` are symlinks → machine-brain
 - `~/Library/LaunchAgents/com.office.nightly-scheduler.plist` may symlink into machine-brain
@@ -477,4 +477,4 @@ Machine tasks integrate with your main workflow — same kanban, same priorities
 - NEVER move `operations/system-configs/`
 - NEVER move/delete symlinked scripts
 - NEVER change the `mind/` symlink
-- NEVER modify any symlink paths
+- NEVER modify managed symlink paths without updating the linker, health checks, and owning runbook
