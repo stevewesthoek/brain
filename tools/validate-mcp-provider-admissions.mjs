@@ -1,0 +1,125 @@
+#!/usr/bin/env node
+
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+
+export const DEFAULT_REGISTRY_PATH = 'operations/specs/mcp-provider-admissions.json';
+const SHA256 = /^[a-f0-9]{64}$/;
+const ID = /^[a-z0-9][a-z0-9-]*$/;
+const ENV_NAME = /^[A-Z][A-Z0-9_]*$/;
+const SAFE_PATH = (value) => typeof value === 'string' && value.length > 0 && !path.isAbsolute(value) && !value.split(/[\\/]/).includes('..');
+
+function digest(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function collectForbiddenSecretFields(value, location = 'registry', errors = []) {
+  if (Array.isArray(value)) value.forEach((item, index) => collectForbiddenSecretFields(item, `${location}[${index}]`, errors));
+  else if (value && typeof value === 'object') {
+    for (const [key, item] of Object.entries(value)) {
+      if (/^(token|secret|password|credential|credentialValue)$/i.test(key)) errors.push(`${location}.${key}: secret values are forbidden`);
+      collectForbiddenSecretFields(item, `${location}.${key}`, errors);
+    }
+  }
+  return errors;
+}
+
+export function validateAdmissionRegistry(registry, { providerRoots = new Map() } = {}) {
+  const errors = collectForbiddenSecretFields(registry);
+  if (registry?.schemaVersion !== '1.0.0') errors.push('schemaVersion must be 1.0.0');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(registry?.reviewedAt ?? '')) errors.push('reviewedAt must be YYYY-MM-DD');
+  if (!Array.isArray(registry?.admissions) || registry.admissions.length === 0) return [...errors, 'admissions must be non-empty'];
+  const admissionIds = new Set();
+  const serverNames = new Set();
+  for (const admission of registry.admissions) {
+    const prefix = admission?.admissionId ?? '<missing-admission>';
+    if (!ID.test(prefix) || admissionIds.has(prefix)) errors.push(`${prefix}: invalid or duplicate admissionId`);
+    admissionIds.add(prefix);
+    if (!['candidate', 'active-local', 'paused', 'revoked'].includes(admission?.status)) errors.push(`${prefix}: invalid status`);
+    if (admission?.owner !== 'brain-runtime') errors.push(`${prefix}: Brain must own admission`);
+    if (admission?.consumer !== 'brain') errors.push(`${prefix}: consumer must be brain`);
+    const provider = admission?.provider;
+    if (!ID.test(provider?.providerId ?? '') || typeof provider?.repository !== 'string' || !/^[a-f0-9]{40}$/.test(provider?.revision ?? '')) errors.push(`${prefix}: provider identity or revision is invalid`);
+    if (!['committed', 'pinned-working-tree'].includes(provider?.sourceState)) errors.push(`${prefix}: provider sourceState is invalid`);
+    if (!SAFE_PATH(provider?.entrypoint) || !Array.isArray(provider?.artifacts) || provider.artifacts.length === 0) errors.push(`${prefix}: provider entrypoint/artifacts are invalid`);
+    const artifactPaths = new Set();
+    for (const artifact of provider?.artifacts ?? []) {
+      if (!SAFE_PATH(artifact?.path) || !SHA256.test(artifact?.sha256 ?? '') || artifactPaths.has(artifact?.path)) errors.push(`${prefix}: invalid or duplicate provider artifact ${artifact?.path}`);
+      artifactPaths.add(artifact?.path);
+    }
+    if (!artifactPaths.has(provider?.entrypoint)) errors.push(`${prefix}: entrypoint must be digest-pinned`);
+    const transport = admission?.transport;
+    if (transport?.kind !== 'stdio' || transport?.projectScoped !== true || transport?.shell !== false || transport?.networkPolicy !== 'loopback-only') errors.push(`${prefix}: stdio must be project-scoped, shell-free, and loopback-only`);
+    if (!ID.test(transport?.serverName ?? '') || serverNames.has(transport?.serverName)) errors.push(`${prefix}: invalid or duplicate serverName`);
+    serverNames.add(transport?.serverName);
+    const auth = admission?.authentication;
+    if (auth?.mode !== 'derived-credential-file' || !ENV_NAME.test(auth?.credentialFileEnvironmentVariable ?? '') || auth?.relayAllowed !== false) errors.push(`${prefix}: authentication must be derived-file, direct-local, and environment-referenced`);
+    if (!auth?.principal || !auth?.audience || auth?.storage !== 'outside-repositories-owner-only') errors.push(`${prefix}: authentication identity/storage is incomplete`);
+    const scope = admission?.scope;
+    if (!ENV_NAME.test(scope?.toolAllowlistEnvironmentVariable ?? '') || !ENV_NAME.test(scope?.suboperationAllowlistEnvironmentVariable ?? '')) errors.push(`${prefix}: scope environment bindings are invalid`);
+    if (!Array.isArray(scope?.tools) || scope.tools.length === 0) errors.push(`${prefix}: admitted tools must be non-empty`);
+    const toolNames = new Set();
+    for (const tool of scope?.tools ?? []) {
+      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(tool?.name ?? '') || toolNames.has(tool?.name)) errors.push(`${prefix}: invalid or duplicate tool ${tool?.name}`);
+      toolNames.add(tool?.name);
+      if (!['read', 'write', 'external-mutation'].includes(tool?.risk) || !['none', 'per-call', 'two-phase'].includes(tool?.approval)) errors.push(`${prefix}:${tool?.name}: invalid risk/approval`);
+      if (tool?.risk !== 'read' && tool?.approval === 'none') errors.push(`${prefix}:${tool?.name}: mutation requires approval`);
+      if (!Array.isArray(tool?.allowedSuboperations)) errors.push(`${prefix}:${tool?.name}: allowedSuboperations must be an array`);
+    }
+    if ((scope?.tools ?? []).some((tool) => tool.name === 'runWorkbenchCommand' && tool.allowedSuboperations.length === 0)) errors.push(`${prefix}: runWorkbenchCommand requires exact suboperations`);
+    const limits = admission?.limits;
+    for (const field of ['startupTimeoutSeconds', 'toolTimeoutSeconds', 'maxRequestBytes', 'maxResponseBytes']) if (!Number.isInteger(limits?.[field]) || limits[field] <= 0) errors.push(`${prefix}: invalid limit ${field}`);
+    if (!Array.isArray(admission?.verification?.commands) || admission.verification.commands.length === 0) errors.push(`${prefix}: verification commands are required`);
+    if (!admission?.revocation?.procedure || admission.revocation?.preserveEvidence !== true) errors.push(`${prefix}: revocation must preserve evidence`);
+
+    const providerRoot = providerRoots.get(provider?.providerId);
+    if (providerRoot) {
+      const root = path.resolve(providerRoot);
+      const stat = fs.lstatSync(root);
+      if (!stat.isDirectory() || stat.isSymbolicLink()) errors.push(`${prefix}: provider root must be a non-symlink directory`);
+      let head;
+      try { head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { errors.push(`${prefix}: provider revision could not be read`); }
+      if (head && head !== provider.revision) errors.push(`${prefix}: provider revision mismatch`);
+      for (const artifact of provider.artifacts ?? []) {
+        const file = path.resolve(root, artifact.path);
+        if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) errors.push(`${prefix}: provider artifact missing ${artifact.path}`);
+        else if (digest(file) !== artifact.sha256) errors.push(`${prefix}: provider artifact digest mismatch ${artifact.path}`);
+      }
+    }
+  }
+  return errors;
+}
+
+export function loadAdmissionRegistry(registryPath = DEFAULT_REGISTRY_PATH) {
+  return JSON.parse(fs.readFileSync(path.resolve(registryPath), 'utf8'));
+}
+
+function parseProviderRoots(argv) {
+  const roots = new Map();
+  for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] !== '--provider-root') continue;
+    const binding = argv[index + 1] ?? '';
+    const separator = binding.indexOf('=');
+    if (separator < 1 || !path.isAbsolute(binding.slice(separator + 1))) throw new Error('--provider-root requires provider-id=/absolute/path');
+    roots.set(binding.slice(0, separator), binding.slice(separator + 1));
+    index += 1;
+  }
+  return roots;
+}
+
+function main() {
+  const registryArg = process.argv.find((value) => value.startsWith('--registry='));
+  const registry = loadAdmissionRegistry(registryArg ? registryArg.slice('--registry='.length) : DEFAULT_REGISTRY_PATH);
+  const providerRoots = parseProviderRoots(process.argv.slice(2));
+  const errors = validateAdmissionRegistry(registry, { providerRoots });
+  if (errors.length) {
+    process.stderr.write(`${errors.join('\n')}\n`);
+    process.exitCode = 1;
+    return;
+  }
+  process.stdout.write(`mcp-provider-admissions-valid admissions=${registry.admissions.length} providers_verified=${providerRoots.size}\n`);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) main();
