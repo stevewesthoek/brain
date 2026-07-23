@@ -300,6 +300,9 @@ validate_payload() {
   if ! jq -e '
     (.nodes | type) == "array"
     and (.connections | type) == "object"
+    and (.name | type) == "string"
+    and (.settings | type) == "object"
+    and ((.staticData | type) == "object" or (.staticData | type) == "null")
     and (.active | type) == "boolean"
   ' "$payload_file" >/dev/null 2>&1; then
     VALIDATION_ERROR_CODE="PAYLOAD_WORKFLOW_SHAPE_INVALID"
@@ -358,9 +361,19 @@ validate_payload() {
           or ($name | normalized_key) == "xn8napikey")
         else false
         end;
+    def is_approved_runtime_authorization_reference:
+      (.value? // null) as $value
+      | ($value | type) == "string"
+      and ($value | test(
+        "^=\\{\\{[[:space:]]*[\\\"\u0027](Bearer|token)[[:space:]]+[\\\"\u0027][[:space:]]*\\+[[:space:]]*\\$env\\.[A-Z][A-Z0-9_]{0,63}[[:space:]]*\\}\\}$"
+      ));
     ([.. | objects | to_entries[] | select(.key | forbidden_credential_key)] | length == 0)
     and ([.. | strings | select(test("^(bearer|basic)[[:space:]]+"; "i"))] | length == 0)
-    and ([.. | objects | select(is_authorization_header)] | length == 0)
+    and ([
+      ..
+      | objects
+      | select(is_authorization_header and (is_approved_runtime_authorization_reference | not))
+    ] | length == 0)
   ' "$payload_file" >/dev/null 2>&1; then
     VALIDATION_ERROR_CODE="PAYLOAD_CREDENTIAL_MATERIAL_REJECTED"
     return 1
@@ -388,6 +401,14 @@ validate_payload() {
   fi
 
   return 0
+}
+
+build_update_payload() {
+  local source_file="$1"
+  local destination_file="$2"
+
+  jq -c '{name, nodes, connections, settings, staticData}' \
+    "$source_file" >"$destination_file"
 }
 
 emit_contract_result() {
@@ -574,6 +595,7 @@ update_workflow_contract() {
   local workflow_id="$1"
   local body_source="$2"
   local payload_file
+  local request_payload_file
   local response_file
   local status_file
   local curl_exit
@@ -608,6 +630,17 @@ update_workflow_contract() {
     emit_definitive_pretransmission_failure "$workflow_id" "TEMPORARY_STORAGE_UNAVAILABLE"
     return $?
   fi
+  request_payload_file="$CREATED_TEMP_FILE"
+
+  if ! build_update_payload "$payload_file" "$request_payload_file"; then
+    emit_definitive_pretransmission_failure "$workflow_id" "PAYLOAD_NORMALIZATION_FAILED"
+    return $?
+  fi
+
+  if ! create_temp_file; then
+    emit_definitive_pretransmission_failure "$workflow_id" "TEMPORARY_STORAGE_UNAVAILABLE"
+    return $?
+  fi
   response_file="$CREATED_TEMP_FILE"
 
   if ! create_temp_file; then
@@ -617,7 +650,7 @@ update_workflow_contract() {
   status_file="$CREATED_TEMP_FILE"
 
   set +e
-  execute_http_once "$workflow_id" "$payload_file" "$response_file" "$status_file"
+  execute_http_once "$workflow_id" "$request_payload_file" "$response_file" "$status_file"
   curl_exit="$?"
   set -e
 

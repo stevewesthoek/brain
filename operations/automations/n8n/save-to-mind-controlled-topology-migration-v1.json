@@ -3,10 +3,10 @@
   "kind": "n8n-controlled-topology-migration",
   "workflow": {
     "id": "FwP5INe9qoo1OwGC",
-    "canonicalizationVersion": 1,
-    "expectedLiveCanonicalSha256": "b08fddcc9cf70c02821fecc57f121e1eb6440857aa9bf49c74e2c24b1c0cca4b",
-    "candidateCanonicalSha256": "1a5664c507a3b141c1fe65700a1fb19d28c41edd281fc5a325cdd3295e2c7ff2",
-    "rollbackCanonicalSha256": "b08fddcc9cf70c02821fecc57f121e1eb6440857aa9bf49c74e2c24b1c0cca4b"
+    "canonicalizationVersion": 2,
+    "expectedLiveCanonicalSha256": "6223cd6e7ff2454e1b82d9b3413015834759af0c3b0d854d92f5e315c89d7dac",
+    "candidateCanonicalSha256": "8f4f53ce729596b3a6aa66228db0b9c865d58bcfb9ec79348f456f4a7b86a346",
+    "rollbackCanonicalSha256": "6223cd6e7ff2454e1b82d9b3413015834759af0c3b0d854d92f5e315c89d7dac"
   },
   "artifacts": {
     "candidatePath": "operations/automations/n8n/workflows/mind-inbox-controlled-deployment-v1.json",
