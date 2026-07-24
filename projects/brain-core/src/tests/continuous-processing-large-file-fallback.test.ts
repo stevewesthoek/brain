@@ -11,7 +11,7 @@ import { refreshMindStewardInboxQueue } from '../adapters/mind-steward-inbox-que
 function createMindFixture(prefix: string) {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const inboxDir = path.join(mindRoot, 'capture', 'inbox');
+  const inboxDir = path.join(mindRoot, 'inbox', 'new');
   const statePath = path.join(tempDir, 'brain-runtime', 'mind-steward', 'inbox-queue-state.json');
   mkdirSync(inboxDir, { recursive: true });
   return { tempDir, mindRoot, inboxDir, statePath };
@@ -76,7 +76,7 @@ test('large-file fallback view lists blocked large files awaiting nightly proces
 
     assert.equal(view.largeFileCount, 1);
     assert.equal(view.blockedLargeFiles.length, 1);
-    assert.equal(view.blockedLargeFiles[0]?.path, 'capture/inbox/big-capture.md');
+    assert.equal(view.blockedLargeFiles[0]?.path, 'inbox/new/big-capture.md');
     assert.equal(view.blockedLargeFiles[0]?.status, 'blocked');
     assert.equal(view.blockedLargeFiles[0]?.lastError, 'blocked_large_file');
     assert(view.blockedLargeFiles[0]!.sizeBytes >= 3 * 1024);
@@ -240,7 +240,7 @@ test('plan: eligible large files appear in bounded fallback plan', () => {
 
     assert.equal(plan.eligibleCount, 1);
     assert.equal(plan.eligibleFiles.length, 1);
-    assert.equal(plan.eligibleFiles[0]?.path, 'capture/inbox/big-capture.md');
+    assert.equal(plan.eligibleFiles[0]?.path, 'inbox/new/big-capture.md');
     assert.equal(plan.eligibleFiles[0]?.eligible, true);
     assert.equal(plan.eligibleFiles[0]?.reason, 'blocked_large_file_within_nightly_bound');
     assert(plan.eligibleFiles[0]!.sizeBytes >= 5 * 1024);
@@ -437,7 +437,7 @@ test('plan: invalid/malformed queue state fails closed', () => {
     generatedAt: '2026-06-18T03:00:00Z',
     source: 'brain-runtime' as const,
     mindRoot: '/nonexistent',
-    inboxPath: '/nonexistent/capture/inbox',
+    inboxPath: '/nonexistent/inbox/new',
     status: 'blocked' as const,
     settings: {
       maxConcurrentJobs: 1,
