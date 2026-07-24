@@ -18,6 +18,18 @@ Workflow ID:   FwP5INe9qoo1OwGC
 Status:        active
 ```
 
+## Guarded Deployment Boundary
+
+- repository target `inbox/new/`
+- repository target `inbox/failed/`
+- Repository controlled-migration candidate status: deployed and read back exactly.
+- Historical frozen candidate status: paused; repository evidence only.
+- Live deployment status: verified by guarded canonical readback on 2026-07-22.
+- Live activation and schedule state: preserved unchanged; no separate mutation requested.
+- B1.0a status: complete for the approved guarded deployment/readback scope.
+- Any future live change requires a new approval, operation ID, confirmation, and readback sequence.
+- The completion evidence did not invoke a webhook fixture and did not perform or claim a Mind write.
+
 ## Request
 
 ```json
@@ -48,7 +60,8 @@ n8n:
 
 - receives the webhook payload;
 - creates a Markdown capture;
-- commits it to `stevewesthoek/mind` under `capture/inbox/`;
+- commits successful captures to `stevewesthoek/mind` under `inbox/new/`;
+- routes failed processing to `stevewesthoek/mind` under `inbox/failed/`;
 - returns a saved-and-queued response.
 
 n8n does not call an LLM for Mind capture classification.
@@ -60,13 +73,13 @@ Mind Steward classifies captures during the nightly local scheduler run. Save to
 Nightly flow:
 
 ```text
-n8n writes capture to GitHub capture/inbox/
+n8n writes successful captures to GitHub inbox/new/
 -> mind-steward-sync-inbox.sh copies missing inbox captures into the local Mind checkout
 -> mind-steward-classify-captures.sh classifies captures locally
 -> mind-compile-loop.sh appends review suggestions to wiki/log.md
 ```
 
-The sync step copies only missing `capture/inbox/*.md` files and does not overwrite local files.
+The sync step copies only missing `inbox/new/*.md` files and does not overwrite local files. Failed processing remains isolated under `inbox/failed/` for review.
 
 ## Local AI Contract
 

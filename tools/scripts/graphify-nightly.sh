@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+GRAPHIFY_CONTAINED_EXECUTION="${GRAPHIFY_CONTAINED_EXECUTION:-0}"
+if [[ "$GRAPHIFY_CONTAINED_EXECUTION" != "1" ]]; then
+  printf '%s\n' 'graphify-nightly is disabled until GRAPHIFY_CONTAINED_EXECUTION=1 is explicitly set' >&2
+  exit 78
+fi
+
 REPO_ROOTS="${GRAPHIFY_REPO_ROOTS:-/Users/Office/Repos}"
 REPO_TIMEOUT_SECONDS="${GRAPHIFY_REPO_TIMEOUT_SECONDS:-1800}"
 GRAPHIFY_BIN="${GRAPHIFY_BIN:-graphify}"
