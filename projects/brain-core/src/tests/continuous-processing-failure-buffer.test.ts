@@ -8,7 +8,7 @@ import { recordMindStewardInboxQueueFailure, refreshMindStewardInboxQueue } from
 function createMindFixture(prefix: string) {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const inboxDir = path.join(mindRoot, 'capture', 'inbox');
+  const inboxDir = path.join(mindRoot, 'inbox', 'new');
   const statePath = path.join(tempDir, 'brain-runtime', 'mind-steward', 'inbox-queue-state.json');
   mkdirSync(inboxDir, { recursive: true });
   return { tempDir, mindRoot, inboxDir, statePath };
@@ -67,7 +67,7 @@ test('failure buffer tracks retry-pending items without pausing', () => {
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/retry.md',
+      capturePath: 'inbox/new/retry.md',
       error: 'classifier_timeout',
       now: new Date('2026-06-18T12:01:00Z'),
       retryDelaySeconds: 120,
@@ -113,14 +113,14 @@ test('failure buffer tracks exhausted items and recommends pausing above thresho
     for (let i = 0; i < 6; i++) {
       recordMindStewardInboxQueueFailure({
         statePath: fixture.statePath,
-        capturePath: `capture/inbox/fail-${i}.md`,
+        capturePath: `inbox/new/fail-${i}.md`,
         error: 'classifier_timeout',
         now: new Date(`2026-06-18T12:01:0${i}Z`),
         retryDelaySeconds: 60,
       });
       recordMindStewardInboxQueueFailure({
         statePath: fixture.statePath,
-        capturePath: `capture/inbox/fail-${i}.md`,
+        capturePath: `inbox/new/fail-${i}.md`,
         error: 'classifier_timeout_again',
         now: new Date(`2026-06-18T12:03:0${i}Z`),
         retryDelaySeconds: 60,
@@ -163,13 +163,13 @@ test('failure buffer does not pause when exhausted count is below threshold', ()
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/one-fail.md',
+      capturePath: 'inbox/new/one-fail.md',
       error: 'timeout',
       now: new Date('2026-06-18T12:01:00Z'),
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/one-fail.md',
+      capturePath: 'inbox/new/one-fail.md',
       error: 'timeout_again',
       now: new Date('2026-06-18T12:02:00Z'),
     });
