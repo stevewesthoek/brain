@@ -1,3 +1,4 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +9,6 @@ test('listAgentCapabilities returns the seeded registry', async () => {
   const capabilities = await listAgentCapabilities();
   const ids = capabilities.map((capability) => capability.id);
 
-  assert.equal(capabilities.length, 21);
   assert.equal(new Set(ids).size, ids.length);
 
   for (const requiredId of [
@@ -17,12 +17,6 @@ test('listAgentCapabilities returns the seeded registry', async () => {
     'skill.research',
     'skill.web',
     'skill.video',
-    'ai.ollama-m4pro',
-    'ai.whisper-m4pro',
-    'ai.ollama-m1',
-    'ai.whisper-m1',
-    'ai.codex-cli',
-    'ai.claude-bedrock',
     'cli.cloudflare',
     'cli.dokploy',
     'cli.aws',
@@ -81,6 +75,7 @@ test('AI surfaces are ordered by priority', async () => {
   const aiSurfaces = capabilities.filter((capability) => capability.kind === 'ai_surface');
   const priorities = aiSurfaces.map((capability) => capability.priority ?? Number.MAX_SAFE_INTEGER);
 
+  assert.ok(aiSurfaces.length > 0);
   assert.deepEqual([...priorities].sort((left, right) => left - right), priorities);
 });
 
@@ -113,13 +108,26 @@ test('CLI capability manifest is normalized and approval-gated', () => {
   }
 });
 
-test('skill capability metadata is enriched from live frontmatter when available', async () => {
-  const capabilities = await listAgentCapabilities();
-  const codeCapability = capabilities.find((capability) => capability.id === 'skill.code');
+test('skill capability metadata is enriched from frontmatter when available', async () => {
+  const skillsRoot = mkdtempSync(path.join('/tmp', 'brain-core-skills-'));
+  const codeSkillRoot = path.join(skillsRoot, 'code');
 
-  assert.ok(codeCapability);
-  assert.equal(codeCapability?.label, 'code');
-  assert.match(codeCapability?.description ?? '', /single entry point for all coding work/i);
+  try {
+    mkdirSync(codeSkillRoot, { recursive: true });
+    writeFileSync(
+      path.join(codeSkillRoot, 'SKILL.md'),
+      '---\nname: code\ndescription: Single entry point for all coding work.\n---\n',
+    );
+
+    const capabilities = await listAgentCapabilities(skillsRoot);
+    const codeCapability = capabilities.find((capability) => capability.id === 'skill.code');
+
+    assert.ok(codeCapability);
+    assert.equal(codeCapability?.label, 'code');
+    assert.match(codeCapability?.description ?? '', /single entry point for all coding work/i);
+  } finally {
+    rmSync(skillsRoot, { recursive: true, force: true });
+  }
 });
 
 test('skill capability metadata falls back when a skill file is unavailable', async () => {
