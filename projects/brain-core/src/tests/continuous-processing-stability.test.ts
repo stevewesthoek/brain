@@ -13,7 +13,7 @@ function createMindFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const inboxDir = path.join(mindRoot, 'capture', 'inbox');
+  const inboxDir = path.join(mindRoot, 'inbox', 'new');
   const statePath = path.join(tempDir, 'brain-runtime', 'mind-steward', 'inbox-queue-state.json');
   mkdirSync(inboxDir, { recursive: true });
   return { tempDir, mindRoot, inboxDir, statePath };
@@ -51,10 +51,10 @@ test('continuous stability view exposes stable and debouncing queue candidates w
     assert.equal(view.stableCount, 1);
     assert.equal(view.debouncingCount, 1);
     assert.equal(view.selectedStableCount, 1);
-    assert.equal(byPath.get('capture/inbox/stable.md')?.stableFile, true);
-    assert.equal(byPath.get('capture/inbox/stable.md')?.debounceUntil, null);
-    assert.equal(byPath.get('capture/inbox/recent.md')?.stableFile, false);
-    assert.equal(byPath.get('capture/inbox/recent.md')?.debounceUntil, '2026-06-18T12:00:25.000Z');
+    assert.equal(byPath.get('inbox/new/stable.md')?.stableFile, true);
+    assert.equal(byPath.get('inbox/new/stable.md')?.debounceUntil, null);
+    assert.equal(byPath.get('inbox/new/recent.md')?.stableFile, false);
+    assert.equal(byPath.get('inbox/new/recent.md')?.debounceUntil, '2026-06-18T12:00:25.000Z');
     assert.equal(view.safety.readOnly, true);
     assert.equal(view.safety.runsWorkflowNow, false);
     assert.equal(view.safety.startsBackgroundDaemon, false);
@@ -167,9 +167,9 @@ test('debounceUntil is present only while item is debouncing', () => {
     });
     const view = getContinuousProcessingStabilityView(q);
     const byPath = new Map(view.items.map(item => [item.path, item]));
-    assert.equal(byPath.get('capture/inbox/old.md')?.debounceUntil, null);
-    assert.notEqual(byPath.get('capture/inbox/new.md')?.debounceUntil, null);
-    assert.equal(typeof byPath.get('capture/inbox/new.md')?.debounceUntil, 'string');
+    assert.equal(byPath.get('inbox/new/old.md')?.debounceUntil, null);
+    assert.notEqual(byPath.get('inbox/new/new.md')?.debounceUntil, null);
+    assert.equal(typeof byPath.get('inbox/new/new.md')?.debounceUntil, 'string');
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
   }
@@ -226,7 +226,7 @@ test('existing pre-change persisted queue state without new fields is handled sa
     settings: { maxConcurrentJobs: 1, maxFilesPerRun: 3, debounceSeconds: 30, maxRetries: 2, largeFileThresholdMb: 2, minimumSecondsBetweenRuns: 300, localOnly: true },
     items: [{
       id: 'mind-inbox-legacy001',
-      path: 'capture/inbox/legacy.md',
+      path: 'inbox/new/legacy.md',
       status: 'pending',
       sizeBytes: 10,
       modifiedAt: '2026-06-17T09:58:00Z',
@@ -330,7 +330,7 @@ test('existing large-file and handled-item behavior remains intact through stabi
       settings: { largeFileThresholdMb: 0.001 },
     });
     const persisted = JSON.parse(readFileSync(fixture.statePath, 'utf8'));
-    const handledItem = persisted.items.find((i: any) => i.path === 'capture/inbox/handled.md');
+    const handledItem = persisted.items.find((i: any) => i.path === 'inbox/new/handled.md');
     if (handledItem) { handledItem.status = 'reported'; handledItem.selectedForSample = false; }
     writeFileSync(fixture.statePath, JSON.stringify(persisted, null, 2) + '\n');
 
@@ -343,10 +343,10 @@ test('existing large-file and handled-item behavior remains intact through stabi
     const view = getContinuousProcessingStabilityView(refreshed);
     const byPath = new Map(view.items.map(item => [item.path, item]));
 
-    assert.equal(byPath.get('capture/inbox/large.md')?.largeFile, true);
-    assert.equal(byPath.get('capture/inbox/large.md')?.selectedForSample, false);
-    assert.equal(byPath.get('capture/inbox/handled.md')?.status, 'reported');
-    assert.equal(byPath.get('capture/inbox/handled.md')?.selectedForSample, false);
+    assert.equal(byPath.get('inbox/new/large.md')?.largeFile, true);
+    assert.equal(byPath.get('inbox/new/large.md')?.selectedForSample, false);
+    assert.equal(byPath.get('inbox/new/handled.md')?.status, 'reported');
+    assert.equal(byPath.get('inbox/new/handled.md')?.selectedForSample, false);
     assert.equal(view.safety.readOnly, true);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
