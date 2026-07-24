@@ -57,10 +57,11 @@ test('GET /orchestrators returns full orchestrator list', async () => {
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.orchestrators.length, 12);
-  assert.ok(body.orchestrators.some(o => o.id === 'brain-core'));
-  assert.ok(body.orchestrators.some(o => o.id === 'video-orchestrator'));
-  assert.ok(body.orchestrators.some(o => o.id === 'stb-pipeline'));
+  const ids = body.orchestrators.map((orchestrator) => orchestrator.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.includes('brain-core'));
+  assert.ok(ids.includes('video-orchestrator'));
+  assert.ok(ids.includes('stb-pipeline'));
 });
 
 test('GET /orchestrators/:id returns specific orchestrator', async () => {

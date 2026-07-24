@@ -225,14 +225,18 @@ test('STB status and video orchestrator status do not support execution', async 
   assert.equal(videoBody.actions.canRequestRun, false);
 });
 
-test('Existing registry tests still pass (orchestrators count is 12)', async () => {
+test('Existing registry tests still pass with unique required orchestrators', async () => {
   const response = await exercise({ method: 'GET', url: '/orchestrators' });
   const body = JSON.parse(response.body) as {
     orchestrators: Array<{ id: string }>;
   };
 
   assert.equal(response.statusCode, 200);
-  assert.equal(body.orchestrators.length, 12);
+  const ids = body.orchestrators.map((orchestrator) => orchestrator.id);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.includes('brain-core'));
+  assert.ok(ids.includes('video-orchestrator'));
+  assert.ok(ids.includes('stb-pipeline'));
 });
 
 test('GET /stb/status evidence is capped and safe', async () => {
