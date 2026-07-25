@@ -16,6 +16,13 @@ const DEFAULT_APPROVALS_DIR = path.resolve(
   '../../../../../.local/video-orchestrator/state/agent-orchestrator-approvals',
 );
 
+function resolveApprovalsDir(): string {
+  const configuredRoot = process.env.BRAIN_CORE_AGENT_ORCHESTRATOR_STATE_ROOT?.trim();
+  return configuredRoot
+    ? path.resolve(configuredRoot, 'approvals')
+    : DEFAULT_APPROVALS_DIR;
+}
+
 // ─── Topological sort (Kahn's algorithm) ────────────────────────────────────
 
 export function topologicalSort(tasks: AgentOrchestratorTask[]): AgentOrchestratorTask[] {
@@ -101,8 +108,9 @@ export function recordApprovalDecision(
   };
 
   try {
-    fs.mkdirSync(DEFAULT_APPROVALS_DIR, { recursive: true });
-    const filePath = path.join(DEFAULT_APPROVALS_DIR, `${planId}-${taskId}.json`);
+    const approvalsDir = resolveApprovalsDir();
+    fs.mkdirSync(approvalsDir, { recursive: true });
+    const filePath = path.join(approvalsDir, `${planId}-${taskId}.json`);
     fs.writeFileSync(filePath, `${JSON.stringify(decision, null, 2)}\n`);
   } catch {
     // Non-fatal: approval recorded in memory even if disk write fails
@@ -116,7 +124,7 @@ export function getApprovalDecision(
   taskId: string,
 ): AgentOrchestratorApprovalDecision | null {
   try {
-    const filePath = path.join(DEFAULT_APPROVALS_DIR, `${planId}-${taskId}.json`);
+    const filePath = path.join(resolveApprovalsDir(), `${planId}-${taskId}.json`);
     if (!fs.existsSync(filePath)) {
       return null;
     }

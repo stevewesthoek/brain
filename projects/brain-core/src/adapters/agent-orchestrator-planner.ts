@@ -12,6 +12,13 @@ const DEFAULT_PLANS_DIR = path.resolve(
   '../../../../../.local/video-orchestrator/state/agent-orchestrator-plans',
 );
 
+function resolvePlansDir(): string {
+  const configuredRoot = process.env.BRAIN_CORE_AGENT_ORCHESTRATOR_STATE_ROOT?.trim();
+  return configuredRoot
+    ? path.resolve(configuredRoot, 'plans')
+    : DEFAULT_PLANS_DIR;
+}
+
 // ─── Provider routing rules ──────────────────────────────────────────────────
 // Gemini free-tier: text analysis/generation (eligible, non-sensitive)
 // Claude: code review/generation, complex reasoning (paid)
@@ -177,8 +184,9 @@ export function planProjectExecution(goal: string, _context: string): AgentOrche
 
 export function savePlan(plan: AgentOrchestratorPlan): boolean {
   try {
-    fs.mkdirSync(DEFAULT_PLANS_DIR, { recursive: true });
-    const filePath = path.join(DEFAULT_PLANS_DIR, `${plan.id}.json`);
+    const plansDir = resolvePlansDir();
+    fs.mkdirSync(plansDir, { recursive: true });
+    const filePath = path.join(plansDir, `${plan.id}.json`);
     fs.writeFileSync(filePath, `${JSON.stringify(plan, null, 2)}\n`);
     return true;
   } catch {
@@ -188,7 +196,7 @@ export function savePlan(plan: AgentOrchestratorPlan): boolean {
 
 export function retrievePlan(planId: string): AgentOrchestratorPlan | null {
   try {
-    const filePath = path.join(DEFAULT_PLANS_DIR, `${planId}.json`);
+    const filePath = path.join(resolvePlansDir(), `${planId}.json`);
     if (!fs.existsSync(filePath)) {
       return null;
     }
@@ -200,16 +208,17 @@ export function retrievePlan(planId: string): AgentOrchestratorPlan | null {
 
 export function listPlans(): AgentOrchestratorPlan[] {
   try {
-    if (!fs.existsSync(DEFAULT_PLANS_DIR)) {
+    const plansDir = resolvePlansDir();
+    if (!fs.existsSync(plansDir)) {
       return [];
     }
     return fs
-      .readdirSync(DEFAULT_PLANS_DIR, { withFileTypes: true })
+      .readdirSync(plansDir, { withFileTypes: true })
       .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
       .map((entry) => {
         try {
           return JSON.parse(
-            fs.readFileSync(path.join(DEFAULT_PLANS_DIR, entry.name), 'utf8'),
+            fs.readFileSync(path.join(plansDir, entry.name), 'utf8'),
           ) as AgentOrchestratorPlan;
         } catch {
           return null;

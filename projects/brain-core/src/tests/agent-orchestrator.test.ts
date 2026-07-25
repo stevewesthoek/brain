@@ -87,19 +87,14 @@ async function exercisePost(url: string, body?: unknown): Promise<MockResponse> 
   return response;
 }
 
-const PLANS_DIR = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-orchestrator-plans',
-);
+const STATE_ROOT = path.join('/tmp', `brain-core-agent-orchestrator-${process.pid}`);
+const PLANS_DIR = path.join(STATE_ROOT, 'plans');
+const APPROVALS_DIR = path.join(STATE_ROOT, 'approvals');
 
-const APPROVALS_DIR = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-orchestrator-approvals',
-);
+process.env.BRAIN_CORE_AGENT_ORCHESTRATOR_STATE_ROOT = STATE_ROOT;
 
 function cleanupDirs(): void {
-  try { fs.rmSync(PLANS_DIR, { recursive: true, force: true }); } catch { /* ok */ }
-  try { fs.rmSync(APPROVALS_DIR, { recursive: true, force: true }); } catch { /* ok */ }
+  try { fs.rmSync(STATE_ROOT, { recursive: true, force: true }); } catch { /* ok */ }
 }
 
 // ─── Plan decomposition ───────────────────────────────────────────────────────
@@ -577,24 +572,34 @@ test('GET /api/agent/plans/:id returns 404 for missing plan', async () => {
   assert.equal(body.error.code, 'not_found');
 });
 
-test('POST /api/agent/execute returns 400 when planId is missing', async () => {
+test('POST /api/agent/execute contains requests with a missing planId before body validation', async () => {
   cleanupDirs();
   const response = await exercisePost('/api/agent/execute', {});
-  const body = JSON.parse(response.body) as { error: { code: string } };
+  const body = JSON.parse(response.body) as {
+    code: string;
+    safety: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
   cleanupDirs();
 
-  assert.equal(response.statusCode, 400);
-  assert.equal(body.error.code, 'missing_plan_id');
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety.requestBodyRead, false);
+  assert.equal(body.safety.approvalBypassAllowed, false);
 });
 
-test('POST /api/agent/execute returns 404 for unknown planId', async () => {
+test('POST /api/agent/execute contains unknown plan requests before plan lookup', async () => {
   cleanupDirs();
   const response = await exercisePost('/api/agent/execute', { planId: 'plan-missing' });
-  const body = JSON.parse(response.body) as { error: { code: string } };
+  const body = JSON.parse(response.body) as {
+    code: string;
+    safety: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
   cleanupDirs();
 
-  assert.equal(response.statusCode, 404);
-  assert.equal(body.error.code, 'not_found');
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety.requestBodyRead, false);
+  assert.equal(body.safety.approvalBypassAllowed, false);
 });
 
 test('POST /api/agent/plan-approval records approval decision', async () => {
