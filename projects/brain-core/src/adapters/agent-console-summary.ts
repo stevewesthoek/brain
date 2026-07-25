@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { readAgentApprovalGates } from './agent-approval-gates.js';
 import { readAgentExecutorPlan } from './agent-executor-plan.js';
@@ -6,9 +7,12 @@ import { readAgentLedger, readAgentTaskGraph } from './agent-ledger.js';
 import { readAgentTaskState } from './agent-task-state.js';
 import type { BrainCoreAgentConsoleSummary } from '../types/api.js';
 
-const DEFAULT_AGENT_CONSOLE_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-console.json',
+const DEFAULT_AGENT_CONSOLE_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'agent-console.json',
 );
 
 interface AgentConsoleSnapshotFile {

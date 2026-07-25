@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { listApprovalRecords, getApprovalStoreSummary, listApprovalAuditEvents } from './actions.js';
 import type {
@@ -6,9 +7,12 @@ import type {
   BrainCoreApprovalRecord,
 } from '../types/api.js';
 
-const DEFAULT_APPROVAL_GATE_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-approval-gates.json',
+const DEFAULT_APPROVAL_GATE_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'agent-approval-gates.json',
 );
 
 interface AgentApprovalGateSnapshotFile {

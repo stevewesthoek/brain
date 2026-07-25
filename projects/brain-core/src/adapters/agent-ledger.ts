@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { listAgentEvents, listAgentRuns } from './agent-runs.js';
 import { listApprovals } from './approvals.js';
@@ -10,9 +11,12 @@ import type {
   BrainCoreAgentTaskSummary,
 } from '../types/api.js';
 
-const DEFAULT_LEDGER_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-ledger.json',
+const DEFAULT_LEDGER_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'agent-ledger.json',
 );
 
 const TASK_GRAPH: BrainCoreAgentTaskSummary[] = [

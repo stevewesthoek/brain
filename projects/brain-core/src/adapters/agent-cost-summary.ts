@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { readAgentLedger } from './agent-ledger.js';
 import { readAgentTaskState } from './agent-task-state.js';
@@ -10,9 +11,12 @@ import type {
   BrainCoreRouteSurface,
 } from '../types/api.js';
 
-const DEFAULT_COST_SUMMARY_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-cost-summary.json',
+const DEFAULT_COST_SUMMARY_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'agent-cost-summary.json',
 );
 
 interface CostSummarySnapshotFile {

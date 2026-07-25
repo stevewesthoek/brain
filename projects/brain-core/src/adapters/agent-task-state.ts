@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type {
   BrainCoreAgentTaskGraphSummary,
@@ -6,9 +7,12 @@ import type {
   BrainCoreAgentTaskStatus,
 } from '../types/api.js';
 
-const DEFAULT_TASK_STATE_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-task-state.json',
+const DEFAULT_TASK_STATE_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'agent-task-state.json',
 );
 
 interface AgentTaskStateSnapshotFile {

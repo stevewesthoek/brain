@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type {
   BrainCoreAgentExecutorPlanStepSummary,
@@ -7,9 +8,12 @@ import type {
   BrainCoreAgentTaskStateSummary,
 } from '../types/api.js';
 
-const DEFAULT_EXECUTOR_PLAN_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/agent-executor-plan.json',
+const DEFAULT_EXECUTOR_PLAN_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'agent-executor-plan.json',
 );
 
 interface AgentExecutorPlanSnapshotFile {

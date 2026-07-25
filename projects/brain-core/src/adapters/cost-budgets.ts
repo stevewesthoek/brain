@@ -1,10 +1,14 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type { BrainCoreAgentCostBudgetSummary, BrainCoreBudgetStatus } from '../types/api.js';
 
-const DEFAULT_BUDGET_PATH = path.resolve(
-  process.cwd(),
-  '../../../../../.local/video-orchestrator/state/cost-budgets.json',
+const DEFAULT_BUDGET_PATH = path.join(
+  os.homedir(),
+  '.local',
+  'video-orchestrator',
+  'state',
+  'cost-budgets.json',
 );
 
 interface CostBudgetSnapshotFile {
