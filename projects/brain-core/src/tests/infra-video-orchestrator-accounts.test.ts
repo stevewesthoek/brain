@@ -210,59 +210,68 @@ test('getInfraVOAuthStatus returns OAuth readiness without token material', asyn
   assert.equal(JSON.stringify(result).includes('refresh_token'), false);
 });
 
-test('POST /infra/video-orchestrator/accounts/:handle/auth-method updates valid auth methods', async () => {
-  _injectPoolForTesting(makeUpdatePool([
-    {
-      account_id: 'aaaaaaaa-0000-0000-0000-000000000001',
-      account_handle: '@says-the-bible',
-      platform: 'youtube',
-      account_status: 'active',
-      auth_method: 'manual',
-    },
-  ]));
+test('POST /infra/video-orchestrator/accounts/:handle/auth-method contains valid mutation requests', async () => {
+  _injectPoolForTesting(makeUpdatePool([]));
 
   const response = await exercise({
     method: 'POST',
     url: '/infra/video-orchestrator/accounts/%40says-the-bible/auth-method?auth_method=oauth2',
   });
-  const body = JSON.parse(response.body) as { ok: boolean; account?: { accountHandle: string; authMethod: string } };
+  const body = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
 
   _injectPoolForTesting(null);
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.ok, true);
-  assert.equal(body.account?.accountHandle, '@says-the-bible');
-  assert.equal(body.account?.authMethod, 'oauth2');
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.ok, false);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
 });
 
-test('POST /infra/video-orchestrator/accounts/:handle/auth-method rejects invalid auth methods', async () => {
+test('POST /infra/video-orchestrator/accounts/:handle/auth-method contains invalid auth-method requests', async () => {
   _injectPoolForTesting(makeUpdatePool([]));
 
   const response = await exercise({
     method: 'POST',
     url: '/infra/video-orchestrator/accounts/%40says-the-bible/auth-method?auth_method=password',
   });
-  const body = JSON.parse(response.body) as { ok: boolean; code?: string };
+  const body = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
 
   _injectPoolForTesting(null);
 
-  assert.equal(response.statusCode, 400);
+  assert.equal(response.statusCode, 503);
   assert.equal(body.ok, false);
-  assert.equal(body.code, 'invalid_auth_method');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
 });
 
-test('POST /infra/video-orchestrator/accounts/:handle/auth-method rejects unknown handles', async () => {
+test('POST /infra/video-orchestrator/accounts/:handle/auth-method contains unknown-handle requests', async () => {
   _injectPoolForTesting(makeUpdatePool([]));
 
   const response = await exercise({
     method: 'POST',
     url: '/infra/video-orchestrator/accounts/%40unknown/auth-method?auth_method=oauth2',
   });
-  const body = JSON.parse(response.body) as { ok: boolean; code?: string };
+  const body = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
 
   _injectPoolForTesting(null);
 
-  assert.equal(response.statusCode, 404);
+  assert.equal(response.statusCode, 503);
   assert.equal(body.ok, false);
-  assert.equal(body.code, 'account_not_found');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
 });
