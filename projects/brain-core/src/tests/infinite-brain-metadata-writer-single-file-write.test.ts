@@ -54,11 +54,15 @@ function withTempMindEnv(mindRoot: string, callback: () => void) {
   const oldMindRepoPath = process.env.IBR_MIND_REPO_PATH;
   const oldAllowlistPath = process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH;
   const oldWriteReportPath = process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH;
+  const oldOperatorApprovalPath = process.env.IBR_OPERATOR_APPROVAL_PATH;
+  const oldIosSyncSafetyReportPath = process.env.IBR_IOS_SYNC_SAFETY_REPORT_PATH;
 
   try {
     process.env.IBR_MIND_REPO_PATH = mindRoot;
     process.env.IBR_METADATA_WRITE_ALLOWLIST_PATH = path.join(mindRoot, 'system', 'InfiniteBrainWriteTest.md');
     process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = path.join(mindRoot, 'write-report.json');
+    process.env.IBR_OPERATOR_APPROVAL_PATH = path.join(mindRoot, 'operator-approval-latest.json');
+    process.env.IBR_IOS_SYNC_SAFETY_REPORT_PATH = path.join(mindRoot, 'ios-sync-safety-latest.json');
 
     callback();
   } finally {
@@ -79,6 +83,18 @@ function withTempMindEnv(mindRoot: string, callback: () => void) {
       process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH = oldWriteReportPath;
     } else {
       delete process.env.IBR_METADATA_WRITER_WRITE_REPORT_PATH;
+    }
+
+    if (oldOperatorApprovalPath !== undefined) {
+      process.env.IBR_OPERATOR_APPROVAL_PATH = oldOperatorApprovalPath;
+    } else {
+      delete process.env.IBR_OPERATOR_APPROVAL_PATH;
+    }
+
+    if (oldIosSyncSafetyReportPath !== undefined) {
+      process.env.IBR_IOS_SYNC_SAFETY_REPORT_PATH = oldIosSyncSafetyReportPath;
+    } else {
+      delete process.env.IBR_IOS_SYNC_SAFETY_REPORT_PATH;
     }
   }
 }
