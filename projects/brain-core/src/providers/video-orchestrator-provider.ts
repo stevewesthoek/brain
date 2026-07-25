@@ -1,7 +1,7 @@
 import { access, copyFile, readFile, writeFile, mkdir, readdir, mkdtemp, rm } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import type { GenerationMode, MediaSource, ScenePlan } from './aws-video-generation-types.js';
@@ -128,7 +128,8 @@ export function getVideoOrchestratorJobsRoot(moduleDir: string = MODULE_DIR): st
 }
 
 function getVideoOrchestratorRoot(): string {
-  return getVideoOrchestratorCloudRoot();
+  const configuredRoot = process.env.BRAIN_VIDEO_ORCHESTRATOR_ROOT?.trim();
+  return configuredRoot ? resolve(configuredRoot) : getVideoOrchestratorCloudRoot();
 }
 
 function shortHash(input: string): string {
