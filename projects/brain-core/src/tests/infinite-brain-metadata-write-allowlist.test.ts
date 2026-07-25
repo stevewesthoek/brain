@@ -30,14 +30,14 @@ test('Allowlist: default path ends with .md', () => {
 test('Allowlist: non-md file rejected', () => {
   const validation = validateSingleFileWriteScope('/Users/Office/Repos/stevewesthoek/mind/test.txt');
   assert.equal(validation.allowed, false, 'non-.md files should be rejected');
-  assert.ok(validation.reason.includes('markdown'), 'reason should mention markdown');
+  assert.equal(validation.reason, 'Target path is not the allowlisted test file');
   assert.equal(validation.safety.arbitraryWritesAllowed, false, 'arbitrary writes must be blocked');
 });
 
 test('Allowlist: path outside Mind rejected', () => {
   const validation = validateSingleFileWriteScope('/tmp/test.md');
   assert.equal(validation.allowed, false, 'paths outside Mind should be rejected');
-  assert.ok(validation.reason.includes('outside'), 'reason should mention outside');
+  assert.equal(validation.reason, 'Target path is not the allowlisted test file');
   assert.equal(validation.safety.broadMindAccess, false, 'broad Mind access must be blocked');
 });
 
