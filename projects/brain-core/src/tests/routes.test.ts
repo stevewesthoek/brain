@@ -1310,7 +1310,7 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
     reportPath,
     JSON.stringify({
       status: 'ok',
-      apps: [{ id: 'office-scheduler', name: 'Office Nightly Scheduler', status: 'running', actionsSupported: false }],
+      apps: [{ id: 'fala', name: 'Fala', status: 'running', actionsSupported: false }],
       writesToMind: false,
       executableActions: false,
     }),
@@ -1323,10 +1323,10 @@ test('GET /local-apps reads from safe local-apps runtime report when configured'
 
     assert.equal(response.statusCode, 200);
     assert.equal(body.apps.length >= 16, true);
-    const officeScheduler = body.apps.find((app) => app.id === 'office-scheduler');
-    assert.equal(officeScheduler?.status, 'running');
-    assert.equal(officeScheduler?.source, 'runtime-report');
-    assert.equal(body.apps.some((app) => app.id === 'mind-steward'), true);
+    const fala = body.apps.find((app) => app.id === 'fala');
+    assert.equal(fala?.status, 'running');
+    assert.equal(fala?.source, 'runtime-report');
+    assert.equal(body.apps.some((app) => app.id === 'buildflow'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
@@ -1918,8 +1918,8 @@ test('GET /local-apps ignores invalid runtime reports and keeps canonical invent
     assert.equal(response.statusCode, 200);
     assert.equal(body.apps.length >= 16, true);
     assert.equal(body.apps.some((app) => app.id === 'local-apps-report'), false);
-    assert.equal(body.apps.some((app) => app.id === 'office-scheduler'), true);
-    assert.equal(body.apps.some((app) => app.id === 'mind-steward'), true);
+    assert.equal(body.apps.some((app) => app.id === 'fala'), true);
+    assert.equal(body.apps.some((app) => app.id === 'buildflow'), true);
     assert.equal(body.apps.every((app) => app.source === 'runtime-report'), true);
   } finally {
     if (previousPath === undefined) {
