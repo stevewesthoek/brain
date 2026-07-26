@@ -1670,51 +1670,37 @@ test('POST /ops/brain-core/restart requires explicit confirmation', async () => 
   assert.equal(body.error?.message, 'Brain Core restart requests require confirmation: true.');
 });
 
-test('POST /local-apps/mind-steward/start returns structured controlled result', async () => {
+test('POST /local-apps/mind-steward/start is fail-closed before execution', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start' });
   const body = JSON.parse(response.body) as {
-    appId: string;
-    action: string;
-    status: string;
     ok: boolean;
-    message: string;
-    errorCode?: string;
-    nextPollMs: number;
-    steps: Array<{ id: string; status: string }>;
-    safety: { pluginExecutesShell: boolean; arbitraryCommandAllowed: boolean; commandOverrideAccepted: boolean; canonicalAppIdRequired: boolean };
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean; credentialValuesAccepted: boolean };
   };
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.appId, 'mind-steward');
-  assert.equal(body.action, 'start');
-  // mind-steward is now wired with a canonical start command — expect a terminal status (success or failed)
-  assert.ok(['success', 'failed', 'not_executable'].includes(body.status), `unexpected status: ${body.status}`);
-  assert.equal(typeof body.ok, 'boolean');
-  assert.equal(typeof body.message, 'string');
-  assert.equal(body.nextPollMs > 0, true);
-  assert.ok(body.steps.length > 0);
-  assert.equal(body.safety.pluginExecutesShell, false);
-  assert.equal(body.safety.arbitraryCommandAllowed, false);
-  assert.equal(body.safety.commandOverrideAccepted, false);
-  assert.equal(body.safety.canonicalAppIdRequired, true);
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.ok, false);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
+  assert.equal(body.safety?.credentialValuesAccepted, false);
 });
 
-test('POST /local-apps/mind-steward/start rejects command override parameters', async () => {
+test('POST /local-apps/mind-steward/start rejects command overrides before reading input', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start?command=rm%20-rf%20%2Ftmp%2Funsafe' });
   const body = JSON.parse(response.body) as {
-    appId: string;
-    action: string;
-    safety: { arbitraryCommandAllowed: boolean; commandOverrideAccepted: boolean; canonicalAppIdRequired: boolean };
-    steps: Array<{ label: string; message: string }>;
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean; credentialValuesAccepted: boolean };
   };
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.appId, 'mind-steward');
-  assert.equal(body.action, 'start');
-  assert.equal(body.safety.arbitraryCommandAllowed, false);
-  assert.equal(body.safety.commandOverrideAccepted, false);
-  assert.equal(body.safety.canonicalAppIdRequired, true);
-  assert.equal(JSON.stringify(body.steps).includes('rm -rf'), false);
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.ok, false);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
+  assert.equal(body.safety?.credentialValuesAccepted, false);
+  assert.equal(response.body.includes('rm -rf'), false);
 });
 
 test('start preflight treats healthy apps as already running and blocks unhealthy occupied ports', async () => {
@@ -1752,14 +1738,18 @@ test('start preflight treats healthy apps as already running and blocks unhealth
   }
 });
 
-test('POST /local-apps/unknown/start rejects unknown app id', async () => {
+test('POST /local-apps/unknown/start is contained before app lookup', async () => {
   const response = await exercise({ method: 'POST', url: '/local-apps/unknown/start' });
-  const body = JSON.parse(response.body) as { status: string; ok: boolean; errorCode?: string; safety: { commandOverrideAccepted: boolean } };
-  assert.equal(response.statusCode, 404);
-  assert.equal(body.status, 'not_found');
+  const body = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
+  assert.equal(response.statusCode, 503);
   assert.equal(body.ok, false);
-  assert.equal(body.errorCode, 'local_app_not_found');
-  assert.equal(body.safety.commandOverrideAccepted, false);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
 });
 
 test('POST /local-apps/mind-steward/delete is not registered', async () => {
@@ -1889,20 +1879,26 @@ test('GET /video/status falls back to failed read-only state when runtime report
   }
 });
 
-test('GET /local-apps/actions/status includes the recent result after POST', async () => {
+test('GET /local-apps/actions/status is unchanged after a contained POST', async () => {
+  const beforeResponse = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
+  const beforeBody = JSON.parse(beforeResponse.body) as {
+    recentResults: Array<{ id: string }>;
+    audit: { persistedResultCount: number };
+  };
   const response = await exercise({ method: 'POST', url: '/local-apps/mind-steward/start' });
-  const postBody = JSON.parse(response.body) as { id: string; ok: boolean; status: string };
+  const postBody = JSON.parse(response.body) as { ok: boolean; code?: string };
   const statusResponse = await exercise({ method: 'GET', url: '/local-apps/actions/status' });
   const statusBody = JSON.parse(statusResponse.body) as {
-    recentResults: Array<{ id: string; appId: string; status: string; ok: boolean }>;
+    recentResults: Array<{ id: string }>;
     audit: { persistedResultCount: number };
   };
 
-  assert.equal(response.statusCode, 200);
+  assert.equal(response.statusCode, 503);
+  assert.equal(postBody.ok, false);
+  assert.equal(postBody.code, 'mutable_capability_contained');
   assert.equal(statusResponse.statusCode, 200);
-  assert.equal(statusBody.recentResults.some((entry) => entry.id === postBody.id), true);
-  assert.equal(statusBody.recentResults.some((entry) => entry.status === postBody.status && entry.ok === postBody.ok), true);
-  assert.equal(statusBody.audit.persistedResultCount >= 0, true);
+  assert.deepEqual(statusBody.recentResults, beforeBody.recentResults);
+  assert.equal(statusBody.audit.persistedResultCount, beforeBody.audit.persistedResultCount);
 });
 
 test('GET /local-apps ignores invalid runtime reports and keeps canonical inventory primary', async () => {
