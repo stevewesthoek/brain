@@ -16,11 +16,11 @@ function createStaleCurrentContextFinding(): MaintenanceFinding {
     created: '2026-06-13',
     sourceRepo: 'mind',
     scope: 'system',
-    paths: ['router/00-current-context.md'],
+    paths: ['system/agent-context/00-current-context.md'],
     trigger: 'review_after date has passed',
     matchedEvidence: [
       {
-        path: 'router/00-current-context.md',
+        path: 'system/agent-context/00-current-context.md',
         location: 'Status YAML block',
         summary:
           'The page is marked review-needed and review_after is 2026-06-05, earlier than the report date.',
@@ -35,7 +35,7 @@ function createStaleCurrentContextFinding(): MaintenanceFinding {
       'Review the current-context page and either confirm it as current or update only affected sections.',
     requiresApproval: true,
     noWritePerformed: true,
-    deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+    deduplicationKey: 'stale-page:system/agent-context/00-current-context.md:review_after',
     suppressionUntil: null,
     review: null,
   };
@@ -65,10 +65,10 @@ function createValidReport(): MaintenanceReport {
       'capture-promotion': { enabled: false, status: 'disabled' },
     },
     filesConsidered: [
-      'router/00-current-context.md',
-      'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-      'wiki/organisations/prochat/brand/product-strategy.md',
-      'live/dashboard.md',
+      'system/agent-context/00-current-context.md',
+      'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+      'organizations/prochat/brand/product-strategy.md',
+      'system/reports/dashboard.md',
       'system/automation-roadmap.md',
     ],
     summary: {
@@ -142,7 +142,7 @@ test('rejects a finding emitted by a disabled detector', () => {
     id: 'finding-duplicate-001',
     type: 'duplicate-candidate',
     deduplicationKey:
-      'duplicate:live/projects/prochat-qa-memory/STRATEGY-PLAN.md:wiki/organisations/prochat/brand/product-strategy.md',
+      'duplicate:projects/prochat-qa-memory/STRATEGY-PLAN.md:organizations/prochat/brand/product-strategy.md',
   };
 
   assert.ok(issuePaths(report).includes('findings[0].type'));
@@ -203,7 +203,7 @@ test('accepts a structured detector error while preserving valid findings', () =
   report.errors = [
     {
       detector: 'source-gap',
-      path: 'wiki/organisations/prochat/brand/product-strategy.md',
+      path: 'organizations/prochat/brand/product-strategy.md',
       errorType: 'timeout',
       summary: 'Source-gap semantic review exceeded its bounded execution time.',
       retryable: true,
