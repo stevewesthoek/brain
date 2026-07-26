@@ -3207,7 +3207,8 @@ export async function approveScript(
   if ('ok' in loaded) return loaded;
 
   const { script, scriptPath } = loaded;
-  if (isPublishedOrUploaded(script, null, false)) {
+  const context = await loadApprovalContext(jobId, script);
+  if (isPublishedOrUploaded(script, context.metadataPublish, context.publishingPublishExists)) {
     return {
       ok: false,
       code: 'already_published_or_uploaded',
