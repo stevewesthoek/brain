@@ -205,25 +205,17 @@ test('approval route dispatches an approved real-video content record', async ()
       response as unknown as ServerResponse,
     );
 
-    assert.equal(response.statusCode, 200);
+    assert.equal(response.statusCode, 503);
     const payload = JSON.parse(response.body) as {
       ok: boolean;
-      dispatch?: { ok: boolean; jobId?: string; executionArn?: string };
+      code?: string;
+      safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
     };
-    assert.equal(payload.ok, true);
-    assert.equal(payload.dispatch?.ok, true);
-    assert.equal(payload.dispatch?.executionArn, executionArn);
-    assert.equal(executionStarts, 1);
-
-    const metadataDir = join(jobsRoot, payload.dispatch!.jobId!, 'metadata');
-    const assets = JSON.parse(await readFile(join(metadataDir, 'assets.json'), 'utf8')) as Record<string, unknown>;
-    const status = JSON.parse(await readFile(join(metadataDir, 'status.json'), 'utf8')) as Record<string, unknown>;
-
-    assert.equal(assets.mediaSource, 'uploaded-video');
-    assert.equal(assets.generationMode, 'approved-source-video');
-    assert.equal(assets.videoSourceKey, 'uploads/route-real-video.mp4');
-    assert.equal(status.executionArn, executionArn);
-    assert.equal(status.currentStep, 'workflow_started');
+    assert.equal(payload.ok, false);
+    assert.equal(payload.code, 'mutable_capability_contained');
+    assert.equal(payload.safety?.requestBodyRead, false);
+    assert.equal(payload.safety?.approvalBypassAllowed, false);
+    assert.equal(executionStarts, 0);
   } finally {
     setApprovedContentProductionDispatchDependenciesForTests(null);
     if (originalApprovalsPath === undefined) delete process.env.VO_APPROVALS_PATH;

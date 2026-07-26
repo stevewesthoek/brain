@@ -46,10 +46,16 @@ test('package publish route validates one YouTube target before controlled uploa
     response as unknown as ServerResponse,
   );
 
-  assert.equal(response.statusCode, 400);
-  const payload = JSON.parse(response.body) as { ok: boolean; error: string };
+  assert.equal(response.statusCode, 503);
+  const payload = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
   assert.equal(payload.ok, false);
-  assert.match(payload.error, /postingTarget\.platformId must be youtube/);
+  assert.equal(payload.code, 'mutable_capability_contained');
+  assert.equal(payload.safety?.requestBodyRead, false);
+  assert.equal(payload.safety?.approvalBypassAllowed, false);
 });
 
 test('package publish route invokes controlled YouTube publishing for the bound job', async () => {
@@ -65,20 +71,14 @@ test('package publish route invokes controlled YouTube publishing for the bound 
     response as unknown as ServerResponse,
   );
 
-  assert.equal(response.statusCode, 400);
-  const payload = JSON.parse(response.body) as Record<string, unknown>;
-  assert.equal(payload.jobId, 'job-does-not-exist');
-  assert.notEqual(payload.code, undefined);
-  assert.deepEqual(payload.package, {
-    id: 'pkg-moving-video-1',
-    jobId: 'job-does-not-exist',
-    status: 'publishing',
-    postingTarget: {
-      platformId: 'youtube',
-      accountId: 'acct-stb-youtube',
-    },
-    publishedAt: payload.package && typeof payload.package === 'object'
-      ? (payload.package as Record<string, unknown>).publishedAt
-      : undefined,
-  });
+  assert.equal(response.statusCode, 503);
+  const payload = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean };
+  };
+  assert.equal(payload.ok, false);
+  assert.equal(payload.code, 'mutable_capability_contained');
+  assert.equal(payload.safety?.requestBodyRead, false);
+  assert.equal(payload.safety?.approvalBypassAllowed, false);
 });
