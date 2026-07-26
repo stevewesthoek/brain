@@ -14,7 +14,7 @@ const cliPath = fileURLToPath(new URL('../bin/mind-maintenance-pilot.js', import
 async function createCommittedMindFixture(): Promise<string> {
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-cli-e2e-'));
   const contents: Record<string, string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -22,21 +22,21 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
 
 Status: draft
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: medium
 `,
-    'wiki/organisations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
+    'organizations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
 
 Status: current
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: high
 `,
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
 
@@ -170,7 +170,7 @@ test('compiled CLI records and replaces a finding decision in a temporary Mind f
     '--finding-id',
     'finding-stale-page-router-00-current-context-001',
     '--deduplication-key',
-    'stale-page:router/00-current-context.md:review_after',
+    'stale-page:system/agent-context/00-current-context.md:review_after',
     '--source-report',
     'mind-maintenance-20260614T103145Z',
     '--source-commit',
@@ -216,7 +216,7 @@ test('compiled CLI records and replaces a finding decision in a temporary Mind f
     '--finding-id',
     'finding-stale-page-router-00-current-context-002',
     '--deduplication-key',
-    'stale-page:router/00-current-context.md:review_after',
+    'stale-page:system/agent-context/00-current-context.md:review_after',
     '--source-report',
     'mind-maintenance-20260701T090000Z',
     '--source-commit',
@@ -256,7 +256,7 @@ test('compiled CLI records and replaces a finding decision in a temporary Mind f
   };
   assert.deepEqual(document.decisions, [{
     findingId: 'finding-stale-page-router-00-current-context-002',
-    deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+    deduplicationKey: 'stale-page:system/agent-context/00-current-context.md:review_after',
     sourceReportId: 'mind-maintenance-20260701T090000Z',
     sourceCommit: 'def5678',
     reviewedBy: 'Steve Westhoek',

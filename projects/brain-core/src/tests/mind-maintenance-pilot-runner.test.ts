@@ -9,7 +9,7 @@ import { MIND_MAINTENANCE_PILOT_FILES } from '../mind-maintenance-pilot/pilot-fi
 async function createMindFixture(): Promise<string> {
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-runner-'));
   const contents: Record<string, string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -17,21 +17,21 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
 
 Status: draft
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: medium
 `,
-    'wiki/organisations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
+    'organizations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
 
 Status: current
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: high
 `,
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
 
@@ -191,7 +191,7 @@ test('preserves structured detector failures in the completed report', async (co
     detectorErrors: [
       {
         detector: 'source-gap',
-        path: 'wiki/organisations/prochat/brand/product-strategy.md',
+        path: 'organizations/prochat/brand/product-strategy.md',
         errorType: 'timeout',
         summary: 'Source-gap semantic review exceeded its bounded execution time.',
         retryable: true,
@@ -227,7 +227,7 @@ test('loads persisted dismissal decisions without modifying the decision file', 
     updatedAt: '2026-06-13T11:30:00.000Z',
     decisions: [{
       findingId: 'finding-stale-page-router-00-current-context-001',
-      deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+      deduplicationKey: 'stale-page:system/agent-context/00-current-context.md:review_after',
       sourceReportId: 'mind-maintenance-20260613T110000Z',
       sourceCommit: 'previous1',
       reviewedBy: 'Steve Westhoek',
