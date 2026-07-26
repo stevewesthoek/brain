@@ -57,7 +57,7 @@ test('detects mutation of any pilot source file', async (context) => {
 
   const before = await captureMindMaintenanceIntegritySnapshot(dataset);
   await writeFile(
-    path.join(dataset.mindRoot, 'router/00-current-context.md'),
+    path.join(dataset.mindRoot, 'system/agent-context/00-current-context.md'),
     '# Changed current context\n',
     'utf8',
   );
@@ -65,7 +65,7 @@ test('detects mutation of any pilot source file', async (context) => {
   const result = compareMindMaintenanceIntegritySnapshots(before, after, []);
 
   assert.equal(result.ok, false);
-  assert.deepEqual(result.changedSourcePaths, ['router/00-current-context.md']);
+  assert.deepEqual(result.changedSourcePaths, ['system/agent-context/00-current-context.md']);
 });
 
 test('detects kanban.md mutation', async (context) => {
@@ -86,12 +86,12 @@ test('detects deletion of a protected source file', async (context) => {
   context.after(async () => rm(dataset.mindRoot, { recursive: true, force: true }));
 
   const before = await captureMindMaintenanceIntegritySnapshot(dataset);
-  await unlink(path.join(dataset.mindRoot, 'live/dashboard.md'));
+  await unlink(path.join(dataset.mindRoot, 'system/reports/dashboard.md'));
   const after = await captureMindMaintenanceIntegritySnapshot(dataset);
   const result = compareMindMaintenanceIntegritySnapshots(before, after, []);
 
   assert.equal(result.ok, false);
-  assert.deepEqual(result.changedSourcePaths, ['live/dashboard.md']);
+  assert.deepEqual(result.changedSourcePaths, ['system/reports/dashboard.md']);
 });
 
 test('treats a file missing in both snapshots as unchanged', async (context) => {
