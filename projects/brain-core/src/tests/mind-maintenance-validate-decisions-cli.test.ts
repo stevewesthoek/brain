@@ -374,14 +374,14 @@ test('compiled CLI lists unmatched decisions without changing decisions or lates
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-list-unmatched-'));
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
   const pilotFiles = [
-    'router/00-current-context.md',
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/product-strategy.md',
-    'live/dashboard.md',
+    'system/agent-context/00-current-context.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'organizations/prochat/brand/product-strategy.md',
+    'system/reports/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
   const contents: Record<(typeof pilotFiles)[number], string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -389,9 +389,9 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'organizations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
   for (const relativePath of pilotFiles) {
@@ -601,14 +601,14 @@ test('compiled CLI reports decision coverage without changing either input file'
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-decision-coverage-'));
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
   const pilotFiles = [
-    'router/00-current-context.md',
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/product-strategy.md',
-    'live/dashboard.md',
+    'system/agent-context/00-current-context.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'organizations/prochat/brand/product-strategy.md',
+    'system/reports/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
   const contents: Record<(typeof pilotFiles)[number], string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -616,9 +616,9 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'organizations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
   for (const relativePath of pilotFiles) {
@@ -792,14 +792,14 @@ test('compiled CLI reports partial decision coverage status without modifying in
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-decision-coverage-status-'));
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
   const pilotFiles = [
-    'router/00-current-context.md',
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/product-strategy.md',
-    'live/dashboard.md',
+    'system/agent-context/00-current-context.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'organizations/prochat/brand/product-strategy.md',
+    'system/reports/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
   const contents: Record<(typeof pilotFiles)[number], string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -807,9 +807,9 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'organizations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
   for (const relativePath of pilotFiles) {
@@ -973,14 +973,14 @@ test('compiled CLI renders the exact partial decision coverage summary without m
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-decision-coverage-summary-'));
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
   const pilotFiles = [
-    'router/00-current-context.md',
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/product-strategy.md',
-    'live/dashboard.md',
+    'system/agent-context/00-current-context.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'organizations/prochat/brand/product-strategy.md',
+    'system/reports/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
   const contents: Record<(typeof pilotFiles)[number], string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -988,9 +988,9 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'organizations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
   for (const relativePath of pilotFiles) {
@@ -1157,14 +1157,14 @@ test('compiled CLI renders the exact partial decision coverage action without mo
   const mindRoot = await mkdtemp(path.join(tmpdir(), 'mind-decision-coverage-action-'));
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
   const pilotFiles = [
-    'router/00-current-context.md',
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
-    'wiki/organisations/prochat/brand/product-strategy.md',
-    'live/dashboard.md',
+    'system/agent-context/00-current-context.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'organizations/prochat/brand/product-strategy.md',
+    'system/reports/dashboard.md',
     'system/automation-roadmap.md',
   ] as const;
   const contents: Record<(typeof pilotFiles)[number], string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -1172,9 +1172,9 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
-    'wiki/organisations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
-    'live/dashboard.md': '# Dashboard\n\nStatus: current\n',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': '# QA Memory Strategy\n\nStatus: draft\n',
+    'organizations/prochat/brand/product-strategy.md': '# ProChat OS Strategy\n\nStatus: current\n',
+    'system/reports/dashboard.md': '# Dashboard\n\nStatus: current\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n\nStatus: active\n',
   };
   for (const relativePath of pilotFiles) {
