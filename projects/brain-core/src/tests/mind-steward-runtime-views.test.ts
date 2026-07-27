@@ -28,7 +28,7 @@ function createMindRuntimeFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const inboxDir = path.join(mindRoot, 'capture', 'inbox');
+  const inboxDir = path.join(mindRoot, 'inbox', 'new');
   const statePath = path.join(tempDir, 'brain-runtime', 'mind-steward', 'inbox-queue-state.json');
   mkdirSync(inboxDir, { recursive: true });
   return { tempDir, mindRoot, inboxDir, statePath };
@@ -121,13 +121,13 @@ test('Mind Steward failed-item view lists exhausted queue failures from Brain ru
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/capture-a.md',
+      capturePath: 'inbox/new/capture-a.md',
       error: 'classifier_timeout',
       now: new Date('2026-06-18T12:01:00Z'),
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/capture-a.md',
+      capturePath: 'inbox/new/capture-a.md',
       error: 'classifier_timeout',
       now: new Date('2026-06-18T12:02:00Z'),
     });
@@ -136,7 +136,7 @@ test('Mind Steward failed-item view lists exhausted queue failures from Brain ru
 
     assert.equal(view.status, 'available');
     assert.equal(view.failedItemCount, 1);
-    assert.equal(view.items[0]?.path, 'capture/inbox/capture-a.md');
+    assert.equal(view.items[0]?.path, 'inbox/new/capture-a.md');
     assert.equal(view.items[0]?.status, 'failed');
     assert.equal(view.items[0]?.attemptCount, 2);
     assert.equal(view.items[0]?.maxRetries, 1);
@@ -168,7 +168,7 @@ test('Mind Steward recovery view exposes approval-required guidance and no auto-
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/capture-a.md',
+      capturePath: 'inbox/new/capture-a.md',
       error: 'selector_failed',
       now: new Date('2026-06-18T12:01:00Z'),
     });
