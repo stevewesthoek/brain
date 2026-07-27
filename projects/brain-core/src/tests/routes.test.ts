@@ -1732,8 +1732,8 @@ test('start preflight treats healthy apps as already running and blocks unhealth
   try {
     const healthyPort = ((healthyServer as any).address() as { port: number }).port;
     const unhealthyPort = ((unhealthyServer as any).address() as { port: number }).port;
-    const healthy = await isAppAlreadyRunning({ appPort: healthyPort, healthUrl: `http://127.0.0.1:${healthyPort}/health` } as never);
-    const unhealthy = await isAppAlreadyRunning({ appPort: unhealthyPort, healthUrl: `http://127.0.0.1:${unhealthyPort}/health` } as never);
+    const healthy = await isAppAlreadyRunning({ appPort: healthyPort, healthUrl: `http://127.0.0.1:${healthyPort}/health`, services: [] } as never);
+    const unhealthy = await isAppAlreadyRunning({ appPort: unhealthyPort, healthUrl: `http://127.0.0.1:${unhealthyPort}/health`, services: [] } as never);
 
     assert.equal(healthy.ok, true);
     assert.equal(healthy.steps.some((step) => step.status === 'success'), true);
