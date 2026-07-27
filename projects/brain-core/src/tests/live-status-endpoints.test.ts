@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const projectRoot = join(__dirname, '..', '..');
 import { routeRequest } from '../api/routes.js';
 import { readVideoProviderRequestWrapperScaffold, validateVideoProviderRequestWrapperScaffoldRequest } from '../adapters/video-orchestrator-provider-request-wrapper-scaffold.js';
 import { readVideoProviderWrapperValidationHarness, runVideoProviderWrapperValidationHarness } from '../adapters/video-orchestrator-provider-wrapper-validation-harness.js';
@@ -7411,7 +7415,7 @@ test('validateVideoProviderRequestWrapperScaffoldRequest returns a disabled vali
 });
 
 test('provider request wrapper scaffold source file does not include unsafe execution primitives', () => {
-  const source = readFileSync(join(process.cwd(), 'src', 'adapters', 'video-orchestrator-provider-request-wrapper-scaffold.ts'), 'utf8');
+  const source = readFileSync(join(projectRoot, 'src', 'adapters', 'video-orchestrator-provider-request-wrapper-scaffold.ts'), 'utf8');
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 
   forbiddenPatterns.forEach((pattern) => {
@@ -7504,7 +7508,7 @@ test('runVideoProviderWrapperValidationHarness returns blocked fixture coverage 
 });
 
 test('provider wrapper validation harness source file does not include unsafe execution primitives', () => {
-  const source = readFileSync(join(process.cwd(), 'src', 'adapters', 'video-orchestrator-provider-wrapper-validation-harness.ts'), 'utf8');
+  const source = readFileSync(join(projectRoot, 'src', 'adapters', 'video-orchestrator-provider-wrapper-validation-harness.ts'), 'utf8');
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 
   forbiddenPatterns.forEach((pattern) => {
@@ -7822,7 +7826,7 @@ test('new provider scaffolding modules do not include unsafe execution primitive
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 
   files.forEach((file) => {
-    const source = readFileSync(join(process.cwd(), 'src', 'adapters', file), 'utf8');
+    const source = readFileSync(join(projectRoot, 'src', 'adapters', file), 'utf8');
     forbiddenPatterns.forEach((pattern) => {
       assert.equal(source.includes(pattern), false, `expected ${file} not to include ${pattern}`);
     });
@@ -8394,14 +8398,14 @@ test('new inert scaffolding source files do not include unsafe execution primiti
   const forbiddenPatterns = ['fetch(', 'axios', 'requestUrl', 'process.env', 'child_process', 'exec(', 'spawn(', 'writeFile', 'appendFile', 'createWriteStream'];
 
   files.forEach((file) => {
-    const source = readFileSync(join(process.cwd(), 'src', 'adapters', file), 'utf8');
+    const source = readFileSync(join(projectRoot, 'src', 'adapters', file), 'utf8');
     forbiddenPatterns.forEach((pattern) => {
       assert.equal(source.includes(pattern), false, `expected ${file} not to include ${pattern}`);
     });
   });
 
   filesWithDataLiterals.forEach((file) => {
-    const source = readFileSync(join(process.cwd(), 'src', 'adapters', file), 'utf8');
+    const source = readFileSync(join(projectRoot, 'src', 'adapters', file), 'utf8');
     forbiddenPatterns.forEach((pattern) => {
       if (pattern === 'fetch(' || pattern === 'axios' || pattern === 'requestUrl' || pattern === 'process.env' || pattern === 'child_process' || pattern === 'exec(' || pattern === 'spawn(' || pattern === 'writeFile' || pattern === 'appendFile' || pattern === 'createWriteStream') {
         return;
