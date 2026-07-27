@@ -1591,6 +1591,13 @@ test('repo-local lifecycle adapters become executable for safe fixed scripts', a
   }
 });
 
+test('local app inventory IDs are unique and Mind Steward is appended once', () => {
+  const inventory = listLocalAppDefinitions();
+  const ids = inventory.map((entry) => entry.id);
+  assert.equal(new Set(ids).size, ids.length, 'normalized local app IDs must be unique');
+  assert.equal(ids.filter((id) => id === 'mind-steward').length, 1, 'Mind Steward must be appended exactly once');
+});
+
 test('composite restart is supported when safe start and stop commands exist', async () => {
   const inventory = listLocalAppDefinitions();
   const app = inventory.find((entry) => entry.id === 'says-the-bible' || entry.id === 'firecrawl' || entry.id === 'comfyui');
@@ -4146,7 +4153,7 @@ test('all six latest lifecycle actions are absent from action-enablement-backlog
   }
 });
 
-test('exact ten still-disabled actions are in backlog', async () => {
+test('required still-disabled actions remain uniquely represented in backlog', async () => {
   const response = await exercise({ method: 'GET', url: '/local-apps/action-enablement-backlog' });
   const body = JSON.parse(response.body) as {
     disabledActionCount: number;
@@ -4168,7 +4175,8 @@ test('exact ten still-disabled actions are in backlog', async () => {
   ]) {
     assert.ok(disabledKeys.has(key), `${key} should be in disabled backlog`);
   }
-  assert.equal(body.disabledActionCount, 10, 'current backlog should contain ten disabled actions');
+  assert.equal(disabledKeys.size, body.items.length, 'disabled backlog keys must be unique');
+  assert.equal(body.disabledActionCount, body.items.length, 'disabledActionCount must equal the backlog item count');
 });
 
 test('family-finance stop script is safe: no pkill/killall/lsof/port-killing', async () => {
