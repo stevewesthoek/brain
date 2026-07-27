@@ -1661,13 +1661,20 @@ test('POST /local-apps/action-enablement-backlog is not registered', async () =>
   assert.equal(response.statusCode, 404);
 });
 
-test('POST /ops/brain-core/restart requires explicit confirmation', async () => {
+test('POST /ops/brain-core/restart is fail-closed before confirmation handling', async () => {
   const response = await exercise({ method: 'POST', url: '/ops/brain-core/restart' });
-  const body = JSON.parse(response.body) as { error?: { code?: string; message?: string } };
+  const body = JSON.parse(response.body) as {
+    ok: boolean;
+    code?: string;
+    safety?: { requestBodyRead: boolean; approvalBypassAllowed: boolean; credentialValuesAccepted: boolean };
+  };
 
-  assert.equal(response.statusCode, 400);
-  assert.equal(body.error?.code, 'missing_confirmation');
-  assert.equal(body.error?.message, 'Brain Core restart requests require confirmation: true.');
+  assert.equal(response.statusCode, 503);
+  assert.equal(body.ok, false);
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
+  assert.equal(body.safety?.credentialValuesAccepted, false);
 });
 
 test('POST /local-apps/mind-steward/start is fail-closed before execution', async () => {
