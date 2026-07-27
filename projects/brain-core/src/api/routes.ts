@@ -94,13 +94,6 @@ import { listRepos } from '../adapters/repos.js';
 import { getGraphifyStatus } from '../adapters/graphify-status.js';
 import { getGraphifyRefreshSchedule } from '../adapters/graphify-refresh-schedule.js';
 import { getMindMaintenanceReportOnlySchedule } from '../adapters/mind-maintenance-schedule.js';
-import { getContinuousProcessingSelection } from '../adapters/continuous-processing-selection.js';
-import { getContinuousProcessingStabilityView } from '../adapters/continuous-processing-stability.js';
-import { getContinuousProcessingConcurrencyView } from '../adapters/continuous-processing-concurrency.js';
-import { getContinuousProcessingFailureBufferView } from '../adapters/continuous-processing-failure-buffer.js';
-import { getContinuousProcessingLargeFileFallbackView, getLargeFileNightlyFallbackPlan } from '../adapters/continuous-processing-large-file-fallback.js';
-import { getContinuousProcessingMeasurementView } from '../adapters/continuous-processing-measurement.js';
-import { getContinuousProcessingDisableRecoveryView } from '../adapters/continuous-processing-disable-recovery.js';
 import { getSimplificationReviewView } from '../adapters/simplification-review.js';
 import { getMindStewardSchedulerStatus, getSchedulerLatestRun, getSchedulerStatus, listSchedulerJobs } from '../adapters/scheduler.js';
 import {
@@ -110,6 +103,7 @@ import {
 } from '../adapters/mind-steward-runtime-views.js';
 import { listSessions } from '../adapters/sessions.js';
 import { listSkills } from '../adapters/skills.js';
+import { getContinuousProcessingRouteResponse } from './domain-routers/continuous-processing-router.js';
 
 type RecentVideoJobsResult = Awaited<ReturnType<typeof getRecentVideoJobsResult>>;
 let lastGoodRecentVideoJobsResult: RecentVideoJobsResult | null = null;
@@ -301,6 +295,81 @@ const getStatus = createStatusAdapter({
   version: '0.1.0',
 });
 
+/**
+ * BS0.1 containment boundary.
+ *
+ * Brain Core has no authenticated HTTP service identity yet.  Loopback address,
+ * browser Origin, and caller-supplied headers are therefore not authorization.
+ * Until the contract registry establishes an exact service identity (BS0.5), the
+ * high-impact endpoints below must fail closed before their request body is read.
+ */
+function isContainedHighImpactMutation(url: URL): boolean {
+  const pathname = url.pathname;
+
+  if (new Set([
+    '/api/mind-maintenance/run',
+    '/api/agent/execute',
+    '/ai-model-selector/control',
+    '/ops/brain-core/restart',
+    '/research/video-analyze',
+    '/api/video-orchestrator/thumbnails/approve',
+    '/api/video-orchestrator/queue/thumbnail',
+    '/api/video-orchestrator/thumbnails/generate',
+    '/api/video-orchestrator/thumbnails/declare-winner',
+    '/api/video-orchestrator/metadata/generate',
+    '/api/video-orchestrator/metadata/approve',
+    '/api/video-orchestrator/automation/rule/create',
+    '/api/video-orchestrator/workflows/schedule',
+    '/api/video-orchestrator/approvals/bulk-approve',
+    '/api/video-orchestrator/approvals/bulk-decide',
+    '/api/video-orchestrator/approvals/check-expiry',
+    '/api/video-orchestrator/events/emit',
+    '/api/video-orchestrator/events/acknowledge',
+    '/api/video-orchestrator/events/subscribe',
+    '/api/video-orchestrator/events/route',
+    '/api/video-orchestrator/webhooks/process',
+    '/api/video-orchestrator/webhooks/verify',
+    '/api/video-orchestrator/webhooks/rotate-secret',
+    '/api/video-orchestrator/webhooks/disable',
+  ]).has(pathname)) {
+    return true;
+  }
+
+  return [
+    /^\/credentials\//,
+    /^\/local-apps\/[^/]+\/(?:start|stop|restart)$/,
+    /^\/approvals\/[^/]+\/(?:approve|reject)$/,
+    /^\/infra\/video-orchestrator\/jobs\/[^/]+\/(?:approve|reject)$/,
+    /^\/infra\/video-orchestrator\/accounts\/[^/]+\/auth-method$/,
+    /^\/api\/infinite-brain\/metadata-writer\/write\//,
+    /^\/api\/infinite-brain\/proposals\/approvals$/,
+    /^\/api\/infinite-brain\/(?:operator-approval|metadata-writer\/enablement)\/record$/,
+    /^\/api\/video-orchestrator\/auth\//,
+    /^\/api\/video-orchestrator\/package\//,
+    /^\/api\/video-orchestrator\/packages\/batch-publish$/,
+    /^\/api\/video-orchestrator\/scripts\/[^/]+\/(?:approve|request-changes)$/,
+    /^\/api\/video-orchestrator\/jobs\/[^/]+\/(?:review\/(?:approve|request-changes)|publish\/youtube(?:\/dry-run)?)$/,
+    /^\/api\/video-orchestrator\/approvals\/[^/]+\/(?:approve|reject)$/,
+    /^\/api\/video-orchestrator\/webhooks\/register$/,
+  ].some((pattern) => pattern.test(pathname));
+}
+
+function rejectContainedHighImpactMutation(response: ServerResponse): void {
+  sendJson(response, 503, {
+    ok: false,
+    code: 'mutable_capability_contained',
+    message: 'This high-impact mutable capability is unavailable until an authenticated service identity is implemented.',
+    safety: {
+      accessControl: 'fail-closed',
+      localhostIsNotAuthentication: true,
+      originIsNotAuthentication: true,
+      requestBodyRead: false,
+      approvalBypassAllowed: false,
+      credentialValuesAccepted: false,
+    },
+  });
+}
+
 export async function routeRequest(
   request: IncomingMessage,
   response: ServerResponse,
@@ -317,6 +386,7 @@ export async function routeRequest(
 
   const method = request.method || 'GET';
   const url = new URL(request.url || '/', 'http://127.0.0.1');
+  const containedHighImpactMutation = method === 'POST' && isContainedHighImpactMutation(url);
 
   if (url.pathname === '/api/video-orchestrator/thumbnails/approve' && method !== 'POST') {
     const body = JSON.stringify({ error: 'Method not allowed' });
@@ -350,7 +420,9 @@ export async function routeRequest(
   if (method === 'OPTIONS') {
     response.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
-      'access-control-allow-methods': thumbnailPathMatch ? 'GET, HEAD, OPTIONS' : 'GET, POST, OPTIONS',
+      'access-control-allow-methods': thumbnailPathMatch || isContainedHighImpactMutation(url)
+        ? 'GET, HEAD, OPTIONS'
+        : 'GET, POST, OPTIONS',
       'access-control-allow-headers': 'content-type',
       'access-control-max-age': '86400',
     });
@@ -367,6 +439,11 @@ export async function routeRequest(
       'Allow': 'GET, HEAD',
     });
     response.end(body);
+    return;
+  }
+
+  if (containedHighImpactMutation) {
+    rejectContainedHighImpactMutation(response);
     return;
   }
 
@@ -400,6 +477,12 @@ export async function routeRequest(
         message: 'Brain Core supports GET plus approval-aware POST request/decision endpoints only.',
       },
     } satisfies BrainCoreErrorResponse);
+    return;
+  }
+
+  const continuousProcessingResponse = getContinuousProcessingRouteResponse(url.pathname);
+  if (continuousProcessingResponse) {
+    sendJson(response, continuousProcessingResponse.statusCode, continuousProcessingResponse.body);
     return;
   }
 
@@ -803,30 +886,6 @@ export async function routeRequest(
       return;
     case '/scheduler/mind-maintenance/report-only-plan':
       sendJson(response, 200, getMindMaintenanceReportOnlySchedule());
-      return;
-    case '/scheduler/continuous-processing/selection':
-      sendJson(response, 200, getContinuousProcessingSelection());
-      return;
-    case '/scheduler/continuous-processing/stability':
-      sendJson(response, 200, getContinuousProcessingStabilityView());
-      return;
-    case '/scheduler/continuous-processing/concurrency':
-      sendJson(response, 200, getContinuousProcessingConcurrencyView());
-      return;
-    case '/scheduler/continuous-processing/failure-buffer':
-      sendJson(response, 200, getContinuousProcessingFailureBufferView());
-      return;
-    case '/scheduler/continuous-processing/large-file-fallback':
-      sendJson(response, 200, getContinuousProcessingLargeFileFallbackView());
-      return;
-    case '/scheduler/continuous-processing/large-file-fallback/plan':
-      sendJson(response, 200, getLargeFileNightlyFallbackPlan());
-      return;
-    case '/scheduler/continuous-processing/measurement':
-      sendJson(response, 200, getContinuousProcessingMeasurementView());
-      return;
-    case '/scheduler/continuous-processing/disable-recovery':
-      sendJson(response, 200, getContinuousProcessingDisableRecoveryView());
       return;
     case '/simplification-review':
       sendJson(response, 200, getSimplificationReviewView());
@@ -3032,6 +3091,45 @@ export async function routeRequest(
         return;
       }
 
+      // ── Infinite Brain: Fetch Application Plan ───────────────────────────────
+      if (url.pathname === '/api/infinite-brain/proposals/application-plan') {
+        const plan = readApplicationPlan();
+        if (!plan) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'application_plan_missing',
+            message: 'No application plan found. Run /generate endpoint first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          plan,
+          safety: plan.safety,
+        });
+        return;
+      }
+
+      // ── Infinite Brain: Application Plan Summary ─────────────────────────────
+      if (url.pathname === '/api/infinite-brain/proposals/application-plan/summary') {
+        const summary = readApplicationPlanSummary();
+        if (!summary) {
+          sendJson(response, 404, {
+            ok: false,
+            code: 'application_plan_missing',
+            message: 'No application plan found. Run /generate endpoint first.',
+          });
+          return;
+        }
+
+        sendJson(response, 200, {
+          ok: true,
+          summary,
+        });
+        return;
+      }
+
       sendJson(response, 404, {
         error: {
           code: 'not_found',
@@ -3810,45 +3908,6 @@ async function routePostRequest(url: URL, request: IncomingMessage, response: Se
         message: 'Failed to generate and save application plan',
       });
     }
-    return;
-  }
-
-  // ── Infinite Brain: Fetch Application Plan ─────────────────────────────────
-  if (url.pathname === '/api/infinite-brain/proposals/application-plan' && request.method === 'GET') {
-    const plan = readApplicationPlan();
-    if (!plan) {
-      sendJson(response, 404, {
-        ok: false,
-        code: 'application_plan_missing',
-        message: 'No application plan found. Run /generate endpoint first.',
-      });
-      return;
-    }
-
-    sendJson(response, 200, {
-      ok: true,
-      plan,
-      safety: plan.safety,
-    });
-    return;
-  }
-
-  // ── Infinite Brain: Application Plan Summary ───────────────────────────────
-  if (url.pathname === '/api/infinite-brain/proposals/application-plan/summary' && request.method === 'GET') {
-    const summary = readApplicationPlanSummary();
-    if (!summary) {
-      sendJson(response, 404, {
-        ok: false,
-        code: 'application_plan_missing',
-        message: 'No application plan found. Run /generate endpoint first.',
-      });
-      return;
-    }
-
-    sendJson(response, 200, {
-      ok: true,
-      summary,
-    });
     return;
   }
 
