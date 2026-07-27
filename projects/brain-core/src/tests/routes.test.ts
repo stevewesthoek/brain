@@ -2743,74 +2743,16 @@ test('GET /execution/readiness reports active execution kill switch', async () =
 });
 
 test('approved scheduler-run-mind-steward-dry-run executes exactly one report-only action when all gates pass', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const approvalBody = JSON.parse(approvalResponse.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
-    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const approvalBody = JSON.parse(approvalResponse.body) as {
-      executed: boolean;
-      approval: { kind: string; status: string };
-      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
-      policy: { executionEnabled: boolean; executionGate: string };
-      execution: { status: string; command: string; outputPath: string; writesToMind: boolean; externalSideEffects: boolean };
-    };
-    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
-    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; kind: string; executed: boolean }> };
-    const outputPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
-
-    assert.equal(requestResponse.statusCode, 202);
-    assert.equal(requestBody.approval.kind, 'scheduler-run-mind-steward-dry-run');
-    assert.equal(requestBody.executed, false);
-    assert.equal(approvalResponse.statusCode, 200);
-    assert.equal(approvalBody.approval.status, 'approved');
-    assert.equal(approvalBody.executed, true);
-    assert.equal(approvalBody.preview.wouldExecute, true);
-    assert.equal(approvalBody.preview.writesToMind, false);
-    assert.equal(approvalBody.preview.externalSideEffects, false);
-    assert.equal(approvalBody.preview.commands.length, 1);
-    assert.equal(approvalBody.execution.status, 'ok');
-    assert.equal(approvalBody.execution.command, 'bash tools/scripts/mind-steward-dry-run-report.sh');
-    assert.equal(approvalBody.execution.outputPath, 'runtime/local/mind-steward/latest.json');
-    assert.equal(approvalBody.execution.writesToMind, false);
-    assert.equal(approvalBody.execution.externalSideEffects, false);
-    assert.equal(approvalBody.policy.executionEnabled, true);
-    assert.equal(approvalBody.policy.executionGate, 'enabled-for-mind-steward-dry-run');
-    assert.equal(fs.existsSync(outputPath), true);
-    assert.equal(
-      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-mind-steward-dry-run' && event.executed === true),
-      true,
-    );
-  } finally {
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(approvalResponse.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(approvalBody.code, 'mutable_capability_contained');
+  assert.equal(approvalBody.ok, false);
+  assert.equal(approvalBody.safety?.requestBodyRead, false);
 });
 
 test('GET /approvals/audit returns approval audit events', async () => {
@@ -2936,969 +2878,213 @@ test('roadmap POST targets create approval requests without executing', async ()
 });
 
 test('approved Graphify scheduler candidates are blocked without workflow feature flags', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-graphify-action-execution');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  delete process.env.BRAIN_CORE_ENABLE_GRAPHIFY_PREFLIGHT_MIND_EXECUTION;
-  delete process.env.BRAIN_CORE_ENABLE_GRAPHIFY_UPDATE_BRAIN_BLOCKED_EXECUTION;
-
   const cases = [
-    {
-      route: '/scheduler/jobs/graphify-preflight-mind/request-run',
-      kind: 'scheduler-run-graphify-preflight-mind',
-      command: 'bash tools/scripts/graphify-orchestrator-report.sh preflight-mind',
-      outputPath: 'runtime/local/graphify/mind-knowledge-latest.json',
-    },
-    {
-      route: '/scheduler/jobs/graphify-update-brain-blocked/request-run',
-      kind: 'scheduler-run-graphify-update-brain-blocked',
-      command: 'bash tools/scripts/graphify-orchestrator-report.sh update-brain-blocked',
-      outputPath: 'runtime/local/graphify/brain-runtime-latest.json',
-    },
+    { route: '/scheduler/jobs/graphify-preflight-mind/request-run' },
+    { route: '/scheduler/jobs/graphify-update-brain-blocked/request-run' },
   ] as const;
 
-  try {
-    for (const item of cases) {
-      const requestResponse = await exercise({ method: 'POST', url: item.route });
-      const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
-      const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-      const approvalBody = JSON.parse(approvalResponse.body) as {
-        approval: { status: string };
-        execution: { status: string; command: string; outputPath?: string; exitCode?: number; message: string; writesToMind: boolean; externalSideEffects: boolean };
-        executed: boolean;
-      };
+  for (const item of cases) {
+    const requestResponse = await exercise({ method: 'POST', url: item.route });
+    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+    const approvalBody = JSON.parse(approvalResponse.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-      assert.equal(requestResponse.statusCode, 202);
-      assert.equal(requestBody.approval.kind, item.kind);
-      assert.equal(requestBody.executed, false);
-      assert.equal(approvalResponse.statusCode, 200);
-      assert.equal(approvalBody.approval.status, 'approved');
-      assert.equal(approvalBody.executed, false);
-      assert.equal(approvalBody.execution.status, 'blocked');
-      assert.equal(approvalBody.execution.command, item.command);
-      assert.equal(approvalBody.execution.outputPath, undefined);
-      assert.equal(approvalBody.execution.message.endsWith(' is not true.'), true);
-      assert.equal(approvalBody.execution.writesToMind, false);
-      assert.equal(approvalBody.execution.externalSideEffects, false);
-    }
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
+    assert.equal(requestResponse.statusCode, 202);
+    assert.equal(approvalResponse.statusCode, 503, 'BS0.1 containment rejects before body read');
+    assert.equal(approvalBody.code, 'mutable_capability_contained');
+    assert.equal(approvalBody.ok, false);
+    assert.equal(approvalBody.safety?.requestBodyRead, false);
   }
 });
 
 test('POST /approvals/:id/approve executes only the approved mind-steward dry-run when all gates pass', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-first-action-execution');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = 'true';
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      approval: { status: string };
-      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
-      policy: { executionEnabled: boolean; executionGate: string };
-      execution: { status: string; command: string; outputPath: string; exitCode: number; writesToMind: boolean; externalSideEffects: boolean };
-      executed: boolean;
-    };
-    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
-    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; executed: boolean; execution?: { status: string } }> };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.approval.status, 'approved');
-    assert.equal(body.executed, true);
-    assert.equal(body.preview.wouldExecute, true);
-    assert.equal(body.preview.writesToMind, false);
-    assert.equal(body.preview.externalSideEffects, false);
-    assert.equal(body.preview.commands.includes('bash tools/scripts/mind-steward-dry-run-report.sh'), true);
-    assert.equal(body.policy.executionEnabled, true);
-    assert.equal(body.policy.executionGate, 'enabled-for-mind-steward-dry-run');
-    assert.equal(body.execution.status, 'ok');
-    assert.equal(body.execution.command, 'bash tools/scripts/mind-steward-dry-run-report.sh');
-    assert.equal(body.execution.outputPath, 'runtime/local/mind-steward/latest.json');
-    assert.equal(body.execution.exitCode, 0);
-    assert.equal(body.execution.writesToMind, false);
-    assert.equal(body.execution.externalSideEffects, false);
-    assert.equal(auditBody.events.some((event) => event.event === 'executed' && event.executed === true && event.execution?.status === 'ok'), true);
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve does not execute the mind-steward dry-run when the feature flag is disabled', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-first-action-blocked');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      policy: { executionEnabled: boolean };
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.policy.executionEnabled, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_DRY_RUN_EXECUTION = previousFlag;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('approved scheduler-run-mind-steward-inbox-dry-run executes exactly one report-only action when all gates pass', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-action-execution');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const approvalBody = JSON.parse(approvalResponse.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
-    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const approvalBody = JSON.parse(approvalResponse.body) as {
-      executed: boolean;
-      approval: { kind: string; status: string };
-      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
-      policy: { executionEnabled: boolean; executionGate: string };
-      execution: { status: string; command: string; outputPath: string; writesToMind: boolean; externalSideEffects: boolean };
-    };
-    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
-    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; kind: string; executed: boolean }> };
-    const outputPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
-
-    assert.equal(requestResponse.statusCode, 202);
-    assert.equal(requestBody.approval.kind, 'scheduler-run-mind-steward-inbox-dry-run');
-    assert.equal(requestBody.executed, false);
-    assert.equal(approvalResponse.statusCode, 200);
-    assert.equal(approvalBody.approval.status, 'approved');
-    assert.equal(approvalBody.executed, true);
-    assert.equal(approvalBody.preview.wouldExecute, true);
-    assert.equal(approvalBody.preview.writesToMind, false);
-    assert.equal(approvalBody.preview.externalSideEffects, false);
-    assert.equal(approvalBody.preview.commands.length, 1);
-    assert.equal(approvalBody.execution.status, 'ok');
-    assert.equal(approvalBody.execution.command, 'bash tools/scripts/mind-steward-inbox-dry-run-report.sh');
-    assert.equal(approvalBody.execution.outputPath, 'runtime/local/mind-steward/inbox-latest.json');
-    assert.equal(approvalBody.execution.writesToMind, false);
-    assert.equal(approvalBody.execution.externalSideEffects, false);
-    assert.equal(approvalBody.policy.executionEnabled, true);
-    assert.equal(approvalBody.policy.executionGate, 'enabled-for-mind-steward-inbox-dry-run');
-    assert.equal(fs.existsSync(outputPath), true);
-    assert.equal(
-      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-mind-steward-inbox-dry-run' && event.executed === true),
-      true,
-    );
-  } finally {
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(approvalResponse.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(approvalBody.code, 'mutable_capability_contained');
+  assert.equal(approvalBody.ok, false);
+  assert.equal(approvalBody.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve does not execute the mind-steward inbox dry-run when the feature flag is disabled', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-action-blocked');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      policy: { executionEnabled: boolean };
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.policy.executionEnabled, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION = previousFlag;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('approved scheduler-run-mind-steward-inbox-classifier-dry-run executes exactly one report-only action when all gates pass', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-classifier-action-execution');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const selectorConfigDir = path.join(testDir, 'selector-config');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
-  const previousSelectorConfigDir = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-  const selectorServer = await startClassifierSelectorHealthServer();
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const approvalBody = JSON.parse(approvalResponse.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeClassifierSelectorConfig(selectorConfigDir, selectorServer.port);
-  writeClassifierInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = selectorConfigDir;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
-    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const approvalBody = JSON.parse(approvalResponse.body) as {
-      executed: boolean;
-      approval: { kind: string; status: string };
-      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
-      policy: { executionEnabled: boolean; executionGate: string };
-      execution: { status: string; command: string; outputPath: string; writesToMind: boolean; externalSideEffects: boolean };
-    };
-    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
-    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; kind: string; executed: boolean }> };
-    const reportPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
-    const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
-      status: string;
-      mode: string;
-      writesToMind: boolean;
-      externalSideEffects: boolean;
-      executableActions: boolean;
-      selectorTaskType: string;
-      inputTokenCount: number;
-      selector: { status: string; providerId: string; model: string; baseUrl: string; reason: string };
-      inbox: { sampledCount: number; skippedCount: number; totalFileCount: number };
-    };
-
-    assert.equal(requestResponse.statusCode, 202);
-    assert.equal(requestBody.approval.kind, 'scheduler-run-mind-steward-inbox-classifier-dry-run');
-    assert.equal(requestBody.executed, false);
-    assert.equal(approvalResponse.statusCode, 200);
-    assert.equal(approvalBody.approval.status, 'approved');
-    assert.equal(approvalBody.executed, true);
-    assert.equal(approvalBody.preview.wouldExecute, true);
-    assert.equal(approvalBody.preview.writesToMind, false);
-    assert.equal(approvalBody.preview.externalSideEffects, false);
-    assert.equal(approvalBody.preview.commands.length, 1);
-    assert.equal(approvalBody.execution.status, 'ok');
-    assert.equal(approvalBody.execution.command, 'bash tools/scripts/mind-steward-inbox-classifier-dry-run-report.sh');
-    assert.equal(approvalBody.execution.outputPath, 'runtime/local/mind-steward/inbox-classifier-latest.json');
-    assert.equal(approvalBody.execution.writesToMind, false);
-    assert.equal(approvalBody.execution.externalSideEffects, false);
-    assert.equal(approvalBody.policy.executionEnabled, true);
-    assert.equal(approvalBody.policy.executionGate, 'enabled-for-mind-steward-inbox-classifier-dry-run');
-    assert.equal(report.status, 'ok');
-    assert.equal(report.mode, 'classifier-dry-run-report-only');
-    assert.equal(report.writesToMind, false);
-    assert.equal(report.externalSideEffects, false);
-    assert.equal(report.executableActions, false);
-    assert.equal(report.selectorTaskType, 'mind_capture_classification');
-    assert.equal(report.selector.status, 'selected');
-    assert.equal(report.selector.providerId, 'ollama-local');
-    assert.equal(report.selector.model, 'qwen2.5:14b');
-    assert.equal(report.inbox.sampledCount, 3);
-    assert.equal(report.inbox.skippedCount, 0);
-    assert.equal(
-      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-mind-steward-inbox-classifier-dry-run' && event.executed === true),
-      true,
-    );
-  } finally {
-    selectorServer.server.close();
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    if (previousSelectorConfigDir === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = previousSelectorConfigDir;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(approvalResponse.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(approvalBody.code, 'mutable_capability_contained');
+  assert.equal(approvalBody.ok, false);
+  assert.equal(approvalBody.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve does not execute the mind-steward inbox classifier dry-run when the feature flag is disabled', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-classifier-action-blocked');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const selectorConfigDir = path.join(testDir, 'selector-config');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
-  const previousSelectorConfigDir = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-  const selectorServer = await startClassifierSelectorHealthServer();
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeClassifierSelectorConfig(selectorConfigDir, selectorServer.port);
-  writeClassifierInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = selectorConfigDir;
-  delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      policy: { executionEnabled: boolean };
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.policy.executionEnabled, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    selectorServer.server.close();
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    if (previousSelectorConfigDir === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = previousSelectorConfigDir;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve blocks the mind-steward inbox classifier dry-run when the script path is missing', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-classifier-action-missing-script');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const selectorConfigDir = path.join(testDir, 'selector-config');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
-  const previousSelectorConfigDir = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-  const previousScript = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT;
-  const selectorServer = await startClassifierSelectorHealthServer();
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeClassifierSelectorConfig(selectorConfigDir, selectorServer.port);
-  writeClassifierInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = selectorConfigDir;
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT = 'tools/scripts/mind-steward-inbox-classifier-dry-run-report.missing.sh';
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('missing'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    selectorServer.server.close();
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    if (previousSelectorConfigDir === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = previousSelectorConfigDir;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousScript === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_SCRIPT = previousScript;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve blocks the mind-steward inbox classifier dry-run when the selector runtime path is missing', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-classifier-action-missing-selector-runtime');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const selectorConfigDir = path.join(testDir, 'selector-config');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
-  const previousSelectorConfigDir = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-  const previousSelectorRuntime = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_RUNTIME;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-  const selectorServer = await startClassifierSelectorHealthServer();
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeClassifierSelectorConfig(selectorConfigDir, selectorServer.port);
-  writeClassifierInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = selectorConfigDir;
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_RUNTIME = path.join(testDir, 'missing-selector-core.py');
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-classifier-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('Selector runtime is missing'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    selectorServer.server.close();
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    if (previousSelectorConfigDir === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_CONFIG_DIR = previousSelectorConfigDir;
-    }
-    if (previousSelectorRuntime === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_RUNTIME;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_CLASSIFIER_SELECTOR_RUNTIME = previousSelectorRuntime;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_CLASSIFIER_DRY_RUN_EXECUTION = previousFlag;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('approved scheduler-run-mind-steward-inbox-queue-dry-run executes exactly one report-only action when all gates pass', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-queue-action-execution');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const approvalBody = JSON.parse(approvalResponse.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeQueueInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string; kind: string }; executed: boolean };
-    const approvalResponse = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const approvalBody = JSON.parse(approvalResponse.body) as {
-      executed: boolean;
-      approval: { kind: string; status: string };
-      preview: { wouldExecute: boolean; writesToMind: boolean; externalSideEffects: boolean; commands: string[] };
-      policy: { executionEnabled: boolean; executionGate: string };
-      execution: { status: string; command: string; outputPath: string; writesToMind: boolean; externalSideEffects: boolean };
-    };
-    const auditResponse = await exercise({ method: 'GET', url: '/approvals/audit' });
-    const auditBody = JSON.parse(auditResponse.body) as { events: Array<{ event: string; kind: string; executed: boolean }> };
-    const reportPath = path.resolve(process.cwd(), '..', '..', approvalBody.execution.outputPath);
-    const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as {
-      status: string;
-      mode: string;
-      writesToMind: boolean;
-      externalSideEffects: boolean;
-      executableActions: boolean;
-      queue_mode: string;
-      max_concurrent_jobs: number;
-      max_files_per_run: number;
-      debounce_seconds: number;
-      max_retries: number;
-      large_file_threshold_mb: number;
-      minimum_seconds_between_runs: number;
-      inbox: {
-        total_inbox_files: number;
-        candidate_files_selected_for_next_run: Array<{ status: string }>;
-        blocked_large_file_entries: Array<{ status: string }>;
-        skipped_entries: Array<{ status: string }>;
-        summary_counts: {
-          total_inbox_files: number;
-          pending: number;
-          blocked_large_file: number;
-          skipped_capacity: number;
-        };
-      };
-    };
-
-    assert.equal(requestResponse.statusCode, 202);
-    assert.equal(requestBody.approval.kind, 'scheduler-run-mind-steward-inbox-queue-dry-run');
-    assert.equal(requestBody.executed, false);
-    assert.equal(approvalResponse.statusCode, 200);
-    assert.equal(approvalBody.approval.status, 'approved');
-    assert.equal(approvalBody.executed, true);
-    assert.equal(approvalBody.preview.wouldExecute, true);
-    assert.equal(approvalBody.preview.writesToMind, false);
-    assert.equal(approvalBody.preview.externalSideEffects, false);
-    assert.equal(approvalBody.preview.commands.length, 1);
-    assert.equal(approvalBody.execution.status, 'ok');
-    assert.equal(approvalBody.execution.command, 'bash tools/scripts/mind-steward-inbox-queue-dry-run-report.sh');
-    assert.equal(approvalBody.execution.outputPath, 'runtime/local/mind-steward/inbox-queue-latest.json');
-    assert.equal(approvalBody.execution.writesToMind, false);
-    assert.equal(approvalBody.execution.externalSideEffects, false);
-    assert.equal(approvalBody.policy.executionEnabled, true);
-    assert.equal(approvalBody.policy.executionGate, 'enabled-for-mind-steward-inbox-queue-dry-run');
-    assert.equal(report.status, 'success');
-    assert.equal(report.mode, 'dry-run-report-only');
-    assert.equal(report.queue_mode, 'dry-run-report-only');
-    assert.equal(report.writesToMind, false);
-    assert.equal(report.externalSideEffects, false);
-    assert.equal(report.executableActions, false);
-    assert.equal(report.max_concurrent_jobs, 1);
-    assert.equal(report.max_files_per_run, 3);
-    assert.equal(report.debounce_seconds, 30);
-    assert.equal(report.max_retries, 2);
-    assert.equal(report.large_file_threshold_mb, 2);
-    assert.equal(report.minimum_seconds_between_runs, 300);
-    assert.equal(report.inbox.total_inbox_files, 5);
-    assert.equal(report.inbox.candidate_files_selected_for_next_run.length, 3);
-    assert.equal(report.inbox.blocked_large_file_entries.length, 1);
-    assert.equal(report.inbox.skipped_entries.length, 1);
-    assert.equal(report.inbox.candidate_files_selected_for_next_run.every((item) => item.status === 'pending'), true);
-    assert.equal(report.inbox.blocked_large_file_entries.every((item) => item.status === 'blocked_large_file'), true);
-    assert.equal(report.inbox.skipped_entries.every((item) => item.status === 'skipped_capacity'), true);
-    assert.equal(report.inbox.summary_counts.total_inbox_files, 5);
-    assert.equal(report.inbox.summary_counts.pending, 3);
-    assert.equal(report.inbox.summary_counts.blocked_large_file, 1);
-    assert.equal(report.inbox.summary_counts.skipped_capacity, 1);
-    assert.equal(
-      auditBody.events.some((event) => event.event === 'executed' && event.kind === 'scheduler-run-mind-steward-inbox-queue-dry-run' && event.executed === true),
-      true,
-    );
-  } finally {
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(approvalResponse.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(approvalBody.code, 'mutable_capability_contained');
+  assert.equal(approvalBody.ok, false);
+  assert.equal(approvalBody.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve does not execute the mind-steward inbox queue dry-run when the feature flag is disabled', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-queue-action-blocked');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeQueueInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-  delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      policy: { executionEnabled: boolean };
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.policy.executionEnabled, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = previousFlag;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve blocks the mind-steward inbox queue dry-run when the script path is missing', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-queue-action-missing-script');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const mindRoot = path.join(testDir, 'mind');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousMindRoot = process.env.MIND_STEWARD_MIND_ROOT;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
-  const previousScript = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  writeQueueInboxFixture(mindRoot);
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.MIND_STEWARD_MIND_ROOT = mindRoot;
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT = 'tools/scripts/mind-steward-inbox-queue-dry-run-report.missing.sh';
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-queue-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('missing'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousMindRoot === undefined) {
-      delete process.env.MIND_STEWARD_MIND_ROOT;
-    } else {
-      process.env.MIND_STEWARD_MIND_ROOT = previousMindRoot;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousScript === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_QUEUE_DRY_RUN_SCRIPT = previousScript;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve blocks the mind-steward inbox dry-run when the script path is missing', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-inbox-action-missing-script');
-  const storePath = path.join(testDir, 'approvals.json');
-  const auditPath = path.join(testDir, 'approval-audit.jsonl');
-  const previousStorePath = process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-  const previousAuditPath = process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-  const previousFlag = process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
-  const previousScript = process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT;
+  const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-dry-run/request-run' });
+  const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
+  const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-  process.env.BRAIN_CORE_APPROVAL_STORE_PATH = storePath;
-  process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = auditPath;
-  process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION = 'true';
-  process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT = 'tools/scripts/mind-steward-inbox-dry-run-report.missing.sh';
-
-  try {
-    const requestResponse = await exercise({ method: 'POST', url: '/scheduler/jobs/mind-steward-inbox-dry-run/request-run' });
-    const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
-    const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-    const body = JSON.parse(response.body) as {
-      execution: { status: string; message: string; writesToMind: boolean };
-      executed: boolean;
-    };
-
-    assert.equal(response.statusCode, 200);
-    assert.equal(body.executed, false);
-    assert.equal(body.execution.status, 'blocked');
-    assert.equal(body.execution.message.includes('missing'), true);
-    assert.equal(body.execution.writesToMind, false);
-  } finally {
-    if (previousStorePath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_STORE_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_STORE_PATH = previousStorePath;
-    }
-    if (previousAuditPath === undefined) {
-      delete process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH;
-    } else {
-      process.env.BRAIN_CORE_APPROVAL_AUDIT_PATH = previousAuditPath;
-    }
-    if (previousFlag === undefined) {
-      delete process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION;
-    } else {
-      process.env.BRAIN_CORE_ENABLE_MIND_STEWARD_INBOX_DRY_RUN_EXECUTION = previousFlag;
-    }
-    if (previousScript === undefined) {
-      delete process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT;
-    } else {
-      process.env.BRAIN_CORE_MIND_STEWARD_INBOX_DRY_RUN_SCRIPT = previousScript;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(requestResponse.statusCode, 202);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve marks approval approved without executing', async () => {
   const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
   const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
   const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/approve` });
-  const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.approval.status, 'approved');
-  assert.equal(body.executed, false);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/reject marks approval rejected without executing', async () => {
   const requestResponse = await exercise({ method: 'POST', url: '/actions/request?kind=manual-request' });
   const requestBody = JSON.parse(requestResponse.body) as { approval: { id: string } };
   const response = await exercise({ method: 'POST', url: `/approvals/${requestBody.approval.id}/reject` });
-  const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.approval.status, 'rejected');
-  assert.equal(body.executed, false);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /approvals/:id/approve records missing audit event when approval does not exist', async () => {
   const response = await exercise({ method: 'POST', url: '/approvals/approval-missing/approve' });
-  const body = JSON.parse(response.body) as { approval: { status: string }; executed: boolean };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 200);
-  assert.equal(body.approval.status, 'expired');
-  assert.equal(body.executed, false);
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('GET /approvals/:id returns approval detail with age and expiration', async () => {
