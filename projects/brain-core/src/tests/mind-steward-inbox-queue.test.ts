@@ -27,7 +27,7 @@ function createMindFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const inboxDir = path.join(mindRoot, 'capture', 'inbox');
+  const inboxDir = path.join(mindRoot, 'inbox', 'new');
   const statePath = path.join(tempDir, 'brain-runtime', 'mind-steward', 'inbox-queue-state.json');
   mkdirSync(inboxDir, { recursive: true });
   return { tempDir, mindRoot, inboxDir, statePath };
@@ -61,7 +61,7 @@ test('persistent inbox queue writes Brain-owned state without changing Mind capt
     assert.equal(state.safety.deletesCaptures, false);
     assert.equal(state.safety.writesKanban, false);
     assert.equal(state.items.length, 1);
-    assert.equal(state.items[0]?.path, 'capture/inbox/capture-a.md');
+    assert.equal(state.items[0]?.path, 'inbox/new/capture-a.md');
     assert.equal(state.items[0]?.status, 'pending');
     assert.equal(state.items[0]?.selectedForSample, true);
     assert.equal(state.items[0]?.stableFile, true);
@@ -169,17 +169,17 @@ test('persistent inbox queue blocks large files and debounces unstable files', (
     });
 
     const byPath = new Map(state.items.map(item => [item.path, item]));
-    assert.equal(byPath.get('capture/inbox/stable.md')?.selectedForSample, true);
-    assert.equal(byPath.get('capture/inbox/stable.md')?.stableFile, true);
-    assert.equal(byPath.get('capture/inbox/stable.md')?.debounceUntil, null);
-    assert.equal(byPath.get('capture/inbox/recent.md')?.status, 'pending');
-    assert.equal(byPath.get('capture/inbox/recent.md')?.selectedForSample, false);
-    assert.equal(byPath.get('capture/inbox/recent.md')?.stableFile, false);
-    assert.equal(byPath.get('capture/inbox/recent.md')?.stableAt, '2026-06-18T12:00:25.000Z');
-    assert.equal(byPath.get('capture/inbox/recent.md')?.debounceUntil, '2026-06-18T12:00:25.000Z');
-    assert.equal(byPath.get('capture/inbox/large.md')?.status, 'blocked');
-    assert.equal(byPath.get('capture/inbox/large.md')?.largeFile, true);
-    assert.equal(byPath.get('capture/inbox/large.md')?.lastError, 'blocked_large_file');
+    assert.equal(byPath.get('inbox/new/stable.md')?.selectedForSample, true);
+    assert.equal(byPath.get('inbox/new/stable.md')?.stableFile, true);
+    assert.equal(byPath.get('inbox/new/stable.md')?.debounceUntil, null);
+    assert.equal(byPath.get('inbox/new/recent.md')?.status, 'pending');
+    assert.equal(byPath.get('inbox/new/recent.md')?.selectedForSample, false);
+    assert.equal(byPath.get('inbox/new/recent.md')?.stableFile, false);
+    assert.equal(byPath.get('inbox/new/recent.md')?.stableAt, '2026-06-18T12:00:25.000Z');
+    assert.equal(byPath.get('inbox/new/recent.md')?.debounceUntil, '2026-06-18T12:00:25.000Z');
+    assert.equal(byPath.get('inbox/new/large.md')?.status, 'blocked');
+    assert.equal(byPath.get('inbox/new/large.md')?.largeFile, true);
+    assert.equal(byPath.get('inbox/new/large.md')?.lastError, 'blocked_large_file');
     assert.equal(state.summary.selectedForSample, 1);
     assert.equal(state.summary.stableFile, 2);
     assert.equal(state.summary.debouncing, 1);
@@ -494,9 +494,9 @@ test('persistent inbox queue does not reselect unchanged handled captures', () =
 
     assert.equal(second.summary.selectedForSample, 0);
     const byPath = new Map(second.items.map(item => [item.path, item]));
-    assert.equal(byPath.get('capture/inbox/reported.md')?.status, 'reported');
-    assert.equal(byPath.get('capture/inbox/approved.md')?.status, 'approved');
-    assert.equal(byPath.get('capture/inbox/done.md')?.status, 'done');
+    assert.equal(byPath.get('inbox/new/reported.md')?.status, 'reported');
+    assert.equal(byPath.get('inbox/new/approved.md')?.status, 'approved');
+    assert.equal(byPath.get('inbox/new/done.md')?.status, 'done');
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
   }
@@ -555,7 +555,7 @@ test('persistent inbox queue schedules bounded retries before retry time', () =>
     });
     const failure = recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/retry.md',
+      capturePath: 'inbox/new/retry.md',
       error: 'classifier_timeout',
       now: new Date('2026-06-18T12:01:00Z'),
       retryDelaySeconds: 120,
@@ -607,14 +607,14 @@ test('persistent inbox queue routes exhausted failures to Brain runtime state wi
     });
     recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/failed.md',
+      capturePath: 'inbox/new/failed.md',
       error: 'classifier_timeout',
       now: new Date('2026-06-18T12:01:00Z'),
       retryDelaySeconds: 60,
     });
     const exhausted = recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/failed.md',
+      capturePath: 'inbox/new/failed.md',
       error: 'classifier_timeout_again',
       now: new Date('2026-06-18T12:03:00Z'),
       retryDelaySeconds: 60,
@@ -652,7 +652,7 @@ test('persistent inbox queue failure routing blocks unknown queue items', () => 
     });
     const result = recordMindStewardInboxQueueFailure({
       statePath: fixture.statePath,
-      capturePath: 'capture/inbox/missing.md',
+      capturePath: 'inbox/new/missing.md',
       error: 'classifier_timeout',
       now: new Date('2026-06-18T12:01:00Z'),
     });
