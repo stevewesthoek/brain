@@ -4867,27 +4867,14 @@ test('POST /api/infinite-brain/proposals/approvals rejects invalid proposalId', 
     remoteAddress: '127.0.0.1',
   });
 
-  // Add JSON body
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(Buffer.from(JSON.stringify({
-        proposalId: 'nonexistent-proposal-id',
-        decision: 'approved',
-        decidedBy: 'test',
-        reason: 'test reason',
-      })));
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 404, 'must return 404 for nonexistent proposal');
-  assert.equal(body.code, 'proposal_not_found', 'code must be proposal_not_found');
-  assert.equal(body.ok, false, 'ok must be false');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /api/infinite-brain/proposals/approvals rejects invalid decision', async () => {
@@ -4897,131 +4884,31 @@ test('POST /api/infinite-brain/proposals/approvals rejects invalid decision', as
     remoteAddress: '127.0.0.1',
   });
 
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(Buffer.from(JSON.stringify({
-        proposalId: 'prop-test',
-        decision: 'invalid-decision',
-        decidedBy: 'test',
-        reason: 'test reason',
-      })));
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 400, 'must return 400 for invalid decision');
-  assert.equal(body.code, 'invalid_decision', 'code must be invalid_decision');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /api/infinite-brain/proposals/approvals exercise success path', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-approval-success');
-  const proposalsPath = path.join(testDir, 'proposals-latest.json');
-  const approvalsPath = path.join(testDir, 'proposal-approvals.json');
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/proposals/approvals',
+    remoteAddress: '127.0.0.1',
+  });
 
-  const previousProposalsPath = process.env.IBR_PROPOSALS_REPORT_PATH;
-  const previousApprovalsPath = process.env.IBR_PROPOSAL_APPROVALS_PATH;
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean; approvalBypassAllowed?: boolean } };
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
-
-  // Write temp proposal report with one valid proposal
-  fs.writeFileSync(proposalsPath, JSON.stringify({
-    timestamp: new Date().toISOString(),
-    totalProposals: 1,
-    proposals: [
-      {
-        proposalId: 'prop-test-valid',
-        category: 'atomization',
-        title: 'Test Proposal',
-        summary: 'This is a test proposal',
-        confidence: 0.95,
-        priority: 'high',
-        riskLevel: 'medium',
-        requiresApproval: true,
-        writesToMindIfApproved: false,
-        safetyMode: 'report-only',
-        status: 'proposed',
-      }
-    ]
-  }, null, 2));
-
-  process.env.IBR_PROPOSALS_REPORT_PATH = proposalsPath;
-  process.env.IBR_PROPOSAL_APPROVALS_PATH = approvalsPath;
-
-  try {
-    const request = createRequest({
-      method: 'POST',
-      url: '/api/infinite-brain/proposals/approvals',
-      remoteAddress: '127.0.0.1',
-    });
-
-    // Mock the request stream to provide JSON body
-    (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-      if (event === 'data') {
-        callback(Buffer.from(JSON.stringify({
-          proposalId: 'prop-test-valid',
-          decision: 'approved',
-          decidedBy: 'test',
-          reason: 'test approval reason',
-        })));
-      } else if (event === 'end') {
-        callback();
-      }
-    };
-
-    const response = new MockResponse();
-    await routeRequest(request, response);
-
-    const body = JSON.parse(response.body) as {
-      ok: boolean;
-      code: string;
-      record: { proposalId: string; decision: string; executionBlocked: boolean; applied: boolean };
-      safety: { executionBlocked: boolean; applied: boolean; writesToMind: boolean };
-    };
-
-    // Assertions: HTTP 200
-    assert.equal(response.statusCode, 200);
-
-    // Assertions: response body structure
-    assert.equal(body.ok, true);
-    assert.equal(body.code, 'approval_recorded');
-    assert.equal(body.record.proposalId, 'prop-test-valid');
-    assert.equal(body.record.decision, 'approved');
-    assert.equal(body.record.executionBlocked, true);
-    assert.equal(body.record.applied, false);
-
-    // Assertions: safety invariants
-    assert.equal(body.safety.executionBlocked, true);
-    assert.equal(body.safety.applied, false);
-    assert.equal(body.safety.writesToMind, false);
-
-    // Assertions: verify approvals file was written
-    const approvalsContent = fs.readFileSync(approvalsPath, 'utf8');
-    const approvalsData = JSON.parse(approvalsContent) as { records: Array<{ proposalId: string; applied: boolean; executionBlocked: boolean }> };
-
-    assert.equal(Array.isArray(approvalsData.records), true);
-    assert.equal(approvalsData.records.length, 1);
-    assert.equal(approvalsData.records[0]?.proposalId, 'prop-test-valid');
-    assert.equal(approvalsData.records[0]?.applied, false);
-    assert.equal(approvalsData.records[0]?.executionBlocked, true);
-  } finally {
-    if (previousProposalsPath === undefined) {
-      delete process.env.IBR_PROPOSALS_REPORT_PATH;
-    } else {
-      process.env.IBR_PROPOSALS_REPORT_PATH = previousProposalsPath;
-    }
-    if (previousApprovalsPath === undefined) {
-      delete process.env.IBR_PROPOSAL_APPROVALS_PATH;
-    } else {
-      process.env.IBR_PROPOSAL_APPROVALS_PATH = previousApprovalsPath;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
 });
 
 test('POST /api/infinite-brain/proposals/application-plan/generate returns empty plan with no approvals', async () => {
@@ -5392,25 +5279,14 @@ test('POST /api/infinite-brain/operator-approval/record rejects missing operator
     remoteAddress: '127.0.0.1',
   });
 
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(Buffer.from(JSON.stringify({
-        operator: '',
-        decision: 'approved',
-        reason: 'test reason',
-      })));
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 400, 'must return 400 for empty operator');
-  assert.equal(body.code, 'missing_operator', 'code must be missing_operator');
-  assert.equal(body.ok, false, 'ok must be false');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /api/infinite-brain/operator-approval/record rejects missing reason', async () => {
@@ -5420,25 +5296,14 @@ test('POST /api/infinite-brain/operator-approval/record rejects missing reason',
     remoteAddress: '127.0.0.1',
   });
 
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(Buffer.from(JSON.stringify({
-        operator: 'test-operator',
-        decision: 'approved',
-        reason: '',
-      })));
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 400, 'must return 400 for empty reason');
-  assert.equal(body.code, 'missing_reason', 'code must be missing_reason');
-  assert.equal(body.ok, false, 'ok must be false');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /api/infinite-brain/operator-approval/record rejects invalid decision', async () => {
@@ -5448,80 +5313,32 @@ test('POST /api/infinite-brain/operator-approval/record rejects invalid decision
     remoteAddress: '127.0.0.1',
   });
 
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(Buffer.from(JSON.stringify({
-        operator: 'test-operator',
-        decision: 'invalid-decision',
-        reason: 'test reason',
-      })));
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 400, 'must return 400 for invalid decision');
-  assert.equal(body.code, 'invalid_decision', 'code must be invalid_decision');
-  assert.equal(body.ok, false, 'ok must be false');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('POST /api/infinite-brain/operator-approval/record accepts approved intent', async () => {
-  const testDir = path.join(process.cwd(), '.buildflow-test-ibr-operator-approval');
-  const approvalPath = path.join(testDir, 'approval.json');
-  const previousEnv = process.env.IBR_OPERATOR_APPROVAL_PATH;
+  const request = createRequest({
+    method: 'POST',
+    url: '/api/infinite-brain/operator-approval/record',
+    remoteAddress: '127.0.0.1',
+  });
 
-  fs.rmSync(testDir, { recursive: true, force: true });
-  fs.mkdirSync(testDir, { recursive: true });
+  const response = new MockResponse();
+  await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean; approvalBypassAllowed?: boolean } };
 
-  try {
-    process.env.IBR_OPERATOR_APPROVAL_PATH = approvalPath;
-
-    const request = createRequest({
-      method: 'POST',
-      url: '/api/infinite-brain/operator-approval/record',
-      remoteAddress: '127.0.0.1',
-    });
-
-    (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-      if (event === 'data') {
-        callback(Buffer.from(JSON.stringify({
-          operator: 'test-operator',
-          decision: 'approved',
-          reason: 'test approval intent',
-        })));
-      } else if (event === 'end') {
-        callback();
-      }
-    };
-
-    const response = new MockResponse();
-    await routeRequest(request, response);
-    const body = JSON.parse(response.body) as {
-      ok?: boolean;
-      record?: { decision: string };
-      safety?: { executionEnabled: boolean; canExecute: boolean; applied: boolean; writesToMind: boolean; approvalRecordOnly: boolean };
-    };
-
-    assert.equal(response.statusCode, 200, 'must return 200 for valid input');
-    assert.equal(body.ok, true, 'ok must be true');
-    assert.equal(body.record?.decision, 'approved', 'decision must be approved');
-    assert.equal(body.safety?.executionEnabled, false, 'executionEnabled must be false');
-    assert.equal(body.safety?.canExecute, false, 'canExecute must be false');
-    assert.equal(body.safety?.applied, false, 'applied must be false');
-    assert.equal(body.safety?.writesToMind, false, 'writesToMind must be false');
-    assert.equal(body.safety?.approvalRecordOnly, true, 'approvalRecordOnly must be true');
-  } finally {
-    if (previousEnv === undefined) {
-      delete process.env.IBR_OPERATOR_APPROVAL_PATH;
-    } else {
-      process.env.IBR_OPERATOR_APPROVAL_PATH = previousEnv;
-    }
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
+  assert.equal(body.safety?.approvalBypassAllowed, false);
 });
 
 test('GET /api/infinite-brain/operator-approval returns stored record', async () => {
@@ -5971,33 +5788,14 @@ test('Route: POST /api/infinite-brain/metadata-writer/write/single-file-test wit
     remoteAddress: '127.0.0.1',
   });
 
-  // Mock the request stream to provide JSON body
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(
-        Buffer.from(
-          JSON.stringify({
-            manualSingleWriteConfirm: false,
-            operator: 'test-operator',
-            reason: 'testing',
-            targetPath: '/test/path.md',
-            fieldName: 'description',
-            value: 'test',
-          }),
-        ),
-      );
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 400, 'must return 400 without confirmation');
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
-  assert.equal(body.ok, false, 'ok must be false');
-  assert(body.code?.includes('confirmation') || body.code?.includes('Confirmation'), 'code should mention confirmation');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('Route: POST /api/infinite-brain/metadata-writer/write/single-file-test with missing operator returns 400', async () => {
@@ -6007,32 +5805,14 @@ test('Route: POST /api/infinite-brain/metadata-writer/write/single-file-test wit
     remoteAddress: '127.0.0.1',
   });
 
-  // Mock the request stream to provide JSON body
-  (request as any).on = (event: string, callback: (data?: unknown) => void) => {
-    if (event === 'data') {
-      callback(
-        Buffer.from(
-          JSON.stringify({
-            manualSingleWriteConfirm: true,
-            operator: '',
-            reason: 'testing',
-            targetPath: '/test/path.md',
-            fieldName: 'description',
-            value: 'test',
-          }),
-        ),
-      );
-    } else if (event === 'end') {
-      callback();
-    }
-  };
-
   const response = new MockResponse();
   await routeRequest(request, response);
+  const body = JSON.parse(response.body) as { ok?: boolean; code?: string; safety?: { requestBodyRead?: boolean } };
 
-  assert.equal(response.statusCode, 400, 'must return 400 with missing operator');
-  const body = JSON.parse(response.body) as { ok?: boolean; code?: string };
-  assert.equal(body.ok, false, 'ok must be false');
+  assert.equal(response.statusCode, 503, 'BS0.1 containment rejects before body read');
+  assert.equal(body.code, 'mutable_capability_contained');
+  assert.equal(body.ok, false);
+  assert.equal(body.safety?.requestBodyRead, false);
 });
 
 test('Route: GET /api/infinite-brain/metadata-writer/write returns 404 when no report exists', async () => {
