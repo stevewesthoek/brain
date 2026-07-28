@@ -1,3 +1,7 @@
+import { canonicalMindPrefix, describeMindPath, resolveCanonicalMindPath } from './canonical-mind-path-registry.js';
+import { MIND_CONTRACT } from './contracts/mind-contract.js';
+import { MIND_CANONICAL_PATHS, MIND_PATH_POLICY } from '../../../operations/specs/infinite-brain-boundary-contracts.js';
+
 export type MindPathKind = 'file' | 'directory';
 export type MindPathEra = 'target' | 'legacy-fallback';
 
@@ -15,21 +19,21 @@ export interface MindPathCompatibilityGroup {
 }
 
 export const MIND_TARGET_PATHS = {
-  tasks: 'tasks.md',
-  inboxNew: 'inbox/new',
-  inboxRaw: 'inbox/raw',
-  inboxProcessed: 'inbox/processed',
-  inboxFailed: 'inbox/failed',
-  projects: 'projects',
-  organizations: 'organizations',
-  repos: 'repos',
-  people: 'people',
-  faith: 'faith',
-  knowledge: 'knowledge',
-  resources: 'resources',
-  history: 'history',
-  agentContext: 'system/agent-context',
-  graphOutput: 'system/generated/graph',
+  tasks: MIND_CANONICAL_PATHS.kanban,
+  inboxNew: MIND_CANONICAL_PATHS.inboxNew.replace(/\/$/, ''),
+  inboxRaw: MIND_CANONICAL_PATHS.inboxRaw.replace(/\/$/, ''),
+  inboxProcessed: MIND_CANONICAL_PATHS.inboxProcessed.replace(/\/$/, ''),
+  inboxFailed: MIND_CANONICAL_PATHS.inboxFailed.replace(/\/$/, ''),
+  projects: MIND_CANONICAL_PATHS.projects.replace(/\/$/, ''),
+  organizations: MIND_CANONICAL_PATHS.organizations.replace(/\/$/, ''),
+  repos: MIND_CANONICAL_PATHS.repos.replace(/\/$/, ''),
+  people: MIND_CANONICAL_PATHS.people.replace(/\/$/, ''),
+  faith: MIND_CANONICAL_PATHS.faith.replace(/\/$/, ''),
+  knowledge: MIND_CANONICAL_PATHS.knowledge.replace(/\/$/, ''),
+  resources: MIND_CANONICAL_PATHS.resources.replace(/\/$/, ''),
+  history: MIND_CANONICAL_PATHS.history.replace(/\/$/, ''),
+  agentContext: MIND_CANONICAL_PATHS.agentContext.replace(/\/$/, ''),
+  graphOutput: MIND_CANONICAL_PATHS.graphOutput,
 } as const;
 
 export const MIND_LEGACY_PATHS = {
@@ -46,27 +50,17 @@ export const MIND_LEGACY_PATHS = {
   legacyGraphifyOut: '.graphify-out',
 } as const;
 
-export const MIND_INBOX_NEW_CANDIDATES: readonly MindPathCandidate[] = [
-  {
-    path: MIND_TARGET_PATHS.inboxNew,
-    kind: 'directory',
-    era: 'target',
-    purpose: 'human-first universal dump zone for new captures',
-  },
-] as const;
+export const MIND_PATH_EXCLUSION_PREFIXES = MIND_PATH_POLICY.blockedPrefixes;
+
+export const MIND_INBOX_NEW_CANDIDATES: readonly MindPathCandidate[] = MIND_CONTRACT.activeCandidatePaths
+  .filter((candidate) => candidate.path === MIND_CONTRACT.currentSuccessPath) as readonly MindPathCandidate[];
 
 // Historical note: capture/inbox was retired after Batch 8W cleanup (2026-07-09).
 // Legacy path MIND_LEGACY_PATHS.captureInbox remains available for historical reference only.
 // Do not re-add as fallback; all active content has been migrated to inbox/new.
 
-export const MIND_FAILED_INBOX_CANDIDATES: readonly MindPathCandidate[] = [
-  {
-    path: MIND_TARGET_PATHS.inboxFailed,
-    kind: 'directory',
-    era: 'target',
-    purpose: 'human-first failed or blocked capture processing surface',
-  },
-] as const;
+export const MIND_FAILED_INBOX_CANDIDATES: readonly MindPathCandidate[] = MIND_CONTRACT.activeCandidatePaths
+  .filter((candidate) => candidate.path === MIND_CONTRACT.currentFailurePath) as readonly MindPathCandidate[];
 
 // Historical note: capture/failed was retired after Batch 8Y cleanup (2026-07-09).
 // Legacy path MIND_LEGACY_PATHS.captureFailed remains available for historical reference only.
@@ -208,7 +202,7 @@ export function isSafeMindInboxCapturePath(capturePath: string | null): captureP
     .some(prefix => normalized.startsWith(prefix) && normalized.length > prefix.length);
 }
 
-export function buildMindInboxCapturePath(captureName: string, inboxRelativePath: string = MIND_LEGACY_PATHS.captureInbox): string | null {
+export function buildMindInboxCapturePath(captureName: string, inboxRelativePath: string = MIND_TARGET_PATHS.inboxNew): string | null {
   if (!isSafeCaptureName(captureName)) return null;
   const normalizedInboxPath = pathNormalizePosix(inboxRelativePath).replace(/\/+$/g, '');
   if (!isSafeRelativeMindPath(normalizedInboxPath)) return null;
@@ -244,17 +238,12 @@ function pathNormalizePosix(value: string): string {
 
 
 
-export const MIND_PROJECT_WRITE_PREFIXES = ['projects/', 'live/'] as const;
-export const MIND_KNOWLEDGE_WRITE_PREFIXES = ['knowledge/', 'wiki/'] as const;
-export const MIND_RESOURCE_WRITE_PREFIXES = ['resources/', 'sources/'] as const;
-export const MIND_HISTORY_WRITE_PREFIXES = ['history/', 'archive/'] as const;
-export const MIND_ORGANIZATION_WRITE_PREFIXES = ['organizations/', 'wiki/organisations/'] as const;
-export const MIND_FAITH_WRITE_PREFIXES = [
-  'faith/',
-  'sources/research/bible/',
-  'sources/research/theology/',
-  'sources/research/apologetics/',
-] as const;
+export const MIND_PROJECT_WRITE_PREFIXES = [canonicalMindPrefix('projects')] as const;
+export const MIND_KNOWLEDGE_WRITE_PREFIXES = [canonicalMindPrefix('knowledge')] as const;
+export const MIND_RESOURCE_WRITE_PREFIXES = [canonicalMindPrefix('resources')] as const;
+export const MIND_HISTORY_WRITE_PREFIXES = [canonicalMindPrefix('history')] as const;
+export const MIND_ORGANIZATION_WRITE_PREFIXES = [canonicalMindPrefix('organizations')] as const;
+export const MIND_FAITH_WRITE_PREFIXES = [canonicalMindPrefix('faith')] as const;
 
 export const MIND_DURABLE_WRITE_PREFIXES = [
   ...MIND_PROJECT_WRITE_PREFIXES,
@@ -279,11 +268,21 @@ export function normalizeExactMindMarkdownPathForPrefixes(
     : null;
 }
 
+/**
+ * A destructive writer may only use a registry-classified canonical source.
+ * Compatibility and historical paths remain readable by their explicit readers,
+ * but cannot be selected as a mutation source in this lane.
+ */
+export function isCanonicalMindMutationSourcePath(value: string): boolean {
+  const entry = describeMindPath(value);
+  return Boolean(entry?.activeDefaultAllowed && entry.type.startsWith('canonical-'));
+}
 
 
-export const MIND_TASK_FILE_CANDIDATES = [MIND_TARGET_PATHS.tasks, MIND_LEGACY_PATHS.kanban] as const;
-export const MIND_PROJECT_PAGE_PREFIXES = ['projects/', 'live/projects/'] as const;
-export const MIND_COMPLETED_PROJECT_ARCHIVE_PREFIXES = ['history/projects/', 'archive/projects/'] as const;
+
+export const MIND_TASK_FILE_CANDIDATES = [MIND_TARGET_PATHS.tasks] as const;
+export const MIND_PROJECT_PAGE_PREFIXES = [canonicalMindPrefix('projects')] as const;
+export const MIND_COMPLETED_PROJECT_ARCHIVE_PREFIXES = [`${canonicalMindPrefix('history')}projects/`] as const;
 
 export function isMindTaskFilePath(value: string): value is typeof MIND_TASK_FILE_CANDIDATES[number] {
   return MIND_TASK_FILE_CANDIDATES.includes(value as typeof MIND_TASK_FILE_CANDIDATES[number]);
@@ -292,13 +291,11 @@ export function isMindTaskFilePath(value: string): value is typeof MIND_TASK_FIL
 
 
 export const MIND_AGENT_CONTEXT_CURRENT_PATH_CANDIDATES = [
-  'system/agent-context/current.md',
-  'router/current.md',
+  `${MIND_TARGET_PATHS.agentContext}/current.md`,
 ] as const;
 
 export const MIND_AGENT_CONTEXT_CURRENT_CONTEXT_CANDIDATES = [
-  'system/agent-context/00-current-context.md',
-  'router/00-current-context.md',
+  `${MIND_TARGET_PATHS.agentContext}/00-current-context.md`,
 ] as const;
 
 export const MIND_GRAPH_OUTPUT_CANDIDATES = [
@@ -310,18 +307,15 @@ export const MIND_GRAPH_OUTPUT_CANDIDATES = [
 
 
 export const MIND_REVIEW_SURFACE_CANDIDATES = [
-  MIND_TARGET_PATHS.inboxProcessed,
-  MIND_LEGACY_PATHS.wikiLog,
+  ...MIND_CONTRACT.reviewSurfaces,
 ] as const;
 
 export const MIND_REJECTED_CAPTURE_REVIEW_SURFACE_CANDIDATES = [
-  MIND_TARGET_PATHS.inboxNew,
-  MIND_LEGACY_PATHS.captureInbox,
+  MIND_CONTRACT.currentFailurePath,
 ] as const;
 
 export const MIND_DECISION_SOURCE_CANDIDATES = [
   'knowledge/decisions.md',
-  'live/decisions.md',
 ] as const;
 
 export function isMindDecisionSourcePath(value: string): value is typeof MIND_DECISION_SOURCE_CANDIDATES[number] {
