@@ -18,13 +18,13 @@ function taskProposal(): MindStewardTaskProposalOnlyRecord {
     proposalId: 'task-proposal-only-approved-fixture',
     status: 'ready',
     outcomeId: 'reviewed-outcome-task-fixture',
-    capturePath: 'capture/inbox/task-capture.md',
+    capturePath: 'inbox/new/task-capture.md',
     title: 'Follow up with ProChat onboarding checklist',
     summary: 'Prepare a reviewed task suggestion from the capture.',
     sourceLinks: [
       {
         type: 'capture',
-        path: 'capture/inbox/task-capture.md',
+        path: 'inbox/new/task-capture.md',
         summary: 'Source capture for task proposal.',
       },
     ],
@@ -112,11 +112,11 @@ function approval(
   };
 }
 
-test('task write approval gate accepts explicit approval for target tasks.md without writing Mind', () => {
+test('task write approval gate accepts explicit approval for canonical kanban.md without writing Mind', () => {
   const proposal = taskProposal();
   const roundTrip = roundTripReport();
   const targetApproval = approval(proposal.proposalId, roundTrip.candidateMarkdown ?? '');
-  targetApproval.targetPath = 'tasks.md';
+  targetApproval.targetPath = 'kanban.md';
   const report = evaluateTaskWriteApprovalGate({
     proposal,
     roundTripReport: roundTrip,
@@ -125,7 +125,7 @@ test('task write approval gate accepts explicit approval for target tasks.md wit
 
   assert.equal(report.status, 'ready');
   assert.equal(report.canRequestTaskWrite, true);
-  assert.equal(report.targetPath, 'tasks.md');
+  assert.equal(report.targetPath, 'kanban.md');
   assert.equal(report.safety.writesToMind, false);
   assert.equal(report.safety.writesKanban, false);
 });

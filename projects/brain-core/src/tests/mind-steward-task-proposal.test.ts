@@ -16,7 +16,7 @@ import { runTasksWriterDisabled } from '../adapters/infinite-brain-writers/write
 function createTaskOutcome() {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-task-proposal-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const capturePath = path.join(mindRoot, 'capture', 'inbox', 'task-capture.md');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'task-capture.md');
   mkdirSync(path.dirname(capturePath), { recursive: true });
   writeFileSync(capturePath, '# Task Capture\n\nFollow up with ProChat onboarding checklist.\n');
   const output = normalizeCaptureClassificationOutput({
@@ -31,7 +31,9 @@ function createTaskOutcome() {
       ],
       skippedFiles: [],
     },
-  }, new Date('2026-06-18T12:00:00Z'));
+  }, new Date('2026-06-18T12:00:00Z'), {
+    captureInboxPath: 'inbox/new',
+  });
   const classification = output.classifications[0];
   assert(classification);
   const sourceRecord = createCaptureSourcePreservationRecord({
@@ -66,11 +68,11 @@ test('task generation remains proposal-only with Kanban writes disabled', () => 
     assert.equal(proposal.title, 'Follow up with ProChat onboarding checklist');
     assert.deepEqual(proposal.sourceLinks, [{
       type: 'capture',
-      path: 'capture/inbox/task-capture.md',
+      path: 'inbox/new/task-capture.md',
       summary: 'Source capture for task proposal.',
     }]);
     assert.equal(proposal.reviewSurface, 'inbox/processed');
-    assert.equal(proposal.protectedKanbanPath, 'tasks.md');
+    assert.equal(proposal.protectedKanbanPath, 'kanban.md');
     assert.equal(proposal.proposalOnly, true);
     assert.equal(proposal.executionAllowed, false);
     assert.equal(proposal.safety.writesToMind, false);
@@ -92,7 +94,7 @@ test('task proposal-only records can link to a reviewed decision source', () => 
       sourceLinks: [
         {
           type: 'decision',
-          path: 'live/decisions.md',
+          path: 'knowledge/decisions.md',
           summary: 'Decision to prioritize ProChat onboarding improvements.',
         },
       ],
@@ -102,12 +104,12 @@ test('task proposal-only records can link to a reviewed decision source', () => 
     assert.deepEqual(proposal.sourceLinks, [
       {
         type: 'capture',
-        path: 'capture/inbox/task-capture.md',
+        path: 'inbox/new/task-capture.md',
         summary: 'Source capture for task proposal.',
       },
       {
         type: 'decision',
-        path: 'live/decisions.md',
+        path: 'knowledge/decisions.md',
         summary: 'Decision to prioritize ProChat onboarding improvements.',
       },
     ]);

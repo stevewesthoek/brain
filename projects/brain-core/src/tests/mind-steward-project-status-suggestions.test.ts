@@ -7,7 +7,7 @@ test('project status suggestions flag due review_after metadata', () => {
     reportDate: '2026-06-18',
     files: [
       {
-        path: 'live/projects/prochat/strategy.md',
+        path: 'projects/prochat/strategy.md',
         content: `---
 status: active
 last_reviewed: 2026-06-01
@@ -22,7 +22,7 @@ review_after: 2026-06-15
   assert.equal(report.status, 'ready');
   assert.equal(report.suggestions.length, 1);
   assert.equal(report.suggestions[0]?.reason, 'review-after-due');
-  assert.equal(report.suggestions[0]?.projectPath, 'live/projects/prochat/strategy.md');
+  assert.equal(report.suggestions[0]?.projectPath, 'projects/prochat/strategy.md');
   assert.equal(report.suggestions[0]?.requiresApproval, true);
   assert.equal(report.safety.writesLiveProjects, false);
 });
@@ -57,7 +57,7 @@ test('project status suggestions flag stale last_reviewed metadata', () => {
     staleAfterDays: 30,
     files: [
       {
-        path: 'live/projects/prochat/qa-memory.md',
+        path: 'projects/prochat/qa-memory.md',
         content: `---
 project_status: current
 last_reviewed: 2026-05-01
@@ -79,7 +79,7 @@ test('project status suggestions flag missing project status metadata', () => {
     reportDate: '2026-06-18',
     files: [
       {
-        path: 'live/projects/prochat/missing-status.md',
+        path: 'projects/prochat/missing-status.md',
         content: '# Project\n\nNo project status metadata.\n',
       },
     ],
@@ -99,11 +99,11 @@ test('project status suggestions ignore non-project and unsafe paths', () => {
         content: 'status: active\nreview_after: 2026-06-01\n',
       },
       {
-        path: 'live/projects/../dashboard.md',
+        path: 'projects/../dashboard.md',
         content: 'status: active\nreview_after: 2026-06-01\n',
       },
       {
-        path: 'live/projects/prochat/current.md',
+        path: 'projects/prochat/current.md',
         content: 'status: active\nreview_after: 2026-07-01\n',
       },
     ],
@@ -121,7 +121,7 @@ test('project status suggestions block invalid report dates and stale thresholds
     staleAfterDays: 0,
     files: [
       {
-        path: 'live/projects/prochat/current.md',
+        path: 'projects/prochat/current.md',
         content: 'status: active\n',
       },
     ],
