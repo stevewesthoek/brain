@@ -28,7 +28,9 @@ function createClassification(name = 'prochat-offer.md') {
       ],
       skippedFiles: [],
     },
-  }, new Date('2026-06-18T12:00:00Z'));
+  }, new Date('2026-06-18T12:00:00Z'), {
+    captureInboxPath: 'inbox/new',
+  });
   const classification = output.classifications[0];
   assert(classification);
   return classification;
@@ -37,7 +39,7 @@ function createClassification(name = 'prochat-offer.md') {
 function createFixture() {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-destination-proposal-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const capturePath = path.join(mindRoot, 'capture', 'inbox', 'prochat-offer.md');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'prochat-offer.md');
   mkdirSync(path.dirname(capturePath), { recursive: true });
   mkdirSync(path.join(mindRoot, 'wiki'), { recursive: true });
   writeFileSync(capturePath, '# ProChat Offer\n\nNotes about ProChat QA memory positioning and onboarding.\n');
@@ -60,15 +62,15 @@ test('selects exactly one clear destination candidate without writing Mind', () 
   try {
     const candidates: MindStewardDestinationCandidate[] = [
       {
-        kind: 'wiki',
-        destinationPath: 'wiki/organisations/prochat/offer.md',
+        kind: 'knowledge',
+        destinationPath: 'knowledge/organisations/prochat/offer.md',
         confidence: 0.91,
         rationale: 'Durable knowledge about a ProChat offer belongs in wiki.',
         evidence: ['classification summary mentions ProChat offer'],
       },
       {
-        kind: 'sources',
-        destinationPath: 'sources/research/prochat-offer.md',
+        kind: 'resources',
+        destinationPath: 'resources/research/prochat-offer.md',
         confidence: 0.54,
         rationale: 'Could be treated as source material.',
         evidence: ['contains notes'],
@@ -84,7 +86,7 @@ test('selects exactly one clear destination candidate without writing Mind', () 
 
     assert.equal(proposal.status, 'ready');
     assert.equal(proposal.materialAmbiguity, false);
-    assert.equal(proposal.selectedDestination?.destinationPath, 'wiki/organisations/prochat/offer.md');
+    assert.equal(proposal.selectedDestination?.destinationPath, 'knowledge/organisations/prochat/offer.md');
     assert.equal(proposal.ambiguousCandidates.length, 0);
     assert.equal(proposal.safety.writesToMind, false);
     assert.equal(proposal.safety.executesOutcome, false);
@@ -102,15 +104,15 @@ test('blocks destination proposal when ambiguity is material', () => {
       duplicateSearch: fixture.duplicateSearch,
       candidates: [
         {
-          kind: 'wiki',
-          destinationPath: 'wiki/organisations/prochat/offer.md',
+          kind: 'knowledge',
+          destinationPath: 'knowledge/organisations/prochat/offer.md',
           confidence: 0.82,
-          rationale: 'May be durable wiki knowledge.',
+          rationale: 'May be durable knowledge.',
           evidence: ['ProChat offer notes'],
         },
         {
-          kind: 'live',
-          destinationPath: 'live/projects/prochat/offer.md',
+          kind: 'projects',
+          destinationPath: 'projects/prochat/offer.md',
           confidence: 0.77,
           rationale: 'May be active project material.',
           evidence: ['ProChat offer notes'],
@@ -138,8 +140,8 @@ test('requires duplicate search and source preservation before selecting a desti
       duplicateSearch: null,
       candidates: [
         {
-          kind: 'wiki',
-          destinationPath: 'wiki/organisations/prochat/offer.md',
+          kind: 'knowledge',
+          destinationPath: 'knowledge/organisations/prochat/offer.md',
           confidence: 0.91,
           rationale: 'Durable knowledge about a ProChat offer belongs in wiki.',
           evidence: ['classification summary mentions ProChat offer'],
@@ -191,7 +193,7 @@ test('rejects broad or invalid destination candidates', () => {
 
 test('uses duplicate search candidates as a single existing-page destination when clear', () => {
   const fixture = createFixture();
-  const durablePath = path.join(fixture.mindRoot, 'wiki', 'organisations', 'prochat', 'offer.md');
+  const durablePath = path.join(fixture.mindRoot, 'knowledge', 'organisations', 'prochat', 'offer.md');
   mkdirSync(path.dirname(durablePath), { recursive: true });
   writeFileSync(durablePath, '# ProChat Offer\n\nProChat QA memory positioning and onboarding plan.\n');
 
@@ -199,6 +201,7 @@ test('uses duplicate search candidates as a single existing-page destination whe
     const duplicateSearch = runMindStewardDuplicateSearch({
       mindRoot: fixture.mindRoot,
       classification: fixture.classification,
+      searchedRoots: ['knowledge'],
       now: new Date('2026-06-18T12:06:00Z'),
     });
     const proposal = createSingleDestinationProposal({
@@ -208,8 +211,8 @@ test('uses duplicate search candidates as a single existing-page destination whe
     });
 
     assert.equal(proposal.status, 'ready');
-    assert.equal(proposal.selectedDestination?.kind, 'wiki');
-    assert.equal(proposal.selectedDestination?.destinationPath, 'wiki/organisations/prochat/offer.md');
+    assert.equal(proposal.selectedDestination?.kind, 'knowledge');
+    assert.equal(proposal.selectedDestination?.destinationPath, 'knowledge/organisations/prochat/offer.md');
     assert.equal(proposal.ambiguousCandidates.length, 0);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });

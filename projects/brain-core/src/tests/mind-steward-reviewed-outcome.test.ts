@@ -39,7 +39,9 @@ function createClassification() {
       ],
       skippedFiles: [],
     },
-  }, new Date('2026-06-18T12:00:00Z'));
+  }, new Date('2026-06-18T12:00:00Z'), {
+    captureInboxPath: 'inbox/new',
+  });
   const classification = output.classifications[0];
   assert(classification);
   return classification;
@@ -48,7 +50,7 @@ function createClassification() {
 function createFixture() {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-reviewed-outcome-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const capturePath = path.join(mindRoot, 'capture', 'inbox', 'prochat-offer.md');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'prochat-offer.md');
   mkdirSync(path.dirname(capturePath), { recursive: true });
   mkdirSync(path.join(mindRoot, 'wiki'), { recursive: true });
   writeFileSync(capturePath, '# ProChat Offer\n\nNotes about ProChat QA memory positioning and onboarding.\n');
@@ -75,6 +77,7 @@ function destinationProposalFor(
     wiki: 'wiki/organisations/prochat/offer.md',
     sources: 'sources/research/prochat-offer.md',
     archive: 'archive/captures/prochat-offer.md',
+    knowledge: 'knowledge/organisations/prochat/offer.md',
   };
   return createSingleDestinationProposal({
     classification: fixture.classification,
@@ -98,14 +101,16 @@ test('supports all reviewed capture outcomes without executing writes', () => {
     const cases: Array<{
       outcome: MindStewardReviewedOutcomeType;
       kind?: MindStewardDestinationKind;
+      expectedStatus: 'ready' | 'blocked';
       expectedDestination: string | null;
+      expectedBlocker?: string;
     }> = [
-      { outcome: 'promote-live', kind: 'live', expectedDestination: 'live/projects/prochat/offer.md' },
-      { outcome: 'compile-wiki', kind: 'wiki', expectedDestination: 'wiki/organisations/prochat/offer.md' },
-      { outcome: 'route-sources', kind: 'sources', expectedDestination: 'sources/research/prochat-offer.md' },
-      { outcome: 'archive', kind: 'archive', expectedDestination: 'archive/captures/prochat-offer.md' },
-      { outcome: 'create-task-proposal', expectedDestination: null },
-      { outcome: 'reject-leave-in-inbox', expectedDestination: null },
+      { outcome: 'promote-live', kind: 'live', expectedStatus: 'blocked', expectedDestination: null, expectedBlocker: 'destinationProposalNotReady' },
+      { outcome: 'compile-wiki', kind: 'wiki', expectedStatus: 'blocked', expectedDestination: null, expectedBlocker: 'destinationProposalNotReady' },
+      { outcome: 'route-sources', kind: 'sources', expectedStatus: 'blocked', expectedDestination: null, expectedBlocker: 'destinationProposalNotReady' },
+      { outcome: 'archive', kind: 'archive', expectedStatus: 'blocked', expectedDestination: null, expectedBlocker: 'destinationProposalNotReady' },
+      { outcome: 'create-task-proposal', expectedStatus: 'ready', expectedDestination: null },
+      { outcome: 'reject-leave-in-inbox', expectedStatus: 'ready', expectedDestination: null },
     ];
 
     for (const item of cases) {
@@ -120,8 +125,11 @@ test('supports all reviewed capture outcomes without executing writes', () => {
           : null,
       });
 
-      assert.equal(outcome.status, 'ready', item.outcome);
+      assert.equal(outcome.status, item.expectedStatus, item.outcome);
       assert.equal(outcome.destinationPath, item.expectedDestination, item.outcome);
+      if (item.expectedBlocker) {
+        assert(outcome.blockers.includes(item.expectedBlocker), item.outcome);
+      }
       assert.equal(outcome.safety.writesToMind, false);
       assert.equal(outcome.safety.writesKanban, false);
       assert.equal(outcome.safety.movesCaptures, false);
@@ -160,14 +168,14 @@ test('blocks reviewed destination outcome when destination kind does not match o
     const outcome = createReviewedCaptureOutcome({
       classification: fixture.classification,
       sourceRecord: fixture.sourceRecord,
-      destinationProposal: destinationProposalFor(fixture, 'wiki'),
+      destinationProposal: destinationProposalFor(fixture, 'knowledge'),
       outcome: 'promote-live',
       review: REVIEW,
     });
 
     assert.equal(outcome.status, 'blocked');
     assert(outcome.blockers.includes('destinationKindMismatch'));
-    assert.equal(outcome.destinationPath, 'wiki/organisations/prochat/offer.md');
+    assert.equal(outcome.destinationPath, 'knowledge/organisations/prochat/offer.md');
     assert.equal(outcome.safety.executesOutcome, false);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });

@@ -23,7 +23,7 @@ import { createOriginalCaptureAfterApprovalPlan } from '../adapters/mind-steward
 function createFixture() {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-original-after-approval-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const capturePath = path.join(mindRoot, 'capture', 'inbox', 'prochat-offer.md');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'prochat-offer.md');
   mkdirSync(path.dirname(capturePath), { recursive: true });
   mkdirSync(path.join(mindRoot, 'wiki'), { recursive: true });
   writeFileSync(capturePath, '# ProChat Offer\n\nNotes about ProChat QA memory positioning and onboarding.\n');
@@ -39,7 +39,9 @@ function createFixture() {
       ],
       skippedFiles: [],
     },
-  }, new Date('2026-06-18T12:00:00Z'));
+  }, new Date('2026-06-18T12:00:00Z'), {
+    captureInboxPath: 'inbox/new',
+  });
   const classification = output.classifications[0];
   assert(classification);
   const sourceRecord = createCaptureSourcePreservationRecord({
@@ -102,52 +104,52 @@ function reviewedOutcomeFor(
   });
 }
 
-test('retains original capture in inbox as source evidence for live, wiki, and task outcomes', () => {
+test('retains task captures while blocking retired destination outcomes', () => {
   const fixture = createFixture();
   try {
-    for (const [outcomeType, kind] of [
-      ['promote-live', 'live'],
-      ['compile-wiki', 'wiki'],
-      ['create-task-proposal', undefined],
+    for (const [outcomeType, kind, expectedStatus] of [
+      ['promote-live', 'live', 'blocked'],
+      ['compile-wiki', 'wiki', 'blocked'],
+      ['create-task-proposal', undefined, 'ready'],
     ] as const) {
       const outcome = reviewedOutcomeFor(fixture, outcomeType, kind);
       const plan = createOriginalCaptureAfterApprovalPlan(outcome, fixture.sourceRecord);
 
-      assert.equal(plan.status, 'ready', outcomeType);
-      assert.equal(plan.originalCaptureAction, 'retain-in-inbox-as-source-evidence');
-      assert.equal(plan.visibleCaptureState, 'approved-retained');
-      assert.equal(plan.allowedMoveOperation, null);
-      assert.equal(plan.sourceContentSha256, fixture.sourceRecord.originalCapture.contentSha256);
+      assert.equal(plan.status, expectedStatus, outcomeType);
+      if (expectedStatus === 'blocked') {
+        assert(plan.blockers.includes('reviewedOutcomeMustBeReady'), outcomeType);
+        assert.equal(plan.originalCaptureAction, null);
+      } else {
+        assert.equal(plan.originalCaptureAction, 'retain-in-inbox-as-source-evidence');
+        assert.equal(plan.visibleCaptureState, 'approved-retained');
+        assert.equal(plan.allowedMoveOperation, null);
+        assert.equal(plan.sourceContentSha256, fixture.sourceRecord.originalCapture.contentSha256);
+        assert.equal(plan.safety.requiresSeparateExactPathApprovalForMove, false);
+      }
       assert.equal(plan.safety.movesCaptures, false);
       assert.equal(plan.safety.deletesCaptures, false);
-      assert.equal(plan.safety.requiresSeparateExactPathApprovalForMove, false);
     }
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
   }
 });
 
-test('defines source routing and archive outcomes as pending separate exact-path move approval', () => {
+test('blocks retired source-routing and archive outcomes until canonical remapping is authorized', () => {
   const fixture = createFixture();
   try {
     const sourceOutcome = reviewedOutcomeFor(fixture, 'route-sources', 'sources');
     const sourcePlan = createOriginalCaptureAfterApprovalPlan(sourceOutcome, fixture.sourceRecord);
-    assert.equal(sourcePlan.status, 'ready');
-    assert.equal(sourcePlan.originalCaptureAction, 'route-original-to-sources-after-separate-exact-path-approval');
-    assert.equal(sourcePlan.visibleCaptureState, 'approved-source-routing-pending');
-    assert.equal(sourcePlan.allowedMoveOperation, 'source-routing');
-    assert.equal(sourcePlan.destinationPath, 'sources/research/prochat-offer.md');
-    assert.equal(sourcePlan.safety.requiresSeparateExactPathApprovalForMove, true);
+    assert.equal(sourcePlan.status, 'blocked');
+    assert(sourcePlan.blockers.includes('reviewedOutcomeMustBeReady'));
+    assert.equal(sourcePlan.originalCaptureAction, null);
+    assert.equal(sourcePlan.safety.movesCaptures, false);
 
     const archiveOutcome = reviewedOutcomeFor(fixture, 'archive', 'archive');
     const archivePlan = createOriginalCaptureAfterApprovalPlan(archiveOutcome, fixture.sourceRecord);
-    assert.equal(archivePlan.status, 'ready');
-    assert.equal(archivePlan.originalCaptureAction, 'archive-original-after-separate-exact-path-approval');
-    assert.equal(archivePlan.visibleCaptureState, 'approved-archive-routing-pending');
-    assert.equal(archivePlan.allowedMoveOperation, 'supersede-archive');
-    assert.equal(archivePlan.destinationPath, 'archive/captures/prochat-offer.md');
+    assert.equal(archivePlan.status, 'blocked');
+    assert(archivePlan.blockers.includes('reviewedOutcomeMustBeReady'));
+    assert.equal(archivePlan.originalCaptureAction, null);
     assert.equal(archivePlan.safety.movesCaptures, false);
-    assert.equal(archivePlan.safety.requiresSeparateExactPathApprovalForMove, true);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
   }
