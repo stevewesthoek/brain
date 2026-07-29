@@ -26,6 +26,7 @@ operations/runbooks/infinite-brain-roadmap-status.md
 | 5. Controlled application | General bounded proposal apply path built from the narrow writer proof | planned |
 | 6. Measured automation | One evidence-backed pilot at a time | planned |
 | 7. Simplification | Smaller routers, fewer duplicate contracts, bounded generated state | planned |
+| 8. Context-memory efficiency and freshness | Deterministic structural code memory by default; bounded semantic synthesis for selected Brain/Mind scopes | planned |
 
 ## Runtime architecture target
 
@@ -118,11 +119,27 @@ Cross-cutting services:
 - route inventory for the current Brain Core dispatcher;
 - domain routers with unchanged external behavior;
 - contract-duplication report and removal plan;
-- one current Graphify profile per purpose, with retention policy;
+- Codebase Memory MCP as the proposed default structural code-memory layer for active repositories;
+- bounded Graphify profiles only for selected Brain architecture and approved Mind knowledge synthesis, with event-driven freshness and retention policy;
 - generated/runtime/source boundary audit;
 - startup, retrieval, context-token, and storage budgets;
 - documentation lint and link/path consistency check.
 - tested backup/restore and retention procedures for canonical data and runtime recovery evidence.
+
+B1.0f reconciliation, B1.0a guarded-deployment lane are complete; B1.0e is retained only as superseded historical evidence.
+
+## Phase P8 runtime deliverables
+
+- one local Codebase Memory MCP service or approved equivalent providing deterministic structural indexes for each active code repository;
+- incremental or file-watch refresh that updates changed code without an LLM and records repository commit/freshness metadata;
+- agent instructions that query structural memory before broad repository exploration while requiring exact source reads before edits or authority claims;
+- bounded Graphify profiles limited to approved Brain architecture and Mind knowledge scopes;
+- Graphify runs triggered only by relevant document/media changes or explicit architecture work, never by an unconditional nightly full-repository schedule;
+- no local LLM dependency for routine code graph generation or refresh;
+- a benchmark covering indexing latency, CPU/memory load, freshness lag, retrieval quality, token use, and failure fallback on the M1 Pro host;
+- rollback and graceful-degradation rules proving repositories remain usable when either context service is unavailable.
+
+P8 is planned only. This roadmap entry authorizes no provider installation, watcher, scheduler change, Graphify retirement, or rollout.
 
 ## Sequencing rules
 

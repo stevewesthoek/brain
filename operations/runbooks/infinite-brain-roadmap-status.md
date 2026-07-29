@@ -1,7 +1,7 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-07-10
+**Last verified:** 2026-07-28
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -16,6 +16,16 @@ This page reports reality. Roadmaps report order. Implementation plans report wo
 ## Current summary
 
 The Mind/Brain system is usable as a human-first vault with report-only and narrowly approval-gated Brain capabilities. It does not yet provide a vendor-neutral Context Gateway, a full retrieval evaluation harness, general proposal application, or proven continuous automation value.
+
+## Current planning priority
+
+- Brain Core stabilization is green at commit `4784a5f9`; the package suite completed successfully after canonical Mind-path and destination/outcome reconciliation.
+- B1.0a — Deploy and verify Save-to-Mind target paths is complete; B1.0e is superseded by completed B1.0f and B1.0a. B1.6 and B1.7 remain pending because no dated completion evidence or cross-configuration/cross-repository validation is recorded.
+- BS0.10 remains blocked on Mind M1.4 task authority. BS0.19 remains pending on cross-repository authority and deletion readiness. B5.4 remains blocked on Mind prerequisites.
+- P8 context-memory efficiency and freshness is planned only. Codebase Memory MCP is the proposed structural default and Graphify the bounded semantic supplement; no installation, watcher, scheduler change, or rollout is active yet.
+- the first bounded measured-automation pilot batch remains the current capability ceiling; B8.1 benchmark evidence is the first executable P8 task. B8.2–B8.6 remain blocked by prior-task evidence and provider-admission boundaries.
+
+This section records planning truth only. It does not change capability, deployed, observed, or verified state.
 
 ## Capability table
 
@@ -65,7 +75,9 @@ Execute Priority 1 tasks from:
 /Users/Office/Repos/stevewesthoek/brain/operations/specs/infinite-brain-runtime-implementation-plan.md
 ```
 
-Do not activate broad Mind writes, continuous execution, or new external actions while Priority 1 is incomplete.
+BS0.19 remains blocked until Mind M1.4 task authority is resolved. B1.6 and B1.7 are the next repository-only coherence tasks. P8 must begin with B8.1 benchmark evidence before provider admission, installation, watchers, scheduler changes, or Graphify retirement are considered.
+
+Do not activate broad Mind writes, continuous execution, new external actions, or context-memory services while their prerequisite task and approval boundary is incomplete.
 
 ## Update rule
 

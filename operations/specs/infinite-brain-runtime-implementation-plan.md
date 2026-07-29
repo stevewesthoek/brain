@@ -26,6 +26,11 @@ After each task, report files changed, tests run, and remaining blockers.
 
 ## Priority 1 — Canonical coherence and migration closure
 
+### B1.0e — Reconcile candidate node topology with live workflow
+
+- **Status:** superseded (2026-07-22) by completed B1.0f controlled topology migration design and completed B1.0a guarded deployment/readback. Retained as historical decision evidence.
+- **Evidence:** `operations/reports/b1-0a-save-to-mind-live-routing-2026-07-10.md` and `operations/reports/b1-0a-guarded-live-completion-2026-07-22.md`.
+
 ### B1.1 — Create one Mind contract module
 
 - **Files:** `projects/brain-core/src/mind-paths.ts`, new `projects/brain-core/src/contracts/mind-contract.ts`, related tests
@@ -68,6 +73,7 @@ After each task, report files changed, tests run, and remaining blockers.
 
 ### B1.6 — Update active AI instruction paths
 
+- **Status:** pending. No dated completion evidence or cross-configuration validation is recorded.
 - **Files:** global Claude, Codex, Gemini, Cursor, Kiro, and IDE context Markdown/config instruction files identified by `rg 'mind/router|mind/00-memory-map|mind/0[346]-' operations/system-configs`
 - **Change:** point to `mind/system/agent-context/AGENTS.md`, `00-start-here.md`, `00-current-context.md`, and `00-memory-map.md`; update target research/task/project paths.
 - **Verify:** the same `rg` returns no unexplained active old path; run config-specific validation if available.
@@ -75,6 +81,7 @@ After each task, report files changed, tests run, and remaining blockers.
 
 ### B1.7 — Add a cross-repo contract check
 
+- **Status:** pending. No dated completion evidence or stale-path failure fixture is recorded.
 - **Files:** new script under `tools/scripts/`, test fixture, package script
 - **Change:** validate that required Mind entrypoints exist, current intake paths agree, bridge/schema versions match, and active global instructions use current paths.
 - **Verify:** command passes on current repos and fails on a fixture with one stale path.
@@ -298,6 +305,52 @@ After each task, report files changed, tests run, and remaining blockers.
 - **Change:** inventory canonical vs generated/runtime data; add a restore-to-temporary-directory check for Mind entrypoints, Brain contracts, capability manifest, and rollback evidence; document retention and deletion boundaries.
 - **Verify:** restore check never writes to live repos and reports hashes, missing files, and recovery order.
 - **Stop if:** a canonical file has no documented backup or reproducible source; report the gap before changing storage.
+
+## Priority 8 — Context-memory efficiency and freshness
+
+### B8.1 — Benchmark structural code-memory options on the M1 Pro
+
+- **Status:** planned.
+- **Scope:** Codebase Memory MCP, existing Graphify code-only mode, and exact-source exploration on representative Brain, Workbench, and one normal application repository.
+- **Change:** record indexing time, incremental refresh latency, CPU, peak memory, disk use, retrieval quality, tool calls, and model-token use; keep all tests local and read-only.
+- **Verify:** repeatable benchmark fixtures and a dated comparison report identify the preferred default and fallback.
+- **Stop if:** a benchmark requires credentials, personal Mind content, or an unbounded model run.
+
+### B8.2 — Admit and install Codebase Memory MCP as the structural default
+
+- **Status:** planned; blocked on B8.1 evidence and provider-admission review.
+- **Change:** install or package a pinned Codebase Memory version, register it through the existing MCP provider-admission boundary, and configure one isolated index per approved repository.
+- **Verify:** provider schema, executable provenance, exact tool inventory, read-only behavior, and rollback/uninstall instructions pass.
+- **Safety:** no repository writes, network mutation, credentials, or automatic rollout to every repository.
+
+### B8.3 — Implement incremental freshness and repository inventory
+
+- **Status:** planned; blocked on B8.2.
+- **Change:** define the approved repository inventory, file-watch or incremental refresh behavior, ignored/generated paths, commit/freshness metadata, resource budgets, and failure receipts.
+- **Verify:** a changed source file becomes queryable within the documented freshness budget without an LLM or full reindex; generated/runtime changes remain excluded.
+- **Stop if:** watcher load exceeds host budgets, indexes cross repository boundaries, or stale state is reported as current.
+
+### B8.4 — Define agent retrieval and exact-source-read policy
+
+- **Status:** planned; blocked on B8.2 and B8.3.
+- **Change:** require agents to use structural memory for architecture, symbol, route, caller/callee, and blast-radius navigation before broad exploration, while requiring exact source reads before edits or authority claims.
+- **Verify:** instruction fixtures distinguish graph navigation, canonical documents, generated projections, and exact source authority; unavailable-service fallback remains ordinary bounded repository reads.
+- **Safety:** graph output cannot authorize writes, override roadmaps, or replace source verification.
+
+### B8.5 — Convert Graphify to bounded event-driven knowledge synthesis
+
+- **Status:** planned; blocked on B8.1 and B8.4.
+- **Scope:** selected Brain architecture documents and explicitly approved Mind knowledge scopes only.
+- **Change:** remove unconditional nightly full scans; retain bounded profiles, relevant-change detection, explicit/manual triggers, changed-document-only enrichment, retention limits, and non-authoritative freshness metadata.
+- **Verify:** code-only changes do not invoke an LLM; relevant document changes mark the Graphify projection stale; bounded regeneration excludes secrets, runtime state, generated output, and unapproved Mind content.
+- **Stop if:** a profile requires a local LLM, broad personal-vault ingestion, or model interpretation of unchanged code.
+
+### B8.6 — Roll out, measure, and retain rollback
+
+- **Status:** planned; blocked on B8.2–B8.5.
+- **Change:** pilot the two-layer architecture on Brain and one normal code repository, record freshness, resource load, token/tool-call deltas, retrieval quality, and operator burden, then approve or reject wider rollout.
+- **Verify:** success thresholds, graceful degradation, index rebuild, Graphify disablement, and complete uninstall/rollback are tested without affecting repository availability.
+- **Exit:** Codebase Memory is the measured structural default, Graphify is bounded to approved semantic scopes, or the pilot is rolled back with evidence.
 
 ## Final verification
 
