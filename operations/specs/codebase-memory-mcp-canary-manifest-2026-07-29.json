@@ -1,0 +1,124 @@
+{
+  "manifestVersion": "1.0.0",
+  "task": "B8.4",
+  "date": "2026-07-29",
+  "branch": "release/brain-stabilization-v1",
+  "evidenceReport": "operations/reports/codebase-memory-mcp-canary-b8-4-2026-07-29.md",
+  "transitionGovernance": "operations/specs/graphify-transition-governance.json",
+
+  "candidate": {
+    "providerId": "codebase-memory-mcp",
+    "version": "0.9.0",
+    "platform": "darwin-arm64",
+    "binarySha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+    "binaryPath": "/Users/Office/.local/bin/codebase-memory-mcp",
+    "admissionId": "codebase-memory-mcp-brain",
+    "admissionStatus": "candidate",
+    "admissionRegistry": "operations/specs/mcp-provider-admissions.json"
+  },
+
+  "freezeBaseline": {
+    "repoHeads": {
+      "brain": { "sha": "61b9cfe7169ce38759a4f5b2072c1ab6b1968095", "branch": "release/brain-stabilization-v1", "dirtyFiles": 371 },
+      "mind": { "sha": "7687bb83", "branch": "main", "dirtyFiles": 74 },
+      "workbench-private": { "sha": "3ba34097", "branch": "main", "dirtyFiles": 3 },
+      "prochat": { "sha": "f37dc9c7", "branch": "main", "dirtyFiles": 16 }
+    },
+    "graphifyArtifacts": [
+      { "repo": "brain", "path": "graphify-out/graph.json", "sha256": "feb942ec1afc141c67a000d6c35b75bab74cf321575086d14d38f2f49f05e227", "mtime": "2026-07-14T04:03:31", "builtFrom": "c2350d59", "stale": true },
+      { "repo": "brain", "path": "graphify-out/GRAPH_REPORT.md", "sha256": "98007401bf5ff18295e6821d0ffb02e14752f4386fc65d757d7a4e13cec38669", "mtime": "2026-07-14T04:03:31", "builtFrom": "c2350d59", "stale": true },
+      { "repo": "brain", "path": "graphify-out/manifest.json", "sha256": "ceefc7849b91801e7f32bd74fb97c3da8008dedbcd45700d477edd554ffb3bb5", "mtime": "2026-07-14T04:03:31", "builtFrom": "c2350d59", "stale": true },
+      { "repo": "workbench-private", "path": "graphify-out/graph.json", "sha256": "1e5068760ecbef6e30387cef0345cac2cb341831a1a1cb186f7720a91fe65aad", "mtime": "2026-07-14T07:05", "builtFrom": "80c5429c", "stale": true },
+      { "repo": "workbench-private", "path": "graphify-out/GRAPH_REPORT.md", "sha256": "841560fb803eae60f68765576b9e67922500cfb796aa06582db5c366fd22a334", "mtime": "2026-07-14T07:05", "builtFrom": "80c5429c", "stale": true },
+      { "repo": "prochat", "path": "graphify-out/graph.json", "sha256": "d7d76127803bfa70a3eb5c50c64a435c155f030399aac0b1504cf656f98dc603", "mtime": "2026-07-14T04:00", "builtFrom": "unknown", "stale": true }
+    ],
+    "cbmCacheState": [
+      { "repo": "brain", "cachePath": "~/Library/Caches/brain/codebase-memory-mcp/brain", "autoWatchBefore": false, "autoWatchAfter": false, "indexHead": "61b9cfe7", "stale": false },
+      { "repo": "workbench-private", "cachePath": "~/Library/Caches/brain/codebase-memory-mcp/workbench-private", "autoWatchBefore": true, "autoWatchAfter": false, "indexHead": "3ba34097", "stale": false },
+      { "repo": "prochat", "cachePath": "~/Library/Caches/brain/codebase-memory-mcp/prochat", "autoWatchBefore": true, "autoWatchAfter": false, "indexHead": "f37dc9c7", "stale": false }
+    ],
+    "graphifyScheduler": {
+      "state": "quiesced",
+      "quiescedSince": "2026-07-14",
+      "reason": "bs0-15-pending-containment",
+      "gate": "tools/scripts/office-nightly-scheduler.sh:529",
+      "lastRun": "2026-07-14T07:05",
+      "lastRunStatus": "failed",
+      "lastRunCutoff": "phase3"
+    },
+    "activeGraphifyProcesses": 0,
+    "isolationVerified": true
+  },
+
+  "canary": {
+    "fixtureCount": 23,
+    "pass": 18,
+    "partial": 4,
+    "testError": 1,
+    "rawCorrectnessPct": 78.3,
+    "adjustedCorrectnessPct": 91.3,
+    "adjustedExclusions": ["F5 (test-authoring: wrong query syntax)", "F13 (test-authoring: missing function_name)", "F7 (field-name gap, not correctness)"],
+    "automaticRejectionChecks": {
+      "requiresLlmForIndexing": false,
+      "transmitsSourceExternally": false,
+      "cannotIsolateRepos": false,
+      "readsExcludedPaths": false,
+      "cannotIdentifyIndexFreshness": false,
+      "returnsStalAsCurrent": false,
+      "modifiesSourceRepos": false,
+      "lacksCompleteRemoval": false,
+      "cannotDegradeToExactSource": false,
+      "peakResourceExceedsBudget": false,
+      "rejected": false
+    },
+    "acceptanceGates": {
+      "fixtureCorrectnessGte95Pct": false,
+      "staleNotTreatedAsCurrent": true,
+      "noSourceTransmission": true,
+      "noRepoMutation": true,
+      "cacheIsolation": true,
+      "workbenchContractCoverage": true,
+      "exactSourceFallback": true,
+      "noAutomaticRejection": true,
+      "tradeoffsDocumented": true,
+      "overallGate": "CONDITIONAL_PASS"
+    },
+    "performance": {
+      "searchGraphP50Ms": 35,
+      "queryGraphCallsP50Ms": 168,
+      "searchCodeP50Ms": 533,
+      "compound4querySessionMs": 518,
+      "rgEquivalentP50Ms": 35,
+      "peakRssMb": 10.2,
+      "binaryMb": 261,
+      "cacheTotalMb": 78.5
+    },
+    "workbenchCompatibility": {
+      "allFieldsMappable": true,
+      "breakingSchemaChanges": false,
+      "adapterTransformationsRequired": 3,
+      "telemetryReasonCodeChange": "graphify_completed → cbm_completed",
+      "handleGraphContextCallSites": 1
+    }
+  },
+
+  "adoptionRecommendation": {
+    "category": "B",
+    "categoryLabel": "supplemental-structural-overlay",
+    "action": "proceed-to-B8.5-adapter-implementation",
+    "gate": "CONDITIONAL_PASS",
+    "conditions": [
+      "B8.2B Step 3 must expand auto_watch=false to all three caches before global activation",
+      "B8.5A design spec must be completed before implementation",
+      "≥85 structural-overlay threshold recorded as provisional canary gate only (not permanent policy)"
+    ]
+  },
+
+  "mutations": {
+    "brainFilesModified": 0,
+    "commitsCreated": 0,
+    "pushes": 0,
+    "externalRepoChanges": 0,
+    "configChanges": ["workbench-private auto_watch: true → false", "prochat auto_watch: true → false"]
+  }
+}

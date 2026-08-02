@@ -51,18 +51,39 @@ export function validateAdmissionRegistry(registry, { providerRoots = new Map() 
     }
     if (!artifactPaths.has(provider?.entrypoint)) errors.push(`${prefix}: entrypoint must be digest-pinned`);
     const transport = admission?.transport;
-    if (transport?.kind !== 'stdio' || transport?.projectScoped !== true || transport?.shell !== false || transport?.networkPolicy !== 'loopback-only') errors.push(`${prefix}: stdio must be project-scoped, shell-free, and loopback-only`);
+    const validNetworkPolicies = ['loopback-only', 'loopback-with-bounded-egress'];
+    if (transport?.kind !== 'stdio' || transport?.projectScoped !== true || transport?.shell !== false || !validNetworkPolicies.includes(transport?.networkPolicy)) errors.push(`${prefix}: stdio must be project-scoped, shell-free, and loopback-only or loopback-with-bounded-egress`);
+    if (transport?.networkPolicy === 'loopback-with-bounded-egress') {
+      if (!Array.isArray(transport?.boundedEgressExceptions) || transport.boundedEgressExceptions.length === 0) errors.push(`${prefix}: loopback-with-bounded-egress requires non-empty boundedEgressExceptions`);
+      for (const exception of transport?.boundedEgressExceptions ?? []) {
+        if (!exception?.host || !exception?.purpose) errors.push(`${prefix}: boundedEgressException requires host and purpose`);
+        if (!['https', 'http'].includes(exception?.protocol)) errors.push(`${prefix}: boundedEgressException protocol must be https or http`);
+        if (!['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'].includes(exception?.method)) errors.push(`${prefix}: boundedEgressException method must be a valid HTTP method`);
+        if (!['non-blocking-non-fatal', 'blocking-fatal', 'blocking-non-fatal'].includes(exception?.failureBehavior)) errors.push(`${prefix}: boundedEgressException failureBehavior is invalid`);
+        if (exception?.sourceDataTransmitted !== false) errors.push(`${prefix}: boundedEgressException must declare sourceDataTransmitted=false`);
+      }
+    }
+    if (transport?.networkPolicy === 'loopback-only' && transport?.boundedEgressExceptions !== undefined) errors.push(`${prefix}: loopback-only must not have boundedEgressExceptions`);
     if (!ID.test(transport?.serverName ?? '') || serverNames.has(transport?.serverName)) errors.push(`${prefix}: invalid or duplicate serverName`);
     serverNames.add(transport?.serverName);
     const auth = admission?.authentication;
-    if (auth?.mode !== 'derived-credential-file' || !ENV_NAME.test(auth?.credentialFileEnvironmentVariable ?? '') || auth?.relayAllowed !== false) errors.push(`${prefix}: authentication must be derived-file, direct-local, and environment-referenced`);
-    if (!auth?.principal || !auth?.audience || auth?.storage !== 'outside-repositories-owner-only') errors.push(`${prefix}: authentication identity/storage is incomplete`);
+    const validAuthModes = ['derived-credential-file', 'none'];
+    if (!validAuthModes.includes(auth?.mode) || auth?.relayAllowed !== false) errors.push(`${prefix}: authentication mode must be one of [${validAuthModes.join(', ')}] and relay must be disallowed`);
+    if (auth?.mode === 'derived-credential-file') {
+      if (!ENV_NAME.test(auth?.credentialFileEnvironmentVariable ?? '')) errors.push(`${prefix}: derived-credential-file authentication requires a valid credentialFileEnvironmentVariable`);
+      if (!auth?.principal || !auth?.audience || auth?.storage !== 'outside-repositories-owner-only') errors.push(`${prefix}: derived-credential-file authentication requires principal, audience, and outside-repositories-owner-only storage`);
+    }
+    if (auth?.mode === 'none') {
+      for (const forbidden of ['credentialFileEnvironmentVariable', 'principal', 'audience', 'storage']) {
+        if (auth?.[forbidden] !== undefined) errors.push(`${prefix}: none-auth admissions must not set ${forbidden}`);
+      }
+    }
     const scope = admission?.scope;
     if (!ENV_NAME.test(scope?.toolAllowlistEnvironmentVariable ?? '') || !ENV_NAME.test(scope?.suboperationAllowlistEnvironmentVariable ?? '')) errors.push(`${prefix}: scope environment bindings are invalid`);
     if (!Array.isArray(scope?.tools) || scope.tools.length === 0) errors.push(`${prefix}: admitted tools must be non-empty`);
     const toolNames = new Set();
     for (const tool of scope?.tools ?? []) {
-      if (!/^[A-Za-z][A-Za-z0-9]*$/.test(tool?.name ?? '') || toolNames.has(tool?.name)) errors.push(`${prefix}: invalid or duplicate tool ${tool?.name}`);
+      if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(tool?.name ?? '') || toolNames.has(tool?.name)) errors.push(`${prefix}: invalid or duplicate tool ${tool?.name}`);
       toolNames.add(tool?.name);
       if (!['read', 'write', 'external-mutation'].includes(tool?.risk) || !['none', 'per-call', 'two-phase'].includes(tool?.approval)) errors.push(`${prefix}:${tool?.name}: invalid risk/approval`);
       if (tool?.risk !== 'read' && tool?.approval === 'none') errors.push(`${prefix}:${tool?.name}: mutation requires approval`);

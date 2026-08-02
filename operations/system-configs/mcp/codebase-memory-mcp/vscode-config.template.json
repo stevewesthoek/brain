@@ -1,0 +1,14 @@
+{
+  "_brain_note": "VS Code/GitHub Copilot mcpServers block. Merge into .vscode/mcp.json (workspace) or into the global settings.json under 'mcp.servers'. CBM_AUTO_WATCH env is not read by the binary. Disable auto_watch per cache dir: CBM_CACHE_DIR=<path> codebase-memory-mcp config set auto_watch false",
+  "_brain_admission": "codebase-memory-mcp-brain",
+  "_brain_status": "candidate — do not add to VS Code config until B8.2B rollout",
+  "servers": {
+    "codebase-memory-mcp": {
+      "command": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "args": [],
+      "env": {
+        "CBM_CACHE_DIR": "/Users/Office/Library/Caches/brain/codebase-memory-mcp/<repo>"
+      }
+    }
+  }
+}

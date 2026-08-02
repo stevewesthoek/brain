@@ -88,6 +88,7 @@ Use active `/skill-name` entries directly when available. For dormant skills, co
 
 **[Codex only] MCP Servers & Plugins:**
 - **stitch** — Design tools integration (command: `npx @_davideast/stitch-mcp proxy`)
+- **b1_0a_guarded_save_to_mind** — Confirmation-required fixed-scope update and rollback tools for workflow `FwP5INe9qoo1OwGC`; registered in `config.toml`, uses the existing n8n credential abstraction, and must never be used for any other workflow or path.
 - **OpenAI plugins** — Canva, Stripe, GitHub, Google Drive (marketplace integrations)
 
 These are Codex-exclusive because they depend on OpenAI's closed-source tooling.

@@ -19,12 +19,14 @@ function quote(value) { return JSON.stringify(value); }
 export function renderProjectRegistration(admission, { providerRoot, credentialFile, nodeExecutable }) {
   const tools = admission.scope.tools.map((tool) => tool.name);
   const suboperations = Array.from(new Set(admission.scope.tools.flatMap((tool) => tool.allowedSuboperations)));
+  const isCredentialFree = admission.authentication?.mode === 'none';
+  const isExecutableDirect = isCredentialFree && admission.provider?.executable === true;
   const entrypoint = path.join(providerRoot, admission.provider.entrypoint);
-  return [
+  const lines = [
     `[mcp_servers.${admission.transport.serverName}]`,
-    `command = ${quote(nodeExecutable)}`,
-    `args = [${quote(entrypoint)}]`,
-    `cwd = ${quote(providerRoot)}`,
+    isExecutableDirect ? `command = ${quote(entrypoint)}` : `command = ${quote(nodeExecutable)}`,
+    isExecutableDirect ? `args = []` : `args = [${quote(entrypoint)}]`,
+    isExecutableDirect ? null : `cwd = ${quote(providerRoot)}`,
     'enabled = true',
     'required = true',
     `startup_timeout_sec = ${admission.limits.startupTimeoutSeconds}`,
@@ -32,11 +34,14 @@ export function renderProjectRegistration(admission, { providerRoot, credentialF
     'default_tools_approval_mode = "writes"',
     '',
     `[mcp_servers.${admission.transport.serverName}.env]`,
-    `${admission.authentication.credentialFileEnvironmentVariable} = ${quote(credentialFile)}`,
-    `${admission.scope.toolAllowlistEnvironmentVariable} = ${quote(tools.join(','))}`,
-    `${admission.scope.suboperationAllowlistEnvironmentVariable} = ${quote(suboperations.join(','))}`,
-    ''
-  ].join('\n');
+  ].filter((line) => line !== null);
+  if (!isCredentialFree && credentialFile) {
+    lines.push(`${admission.authentication.credentialFileEnvironmentVariable} = ${quote(credentialFile)}`);
+  }
+  lines.push(`${admission.scope.toolAllowlistEnvironmentVariable} = ${quote(tools.join(','))}`);
+  lines.push(`${admission.scope.suboperationAllowlistEnvironmentVariable} = ${quote(suboperations.join(','))}`);
+  lines.push('');
+  return lines.join('\n');
 }
 
 function requireOwnerOnlyFile(file, label) {
@@ -52,7 +57,6 @@ function requireExecutableFile(file, label) {
 function main() {
   const admissionId = option('--admission');
   const providerRoot = requireAbsolute(option('--provider-root'), '--provider-root');
-  const credentialFile = requireAbsolute(option('--credential-file'), '--credential-file');
   const nodeExecutable = fs.realpathSync(requireAbsolute(option('--node'), '--node'));
   const output = option('--output') ? requireAbsolute(option('--output'), '--output') : undefined;
   const registry = loadAdmissionRegistry(option('--registry') ?? undefined);
@@ -60,7 +64,12 @@ function main() {
   if (!admission) throw new Error(`Unknown admission: ${admissionId}`);
   const errors = validateAdmissionRegistry(registry, { providerRoots: new Map([[admission.provider.providerId, providerRoot]]) });
   if (errors.length) throw new Error(errors.join('\n'));
-  requireOwnerOnlyFile(credentialFile, 'Credential file');
+  const isCredentialFree = admission.authentication?.mode === 'none';
+  let credentialFile = null;
+  if (!isCredentialFree) {
+    credentialFile = requireAbsolute(option('--credential-file'), '--credential-file');
+    requireOwnerOnlyFile(credentialFile, 'Credential file');
+  }
   requireExecutableFile(nodeExecutable, 'Node executable');
   const rendered = renderProjectRegistration(admission, { providerRoot, credentialFile, nodeExecutable });
   if (!output) { process.stdout.write(rendered); return; }
@@ -76,7 +85,9 @@ function main() {
   fs.chmodSync(output, 0o600);
 }
 
-try { main(); } catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
-  process.exitCode = 1;
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try { main(); } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  }
 }

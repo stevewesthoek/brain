@@ -1,0 +1,6 @@
+[mcp_servers.b1_0a_guarded_save_to_mind]
+command = "/opt/homebrew/bin/node"
+args = ["/Users/Office/Repos/stevewesthoek/brain/tools/mcp/b1-0a-guarded-save-to-mind.mjs"]
+cwd = "/Users/Office/Repos/stevewesthoek/brain"
+startup_timeout_sec = 15
+enabled = true

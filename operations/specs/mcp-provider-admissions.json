@@ -1,7 +1,116 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAt": "2026-07-21",
+  "reviewedAt": "2026-07-29",
   "admissions": [
+    {
+      "admissionId": "codebase-memory-mcp-brain",
+      "status": "candidate",
+      "owner": "brain-runtime",
+      "consumer": "brain",
+      "provider": {
+        "providerId": "codebase-memory-mcp",
+        "repository": "DeusData/codebase-memory-mcp",
+        "revision": "b637e3330c96cfe452da623db068c241aaa3ec01",
+        "sourceState": "committed",
+        "version": "0.9.0",
+        "entrypoint": "codebase-memory-mcp",
+        "executable": true,
+        "artifacts": [
+          {
+            "path": "codebase-memory-mcp",
+            "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6",
+            "note": "darwin-arm64 binary extracted from codebase-memory-mcp-darwin-arm64.tar.gz v0.9.0"
+          },
+          {
+            "path": "archive:codebase-memory-mcp-darwin-arm64.tar.gz",
+            "sha256": "faa02f0404230c451a9812230394481948f80183801fa5bf67044b41c2f25ed4",
+            "note": "darwin-arm64 release archive from GitHub Releases v0.9.0; matches checksums.txt"
+          },
+          {
+            "path": "npm:codebase-memory-mcp-0.9.0.tgz",
+            "sha256": "fec6f680f2662edea48ce4847ff115edc8c25f0d2da3ca6fdfb8ff12dce7d84b",
+            "note": "npm shim tarball sha256; sha1=32aaa6b486ecdfca8f83682e6974f8f56fa3c97d (matches npm .shasum)"
+          }
+        ]
+      },
+      "transport": {
+        "kind": "stdio",
+        "serverName": "codebase-memory-mcp",
+        "projectScoped": true,
+        "shell": false,
+        "networkPolicy": "loopback-with-bounded-egress",
+        "boundedEgressExceptions": [
+          {
+            "host": "api.github.com",
+            "purpose": "Update-check: HTTPS GET /repos/DeusData/codebase-memory-mcp/releases/latest at startup for version detection",
+            "protocol": "https",
+            "method": "GET",
+            "failureBehavior": "non-blocking-non-fatal",
+            "sourceDataTransmitted": false,
+            "disableableByEnvVar": null,
+            "note": "Cannot be disabled by environment variable. Fires once per process startup. Response is discarded if network is unreachable. No source code, index data, or repository content is included in the request."
+          }
+        ],
+        "networkNote": "Stdio transport is loopback-only for all tool operations. The single bounded egress exception is documented above. No other external network access. Nomic-embed-code embeddings are bundled; no runtime model download."
+      },
+      "authentication": {
+        "mode": "none",
+        "relayAllowed": false
+      },
+      "scope": {
+        "toolAllowlistEnvironmentVariable": "CBM_ALLOWED_TOOLS",
+        "suboperationAllowlistEnvironmentVariable": "CBM_ALLOWED_SUBOPERATIONS",
+        "toolAllowlistNote": "CBM_ALLOWED_TOOLS and CBM_ALLOWED_SUBOPERATIONS are Brain-admission documentation fields only. They are not read by the binary and do not restrict server-side tool dispatch. Brain-level access control is DOCUMENTATION-ONLY as of B8.4R: no client-layer enforcement has been proven or implemented. Write tools (index_repository, delete_project, manage_adr, ingest_traces) are approval-gated in this registry and require per-call Brain-operator confirmation, but this is an admission-policy constraint, not a runtime enforcement boundary.",
+        "enforcementStatus": "documentation-only",
+        "enforcementNote": "No runtime enforcement of tool allowlist exists at either the CBM binary layer or the MCP client layer. The approval field on write tools is a Brain admission policy that must be enforced by the calling agent (Claude/Codex) honoring this registry before dispatching. If client-layer enforcement is implemented in a future task, update enforcementStatus to 'client-enforced' and cite the implementation evidence.",
+        "tools": [
+          { "name": "index_repository", "risk": "write", "approval": "per-call", "allowedSuboperations": [], "note": "Writes SQLite index to CBM_CACHE_DIR only; persistence=false (default) prevents repo-local writes" },
+          { "name": "search_code", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "query_graph", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "trace_path", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "get_code_snippet", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "get_graph_schema", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "get_architecture", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "search_graph", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "list_projects", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "delete_project", "risk": "write", "approval": "per-call", "allowedSuboperations": [] },
+          { "name": "index_status", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "detect_changes", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "manage_adr", "risk": "write", "approval": "per-call", "allowedSuboperations": [] },
+          { "name": "ingest_traces", "risk": "write", "approval": "per-call", "allowedSuboperations": [] }
+        ]
+      },
+      "limits": {
+        "startupTimeoutSeconds": 15,
+        "toolTimeoutSeconds": 60,
+        "maxRequestBytes": 65536,
+        "maxResponseBytes": 524288
+      },
+      "cache": {
+        "rootTemplate": "~/Library/Caches/brain/codebase-memory-mcp/<repo>",
+        "envVariable": "CBM_CACHE_DIR",
+        "perRepoIsolation": true,
+        "autoWatchNote": "auto_watch is a persistent per-cache config key (stored in _config.db). Set via: CBM_CACHE_DIR=<path> codebase-memory-mcp config set auto_watch false. The CBM_AUTO_WATCH env var is not read by the binary and has no effect. auto_watch=false prevents background re-indexing on file changes; the filesystem watcher thread still starts but takes no action."
+      },
+      "verification": {
+        "commands": [
+          "node tools/validate-mcp-provider-admissions.mjs",
+          "~/.local/bin/codebase-memory-mcp --version",
+          "shasum -a 256 ~/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+          "CBM_CACHE_DIR=$HOME/Library/Caches/brain/codebase-memory-mcp/brain ~/.local/bin/codebase-memory-mcp cli list_projects"
+        ],
+        "evidence": [
+          "B8.2A 2026-07-29: SHA-256 verified darwin-arm64 binary and archive against checksums.txt from GitHub Releases v0.9.0; tag v0.9.0 resolves to commit b637e3330c96cfe452da623db068c241aaa3ec01; npm sha1 32aaa6b486ecdfca8f83682e6974f8f56fa3c97d matches registry .shasum; npm sha512 base64 matches integrity field; binary links only against macOS system libraries (libSystem.B.dylib, libc++, libc++.1.dylib, libz); binary makes one best-effort HTTPS GET to api.github.com update check at startup (non-blocking, ~500ms total, cannot be disabled by env var, confirmed by strings scan and timing); SBOM: sqlite3/yyjson/mimalloc/xxhash/tre/tree-sitter/lz4/zstd/nomic-embed-code(bundled-int8)/159-grammars all MIT-compatible; install.js script bypassed (Brain-central install only); postinstall bypassed; auto_watch disabled per-cache via 'config set auto_watch false' (CBM_AUTO_WATCH env is not read by binary); no repo-local state with persistence=false (default); all 14 MCP tool names confirmed snake_case from live tools/list via JSON-RPC",
+          "B8.2A 2026-07-29 benchmark: Brain indexed 50476 nodes 66236 edges in 2000ms (fast mode); Workbench-Private 9317 nodes 18492 edges in 552ms; ProChat 3150 nodes 5640 edges in 236ms; all three repos clean (0 new dirty files, 0 .codebase-memory dirs); peak RSS per cli invocation 5.8 MB; disk: Brain 58MB, Workbench-Private 15MB, ProChat 5.7MB; B8.1R fixture accuracy: brain_F1 file+line47 CORRECT; brain_F2 file CORRECT; brain_F3 all 3 callees CORRECT; brain_F4 caller CORRECT; brain_F6 MindSaveToMindTarget file CORRECT; wb_F1 POST+route file CORRECT; wb_F2 middleware file CORRECT; wb_F3 WORKBENCH_SESSION_SCHEMA_VERSION line6 CORRECT; wb_F4 WorkbenchSessionStore file CORRECT; wb_F5 dispatch/server.ts CORRECT; pc_F1 RootLayout line75 CORRECT; pc_F2 21/21 route files CORRECT; pc_F3 middleware line36 CORRECT; pc_F4 stripe/webhook/route.ts CORRECT; overall 14/14 fixtures CORRECT",
+          "B8.2A-R 2026-07-29: remediation pass — removed false CBM_NO_CREDENTIAL_REQUIRED sentinel from authentication.mode=none; corrected all 14 tool names from camelCase to snake_case (verified from live MCP tools/list JSON-RPC); removed false CBM_AUTO_WATCH env var claim (env not read by binary; config set is the only mechanism); documented bounded update-check network exception in networkNote; updated schema to make credential fields conditional on mode; updated validator to reject credential fields for mode=none; added snake_case support to tool name regex; corrected CBM_ALLOWED_TOOLS/CBM_ALLOWED_SUBOPERATIONS as Brain-layer documentation (not server-enforced); added VS Code/Copilot template",
+          "no automatic rejection criteria triggered; no source transmission; no repo mutation; no network beyond bounded update-check to api.github.com (non-blocking); explicit freshness via index_status and detect_changes tools; isolated per-repo caches; clean removal (rm -rf cache + symlink + binary dir)"
+        ]
+      },
+      "revocation": {
+        "procedure": "Set status to 'revoked'. Remove ~/.local/bin/codebase-memory-mcp symlink. Remove ~/.local/lib/brain/providers/codebase-memory-mcp/. Remove ~/Library/Caches/brain/codebase-memory-mcp/. Remove any generated client registrations (codex config.toml blocks, ~/.claude.json mcpServers entries). Retain this admission entry, binary provenance, and benchmark evidence.",
+        "preserveEvidence": true
+      }
+    },
     {
       "admissionId": "workbench-for-brain",
       "status": "active-local",

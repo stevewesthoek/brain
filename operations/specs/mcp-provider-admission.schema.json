@@ -22,11 +22,62 @@
           },
           "transport": {
             "type": "object",
-            "required": ["kind", "serverName", "projectScoped", "shell", "networkPolicy"]
+            "required": ["kind", "serverName", "projectScoped", "shell", "networkPolicy"],
+            "properties": {
+              "kind": { "const": "stdio" },
+              "serverName": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+              "projectScoped": { "const": true },
+              "shell": { "const": false },
+              "networkPolicy": { "enum": ["loopback-only", "loopback-with-bounded-egress"] },
+              "boundedEgressExceptions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["host", "purpose", "protocol", "method", "failureBehavior", "sourceDataTransmitted"],
+                  "properties": {
+                    "host": { "type": "string" },
+                    "purpose": { "type": "string" },
+                    "protocol": { "enum": ["https", "http"] },
+                    "method": { "enum": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"] },
+                    "failureBehavior": { "enum": ["non-blocking-non-fatal", "blocking-fatal", "blocking-non-fatal"] },
+                    "sourceDataTransmitted": { "const": false },
+                    "disableableByEnvVar": { "type": ["string", "null"] },
+                    "note": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "networkNote": { "type": "string" }
+            },
+            "if": {
+              "properties": { "networkPolicy": { "const": "loopback-with-bounded-egress" } },
+              "required": ["networkPolicy"]
+            },
+            "then": {
+              "required": ["boundedEgressExceptions"]
+            },
+            "else": {
+              "properties": { "boundedEgressExceptions": false }
+            }
           },
           "authentication": {
             "type": "object",
-            "required": ["mode", "credentialFileEnvironmentVariable", "principal", "audience", "storage", "relayAllowed"]
+            "required": ["mode", "relayAllowed"],
+            "if": {
+              "properties": { "mode": { "const": "derived-credential-file" } },
+              "required": ["mode"]
+            },
+            "then": {
+              "required": ["credentialFileEnvironmentVariable", "principal", "audience", "storage"]
+            },
+            "else": {
+              "properties": {
+                "credentialFileEnvironmentVariable": false,
+                "principal": false,
+                "audience": false,
+                "storage": false
+              }
+            }
           },
           "scope": {
             "type": "object",

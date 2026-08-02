@@ -1,0 +1,25 @@
+# codebase-memory-mcp — Codex project-scoped MCP config template
+# DO NOT hand-edit this template and merge it directly. Generate the actual config:
+#   node tools/generate-mcp-project-registration.mjs \
+#     --admission codebase-memory-mcp-brain \
+#     --provider-root /Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0 \
+#     --node $(which node)
+#
+# NOTE: auto_watch must be disabled per cache dir before first use:
+#   CBM_CACHE_DIR=/Users/Office/Library/Caches/brain/codebase-memory-mcp/<repo> \
+#     codebase-memory-mcp config set auto_watch false
+# CBM_AUTO_WATCH env var is not read by the binary and has no effect.
+#
+# Brain admission: operations/specs/mcp-provider-admissions.json
+# Status: candidate — do not add to live consumer configs until B8.2B rollout
+
+[mcp_servers.codebase-memory-mcp]
+command = "/Users/Office/.local/bin/codebase-memory-mcp"
+args = []
+enabled = true
+required = false
+startup_timeout_sec = 15
+tool_timeout_sec = 60
+
+[mcp_servers.codebase-memory-mcp.env]
+CBM_CACHE_DIR = "/Users/Office/Library/Caches/brain/codebase-memory-mcp/<repo>"

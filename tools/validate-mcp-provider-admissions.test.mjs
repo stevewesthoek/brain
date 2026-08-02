@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { validateAdmissionRegistry } from './validate-mcp-provider-admissions.mjs';
+import { validateAdmissionRegistry, loadAdmissionRegistry, DEFAULT_REGISTRY_PATH } from './validate-mcp-provider-admissions.mjs';
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-mcp-admission-'));
@@ -47,4 +47,165 @@ test('rejects embedded secret values and unapproved mutations', () => {
   assert(errors.some((error) => error.includes('secret values are forbidden')));
   assert(errors.some((error) => error.includes('mutation requires approval')));
   fs.rmSync(item.root, { recursive: true });
+});
+
+function noneAuthAdmission() {
+  const base = fixture();
+  const admission = base.registry.admissions[0];
+  admission.authentication = { mode: 'none', relayAllowed: false };
+  admission.scope.tools[0].name = 'read_status';
+  return base;
+}
+
+test('mode=none: accepts credential-free admission', () => {
+  const item = noneAuthAdmission();
+  assert.deepEqual(validateAdmissionRegistry(item.registry), []);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('mode=none: rejects credentialFileEnvironmentVariable field', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].authentication.credentialFileEnvironmentVariable = 'SOME_CRED_FILE';
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some((e) => e.includes('must not set credentialFileEnvironmentVariable')), `errors: ${errors}`);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('mode=none: rejects principal, audience, storage fields', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].authentication.principal = 'some-principal';
+  item.registry.admissions[0].authentication.audience = 'some-api';
+  item.registry.admissions[0].authentication.storage = 'outside-repositories-owner-only';
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some((e) => e.includes('must not set principal')), `errors: ${errors}`);
+  assert(errors.some((e) => e.includes('must not set audience')), `errors: ${errors}`);
+  assert(errors.some((e) => e.includes('must not set storage')), `errors: ${errors}`);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('derived-credential-file: preserves existing behavior unchanged', () => {
+  const item = fixture();
+  assert.deepEqual(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }), []);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('tool names: accepts snake_case names', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].scope.tools = [
+    { name: 'index_repository', risk: 'write', approval: 'per-call', allowedSuboperations: [] },
+    { name: 'search_code', risk: 'read', approval: 'none', allowedSuboperations: [] },
+    { name: 'get_code_snippet', risk: 'read', approval: 'none', allowedSuboperations: [] },
+  ];
+  assert.deepEqual(validateAdmissionRegistry(item.registry), []);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('binary-direct: executable=true + mode=none generates correct TOML', async () => {
+  const { renderProjectRegistration } = await import('./generate-mcp-project-registration.mjs');
+  const admission = {
+    transport: { serverName: 'test-server' },
+    authentication: { mode: 'none', relayAllowed: false },
+    provider: { entrypoint: 'test-binary', executable: true },
+    limits: { startupTimeoutSeconds: 10, toolTimeoutSeconds: 30 },
+    scope: {
+      toolAllowlistEnvironmentVariable: 'TEST_ALLOWED_TOOLS',
+      suboperationAllowlistEnvironmentVariable: 'TEST_ALLOWED_SUB',
+      tools: [{ name: 'read_graph', allowedSuboperations: [] }],
+    },
+  };
+  const rendered = renderProjectRegistration(admission, { providerRoot: '/opt/bin', credentialFile: null, nodeExecutable: '/usr/bin/node' });
+  assert(rendered.includes('command = "/opt/bin/test-binary"'), `missing binary command: ${rendered}`);
+  assert(rendered.includes('args = []'), `missing empty args: ${rendered}`);
+  assert(!rendered.includes('cwd ='), `should not include cwd: ${rendered}`);
+  assert(!rendered.includes('CREDENTIAL'), `should not include credential: ${rendered}`);
+});
+
+test('loopback-with-bounded-egress: accepts valid bounded egress exceptions', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].transport.networkPolicy = 'loopback-with-bounded-egress';
+  item.registry.admissions[0].transport.boundedEgressExceptions = [{
+    host: 'api.github.com',
+    purpose: 'Update check',
+    protocol: 'https',
+    method: 'GET',
+    failureBehavior: 'non-blocking-non-fatal',
+    sourceDataTransmitted: false,
+    disableableByEnvVar: null,
+    note: 'Startup version check'
+  }];
+  assert.deepEqual(validateAdmissionRegistry(item.registry), []);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('loopback-with-bounded-egress: rejects missing boundedEgressExceptions', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].transport.networkPolicy = 'loopback-with-bounded-egress';
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some(e => e.includes('requires non-empty boundedEgressExceptions')), `errors: ${errors}`);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('loopback-with-bounded-egress: rejects sourceDataTransmitted=true', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].transport.networkPolicy = 'loopback-with-bounded-egress';
+  item.registry.admissions[0].transport.boundedEgressExceptions = [{
+    host: 'evil.com',
+    purpose: 'Exfiltration',
+    protocol: 'https',
+    method: 'POST',
+    failureBehavior: 'non-blocking-non-fatal',
+    sourceDataTransmitted: true,
+    disableableByEnvVar: null,
+    note: 'Should fail'
+  }];
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some(e => e.includes('sourceDataTransmitted=false')), `errors: ${errors}`);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('loopback-only: rejects boundedEgressExceptions field', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].transport.boundedEgressExceptions = [{
+    host: 'api.github.com',
+    purpose: 'Update check',
+    protocol: 'https',
+    method: 'GET',
+    failureBehavior: 'non-blocking-non-fatal',
+    sourceDataTransmitted: false,
+    disableableByEnvVar: null,
+    note: 'Should not exist on loopback-only'
+  }];
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some(e => e.includes('loopback-only must not have boundedEgressExceptions')), `errors: ${errors}`);
+  fs.rmSync(item.root, { recursive: true });
+});
+
+test('live admission registry: passes validation without provider root', () => {
+  const registry = loadAdmissionRegistry(DEFAULT_REGISTRY_PATH);
+  const errors = validateAdmissionRegistry(registry);
+  assert.deepEqual(errors, [], `live registry errors: ${errors.join(', ')}`);
+});
+
+test('tool allowlist: rendered TOML includes all admitted snake_case tool names', async () => {
+  const { renderProjectRegistration } = await import('./generate-mcp-project-registration.mjs');
+  const tools = [
+    'index_repository', 'search_code', 'query_graph', 'trace_path',
+    'get_code_snippet', 'get_graph_schema', 'get_architecture', 'search_graph',
+    'list_projects', 'delete_project', 'index_status', 'detect_changes',
+    'manage_adr', 'ingest_traces',
+  ];
+  const admission = {
+    transport: { serverName: 'codebase-memory-mcp' },
+    authentication: { mode: 'none', relayAllowed: false },
+    provider: { entrypoint: 'codebase-memory-mcp', executable: true },
+    limits: { startupTimeoutSeconds: 15, toolTimeoutSeconds: 60 },
+    scope: {
+      toolAllowlistEnvironmentVariable: 'CBM_ALLOWED_TOOLS',
+      suboperationAllowlistEnvironmentVariable: 'CBM_ALLOWED_SUBOPERATIONS',
+      tools: tools.map((name, i) => ({ name, allowedSuboperations: [], risk: i === 0 ? 'write' : 'read', approval: i === 0 ? 'per-call' : 'none' })),
+    },
+  };
+  const rendered = renderProjectRegistration(admission, { providerRoot: '/opt', credentialFile: null, nodeExecutable: '/usr/bin/node' });
+  const expected = tools.join(',');
+  assert(rendered.includes(expected), `tool allowlist mismatch.\nExpected: ${expected}\nGot: ${rendered}`);
 });
