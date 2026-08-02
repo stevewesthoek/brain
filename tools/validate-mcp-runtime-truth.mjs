@@ -20,6 +20,7 @@
  * or raw TOML values that could contain secrets.
  */
 
+import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -30,31 +31,28 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPT_ROOT = path.resolve(__dirname, '..');
 
 // ---------------------------------------------------------------------------
-// CLI argument parsing
+// Constants — module-scoped, no CLI parsing at import time
 // ---------------------------------------------------------------------------
 
-const args = process.argv.slice(2);
-const FIXTURE_ONLY = args.includes('--fixture-only');
+const ADMISSION_REGISTRY_PATH = path.join(SCRIPT_ROOT, 'operations/specs/mcp-provider-admissions.json');
 
-function argValue(flag) {
-  const idx = args.indexOf(flag);
-  return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : null;
+// ---------------------------------------------------------------------------
+// Result aggregation helpers (stateless)
+// ---------------------------------------------------------------------------
+
+function aggregateLevel(detections) {
+  let level = 'pass';
+  for (const d of detections) {
+    if (d.level === 'fail') return 'fail';
+    if (d.level === 'warn' && level === 'pass') level = 'warn';
+  }
+  return level;
 }
 
-const ADMISSION_REGISTRY_PATH = argValue('--admission-registry')
-  ?? path.join(SCRIPT_ROOT, 'operations/specs/mcp-provider-admissions.json');
-
-// ---------------------------------------------------------------------------
-// Result accumulator
-// ---------------------------------------------------------------------------
-
-const results = [];
-let worstLevel = 'pass'; // pass < warn < fail
-
-function record(key, value, level = 'info') {
-  results.push({ key, value, level });
-  if (level === 'fail' && worstLevel !== 'fail') worstLevel = 'fail';
-  if (level === 'warn' && worstLevel === 'pass') worstLevel = 'warn';
+function exitCodeFor(overallLevel, strict) {
+  if (overallLevel === 'fail') return 1;
+  if (overallLevel === 'warn' && strict) return 1;
+  return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -242,6 +240,7 @@ args = ["/repo/tools/mcp/b1-0a-guarded-save-to-mind.mjs"]
       {
         admissionId: 'workbench-for-brain',
         status: 'active-local',
+        transport: { serverName: 'workbench' },
         provider: { revision: 'aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e', version: '1.3.3-beta' },
         scope: {
           toolAllowlistEnvironmentVariable: 'WORKBENCH_MCP_ALLOWED_TOOLS',
@@ -432,7 +431,12 @@ export function detectRetiredBridgeEnabled(opts = {}) {
 // ---------------------------------------------------------------------------
 
 export async function detectProviderRevisionMismatch(opts = {}) {
-  const { fixtureOnly = false, providerRoots = new Map(), registry = null } = opts;
+  const {
+    fixtureOnly = false,
+    providerRoots = new Map(),
+    providerRevisions = new Map(),
+    registry = null,
+  } = opts;
 
   if (fixtureOnly) {
     return { key: 'provider-revision-mismatch', value: 'not-verified (fixture-only)', level: 'info' };
@@ -447,26 +451,84 @@ export async function detectProviderRevisionMismatch(opts = {}) {
     return { key: 'provider-revision-mismatch', value: 'registry-missing', level: 'warn' };
   }
 
+  // Detect duplicate provider bindings
+  if (providerRoots.size !== [...new Set(providerRoots.keys())].length) {
+    return { key: 'provider-revision-mismatch', value: 'duplicate-provider-binding', level: 'fail' };
+  }
+
   const issues = [];
+
   for (const [providerId, rootPath] of providerRoots) {
+    // Unknown provider
     const admission = admissionRegistry.admissions?.find(
       (a) => a.provider?.providerId === providerId
     );
     if (!admission) {
-      issues.push(`${providerId}: no admission found`);
+      issues.push(`${providerId}: unknown-provider-id`);
       continue;
     }
+
+    const admittedRevision = admission.provider?.revision;
+
+    // Determine if root is a Git repo
+    let headRevision = null;
+    let isGitRoot = false;
+    try {
+      headRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: rootPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      isGitRoot = true;
+    } catch {
+      // not a git repo — exported tree
+    }
+
+    if (isGitRoot) {
+      // Git root: verify HEAD matches admitted revision
+      if (headRevision !== admittedRevision) {
+        issues.push(`${providerId}: revision-mismatch (HEAD=${headRevision} admitted=${admittedRevision})`);
+        continue;
+      }
+      // If caller also supplied an explicit revision, it must agree
+      if (providerRevisions.has(providerId) && providerRevisions.get(providerId) !== headRevision) {
+        issues.push(`${providerId}: explicit-revision-disagrees-with-git-head`);
+        continue;
+      }
+    } else {
+      // Non-Git exported tree: require explicit revision binding
+      if (!providerRevisions.has(providerId)) {
+        issues.push(`${providerId}: non-git-root-requires-explicit-provider-revision`);
+        continue;
+      }
+      const explicitRevision = providerRevisions.get(providerId);
+      if (explicitRevision !== admittedRevision) {
+        issues.push(`${providerId}: explicit-revision-mismatch (given=${explicitRevision} admitted=${admittedRevision})`);
+        continue;
+      }
+    }
+
+    // Artifact digest verification — skip working-tree-only artifacts
     for (const artifact of admission.provider?.artifacts ?? []) {
       if (artifact.note?.includes('working-tree-only')) continue;
+      // Skip archive: and npm: virtual paths (not on disk)
+      if (artifact.path.startsWith('archive:') || artifact.path.startsWith('npm:')) continue;
       const artifactPath = path.join(rootPath, artifact.path);
       try {
         const data = fs.readFileSync(artifactPath);
         const actual = crypto.createHash('sha256').update(data).digest('hex');
         if (actual !== artifact.sha256) {
-          issues.push(`${providerId}/${artifact.path}: digest mismatch`);
+          issues.push(`${providerId}/${artifact.path}: artifact-digest-mismatch`);
         }
       } catch {
-        issues.push(`${providerId}/${artifact.path}: read-error`);
+        issues.push(`${providerId}/${artifact.path}: artifact-read-error`);
+      }
+    }
+
+    // Check entrypoint is not unverified working-tree-only output
+    const entrypoint = admission.provider?.entrypoint;
+    if (entrypoint) {
+      const entrypointArtifact = admission.provider?.artifacts?.find((a) => a.path === entrypoint);
+      if (entrypointArtifact?.note?.includes('working-tree-only')) {
+        issues.push(`${providerId}: runtime-entrypoint-unverified (${entrypoint} is working-tree-only)`);
       }
     }
   }
@@ -820,73 +882,140 @@ export function detectCodebaseMemoryFalseDefaultClaim(opts = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Main runner
+// Fixture mode runner — clean built-in fixture, expected: all-pass (exit 0)
 // ---------------------------------------------------------------------------
 
-async function runAllDetections(opts = {}) {
-  const { fixtureOnly = false } = opts;
-
-  // Run all 10 detections
-  const detections = [
-    detectAdmissionWithoutRegistration({ fixtureOnly, ...opts }),
-    detectCandidateDescribedAsDefault({ fixtureOnly, ...opts }),
-    detectRetiredBridgeEnabled({ fixtureOnly, ...opts }),
-    // Detection 4 is async in real mode due to dynamic crypto import
-    { key: 'provider-revision-mismatch', value: 'not-verified (use --provider-root to verify)', level: 'info' },
-    detectPrematureCodebaseMemoryRegistration({ fixtureOnly, ...opts }),
-    detectWorkbenchScopeExceedance({ fixtureOnly, ...opts }),
-    detectBareCredentialInConfig({ fixtureOnly, ...opts }),
-    detectGraphifySchedulerViolation({ fixtureOnly, ...opts }),
-    detectGraphifyFalseTruthClaim({ fixtureOnly, ...opts }),
-    detectCodebaseMemoryFalseDefaultClaim({ fixtureOnly, ...opts }),
-  ];
-
-  return detections;
-}
-
-// ---------------------------------------------------------------------------
-// Fixture mode runner
-// ---------------------------------------------------------------------------
-
-function runFixtureMode() {
+function runFixtureMode(strict = false) {
   console.log('# mcp-runtime-truth-check fixture mode');
   console.log('# Using built-in test fixtures — no real files read');
   console.log('');
 
-  const fixtureOpts = { fixtureOnly: true };
+  // Clean fixture: workbench registered in Codex, legacy bridge absent, no CBM registration
+  const cleanToml = FIXTURE.codexConfigToml.replace(
+    /\[mcp_servers\.b1_0a_guarded_save_to_mind\][\s\S]*?(?=\[|$)/, ''
+  );
 
   const detections = [
-    detectAdmissionWithoutRegistration({ ...fixtureOpts, codexTomlText: FIXTURE.codexConfigToml, claudeJsonText: FIXTURE.claudeJson, registry: FIXTURE.admissionRegistry }),
-    detectCandidateDescribedAsDefault({ ...fixtureOpts, docTexts: FIXTURE.brainDocs, registry: FIXTURE.admissionRegistry }),
-    detectRetiredBridgeEnabled({ ...fixtureOpts, codexTomlText: FIXTURE.codexConfigToml }),
+    detectAdmissionWithoutRegistration({ fixtureOnly: true, codexTomlText: FIXTURE.codexConfigToml, claudeJsonText: FIXTURE.claudeJson, registry: FIXTURE.admissionRegistry }),
+    detectCandidateDescribedAsDefault({ fixtureOnly: true, docTexts: FIXTURE.brainDocs, registry: FIXTURE.admissionRegistry }),
+    detectRetiredBridgeEnabled({ fixtureOnly: true, codexTomlText: cleanToml }),
     { key: 'provider-revision-mismatch', value: 'not-verified (fixture-only)', level: 'info' },
-    detectPrematureCodebaseMemoryRegistration({ ...fixtureOpts, codexTomlText: FIXTURE.codexConfigToml, claudeJsonText: FIXTURE.claudeJson, registry: FIXTURE.admissionRegistry }),
-    detectWorkbenchScopeExceedance({ ...fixtureOpts, codexTomlText: FIXTURE.codexConfigToml, registry: FIXTURE.admissionRegistry }),
-    detectBareCredentialInConfig({ ...fixtureOpts, configTexts: { 'fixture-config': FIXTURE.codexConfigToml } }),
-    detectGraphifySchedulerViolation({ ...fixtureOpts, governanceJson: JSON.parse(FIXTURE.graphifyGovernance), schedulerActive: false }),
-    detectGraphifyFalseTruthClaim({ ...fixtureOpts, docTexts: FIXTURE.brainDocs }),
-    detectCodebaseMemoryFalseDefaultClaim({ ...fixtureOpts, docTexts: FIXTURE.brainDocs, registry: FIXTURE.admissionRegistry }),
+    detectPrematureCodebaseMemoryRegistration({ fixtureOnly: true, codexTomlText: FIXTURE.codexConfigToml, claudeJsonText: FIXTURE.claudeJson, registry: FIXTURE.admissionRegistry }),
+    detectWorkbenchScopeExceedance({ fixtureOnly: true, codexTomlText: FIXTURE.codexConfigToml, registry: FIXTURE.admissionRegistry }),
+    detectBareCredentialInConfig({ fixtureOnly: true, configTexts: { 'fixture-config': cleanToml } }),
+    detectGraphifySchedulerViolation({ fixtureOnly: true, governanceJson: JSON.parse(FIXTURE.graphifyGovernance), schedulerActive: false }),
+    detectGraphifyFalseTruthClaim({ fixtureOnly: true, docTexts: FIXTURE.brainDocs }),
+    detectCodebaseMemoryFalseDefaultClaim({ fixtureOnly: true, docTexts: FIXTURE.brainDocs, registry: FIXTURE.admissionRegistry }),
   ];
 
-  let overallLevel = 'pass';
   for (const d of detections) {
-    const level = d.level ?? 'info';
-    if (level === 'fail' && overallLevel !== 'fail') overallLevel = 'fail';
-    if (level === 'warn' && overallLevel === 'pass') overallLevel = 'warn';
     console.log(`${d.key}=${d.value}`);
   }
 
+  const overallLevel = aggregateLevel(detections);
   console.log('');
   console.log(`mcp-runtime-truth-check=${overallLevel}`);
-  process.exit(0);
+  process.exitCode = exitCodeFor(overallLevel, strict);
+}
+
+// ---------------------------------------------------------------------------
+// Named failing-fixture scenario runner — expected: specific violation present
+// ---------------------------------------------------------------------------
+
+const FIXTURE_SCENARIOS = {
+  'retired-bridge-enabled': () => {
+    const tomlWithBridge = FIXTURE.codexConfigToml;
+    return [
+      detectRetiredBridgeEnabled({ fixtureOnly: true, codexTomlText: tomlWithBridge }),
+    ];
+  },
+  'premature-cbm-registration': () => {
+    const tomlWithCbm = FIXTURE.codexConfigToml + `
+[mcp_servers.codebase-memory-mcp]
+command = "/usr/local/bin/codebase-memory-mcp"
+args = []
+`;
+    return [
+      detectPrematureCodebaseMemoryRegistration({
+        fixtureOnly: true,
+        codexTomlText: tomlWithCbm,
+        claudeJsonText: FIXTURE.claudeJson,
+        registry: FIXTURE.admissionRegistry,
+      }),
+    ];
+  },
+  'scope-exceedance': () => {
+    const tomlWithExtra = FIXTURE.codexConfigToml.replace(
+      'WORKBENCH_MCP_ALLOWED_TOOLS = "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand"',
+      'WORKBENCH_MCP_ALLOWED_TOOLS = "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand,runUnapprovedTool"'
+    );
+    return [
+      detectWorkbenchScopeExceedance({ fixtureOnly: true, codexTomlText: tomlWithExtra, registry: FIXTURE.admissionRegistry }),
+    ];
+  },
+};
+
+function runFixtureScenarioMode(scenarioName, strict = false) {
+  const scenarioFn = FIXTURE_SCENARIOS[scenarioName];
+  if (!scenarioFn) {
+    console.error(`validate-mcp-runtime-truth: unknown --fixture-scenario "${scenarioName}"`);
+    console.error(`Known scenarios: ${Object.keys(FIXTURE_SCENARIOS).join(', ')}`);
+    process.exitCode = 2;
+    return;
+  }
+
+  console.log(`# mcp-runtime-truth-check fixture-scenario=${scenarioName}`);
+  console.log('');
+
+  const detections = scenarioFn();
+  for (const d of detections) {
+    console.log(`${d.key}=${d.value}`);
+  }
+
+  const overallLevel = aggregateLevel(detections);
+  console.log('');
+  console.log(`mcp-runtime-truth-check=${overallLevel}`);
+  process.exitCode = exitCodeFor(overallLevel, strict);
 }
 
 // ---------------------------------------------------------------------------
 // Real mode runner
 // ---------------------------------------------------------------------------
 
-async function runRealMode() {
-  const admissionRegistry = loadAdmissionRegistry(ADMISSION_REGISTRY_PATH);
+async function runRealMode(strict = false) {
+  const cliArgs = process.argv.slice(2);
+
+  // --provider-root workbench=/absolute/path  (may appear multiple times)
+  const providerRoots = new Map();
+  for (let i = 0; i < cliArgs.length; i++) {
+    if (cliArgs[i] === '--provider-root' && cliArgs[i + 1]) {
+      const binding = cliArgs[i + 1];
+      const sep = binding.indexOf('=');
+      if (sep < 1) throw new Error('--provider-root requires provider-id=/absolute/path');
+      providerRoots.set(binding.slice(0, sep), binding.slice(sep + 1));
+      i++;
+    }
+  }
+
+  // --provider-revision workbench=<sha>  (explicit revision for non-Git exported trees)
+  const providerRevisions = new Map();
+  for (let i = 0; i < cliArgs.length; i++) {
+    if (cliArgs[i] === '--provider-revision' && cliArgs[i + 1]) {
+      const binding = cliArgs[i + 1];
+      const sep = binding.indexOf('=');
+      if (sep < 1) throw new Error('--provider-revision requires provider-id=<sha>');
+      providerRevisions.set(binding.slice(0, sep), binding.slice(sep + 1));
+      i++;
+    }
+  }
+
+  // --admission-registry override
+  const regIdx = cliArgs.indexOf('--admission-registry');
+  const registryPath = regIdx !== -1 && cliArgs[regIdx + 1]
+    ? cliArgs[regIdx + 1]
+    : ADMISSION_REGISTRY_PATH;
+
+  const admissionRegistry = loadAdmissionRegistry(registryPath);
   const codexTomlText = safeReadText(path.join(os.homedir(), '.codex/config.toml'));
   const claudeJsonText = safeReadText(path.join(os.homedir(), '.claude.json'));
   const docTexts = loadKnownBrainDocs();
@@ -895,11 +1024,18 @@ async function runRealMode() {
 
   const sharedOpts = { fixtureOnly: false, codexTomlText, claudeJsonText, registry: admissionRegistry, docTexts, governanceJson };
 
+  const providerRevisionResult = await detectProviderRevisionMismatch({
+    fixtureOnly: false,
+    providerRoots,
+    providerRevisions,
+    registry: admissionRegistry,
+  });
+
   const detections = [
     detectAdmissionWithoutRegistration(sharedOpts),
     detectCandidateDescribedAsDefault(sharedOpts),
     detectRetiredBridgeEnabled(sharedOpts),
-    { key: 'provider-revision-mismatch', value: 'not-verified (use --provider-root to verify)', level: 'info' },
+    providerRevisionResult,
     detectPrematureCodebaseMemoryRegistration(sharedOpts),
     detectWorkbenchScopeExceedance(sharedOpts),
     detectBareCredentialInConfig(sharedOpts),
@@ -908,28 +1044,48 @@ async function runRealMode() {
     detectCodebaseMemoryFalseDefaultClaim(sharedOpts),
   ];
 
-  let overallLevel = 'pass';
-  for (const d of detections) {
-    const level = d.level ?? 'info';
-    if (level === 'fail' && overallLevel !== 'fail') overallLevel = 'fail';
-    if (level === 'warn' && overallLevel === 'pass') overallLevel = 'warn';
-  }
-
+  const overallLevel = aggregateLevel(detections);
   console.log(`mcp-runtime-truth-check=${overallLevel}`);
   for (const d of detections) {
     console.log(`${d.key}=${d.value}`);
   }
+  process.exitCode = exitCodeFor(overallLevel, strict);
 }
 
 // ---------------------------------------------------------------------------
-// Entry point
+// Entry point — protected by main-module guard so imports never execute CLI
 // ---------------------------------------------------------------------------
 
-if (FIXTURE_ONLY) {
-  runFixtureMode();
-} else {
-  runRealMode().catch((err) => {
+const IS_MAIN = (
+  typeof process !== 'undefined' &&
+  process.argv[1] &&
+  fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))
+);
+
+if (IS_MAIN) {
+  runCli().catch((err) => {
     console.error('validate-mcp-runtime-truth: unexpected error:', err.message);
-    process.exit(1);
+    process.exit(2);
   });
+}
+
+async function runCli() {
+  // Reload args inside the CLI entry so library functions stay pure
+  const cliArgs = process.argv.slice(2);
+  const fixtureOnly = cliArgs.includes('--fixture-only');
+  const fixtureScenario = (() => {
+    const idx = cliArgs.indexOf('--fixture-scenario');
+    return idx !== -1 ? (cliArgs[idx + 1] ?? null) : null;
+  })();
+  const strict = cliArgs.includes('--strict');
+
+  if (fixtureOnly) {
+    runFixtureMode(strict);
+    return;
+  }
+  if (fixtureScenario !== null) {
+    runFixtureScenarioMode(fixtureScenario, strict);
+    return;
+  }
+  await runRealMode(strict);
 }

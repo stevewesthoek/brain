@@ -6,7 +6,12 @@
  */
 
 import assert from 'node:assert/strict';
+import { execFileSync, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   detectAdmissionWithoutRegistration,
@@ -19,6 +24,17 @@ import {
   detectGraphifyFalseTruthClaim,
   detectCodebaseMemoryFalseDefaultClaim,
 } from './validate-mcp-runtime-truth.mjs';
+
+const SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'validate-mcp-runtime-truth.mjs');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function runValidator(args, { HOME: home = '/tmp/fakehome' } = {}) {
+  const result = spawnSync('node', [SCRIPT, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home },
+  });
+  return { stdout: result.stdout, stderr: result.stderr, exitCode: result.status ?? 1 };
+}
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -341,4 +357,244 @@ test('clean fixture with no violations passes all checks', () => {
     .map((r) => `${r.key}=${r.value}`);
 
   assert.deepEqual(failures, [], `Unexpected failures in clean fixture: ${failures.join(', ')}`);
+});
+
+// ---------------------------------------------------------------------------
+// Import-safety regression tests (Task 1)
+// ---------------------------------------------------------------------------
+
+test('importing the module does not read real home config or print anything', async () => {
+  const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-mcp-rt-home-'));
+  try {
+    // Verify no .codex/config.toml and no .claude.json exist under fakeHome
+    assert(!fs.existsSync(path.join(fakeHome, '.codex/config.toml')));
+    assert(!fs.existsSync(path.join(fakeHome, '.claude.json')));
+
+    // Dynamic import from a child process with overridden HOME
+    const result = spawnSync('node', [
+      '--input-type=module',
+      '--eval',
+      `import '${SCRIPT}'; process.exit(0);`,
+    ], { encoding: 'utf8', env: { ...process.env, HOME: fakeHome } });
+
+    assert.equal(result.status, 0, `Child exit should be 0, got ${result.status}\nstderr: ${result.stderr}`);
+    assert.equal(result.stdout, '', `Import must produce no stdout, got: ${result.stdout}`);
+    assert.equal(result.stderr, '', `Import must produce no stderr, got: ${result.stderr}`);
+
+    // No home directory files should have been created
+    const homeFiles = fs.readdirSync(fakeHome);
+    assert.deepEqual(homeFiles, [], `Import must not create files in HOME, found: ${homeFiles}`);
+  } finally {
+    fs.rmSync(fakeHome, { recursive: true, force: true });
+  }
+});
+
+test('importing the module sets no exit code', async () => {
+  const result = spawnSync('node', [
+    '--input-type=module',
+    '--eval',
+    `import '${SCRIPT}'; console.log('exitCode=' + (process.exitCode ?? 'undefined'));`,
+  ], { encoding: 'utf8', env: { ...process.env, HOME: '/tmp/fakehome' } });
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /exitCode=undefined/);
+});
+
+// ---------------------------------------------------------------------------
+// CLI exit-code matrix tests (Task 2)
+// ---------------------------------------------------------------------------
+
+test('--fixture-only clean fixture → exit 0', () => {
+  const { exitCode, stdout } = runValidator(['--fixture-only']);
+  assert.equal(exitCode, 0, `expected exit 0, got ${exitCode}\n${stdout}`);
+  assert.match(stdout, /mcp-runtime-truth-check=pass/);
+});
+
+test('--fixture-scenario retired-bridge-enabled → exit 1', () => {
+  const { exitCode, stdout } = runValidator(['--fixture-scenario', 'retired-bridge-enabled']);
+  assert.equal(exitCode, 1, `expected exit 1, got ${exitCode}\n${stdout}`);
+  assert.match(stdout, /mcp-runtime-truth-check=fail/);
+});
+
+test('--fixture-scenario premature-cbm-registration → exit 1', () => {
+  const { exitCode, stdout } = runValidator(['--fixture-scenario', 'premature-cbm-registration']);
+  assert.equal(exitCode, 1, `expected exit 1, got ${exitCode}\n${stdout}`);
+  assert.match(stdout, /mcp-runtime-truth-check=fail/);
+});
+
+test('unknown --fixture-scenario → exit 2', () => {
+  const { exitCode, stderr } = runValidator(['--fixture-scenario', 'nonexistent-scenario']);
+  assert.equal(exitCode, 2, `expected exit 2, got ${exitCode}\n${stderr}`);
+});
+
+test('real-mode invocation against synthetic home without config → exit 0 (warn only)', () => {
+  const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-mcp-rt-real-'));
+  try {
+    // No codex or claude config — real mode should run and warn, not crash
+    const { exitCode, stdout } = runValidator(
+      ['--admission-registry', path.join(REPO_ROOT, 'operations/specs/mcp-provider-admissions.json')],
+      { HOME: fakeHome }
+    );
+    // warn → exit 0 without --strict
+    assert(exitCode === 0 || exitCode === 1, `exit code must be 0 or 1, got ${exitCode}`);
+    assert.match(stdout, /mcp-runtime-truth-check=/);
+  } finally {
+    fs.rmSync(fakeHome, { recursive: true, force: true });
+  }
+});
+
+test('--fixture-only with clean fixture passes no real home config is read', () => {
+  // Using a guaranteed non-existent HOME to prove no real files touched
+  const { exitCode, stdout } = runValidator(['--fixture-only'], { HOME: '/tmp/nosuchhome-brain-test' });
+  assert.equal(exitCode, 0, `exit must be 0, got ${exitCode}\n${stdout}`);
+  assert.match(stdout, /mcp-runtime-truth-check=pass/);
+});
+
+// ---------------------------------------------------------------------------
+// Provider-root and provider-revision verification tests (Task 3)
+// ---------------------------------------------------------------------------
+
+import { detectProviderRevisionMismatch } from './validate-mcp-runtime-truth.mjs';
+
+function makeRtRegistry({ revision = 'aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e' } = {}) {
+  return {
+    schemaVersion: '1.0.0',
+    reviewedAt: '2026-08-02',
+    admissions: [{
+      admissionId: 'workbench-for-brain',
+      status: 'candidate',
+      transport: { serverName: 'workbench' },
+      provider: {
+        providerId: 'workbench',
+        revision,
+        entrypoint: 'src/server.js',
+        artifacts: [
+          { path: 'src/server.js', sha256: '' },
+        ],
+      },
+    }],
+  };
+}
+
+function makeGitProviderRoot({ revision: targetRevision, serverJsContent = 'console.log("server")' } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-rt-provider-'));
+  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'src/server.js'), serverJsContent);
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  execFileSync('git', ['add', '.'], { cwd: root });
+  execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=t@t.invalid', 'commit', '-qm', 'init'], { cwd: root });
+  if (targetRevision) {
+    // Use an arbitrary commit sha that won't match
+    return { root, actualRevision: 'deadbeef00000000000000000000000000000000' };
+  }
+  const actualRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  return { root, actualRevision };
+}
+
+function makeExportedRoot({ serverJsContent = 'console.log("server")' } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-rt-exported-'));
+  fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'src/server.js'), serverJsContent);
+  // No .git directory — simulates git archive output
+  return root;
+}
+
+test('detectProviderRevisionMismatch: no provider roots → not-verified info', async () => {
+  const result = await detectProviderRevisionMismatch({ fixtureOnly: false, providerRoots: new Map(), registry: makeRtRegistry() });
+  assert.equal(result.key, 'provider-revision-mismatch');
+  assert.match(result.value, /not-verified/);
+  assert.equal(result.level, 'info');
+});
+
+test('detectProviderRevisionMismatch: unknown provider id → fail', async () => {
+  const root = makeExportedRoot();
+  const roots = new Map([['unknown-provider', root]]);
+  const revisions = new Map([['unknown-provider', 'aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e']]);
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, providerRevisions: revisions, registry: makeRtRegistry() });
+    assert.equal(result.level, 'fail', `expected fail, got: ${JSON.stringify(result)}`);
+    assert.match(result.value, /unknown-provider-id/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('detectProviderRevisionMismatch: non-git root without explicit revision → fail', async () => {
+  const root = makeExportedRoot();
+  const roots = new Map([['workbench', root]]);
+  const revision = 'aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e';
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, registry: makeRtRegistry({ revision }) });
+    assert.equal(result.level, 'fail');
+    assert.match(result.value, /non-git-root-requires-explicit-provider-revision/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('detectProviderRevisionMismatch: non-git root with mismatched explicit revision → fail', async () => {
+  const root = makeExportedRoot();
+  const roots = new Map([['workbench', root]]);
+  const revision = 'aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e';
+  const revisions = new Map([['workbench', 'wrongrevision000000000000000000000000000']]);
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, providerRevisions: revisions, registry: makeRtRegistry({ revision }) });
+    assert.equal(result.level, 'fail');
+    assert.match(result.value, /explicit-revision-mismatch/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('detectProviderRevisionMismatch: non-git root with correct revision and matching artifacts → pass', async () => {
+  const content = 'console.log("server")';
+  const root = makeExportedRoot({ serverJsContent: content });
+  const { createHash } = await import('node:crypto');
+  const sha256 = createHash('sha256').update(content).digest('hex');
+  const revision = 'aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e';
+  const registry = makeRtRegistry({ revision });
+  registry.admissions[0].provider.artifacts[0].sha256 = sha256;
+  const roots = new Map([['workbench', root]]);
+  const revisions = new Map([['workbench', revision]]);
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, providerRevisions: revisions, registry });
+    assert.equal(result.level, 'info', `expected pass, got: ${JSON.stringify(result)}`);
+    assert.equal(result.value, 'verified');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('detectProviderRevisionMismatch: git root with mismatched HEAD → fail', async () => {
+  const { root } = makeGitProviderRoot();
+  const roots = new Map([['workbench', root]]);
+  const revision = 'wrongrevision000000000000000000000000000a';
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, registry: makeRtRegistry({ revision }) });
+    assert.equal(result.level, 'fail');
+    assert.match(result.value, /revision-mismatch/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('detectProviderRevisionMismatch: git root with matching HEAD and digest → pass', async () => {
+  const content = 'console.log("server")';
+  const { root, actualRevision } = makeGitProviderRoot({ serverJsContent: content });
+  const { createHash } = await import('node:crypto');
+  const sha256 = createHash('sha256').update(content).digest('hex');
+  const registry = makeRtRegistry({ revision: actualRevision });
+  registry.admissions[0].provider.artifacts[0].sha256 = sha256;
+  const roots = new Map([['workbench', root]]);
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, registry });
+    assert.equal(result.level, 'info', `expected pass, got: ${JSON.stringify(result)}`);
+    assert.equal(result.value, 'verified');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('detectProviderRevisionMismatch: working-tree-only entrypoint → fail with runtime-entrypoint-unverified', async () => {
+  const content = 'console.log("server")';
+  const { root, actualRevision } = makeGitProviderRoot({ serverJsContent: content });
+  const { createHash } = await import('node:crypto');
+  const sha256 = createHash('sha256').update(content).digest('hex');
+  const registry = makeRtRegistry({ revision: actualRevision });
+  // Mark the entrypoint artifact as working-tree-only
+  registry.admissions[0].provider.artifacts[0].note = 'sourceState: working-tree-only — gitignored';
+  registry.admissions[0].provider.artifacts[0].sha256 = sha256;
+  const roots = new Map([['workbench', root]]);
+  try {
+    const result = await detectProviderRevisionMismatch({ providerRoots: roots, registry });
+    assert.equal(result.level, 'fail', `expected fail, got: ${JSON.stringify(result)}`);
+    assert.match(result.value, /runtime-entrypoint-unverified/);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });

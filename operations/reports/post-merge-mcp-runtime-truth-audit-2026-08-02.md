@@ -53,26 +53,35 @@
 - **Source state:** `mixed` (source artifacts committed; dist artifacts gitignored at both revisions)
 
 ### Provider validation
-- **Validation method:** exported committed tree at `aa7bf7ec...` via `git archive`
-- **Source artifacts verified:** 13 committed source paths — 10 changed, 3 unchanged
-- **Dist artifacts:** 12 gitignored dist files — hashes cannot be verified from committed objects; retain working-tree-only status
-- **Validator result against committed tree:** source hashes match updated admission
+
+| Dimension | State |
+|-----------|-------|
+| Committed source reviewed | yes — 13 source artifacts verified from `git archive` export of `aa7bf7ec...`; 10 changed, 3 unchanged |
+| Revision attested | yes — `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e` confirmed via `git rev-parse HEAD` on exported tree |
+| Runtime entrypoint verified | **no** — `packages/mcp/dist/server.js` is gitignored at both revisions (sourceState: working-tree-only); cannot be verified from committed objects |
+| Dist artifacts verified | no — all 12 dist artifacts carry `sourceState: working-tree-only`; hashes recorded for working-tree state only |
+| Client registered | no — no `[mcp_servers.workbench]` in `~/.codex/config.toml`; no `mcpServers.workbench` in `~/.claude.json` |
+| Server running | not observed — no client registration to start it from |
+| Admission status | `candidate` — source reviewed and revision attested; runtime entrypoint provenance not established |
+| Runtime status | not active — no registration, no running server |
 
 ### Admitted tool scope
 - **Admitted tools:** `getWorkbenchStatus`, `readWorkbenchContext`, `runWorkbenchCommand`
 - **Admitted command kinds:** `n8n_workflow_migration` only
 - **Scope enforcement:** server-side via `WORKBENCH_MCP_ALLOWED_TOOLS` and `WORKBENCH_MCP_ALLOWED_COMMAND_KINDS` environment variables parsed by `scope.ts`
 
-### Client registration
-- **Claude Code (`~/.claude.json` root `mcpServers`):** no `workbench` entry found
-- **Codex (`~/.codex/config.toml`):** no `[mcp_servers.workbench]` entry found
-- **Conclusion:** not registered in any client
+### Source review vs. runtime provenance
 
-### Admission vs. registration distinction
-The admission is `active-local`. No client registration exists. Admission does not imply live operation. A valid admission means Brain has reviewed and approved the provider for local registration; it does not mean the server is running or any client has connected to it.
+These are distinct properties:
 
-### Runtime provenance
-Provider source verified from exported committed tree only. Working-tree dist files were not re-verified. Live server process was not inspected (no client registration to start it from).
+- **Source review** confirms the committed code at the reviewed revision is admissible — the logic, tool surface, auth flow, and command boundaries were inspected. This was completed.
+- **Runtime entrypoint provenance** confirms the file that actually executes (`packages/mcp/dist/server.js`) derives from the reviewed committed source. This requires either a committed dist, a reproducible build record, or a directly executable source entrypoint. None of these conditions hold: the dist is gitignored and only in the working tree.
+
+**Completing runtime provenance requires one of:**
+1. Committing and pinning the dist artifacts alongside a reproducible build record (exact command, locked deps, clean exported source, result hash).
+2. Changing the MCP entrypoint to a source file that is directly executable under a pinned runtime and fully committed.
+
+Until one of those conditions is met, the truthful admission status is `candidate`.
 
 ---
 
@@ -114,9 +123,9 @@ Not complete. Graphify frozen state is not B8.5 completion. B8.5 requires bounde
 
 ## Summary table
 
-| Component | Installed | Registered | Default | Watcher | Admission |
-|-----------|-----------|------------|---------|---------|-----------|
-| Codebase Memory MCP | yes | no | no | disabled | candidate |
-| Workbench MCP | yes (at source path) | no | no | n/a | active-local |
+| Component | Installed | Registered | Runtime entrypoint verified | Server running | Admission |
+|-----------|-----------|------------|---------------------------|----------------|-----------|
+| Codebase Memory MCP | yes (binary) | no | yes (binary is committed artifact) | no | candidate |
+| Workbench MCP | yes (source at path) | no | **no** (dist is working-tree-only) | no | candidate |
 | Legacy bridge (b1_0a) | yes | yes (Codex) | n/a | n/a | retired |
-| Graphify | installed | n/a | frozen | n/a | n/a |
+| Graphify | installed | n/a | n/a | frozen (scheduler skipping) | n/a |

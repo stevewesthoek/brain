@@ -113,10 +113,20 @@ or the loopback-only network policy.
 
 ## Post-admission state
 
-- **Admission status:** `active-local` (unchanged)
-- **Provider revision:** `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e`
-- **Provider version:** `1.3.3-beta`
-- **Source state:** `mixed` (source committed, dist working-tree-only)
-- **Client registration:** none — admission is not client registration
+| Dimension | State |
+|-----------|-------|
+| Committed source reviewed | yes — 13 source artifacts verified from exported committed tree at `aa7bf7ec...` |
+| Revision attested | yes — `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e` verified via `git archive` export |
+| Runtime entrypoint verified | **no** — `packages/mcp/dist/server.js` is gitignored (sourceState: working-tree-only); cannot be verified from committed objects |
+| Client registered | no — no `[mcp_servers.workbench]` in `~/.codex/config.toml`; no `mcpServers.workbench` in `~/.claude.json` |
+| Server running | not observed — no client registration to start it from |
+| Admission status | `candidate` — source reviewed; runtime entrypoint provenance not established |
+| Runtime status | not active — no client registration; no live server observed |
 
-A valid admission does not imply the provider is running or any client has connected to it. Client registration requires a separate authorized configuration step.
+### Why `candidate` and not `active-local`
+
+An `active-local` admission requires that the runtime entrypoint provenance is established. The MCP entrypoint (`packages/mcp/dist/server.js`) and all 12 dist artifacts are gitignored at both the old and new revision and carry `sourceState: working-tree-only`. They cannot be verified from the committed Git tree. No client is registered, no server is running, and no reproducible build record exists that would establish the working-tree dist as derived from a specific committed source state.
+
+**Source review is not runtime provenance.** The committed source files were reviewed and are admissible. The dist files that actually run at runtime were not and cannot be verified from committed objects. Until the runtime entrypoint is either committed/pinned or a reproducible build record (exact command, locked deps, exported source, result hash) is produced, the admission truthfully rests at `candidate`.
+
+A valid `candidate` admission means Brain has reviewed and approved the committed source for local use pending runtime-entrypoint provenance. It does not mean the server is running or any client has connected to it.

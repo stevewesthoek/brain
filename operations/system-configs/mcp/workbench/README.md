@@ -1,16 +1,27 @@
 # Workbench MCP Provider for Brain
 
-**State:** admitted for local Brain consumption  
+**Admission status:** `candidate`  
 **Admission:** `operations/specs/mcp-provider-admissions.json`  
 **Standard:** `operations/system-configs/mcp/MCP-PROVIDER-ADMISSION-STANDARD.md`  
 **Provider Repository:** `prochattools/workbench-private`  
-**MCP Entrypoint:** `packages/mcp/dist/server.js`
-**Current client registration:** none (see post-merge audit 2026-08-02)
+**MCP Entrypoint:** `packages/mcp/dist/server.js` (working-tree-only — not verifiable from committed objects)
+**Current client registration:** none  
+**Server running:** not observed
 
-> **Admission is NOT client registration.** A valid admission means Brain has reviewed
-> and approved this provider for local use. It does not mean the server is running,
-> that a client has connected to it, or that any IDE config has been updated.
-> Client registration requires a separate authorized configuration step.
+> **Why `candidate` and not `active-local`:**
+> The committed source at `aa7bf7ec...` was reviewed and is admissible. However the
+> runtime entrypoint (`packages/mcp/dist/server.js`) and all 12 dist artifacts are
+> gitignored and exist only in the working tree. They cannot be verified from committed
+> objects. No reproducible build record exists. Until the runtime entrypoint provenance
+> is established, the truthful admission status is `candidate`.
+>
+> **Source review is not runtime provenance.** Reviewing the committed source confirms
+> the code is admissible. It does not confirm that the file that will actually execute
+> matches that reviewed source.
+>
+> **Admission is NOT client registration.** `candidate` means Brain has reviewed and
+> approved the committed source for local use pending runtime-entrypoint provenance.
+> It does not mean the server is running or any client has connected to it.
 > As of 2026-08-02, no `[mcp_servers.workbench]` entry exists in `~/.codex/config.toml`
 > and no `mcpServers.workbench` entry exists in `~/.claude.json`.
 

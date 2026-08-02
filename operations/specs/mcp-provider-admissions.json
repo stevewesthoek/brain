@@ -113,7 +113,7 @@
     },
     {
       "admissionId": "workbench-for-brain",
-      "status": "active-local",
+      "status": "candidate",
       "owner": "brain-runtime",
       "consumer": "brain",
       "provider": {
