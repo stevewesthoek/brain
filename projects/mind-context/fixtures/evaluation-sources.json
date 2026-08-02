@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "sources": [
+    {"sourceId":"canonical-owner","path":"fixtures/evaluation/canonical-owner.md","scope":"fixtures/canonical","authority":"canonical","freshness":"fresh","privacy":"internal"},
+    {"sourceId":"status-a","path":"fixtures/evaluation/status-a.md","scope":"fixtures/conflict","authority":"supporting","freshness":"fresh","privacy":"internal"},
+    {"sourceId":"status-b","path":"fixtures/evaluation/status-b.md","scope":"fixtures/conflict","authority":"canonical","freshness":"fresh","privacy":"internal"},
+    {"sourceId":"stale-owner","path":"fixtures/evaluation/stale-owner.md","scope":"fixtures/stale","authority":"supporting","freshness":"stale","privacy":"internal"},
+    {"sourceId":"secret-file","path":"fixtures/evaluation/secret-file.md","scope":"fixtures/secret","authority":"untrusted","freshness":"unknown","privacy":"sensitive"},
+    {"sourceId":"source-b","path":"fixtures/evaluation/source-b.md","scope":"fixtures/b","authority":"untrusted","freshness":"unknown","privacy":"public"},
+    {"sourceId":"missing-record","path":"fixtures/evaluation/missing-record.md","scope":"fixtures/unknown","authority":"supporting","freshness":"unknown","privacy":"internal"},
+    {"sourceId":"redacted-summary","path":"fixtures/evaluation/redacted-summary.md","scope":"fixtures/redacted","authority":"canonical","freshness":"fresh","privacy":"sensitive"},
+    {"sourceId":"value-a","path":"fixtures/evaluation/value-a.md","scope":"fixtures/conflict","authority":"supporting","freshness":"fresh","privacy":"internal"},
+    {"sourceId":"value-b","path":"fixtures/evaluation/value-b.md","scope":"fixtures/conflict","authority":"canonical","freshness":"fresh","privacy":"internal"},
+    {"sourceId":"source-1","path":"fixtures/evaluation/source-1.md","scope":"fixtures/many","authority":"supporting","freshness":"fresh","privacy":"public"},
+    {"sourceId":"outside","path":"fixtures/evaluation/outside.md","scope":"fixtures/external","authority":"untrusted","freshness":"unknown","privacy":"internal"},
+    {"sourceId":"untrusted-note","path":"fixtures/evaluation/untrusted-note.md","scope":"fixtures/untrusted","authority":"untrusted","freshness":"fresh","privacy":"public"}
+  ]
+}

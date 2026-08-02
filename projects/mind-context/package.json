@@ -1,0 +1,20 @@
+{
+  "name": "mind-context",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "scripts": {
+    "build": "sh -c 'set -e; find src test -name \"*.mjs\" -print0 | xargs -0 -n 1 node --check'",
+    "check": "npm run build",
+    "typecheck": "npm run build",
+    "test": "node --test test/*.test.mjs",
+    "smoke": "node --test test/smoke.test.mjs",
+    "cli": "node src/cli/cli.mjs",
+    "eval": "node src/evals/benchmark.mjs",
+    "eval:gate": "node src/evals/gate.mjs"
+  }
+}
