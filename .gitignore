@@ -35,6 +35,9 @@ tsx-*/
 # Local Claude runtime/worktrees at repo root
 .claude/
 
+# Project-scoped Codex runtime registration (generated from Brain admission data)
+.codex/
+
 # Generated model caches (regenerable via sync commands)
 ai/models/bedrock-models.generated.json
 

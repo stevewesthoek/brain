@@ -1,6 +1,6 @@
 # ClickUp CSV Importer Runbook
 
-**Status:** ✓ DOCUMENTED (Python utility, one-time or recurring imports)
+**Status:** RETIRED (2026-07-31) — BS0.10: exit guard added; M1.4 resolved; numbered roots (0x-*/) are historical paths. See `operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md`.
 
 ## Overview
 

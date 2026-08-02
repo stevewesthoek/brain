@@ -57,6 +57,16 @@ import * as path from 'path';
 import * as os   from 'os';
 import { execSync, spawnSync } from 'child_process';
 
+const executionMode = process.argv.slice(2).find(arg => arg.startsWith('--mode='))?.slice('--mode='.length);
+if (executionMode !== 'apply') {
+  if (executionMode !== undefined && executionMode !== 'report-only') {
+    console.error("pipeline mode must be exactly 'report-only' or 'apply'");
+    process.exit(64);
+  }
+  console.log('bible-studies pipeline: mode=report-only; no Mind or external writes');
+  process.exit(0);
+}
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const C = {
   bibleSrc:   '/Users/Office/Library/CloudStorage/GoogleDrive-info@prochat.tools/My Drive/Bible Study/Dance of Life/Bible Studies',

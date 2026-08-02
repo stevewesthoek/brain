@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bible-studies-pipeline.sh — Nightly transcription + NotebookLM sync for Dance of Life Bible Studies
 #
-# Phases:
+# Phases (only with --mode=apply):
 #   1. Scan Bible Studies/ for new audio/video files
 #   2. Transcribe each with mlx-whisper (large-v3, max quality)
 #   3. Format transcript as Obsidian markdown note
@@ -10,16 +10,49 @@
 #   6. Regenerate README index
 #   7. Git commit new notes to brain repo
 #
-# Called by: office-nightly-scheduler.sh (last content job, after dance-of-life-sync)
+# Scheduler status: quiesced by BS0.2; this wrapper is report-only by default.
 # Script:    tools/scripts/bible-studies/pipeline.mjs
 # State:     ~/.local/state/bible-studies/state.json
 # Log:       ~/Library/Logs/office-scheduler/bible-studies.log
 #
 # Usage:
-#   ./bible-studies-pipeline.sh              # normal nightly run
-#   FORCE_RESCAN=1 ./bible-studies-pipeline.sh  # recheck all videos (skip already-transcribed)
+#   ./bible-studies-pipeline.sh                 # report-only; no external or Mind action
+#   ./bible-studies-pipeline.sh --mode=apply    # explicit operator action
 
 set -euo pipefail
+
+MODE="report-only"
+case "$#" in
+  0)
+    ;;
+  1)
+    case "$1" in
+      --mode=report-only) MODE="report-only" ;;
+      --mode=apply) MODE="apply" ;;
+      *)
+        echo "usage: $0 [--mode=report-only|--mode=apply]" >&2
+        exit 64
+        ;;
+    esac
+    ;;
+  2)
+    if [[ "$1" == "--mode" && ( "$2" == "report-only" || "$2" == "apply" ) ]]; then
+      MODE="$2"
+    else
+      echo "usage: $0 [--mode=report-only|--mode=apply]" >&2
+      exit 64
+    fi
+    ;;
+  *)
+    echo "usage: $0 [--mode=report-only|--mode=apply]" >&2
+    exit 64
+    ;;
+esac
+
+if [[ "$MODE" != "apply" ]]; then
+  echo "bible-studies-pipeline: mode=report-only; pipeline remains quiesced (no Mind or external writes)"
+  exit 0
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PIPELINE="$SCRIPT_DIR/bible-studies/pipeline.mjs"
@@ -64,4 +97,4 @@ export MLX_WHISPER_BIN="$MLX_BIN"
 
 export FORCE_RESCAN="${FORCE_RESCAN:-0}"
 
-exec "$BUN_BIN" "$PIPELINE"
+exec "$BUN_BIN" "$PIPELINE" --mode=apply

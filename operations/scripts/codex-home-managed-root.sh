@@ -17,7 +17,8 @@ set -euo pipefail
 #            directory. Requires CODEX_HOME_ROLLBACK_BACKUP and confirmation.
 #
 # Environment overrides (primarily for tests):
-#   HOME, BRAIN_REPO, DRY_RUN=1, CODEX_HOME_SKIP_PROCESS_CHECK=1
+#   HOME, BRAIN_REPO, DRY_RUN=1
+#   CODEX_HOME_TEST_MODE=1 with CODEX_HOME_SKIP_PROCESS_CHECK=1
 ###############################################################################
 
 COMMAND="${1:-check}"
@@ -55,6 +56,12 @@ run() {
 
 path_bytes() {
   LC_ALL=C printf '%s' "$1" | wc -c | tr -d ' '
+}
+
+control_socket_has_owner() {
+  local socket_path="$1"
+  command -v lsof >/dev/null 2>&1 || return 2
+  lsof -nU -Fn 2>/dev/null | rg --fixed-strings --line-regexp "n$socket_path" >/dev/null
 }
 
 resolve_link_target_abs() {
@@ -249,6 +256,53 @@ check_managed_layout() {
     failures=$((failures + 1))
   fi
 
+  if [ -S "$socket_path" ]; then
+    if ! command -v lsof >/dev/null 2>&1; then
+      say "[FAIL] lsof is required to determine whether the control socket is stale."
+      failures=$((failures + 1))
+    elif control_socket_has_owner "$socket_path"; then
+      say "[OK] Control socket is owned by a running process."
+    else
+      say "[FAIL] Control socket exists but no process owns it: $socket_path"
+      failures=$((failures + 1))
+    fi
+  fi
+
+  local state_db="$CODEX_HOME_DIR/state_5.sqlite"
+  if [ -f "$state_db" ]; then
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+      say "[FAIL] sqlite3 is required to validate $state_db."
+      failures=$((failures + 1))
+    else
+      local integrity threads_table rollout_column legacy_root legacy_sql legacy_count
+      integrity="$(sqlite3 -readonly "$state_db" 'PRAGMA integrity_check;' 2>/dev/null || true)"
+      if [ "$integrity" != "ok" ]; then
+        say "[FAIL] $state_db failed integrity validation."
+        failures=$((failures + 1))
+      else
+        threads_table="$(sqlite3 -readonly "$state_db" \
+          "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads';")"
+        rollout_column="$(sqlite3 -readonly "$state_db" \
+          "SELECT COUNT(*) FROM pragma_table_info('threads') WHERE name='rollout_path';")"
+        if [ "$threads_table" -eq 1 ] && [ "$rollout_column" -eq 1 ]; then
+          legacy_root="$(normalize_existing_path "$CONFIGS_DIR/codex")" || legacy_root=""
+          legacy_sql="$(sql_quote_literal "$legacy_root")"
+          legacy_count="$(sqlite3 -readonly "$state_db" \
+            "SELECT COUNT(*) FROM threads
+             WHERE substr(rollout_path, 1, length(${legacy_sql}) + 1) = ${legacy_sql} || '/';")"
+          if [ "$legacy_count" -eq 0 ]; then
+            say "[OK] State database has no legacy repository rollout paths."
+          else
+            say "[FAIL] State database still has $legacy_count legacy repository rollout path(s)."
+            failures=$((failures + 1))
+          fi
+        else
+          say "[OK] State database has no rollout-path inventory to validate."
+        fi
+      fi
+    fi
+  fi
+
   [ "$failures" -eq 0 ] || return 1
   say "Codex managed runtime root check passed."
 }
@@ -260,6 +314,9 @@ codex_processes_are_running() {
   fi
 
   if [ "${CODEX_HOME_SKIP_PROCESS_CHECK:-0}" -eq 1 ]; then
+    [ "${CODEX_HOME_TEST_MODE:-0}" -eq 1 ] || {
+      die "CODEX_HOME_SKIP_PROCESS_CHECK is test-only and cannot bypass the live Codex process guard."
+    }
     say "[WARN] Process check skipped by CODEX_HOME_SKIP_PROCESS_CHECK=1."
     return 1
   fi
@@ -317,26 +374,39 @@ repair_layout() {
 
   local timestamp
   timestamp="$(date +%Y%m%d-%H%M%S)"
-  local backup_dir="$HOME_DIR/.brain-configs-backups/codex-managed-root/$timestamp-$$/replaced-managed-entries"
+  local backup_root="$HOME_DIR/.brain-configs-backups/codex-managed-root/$timestamp-$$"
+  local backup_dir="$backup_root/replaced-managed-entries"
 
   run mkdir -p "$CODEX_HOME_DIR"
   install_managed_layout "$CODEX_HOME_DIR" "$backup_dir"
 
+  local control_socket="$CODEX_HOME_DIR/$SOCKET_RELATIVE_PATH"
+  if [ -S "$control_socket" ]; then
+    command -v lsof >/dev/null 2>&1 || {
+      die "lsof is required to determine whether the control socket is stale."
+    }
+    if control_socket_has_owner "$control_socket"; then
+      die "The control socket is still owned by a running process: $control_socket"
+    fi
+    say "Removing stale Codex control socket: $control_socket"
+    run unlink "$control_socket"
+  fi
+
+  local legacy_root final_root
+  legacy_root="$(normalize_existing_path "$CONFIGS_DIR/codex")" || {
+    die "Cannot resolve the legacy Codex repository path."
+  }
+  final_root="$(normalize_existing_path "$CODEX_HOME_DIR")" || {
+    die "Cannot resolve the final Codex home path: $CODEX_HOME_DIR"
+  }
+  if [ "$DRY_RUN" -eq 1 ]; then
+    say "[dry-run] Would validate and repair legacy rollout paths in $CODEX_HOME_DIR/state_5.sqlite."
+  else
+    repair_state_db_rollout_paths "$CODEX_HOME_DIR" "$legacy_root" "$final_root" "$backup_root"
+  fi
+
   if [ "$DRY_RUN" -eq 0 ]; then
     check_managed_layout
-  fi
-}
-
-copy_entry_with_ditto() {
-  local source="$1"
-  local destination="$2"
-
-  if [ -L "$source" ]; then
-    local target
-    target="$(readlink "$source")" || return 1
-    ln -s "$target" "$destination" || return 1
-  else
-    ditto "$source" "$destination" || return 1
   fi
 }
 
@@ -350,46 +420,131 @@ copy_directory() {
 
   mkdir -p "$destination" || return 1
 
-  if command -v ditto >/dev/null 2>&1; then
-    local entry entry_name control_child
-    local -a entries control_children
-    entries=("$source"/.[!.]* "$source"/..?* "$source"/*)
-    for entry in "${entries[@]}"; do
-      if [ ! -e "$entry" ] && [ ! -L "$entry" ]; then
-        continue
-      fi
-      entry_name="$(basename -- "$entry")"
-      if [ "$entry_name" = "app-server-control" ] && [ -d "$entry" ] && [ ! -L "$entry" ]; then
-        mkdir -p "$destination/$entry_name" || return 1
-        control_children=("$entry"/.[!.]* "$entry"/..?* "$entry"/*)
-        for control_child in "${control_children[@]}"; do
-          if [ ! -e "$control_child" ] && [ ! -L "$control_child" ]; then
-            continue
-          fi
-          if [ -S "$control_child" ]; then
-            continue
-          fi
-          copy_entry_with_ditto \
-            "$control_child" \
-            "$destination/$entry_name/$(basename -- "$control_child")" || return 1
-        done
-      else
-        copy_entry_with_ditto "$entry" "$destination/$entry_name" || return 1
-      fi
-      if [ "${CODEX_HOME_TEST_COPY_FAILURE_ENTRY:-}" = "$entry_name" ]; then
-        return 1
-      fi
-    done
-  elif command -v rsync >/dev/null 2>&1; then
-    local -a rsync_args=(-a)
-    rsync "${rsync_args[@]}" \
-      --exclude="/$SOCKET_RELATIVE_PATH" \
-      "$source/" "$destination/"
-  else
-    tar -C "$source" \
-      --exclude="./$SOCKET_RELATIVE_PATH" \
-      -cf - . | tar -C "$destination" -xf -
+  # Archive each discovered entry without recursive tar traversal so find's
+  # type filter is authoritative. This skips every Unix socket at any depth
+  # while preserving all other files, directories, symlinks, and permissions.
+  (
+    cd -- "$source" || exit 1
+    find . ! -type s -print0 | tar --null --no-recursion -cf - -T -
+  ) | tar -C "$destination" -xpf - || return 1
+
+  if [ -n "${CODEX_HOME_TEST_COPY_FAILURE_ENTRY:-}" ] && {
+    [ -e "$source/$CODEX_HOME_TEST_COPY_FAILURE_ENTRY" ] ||
+      [ -L "$source/$CODEX_HOME_TEST_COPY_FAILURE_ENTRY" ]
+  }; then
+    return 1
   fi
+}
+
+sql_quote_literal() {
+  local value="$1"
+  value="$(printf '%s' "$value" | sed "s/'/''/g")"
+  printf "'%s'" "$value"
+}
+
+repair_state_db_rollout_paths() {
+  local staged_root="$1"
+  local legacy_root="$2"
+  local final_root="$3"
+  local backup_dir="$4"
+  local state_db="$staged_root/state_5.sqlite"
+
+  [ -f "$state_db" ] || return 0
+  command -v sqlite3 >/dev/null 2>&1 || {
+    die "sqlite3 is required to validate and repair the migrated Codex state database."
+  }
+  [ -r "$state_db" ] && [ -w "$state_db" ] && [ -w "$(dirname -- "$state_db")" ] || {
+    die "The Codex state database or its parent directory is not writable: $state_db"
+  }
+
+  local integrity
+  integrity="$(sqlite3 -cmd '.timeout 5000' "$state_db" 'PRAGMA integrity_check;')" || {
+    die "Could not validate the Codex state database at $state_db."
+  }
+  [ "$integrity" = "ok" ] || {
+    die "The Codex state database failed integrity validation: $integrity"
+  }
+
+  local threads_table rollout_column
+  threads_table="$(sqlite3 -cmd '.timeout 5000' "$state_db" \
+    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='threads';")"
+  if [ "$threads_table" -eq 0 ]; then
+    say "[WARN] Codex state database has no threads table; no rollout paths were rewritten."
+    return 0
+  fi
+  rollout_column="$(sqlite3 -cmd '.timeout 5000' "$state_db" \
+    "SELECT COUNT(*) FROM pragma_table_info('threads') WHERE name='rollout_path';")"
+  [ "$rollout_column" -eq 1 ] || {
+    die "The Codex state database has no threads.rollout_path column."
+  }
+
+  local legacy_sql final_sql legacy_count legacy_path relative missing_paths
+  legacy_sql="$(sql_quote_literal "$legacy_root")"
+  final_sql="$(sql_quote_literal "$final_root")"
+  legacy_count="$(sqlite3 -cmd '.timeout 5000' "$state_db" \
+    "SELECT COUNT(*) FROM threads
+     WHERE substr(rollout_path, 1, length(${legacy_sql}) + 1) = ${legacy_sql} || '/';")"
+  [ "$legacy_count" -gt 0 ] || {
+    say "No legacy rollout paths required rewriting in the staged state database."
+    return 0
+  }
+
+  missing_paths=0
+  while IFS= read -r legacy_path; do
+    case "$legacy_path" in
+      "$legacy_root"/*) relative="${legacy_path#"$legacy_root"/}" ;;
+      *)
+        missing_paths=$((missing_paths + 1))
+        continue
+        ;;
+    esac
+    if [ ! -f "$staged_root/$relative" ]; then
+      missing_paths=$((missing_paths + 1))
+    fi
+  done < <(sqlite3 -cmd '.timeout 5000' "$state_db" \
+    "SELECT rollout_path FROM threads
+     WHERE substr(rollout_path, 1, length(${legacy_sql}) + 1) = ${legacy_sql} || '/';")
+  [ "$missing_paths" -eq 0 ] || {
+    die "$missing_paths legacy rollout path(s) have no target file; refusing to rewrite the state database."
+  }
+
+  mkdir -p "$backup_dir"
+  sqlite3 "$state_db" ".backup '$backup_dir/state_5.sqlite-before-path-rewrite'" || {
+    die "Could not back up the Codex state database before path repair."
+  }
+
+  local updated_count
+  updated_count="$(sqlite3 "$state_db" "
+BEGIN IMMEDIATE;
+UPDATE threads
+SET rollout_path = ${final_sql} || substr(rollout_path, length(${legacy_sql}) + 1)
+WHERE substr(rollout_path, 1, length(${legacy_sql}) + 1) = ${legacy_sql} || '/';
+SELECT changes();
+COMMIT;
+PRAGMA wal_checkpoint(TRUNCATE);
+" | sed -n '1p')" || {
+    die "Could not rewrite legacy rollout paths in the Codex state database."
+  }
+  [ "$updated_count" -eq "$legacy_count" ] || {
+    die "State database path repair updated $updated_count row(s); expected $legacy_count."
+  }
+
+  integrity="$(sqlite3 -cmd '.timeout 5000' "$state_db" 'PRAGMA integrity_check;')" || {
+    die "Could not revalidate the repaired Codex state database."
+  }
+  [ "$integrity" = "ok" ] || {
+    die "The repaired Codex state database failed integrity validation: $integrity"
+  }
+  [ "$(sqlite3 -cmd '.timeout 5000' "$state_db" \
+    "SELECT COUNT(*) FROM threads
+     WHERE substr(rollout_path, 1, length(${legacy_sql}) + 1) = ${legacy_sql} || '/';")" -eq 0 ] || {
+    die "Legacy rollout paths remain after staged state database repair."
+  }
+  [ "$(sqlite3 -cmd '.timeout 5000' "$state_db" 'SELECT COUNT(*) FROM pragma_foreign_key_check;')" -eq 0 ] || {
+    die "The repaired staged Codex state database failed foreign-key validation."
+  }
+
+  say "Rewrote $updated_count legacy rollout path(s) in the Codex state database."
 }
 
 migrate_layout() {
@@ -433,6 +588,12 @@ migrate_layout() {
   if ! copy_directory "$actual_source" "$stage_root"; then
     die "Copy failed. The original symlink is untouched; staging was retained at $stage_root"
   fi
+
+  local final_root
+  final_root="$(normalize_existing_path "$CODEX_HOME_DIR")" || {
+    die "Cannot resolve the final Codex home path: $CODEX_HOME_DIR"
+  }
+  repair_state_db_rollout_paths "$stage_root" "$actual_source" "$final_root" "$backup_dir"
 
   install_managed_layout "$stage_root" "$backup_dir/replaced-managed-entries"
 

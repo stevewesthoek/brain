@@ -1,6 +1,6 @@
 # Mind Kanban Syncer Runbook
 
-**Status:** ✓ PRODUCTION (Python + Cron, Obsidian Kanban Plugin)
+**Status:** RETIRED (2026-07-31) — BS0.10: exit guard added; M1.4 resolved; kanban.md is human-only authority. See `operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md`.
 
 ## Overview
 

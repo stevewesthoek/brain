@@ -18,7 +18,9 @@
     "ibr:relationships:audit": "node tools/infinite-brain/relationship-audit-dry-run.mjs",
     "ibr:insights:dry-run": "node tools/infinite-brain/insight-generation-dry-run.mjs",
     "ibr:proposals:dry-run": "node tools/infinite-brain/proposal-generation-dry-run.mjs",
-    "ibr:pipeline:dry-run": "node tools/infinite-brain/run-report-only-pipeline.mjs"
+    "ibr:pipeline:dry-run": "node tools/infinite-brain/run-report-only-pipeline.mjs",
+    "infinite-brain:conformance": "node tools/scripts/validate-infinite-brain-conformance.mjs",
+    "infinite-brain:cross-repo-contract": "node tools/scripts/validate-cross-repo-contract.mjs"
   },
   "keywords": [
     "claude",

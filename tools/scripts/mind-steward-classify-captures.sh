@@ -9,6 +9,34 @@ JSON_OUTPUT="$OUTPUT_DIR/classify-latest.json"
 MD_OUTPUT="$OUTPUT_DIR/classify-latest.md"
 CLI_PATH="$STEWARD_DIR/src/cli/classify-captures.ts"
 
+MODE="dry-run"
+case "$#" in
+  0)
+    ;;
+  1)
+    case "$1" in
+      --mode=dry-run) MODE="dry-run" ;;
+      --mode=apply) MODE="apply" ;;
+      *)
+        echo "usage: $0 [--mode=dry-run|--mode=apply]" >&2
+        exit 64
+        ;;
+    esac
+    ;;
+  2)
+    if [[ "$1" == "--mode" && ( "$2" == "dry-run" || "$2" == "apply" ) ]]; then
+      MODE="$2"
+    else
+      echo "usage: $0 [--mode=dry-run|--mode=apply]" >&2
+      exit 64
+    fi
+    ;;
+  *)
+    echo "usage: $0 [--mode=dry-run|--mode=apply]" >&2
+    exit 64
+    ;;
+esac
+
 mkdir -p "$OUTPUT_DIR"
 chmod 700 "$OUTPUT_DIR"
 
@@ -17,6 +45,7 @@ ARGS=(
   --mind-root "$MIND_ROOT"
   --output-json "$JSON_OUTPUT"
   --output-md "$MD_OUTPUT"
+  --mode "$MODE"
 )
 
 if [[ -n "${AI_SELECTOR_URL:-}" ]]; then
@@ -25,10 +54,6 @@ fi
 
 if [[ -n "${MIND_STEWARD_CLASSIFY_LIMIT:-}" ]]; then
   ARGS+=(--limit "$MIND_STEWARD_CLASSIFY_LIMIT")
-fi
-
-if [[ "${MIND_STEWARD_CLASSIFY_DRY_RUN:-0}" == "1" ]]; then
-  ARGS+=(--dry-run)
 fi
 
 "${ARGS[@]}"

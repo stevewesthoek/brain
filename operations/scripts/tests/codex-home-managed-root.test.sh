@@ -4,11 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 MANAGER="$(cd -- "$SCRIPT_DIR/.." && pwd)/codex-home-managed-root.sh"
 BRAIN_LINKER="$(cd -- "$SCRIPT_DIR/.." && pwd)/brain-configs-link.sh"
-TEST_ROOT="$(mktemp -d /tmp/chmr.XXXXXX)"
+TEST_ROOT="$(mktemp -d /tmp/cx.XXXXXX)"
 
 cleanup() {
   case "$TEST_ROOT" in
-    /tmp/chmr.*) rm -rf -- "$TEST_ROOT" ;;
+    /tmp/cx.*) rm -rf -- "$TEST_ROOT" ;;
     *) printf '[ERROR] Refusing unsafe test cleanup: %s\n' "$TEST_ROOT" >&2 ;;
   esac
 }
@@ -25,14 +25,17 @@ pass() {
 
 create_brain_fixture() {
   local root="$1"
+  local configs_dir="${2:-$root/brain/operations/system-configs}"
+  local brain_ai_dir="${3:-$root/brain/ai}"
   mkdir -p \
-    "$root/brain/operations/system-configs/codex/rules" \
-    "$root/brain/ai/skills/active"
-  printf 'fixture agents\n' > "$root/brain/operations/system-configs/codex/AGENTS.md"
-  printf 'fixture config\n' > "$root/brain/operations/system-configs/codex/config.toml"
-  printf 'fixture rtk\n' > "$root/brain/operations/system-configs/codex/RTK.md"
-  printf 'fixture rules\n' > "$root/brain/operations/system-configs/codex/rules/default.rules"
-  printf 'fixture skill\n' > "$root/brain/ai/skills/active/example.md"
+    "$root/brain" \
+    "$configs_dir/codex/rules" \
+    "$brain_ai_dir/skills/active"
+  printf 'fixture agents\n' > "$configs_dir/codex/AGENTS.md"
+  printf 'fixture config\n' > "$configs_dir/codex/config.toml"
+  printf 'fixture rtk\n' > "$configs_dir/codex/RTK.md"
+  printf 'fixture rules\n' > "$configs_dir/codex/rules/default.rules"
+  printf 'fixture skill\n' > "$brain_ai_dir/skills/active/example.md"
 }
 
 run_manager() {
@@ -42,6 +45,9 @@ run_manager() {
     unset CODEX_HOME
     HOME="$root/home" \
       BRAIN_REPO="$root/brain" \
+      CONFIGS_DIR="${CONFIGS_DIR:-$root/brain/operations/system-configs}" \
+      BRAIN_AI_DIR="${BRAIN_AI_DIR:-$root/brain/ai}" \
+      CODEX_HOME_TEST_MODE=1 \
       CODEX_HOME_SKIP_PROCESS_CHECK="${CODEX_HOME_SKIP_PROCESS_CHECK:-1}" \
       bash "$MANAGER" "$@"
   )
@@ -60,33 +66,89 @@ assert_managed_link() {
 # Legacy whole-directory symlink migration
 ###############################################################################
 
-MIGRATION_ROOT="$TEST_ROOT/migration"
-create_brain_fixture "$MIGRATION_ROOT"
+MIGRATION_ROOT="$TEST_ROOT/m"
+MIGRATION_CONFIGS="$TEST_ROOT/c"
+MIGRATION_AI="$TEST_ROOT/a"
+create_brain_fixture "$MIGRATION_ROOT" "$MIGRATION_CONFIGS" "$MIGRATION_AI"
 mkdir -p "$MIGRATION_ROOT/home"
 
-LEGACY_CODEX="$MIGRATION_ROOT/brain/operations/system-configs/codex"
+LEGACY_CODEX="$MIGRATION_CONFIGS/codex"
+LEGACY_ROLLOUT_RELATIVE="sessions/2026/07/22/rollout-2026-07-22T12-00-00-00000000-0000-4000-8000-000000000001.jsonl"
+CURRENT_ROLLOUT_RELATIVE="sessions/2026/07/22/rollout-2026-07-22T12-00-01-00000000-0000-4000-8000-000000000002.jsonl"
 mkdir -p \
   "$LEGACY_CODEX/sessions" \
+  "$LEGACY_CODEX/sessions/2026/07/22" \
   "$LEGACY_CODEX/skills/.system" \
-  "$LEGACY_CODEX/app-server-control"
+  "$LEGACY_CODEX/app-server-control" \
+  "$LEGACY_CODEX/ipc" \
+  "$LEGACY_CODEX/n/d"
+LEGACY_CODEX_PHYSICAL="$(cd -P -- "$LEGACY_CODEX" && pwd)"
+FINAL_CODEX_HOME_PHYSICAL="$(cd -P -- "$MIGRATION_ROOT/home" && pwd)/.codex"
 printf 'session-data\n' > "$LEGACY_CODEX/sessions/thread.json"
+printf 'legacy-rollout\n' > "$LEGACY_CODEX/$LEGACY_ROLLOUT_RELATIVE"
+printf 'current-rollout\n' > "$LEGACY_CODEX/$CURRENT_ROLLOUT_RELATIVE"
 printf '{}\n' > "$LEGACY_CODEX/auth.json"
 printf 'system-skill\n' > "$LEGACY_CODEX/skills/.system/marker"
+printf 'control-neighbor\n' > "$LEGACY_CODEX/app-server-control/state.json"
+printf 'ipc-neighbor\n' > "$LEGACY_CODEX/ipc/state.json"
+printf 'deep-neighbor\n' > "$LEGACY_CODEX/n/d/state.json"
 mkdir -p "$MIGRATION_ROOT/external-private-tree"
 printf 'must stay external\n' > "$MIGRATION_ROOT/external-private-tree/marker"
 ln -s "$MIGRATION_ROOT/external-private-tree" "$LEGACY_CODEX/external-link"
-SHORT_SOCKET="$TEST_ROOT.sock"
-ruby -rsocket -e 'server = UNIXServer.new(ARGV.fetch(0)); server.close' "$SHORT_SOCKET"
-mv "$SHORT_SOCKET" "$LEGACY_CODEX/app-server-control/app-server-control.sock"
-ln -s "$MIGRATION_ROOT/brain/ai/skills/active" "$LEGACY_CODEX/skills/user"
+FIXTURE_SOCKETS=(
+  "$LEGACY_CODEX/app-server-control/app-server-control.sock"
+  "$LEGACY_CODEX/ipc/ipc.sock"
+  "$LEGACY_CODEX/n/d/s.sock"
+)
+for socket in "${FIXTURE_SOCKETS[@]}"; do
+  socket_parent="$(cd -P -- "$(dirname -- "$socket")" && pwd)"
+  physical_socket="$socket_parent/$(basename -- "$socket")"
+  socket_bytes="$(LC_ALL=C printf '%s' "$physical_socket" | wc -c | tr -d ' ')"
+  [ "$socket_bytes" -le 103 ] || {
+    fail "test construction produced a ${socket_bytes}-byte socket path (maximum 103): $physical_socket"
+  }
+  ruby -rsocket -e 'server = UNIXServer.new(ARGV.fetch(0)); server.close' "$socket"
+  pass "fixture socket path is ${socket_bytes} bytes: ${socket#"$LEGACY_CODEX/"}"
+done
+ln -s "$MIGRATION_AI/skills/active" "$LEGACY_CODEX/skills/user"
 ln -s "$LEGACY_CODEX" "$MIGRATION_ROOT/home/.codex"
+sqlite3 "$LEGACY_CODEX/state_5.sqlite" "
+CREATE TABLE threads (id TEXT PRIMARY KEY, rollout_path TEXT NOT NULL);
+INSERT INTO threads VALUES (
+  '00000000-0000-4000-8000-000000000001',
+  '$LEGACY_CODEX_PHYSICAL/$LEGACY_ROLLOUT_RELATIVE'
+);
+INSERT INTO threads VALUES (
+  '00000000-0000-4000-8000-000000000002',
+  '$FINAL_CODEX_HOME_PHYSICAL/$CURRENT_ROLLOUT_RELATIVE'
+);
+"
 
-if run_manager "$MIGRATION_ROOT" check >/dev/null 2>&1; then
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  run_manager "$MIGRATION_ROOT" check >/dev/null 2>&1; then
   fail "check unexpectedly accepted a whole-directory symlink"
 fi
 pass "check rejects the legacy whole-directory symlink"
 
-if CODEX_HOME_TEST_SOURCE_KB=100 \
+if (
+  unset CODEX_HOME
+  HOME="$MIGRATION_ROOT/home" \
+    BRAIN_REPO="$MIGRATION_ROOT/brain" \
+    CONFIGS_DIR="$MIGRATION_CONFIGS" \
+    BRAIN_AI_DIR="$MIGRATION_AI" \
+    CODEX_HOME_SKIP_PROCESS_CHECK=1 \
+    CONFIRM_CODEX_HOME_MIGRATION=1 \
+    bash "$MANAGER" migrate >/dev/null 2>&1
+); then
+  fail "migration accepted the test-only process-check bypass outside test mode"
+fi
+[ -L "$MIGRATION_ROOT/home/.codex" ] || fail "process-check bypass refusal changed the legacy symlink"
+pass "migration prevents the test-only process-check bypass in live use"
+
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  CODEX_HOME_TEST_SOURCE_KB=100 \
   CODEX_HOME_TEST_AVAILABLE_KB=100 \
   CONFIRM_CODEX_HOME_MIGRATION=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
@@ -96,7 +158,9 @@ fi
 [ -L "$MIGRATION_ROOT/home/.codex" ] || fail "disk-space refusal changed the legacy symlink"
 pass "migration refuses insufficient disk space without changing the source"
 
-if CODEX_HOME_TEST_COPY_FAILURE=1 \
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  CODEX_HOME_TEST_COPY_FAILURE=1 \
   CONFIRM_CODEX_HOME_MIGRATION=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   run_manager "$MIGRATION_ROOT" migrate >/dev/null 2>&1; then
@@ -105,7 +169,9 @@ fi
 [ -L "$MIGRATION_ROOT/home/.codex" ] || fail "copy failure changed the legacy symlink"
 pass "migration leaves the original symlink untouched when copying fails"
 
-if CODEX_HOME_TEST_COPY_FAILURE_ENTRY=auth.json \
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  CODEX_HOME_TEST_COPY_FAILURE_ENTRY=auth.json \
   CONFIRM_CODEX_HOME_MIGRATION=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   run_manager "$MIGRATION_ROOT" migrate >/dev/null 2>&1; then
@@ -114,7 +180,9 @@ fi
 [ -L "$MIGRATION_ROOT/home/.codex" ] || fail "mid-copy failure changed the legacy symlink"
 pass "migration propagates a mid-copy failure and leaves the original symlink untouched"
 
-if CODEX_HOME_TEST_SWITCH_FAILURE=1 \
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  CODEX_HOME_TEST_SWITCH_FAILURE=1 \
   CONFIRM_CODEX_HOME_MIGRATION=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   run_manager "$MIGRATION_ROOT" migrate >/dev/null 2>&1; then
@@ -123,14 +191,18 @@ fi
 [ -L "$MIGRATION_ROOT/home/.codex" ] || fail "switch failure did not restore the legacy symlink"
 pass "migration restores the original symlink when the atomic switch fails"
 
-DRY_RUN=1 \
+CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  DRY_RUN=1 \
   CONFIRM_CODEX_HOME_MIGRATION=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   run_manager "$MIGRATION_ROOT" migrate >/dev/null
 [ -L "$MIGRATION_ROOT/home/.codex" ] || fail "dry-run changed the legacy symlink"
 pass "dry-run leaves the legacy Codex home unchanged"
 
-CONFIRM_CODEX_HOME_MIGRATION=1 \
+CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  CONFIRM_CODEX_HOME_MIGRATION=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   run_manager "$MIGRATION_ROOT" migrate >/dev/null
 
@@ -139,29 +211,97 @@ CONFIRM_CODEX_HOME_MIGRATION=1 \
 [ -f "$MIGRATION_ROOT/home/.codex/sessions/thread.json" ] || fail "session data was not preserved"
 [ -f "$MIGRATION_ROOT/home/.codex/auth.json" ] || fail "authentication file was not preserved"
 [ -f "$MIGRATION_ROOT/home/.codex/skills/.system/marker" ] || fail "system skills were not preserved"
+[ "$(sqlite3 "$MIGRATION_ROOT/home/.codex/state_5.sqlite" \
+  "SELECT COUNT(*) FROM threads WHERE rollout_path LIKE '$LEGACY_CODEX_PHYSICAL/%';")" -eq 0 ] || {
+  fail "migration left legacy repository rollout paths in the state database"
+}
+[ "$(sqlite3 "$MIGRATION_ROOT/home/.codex/state_5.sqlite" \
+  "SELECT COUNT(*) FROM threads WHERE rollout_path LIKE '$FINAL_CODEX_HOME_PHYSICAL/%';")" -eq 2 ] || {
+  fail "migration did not preserve and normalize both rollout paths"
+}
+[ "$(sqlite3 "$LEGACY_CODEX/state_5.sqlite" \
+  "SELECT COUNT(*) FROM threads WHERE rollout_path LIKE '$LEGACY_CODEX_PHYSICAL/%';")" -eq 1 ] || {
+  fail "migration modified the source state database"
+}
 [ -L "$MIGRATION_ROOT/home/.codex/external-link" ] || fail "a top-level symlink was dereferenced during migration"
 [ "$(readlink "$MIGRATION_ROOT/home/.codex/external-link")" = "$MIGRATION_ROOT/external-private-tree" ] || {
   fail "a top-level symlink changed target during migration"
 }
-[ ! -S "$MIGRATION_ROOT/home/.codex/app-server-control/app-server-control.sock" ] || {
-  fail "stale app-server socket was copied into the migrated root"
-}
+for socket in \
+  app-server-control/app-server-control.sock \
+  ipc/ipc.sock \
+  n/d/s.sock; do
+  [ ! -e "$MIGRATION_ROOT/home/.codex/$socket" ] || {
+    fail "socket was copied into the migrated root: $socket"
+  }
+  [ -S "$LEGACY_CODEX/$socket" ] || {
+    fail "migration modified or removed the source socket: $socket"
+  }
+done
+for neighbor in \
+  app-server-control/state.json \
+  ipc/state.json \
+  n/d/state.json; do
+  [ -f "$MIGRATION_ROOT/home/.codex/$neighbor" ] || {
+    fail "ordinary file beside a socket was not preserved: $neighbor"
+  }
+done
 assert_managed_link \
   "$MIGRATION_ROOT/home/.codex/config.toml" \
-  "$MIGRATION_ROOT/brain/operations/system-configs/codex/config.toml"
+  "$MIGRATION_CONFIGS/codex/config.toml"
 assert_managed_link \
   "$MIGRATION_ROOT/home/.codex/skills/user" \
-  "$MIGRATION_ROOT/brain/ai/skills/active"
+  "$MIGRATION_AI/skills/active"
 
 ORIGINAL_BACKUP_COUNT="$(find "$MIGRATION_ROOT/home/.brain-configs-backups" -type l -name original-codex-home | wc -l | tr -d ' ')"
 [ "$ORIGINAL_BACKUP_COUNT" -eq 1 ] || fail "expected one preserved original Codex home link"
 ORIGINAL_BACKUP="$(find "$MIGRATION_ROOT/home/.brain-configs-backups" -type l -name original-codex-home -print -quit)"
-run_manager "$MIGRATION_ROOT" check >/dev/null
-run_manager "$MIGRATION_ROOT" repair >/dev/null
-run_manager "$MIGRATION_ROOT" repair >/dev/null
+[ -f "$(dirname -- "$ORIGINAL_BACKUP")/state_5.sqlite-before-path-rewrite" ] || {
+  fail "migration did not preserve the staged state database before path repair"
+}
+CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" check >/dev/null
+CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" repair >/dev/null
+CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" repair >/dev/null
 pass "migration preserves runtime state, installs links, validates, and remains idempotent"
 
-CONFIRM_CODEX_HOME_ROLLBACK=1 \
+sqlite3 "$MIGRATION_ROOT/home/.codex/state_5.sqlite" "
+UPDATE threads
+SET rollout_path = '$LEGACY_CODEX_PHYSICAL/$LEGACY_ROLLOUT_RELATIVE'
+WHERE id = '00000000-0000-4000-8000-000000000001';
+"
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  run_manager "$MIGRATION_ROOT" check >/dev/null 2>&1; then
+  fail "check accepted a state database with a legacy repository rollout path"
+fi
+CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  run_manager "$MIGRATION_ROOT" repair >/dev/null
+[ "$(sqlite3 "$MIGRATION_ROOT/home/.codex/state_5.sqlite" \
+  "SELECT COUNT(*) FROM threads WHERE rollout_path LIKE '$LEGACY_CODEX_PHYSICAL/%';")" -eq 0 ] || {
+  fail "repair left a legacy repository rollout path in the state database"
+}
+CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" check >/dev/null
+pass "check rejects and repair normalizes legacy repository rollout paths in the state database"
+
+MIGRATED_CONTROL_SOCKET="$MIGRATION_ROOT/home/.codex/app-server-control/app-server-control.sock"
+mkdir -p "$(dirname -- "$MIGRATED_CONTROL_SOCKET")"
+ruby -rsocket -e 'server = UNIXServer.new(ARGV.fetch(0)); server.close' "$MIGRATED_CONTROL_SOCKET"
+if CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  run_manager "$MIGRATION_ROOT" check >/dev/null 2>&1; then
+  fail "check accepted an unowned control socket"
+fi
+CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  run_manager "$MIGRATION_ROOT" repair >/dev/null
+[ ! -e "$MIGRATED_CONTROL_SOCKET" ] || fail "repair left the stale control socket in place"
+CONFIGS_DIR="$MIGRATION_CONFIGS" BRAIN_AI_DIR="$MIGRATION_AI" run_manager "$MIGRATION_ROOT" check >/dev/null
+pass "check rejects and repair removes an unowned control socket"
+
+CONFIGS_DIR="$MIGRATION_CONFIGS" \
+  BRAIN_AI_DIR="$MIGRATION_AI" \
+  CONFIRM_CODEX_HOME_ROLLBACK=1 \
   CODEX_HOME_ROLLBACK_BACKUP="$ORIGINAL_BACKUP" \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   run_manager "$MIGRATION_ROOT" rollback >/dev/null
@@ -284,6 +424,7 @@ mkdir -p "$LINKER_ROOT/home"
 HOME="$LINKER_ROOT/home" \
   BRAIN_REPO="$LINKER_ROOT/brain" \
   CODEX_HOME="$LINKER_ROOT/ambient-wrong-codex-home" \
+  CODEX_HOME_TEST_MODE=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   bash "$BRAIN_LINKER" >/dev/null 2>&1
 [ -d "$LINKER_ROOT/home/.codex" ] && [ ! -L "$LINKER_ROOT/home/.codex" ] || {
@@ -303,6 +444,7 @@ ln -s \
   "$LEGACY_LINKER_ROOT/home/.codex"
 if HOME="$LEGACY_LINKER_ROOT/home" \
   BRAIN_REPO="$LEGACY_LINKER_ROOT/brain" \
+  CODEX_HOME_TEST_MODE=1 \
   CODEX_HOME_SKIP_PROCESS_CHECK=1 \
   bash "$BRAIN_LINKER" >/dev/null 2>&1; then
   fail "general Brain linker reported success for an unresolved legacy Codex symlink"

@@ -77,6 +77,17 @@ logger.addHandler(fh)
 logger.addHandler(eh)
 logger.addHandler(ch)
 
+# ─── RETIREMENT GUARD ────────────────────────────────────────────────────────
+# This script is retired. Do not remove this block or add bypass flags.
+print(
+    "RETIRED: mind-auto-router.py is retired as of 2026-07-31. "
+    "Reason: Legacy numbered roots (0x-*/) are historical paths per the canonical path registry. "
+    "kanban.md is human-only authority per M1.4. "
+    "See operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md"
+)
+sys.exit(0)
+# ─────────────────────────────────────────────────────────────────────────────
+
 
 def get_github_token() -> str:
     """Get GitHub token from env var or config file."""

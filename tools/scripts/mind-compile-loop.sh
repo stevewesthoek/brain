@@ -1,26 +1,42 @@
 #!/usr/bin/env bash
-# mind-compile-loop.sh — Suggest-only inbox classification for the Mind wiki
+# mind-compile-loop.sh — Report-only inbox classification for Mind
 #
 # Run nightly by office-nightly-scheduler.sh.
 #
-# Reads inbox/new/, classifies each file by its frontmatter and content,
-# and appends proposed actions to wiki/log.md. Does NOT move, rename, or
-# modify any files. Human reviews and approves from wiki/log.md.
+# Reads inbox/new/, classifies each file by its frontmatter and content, and
+# prints proposals to stdout. It does not move, rename, append, or otherwise
+# modify Mind. Destination selection remains deferred to the path registry.
 #
-# Phase: Suggest-only (Phase 1). No file moves until explicitly approved.
-# Future Phase 2: implement approved moves after review workflow is stable.
+# Phase: report-only containment. No write mode is provided by this script.
 #
-# Classification logic (frontmatter + heuristics):
-#   para_type=project   → propose move to live/projects/
-#   para_type=task      → propose add to live/tasks.md
-#   para_type=area      → propose move to wiki/areas/
-#   para_type=resource  → propose move to sources/research/
-#   type=decision       → propose move to live/decisions.md
-#   anything else       → propose move to wiki/ (general knowledge)
+# Classification logic (frontmatter + heuristics) assigns a proposal category
+# only. It intentionally does not calculate a filesystem destination.
 #
 # Skip README.md and files that already have a compiled: true frontmatter field.
 
 set -euo pipefail
+
+MODE="report-only"
+case "$#" in
+  0)
+    ;;
+  1)
+    if [[ "$1" != "--mode=report-only" ]]; then
+      echo "usage: $0 [--mode=report-only]" >&2
+      exit 64
+    fi
+    ;;
+  2)
+    if [[ "$1" != "--mode" || "$2" != "report-only" ]]; then
+      echo "usage: $0 [--mode=report-only]" >&2
+      exit 64
+    fi
+    ;;
+  *)
+    echo "usage: $0 [--mode=report-only]" >&2
+    exit 64
+    ;;
+esac
 
 resolve_inbox_dir() {
   local mind_dir="$1"
@@ -35,7 +51,6 @@ resolve_inbox_dir() {
 
 MIND_DIR="${MIND_DIR:-$HOME/Repos/stevewesthoek/mind}"
 INBOX_DIR="$(resolve_inbox_dir "$MIND_DIR")"
-WIKI_LOG="${MIND_DIR}/wiki/log.md"
 
 if [[ ! -d "$INBOX_DIR" ]] || [[ "$INBOX_DIR" == "unavailable" ]]; then
   echo "Inbox not found (expected inbox/new): $MIND_DIR"
@@ -50,7 +65,7 @@ errors=0
 
 today="$(date +%Y-%m-%d)"
 
-# Collect proposed actions to append in one block
+# Collect a report-only proposal block.
 proposals=""
 
 while IFS= read -r -d '' file; do
@@ -77,54 +92,41 @@ while IFS= read -r -d '' file; do
   created=$(grep -m1 "^created:" "$file" 2>/dev/null | awk -F': ' '{print $2}' | xargs || echo "unknown")
   confidence=$(grep -m1 "^confidence:" "$file" 2>/dev/null | awk -F': ' '{print $2}' | xargs || echo "?")
 
-  # Classify → proposed destination
-  proposed_dest=""
+  # Classify → proposal category. Destination assignment is deliberately
+  # deferred until the canonical path registry governs this workflow.
   action_note=""
 
   case "$para_type" in
     project)
-      slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed 's/^-//;s/-$//')
-      proposed_dest="live/projects/${slug}.md"
       action_note="new project page"
       ;;
     task)
-      proposed_dest="live/tasks.md (append as task item)"
       action_note="new task"
       ;;
     area)
-      slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed 's/^-//;s/-$//')
-      proposed_dest="wiki/areas/${slug}.md"
       action_note="new area note"
       ;;
     resource|reference)
-      slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed 's/^-//;s/-$//')
-      proposed_dest="resources/research/${slug}.md"
       action_note="new research note"
       ;;
     *)
       # Fall back to file_type
       case "$file_type" in
         decision)
-          proposed_dest="live/decisions.md (append)"
           action_note="new decision"
           ;;
         capture|"")
-          # Generic capture — goes to wiki as a knowledge note
-          slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed 's/^-//;s/-$//')
-          proposed_dest="wiki/${slug}.md"
           action_note="general knowledge note"
           ;;
         *)
-          slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed 's/^-//;s/-$//')
-          proposed_dest="wiki/${slug}.md"
-          action_note="unclassified → wiki"
+          action_note="unclassified"
           ;;
       esac
       ;;
   esac
 
   proposals="${proposals}
-- ${today} — compile-suggest — **${title}** (${action_note}, confidence=${confidence}, src=${source}) → propose move \`inbox/${filename}\` → \`${proposed_dest}\` — created ${created}"
+- ${today} — compile-suggest — **${title}** (${action_note}, confidence=${confidence}, src=${source}) — source \`inbox/new/${filename}\` — created ${created} — destination unresolved"
   proposed=$((proposed + 1))
 
 done < <(find "$INBOX_DIR" -maxdepth 1 -name "*.md" -print0 2>/dev/null)
@@ -135,16 +137,6 @@ if [[ -z "$proposals" ]] || [[ "$proposed" -eq 0 ]]; then
   exit 0
 fi
 
-# Append proposals to wiki/log.md
-if [[ ! -f "$WIKI_LOG" ]]; then
-  echo "Wiki log not found: $WIKI_LOG — skipping write" >&2
-  exit 1
-fi
-
-{
-  echo ""
-  echo "<!-- mind-compile-loop run: ${today} | processed=${proposed} skipped=${skipped} total=${total} -->"
-  printf '%s\n' "$proposals"
-} >> "$WIKI_LOG"
-
-echo "mind-compile-loop: proposed=${proposed} skipped=${skipped} total=${total} → appended to wiki/log.md"
+echo "<!-- mind-compile-loop mode=${MODE} | ${today} | processed=${proposed} skipped=${skipped} total=${total} -->"
+printf '%s\n' "$proposals"
+echo "mind-compile-loop: mode=${MODE} proposed=${proposed} skipped=${skipped} total=${total} (no Mind writes)"

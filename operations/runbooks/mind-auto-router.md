@@ -1,6 +1,6 @@
 # Mind Auto-Router Runbook
 
-**Status:** ✓ PRODUCTION (Replaced n8n scheduled workflows 2026-04-10)
+**Status:** RETIRED (2026-07-31) — BS0.10: exit guard added; M1.4 resolved; numbered roots (0x-*/) are historical paths. See `operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md`.
 
 ## Post-Reboot / After OS Reinstall
 

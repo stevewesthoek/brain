@@ -8,6 +8,7 @@ LOCK_DIR="$STATE_DIR/nightly.lock"
 LAST_COMPLETED_FILE="$STATE_DIR/last_completed_lisbon_date"
 STB_CONFIG_FILE="${OFFICE_SCHEDULER_STB_CONFIG_FILE:-$STATE_DIR/stb-pipeline-batch.env}"
 REPORT_SCRIPT="${OFFICE_SCHEDULER_REPORT_SCRIPT:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/render-office-scheduler-report.sh}"
+TYPED_JOB_VALIDATOR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/tools/validate-typed-scheduler-jobs.mjs"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR"
 chmod 700 "$STATE_DIR" "$LOG_DIR"
@@ -419,7 +420,7 @@ run_mind_compile_loop() {
     return 0
   fi
 
-  command="$(printf 'bash %q >> %q 2>&1' "$compile_script" "$compile_log")"
+  command="$(printf 'bash %q --mode=report-only >> %q 2>&1' "$compile_script" "$compile_log")"
   run_job "mind-compile-loop" "$timeout_seconds" "$command" "$compile_log"
 }
 
@@ -486,85 +487,28 @@ main() {
 
   log "nightly scheduler start today=$today_lisbon"
 
+  if ! node "$TYPED_JOB_VALIDATOR"; then
+    log "stopping scheduler reason=typed_job_manifest_invalid"
+    exit 1
+  fi
+
   local stop_chain=0
 
-  if run_stb_pipeline_batch; then
-    :
-  else
-    local rc="$?"
-    if [[ "$rc" -eq 124 ]]; then
-      log "stopping chain reason=stb_timeout"
-      stop_chain=1
-    else
-      log "continuing chain after stb failure exit_code=$rc"
-    fi
-  fi
+  # BS0.11 leaves only bounded report-only jobs callable.  The named functions
+  # remain as inventory evidence; an externally scheduled copy therefore fails
+  # closed instead of reaching a credential, deletion, or external-write path.
+  log "skipping job=stb-pipeline-batch reason=bs0-11-unsafe-quiesced"
+  log "skipping job=n8n-backup reason=bs0-11-unsafe-quiesced"
+  log "skipping job=claude-session-cleanup reason=bs0-11-unsafe-quiesced"
+  log "skipping job=dance-of-life-sync reason=bs0-11-unsafe-quiesced"
 
-  if [[ "$stop_chain" -eq 0 ]]; then
-    if run_n8n_backup; then
-      :
-    else
-      local rc="$?"
-      if [[ "$rc" -eq 124 ]]; then
-        log "stopping chain reason=n8n_timeout"
-        stop_chain=1
-      else
-        log "continuing chain after n8n backup failure exit_code=$rc"
-      fi
-    fi
-  fi
+  # Bible Studies remains quiesced: its implementation can write Mind and
+  # external services only under a future explicit operator approval flow.
+  log "skipping job=bible-studies-pipeline reason=bs0-2-quiesced"
 
-  if [[ "$stop_chain" -eq 0 ]]; then
-    if run_claude_session_cleanup; then
-      :
-    else
-      local rc="$?"
-      if [[ "$rc" -eq 124 ]]; then
-        log "stopping chain reason=cleanup_timeout"
-        stop_chain=1
-      else
-        log "continuing after cleanup failure exit_code=$rc"
-      fi
-    fi
-  fi
-
-  if [[ "$stop_chain" -eq 0 ]]; then
-    if run_dance_of_life_sync; then
-      :
-    else
-      local rc="$?"
-      if [[ "$rc" -eq 124 ]]; then
-        log "continuing after dance-of-life-sync timeout exit_code=$rc"
-        # Not stopping chain — this job is lowest priority, timeout is expected during bulk download
-      else
-        log "continuing after dance-of-life-sync failure exit_code=$rc"
-      fi
-    fi
-  fi
-
-  # Bible Studies transcription pipeline — runs after dance-of-life-sync (new videos first),
-  # never stops chain, lowest priority content job, 4-hour timeout
-  if [[ "$stop_chain" -eq 0 ]]; then
-    if run_bible_studies_pipeline; then
-      :
-    else
-      local rc="$?"
-      if [[ "$rc" -eq 124 ]]; then
-        log "continuing after bible-studies-pipeline timeout exit_code=$rc"
-      else
-        log "continuing after bible-studies-pipeline failure exit_code=$rc"
-      fi
-    fi
-  fi
-
-  # Gemini tmp/history cleanup — never stops chain
-  run_gemini_cleanup || log "warning gemini-cleanup failed but chain continues"
-
-  # Google Ads daily sync — never stops chain, lightweight (< 2 minutes typically)
-  run_google_ads_sync || log "warning google-ads-sync failed but chain continues"
-
-  # GWS token refresh — daily, keeps auth fresh for skill-prune emails, never stops chain
-  run_gws_token_refresh || log "warning gws-token-refresh failed but chain continues"
+  log "skipping job=gemini-cleanup reason=bs0-11-unsafe-quiesced"
+  log "skipping job=google-ads-sync reason=bs0-11-unsafe-quiesced"
+  log "skipping job=gws-token-refresh reason=bs0-11-unsafe-quiesced"
 
   # Mind Steward dry-run report — validates planner package and writes runtime report only; never stops chain
   run_mind_steward_dry_run_report || log "warning mind-steward-dry-run failed but chain continues"
@@ -575,23 +519,16 @@ main() {
   # Video runtime report — writes read-only runtime status only; never stops chain
   run_video_runtime_report || log "warning video-runtime-report failed but chain continues"
 
-  # Video Orchestrator storage cleanup — archives completed job files after 30d, never stops chain
-  run_video_orchestrator_storage_cleanup || log "warning video-orchestrator-storage-cleanup failed but chain continues"
+  log "skipping job=video-orchestrator-storage-cleanup reason=bs0-11-unsafe-quiesced"
+  log "skipping job=memory-context-refresh reason=bs0-11-unsafe-quiesced"
 
-  # Memory context refresh — regenerates ~/.brain/memory-context.md for passive Codex/Gemini injection
-  run_memory_context_refresh || log "warning memory-context-refresh failed but chain continues"
-
-  # Mind compile loop — suggest-only inbox classifier; appends proposed moves to wiki/log.md, no file moves
+  # Mind compile loop — report-only inbox classifier; stdout is captured outside Mind.
   run_mind_compile_loop || log "warning mind-compile-loop failed but chain continues"
 
-  # Graphify nightly — local-only codebase graph maintenance; selector resource guard may skip heavy builds
-  run_graphify_nightly || log "warning graphify-nightly failed but chain continues"
-
-  # ING Bank Statement download — runs on the 1st of each month, never stops chain
-  run_ing_bank_statement_download || log "warning ing-bank-statement-download failed but chain continues"
-
-  # Skill library pruning — runs on the 7th of each month only, never stops chain
-  run_skill_prune || log "warning skill-prune failed but chain continues"
+  # Graphify receives its own containment decision in BS0.15.
+  log "skipping job=graphify-nightly reason=bs0-15-pending-containment"
+  log "skipping job=ing-bank-statement-download reason=bs0-11-unsafe-quiesced"
+  log "skipping job=skill-prune reason=bs0-11-unsafe-quiesced"
 
   if [[ "$stop_chain" -eq 0 ]]; then
     printf '%s\n' "$today_lisbon" > "$LAST_COMPLETED_FILE"
