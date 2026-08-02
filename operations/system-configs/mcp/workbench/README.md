@@ -5,6 +5,14 @@
 **Standard:** `operations/system-configs/mcp/MCP-PROVIDER-ADMISSION-STANDARD.md`  
 **Provider Repository:** `prochattools/workbench-private`  
 **MCP Entrypoint:** `packages/mcp/dist/server.js`
+**Current client registration:** none (see post-merge audit 2026-08-02)
+
+> **Admission is NOT client registration.** A valid admission means Brain has reviewed
+> and approved this provider for local use. It does not mean the server is running,
+> that a client has connected to it, or that any IDE config has been updated.
+> Client registration requires a separate authorized configuration step.
+> As of 2026-08-02, no `[mcp_servers.workbench]` entry exists in `~/.codex/config.toml`
+> and no `mcpServers.workbench` entry exists in `~/.claude.json`.
 
 Workbench is an external provider and consumer-facing execution host. Its MCP
 server, authentication, action projection, source policy, grants, operation and

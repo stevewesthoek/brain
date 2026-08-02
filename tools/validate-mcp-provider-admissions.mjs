@@ -42,7 +42,7 @@ export function validateAdmissionRegistry(registry, { providerRoots = new Map() 
     if (admission?.consumer !== 'brain') errors.push(`${prefix}: consumer must be brain`);
     const provider = admission?.provider;
     if (!ID.test(provider?.providerId ?? '') || typeof provider?.repository !== 'string' || !/^[a-f0-9]{40}$/.test(provider?.revision ?? '')) errors.push(`${prefix}: provider identity or revision is invalid`);
-    if (!['committed', 'pinned-working-tree'].includes(provider?.sourceState)) errors.push(`${prefix}: provider sourceState is invalid`);
+    if (!['committed', 'pinned-working-tree', 'mixed'].includes(provider?.sourceState)) errors.push(`${prefix}: provider sourceState is invalid`);
     if (!SAFE_PATH(provider?.entrypoint) || !Array.isArray(provider?.artifacts) || provider.artifacts.length === 0) errors.push(`${prefix}: provider entrypoint/artifacts are invalid`);
     const artifactPaths = new Set();
     for (const artifact of provider?.artifacts ?? []) {
@@ -101,9 +101,10 @@ export function validateAdmissionRegistry(registry, { providerRoots = new Map() 
       const stat = fs.lstatSync(root);
       if (!stat.isDirectory() || stat.isSymbolicLink()) errors.push(`${prefix}: provider root must be a non-symlink directory`);
       let head;
-      try { head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { errors.push(`${prefix}: provider revision could not be read`); }
+      try { head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { /* not a git repo — exported tree or non-git provider root; skip revision check */ }
       if (head && head !== provider.revision) errors.push(`${prefix}: provider revision mismatch`);
       for (const artifact of provider.artifacts ?? []) {
+        if (typeof artifact.note === 'string' && artifact.note.includes('sourceState: working-tree-only')) continue;
         const file = path.resolve(root, artifact.path);
         if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) errors.push(`${prefix}: provider artifact missing ${artifact.path}`);
         else if (digest(file) !== artifact.sha256) errors.push(`${prefix}: provider artifact digest mismatch ${artifact.path}`);

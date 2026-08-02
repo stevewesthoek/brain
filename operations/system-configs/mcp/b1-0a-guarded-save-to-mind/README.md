@@ -41,6 +41,12 @@ The historical Codex block remains in
 is not deleted. Workbench now owns the authenticated execution boundary while
 Brain owns admission and exact B1.0a scope.
 
+**Observed Codex state (2026-08-02):** Present and enabled in `~/.codex/config.toml`.
+Expected: `enabled = false`. Remediation required before next Codex session.
+In `~/.codex/config.toml`, add or update `enabled = false` under
+`[mcp_servers.b1_0a_guarded_save_to_mind]`. This is user-level configuration;
+it was not modified in the 2026-08-02 post-merge audit task.
+
 ## Validation
 
 ```bash
