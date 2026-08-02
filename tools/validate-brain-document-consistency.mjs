@@ -29,6 +29,7 @@ const TEST_COUNT_SOURCES = [
 const DELETION_EVIDENCE_PATH = 'operations/specs/deletion-readiness-evidence.json';
 const PATH_REGISTRY_PATH = 'operations/specs/infinite-brain-path-registry.json';
 const BENCHMARK_PLAN_PATH = 'operations/specs/b8-1-context-memory-benchmark-plan.md';
+const ROADMAP_AUDIT_PATH = 'operations/reports/roadmap-audit-2026-08-01.md';
 const inspectedFiles = [...new Set([
   ...files,
   ...VERDICT_SOURCES,
@@ -36,6 +37,7 @@ const inspectedFiles = [...new Set([
   DELETION_EVIDENCE_PATH,
   PATH_REGISTRY_PATH,
   BENCHMARK_PLAN_PATH,
+  ROADMAP_AUDIT_PATH,
 ])];
 
 const stalePatterns = [
@@ -333,6 +335,19 @@ function checkBenchmarkPlanContradictions(content, relativePath, errors) {
   }
 }
 
+// Verifies that the roadmap audit report contains the 2026-08-02 reconciliation addendum.
+// The addendum records updated test counts and B8.1 authorization state.
+function checkRoadmapAuditAddendum(content, relativePath, errors) {
+  if (!relativePath.includes('roadmap-audit-2026-08-01')) return;
+  if (!content) {
+    errors.push(`${relativePath}:missing-2026-08-02-reconciliation-addendum`);
+    return;
+  }
+  if (!content.includes('## Reconciliation addendum — 2026-08-02')) {
+    errors.push(`${relativePath}:missing-2026-08-02-reconciliation-addendum:header not found`);
+  }
+}
+
 function main() {
   const errors = [];
   const contentsByPath = {};
@@ -367,6 +382,8 @@ function main() {
   if (benchmarkPlanContent) {
     checkBenchmarkPlanContradictions(benchmarkPlanContent, BENCHMARK_PLAN_PATH, errors);
   }
+
+  checkRoadmapAuditAddendum(contentsByPath[ROADMAP_AUDIT_PATH], ROADMAP_AUDIT_PATH, errors);
 
   if (errors.length > 0) {
     process.stdout.write(`docs=fail\nerrors=${errors.length}\n`);

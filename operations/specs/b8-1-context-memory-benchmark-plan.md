@@ -43,7 +43,7 @@ B8.1 is the first canonical task in Priority 8 (context-memory efficiency and fr
 |------|------|-------------|------------|
 | Brain | `/Users/Office/Repos/stevewesthoek/brain` | AI infrastructure, skills, runbooks | TypeScript + shell |
 | Workbench Private | `/Users/Office/Repos/prochattools/saas/workbench-private` | Full-stack TypeScript application | TypeScript, Next.js, Prisma |
-| ProChat | `/Users/Office/Repos/prochattools/saas/prochat` | Normal application repository | TypeScript, Next.js |
+| ProChat | `/Users/Office/Repos/prochattools/web/prochat` | Normal application repository | TypeScript, Next.js |
 
 ---
 
@@ -145,21 +145,28 @@ Each fixture has: a natural-language question, the expected answer (file path + 
 
 ## Required metrics
 
-For each approach × repository combination, measure all of the following.
+---
 
-### Performance metrics
+### Part A — Deterministic offline retrieval benchmark (no remote model required)
+
+Part A may be measured without any AI model connection. All metrics are computed from the outputs of the retrieval subject against pinned commit exports. No model input/output tokens are consumed or required.
+
+**Part A is the primary benchmark.** B8.2 acceptance is evaluated using Part A results only.
+
+#### Indexing and structural metrics
 
 | Metric | Unit | How to measure |
 |--------|------|----------------|
 | Initial indexing time (cold start) | milliseconds (wall clock) | Time from invocation to "ready" signal |
-| Incremental refresh latency | milliseconds | Modify one file, measure time until it appears in results |
+| Incremental refresh latency | milliseconds | Modify one file in disposable copy, measure time until reflected in results |
 | Peak CPU during indexing | % | `top` or `Activity Monitor` sampling |
 | Peak memory RSS during indexing | MB | `/usr/bin/time -l` or `ps` sampling |
 | Disk use for index artifacts | MB | `du -sh` on cache directory after indexing |
+| Serialized token estimate | integer (rough estimate) | Run a pinned local tokenizer (e.g. tiktoken with `cl100k_base`) on index serialization output; record result alongside tokenizer version and model name |
 
-### Retrieval accuracy metrics
+#### Retrieval accuracy metrics (computed against pinned fixtures)
 
-For each fixture:
+For each fixture, the retrieval subject is invoked deterministically against its exported tree. Outputs are compared to pinned expected values from `b8-1-context-memory-benchmark-manifest.json`.
 
 | Metric | Calculation |
 |--------|-------------|
@@ -172,16 +179,15 @@ For each fixture:
 | Architecture navigation | Correct 3-hop traversal? (yes/no) |
 | Overall F1 per fixture set | `2 * (precision * recall) / (precision + recall)` |
 
-### Cost and overhead metrics
+#### Operator burden metrics
 
-| Metric | Unit |
-|--------|------|
-| Tool call count per query | integer |
-| Model input tokens per query | integer |
-| Model output tokens per query | integer |
-| Total tokens for full fixture set | integer |
+| Phase | Steps to document |
+|-------|------------------|
+| Installation | Number of manual steps required from zero |
+| Per-session startup | Steps required before each benchmark session |
+| Cleanup and rollback | Steps to fully remove index and restore repo to pre-benchmark state |
 
-### Failure behavior metrics
+#### Failure behavior metrics
 
 | Scenario | Expected behavior to document |
 |----------|------------------------------|
@@ -189,13 +195,30 @@ For each fixture:
 | Service unavailable (binary not found) | Does the agent fall back gracefully to exact-source reads? |
 | Index missing (first run, no cache) | Does the binary exit cleanly or block? |
 
-### Operator burden metrics
+---
 
-| Phase | Steps to document |
-|-------|------------------|
-| Installation | Number of manual steps required from zero |
-| Per-session startup | Steps required before each benchmark session |
-| Cleanup and rollback | Steps to fully remove index and restore repo to pre-benchmark state |
+### Part B — Optional model-mediated evaluation (requires separate authorization)
+
+**Part B is NOT required for B8.2 acceptance. It is not authorized in this plan.**
+
+Part B involves feeding retrieval subject outputs as context into an actual AI model session and measuring end-to-end task performance (time-to-correct-answer, token usage, etc.). Part B requires:
+- Explicit separate authorization before execution
+- A recorded model version and session configuration
+- All token costs pre-approved
+
+Part B metrics (for reference only — do not collect without authorization):
+
+| Metric | Unit |
+|--------|------|
+| Tool call count per query | integer |
+| Model input tokens per query | integer (requires live model session) |
+| Model output tokens per query | integer (requires live model session) |
+| Total tokens for full fixture set | integer |
+| Time to correct answer | seconds (end-to-end, model-included) |
+
+**Do not record or infer model input/output token counts from Part A runs.** Part A serialized token estimate (above) is a rough structural size indicator only — it does not represent actual model billing tokens.
+
+---
 
 ---
 

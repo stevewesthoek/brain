@@ -535,3 +535,27 @@ test('live benchmark plan passes all document consistency checks', () => {
   const out = execFileSync('node', [validator], { encoding: 'utf8' });
   assert.match(out, /^docs=pass$/m);
 });
+
+// ---------------------------------------------------------------------------
+// Reconciliation addendum check (Task 8)
+// ---------------------------------------------------------------------------
+
+test('roadmap audit without 2026-08-02 addendum fails consistency check', () => {
+  const tempRoot = makeTempRoot();
+  try {
+    const auditPath = path.join(tempRoot, 'operations/reports/roadmap-audit-2026-08-01.md');
+    // Remove the addendum header so it's absent
+    const content = fs.readFileSync(auditPath, 'utf8');
+    const stripped = content.replace(/^## Reconciliation addendum — 2026-08-02\b.*$/m, '');
+    fs.writeFileSync(auditPath, stripped);
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /missing-2026-08-02-reconciliation-addendum/);
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('roadmap audit with 2026-08-02 addendum passes consistency check', () => {
+  const out = execFileSync('node', [validator], { encoding: 'utf8' });
+  assert.match(out, /^docs=pass$/m);
+});

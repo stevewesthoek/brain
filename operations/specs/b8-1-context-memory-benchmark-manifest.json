@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "1.0.0",
+  "createdAt": "2026-08-02",
+  "repositories": [
+    {
+      "repositoryId": "brain",
+      "localPath": "/Users/Office/Repos/stevewesthoek/brain",
+      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "description": "machine-brain — AI infrastructure, skills, runbooks (TypeScript + shell)"
+    },
+    {
+      "repositoryId": "workbench",
+      "localPath": "/Users/Office/Repos/prochattools/saas/workbench-private",
+      "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
+      "description": "Workbench Private — full-stack TypeScript application"
+    },
+    {
+      "repositoryId": "prochat",
+      "localPath": "/Users/Office/Repos/prochattools/web/prochat",
+      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "description": "ProChat — Next.js TypeScript application"
+    }
+  ],
+  "fixtures": [
+    {
+      "fixtureId": "brain_f1",
+      "repositoryId": "brain",
+      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "question": "Where is MIND_TARGET_PATHS exported and what does it define?",
+      "expectedFile": "projects/brain-core/src/mind-paths.ts",
+      "expectedSymbol": "MIND_TARGET_PATHS",
+      "expectedLine": 21,
+      "expectedCallers": [
+        "projects/brain-core/src/mind-paths.ts"
+      ],
+      "expectedCallees": [
+        "MIND_CANONICAL_PATHS"
+      ],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n 'export const MIND_TARGET_PATHS' projects/brain-core/src/mind-paths.ts",
+      "notes": "MIND_INBOX_PATH does not exist at this commit. The canonical inbox path is MIND_TARGET_PATHS.inboxNew sourced from MIND_CANONICAL_PATHS. File sha256: 27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e"
+    },
+    {
+      "fixtureId": "brain_f2",
+      "repositoryId": "brain",
+      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "question": "Which function classifies a Mind task for routing?",
+      "expectedFile": "projects/mind-steward/src/classifier.ts",
+      "expectedSymbol": "classifyMindCaptureInbox",
+      "expectedLine": 73,
+      "expectedCallers": [
+        "projects/mind-steward/src/cli/classify-captures.ts",
+        "projects/mind-steward/src/index.ts"
+      ],
+      "expectedCallees": [
+        "selectLocalModel",
+        "classifyWithLocalModel",
+        "parseMarkdown"
+      ],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n 'export async function classifyMindCaptureInbox' projects/mind-steward/src/classifier.ts",
+      "notes": "File sha256: 36d24d52eebc858eea146214a50efdaa1ab0ee2464b8b3f769bcc2022fcbf1d1"
+    },
+    {
+      "fixtureId": "brain_f3",
+      "repositoryId": "brain",
+      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "question": "What MCP tools does the Workbench admission allow?",
+      "expectedFile": "operations/specs/mcp-provider-admissions.json",
+      "expectedLiteral": "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand",
+      "expectedCallers": [
+        "tools/validate-mcp-provider-admissions.mjs",
+        "tools/validate-mcp-runtime-truth.mjs"
+      ],
+      "expectedCallees": [
+        "WORKBENCH_MCP_ALLOWED_TOOLS"
+      ],
+      "scoringType": "set-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "python3 -c \"import json,sys; d=json.load(open('operations/specs/mcp-provider-admissions.json')); wb=[a for a in d['admissions'] if a.get('admissionId')=='workbench-for-brain'][0]; print([t['name'] for t in wb['scope']['tools']])\"",
+      "notes": "Three admitted tools: getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand. Environment variable: WORKBENCH_MCP_ALLOWED_TOOLS."
+    },
+    {
+      "fixtureId": "brain_f4",
+      "repositoryId": "brain",
+      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "question": "What validator runs the deletion-readiness check?",
+      "expectedFile": "tools/validate-deletion-readiness.mjs",
+      "expectedSymbol": "main",
+      "expectedLine": 255,
+      "expectedCallers": [
+        "operations/specs/infinite-brain-runtime-implementation-plan.md"
+      ],
+      "expectedCallees": [
+        "operations/specs/deletion-readiness-evidence.json",
+        "tools/mind-canonical-path-registry.mjs"
+      ],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n '^function main' tools/validate-deletion-readiness.mjs",
+      "notes": "Invocation: node tools/validate-deletion-readiness.mjs. File sha256: 414c67672696e7f546f5a86ee4fb135bb900167678884f468c70a4d8e7ba96d5"
+    },
+    {
+      "fixtureId": "workbench_f1",
+      "repositoryId": "workbench",
+      "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
+      "question": "Where is BRAIN_PROFILE_ALLOWED_TOOLS defined and what value does it hold?",
+      "expectedFile": "packages/mcp/src/configure-core.ts",
+      "expectedSymbol": "BRAIN_PROFILE_ALLOWED_TOOLS",
+      "expectedLiteral": "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand",
+      "expectedLine": 7,
+      "expectedCallers": [
+        "packages/mcp/src/claude-adapter.ts",
+        "packages/mcp/src/codex-adapter.ts",
+        "packages/mcp/src/configure-claude.ts",
+        "packages/mcp/src/configure-codex.ts",
+        "packages/mcp/src/ide-adapters.ts",
+        "packages/mcp/src/registration-manifest.ts",
+        "packages/mcp/src/registration-policy.ts"
+      ],
+      "expectedCallees": [],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n 'export const BRAIN_PROFILE_ALLOWED_TOOLS' packages/mcp/src/configure-core.ts",
+      "notes": "File sha256: 914d6a70541bfd138e1a9c53e58a7dfd874be3bc93da228c3c7390701d6dc89f. BRAIN_PROFILE_ALLOWED_COMMAND_KINDS is on line 8."
+    },
+    {
+      "fixtureId": "workbench_f2",
+      "repositoryId": "workbench",
+      "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
+      "question": "Where are the MCP scope environment variable names defined?",
+      "expectedFile": "packages/mcp/src/scope.ts",
+      "expectedSymbol": "MCP_ALLOWED_TOOLS_ENV",
+      "expectedLiteral": "WORKBENCH_MCP_ALLOWED_TOOLS",
+      "expectedLine": 7,
+      "expectedCallers": [],
+      "expectedCallees": [],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": false,
+      "verificationCommand": "grep -n 'export const MCP_ALLOWED_TOOLS_ENV' packages/mcp/src/scope.ts",
+      "notes": "File sha256: 4dd2731c09d146776a14b36d12755391257e90c22324063570272a4e821fae35"
+    },
+    {
+      "fixtureId": "prochat_f1",
+      "repositoryId": "prochat",
+      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "question": "Where is the RootLayout component defined?",
+      "expectedFile": "src/app/layout.tsx",
+      "expectedSymbol": "RootLayout",
+      "expectedLine": 74,
+      "expectedCallers": [],
+      "expectedCallees": [
+        "Providers",
+        "AppChrome"
+      ],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n 'export default function RootLayout' src/app/layout.tsx",
+      "notes": "File sha256: bc882d1532602fb3a853b3acacc6e3683a1123afb8bcd53e1e2140382309d245"
+    },
+    {
+      "fixtureId": "prochat_f2",
+      "repositoryId": "prochat",
+      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "question": "How many route.ts files exist in this repository?",
+      "expectedFileCount": 27,
+      "scoringType": "count-match",
+      "callerCalleeApplicable": false,
+      "verificationCommand": "find . -name 'route.ts' | wc -l | tr -d ' '",
+      "notes": "Total route.ts files across all directories (including admin/). API-only count under src/app/api/ is 22."
+    },
+    {
+      "fixtureId": "prochat_f3",
+      "repositoryId": "prochat",
+      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "question": "Where is the Stripe webhook POST handler defined?",
+      "expectedFile": "src/app/api/webhook/stripe/route.ts",
+      "expectedSymbol": "POST",
+      "expectedLine": 9,
+      "expectedCallers": [],
+      "expectedCallees": [
+        "stripe.webhooks.constructEvent",
+        "markSessionPaid"
+      ],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n 'export async function POST' src/app/api/webhook/stripe/route.ts",
+      "notes": "File sha256: 997de32ecc6394909b7b24f2a4ca5b8ee4e43f1c0a28eb500c632c0b84abe828"
+    },
+    {
+      "fixtureId": "prochat_f4",
+      "repositoryId": "prochat",
+      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "question": "Where is the database connection initialized?",
+      "expectedFile": "src/libs/prisma.ts",
+      "expectedSymbol": "prisma",
+      "expectedLine": 7,
+      "expectedCallers": [
+        "src/app/api/waitlist/route.ts",
+        "src/app/api/preferences/route.ts",
+        "src/app/api/tenants/projects/route.ts",
+        "src/libs/resend.ts",
+        "src/lib/license-storage.ts",
+        "src/lib/licenses.ts",
+        "src/lib/waitlist-admin.ts",
+        "src/lib/waitlist/server.ts"
+      ],
+      "expectedCallees": [
+        "PrismaClient"
+      ],
+      "scoringType": "exact-match",
+      "callerCalleeApplicable": true,
+      "verificationCommand": "grep -n 'export default prisma' src/libs/prisma.ts",
+      "notes": "File sha256: b4728c627b8f635f3849e845625bf84348013e5bcb9346f4434a297aa567d510. DATABASE_URL environment variable provides connection string."
+    }
+  ]
+}

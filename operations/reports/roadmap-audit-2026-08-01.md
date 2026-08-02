@@ -6,6 +6,61 @@
 deployment, scheduler, cache, or Mind mutation performed; audit documents were
 written and existing roadmap documents were edited as required by the audit scope
 
+## Reconciliation addendum — 2026-08-02
+
+**Addendum date:** 2026-08-02
+**Author:** B8.1 pre-execution hardening pass
+
+This addendum records counts and verdicts as of 2026-08-02 following B8.1 pre-execution hardening work (Tasks 1–8) on branch `feature/brain-next`. No canonical P8 task has been accepted as complete. The addendum updates verification counts only; all audit conclusions in the original report remain unchanged.
+
+### Verification count reconciliation
+
+#### Historical counts (as of 2026-08-01 audit)
+
+| Validator | Count |
+|---|---|
+| validate-mcp-runtime-truth | 31/31 |
+| validate-mcp-provider-admissions | 14/14 |
+| validate-brain-document-consistency | 29/29 |
+| validate-deletion-readiness | 63/63 |
+| validate-graphify-operational-profiles | 5/5 |
+
+#### Current verified counts (as of 2026-08-02)
+
+| Validator | Count | Change |
+|---|---|---|
+| validate-mcp-runtime-truth | 45/45 | +14 regression tests (Tasks 1–3: false-positive fixes + nested governance) |
+| validate-mcp-provider-admissions | 14/14 | unchanged |
+| validate-brain-document-consistency | 29/29 | +addendum check (Task 8) |
+| validate-deletion-readiness | 63/63 | unchanged |
+| validate-graphify-operational-profiles | 5/5 | unchanged |
+| mcp-provider-verification (shared lib) | 14/14 | new (Task 1) |
+| validate-b8-1-benchmark-manifest | 19/19 | new (Task 5) |
+| prepare-b8-1-context-memory-benchmark | 20/20 | new (Task 6) |
+
+### B8.1 hardening artifacts created
+
+| Artifact | Task | Purpose |
+|---|---|---|
+| `tools/lib/mcp-provider-verification.mjs` | Task 1 | Shared provider verification module (no `providers_verified=` field; separate source/runtime fields) |
+| `tools/lib/mcp-provider-verification.test.mjs` | Task 1 | 14 unit tests |
+| `operations/specs/b8-1-context-memory-benchmark-manifest.schema.json` | Task 4 | JSON Schema for pinned benchmark fixtures |
+| `operations/specs/b8-1-context-memory-benchmark-manifest.json` | Task 4 | 10 pinned fixtures across brain/workbench/prochat at exact commits |
+| `tools/validate-b8-1-benchmark-manifest.mjs` | Task 5 | Manifest validator (schema + duplicate + symbolic-ref + file + line + count + wording + path checks) |
+| `tools/validate-b8-1-benchmark-manifest.test.mjs` | Task 5 | 19 tests |
+| `tools/prepare-b8-1-context-memory-benchmark.mjs` | Task 6 | Dry-run-only preflight harness (NEVER executes retrieval subject; `--materialize` required for directory creation) |
+| `tools/prepare-b8-1-context-memory-benchmark.test.mjs` | Task 6 | 20 tests |
+
+### B8.1 authorization state
+
+**B8.1 is NOT complete. B8.1 is NOT authorized for execution.**
+
+This hardening pass produced preparatory infrastructure only. The benchmark plan (`operations/specs/b8-1-context-memory-benchmark-plan.md`) separates:
+- **Part A (deterministic offline retrieval benchmark)** — no remote model required; may measure indexing time, file accuracy, graph-edge precision, payload size, retrieval count, serialized token estimate with pinned local tokenizer
+- **Part B (optional model-mediated evaluation)** — requires separate explicit authorization; actual model input/output tokens require separate approval before collection
+
+No benchmark run has been executed. No retrieval subject has been started. No index has been created. No user configuration has been modified.
+
 ## Methodology
 
 Recalculated every phase from explicit task status in
