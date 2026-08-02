@@ -1,0 +1,144 @@
+{
+  "inventoryVersion": "1.0.0",
+  "generatedAt": "2026-07-17T00:00:00.000Z",
+  "items": [
+    {
+      "path": "projects/brain-core/src",
+      "sizeBytes": 6369280,
+      "trackingState": "tracked source",
+      "owner": "brain-runtime",
+      "regenerationSource": "repository edits",
+      "runtimeDependency": false,
+      "migrationRisk": "low",
+      "recommendedDisposition": "retain as source"
+    },
+    {
+      "path": "projects/brain-core/dist",
+      "sizeBytes": 8271872,
+      "trackingState": "generated cache",
+      "owner": "brain-runtime",
+      "regenerationSource": "npm --prefix projects/brain-core run build",
+      "runtimeDependency": false,
+      "migrationRisk": "medium",
+      "recommendedDisposition": "ignore or regenerate"
+    },
+    {
+      "path": "operations/system-configs/codex/computer-use",
+      "sizeBytes": 62832640,
+      "trackingState": "packaged binary",
+      "owner": "codex-surface",
+      "regenerationSource": "reinstallable app bundle",
+      "runtimeDependency": true,
+      "migrationRisk": "medium",
+      "recommendedDisposition": "keep installed, avoid editing"
+    },
+    {
+      "path": "operations/system-configs/codex/memories_1.sqlite",
+      "sizeBytes": 323584,
+      "trackingState": "mutable local state",
+      "owner": "codex-surface",
+      "regenerationSource": "local memory cache refresh",
+      "runtimeDependency": true,
+      "migrationRisk": "high",
+      "recommendedDisposition": "keep outside source control"
+    },
+    {
+      "path": "operations/system-configs/codex/app-server-control/app-server.log",
+      "sizeBytes": 41,
+      "trackingState": "mutable local state",
+      "owner": "codex-surface",
+      "regenerationSource": "app-server restart",
+      "runtimeDependency": true,
+      "migrationRisk": "high",
+      "recommendedDisposition": "treat as ephemeral runtime output"
+    },
+    {
+      "path": "operations/system-configs/codex/app-server-control/app-server-startup.lock",
+      "sizeBytes": 0,
+      "trackingState": "mutable local state",
+      "owner": "codex-surface",
+      "regenerationSource": "app-server boot",
+      "runtimeDependency": true,
+      "migrationRisk": "medium",
+      "recommendedDisposition": "keep transient only"
+    },
+    {
+      "path": "operations/system-configs/codex/attachments",
+      "sizeBytes": 1875968,
+      "trackingState": "runtime state",
+      "owner": "codex-surface",
+      "regenerationSource": "attachment upload",
+      "runtimeDependency": true,
+      "migrationRisk": "high",
+      "recommendedDisposition": "keep outside source control"
+    },
+    {
+      "path": "operations/system-configs/codex/browser",
+      "sizeBytes": 4096,
+      "trackingState": "generated cache",
+      "owner": "codex-surface",
+      "regenerationSource": "browser session bootstrap",
+      "runtimeDependency": true,
+      "migrationRisk": "medium",
+      "recommendedDisposition": "keep ignored"
+    },
+    {
+      "path": "operations/system-configs/cursor/projects/empty-window/terminals",
+      "sizeBytes": 0,
+      "trackingState": "runtime state",
+      "owner": "cursor-surface",
+      "regenerationSource": "terminal session recording",
+      "runtimeDependency": true,
+      "migrationRisk": "low",
+      "recommendedDisposition": "keep ephemeral"
+    },
+    {
+      "path": "runtime/local/graphify",
+      "sizeBytes": 32768,
+      "trackingState": "generated cache",
+      "owner": "brain-runtime",
+      "regenerationSource": "graphify contained execution",
+      "runtimeDependency": true,
+      "migrationRisk": "medium",
+      "recommendedDisposition": "keep ignored and regenerable"
+    },
+    {
+      "path": "runtime/local/mind-steward",
+      "sizeBytes": 45056,
+      "trackingState": "generated cache",
+      "owner": "brain-runtime",
+      "regenerationSource": "mind-steward preview/report generation",
+      "runtimeDependency": true,
+      "migrationRisk": "medium",
+      "recommendedDisposition": "keep ignored and regenerable"
+    },
+    {
+      "path": "tools/firecrawl/logs/firecrawl.log",
+      "sizeBytes": 30714,
+      "trackingState": "secrets-adjacent file",
+      "owner": "firecrawl",
+      "regenerationSource": "firecrawl request logging",
+      "runtimeDependency": true,
+      "migrationRisk": "high",
+      "recommendedDisposition": "treat as sensitive runtime log"
+    }
+  ],
+  "proposedIgnoreRules": [
+    "runtime/",
+    "projects/brain-core/dist/",
+    "operations/system-configs/codex/browser/",
+    "operations/system-configs/codex/attachments/",
+    "tools/firecrawl/logs/",
+    "**/*.log"
+  ],
+  "proposedMoveRules": [
+    "keep packaged binaries installed, not edited",
+    "keep mutable runtime state outside source control",
+    "keep generated caches ignored and regenerable"
+  ],
+  "migrationRiskSummary": [
+    "runtime state and secrets-adjacent files are highest risk",
+    "packaged binaries are editable only through reinstall or rebuild",
+    "generated caches should remain ignored and disposable"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "reportVersion": "1.0.0",
+  "generatedAt": "2026-07-17T00:00:00.000Z",
+  "metrics": [
+    {
+      "metricId": "brain-core-startup",
+      "actual": null,
+      "budget": null,
+      "status": "baseline-only",
+      "unit": "ms",
+      "source": "repeatable startup benchmark not yet established"
+    },
+    {
+      "metricId": "context-gateway-p50-latency",
+      "actual": null,
+      "budget": null,
+      "status": "baseline-only",
+      "unit": "ms",
+      "source": "current eval command does not emit a percentile timing harness"
+    },
+    {
+      "metricId": "context-gateway-p95-latency",
+      "actual": null,
+      "budget": null,
+      "status": "baseline-only",
+      "unit": "ms",
+      "source": "current eval command does not emit a percentile timing harness"
+    },
+    {
+      "metricId": "context-token-usage",
+      "actual": 4000,
+      "budget": 4000,
+      "status": "documented-budget",
+      "unit": "tokens",
+      "source": "projects/mind-context/src/core/budget.mjs"
+    },
+    {
+      "metricId": "graph-scope-size",
+      "actual": {
+        "maxFiles": 5000,
+        "maxBytes": 52428800,
+        "maxNodes": 10000,
+        "maxEdges": 50000
+      },
+      "budget": {
+        "maxFiles": 5000,
+        "maxBytes": 52428800,
+        "maxNodes": 10000,
+        "maxEdges": 50000
+      },
+      "status": "documented-budget",
+      "unit": "files-bytes-nodes-edges",
+      "source": "operations/specs/graphify-operational-profile.json"
+    },
+    {
+      "metricId": "runtime-generated-storage",
+      "actual": 77824,
+      "budget": null,
+      "status": "baseline-only",
+      "unit": "bytes",
+      "source": "runtime/local/graphify and runtime/local/mind-steward directory sizes"
+    },
+    {
+      "metricId": "route-module-size",
+      "actual": 238174,
+      "budget": null,
+      "status": "baseline-only",
+      "unit": "bytes",
+      "source": "wc -c projects/brain-core/src/api/routes.ts"
+    }
+  ]
+}
