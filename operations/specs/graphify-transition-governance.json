@@ -1,0 +1,119 @@
+{
+  "governanceVersion": "1.0.0",
+  "effectiveDate": "2026-07-29",
+  "authority": "brain-runtime",
+  "taskOrigin": "historical-pre-canonical B8.4R (obsolete out-of-sequence numbering; see migrationPath.historicalPhaseCompleted)",
+  "evidence": "operations/reports/codebase-memory-mcp-canary-b8-4-2026-07-29.md",
+
+  "states": {
+    "structuralCodeIndexing": {
+      "state": "frozen-pending-migration",
+      "description": "Graphify structural code indexing is frozen at BS0.15 containment. The nightly scheduler skips graphify-nightly via code gate (office-nightly-scheduler.sh:529). No new graphify-out artifacts may be produced without an explicit approved re-activation task.",
+      "frozenSince": "2026-07-14",
+      "frozenBy": "BS0.15 containment directive",
+      "schedulerGate": "tools/scripts/office-nightly-scheduler.sh:529 — skipping job=graphify-nightly reason=bs0-15-pending-containment",
+      "resumeCondition": "Separate approved B8.x task with explicit Brain operations approval. Not resumable by any agent without documented task authorization.",
+      "currentAlternative": "codebase-memory-mcp v0.9.0 (Brain candidate, B8.2A-R). Status: candidate — not global-active.",
+      "affectedRepos": ["brain", "mind", "workbench-private", "prochat", "connected-repos"]
+    },
+
+    "semanticSynthesis": {
+      "state": "retained-inactive",
+      "description": "Graphify semantic synthesis (LLM-powered community labeling, semantic summaries, narrative GRAPH_REPORT sections) is retained but inactive. The Graphify binary and scheduler config are preserved. Semantic synthesis is NOT part of the CBM migration scope — CBM provides structural navigation only, not semantic summarization.",
+      "retentionReason": "Graphify semantic synthesis is a distinct capability from structural code indexing. It may be separately reactivated under its own approved task if the value justifies it.",
+      "currentState": "Inactive. Last semantic synthesis output: 2026-07-14 (stale). Community labels in current graphify-out are placeholders (Community 0, Community 1) — no LLM labeling present in current Workbench or Brain outputs.",
+      "reactivationCondition": "Separate approved task with explicit brain-runtime authorization. Reactivation of semantic synthesis does not require Graphify structural indexing to also resume.",
+      "note": "CBM does not replace semantic synthesis. If semantic synthesis value is proven, it may coexist with CBM as a scheduled supplemental step."
+    },
+
+    "historicalIndexes": {
+      "state": "non-authoritative-checksum-retained",
+      "description": "Existing graphify-out artifacts (graph.json, GRAPH_REPORT.md, manifest.json) are non-authoritative. They were built from stale commits. They must not be used as current architecture truth. Their SHA-256 checksums are retained in the freeze manifest for integrity verification.",
+      "artifacts": [
+        {
+          "repo": "brain",
+          "artifact": "graphify-out/graph.json",
+          "sha256": "feb942ec1afc141c67a000d6c35b75bab74cf321575086d14d38f2f49f05e227",
+          "builtFrom": "c2350d59",
+          "mtime": "2026-07-14T04:03:31",
+          "authoritative": false
+        },
+        {
+          "repo": "brain",
+          "artifact": "graphify-out/GRAPH_REPORT.md",
+          "sha256": "98007401bf5ff18295e6821d0ffb02e14752f4386fc65d757d7a4e13cec38669",
+          "builtFrom": "c2350d59",
+          "mtime": "2026-07-14T04:03:31",
+          "authoritative": false
+        },
+        {
+          "repo": "brain",
+          "artifact": "graphify-out/manifest.json",
+          "sha256": "ceefc7849b91801e7f32bd74fb97c3da8008dedbcd45700d477edd554ffb3bb5",
+          "builtFrom": "c2350d59",
+          "mtime": "2026-07-14T04:03:31",
+          "authoritative": false
+        },
+        {
+          "repo": "workbench-private",
+          "artifact": "graphify-out/graph.json",
+          "sha256": "1e5068760ecbef6e30387cef0345cac2cb341831a1a1cb186f7720a91fe65aad",
+          "builtFrom": "80c5429c",
+          "mtime": "2026-07-14T07:05",
+          "authoritative": false
+        },
+        {
+          "repo": "workbench-private",
+          "artifact": "graphify-out/GRAPH_REPORT.md",
+          "sha256": "841560fb803eae60f68765576b9e67922500cfb796aa06582db5c366fd22a334",
+          "builtFrom": "80c5429c",
+          "mtime": "2026-07-14T07:05",
+          "authoritative": false
+        },
+        {
+          "repo": "prochat",
+          "artifact": "graphify-out/graph.json",
+          "sha256": "d7d76127803bfa70a3eb5c50c64a435c155f030399aac0b1504cf656f98dc603",
+          "builtFrom": "unknown",
+          "mtime": "2026-07-14T04:00",
+          "authoritative": false
+        }
+      ],
+      "freshnessManifest": "operations/specs/codebase-memory-mcp-canary-manifest-2026-07-29.json"
+    },
+
+    "deletion": {
+      "state": "prohibited-before-retention-gate",
+      "description": "No graphify-out artifacts, graphify binary, scheduler integration, or graphify skill/config may be deleted until the retention gate is explicitly approved. The retention gate requires: (1) CBM adapter verified in production for ≥7 days with WORKBENCH_GRAPH_BACKEND=cbm, (2) Mind semantic synthesis need assessed and documented, (3) Explicit Brain operations approval.",
+      "prohibitedActions": [
+        "Deleting graphify-out/ in any repo",
+        "Removing graphify binary from PATH",
+        "Removing graphify entries from nightly scheduler",
+        "Deleting graphify skill files",
+        "Removing graphify-operational-profile.json or graphify-operational-profiles.json"
+      ],
+      "retentionGateConditions": [
+        "Approved Workbench CBM adapter deployment verified stable in production for at least seven days (not gated on any specific B8 task label — the capability must be demonstrated)",
+        "Mind semantic synthesis value assessment documented",
+        "Brain operations explicit approval for deletion"
+      ],
+      "historicalRetentionGateAnnotation": "Original condition referenced 'B8.5 Workbench CBM adapter' using historical pre-canonical B8.5 label, which collides with canonical B8.5 (Convert Graphify to bounded semantic synthesis). Condition is now capability-based to avoid label confusion.",
+      "estimatedGateClearance": "After approved CBM adapter deployment is verified stable for 7 days and all three conditions are met; no timeline authorized"
+    }
+  },
+
+  "migrationPath": {
+    "historicalPhaseCompleted": "B8.4R-complete (historical-pre-canonical label; corresponds to obsolete out-of-sequence B8 numbering scheme predating the canonical B8.1-B8.6 dependency chain)",
+    "currentPhase": "deferred-pending-canonical-P8-authorization",
+    "currentExecutionAuthority": "none",
+    "canonicalP8Status": "0/6 accepted complete; intentionally deferred; requires separate authorization before any canonical B8 task begins",
+    "nextTask": "No current authorized next task. When canonical P8 is authorized, the sequence begins at canonical B8.1 (benchmark structural code-memory options). Historical out-of-sequence work (canary, candidate installation, design specs) does not satisfy or bypass the B8.1 prerequisite.",
+    "historicalNextTaskAnnotation": "Historical pre-canonical label was: 'B8.5A (Brain-only contract spec) then B8.5 (Workbench adapter implementation)'. Historical B8.5 (Workbench CBM adapter) collides with canonical B8.5 (Convert Graphify to bounded event-driven semantic synthesis). These are different tasks.",
+    "globalActivationStatus": "not-active",
+    "globalActivationBlockers": [
+      "Canonical B8.2 (admit and install CBM as approved structural default) not yet authorized — candidate binary exists but is not approved default",
+      "Approved Workbench CBM adapter deployment must be verified stable for at least seven days before retention gate consideration",
+      "No global rollout or scheduler changes authorized until canonical P8 is explicitly authorized and B8.2 is complete"
+    ]
+  }
+}

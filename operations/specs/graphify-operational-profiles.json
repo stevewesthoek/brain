@@ -1,0 +1,69 @@
+{
+  "catalogVersion": "1.0.0",
+  "profiles": [
+    {
+      "profileId": "graphify-brain-architecture",
+      "title": "Brain Architecture Graphify Profile",
+      "repositoryFocus": "brain",
+      "operationalOutputRoot": "runtime/local/graphify/brain-architecture",
+      "generatedOutputAuthority": "non-authoritative",
+      "publication": "atomic-staged-rename",
+      "currentCommitsOnly": true,
+      "projectOwnedModulesVisible": true,
+      "generatedOutputsUntracked": true,
+      "retention": { "maxRuns": 7, "maxAgeDays": 14, "keepFailureReceipts": 14 },
+      "corpus": {
+        "mode": "explicit-allowlist",
+        "repositories": ["brain"],
+        "excluded": [
+          ".env",
+          "**/.env",
+          "operations/system-configs",
+          "operations/infrastructure",
+          "operations/automations/n8n/n8n_backup",
+          "vendor",
+          "node_modules",
+          "runtime",
+          "graphify-out",
+          ".graphify-out",
+          ".git",
+          "**/*credential*",
+          "**/*secret*",
+          "**/*backup*"
+        ]
+      }
+    },
+    {
+      "profileId": "graphify-mind-knowledge",
+      "title": "Mind Knowledge Graphify Profile",
+      "repositoryFocus": "mind",
+      "operationalOutputRoot": "runtime/local/graphify/mind-knowledge",
+      "generatedOutputAuthority": "non-authoritative",
+      "publication": "atomic-staged-rename",
+      "currentCommitsOnly": true,
+      "projectOwnedModulesVisible": true,
+      "generatedOutputsUntracked": true,
+      "retention": { "maxRuns": 7, "maxAgeDays": 14, "keepFailureReceipts": 14 },
+      "corpus": {
+        "mode": "explicit-allowlist",
+        "repositories": ["mind"],
+        "excluded": [
+          ".env",
+          "**/.env",
+          "operations/system-configs",
+          "operations/infrastructure",
+          "operations/automations/n8n/n8n_backup",
+          "vendor",
+          "node_modules",
+          "runtime",
+          "graphify-out",
+          ".graphify-out",
+          ".git",
+          "**/*credential*",
+          "**/*secret*",
+          "**/*backup*"
+        ]
+      }
+    }
+  ]
+}
