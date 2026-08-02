@@ -1,0 +1,553 @@
+{
+  "schemaVersion": "1.0.0",
+  "reviewedAt": "2026-07-22",
+  "capabilities": [
+    {
+      "capabilityId": "retrieval-corpus-validation",
+      "displayName": "Retrieval Corpus Validation",
+      "owner": "brain-runtime",
+      "description": "Validate the retrieval evaluation corpus against the canonical schema.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "retrieval-evaluation-corpus.schema.json",
+      "schemaPath": "operations/specs/retrieval-evaluation-corpus.schema.json",
+      "entrypoint": "tools/validate-retrieval-evaluation-corpus.mjs",
+      "evidenceCommand": "node tools/validate-retrieval-evaluation-corpus.mjs",
+      "evidenceReport": "operations/reports/bs0-20-retrieval-evaluation-corpus-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "operations/fixtures"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/bs0-20-retrieval-evaluation-corpus-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "context-pack-validation",
+      "displayName": "Context Pack Validation",
+      "owner": "brain-runtime",
+      "description": "Validate deterministic context packs produced by the retrieval core.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "context-pack.schema.json",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "tools/validate-context-pack.mjs",
+      "evidenceCommand": "node tools/validate-context-pack.mjs",
+      "evidenceReport": "operations/reports/bs0-21-context-pack-schema-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "retrieval-corpus-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "operations/fixtures"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/bs0-21-context-pack-schema-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "context-gateway-core",
+      "displayName": "Context Gateway Core",
+      "owner": "brain-runtime",
+      "description": "Deterministic discovery, ranking, budgeting, rendering, and validation for context packs.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "brain-runtime-implementation-plan",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "projects/mind-context/src/core/index.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b2-6-b3-3-context-gateway-batch-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "context-pack-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b2-6-b3-3-context-gateway-batch-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "context-gateway-cli-resolve",
+      "displayName": "Context Gateway CLI Resolve",
+      "owner": "brain-runtime",
+      "description": "Resolve a deterministic context pack from fixtures.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "brain-runtime-implementation-plan",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "projects/mind-context/src/cli/cli.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b2-6-cli-commands-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "context-gateway-core"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b2-6-cli-commands-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "context-gateway-cli-explain",
+      "displayName": "Context Gateway CLI Explain",
+      "owner": "brain-runtime",
+      "description": "Explain ranking, exclusions, budget, truncation, conflicts, and unknowns.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "brain-runtime-implementation-plan",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "projects/mind-context/src/cli/cli.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b2-6-cli-commands-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "context-gateway-core"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b2-6-cli-commands-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "context-gateway-cli-health",
+      "displayName": "Context Gateway CLI Health",
+      "owner": "brain-runtime",
+      "description": "Report read-only fixture-only health for the context gateway.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "brain-runtime-implementation-plan",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "projects/mind-context/src/cli/cli.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b2-6-cli-commands-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "context-gateway-core"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b2-6-cli-commands-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "retrieval-trust-boundary",
+      "displayName": "Retrieval Trust Boundary",
+      "owner": "brain-runtime",
+      "description": "Treat retrieved source text as untrusted data and prevent permission drift.",
+      "state": "verified",
+      "safetyMode": "fixture-only",
+      "contractId": "brain-runtime-implementation-plan",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "projects/mind-context/src/core/plan-context-pack.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b2-7-trust-boundary-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "context-gateway-core"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/fixtures"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b2-7-trust-boundary-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "evaluation-loader",
+      "displayName": "Evaluation Loader",
+      "owner": "brain-runtime",
+      "description": "Load evaluation corpus and source registries through package-local validators.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "retrieval-evaluation-corpus.schema.json",
+      "schemaPath": "operations/specs/retrieval-evaluation-corpus.schema.json",
+      "entrypoint": "projects/mind-context/src/evals/corpus.mjs",
+      "evidenceCommand": "node tools/validate-retrieval-evaluation-corpus.mjs",
+      "evidenceReport": "operations/reports/b3-1-evaluation-loader-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "retrieval-corpus-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "operations/fixtures"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b3-1-evaluation-loader-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "metric-calculator",
+      "displayName": "Metric Calculator",
+      "owner": "brain-runtime",
+      "description": "Calculate precision, recall, violations, authority, freshness, and latency metrics.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "retrieval-evaluation-corpus.schema.json",
+      "schemaPath": "operations/specs/retrieval-evaluation-corpus.schema.json",
+      "entrypoint": "projects/mind-context/src/evals/metrics.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b3-2-metric-calculator-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "evaluation-loader"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b3-2-metric-calculator-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "fixed-benchmark-command",
+      "displayName": "Fixed Benchmark Command",
+      "owner": "brain-runtime",
+      "description": "Run the fixed lexical benchmark command and emit timestamped artifacts.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "retrieval-evaluation-corpus.schema.json",
+      "schemaPath": "operations/specs/retrieval-evaluation-corpus.schema.json",
+      "entrypoint": "projects/mind-context/src/evals/benchmark.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context run eval",
+      "evidenceReport": "operations/reports/b3-3-fixed-benchmark-command-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "metric-calculator"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b3-3-fixed-benchmark-command-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "semantic-ranker-gate",
+      "displayName": "Semantic Ranker Gate",
+      "owner": "brain-runtime",
+      "description": "Compare lexical baseline and candidate benchmark outputs with fail-closed deltas.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "retrieval-evaluation-corpus.schema.json",
+      "schemaPath": "operations/specs/retrieval-evaluation-corpus.schema.json",
+      "entrypoint": "projects/mind-context/src/evals/gate.mjs",
+      "evidenceCommand": "node tools/run-semantic-ranker-gate-smoke.mjs",
+      "evidenceReport": "operations/reports/b3-4-semantic-ranker-gate-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "fixed-benchmark-command",
+        "evaluation-loader"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/out/eval",
+        "projects/mind-context/fixtures"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b3-4-semantic-ranker-gate-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "fixture-only-thin-mcp-adapter",
+      "displayName": "Fixture-Only Thin MCP Adapter",
+      "owner": "brain-runtime",
+      "description": "Expose the same read-only gateway behavior through a thin local adapter layer.",
+      "state": "verified",
+      "safetyMode": "fixture-only",
+      "contractId": "brain-runtime-implementation-plan",
+      "schemaPath": "operations/specs/context-pack.schema.json",
+      "entrypoint": "projects/mind-context/src/adapters/index.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/b2-8-thin-adapters-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "context-gateway-core",
+        "retrieval-trust-boundary"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/b2-8-thin-adapters-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "capability-state-validation",
+      "displayName": "Capability-State Validation",
+      "owner": "brain-runtime",
+      "description": "Validate repository capability-state truth and prevent state upgrades during validation.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "capability-state.schema.json",
+      "schemaPath": "operations/specs/capability-state.schema.json",
+      "entrypoint": "tools/validate-capability-state.mjs",
+      "evidenceCommand": "node tools/validate-capability-state.mjs",
+      "evidenceReport": "operations/reports/bs0-12-capability-state-evidence-repair-2026-07-14.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "operations/specs"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/bs0-12-capability-state-evidence-repair-2026-07-14.md"
+      ]
+    },
+    {
+      "capabilityId": "provider-admission-validation",
+      "displayName": "Provider Admission Validation",
+      "owner": "brain-runtime",
+      "description": "Validate the admitted Workbench MCP provider and its artifact hashes.",
+      "state": "verified",
+      "safetyMode": "approval-gated",
+      "contractId": "mcp-provider-admission",
+      "schemaPath": "operations/specs/mcp-provider-admissions.json",
+      "entrypoint": "tools/validate-mcp-provider-admissions.mjs",
+      "evidenceCommand": "node tools/validate-mcp-provider-admissions.mjs",
+      "evidenceReport": "operations/reports/workbench-mcp-provider-admission-2026-07-15.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "capability-state-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "node tools/validate-mcp-provider-admissions.mjs",
+      "repositoryState": "verified",
+      "deployedState": "configured",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "operations/system-configs/mcp"
+      ],
+      "writeScope": [
+        "operations/system-configs/mcp"
+      ],
+      "externalMutation": true,
+      "approvalRequirement": "two-phase",
+      "evidenceReferences": [
+        "operations/reports/workbench-mcp-provider-admission-2026-07-15.md"
+      ]
+    },
+    {
+      "capabilityId": "typed-capability-worker",
+      "displayName": "Typed Capability Worker",
+      "owner": "brain-runtime",
+      "description": "Typed worker surface for repository capability operations.",
+      "state": "candidate",
+      "safetyMode": "report-only",
+      "contractId": "capability-state.schema.json",
+      "schemaPath": "operations/specs/capability-state.schema.json",
+      "entrypoint": "projects/brain-core/src/adapters/infinite-brain-typed-capability-worker.ts",
+      "evidenceCommand": "node --test projects/brain-core/src/tests/infinite-brain-typed-capability-worker.test.ts",
+      "evidenceReport": "operations/reports/bs0-18-typed-capability-workers-2026-07-16.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "provider-admission-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "candidate",
+      "deployedState": "unknown",
+      "observedState": "unknown",
+      "verifiedState": "unknown",
+      "readScope": [
+        "projects/brain-core/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "none",
+      "evidenceReferences": [
+        "operations/reports/bs0-18-typed-capability-workers-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "exact-scope-approval-validator",
+      "displayName": "Exact Scope Approval Validator",
+      "owner": "brain-runtime",
+      "description": "Validate exact-scope approval semantics for restricted operations.",
+      "state": "candidate",
+      "safetyMode": "approval-gated",
+      "contractId": "capability-state.schema.json",
+      "schemaPath": "operations/specs/capability-state.schema.json",
+      "entrypoint": "projects/brain-core/src/adapters/infinite-brain-exact-scope-approval.ts",
+      "evidenceCommand": "node --test projects/brain-core/src/tests/infinite-brain-exact-scope-approval.test.ts",
+      "evidenceReport": "operations/reports/bs0-17-exact-scope-approval-semantics-2026-07-15.md",
+      "lastVerified": "2026-07-16",
+      "dependencies": [
+        "provider-admission-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "none",
+      "repositoryState": "candidate",
+      "deployedState": "unknown",
+      "observedState": "unknown",
+      "verifiedState": "unknown",
+      "readScope": [
+        "projects/brain-core/src"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "required",
+      "evidenceReferences": [
+        "operations/reports/bs0-17-exact-scope-approval-semantics-2026-07-15.md"
+      ]
+    },
+    {
+      "capabilityId": "save-to-mind-controlled-migration",
+      "displayName": "Save-to-Mind Controlled Migration",
+      "owner": "brain-runtime",
+      "description": "Approval-gated controlled write migration for Save-to-Mind target paths.",
+      "state": "verified",
+      "safetyMode": "approval-gated",
+      "contractId": "save-to-mind-candidate-evidence",
+      "schemaPath": "operations/specs/mcp-provider-admissions.json",
+      "entrypoint": "operations/automations/n8n/validate-mind-inbox-paths.mjs",
+      "evidenceCommand": "node tools/validate-mcp-provider-admissions.mjs",
+      "evidenceReport": "operations/reports/b1-0a-guarded-live-completion-2026-07-22.md",
+      "lastVerified": "2026-07-22",
+      "dependencies": [
+        "provider-admission-validation"
+      ],
+      "featureFlag": "none",
+      "rollbackOrDisableCommand": "node tools/validate-mcp-provider-admissions.mjs",
+      "repositoryState": "verified",
+      "deployedState": "deployed",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "operations/automations/n8n"
+      ],
+      "writeScope": [
+        "operations/automations/n8n"
+      ],
+      "externalMutation": true,
+      "approvalRequirement": "two-phase",
+      "evidenceReferences": [
+        "operations/reports/b1-0a-guarded-live-completion-2026-07-22.md"
+      ]
+    }
+  ]
+}

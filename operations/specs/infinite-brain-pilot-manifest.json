@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0.0",
+  "pilotId": "brain-runtime-measured-automation-pilot",
+  "capabilityId": "measured-automation-pilot",
+  "owner": "brain-runtime",
+  "startAt": "2026-07-16T00:00:00.000Z",
+  "endAt": "2026-08-15T00:00:00.000Z",
+  "sampleLimit": 3,
+  "featureFlag": "BRAIN_RUNTIME_MEASURED_AUTOMATION_PILOT",
+  "featureFlagEnabled": false,
+  "scheduleEnabled": false,
+  "killConditions": [
+    "baseline-missing",
+    "missing-human-verdict-path",
+    "second-active-pilot",
+    "model-supplied-authority",
+    "retain-scope-expansion",
+    "external-write-attempt"
+  ],
+  "baselineReference": {
+    "sourceCommit": "5c23708a4fdc4c0e1d871620d6e818b82bc59d28",
+    "sourcePath": "operations/reports/b4-4-b5-1-b5-3-batch-2026-07-16.md",
+    "state": {
+      "repositoryState": "verified",
+      "deployedState": "unknown",
+      "observedState": "observed",
+      "verifiedState": "verified"
+    }
+  },
+  "metricDefinitions": [
+    {
+      "metricId": "latencyMs",
+      "label": "pilot latency",
+      "source": "fixture-measurement-clock",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    },
+    {
+      "metricId": "selectedSourceCount",
+      "label": "selected sources",
+      "source": "fixture-source-selection",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    },
+    {
+      "metricId": "omittedSourceCount",
+      "label": "omitted sources",
+      "source": "fixture-source-selection",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    },
+    {
+      "metricId": "errorCount",
+      "label": "pilot errors",
+      "source": "fixture-execution-log",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    },
+    {
+      "metricId": "reviewDecision",
+      "label": "review decision",
+      "source": "fixture-human-verdict",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    },
+    {
+      "metricId": "correctionTimeMs",
+      "label": "correction time",
+      "source": "fixture-human-verdict",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    },
+    {
+      "metricId": "rollbackCount",
+      "label": "rollback count",
+      "source": "fixture-rollback-record",
+      "collectionWindow": {
+        "start": "2026-07-16T00:00:00.000Z",
+        "end": "2026-08-15T00:00:00.000Z"
+      }
+    }
+  ],
+  "humanVerdictPath": "operations/reports/infinite-brain-measured-automation-verdicts-2026-07-16.json",
+  "scope": {
+    "mode": "report-only",
+    "writesToMind": false,
+    "externalWrites": false
+  },
+  "state": {
+    "repositoryState": "verified",
+    "deployedState": "unknown",
+    "observedState": "observed",
+    "verifiedState": "verified"
+  },
+  "active": true
+}
+

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Infinite Brain Contract Layer Map",
+  "type": "object",
+  "required": ["schemaVersion", "families"],
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "families": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["familyId", "normativeMindSource", "brainExecutableSchema", "brainValidator", "runtimeConfiguration", "deploymentEvidence", "observedEvidence", "verifiedEvidence", "compatibilityLayer", "deprecationState", "unresolvedOwnerDecision"],
+        "properties": {
+          "familyId": { "type": "string" },
+          "normativeMindSource": { "type": "object" },
+          "brainExecutableSchema": { "type": "object" },
+          "brainValidator": { "type": "object" },
+          "runtimeConfiguration": { "type": "object" },
+          "deploymentEvidence": { "type": "object" },
+          "observedEvidence": { "type": "object" },
+          "verifiedEvidence": { "type": "object" },
+          "compatibilityLayer": { "type": "object" },
+          "deprecationState": { "type": "string" },
+          "unresolvedOwnerDecision": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

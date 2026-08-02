@@ -1,0 +1,425 @@
+{
+  "schemaVersion": "1.0.0",
+  "reviewedAt": "2026-07-14",
+  "capabilities": [
+    {
+      "capabilityId": "brain-core-api",
+      "owner": "brain-runtime",
+      "contractId": "brain-runtime-implementation-plan",
+      "implementationPaths": [
+        "projects/brain-core/src/api/routes.ts"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "configured",
+      "evidencePaths": [
+        "operations/specs/infinite-brain-runtime-implementation-plan.md"
+      ],
+      "validationCommands": [
+        "npm --prefix projects/brain-core run typecheck"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "deployment evidence absent"
+      ],
+      "dependencies": [],
+      "notes": "Repository configuration only."
+    },
+    {
+      "capabilityId": "mutable-capability-containment",
+      "owner": "brain-runtime",
+      "contractId": "capability-state-contract",
+      "implementationPaths": [
+        "projects/brain-core/src/tests/mutable-capability-containment.test.ts"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "operations/reports/bs0-1-mutable-capability-containment-2026-07-13.md"
+      ],
+      "validationCommands": [
+        "npm --prefix projects/brain-core run test"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "runtime deployment unknown"
+      ],
+      "dependencies": [
+        "brain-core-api"
+      ],
+      "notes": "Repository test verification only."
+    },
+    {
+      "capabilityId": "mind-steward-classification",
+      "owner": "brain-runtime",
+      "contractId": "mind-folder-contract",
+      "implementationPaths": [
+        "projects/mind-steward/src/classifier.ts"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "verified",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "projects/mind-steward/src/tests/classifier-paths.test.ts"
+      ],
+      "validationCommands": [
+        "npm --prefix projects/mind-steward run test"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "report-only"
+      ],
+      "dependencies": [
+        "canonical-path-registry"
+      ],
+      "notes": "No broad Mind writes."
+    },
+    {
+      "capabilityId": "mind-sync",
+      "owner": "brain-runtime",
+      "contractId": "mind-folder-contract",
+      "implementationPaths": [
+        "tools/scripts/mind-steward-sync-inbox.mjs"
+      ],
+      "configurationState": "paused",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "paused",
+      "evidencePaths": [
+        "operations/reports/bs0-2-unsafe-mind-write-quiescence-2026-07-13.md"
+      ],
+      "validationCommands": [],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "write quiescence"
+      ],
+      "dependencies": [],
+      "notes": "Disabled."
+    },
+    {
+      "capabilityId": "compile-loop",
+      "owner": "brain-runtime",
+      "contractId": "mind-folder-contract",
+      "implementationPaths": [
+        "tools/scripts/mind-compile-loop.sh"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "verified",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "tools/scripts/mind-compile-loop.test.mjs"
+      ],
+      "validationCommands": [
+        "node --test tools/scripts/mind-compile-loop.test.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [],
+      "dependencies": [
+        "scheduler"
+      ],
+      "notes": "Report-only."
+    },
+    {
+      "capabilityId": "scheduler",
+      "owner": "brain-runtime",
+      "contractId": "capability-state-contract",
+      "implementationPaths": [
+        "operations/specs/infinite-brain-scheduler-inventory.json"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "verified",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "tools/validate-infinite-brain-scheduler-inventory.mjs"
+      ],
+      "validationCommands": [
+        "node tools/validate-infinite-brain-scheduler-inventory.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "external activation unknown"
+      ],
+      "dependencies": [],
+      "notes": "Repository scheduler truth only."
+    },
+    {
+      "capabilityId": "save-to-mind-candidate",
+      "owner": "brain-runtime",
+      "contractId": "save-to-mind-candidate-evidence",
+      "implementationPaths": [
+        "operations/automations/n8n/save-to-mind-topology-migration.json"
+      ],
+      "configurationState": "candidate",
+      "deploymentState": "candidate",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "paused",
+      "evidencePaths": [
+        "operations/automations/n8n/validate-mind-inbox-paths.mjs"
+      ],
+      "validationCommands": [
+        "node operations/automations/n8n/validate-mind-inbox-paths.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [],
+      "dependencies": [],
+      "notes": "Historical frozen candidate retained as compatibility evidence; activation is not asserted for this artifact."
+    },
+    {
+      "capabilityId": "save-to-mind-live-deployment",
+      "owner": "brain-runtime",
+      "contractId": "save-to-mind-candidate-evidence",
+      "implementationPaths": [
+        "operations/automations/n8n/workflows/mind-inbox-controlled-deployment-v1.json",
+        "operations/automations/n8n/save-to-mind-controlled-topology-migration-v1.json"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "deployed",
+      "observationState": "observed",
+      "verificationState": "verified",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "operations/automations/n8n/workflows/mind-inbox-controlled-deployment-v1.json",
+        "operations/automations/n8n/validate-mind-inbox-paths.mjs"
+      ],
+      "validationCommands": [
+        "node operations/automations/n8n/validate-mind-inbox-paths.mjs",
+        "node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-mrp6"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [],
+      "dependencies": [
+        "save-to-mind-candidate",
+        "workbench-mcp-bridge"
+      ],
+      "notes": "MRP-6 guarded deployment completed with one candidate update and two canonical readbacks; the exact candidate hash was confirmed and protected domains were unchanged. No webhook fixture or Mind write was performed."
+    },
+    {
+      "capabilityId": "n8n-routing",
+      "owner": "brain-runtime",
+      "contractId": "save-to-mind-candidate-evidence",
+      "implementationPaths": [
+        "operations/automations/n8n/workflows/mind-inbox-fixed.json"
+      ],
+      "configurationState": "candidate",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "paused",
+      "evidencePaths": [
+        "tools/n8n-save-to-mind-freeze.test.mjs"
+      ],
+      "validationCommands": [
+        "node --test tools/n8n-save-to-mind-freeze.test.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "candidate freeze"
+      ],
+      "dependencies": [],
+      "notes": "No live query."
+    },
+    {
+      "capabilityId": "maintenance-pilot",
+      "owner": "brain-runtime",
+      "contractId": "maintenance-intelligence-standard",
+      "implementationPaths": [
+        "projects/brain-core/src/mind-maintenance-pilot"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "paused",
+      "evidencePaths": [
+        "operations/reports/bs0-2-unsafe-mind-write-quiescence-2026-07-13.md"
+      ],
+      "validationCommands": [],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "report-only"
+      ],
+      "dependencies": [],
+      "notes": "No Mind writes."
+    },
+    {
+      "capabilityId": "graphify",
+      "owner": "brain-runtime",
+      "contractId": "generated-output-policy",
+      "implementationPaths": [
+        "tools/scripts/graphify-nightly.sh",
+        "operations/specs/graphify-operational-profile.json"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "operations/specs/graphify-operational-profile.json",
+        "tools/validate-graphify-operational-profile.mjs"
+      ],
+      "validationCommands": [
+        "node tools/validate-graphify-operational-profile.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "contained runner deferred"
+      ],
+      "dependencies": [
+        "scheduler"
+      ],
+      "notes": "Generated output is non-authoritative; legacy runner is fail-closed."
+    },
+    {
+      "capabilityId": "context-gateway",
+      "owner": "brain-runtime",
+      "contractId": "brain-runtime-roadmap",
+      "implementationPaths": [],
+      "configurationState": "planned",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "planned",
+      "evidencePaths": [],
+      "validationCommands": [],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "B2 pending"
+      ],
+      "dependencies": [],
+      "notes": "No canonical runtime."
+    },
+    {
+      "capabilityId": "task-synchronization",
+      "owner": "mind-human",
+      "contractId": "mind-implementation-plan",
+      "implementationPaths": [
+        "tools/scripts/mind-kanban-syncer.py"
+      ],
+      "configurationState": "retired",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "blocked",
+      "evidencePaths": [
+        "operations/reports/bs0-10-active-legacy-path-producers-2026-07-14.md",
+        "operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md"
+      ],
+      "validationCommands": [],
+      "reviewedAt": "2026-07-14",
+      "blockers": [],
+      "dependencies": [],
+      "notes": "BS0.10 complete 2026-07-31: M1.4 resolved; all four legacy producers retired with exit guards. kanban.md is human-only authority."
+    },
+    {
+      "capabilityId": "controlled-writes",
+      "owner": "brain-runtime",
+      "contractId": "brain-mind-bridge",
+      "implementationPaths": [
+        "projects/brain-core/src/adapters/infinite-brain-writers"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "paused",
+      "evidencePaths": [],
+      "validationCommands": [],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "approval required"
+      ],
+      "dependencies": [
+        "approval-broker"
+      ],
+      "notes": "No general application."
+    },
+    {
+      "capabilityId": "approval-broker",
+      "owner": "brain-runtime",
+      "contractId": "brain-mind-bridge",
+      "implementationPaths": [
+        "projects/brain-core/src/adapters/infinite-brain-operator-approval.ts"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "configured",
+      "evidencePaths": [],
+      "validationCommands": [],
+      "reviewedAt": "2026-07-14",
+      "blockers": [],
+      "dependencies": [],
+      "notes": "Repository capability."
+    },
+    {
+      "capabilityId": "rollback-restoration",
+      "owner": "brain-runtime",
+      "contractId": "save-to-mind-candidate-evidence",
+      "implementationPaths": [
+        "tools/n8n-save-to-mind-artifact-safety.mjs"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "unknown",
+      "observationState": "unknown",
+      "verificationState": "unknown",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "operations/reports/bs0-4-credential-backup-safety-2026-07-13.md"
+      ],
+      "validationCommands": [
+        "node --test tools/n8n-save-to-mind-artifact-safety.test.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [
+        "deployment unverified"
+      ],
+      "dependencies": [],
+      "notes": "Artifact validation only."
+    },
+    {
+      "capabilityId": "workbench-mcp-bridge",
+      "owner": "brain-runtime",
+      "contractId": "mcp-provider-admission",
+      "implementationPaths": [
+        "operations/specs/mcp-provider-admissions.json",
+        "tools/validate-mcp-provider-admissions.mjs",
+        "tools/generate-mcp-project-registration.mjs"
+      ],
+      "configurationState": "configured",
+      "deploymentState": "configured",
+      "observationState": "observed",
+      "verificationState": "verified",
+      "safetyState": "verified",
+      "evidencePaths": [
+        "operations/specs/mcp-provider-admissions.json",
+        "tools/validate-mcp-provider-admissions.mjs"
+      ],
+      "validationCommands": [
+        "node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-mrp6",
+        "node --test tools/validate-mcp-provider-admissions.test.mjs"
+      ],
+      "reviewedAt": "2026-07-14",
+      "blockers": [],
+      "dependencies": [
+        "approval-broker",
+        "save-to-mind-candidate"
+      ],
+      "notes": "Project-scoped authenticated MRP-6 Workbench provider is admitted for status, context reads, and the n8n workflow migration command only; one fresh guarded B1.0a migration completed with exact canonical readback."
+    }
+  ]
+}

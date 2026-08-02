@@ -1,0 +1,3 @@
+import fs from 'node:fs';import {validateContextPack} from '../projects/mind-context/src/context-pack.mjs';
+export function validateFixtureSet(set){const e=validateContextPack(set.valid);return e;}
+if(import.meta.url===`file://${process.argv[1]}`){const p=process.argv[2]??'operations/fixtures/context-pack-fixtures-v1.json';const set=JSON.parse(fs.readFileSync(p,'utf8'));const e=validateFixtureSet(set);if(e.length){console.error(e.join('\n'));process.exit(1)}console.log('context-pack=pass version=1.0');}

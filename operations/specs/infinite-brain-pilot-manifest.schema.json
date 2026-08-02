@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Infinite Brain Measured Automation Pilot Manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "pilotId",
+    "capabilityId",
+    "owner",
+    "startAt",
+    "endAt",
+    "sampleLimit",
+    "featureFlag",
+    "featureFlagEnabled",
+    "scheduleEnabled",
+    "killConditions",
+    "baselineReference",
+    "metricDefinitions",
+    "humanVerdictPath",
+    "scope",
+    "state",
+    "active"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "pilotId": { "type": "string", "minLength": 1 },
+    "capabilityId": { "type": "string", "minLength": 1 },
+    "owner": { "type": "string", "minLength": 1 },
+    "startAt": { "type": "string", "format": "date-time" },
+    "endAt": { "type": "string", "format": "date-time" },
+    "sampleLimit": { "type": "integer", "minimum": 1 },
+    "featureFlag": { "type": "string", "minLength": 1 },
+    "featureFlagEnabled": { "type": "boolean" },
+    "scheduleEnabled": { "type": "boolean" },
+    "killConditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "baselineReference": {
+      "type": "object",
+      "required": ["sourceCommit", "sourcePath", "state"],
+      "properties": {
+        "sourceCommit": { "type": "string", "minLength": 1 },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "state": {
+          "type": "object",
+          "required": ["repositoryState", "deployedState", "observedState", "verifiedState"],
+          "properties": {
+            "repositoryState": { "type": "string", "minLength": 1 },
+            "deployedState": { "type": "string", "minLength": 1 },
+            "observedState": { "type": "string", "minLength": 1 },
+            "verifiedState": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "metricDefinitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["metricId", "label", "source", "collectionWindow"],
+        "properties": {
+          "metricId": {
+            "type": "string",
+            "enum": [
+              "latencyMs",
+              "selectedSourceCount",
+              "omittedSourceCount",
+              "errorCount",
+              "reviewDecision",
+              "correctionTimeMs",
+              "rollbackCount"
+            ]
+          },
+          "label": { "type": "string", "minLength": 1 },
+          "source": { "type": "string", "minLength": 1 },
+          "collectionWindow": {
+            "type": "object",
+            "required": ["start", "end"],
+            "properties": {
+              "start": { "type": "string", "format": "date-time" },
+              "end": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "humanVerdictPath": { "type": "string", "minLength": 1 },
+    "scope": {
+      "type": "object",
+      "required": ["mode", "writesToMind", "externalWrites"],
+      "properties": {
+        "mode": { "enum": ["report-only", "read-only"] },
+        "writesToMind": { "const": false },
+        "externalWrites": { "const": false }
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": ["repositoryState", "deployedState", "observedState", "verifiedState"],
+      "properties": {
+        "repositoryState": { "type": "string", "minLength": 1 },
+        "deployedState": { "type": "string", "minLength": 1 },
+        "observedState": { "type": "string", "minLength": 1 },
+        "verifiedState": { "type": "string", "minLength": 1 }
+      }
+    },
+    "active": { "type": "boolean" }
+  }
+}
+

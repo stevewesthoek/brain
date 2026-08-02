@@ -1,0 +1,324 @@
+{
+  "schemaVersion": "1.0.0",
+  "reviewedAt": "2026-07-17",
+  "entries": [
+    {
+      "id": "mind-agent-context-agents",
+      "sourceRepository": "mind",
+      "sourcePath": "system/agent-context/AGENTS.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 1,
+      "sampleContent": "# Mind Agent Context\nRead-only canonical entrypoint for recovery validation.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "mind/system/agent-context/00-start-here.md",
+          "mind/system/agent-context/00-current-context.md",
+          "mind/system/agent-context/00-memory-map.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/infinite-brain-cross-repository-baseline-reconciliation-2026-07-15.md"
+        ]
+      }
+    },
+    {
+      "id": "mind-start-here",
+      "sourceRepository": "mind",
+      "sourcePath": "system/agent-context/00-start-here.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 2,
+      "sampleContent": "# Start Here\nRecoverable read-only startup snapshot.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "mind/system/agent-context/AGENTS.md",
+          "mind/system/agent-context/00-current-context.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/infinite-brain-cross-repository-baseline-reconciliation-2026-07-15.md"
+        ]
+      }
+    },
+    {
+      "id": "mind-current-context",
+      "sourceRepository": "mind",
+      "sourcePath": "system/agent-context/00-current-context.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 3,
+      "sampleContent": "# Current Context\nRecoverable canonical planning snapshot.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "mind/system/agent-context/AGENTS.md",
+          "mind/system/agent-context/00-memory-map.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/infinite-brain-cross-repository-baseline-reconciliation-2026-07-15.md"
+        ]
+      }
+    },
+    {
+      "id": "mind-memory-map",
+      "sourceRepository": "mind",
+      "sourcePath": "system/agent-context/00-memory-map.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 4,
+      "sampleContent": "# Memory Map\nRecoverable canonical memory-routing snapshot.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "mind/system/agent-context/AGENTS.md",
+          "mind/system/agent-context/00-start-here.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/infinite-brain-cross-repository-baseline-reconciliation-2026-07-15.md"
+        ]
+      }
+    },
+    {
+      "id": "brain-implementation-plan",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/infinite-brain-runtime-implementation-plan.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 5,
+      "sampleContent": "# Infinite Brain Runtime Implementation Plan\nB7.7 recovery snapshot.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "operations/specs/infinite-brain-runtime-roadmap.md",
+          "operations/runbooks/infinite-brain-roadmap-status.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/b7-2-b7-6-batch-summary-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "brain-roadmap",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/infinite-brain-runtime-roadmap.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 6,
+      "sampleContent": "# Infinite Brain Runtime Roadmap\nB7.7 recovery snapshot.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "operations/specs/infinite-brain-runtime-implementation-plan.md",
+          "operations/runbooks/infinite-brain-roadmap-status.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/b7-2-b7-6-batch-summary-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "brain-roadmap-status",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/runbooks/infinite-brain-roadmap-status.md",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 7,
+      "sampleContent": "# Infinite Brain Live Capability Status\nB7.7 recovery snapshot.\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "operations/specs/infinite-brain-runtime-implementation-plan.md",
+          "operations/specs/infinite-brain-runtime-roadmap.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/b7-2-b7-6-batch-summary-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "capability-manifest",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/infinite-brain-capabilities.json",
+      "stateClass": "generated",
+      "recoveryMode": "required",
+      "restoreOrder": 8,
+      "sampleContent": "{\n  \"capabilities\": [\"generated-capability-status\"],\n  \"reviewedAt\": \"2026-07-17\"\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/generate-capability-manifest.mjs",
+          "tools/validate-capability-manifest.mjs"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/b7-2-b7-6-batch-summary-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "capability-state",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/capability-state.json",
+      "stateClass": "generated",
+      "recoveryMode": "required",
+      "restoreOrder": 9,
+      "sampleContent": "{\n  \"schemaVersion\": \"1.0.0\",\n  \"reviewedAt\": \"2026-07-17\"\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/validate-capability-state.mjs",
+          "tools/validate-infinite-brain-capabilities.mjs"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/b7-2-b7-6-batch-summary-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "provider-admissions",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/mcp-provider-admissions.json",
+      "stateClass": "generated",
+      "recoveryMode": "required",
+      "restoreOrder": 10,
+      "sampleContent": "{\n  \"schemaVersion\": \"1.0.0\",\n  \"reviewedAt\": \"2026-07-17\"\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/validate-mcp-provider-admissions.mjs",
+          "operations/reports/workbench-mcp-provider-admission-reconciliation-2026-07-17.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/workbench-mcp-provider-admission-reconciliation-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "rollback-evidence",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/reports/artifacts/b1-0a-live-workflow-rollback.json",
+      "stateClass": "runtime",
+      "recoveryMode": "required",
+      "restoreOrder": 11,
+      "sampleContent": "{\n  \"workflowId\": \"FwP5INe9qoo1OwGC\",\n  \"rollback\": true\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/n8n-save-to-mind-artifact-safety.mjs",
+          "operations/reports/bs0-4-credential-backup-safety-2026-07-13.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/bs0-4-credential-backup-safety-2026-07-13.md"
+        ]
+      }
+    },
+    {
+      "id": "runtime-rollback-snapshot",
+      "sourceRepository": "brain",
+      "sourcePath": "runtime/local/infinite-brain/metadata-write-rollback-latest.json",
+      "stateClass": "runtime",
+      "recoveryMode": "excluded",
+      "restoreOrder": 12,
+      "sampleContent": "{\n  \"runtime\": \"excluded\"\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "projects/brain-core/scripts/dev/rollback-metadata-write.mjs"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/artifacts/b1-0a-live-workflow-rollback.json"
+        ]
+      }
+    },
+    {
+      "id": "contract-registry",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/infinite-brain-contract-registry.json",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 13,
+      "sampleContent": "{\n  \"schemaVersion\": \"1.0.0\",\n  \"contractCount\": 1\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/validate-infinite-brain-contract-registry.mjs",
+          "operations/specs/infinite-brain-contract-layer-map.json"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/bs0-5-contract-registry-2026-07-13.md"
+        ]
+      }
+    },
+    {
+      "id": "contract-layer-map",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/specs/infinite-brain-contract-layer-map.json",
+      "stateClass": "canonical",
+      "recoveryMode": "required",
+      "restoreOrder": 14,
+      "sampleContent": "{\n  \"schemaVersion\": \"1.0.0\",\n  \"layerCount\": 1\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/validate-infinite-brain-contract-layers.mjs",
+          "operations/specs/infinite-brain-contract-registry.json"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/bs0-7-contract-layer-separation-2026-07-13.md"
+        ]
+      }
+    },
+    {
+      "id": "mutable-state-inventory",
+      "sourceRepository": "brain",
+      "sourcePath": "operations/reports/b7-4-mutable-state-inventory-2026-07-17.json",
+      "stateClass": "generated",
+      "recoveryMode": "optional",
+      "restoreOrder": 15,
+      "sampleContent": "{\n  \"inventoryVersion\": \"1.0.0\",\n  \"items\": []\n}\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "tools/validate-mutable-state-inventory.mjs",
+          "operations/reports/b7-4-mutable-state-inventory-2026-07-17.md"
+        ],
+        "backupEvidenceRefs": [
+          "operations/reports/b7-4-mutable-state-inventory-2026-07-17.md"
+        ]
+      }
+    },
+    {
+      "id": "brain-core-exact-scope-cache",
+      "sourceRepository": "brain",
+      "sourcePath": "projects/brain-core/dist/tests/infinite-brain-exact-scope-approval.test.js",
+      "stateClass": "cache",
+      "recoveryMode": "excluded",
+      "restoreOrder": 16,
+      "sampleContent": "export const recovered = true;\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "projects/brain-core/src/tests/infinite-brain-exact-scope-approval.test.ts",
+          "projects/brain-core/run_tests.sh"
+        ],
+        "backupEvidenceRefs": []
+      }
+    },
+    {
+      "id": "mind-preview-cache",
+      "sourceRepository": "brain",
+      "sourcePath": "projects/mind-steward/dist/tests/preview.test.js",
+      "stateClass": "cache",
+      "recoveryMode": "excluded",
+      "restoreOrder": 17,
+      "sampleContent": "export const previewRecovered = true;\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "projects/mind-steward/src/tests/preview.test.ts",
+          "projects/mind-steward/run_tests.sh"
+        ],
+        "backupEvidenceRefs": []
+      }
+    },
+    {
+      "id": "mind-maintenance-cache",
+      "sourceRepository": "brain",
+      "sourcePath": "projects/mind-steward/dist/tests/maintenance-preview.test.js",
+      "stateClass": "cache",
+      "recoveryMode": "excluded",
+      "restoreOrder": 18,
+      "sampleContent": "export const maintenanceRecovered = true;\n",
+      "provenance": {
+        "reproducibleSourceRefs": [
+          "projects/mind-steward/src/tests/maintenance-preview.test.ts",
+          "projects/mind-steward/run_tests.sh"
+        ],
+        "backupEvidenceRefs": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "kind": "b1-7-contract-fixture",
+  "entrypoints": ["system/agent-context/AGENTS.md", "system/agent-context/00-start-here.md", "system/agent-context/00-current-context.md", "system/agent-context/00-memory-map.md"],
+  "intakePaths": ["inbox/new", "inbox/raw", "resources", "inbox/processed", "inbox/failed"],
+  "bridgeContractId": "wrong-contract",
+  "mindBridgeVersion": "2.0",
+  "brainContractRegistryVersion": "1.0.0",
+  "brainContractLayerSchemaVersion": "1.0.0",
+  "activeInstructions": ["mind/system/agent-context/AGENTS.md"]
+}

@@ -1,0 +1,185 @@
+{
+  "valid": {
+    "schemaVersion": "1.0.0",
+    "reviewedAt": "2026-07-16",
+    "capabilities": [
+      {
+        "capabilityId": "context-gateway-core",
+        "displayName": "Context Gateway Core",
+        "owner": "brain-runtime",
+        "description": "Deterministic discovery, ranking, budgeting, rendering, and validation for context packs.",
+        "state": "verified",
+        "safetyMode": "read-only",
+        "contractId": "brain-runtime-implementation-plan",
+        "schemaPath": "operations/specs/context-pack.schema.json",
+        "entrypoint": "projects/mind-context/src/core/index.mjs",
+        "evidenceCommand": "npm --prefix projects/mind-context test",
+        "evidenceReport": "operations/reports/b2-6-b3-3-context-gateway-batch-2026-07-16.md",
+        "lastVerified": "2026-07-16",
+        "dependencies": [],
+        "featureFlag": "none",
+        "rollbackOrDisableCommand": "none",
+        "repositoryState": "verified",
+        "deployedState": "unknown",
+        "observedState": "observed",
+        "verifiedState": "verified",
+        "readScope": [
+          "projects/mind-context/src"
+        ],
+        "writeScope": [],
+        "externalMutation": false,
+        "approvalRequirement": "none",
+        "evidenceReferences": [
+          "operations/reports/b2-6-b3-3-context-gateway-batch-2026-07-16.md"
+        ]
+      },
+      {
+        "capabilityId": "workbench-mcp-bridge",
+        "displayName": "Workbench MCP Bridge",
+        "owner": "brain-runtime",
+        "description": "Repository-scoped Workbench provider admission for status and context reads.",
+        "state": "verified",
+        "safetyMode": "approval-gated",
+        "contractId": "mcp-provider-admission",
+        "schemaPath": "operations/specs/mcp-provider-admissions.json",
+        "entrypoint": "operations/system-configs/mcp/workbench/README.md",
+        "evidenceCommand": "node tools/validate-mcp-provider-admissions.mjs",
+        "evidenceReport": "operations/reports/workbench-mcp-provider-admission-2026-07-15.md",
+        "lastVerified": "2026-07-16",
+        "dependencies": [],
+        "featureFlag": "none",
+        "rollbackOrDisableCommand": "node tools/validate-mcp-provider-admissions.mjs",
+        "repositoryState": "verified",
+        "deployedState": "configured",
+        "observedState": "observed",
+        "verifiedState": "verified",
+        "readScope": [
+          "operations/system-configs/mcp/workbench"
+        ],
+        "writeScope": [
+          "operations/system-configs/mcp/workbench"
+        ],
+        "externalMutation": true,
+        "approvalRequirement": "two-phase",
+        "evidenceReferences": [
+          "operations/reports/workbench-mcp-provider-admission-2026-07-15.md",
+          "operations/reports/workbench-mcp-provider-admission-reconciliation-2026-07-16.md"
+        ]
+      }
+    ]
+  },
+  "invalid": [
+    {
+      "name": "unknown-state",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "context-gateway-core",
+            "state": "mystery"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-owner",
+      "remove": "capabilities[0].owner"
+    },
+    {
+      "name": "verified-without-evidence",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "context-gateway-core",
+            "state": "verified",
+            "evidenceReferences": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "external-mutation-without-approval",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "workbench-mcp-bridge",
+            "externalMutation": true,
+            "approvalRequirement": "none"
+          }
+        ]
+      }
+    },
+    {
+      "name": "write-without-rollback",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "workbench-mcp-bridge",
+            "writeScope": [
+              "operations/system-configs/mcp/workbench"
+            ],
+            "rollbackOrDisableCommand": "none"
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-entrypoint",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "context-gateway-core",
+            "entrypoint": "n/a"
+          }
+        ]
+      }
+    },
+    {
+      "name": "deployed-without-repo-implementation",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "context-gateway-core",
+            "repositoryState": "planned",
+            "deployedState": "deployed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "verified-without-observed",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "workbench-mcp-bridge",
+            "observedState": "planned",
+            "verifiedState": "verified"
+          }
+        ]
+      }
+    },
+    {
+      "name": "model-owned",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "context-gateway-core",
+            "owner": "model-generated"
+          }
+        ]
+      }
+    },
+    {
+      "name": "unbounded-scope",
+      "patch": {
+        "capabilities": [
+          {
+            "capabilityId": "context-gateway-core",
+            "readScope": [
+              "../outside"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

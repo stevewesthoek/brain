@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0.0",
+  "mutations": [
+    {
+      "path": "versions.brainPlan",
+      "value": "1.9",
+      "expectedError": "version:brain-roadmap-plan-mismatch"
+    },
+    {
+      "path": "tasks.brainRoadmapTitleReferences.0.title",
+      "value": "Stale roadmap title",
+      "expectedError": "tasks:roadmap-title-mismatch:B1.0a"
+    },
+    {
+      "path": "mindPolicy.successIntake",
+      "value": false,
+      "expectedError": "path:mind-success-intake-stale"
+    },
+    {
+      "path": "pathPolicy.compatibilityDefaultsSafe",
+      "value": false,
+      "expectedError": "path:unsafe-compatibility-default"
+    },
+    {
+      "path": "capabilityClaims.saveToMindLiveDeployment.deploymentState",
+      "value": "unknown",
+      "expectedError": "capability:live-deployment-evidence-missing"
+    },
+    {
+      "path": "mcp.migrationSuboperations",
+      "value": [
+        "n8n_workflow_migration",
+        "run_exact_command"
+      ],
+      "expectedError": "mcp:migration-scope-mismatch"
+    }
+  ]
+}

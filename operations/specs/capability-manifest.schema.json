@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capability-manifest.schema.json",
+  "title": "Infinite Brain Capability Manifest",
+  "type": "object",
+  "required": ["schemaVersion", "reviewedAt", "capabilities"],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "reviewedAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    }
+  },
+  "$defs": {
+    "state": {
+      "enum": ["planned", "candidate", "configured", "deployed", "observed", "verified", "paused", "blocked", "retired", "unknown"]
+    },
+    "safetyMode": {
+      "enum": ["read-only", "fixture-only", "report-only", "approval-gated", "external-mutation", "paused", "blocked", "retired", "unknown"]
+    },
+    "approvalRequirement": {
+      "enum": ["none", "required", "two-phase"]
+    },
+    "scopePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\.\\./)(?!.*\\\\).+$"
+    },
+    "capability": {
+      "type": "object",
+      "required": [
+        "capabilityId",
+        "displayName",
+        "owner",
+        "description",
+        "state",
+        "safetyMode",
+        "contractId",
+        "schemaPath",
+        "entrypoint",
+        "evidenceCommand",
+        "evidenceReport",
+        "lastVerified",
+        "dependencies",
+        "featureFlag",
+        "rollbackOrDisableCommand",
+        "repositoryState",
+        "deployedState",
+        "observedState",
+        "verifiedState",
+        "readScope",
+        "writeScope",
+        "externalMutation",
+        "approvalRequirement",
+        "evidenceReferences"
+      ],
+      "properties": {
+        "capabilityId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "safetyMode": {
+          "$ref": "#/$defs/safetyMode"
+        },
+        "contractId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schemaPath": {
+          "$ref": "#/$defs/scopePath"
+        },
+        "entrypoint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceCommand": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceReport": {
+          "$ref": "#/$defs/scopePath"
+        },
+        "lastVerified": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "featureFlag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rollbackOrDisableCommand": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repositoryState": {
+          "$ref": "#/$defs/state"
+        },
+        "deployedState": {
+          "$ref": "#/$defs/state"
+        },
+        "observedState": {
+          "$ref": "#/$defs/state"
+        },
+        "verifiedState": {
+          "$ref": "#/$defs/state"
+        },
+        "readScope": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scopePath"
+          }
+        },
+        "writeScope": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scopePath"
+          }
+        },
+        "externalMutation": {
+          "type": "boolean"
+        },
+        "approvalRequirement": {
+          "$ref": "#/$defs/approvalRequirement"
+        },
+        "evidenceReferences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/scopePath"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
