@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "1.0.0",
+  "evaluatedAt": "2026-08-01",
+  "boundary": "Brain-owned evidence index. No Mind content modified. No filesystem mutation.",
+  "entries": {
+    "capture-inbox": {
+      "fullyMigrated": "Canonical replacement inbox/new/ is live-definition-verified per registry; absent-from-live-definition confirmed.",
+      "noActiveProducer": "BS0.10 retired all four legacy-path producers on 2026-07-31. Evidence: operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md.",
+      "noActiveConsumer": "Brain source scan: mind-paths.ts legacy label and n8n fixture adapter blocked-path check are compatibility-read only; writePolicy is forbidden.",
+      "provenanceProof": "Path origin documented in operations/specs/infinite-brain-path-registry.json (pathId=capture-inbox, normativeSource mind/system/folder-contract.md); historical transition recorded in BS0.10 and B1.0 reports.",
+      "rollbackProof": "writePolicy is forbidden; no active writes exist to roll back. Historical content was never modified by Brain automation. Rollback surface is zero by policy.",
+      "approvalProof": "Non-canonical status established by BS0.6 canonical path registry (2026-07-14); migration closure confirmed by B1.0a guarded live completion (2026-07-22).",
+      "authorityProof": "Authority is fully resolved: canonicalReplacement is inbox/new/ (live-definition-verified); normativeSource is mind/system/folder-contract.md; no scoped exceptions or unresolved claims.",
+      "prerequisiteEvidence": {
+        "cross-repository-conformance": "B1.7 cross-repo contract check passed 2026-07-30: required Mind entrypoints, canonical intake directories, bridge contract, and active instruction paths all verified. Evidence: operations/reports/b1-7-cross-repo-contract-2026-07-30.md.",
+        "B1.0a-live-routing-verification": "B1.0a guarded live completion (2026-07-22): exact canonical readback confirmed inbox/new/ routing; candidateUpdate=1 readback=2 reasonCode=READBACK_CANDIDATE_CONFIRMED. Evidence: operations/reports/b1-0a-guarded-live-completion-2026-07-22.md."
+      },
+      "missingApproval": "approved-folder-cleanup prerequisite has no existing repository artifact explicitly authorizing folder deletion or cleanup. No artifact cited."
+    },
+    "capture-failed": {
+      "fullyMigrated": "Canonical replacement inbox/failed/ is live-definition-verified per registry; absent-from-live-definition confirmed.",
+      "noActiveProducer": "BS0.10 retired all four legacy-path producers on 2026-07-31. Evidence: operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md.",
+      "noActiveConsumer": "Brain source scan: compatibility-read only; writePolicy is forbidden.",
+      "provenanceProof": "Path origin documented in operations/specs/infinite-brain-path-registry.json (pathId=capture-failed, normativeSource mind/system/folder-contract.md); historical transition recorded in BS0.10 and B1.0 reports.",
+      "rollbackProof": "writePolicy is forbidden; no active writes exist to roll back. Rollback surface is zero by policy.",
+      "approvalProof": "Non-canonical status established by BS0.6 canonical path registry (2026-07-14); migration closure confirmed by B1.0a guarded live completion (2026-07-22).",
+      "authorityProof": "Authority is fully resolved: canonicalReplacement is inbox/failed/ (live-definition-verified); normativeSource is mind/system/folder-contract.md; no scoped exceptions or unresolved claims.",
+      "prerequisiteEvidence": {
+        "cross-repository-conformance": "B1.7 cross-repo contract check passed 2026-07-30. Evidence: operations/reports/b1-7-cross-repo-contract-2026-07-30.md.",
+        "B1.0a-live-failure-routing-verification": "B1.0a guarded live completion (2026-07-22): exact canonical readback confirmed inbox/failed/ failure-routing; candidateUpdate=1 readback=2. Evidence: operations/reports/b1-0a-guarded-live-completion-2026-07-22.md."
+      },
+      "missingApproval": "approved-folder-cleanup prerequisite has no existing repository artifact explicitly authorizing folder deletion or cleanup. No artifact cited."
+    },
+    "live-root": {
+      "noActiveProducer": "Brain source scan: no write consumer; canonicalReplacement is projects/.",
+      "noActiveConsumer": "execution-plans.ts blocked prefix check; writer-audit-log entries all rejected (null outcomes).",
+      "provenanceProof": "Path origin documented in operations/specs/infinite-brain-path-registry.json (pathId=live-root, normativeSource mind/system/folder-contract.md); compatibility status recorded in BS0.6.",
+      "rollbackProof": "writePolicy is forbidden; no active writes exist to roll back. Rollback surface is zero by policy.",
+      "approvalProof": "Compatibility status established by BS0.6 canonical path registry (2026-07-14). canonicalReplacement is projects/.",
+      "authorityProof": "Authority is fully resolved: canonicalReplacement is projects/; no scoped exceptions, no unresolved authority claims.",
+      "prerequisiteEvidence": {
+        "cross-repository-conformance": "B1.7 cross-repo contract check passed 2026-07-30. Evidence: operations/reports/b1-7-cross-repo-contract-2026-07-30.md."
+      },
+      "missingApproval": "approved-folder-cleanup prerequisite has no existing repository artifact explicitly authorizing folder deletion or cleanup. No artifact cited."
+    },
+    "sources-root": {
+      "ambiguousConsumer": "vo-studio-fixtures.ts references /sources/ as static fixture audio paths; independence from Mind directory not yet formally verified.",
+      "pendingCleanupTask": "Verify fixture audio paths are non-Mind directory references before proceeding."
+    },
+    "router-root": {
+      "ambiguousConsumer": "execution-plans.ts and api.ts reference router/current.md as a compatibility target alongside canonical system/agent-context/current.md.",
+      "pendingCleanupTask": "Remove router-root compatibility references from execution-plans.ts and api.ts as a separate Brain cleanup task."
+    },
+    "archive-root": {
+      "noActiveProducer": "Brain source scan: no active write consumer.",
+      "noActiveConsumer": "execution-plans.ts blocked prefix; writePolicy is forbidden.",
+      "provenanceProof": "Path origin documented in operations/specs/infinite-brain-path-registry.json (pathId=archive-root, normativeSource mind/system/folder-contract.md); historical status recorded in BS0.6.",
+      "rollbackProof": "writePolicy is forbidden; no active writes exist to roll back. Rollback surface is zero by policy.",
+      "approvalProof": "Historical status established by BS0.6 canonical path registry (2026-07-14). canonicalReplacement is history/.",
+      "authorityProof": "Authority is fully resolved: canonicalReplacement is history/; no scoped exceptions, no unresolved authority claims.",
+      "prerequisiteEvidence": {
+        "cross-repository-conformance": "B1.7 cross-repo contract check passed 2026-07-30. Evidence: operations/reports/b1-7-cross-repo-contract-2026-07-30.md."
+      },
+      "missingApproval": "approved-folder-cleanup prerequisite has no existing repository artifact explicitly authorizing folder deletion or cleanup. No artifact cited."
+    },
+    "numbered-roots": {
+      "noActiveProducer": "BS0.10 retired all four producers targeting 0x-*/ roots on 2026-07-31. Evidence: operations/reports/bs0-10-legacy-producer-migration-2026-07-31.md.",
+      "noActiveConsumer": "execution-plans.ts explicitly blocks 01-inbox/ through 08-archive/ prefixes; writePolicy is forbidden.",
+      "provenanceProof": "Path pattern origin documented in operations/specs/infinite-brain-path-registry.json (pathId=numbered-roots, pattern 0[1-9]-*/, normativeSource mind/system/folder-contract.md); retirement recorded in BS0.10.",
+      "rollbackProof": "writePolicy is forbidden; BS0.10 retirement guards are in place. Rollback surface is zero; any future content is blocked by execution-plans.ts prefix guards.",
+      "approvalProof": "Historical status established by BS0.6 canonical path registry (2026-07-14); BS0.10 producer retirement completed 2026-07-31.",
+      "authorityProof": "Authority is fully resolved: no canonicalReplacement required (retired numbered roots have no single canonical replacement); no scoped exceptions, no unresolved claims.",
+      "prerequisiteEvidence": {
+        "cross-repository-conformance": "B1.7 cross-repo contract check passed 2026-07-30. Evidence: operations/reports/b1-7-cross-repo-contract-2026-07-30.md."
+      },
+      "missingApproval": "approved-folder-cleanup prerequisite has no existing repository artifact explicitly authorizing folder deletion or cleanup. No artifact cited."
+    },
+    "wiki-root": {
+      "activeConsumer": "wiki-health.ts actively reads wiki/ for health checks; no retirement plan in place.",
+      "unresolvedAuthority": "Scoped exceptions (prochat-brand-exception, prochat-playbooks-exception, prochat-youtube-exception, personal-identity-exception) retain compatibility-authoritative status; scoped-exception-resolution prerequisite unmet."
+    },
+    "wiki-log": {
+      "activeConsumer": "mind-contract.ts reviewSurfaces includes wiki/log.md; maintenance-preview tests depend on it.",
+      "missingProvenance": "proposal-ledger-migration prerequisite unmet; inbox/processed/ migration not complete."
+    },
+    "legacy-task-summary": {
+      "noActiveProducer": {
+        "status": "satisfied",
+        "evidence": "M1.4 resolved: tasks.md is retired non-authoritative; live/tasks.md is a derived summary with forbidden writePolicy.",
+        "appliesTo": ["live/tasks.md"]
+      },
+      "noActiveConsumer": {
+        "status": "satisfied",
+        "evidence": "validate-brain-document-consistency.mjs references it only in a stale-path exception check; not a write consumer.",
+        "appliesTo": ["live/tasks.md"]
+      },
+      "provenanceProof": {
+        "status": "satisfied",
+        "evidence": "Path origin documented in operations/specs/infinite-brain-path-registry.json (pathId=legacy-task-summary, normativeSource mind/system/task-kanban-contract.md); compatibility status established at BS0.6.",
+        "appliesTo": ["live/tasks.md"]
+      },
+      "rollbackProof": {
+        "status": "unresolved",
+        "evidence": "No Brain artifact records the human-approved deletion rollback expectations required by operations/reports/bs0-19-deletion-readiness-prerequisite-decision-2026-07-16.md.",
+        "appliesTo": ["live/tasks.md"]
+      },
+      "approvalProof": {
+        "status": "unresolved",
+        "evidence": "M1.4 proves task-authority retirement, but no Brain artifact explicitly records human-approved deletion ownership for live/tasks.md.",
+        "appliesTo": ["live/tasks.md"]
+      },
+      "authorityProof": {
+        "status": "satisfied",
+        "evidence": "Task authority is resolved: canonicalReplacement is kanban.md and M1.4 retained it as the sole human task authority.",
+        "appliesTo": ["live/tasks.md"]
+      },
+      "prerequisiteEvidence": {
+        "M1.4-lossless-task-migration": {
+          "status": "satisfied",
+          "evidence": "M1.4 resolved 2026-07-31: kanban.md retained as sole human task authority; tasks.md and live/tasks.md retired and non-authoritative. Confirmed in operations/runbooks/infinite-brain-roadmap-status.md.",
+          "appliesTo": ["live/tasks.md"]
+        },
+        "cross-repository-conformance": {
+          "status": "satisfied",
+          "evidence": "B1.7 cross-repo contract check passed 2026-07-30. Evidence: operations/reports/b1-7-cross-repo-contract-2026-07-30.md.",
+          "appliesTo": "global"
+        }
+      },
+      "missingRollback": "Human-approved deletion rollback expectations for live/tasks.md are not recorded in a Brain artifact.",
+      "missingApproval": "Human-approved deletion ownership for live/tasks.md is not recorded; retirement and non-authoritative status are not deletion approval."
+    },
+    "prochat-brand-exception": {
+      "unresolvedAuthority": "Scoped compatibility-authoritative status requires a Mind-authority-decision before deletion; no replacement is asserted.",
+      "missingApproval": "Deletion prerequisite Mind-authority-decision is not recorded."
+    },
+    "prochat-playbooks-exception": {
+      "unresolvedAuthority": "Scoped compatibility-authoritative status requires a Mind-authority-decision before deletion.",
+      "missingApproval": "Deletion prerequisite Mind-authority-decision is not recorded."
+    },
+    "prochat-youtube-exception": {
+      "unresolvedAuthority": "Scoped compatibility-authoritative status requires a Mind-authority-decision before deletion.",
+      "missingApproval": "Deletion prerequisite Mind-authority-decision is not recorded."
+    },
+    "personal-identity-exception": {
+      "unresolvedAuthority": "Scoped personal-identity compatibility authority requires a Mind-authority-decision before deletion.",
+      "missingApproval": "Deletion prerequisite Mind-authority-decision is not recorded."
+    },
+    "graphify-operational-output": {
+      "noActiveProducer": "Graphify structural indexing is frozen-pending-migration per operations/specs/graphify-transition-governance.json (effectiveDate 2026-07-29). Scheduler gate at tools/scripts/office-nightly-scheduler.sh:529 emits 'skipping job=graphify-nightly reason=bs0-15-pending-containment'. The .graphify-out/ directory does not exist on disk in the Brain root.",
+      "noActiveConsumer": "Path .graphify-out/ does not exist on disk in the Brain root and is not referenced by any active production code.",
+      "provenanceProof": "Path registered in operations/specs/infinite-brain-path-registry.json (pathId=graphify-operational-output, type=generated-output, lifecycleState=compatibility, normativeSource mind/system/generated-output-policy.md). Mind generated-output-policy.md classifies .graphify-out/ as a compatibility root (non-canonical); canonical future root is runtime/local/graphify/.",
+      "rollbackProof": "Path does not exist on disk in the Brain root; no content to delete or roll back. Generator is quiesced and cannot produce new output without a separately-approved task.",
+      "approvalProof": "Non-authoritative classification established by BS0.15 (2026-07-14). Brain-root .graphify-out/ absence confirmed during this evaluation.",
+      "authorityProof": "Partial: normative source (mind/system/generated-output-policy.md) classifies .graphify-out/ as compatibility root. However, the profile catalog's operationalOutputRoot (runtime/local/graphify/) differs from this registry literal. The graphify-profile-conformance prerequisite cannot be satisfied for .graphify-out/ by the current profile catalog until the relationship is explicitly documented. Authority over this path's deletion scope is unresolved pending cross-repository absence verification.",
+      "missingApproval": "graphify-profile-conformance and retention-policy prerequisites cannot be satisfied by the current profile catalog because the catalog governs runtime/local/graphify/... output roots, which explicitly exclude both .graphify-out/ and graphify-out/ from the corpus. The profile validator passes for its declared runtime/local/graphify/ roots — that catalog pass does not extend to the .graphify-out/ registry literal. No deletion approval exists for .graphify-out/ across all repositories where it may exist. A Brain-root absence assertion does not constitute cross-repository absence proof.",
+      "prerequisiteEvidence": {
+        "graphify-profile-conformance": {
+          "status": "unresolved",
+          "evidence": "validate-graphify-operational-profiles.mjs passes (catalog=pass, profiles=2) for runtime/local/graphify/brain-architecture and runtime/local/graphify/mind-knowledge. Both profiles explicitly EXCLUDE .graphify-out/ from their corpus. The validator governs the runtime/local/graphify/ output root — it does not validate conformance for .graphify-out/. No profile declares .graphify-out/ as its operationalOutputRoot. The relationship between the profile catalog and the .graphify-out/ compatibility root is not modeled in the current catalog.",
+          "appliesTo": ["runtime/local/graphify/brain-architecture", "runtime/local/graphify/mind-knowledge"]
+        },
+        "retention-policy": {
+          "status": "unresolved",
+          "evidence": "operations/specs/graphify-operational-profiles.json declares maxRuns=7, maxAgeDays=14 per profile. These retention limits apply to runtime/local/graphify/ output roots. Both profiles explicitly exclude .graphify-out/ from their corpus. No retention policy currently governs the .graphify-out/ compatibility root. The profile retention policy cannot be cited as applicable to .graphify-out/ without an explicit declared scope mapping. graphify-transition-governance.json governs deletion prohibition for graphify-out/ but does not address .graphify-out/ retention policy in the same structured way.",
+          "appliesTo": ["runtime/local/graphify/brain-architecture", "runtime/local/graphify/mind-knowledge"]
+        }
+      }
+    },
+    "graphify-compatibility-output": {
+      "noActiveProducer": "Graphify structural indexing is frozen-pending-migration (governance 2026-07-29). Scheduler gate at tools/scripts/office-nightly-scheduler.sh:529 emits 'skipping job=graphify-nightly reason=bs0-15-pending-containment'. No active generator targets this path.",
+      "noActiveConsumer": "No active consumer verified; generated-read only. Stale artifacts present (built 2026-07-14 from c2350d59) and checksums retained in operations/specs/codebase-memory-mcp-canary-manifest-2026-07-29.json.",
+      "provenanceProof": "Path origin documented in operations/specs/infinite-brain-path-registry.json (pathId=graphify-compatibility-output, canonicalReplacement .graphify-out/, normativeSource mind/system/folder-contract.md). Mind folder-contract.md row: 'graphify-out/ and .graphify-out/ references → runtime/local/graphify/; compatibility roots are non-authoritative and blocked for manual writes.' BS0.15 containment report. Stale artifacts verified non-authoritative by B8.4R freeze baseline (2026-07-29).",
+      "rollbackProof": "No active generator targets this path; generated output at this path is non-authoritative and non-normative. Stale artifacts checksummed and retained per governance. Deletion reversible by re-running contained Graphify runner under a separately-approved task.",
+      "approvalProof": "Compatibility status and generator supersession established by BS0.15 Graphify containment (2026-07-14). Evidence: operations/reports/bs0-15-graphify-containment-capacity-2026-07-14.md.",
+      "authorityProof": "Normative source (mind/system/folder-contract.md) classifies graphify-out/ as a compatibility root. canonical future root is runtime/local/graphify/. However, graphify-transition-governance.json explicitly prohibits deletion until the retention gate is cleared.",
+      "missingApproval": "graphify-transition-governance.json (effectiveDate 2026-07-29) sets deletion state to 'prohibited-before-retention-gate'. Three uncleared conditions are required: (1) approved Workbench CBM adapter deployment verified stable for at least seven days; (2) Mind semantic synthesis value assessment documented; (3) explicit Brain operations approval for deletion. None of these conditions is satisfied. Deletion of graphify-out/ is explicitly prohibited by governance until all three conditions are cleared.",
+      "prerequisiteEvidence": {
+        "graphify-profile-conformance": {
+          "status": "unresolved",
+          "evidence": "validate-graphify-operational-profiles.mjs passes (catalog=pass, profiles=2) for runtime/local/graphify/brain-architecture and runtime/local/graphify/mind-knowledge. Both profiles explicitly EXCLUDE graphify-out/ from their corpus. The validator governs the runtime/local/graphify/ output root — it does not validate conformance for the graphify-out/ compatibility root. No profile declares graphify-out/ as its operationalOutputRoot.",
+          "appliesTo": ["runtime/local/graphify/brain-architecture", "runtime/local/graphify/mind-knowledge"]
+        },
+        "retention-policy": {
+          "status": "unmet",
+          "evidence": "The profile-declared retention policy (maxRuns=7, maxAgeDays=14) applies to runtime/local/graphify/ output roots only. graphify-out/ is explicitly excluded from the corpus of both profiles. No applicable retention policy governs the graphify-out/ compatibility root. Furthermore, graphify-transition-governance.json explicitly prohibits deletion of graphify-out/ in any repo until the retention gate is cleared. A policy that explicitly prohibits deletion is evidence of a blocker, not evidence of clearance.",
+          "appliesTo": ["runtime/local/graphify/brain-architecture", "runtime/local/graphify/mind-knowledge"]
+        }
+      }
+    },
+    "graphify-planned-output": {
+      "noActiveProducer": "Future-target with forbidden writePolicy; not a legacy path.",
+      "noActiveConsumer": "No active consumer; future-only readPolicy."
+    },
+    "n8n-inbox-override-name": {
+      "activeConsumer": "MIND_INBOX_PATH override expression is deployed in the live n8n workflow (confirmed B1.0a, 2026-07-22); the live workflow actively references this environment-variable name. Marking as active deployed reference pending B1.0a-live-routing-verification deletion-gate clearance.",
+      "_note": "Registry type is external-integration, lifecycleState active. The deployed expression constitutes an active reference. noActiveConsumer cannot be truthfully claimed while the deployed workflow references this name."
+    },
+    "n8n-failed-override-name": {
+      "activeConsumer": "MIND_FAILED_PATH override expression is deployed in the live n8n workflow (confirmed B1.0a, 2026-07-22); the live workflow actively references this environment-variable name. Marking as active deployed reference pending B1.0a-live-failure-routing-verification deletion-gate clearance.",
+      "_note": "Registry type is external-integration, lifecycleState active. The deployed expression constitutes an active reference. noActiveConsumer cannot be truthfully claimed while the deployed workflow references this name."
+    },
+    "prochat-os-strategy-missing": {
+      "unresolvedAuthority": "normativeSourceStatus is unresolved; no replacement is invented.",
+      "missingApproval": "Deletion prerequisite Mind-authority-decision is not recorded."
+    },
+    "tasks-md-future": {
+      "fullyMigrated": "M1.4 resolved: explicitly retired and non-authoritative per task-kanban-contract.md; writePolicy is forbidden.",
+      "noActiveProducer": "No producer targets tasks.md; future-target with forbidden writePolicy.",
+      "noActiveConsumer": "Conformance validator reads Mind state metadata only; not a write consumer."
+    },
+    "tasks-directory-future": {
+      "fullyMigrated": "M1.4 resolved: no producer targets tasks/; future-target with forbidden writePolicy.",
+      "noActiveProducer": "BS0.10 retired all task-directory producers on 2026-07-31.",
+      "noActiveConsumer": "No active consumer verified."
+    }
+  }
+}
