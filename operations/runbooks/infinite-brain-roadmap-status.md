@@ -2,6 +2,7 @@
 
 **Status:** canonical live status
 **Last verified:** 2026-08-01
+**Audited:** 2026-08-02 — see `operations/reports/post-merge-mcp-runtime-truth-audit-2026-08-02.md` for current MCP state
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
