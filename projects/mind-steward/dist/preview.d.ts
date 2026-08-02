@@ -1,7 +1,8 @@
-export declare const MIND_PREVIEW_ALLOWED_TARGETS: readonly ["router/current.md", "capture/inbox/", "capture/failed/", "live/tasks.md", "live/projects.md", "live/decisions.md", "sources/index.md", "wiki/index.md"];
-export declare const MIND_PREVIEW_BLOCKED_PREFIXES: readonly [".git/", ".obsidian/", "node_modules/", "dist/", "build/", "coverage/", "runtime/", "logs/", "01-inbox/", "02-strategy/", "03-projects/", "04-tasks/", "05-areas/", "06-resources/", "07-templates/", "08-archive/", "archive/old/"];
-export declare const MIND_PREVIEW_BLOCKED_EXACT_PATHS: readonly [".env"];
-export declare const MIND_PREVIEW_BLOCKED_SUFFIXES: readonly [".env"];
+export declare const MIND_PREVIEW_CURRENT_CONTEXT_PATH: string;
+export declare const MIND_PREVIEW_ALLOWED_TARGETS: readonly string[];
+export declare const MIND_PREVIEW_BLOCKED_PREFIXES: readonly string[];
+export declare const MIND_PREVIEW_BLOCKED_EXACT_PATHS: readonly string[];
+export declare const MIND_PREVIEW_BLOCKED_SUFFIXES: readonly string[];
 export type MindPreviewOperation = 'patch' | 'overwrite' | 'create';
 export type MindPreviewActionKind = 'mind-steward-update-current-context';
 export interface MindPreviewApprovalRecord {

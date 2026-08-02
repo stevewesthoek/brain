@@ -9,6 +9,8 @@ export { MIND_PREVIEW_ALLOWED_TARGETS, MIND_PREVIEW_BLOCKED_EXACT_PATHS, MIND_PR
 export type { CreateMindWritePreviewInput, MindPreviewApprovalRecord, MindPreviewActionKind, MindPreviewOperation, MindPreviewPolicyResult, MindPreviewArtifact, MindPreviewArtifactSummary, MindWriteApplyInput, MindWriteApplyResult, MindWritePreview, ListMindPreviewArtifactsInput, ReadMindPreviewArtifactInput, WriteMindPreviewArtifactInput, WriteMindPreviewArtifactResult, } from './preview.js';
 export type { MindWikiHealthFinding, MindWikiHealthResult, MindWikiHealthSeverity, MindWikiHealthSummary, } from './wiki-health.js';
 export { createMindMaintenancePreviewQueueFromFindings, } from './maintenance-preview.js';
+export { classifyMindCaptureInbox, discoverMindFailedCaptures, resolveMindCaptureExecutionMode, } from './classifier.js';
+export type { MindCaptureClassification, MindCaptureClassificationResult, MindCaptureClassificationRun, MindCaptureExecutionMode, MindCaptureParaType, } from './classifier.js';
 export type { MindMaintenancePreviewAction, MindMaintenancePreviewActionKind, MindMaintenancePreviewQueue, MindMaintenancePreviewRisk, } from './maintenance-preview.js';
 export { writeMaintenancePreviewArtifact, listMaintenancePreviewArtifacts, readMaintenancePreviewArtifact, } from './preview-artifacts.js';
 export type { WriteMaintenancePreviewArtifactInput, ListMaintenancePreviewArtifactsInput, ReadMaintenancePreviewArtifactInput, MaintenancePreviewArtifactMeta, MaintenancePreviewArtifactListItem, } from './preview-artifacts.js';

@@ -1,8 +1,27 @@
-export declare const MIND_ROUTER_CONTRACT_FILES: readonly ["router/current.md", "router/map.md", "router/rules.md", "router/taxonomy.md", "router/maintenance.md", "router/mind-steward.md"];
-export declare const MIND_REQUIRED_PATHS: readonly ["HOME.md", "TODAY.md", "README.md", "AGENTS.md", "router/", "capture/inbox/", "capture/daily/", "capture/failed/", "live/", "wiki/", "sources/", "archive/"];
-export declare const MIND_LIVE_FILES: readonly ["live/dashboard.md", "live/tasks.md", "live/projects.md", "live/workflows.md", "live/decisions.md"];
-export declare const MIND_REQUIRED_INDEX_FILES: readonly ["capture/inbox/README.md", "capture/daily/README.md", "capture/failed/README.md", "wiki/index.md", "sources/index.md", "archive/index.md"];
-export declare const MIND_LEGACY_READ_ONLY_PATHS: readonly ["01-inbox/", "02-strategy/", "03-projects/", "04-tasks/", "05-areas/", "06-resources/", "07-templates/", "08-archive/"];
+import { MIND_CONTRACT } from '../../../operations/specs/infinite-brain-boundary-contracts.js';
+export declare const MIND_ROUTER_CONTRACT_FILES: string[];
+export declare const MIND_CURRENT_SUCCESS_PATH: string;
+export declare const MIND_CURRENT_FAILURE_PATH: string;
+export declare const MIND_REVIEW_SURFACES: readonly string[];
+export declare const MIND_HISTORICAL_ONLY_PATHS: readonly string[];
+export declare const MIND_AUTHORITY_LABELS: readonly string[];
+export { MIND_CONTRACT };
+export declare const MIND_REQUIRED_PATHS: string[];
+export declare const MIND_LIVE_FILES: string[];
+export declare const MIND_REQUIRED_INDEX_FILES: string[];
+export declare const MIND_LEGACY_READ_ONLY_PATHS: string[];
+export declare const MIND_ANTI_CLUTTER_LIMITS: {
+    readonly [x: string]: {
+        readonly maxLines: 150;
+        readonly maxAgeDays?: never;
+    } | {
+        readonly maxAgeDays: 7;
+        readonly maxLines?: never;
+    } | {
+        readonly maxAgeDays: 3;
+        readonly maxLines?: never;
+    };
+};
 export type MindRouterJobId = 'mind-compile-loop' | 'mind-memory-loop' | 'mind-hygiene-loop' | 'mind-drift-error-loop';
 export type MindRouterMode = 'dry-run' | 'write';
 export type MindPathKind = 'file' | 'directory';
@@ -15,7 +34,7 @@ export interface MindPathStatus {
     modifiedAt?: string;
     followedSymlink?: boolean;
 }
-export type MindSaveToMindTarget = 'legacy-01-inbox' | 'capture-inbox' | 'unknown';
+export type MindSaveToMindTarget = 'inbox-new' | 'unknown';
 export type MindFailureBufferStatus = 'not-configured' | 'folder-only' | 'test-verified' | 'real-error-verified' | 'unknown';
 export interface MindContractSnapshot {
     paths: MindPathStatus[];
@@ -43,29 +62,6 @@ export interface MindContractDryRunResult extends MindRouterJobResult {
     failureBufferStatus: MindFailureBufferStatus;
     failureBufferReadyForArchivePhase: boolean;
 }
-export declare const MIND_ANTI_CLUTTER_LIMITS: {
-    readonly 'router/current.md': {
-        readonly maxLines: 150;
-    };
-    readonly 'TODAY.md': {
-        readonly maxLines: 200;
-    };
-    readonly 'live/tasks.md': {
-        readonly maxLines: 300;
-    };
-    readonly 'live/projects.md': {
-        readonly maxLines: 250;
-    };
-    readonly 'wiki/*.md': {
-        readonly maxLines: 500;
-    };
-    readonly 'capture/inbox/': {
-        readonly maxAgeDays: 7;
-    };
-    readonly 'capture/failed/': {
-        readonly maxAgeDays: 3;
-    };
-};
 export type MindRouterPlanActionKind = 'compile-capture' | 'promote-memory' | 'summarize-file' | 'split-file' | 'archive-stale-capture' | 'review-failed-capture' | 'verify-contract';
 export interface MindRouterPlanAction {
     kind: MindRouterPlanActionKind;

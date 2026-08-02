@@ -1,40 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { describeMindPath, joinMindPath, resolveCanonicalMindPath } from './path-registry.js';
+import { MIND_PREVIEW_POLICY } from '../../../operations/specs/infinite-brain-boundary-contracts.js';
 
-export const MIND_PREVIEW_ALLOWED_TARGETS = [
-  'router/current.md',
-  'capture/inbox/',
-  'capture/failed/',
-  'live/tasks.md',
-  'live/projects.md',
-  'live/decisions.md',
-  'sources/index.md',
-  'wiki/index.md',
-] as const;
-
-export const MIND_PREVIEW_BLOCKED_PREFIXES = [
-  '.git/',
-  '.obsidian/',
-  'node_modules/',
-  'dist/',
-  'build/',
-  'coverage/',
-  'runtime/',
-  'logs/',
-  '01-inbox/',
-  '02-strategy/',
-  '03-projects/',
-  '04-tasks/',
-  '05-areas/',
-  '06-resources/',
-  '07-templates/',
-  '08-archive/',
-  'archive/old/',
-] as const;
-
-export const MIND_PREVIEW_BLOCKED_EXACT_PATHS = ['.env'] as const;
-export const MIND_PREVIEW_BLOCKED_SUFFIXES = ['.env'] as const;
+export const MIND_PREVIEW_CURRENT_CONTEXT_PATH = joinMindPath(resolveCanonicalMindPath('agent-context'), 'current.md');
+export const MIND_PREVIEW_ALLOWED_TARGETS = MIND_PREVIEW_POLICY.allowedTargets;
+export const MIND_PREVIEW_BLOCKED_PREFIXES = MIND_PREVIEW_POLICY.blockedPrefixes;
+export const MIND_PREVIEW_BLOCKED_EXACT_PATHS = MIND_PREVIEW_POLICY.blockedExactPaths;
+export const MIND_PREVIEW_BLOCKED_SUFFIXES = MIND_PREVIEW_POLICY.blockedSuffixes;
 
 export type MindPreviewOperation = 'patch' | 'overwrite' | 'create';
 export type MindPreviewActionKind = 'mind-steward-update-current-context';
@@ -183,11 +157,7 @@ export interface ReadMindPreviewArtifactInput {
   now?: Date;
 }
 
-const LINE_LIMITS: Partial<Record<string, number>> = {
-  'router/current.md': 150,
-  'live/tasks.md': 300,
-  'live/projects.md': 250,
-};
+const LINE_LIMITS: Partial<Record<string, number>> = { [MIND_PREVIEW_CURRENT_CONTEXT_PATH]: 150 };
 
 const PREVIEW_RUNTIME_ROOT = path.join('runtime', 'local', 'mind-steward', 'previews');
 const PREVIEW_RUNTIME_DISALLOWED_SEGMENTS = ['..', '.env', '.git', 'node_modules', 'dist', 'build', 'mind'];
@@ -209,11 +179,16 @@ export function evaluateMindPreviewPolicy(targetPath: string): MindPreviewPolicy
     normalized as (typeof MIND_PREVIEW_BLOCKED_EXACT_PATHS)[number],
   );
   const blockedBySuffix = MIND_PREVIEW_BLOCKED_SUFFIXES.some((suffix) => normalized.endsWith(`/${suffix}`));
-  const blockedRoot = Boolean(blockedByPrefix || blockedByExact || blockedBySuffix);
+  const registryEntry = !normalized.startsWith('/') && !normalized.includes('..') ? describeMindPath(normalized) : null;
+  const blockedByRegistry = Boolean(registryEntry && !registryEntry.activeDefaultAllowed);
+  const blockedByUnknown = !normalized.startsWith('/') && !normalized.includes('..') && registryEntry === null;
+  const blockedRoot = Boolean(blockedByPrefix || blockedByExact || blockedBySuffix || blockedByRegistry || blockedByUnknown);
 
   if (blockedByPrefix) reasons.push(`Target path is blocked by prefix ${blockedByPrefix}.`);
   if (blockedByExact) reasons.push(`Target path is blocked by exact path ${normalized}.`);
   if (blockedBySuffix) reasons.push('Target path is blocked because env files are not allowed.');
+  if (blockedByRegistry) reasons.push(`Target path is registry-classified as ${registryEntry?.type} and cannot be an active write default.`);
+  if (blockedByUnknown) reasons.push('Target path is not registered and fails closed.');
 
   const allowedRoot = MIND_PREVIEW_ALLOWED_TARGETS.some((allowedPath) => {
     if (allowedPath.endsWith('/')) return normalized.startsWith(allowedPath);
@@ -280,16 +255,16 @@ export function applyApprovedMindWritePreview(
     reasons.push('Exact action kind mind-steward-update-current-context is required.');
   }
 
-  if (preview.targetPath !== 'router/current.md') {
-    reasons.push('Target path must be exactly router/current.md.');
+  if (preview.targetPath !== MIND_PREVIEW_CURRENT_CONTEXT_PATH) {
+    reasons.push(`Target path must be exactly ${MIND_PREVIEW_CURRENT_CONTEXT_PATH}.`);
   }
 
   if (!preview.allowedRoot || preview.blockedRoot) {
     reasons.push(`Preview target ${preview.targetPath} is not an allowed unblocked Mind root.`);
   }
 
-  if (preview.targetPath !== 'router/current.md') {
-    reasons.push('Preview target path must be router/current.md.');
+  if (preview.targetPath !== MIND_PREVIEW_CURRENT_CONTEXT_PATH) {
+    reasons.push(`Preview target path must be ${MIND_PREVIEW_CURRENT_CONTEXT_PATH}.`);
   }
 
   for (const reason of preview.policyReasons) {
@@ -302,11 +277,11 @@ export function applyApprovedMindWritePreview(
   }
 
   if (preview.maxLines !== 150) {
-    reasons.push('router/current.md must use the 150 line limit.');
+    reasons.push(`${MIND_PREVIEW_CURRENT_CONTEXT_PATH} must use the 150 line limit.`);
   }
 
   if (preview.lineCountAfter > 150) {
-    reasons.push('router/current.md content exceeds the 150 line limit.');
+    reasons.push(`${MIND_PREVIEW_CURRENT_CONTEXT_PATH} content exceeds the 150 line limit.`);
   }
 
   if (containsLiveLookingSecret(preview.unifiedDiff) || containsLiveLookingSecret(preview.newHash)) {
@@ -453,7 +428,7 @@ function createSimpleUnifiedDiff(path: string, oldContent: string, newContent: s
 }
 
 function containsLiveLookingSecret(content: string): boolean {
-  const secretPrefixes = ['sk-', 'gh' + 'p_', 'AI' + 'za'];
+  const secretPrefixes = MIND_PREVIEW_POLICY.secretPrefixes;
   const privateKeyHeader = ['-----BEGIN', 'PRIVATE KEY-----'].join(' ');
 
   if (content.includes(privateKeyHeader)) return true;

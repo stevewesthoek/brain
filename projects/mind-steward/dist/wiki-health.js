@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-const DEFAULT_REQUIRED_FILES = ['wiki/index.md', 'wiki/log.md', 'sources/index.md'];
+import { describeMindPath, resolveCanonicalMindPath } from './path-registry.js';
+const DEFAULT_REQUIRED_FILES = ['wiki/log.md'];
+const INBOX_NEW = resolveCanonicalMindPath('inbox-new');
+const INBOX_FAILED = resolveCanonicalMindPath('inbox-failed');
 const DEFAULT_WIKI_LIMIT = 500;
 const DEFAULT_CAPTURE_INBOX_MAX_AGE_DAYS = 7;
 const DEFAULT_FAILED_CAPTURE_MAX_AGE_DAYS = 3;
@@ -12,47 +15,21 @@ export function createMindWikiHealthResultFromRoot(rootPath, now = new Date()) {
     }
     const checkedPaths = [...DEFAULT_REQUIRED_FILES];
     const findings = [];
-    const visitedWikiFiles = listMarkdownFiles(path.join(normalizedRoot, 'wiki'));
     for (const required of DEFAULT_REQUIRED_FILES) {
         if (!exists(normalizedRoot, required)) {
             findings.push(createFinding('missing-required-file', 'error', required, `Missing required wiki contract file: ${required}`, `Create ${required} with the required Mind OS contract content.`));
         }
     }
-    if (exists(normalizedRoot, 'sources/index.md')) {
-        const contents = readText(normalizedRoot, 'sources/index.md').trim();
-        if (contents.length === 0) {
-            findings.push(createFinding('empty-sources-index', 'error', 'sources/index.md', 'sources/index.md exists but is empty.', 'Add a minimal source catalog so compiled pages can trace back to sources.'));
-        }
-    }
-    if (exists(normalizedRoot, 'wiki/index.md')) {
-        const indexContents = readText(normalizedRoot, 'wiki/index.md');
-        const knownIndexLinks = extractWikiLinks(indexContents).map(normalizeWikiLink);
-        for (const filePath of visitedWikiFiles) {
-            const relative = path.relative(normalizedRoot, filePath).replace(/\\/g, '/');
-            if (relative === 'wiki/index.md' || relative === 'wiki/log.md')
-                continue;
-            const contents = fs.readFileSync(filePath, 'utf8');
-            if (lineCount(contents) > DEFAULT_WIKI_LIMIT) {
-                findings.push(createFinding('oversized-wiki-page', 'warning', relative, `${relative} exceeds the wiki target line limit of ${DEFAULT_WIKI_LIMIT}.`, 'Split the page or move subtopics into linked pages.'));
-            }
-            if (!containsSourceTrace(contents)) {
-                findings.push(createFinding('missing-source-trace', 'warning', relative, `${relative} does not contain an obvious source trace marker.`, 'Add a brief source or capture link when the page is compiled from evidence.'));
-            }
-            if (!isReferencedByIndex(relative, knownIndexLinks)) {
-                findings.push(createFinding('orphan-wiki-page', 'warning', relative, `${relative} is not referenced from wiki/index.md.`, 'Add the page to wiki/index.md if it is meant to be discoverable.'));
-            }
-        }
-    }
     const staleCaptureCutoff = now.getTime() - DEFAULT_CAPTURE_INBOX_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
     const failedCaptureCutoff = now.getTime() - DEFAULT_FAILED_CAPTURE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
-    for (const captureFile of listAllFiles(path.join(normalizedRoot, 'capture', 'inbox'))) {
+    for (const captureFile of listAllFiles(path.join(normalizedRoot, INBOX_NEW))) {
         const relative = path.relative(normalizedRoot, captureFile).replace(/\\/g, '/');
         const modifiedAt = fs.statSync(captureFile).mtime.getTime();
         if (modifiedAt < staleCaptureCutoff) {
             findings.push(createFinding('stale-capture-inbox', 'warning', relative, `${relative} is older than ${DEFAULT_CAPTURE_INBOX_MAX_AGE_DAYS} days.`, 'Review, route, or archive the capture.'));
         }
     }
-    for (const failedFile of listAllFiles(path.join(normalizedRoot, 'capture', 'failed'))) {
+    for (const failedFile of listAllFiles(path.join(normalizedRoot, INBOX_FAILED))) {
         const relative = path.relative(normalizedRoot, failedFile).replace(/\\/g, '/');
         const modifiedAt = fs.statSync(failedFile).mtime.getTime();
         if (modifiedAt < failedCaptureCutoff) {

@@ -6,4 +6,5 @@ export { createMindStewardDryRunReport } from './report.js';
 export { createMindWikiHealthResultFromRoot } from './wiki-health.js';
 export { MIND_PREVIEW_ALLOWED_TARGETS, MIND_PREVIEW_BLOCKED_EXACT_PATHS, MIND_PREVIEW_BLOCKED_PREFIXES, MIND_PREVIEW_BLOCKED_SUFFIXES, applyApprovedMindWritePreview, createMindWritePreview, createMindPreviewArtifact, evaluateMindPreviewPolicy, listMindPreviewArtifacts, readMindPreviewArtifact, writeMindPreviewArtifact, } from './preview.js';
 export { createMindMaintenancePreviewQueueFromFindings, } from './maintenance-preview.js';
+export { classifyMindCaptureInbox, discoverMindFailedCaptures, resolveMindCaptureExecutionMode, } from './classifier.js';
 export { writeMaintenancePreviewArtifact, listMaintenancePreviewArtifacts, readMaintenancePreviewArtifact, } from './preview-artifacts.js';

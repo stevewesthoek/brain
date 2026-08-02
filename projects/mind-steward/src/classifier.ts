@@ -30,10 +30,15 @@ export type MindCaptureClassificationResult = {
   classification?: MindCaptureClassification;
 };
 
+export type MindCaptureExecutionMode = 'dry-run' | 'apply';
+
 export type MindCaptureClassificationRun = {
   ok: boolean;
   mindRoot: string;
   selectorUrl: string;
+  mode: MindCaptureExecutionMode;
+  writesToMind: false;
+  executableActions: false;
   processed: number;
   classified: number;
   skipped: number;
@@ -69,11 +74,16 @@ export async function classifyMindCaptureInbox(input: {
   mindRoot: string;
   selectorUrl?: string;
   limit?: number;
+  mode?: MindCaptureExecutionMode;
   dryRun?: boolean;
 }): Promise<MindCaptureClassificationRun> {
+  const mode = resolveMindCaptureExecutionMode(input);
+  if (mode === 'apply') {
+    throw new Error('apply_disabled_pending_approval_integration');
+  }
   const mindRoot = path.resolve(input.mindRoot);
   const selectorUrl = input.selectorUrl ?? process.env.AI_SELECTOR_URL ?? DEFAULT_SELECTOR_URL;
-  const inboxDir = path.join(mindRoot, 'capture/inbox');
+  const inboxDir = path.join(mindRoot, 'inbox/new');
   const files = listCaptureFiles(inboxDir).slice(0, input.limit ?? Number.POSITIVE_INFINITY);
   const results: MindCaptureClassificationResult[] = [];
 
@@ -94,10 +104,6 @@ export async function classifyMindCaptureInbox(input: {
 
       const route = await selectLocalModel(selectorUrl, estimateTokens(content));
       const classification = await classifyWithLocalModel(route, content, parsed);
-      const updated = renderClassifiedMarkdown(content, parsed, classification, route);
-      if (!input.dryRun) {
-        fs.writeFileSync(file, updated);
-      }
       classified += 1;
       results.push({ file: relativePath, status: 'classified', classification });
     } catch (error) {
@@ -114,6 +120,9 @@ export async function classifyMindCaptureInbox(input: {
     ok: failed === 0,
     mindRoot,
     selectorUrl,
+    mode,
+    writesToMind: false,
+    executableActions: false,
     processed: files.length,
     classified,
     skipped,
@@ -122,13 +131,48 @@ export async function classifyMindCaptureInbox(input: {
   };
 }
 
+export function resolveMindCaptureExecutionMode(input: {
+  mode?: string;
+  dryRun?: boolean;
+}): MindCaptureExecutionMode {
+  const mode = input.mode ?? 'dry-run';
+  if (mode !== 'dry-run' && mode !== 'apply') {
+    throw new Error("mode must be exactly 'dry-run' or 'apply'");
+  }
+  if (mode === 'apply' && input.dryRun === true) {
+    throw new Error('conflicting execution mode arguments');
+  }
+  return mode;
+}
+
+export function discoverMindFailedCaptures(mindRoot: string, limit?: number): string[] {
+  const failedDir = path.join(path.resolve(mindRoot), 'inbox/failed');
+  if (!fs.existsSync(failedDir)) return [];
+  return fs.readdirSync(failedDir)
+    .filter((name) => name.endsWith('.md') && name !== 'README.md')
+    .sort()
+    .map((name) => path.join('inbox', 'failed', name))
+    .slice(0, limit ?? Number.POSITIVE_INFINITY);
+}
+
 function listCaptureFiles(inboxDir: string): string[] {
   if (!fs.existsSync(inboxDir)) return [];
+  const directoryStat = fs.lstatSync(inboxDir);
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error(`unsafe_capture_path: ${inboxDir}`);
+  }
   return fs
     .readdirSync(inboxDir)
     .filter((name) => name.endsWith('.md') && name !== 'README.md')
     .sort()
-    .map((name) => path.join(inboxDir, name));
+    .map((name) => {
+      const file = path.join(inboxDir, name);
+      const fileStat = fs.lstatSync(file);
+      if (!fileStat.isFile() || fileStat.isSymbolicLink()) {
+        throw new Error(`unsafe_capture_symlink: ${file}`);
+      }
+      return file;
+    });
 }
 
 async function selectLocalModel(selectorUrl: string, inputTokenCount: number): Promise<Required<Pick<SelectorResponse, 'provider_id' | 'model' | 'base_url'>> & { timeout_inference_sec: number }> {

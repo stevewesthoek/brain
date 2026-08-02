@@ -6,8 +6,14 @@ import type {
   MindRouterPlanAction,
 } from './contracts.js';
 import { MIND_ANTI_CLUTTER_LIMITS } from './contracts.js';
+import { joinMindPath, resolveCanonicalMindPath } from './path-registry.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const INBOX_NEW = resolveCanonicalMindPath('inbox-new');
+const INBOX_FAILED = resolveCanonicalMindPath('inbox-failed');
+const KNOWLEDGE = resolveCanonicalMindPath('knowledge');
+const PROJECTS = resolveCanonicalMindPath('projects');
+const AGENT_CURRENT = joinMindPath(resolveCanonicalMindPath('agent-context'), '00-current-context.md');
 
 export function createMindRouterLoopPlan(
   jobId: MindRouterJobId,
@@ -47,7 +53,7 @@ function createActions(
       return [
         {
           kind: 'verify-contract',
-          path: 'router/mind-steward.md',
+          path: AGENT_CURRENT,
           reason: 'Verify Mind OS folder contract, Save-to-Mind target, failure buffer, and Brain Core availability.',
           risk: 'low',
         },
@@ -62,7 +68,7 @@ function planCompileLoop(paths: MindPathStatus[], now: Date): MindRouterPlanActi
       kind: 'compile-capture' as const,
       path: pathStatus.path,
       reason: isOlderThan(pathStatus, now, 1)
-        ? 'Capture is ready for routing into live/wiki/sources/archive after review.'
+        ? 'Capture is ready for registry-governed routing after review.'
         : 'New capture is available for classification and routing.',
       targetPath: inferCompileTarget(pathStatus.path),
       risk: 'medium' as const,
@@ -75,25 +81,14 @@ function planMemoryLoop(paths: MindPathStatus[]): MindRouterPlanAction[] {
       return [];
     }
 
-    if (pathStatus.path === 'router/current.md' && exceedsLines(pathStatus, MIND_ANTI_CLUTTER_LIMITS['router/current.md'].maxLines)) {
+    if (pathStatus.path === AGENT_CURRENT && exceedsLines(pathStatus, MIND_ANTI_CLUTTER_LIMITS[AGENT_CURRENT]?.maxLines ?? 150)) {
       return [
         {
           kind: 'promote-memory',
           path: pathStatus.path,
-          reason: 'router/current.md is above the short-term memory line limit and should be summarized/promoted.',
-          targetPath: 'wiki/index.md',
+          reason: 'Current agent context is above the short-term memory line limit and should be summarized/promoted.',
+          targetPath: KNOWLEDGE,
           risk: 'medium',
-        },
-      ];
-    }
-
-    if (pathStatus.path === 'TODAY.md' && exceedsLines(pathStatus, MIND_ANTI_CLUTTER_LIMITS['TODAY.md'].maxLines)) {
-      return [
-        {
-          kind: 'summarize-file',
-          path: pathStatus.path,
-          reason: 'TODAY.md is above the daily focus line limit and should be compacted.',
-          risk: 'low',
         },
       ];
     }
@@ -110,48 +105,21 @@ function planHygieneLoop(paths: MindPathStatus[], now: Date): MindRouterPlanActi
       return actions;
     }
 
-    if (pathStatus.path === 'live/tasks.md' && exceedsLines(pathStatus, MIND_ANTI_CLUTTER_LIMITS['live/tasks.md'].maxLines)) {
-      actions.push({
-        kind: 'summarize-file',
-        path: pathStatus.path,
-        reason: 'live/tasks.md is above the task surface line limit and should be compacted.',
-        risk: 'medium',
-      });
-    }
-
-    if (pathStatus.path === 'live/projects.md' && exceedsLines(pathStatus, MIND_ANTI_CLUTTER_LIMITS['live/projects.md'].maxLines)) {
-      actions.push({
-        kind: 'summarize-file',
-        path: pathStatus.path,
-        reason: 'live/projects.md is above the project surface line limit and should be compacted.',
-        risk: 'medium',
-      });
-    }
-
-    if (isWikiFile(pathStatus) && exceedsLines(pathStatus, MIND_ANTI_CLUTTER_LIMITS['wiki/*.md'].maxLines)) {
-      actions.push({
-        kind: 'split-file',
-        path: pathStatus.path,
-        reason: 'Wiki file is above the target line limit and should be split or summarized.',
-        risk: 'medium',
-      });
-    }
-
-    if (isCaptureInboxFile(pathStatus) && isOlderThan(pathStatus, now, MIND_ANTI_CLUTTER_LIMITS['capture/inbox/'].maxAgeDays)) {
+    if (isCaptureInboxFile(pathStatus) && isOlderThan(pathStatus, now, MIND_ANTI_CLUTTER_LIMITS[INBOX_NEW]?.maxAgeDays ?? 7)) {
       actions.push({
         kind: 'archive-stale-capture',
         path: pathStatus.path,
-        reason: 'capture/inbox item is older than the seven-day anti-clutter limit.',
-        targetPath: 'archive/old/',
+        reason: 'Canonical inbox item is older than the seven-day anti-clutter limit.',
+        targetPath: resolveCanonicalMindPath('history'),
         risk: 'high',
       });
     }
 
-    if (isFailedCaptureFile(pathStatus) && isOlderThan(pathStatus, now, MIND_ANTI_CLUTTER_LIMITS['capture/failed/'].maxAgeDays)) {
+    if (isFailedCaptureFile(pathStatus) && isOlderThan(pathStatus, now, MIND_ANTI_CLUTTER_LIMITS[INBOX_FAILED]?.maxAgeDays ?? 3)) {
       actions.push({
         kind: 'review-failed-capture',
         path: pathStatus.path,
-        reason: 'capture/failed item is older than the three-day review limit.',
+        reason: 'Canonical failed inbox item is older than the three-day review limit.',
         risk: 'medium',
       });
     }
@@ -194,23 +162,19 @@ function createWarnings(
     warnings.push(`${jobId} is blocked from execution: ${blockedBy.join(' ')}`);
   }
 
-  if (snapshot.saveToMindTarget !== 'capture-inbox') {
-    warnings.push('Save-to-Mind target is not verified as capture/inbox for this snapshot.');
+  if (snapshot.saveToMindTarget !== 'inbox-new') {
+    warnings.push('Save-to-Mind target is not verified as canonical inbox/new for this snapshot.');
   }
 
   return warnings;
 }
 
 function isCaptureInboxFile(pathStatus: MindPathStatus): boolean {
-  return pathStatus.kind === 'file' && pathStatus.path.startsWith('capture/inbox/') && pathStatus.path.endsWith('.md');
+  return pathStatus.kind === 'file' && pathStatus.path.startsWith(INBOX_NEW) && pathStatus.path.endsWith('.md');
 }
 
 function isFailedCaptureFile(pathStatus: MindPathStatus): boolean {
-  return pathStatus.kind === 'file' && pathStatus.path.startsWith('capture/failed/') && pathStatus.path.endsWith('.md');
-}
-
-function isWikiFile(pathStatus: MindPathStatus): boolean {
-  return pathStatus.kind === 'file' && pathStatus.path.startsWith('wiki/') && pathStatus.path.endsWith('.md');
+  return pathStatus.kind === 'file' && pathStatus.path.startsWith(INBOX_FAILED) && pathStatus.path.endsWith('.md');
 }
 
 function exceedsLines(pathStatus: MindPathStatus, maxLines: number): boolean {
@@ -231,9 +195,7 @@ function isOlderThan(pathStatus: MindPathStatus, now: Date, days: number): boole
 }
 
 function inferCompileTarget(path: string): string {
-  if (path.includes('business')) return 'wiki/business.md';
-  if (path.includes('faith') || path.includes('bible')) return 'wiki/faith.md';
-  if (path.includes('task') || path.includes('todo')) return 'live/tasks.md';
-  if (path.includes('project')) return 'live/projects.md';
-  return 'wiki/index.md';
+  if (path.includes('faith') || path.includes('bible')) return resolveCanonicalMindPath('faith');
+  if (path.includes('project')) return PROJECTS;
+  return KNOWLEDGE;
 }

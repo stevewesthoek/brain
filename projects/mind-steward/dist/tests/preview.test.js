@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { applyApprovedMindWritePreview, createMindPreviewArtifact, createMindWritePreview, evaluateMindPreviewPolicy, listMindPreviewArtifacts, readMindPreviewArtifact, writeMindPreviewArtifact, } from '../preview.js';
+import { applyApprovedMindWritePreview, createMindPreviewArtifact, createMindWritePreview, evaluateMindPreviewPolicy, MIND_PREVIEW_CURRENT_CONTEXT_PATH, listMindPreviewArtifacts, readMindPreviewArtifact, writeMindPreviewArtifact, } from '../preview.js';
 const now = new Date('2026-05-17T12:00:00.000Z');
 test('preview policy allows the first proposed router current target', () => {
-    const result = evaluateMindPreviewPolicy('router/current.md');
-    assert.equal(result.targetPath, 'router/current.md');
+    const result = evaluateMindPreviewPolicy(MIND_PREVIEW_CURRENT_CONTEXT_PATH);
+    assert.equal(result.targetPath, MIND_PREVIEW_CURRENT_CONTEXT_PATH);
     assert.equal(result.allowedRoot, true);
     assert.equal(result.blockedRoot, false);
     assert.equal(result.reasons.includes('Target path is allowed for preview-only planning.'), true);
@@ -15,7 +15,7 @@ test('preview policy rejects legacy numbered folders even when markdown', () => 
     const result = evaluateMindPreviewPolicy('03-projects/example.md');
     assert.equal(result.allowedRoot, false);
     assert.equal(result.blockedRoot, true);
-    assert.equal(result.reasons.some((reason) => reason.includes('03-projects/')), true);
+    assert.equal(result.reasons.some((reason) => reason.includes('fails closed')), true);
 });
 test('preview policy rejects obsidian plugin/config paths', () => {
     const result = evaluateMindPreviewPolicy('.obsidian/plugins/example/main.js');
@@ -36,7 +36,7 @@ test('preview policy rejects traversal and absolute paths', () => {
 test('createMindWritePreview is non-writing and includes hashes and diff', () => {
     const preview = createMindWritePreview({
         actionKind: 'mind-steward-update-current-context',
-        targetPath: 'router/current.md',
+        targetPath: MIND_PREVIEW_CURRENT_CONTEXT_PATH,
         operation: 'overwrite',
         oldContent: '# Current\n\nOld context\n',
         newContent: '# Current\n\nNew context\n',
@@ -52,13 +52,13 @@ test('createMindWritePreview is non-writing and includes hashes and diff', () =>
     assert.equal(typeof preview.oldHash, 'string');
     assert.equal(typeof preview.newHash, 'string');
     assert.notEqual(preview.oldHash, preview.newHash);
-    assert.match(preview.unifiedDiff, /--- a\/router\/current\.md/);
+    assert.match(preview.unifiedDiff, /--- a\/system\/agent-context\/current\.md/);
     assert.match(preview.unifiedDiff, /\+New context/);
 });
 test('createMindWritePreview flags line-limit violations without writing', () => {
     const preview = createMindWritePreview({
         actionKind: 'mind-steward-update-current-context',
-        targetPath: 'router/current.md',
+        targetPath: MIND_PREVIEW_CURRENT_CONTEXT_PATH,
         operation: 'overwrite',
         oldContent: '# Current\n',
         newContent: Array.from({ length: 151 }, (_, index) => `Line ${index + 1}`).join('\n'),
@@ -72,7 +72,7 @@ test('createMindWritePreview flags line-limit violations without writing', () =>
 test('createMindWritePreview flags live-looking secret material without writing', () => {
     const preview = createMindWritePreview({
         actionKind: 'mind-steward-update-current-context',
-        targetPath: 'router/current.md',
+        targetPath: MIND_PREVIEW_CURRENT_CONTEXT_PATH,
         operation: 'overwrite',
         oldContent: '# Current\n',
         newContent: `# Current\n\n${'sk-'}${'x'.repeat(24)}\n`,
@@ -85,7 +85,7 @@ test('createMindWritePreview flags live-looking secret material without writing'
 test('applyApprovedMindWritePreview accepts the approved router current target', () => {
     const preview = createMindWritePreview({
         actionKind: 'mind-steward-update-current-context',
-        targetPath: 'router/current.md',
+        targetPath: MIND_PREVIEW_CURRENT_CONTEXT_PATH,
         operation: 'overwrite',
         oldContent: '# Current\n\nOld context\n',
         newContent: '# Current\n\nNew context\n',
@@ -103,13 +103,13 @@ test('applyApprovedMindWritePreview accepts the approved router current target',
         now,
     });
     assert.equal(result.applied, true);
-    assert.equal(result.targetPath, 'router/current.md');
+    assert.equal(result.targetPath, MIND_PREVIEW_CURRENT_CONTEXT_PATH);
     assert.equal(result.writesToMind, true);
     assert.equal(result.audit.event, 'applied');
     assert.equal(result.audit.kind, 'mind-steward-update-current-context');
-    assert.equal(result.audit.targetPath, 'router/current.md');
+    assert.equal(result.audit.targetPath, MIND_PREVIEW_CURRENT_CONTEXT_PATH);
     assert.equal(result.audit.status, 'ok');
-    assert.equal(result.rollback.targetPath, 'router/current.md');
+    assert.equal(result.rollback.targetPath, MIND_PREVIEW_CURRENT_CONTEXT_PATH);
     assert.equal(result.rollback.restoreContentHash, preview.oldHash);
     assert.equal(result.validation.accepted, true);
     assert.equal(result.validation.reasons.length, 0);

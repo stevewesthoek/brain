@@ -69,11 +69,14 @@ export {
 } from './maintenance-preview.js';
 export {
   classifyMindCaptureInbox,
+  discoverMindFailedCaptures,
+  resolveMindCaptureExecutionMode,
 } from './classifier.js';
 export type {
   MindCaptureClassification,
   MindCaptureClassificationResult,
   MindCaptureClassificationRun,
+  MindCaptureExecutionMode,
   MindCaptureParaType,
 } from './classifier.js';
 export type {

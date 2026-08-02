@@ -1,7 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyMindCaptureInbox } from '../classifier.js';
+import {
+  classifyMindCaptureInbox,
+  discoverMindFailedCaptures,
+  type MindCaptureExecutionMode,
+} from '../classifier.js';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
@@ -12,29 +16,30 @@ const mindRoot = args['mind-root'] || process.env.MIND_STEWARD_MIND_ROOT || path
 const selectorUrl = args['selector-url'] || process.env.AI_SELECTOR_URL || 'http://127.0.0.1:4890';
 const jsonOutput = args['output-json'] || path.resolve(RUNTIME_DIR, 'classify-latest.json');
 const mdOutput = args['output-md'] || path.resolve(RUNTIME_DIR, 'classify-latest.md');
-const limit = args.limit ? Number(args.limit) : undefined;
-const dryRun = args['dry-run'] === 'true';
+const mode = resolveCliMode(args);
 
 const startedAt = new Date().toISOString();
 const runInput: Parameters<typeof classifyMindCaptureInbox>[0] = {
   mindRoot,
   selectorUrl,
-  dryRun,
+  mode,
 };
-if (Number.isFinite(limit)) {
-  runInput.limit = limit;
+const parsedLimit = parseLimitArg(args.limit);
+if (parsedLimit !== undefined) {
+  runInput.limit = parsedLimit;
 }
 const run = await classifyMindCaptureInbox(runInput);
+const failedItems = discoverMindFailedCaptures(mindRoot);
 const endedAt = new Date().toISOString();
 
 const report = {
   job: 'mind-steward-classify-captures',
-  mode: dryRun ? 'dry-run' : 'apply-classification',
-  writesToMind: !dryRun,
-  executableActions: !dryRun,
   startedAt,
   endedAt,
   ...run,
+  executableActions: run.writesToMind,
+  failedQueueCount: failedItems.length,
+  failedItems,
 };
 type ClassificationCliReport = typeof report;
 
@@ -60,6 +65,10 @@ function renderMarkdown(report: ClassificationCliReport): string {
     `- Classified: ${report.classified}`,
     `- Skipped: ${report.skipped}`,
     `- Failed: ${report.failed}`,
+    `- Failed queue items: ${report.failedQueueCount}`,
+    '',
+    '## Failed Queue',
+    ...(report.failedItems.length > 0 ? report.failedItems.map((file) => `- ${file}`) : ['- none']),
     '',
     '## Results',
     ...report.results.map((result) => {
@@ -91,4 +100,37 @@ function parseArgs(argv: string[]): Record<string, string> {
     }
   }
   return result;
+}
+
+function resolveCliMode(args: Record<string, string>): MindCaptureExecutionMode {
+  const rawMode = args.mode;
+  const rawDryRun = args['dry-run'];
+
+  if (rawMode !== undefined && rawMode !== 'dry-run' && rawMode !== 'apply') {
+    throw new Error("--mode must be exactly 'dry-run' or 'apply'");
+  }
+  if (rawDryRun !== undefined && rawDryRun !== 'true' && rawDryRun !== 'false') {
+    throw new Error("--dry-run must be 'true' or 'false' when supplied");
+  }
+  if (
+    rawMode !== undefined
+    && rawDryRun !== undefined
+    && rawDryRun === 'true'
+    && rawMode !== 'dry-run'
+  ) {
+    throw new Error('--mode and --dry-run conflict; refusing to classify');
+  }
+
+  // The legacy boolean flag is intentionally never an apply switch.  Apply
+  // requires the explicit, separately documented --mode=apply contract.
+  return rawMode ?? 'dry-run';
+}
+
+function parseLimitArg(value?: string): number | undefined {
+  if (value === undefined) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error('--limit must be a finite number');
+  }
+  return parsed;
 }

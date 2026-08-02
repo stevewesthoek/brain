@@ -131,9 +131,9 @@ function createContractWarnings(input: {
     );
   }
 
-  if (input.saveToMindTarget !== 'capture-inbox') {
+  if (input.saveToMindTarget !== 'inbox-new') {
     warnings.push(
-      `Save-to-Mind target is not verified as capture/inbox/; current target: ${input.saveToMindTarget ?? 'unknown'}`,
+      `Save-to-Mind target is not verified as canonical inbox/new/; current target: ${input.saveToMindTarget ?? 'unknown'}`,
     );
   }
 

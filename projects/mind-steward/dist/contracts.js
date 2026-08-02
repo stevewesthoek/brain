@@ -1,56 +1,26 @@
+import { joinMindPath, loadMindPathRegistry, resolveCanonicalMindPath } from './path-registry.js';
+import { MIND_CONTRACT } from '../../../operations/specs/infinite-brain-boundary-contracts.js';
+const canonical = (pathId) => resolveCanonicalMindPath(pathId);
 export const MIND_ROUTER_CONTRACT_FILES = [
-    'router/current.md',
-    'router/map.md',
-    'router/rules.md',
-    'router/taxonomy.md',
-    'router/maintenance.md',
-    'router/mind-steward.md',
-];
+    'AGENTS.md', '00-start-here.md', '00-current-context.md', '00-memory-map.md',
+].map((file) => joinMindPath(canonical('agent-context'), file));
+export const MIND_CURRENT_SUCCESS_PATH = MIND_CONTRACT.currentSuccessPath;
+export const MIND_CURRENT_FAILURE_PATH = MIND_CONTRACT.currentFailurePath;
+export const MIND_REVIEW_SURFACES = MIND_CONTRACT.reviewSurfaces;
+export const MIND_HISTORICAL_ONLY_PATHS = MIND_CONTRACT.historicalOnlyPaths;
+export const MIND_AUTHORITY_LABELS = MIND_CONTRACT.authorityLabels;
+export { MIND_CONTRACT };
 export const MIND_REQUIRED_PATHS = [
-    'HOME.md',
-    'TODAY.md',
-    'README.md',
-    'AGENTS.md',
-    'router/',
-    'capture/inbox/',
-    'capture/daily/',
-    'capture/failed/',
-    'live/',
-    'wiki/',
-    'sources/',
-    'archive/',
-];
-export const MIND_LIVE_FILES = [
-    'live/dashboard.md',
-    'live/tasks.md',
-    'live/projects.md',
-    'live/workflows.md',
-    'live/decisions.md',
-];
-export const MIND_REQUIRED_INDEX_FILES = [
-    'capture/inbox/README.md',
-    'capture/daily/README.md',
-    'capture/failed/README.md',
-    'wiki/index.md',
-    'sources/index.md',
-    'archive/index.md',
-];
-export const MIND_LEGACY_READ_ONLY_PATHS = [
-    '01-inbox/',
-    '02-strategy/',
-    '03-projects/',
-    '04-tasks/',
-    '05-areas/',
-    '06-resources/',
-    '07-templates/',
-    '08-archive/',
-];
+    'inbox-new', 'inbox-failed', 'projects', 'organizations', 'repos', 'people',
+    'faith', 'knowledge', 'resources', 'history', 'agent-context', 'kanban-current-authority',
+].map(canonical);
+export const MIND_LIVE_FILES = [];
+export const MIND_REQUIRED_INDEX_FILES = [];
+export const MIND_LEGACY_READ_ONLY_PATHS = loadMindPathRegistry().entries
+    .filter((entry) => !entry.activeDefaultAllowed && ['compatibility-read', 'historical-read'].includes(entry.readPolicy))
+    .flatMap((entry) => entry.literal ? [entry.literal] : []);
 export const MIND_ANTI_CLUTTER_LIMITS = {
-    'router/current.md': { maxLines: 150 },
-    'TODAY.md': { maxLines: 200 },
-    'live/tasks.md': { maxLines: 300 },
-    'live/projects.md': { maxLines: 250 },
-    'wiki/*.md': { maxLines: 500 },
-    'capture/inbox/': { maxAgeDays: 7 },
-    'capture/failed/': { maxAgeDays: 3 },
+    [joinMindPath(canonical('agent-context'), '00-current-context.md')]: { maxLines: 150 },
+    [canonical('inbox-new')]: { maxAgeDays: 7 },
+    [canonical('inbox-failed')]: { maxAgeDays: 3 },
 };

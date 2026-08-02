@@ -5,11 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { createMindStewardDryRunReport } from '../report.js';
 import type { MindContractSnapshot } from '../contracts.js';
+import { joinMindPath, resolveCanonicalMindPath } from '../path-registry.js';
 
 function snapshot(paths: MindContractSnapshot['paths']): MindContractSnapshot {
   return {
     paths,
-    saveToMindTarget: 'capture-inbox',
+    saveToMindTarget: 'inbox-new',
     liveDeploymentVerified: true,
     failureBufferStatus: 'real-error-verified',
   };
@@ -34,9 +35,9 @@ test('mind-steward dry-run report computes counts and blockers', () => {
   try {
     const report = createMindStewardDryRunReport(
       snapshot([
-        { path: 'capture/inbox/a.md', kind: 'file', exists: true, modifiedAt: '2026-05-15T00:00:00.000Z' },
-        { path: 'capture/failed/b.md', kind: 'file', exists: true },
-        { path: 'router/current.md', kind: 'file', exists: true, lineCount: 151 },
+        { path: `${resolveCanonicalMindPath('inbox-new')}a.md`, kind: 'file', exists: true, modifiedAt: '2026-05-15T00:00:00.000Z' },
+        { path: `${resolveCanonicalMindPath('inbox-failed')}b.md`, kind: 'file', exists: true },
+        { path: joinMindPath(resolveCanonicalMindPath('agent-context'), '00-current-context.md'), kind: 'file', exists: true, lineCount: 151 },
       ]),
       new Date('2026-05-17T00:00:00.000Z'),
     );

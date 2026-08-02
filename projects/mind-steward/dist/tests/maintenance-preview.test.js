@@ -8,7 +8,7 @@ test('maintenance-preview: creates an empty queue for empty findings', () => {
     assert.strictEqual(queue.writesToMind, false);
     assert.strictEqual(queue.externalSideEffects, false);
 });
-test('maintenance-preview: maps missing wiki/log.md finding to low-risk create action', () => {
+test('maintenance-preview: keeps wiki/log.md as a read-only compatibility ledger', () => {
     const finding = {
         id: 'missing-required-file',
         severity: 'error',
@@ -20,11 +20,11 @@ test('maintenance-preview: maps missing wiki/log.md finding to low-risk create a
     const queue = createMindMaintenancePreviewQueueFromFindings([finding]);
     assert.strictEqual(queue.actions.length, 1);
     const action = queue.actions[0];
-    assert.strictEqual(action.kind, 'create-missing-wiki-log');
+    assert.strictEqual(action.kind, 'no-op-info');
     assert.strictEqual(action.targetPath, 'wiki/log.md');
     assert.strictEqual(action.risk, 'low');
-    assert.strictEqual(action.proposedOperation, 'create');
-    assert.strictEqual(action.requiresApproval, true);
+    assert.strictEqual(action.proposedOperation, 'review');
+    assert.strictEqual(action.requiresApproval, false);
     assert.strictEqual(action.writesToMind, false);
     assert.strictEqual(action.blockedBy.length, 0);
 });
@@ -32,8 +32,8 @@ test('maintenance-preview: maps stale failed capture to review action', () => {
     const finding = {
         id: 'stale-failed-capture',
         severity: 'warning',
-        path: 'capture/failed/2026-05-10-webhook-capture.md',
-        message: 'capture/failed/2026-05-10-webhook-capture.md is older than 3 days.',
+        path: 'inbox/failed/2026-05-10-webhook-capture.md',
+        message: 'inbox/failed/2026-05-10-webhook-capture.md is older than 3 days.',
         recommendation: 'Review whether to retry the capture, fix the root cause, or discard it.',
         writesToMind: false,
     };
@@ -49,8 +49,8 @@ test('maintenance-preview: maps missing source trace to patch preview action wit
     const finding = {
         id: 'missing-source-trace',
         severity: 'warning',
-        path: 'wiki/some-topic.md',
-        message: 'wiki/some-topic.md does not contain an obvious source trace marker.',
+        path: 'knowledge/some-topic.md',
+        message: 'knowledge/some-topic.md does not contain an obvious source trace marker.',
         recommendation: 'Add a brief source or capture link when the page is compiled from evidence.',
         writesToMind: false,
     };
@@ -221,7 +221,7 @@ test('maintenance-preview: counts actions by risk level correctly', () => {
         {
             id: 'stale-capture-inbox',
             severity: 'warning',
-            path: 'capture/inbox/old-capture.md',
+            path: 'inbox/new/old-capture.md',
             message: 'Stale capture',
             recommendation: 'Review capture',
             writesToMind: false,
@@ -229,7 +229,7 @@ test('maintenance-preview: counts actions by risk level correctly', () => {
         {
             id: 'orphan-wiki-page',
             severity: 'warning',
-            path: 'wiki/orphan.md',
+            path: 'knowledge/orphan.md',
             message: 'Orphan page',
             recommendation: 'Add to index',
             writesToMind: false,
@@ -237,10 +237,10 @@ test('maintenance-preview: counts actions by risk level correctly', () => {
     ];
     const queue = createMindMaintenancePreviewQueueFromFindings(findings);
     assert.strictEqual(queue.summary.total, 3);
-    assert.strictEqual(queue.summary.lowRiskCount, 2); // wiki/log.md and orphan-wiki-page
+    assert.strictEqual(queue.summary.lowRiskCount, 2);
     assert.strictEqual(queue.summary.mediumRiskCount, 1); // stale capture
     assert.strictEqual(queue.summary.highRiskCount, 0);
-    assert.strictEqual(queue.summary.approvalRequiredCount, 1); // wiki/log.md
+    assert.strictEqual(queue.summary.approvalRequiredCount, 0);
     assert.strictEqual(queue.summary.blockedCount, 0);
 });
 test('maintenance-preview: never sets writesToMind=true for any action', () => {
@@ -256,7 +256,7 @@ test('maintenance-preview: never sets writesToMind=true for any action', () => {
         {
             id: 'missing-source-trace',
             severity: 'warning',
-            path: 'wiki/page.md',
+            path: 'knowledge/page.md',
             message: 'Missing trace',
             recommendation: 'Add trace',
             writesToMind: false,

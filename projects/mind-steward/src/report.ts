@@ -4,6 +4,10 @@ import { createMindRouterLoopPlan } from './plans.js';
 import { createMindWikiHealthResultFromRoot, type MindWikiHealthResult } from './wiki-health.js';
 import { createMindMaintenancePreviewQueueFromFindings } from './maintenance-preview.js';
 import fs from 'node:fs';
+import { resolveCanonicalMindPath } from './path-registry.js';
+
+const INBOX_NEW = resolveCanonicalMindPath('inbox-new');
+const INBOX_FAILED = resolveCanonicalMindPath('inbox-failed');
 
 export interface MindStewardDryRunReport {
   generatedAt: string;
@@ -80,8 +84,8 @@ export function createMindStewardDryRunReport(
       acc.pathCount += 1;
       if (item.exists) acc.existingPathCount += 1;
       else acc.missingPathCount += 1;
-      if (item.path.startsWith('capture/failed/') && item.exists) acc.failedCaptureCount += 1;
-      if (item.path.startsWith('capture/inbox/') && item.exists) {
+      if (item.path.startsWith(INBOX_FAILED) && item.exists) acc.failedCaptureCount += 1;
+      if (item.path.startsWith(INBOX_NEW) && item.exists) {
         acc.captureInboxCount += 1;
         const ageDays = calculateAgeDays(item.modifiedAt, now);
         if (typeof ageDays === 'number') {

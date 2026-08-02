@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { MindWikiHealthFinding } from './wiki-health.js';
+import { describeMindPath, isCanonicalActivePath, isRegisteredCompatibilityRead } from './path-registry.js';
+import { MIND_MAINTENANCE_POLICY } from '../../../operations/specs/infinite-brain-boundary-contracts.js';
 
 export type MindMaintenancePreviewActionKind =
   | 'create-missing-wiki-log'
@@ -49,27 +51,8 @@ export interface MindMaintenancePreviewQueue {
   externalSideEffects: false;
 }
 
-const BLOCKED_PATHS_PREFIXES = [
-  '.obsidian/',
-  '.git/',
-  'node_modules/',
-  'dist/',
-  'build/',
-  'runtime/',
-  'logs/',
-  'coverage/',
-  '01-inbox/',
-  '02-strategy/',
-  '03-projects/',
-  '04-tasks/',
-  '05-areas/',
-  '06-resources/',
-  '07-templates/',
-  '08-archive/',
-  'archive/old/',
-];
-
-const BLOCKED_PATHS_EXACT = ['.env'];
+const BLOCKED_PATHS_PREFIXES = MIND_MAINTENANCE_POLICY.blockedPrefixes;
+const BLOCKED_PATHS_EXACT = MIND_MAINTENANCE_POLICY.blockedExactPaths;
 
 function isPathBlocked(targetPath: string): boolean {
   // Check exact paths
@@ -92,6 +75,15 @@ function isPathBlocked(targetPath: string): boolean {
     if (targetPath.startsWith(prefix)) {
       return true;
     }
+  }
+
+  // Every Mind path must be registry-classified. Only the registered proposal
+  // ledger may appear as a compatibility review item; all other compatibility
+  // paths and unknown paths fail closed.
+  const entry = describeMindPath(targetPath);
+  if (!entry) return true;
+  if (!isCanonicalActivePath(targetPath)) {
+    return !(targetPath === 'wiki/log.md' && isRegisteredCompatibilityRead(targetPath));
   }
 
   return false;
@@ -121,51 +113,26 @@ function mapFindingToAction(finding: MindWikiHealthFinding): MindMaintenancePrev
   switch (finding.id) {
     case 'missing-required-file': {
       if (finding.path === 'wiki/log.md') {
-        kind = 'create-missing-wiki-log';
-        title = 'Create missing wiki/log.md';
-        summary = 'The wiki/log.md append-only knowledge maintenance ledger is missing.';
-        recommendation = 'Create wiki/log.md with a header and initial entry. This is a safe, low-risk action.';
+        kind = 'no-op-info';
+        title = 'Review registered wiki/log.md compatibility ledger';
+        summary = 'wiki/log.md is a registered compatibility proposal ledger, not a write default.';
+        recommendation = 'Review its deletion prerequisites; do not create or write it from this preview.';
         risk = 'low';
-        operation = 'create';
-        requiresApproval = true;
-      } else if (finding.path === 'wiki/index.md') {
-        kind = 'update-wiki-index-link';
-        title = 'Create missing wiki/index.md';
-        summary = 'The wiki/index.md index file is missing or empty.';
-        recommendation = 'Create wiki/index.md with links to wiki pages. This is a safe, foundational action.';
-        risk = 'low';
-        operation = 'create';
-        requiresApproval = true;
-      } else if (finding.path === 'sources/index.md') {
-        kind = 'update-wiki-index-link';
-        title = 'Create missing sources/index.md';
-        summary = 'The sources/index.md catalog file is missing.';
-        recommendation = 'Create sources/index.md with a list of knowledge sources. This helps trace compiled content back to evidence.';
-        risk = 'low';
-        operation = 'create';
-        requiresApproval = true;
+        operation = 'review';
+        requiresApproval = false;
       } else {
         return null;
       }
       break;
     }
 
-    case 'empty-sources-index': {
-      kind = 'update-wiki-index-link';
-      title = 'Review empty sources/index.md';
-      summary = 'The sources/index.md catalog file exists but is empty.';
-      recommendation = 'Review or populate sources/index.md so compiled pages can trace back to sources.';
-      risk = 'low';
-      operation = 'review';
-      requiresApproval = false;
-      break;
-    }
+    case 'empty-sources-index': return null;
 
     case 'stale-capture-inbox': {
       kind = 'review-stale-capture';
       title = `Review stale capture: ${finding.path}`;
       summary = `Capture at ${finding.path} is older than 7 days.`;
-      recommendation = 'Review the capture to determine if it should be routed to live, archived, or deleted.';
+      recommendation = 'Review the capture to determine whether it belongs in canonical projects, knowledge, resources, or history.';
       risk = 'medium';
       operation = 'review';
       requiresApproval = false;
@@ -198,7 +165,7 @@ function mapFindingToAction(finding: MindWikiHealthFinding): MindMaintenancePrev
       kind = 'review-orphan-wiki-page';
       title = `Review orphan wiki page: ${finding.path}`;
       summary = `${finding.path} is not referenced from wiki/index.md.`;
-      recommendation = 'Add the page to wiki/index.md if it is meant to be discoverable, or move it to archive if it is outdated.';
+      recommendation = 'Link the page from its canonical index if it is meant to be discoverable, or move it to history if it is outdated.';
       risk = 'low';
       operation = 'review';
       requiresApproval = false;

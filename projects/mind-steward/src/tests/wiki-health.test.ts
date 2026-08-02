@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMindWikiHealthResultFromRoot } from '../wiki-health.js';
+import { resolveCanonicalMindPath } from '../path-registry.js';
 
 function makeRoot(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'mind-wiki-health-'));
@@ -13,15 +14,15 @@ test('healthy Mind fixture reports no findings and preview-safe flags', () => {
   const root = makeRoot();
   try {
     fs.mkdirSync(path.join(root, 'wiki'), { recursive: true });
-    fs.mkdirSync(path.join(root, 'capture', 'inbox'), { recursive: true });
-    fs.mkdirSync(path.join(root, 'capture', 'failed'), { recursive: true });
+    fs.mkdirSync(path.join(root, resolveCanonicalMindPath('inbox-new')), { recursive: true });
+    fs.mkdirSync(path.join(root, resolveCanonicalMindPath('inbox-failed')), { recursive: true });
     fs.mkdirSync(path.join(root, 'sources'), { recursive: true });
     fs.writeFileSync(path.join(root, 'wiki', 'index.md'), '# Wiki Index\n\n- [[people]]\n- [[organisations]]\n');
     fs.writeFileSync(path.join(root, 'wiki', 'log.md'), '# Wiki Log\n\nNo automated entries yet.\n');
     fs.writeFileSync(path.join(root, 'wiki', 'people.md'), '# People\n\nSource: capture/inbox/people.md\n');
     fs.writeFileSync(path.join(root, 'sources', 'index.md'), '# Sources\n\n- web\n');
-    fs.writeFileSync(path.join(root, 'capture', 'inbox', 'recent.md'), '# Recent\n');
-    fs.writeFileSync(path.join(root, 'capture', 'failed', 'failed.md'), '# Failed\n');
+    fs.writeFileSync(path.join(root, resolveCanonicalMindPath('inbox-new'), 'recent.md'), '# Recent\n');
+    fs.writeFileSync(path.join(root, resolveCanonicalMindPath('inbox-failed'), 'failed.md'), '# Failed\n');
 
     const result = createMindWikiHealthResultFromRoot(root, new Date('2026-05-17T12:00:00.000Z'));
 
@@ -54,7 +55,7 @@ test('missing wiki/log.md is reported', () => {
   }
 });
 
-test('oversized wiki pages and missing source traces are reported', () => {
+test('ordinary wiki pages are not active health authority', () => {
   const root = makeRoot();
   try {
     fs.mkdirSync(path.join(root, 'wiki'), { recursive: true });
@@ -66,8 +67,8 @@ test('oversized wiki pages and missing source traces are reported', () => {
 
     const result = createMindWikiHealthResultFromRoot(root);
 
-    assert.equal(result.findings.some((finding) => finding.id === 'oversized-wiki-page'), true);
-    assert.equal(result.findings.some((finding) => finding.id === 'missing-source-trace'), true);
+    assert.equal(result.findings.some((finding) => finding.id === 'oversized-wiki-page'), false);
+    assert.equal(result.findings.some((finding) => finding.id === 'missing-source-trace'), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -78,13 +79,13 @@ test('stale capture inbox and failed capture items are reported', () => {
   try {
     fs.mkdirSync(path.join(root, 'wiki'), { recursive: true });
     fs.mkdirSync(path.join(root, 'sources'), { recursive: true });
-    fs.mkdirSync(path.join(root, 'capture', 'inbox'), { recursive: true });
-    fs.mkdirSync(path.join(root, 'capture', 'failed'), { recursive: true });
+    fs.mkdirSync(path.join(root, resolveCanonicalMindPath('inbox-new')), { recursive: true });
+    fs.mkdirSync(path.join(root, resolveCanonicalMindPath('inbox-failed')), { recursive: true });
     fs.writeFileSync(path.join(root, 'wiki', 'index.md'), '# Wiki Index\n');
     fs.writeFileSync(path.join(root, 'wiki', 'log.md'), '# Wiki Log\n');
     fs.writeFileSync(path.join(root, 'sources', 'index.md'), '# Sources\n');
-    const staleInbox = path.join(root, 'capture', 'inbox', 'old.md');
-    const staleFailed = path.join(root, 'capture', 'failed', 'old.md');
+    const staleInbox = path.join(root, resolveCanonicalMindPath('inbox-new'), 'old.md');
+    const staleFailed = path.join(root, resolveCanonicalMindPath('inbox-failed'), 'old.md');
     fs.writeFileSync(staleInbox, '# Old inbox\n');
     fs.writeFileSync(staleFailed, '# Old failed\n');
     const oldDate = new Date('2026-05-01T00:00:00.000Z');

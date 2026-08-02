@@ -94,8 +94,8 @@ function createContractWarnings(input) {
     if (input.presentLegacyReadOnlyPaths.length > 0) {
         warnings.push(`Legacy read-only folders still present: ${input.presentLegacyReadOnlyPaths.join(', ')}`);
     }
-    if (input.saveToMindTarget !== 'capture-inbox') {
-        warnings.push(`Save-to-Mind target is not verified as capture/inbox/; current target: ${input.saveToMindTarget ?? 'unknown'}`);
+    if (input.saveToMindTarget !== 'inbox-new') {
+        warnings.push(`Save-to-Mind target is not verified as canonical inbox/new/; current target: ${input.saveToMindTarget ?? 'unknown'}`);
     }
     if (!input.liveDeploymentVerified) {
         warnings.push('Live n8n deployment has not been verified; repo JSON changes are not proof of production behavior.');

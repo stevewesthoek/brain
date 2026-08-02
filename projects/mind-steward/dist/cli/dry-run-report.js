@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createMindPathSnapshotFromRoot, createMindStewardDryRunReport } from '../index.js';
+import { MIND_LEGACY_READ_ONLY_PATHS, MIND_REQUIRED_PATHS, MIND_ROUTER_CONTRACT_FILES } from '../contracts.js';
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(MODULE_DIR, '..', '..');
 const RUNTIME_DIR = path.resolve(PACKAGE_ROOT, 'runtime/local/mind-steward');
@@ -17,41 +18,7 @@ fs.mkdirSync(path.dirname(mdOutput), { recursive: true });
 fs.writeFileSync(jsonOutput, `${JSON.stringify(report, null, 2)}\n`);
 fs.writeFileSync(mdOutput, renderMarkdown(report));
 function createMindRelativePaths() {
-    return [
-        'HOME.md',
-        'TODAY.md',
-        'README.md',
-        'AGENTS.md',
-        'router/current.md',
-        'router/map.md',
-        'router/rules.md',
-        'router/taxonomy.md',
-        'router/maintenance.md',
-        'router/mind-steward.md',
-        'capture/inbox/',
-        'capture/daily/',
-        'capture/failed/',
-        'capture/inbox/README.md',
-        'capture/daily/README.md',
-        'capture/failed/README.md',
-        'live/dashboard.md',
-        'live/tasks.md',
-        'live/projects.md',
-        'live/workflows.md',
-        'live/decisions.md',
-        'wiki/index.md',
-        'wiki/log.md',
-        'sources/index.md',
-        'archive/index.md',
-        '01-inbox/',
-        '02-strategy/',
-        '03-projects/',
-        '04-tasks/',
-        '05-areas/',
-        '06-resources/',
-        '07-templates/',
-        '08-archive/',
-    ];
+    return [...MIND_REQUIRED_PATHS, ...MIND_ROUTER_CONTRACT_FILES, ...MIND_LEGACY_READ_ONLY_PATHS];
 }
 function renderMarkdown(report) {
     const lines = [
