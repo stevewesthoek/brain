@@ -310,10 +310,17 @@ test('missing focused-test count fails consistency check', () => {
 
 test('pass receipt reports every distinct inspected file', () => {
   const tempRoot = makeTempRoot();
+  // Copy the benchmark plan into tempRoot so the validator finds it
+  const planSrc = path.join(root, BENCHMARK_PLAN_RELPATH);
+  if (fs.existsSync(planSrc)) {
+    const planDest = path.join(tempRoot, BENCHMARK_PLAN_RELPATH);
+    fs.mkdirSync(path.dirname(planDest), { recursive: true });
+    fs.copyFileSync(planSrc, planDest);
+  }
   try {
     const out = runValidator(tempRoot);
     assert.match(out, /^docs=pass$/m);
-    assert.match(out, /^files=9$/m);
+    assert.match(out, /^files=10$/m);
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -421,4 +428,110 @@ test('B8.1 before provider admission and installation fails with installed candi
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Benchmark-plan contradiction tests (Task 7)
+// ---------------------------------------------------------------------------
+
+const BENCHMARK_PLAN_RELPATH = 'operations/specs/b8-1-context-memory-benchmark-plan.md';
+
+function makeTempRootWithBenchmarkPlan(planContent) {
+  const tempRoot = makeTempRoot();
+  const planDest = path.join(tempRoot, BENCHMARK_PLAN_RELPATH);
+  fs.mkdirSync(path.dirname(planDest), { recursive: true });
+  fs.writeFileSync(planDest, planContent);
+  return tempRoot;
+}
+
+function makeCleanBenchmarkPlan() {
+  return [
+    '# B8.1 benchmark plan',
+    '',
+    '## Safety boundaries',
+    '',
+    '1. **Network isolation** — Benchmark processes run with external network blocked. The Codebase Memory startup update request will fail non-fatally.',
+    '2. **No source repository mutation** — Never modify the three source repositories. Create disposable benchmark copies under ~/.brain/benchmark/b8-1/worktrees/<run-id>/.',
+    '',
+    '## Execution prerequisites',
+    '',
+    '1. Human approval for local benchmark run (B8.1 authorization)',
+    '2. Graphify bounded profile confirmed operational',
+    '3. All three source repositories at a known clean commit',
+    '',
+    'Correct dependency order:',
+    'B8.1 authorization → bounded benchmark execution → B8.1 evidence → B8.2 formal admission decision',
+    '',
+    'B8.2 acceptance is the output of B8.1, not a prerequisite for it.',
+    '',
+    'Use direct CLI invocation or ephemeral benchmark-only configuration.',
+    'Do not add persistent MCP server entries to user-level configuration before B8.2 acceptance.',
+  ].join('\n');
+}
+
+test('corrected benchmark plan passes contradiction checks', () => {
+  const tempRoot = makeTempRootWithBenchmarkPlan(makeCleanBenchmarkPlan());
+  try {
+    const out = runValidator(tempRoot);
+    assert.match(out, /^docs=pass$/m);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('B8.2 acceptance as numbered prerequisite for B8.1 fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan().replace(
+    '1. Human approval',
+    '1. B8.2 canonical acceptance decision recorded\n2. Human approval',
+  );
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:b82-prerequisite-for-b81/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('Workbench MCP registration as mandatory prerequisite fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan().replace(
+    '1. Human approval',
+    '1. Workbench MCP registered in at least one client\n2. Human approval',
+  );
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:workbench-registration-required/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('"no network access" with allowed external egress fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan().replace(
+    '**Network isolation** — Benchmark processes run with external network blocked. The Codebase Memory startup update request will fail non-fatally.',
+    '**No network access** — Codebase Memory update check is allowed (loopback-only, non-blocking)',
+  );
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:no-network-claim-contradicted-by-egress-permission/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('active-local Workbench claim in benchmark plan fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nWorkbench MCP status is active-local.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:active-local-workbench-unresolved-entrypoint/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('corrective B8.2-as-output wording does not trigger b82-prerequisite-for-b81', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nB8.2 acceptance is the output of B8.1, not a prerequisite for it. B8.2 cannot require B8.1.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidator(tempRoot);
+    assert.match(out, /^docs=pass$/m);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('live benchmark plan passes all document consistency checks', () => {
+  const out = execFileSync('node', [validator], { encoding: 'utf8' });
+  assert.match(out, /^docs=pass$/m);
 });

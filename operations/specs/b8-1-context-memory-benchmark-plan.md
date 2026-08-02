@@ -203,19 +203,21 @@ For each fixture:
 
 These rules apply to ALL benchmark runs without exception.
 
-1. **No network access** — Run with `WORKBENCH_ACTION_BASE_URL` unset; Codebase Memory update check is allowed (loopback-only, non-blocking)
+1. **Network isolation** — Benchmark processes run with external network blocked. The Codebase Memory startup update request to `api.github.com` will fail non-fatally; this is expected and recorded as bounded behavior. No external connection may succeed. If network isolation cannot be proven on the host, the benchmark must stop rather than claim no-network execution.
 2. **No Mind content** — Do not use any file from `~/Repos/stevewesthoek/mind/` as a benchmark source or fixture
-3. **No repository mutation** — `--persistence false` for Codebase Memory; no writes to source repos
-4. **No persistent watcher** — `auto_watch=false` must be set in each cache before benchmarking via `CBM_CACHE_DIR=<path> codebase-memory-mcp config set auto_watch false`; no background re-indexing
-5. **No scheduler** — Do not activate or start the nightly scheduler during benchmarking
-6. **No default client registration** — Do not add any MCP server to `~/.claude.json` or `~/.codex/config.toml` during benchmarking; use project-scoped or CLI invocation only
-7. **No Graphify semantic synthesis** — Use code-only profile; disable embedding and semantic ranking
-8. **Stop conditions** — Abort run if:
+3. **No source repository mutation** — Never modify the three source repositories to measure incremental refresh. Create disposable benchmark copies under `~/.brain/benchmark/b8-1/worktrees/<run-id>/` from pinned commits. Freshness tests may modify only those disposable copies. `--persistence false` (default) prevents repo-local writes for Codebase Memory.
+4. **Disposable copies required for mutation tests** — Before each freshness run: verify source repository HEAD and status are unchanged. After each run: verify source repository HEAD and status are still unchanged; verify the disposable copy (not the source) contains the intentional mutation; verify no `.codebase-memory/` directory appears in source repositories. Cleanup must use the exact benchmark run directory `~/.brain/benchmark/b8-1/worktrees/<run-id>/`, not a parent path without a recorded run ID.
+5. **No persistent watcher** — `auto_watch=false` must be set in each benchmark cache before benchmarking via `CBM_CACHE_DIR=<path> codebase-memory-mcp config set auto_watch false`; no background re-indexing; verify no persistent watcher remains after each run; verify no scheduler starts
+6. **No scheduler** — Do not activate or start the nightly scheduler during benchmarking
+7. **Ephemeral benchmark configuration only** — Use direct CLI invocation, direct bounded stdio MCP harness, or ephemeral benchmark-only configuration located under `~/.brain/benchmark/b8-1/config/`. Do not add any MCP server to `~/.claude.json`, `~/.codex/config.toml`, `~/.cursor/`, or `~/.gemini/` during benchmarking. The runtime-truth validator distinguishes ephemeral benchmark invocation from persistent client registration.
+8. **No Graphify semantic synthesis** — Use code-only profile; disable embedding and semantic ranking
+9. **Stop conditions** — Abort run if:
    - any source repository has dirty state after a run
    - any `.codebase-memory/` directory appears in a source repo
    - disk use exceeds 500MB per repo
    - peak memory exceeds 1GB
-9. **Reversibility** — All benchmark artifacts are stored in `~/.brain/benchmark/b8-1/` only; clean removal: `rm -rf ~/.brain/benchmark/b8-1/`
+   - external network connection succeeds (expected to be blocked)
+10. **Reversibility** — All benchmark artifacts are stored in `~/.brain/benchmark/b8-1/` only; clean removal: `rm -rf ~/.brain/benchmark/b8-1/`
 
 ---
 
@@ -286,12 +288,26 @@ The `violations` array must be empty for the run to be eligible for B8.2 conside
 
 Before executing the benchmark (NOT authorized in this plan):
 
-1. B8.2 canonical acceptance decision recorded
-2. Workbench MCP registered in at least one client (for controlled test invocation)
-3. Codebase Memory project-scoped config generated from admission registry
-4. Graphify bounded profile confirmed operational
-5. Human approval for local benchmark run
-6. All three source repositories at a known clean commit
+1. Human approval for local benchmark run (B8.1 authorization)
+2. Graphify bounded profile confirmed operational
+3. All three source repositories at a known clean commit
+4. Disposable benchmark worktree root `~/.brain/benchmark/b8-1/worktrees/` created and empty
+5. Network isolation confirmed for the host (or stop condition acknowledged)
+
+**Correct dependency order:**
+
+```
+B8.1 authorization
+→ bounded benchmark execution
+→ B8.1 evidence and decision recorded
+→ B8.2 formal admission / default-activation decision
+```
+
+B8.2 acceptance is the *output* of B8.1, not a *prerequisite* for it. B8.2 cannot be required before B8.1 runs.
+
+Workbench MCP client registration is not required. The benchmark subjects (Codebase Memory MCP, Graphify, exact-source) do not use Workbench. Do not register Workbench as a benchmark prerequisite.
+
+Codebase Memory persistent client registration is not required. Use direct CLI invocation or ephemeral benchmark-only configuration. Do not add any persistent MCP server entry to user-level configuration before B8.2 acceptance.
 
 ---
 

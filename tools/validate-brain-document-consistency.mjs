@@ -28,12 +28,14 @@ const TEST_COUNT_SOURCES = [
 
 const DELETION_EVIDENCE_PATH = 'operations/specs/deletion-readiness-evidence.json';
 const PATH_REGISTRY_PATH = 'operations/specs/infinite-brain-path-registry.json';
+const BENCHMARK_PLAN_PATH = 'operations/specs/b8-1-context-memory-benchmark-plan.md';
 const inspectedFiles = [...new Set([
   ...files,
   ...VERDICT_SOURCES,
   ...TEST_COUNT_SOURCES,
   DELETION_EVIDENCE_PATH,
   PATH_REGISTRY_PATH,
+  BENCHMARK_PLAN_PATH,
 ])];
 
 const stalePatterns = [
@@ -276,15 +278,75 @@ function checkPotentialSafeEvidenceStructure(content, registryContent, errors) {
   }
 }
 
+// Checks the B8.1 benchmark plan for structural contradictions:
+// - B8.2 acceptance listed as a prerequisite for B8.1 execution
+// - Workbench client registration claimed as mandatory when not needed
+// - "no network" wording that simultaneously permits successful external egress
+// - Incremental refresh instructions that mutate source repositories
+// - Persistent Codebase Memory registration before B8.2
+// - active-local Workbench claim while runtime entrypoint provenance is unresolved
+function checkBenchmarkPlanContradictions(content, relativePath, errors) {
+  if (!relativePath.includes('b8-1-context-memory-benchmark-plan')) return;
+
+  // Contradiction 1: B8.2 acceptance listed as a numbered prerequisite for B8.1 execution.
+  // Catches "1. B8.2 canonical acceptance decision recorded" style items in the prerequisites list.
+  // Does NOT catch corrective text that explains B8.2 is the output (e.g., "not a prerequisite").
+  if (/^\s*\d+\.\s+B8\.2[^.\n]{0,120}(prerequisite|required|recorded|complete)/im.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:b82-prerequisite-for-b81`);
+  }
+
+  // Contradiction 2: Workbench MCP client registration as mandatory benchmark prerequisite
+  // (The benchmark subjects do not require Workbench)
+  if (/workbench[^.\n]{0,80}(MCP)? registered[^.\n]{0,80}(prerequisite|required|at least one client)/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:workbench-registration-required`);
+  }
+
+  // Contradiction 3: "no network access" while permitting successful external egress
+  // Safe pattern: network isolation with expected non-fatal failure documented
+  // Unsafe pattern: "no network access" + "allowed" for the github update check
+  const noNetworkClaim = /no network access/i.test(content);
+  const successfulEgressPermitted = /codebase memory update check is allowed/i.test(content) ||
+    /github.*update.*check.*allowed/i.test(content) ||
+    /api\.github\.com.*allowed/i.test(content);
+  if (noNetworkClaim && successfulEgressPermitted) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:no-network-claim-contradicted-by-egress-permission`);
+  }
+
+  // Contradiction 4: incremental refresh measured by mutating source repositories directly
+  // Safe: "disposable benchmark copies" or "disposable worktrees"
+  // Unsafe: "modify" or "mutate" + source repo names without "disposable" or "copy"
+  const mutatesSourceDirectly = /(?:modify|mutate|change)[^.\n]{0,80}(?:source repo|\/brain\b|\/workbench-private\b|\/prochat\b)[^.\n]{0,80}(?:incremental|freshness|refresh)/i.test(content);
+  const hasDisposableCopiesPolicy = /disposable benchmark cop|disposable worktree|never modify the three source/i.test(content);
+  if (mutatesSourceDirectly && !hasDisposableCopiesPolicy) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:source-repo-mutation-for-freshness`);
+  }
+
+  // Contradiction 5: persistent Codebase Memory client registration required before B8.2
+  if (/codebase memory[^.\n]{0,80}project.scoped config generated from admission/i.test(content) &&
+      !/ephemeral|direct CLI|direct bounded stdio/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:persistent-cbm-registration-before-b82`);
+  }
+
+  // Contradiction 6: active-local Workbench status claimed while entrypoint provenance unresolved
+  if (/workbench[^.\n]{0,80}active-local/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:active-local-workbench-unresolved-entrypoint`);
+  }
+}
+
 function main() {
   const errors = [];
   const contentsByPath = {};
   for (const relativePath of inspectedFiles) {
-    contentsByPath[relativePath] = read(relativePath);
+    try {
+      contentsByPath[relativePath] = read(relativePath);
+    } catch {
+      // file not found for optional paths — skip gracefully
+    }
   }
 
   for (const relativePath of files) {
     const content = contentsByPath[relativePath];
+    if (!content) continue;
     if (!relativePath.endsWith('.json')) {
       checkStalePaths(content, relativePath, errors);
       checkBrokenLinks(content, relativePath, errors);
@@ -300,6 +362,11 @@ function main() {
     contentsByPath[PATH_REGISTRY_PATH],
     errors,
   );
+
+  const benchmarkPlanContent = contentsByPath[BENCHMARK_PLAN_PATH];
+  if (benchmarkPlanContent) {
+    checkBenchmarkPlanContradictions(benchmarkPlanContent, BENCHMARK_PLAN_PATH, errors);
+  }
 
   if (errors.length > 0) {
     process.stdout.write(`docs=fail\nerrors=${errors.length}\n`);
