@@ -1,7 +1,7 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-07-28
+**Last verified:** 2026-08-01
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -15,73 +15,200 @@ This page reports reality. Roadmaps report order. Implementation plans report wo
 
 ## Current summary
 
-The Mind/Brain system is usable as a human-first vault with report-only and narrowly approval-gated Brain capabilities. It does not yet provide a vendor-neutral Context Gateway, a full retrieval evaluation harness, general proposal application, or proven continuous automation value.
+The Mind/Brain system is usable as a human-first vault with report-only and narrowly approval-gated Brain capabilities. It now has a validated retrieval evaluation corpus, context-pack schema, deterministic read-only retrieval core package, CLI command surface, trust-boundary enforcement, evaluation loader, metric calculator, fixed benchmark command, thin adapters, semantic-ranker gate, capability manifest, generated live status, the B4.4 one-status-view exposure, the first bounded measured-automation pilot batch, the B7.2-B7.7 simplification batch, and tested backup/restore/runtime recovery checks, but it still does not provide proven continuous automation value.
 
 ## Current planning priority
 
-- Brain Core stabilization is green at commit `4784a5f9`; the package suite completed successfully after canonical Mind-path and destination/outcome reconciliation.
-- B1.0a — Deploy and verify Save-to-Mind target paths is complete; B1.0e is superseded by completed B1.0f and B1.0a. B1.6 and B1.7 remain pending because no dated completion evidence or cross-configuration/cross-repository validation is recorded.
-- BS0.10 remains blocked on Mind M1.4 task authority. BS0.19 remains pending on cross-repository authority and deletion readiness. B5.4 remains blocked on Mind prerequisites.
-- P8 context-memory efficiency and freshness is planned only. Codebase Memory MCP is the proposed structural default and Graphify the bounded semantic supplement; no installation, watcher, scheduler change, or rollout is active yet.
-- the first bounded measured-automation pilot batch remains the current capability ceiling; B8.1 benchmark evidence is the first executable P8 task. B8.2–B8.6 remain blocked by prior-task evidence and provider-admission boundaries.
+The stabilization program is the highest-priority execution lane. `BS0.1`
+through `BS0.23` are complete (23 tasks), and all runtime priority tasks
+P1–P7 (B1.0–B1.7, B2.1–B2.8, B3.1–B3.4, B4.1–B4.4, B5.1–B5.4, B6.1–B6.3,
+B7.1–B7.7) are complete. All stabilization tasks and runtime priorities P1
+through P7 are complete. P8 remains intentionally deferred. No canonical P8
+task is accepted complete or authorized for continued execution. Preliminary
+and out-of-sequence Codebase Memory experiments, candidate installation,
+indexes, governance, and design artifacts already exist under an obsolete B8
+numbering scheme; those artifacts do not satisfy or bypass the current
+B8.1–B8.6 dependency chain.
+A full roadmap audit was performed on 2026-08-01 and confirmed this state;
+see `operations/reports/roadmap-audit-2026-08-01.md`.
+The remaining documented work is P8 context-memory efficiency (B8.1–B8.6),
+planned post-stabilization and not yet authorized. B8.1 benchmark evidence
+is required before approved default admission or activation, additional
+repository rollout, watcher or scheduler changes, or canonical Graphify
+migration. The existing candidate binary, preliminary indexes, and
+obsolete-numbered artifacts remain evidence only and do not satisfy the
+canonical dependency chain. B8.1 is the first canonical task when P8 is
+explicitly authorized; it is not the current approved execution task.
+The stabilization tasks remain separate from the existing B1, B2, and later
+task IDs; existing B2 Context Gateway tasks are unchanged.
 
-This section records planning truth only. It does not change capability, deployed, observed, or verified state.
+- BS0.1–BS0.19 are all complete. BS0.10 completed 2026-07-31 after Mind
+  M1.4 resolved; all four legacy producers retired with exit guards (41/41
+  subprocess tests pass). BS0.19 completed 2026-08-01 with semantic
+  prerequisite repair: validator enforces one structured positive-proof contract
+  for all six universal proofs and every exact registry `deletionPrerequisites`
+  identifier. Only status=satisfied with nonblank evidence and appliesTo equal
+  to global or containing the exact registry literal is positive; legacy strings
+  never contribute to SAFE. Retirement or non-authoritative classification does
+  not substitute for human deletion approval. 63 focused tests pass (63/63).
+  Live verdict (19 non-canonical entries): 0 SAFE, 2 PARTIAL, 17 BLOCKED.
+- BS0.23, B1.1–B1.4, B1.6, B1.7 are complete. B4.4, B5.1–B5.4 are complete.
+  B6.1–B6.3 and B7.1–B7.7 are complete. BS0.20–BS0.22 and B2.1–B3.4 are
+  complete. B1.0a is complete.
+- `B1.0a — Deploy and verify Save-to-Mind target paths` completed through the
+  admitted MRP-6 two-phase migration path on 2026-07-22. One candidate update
+  and two readbacks confirmed the exact approved candidate canonical hash;
+  protected domains remained unchanged and no rollback update was required.
+- `B5.4 — Controlled write pilot` completed 2026-07-31 after Mind M5.1–M5.3
+  resolved. Three repeatability runs passed; all rejection and rollback gates
+  passed; no repository mutation occurred.
+- Brain Core stabilization is green at commit `4784a5f9`; the package suite
+  completed successfully after canonical Mind-path and destination/outcome
+  reconciliation.
+- B1.0e is superseded by completed B1.0f and B1.0a. B1.6 and B1.7 are complete
+  with dated evidence; B1.7's Mind-side verification was read-only and required
+  no Mind implementation change.
+- P8 context-memory efficiency and freshness is planned only. A Codebase
+  Memory MCP candidate binary is installed (`~/.local/bin/codebase-memory-mcp`
+  v0.9.0, SHA-256 d9fbdd7d, admission status: candidate); no approved default
+  activation, rollout, or scheduler change exists. Graphify structural
+  indexing is quiesced; `graphify-transition-governance.json` prohibits
+  deletion of `graphify-out/` (retained pending retention-gate clearance).
+- Mind `M1.3` is complete (2026-07-31).
+- Mind `M1.4` is complete (2026-07-31): kanban.md retained as sole human task
+  authority; tasks.md retired and non-authoritative.
+
+This section changes planning priority only. It does not change any capability
+state, deployed-state claim, observed-state claim, or verification result below.
 
 ## Capability table
+<!-- BEGIN GENERATED CAPABILITY STATUS -->
+| Capability ID | Owner | State | Safety | Repo | Deployed | Observed | Verified | Entrypoint | Evidence Command | Last Verified | Dependencies | Feature Flag | Approval | Rollback/Disable | Evidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+capability-state-validation | brain-runtime | verified | read-only | verified | unknown | observed | verified | tools/validate-capability-state.mjs | node tools/validate-capability-state.mjs | 2026-07-16 |  | none | none | none | pass: operations/reports/bs0-12-capability-state-evidence-repair-2026-07-14.md
+context-gateway-cli-explain | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/cli/cli.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core | none | none | none | pass: operations/reports/b2-6-cli-commands-2026-07-16.md
+context-gateway-cli-health | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/cli/cli.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core | none | none | none | pass: operations/reports/b2-6-cli-commands-2026-07-16.md
+context-gateway-cli-resolve | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/cli/cli.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core | none | none | none | pass: operations/reports/b2-6-cli-commands-2026-07-16.md
+context-gateway-core | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/core/index.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-pack-validation | none | none | none | pass: operations/reports/b2-6-b3-3-context-gateway-batch-2026-07-16.md
+context-pack-validation | brain-runtime | verified | read-only | verified | unknown | observed | verified | tools/validate-context-pack.mjs | node tools/validate-context-pack.mjs | 2026-07-16 | retrieval-corpus-validation | none | none | none | pass: operations/reports/bs0-21-context-pack-schema-2026-07-16.md
+evaluation-loader | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/evals/corpus.mjs | node tools/validate-retrieval-evaluation-corpus.mjs | 2026-07-16 | retrieval-corpus-validation | none | none | none | pass: operations/reports/b3-1-evaluation-loader-2026-07-16.md
+exact-scope-approval-validator | brain-runtime | candidate | approval-gated | candidate | unknown | unknown | unknown | projects/brain-core/src/adapters/infinite-brain-exact-scope-approval.ts | node --test projects/brain-core/src/tests/infinite-brain-exact-scope-approval.test.ts | 2026-07-16 | provider-admission-validation | none | required | none | not-run
+fixed-benchmark-command | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/evals/benchmark.mjs | npm --prefix projects/mind-context run eval | 2026-07-16 | metric-calculator | none | none | none | pass: operations/reports/b3-3-fixed-benchmark-command-2026-07-16.md
+fixture-only-thin-mcp-adapter | brain-runtime | verified | fixture-only | verified | unknown | observed | verified | projects/mind-context/src/adapters/index.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core, retrieval-trust-boundary | none | none | none | pass: operations/reports/b2-8-thin-adapters-2026-07-16.md
+metric-calculator | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/evals/metrics.mjs | npm --prefix projects/mind-context test | 2026-07-16 | evaluation-loader | none | none | none | pass: operations/reports/b3-2-metric-calculator-2026-07-16.md
+provider-admission-validation | brain-runtime | verified | approval-gated | verified | configured | observed | verified | tools/validate-mcp-provider-admissions.mjs | node tools/validate-mcp-provider-admissions.mjs | 2026-07-16 | capability-state-validation | none | two-phase | node tools/validate-mcp-provider-admissions.mjs | pass: operations/reports/workbench-mcp-provider-admission-2026-07-15.md
+retrieval-corpus-validation | brain-runtime | verified | read-only | verified | unknown | observed | verified | tools/validate-retrieval-evaluation-corpus.mjs | node tools/validate-retrieval-evaluation-corpus.mjs | 2026-07-16 |  | none | none | none | pass: operations/reports/bs0-20-retrieval-evaluation-corpus-2026-07-16.md
+retrieval-trust-boundary | brain-runtime | verified | fixture-only | verified | unknown | observed | verified | projects/mind-context/src/core/plan-context-pack.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core | none | none | none | pass: operations/reports/b2-7-trust-boundary-2026-07-16.md
+save-to-mind-controlled-migration | brain-runtime | verified | approval-gated | verified | deployed | observed | verified | operations/automations/n8n/validate-mind-inbox-paths.mjs | node tools/validate-mcp-provider-admissions.mjs | 2026-07-22 | provider-admission-validation | none | two-phase | node tools/validate-mcp-provider-admissions.mjs | pass: operations/reports/b1-0a-guarded-live-completion-2026-07-22.md
+semantic-ranker-gate | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/evals/gate.mjs | node tools/run-semantic-ranker-gate-smoke.mjs | 2026-07-16 | fixed-benchmark-command, evaluation-loader | none | none | none | pass: operations/reports/b3-4-semantic-ranker-gate-2026-07-16.md
+typed-capability-worker | brain-runtime | candidate | report-only | candidate | unknown | unknown | unknown | projects/brain-core/src/adapters/infinite-brain-typed-capability-worker.ts | node --test projects/brain-core/src/tests/infinite-brain-typed-capability-worker.test.ts | 2026-07-16 | provider-admission-validation | none | none | none | not-run
+<!-- END GENERATED CAPABILITY STATUS -->
+## Contract-layer boundary
 
-| Capability | State | Evidence | Limit |
-|---|---|---|---|
-| Mind human navigation and targeted agent reads | active | Mind entrypoints and primary global AI startup pointers use `system/agent-context/` | active runbooks/integration docs still contain retired paths |
-| Save-to-Mind success intake to `inbox/new/` | active | migration commits and folder contract | failure-path external workflow requires separate verification |
-| Brain Core Mind target-path model | tested | Brain Core typecheck passes; target-path tests exist | legacy constants/fixtures remain |
-| Mind Steward package | paused | typecheck fails in `src/cli/classify-captures.ts` | classifier hard-codes retired intake and writes unless dry-run is explicit |
-| Mind maintenance detection/reporting | report-only | adapters, tests, and reports exist | operational usefulness beyond bounded fixtures is unproven |
-| Infinite Brain single-file metadata writer | approval-gated | allowlist, approval, rollback, and verification implementation exists | one narrow metadata scope only |
-| General proposal application | planned | planner/dry-run components exist | not approved as a general write capability |
-| Context Gateway | planned | philosophy, strategy, bridge, and implementation tasks exist | no canonical runtime implementation |
-| Retrieval evaluation corpus/runner | planned | roadmap and task specification exist | no baseline runner yet |
-| Capability manifest/generated status | planned | status vocabulary and implementation tasks exist | this table is manually maintained until generator exists |
-| Continuous processing | paused | safety/queue components exist | disabled; value and review burden unproven |
+Mind policy, Brain executable schemas/validators, repository configuration,
+deployment evidence, observed evidence, verified evidence, and generated
+output are mapped separately in
+`operations/specs/infinite-brain-contract-layer-map.json`. This status page is
+human-readable operational status; it cannot promote a candidate or
+repository-validated state to deployed or live verified state.
 
 ## Verification performed
 
-On 2026-07-10:
+On 2026-07-16:
 
 ```text
-brain-core: npm run typecheck → pass
-mind-steward: npm run typecheck → fail (TS2412 at src/cli/classify-captures.ts:25)
-mind graph: built from 534876aa, current HEAD 2d4676df → stale
-brain graph: built from ba1ddff3, current HEAD 9989b8b0 → stale
+BS0.3 candidate-freeze validator and planner tests → pass
+BS0.3 candidate workflow top-level activation flag → false
+BS0.3 deployment, schedule, and live-state claims → not asserted/unverified
+BS0.4 rollback-artifact safety validator and focused tests → pass
+BS0.4 approved rollback artifact → hash, JSON, workflow ID, size, and credential-surface checks pass
+MCP provider admission schema, registry, artifact hashes, and generator check → pass
+Workbench MCP authenticated read-only status → pass
+Workbench admitted tools/suboperation runtime enforcement → pass offline
+BS0.16 layered conformance suite and deliberately stale fixture → pass
+B1.0a guarded migration and deployment readback → pass (`candidateUpdate=1`, `rollbackUpdate=0`, `readback=2`)
+B1.0a webhook fixture → not executed; no end-to-end capture invocation claimed
+BS0.20 corpus validator and tests → pass
+BS0.21 context-pack validator and tests → pass
+BS0.22 deterministic retrieval core tests → pass
+B2.6 CLI commands and structured error tests → pass
+B2.7 retrieval trust-boundary tests → pass
+B3.1 evaluation loader tests → pass
+B3.2 metric calculator tests → pass
+B3.3 fixed benchmark command → pass
+Retrieval corpus/schema/fixture JSON parse checks → pass
+Capability-state validation → pass
+Mind Context package build/test/smoke/eval → pass
+Semantic-ranker smoke gate → pass
+Capability manifest inventory and generated live-status checks → pass
 ```
 
 The existing graph reports include low-signal Obsidian plugin or unlabeled broad-repo modules and must not be treated as current architecture truth.
 
+On 2026-07-31, Brain-only final verification passed Brain Core, Brain Console,
+Mind Steward, capability, contract, scheduler, retrieval, documentation,
+recovery, and B1.7 synthetic-fixture checks. The dated verification report is
+`operations/reports/infinite-brain-final-verification-2026-07-30.md`. The
+Brain-local Mind Steward classifier API/CLI mismatch is closed. Live
+cross-repository checks remain intentionally skipped under the strict Brain-only
+boundary.
+
+On 2026-07-17:
+
+```text
+node --test operations/specs/infinite-brain-boundary-contracts.test.mjs → pass
+node --test tools/validate-brain-document-consistency.test.mjs → pass
+node --test tools/validate-performance-budgets.test.mjs → pass
+node --test projects/brain-core/dist/tests/infinite-brain-exact-scope-approval.test.js → pass
+node --test projects/mind-steward/dist/tests/preview.test.js → pass
+node --test projects/mind-steward/dist/tests/maintenance-preview.test.js → pass
+npm --prefix projects/brain-core run build → pass
+npm --prefix projects/brain-core run typecheck → pass
+npm --prefix projects/mind-steward run build → pass
+npm --prefix projects/mind-steward run typecheck → pass
+node tools/validate-graphify-operational-profiles.mjs → pass
+node tools/validate-mutable-state-inventory.mjs → pass
+node tools/validate-capability-manifest.mjs → pass
+node tools/validate-capability-state.mjs → pass
+node tools/validate-infinite-brain-capabilities.mjs → pass
+node tools/mind-canonical-path-registry.mjs validate → pass
+node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-private → pass
+npm run infinite-brain:conformance → pass
+git diff --check → pass
+```
+
 ## Current blockers
 
-1. Active path/config documentation is not fully aligned with completed Mind migration.
-2. Mind Steward has duplicated legacy contracts and a failing typecheck.
-3. Context retrieval remains instruction-driven rather than one executable core.
-4. Retrieval quality lacks a representative ground-truth corpus.
-5. Capability state is not yet generated from a manifest and evidence commands.
-6. Meaningful time savings and maintenance reduction remain unproven.
-7. Brain Core's route dispatcher and generated/local state are larger than necessary.
+1. Save-to-Mind deployment is verified by exact candidate canonical readback; activation and schedule were preserved unchanged, while end-to-end webhook execution remains outside the completed MRP-6 scope.
+2. Backup provenance outside the approved rollback artifact remains unknown and blocked from inspection.
+3. Capability-truth exposure is now complete through B4.4, but proven continuous automation value remains unproven.
+4. Meaningful time savings and maintenance reduction remain unproven.
+5. Deletion-readiness gate (`node tools/validate-deletion-readiness.mjs`) after contract-reconciliation pass (2026-08-01): 0 SAFE; 2 PARTIAL (router-root, sources-root); 17 BLOCKED. No path has the complete structured proof chain plus explicit human deletion approval and rollback expectations required for SAFE. Both Graphify paths (graphify-operational-output and graphify-compatibility-output) are BLOCKED: the profile catalog governs `runtime/local/graphify/...` output roots and explicitly excludes both `.graphify-out/` and `graphify-out/` from the corpus; a catalog pass for a different root cannot satisfy the `graphify-profile-conformance` prerequisite for either compatibility root; additionally, graphify-transition-governance.json explicitly prohibits deletion of `graphify-out/` until the retention gate is cleared. legacy-task-summary (`live/tasks.md`) is BLOCKED: M1.4 proves retirement and task-authority migration, but retirement is not deletion approval — no Brain artifact records human-approved deletion ownership or rollback expectations. BLOCKED breakdown: 5 missing `approved-folder-cleanup` artifact; 2 Graphify prerequisite-scope-mismatch or governance-prohibited deletion; 2 active deployed n8n consumers; 5 unresolved scoped or Mind authority cases; 1 missing human deletion approval (legacy-task-summary); 1 active consumer (wiki-root); 1 active dependency (wiki-log). PARTIAL is fail-closed for deletion.
+6. All stabilization tasks and runtime priorities P1 through P7 are complete. P8 (context-memory efficiency B8.1–B8.6) is intentionally deferred. No canonical P8 task is accepted complete.
 
 ## Next approved work
 
-Execute Priority 1 tasks from:
+Select the next executable task only from the canonical plans:
 
 ```text
 /Users/Office/Repos/stevewesthoek/mind/system/mind-implementation-plan.md
 /Users/Office/Repos/stevewesthoek/brain/operations/specs/infinite-brain-runtime-implementation-plan.md
 ```
 
-BS0.19 remains blocked until Mind M1.4 task authority is resolved. B1.6 and B1.7 are the next repository-only coherence tasks. P8 must begin with B8.1 benchmark evidence before provider admission, installation, watchers, scheduler changes, or Graphify retirement are considered.
+All stabilization tasks (BS0.1–BS0.23) and P1–P7 runtime priorities are
+complete. B8.1 benchmark evidence is required before approved canonical
+admission or default activation, additional repository rollout, watcher or
+scheduler changes, or canonical Graphify migration. The preliminary candidate
+installation and indexes remain evidence only. P8 is not the current approved
+execution phase; it requires separate authorization.
 
-Do not activate broad Mind writes, continuous execution, new external actions, or context-memory services while their prerequisite task and approval boundary is incomplete.
+Do not activate broad Mind writes, continuous execution, new external actions,
+or context-memory services while their prerequisite task and approval boundary
+is incomplete.
 
 ## Update rule
 
-Until the capability manifest generator exists, update this page only when:
+Update this page only when:
 
 - an evidence command was run;
 - a capability state changed;

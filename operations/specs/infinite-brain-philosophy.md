@@ -103,6 +103,8 @@ Mind remains readable and useful when Brain, a model provider, an index, a graph
 
 Search indexes, embeddings, graphs, summaries, and context packs are disposable projections. Human-readable source files remain authoritative.
 
+For active software development, Brain should prefer a deterministic, incrementally updated structural code index that does not require an LLM. Multimodal or interpretive knowledge graphs may supplement that index only for explicitly selected Brain and Mind knowledge scopes, must remain non-authoritative, and should run on demand or when relevant source documents change rather than on a fixed nightly schedule.
+
 ### 14. Measure value, not activity
 
 Automation is retained only when it improves retrieval quality, saves meaningful time, reduces maintenance burden, or prevents errors without creating disproportionate review work.
@@ -182,3 +184,35 @@ operations/specs/infinite-brain-philosophy.md
 → operations/specs/infinite-brain-runtime-implementation-plan.md
 → operations/runbooks/infinite-brain-roadmap-status.md
 ```
+
+## Product expression and canonical founder intent
+
+The canonical human philosophy remains owned by Mind:
+
+```text
+/Users/Office/Repos/stevewesthoek/mind/system/infinite-brain-philosophy.md
+```
+
+That authority now records the founder-confirmed long-term intent and defines **ProChat Memory** as the customer-facing product expression of the Infinite Brain philosophy.
+
+Brain must not duplicate or reinterpret that business philosophy. Brain operationalizes it through retrieval, context selection, pattern detection, confidence and provenance, bounded autonomy, reversibility, correction, supersession, portability, and runtime safety.
+
+The repository relationship remains:
+
+```text
+Mind = human-owned meaning, identity, strategy, evidence, and history
+Brain = machine-owned capabilities, retrieval, automation, enforcement, and runtime
+ProChat Memory = customer-facing product expression
+ProChat public platform = marketing and product-communication execution
+```
+
+Implementation implications for Brain:
+
+- preserve the distinction between fact, evidence, inference, confidence, recommendation, and human-approved decision;
+- treat current human intent as higher authority than historical patterns;
+- support correction, deletion, supersession, export, and inspectability;
+- keep high-impact identity, philosophy, faith, and strategy changes human-controlled;
+- optimize for selective, timely context rather than context dumping;
+- never promote runtime inference into Mind authority without review.
+
+Current product positioning and public claims remain controlled by Mind's ProChat brand authorities and are not expanded automatically by this philosophy update.
