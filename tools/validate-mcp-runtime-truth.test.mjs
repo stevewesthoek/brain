@@ -295,7 +295,9 @@ test('graphify frozen with inactive scheduler passes', () => {
     schedulerActive: false
   });
   assert.equal(result.key, 'graphify-scheduler-violation');
-  assert.equal(result.value, 'frozen-scheduler-inactive', `Expected frozen-scheduler-inactive: ${result.value}`);
+  // Result now contains structured state fields; must not be 'fail'
+  assert.equal(result.level, 'info', `Expected info level (not fail), got: ${result.level} value=${result.value}`);
+  assert(result.value.includes('graphify-structural-state='), `Expected structural-state in value: ${result.value}`);
 });
 
 // ---------------------------------------------------------------------------
@@ -552,7 +554,8 @@ test('detectProviderRevisionMismatch: non-git root with correct revision and mat
   try {
     const result = await detectProviderRevisionMismatch({ providerRoots: roots, providerRevisions: revisions, registry });
     assert.equal(result.level, 'info', `expected pass, got: ${JSON.stringify(result)}`);
-    assert.equal(result.value, 'verified');
+    // Value now uses structured output from shared module
+    assert.match(result.value, /providers_source_verified=1/, `expected source_verified in value: ${result.value}`);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -578,7 +581,8 @@ test('detectProviderRevisionMismatch: git root with matching HEAD and digest →
   try {
     const result = await detectProviderRevisionMismatch({ providerRoots: roots, registry });
     assert.equal(result.level, 'info', `expected pass, got: ${JSON.stringify(result)}`);
-    assert.equal(result.value, 'verified');
+    // Value now uses structured output from shared module
+    assert.match(result.value, /providers_source_verified=1/, `expected source_verified in value: ${result.value}`);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -597,4 +601,177 @@ test('detectProviderRevisionMismatch: working-tree-only entrypoint → fail with
     assert.equal(result.level, 'fail', `expected fail, got: ${JSON.stringify(result)}`);
     assert.match(result.value, /runtime-entrypoint-unverified/);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+// ---------------------------------------------------------------------------
+// Task 2 — False positive regression tests for detectCandidateDescribedAsDefault
+// and detectCodebaseMemoryFalseDefaultClaim
+// Exact sentences from the roadmap and implementation-plan that were being
+// falsely flagged.
+// ---------------------------------------------------------------------------
+
+test('detectCandidateDescribedAsDefault: roadmap future-deliverable bullet does not trigger', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  // Exact text from operations/specs/infinite-brain-runtime-roadmap.md line 168
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: {
+      'roadmap': 'Codebase Memory MCP as the default structural code-memory layer for active repositories;'
+    },
+    registry,
+  });
+  assert.equal(result.key, 'candidate-described-as-default');
+  assert.equal(result.value, 'none', `Expected none (no false positive), got: ${result.value}`);
+});
+
+test('detectCandidateDescribedAsDefault: "B8.2 decides whether Codebase Memory becomes the default" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'roadmap': 'B8.2 decides whether Codebase Memory becomes the default.' },
+    registry,
+  });
+  assert.equal(result.value, 'none', `Expected none, got: ${result.value}`);
+});
+
+test('detectCandidateDescribedAsDefault: "Default activation requires explicit approval" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Default activation requires explicit approval.' },
+    registry,
+  });
+  assert.equal(result.value, 'none', `Expected none, got: ${result.value}`);
+});
+
+test('detectCandidateDescribedAsDefault: "Codebase Memory is a candidate for the future default" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Codebase Memory is a candidate for the future default.' },
+    registry,
+  });
+  assert.equal(result.value, 'none', `Expected none, got: ${result.value}`);
+});
+
+test('detectCandidateDescribedAsDefault: "The planned deliverable is a measured structural default" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'The planned deliverable is a measured structural default.' },
+    registry,
+  });
+  assert.equal(result.value, 'none', `Expected none, got: ${result.value}`);
+});
+
+test('detectCandidateDescribedAsDefault: "Codebase Memory is not active" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Codebase Memory is not active.' },
+    registry,
+  });
+  assert.equal(result.value, 'none', `Expected none, got: ${result.value}`);
+});
+
+test('detectCandidateDescribedAsDefault: "Codebase Memory is the default structural provider" → FAILS', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Codebase Memory is the default structural provider.' },
+    registry,
+  });
+  assert.notEqual(result.value, 'none', `Expected detection, got: ${result.value}`);
+  assert.equal(result.level, 'fail');
+});
+
+test('detectCandidateDescribedAsDefault: "Default activation is complete" → FAILS', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCandidateDescribedAsDefault({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Codebase Memory default activation is complete.' },
+    registry,
+  });
+  assert.notEqual(result.value, 'none', `Expected detection, got: ${result.value}`);
+  assert.equal(result.level, 'fail');
+});
+
+test('detectCodebaseMemoryFalseDefaultClaim: "No default activation is authorized" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCodebaseMemoryFalseDefaultClaim({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'No default activation is authorized.' },
+    registry,
+  });
+  assert.equal(result.value, 'none-detected', `Expected none-detected, got: ${result.value}`);
+});
+
+test('detectCodebaseMemoryFalseDefaultClaim: "Codebase Memory is not active" → no false positive', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCodebaseMemoryFalseDefaultClaim({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Codebase Memory is not active.' },
+    registry,
+  });
+  assert.equal(result.value, 'none-detected', `Expected none-detected, got: ${result.value}`);
+});
+
+test('detectCodebaseMemoryFalseDefaultClaim: "Codebase Memory MCP is enabled for all Brain clients" → FAILS', () => {
+  const registry = makeRegistry({ cbmStatus: 'candidate' });
+  const result = detectCodebaseMemoryFalseDefaultClaim({
+    fixtureOnly: true,
+    docTexts: { 'plan': 'Codebase Memory MCP is enabled for all Brain clients.' },
+    registry,
+  });
+  assert.notEqual(result.value, 'none-detected', `Expected detection, got: ${result.value}`);
+  assert.equal(result.level, 'fail');
+});
+
+// ---------------------------------------------------------------------------
+// Task 3 — Graphify runtime-truth evaluation with real nested governance
+// ---------------------------------------------------------------------------
+
+test('detectGraphifySchedulerViolation: nested governance frozen-pending-migration → frozen', () => {
+  const nestedGovernance = {
+    states: {
+      structuralCodeIndexing: { state: 'frozen-pending-migration', schedulerGate: 'skipping job=graphify-nightly reason=bs0-15-pending-containment' },
+      semanticSynthesis: { state: 'retained-inactive' },
+      deletion: { state: 'prohibited-before-retention-gate' },
+    },
+    migrationPath: { globalActivationStatus: 'not-active' },
+  };
+  const result = detectGraphifySchedulerViolation({
+    fixtureOnly: true,
+    governanceJson: nestedGovernance,
+    schedulerActive: false,
+  });
+  assert.equal(result.key, 'graphify-scheduler-violation');
+  assert.equal(result.level, 'info', `Expected info, got: ${result.level} value=${result.value}`);
+  assert(result.value.includes('graphify-structural-state=frozen'), `Expected frozen: ${result.value}`);
+  assert(result.value.includes('graphify-scheduler-gate=skip-enforced'), `Expected skip-enforced: ${result.value}`);
+  assert(result.value.includes('graphify-process=not-observed'), `Expected not-observed: ${result.value}`);
+});
+
+test('detectGraphifySchedulerViolation: nested governance frozen + scheduler active → fail', () => {
+  const nestedGovernance = {
+    states: {
+      structuralCodeIndexing: { state: 'frozen-pending-migration', schedulerGate: 'skipping job=graphify-nightly' },
+      deletion: { state: 'prohibited-before-retention-gate' },
+    },
+    migrationPath: { globalActivationStatus: 'not-active' },
+  };
+  const result = detectGraphifySchedulerViolation({
+    fixtureOnly: true,
+    governanceJson: nestedGovernance,
+    schedulerActive: true,
+  });
+  assert.equal(result.level, 'fail', `Expected fail: ${result.value}`);
+  assert(result.value.includes('scheduler active'), `Expected scheduler active: ${result.value}`);
+});
+
+test('detectGraphifySchedulerViolation: fixture mode uses correct nested governance from FIXTURE constant', () => {
+  // Test that the fixture constant itself uses the nested schema
+  const result = detectGraphifySchedulerViolation({ fixtureOnly: true, schedulerActive: false });
+  assert.equal(result.level, 'info', `Expected info: ${result.value}`);
+  assert(result.value.includes('graphify-structural-state=frozen'), `Expected frozen in fixture: ${result.value}`);
 });

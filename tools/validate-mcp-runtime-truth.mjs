@@ -226,10 +226,15 @@ args = ["/repo/tools/mcp/b1-0a-guarded-save-to-mind.mjs"]
     mcpServers: {}
   }),
 
-  // Simulated graphify governance
+  // Simulated graphify governance — uses the correct nested structure from
+  // operations/specs/graphify-transition-governance.json
   graphifyGovernance: JSON.stringify({
-    deletionState: 'prohibited-before-retention-gate',
-    schedulerActive: false
+    states: {
+      structuralCodeIndexing: { state: 'frozen-pending-migration', schedulerGate: 'skipping job=graphify-nightly reason=bs0-15-pending-containment' },
+      semanticSynthesis: { state: 'retained-inactive' },
+      deletion: { state: 'prohibited-before-retention-gate' },
+    },
+    migrationPath: { globalActivationStatus: 'not-active' },
   }),
 
   // Simulated admission registry
@@ -365,13 +370,18 @@ export function detectCandidateDescribedAsDefault(opts = {}) {
       for (const line of lines) {
         const lineLower = line.toLowerCase();
         const matchesName = [...nameVariants].some((v) => lineLower.includes(v.toLowerCase()));
-        if (
-          matchesName &&
-          /(is the default|as the default|default context memory|default activation)/i.test(line)
-        ) {
-          issues.push(`${admission.admissionId}: described as default in ${docKey}`);
-          break; // Only report once per doc
-        }
+        if (!matchesName) continue;
+        // Must contain an affirmative present-state claim about being default/active.
+        // "is the default" or "is activated" or "is active" = present state.
+        // "as the default" alone = goal/deliverable description, not a present claim — exclude it.
+        // "default activation is complete" = past completion = affirmative.
+        const hasAffirmativePresent = /(is the default|default context memory|default activation is complete|is active\b|is activated|is enabled for all)/i.test(line);
+        if (!hasAffirmativePresent) continue;
+        // Must NOT contain negators or future/conditional qualifiers that make this non-current
+        const hasNegatorOrFuture = /\b(not|no |requires|pending|candidate|planned|future|whether|before|decide|decides|will |would |may |unless|once|after|when |if )/i.test(line);
+        if (hasNegatorOrFuture) continue;
+        issues.push(`${admission.admissionId}: described as default in ${docKey}`);
+        break; // Only report once per doc
       }
     }
   }
@@ -451,92 +461,20 @@ export async function detectProviderRevisionMismatch(opts = {}) {
     return { key: 'provider-revision-mismatch', value: 'registry-missing', level: 'warn' };
   }
 
-  // Detect duplicate provider bindings
-  if (providerRoots.size !== [...new Set(providerRoots.keys())].length) {
-    return { key: 'provider-revision-mismatch', value: 'duplicate-provider-binding', level: 'fail' };
+  // Use shared verification module for Detection 4
+  const { verifyAllProviders } = await import('./lib/mcp-provider-verification.mjs');
+  const aggr = verifyAllProviders({ admissionRegistry, providerRoots, providerRevisions });
+
+  if (aggr.issues.length > 0) {
+    return { key: 'provider-revision-mismatch', value: aggr.issues.join('; '), level: 'fail' };
   }
 
-  const issues = [];
+  // Build structured output for runtime-truth context
+  const runtimeVerified = aggr.runtimeVerifiedCount > 0 ? 'verified' : 'unverified';
+  const parts = [`providers_source_verified=${aggr.sourceVerifiedCount}`, `providers_runtime_verified=${aggr.runtimeVerifiedCount}`];
+  if (aggr.incompleteCount > 0) parts.push(`providers_incomplete=${aggr.incompleteCount}`);
 
-  for (const [providerId, rootPath] of providerRoots) {
-    // Unknown provider
-    const admission = admissionRegistry.admissions?.find(
-      (a) => a.provider?.providerId === providerId
-    );
-    if (!admission) {
-      issues.push(`${providerId}: unknown-provider-id`);
-      continue;
-    }
-
-    const admittedRevision = admission.provider?.revision;
-
-    // Determine if root is a Git repo
-    let headRevision = null;
-    let isGitRoot = false;
-    try {
-      headRevision = execFileSync('git', ['rev-parse', 'HEAD'], {
-        cwd: rootPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-      }).trim();
-      isGitRoot = true;
-    } catch {
-      // not a git repo — exported tree
-    }
-
-    if (isGitRoot) {
-      // Git root: verify HEAD matches admitted revision
-      if (headRevision !== admittedRevision) {
-        issues.push(`${providerId}: revision-mismatch (HEAD=${headRevision} admitted=${admittedRevision})`);
-        continue;
-      }
-      // If caller also supplied an explicit revision, it must agree
-      if (providerRevisions.has(providerId) && providerRevisions.get(providerId) !== headRevision) {
-        issues.push(`${providerId}: explicit-revision-disagrees-with-git-head`);
-        continue;
-      }
-    } else {
-      // Non-Git exported tree: require explicit revision binding
-      if (!providerRevisions.has(providerId)) {
-        issues.push(`${providerId}: non-git-root-requires-explicit-provider-revision`);
-        continue;
-      }
-      const explicitRevision = providerRevisions.get(providerId);
-      if (explicitRevision !== admittedRevision) {
-        issues.push(`${providerId}: explicit-revision-mismatch (given=${explicitRevision} admitted=${admittedRevision})`);
-        continue;
-      }
-    }
-
-    // Artifact digest verification — skip working-tree-only artifacts
-    for (const artifact of admission.provider?.artifacts ?? []) {
-      if (artifact.note?.includes('working-tree-only')) continue;
-      // Skip archive: and npm: virtual paths (not on disk)
-      if (artifact.path.startsWith('archive:') || artifact.path.startsWith('npm:')) continue;
-      const artifactPath = path.join(rootPath, artifact.path);
-      try {
-        const data = fs.readFileSync(artifactPath);
-        const actual = crypto.createHash('sha256').update(data).digest('hex');
-        if (actual !== artifact.sha256) {
-          issues.push(`${providerId}/${artifact.path}: artifact-digest-mismatch`);
-        }
-      } catch {
-        issues.push(`${providerId}/${artifact.path}: artifact-read-error`);
-      }
-    }
-
-    // Check entrypoint is not unverified working-tree-only output
-    const entrypoint = admission.provider?.entrypoint;
-    if (entrypoint) {
-      const entrypointArtifact = admission.provider?.artifacts?.find((a) => a.path === entrypoint);
-      if (entrypointArtifact?.note?.includes('working-tree-only')) {
-        issues.push(`${providerId}: runtime-entrypoint-unverified (${entrypoint} is working-tree-only)`);
-      }
-    }
-  }
-
-  if (issues.length > 0) {
-    return { key: 'provider-revision-mismatch', value: issues.join('; '), level: 'fail' };
-  }
-  return { key: 'provider-revision-mismatch', value: 'verified', level: 'info' };
+  return { key: 'provider-revision-mismatch', value: parts.join('; '), level: aggr.runtimeVerifiedCount > 0 ? 'info' : 'warn' };
 }
 
 // ---------------------------------------------------------------------------
@@ -758,43 +696,101 @@ export function detectGraphifySchedulerViolation(opts = {}) {
   const { fixtureOnly = false, governanceJson = null, schedulerActive = null } = opts;
 
   let governance = governanceJson;
-  let isActive = schedulerActive;
 
   if (fixtureOnly) {
     governance = governance ?? JSON.parse(FIXTURE.graphifyGovernance);
-    isActive = isActive ?? governance.schedulerActive;
   } else {
     const govPath = path.join(SCRIPT_ROOT, 'operations/specs/graphify-transition-governance.json');
     governance = governance ?? safeReadJson(govPath);
-    // Determine scheduler active state from known skip-signal
-    isActive = isActive ?? detectGraphifySchedulerActiveFromFiles();
   }
 
   if (!governance) {
     return { key: 'graphify-scheduler-violation', value: 'governance-missing', level: 'warn' };
   }
 
-  const deletionState = governance.deletionState ?? governance.deletion_state;
-  const frozen = deletionState && deletionState !== 'permitted';
+  // Read nested governance structure (real schema under operations/specs/graphify-transition-governance.json)
+  const structuralState = governance.states?.structuralCodeIndexing?.state ?? governance.deletionState ?? governance.deletion_state;
+  const schedulerGate = governance.states?.structuralCodeIndexing?.schedulerGate ?? null;
+  const deletionState = governance.states?.deletion?.state ?? governance.deletionState ?? governance.deletion_state;
+  const globalActivationStatus = governance.migrationPath?.globalActivationStatus ?? null;
 
-  if (frozen && isActive === true) {
+  const isFrozen = structuralState && (structuralState.includes('frozen') || structuralState === 'frozen-pending-migration');
+  const isDeletionProhibited = deletionState && deletionState !== 'permitted';
+
+  // Determine if scheduler gate is enforced via skip-signal
+  const isJobGated = schedulerGate
+    ? (schedulerGate.includes('skipping') || schedulerGate.includes('bs0-15'))
+    : false;
+
+  // Determine actual scheduler/process state
+  let schedulerFrameworkInstalled = false;
+  let nightlySchedulerLoaded = false;
+  let graphifyJobGated = isJobGated;
+  let graphifyProcessObserved = 'not-observed';
+
+  if (!fixtureOnly) {
+    const detectedState = detectGraphifySchedulerActiveFromFiles(schedulerGate);
+    schedulerFrameworkInstalled = detectedState.schedulerFrameworkInstalled;
+    nightlySchedulerLoaded = detectedState.nightlySchedulerLoaded;
+    graphifyJobGated = detectedState.graphifyJobGated || isJobGated;
+    graphifyProcessObserved = detectedState.graphifyProcessObserved;
+  }
+
+  // Use explicit schedulerActive override if provided (for tests)
+  const isActive = schedulerActive !== null ? schedulerActive : (!graphifyJobGated && graphifyProcessObserved !== 'not-observed');
+
+  if (isDeletionProhibited && isActive === true) {
     return {
       key: 'graphify-scheduler-violation',
       value: `scheduler active while governance deletionState="${deletionState}"`,
       level: 'fail'
     };
   }
-  return { key: 'graphify-scheduler-violation', value: frozen ? 'frozen-scheduler-inactive' : 'not-frozen', level: 'info' };
+
+  // Build structured output
+  const structuralLabel = isFrozen ? 'frozen' : (structuralState ?? 'unknown');
+  const schedulerGateLabel = graphifyJobGated ? 'skip-enforced' : (schedulerGate ? 'present-not-skip' : 'absent');
+
+  const outputParts = [
+    `graphify-structural-state=${structuralLabel}`,
+    `graphify-scheduler-gate=${schedulerGateLabel}`,
+    `graphify-process=${graphifyProcessObserved}`,
+  ];
+
+  if (!fixtureOnly) {
+    outputParts.push(`schedulerFrameworkInstalled=${schedulerFrameworkInstalled}`);
+    outputParts.push(`nightlySchedulerLoaded=${nightlySchedulerLoaded}`);
+    outputParts.push(`structuralIndexingAuthorized=${globalActivationStatus === 'active'}`);
+  }
+
+  const value = outputParts.join('; ');
+  return { key: 'graphify-scheduler-violation', value, level: 'info' };
 }
 
-function detectGraphifySchedulerActiveFromFiles() {
-  // Check for known scheduler skip-signal file or plist
+function detectGraphifySchedulerActiveFromFiles(knownSchedulerGate = null) {
   const plistPath = path.join(os.homedir(), 'Library/LaunchAgents/com.office.nightly-scheduler.plist');
   const plistText = safeReadText(plistPath);
-  if (!plistText) return false;
-  // If the plist mentions graphify-nightly and is not disabled, consider it potentially active
-  // Conservative: only flag as active if explicitly loaded and running
-  return plistText.includes('graphify-nightly') && !plistText.includes('Disabled') && !plistText.includes('<false/>');
+
+  const schedulerFrameworkInstalled = plistText !== null;
+  const nightlySchedulerLoaded = plistText !== null && !plistText.includes('<false/>');
+
+  // Check scheduler gate from governance first (most authoritative)
+  // Plist presence alone never implies graphify is active — only skip-signal absence + process would
+  const graphifyJobGated = knownSchedulerGate
+    ? (knownSchedulerGate.includes('skipping') || knownSchedulerGate.includes('bs0-15'))
+    : false; // Without governance gate text, cannot confirm gated; default to false (conservative)
+
+  // Check if graphify process is actually running using synchronous pgrep
+  let graphifyProcessObserved = 'not-observed';
+  try {
+    const pgrepOut = execFileSync('pgrep', ['-x', 'graphify'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    if (pgrepOut.length > 0) graphifyProcessObserved = 'observed';
+  } catch {
+    // pgrep returns non-zero when no process found; treat as not-observed
+    graphifyProcessObserved = 'not-observed';
+  }
+
+  return { schedulerFrameworkInstalled, nightlySchedulerLoaded, graphifyJobGated, graphifyProcessObserved };
 }
 
 // ---------------------------------------------------------------------------
@@ -860,18 +856,27 @@ export function detectCodebaseMemoryFalseDefaultClaim(opts = {}) {
   }
 
   const issues = [];
-  const falseClaims = [
-    /codebase[- ]memory.{0,80}(is active|is the default|default activation|is activated)/i,
-    /codebase memory mcp.{0,80}(active|default|enabled)/i
-  ];
+
+  // Negators and future/conditional qualifiers that make a sentence non-current-state
+  const NEGATOR_PATTERN = /\b(not |no |requires|pending|candidate|planned|future|whether|before|decide|decides|will |would |may |unless|once|after|when |if )/i;
 
   for (const [docKey, text] of Object.entries(docs ?? {})) {
     if (typeof text !== 'string') continue;
-    for (const pattern of falseClaims) {
-      if (pattern.test(text)) {
-        issues.push(`${docKey}: claims Codebase Memory is active/default while admission is ${cbmAdmission.status}`);
-        break;
-      }
+    const lines = text.split('\n');
+    let flagged = false;
+    for (const line of lines) {
+      if (flagged) break;
+      const lineLower = line.toLowerCase();
+      // Must mention codebase memory
+      const mentionsCBM = /codebase[- ]memory/i.test(line);
+      if (!mentionsCBM) continue;
+      // Must contain affirmative present-state claim
+      const hasAffirmativeClaim = /(is active|is the default|default activation is complete|is activated|is enabled for all)/i.test(line);
+      if (!hasAffirmativeClaim) continue;
+      // Must NOT contain negators that flip the meaning
+      if (NEGATOR_PATTERN.test(line)) continue;
+      issues.push(`${docKey}: claims Codebase Memory is active/default while admission is ${cbmAdmission.status}`);
+      flagged = true;
     }
   }
 

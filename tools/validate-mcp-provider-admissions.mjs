@@ -26,11 +26,11 @@ function collectForbiddenSecretFields(value, location = 'registry', errors = [])
   return errors;
 }
 
-export function validateAdmissionRegistry(registry, { providerRoots = new Map() } = {}) {
-  const errors = collectForbiddenSecretFields(registry);
+// Synchronous core validation (schema, structure, policy) — does NOT do filesystem checks
+function validateAdmissionRegistryCore(registry, errors) {
   if (registry?.schemaVersion !== '1.0.0') errors.push('schemaVersion must be 1.0.0');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(registry?.reviewedAt ?? '')) errors.push('reviewedAt must be YYYY-MM-DD');
-  if (!Array.isArray(registry?.admissions) || registry.admissions.length === 0) return [...errors, 'admissions must be non-empty'];
+  if (!Array.isArray(registry?.admissions) || registry.admissions.length === 0) { errors.push('admissions must be non-empty'); return; }
   const admissionIds = new Set();
   const serverNames = new Set();
   for (const admission of registry.admissions) {
@@ -94,22 +94,48 @@ export function validateAdmissionRegistry(registry, { providerRoots = new Map() 
     for (const field of ['startupTimeoutSeconds', 'toolTimeoutSeconds', 'maxRequestBytes', 'maxResponseBytes']) if (!Number.isInteger(limits?.[field]) || limits[field] <= 0) errors.push(`${prefix}: invalid limit ${field}`);
     if (!Array.isArray(admission?.verification?.commands) || admission.verification.commands.length === 0) errors.push(`${prefix}: verification commands are required`);
     if (!admission?.revocation?.procedure || admission.revocation?.preserveEvidence !== true) errors.push(`${prefix}: revocation must preserve evidence`);
+  }
+}
 
+// Synchronous provider-root validation (kept for backward compat with existing tests that
+// pass providerRoots directly to validateAdmissionRegistry synchronously).
+// Uses the inline logic (not the shared module) so this function remains sync.
+function validateProviderRootsSync(registry, providerRoots, errors) {
+  for (const admission of registry.admissions ?? []) {
+    const prefix = admission?.admissionId ?? '<missing-admission>';
+    const provider = admission?.provider;
     const providerRoot = providerRoots.get(provider?.providerId);
-    if (providerRoot) {
-      const root = path.resolve(providerRoot);
+    if (!providerRoot) continue;
+    const root = path.resolve(providerRoot);
+    try {
       const stat = fs.lstatSync(root);
-      if (!stat.isDirectory() || stat.isSymbolicLink()) errors.push(`${prefix}: provider root must be a non-symlink directory`);
-      let head;
-      try { head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { /* not a git repo — exported tree or non-git provider root; skip revision check */ }
-      if (head && head !== provider.revision) errors.push(`${prefix}: provider revision mismatch`);
-      for (const artifact of provider.artifacts ?? []) {
-        if (typeof artifact.note === 'string' && artifact.note.includes('sourceState: working-tree-only')) continue;
-        const file = path.resolve(root, artifact.path);
-        if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) errors.push(`${prefix}: provider artifact missing ${artifact.path}`);
-        else if (digest(file) !== artifact.sha256) errors.push(`${prefix}: provider artifact digest mismatch ${artifact.path}`);
-      }
+      if (!stat.isDirectory() || stat.isSymbolicLink()) { errors.push(`${prefix}: provider root must be a non-symlink directory`); continue; }
+    } catch { errors.push(`${prefix}: provider root does not exist`); continue; }
+    let head;
+    try { head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { /* not a git repo — exported tree */ }
+    if (head && head !== provider.revision) errors.push(`${prefix}: provider revision mismatch`);
+    for (const artifact of provider.artifacts ?? []) {
+      if (typeof artifact.note === 'string' && artifact.note.includes('sourceState: working-tree-only')) continue;
+      if (artifact.path.startsWith('archive:') || artifact.path.startsWith('npm:')) continue;
+      const file = path.resolve(root, artifact.path);
+      if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) errors.push(`${prefix}: provider artifact missing ${artifact.path}`);
+      else if (digest(file) !== artifact.sha256) errors.push(`${prefix}: provider artifact digest mismatch ${artifact.path}`);
     }
+  }
+}
+
+/**
+ * Synchronous validation of admission registry.
+ * Used by existing tests that import this function directly.
+ * @param {Object} registry
+ * @param {{ providerRoots?: Map<string,string>, providerRevisions?: Map<string,string> }} opts
+ * @returns {string[]}
+ */
+export function validateAdmissionRegistry(registry, { providerRoots = new Map(), providerRevisions = new Map() } = {}) {
+  const errors = collectForbiddenSecretFields(registry);
+  validateAdmissionRegistryCore(registry, errors);
+  if (providerRoots.size > 0) {
+    validateProviderRootsSync(registry, providerRoots, errors);
   }
   return errors;
 }
@@ -131,17 +157,61 @@ function parseProviderRoots(argv) {
   return roots;
 }
 
-function main() {
+function parseProviderRevisions(argv) {
+  const revisions = new Map();
+  for (let index = 0; index < argv.length; index += 1) {
+    if (argv[index] !== '--provider-revision') continue;
+    const binding = argv[index + 1] ?? '';
+    const separator = binding.indexOf('=');
+    if (separator < 1) throw new Error('--provider-revision requires provider-id=<sha>');
+    revisions.set(binding.slice(0, separator), binding.slice(separator + 1));
+    index += 1;
+  }
+  return revisions;
+}
+
+async function main() {
+  const argv = process.argv.slice(2);
   const registryArg = process.argv.find((value) => value.startsWith('--registry='));
   const registry = loadAdmissionRegistry(registryArg ? registryArg.slice('--registry='.length) : DEFAULT_REGISTRY_PATH);
-  const providerRoots = parseProviderRoots(process.argv.slice(2));
-  const errors = validateAdmissionRegistry(registry, { providerRoots });
-  if (errors.length) {
-    process.stderr.write(`${errors.join('\n')}\n`);
+  const providerRoots = parseProviderRoots(argv);
+  const providerRevisions = parseProviderRevisions(argv);
+
+  // Core schema/policy validation (always synchronous)
+  const coreErrors = collectForbiddenSecretFields(registry);
+  validateAdmissionRegistryCore(registry, coreErrors);
+  if (coreErrors.length) {
+    process.stderr.write(`${coreErrors.join('\n')}\n`);
     process.exitCode = 1;
     return;
   }
-  process.stdout.write(`mcp-provider-admissions-valid admissions=${registry.admissions.length} providers_verified=${providerRoots.size}\n`);
+
+  if (providerRoots.size > 0) {
+    // Use shared verification module for structured output
+    const { verifyAllProviders, formatVerificationSummary } = await import('./lib/mcp-provider-verification.mjs');
+    const aggr = verifyAllProviders({ admissionRegistry: registry, providerRoots, providerRevisions });
+
+    if (aggr.issues.length > 0) {
+      process.stderr.write(`${aggr.issues.join('\n')}\n`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const summary = formatVerificationSummary({
+      admissionsCount: registry.admissions.length,
+      sourceVerifiedCount: aggr.sourceVerifiedCount,
+      runtimeVerifiedCount: aggr.runtimeVerifiedCount,
+      incompleteCount: aggr.incompleteCount,
+    });
+    process.stdout.write(`mcp-provider-admissions-valid\n${summary}\n`);
+  } else {
+    process.stdout.write(`mcp-provider-admissions-valid\nadmissions=${registry.admissions.length}\n`);
+  }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error('validate-mcp-provider-admissions: unexpected error:', err.message);
+    process.exit(2);
+  });
+}
