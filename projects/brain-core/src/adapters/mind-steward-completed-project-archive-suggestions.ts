@@ -10,6 +10,7 @@ import {
   MIND_PROJECT_PAGE_PREFIXES,
   normalizeExactMindMarkdownPathForPrefixes,
 } from '../mind-paths.js';
+import { canonicalMindPrefix } from '../canonical-mind-path-registry.js';
 
 export interface MindStewardCompletedProjectFile {
   path: string;
@@ -22,7 +23,7 @@ export interface MindStewardCompletedProjectArchiveSuggestion {
   activePath: string;
   proposedArchivePath: string | null;
   completionEvidence: string[];
-  affectedSurface: 'projects' | 'live/projects';
+  affectedSurface: 'projects';
   recommendation: 'archive-after-approval';
   requiresApproval: true;
   blockers: string[];
@@ -132,12 +133,12 @@ function explicitArchivePath(metadata: ParsedMetadataValue[]): string | null {
 }
 
 function defaultArchivePath(activePath: string): string {
-  if (activePath.startsWith('projects/')) return `history/projects/${activePath.slice('projects/'.length)}`;
-  return `archive/projects/${activePath.slice('live/projects/'.length)}`;
+  const projects = canonicalMindPrefix('projects');
+  return `${canonicalMindPrefix('history')}projects/${activePath.slice(projects.length)}`;
 }
 
 function affectedSurface(activePath: string): MindStewardCompletedProjectArchiveSuggestion['affectedSurface'] {
-  return activePath.startsWith('projects/') ? 'projects' : 'live/projects';
+  return 'projects';
 }
 
 function createSuggestion(

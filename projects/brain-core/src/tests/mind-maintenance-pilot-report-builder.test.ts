@@ -8,7 +8,7 @@ import {
 
 function createDataset(): LoadedMindMaintenancePilotDataset {
   const contents: Record<string, string> = {
-    'router/00-current-context.md': `---
+    'system/agent-context/00-current-context.md': `---
 status: review-needed
 last_reviewed: 2026-05-22
 review_after: 2026-06-05
@@ -16,21 +16,21 @@ freshness_risk: high
 ---
 # Current Context
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
 
 Status: draft
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: medium
 `,
-    'wiki/organisations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
+    'organizations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
 
 Status: current
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: high
 `,
-    'live/dashboard.md': `# Dashboard
+    'system/reports/dashboard.md': `# Dashboard
 
 Status: current
 Primary interface: Brain Console
@@ -70,7 +70,7 @@ test('builds the canonical in-memory five-file pilot report', () => {
   assert.equal(result.report.summary.findingsOpen, 1);
   assert.equal(result.report.summary.detectorErrors, 0);
   assert.equal(result.report.findings[0]?.type, 'stale-page');
-  assert.equal(result.report.findings[0]?.paths[0], 'router/00-current-context.md');
+  assert.equal(result.report.findings[0]?.paths[0], 'system/agent-context/00-current-context.md');
   assert.equal(result.report.detectors['duplicate-candidate'].status, 'completed');
   assert.equal(result.report.detectors['contradiction-candidate'].status, 'completed');
   assert.equal(result.report.detectors['capture-promotion'].status, 'completed');
@@ -81,7 +81,7 @@ test('builds the canonical in-memory five-file pilot report', () => {
 
 test('includes a valid source-gap finding and keeps summary counts aligned', () => {
   const dataset = createDataset();
-  const strategyPath = 'wiki/organisations/prochat/brand/product-strategy.md' as const;
+  const strategyPath = 'organizations/prochat/brand/product-strategy.md' as const;
   const result = buildMindMaintenancePilotReport({
     dataset,
     sourceCommit: 'abc1234',
@@ -111,7 +111,7 @@ test('includes a valid source-gap finding and keeps summary counts aligned', () 
 
 test('preserves ambiguous source-gap candidates without creating findings', () => {
   const dataset = createDataset();
-  const strategyPath = 'wiki/organisations/prochat/brand/product-strategy.md' as const;
+  const strategyPath = 'organizations/prochat/brand/product-strategy.md' as const;
   const result = buildMindMaintenancePilotReport({
     dataset,
     sourceCommit: 'abc1234',
@@ -212,7 +212,7 @@ test('applies an accepted persisted decision and recalculates summary counts', (
     updatedAt: '2026-06-13T12:00:00.000Z',
     decisions: [{
       findingId: 'finding-stale-page-router-00-current-context-001',
-      deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+      deduplicationKey: 'stale-page:system/agent-context/00-current-context.md:review_after',
       sourceReportId: 'mind-maintenance-20260613T110000Z',
       sourceCommit: 'previous1',
       reviewedBy: 'Steve Westhoek',
@@ -248,7 +248,7 @@ test('moves dismissed findings into suppression and keeps report counts aligned'
     updatedAt: '2026-06-13T12:00:00.000Z',
     decisions: [{
       findingId: 'finding-stale-page-router-00-current-context-001',
-      deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+      deduplicationKey: 'stale-page:system/agent-context/00-current-context.md:review_after',
       sourceReportId: 'mind-maintenance-20260613T110000Z',
       sourceCommit: 'previous1',
       reviewedBy: 'Steve Westhoek',
@@ -284,7 +284,7 @@ test('reopens resolved recurrence and exposes unmatched historical decisions', (
     decisions: [
       {
         findingId: 'finding-stale-page-router-00-current-context-001',
-        deduplicationKey: 'stale-page:router/00-current-context.md:review_after',
+        deduplicationKey: 'stale-page:system/agent-context/00-current-context.md:review_after',
         sourceReportId: 'mind-maintenance-20260601T110000Z',
         sourceCommit: 'previous1',
         reviewedBy: 'Steve Westhoek',
@@ -331,7 +331,7 @@ test('reopens resolved recurrence and exposes unmatched historical decisions', (
 
 test('reports exact normalized duplicate-page candidates without writing source files', () => {
   const dataset = createDataset();
-  const first = dataset.files.find((file) => file.path === 'live/dashboard.md');
+  const first = dataset.files.find((file) => file.path === 'system/reports/dashboard.md');
   const second = dataset.files.find((file) => file.path === 'system/automation-roadmap.md');
 
   assert.ok(first);
@@ -363,7 +363,7 @@ This substantive page content is intentionally repeated for duplicate detection.
   );
 
   assert.equal(duplicateFindings.length, 1);
-  assert.deepEqual(duplicateFindings[0]?.paths, ['live/dashboard.md', 'system/automation-roadmap.md']);
+  assert.deepEqual(duplicateFindings[0]?.paths, ['system/automation-roadmap.md', 'system/reports/dashboard.md']);
   assert.equal(duplicateFindings[0]?.requiresApproval, true);
   assert.equal(duplicateFindings[0]?.noWritePerformed, true);
   assert.equal(result.report.safety.sourceFilesChanged, 0);
@@ -381,10 +381,10 @@ test('reports explicit mutually exclusive contradiction candidates without writi
     contradictionCandidates: [
       {
         left: {
-          path: 'live/dashboard.md',
+          path: 'system/reports/dashboard.md',
           location: 'Primary interface line',
           statement: 'Primary interface: Brain Console',
-          authority: 'current live dashboard',
+          authority: 'current canonical dashboard',
           scope: 'daily operating interface',
           sourceReferences: [],
         },
@@ -401,15 +401,15 @@ test('reports explicit mutually exclusive contradiction candidates without writi
       },
       {
         left: {
-          path: 'live/dashboard.md',
+          path: 'system/reports/dashboard.md',
           location: 'Primary interface line',
           statement: 'Primary interface: Brain Console',
-          authority: 'current live dashboard',
+          authority: 'current canonical dashboard',
           scope: 'daily operating interface',
           sourceReferences: [],
         },
         right: {
-          path: 'router/00-current-context.md',
+          path: 'system/agent-context/00-current-context.md',
           location: 'Context purpose line',
           statement: 'Agents should read this early.',
           authority: 'current routing context',
@@ -429,8 +429,8 @@ test('reports explicit mutually exclusive contradiction candidates without writi
   assert.equal(result.report.detectors['contradiction-candidate'].status, 'completed');
   assert.equal(contradictionFindings.length, 1);
   assert.deepEqual(contradictionFindings[0]?.paths, [
-    'live/dashboard.md',
     'system/automation-roadmap.md',
+    'system/reports/dashboard.md',
   ]);
   assert.equal(contradictionFindings[0]?.matchedEvidence.length, 2);
   assert.equal(contradictionFindings[0]?.comparisonEvidence.length, 2);
@@ -449,7 +449,7 @@ test('reports durable insights trapped in capture with duplicate-check evidence 
     generatedAt: '2026-06-13T12:00:00Z',
     capturePromotionCandidates: [
       {
-        capturePath: 'capture/inbox/reusable-qa-lesson.md',
+        capturePath: 'inbox/new/reusable-qa-lesson.md',
         location: 'lesson paragraph',
         summary: 'Repeated QA investigation lesson.',
         reusableInsight: 'Record recurring failure patterns once and reuse them across projects.',
@@ -460,14 +460,14 @@ test('reports durable insights trapped in capture with duplicate-check evidence 
         repeatedConceptCount: 3,
         duplicateCheck: {
           matched: true,
-          paths: ['live/projects/prochat-qa-memory/STRATEGY-PLAN.md'],
+          paths: ['projects/prochat-qa-memory/STRATEGY-PLAN.md'],
           summary: 'Related strategy exists and should be updated rather than duplicated.',
         },
-        recommendedDestination: 'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+        recommendedDestination: 'projects/prochat-qa-memory/STRATEGY-PLAN.md',
         recommendation: 'update-existing',
       },
       {
-        capturePath: 'capture/inbox/private-reflection.md',
+        capturePath: 'inbox/new/private-reflection.md',
         location: 'reflection paragraph',
         summary: 'Temporary private reflection.',
         reusableInsight: 'Personal note not intended for durable promotion.',
@@ -481,7 +481,7 @@ test('reports durable insights trapped in capture with duplicate-check evidence 
           paths: [],
           summary: 'No durable duplicate found.',
         },
-        recommendedDestination: 'wiki/personal/private-reflection.md',
+        recommendedDestination: 'knowledge/personal/private-reflection.md',
         recommendation: 'create-new',
       },
     ],
@@ -492,8 +492,8 @@ test('reports durable insights trapped in capture with duplicate-check evidence 
   assert.equal(result.report.detectors['capture-promotion'].status, 'completed');
   assert.equal(findings.length, 1);
   assert.deepEqual(findings[0]?.paths, [
-    'capture/inbox/reusable-qa-lesson.md',
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'inbox/new/reusable-qa-lesson.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
   ]);
   assert.match(findings[0]?.comparisonEvidence[0]?.summary ?? '', /Matching durable content found/);
   assert.match(findings[0]?.recommendedAction ?? '', /Update the reviewed existing page/);

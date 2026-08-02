@@ -1,4 +1,10 @@
 import type { MaintenanceFinding, MaintenanceRisk } from './types.js';
+import { canonicalMindPrefix } from '../canonical-mind-path-registry.js';
+
+const CANONICAL_CAPTURE_PREFIX = canonicalMindPrefix('inbox-new');
+const CANONICAL_PROMOTION_PREFIXES = [
+  canonicalMindPrefix('projects'), canonicalMindPrefix('knowledge'), canonicalMindPrefix('resources'),
+];
 
 export type CapturePromotionClassification = 'decision' | 'lesson' | 'rule' | 'insight' | 'temporary' | 'personal';
 export type CapturePromotionRecommendation = 'update-existing' | 'create-new';
@@ -36,16 +42,16 @@ function requireText(value: string, field: string): void {
 }
 
 function validateCandidate(candidate: CapturePromotionCandidate): void {
-  if (!candidate.capturePath.startsWith('capture/')) {
-    throw new Error(`Capture-promotion path must be inside capture/: ${candidate.capturePath}`);
+  if (!candidate.capturePath.startsWith(CANONICAL_CAPTURE_PREFIX)) {
+    throw new Error(`Capture-promotion path must be inside canonical inbox/new/: ${candidate.capturePath}`);
   }
   requireText(candidate.location, 'an exact location');
   requireText(candidate.summary, 'a capture summary');
   requireText(candidate.reusableInsight, 'a concise reusable insight');
   requireText(candidate.duplicateCheck.summary, 'a duplicate-check summary');
   requireText(candidate.recommendedDestination, 'a recommended destination');
-  if (!['live/', 'wiki/', 'sources/'].some((prefix) => candidate.recommendedDestination.startsWith(prefix))) {
-    throw new Error(`Capture-promotion destination must be in live/, wiki/, or sources/: ${candidate.recommendedDestination}`);
+  if (!CANONICAL_PROMOTION_PREFIXES.some((prefix) => candidate.recommendedDestination.startsWith(prefix))) {
+    throw new Error(`Capture-promotion destination must be in canonical projects/, knowledge/, or resources/: ${candidate.recommendedDestination}`);
   }
   if (candidate.confidence < 0 || candidate.confidence > 1) {
     throw new Error('Capture-promotion confidence must be between 0 and 1.');
@@ -66,7 +72,7 @@ function hasPromotionSignal(candidate: CapturePromotionCandidate): boolean {
 }
 
 function riskFor(candidate: CapturePromotionCandidate): MaintenanceRisk {
-  return candidate.recommendedDestination.startsWith('wiki/') ? 'medium' : 'low';
+  return candidate.recommendedDestination.startsWith(canonicalMindPrefix('knowledge')) ? 'medium' : 'low';
 }
 
 function slug(value: string): string {

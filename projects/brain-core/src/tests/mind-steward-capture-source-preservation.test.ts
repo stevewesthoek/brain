@@ -20,7 +20,7 @@ function sha256(value: string): string {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-function createClassification(name = 'capture-a.md', captureInboxPath = 'capture/inbox') {
+function createClassification(name = 'capture-a.md', captureInboxPath = 'inbox/new') {
   const output = normalizeCaptureClassificationOutput({
     status: 'ok',
     selector: { status: 'selected' },
@@ -42,7 +42,7 @@ function createClassification(name = 'capture-a.md', captureInboxPath = 'capture
 test('preserves original capture source identity without writing or moving Mind files', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-capture-source-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const capturePath = path.join(mindRoot, 'capture', 'inbox', 'capture-a.md');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'capture-a.md');
   const content = '# Capture A\n\nOriginal capture source content.\n';
   mkdirSync(path.dirname(capturePath), { recursive: true });
   writeFileSync(capturePath, content);
@@ -57,7 +57,7 @@ test('preserves original capture source identity without writing or moving Mind 
 
     assert.equal(record.status, 'preserved');
     assert.equal(record.classificationId, classification.classificationId);
-    assert.equal(record.originalCapture.path, 'capture/inbox/capture-a.md');
+    assert.equal(record.originalCapture.path, 'inbox/new/capture-a.md');
     assert.equal(record.originalCapture.contentSha256, sha256(content));
     assert.equal(record.retentionPolicy, 'preserve-in-place-until-approved-outcome-defined');
     assert.equal(record.safety.writesToMind, false);
@@ -113,7 +113,7 @@ test('source preservation gate blocks when preservation evidence is missing', ()
 test('source preservation record blocks unsafe capture paths', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-capture-source-unsafe-'));
   const mindRoot = path.join(tempDir, 'mind');
-  mkdirSync(path.join(mindRoot, 'capture', 'inbox'), { recursive: true });
+  mkdirSync(path.join(mindRoot, 'inbox', 'new'), { recursive: true });
 
   try {
     const classification = createClassification('../escape.md');
@@ -134,7 +134,7 @@ test('source preservation record blocks unsafe capture paths', () => {
 test('source preservation record blocks missing original capture file', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-capture-source-missing-'));
   const mindRoot = path.join(tempDir, 'mind');
-  mkdirSync(path.join(mindRoot, 'capture', 'inbox'), { recursive: true });
+  mkdirSync(path.join(mindRoot, 'inbox', 'new'), { recursive: true });
 
   try {
     const classification = createClassification();
@@ -157,7 +157,7 @@ test('source preservation record blocks missing original capture file', () => {
 test('source preservation gate blocks mismatched source evidence', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-capture-source-mismatch-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const capturePath = path.join(mindRoot, 'capture', 'inbox', 'capture-a.md');
+  const capturePath = path.join(mindRoot, 'inbox', 'new', 'capture-a.md');
   mkdirSync(path.dirname(capturePath), { recursive: true });
   writeFileSync(capturePath, '# Capture A\n');
 
@@ -183,7 +183,7 @@ test('source preservation gate blocks mismatched source evidence', () => {
 test('source preservation record blocks symlink captures', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'mind-capture-source-symlink-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const inboxPath = path.join(mindRoot, 'capture', 'inbox');
+  const inboxPath = path.join(mindRoot, 'inbox', 'new');
   const targetPath = path.join(tempDir, 'source.md');
   const capturePath = path.join(inboxPath, 'capture-a.md');
   mkdirSync(inboxPath, { recursive: true });

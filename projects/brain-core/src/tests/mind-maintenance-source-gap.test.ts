@@ -170,7 +170,7 @@ test('requires exact candidate path, location, and claim text', () => {
         reportDate: '2026-06-13',
         candidates: [
           {
-            path: 'live/dashboard.md',
+            path: 'system/reports/dashboard.md',
             location: 'Strategy',
             claim: 'A factual claim.',
             kind: 'external-factual',

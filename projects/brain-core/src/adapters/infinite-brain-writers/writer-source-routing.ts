@@ -1,6 +1,6 @@
 /**
  * Infinite Brain Source Routing Writer
- * Moves one explicitly approved existing Markdown file to one exact path under resources/ or legacy sources/.
+ * Moves one explicitly approved canonical Markdown file to one exact canonical resources/ path.
  * No overwrite, folder move, glob, symlink, or autonomous destination selection.
  */
 
@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   MIND_RESOURCE_WRITE_PREFIXES,
+  isCanonicalMindMutationSourcePath,
   normalizeExactMindMarkdownPathForPrefixes,
 } from '../../mind-paths.js';
 import { createWriterAuditRecord, persistWriterAuditRecord } from './writer-audit-log.js';
@@ -196,7 +197,7 @@ export function runSourceRoutingMove(
   if (!input.approvedAt || Number.isNaN(Date.parse(input.approvedAt))) blockers.push('validApprovedAtRequired');
   if (!input.expiresAt || Number.isNaN(Date.parse(input.expiresAt))) blockers.push('validExpiresAtRequired');
   else if (Date.parse(input.expiresAt) <= Date.now()) blockers.push('approvalExpired');
-  if (!sourcePath || MIND_RESOURCE_WRITE_PREFIXES.some(prefix => sourcePath.startsWith(prefix))) blockers.push('invalidExactSourcePath');
+  if (!sourcePath || !isCanonicalMindMutationSourcePath(sourcePath) || MIND_RESOURCE_WRITE_PREFIXES.some(prefix => sourcePath.startsWith(prefix))) blockers.push('invalidExactSourcePath');
   if (!destinationPath) blockers.push('invalidExactSourcesDestinationPath');
   if (sourcePath && destinationPath && sourcePath === destinationPath) blockers.push('sourceDestinationMustDiffer');
 

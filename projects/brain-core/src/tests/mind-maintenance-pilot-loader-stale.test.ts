@@ -15,7 +15,7 @@ async function createPilotFixture(): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), 'mind-maintenance-pilot-'));
 
   const contents: Record<string, string> = {
-    'router/00-current-context.md': `# Current Context
+    'system/agent-context/00-current-context.md': `# Current Context
 
 ## Status
 
@@ -26,12 +26,19 @@ review_after: 2026-06-05
 freshness_risk: high
 \`\`\`
 `,
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md': `# QA Memory Strategy
 
 Status: draft
 Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: medium
+`,
+    'organizations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
+
+Status: current
+Last reviewed: 2026-06-13
+Review after: 2026-07-13
+Freshness risk: high
 `,
     'wiki/organisations/prochat/brand/product-strategy.md': `# ProChat OS Strategy
 
@@ -40,7 +47,7 @@ Last reviewed: 2026-06-13
 Review after: 2026-07-13
 Freshness risk: high
 `,
-    'live/dashboard.md': '# Dashboard\n',
+    'system/reports/dashboard.md': '# Dashboard\n',
     'system/automation-roadmap.md': '# Automation Roadmap\n',
   };
 
@@ -96,6 +103,21 @@ test('loads the bounded five-file target-path pilot dataset during migration', a
   assert.ok(dataset.files.every((file) => file.absolutePath.startsWith(root)));
 });
 
+test('loads an explicitly requested registered compatibility reader without making it a default', async (context) => {
+  const root = await createPilotFixture();
+  context.after(async () => rm(root, { recursive: true, force: true }));
+  const requestedPaths = [...MIND_MAINTENANCE_TARGET_PILOT_FILES];
+  requestedPaths[2] = 'wiki/organisations/prochat/brand/product-strategy.md';
+  const compatibilityPath = path.join(root, requestedPaths[2]!);
+  await mkdir(path.dirname(compatibilityPath), { recursive: true });
+  await writeFile(compatibilityPath, '# Compatibility strategy\n', 'utf8');
+
+  const dataset = await loadMindMaintenancePilotDataset(root, requestedPaths);
+
+  assert.equal(dataset.files[2]?.path, 'wiki/organisations/prochat/brand/product-strategy.md');
+  assert.notDeepEqual(MIND_MAINTENANCE_PILOT_FILES, requestedPaths);
+});
+
 test('rejects substituted, missing, duplicate, and relative-root datasets', async (context) => {
   const root = await createPilotFixture();
   context.after(async () => rm(root, { recursive: true, force: true }));
@@ -129,7 +151,7 @@ test('emits the expected stale finding for current context after review_after', 
   context.after(async () => rm(root, { recursive: true, force: true }));
 
   const dataset = await loadMindMaintenancePilotDataset(root);
-  const currentContext = dataset.files.find((file) => file.path === 'router/00-current-context.md');
+  const currentContext = dataset.files.find((file) => file.path === 'system/agent-context/00-current-context.md');
   assert.ok(currentContext);
 
   const finding = detectStalePageFinding({ file: currentContext, reportDate: '2026-06-13' });
@@ -137,7 +159,7 @@ test('emits the expected stale finding for current context after review_after', 
   assert.ok(finding);
   assert.equal(finding.type, 'stale-page');
   assert.equal(finding.status, 'open');
-  assert.deepEqual(finding.paths, ['router/00-current-context.md']);
+  assert.deepEqual(finding.paths, ['system/agent-context/00-current-context.md']);
   assert.equal(finding.risk, 'high');
   assert.equal(finding.requiresApproval, true);
   assert.equal(finding.noWritePerformed, true);
@@ -145,15 +167,15 @@ test('emits the expected stale finding for current context after review_after', 
   assert.match(finding.uncertainty, /does not show.*incorrect/i);
   assert.equal(
     finding.deduplicationKey,
-    'stale-page:router/00-current-context.md:review_after',
+    'stale-page:system/agent-context/00-current-context.md:review_after',
   );
 });
 
 test('detects stale freshness metadata inside Mind-style fenced yaml status blocks', () => {
   const finding = detectStalePageFinding({
     file: {
-      path: 'router/00-current-context.md',
-      absolutePath: '/tmp/mind/router/00-current-context.md',
+      path: 'system/agent-context/00-current-context.md',
+      absolutePath: '/tmp/mind/system/agent-context/00-current-context.md',
       content: `# Current Context
 
 ## Status
@@ -171,7 +193,7 @@ freshness_risk: high
 
   assert.ok(finding);
   assert.equal(finding.type, 'stale-page');
-  assert.deepEqual(finding.paths, ['router/00-current-context.md']);
+  assert.deepEqual(finding.paths, ['system/agent-context/00-current-context.md']);
   assert.equal(finding.risk, 'high');
   assert.equal(finding.requiresApproval, true);
   assert.equal(finding.noWritePerformed, true);
@@ -186,9 +208,9 @@ test('does not mark future-review or metadata-free pages as stale', async (conte
 
   const dataset = await loadMindMaintenancePilotDataset(root);
   const qaStrategy = dataset.files.find(
-    (file) => file.path === 'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    (file) => file.path === 'projects/prochat-qa-memory/STRATEGY-PLAN.md',
   );
-  const dashboard = dataset.files.find((file) => file.path === 'live/dashboard.md');
+  const dashboard = dataset.files.find((file) => file.path === 'system/reports/dashboard.md');
   assert.ok(qaStrategy);
   assert.ok(dashboard);
 
@@ -201,7 +223,7 @@ test('does not treat the review_after date itself as overdue', async (context) =
   context.after(async () => rm(root, { recursive: true, force: true }));
 
   const dataset = await loadMindMaintenancePilotDataset(root);
-  const currentContext = dataset.files.find((file) => file.path === 'router/00-current-context.md');
+  const currentContext = dataset.files.find((file) => file.path === 'system/agent-context/00-current-context.md');
   assert.ok(currentContext);
 
   assert.equal(detectStalePageFinding({ file: currentContext, reportDate: '2026-06-05' }), null);
@@ -212,7 +234,7 @@ test('rejects invalid report dates', async (context) => {
   context.after(async () => rm(root, { recursive: true, force: true }));
 
   const dataset = await loadMindMaintenancePilotDataset(root);
-  const currentContext = dataset.files.find((file) => file.path === 'router/00-current-context.md');
+  const currentContext = dataset.files.find((file) => file.path === 'system/agent-context/00-current-context.md');
   assert.ok(currentContext);
 
   assert.throws(

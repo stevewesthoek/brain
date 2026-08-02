@@ -1,6 +1,6 @@
 /**
  * Infinite Brain Live Status Writer
- * Guarded single-file status updates for existing Markdown pages under projects/ or legacy live/.
+ * Guarded single-file status updates for existing Markdown pages under canonical projects/.
  */
 
 import fs, {

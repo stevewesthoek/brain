@@ -16,7 +16,7 @@ function createFile(
 
 test('emits a finding for explicit active and completed metadata', () => {
   const file = createFile(
-    'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
+    'projects/prochat-qa-memory/STRATEGY-PLAN.md',
     `---
 status: active
 completed_on: 2026-06-10
@@ -40,7 +40,7 @@ completed_on: 2026-06-10
 
 test('emits a finding for current navigation with explicit supersession metadata', () => {
   const file = createFile(
-    'live/dashboard.md',
+    'system/reports/dashboard.md',
     `# Dashboard
 
 Status: current
@@ -57,7 +57,7 @@ Superseded by: Brain Console
 
 test('does not emit for active metadata without explicit completion evidence', () => {
   const file = createFile(
-    'live/dashboard.md',
+    'system/reports/dashboard.md',
     `# Dashboard
 
 Status: current
@@ -99,7 +99,7 @@ Status: active
 
 test('does not treat unrelated dates as completion evidence', () => {
   const file = createFile(
-    'wiki/organisations/prochat/brand/product-strategy.md',
+    'organizations/prochat/brand/product-strategy.md',
     `---
 status: current
 last_reviewed: 2026-06-13
@@ -114,7 +114,7 @@ review_after: 2026-07-13
 
 test('rejects invalid report dates', () => {
   const file = createFile(
-    'live/dashboard.md',
+    'system/reports/dashboard.md',
     `Status: active
 Completed: true
 `,

@@ -21,7 +21,7 @@ async function createMindStructureFixture(): Promise<string> {
   await writeFixtureFile(mindRoot, 'wiki/log.md', '# Log\n');
   await writeFixtureFile(
     mindRoot,
-    'router/00-current-context.md',
+    'system/agent-context/00-current-context.md',
     `# Current Context
 
 ## Status
@@ -34,7 +34,7 @@ freshness_risk: high
 \`\`\`
 `,
   );
-  await writeFixtureFile(mindRoot, 'router/00-memory-map.md', '# Memory Map\n');
+  await writeFixtureFile(mindRoot, 'system/agent-context/00-memory-map.md', '# Memory Map\n');
   await mkdir(path.join(mindRoot, 'inbox/new'), { recursive: true });
   await mkdir(path.join(mindRoot, 'inbox/raw'), { recursive: true });
   await mkdir(path.join(mindRoot, 'inbox/processed'), { recursive: true });
@@ -53,7 +53,7 @@ freshness_risk: high
   await mkdir(path.join(mindRoot, 'system/generated/graph'), { recursive: true });
 
   for (const pilotPath of MIND_MAINTENANCE_PILOT_FILES) {
-    const content = pilotPath === 'router/00-current-context.md'
+    const content = pilotPath === 'system/agent-context/00-current-context.md'
       ? `# Current Context
 
 ## Status
@@ -149,7 +149,7 @@ test('fails when freshness metadata is present but invalid', async (context) => 
   context.after(async () => rm(mindRoot, { recursive: true, force: true }));
   await writeFixtureFile(
     mindRoot,
-    'router/00-current-context.md',
+    'system/agent-context/00-current-context.md',
     `# Current Context
 
 ## Status
@@ -170,7 +170,7 @@ freshness_risk: urgent
 
   assert.equal(report.status, 'fail');
   const freshnessCheck = report.checks.find(
-    (check) => check.id === 'freshness-metadata:router/00-current-context.md',
+    (check) => check.id === 'freshness-metadata:system/agent-context/00-current-context.md',
   );
   assert.equal(freshnessCheck?.status, 'fail');
   assert.match(freshnessCheck?.message ?? '', /last_reviewed/);

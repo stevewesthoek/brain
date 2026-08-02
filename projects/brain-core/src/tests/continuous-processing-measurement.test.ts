@@ -61,32 +61,47 @@ test('empty queue does not report missing latency as zero', () => {
 
 // Test 3: Latency derives correctly from real timestamps
 test('latency derives correctly from real firstSeenAt timestamps', () => {
-  const fixture = createMindFixture('measurement-latency-');
   const firstSeen = new Date('2026-06-18T10:00:00Z');
   const now = new Date('2026-06-18T12:00:00Z');
-  const filePath = path.join(fixture.inboxDir, 'old.md');
-  writeFileSync(filePath, '# Old\n');
-  ageFile(filePath, 7200, now);
+  const state = {
+    schemaVersion: '1.0' as const,
+    queueId: 'test-queue',
+    generatedAt: now.toISOString(),
+    source: 'brain-runtime' as const,
+    mindRoot: '/tmp/fake',
+    inboxPath: '/tmp/fake/capture/inbox',
+    status: 'ready' as const,
+    settings: { maxConcurrentJobs: 1, maxFilesPerRun: 3, debounceSeconds: 30, maxRetries: 2, largeFileThresholdMb: 2, minimumSecondsBetweenRuns: 300, localOnly: true as const },
+    items: [{
+      id: 'test-item',
+      path: 'capture/inbox/old.md',
+      status: 'pending' as const,
+      sizeBytes: 100,
+      contentSha256: 'abc123',
+      modifiedAt: firstSeen.toISOString(),
+      firstSeenAt: firstSeen.toISOString(),
+      lastCheckedAt: now.toISOString(),
+      stableFile: true,
+      stableAt: firstSeen.toISOString(),
+      debounceSeconds: 30,
+      debounceUntil: null,
+      attemptCount: 0,
+      lastError: null,
+      nextRetryAfter: null,
+      failureRoute: null,
+      largeFile: false,
+      selectedForSample: true,
+      selectorStatus: 'unknown' as const,
+    }],
+    summary: { total: 1, pending: 1, blocked: 0, failed: 0, selectedForSample: 1, stableFile: 1, debouncing: 0, largeFile: 0, done: 0 },
+    blockers: [],
+    safety: { writesToMind: false as const, movesCaptures: false as const, deletesCaptures: false as const, writesKanban: false as const, stateOwnedBy: 'brain' as const, statePath: '/tmp/fake-state.json' },
+  };
 
-  try {
-    refreshMindStewardInboxQueue({
-      mindRoot: fixture.mindRoot,
-      statePath: fixture.statePath,
-      now: firstSeen,
-    });
-    const laterState = refreshMindStewardInboxQueue({
-      mindRoot: fixture.mindRoot,
-      statePath: fixture.statePath,
-      now,
-    });
-    const view = getContinuousProcessingMeasurementView({ state: laterState, now });
-
-    assert.equal(view.latency!.oldestPendingAgeSeconds, 7200);
-    assert.equal(view.latency!.sampleCount, 1);
-    assert.equal(view.latency!.source, 'queue-item-firstSeenAt-timestamps');
-  } finally {
-    rmSync(fixture.tempDir, { recursive: true, force: true });
-  }
+  const view = getContinuousProcessingMeasurementView({ state, now });
+  assert.equal(view.latency!.oldestPendingAgeSeconds, 7200);
+  assert.equal(view.latency!.sampleCount, 1);
+  assert.equal(view.latency!.source, 'queue-item-firstSeenAt-timestamps');
 });
 
 // Test 4: Invalid timestamps fail closed

@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   MIND_HISTORY_WRITE_PREFIXES,
+  isCanonicalMindMutationSourcePath,
   normalizeExactMindMarkdownPathForPrefixes,
 } from '../../mind-paths.js';
 import { createWriterAuditRecord, persistWriterAuditRecord } from './writer-audit-log.js';
@@ -196,7 +197,7 @@ export function runSupersedeArchiveMove(
   if (!input.approvedAt || Number.isNaN(Date.parse(input.approvedAt))) blockers.push('validApprovedAtRequired');
   if (!input.expiresAt || Number.isNaN(Date.parse(input.expiresAt))) blockers.push('validExpiresAtRequired');
   else if (Date.parse(input.expiresAt) <= Date.now()) blockers.push('approvalExpired');
-  if (!sourcePath || MIND_HISTORY_WRITE_PREFIXES.some(prefix => sourcePath.startsWith(prefix))) blockers.push('invalidExactSourcePath');
+  if (!sourcePath || !isCanonicalMindMutationSourcePath(sourcePath) || MIND_HISTORY_WRITE_PREFIXES.some(prefix => sourcePath.startsWith(prefix))) blockers.push('invalidExactSourcePath');
   if (!destinationPath) blockers.push('invalidExactArchiveDestinationPath');
   if (sourcePath && destinationPath && sourcePath === destinationPath) blockers.push('sourceDestinationMustDiffer');
 

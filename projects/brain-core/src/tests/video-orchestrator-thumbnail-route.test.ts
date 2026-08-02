@@ -1002,7 +1002,7 @@ test('thumbnail error GET and HEAD responses share byte-accurate representation 
 
 
 
-test('thumbnail generate route returns approval plus variant_a and variant_b attachments', async () => {
+test('thumbnail generate route is fail-closed during BS0.1 containment', async () => {
   const { Readable } = await import('node:stream');
   const { mkdtemp, mkdir, rm, writeFile } = await import('node:fs/promises');
   const { join } = await import('node:path');
@@ -1072,23 +1072,8 @@ sys.exit(0)
 
     await routeRequest(request, response as unknown as ServerResponse);
 
-    assert.equal(response.statusCode, 200);
-    const payload = JSON.parse(response.body) as {
-      ok: boolean;
-      approval: { status: string };
-      generation: {
-        contentItemId: string;
-        variants: Array<{ contentItemId: string; variantId: string; path: string }>;
-      };
-    };
-    assert.equal(payload.ok, true);
-    assert.equal(payload.approval.status, 'pending');
-    assert.equal(payload.generation.contentItemId, 'content-moving-video-123');
-    assert.deepEqual(payload.generation.variants.map((variant) => variant.variantId), ['variant_a', 'variant_b']);
-    assert.ok(payload.generation.variants.every((variant) => variant.contentItemId === 'content-moving-video-123'));
-    // Variants should now have real file paths (not S3 URLs)
-    assert.ok(payload.generation.variants.every((variant) => !variant.path.startsWith('s3://')));
-    assert.ok(payload.generation.variants.every((variant) => variant.path.includes('.jpg')));
+    assert.equal(response.statusCode, 503);
+    assert.equal(JSON.parse(response.body).code, 'mutable_capability_contained');
   } finally {
     if (originalHome === undefined) {
       delete process.env.HOME;

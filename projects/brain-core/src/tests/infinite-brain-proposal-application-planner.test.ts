@@ -33,7 +33,7 @@ function validApproval(overrides: Partial<ProposalApprovalRecord> = {}): Proposa
     reason: 'Approved bounded wiki update.',
     targets: [
       {
-        path: 'wiki/example.md',
+        path: 'knowledge/example.md',
         expectedBeforeHash: 'a'.repeat(64),
         destinationPath: null,
         allowedSections: ['Approved section'],
@@ -138,7 +138,7 @@ test('allows create only when the before hash is null', () => {
   const approval = validApproval({
     action: 'create',
     targets: [{
-      path: 'wiki/new-page.md',
+      path: 'knowledge/new-page.md',
       expectedBeforeHash: null,
       destinationPath: null,
       allowedSections: [],
@@ -160,7 +160,7 @@ test('allows create only when the before hash is null', () => {
 
 test('accepts valid preserved source references', () => {
   const reference = {
-    path: 'sources/research/example.md',
+    path: 'resources/research/example.md',
     location: '## Evidence',
     summary: 'Supports the approved wiki update.',
   };
@@ -239,7 +239,7 @@ test('accepts explicitly approved replacement source references', () => {
     {
       ...proposal,
       sourceReferences: [{
-        path: 'sources/old.md',
+        path: 'resources/old.md',
         location: '## Old evidence',
         summary: 'Previously approved evidence.',
       }],
@@ -247,7 +247,7 @@ test('accepts explicitly approved replacement source references', () => {
     validApproval({
       replaceSourceReferences: true,
       sourceReferences: [{
-        path: 'sources/new.md',
+        path: 'resources/new.md',
         location: '## New evidence',
         summary: 'Explicit approved replacement evidence.',
       }],

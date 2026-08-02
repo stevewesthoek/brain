@@ -39,7 +39,7 @@ function withEnv<T>(values: Record<string, string>, run: () => T): T {
 test('Recovery procedure is ready for an applied wiki update and does not mutate Mind', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'writer-recovery-wiki-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const targetPath = 'wiki/example.md';
+  const targetPath = 'knowledge/example.md';
   const absoluteTargetPath = path.join(mindRoot, targetPath);
   const beforeContent = '# Example\n\nBefore.\n';
   const afterContent = '# Example\n\nAfter.\n';
@@ -63,7 +63,7 @@ test('Recovery procedure is ready for an applied wiki update and does not mutate
       expectedBeforeHash: sha256(beforeContent),
       newContent: afterContent,
       allowedSections: ['Example'],
-      contentIntent: 'Test recovery procedure for an exact wiki update.',
+      contentIntent: 'Test recovery procedure for an exact knowledge update.',
       operator: 'human-reviewer',
       reason: 'Apply test update before generating recovery procedure.',
       manualSingleWriteConfirm: true,
@@ -92,7 +92,7 @@ test('Recovery procedure is ready for an applied wiki update and does not mutate
 test('Recovery procedure is ready for an applied live-status update', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'writer-recovery-live-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const targetPath = 'live/projects/example.md';
+  const targetPath = 'projects/example.md';
   const absoluteTargetPath = path.join(mindRoot, targetPath);
   const beforeContent = '# Project\n\nStatus: active\n';
   const afterContent = '# Project\n\nStatus: complete\n';
@@ -116,7 +116,7 @@ test('Recovery procedure is ready for an applied live-status update', () => {
       expectedBeforeHash: sha256(beforeContent),
       newContent: afterContent,
       allowedSections: ['Status'],
-      contentIntent: 'Test recovery procedure for an exact live status update.',
+      contentIntent: 'Test recovery procedure for an exact canonical project status update.',
       operator: 'human-reviewer',
       reason: 'Apply test update before generating recovery procedure.',
       manualSingleWriteConfirm: true,
@@ -140,8 +140,8 @@ test('Recovery procedure is ready for an applied live-status update', () => {
 test('Recovery procedure is ready for an applied supersede/archive move', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'writer-recovery-archive-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const sourcePath = 'live/projects/example.md';
-  const destinationPath = 'archive/projects/example.md';
+  const sourcePath = 'projects/example.md';
+  const destinationPath = 'history/projects/example.md';
   const source = path.join(mindRoot, sourcePath);
   const destination = path.join(mindRoot, destinationPath);
   const content = '# Project\n\nStatus: obsolete\n';
@@ -197,8 +197,8 @@ test('Recovery procedure is ready for an applied supersede/archive move', () => 
 test('Recovery procedure is ready for an applied source-routing move', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'writer-recovery-source-routing-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const sourcePath = 'capture/inbox/research.md';
-  const destinationPath = 'sources/research/research.md';
+  const sourcePath = 'inbox/new/research.md';
+  const destinationPath = 'resources/research/research.md';
   const source = path.join(mindRoot, sourcePath);
   const destination = path.join(mindRoot, destinationPath);
   const content = '# Research\n\nEvidence.\n';
@@ -248,7 +248,7 @@ test('Recovery procedure is ready for an applied source-routing move', () => {
 test('Recovery procedure blocks when the rollback artifact is missing', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'writer-recovery-missing-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const targetPath = 'wiki/example.md';
+  const targetPath = 'knowledge/example.md';
   const absoluteTargetPath = path.join(mindRoot, targetPath);
   mkdirSync(path.dirname(absoluteTargetPath), { recursive: true });
   writeFileSync(absoluteTargetPath, '# Example\n\nAfter.\n');
@@ -296,7 +296,7 @@ test('Recovery procedure blocks when the rollback artifact is missing', () => {
 test('Recovery procedure blocks when current Mind state no longer matches the write report', () => {
   const tempDir = mkdtempSync(path.join('/tmp', 'writer-recovery-mismatch-'));
   const mindRoot = path.join(tempDir, 'mind');
-  const targetPath = 'wiki/example.md';
+  const targetPath = 'knowledge/example.md';
   const absoluteTargetPath = path.join(mindRoot, targetPath);
   const beforeContent = '# Example\n\nBefore.\n';
   const afterContent = '# Example\n\nAfter.\n';

@@ -1,6 +1,6 @@
 /**
  * Mind Steward persistent inbox queue.
- * Brain-owned runtime state for capture/inbox candidates. This adapter does
+ * Brain-owned runtime state for canonical inbox/new candidates. This adapter does
  * not write to Mind or move captures.
  */
 

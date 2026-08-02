@@ -67,7 +67,7 @@ export const REQUIRED_MIND_STRUCTURE_PATHS: readonly MindStructureRequiredPath[]
 ] as const;
 
 const FRESHNESS_SCAN_PATHS = [
-  'router/00-current-context.md',
+  'system/agent-context/00-current-context.md',
   ...MIND_MAINTENANCE_PILOT_FILES,
 ] as const;
 

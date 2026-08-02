@@ -178,12 +178,12 @@ function createWikiWriterFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const wikiDir = path.join(mindRoot, 'wiki');
-  const targetPath = 'wiki/example.md';
+  const knowledgeDir = path.join(mindRoot, 'knowledge');
+  const targetPath = 'knowledge/example.md';
   const absoluteTargetPath = path.join(mindRoot, targetPath);
   const beforeContent = '# Example\n\nBefore.\n';
 
-  mkdirSync(wikiDir, { recursive: true });
+  mkdirSync(knowledgeDir, { recursive: true });
   writeFileSync(absoluteTargetPath, beforeContent);
 
   return {
@@ -206,16 +206,16 @@ function createWikiWriterFixture(prefix: string): {
       allowedSections: ['Example'],
       contentIntent: 'Replace only the approved page content.',
       operator: 'human-reviewer',
-      reason: 'Apply the approved bounded wiki update.',
+      reason: 'Apply the approved bounded knowledge update.',
       manualSingleWriteConfirm: true,
       mindRoot,
     },
   };
 }
 
-test('Wiki single-file writer applies one exact approved path atomically', () => {
+test('Wiki single-file writer applies one exact approved canonical knowledge path atomically', () => {
   const fixture = createWikiWriterFixture('wiki-writer-success-');
-  const neighborPath = path.join(fixture.mindRoot, 'wiki', 'neighbor.md');
+  const neighborPath = path.join(fixture.mindRoot, 'knowledge', 'neighbor.md');
   const rollbackDir = path.join(fixture.tempDir, 'rollbacks');
   const reportPath = path.join(fixture.tempDir, 'wiki-write-report.json');
   const originalRollbackEnv = process.env.IBR_WIKI_WRITER_ROLLBACK_DIR;
@@ -245,9 +245,9 @@ test('Wiki single-file writer applies one exact approved path atomically', () =>
   }
 });
 
-test('Wiki single-file writer accepts a target knowledge path during Mind folder migration', () => {
+test('Wiki single-file writer rejects a compatibility wiki target during Mind folder migration', () => {
   const fixture = createWikiWriterFixture('wiki-writer-knowledge-target-');
-  const targetPath = 'knowledge/example.md';
+  const targetPath = 'wiki/example.md';
   const absoluteTargetPath = path.join(fixture.mindRoot, targetPath);
   mkdirSync(path.dirname(absoluteTargetPath), { recursive: true });
   writeFileSync(absoluteTargetPath, fixture.beforeContent);
@@ -255,9 +255,10 @@ test('Wiki single-file writer accepts a target knowledge path during Mind folder
   try {
     const report = runWikiWriterSingleFileWrite({ ...fixture.input, targetPath });
 
-    assert.equal(report.status, 'applied');
-    assert.deepEqual(report.changedPaths, [targetPath]);
-    assert.equal(readFileSync(absoluteTargetPath, 'utf8'), fixture.input.newContent);
+    assert.equal(report.status, 'blocked');
+    assert(report.blockers.includes('invalidExactWikiTargetPath'));
+    assert.deepEqual(report.changedPaths, []);
+    assert.equal(readFileSync(absoluteTargetPath, 'utf8'), fixture.beforeContent);
     assert.equal(readFileSync(fixture.absoluteTargetPath, 'utf8'), fixture.beforeContent);
   } finally {
     rmSync(fixture.tempDir, { recursive: true, force: true });
@@ -387,8 +388,8 @@ test('Wiki single-file writer persists rollback snapshot and structured write re
 
 test('Wiki single-file writer rejects a symlink target without changing Mind', async () => {
   const fixture = createWikiWriterFixture('wiki-writer-symlink-');
-  const realTarget = path.join(fixture.mindRoot, 'wiki', 'real.md');
-  const symlinkTarget = path.join(fixture.mindRoot, 'wiki', 'linked.md');
+  const realTarget = path.join(fixture.mindRoot, 'knowledge', 'real.md');
+  const symlinkTarget = path.join(fixture.mindRoot, 'knowledge', 'linked.md');
 
   writeFileSync(realTarget, fixture.beforeContent);
   rmSync(fixture.absoluteTargetPath, { force: true });
@@ -398,7 +399,7 @@ test('Wiki single-file writer rejects a symlink target without changing Mind', a
   try {
     const report = runWikiWriterSingleFileWrite({
       ...fixture.input,
-      targetPath: 'wiki/linked.md',
+      targetPath: 'knowledge/linked.md',
       expectedBeforeHash: sha256ForWikiWriterTest(fixture.beforeContent),
     });
 
@@ -428,12 +429,12 @@ function createLiveStatusWriterFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const liveDir = path.join(mindRoot, 'live', 'projects');
-  const targetPath = 'live/projects/example.md';
+  const projectDir = path.join(mindRoot, 'projects');
+  const targetPath = 'projects/example.md';
   const absoluteTargetPath = path.join(mindRoot, targetPath);
   const beforeContent = '# Example project\n\nStatus: active\n';
 
-  mkdirSync(liveDir, { recursive: true });
+  mkdirSync(projectDir, { recursive: true });
   writeFileSync(absoluteTargetPath, beforeContent);
 
   return {
@@ -456,16 +457,16 @@ function createLiveStatusWriterFixture(prefix: string): {
       allowedSections: ['Status'],
       contentIntent: 'Update only the approved current project status.',
       operator: 'human-reviewer',
-      reason: 'Apply the approved bounded live-page status update.',
+      reason: 'Apply the approved bounded project-page status update.',
       manualSingleWriteConfirm: true,
       mindRoot,
     },
   };
 }
 
-test('Live status writer applies one exact approved live path atomically', () => {
+test('Live status writer applies one exact approved canonical project path atomically', () => {
   const fixture = createLiveStatusWriterFixture('live-status-success-');
-  const neighborPath = path.join(fixture.mindRoot, 'live', 'projects', 'neighbor.md');
+  const neighborPath = path.join(fixture.mindRoot, 'projects', 'neighbor.md');
   const rollbackDir = path.join(fixture.tempDir, 'rollbacks');
   const reportPath = path.join(fixture.tempDir, 'live-status-write-report.json');
   const originalRollbackEnv = process.env.IBR_LIVE_STATUS_WRITER_ROLLBACK_DIR;
@@ -508,7 +509,7 @@ test('Live status writer rejects before-hash mismatch without changing Mind', ()
   }
 });
 
-test('Live status writer rejects broad, traversal, and non-live paths', () => {
+test('Live status writer rejects broad, traversal, and noncanonical paths', () => {
   const fixture = createLiveStatusWriterFixture('live-status-invalid-path-');
   try {
     for (const targetPath of ['', 'live/', 'live/*.md', 'live/../wiki/example.md', 'wiki/example.md']) {
@@ -577,8 +578,8 @@ test('Live status writer persists rollback snapshot and structured report', () =
 
 test('Live status writer rejects a symlink target without changing Mind', async () => {
   const fixture = createLiveStatusWriterFixture('live-status-symlink-');
-  const realTarget = path.join(fixture.mindRoot, 'live', 'projects', 'real.md');
-  const symlinkTarget = path.join(fixture.mindRoot, 'live', 'projects', 'linked.md');
+  const realTarget = path.join(fixture.mindRoot, 'projects', 'real.md');
+  const symlinkTarget = path.join(fixture.mindRoot, 'projects', 'linked.md');
   writeFileSync(realTarget, fixture.beforeContent);
   const { symlinkSync } = await import('node:fs');
   symlinkSync(realTarget, symlinkTarget);
@@ -586,7 +587,7 @@ test('Live status writer rejects a symlink target without changing Mind', async 
   try {
     const report = runLiveStatusSingleFileWrite({
       ...fixture.input,
-      targetPath: 'live/projects/linked.md',
+      targetPath: 'projects/linked.md',
       expectedBeforeHash: sha256ForWikiWriterTest(fixture.beforeContent),
     });
     assert.equal(report.status, 'blocked');
@@ -616,8 +617,8 @@ function createSupersedeArchiveFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const sourcePath = 'live/projects/example.md';
-  const destinationPath = 'archive/projects/example.md';
+  const sourcePath = 'projects/example.md';
+  const destinationPath = 'history/projects/example.md';
   const absoluteSourcePath = path.join(mindRoot, sourcePath);
   const absoluteDestinationPath = path.join(mindRoot, destinationPath);
   const content = '# Example project\n\nStatus: obsolete\n';
@@ -646,7 +647,7 @@ function createSupersedeArchiveFixture(prefix: string): {
       destinationPath,
       expectedSourceHash: sha256ForWikiWriterTest(content),
       contradictionSummary: 'The current project status conflicts with completed evidence.',
-      supersessionReason: 'Archive the obsolete live page while preserving history.',
+      supersessionReason: 'Archive the obsolete project page while preserving history.',
       operator: 'human-reviewer',
       manualSingleMoveConfirm: true,
       mindRoot,
@@ -654,7 +655,7 @@ function createSupersedeArchiveFixture(prefix: string): {
   };
 }
 
-test('Supersede/archive writer moves one exact approved file into archive', () => {
+test('Supersede/archive writer moves one exact approved file into canonical history', () => {
   const fixture = createSupersedeArchiveFixture('supersede-archive-success-');
   const rollbackDir = path.join(fixture.tempDir, 'rollbacks');
   const reportPath = path.join(fixture.tempDir, 'supersede-archive-report.json');
@@ -695,7 +696,7 @@ test('Supersede/archive writer rejects source hash mismatch', () => {
   }
 });
 
-test('Supersede/archive writer rejects broad, traversal, archive-source, and non-archive destinations', () => {
+test('Supersede/archive writer rejects broad, traversal, legacy-source, and non-history destinations', () => {
   const fixture = createSupersedeArchiveFixture('supersede-archive-invalid-');
   try {
     const cases = [
@@ -791,26 +792,26 @@ test('Supersede/archive writer persists rollback metadata and move report', () =
 test('Supersede/archive writer rejects symlink sources and symlink archive parents', async () => {
   const fixture = createSupersedeArchiveFixture('supersede-archive-symlink-');
   const { symlinkSync } = await import('node:fs');
-  const realSource = path.join(fixture.mindRoot, 'live', 'projects', 'real.md');
-  const linkedSource = path.join(fixture.mindRoot, 'live', 'projects', 'linked.md');
+  const realSource = path.join(fixture.mindRoot, 'projects', 'real.md');
+  const linkedSource = path.join(fixture.mindRoot, 'projects', 'linked.md');
   writeFileSync(realSource, fixture.content);
   symlinkSync(realSource, linkedSource);
   try {
     const sourceReport = runSupersedeArchiveMove({
       ...fixture.input,
-      sourcePath: 'live/projects/linked.md',
+      sourcePath: 'projects/linked.md',
       expectedSourceHash: sha256ForWikiWriterTest(fixture.content),
     });
     assert.equal(sourceReport.status, 'blocked');
     assert(sourceReport.blockers.includes('existingSourceFileRequired'));
 
-    const archiveReal = path.join(fixture.mindRoot, 'archive-real');
-    const archiveLink = path.join(fixture.mindRoot, 'archive-link');
+  const archiveReal = path.join(fixture.mindRoot, 'history-real');
+  const archiveLink = path.join(fixture.mindRoot, 'history-link');
     mkdirSync(archiveReal, { recursive: true });
     symlinkSync(archiveReal, archiveLink);
     const destinationReport = runSupersedeArchiveMove({
       ...fixture.input,
-      destinationPath: 'archive-link/example.md',
+      destinationPath: 'history-link/example.md',
     });
     assert.equal(destinationReport.status, 'blocked');
   } finally {
@@ -836,8 +837,8 @@ function createSourceRoutingFixture(prefix: string): {
 } {
   const tempDir = mkdtempSync(path.join('/tmp', prefix));
   const mindRoot = path.join(tempDir, 'mind');
-  const sourcePath = 'capture/inbox/research-draft.md';
-  const destinationPath = 'sources/research/research-draft.md';
+  const sourcePath = 'inbox/new/research-draft.md';
+  const destinationPath = 'resources/research/research-draft.md';
   const absoluteSourcePath = path.join(mindRoot, sourcePath);
   const absoluteDestinationPath = path.join(mindRoot, destinationPath);
   const content = '# Research draft\n\nSupported findings.\n';
@@ -865,7 +866,7 @@ function createSourceRoutingFixture(prefix: string): {
       sourcePath,
       destinationPath,
       expectedSourceHash: sha256ForWikiWriterTest(content),
-      routingReason: 'Route the approved research draft into the durable sources area.',
+      routingReason: 'Route the approved research draft into the durable resources area.',
       sourceSummary: 'Research summary with supporting evidence and uncertainty.',
       operator: 'human-reviewer',
       manualSingleMoveConfirm: true,
@@ -874,7 +875,7 @@ function createSourceRoutingFixture(prefix: string): {
   };
 }
 
-test('Source-routing writer moves one exact approved file into sources', () => {
+test('Source-routing writer moves one exact approved file into canonical resources', () => {
   const fixture = createSourceRoutingFixture('source-routing-success-');
   const rollbackDir = path.join(fixture.tempDir, 'rollbacks');
   const reportPath = path.join(fixture.tempDir, 'source-routing-report.json');
@@ -915,7 +916,7 @@ test('Source-routing writer rejects source hash mismatch', () => {
   }
 });
 
-test('Source-routing writer rejects broad, traversal, sources-origin, and non-sources destinations', () => {
+test('Source-routing writer rejects broad, traversal, legacy-source, and non-resources destinations', () => {
   const fixture = createSourceRoutingFixture('source-routing-invalid-');
   try {
     const cases = [
@@ -1013,27 +1014,27 @@ test('Source-routing writer persists rollback metadata and move report', () => {
 test('Source-routing writer rejects symlink sources and symlink destination parents', async () => {
   const fixture = createSourceRoutingFixture('source-routing-symlink-');
   const { symlinkSync } = await import('node:fs');
-  const realSource = path.join(fixture.mindRoot, 'capture', 'inbox', 'real.md');
-  const linkedSource = path.join(fixture.mindRoot, 'capture', 'inbox', 'linked.md');
+  const realSource = path.join(fixture.mindRoot, 'inbox', 'new', 'real.md');
+  const linkedSource = path.join(fixture.mindRoot, 'inbox', 'new', 'linked.md');
   writeFileSync(realSource, fixture.content);
   symlinkSync(realSource, linkedSource);
 
   try {
     const sourceReport = runSourceRoutingMove({
       ...fixture.input,
-      sourcePath: 'capture/inbox/linked.md',
+      sourcePath: 'inbox/new/linked.md',
       expectedSourceHash: sha256ForWikiWriterTest(fixture.content),
     });
     assert.equal(sourceReport.status, 'blocked');
     assert(sourceReport.blockers.includes('existingSourceFileRequired'));
 
-    const realParent = path.join(fixture.mindRoot, 'sources-real');
-    const linkedParent = path.join(fixture.mindRoot, 'sources-link');
+    const realParent = path.join(fixture.mindRoot, 'resources-real');
+    const linkedParent = path.join(fixture.mindRoot, 'resources-link');
     mkdirSync(realParent, { recursive: true });
     symlinkSync(realParent, linkedParent);
     const destinationReport = runSourceRoutingMove({
       ...fixture.input,
-      destinationPath: 'sources-link/research-draft.md',
+      destinationPath: 'resources-link/research-draft.md',
     });
     assert.equal(destinationReport.status, 'blocked');
   } finally {

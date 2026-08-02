@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateCompletedProjectArchiveSuggestions } from '../adapters/mind-steward-completed-project-archive-suggestions.js';
 
-test('completed project archive suggestions propose default exact archive path', () => {
+test('completed project archive suggestions propose canonical history path', () => {
   const report = generateCompletedProjectArchiveSuggestions({
     reportDate: '2026-06-18',
     files: [
       {
-        path: 'live/projects/prochat/qa-memory.md',
+        path: 'projects/prochat/qa-memory.md',
         content: `---
 status: active
 completed_on: 2026-06-10
@@ -21,8 +21,8 @@ completed_on: 2026-06-10
   assert.equal(report.status, 'ready');
   assert.equal(report.suggestions.length, 1);
   assert.equal(report.suggestions[0]?.status, 'ready');
-  assert.equal(report.suggestions[0]?.activePath, 'live/projects/prochat/qa-memory.md');
-  assert.equal(report.suggestions[0]?.proposedArchivePath, 'archive/projects/prochat/qa-memory.md');
+  assert.equal(report.suggestions[0]?.activePath, 'projects/prochat/qa-memory.md');
+  assert.equal(report.suggestions[0]?.proposedArchivePath, 'history/projects/prochat/qa-memory.md');
   assert.equal(report.suggestions[0]?.requiresApproval, true);
   assert.equal(report.safety.writesArchive, false);
   assert.equal(report.safety.movesFiles, false);
@@ -59,11 +59,11 @@ test('completed project archive suggestions honor safe explicit archive path', (
     reportDate: '2026-06-18',
     files: [
       {
-        path: 'live/projects/prochat/qa-memory.md',
+        path: 'projects/prochat/qa-memory.md',
         content: `---
 project_status: current
 completion_status: completed
-archive_path: archive/projects/completed/prochat-qa-memory.md
+archive_path: history/projects/completed/prochat-qa-memory.md
 ---
 # QA Memory
 `,
@@ -72,7 +72,7 @@ archive_path: archive/projects/completed/prochat-qa-memory.md
   });
 
   assert.equal(report.suggestions.length, 1);
-  assert.equal(report.suggestions[0]?.proposedArchivePath, 'archive/projects/completed/prochat-qa-memory.md');
+  assert.equal(report.suggestions[0]?.proposedArchivePath, 'history/projects/completed/prochat-qa-memory.md');
   assert.deepEqual(report.suggestions[0]?.blockers, []);
 });
 
@@ -81,11 +81,11 @@ test('completed project archive suggestions avoid pages without active-completed
     reportDate: '2026-06-18',
     files: [
       {
-        path: 'live/projects/prochat/active.md',
+        path: 'projects/prochat/active.md',
         content: 'status: active\n',
       },
       {
-        path: 'live/projects/prochat/completed.md',
+        path: 'projects/prochat/completed.md',
         content: 'completion_status: completed\n',
       },
       {
@@ -105,11 +105,11 @@ test('completed project archive suggestions block unsafe explicit archive destin
     reportDate: '2026-06-18',
     files: [
       {
-        path: 'live/projects/prochat/qa-memory.md',
+        path: 'projects/prochat/qa-memory.md',
         content: `---
 status: active
 completed_on: 2026-06-10
-archive_path: archive/
+archive_path: history/
 ---
 # QA Memory
 `,
@@ -129,7 +129,7 @@ test('completed project archive suggestions block invalid report dates', () => {
     reportDate: 'June 18, 2026',
     files: [
       {
-        path: 'live/projects/prochat/qa-memory.md',
+        path: 'projects/prochat/qa-memory.md',
         content: 'status: active\ncompleted_on: 2026-06-10\n',
       },
     ],

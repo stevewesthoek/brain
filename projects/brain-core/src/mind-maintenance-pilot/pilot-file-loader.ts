@@ -6,14 +6,12 @@ export const MIND_MAINTENANCE_PILOT_FILE_GROUPS = [
     id: 'current-context',
     candidates: [
       'system/agent-context/00-current-context.md',
-      'router/00-current-context.md',
     ],
   },
   {
     id: 'prochat-qa-memory-strategy',
     candidates: [
       'projects/prochat-qa-memory/STRATEGY-PLAN.md',
-      'live/projects/prochat-qa-memory/STRATEGY-PLAN.md',
     ],
   },
   {
@@ -27,7 +25,6 @@ export const MIND_MAINTENANCE_PILOT_FILE_GROUPS = [
     id: 'dashboard',
     candidates: [
       'system/reports/dashboard.md',
-      'live/dashboard.md',
     ],
   },
   {
@@ -46,7 +43,7 @@ export const MIND_MAINTENANCE_TARGET_PILOT_FILES = MIND_MAINTENANCE_PILOT_FILE_G
   .map(group => group.candidates[0]) as readonly MindMaintenancePilotFile[];
 
 export const MIND_MAINTENANCE_PILOT_FILES = MIND_MAINTENANCE_PILOT_FILE_GROUPS
-  .map(group => group.candidates[1] ?? group.candidates[0]) as readonly MindMaintenancePilotFile[];
+  .map(group => group.candidates[0]) as readonly MindMaintenancePilotFile[];
 
 export const MIND_MAINTENANCE_COMPATIBLE_PILOT_FILES = MIND_MAINTENANCE_PILOT_FILE_GROUPS
   .flatMap(group => [...group.candidates]) as readonly MindMaintenancePilotFile[];
