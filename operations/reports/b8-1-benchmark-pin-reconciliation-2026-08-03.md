@@ -1,6 +1,6 @@
 # B8.1 Benchmark Pin Reconciliation — 2026-08-03
 
-**Status:** partial reconciliation ready for feature-branch publication; canonical dry-run plan generation remains blocked by dirty Workbench Private and ProChat source checkouts.
+**Status:** partial reconciliation published on the feature branch; canonical dry-run plan generation remains blocked by dirty, concurrently changing Workbench Private and ProChat source checkouts.
 
 **Execution boundary:** this reconciliation did not execute B8.1, use `--materialize`, create or refresh a Codebase Memory index, start an MCP server or watcher, run Graphify, alter a scheduler, access Mind content, modify a source checkout, modify user configuration, or modify a provider binary.
 
@@ -311,7 +311,7 @@ Focused negative-case total: 6/6 passed (five repository tests plus one direct m
 
 The canonical dry-run command was intentionally not run because both retained source checkouts are dirty and neither is at its selected manifest pin:
 
-- Workbench Private: checkout HEAD `f4828514...`, selected pin `aa7bf7ec...`, nonempty status digest `947df94e...`.
+- Workbench Private: checkout HEAD `f4828514...`, selected pin `aa7bf7ec...`, nonempty and actively changing status; last observed digest during reconciliation `692a606f...`.
 - ProChat: checkout HEAD `e404821b...`, selected pin `9bcd5769...`, nonempty status digest `1521345e...` in the fresh validation epoch.
 
 Therefore no fresh canonical plan exists, `executionReady` was not emitted, and there is no `planSha256` to approve. No gate was weakened to manufacture `executionReady=true`.
@@ -328,24 +328,33 @@ Therefore no fresh canonical plan exists, `executionReady` was not emitted, and 
 - Untracked report no-index whitespace check: passed (expected no-index exit 1 because the file differs from `/dev/null`).
 - Temporary B8.1 exports remaining: 0.
 - Pre-landing structural review: no SQL/data, concurrency, LLM trust-boundary, enum, conditional-side-effect, secret, or assertion-weakening issue found. The active benchmark plan path was updated to match the manifest during review.
+- Required source-state invariant: failed because Workbench Private changed concurrently after the repeated full validation run. No stable final source epoch is claimed.
 
 ## Final source-state invariant
 
-Brain and Workbench Private retained their initial HEAD and status fingerprints. During the first validation epoch, ProChat retained HEAD `e404821bfeef0868fef9f42a14ede4926aabe6ef` but its status fingerprint changed:
+During the first validation epoch, Brain and Workbench Private retained their initial HEAD and status fingerprints. ProChat retained HEAD `e404821bfeef0868fef9f42a14ede4926aabe6ef` but its status fingerprint changed:
 
 - Initial: `858593d05c347c40461186229c676e6636460307e56c733fca10355f7d4f4b85`
 - Final observed: `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`
 - Newly observed porcelain entry: ` M src/app/(marketing)/components/product-pages/PublicProductPage.tsx`
 
-Codex did not write to ProChat. The first epoch was discarded. A fresh evidence epoch was established with ProChat status fingerprint `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`. All nine execution-gate suites and the final validators were rerun in that fresh epoch. The final source-state check retained these exact values:
+Codex did not write to ProChat. The first epoch was discarded. A second evidence epoch was established with ProChat status fingerprint `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`, and all nine execution-gate suites and final validators were rerun.
 
-| Repository | Final HEAD | Final status SHA-256 |
-|---|---|---|
-| Brain | `257fd72c3f47a53afb23778ed860976fd2429c71` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
-| Workbench Private | `f482851457c4505bcbf98dd02c469728f61ab427` | `947df94e08524ecfd3165705d7386fdea47797a6a665247edb39de67fcf41676` |
-| ProChat | `e404821bfeef0868fef9f42a14ede4926aabe6ef` | `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f` |
+After the first feature-branch commit was pushed, the required post-push check found a second concurrent source change. Workbench Private retained HEAD `f482851457c4505bcbf98dd02c469728f61ab427`, but its status fingerprint changed:
 
-This does not make ProChat clean or eligible for repinning—it only preserves an honest non-mutation boundary for publishing the partial Brain reconciliation.
+- Previous: `947df94e08524ecfd3165705d7386fdea47797a6a665247edb39de67fcf41676`
+- Newly observed: `bc49872ad61126ba71c05008ccb27728cb0f0770f4644b6923741237a4062b74`
+- Newly observed porcelain entry: ` M apps/macos/Sources/WorkbenchMac/XPC/NSXPCConnectionHelperClient.swift`
+
+Codex did not write to Workbench Private. The second epoch was also discarded. A third evidence epoch was established with the Workbench status fingerprint `bc49872ad61126ba71c05008ccb27728cb0f0770f4644b6923741237a4062b74`. All nine execution-gate suites passed 296/296 again, and the authoritative manifest, live document-consistency, live deletion-readiness, JSON, whitespace, secret, and temporary-export checks were repeated.
+
+Immediately after those checks, Workbench Private changed again while retaining HEAD `f482851457c4505bcbf98dd02c469728f61ab427`:
+
+- Previous: `bc49872ad61126ba71c05008ccb27728cb0f0770f4644b6923741237a4062b74`
+- Last observed during reconciliation: `692a606f1ac1ad2a4828ec35f92e0a6d302bfe8e79729aaaff83afc612d4602c`
+- Newly observed porcelain entry: ` M "apps/macos/Tests/WorkbenchMacTests/Phase P-XPCConnectionTests.swift"`
+
+The third epoch was discarded. The required unchanged-fingerprint invariant therefore **failed**, and no stable final source-state table is asserted. Brain remained at clean HEAD `257fd72c3f47a53afb23778ed860976fd2429c71`; ProChat's last observed HEAD/status pair remained `e404821bfeef0868fef9f42a14ede4926aabe6ef` / `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`. Workbench Private and ProChat remain ineligible for repinning.
 
 ## Canonical truth retained
 
@@ -359,4 +368,4 @@ This does not make ProChat clean or eligible for repinning—it only preserves a
 
 ## Exact next action
 
-Human owner must first stop or coordinate concurrent ProChat edits, reconcile or preserve the unrelated dirty Workbench Private and ProChat work, and produce clean read-only checkouts at explicitly selected commits. Then rerun pin reconciliation and the unchanged-fingerprint validation from a fresh snapshot. Only after all three manifest-selected source checkouts are clean and exactly at their pins may the canonical `cbm,exact-source` dry-run plan be generated for digest review. Materialization and execution remain separately unauthorized.
+Human owner must first stop or coordinate concurrent Workbench Private and ProChat edits, reconcile or preserve their unrelated dirty work, and produce clean read-only checkouts at explicitly selected commits. Then rerun pin reconciliation and the unchanged-fingerprint validation from a fresh snapshot. Only after all three manifest-selected source checkouts are clean and exactly at their pins may the canonical `cbm,exact-source` dry-run plan be generated for digest review. Materialization and execution remain separately unauthorized.
