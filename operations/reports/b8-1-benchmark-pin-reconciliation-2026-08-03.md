@@ -1,6 +1,6 @@
 # B8.1 Benchmark Pin Reconciliation — 2026-08-03
 
-**Status:** partial reconciliation published on the feature branch; canonical dry-run plan generation remains blocked by dirty, concurrently changing Workbench Private and ProChat source checkouts.
+**Status:** partial reconciliation published on the feature branch; canonical dry-run plan generation is blocked after repeated audits found dirty, concurrently changing Workbench Private and ProChat source checkouts.
 
 **Execution boundary:** this reconciliation did not execute B8.1, use `--materialize`, create or refresh a Codebase Memory index, start an MCP server or watcher, run Graphify, alter a scheduler, access Mind content, modify a source checkout, modify user configuration, or modify a provider binary.
 
@@ -355,6 +355,27 @@ Immediately after those checks, Workbench Private changed again while retaining 
 - Newly observed porcelain entry: ` M "apps/macos/Tests/WorkbenchMacTests/Phase P-XPCConnectionTests.swift"`
 
 The third epoch was discarded. The required unchanged-fingerprint invariant therefore **failed**, and no stable final source-state table is asserted. Brain remained at clean HEAD `257fd72c3f47a53afb23778ed860976fd2429c71`; ProChat's last observed HEAD/status pair remained `e404821bfeef0868fef9f42a14ede4926aabe6ef` / `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`. Workbench Private and ProChat remain ineligible for repinning.
+
+## Continuation audit — repeated clean-source gate
+
+At the start of this continuation audit, the feature worktree was clean and pushed at `ad316a8812a00f1bd0761944eee2c14cc5d7278d`; remote `main` remained `257fd72c3f47a53afb23778ed860976fd2429c71`.
+
+The required external source state still did not exist:
+
+| Repository | Branch / HEAD | Observed status SHA-256 | Remote `main` | Result |
+|---|---|---|---|---|
+| Brain | `main` / `257fd72c3f47a53afb23778ed860976fd2429c71` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` | `257fd72c3f47a53afb23778ed860976fd2429c71` | Clean and exact. |
+| Workbench Private | `main` / `f482851457c4505bcbf98dd02c469728f61ab427` | `85e3f7dd254795e5e6e3f20dbad239c0c433fd70ae81ef8f0750e68b6a9d886e` | `18cf611a6703998514575ae9038bc7fe86c689d4` | Dirty and changed again; newly observed entry ` M .gitignore`. Local HEAD is 101 commits ahead of remote `main`. |
+| ProChat | `main` / `e404821bfeef0868fef9f42a14ede4926aabe6ef` | `6311a0e3cdd15d4599784660d03022d311f68337769f02bb1a3f8dd24b4bcd03` | `70fe808ba1b764719840d1a81ca1cb766239d4dc` | Dirty and changed again; newly observed entry ` M src/app/(marketing)/contact/ContactPageClient.tsx`. Local HEAD is 2 commits ahead of remote `main`. |
+
+ProChat changed from the prior continuation fingerprint `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f` to `6311a0e3cdd15d4599784660d03022d311f68337769f02bb1a3f8dd24b4bcd03` without a HEAD change. Codex did not write to ProChat; this is another discarded external-source epoch.
+
+Registered-worktree inventory found no eligible alternative:
+
+- Workbench Private has one additional registered worktree, `/Users/Office/Repos/prochattools/saas/workbench-mrp6`, at `be780050a68d4ec95a7f07a1a180881582c57fc0`. It is dirty in four files and diverges from the retained manifest pin `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e` by 118 pin-only commits and 3 worktree-only commits.
+- ProChat has no additional registered worktree.
+
+No source repository or worktree was created, modified, cleaned, reset, or switched during this audit. There is still no clean exact-pin source set, so the canonical dry-run command remains prohibited and no `executionReady` or `planSha256` can be emitted.
 
 ## Canonical truth retained
 
