@@ -535,14 +535,21 @@ function verifyFixture(fixture, exportedRoot) {
  * @param {string} schemaPath
  * @param {{
  *   allowMissingRepos?: boolean,
- *   exportedRootBindings?: Record<string, string>
+ *   exportedRootBindings?: Record<string, string>,
+ *   repositoryRootBindings?: Record<string, string>
  * }} [options]
  *   exportedRootBindings: map of repositoryId → absolute path to pre-exported tree.
  *     When provided for a repository, skips git archive export and uses the path directly.
  *     The caller is responsible for cleanup of provided paths.
+ *   repositoryRootBindings: map of repositoryId → absolute Git checkout root.
+ *     When provided, archives the pinned commit from that checkout instead of localPath.
  * @returns {Promise<{ valid: boolean, errors: string[] }>}
  */
-async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = false, exportedRootBindings = {} } = {}) {
+async function validateManifest(manifestPath, schemaPath, {
+  allowMissingRepos = false,
+  exportedRootBindings = {},
+  repositoryRootBindings = {},
+} = {}) {
   const errors = [];
   const tmpDirs = []; // only dirs WE created via git archive; not caller-provided bindings
 
@@ -563,6 +570,13 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
     errors.push(...schemaErrors);
     if (errors.length > 0) return { valid: false, errors };
     manifest = resolveRepositoryPaths(manifest, manifestPath);
+
+    const repositoryIds = new Set(manifest.repositories.map(repo => repo.repositoryId));
+    for (const repositoryId of Object.keys(repositoryRootBindings)) {
+      if (!repositoryIds.has(repositoryId)) errors.push(`repository root binding has unknown repositoryId "${repositoryId}"`);
+      if (exportedRootBindings[repositoryId]) errors.push(`${repositoryId}: cannot bind both repository root and exported root`);
+    }
+    if (errors.length > 0) return { valid: false, errors };
 
     const exportedRoots = new Map();
 
@@ -592,14 +606,15 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
         continue; // skip git archive export
       }
 
-      if (!fs.existsSync(repo.localPath)) {
+      const repositoryPath = repositoryRootBindings[repo.repositoryId] ?? repo.localPath;
+      if (!fs.existsSync(repositoryPath)) {
         if (allowMissingRepos) continue;
-        errors.push(`${repo.repositoryId}: repository not found at ${repo.localPath}`);
+        errors.push(`${repo.repositoryId}: repository not found at ${repositoryPath}`);
         continue;
       }
       try {
-        const repositoryStat = fs.lstatSync(repo.localPath);
-        const physicalRepositoryPath = fs.realpathSync(repo.localPath);
+        const repositoryStat = fs.lstatSync(repositoryPath);
+        const physicalRepositoryPath = fs.realpathSync(repositoryPath);
         if (!repositoryStat.isDirectory() || repositoryStat.isSymbolicLink()) {
           errors.push(`${repo.repositoryId}: repository root must be a non-symlink directory`);
           continue;
@@ -614,21 +629,21 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
       }
 
       try {
-        execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
+        execFileSync('git', ['-C', repositoryPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
       } catch {
         errors.push(`${repo.repositoryId}: commit ${repo.pinnedCommit} not found`);
         continue;
       }
 
       let headBefore;
-      try { headBefore = execFileSync('git', ['-C', repo.localPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {
+      try { headBefore = execFileSync('git', ['-C', repositoryPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {
         errors.push(`${repo.repositoryId}: cannot read HEAD`);
         continue;
       }
 
       let exportedRoot;
       try {
-        exportedRoot = exportCommit(repo.localPath, repo.pinnedCommit);
+        exportedRoot = exportCommit(repositoryPath, repo.pinnedCommit);
         tmpDirs.push(exportedRoot);
         exportedRoots.set(repo.repositoryId, exportedRoot);
         errors.push(...removeDeclaredSymlinks(exportedRoot, repo.excludedSymlinkPaths).map(error => `${repo.repositoryId}: ${error}`));
@@ -639,7 +654,7 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
       }
 
       let headAfter;
-      try { headAfter = execFileSync('git', ['-C', repo.localPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {
+      try { headAfter = execFileSync('git', ['-C', repositoryPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {
         errors.push(`${repo.repositoryId}: cannot read HEAD after export`);
         continue;
       }

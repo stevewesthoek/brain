@@ -101,6 +101,138 @@ function loadAdmission() {
   return admissions.admissions.find(a => a.admissionId === 'codebase-memory-mcp-brain');
 }
 
+/** Parse repeatable --source-root repositoryId=/absolute/path arguments. */
+export function parseSourceRootOverrideArgs(args) {
+  const entries = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--source-root') {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--')) return { overrides: null, error: '--source-root requires repositoryId=/absolute/path' };
+      entries.push(value);
+      index += 1;
+    } else if (arg.startsWith('--source-root=')) {
+      entries.push(arg.slice('--source-root='.length));
+    }
+  }
+
+  if (entries.length === 0) return { overrides: null, error: null };
+
+  const overrides = {};
+  for (const entry of entries) {
+    const separator = entry.indexOf('=');
+    if (separator <= 0 || separator === entry.length - 1) {
+      return { overrides: null, error: `invalid --source-root mapping "${entry}"; expected repositoryId=/absolute/path` };
+    }
+    const repositoryId = entry.slice(0, separator);
+    const root = entry.slice(separator + 1);
+    if (!/^[a-zA-Z0-9_-]+$/.test(repositoryId)) {
+      return { overrides: null, error: `invalid repositoryId in --source-root mapping: "${repositoryId}"` };
+    }
+    if (Object.hasOwn(overrides, repositoryId)) {
+      return { overrides: null, error: `duplicate --source-root mapping for repositoryId "${repositoryId}"` };
+    }
+    overrides[repositoryId] = root;
+  }
+  return { overrides, error: null };
+}
+
+/** Validate and apply an exact, complete repositoryId → clean Git root mapping. */
+function applySourceRootOverrides(checks, manifest, sourceRootOverrides) {
+  if (sourceRootOverrides == null) {
+    return { valid: true, manifest, repositoryRootBindings: {} };
+  }
+  if (typeof sourceRootOverrides !== 'object' || Array.isArray(sourceRootOverrides)) {
+    recordCheck(checks, 'source-root-overrides', 'fail', 'source-root overrides must be an object mapping repository IDs to absolute paths');
+    return { valid: false, manifest: null, repositoryRootBindings: {} };
+  }
+
+  const repositoryIds = (manifest.repositories ?? []).map(repo => repo.repositoryId).sort();
+  const overrideIds = Object.keys(sourceRootOverrides).sort();
+  const missing = repositoryIds.filter(repositoryId => !overrideIds.includes(repositoryId));
+  const unknown = overrideIds.filter(repositoryId => !repositoryIds.includes(repositoryId));
+  if (missing.length > 0 || unknown.length > 0) {
+    recordCheck(
+      checks,
+      'source-root-overrides',
+      'fail',
+      `repository ID mismatch: missing=[${missing.join(',')}] unknown=[${unknown.join(',')}]`,
+    );
+    return { valid: false, manifest: null, repositoryRootBindings: {} };
+  }
+
+  const repositoryRootBindings = {};
+  const errors = [];
+  for (const repo of manifest.repositories) {
+    const requestedRoot = sourceRootOverrides[repo.repositoryId];
+    if (typeof requestedRoot !== 'string' || requestedRoot.length === 0) {
+      errors.push(`${repo.repositoryId}: root must be a nonempty string`);
+      continue;
+    }
+    if (!path.isAbsolute(requestedRoot)) {
+      errors.push(`${repo.repositoryId}: root must be absolute`);
+      continue;
+    }
+    if (requestedRoot.split(/[\\/]/).includes('..')) {
+      errors.push(`${repo.repositoryId}: root contains path traversal`);
+      continue;
+    }
+    if (!fs.existsSync(requestedRoot)) {
+      errors.push(`${repo.repositoryId}: root not found: ${requestedRoot}`);
+      continue;
+    }
+
+    let physicalRoot;
+    try {
+      const rootStat = fs.lstatSync(requestedRoot);
+      if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error('root must be a non-symlink directory');
+      physicalRoot = fs.realpathSync(requestedRoot);
+      const gitTopLevel = execFileSync('git', ['-C', physicalRoot, 'rev-parse', '--show-toplevel'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (fs.realpathSync(gitTopLevel) !== physicalRoot) throw new Error('root must be the Git checkout top level');
+
+      execFileSync('git', ['-C', physicalRoot, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], {
+        stdio: ['ignore', 'ignore', 'ignore'],
+      });
+      const head = execFileSync('git', ['-C', physicalRoot, 'rev-parse', 'HEAD'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+      if (head !== repo.pinnedCommit) throw new Error(`HEAD ${head} does not equal pinned commit ${repo.pinnedCommit}`);
+      const porcelain = execFileSync('git', ['-C', physicalRoot, 'status', '--porcelain'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      if (porcelain !== '') throw new Error('root is dirty');
+    } catch (error) {
+      errors.push(`${repo.repositoryId}: ${error.message}`);
+      continue;
+    }
+    repositoryRootBindings[repo.repositoryId] = physicalRoot;
+  }
+
+  if (errors.length > 0) {
+    recordCheck(checks, 'source-root-overrides', 'fail', errors.join('; '));
+    return { valid: false, manifest: null, repositoryRootBindings: {} };
+  }
+
+  const effectiveManifest = {
+    ...manifest,
+    repositories: manifest.repositories.map(repo => ({
+      ...repo,
+      localPath: repositoryRootBindings[repo.repositoryId],
+    })),
+  };
+  const detail = effectiveManifest.repositories
+    .map(repo => `${repo.repositoryId}=${repo.localPath}@${repo.pinnedCommit}`)
+    .sort()
+    .join('; ');
+  recordCheck(checks, 'source-root-overrides', 'pass', detail);
+  return { valid: true, manifest: effectiveManifest, repositoryRootBindings };
+}
+
 function captureSourceState(manifest) {
   const states = [];
   for (const repo of manifest.repositories) {
@@ -138,7 +270,7 @@ function captureSourceState(manifest) {
  *
  * Async: validates manifest including fixture verification against exported pinned commits.
  */
-async function checkManifestAsync(checks, manifestPathOverride) {
+async function checkManifestAsync(checks, manifestPathOverride, sourceRootOverrides) {
   const resolvedPath = manifestPathOverride ?? MANIFEST_PATH;
   let manifestText;
   try {
@@ -162,9 +294,16 @@ async function checkManifestAsync(checks, manifestPathOverride) {
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
-  // Full validation: schema + semantic + exported-tree fixtures
+  const resolvedManifest = resolveRepositoryPaths(manifest, resolvedPath);
+  const overrideResult = applySourceRootOverrides(checks, resolvedManifest, sourceRootOverrides);
+
+  // Full validation: schema + semantic + exported-tree fixtures. When overrides
+  // are present, archive from those exact clean roots instead of the manifest paths.
   try {
-    const result = await validateManifest(resolvedPath, MANIFEST_SCHEMA_PATH, { allowMissingRepos: false });
+    const result = await validateManifest(resolvedPath, MANIFEST_SCHEMA_PATH, {
+      allowMissingRepos: false,
+      repositoryRootBindings: overrideResult.valid ? overrideResult.repositoryRootBindings : {},
+    });
     if (!result.valid) {
       recordCheck(checks, 'manifest-validation', 'fail', `validation error: ${result.errors[0]}`);
       return { manifest: null, manifestHash: null, manifestText: null };
@@ -175,9 +314,13 @@ async function checkManifestAsync(checks, manifestPathOverride) {
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
+  if (!overrideResult.valid) {
+    return { manifest: null, manifestHash: null, manifestText: null };
+  }
+
   const manifestHash = crypto.createHash('sha256').update(manifestText).digest('hex');
   recordCheck(checks, 'manifest-validation', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos; sha256=${manifestHash.slice(0, 16)}...`);
-  return { manifest: resolveRepositoryPaths(manifest, resolvedPath), manifestHash, manifestText };
+  return { manifest: overrideResult.manifest, manifestHash, manifestText };
 }
 
 function checkPinnedCommits(checks, manifest) {
@@ -1075,7 +1218,19 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export async function runPreflight({ dryRun = true, materialize: doMaterialize = false, runId, subjects, approvedPlanSha256, _manifestPathOverride, _homeOverride, _diskBudgetHooks, _networkIsolationHooks, _materializationHooks } = {}) {
+export async function runPreflight({
+  dryRun = true,
+  materialize: doMaterialize = false,
+  runId,
+  subjects,
+  approvedPlanSha256,
+  sourceRootOverrides,
+  _manifestPathOverride,
+  _homeOverride,
+  _diskBudgetHooks,
+  _networkIsolationHooks,
+  _materializationHooks,
+} = {}) {
   const checks = [];
 
   // Defect #4: Strict subject parsing — no defaults, no silent filtering
@@ -1103,7 +1258,7 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
 
   // Defect #7: Full manifest validation in preflight — async call
   const resolvedManifestPath = _manifestPathOverride ?? MANIFEST_PATH;
-  const { manifest, manifestHash, manifestText } = await checkManifestAsync(checks, _manifestPathOverride);
+  const { manifest, manifestHash, manifestText } = await checkManifestAsync(checks, _manifestPathOverride, sourceRootOverrides);
 
   checkPinnedCommits(checks, manifest);
   const runDir = checkRunId(checks, runId, _homeOverride);
@@ -1272,6 +1427,12 @@ if (IS_MAIN) {
     if (idx >= 0 && idx + 1 < args.length) approvedPlanSha256 = args[idx + 1];
   }
 
+  const { overrides: sourceRootOverrides, error: sourceRootOverrideError } = parseSourceRootOverrideArgs(args);
+  if (sourceRootOverrideError) {
+    console.error(`ERROR: ${sourceRootOverrideError}`);
+    process.exit(2);
+  }
+
   // Defect #4: CLI must require explicit --subjects
   const subjectsArg = args.find(a => a.startsWith('--subjects='));
   let subjectsRaw = null;
@@ -1303,6 +1464,7 @@ if (IS_MAIN) {
       runId,
       subjects: subjectsRaw,
       approvedPlanSha256,
+      sourceRootOverrides,
       _manifestPathOverride: manifestPathOverride,
     });
 

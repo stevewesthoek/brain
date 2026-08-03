@@ -567,3 +567,59 @@ test('provided exported root binding must not itself be a symlink', async () => 
     fs.rmSync(manifestFile, { force: true });
   }
 });
+
+test('repository root binding is authoritative when the manifest-local repository is missing', async () => {
+  const beforeExports = new Set(fs.readdirSync(os.tmpdir()).filter(name => name.startsWith('brain-b81-manifest-')));
+  const { root: boundRoot, commit } = makeTempGitRepo();
+  const missingRoot = path.join(os.tmpdir(), `brain-b81-missing-${Date.now()}`);
+  const manifest = makeManifest({ repoPath: missingRoot, commit });
+  const manifestFile = path.join(os.tmpdir(), `brain-b81-root-binding-manifest-${Date.now()}.json`);
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest));
+  try {
+    const result = await validateManifest(manifestFile, SCHEMA_PATH, {
+      repositoryRootBindings: { brain: boundRoot },
+    });
+    assert.equal(result.valid, true, result.errors.join('; '));
+    const afterExports = fs.readdirSync(os.tmpdir()).filter(name =>
+      name.startsWith('brain-b81-manifest-') && !beforeExports.has(name));
+    assert.deepEqual(afterExports, []);
+  } finally {
+    fs.rmSync(boundRoot, { recursive: true, force: true });
+    fs.rmSync(manifestFile, { force: true });
+  }
+});
+
+test('repository root binding rejects unknown repository IDs', async () => {
+  const { root, commit } = makeTempGitRepo();
+  const manifest = makeManifest({ repoPath: root, commit });
+  const manifestFile = path.join(os.tmpdir(), `brain-b81-unknown-binding-${Date.now()}.json`);
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest));
+  try {
+    const result = await validateManifest(manifestFile, SCHEMA_PATH, {
+      repositoryRootBindings: { unknown: root },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /unknown repositoryId/.test(error)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(manifestFile, { force: true });
+  }
+});
+
+test('repository and exported root bindings cannot target the same repository', async () => {
+  const { root, commit } = makeTempGitRepo();
+  const manifest = makeManifest({ repoPath: root, commit });
+  const manifestFile = path.join(os.tmpdir(), `brain-b81-dual-binding-${Date.now()}.json`);
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest));
+  try {
+    const result = await validateManifest(manifestFile, SCHEMA_PATH, {
+      repositoryRootBindings: { brain: root },
+      exportedRootBindings: { brain: root },
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /cannot bind both repository root and exported root/.test(error)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(manifestFile, { force: true });
+  }
+});

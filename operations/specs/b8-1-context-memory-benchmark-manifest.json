@@ -18,13 +18,13 @@
     {
       "repositoryId": "workbench",
       "localPath": "../../../../prochattools/saas/workbench-private",
-      "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
+      "pinnedCommit": "f482851457c4505bcbf98dd02c469728f61ab427",
       "description": "Workbench Private — full-stack TypeScript application"
     },
     {
       "repositoryId": "prochat",
       "localPath": "../../../../prochattools/web/prochat",
-      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
       "description": "ProChat — Next.js TypeScript application"
     }
   ],
@@ -132,12 +132,12 @@
     {
       "fixtureId": "workbench_f1",
       "repositoryId": "workbench",
-      "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
+      "pinnedCommit": "f482851457c4505bcbf98dd02c469728f61ab427",
       "question": "Where is BRAIN_PROFILE_ALLOWED_TOOLS defined and what value does it hold?",
       "expectedFile": "packages/mcp/src/configure-core.ts",
       "expectedSymbol": "BRAIN_PROFILE_ALLOWED_TOOLS",
       "expectedLiteral": "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand",
-      "expectedLine": 7,
+      "expectedLine": 35,
       "expectedCallers": [
         "packages/mcp/src/claude-adapter.ts",
         "packages/mcp/src/codex-adapter.ts",
@@ -153,15 +153,15 @@
       "verification": {
         "algorithm": "line-contains",
         "path": "packages/mcp/src/configure-core.ts",
-        "line": 7,
+        "line": 35,
         "contains": ["BRAIN_PROFILE_ALLOWED_TOOLS"]
       },
-      "notes": "File sha256: 914d6a70541bfd138e1a9c53e58a7dfd874be3bc93da228c3c7390701d6dc89f. BRAIN_PROFILE_ALLOWED_COMMAND_KINDS is on line 8."
+      "notes": "File sha256: 56c21ff5b4d8323a64e3d58643e10332253b3b2cf1c3a033eaff23614d2a01f3. BRAIN_PROFILE_ALLOWED_COMMAND_KINDS is on line 36."
     },
     {
       "fixtureId": "workbench_f2",
       "repositoryId": "workbench",
-      "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
+      "pinnedCommit": "f482851457c4505bcbf98dd02c469728f61ab427",
       "question": "Where are the MCP scope environment variable names defined?",
       "expectedFile": "packages/mcp/src/scope.ts",
       "expectedSymbol": "MCP_ALLOWED_TOOLS_ENV",
@@ -182,7 +182,7 @@
     {
       "fixtureId": "prochat_f1",
       "repositoryId": "prochat",
-      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
       "question": "Where is the RootLayout component defined?",
       "expectedFile": "src/app/layout.tsx",
       "expectedSymbol": "RootLayout",
@@ -205,7 +205,7 @@
     {
       "fixtureId": "prochat_f2",
       "repositoryId": "prochat",
-      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
       "question": "How many route.ts files exist in this repository?",
       "expectedFileCount": 27,
       "scoringType": "count-match",
@@ -221,7 +221,7 @@
     {
       "fixtureId": "prochat_f3",
       "repositoryId": "prochat",
-      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
       "question": "Where is the Stripe webhook POST handler defined?",
       "expectedFile": "src/app/api/webhook/stripe/route.ts",
       "expectedSymbol": "POST",
@@ -244,7 +244,7 @@
     {
       "fixtureId": "prochat_f4",
       "repositoryId": "prochat",
-      "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
+      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
       "question": "Where is the database connection initialized?",
       "expectedFile": "src/libs/prisma.ts",
       "expectedSymbol": "prisma",

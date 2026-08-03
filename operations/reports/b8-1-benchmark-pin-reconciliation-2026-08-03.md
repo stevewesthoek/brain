@@ -1,6 +1,6 @@
 # B8.1 Benchmark Pin Reconciliation — 2026-08-03
 
-**Status:** partial reconciliation published on the feature branch; canonical dry-run plan generation is blocked after repeated audits found dirty, concurrently changing Workbench Private and ProChat source checkouts.
+**Status:** reconciliation complete. Independent clean detached source clones resolved the dirty-live-checkout blocker, all selected pins and fixtures were validated, and the canonical non-materializing dry-run emitted an execution-ready plan for exact digest review. B8.1 remains unexecuted and unauthorized for materialization.
 
 **Execution boundary:** this reconciliation did not execute B8.1, use `--materialize`, create or refresh a Codebase Memory index, start an MCP server or watcher, run Graphify, alter a scheduler, access Mind content, modify a source checkout, modify user configuration, or modify a provider binary.
 
@@ -235,7 +235,7 @@ Fixture review:
 - `workbench_f2`: path, symbol, line 7, literal, and file hash `4dd2731c...` remain unchanged.
 - Security boundaries change materially: native ingress now verifies the derived MCP credential against the owner action token; registration validates the Node runtime; health verification is explicit; bounded cancellation and ambiguity behavior is added. The three-tool Brain allowlist and `n8n_workflow_migration` command-kind allowlist remain exact.
 
-Classification: **requires fixture update, blocked pending a clean source checkout/human decision**. Because the source checkout is dirty, current HEAD cannot become a new pin. The manifest retains `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e`; no Workbench fixture is changed.
+Initial classification: **requires fixture update and a clean source checkout**. The live checkout was ineligible, but the 2026-08-04 disposable-source resolution validated the same committed HEAD from a clean detached clone. The manifest now pins `f482851457c4505bcbf98dd02c469728f61ab427`; `workbench_f1` is updated to line 35 with file hash `56c21ff5b4d8323a64e3d58643e10332253b3b2cf1c3a033eaff23614d2a01f3`. No expected assertion is weakened.
 
 ### ProChat — 5 commits
 
@@ -275,7 +275,7 @@ Fixture review:
 - `prochat_f4`: Prisma path, symbol at line 7, callers/callee, and file hash `b4728c62...` are unchanged.
 - The committed delta is presentation/performance work and does not change provider identity, security boundaries, or retrieval semantics for these fixtures.
 
-Classification: **content-admissible pin refresh, blocked pending a clean source checkout/human decision**. Because the source checkout is dirty, current HEAD cannot become a new pin. The manifest retains `9bcd5769da33a851edea379431916f7e04890ff7`; no ProChat fixture is changed.
+Classification: **content-admissible pin refresh**. The live checkout was ineligible, but the 2026-08-04 disposable-source resolution validated the committed HEAD from a clean detached clone. The manifest now pins `e404821bfeef0868fef9f42a14ede4926aabe6ef`; the four ProChat fixture assertions and content hashes are unchanged apart from their pinned commit.
 
 ## Manifest reconciliation
 
@@ -285,8 +285,10 @@ Exact changes:
 2. Brain repository `pinnedCommit`: `9d8c01a5...` → `257fd72c...`.
 3. `brain_f1` through `brain_f4` pinned commits: `9d8c01a5...` → `257fd72c...`.
 4. Active benchmark plan repository table: `../../../brain` → `../../../brain-next`.
-5. No expected path, symbol, line, literal, set, count, caller, callee, or scoring assertion is weakened.
-6. Workbench and ProChat pins and fixtures are unchanged.
+5. Workbench repository and fixture pins: `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e` → `f482851457c4505bcbf98dd02c469728f61ab427`.
+6. `workbench_f1`: line 7 → 35; file hash `914d6a70...` → `56c21ff5b4d8323a64e3d58643e10332253b3b2cf1c3a033eaff23614d2a01f3`; verification line updated to 35. The command-kind literal remains at line 36.
+7. ProChat repository and fixture pins: `9bcd5769da33a851edea379431916f7e04890ff7` → `e404821bfeef0868fef9f42a14ede4926aabe6ef`.
+8. No expected path, symbol, literal, set, count, caller, callee, or scoring assertion is weakened. The only fixture line/hash change records the exact moved Workbench literal.
 
 ## Export validation and dry-run gate
 
@@ -309,28 +311,26 @@ Focused fail-closed checks passed:
 
 Focused negative-case total: 6/6 passed (five repository tests plus one direct missing-path assertion). No `brain-b81-*` temporary export remained.
 
-The canonical dry-run command was intentionally not run because both retained source checkouts are dirty and neither is at its selected manifest pin:
+Those historical live-checkout attempts correctly stopped. On 2026-08-04, independent clean detached clones supplied through the complete, explicit `--source-root` mapping resolved the source-state gate without changing either live checkout. The canonical command then exited 0 with `executionReady: true`, `materialized: false`, no blocking checks, subjects `cbm,exact-source`, and Graphify excluded.
 
-- Workbench Private: checkout HEAD `f4828514...`, selected pin `aa7bf7ec...`, nonempty and actively changing status; last observed digest during reconciliation `692a606f...`.
-- ProChat: checkout HEAD `e404821b...`, selected pin `9bcd5769...`, nonempty status digest `1521345e...` in the fresh validation epoch.
-
-Therefore no fresh canonical plan exists, `executionReady` was not emitted, and there is no `planSha256` to approve. No gate was weakened to manufacture `executionReady=true`.
+The exact emitted plan digest is `7840db6cc15f53260e920b86e666bedd3730becedfa788d6c8451871939802f5`. The complete digest-bound object is preserved at `operations/reports/b8-1-canonical-dry-run-plan-2026-08-04.json` (file SHA-256 `683ff4051e9fa5215febb2d0dc13bc322ed340085d2a3eb328335da398b024e4`) so every check record and all 21 planned paths are reviewable. This digest is review evidence only; it is not execution authorization. No gate was weakened to obtain the result.
 
 ## Final Brain validation
 
-- All nine execution-gate suites: 296/296 passed.
+- All nine execution-gate suites: 307/307 passed (the earlier historical epoch passed 296/296 before the source-root tests were added).
 - Authoritative exported-tree manifest validation: passed.
 - Live document consistency: passed for 10 files.
 - Live deletion readiness: expected exit 1 with `SAFE=0`, `PARTIAL=2`, `BLOCKED=17`.
 - Edited JSON parse: passed.
 - Changed-file secret scan: passed.
 - `git diff --check`: passed.
-- Untracked report no-index whitespace check: passed (expected no-index exit 1 because the file differs from `/dev/null`).
-- Temporary B8.1 exports remaining: 0.
-- Pre-landing structural review: no SQL/data, concurrency, LLM trust-boundary, enum, conditional-side-effect, secret, or assertion-weakening issue found. The active benchmark plan path was updated to match the manifest during review.
-- Required source-state invariant: failed because Workbench Private changed concurrently after the repeated full validation run. No stable final source epoch is claimed.
+- Report and preserved-plan whitespace checks: passed.
+- Temporary validator exports remaining: 0.
+- Canonical run root absent; no benchmark state was materialized.
+- Required source-state invariant: passed in the 2026-08-04 disposable-source epoch. The independent clones were clean and exact, and the live Workbench and ProChat HEAD/status fingerprints were unchanged from the beginning to the end of that epoch.
+- Pre-landing structural and independent adversarial review: all actionable evidence-preservation and root-binding coverage findings were corrected; no unresolved finding remains.
 
-## Final source-state invariant
+## Historical live-checkout source-state invariant
 
 During the first validation epoch, Brain and Workbench Private retained their initial HEAD and status fingerprints. ProChat retained HEAD `e404821bfeef0868fef9f42a14ede4926aabe6ef` but its status fingerprint changed:
 
@@ -354,9 +354,9 @@ Immediately after those checks, Workbench Private changed again while retaining 
 - Last observed during reconciliation: `692a606f1ac1ad2a4828ec35f92e0a6d302bfe8e79729aaaff83afc612d4602c`
 - Newly observed porcelain entry: ` M "apps/macos/Tests/WorkbenchMacTests/Phase P-XPCConnectionTests.swift"`
 
-The third epoch was discarded. The required unchanged-fingerprint invariant therefore **failed**, and no stable final source-state table is asserted. Brain remained at clean HEAD `257fd72c3f47a53afb23778ed860976fd2429c71`; ProChat's last observed HEAD/status pair remained `e404821bfeef0868fef9f42a14ede4926aabe6ef` / `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`. Workbench Private and ProChat remain ineligible for repinning.
+The third epoch was discarded. The required unchanged-fingerprint invariant therefore **failed** in that historical epoch, and no stable final source-state table was asserted for it. Brain remained at clean HEAD `257fd72c3f47a53afb23778ed860976fd2429c71`; ProChat's last observed HEAD/status pair remained `e404821bfeef0868fef9f42a14ede4926aabe6ef` / `1521345e6facbba590eff52b40087a1c7d04eeac5ddd28c59b3282e557f0d26f`. Workbench Private and ProChat were ineligible for repinning in that epoch.
 
-## Continuation audit — repeated clean-source gate
+## Historical continuation audit — repeated clean-source gate
 
 At the start of this continuation audit, the feature worktree was clean and pushed at `ad316a8812a00f1bd0761944eee2c14cc5d7278d`; remote `main` remained `257fd72c3f47a53afb23778ed860976fd2429c71`.
 
@@ -375,7 +375,44 @@ Registered-worktree inventory found no eligible alternative:
 - Workbench Private has one additional registered worktree, `/Users/Office/Repos/prochattools/saas/workbench-mrp6`, at `be780050a68d4ec95a7f07a1a180881582c57fc0`. It is dirty in four files and diverges from the retained manifest pin `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e` by 118 pin-only commits and 3 worktree-only commits.
 - ProChat has no additional registered worktree.
 
-No source repository or worktree was created, modified, cleaned, reset, or switched during this audit. There is still no clean exact-pin source set, so the canonical dry-run command remains prohibited and no `executionReady` or `planSha256` can be emitted.
+No source repository or worktree was created, modified, cleaned, reset, or switched during that audit. At that point there was no clean exact-pin source set, so the canonical dry-run command remained prohibited and no `executionReady` or `planSha256` was emitted in that historical epoch.
+
+## 2026-08-04 disposable-source resolution
+
+The feature worktree began clean on branch `feature/b8-1-benchmark-plan` at `c5101a8fa76e31154148b57e9242d225db3ed77a`, matching the remote feature branch. Fetched `origin/main` remained fixed at `257fd72c3f47a53afb23778ed860976fd2429c71`.
+
+The live source repositories were fingerprinted before any disposable checkout was created and again after all validation:
+
+| Repository | Live HEAD | Initial status SHA-256 | Final status SHA-256 | Result |
+|---|---|---|---|---|
+| Workbench Private | `f482851457c4505bcbf98dd02c469728f61ab427` | `85e3f7dd254795e5e6e3f20dbad239c0c433fd70ae81ef8f0750e68b6a9d886e` | `85e3f7dd254795e5e6e3f20dbad239c0c433fd70ae81ef8f0750e68b6a9d886e` | Unchanged; read-only. |
+| ProChat | `e404821bfeef0868fef9f42a14ede4926aabe6ef` | `5c7139e3b1e6d2a5128fecb9a674693e4e1a8d9dabeaac09171d7f70f77a0b0e` | `5c7139e3b1e6d2a5128fecb9a674693e4e1a8d9dabeaac09171d7f70f77a0b0e` | Unchanged; read-only. |
+
+Independent detached clones were created under `/tmp/b8-1-sources.qhkwvd` at the exact selected commits:
+
+- Brain: `257fd72c3f47a53afb23778ed860976fd2429c71`
+- Workbench Private: `f482851457c4505bcbf98dd02c469728f61ab427`
+- ProChat: `e404821bfeef0868fef9f42a14ede4926aabe6ef`
+
+All three detached checkouts had empty porcelain status. Exact `git archive` exports validated all 10 fixtures. Workbench's security boundaries are strengthened by the refreshed delta and its moved fixture is recorded exactly. ProChat's delta is content-admissible, and its fixture content hashes remain unchanged.
+
+The harness now accepts a repeatable `--source-root repoId=/absolute/path` option without changing default behavior. An override set must cover the manifest repository IDs exactly; each root must be absolute, traversal-free, an existing nonsymlink Git top-level, clean, and at the exact pinned commit. Unknown, missing, duplicate, dirty, wrong-commit, and traversal-bearing mappings fail closed. The override mapping participates in the source-state hash and plan digest. The focused preparation and manifest suites pass 89/89, including the required override cases, a dry-run-to-approved-materialization lifecycle test with the same exact roots, an authoritative repository-root-binding test whose manifest-local root is absent, unknown/dual-binding rejection, and temporary-export cleanup.
+
+The canonical dry-run used all three explicit clean roots and returned:
+
+- `executionReady: true`; `materialized: false`; blocking checks: none.
+- Selected subjects: `cbm`, `exact-source`; excluded subject: `graphify`; partial evidence: true.
+- `planSha256`: `7840db6cc15f53260e920b86e666bedd3730becedfa788d6c8451871939802f5`.
+- Manifest: `sha256:91805c0a67d923e42ee090119140ad2591e0ed179d16e9f7ee2e3e03d1edd6f7`.
+- Manifest schema: `sha256:b2c10030cbc7e937f92a03db4245b7b65132bfa1621d83fbba27fa667c4a6ecc`.
+- Evidence schema: `sha256:62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1`.
+- Source-state hash: `sha256:d43d9ca2ac8acab940e48094e2c5c6d6db21bf2bcfc78bcff62d860fef52069a`.
+- CBM stable launcher: `/Users/Office/.local/bin/codebase-memory-mcp`; resolved provider: `/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp`; version `v0.9.0`; SHA-256 `d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6`.
+- Network isolation passed with `/usr/bin/sandbox-exec`, Node `v25.9.0`, a successful control, a started child process, and a denied connection (`EPERM`).
+- The plan enumerated 21 paths under `/Users/Office/.brain`; the proposed run root was `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-plan-20260804`. The complete path set and all other digest inputs are preserved in `operations/reports/b8-1-canonical-dry-run-plan-2026-08-04.json`.
+- The proposed run root was not created. No index, MCP server, watcher, scheduler, provider, user configuration, Mind content, or source checkout was changed.
+
+After the final report data was captured, the exact disposable root `/tmp/b8-1-sources.qhkwvd` was removed and verified absent. Because its physical paths are digest-bound, any later operation using this exact approved digest must first recreate clean detached roots at the same paths and commits; otherwise it must emit and obtain approval for a new digest.
 
 ## Canonical truth retained
 
@@ -389,4 +426,4 @@ No source repository or worktree was created, modified, cleaned, reset, or switc
 
 ## Exact next action
 
-Human owner must first stop or coordinate concurrent Workbench Private and ProChat edits, reconcile or preserve their unrelated dirty work, and produce clean read-only checkouts at explicitly selected commits. Then rerun pin reconciliation and the unchanged-fingerprint validation from a fresh snapshot. Only after all three manifest-selected source checkouts are clean and exactly at their pins may the canonical `cbm,exact-source` dry-run plan be generated for digest review. Materialization and execution remain separately unauthorized.
+Human owner must review `operations/reports/b8-1-canonical-dry-run-plan-2026-08-04.json` and the exact plan digest `7840db6cc15f53260e920b86e666bedd3730becedfa788d6c8451871939802f5`. Materialization may occur only in a separately authorized operation that explicitly approves that exact digest and recreates the recorded clean roots at the exact digest-bound paths and commits; a different mapping requires a new reviewed digest. Benchmark execution, B8.2, and Graphify remain unauthorized.

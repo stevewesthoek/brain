@@ -19,6 +19,7 @@ import {
   buildCanonicalPlan,
   computePlanDigest,
   interpretSandboxedChildResult,
+  parseSourceRootOverrideArgs,
   runPreflight,
 } from './prepare-b8-1-context-memory-benchmark.mjs';
 
@@ -1211,4 +1212,186 @@ test('T43: symlink retarget after approval is rejected before any run write', as
     assert.equal(result.summary.executionReady, false);
     assert.equal(fs.existsSync(path.join(escapeRoot, 'b8-1', 'runs', runId)), false);
   } finally { cleanup(repoDir, manifestFile, home, escapeRoot); }
+});
+
+test('T44: source-root override repository IDs must exactly match the manifest', async () => {
+  const repoDir = makeTempDir('b81-override-id-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-id-mismatch',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { other: repoDir },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(result.summary.planSha256, null);
+    assert.match(result.checks.find(check => check.name === 'source-root-overrides')?.detail ?? '', /missing=\[test\].*unknown=\[other\]/);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T45: dirty source-root override fails closed', async () => {
+  const repoDir = makeTempDir('b81-override-dirty-source-');
+  const commit = makeTempGitRepo(repoDir);
+  const overrideDir = makeTempDir('b81-override-dirty-root-');
+  execFileSync('git', ['clone', '-q', '--no-local', repoDir, overrideDir]);
+  fs.writeFileSync(path.join(overrideDir, 'dirty.txt'), 'untracked');
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-dirty',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: overrideDir },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.match(result.checks.find(check => check.name === 'source-root-overrides')?.detail ?? '', /root is dirty/);
+  } finally { cleanup(repoDir, overrideDir, manifestFile, home); }
+});
+
+test('T46: source-root override at the wrong commit fails closed', async () => {
+  const repoDir = makeTempDir('b81-override-wrong-source-');
+  const commit = makeTempGitRepo(repoDir);
+  const overrideDir = makeTempDir('b81-override-wrong-root-');
+  execFileSync('git', ['clone', '-q', '--no-local', repoDir, overrideDir]);
+  fs.writeFileSync(path.join(overrideDir, 'later.txt'), 'later');
+  execFileSync('git', ['add', 'later.txt'], { cwd: overrideDir });
+  execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@t.invalid', 'commit', '-qm', 'later'], { cwd: overrideDir });
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-wrong-commit',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: overrideDir },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.match(result.checks.find(check => check.name === 'source-root-overrides')?.detail ?? '', /does not equal pinned commit/);
+  } finally { cleanup(repoDir, overrideDir, manifestFile, home); }
+});
+
+test('T47: source-root override containing traversal fails closed', async () => {
+  const repoDir = makeTempDir('b81-override-traversal-source-');
+  const commit = makeTempGitRepo(repoDir);
+  const traversingRoot = `${repoDir}/../${path.basename(repoDir)}`;
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-traversal',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: traversingRoot },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.match(result.checks.find(check => check.name === 'source-root-overrides')?.detail ?? '', /path traversal/);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T48: missing source-root override fails closed', async () => {
+  const repoDir = makeTempDir('b81-override-missing-source-');
+  const commit = makeTempGitRepo(repoDir);
+  const missingRoot = path.join(os.tmpdir(), `b81-missing-${crypto.randomBytes(4).toString('hex')}`);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-missing',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: missingRoot },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.match(result.checks.find(check => check.name === 'source-root-overrides')?.detail ?? '', /root not found/);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T49: clean exact source-root override succeeds and changes the plan digest', async () => {
+  const repoDir = makeTempDir('b81-override-success-source-');
+  const commit = makeTempGitRepo(repoDir);
+  const firstOverride = makeTempDir('b81-override-success-a-');
+  const secondOverride = makeTempDir('b81-override-success-b-');
+  execFileSync('git', ['clone', '-q', '--no-local', repoDir, firstOverride]);
+  execFileSync('git', ['clone', '-q', '--no-local', repoDir, secondOverride]);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const first = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-success',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: firstOverride },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const second = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-success',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: secondOverride },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(first.summary.executionReady, true);
+    assert.equal(second.summary.executionReady, true);
+    assert.equal(first.checks.find(check => check.name === 'source-root-overrides')?.status, 'pass');
+    assert.notEqual(first.summary.planSha256, second.summary.planSha256);
+  } finally { cleanup(repoDir, firstOverride, secondOverride, manifestFile, home); }
+});
+
+test('T50: source-root CLI parser rejects duplicate and malformed mappings', () => {
+  assert.match(
+    parseSourceRootOverrideArgs(['--source-root', 'test=/tmp/a', '--source-root=test=/tmp/b']).error ?? '',
+    /duplicate/,
+  );
+  assert.match(parseSourceRootOverrideArgs(['--source-root=missing-separator']).error ?? '', /expected repositoryId=/);
+});
+
+test('T51: an approved dry-run plan materializes with the same exact source-root override', async () => {
+  const repoDir = makeTempDir('b81-override-lifecycle-source-');
+  const commit = makeTempGitRepo(repoDir);
+  const overrideDir = makeTempDir('b81-override-lifecycle-root-');
+  execFileSync('git', ['clone', '-q', '--no-local', repoDir, overrideDir]);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  try {
+    const planned = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-override-lifecycle',
+      subjects: ['exact-source'],
+      sourceRootOverrides: { test: overrideDir },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(planned.summary.executionReady, true);
+    assert.match(planned.summary.planSha256 ?? '', /^[a-f0-9]{64}$/);
+
+    const materialized = await runPreflight({
+      dryRun: false,
+      materialize: true,
+      runId: 'b8-1-override-lifecycle',
+      subjects: ['exact-source'],
+      approvedPlanSha256: planned.summary.planSha256,
+      sourceRootOverrides: { test: overrideDir },
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(materialized.summary.executionReady, true);
+    assert.equal(materialized.summary.materialized, true);
+    assert.equal(execFileSync('git', ['-C', overrideDir, 'status', '--porcelain'], { encoding: 'utf8' }), '');
+  } finally { cleanup(repoDir, overrideDir, manifestFile, home); }
 });

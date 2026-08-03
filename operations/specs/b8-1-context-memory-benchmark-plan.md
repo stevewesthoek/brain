@@ -97,6 +97,18 @@ Subjects are explicitly selected via `--subjects` flag:
 | Workbench Private | `workbench` | `../../../../prochattools/saas/workbench-private` from the manifest | Full-stack TypeScript application |
 | ProChat | `prochat` | `../../../../prochattools/web/prochat` from the manifest | Next.js TypeScript application |
 
+The manifest paths are the fail-closed defaults. When a live checkout is dirty, preflight may instead receive one complete explicit mapping of repository IDs to independent clean Git checkout roots:
+
+```text
+--source-root brain=/absolute/clean/brain \
+--source-root workbench=/absolute/clean/workbench \
+--source-root prochat=/absolute/clean/prochat
+```
+
+If any override is supplied, every manifest repository ID must be mapped exactly once. Each root must be an absolute, existing, non-symlink Git top level with empty `git status --porcelain` and `HEAD` exactly equal to the manifest pin. Unknown or missing IDs, traversal, a missing root, a dirty root, or a wrong commit fails preflight. The effective roots are captured in the digest-bound check records and source-state hash; no override mutates a checkout.
+
+Because physical override paths are digest inputs, an approved materialization must use the same exact roots recorded by the reviewed plan. If disposable roots were removed after planning, recreate clean detached checkouts at those exact paths and commits before using the approved digest; any different root mapping requires a new dry-run digest and new approval.
+
 ---
 
 ## Per-run isolation
@@ -174,8 +186,8 @@ Part B would involve feeding retrieval subject outputs as context into an AI mod
 
 1. **Proven network isolation is mandatory only for CBM** — Benchmark processes run with external network blocked via a fixed committed `sandbox-exec` profile (`operations/specs/b8-1-network-deny.sb`). The preflight harness runs a disposable self-test proving a sandboxed child started and received `EPERM`/`EACCES`; timeout, refusal, or launch failure never count as proof. Exact-source-only evidence must record exactly `{required:false,status:"not-required"}` and must not fabricate adapter or self-test data. The Codebase Memory startup update request to `api.github.com` will fail non-fatally under isolation; this is expected behavior.
 2. **No Mind content** — No file from `~/Repos/stevewesthoek/mind/` may be used as a benchmark source or fixture.
-3. **No source repository mutation** — Never modify the three source repositories. Create disposable per-run copies via `git archive` of pinned commits. Never use working-tree files as benchmark inputs — use only Git objects from pinned commits.
-4. **Disposable copies required for freshness tests** — Source-state invariants (HEAD, status porcelain, status SHA-256) are captured before and after materialization. Exact equality is required.
+3. **No source repository mutation** — Never modify the three live source repositories. Create independent clean detached checkouts when source-root overrides are needed, then create disposable per-run copies via `git archive` of pinned commits. Never use dirty working-tree files as benchmark inputs — use only Git objects from pinned commits.
+4. **Disposable copies required for freshness tests** — Effective source-root invariants (HEAD, status porcelain, status SHA-256) are captured before and after materialization. Exact equality is required.
 5. **No persistent watcher** — `auto_watch=false` set per-run in per-run cache directories.
 6. **No scheduler** — Do not activate or start the nightly scheduler during benchmarking.
 7. **Ephemeral benchmark configuration only** — Use direct CLI invocation with per-run configuration. Do not add any MCP server to user-level configuration during benchmarking.
@@ -209,7 +221,7 @@ Before executing the benchmark (NOT authorized in this plan):
 
 1. Human approval for local benchmark run (B8.1 authorization)
 2. All selected subjects pass preflight gates (exit 0)
-3. All three source repositories clean with `HEAD` exactly equal to their manifest-pinned commits
+3. All three effective source roots clean with `HEAD` exactly equal to their manifest-pinned commits, using either the default manifest paths or one complete explicit `--source-root` mapping
 4. Proven network isolation when CBM is selected (self-test passes); exact-source needs only the exact `not-required` record
 5. Valid explicit run ID supplied
 6. Explicit approval of the exact `planSha256` emitted for those deterministic inputs
