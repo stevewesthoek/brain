@@ -17,11 +17,11 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const require = createRequire('/opt/homebrew/lib/node_modules/n8n/');
-const Ajv2020 = require('ajv/dist/2020');
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
+const require = createRequire(path.join(REPO_ROOT, 'package.json'));
+const Ajv2020 = require('ajv/dist/2020');
+
 const DEFAULT_MANIFEST_PATH = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
 const DEFAULT_SCHEMA_PATH = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.schema.json');
 
@@ -153,14 +153,54 @@ function validateSchema(manifest, schemaObj) {
 }
 
 // ---------------------------------------------------------------------------
+// Symlink escape detection in exported tree (defect #8)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns an error string if relPath (relative to exportedRoot) resolves outside
+ * exportedRoot via symlinks, or null if safe (or path doesn't exist).
+ */
+function checkSymlinkEscape(exportedRoot, relPath) {
+  const fullPath = path.join(exportedRoot, relPath);
+  let resolvedPath;
+  try {
+    resolvedPath = fs.realpathSync(fullPath);
+  } catch {
+    return null; // path doesn't exist; handled by the caller as a missing-file error
+  }
+  let resolvedRoot;
+  try {
+    resolvedRoot = fs.realpathSync(exportedRoot);
+  } catch {
+    return null;
+  }
+  const rel = path.relative(resolvedRoot, resolvedPath);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return `symlink escape: "${relPath}" resolves outside exported root (→ ${resolvedPath})`;
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Structured verification execution
 // ---------------------------------------------------------------------------
 
+/**
+ * Verify a structured verification object against an exported tree root.
+ *
+ * @param {object} verification
+ * @param {string} exportedRoot  - Absolute path to the exported tree root.
+ * @returns {string[]} errors (empty = pass)
+ */
 function verifyStructuredVerification(verification, exportedRoot) {
   const errors = [];
   const algo = verification.algorithm;
 
   if (algo === 'line-contains' || algo === 'symbol-at-line') {
+    // Symlink escape check
+    const escapeErr = checkSymlinkEscape(exportedRoot, verification.path);
+    if (escapeErr) { errors.push(`verification: ${escapeErr}`); return errors; }
+
     const filePath = path.join(exportedRoot, verification.path);
     if (!fs.existsSync(filePath)) {
       errors.push(`verification: file not found: ${verification.path}`);
@@ -185,6 +225,10 @@ function verifyStructuredVerification(verification, exportedRoot) {
       errors.push(`verification: file count mismatch for ${verification.fileName} (expected=${verification.expectedCount} actual=${count})`);
     }
   } else if (algo === 'json-pointer-set') {
+    // Symlink escape check
+    const escapeErr = checkSymlinkEscape(exportedRoot, verification.path);
+    if (escapeErr) { errors.push(`verification: ${escapeErr}`); return errors; }
+
     const filePath = path.join(exportedRoot, verification.path);
     if (!fs.existsSync(filePath)) {
       errors.push(`verification: file not found: ${verification.path}`);
@@ -215,6 +259,12 @@ function verifyStructuredVerification(verification, exportedRoot) {
       errors.push(`verification: set mismatch at ${verification.jsonPointer}: expected=[${[...expectedSet]}] actual=[${[...actualSet]}]`);
     }
   } else if (algo === 'file-exists') {
+    // Symlink escape check
+    if (verification.path) {
+      const escapeErr = checkSymlinkEscape(exportedRoot, verification.path);
+      if (escapeErr) { errors.push(`verification: ${escapeErr}`); return errors; }
+    }
+
     const filePath = path.join(exportedRoot, verification.path);
     if (!fs.existsSync(filePath)) {
       errors.push(`verification: file not found: ${verification.path}`);
@@ -272,6 +322,14 @@ function exportCommit(repoPath, commit) {
 // Legacy verifyFixture (for backward compatibility with tests)
 // ---------------------------------------------------------------------------
 
+/**
+ * Verify a fixture against an exported tree root.
+ * Supports both structured verification objects and legacy expectedFile/expectedLine checks.
+ *
+ * @param {object} fixture
+ * @param {string} exportedRoot  - Absolute path to the exported tree root.
+ * @returns {string[]} errors (empty = pass)
+ */
 function verifyFixture(fixture, exportedRoot) {
   const errors = [];
 
@@ -288,6 +346,14 @@ function verifyFixture(fixture, exportedRoot) {
   }
 
   if (!fixture.expectedFile) return errors;
+
+  // Symlink escape check
+  const escapeErr = checkSymlinkEscape(exportedRoot, fixture.expectedFile);
+  if (escapeErr) {
+    errors.push(`${fixture.fixtureId}: ${escapeErr}`);
+    return errors;
+  }
+
   const filePath = path.join(exportedRoot, fixture.expectedFile);
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
     errors.push(`${fixture.fixtureId}: expectedFile not found: ${fixture.expectedFile}`);
@@ -317,9 +383,23 @@ function verifyFixture(fixture, exportedRoot) {
 // Main validation
 // ---------------------------------------------------------------------------
 
-async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = false } = {}) {
+/**
+ * Validate a manifest file.
+ *
+ * @param {string} manifestPath
+ * @param {string} schemaPath
+ * @param {{
+ *   allowMissingRepos?: boolean,
+ *   exportedRootBindings?: Record<string, string>
+ * }} [options]
+ *   exportedRootBindings: map of repositoryId → absolute path to pre-exported tree.
+ *     When provided for a repository, skips git archive export and uses the path directly.
+ *     The caller is responsible for cleanup of provided paths.
+ * @returns {Promise<{ valid: boolean, errors: string[] }>}
+ */
+async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = false, exportedRootBindings = {} } = {}) {
   const errors = [];
-  const tmpDirs = [];
+  const tmpDirs = []; // only dirs WE created via git archive; not caller-provided bindings
 
   try {
     let manifest;
@@ -341,6 +421,25 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
     const exportedRoots = new Map();
 
     for (const repo of manifest.repositories) {
+      // Defect #8: Use caller-provided exported root bindings when available
+      if (exportedRootBindings[repo.repositoryId]) {
+        const providedRoot = exportedRootBindings[repo.repositoryId];
+        if (!fs.existsSync(providedRoot)) {
+          errors.push(`${repo.repositoryId}: provided exported root not found: ${providedRoot}`);
+          continue;
+        }
+        // Verify no symlink escape from the provided root itself
+        let resolvedProvided;
+        try {
+          resolvedProvided = fs.realpathSync(providedRoot);
+        } catch (e) {
+          errors.push(`${repo.repositoryId}: cannot resolve provided root: ${e.message}`);
+          continue;
+        }
+        exportedRoots.set(repo.repositoryId, resolvedProvided);
+        continue; // skip git archive export
+      }
+
       if (!fs.existsSync(repo.localPath)) {
         if (allowMissingRepos) continue;
         errors.push(`${repo.repositoryId}: repository not found at ${repo.localPath}`);
@@ -375,8 +474,10 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
         errors.push(`${repo.repositoryId}: cannot read HEAD after export`);
         continue;
       }
+
+      // Defect #8: commit diff detection
       if (headBefore !== headAfter) {
-        errors.push(`${repo.repositoryId}: HEAD changed during validation`);
+        errors.push(`${repo.repositoryId}: HEAD changed during validation (before=${headBefore.slice(0,12)} after=${headAfter.slice(0,12)})`);
       }
     }
 

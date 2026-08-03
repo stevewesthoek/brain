@@ -16,13 +16,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 // ---------------------------------------------------------------------------
-// Load Ajv from n8n's installation so we do not require a local dependency.
+// Load Ajv from local repository, not n8n.
 // ---------------------------------------------------------------------------
-const requireFromN8n = createRequire('/opt/homebrew/lib/node_modules/n8n/');
-const Ajv = requireFromN8n('ajv/dist/2020');
-const addFormats = requireFromN8n('ajv-formats');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '..');
+const require = createRequire(path.join(REPO_ROOT, 'package.json'));
+const Ajv = require('ajv/dist/2020');
+const addFormats = require('ajv-formats');
 
 const DEFAULT_SCHEMA_PATH = path.resolve(
   import.meta.dirname,
