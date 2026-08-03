@@ -720,15 +720,15 @@ Context Gateway tasks are unchanged.
 
 ### B8.1 — Benchmark structural code-memory options on the M1 Pro
 
-- **Status:** planned.
-- **Scope:** Codebase Memory MCP, existing Graphify code-only profile, and exact-source exploration on representative Brain, Workbench, and one normal application repository.
-- **Change:** record indexing time, incremental refresh latency, CPU, peak memory, disk use, retrieval quality, tool calls, and model-token use; keep all tests local and read-only.
+- **Status:** incomplete and not executed. P8 remains 0/6 accepted; dry-run validation is not benchmark authorization.
+- **Scope:** Codebase Memory MCP, Graphify only after its bounded executable contract is proven, and exact-source exploration on representative Brain, Workbench, and one normal application repository. Graphify is currently blocked.
+- **Change:** after explicit benchmark authorization and approval of the exact emitted plan digest, record indexing time, incremental refresh latency, CPU, peak memory, disk use, retrieval quality, and offline operation counts; keep all tests local and read-only. Offline evidence excludes model-mediated token fields.
 - **Verify:** repeatable benchmark fixtures and a dated comparison report identify the preferred default and fallback.
-- **Stop if:** a benchmark requires credentials, personal Mind content, or an unbounded model run.
+- **Stop if:** authorization or the exact approved digest is absent/stale, Graphify remains blocked while selected, or a benchmark requires credentials, personal Mind content, or an unbounded model run.
 
 ### B8.2 — Reconcile and formally admit Codebase Memory MCP as the structural default
 
-- **Status:** planned; blocked on B8.1 evidence and provider-admission review.
+- **Status:** incomplete; blocked on accepted B8.1 evidence and provider-admission review.
 - **Change:** reconcile the existing pinned candidate binary, candidate admission, and preliminary isolated indexes against the approved B8.1 decision; install or repackage only when that decision requires it, then formally admit the provider through the existing MCP boundary and add repository indexes only within the accepted rollout scope.
 - **Verify:** provider schema, executable provenance, exact tool inventory, read-only behavior, accepted repository scope, and rollback/uninstall instructions pass before any default activation or wider rollout.
 - **Safety:** no repository writes, network mutation, credentials, default activation, or automatic rollout to every repository without canonical acceptance.
@@ -767,11 +767,11 @@ Context Gateway tasks are unchanged.
 Run only after all selected tasks for a priority are complete:
 
 ```bash
-cd /Users/Office/Repos/stevewesthoek/brain/projects/brain-core
+cd projects/brain-core
 npm run typecheck
 npm test
 
-cd /Users/Office/Repos/stevewesthoek/brain/projects/mind-steward
+cd ../mind-steward
 npm run typecheck
 npm test
 ```

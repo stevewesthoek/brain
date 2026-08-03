@@ -20,6 +20,9 @@ import {
   verifyStructuredVerification,
   isForbiddenPath,
   checkForbiddenWording,
+  validateExportedTreeSymlinks,
+  removeDeclaredSymlinks,
+  isProvenUnsafeSymlinkResolution,
 } from './validate-b8-1-benchmark-manifest.mjs';
 
 const SCHEMA_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../operations/specs/b8-1-context-memory-benchmark-manifest.schema.json');
@@ -46,7 +49,7 @@ function makeManifest({ repoId = 'brain', repoPath, commit, fixtures = null } = 
   return {
     schemaVersion: '1.0.0',
     createdAt: '2026-08-02',
-    repositories: [{ repositoryId: repoId, localPath: repoPath, pinnedCommit: commit, description: 'test' }],
+    repositories: [{ repositoryId: repoId, localPath: path.relative(os.tmpdir(), repoPath), pinnedCommit: commit, description: 'test' }],
     fixtures: fixtures ?? [{
       fixtureId: 'brain_f1',
       repositoryId: repoId,
@@ -106,7 +109,7 @@ test('symbolic ref "main" as pinnedCommit is rejected by Ajv schema', () => {
   const manifest = {
     schemaVersion: '1.0.0',
     createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'main' }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'main' }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'test', expectedFile: 'src/server.js', scoringType: 'exact-match',
@@ -220,7 +223,7 @@ test('expectedCallers as string (not array) is rejected', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'test', expectedFile: 'src/server.js',
@@ -253,7 +256,7 @@ test('validateSchema: fixture with "or equivalent" in notes field is rejected', 
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'test', expectedFile: 'src/server.js', scoringType: 'exact-match',
@@ -327,7 +330,7 @@ test('count-match fixture without expectedFile passes schema', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'count_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'How many?', expectedFileCount: 5, scoringType: 'count-match',
@@ -347,7 +350,7 @@ test('exact-match fixture without expectedFile fails schema', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'exact_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'Where?', scoringType: 'exact-match', callerCalleeApplicable: false,
@@ -366,7 +369,7 @@ test('path traversal in expectedFile is rejected', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'test', expectedFile: '../../../etc/passwd', scoringType: 'exact-match',
@@ -420,7 +423,7 @@ test('verificationCommand field is not accepted by schema', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'test', expectedFile: 'src/x.ts', scoringType: 'exact-match',
@@ -443,7 +446,7 @@ test('fixture pinnedCommit differing from repository is rejected', () => {
   const commit2 = 'b'.repeat(40);
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: commit1 }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: commit1 }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: commit2,
       question: 'test', expectedFile: 'src/x.ts', scoringType: 'exact-match',
@@ -463,7 +466,7 @@ test('absolute path in verification.path rejected', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0', createdAt: '2026-08-02',
-    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    repositories: [{ repositoryId: 'brain', localPath: 'some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
       fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
       question: 'test', expectedFile: 'src/x.ts', scoringType: 'exact-match',
@@ -483,4 +486,84 @@ test('live manifest validates without errors (full live run)', async () => {
   const manifestPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../operations/specs/b8-1-context-memory-benchmark-manifest.json');
   const { valid, errors } = await validateManifest(manifestPath, SCHEMA_PATH);
   assert.equal(valid, true, `errors: ${errors.join('; ')}`);
+});
+
+test('duplicate repository IDs are rejected', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = makeManifest({ repoPath: '/tmp/repo', commit: 'a'.repeat(40) });
+  manifest.repositories.push({ ...manifest.repositories[0] });
+  const errors = validateSchema(manifest, schema);
+  assert.ok(errors.some(error => /duplicate repositoryId/.test(error)), errors.join('; '));
+});
+
+test('absolute repository paths are rejected as non-portable', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = makeManifest({ repoPath: '/tmp/repo', commit: 'a'.repeat(40) });
+  manifest.repositories[0].localPath = '/tmp/repo';
+  const errors = validateSchema(manifest, schema);
+  assert.ok(errors.some(error => /portable|pattern/.test(error)), errors.join('; '));
+});
+
+test('file-name-count rejects traversal and missing roots instead of counting zero', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-count-root-'));
+  try {
+    const traversal = verifyStructuredVerification({
+      algorithm: 'file-name-count', root: '../../', fileName: 'route.ts', expectedCount: 0,
+    }, root);
+    assert.ok(traversal.some(error => /escape/.test(error)), traversal.join('; '));
+    const missing = verifyStructuredVerification({
+      algorithm: 'file-name-count', root: 'missing', fileName: 'route.ts', expectedCount: 0,
+    }, root);
+    assert.ok(missing.some(error => /not found|unreadable/.test(error)), missing.join('; '));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('unreferenced symlink escapes are rejected', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-symlink-root-'));
+  try {
+    fs.symlinkSync('/tmp', path.join(root, 'escape'));
+    const errors = validateExportedTreeSymlinks(root);
+    assert.ok(errors.some(error => /symlink escape/.test(error)), errors.join('; '));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('declared symlink exclusions cannot omit a safely contained link', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-contained-link-'));
+  try {
+    fs.writeFileSync(path.join(root, 'target.txt'), 'safe');
+    fs.symlinkSync('target.txt', path.join(root, 'link.txt'));
+    const errors = removeDeclaredSymlinks(root, ['link.txt']);
+    assert.ok(errors.some(error => /resolves safely/.test(error)), errors.join('; '));
+    assert.equal(fs.lstatSync(path.join(root, 'link.txt')).isSymbolicLink(), true);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+});
+
+test('declared symlink exclusions accept only proven escapes or broken targets', () => {
+  assert.equal(isProvenUnsafeSymlinkResolution(Object.assign(new Error('path not found or unreadable: link'), { code: 'ENOENT' })), true);
+  assert.equal(isProvenUnsafeSymlinkResolution(new Error('symlink escape: "link" resolves outside exported root')), true);
+  assert.equal(isProvenUnsafeSymlinkResolution(Object.assign(new Error('path not found or unreadable: link'), { code: 'EACCES' })), false);
+  assert.equal(isProvenUnsafeSymlinkResolution(Object.assign(new Error('path not found or unreadable: link'), { code: 'EIO' })), false);
+});
+
+test('provided exported root binding must not itself be a symlink', async () => {
+  const { root: repoRoot, commit } = makeTempGitRepo();
+  const manifest = makeManifest({ repoPath: repoRoot, commit });
+  const manifestFile = path.join(os.tmpdir(), `brain-b81-binding-manifest-${Date.now()}.json`);
+  const bindingParent = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-binding-'));
+  const bindingLink = path.join(bindingParent, 'root-link');
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest));
+  fs.symlinkSync(repoRoot, bindingLink);
+  try {
+    const result = await validateManifest(manifestFile, SCHEMA_PATH, { exportedRootBindings: { brain: bindingLink } });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /provided exported root must be a non-symlink directory/.test(error)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(repoRoot, { recursive: true, force: true });
+    fs.rmSync(bindingParent, { recursive: true, force: true });
+    fs.rmSync(manifestFile, { force: true });
+  }
 });

@@ -12,7 +12,7 @@
  * Semantics:
  *   - Git provider root: HEAD must equal admitted revision. Mismatch = failure.
  *   - Non-Git exported root: requires --provider-revision attestation. Missing = failure.
- *   - Working-tree-only artifacts: never count as source-verified or runtime-verified.
+ *   - Working-tree-only artifacts: excluded from committed-source proof and never runtime-verified.
  *   - Working-tree-only entrypoint: runtimeEntrypointVerified=false.
  *   - Candidate with source-only: may have admissionEligible=false (incomplete, not fully failed).
  *   - Active-local: must pass all verification fields or it fails.
@@ -130,6 +130,8 @@ export function verifyProvider({ admission, rootPath, explicitRevision = null })
   let allRuntimeArtifactsVerified = true;
   let entrypointFound = false;
   let entrypointIsWorkingTreeOnly = false;
+  let entrypointDigestVerified = false;
+  let sourceArtifactCount = 0;
 
   for (const artifact of artifacts) {
     // Skip virtual paths (archive:, npm:)
@@ -146,45 +148,52 @@ export function verifyProvider({ admission, rootPath, explicitRevision = null })
     }
 
     if (isWTO) {
-      // Working-tree-only: never counts as source-verified or runtime-verified
+      // Working-tree-only outputs are outside committed-source proof and can
+      // never establish runtime verification.
       if (isEntrypoint) {
         issues.push(`${providerId}: runtime-entrypoint-unverified (${entrypoint} is working-tree-only)`);
       }
-      allSourceArtifactsVerified = false;
-      if (isEntrypoint) allRuntimeArtifactsVerified = false;
+      allRuntimeArtifactsVerified = false;
       continue;
     }
+    sourceArtifactCount += 1;
 
     // Attempt to verify committed artifact
-    const artifactPath = path.join(root, artifact.path);
+    const artifactPath = path.resolve(root, artifact.path);
     try {
+      const relative = path.relative(root, artifactPath);
+      if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('artifact path escapes provider root');
+      const artifactStat = fs.lstatSync(artifactPath);
+      if (!artifactStat.isFile() || artifactStat.isSymbolicLink()) throw new Error('artifact must be a non-symlink file');
       const actualDigest = digest(artifactPath);
       if (actualDigest !== artifact.sha256) {
         issues.push(`${providerId}/${artifact.path}: artifact-digest-mismatch`);
         allSourceArtifactsVerified = false;
-        if (isEntrypoint) allRuntimeArtifactsVerified = false;
+        allRuntimeArtifactsVerified = false;
+      } else if (isEntrypoint) {
+        entrypointDigestVerified = true;
       }
     } catch {
       issues.push(`${providerId}/${artifact.path}: artifact-read-error`);
       allSourceArtifactsVerified = false;
-      if (isEntrypoint) allRuntimeArtifactsVerified = false;
+      allRuntimeArtifactsVerified = false;
     }
   }
 
   // Only set sourceArtifactsVerified if revision is verified AND all non-WTO artifacts pass
-  if (revisionVerified && allSourceArtifactsVerified && artifacts.length > 0) {
+  if (revisionVerified && allSourceArtifactsVerified && sourceArtifactCount > 0) {
     sourceArtifactsVerified = true;
   }
 
   // Runtime entrypoint verification
-  if (entrypoint && !entrypointIsWorkingTreeOnly && revisionVerified) {
-    runtimeEntrypointVerified = allRuntimeArtifactsVerified;
+  if (entrypointFound && entrypoint && !entrypointIsWorkingTreeOnly && revisionVerified) {
+    runtimeEntrypointVerified = entrypointDigestVerified;
   } else if (entrypoint && entrypointIsWorkingTreeOnly) {
     runtimeEntrypointVerified = false;
   }
 
   // Runtime artifacts verified (all non-WTO artifacts pass digest check and revision verified)
-  if (revisionVerified && allRuntimeArtifactsVerified && artifacts.length > 0) {
+  if (revisionVerified && entrypointFound && allRuntimeArtifactsVerified && artifacts.length > 0) {
     runtimeArtifactsVerified = true;
   }
 

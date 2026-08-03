@@ -36,7 +36,7 @@ Do not duplicate fixture definitions in prose. The manifest is machine-validated
 - Schema: `operations/specs/b8-1-context-memory-benchmark-evidence.schema.json`
 - Validation: `node tools/validate-b8-1-benchmark-evidence.mjs`
 
-Evidence records must conform to this schema. Offline-only evidence must NOT contain model input/output token fields. Those belong exclusively to the separately-unauthorized `optionalModelMediatedMetrics` section.
+Evidence records must conform to this schema. Offline-only evidence must NOT contain model input/output token fields. Model-mediated metrics are outside this offline schema and remain separately unauthorized.
 
 Evidence validation for a materialized run must supply both `--manifest` and `--run-dir`. The validator hashes the actual manifest and `preflight-receipt.json` bytes, recomputes the approved run-plan digest, and requires the run plan, receipt, and evidence to agree on the digest, subject partition, pinned commits, CBM identity/isolation proof, and fixture coverage. Evidence for an excluded subject is invalid.
 
@@ -79,7 +79,7 @@ Subjects are explicitly selected via `--subjects` flag:
 - A selected blocked subject prevents readiness and materialization (exit 1)
 - An unselected blocked subject is recorded as `excluded-subject`
 - CBM + exact-source only = partial evidence; does NOT complete B8.1
-- A successful dry-run is a preflight observation only. It is neither B8.1 execution authorization nor approval to materialize a run.
+- A successful dry-run emits the complete canonical plan and its digest for review. It is a preflight observation only, neither B8.1 execution authorization nor approval to materialize a run.
 - Materialization requires `--approved-plan-sha256` to equal the exact digest emitted by the matching dry-run. Missing or changed approval creates no run directory.
 - Partial evidence does NOT authorize B8.2
 - Full B8.1 requires the canonical three-way comparison OR a separate explicit decision that Graphify is ineligible
@@ -93,9 +93,9 @@ Subjects are explicitly selected via `--subjects` flag:
 
 | Repo | Subject ID | Path | Description |
 |------|-----------|------|-------------|
-| Brain | `brain` | `/Users/Office/Repos/stevewesthoek/brain` | AI infrastructure, skills, runbooks (TypeScript + shell) |
-| Workbench Private | `workbench` | `/Users/Office/Repos/prochattools/saas/workbench-private` | Full-stack TypeScript application |
-| ProChat | `prochat` | `/Users/Office/Repos/prochattools/web/prochat` | Next.js TypeScript application |
+| Brain | `brain` | `../../../brain` from the manifest | AI infrastructure, skills, runbooks (TypeScript + shell) |
+| Workbench Private | `workbench` | `../../../../prochattools/saas/workbench-private` from the manifest | Full-stack TypeScript application |
+| ProChat | `prochat` | `../../../../prochattools/web/prochat` from the manifest | Next.js TypeScript application |
 
 ---
 
@@ -122,7 +122,8 @@ Every benchmark run is fully isolated under a single run directory:
 ```
 
 - Every cache and configuration path is per-run
-- `run-plan.json` and `preflight-receipt.json` bind the same deterministic inputs: subject partition, manifest and schema hashes, pinned commits, CBM verification, network adapter/profile identity, Graphify status/reason/profile hash, disk gate result, every benchmark-directory/run-artifact write path, source-state hash, and complete preflight check records.
+- `run-plan.json` and `preflight-receipt.json` bind the same deterministic inputs: subject partition, manifest and schema hashes, pinned commits, declared escaping-symlink exclusions, CBM verification, network adapter/runtime/helper/profile identity, Graphify status/reason/profile hash, disk gate result, every benchmark-directory/run-artifact write path, the physical run-directory target, source-state hash, and complete preflight check records.
+- The evidence validator binds the receipt bytes, cleanup manifest, and both source-state proof files to the approved plan. Timestamps remain observational and outside digest inputs.
 - Planned-write checks resolve existing ancestors physically, reject symlink escapes and protected-path overlap, and create the approved run directory exclusively; no unchecked sibling staging directory is used.
 - `createdAt` timestamps are observational metadata and are not plan-digest inputs.
 - No shared cache or configuration directory exists outside the run root
@@ -165,7 +166,7 @@ Part A may be measured without any AI model connection. All metrics are computed
 
 **Part B is NOT required for B8.2 acceptance. It is not authorized in this plan. Model-mediated Part B remains unauthorized.**
 
-Part B would involve feeding retrieval subject outputs as context into an AI model session. Part B metrics (modelInputTokens, modelOutputTokens, timeToAnswerMs) belong exclusively in the `optionalModelMediatedMetrics` section of the evidence schema and must NOT appear in offline evidence.
+Part B would involve feeding retrieval subject outputs as context into an AI model session. Part B metrics (modelInputTokens, modelOutputTokens, timeToAnswerMs) require a separate authorized evidence contract and must NOT appear in offline evidence.
 
 ---
 

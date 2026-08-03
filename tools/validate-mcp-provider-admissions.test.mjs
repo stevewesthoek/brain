@@ -35,7 +35,7 @@ test('validates identity, scope, and pinned provider artifacts', () => {
   const item = fixture();
   assert.deepEqual(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }), []);
   fs.writeFileSync(path.join(item.root, 'dist/server.js'), 'tampered');
-  assert(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }).some((error) => error.includes('digest mismatch')));
+  assert(validateAdmissionRegistry(item.registry, { providerRoots: new Map([['example', item.root]]) }).some((error) => error.includes('artifact-digest-mismatch')));
   fs.rmSync(item.root, { recursive: true });
 });
 

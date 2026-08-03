@@ -30,7 +30,9 @@
           },
           "localPath": {
             "type": "string",
-            "description": "Absolute path to local checkout (must be absolute)"
+            "minLength": 1,
+            "pattern": "^(?!/)(?![A-Za-z]:[\\\\/]).+",
+            "description": "Portable path to the local checkout, resolved relative to this manifest"
           },
           "pinnedCommit": {
             "type": "string",
@@ -39,6 +41,12 @@
           },
           "description": {
             "type": "string"
+          },
+          "excludedSymlinkPaths": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Digest-bound symlinks omitted from exported benchmark sources because they escape the pinned tree"
           }
         }
       }
@@ -112,6 +120,7 @@
           "verification": {
             "type": "object",
             "required": ["algorithm"],
+            "additionalProperties": false,
             "properties": {
               "algorithm": {
                 "type": "string",

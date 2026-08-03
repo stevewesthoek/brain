@@ -212,13 +212,14 @@ test('Scenario 8: Candidate with source-only (WTO entrypoint) → sourceArtifact
       providerId: 'candidate-provider',
       repository: 'test/repo',
       revision,
-      entrypoint: 'src/server.js',
-      artifacts: [runtimeArtifact],
+      artifacts: [srcArtifact, { ...runtimeArtifact, path: 'dist/server.js' }],
+      entrypoint: 'dist/server.js',
     },
   };
   try {
     const result = verifyProvider({ admission, rootPath: root, explicitRevision: revision });
     // WTO entrypoint means runtimeEntrypointVerified=false
+    assert.equal(result.sourceArtifactsVerified, true);
     assert.equal(result.runtimeEntrypointVerified, false);
     assert.equal(result.admissionEligible, false);
     assert(result.issues.some((i) => i.includes('runtime-entrypoint-unverified')), `issues: ${result.issues}`);
@@ -244,6 +245,24 @@ test('Scenario 9: Active-local with unverified runtime → admissionEligible=fal
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('committed entrypoint remains individually verified when another runtime artifact is working-tree-only', () => {
+  const { root, revision, sha256 } = makeGitRoot();
+  const admission = makeAdmission({
+    revision,
+    status: 'candidate',
+    artifacts: [
+      { path: 'src/server.js', sha256 },
+      { path: 'dist/generated.js', sha256: 'f'.repeat(64), note: 'sourceState: working-tree-only' },
+    ],
+  });
+  try {
+    const result = verifyProvider({ admission, rootPath: root });
+    assert.equal(result.sourceArtifactsVerified, true);
+    assert.equal(result.runtimeEntrypointVerified, true);
+    assert.equal(result.runtimeArtifactsVerified, false);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
 // ---------------------------------------------------------------------------

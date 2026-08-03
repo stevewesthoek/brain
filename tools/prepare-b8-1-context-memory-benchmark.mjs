@@ -25,6 +25,9 @@ import {
   validateSchema,
   verifyStructuredVerification,
   verifyFixture,
+  resolveRepositoryPaths,
+  removeDeclaredSymlinks,
+  validateExportedTreeSymlinks,
 } from './validate-b8-1-benchmark-manifest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -174,7 +177,7 @@ async function checkManifestAsync(checks, manifestPathOverride) {
 
   const manifestHash = crypto.createHash('sha256').update(manifestText).digest('hex');
   recordCheck(checks, 'manifest-validation', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos; sha256=${manifestHash.slice(0, 16)}...`);
-  return { manifest, manifestHash, manifestText };
+  return { manifest: resolveRepositoryPaths(manifest, resolvedPath), manifestHash, manifestText };
 }
 
 function checkPinnedCommits(checks, manifest) {
@@ -232,7 +235,12 @@ function checkCbmBinary(checks, selectedSubjects, home) {
 
   const providerRoot = path.resolve(path.join(homeDir(home), '.local', 'lib', 'brain', 'providers', 'codebase-memory-mcp'));
   const version = admission.provider.version;
-  const expectedHash = admission.provider.artifacts[0].sha256;
+  const entrypointArtifact = admission.provider.artifacts.find(artifact => artifact.path === admission.provider.entrypoint);
+  if (!entrypointArtifact) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', 'admitted CBM entrypoint is not digest-pinned');
+    return null;
+  }
+  const expectedHash = entrypointArtifact.sha256;
   const stablePath = path.resolve(path.join(homeDir(home), '.local', 'bin', 'codebase-memory-mcp'));
   const versionedPath = path.resolve(path.join(providerRoot, `v${version}`, 'codebase-memory-mcp'));
 
@@ -391,6 +399,18 @@ async function checkNetworkIsolationAsync(checks, selectedSubjects, opts = {}) {
     return null;
   }
 
+  const childPath = path.resolve(__dirname, 'lib', 'b8-1-network-isolation-child.mjs');
+  let runtimeIdentity;
+  let childIdentity;
+  try {
+    const runtimePath = fs.realpathSync(process.execPath);
+    runtimeIdentity = { path: runtimePath, sha256: sha256File(runtimePath), version: process.version };
+    childIdentity = { path: childPath, sha256: sha256File(childPath) };
+  } catch (error) {
+    recordCheck(checks, 'network-isolation', 'blocked', `cannot bind isolation runtime/helper identity: ${error.message}`);
+    return null;
+  }
+
   // --- Step 1: Start local loopback TCP server ---
   const { server, port } = await new Promise((resolve, reject) => {
     const tcpFactory = opts._tcpServerFactory ?? (() => net.createServer());
@@ -423,10 +443,9 @@ async function checkNetworkIsolationAsync(checks, selectedSubjects, opts = {}) {
     // --- Step 3: Sandboxed connection — must be denied with EPERM/EACCES ---
     // Use sandbox-exec with the deny profile and the child helper to test connection.
     // The child helper returns structured JSON and specific exit codes.
-    const childPath = path.resolve(__dirname, 'lib', 'b8-1-network-isolation-child.mjs');
     const sandboxedTest = spawn(
       adapterPath,
-      ['-f', NETWORK_DENY_PROFILE, 'node', childPath, String(port)],
+      ['-f', NETWORK_DENY_PROFILE, runtimeIdentity.path, childPath, String(port)],
       { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] }
     );
 
@@ -450,6 +469,8 @@ async function checkNetworkIsolationAsync(checks, selectedSubjects, opts = {}) {
       path: adapterPath,
       sha256: adapterSha256,
     },
+    runtimeIdentity,
+    childIdentity,
     profilePath: NETWORK_DENY_PROFILE,
     profileSha256,
     controlSucceeded: true,
@@ -558,7 +579,8 @@ function checkDiskBudget(checks, home, opts = {}) {
 
   // Try df first (most reliable on macOS)
   try {
-    const dfResult = spawnSync('df', ['-m', benchmarkParent], { encoding: 'utf8' });
+    const spawn = opts._spawnSync ?? spawnSync;
+    const dfResult = spawn('df', ['-m', benchmarkParent], { encoding: 'utf8' });
     if (dfResult.status === 0) {
       const lines = dfResult.stdout.trim().split('\n');
       if (lines.length >= 2) {
@@ -783,6 +805,7 @@ export function buildCanonicalPlan({
   graphifyStatus,
   diskResult,
   plannedWritePaths,
+  runDirectoryPhysical,
   sourceStateHash,
   checks,
 }) {
@@ -828,6 +851,7 @@ export function buildCanonicalPlan({
     graphifyStatus: canonicalize(graphifyStatus),
     diskResult: canonicalize(diskResult),
     plannedWritePaths: [...plannedWritePaths].sort(),
+    runDirectoryPhysical,
     sourceStateHash: `sha256:${sourceStateHash}`,
     checks: checks.map(check => ({
       name: check.name,
@@ -882,14 +906,12 @@ function buildSubjectDirs(selectedSubjects, manifest) {
 /**
  * Validate an exported tree against the fixture assertions for a repository.
  * Called from materialize(). Fails and throws if any assertion fails.
- * Removes tmpDir before throwing to leave no partial state.
  *
  * @param {object} manifest
  * @param {string} repoId
  * @param {string} exportedRoot  - Path to exported tree for this repo.
- * @param {string} tmpDir  - The tmp directory to remove on failure.
  */
-function validateExportedTree(manifest, repoId, exportedRoot, tmpDir) {
+function validateExportedTree(manifest, repoId, exportedRoot) {
   // Check all fixtures for this repo
   const fixtures = (manifest.fixtures ?? []).filter(f => f.repositoryId === repoId);
 
@@ -902,7 +924,6 @@ function validateExportedTree(manifest, repoId, exportedRoot, tmpDir) {
     }
 
     if (verErrors.length > 0) {
-      try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* best effort */ }
       throw new Error(`exported tree assertion failed for ${fixture.fixtureId}: ${verErrors[0]}`);
     }
   }
@@ -913,7 +934,13 @@ function validateExportedTree(manifest, repoId, exportedRoot, tmpDir) {
  * Defect #9 & Task 6: Manifest hash tracking and expanded plan/receipt.
  * Materialization consumes the exact canonical plan that was approved.
  */
-function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, plannedSourceState, planSha256) {
+function rollbackMaterialization(runDir, createdRunDir) {
+  if (!createdRunDir) return;
+  fs.rmSync(runDir, { recursive: true, force: true });
+  if (fs.existsSync(runDir)) throw new Error(`rollback left materialization artifact at ${runDir}`);
+}
+
+function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, plannedSourceState, planSha256, hooks = {}) {
   let createdRunDir = false;
   const missingParents = [];
   try {
@@ -923,9 +950,21 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
     for (let current = path.dirname(runDir); !fs.existsSync(current); current = path.dirname(current)) {
       missingParents.push(current);
     }
+    const expectedPhysicalRunDir = canonicalPlan.runDirectoryPhysical;
+    if (!canonicalPlan.plannedWritePaths.includes(path.resolve(runDir))) {
+      throw new Error('run directory is not present in the approved planned-write set');
+    }
+    hooks._beforeMaterialize?.({ runDir });
+    if (physicalPathThroughExistingAncestor(runDir) !== expectedPhysicalRunDir) {
+      throw new Error('run directory physical path changed after plan approval');
+    }
     fs.mkdirSync(path.dirname(runDir), { recursive: true });
     fs.mkdirSync(runDir, { recursive: false });
     createdRunDir = true;
+    if (fs.realpathSync(runDir) !== expectedPhysicalRunDir) {
+      throw new Error('run directory physical path changed after plan approval');
+    }
+    hooks._failAt?.('after-run-directory');
 
     // Defect #10: Subject-aware directory creation
     const dirs = buildSubjectDirs(selectedSubjects, manifest);
@@ -955,12 +994,17 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
       }
       execFileSync('tar', ['-x', '-f', tarPath, '-C', destDir]);
       fs.rmSync(tarPath, { force: true });
+      const symlinkErrors = [
+        ...removeDeclaredSymlinks(destDir, repo.excludedSymlinkPaths),
+        ...validateExportedTreeSymlinks(destDir),
+      ];
+      if (symlinkErrors.length > 0) throw new Error(`${repo.repositoryId}: ${symlinkErrors[0]}`);
+      hooks._failAt?.(`after-export:${repo.repositoryId}`);
 
       // Defect #8: Validate exported tree against fixture assertions after each export
       try {
-        validateExportedTree(manifest, repo.repositoryId, destDir, runDir);
+        validateExportedTree(manifest, repo.repositoryId, destDir);
       } catch (e) {
-        // validateExportedTree already removed the exclusively created run directory.
         recordCheck(checks, 'materialization', 'fail', e.message);
         throw e;
       }
@@ -973,7 +1017,6 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
       const before = stateBefore[i];
       const after = stateAfter[i];
       if (before.HEAD !== after.HEAD || before.statusSha256 !== after.statusSha256) {
-        try { fs.rmSync(runDir, { recursive: true, force: true }); } catch { /* best effort */ }
         throw new Error(`source state changed for ${before.repositoryId}: HEAD ${before.HEAD} -> ${after.HEAD}, status ${before.statusSha256} -> ${after.statusSha256}`);
       }
     }
@@ -991,6 +1034,7 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
     const cleanupManifest = {
       runId: path.basename(runDir),
       runDirectory: runDir,
+      runDirectoryPhysical: fs.realpathSync(runDir),
       createdAt: new Date().toISOString(),
       note: 'cleanup targets this exact directory only'
     };
@@ -998,16 +1042,31 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
 
     recordCheck(checks, 'materialization', 'pass', `created ${runDir}`);
   } catch (e) {
-    if (createdRunDir) {
-      try { fs.rmSync(runDir, { recursive: true, force: true }); } catch { /* best effort */ }
+    let rollbackError = null;
+    try {
+      rollbackMaterialization(runDir, createdRunDir);
+    } catch (error) {
+      rollbackError = error;
+      recordCheck(checks, 'materialization-cleanup', 'fail', error.message);
     }
     for (const parentDir of missingParents) {
-      try { fs.rmdirSync(parentDir); } catch { /* preserve preexisting or nonempty directories */ }
+      try {
+        fs.rmdirSync(parentDir);
+      } catch (error) {
+        try {
+          const parentStat = fs.lstatSync(parentDir);
+          if (parentStat.isDirectory() && !parentStat.isSymbolicLink() && fs.readdirSync(parentDir).length === 0) {
+            rollbackError ??= new Error(`rollback left empty harness-created parent ${parentDir}: ${error.message}`);
+            recordCheck(checks, 'materialization-cleanup', 'fail', rollbackError.message);
+          }
+        } catch { /* absent, nonempty, or externally replaced parent is not ours to remove */ }
+      }
     }
     // Only record the check if it wasn't already recorded by validateExportedTree
     if (!checks.some(c => c.name === 'materialization')) {
-      recordCheck(checks, 'materialization', 'fail', e.message);
+      recordCheck(checks, 'materialization', 'fail', rollbackError ? `${e.message}; ${rollbackError.message}` : e.message);
     }
+    if (rollbackError) throw new Error(`${e.message}; ${rollbackError.message}`);
     throw e;
   }
 }
@@ -1016,7 +1075,7 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export async function runPreflight({ dryRun = true, materialize: doMaterialize = false, runId, subjects, approvedPlanSha256, _manifestPathOverride, _homeOverride, _diskBudgetHooks, _networkIsolationHooks } = {}) {
+export async function runPreflight({ dryRun = true, materialize: doMaterialize = false, runId, subjects, approvedPlanSha256, _manifestPathOverride, _homeOverride, _diskBudgetHooks, _networkIsolationHooks, _materializationHooks } = {}) {
   const checks = [];
 
   // Defect #4: Strict subject parsing — no defaults, no silent filtering
@@ -1099,6 +1158,7 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
       graphifyStatus,
       diskResult,
       plannedWritePaths,
+      runDirectoryPhysical: physicalPathThroughExistingAncestor(runDir),
       sourceStateHash,
       checks,
     });
@@ -1134,7 +1194,7 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
       } else {
         // Approval matches — proceed with materialization
         try {
-          materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, sourceStateBefore, planSha256);
+          materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, sourceStateBefore, planSha256, _materializationHooks ?? {});
           materialized = true;
         } catch (e) {
           // Error is already recorded in checks by materialize()
@@ -1161,7 +1221,7 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
     runId: runId ?? null,
     planSha256,
   };
-  return { checks: [...checks], summary, runDir, dryRun };
+  return { checks: [...checks], summary, runDir, dryRun, canonicalPlan };
 }
 
 // ---------------------------------------------------------------------------
@@ -1217,7 +1277,7 @@ if (IS_MAIN) {
   let subjectsRaw = null;
   if (subjectsArg?.startsWith('--subjects=')) {
     const raw = subjectsArg.slice('--subjects='.length);
-    subjectsRaw = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    subjectsRaw = raw.split(',');
     // Detect trailing/leading commas or double commas → empty strings after split
     if (raw.split(',').some(s => s.trim() === '')) {
       console.error('ERROR: malformed --subjects value: empty segment from comma-splitting');
@@ -1227,7 +1287,7 @@ if (IS_MAIN) {
     const idx = args.indexOf('--subjects');
     if (idx >= 0 && idx + 1 < args.length) {
       const raw = args[idx + 1];
-      subjectsRaw = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      subjectsRaw = raw.split(',');
       if (raw.split(',').some(s => s.trim() === '')) {
         console.error('ERROR: malformed --subjects value: empty segment from comma-splitting');
         process.exit(2);
@@ -1237,7 +1297,7 @@ if (IS_MAIN) {
   }
 
   try {
-    const { checks, summary, runDir } = await runPreflight({
+    const { checks, summary, runDir, canonicalPlan } = await runPreflight({
       dryRun: isDryRun,
       materialize: doMaterialize,
       runId,
@@ -1256,6 +1316,10 @@ if (IS_MAIN) {
     }
 
     console.log('');
+    if (canonicalPlan) {
+      console.log(JSON.stringify({ planSha256: summary.planSha256, canonicalPlan }, null, 2));
+      console.log('');
+    }
     console.log(JSON.stringify(summary, null, 2));
 
     if (!summary.executionReady) process.exitCode = 1;

@@ -85,6 +85,18 @@ function validateSchema(manifest, schemaObj) {
   if (ajvErrors.length > 0) return errors;
 
   // Additional semantic checks
+  const repositoryIds = new Set();
+  for (const repo of manifest.repositories ?? []) {
+    if (repositoryIds.has(repo.repositoryId)) errors.push(`repository: duplicate repositoryId "${repo.repositoryId}"`);
+    repositoryIds.add(repo.repositoryId);
+    if (path.isAbsolute(repo.localPath)) errors.push(`${repo.repositoryId}: localPath must be portable and relative to the manifest`);
+    if (repo.localPath.includes('\\')) errors.push(`${repo.repositoryId}: localPath must use portable forward slashes`);
+    if (isForbiddenPath(`/${repo.localPath}/`)) errors.push(`${repo.repositoryId}: localPath enters forbidden area`);
+    for (const excludedPath of repo.excludedSymlinkPaths ?? []) {
+      errors.push(...validateExportRelativePath(excludedPath, `${repo.repositoryId}: excludedSymlinkPaths`));
+    }
+  }
+
   const fixtureIds = new Set();
   for (const fixture of manifest.fixtures ?? []) {
     if (fixtureIds.has(fixture.fixtureId)) errors.push(`fixture: duplicate fixtureId "${fixture.fixtureId}"`);
@@ -115,8 +127,10 @@ function validateSchema(manifest, schemaObj) {
 
     // Verification path checks
     if (fixture.verification?.path) {
-      if (path.isAbsolute(fixture.verification.path)) errors.push(`${fixture.fixtureId}: verification.path must be relative`);
-      if (fixture.verification.path.includes('..')) errors.push(`${fixture.fixtureId}: verification.path contains path traversal`);
+      errors.push(...validateExportRelativePath(fixture.verification.path, `${fixture.fixtureId}: verification.path`));
+    }
+    if (fixture.verification?.root) {
+      errors.push(...validateExportRelativePath(fixture.verification.root, `${fixture.fixtureId}: verification.root`));
     }
 
     // Forbidden wording
@@ -152,6 +166,26 @@ function validateSchema(manifest, schemaObj) {
   return errors;
 }
 
+function validateExportRelativePath(value, label) {
+  const errors = [];
+  if (typeof value !== 'string' || value.length === 0) return [`${label} must be a nonempty relative path`];
+  if (path.isAbsolute(value)) errors.push(`${label} must be relative`);
+  if (value.includes('\\')) errors.push(`${label} must use forward slashes`);
+  if (value.split('/').includes('..')) errors.push(`${label} contains path traversal`);
+  if (isForbiddenPath(value)) errors.push(`${label} enters forbidden area`);
+  return errors;
+}
+
+function resolveRepositoryPaths(manifest, manifestPath) {
+  return {
+    ...manifest,
+    repositories: (manifest.repositories ?? []).map(repo => ({
+      ...repo,
+      localPath: path.resolve(path.dirname(manifestPath), repo.localPath),
+    })),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Symlink escape detection in exported tree (defect #8)
 // ---------------------------------------------------------------------------
@@ -179,6 +213,89 @@ function checkSymlinkEscape(exportedRoot, relPath) {
     return `symlink escape: "${relPath}" resolves outside exported root (→ ${resolvedPath})`;
   }
   return null;
+}
+
+function resolveContainedPath(exportedRoot, relPath, expectedType) {
+  const lexical = path.resolve(exportedRoot, relPath);
+  const lexicalRelative = path.relative(path.resolve(exportedRoot), lexical);
+  if (lexicalRelative.startsWith('..') || path.isAbsolute(lexicalRelative)) {
+    throw new Error(`path escape: "${relPath}" is outside exported root`);
+  }
+  const resolvedRoot = fs.realpathSync(exportedRoot);
+  let resolved;
+  try {
+    resolved = fs.realpathSync(lexical);
+  } catch (error) {
+    const wrapped = new Error(`path not found or unreadable: ${relPath}: ${error.message}`);
+    wrapped.code = error.code;
+    throw wrapped;
+  }
+  const physicalRelative = path.relative(resolvedRoot, resolved);
+  if (physicalRelative.startsWith('..') || path.isAbsolute(physicalRelative)) {
+    throw new Error(`symlink escape: "${relPath}" resolves outside exported root`);
+  }
+  const stat = fs.statSync(resolved);
+  if (expectedType === 'file' && !stat.isFile()) throw new Error(`expected file: ${relPath}`);
+  if (expectedType === 'directory' && !stat.isDirectory()) throw new Error(`expected directory: ${relPath}`);
+  return resolved;
+}
+
+function isProvenUnsafeSymlinkResolution(error) {
+  return error?.code === 'ENOENT' || /^symlink escape:/.test(error?.message || '');
+}
+
+function validateExportedTreeSymlinks(exportedRoot) {
+  const errors = [];
+  function walk(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const fullPath = path.join(directory, entry.name);
+      const relPath = path.relative(exportedRoot, fullPath);
+      if (entry.isSymbolicLink()) {
+        try {
+          resolveContainedPath(exportedRoot, relPath);
+        } catch (error) {
+          errors.push(`exported tree ${error.message}`);
+        }
+      } else if (entry.isDirectory()) {
+        walk(fullPath);
+      }
+    }
+  }
+  walk(exportedRoot);
+  return errors;
+}
+
+function removeDeclaredSymlinks(exportedRoot, excludedSymlinkPaths = []) {
+  const errors = [];
+  for (const relPath of excludedSymlinkPaths) {
+    const lexicalPath = path.resolve(exportedRoot, relPath);
+    const relative = path.relative(path.resolve(exportedRoot), lexicalPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      errors.push(`declared symlink exclusion escapes exported root: ${relPath}`);
+      continue;
+    }
+    try {
+      const stat = fs.lstatSync(lexicalPath);
+      if (!stat.isSymbolicLink()) {
+        errors.push(`declared symlink exclusion is not a symlink: ${relPath}`);
+        continue;
+      }
+      try {
+        resolveContainedPath(exportedRoot, relPath);
+        errors.push(`declared symlink exclusion resolves safely inside exported root: ${relPath}`);
+        continue;
+      } catch (error) {
+        if (!isProvenUnsafeSymlinkResolution(error)) {
+          errors.push(`cannot classify declared symlink exclusion ${relPath}: ${error.message}`);
+          continue;
+        }
+      }
+      fs.unlinkSync(lexicalPath);
+    } catch (error) {
+      errors.push(`cannot remove declared symlink exclusion ${relPath}: ${error.message}`);
+    }
+  }
+  return errors;
 }
 
 // ---------------------------------------------------------------------------
@@ -219,8 +336,20 @@ function verifyStructuredVerification(verification, exportedRoot) {
       }
     }
   } else if (algo === 'file-name-count') {
-    const root = path.join(exportedRoot, verification.root || '.');
-    const count = countFiles(root, verification.fileName);
+    let root;
+    try {
+      root = resolveContainedPath(exportedRoot, verification.root || '.', 'directory');
+    } catch (error) {
+      errors.push(`verification: ${error.message}`);
+      return errors;
+    }
+    let count;
+    try {
+      count = countFiles(root, verification.fileName);
+    } catch (error) {
+      errors.push(`verification: cannot count files: ${error.message}`);
+      return errors;
+    }
     if (count !== verification.expectedCount) {
       errors.push(`verification: file count mismatch for ${verification.fileName} (expected=${verification.expectedCount} actual=${count})`);
     }
@@ -293,12 +422,10 @@ function resolveJsonPointer(obj, pointer) {
 function countFiles(root, name) {
   let count = 0;
   function walk(dir) {
-    try {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) walk(path.join(dir, entry.name));
-        else if (entry.name === name) count++;
-      }
-    } catch { /* skip inaccessible */ }
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(path.join(dir, entry.name));
+      else if (entry.name === name) count++;
+    }
   }
   walk(root);
   return count;
@@ -310,12 +437,30 @@ function countFiles(root, name) {
 
 function exportCommit(repoPath, commit) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-manifest-'));
-  execFileSync('git', ['-C', repoPath, 'archive', commit, '--', '.'], {
-    stdio: ['ignore', fs.openSync(path.join(tmp, '_archive.tar'), 'w'), 'ignore'],
-  });
-  execFileSync('tar', ['-x', '-f', path.join(tmp, '_archive.tar'), '-C', tmp]);
-  fs.rmSync(path.join(tmp, '_archive.tar'), { force: true });
-  return tmp;
+  const tarPath = path.join(tmp, '_archive.tar');
+  let archiveFd = null;
+  try {
+    archiveFd = fs.openSync(tarPath, 'w');
+    execFileSync('git', ['-C', repoPath, 'archive', commit, '--', '.'], {
+      stdio: ['ignore', archiveFd, 'ignore'],
+    });
+    fs.closeSync(archiveFd);
+    archiveFd = null;
+    execFileSync('tar', ['-x', '-f', tarPath, '-C', tmp]);
+    fs.rmSync(tarPath, { force: true });
+    return tmp;
+  } catch (error) {
+    if (archiveFd !== null) {
+      try { fs.closeSync(archiveFd); } catch { /* retain primary error */ }
+    }
+    try {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    } catch (cleanupError) {
+      throw new Error(`${error.message}; temporary export cleanup failed: ${cleanupError.message}`);
+    }
+    if (fs.existsSync(tmp)) throw new Error(`${error.message}; temporary export cleanup left ${tmp}`);
+    throw error;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +562,7 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
     const schemaErrors = validateSchema(manifest, schema);
     errors.push(...schemaErrors);
     if (errors.length > 0) return { valid: false, errors };
+    manifest = resolveRepositoryPaths(manifest, manifestPath);
 
     const exportedRoots = new Map();
 
@@ -431,18 +577,39 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
         // Verify no symlink escape from the provided root itself
         let resolvedProvided;
         try {
+          const providedStat = fs.lstatSync(providedRoot);
+          if (!providedStat.isDirectory() || providedStat.isSymbolicLink()) {
+            errors.push(`${repo.repositoryId}: provided exported root must be a non-symlink directory`);
+            continue;
+          }
           resolvedProvided = fs.realpathSync(providedRoot);
         } catch (e) {
           errors.push(`${repo.repositoryId}: cannot resolve provided root: ${e.message}`);
           continue;
         }
         exportedRoots.set(repo.repositoryId, resolvedProvided);
+        errors.push(...validateExportedTreeSymlinks(resolvedProvided).map(error => `${repo.repositoryId}: ${error}`));
         continue; // skip git archive export
       }
 
       if (!fs.existsSync(repo.localPath)) {
         if (allowMissingRepos) continue;
         errors.push(`${repo.repositoryId}: repository not found at ${repo.localPath}`);
+        continue;
+      }
+      try {
+        const repositoryStat = fs.lstatSync(repo.localPath);
+        const physicalRepositoryPath = fs.realpathSync(repo.localPath);
+        if (!repositoryStat.isDirectory() || repositoryStat.isSymbolicLink()) {
+          errors.push(`${repo.repositoryId}: repository root must be a non-symlink directory`);
+          continue;
+        }
+        if (isForbiddenPath(`/${physicalRepositoryPath}/`)) {
+          errors.push(`${repo.repositoryId}: repository root resolves into a forbidden area`);
+          continue;
+        }
+      } catch (error) {
+        errors.push(`${repo.repositoryId}: cannot resolve repository root: ${error.message}`);
         continue;
       }
 
@@ -464,6 +631,8 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
         exportedRoot = exportCommit(repo.localPath, repo.pinnedCommit);
         tmpDirs.push(exportedRoot);
         exportedRoots.set(repo.repositoryId, exportedRoot);
+        errors.push(...removeDeclaredSymlinks(exportedRoot, repo.excludedSymlinkPaths).map(error => `${repo.repositoryId}: ${error}`));
+        errors.push(...validateExportedTreeSymlinks(exportedRoot).map(error => `${repo.repositoryId}: ${error}`));
       } catch (e) {
         errors.push(`${repo.repositoryId}: archive export failed: ${e.message}`);
         continue;
@@ -501,7 +670,12 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
 
   } finally {
     for (const tmp of tmpDirs) {
-      try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* best effort */ }
+      try {
+        fs.rmSync(tmp, { recursive: true, force: true });
+        if (fs.existsSync(tmp)) errors.push(`temporary export cleanup left ${tmp}`);
+      } catch (error) {
+        errors.push(`temporary export cleanup failed for ${tmp}: ${error.message}`);
+      }
     }
   }
 
@@ -537,4 +711,4 @@ if (IS_MAIN) {
   });
 }
 
-export { validateManifest, validateSchema, verifyFixture, verifyStructuredVerification, isForbiddenPath, checkForbiddenWording };
+export { validateManifest, validateSchema, verifyFixture, verifyStructuredVerification, isForbiddenPath, checkForbiddenWording, resolveRepositoryPaths, removeDeclaredSymlinks, validateExportedTreeSymlinks, isProvenUnsafeSymlinkResolution };

@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-01
-**Audited:** 2026-08-02 — see `operations/reports/post-merge-mcp-runtime-truth-audit-2026-08-02.md` for current MCP state
+**Last verified:** 2026-08-03
+**Audited:** 2026-08-03 — merge-readiness gate audited without executing B8.1
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -40,6 +40,10 @@ migration. The existing candidate binary, preliminary indexes, and
 obsolete-numbered artifacts remain evidence only and do not satisfy the
 canonical dependency chain. B8.1 is the first canonical task when P8 is
 explicitly authorized; it is not the current approved execution task.
+The merge-readiness audit did not execute the benchmark: B8.1 and B8.2 remain
+incomplete, Graphify remains blocked, and P8 remains 0/6 accepted. The exact
+next action is explicit authorization for a benchmark plan digest; a dry-run
+alone does not authorize materialization or execution.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 
@@ -173,7 +177,7 @@ node tools/validate-capability-manifest.mjs → pass
 node tools/validate-capability-state.mjs → pass
 node tools/validate-infinite-brain-capabilities.mjs → pass
 node tools/mind-canonical-path-registry.mjs validate → pass
-node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=/Users/Office/Repos/prochattools/saas/workbench-private → pass
+node tools/validate-mcp-provider-admissions.mjs --provider-root workbench=<workspace>/prochattools/saas/workbench-private → pass
 npm run infinite-brain:conformance → pass
 git diff --check → pass
 ```
@@ -189,11 +193,12 @@ git diff --check → pass
 
 ## Next approved work
 
-Select the next executable task only from the canonical plans:
+Select the next executable task only from the canonical plans. Paths below are
+relative to the Brain checkout root:
 
 ```text
-/Users/Office/Repos/stevewesthoek/mind/system/mind-implementation-plan.md
-/Users/Office/Repos/stevewesthoek/brain/operations/specs/infinite-brain-runtime-implementation-plan.md
+../mind/system/mind-implementation-plan.md
+operations/specs/infinite-brain-runtime-implementation-plan.md
 ```
 
 All stabilization tasks (BS0.1–BS0.23) and P1–P7 runtime priorities are

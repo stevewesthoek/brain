@@ -34,6 +34,10 @@ const DEFAULT_SCHEMA_PATH = path.resolve(
   import.meta.dirname,
   '../operations/specs/b8-1-context-memory-benchmark-evidence.schema.json'
 );
+const DEFAULT_MANIFEST_SCHEMA_PATH = path.resolve(
+  import.meta.dirname,
+  '../operations/specs/b8-1-context-memory-benchmark-manifest.schema.json'
+);
 const VALID_SUBJECTS = ['cbm', 'graphify', 'exact-source'];
 
 function canonicalJson(value) {
@@ -69,6 +73,10 @@ function planDigestInputs(artifact) {
   return inputs;
 }
 
+function hashCanonicalValue(value) {
+  return crypto.createHash('sha256').update(canonicalJson(value)).digest('hex');
+}
+
 // ---------------------------------------------------------------------------
 // Core validation function
 // ---------------------------------------------------------------------------
@@ -96,6 +104,8 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
   const resolvedSchemaPath = schemaPath || DEFAULT_SCHEMA_PATH;
   let schema;
   try {
+    const schemaStat = fs.lstatSync(resolvedSchemaPath);
+    if (!schemaStat.isFile() || schemaStat.isSymbolicLink()) throw new Error('schema must be a non-symlink regular file');
     schema = JSON.parse(fs.readFileSync(resolvedSchemaPath, 'utf8'));
   } catch (err) {
     return { valid: false, errors: [`Failed to read schema file: ${err.message}`] };
@@ -127,9 +137,9 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
   }
 
   // --- Semantic check 2: runId pattern (belt-and-suspenders over schema) -----
-  if (evidence.runId !== undefined && !/^b8-1-[a-zA-Z0-9._-]+$/.test(evidence.runId)) {
+  if (evidence.runId !== undefined && (!/^b8-1-[a-zA-Z0-9._-]+$/.test(evidence.runId) || evidence.runId.includes('..'))) {
     errors.push(
-      `Semantic: runId "${evidence.runId}" does not match required pattern ^b8-1-[a-zA-Z0-9._-]+$`
+      `Semantic: runId "${evidence.runId}" must match ^b8-1-[a-zA-Z0-9._-]+$ and must not contain ".."`
     );
   }
 
@@ -165,6 +175,11 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       && proof?.status === 'passed'
       && typeof proof?.adapterIdentity?.path === 'string'
       && /^[a-f0-9]{64}$/.test(proof?.adapterIdentity?.sha256 ?? '')
+      && typeof proof?.runtimeIdentity?.path === 'string'
+      && /^[a-f0-9]{64}$/.test(proof?.runtimeIdentity?.sha256 ?? '')
+      && typeof proof?.runtimeIdentity?.version === 'string'
+      && typeof proof?.childIdentity?.path === 'string'
+      && /^[a-f0-9]{64}$/.test(proof?.childIdentity?.sha256 ?? '')
       && typeof proof?.profilePath === 'string'
       && /^[a-f0-9]{64}$/.test(proof?.profileSha256 ?? '')
       && proof?.controlSucceeded === true
@@ -199,6 +214,8 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
   let manifest = null;
   if (options.manifestPath) {
     try {
+      const manifestStat = fs.lstatSync(options.manifestPath);
+      if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) throw new Error('manifest must be a non-symlink regular file');
       const manifestBytes = fs.readFileSync(options.manifestPath);
       manifest = JSON.parse(manifestBytes.toString('utf8'));
       const actualManifestHash = `sha256:${crypto.createHash('sha256').update(manifestBytes).digest('hex')}`;
@@ -247,6 +264,28 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
   // --- Semantic check 6: bind evidence to the actual run artifacts ----------
   if (options.runDir) {
     const runDir = path.resolve(options.runDir);
+    let physicalRunDir;
+    try {
+      const runDirStat = fs.lstatSync(runDir);
+      if (!runDirStat.isDirectory() || runDirStat.isSymbolicLink()) throw new Error('run directory must be a non-symlink directory');
+      physicalRunDir = fs.realpathSync(runDir);
+    } catch (error) {
+      errors.push(`Binding: invalid --run-dir ${runDir}: ${error.message}`);
+      return { valid: false, errors };
+    }
+    const readRunArtifact = (filePath, label) => {
+      const artifactStat = fs.lstatSync(filePath);
+      if (!artifactStat.isFile() || artifactStat.isSymbolicLink()) throw new Error(`${label} must be a non-symlink regular file`);
+      const physicalPath = fs.realpathSync(filePath);
+      const relative = path.relative(physicalRunDir, physicalPath);
+      if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(`${label} resolves outside the run directory`);
+      return fs.readFileSync(physicalPath);
+    };
+    try {
+      readRunArtifact(path.resolve(evidencePath), 'evidence file');
+    } catch (error) {
+      errors.push(`Binding: ${error.message}`);
+    }
     const runDirBasename = path.basename(runDir);
     if (!options.manifestPath) {
       errors.push('Binding: --manifest is required when --run-dir is supplied');
@@ -257,10 +296,13 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
 
     const runPlanPath = path.join(runDir, 'run-plan.json');
     const receiptPath = path.join(runDir, 'preflight-receipt.json');
+    const cleanupManifestPath = path.join(runDir, 'cleanup-manifest.json');
+    const sourceStateBeforePath = path.join(runDir, 'source-state-before.json');
+    const sourceStateAfterPath = path.join(runDir, 'source-state-after.json');
     let runPlan = null;
     let receipt = null;
     try {
-      runPlan = JSON.parse(fs.readFileSync(runPlanPath, 'utf8'));
+      runPlan = JSON.parse(readRunArtifact(runPlanPath, 'run-plan.json').toString('utf8'));
       if (!isRecord(runPlan)) {
         errors.push(`Binding: run-plan.json must contain a JSON object`);
         runPlan = null;
@@ -269,7 +311,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       errors.push(`Binding: run-plan.json missing or unparseable at ${runPlanPath}: ${err.message}`);
     }
     try {
-      const receiptBytes = fs.readFileSync(receiptPath);
+      const receiptBytes = readRunArtifact(receiptPath, 'preflight-receipt.json');
       receipt = JSON.parse(receiptBytes.toString('utf8'));
       if (!isRecord(receipt)) {
         errors.push(`Binding: preflight-receipt.json must contain a JSON object`);
@@ -287,10 +329,14 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       'schemaVersion', 'runId', 'partialEvidence', 'selectedSubjects', 'excludedSubjects', 'manifestPath', 'manifestHash',
       'manifestSchemaPath', 'manifestSchemaHash', 'evidenceSchemaPath', 'evidenceSchemaHash',
       'pinnedRepositoryCommits', 'subjectBinaryIdentity', 'networkIsolationProof', 'cbmVerification', 'graphifyStatus',
-      'diskResult', 'plannedWritePaths', 'sourceStateHash', 'checks', 'planSha256',
+      'diskResult', 'plannedWritePaths', 'runDirectoryPhysical', 'sourceStateHash', 'checks', 'planSha256',
     ];
     for (const [artifactName, artifact] of [['run-plan.json', runPlan], ['preflight-receipt.json', receipt]]) {
       if (!artifact) continue;
+      const allowedPlanFields = [...requiredPlanFields, 'createdAt'];
+      if (!sameSet(Object.keys(artifact), allowedPlanFields)) {
+        errors.push(`Binding: ${artifactName} must contain exactly the approved plan fields plus observational createdAt`);
+      }
       for (const field of requiredPlanFields) {
         if (!(field in artifact)) errors.push(`Binding: ${artifactName} is missing required field ${field}`);
       }
@@ -304,9 +350,10 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
         || !sameSet(Object.keys(check), ['name', 'status', 'detail'])
         || typeof check.name !== 'string'
         || typeof check.status !== 'string'
+        || !['pass', 'excluded-subject'].includes(check.status)
         || (check.detail !== null && typeof check.detail !== 'string')
       )) {
-        errors.push(`Binding: ${artifactName} checks must contain full {name,status,detail} records`);
+        errors.push(`Binding: ${artifactName} checks must contain full nonblocking {name,status,detail} records`);
       }
     }
 
@@ -336,6 +383,9 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       if (runPlan.runId !== evidence.runId) {
         errors.push('Binding: run-plan.json runId does not match evidence.runId');
       }
+      if (runPlan.runDirectoryPhysical !== physicalRunDir) {
+        errors.push('Binding: physical run directory does not match the approved plan');
+      }
       if (options.manifestPath) {
         if (typeof runPlan.manifestPath !== 'string') {
           errors.push('Binding: run-plan.json manifestPath must be a string');
@@ -345,6 +395,23 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       }
       if (runPlan.manifestHash !== evidence.manifestHash) {
         errors.push('Binding: run-plan.json manifestHash does not match evidence.manifestHash');
+      }
+      const schemaBindings = [
+        ['manifest schema', runPlan.manifestSchemaPath, runPlan.manifestSchemaHash, DEFAULT_MANIFEST_SCHEMA_PATH],
+        ['evidence schema', runPlan.evidenceSchemaPath, runPlan.evidenceSchemaHash, path.resolve(resolvedSchemaPath)],
+      ];
+      for (const [label, declaredPath, declaredHash, expectedPath] of schemaBindings) {
+        try {
+          if (typeof declaredPath !== 'string' || path.resolve(declaredPath) !== expectedPath) {
+            throw new Error(`approved ${label} path does not match the canonical validator path`);
+          }
+          const schemaStat = fs.lstatSync(expectedPath);
+          if (!schemaStat.isFile() || schemaStat.isSymbolicLink()) throw new Error(`${label} must be a non-symlink regular file`);
+          const actualHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(expectedPath)).digest('hex')}`;
+          if (declaredHash !== actualHash) throw new Error(`${label} hash ${actualHash} does not match approved ${declaredHash}`);
+        } catch (error) {
+          errors.push(`Binding: ${error.message}`);
+        }
       }
       if (!sameSet(runPlan.selectedSubjects ?? [], selectedSubjects)) {
         errors.push('Binding: run-plan selectedSubjects do not match evidence selectedSubjects');
@@ -403,8 +470,57 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       }
     }
 
-    if (evidence.cleanupStatus?.runDirectory && path.resolve(evidence.cleanupStatus.runDirectory) !== runDir) {
+    if (typeof evidence.cleanupStatus?.runDirectory !== 'string' || path.resolve(evidence.cleanupStatus.runDirectory) !== runDir) {
       errors.push('Binding: cleanupStatus.runDirectory does not match --run-dir');
+    }
+    if (evidence.cleanupStatus?.removed !== false || 'removedAt' in (evidence.cleanupStatus ?? {})) {
+      errors.push('Binding: evidence for an existing --run-dir must declare removed=false with no removedAt');
+    }
+
+    try {
+      const cleanupManifest = JSON.parse(readRunArtifact(cleanupManifestPath, 'cleanup-manifest.json').toString('utf8'));
+      if (!isRecord(cleanupManifest)
+        || cleanupManifest.runId !== evidence.runId
+        || typeof cleanupManifest.runDirectory !== 'string'
+        || path.resolve(cleanupManifest.runDirectory) !== runDir
+        || cleanupManifest.runDirectoryPhysical !== physicalRunDir) {
+        errors.push('Binding: cleanup-manifest.json does not match evidence runId and --run-dir');
+      }
+    } catch (error) {
+      errors.push(`Binding: cleanup-manifest.json missing or unparseable at ${cleanupManifestPath}: ${error.message}`);
+    }
+
+    try {
+      const before = JSON.parse(readRunArtifact(sourceStateBeforePath, 'source-state-before.json').toString('utf8'));
+      const after = JSON.parse(readRunArtifact(sourceStateAfterPath, 'source-state-after.json').toString('utf8'));
+      if (!Array.isArray(before) || !Array.isArray(after)) {
+        errors.push('Binding: source-state proof files must contain arrays');
+      } else {
+        const beforeHash = hashCanonicalValue(before);
+        const afterHash = hashCanonicalValue(after);
+        const approvedHash = runPlan?.sourceStateHash?.replace(/^sha256:/, '');
+        if (!approvedHash || beforeHash !== approvedHash || afterHash !== approvedHash || !sameValue(before, after)) {
+          errors.push('Binding: source-state proof files do not match each other and the approved sourceStateHash');
+        }
+        const expectedCommits = new Map(normalizePinnedCommits(runPlan?.pinnedRepositoryCommits).map(item => [item.repositoryId, item.commit]));
+        const sourceRepositoryIds = [];
+        for (const state of before) {
+          sourceRepositoryIds.push(state?.repositoryId);
+          if (!isRecord(state)
+            || typeof state.repositoryId !== 'string'
+            || !expectedCommits.has(state.repositoryId)
+            || state.HEAD !== expectedCommits.get(state.repositoryId)
+            || state.pinnedCommit !== expectedCommits.get(state.repositoryId)
+            || state.statusPorcelain !== ''
+            || state.pinnedCommitAvailable !== true
+            || state.statusSha256 !== crypto.createHash('sha256').update(state.statusPorcelain ?? '').digest('hex')) {
+            errors.push(`Binding: source-state entry is not clean and pinned for ${state?.repositoryId ?? '<unknown>'}`);
+          }
+        }
+        if (!sameSet(sourceRepositoryIds, [...expectedCommits.keys()])) errors.push('Binding: source-state entries must uniquely cover the exact pinned repository set');
+      }
+    } catch (error) {
+      errors.push(`Binding: source-state proof missing or unparseable: ${error.message}`);
     }
   }
 

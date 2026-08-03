@@ -775,3 +775,13 @@ test('detectGraphifySchedulerViolation: fixture mode uses correct nested governa
   assert.equal(result.level, 'info', `Expected info: ${result.value}`);
   assert(result.value.includes('graphify-structural-state=frozen'), `Expected frozen in fixture: ${result.value}`);
 });
+
+test('module import is safe when process.argv[1] does not exist', () => {
+  const scriptUrl = `file://${SCRIPT}`;
+  const result = spawnSync(process.execPath, [
+    '--input-type=module',
+    '--eval',
+    `process.argv[1]='/definitely/missing/entrypoint.mjs'; await import(${JSON.stringify(scriptUrl)});`,
+  ], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+});

@@ -1,7 +1,7 @@
 /**
  * prepare-b8-1-context-memory-benchmark.test.mjs
  *
- * 22 regression tests for the B8.1 benchmark preflight harness.
+ * Regression tests for the B8.1 benchmark preflight harness.
  * Uses synthetic HOME directories and temp git repos — never touches real home.
  * Run: node --test tools/prepare-b8-1-context-memory-benchmark.test.mjs
  */
@@ -70,7 +70,13 @@ function makeMinimalManifest(repos) {
 
 function writeTempManifest(manifest) {
   const f = path.join(os.tmpdir(), `b81-test-manifest-${crypto.randomBytes(4).toString('hex')}.json`);
-  fs.writeFileSync(f, JSON.stringify(manifest));
+  const portableManifest = structuredClone(manifest);
+  for (const repository of portableManifest.repositories ?? []) {
+    if (path.isAbsolute(repository.localPath)) {
+      repository.localPath = path.relative(path.dirname(f), repository.localPath);
+    }
+  }
+  fs.writeFileSync(f, JSON.stringify(portableManifest));
   return f;
 }
 
@@ -110,6 +116,8 @@ function makeCanonicalPlanFixture(overrides = {}) {
       required: true,
       status: 'passed',
       adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: '6'.repeat(64) },
+      runtimeIdentity: { path: '/synthetic/node', sha256: 'b'.repeat(64), version: 'v24.0.0' },
+      childIdentity: { path: '/synthetic/b8-1-network-isolation-child.mjs', sha256: 'c'.repeat(64) },
       profilePath: '/synthetic/b8-1-network-deny.sb',
       profileSha256: '7'.repeat(64),
       controlSucceeded: true,
@@ -128,6 +136,7 @@ function makeCanonicalPlanFixture(overrides = {}) {
     },
     diskResult: { name: 'disk-budget', status: 'pass', detail: '4096 MB available' },
     plannedWritePaths: ['/synthetic/run/evidence', '/synthetic/run/logs'],
+    runDirectoryPhysical: '/synthetic/run',
     sourceStateHash: 'a'.repeat(64),
     checks: [{ name: 'manifest-validation', status: 'pass', detail: 'valid' }],
     ...overrides,
@@ -502,6 +511,8 @@ test('T15: return shape includes checks, summary, runDir, dryRun', async () => {
     assert.ok(Array.isArray(result.checks));
     assert.ok(typeof result.summary === 'object');
     assert.ok('runDir' in result);
+    assert.ok(typeof result.canonicalPlan === 'object');
+    assert.equal(computePlanDigest(result.canonicalPlan), result.summary.planSha256);
     assert.equal(result.dryRun, true);
     assert.ok(typeof result.summary.executionReady === 'boolean');
     assert.ok(Array.isArray(result.summary.selectedSubjects));
@@ -743,7 +754,7 @@ test('T22: disk budget check does not crash', async () => {
     });
     const diskCheck = checks.find(c => c.name === 'disk-budget');
     assert.ok(diskCheck, 'disk-budget check must exist');
-    assert.ok(['pass', 'fail', 'informational'].includes(diskCheck.status));
+    assert.ok(['pass', 'fail', 'blocked'].includes(diskCheck.status));
   } finally {
     cleanup(repoDir, manifestFile, home);
   }
@@ -770,7 +781,14 @@ test('T24: subjects, manifest, schemas, binary, profile, and write paths change 
     makeCanonicalPlanFixture({
       graphifyStatus: { ...baseline.graphifyStatus, profileSha256: 'f'.repeat(64) },
     }),
+    makeCanonicalPlanFixture({
+      networkProof: {
+        ...baseline.networkIsolationProof,
+        childIdentity: { ...baseline.networkIsolationProof.childIdentity, sha256: '0'.repeat(64) },
+      },
+    }),
     makeCanonicalPlanFixture({ plannedWritePaths: [...baseline.plannedWritePaths, '/synthetic/run/new-path'] }),
+    makeCanonicalPlanFixture({ runDirectoryPhysical: '/synthetic/other-run' }),
   ];
   for (const mutated of mutations) {
     assert.notEqual(computePlanDigest(mutated), baselineDigest);
@@ -1061,4 +1079,136 @@ test('T36: absent .brain directory is a digest-bound planned write before materi
   } finally {
     cleanup(repoDir, manifestFile, home);
   }
+});
+
+test('T37: insufficient disk blocks readiness and creates no run artifact', async () => {
+  const repoDir = makeTempDir('b81-disk-low-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const runId = 'b8-1-disk-low';
+  try {
+    const result = await runPreflight({
+      dryRun: true, runId, subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: home,
+      _diskBudgetHooks: { _spawnSync: () => ({ status: 0, stdout: 'Filesystem 1M-blocks Used Available Capacity Mounted on\n/dev/test 1 1 100 1% /' }) },
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(result.checks.find(check => check.name === 'disk-budget')?.status, 'fail');
+    assert.equal(fs.existsSync(path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', runId)), false);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T38: unknown disk capacity blocks readiness and creates no run artifact', async () => {
+  const repoDir = makeTempDir('b81-disk-unknown-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const runId = 'b8-1-disk-unknown';
+  try {
+    const result = await runPreflight({
+      dryRun: true, runId, subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: home,
+      _diskBudgetHooks: {
+        _spawnSync: () => ({ status: 1, stdout: '' }),
+        _statFsSync: () => { throw new Error('capacity unavailable'); },
+      },
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(result.checks.find(check => check.name === 'disk-budget')?.status, 'blocked');
+    assert.equal(fs.existsSync(path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', runId)), false);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T39: selected Graphify remains blocked and creates no run artifact', async () => {
+  const repoDir = makeTempDir('b81-graphify-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const runId = 'b8-1-graphify-blocked';
+  try {
+    const result = await runPreflight({ dryRun: true, runId, subjects: ['graphify'], _manifestPathOverride: manifestFile, _homeOverride: home });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(result.checks.find(check => check.name === 'graphify-subject')?.status, 'blocked');
+    assert.equal(fs.existsSync(path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', runId)), false);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T40: stale approval after manifest input change creates no run directory', async () => {
+  const repoDir = makeTempDir('b81-stale-plan-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const runId = 'b8-1-stale-plan';
+  try {
+    const dryRun = await runPreflight({ dryRun: true, runId, subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: home });
+    const changedManifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+    changedManifest.repositories[0].description = 'digest-changing description';
+    fs.writeFileSync(manifestFile, JSON.stringify(changedManifest));
+    const materialization = await runPreflight({
+      dryRun: false, materialize: true, runId, subjects: ['exact-source'], approvedPlanSha256: dryRun.summary.planSha256,
+      _manifestPathOverride: manifestFile, _homeOverride: home,
+    });
+    assert.equal(materialization.summary.executionReady, false);
+    assert.ok(materialization.checks.some(check => check.name === 'plan-approval' && check.status === 'fail'));
+    assert.equal(fs.existsSync(path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', runId)), false);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T41: materialization-time run collision never writes into the colliding directory', async () => {
+  const repoDir = makeTempDir('b81-collision-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const runId = 'b8-1-collision-race';
+  const runDir = path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', runId);
+  try {
+    const dryRun = await runPreflight({ dryRun: true, runId, subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: home });
+    const result = await runPreflight({
+      dryRun: false, materialize: true, runId, subjects: ['exact-source'], approvedPlanSha256: dryRun.summary.planSha256,
+      _manifestPathOverride: manifestFile, _homeOverride: home,
+      _materializationHooks: { _beforeMaterialize: () => fs.mkdirSync(runDir, { recursive: true }) },
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(fs.existsSync(path.join(runDir, 'run-plan.json')), false);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T42: forced mid-materialization failure rolls back the owned run directory', async () => {
+  const repoDir = makeTempDir('b81-rollback-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const runId = 'b8-1-forced-rollback';
+  const runDir = path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', runId);
+  try {
+    const dryRun = await runPreflight({ dryRun: true, runId, subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: home });
+    const result = await runPreflight({
+      dryRun: false, materialize: true, runId, subjects: ['exact-source'], approvedPlanSha256: dryRun.summary.planSha256,
+      _manifestPathOverride: manifestFile, _homeOverride: home,
+      _materializationHooks: { _failAt: phase => { if (phase === 'after-run-directory') throw new Error('injected materialization failure'); } },
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(fs.existsSync(runDir), false);
+    assert.equal(fs.existsSync(path.join(home, '.brain', 'benchmark')), false);
+  } finally { cleanup(repoDir, manifestFile, home); }
+});
+
+test('T43: symlink retarget after approval is rejected before any run write', async () => {
+  const repoDir = makeTempDir('b81-retarget-repo-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const escapeRoot = makeTempDir('b81-retarget-escape-');
+  const runId = 'b8-1-retarget-race';
+  try {
+    const dryRun = await runPreflight({ dryRun: true, runId, subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: home });
+    const result = await runPreflight({
+      dryRun: false, materialize: true, runId, subjects: ['exact-source'], approvedPlanSha256: dryRun.summary.planSha256,
+      _manifestPathOverride: manifestFile, _homeOverride: home,
+      _materializationHooks: {
+        _beforeMaterialize: () => fs.symlinkSync(escapeRoot, path.join(home, '.brain', 'benchmark')),
+      },
+    });
+    assert.equal(result.summary.executionReady, false);
+    assert.equal(fs.existsSync(path.join(escapeRoot, 'b8-1', 'runs', runId)), false);
+  } finally { cleanup(repoDir, manifestFile, home, escapeRoot); }
 });

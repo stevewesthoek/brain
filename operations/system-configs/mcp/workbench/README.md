@@ -1,11 +1,11 @@
 # Workbench MCP Provider for Brain
 
-**Admission status:** `candidate`  
-**Admission:** `operations/specs/mcp-provider-admissions.json`  
-**Standard:** `operations/system-configs/mcp/MCP-PROVIDER-ADMISSION-STANDARD.md`  
-**Provider Repository:** `prochattools/workbench-private`  
+**Admission status:** `candidate`
+**Admission:** `operations/specs/mcp-provider-admissions.json`
+**Standard:** `operations/system-configs/mcp/MCP-PROVIDER-ADMISSION-STANDARD.md`
+**Provider Repository:** `prochattools/workbench-private`
 **MCP Entrypoint:** `packages/mcp/dist/server.js` (working-tree-only — not verifiable from committed objects)
-**Current client registration:** none  
+**Current client registration:** none
 **Server running:** not observed
 
 > **Why `candidate` and not `active-local`:**
@@ -47,7 +47,7 @@ runtime configuration, not authority.
 
 ### Prerequisites
 1. Node.js installed on your system
-2. Access to workbench-private repo at `/Users/Office/Repos/prochattools/saas/workbench-private`
+2. Access to the `prochattools/saas/workbench-private` checkout
 3. Workbench MCP credential token (token, not a full OAuth bearer)
 
 ### Setup for All IDEs (Automated)

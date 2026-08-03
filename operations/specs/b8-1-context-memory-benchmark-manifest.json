@@ -4,19 +4,26 @@
   "repositories": [
     {
       "repositoryId": "brain",
-      "localPath": "/Users/Office/Repos/stevewesthoek/brain",
+      "localPath": "../../../brain",
       "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
-      "description": "machine-brain — AI infrastructure, skills, runbooks (TypeScript + shell)"
+      "description": "machine-brain — AI infrastructure, skills, runbooks (TypeScript + shell)",
+      "excludedSymlinkPaths": [
+        "operations/system-configs/claude/hooks/auto-handoff.sh",
+        "operations/system-configs/gemini/antigravity/mcp_config.json",
+        "operations/system-configs/gemini/antigravity/skills",
+        "operations/system-configs/gemini/antigravity-backup/skills",
+        "operations/system-configs/gemini/antigravity-ide/skills"
+      ]
     },
     {
       "repositoryId": "workbench",
-      "localPath": "/Users/Office/Repos/prochattools/saas/workbench-private",
+      "localPath": "../../../../prochattools/saas/workbench-private",
       "pinnedCommit": "aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e",
       "description": "Workbench Private — full-stack TypeScript application"
     },
     {
       "repositoryId": "prochat",
-      "localPath": "/Users/Office/Repos/prochattools/web/prochat",
+      "localPath": "../../../../prochattools/web/prochat",
       "pinnedCommit": "9bcd5769da33a851edea379431916f7e04890ff7",
       "description": "ProChat — Next.js TypeScript application"
     }

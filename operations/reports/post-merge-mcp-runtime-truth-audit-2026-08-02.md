@@ -45,8 +45,11 @@
 ## Workbench MCP
 
 ### Admission state (post-update)
+
+The merge-readiness review corrected the draft status below: the observed and
+admitted Workbench state is `candidate`; it was not promoted to `active-local`.
 - **Admission ID:** `workbench-for-brain`
-- **Status:** `active-local`
+- **Status:** `candidate`
 - **Admitted revision (before this task):** `be780050a68d4ec95a7f07a1a180881582c57fc0`
 - **Admitted revision (after this task):** `aa7bf7ec97d0b0973ee3d322c689d44a6c8f539e`
 - **Admitted version:** `1.3.3-beta`

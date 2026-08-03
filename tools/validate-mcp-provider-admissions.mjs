@@ -1,19 +1,14 @@
 #!/usr/bin/env node
 
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { verifyAllProviders, formatVerificationSummary } from './lib/mcp-provider-verification.mjs';
 
 export const DEFAULT_REGISTRY_PATH = 'operations/specs/mcp-provider-admissions.json';
 const SHA256 = /^[a-f0-9]{64}$/;
 const ID = /^[a-z0-9][a-z0-9-]*$/;
 const ENV_NAME = /^[A-Z][A-Z0-9_]*$/;
 const SAFE_PATH = (value) => typeof value === 'string' && value.length > 0 && !path.isAbsolute(value) && !value.split(/[\\/]/).includes('..');
-
-function digest(file) {
-  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-}
 
 function collectForbiddenSecretFields(value, location = 'registry', errors = []) {
   if (Array.isArray(value)) value.forEach((item, index) => collectForbiddenSecretFields(item, `${location}[${index}]`, errors));
@@ -97,33 +92,6 @@ function validateAdmissionRegistryCore(registry, errors) {
   }
 }
 
-// Synchronous provider-root validation (kept for backward compat with existing tests that
-// pass providerRoots directly to validateAdmissionRegistry synchronously).
-// Uses the inline logic (not the shared module) so this function remains sync.
-function validateProviderRootsSync(registry, providerRoots, errors) {
-  for (const admission of registry.admissions ?? []) {
-    const prefix = admission?.admissionId ?? '<missing-admission>';
-    const provider = admission?.provider;
-    const providerRoot = providerRoots.get(provider?.providerId);
-    if (!providerRoot) continue;
-    const root = path.resolve(providerRoot);
-    try {
-      const stat = fs.lstatSync(root);
-      if (!stat.isDirectory() || stat.isSymbolicLink()) { errors.push(`${prefix}: provider root must be a non-symlink directory`); continue; }
-    } catch { errors.push(`${prefix}: provider root does not exist`); continue; }
-    let head;
-    try { head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { /* not a git repo — exported tree */ }
-    if (head && head !== provider.revision) errors.push(`${prefix}: provider revision mismatch`);
-    for (const artifact of provider.artifacts ?? []) {
-      if (typeof artifact.note === 'string' && artifact.note.includes('sourceState: working-tree-only')) continue;
-      if (artifact.path.startsWith('archive:') || artifact.path.startsWith('npm:')) continue;
-      const file = path.resolve(root, artifact.path);
-      if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) errors.push(`${prefix}: provider artifact missing ${artifact.path}`);
-      else if (digest(file) !== artifact.sha256) errors.push(`${prefix}: provider artifact digest mismatch ${artifact.path}`);
-    }
-  }
-}
-
 /**
  * Synchronous validation of admission registry.
  * Used by existing tests that import this function directly.
@@ -135,7 +103,8 @@ export function validateAdmissionRegistry(registry, { providerRoots = new Map(),
   const errors = collectForbiddenSecretFields(registry);
   validateAdmissionRegistryCore(registry, errors);
   if (providerRoots.size > 0) {
-    validateProviderRootsSync(registry, providerRoots, errors);
+    const aggregate = verifyAllProviders({ admissionRegistry: registry, providerRoots, providerRevisions });
+    errors.push(...aggregate.issues);
   }
   return errors;
 }
@@ -188,7 +157,6 @@ async function main() {
 
   if (providerRoots.size > 0) {
     // Use shared verification module for structured output
-    const { verifyAllProviders, formatVerificationSummary } = await import('./lib/mcp-provider-verification.mjs');
     const aggr = verifyAllProviders({ admissionRegistry: registry, providerRoots, providerRevisions });
 
     if (aggr.issues.length > 0) {

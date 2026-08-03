@@ -24,7 +24,7 @@
   "additionalProperties": false,
   "properties": {
     "schemaVersion": { "type": "string", "const": "1.0.0" },
-    "runId": { "type": "string", "pattern": "^b8-1-[a-zA-Z0-9._-]+$" },
+    "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
     "runAt": { "type": "string", "format": "date-time" },
     "partialEvidence": { "type": "boolean" },
     "selectedSubjects": {
@@ -92,11 +92,30 @@
         },
         {
           "type": "object",
-          "required": ["required", "status", "adapterIdentity", "profilePath", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "required": ["required", "status", "adapterIdentity", "runtimeIdentity", "childIdentity", "profilePath", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
           "properties": {
             "required": { "type": "boolean", "const": true },
             "status": { "type": "string", "const": "passed" },
             "adapterIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "runtimeIdentity": {
+              "type": "object",
+              "required": ["path", "sha256", "version"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "version": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "childIdentity": {
               "type": "object",
               "required": ["path", "sha256"],
               "properties": {
@@ -155,16 +174,6 @@
       },
       "additionalProperties": false
     },
-    "optionalModelMediatedMetrics": {
-      "type": "object",
-      "description": "Separately unauthorized. Must not appear in offline-only evidence.",
-      "properties": {
-        "modelInputTokens": { "type": "integer" },
-        "modelOutputTokens": { "type": "integer" },
-        "modelName": { "type": "string" },
-        "timeToAnswerMs": { "type": "integer" }
-      }
-    },
     "violations": {
       "type": "array",
       "items": {
@@ -174,20 +183,82 @@
           "reason": { "type": "string" },
           "detail": { "type": "string" },
           "timestamp": { "type": "string" }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "cleanupStatus": {
       "type": "object",
       "required": ["runDirectory", "removed"],
       "properties": {
-        "runDirectory": { "type": "string" },
+        "runDirectory": { "type": "string", "minLength": 1 },
         "removed": { "type": "boolean" },
         "removedAt": { "type": "string" }
-      }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "removed": { "const": true } }, "required": ["removed"] },
+          "then": { "properties": { "removedAt": true }, "required": ["removedAt"] },
+          "else": { "properties": { "removedAt": true }, "not": { "required": ["removedAt"] } }
+        }
+      ]
     }
   },
   "allOf": [
+    {
+      "if": { "properties": { "excludedSubjects": { "type": "array", "maxItems": 0 } }, "required": ["excludedSubjects"] },
+      "then": { "properties": { "partialEvidence": { "const": false } } },
+      "else": { "properties": { "partialEvidence": { "const": true } } }
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "cbm" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "cbm" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "cbm" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "cbm" } }
+          }
+        }
+      ]
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "graphify" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "graphify" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "graphify" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "graphify" } }
+          }
+        }
+      ]
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "contains": { "const": "exact-source" } },
+            "excludedSubjects": { "type": "array", "not": { "contains": { "const": "exact-source" } } }
+          }
+        },
+        {
+          "properties": {
+            "selectedSubjects": { "type": "array", "not": { "contains": { "const": "exact-source" } } },
+            "excludedSubjects": { "type": "array", "contains": { "const": "exact-source" } }
+          }
+        }
+      ]
+    },
     {
       "if": {
         "properties": {

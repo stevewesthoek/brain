@@ -16,6 +16,13 @@ import { computePlanDigest } from './prepare-b8-1-context-memory-benchmark.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_SCHEMA = path.join(root, 'operations/specs/b8-1-context-memory-benchmark-evidence.schema.json');
+const DEFAULT_MANIFEST_SCHEMA = path.join(root, 'operations/specs/b8-1-context-memory-benchmark-manifest.schema.json');
+
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -65,6 +72,15 @@ function minimalEvidence(overrides = {}) {
         path: '/usr/bin/sandbox-exec',
         sha256: 'a'.repeat(64)
       },
+      runtimeIdentity: {
+        path: '/synthetic/node',
+        sha256: '7'.repeat(64),
+        version: 'v24.0.0'
+      },
+      childIdentity: {
+        path: '/synthetic/b8-1-network-isolation-child.mjs',
+        sha256: '8'.repeat(64)
+      },
       profilePath: '/path/to/profile.sb',
       profileSha256: 'e'.repeat(64),
       controlSucceeded: true,
@@ -88,7 +104,7 @@ function minimalEvidence(overrides = {}) {
     violations: [],
     cleanupStatus: {
       runDirectory: '/tmp/b8-1-test-run-001',
-      removed: true
+      removed: false
     },
     ...overrides
   };
@@ -128,6 +144,16 @@ function makeBoundRun(selectedSubjects = ['exact-source']) {
     lineCorrect: true,
   }));
 
+  const sourceState = [{
+    repositoryId: 'repo',
+    path: '/synthetic/repo',
+    HEAD: commit,
+    statusPorcelain: '',
+    statusSha256: crypto.createHash('sha256').update('').digest('hex'),
+    pinnedCommit: commit,
+    pinnedCommitAvailable: true,
+  }];
+  const sourceStateHash = crypto.createHash('sha256').update(canonicalJson(sourceState)).digest('hex');
   const planInputs = {
     schemaVersion: '1.0.0',
     runId,
@@ -136,10 +162,10 @@ function makeBoundRun(selectedSubjects = ['exact-source']) {
     excludedSubjects: [...excludedSubjects].sort(),
     manifestPath,
     manifestHash,
-    manifestSchemaPath: '/synthetic/manifest.schema.json',
-    manifestSchemaHash: `sha256:${'2'.repeat(64)}`,
+    manifestSchemaPath: DEFAULT_MANIFEST_SCHEMA,
+    manifestSchemaHash: `sha256:${crypto.createHash('sha256').update(fs.readFileSync(DEFAULT_MANIFEST_SCHEMA)).digest('hex')}`,
     evidenceSchemaPath: DEFAULT_SCHEMA,
-    evidenceSchemaHash: `sha256:${'3'.repeat(64)}`,
+    evidenceSchemaHash: `sha256:${crypto.createHash('sha256').update(fs.readFileSync(DEFAULT_SCHEMA)).digest('hex')}`,
     pinnedRepositoryCommits: [{ repositoryId: 'repo', commit }],
     subjectBinaryIdentity,
     networkIsolationProof,
@@ -159,7 +185,8 @@ function makeBoundRun(selectedSubjects = ['exact-source']) {
     },
     diskResult: { name: 'disk-budget', status: 'pass', detail: '4096 MB available' },
     plannedWritePaths: [path.join(runDir, 'evidence')],
-    sourceStateHash: `sha256:${'6'.repeat(64)}`,
+    runDirectoryPhysical: fs.realpathSync(runDir),
+    sourceStateHash: `sha256:${sourceStateHash}`,
     checks: [{ name: 'manifest-validation', status: 'pass', detail: 'fixture manifest valid' }],
   };
   const planSha256 = computePlanDigest(planInputs);
@@ -168,6 +195,15 @@ function makeBoundRun(selectedSubjects = ['exact-source']) {
   const receiptPath = path.join(runDir, 'preflight-receipt.json');
   writeJson(runPlanPath, artifact);
   writeJson(receiptPath, artifact);
+  writeJson(path.join(runDir, 'cleanup-manifest.json'), {
+    runId,
+    runDirectory: runDir,
+    runDirectoryPhysical: fs.realpathSync(runDir),
+    createdAt: '2026-08-03T10:00:00.000Z',
+    note: 'cleanup targets this exact directory only',
+  });
+  writeJson(path.join(runDir, 'source-state-before.json'), sourceState);
+  writeJson(path.join(runDir, 'source-state-after.json'), sourceState);
   const preflightReceiptHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(receiptPath)).digest('hex')}`;
 
   const evidence = minimalEvidence({
@@ -187,6 +223,21 @@ function makeBoundRun(selectedSubjects = ['exact-source']) {
   const evidencePath = path.join(runDir, 'evidence', 'evidence.json');
   writeJson(evidencePath, evidence);
   return { tempRoot, runDir, manifestPath, runPlanPath, receiptPath, evidencePath, evidence, artifact };
+}
+
+function rewriteBoundPlanArtifacts(bound, mutate) {
+  let firstDigest = null;
+  for (const artifactPath of [bound.runPlanPath, bound.receiptPath]) {
+    const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+    mutate(artifact);
+    const { planSha256: _oldDigest, createdAt: _createdAt, ...digestInputs } = artifact;
+    artifact.planSha256 = computePlanDigest(digestInputs);
+    firstDigest ??= artifact.planSha256;
+    writeJson(artifactPath, artifact);
+  }
+  bound.evidence.planSha256 = firstDigest;
+  bound.evidence.preflightReceiptHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(bound.receiptPath)).digest('hex')}`;
+  writeJson(bound.evidencePath, bound.evidence);
 }
 
 // ---------------------------------------------------------------------------
@@ -380,6 +431,15 @@ test('valid comprehensive evidence passes', () => {
       adapterIdentity: {
         path: '/usr/bin/sandbox-exec',
         sha256: 'a'.repeat(64)
+      },
+      runtimeIdentity: {
+        path: '/synthetic/node',
+        sha256: '7'.repeat(64),
+        version: 'v24.0.0'
+      },
+      childIdentity: {
+        path: '/synthetic/b8-1-network-isolation-child.mjs',
+        sha256: '8'.repeat(64)
       },
       profilePath: '/path/to/profile.sb',
       profileSha256: 'f'.repeat(64),
@@ -761,4 +821,107 @@ test('non-string run-plan manifestPath fails closed instead of throwing', () => 
   } finally {
     fs.rmSync(bound.tempRoot, { recursive: true, force: true });
   }
+});
+
+test('schema rejects an incomplete subject partition', () => {
+  const evidence = minimalEvidence({
+    selectedSubjects: ['exact-source'],
+    excludedSubjects: ['cbm'],
+    subjectBinaryIdentity: {},
+    networkIsolationProof: { required: false, status: 'not-required' },
+    fixtureResults: [{ fixtureId: 'fix-001', subject: 'exact-source', fileCorrect: true, lineCorrect: true }],
+  });
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /oneOf|partition/.test(error)), result.errors.join('; '));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('runId containing a double-dot segment is rejected consistently', () => {
+  const { filePath, dir } = writeTempEvidence(minimalEvidence({ runId: 'b8-1-..escape' }));
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /runId|pattern/.test(error)), result.errors.join('; '));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('empty cleanup directory cannot bypass run binding', () => {
+  const bound = makeBoundRun();
+  try {
+    bound.evidence.cleanupStatus.runDirectory = '';
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /runDirectory/.test(error)), result.errors.join('; '));
+  } finally { fs.rmSync(bound.tempRoot, { recursive: true, force: true }); }
+});
+
+test('missing cleanup manifest and tampered source state fail run binding', () => {
+  const bound = makeBoundRun();
+  try {
+    fs.rmSync(path.join(bound.runDir, 'cleanup-manifest.json'));
+    writeJson(path.join(bound.runDir, 'source-state-after.json'), []);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /cleanup-manifest/.test(error)), result.errors.join('; '));
+    assert.ok(result.errors.some(error => /source-state/.test(error)), result.errors.join('; '));
+  } finally { fs.rmSync(bound.tempRoot, { recursive: true, force: true }); }
+});
+
+test('symlinked run roots and run artifacts fail binding', () => {
+  const bound = makeBoundRun();
+  try {
+    const realRunDir = `${bound.runDir}-real`;
+    fs.renameSync(bound.runDir, realRunDir);
+    fs.symlinkSync(realRunDir, bound.runDir);
+    const runRootResult = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(runRootResult.valid, false);
+    assert.ok(runRootResult.errors.some(error => /non-symlink directory/.test(error)), runRootResult.errors.join('; '));
+  } finally { fs.rmSync(bound.tempRoot, { recursive: true, force: true }); }
+
+  const artifactBound = makeBoundRun();
+  try {
+    const externalCleanup = path.join(artifactBound.tempRoot, 'external-cleanup.json');
+    fs.renameSync(path.join(artifactBound.runDir, 'cleanup-manifest.json'), externalCleanup);
+    fs.symlinkSync(externalCleanup, path.join(artifactBound.runDir, 'cleanup-manifest.json'));
+    const artifactResult = validateEvidence(artifactBound.evidencePath, DEFAULT_SCHEMA, { manifestPath: artifactBound.manifestPath, runDir: artifactBound.runDir });
+    assert.equal(artifactResult.valid, false);
+    assert.ok(artifactResult.errors.some(error => /cleanup-manifest\.json must be a non-symlink/.test(error)), artifactResult.errors.join('; '));
+  } finally { fs.rmSync(artifactBound.tempRoot, { recursive: true, force: true }); }
+});
+
+test('source-state duplicate, unknown, and forged-status entries fail exact coverage', () => {
+  const bound = makeBoundRun();
+  try {
+    const statePath = path.join(bound.runDir, 'source-state-before.json');
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8'))[0];
+    const forged = [
+      { ...state, repositoryId: 'unknown', HEAD: undefined, pinnedCommit: undefined, statusSha256: '0'.repeat(64) },
+    ];
+    writeJson(statePath, forged);
+    writeJson(path.join(bound.runDir, 'source-state-after.json'), forged);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /exact pinned repository set|not clean and pinned/.test(error)), result.errors.join('; '));
+  } finally { fs.rmSync(bound.tempRoot, { recursive: true, force: true }); }
+});
+
+test('changed approved schema bytes fail evidence binding', () => {
+  const bound = makeBoundRun();
+  const schemaCopy = path.join(bound.tempRoot, 'evidence.schema.json');
+  try {
+    fs.copyFileSync(DEFAULT_SCHEMA, schemaCopy);
+    const originalHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(schemaCopy)).digest('hex')}`;
+    rewriteBoundPlanArtifacts(bound, artifact => {
+      artifact.evidenceSchemaPath = schemaCopy;
+      artifact.evidenceSchemaHash = originalHash;
+    });
+    fs.appendFileSync(schemaCopy, '\n');
+    const result = validateEvidence(bound.evidencePath, schemaCopy, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /evidence schema hash/.test(error)), result.errors.join('; '));
+  } finally { fs.rmSync(bound.tempRoot, { recursive: true, force: true }); }
 });

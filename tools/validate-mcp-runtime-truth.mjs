@@ -1064,7 +1064,13 @@ async function runRealMode(strict = false) {
 const IS_MAIN = (
   typeof process !== 'undefined' &&
   process.argv[1] &&
-  fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))
+  (() => {
+    try {
+      return fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+    } catch {
+      return false;
+    }
+  })()
 );
 
 if (IS_MAIN) {
