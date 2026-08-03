@@ -20,6 +20,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  validateSchema,
+  verifyStructuredVerification,
+  verifyFixture,
+} from './validate-b8-1-benchmark-manifest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -98,8 +103,8 @@ function captureSourceState(manifest) {
 
 /**
  * Defect #7: Full manifest validation in preflight.
- * Loads and fully validates the manifest (schema + semantic) using the same
- * validateSchema function exported from the manifest validator.
+ * Loads and fully validates the manifest (schema + semantic) using the manifest validator.
+ * This is fail-closed — any validation error blocks readiness.
  */
 function checkManifest(checks, manifestPathOverride) {
   const resolvedPath = manifestPathOverride ?? MANIFEST_PATH;
@@ -134,36 +139,22 @@ function checkManifest(checks, manifestPathOverride) {
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
-  let validateSchema;
+  // Call the real, imported validator — fail closed if it fails
   try {
-    // Dynamic import of the manifest validator's validateSchema
-    // We use a lazy require-like pattern to avoid circular imports at module load
-    const { createRequire } = await_free_import_validateSchema();
-    validateSchema = createRequire;
-  } catch (e) {
-    // Fallback: if import fails, do a basic check only
-    validateSchema = null;
-  }
-
-  if (validateSchema) {
     const schemaErrors = validateSchema(manifest, schemaObj);
     if (schemaErrors.length > 0) {
-      recordCheck(checks, 'manifest-loaded', 'fail', `schema/semantic errors: ${schemaErrors[0]}`);
+      recordCheck(checks, 'manifest-loaded', 'fail', `validation error: ${schemaErrors[0]}`);
       return { manifest: null, manifestHash: null, manifestText: null };
     }
+  } catch (e) {
+    console.error(`INTERNAL: manifest validator failed: ${e.message}`);
+    recordCheck(checks, 'manifest-loaded', 'fail', `validator error: ${e.message}`);
+    return { manifest: null, manifestHash: null, manifestText: null };
   }
 
   const manifestHash = crypto.createHash('sha256').update(manifestText).digest('hex');
   recordCheck(checks, 'manifest-loaded', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos; sha256=${manifestHash.slice(0, 16)}...`);
   return { manifest, manifestHash, manifestText };
-}
-
-// Placeholder to be replaced: actual lazy validateSchema resolver
-function await_free_import_validateSchema() {
-  // This is intentionally replaced by the synchronous inline import below.
-  // Return an object with a createRequire stub that returns null so the
-  // caller falls back to the simple path check.
-  return { createRequire: null };
 }
 
 function checkPinnedCommits(checks, manifest) {
@@ -670,17 +661,8 @@ function buildSubjectDirs(selectedSubjects, manifest) {
  * @param {string} tmpDir  - The tmp directory to remove on failure.
  */
 function validateExportedTree(manifest, repoId, exportedRoot, tmpDir) {
-  const { verifyStructuredVerification, verifyFixture } = _getManifestValidatorFunctions();
-
   // Check all fixtures for this repo
   const fixtures = (manifest.fixtures ?? []).filter(f => f.repositoryId === repoId);
-
-  // Build expected set from manifest
-  const fixtureIds = fixtures.map(f => f.fixtureId);
-  const fixtureSet = new Set(fixtureIds);
-
-  // Check for count diff (fixtures in manifest vs. fixtures for this repo)
-  // This is a no-op here since we filter by repoId above; the full count is per-manifest.
 
   for (const fixture of fixtures) {
     let verErrors = [];
@@ -697,38 +679,6 @@ function validateExportedTree(manifest, repoId, exportedRoot, tmpDir) {
   }
 }
 
-/**
- * Lazy loader for manifest validator functions.
- * Uses a module-level cache to avoid re-importing.
- */
-let _manifestValidatorCache = null;
-function _getManifestValidatorFunctions() {
-  if (_manifestValidatorCache) return _manifestValidatorCache;
-  // Synchronous require via createRequire — the manifest validator exports named functions
-  const { createRequire } = await_free_require();
-  if (createRequire) {
-    try {
-      const mod = createRequire(path.join(__dirname, 'validate-b8-1-benchmark-manifest.mjs'));
-      _manifestValidatorCache = {
-        verifyStructuredVerification: mod.verifyStructuredVerification,
-        verifyFixture: mod.verifyFixture,
-        validateSchema: mod.validateSchema,
-      };
-      return _manifestValidatorCache;
-    } catch { /* fall through */ }
-  }
-  // Fallback stubs (no-op) — used in tests where manifest validator is not importable synchronously
-  _manifestValidatorCache = {
-    verifyStructuredVerification: () => [],
-    verifyFixture: () => [],
-    validateSchema: () => [],
-  };
-  return _manifestValidatorCache;
-}
-
-function await_free_require() {
-  return { createRequire: null };
-}
 
 /**
  * Defect #9: Manifest hash tracking in materialization.
@@ -907,25 +857,38 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
   // Defect #6: Planned-write containment (replaces unconditional pass)
   checkPlannedWriteContainment(checks, runDir, selectedSubjects, _homeOverride);
 
-  const blockingChecks = checks
+  let blockingChecks = checks
     .filter(c => c.status === 'fail' || c.status === 'blocked')
     .map(c => c.name);
 
-  const executionReady = blockingChecks.length === 0 && runDir && !fs.existsSync(runDir);
+  // executionReady means we CAN proceed to materialization (preflight passed)
+  const canMaterialize = blockingChecks.length === 0 && runDir && !fs.existsSync(runDir);
+
+  let materialized = false;
 
   if (doMaterialize && !dryRun) {
-    if (!executionReady) {
+    if (!canMaterialize) {
       recordCheck(checks, 'materialization', 'fail', 'cannot materialize: execution not ready');
     } else {
       try {
         materialize(runDir, manifest, manifestHash, resolvedManifestPath, checks, selectedSubjects, _homeOverride);
+        materialized = true;
       } catch (e) {
         // Error is already recorded in checks by materialize()
+        materialized = false;
       }
     }
+
+    // Recalculate blocking checks after materialization attempt
+    blockingChecks = checks
+      .filter(c => c.status === 'fail' || c.status === 'blocked')
+      .map(c => c.name);
   }
 
-  const summary = { executionReady, selectedSubjects, excludedSubjects, blockingChecks, runId: runId ?? null };
+  // executionReady means the last operation succeeded (or would succeed in dry-run)
+  const executionReady = blockingChecks.length === 0;
+
+  const summary = { executionReady, materialized, selectedSubjects, excludedSubjects, blockingChecks, runId: runId ?? null };
   return { checks: [...checks], summary, runDir, dryRun };
 }
 
