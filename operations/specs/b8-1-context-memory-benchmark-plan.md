@@ -93,7 +93,7 @@ Subjects are explicitly selected via `--subjects` flag:
 
 | Repo | Subject ID | Path | Description |
 |------|-----------|------|-------------|
-| Brain | `brain` | `../../../brain` from the manifest | AI infrastructure, skills, runbooks (TypeScript + shell) |
+| Brain | `brain` | `../../../brain-next` from the manifest | AI infrastructure, skills, runbooks (TypeScript + shell) |
 | Workbench Private | `workbench` | `../../../../prochattools/saas/workbench-private` from the manifest | Full-stack TypeScript application |
 | ProChat | `prochat` | `../../../../prochattools/web/prochat` from the manifest | Next.js TypeScript application |
 

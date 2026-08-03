@@ -4,8 +4,8 @@
   "repositories": [
     {
       "repositoryId": "brain",
-      "localPath": "../../../brain",
-      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "localPath": "../../../brain-next",
+      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
       "description": "machine-brain — AI infrastructure, skills, runbooks (TypeScript + shell)",
       "excludedSymlinkPaths": [
         "operations/system-configs/claude/hooks/auto-handoff.sh",
@@ -32,7 +32,7 @@
     {
       "fixtureId": "brain_f1",
       "repositoryId": "brain",
-      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
       "question": "Where is MIND_TARGET_PATHS exported and what does it define?",
       "expectedFile": "projects/brain-core/src/mind-paths.ts",
       "expectedSymbol": "MIND_TARGET_PATHS",
@@ -56,7 +56,7 @@
     {
       "fixtureId": "brain_f2",
       "repositoryId": "brain",
-      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
       "question": "Which function classifies a Mind task for routing?",
       "expectedFile": "projects/mind-steward/src/classifier.ts",
       "expectedSymbol": "classifyMindCaptureInbox",
@@ -83,7 +83,7 @@
     {
       "fixtureId": "brain_f3",
       "repositoryId": "brain",
-      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
       "question": "What MCP tools does the Workbench admission allow?",
       "expectedFile": "operations/specs/mcp-provider-admissions.json",
       "expectedLiteral": "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand",
@@ -107,7 +107,7 @@
     {
       "fixtureId": "brain_f4",
       "repositoryId": "brain",
-      "pinnedCommit": "9d8c01a5a49e94b6aed1b62d721386c9b9b3416a",
+      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
       "question": "What validator runs the deletion-readiness check?",
       "expectedFile": "tools/validate-deletion-readiness.mjs",
       "expectedSymbol": "main",
