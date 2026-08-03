@@ -4,6 +4,7 @@
  */
 
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +12,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { validateEvidence } from './validate-b8-1-benchmark-evidence.mjs';
+import { computePlanDigest } from './prepare-b8-1-context-memory-benchmark.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_SCHEMA = path.join(root, 'operations/specs/b8-1-context-memory-benchmark-evidence.schema.json');
@@ -35,8 +37,9 @@ function minimalEvidence(overrides = {}) {
   return {
     schemaVersion: '1.0.0',
     runId: 'b8-1-test-run-001',
+    partialEvidence: true,
     selectedSubjects: ['cbm'],
-    excludedSubjects: [],
+    excludedSubjects: ['graphify', 'exact-source'],
     pinnedRepositoryCommits: {
       'brain-next': {
         repositoryId: 'stevewesthoek/brain-next',
@@ -45,16 +48,23 @@ function minimalEvidence(overrides = {}) {
     },
     manifestHash: 'sha256:' + 'b'.repeat(64),
     preflightReceiptHash: 'sha256:' + 'c'.repeat(64),
+    planSha256: 'f'.repeat(64),
     subjectBinaryIdentity: {
       cbm: {
+        stablePath: '/synthetic/home/.local/bin/codebase-memory-mcp',
+        resolvedPath: '/synthetic/home/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp',
         sha256: 'd'.repeat(64),
         version: '1.2.3'
       }
     },
     // Task 4: networkIsolationProof requires specific fields when CBM is selected
     networkIsolationProof: {
+      required: true,
       status: 'passed',
-      adapter: 'sandbox-exec',
+      adapterIdentity: {
+        path: '/usr/bin/sandbox-exec',
+        sha256: 'a'.repeat(64)
+      },
       profilePath: '/path/to/profile.sb',
       profileSha256: 'e'.repeat(64),
       controlSucceeded: true,
@@ -82,6 +92,101 @@ function minimalEvidence(overrides = {}) {
     },
     ...overrides
   };
+}
+
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function makeBoundRun(selectedSubjects = ['exact-source']) {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'b8-1-bound-evidence-'));
+  const runId = 'b8-1-bound-run-001';
+  const runDir = path.join(tempRoot, runId);
+  fs.mkdirSync(path.join(runDir, 'evidence'), { recursive: true });
+
+  const commit = '1'.repeat(40);
+  const manifest = {
+    schemaVersion: '1.0.0',
+    repositories: [{ repositoryId: 'repo', localPath: '/synthetic/repo', pinnedCommit: commit }],
+    fixtures: [{ fixtureId: 'fixture-1', repositoryId: 'repo' }],
+  };
+  const manifestPath = path.join(tempRoot, 'manifest.json');
+  writeJson(manifestPath, manifest);
+  const manifestHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(manifestPath)).digest('hex')}`;
+
+  const excludedSubjects = ['cbm', 'graphify', 'exact-source'].filter(subject => !selectedSubjects.includes(subject));
+  const cbmSelected = selectedSubjects.includes('cbm');
+  const cbmTemplate = minimalEvidence();
+  const subjectBinaryIdentity = cbmSelected ? cbmTemplate.subjectBinaryIdentity : {};
+  const networkIsolationProof = cbmSelected
+    ? cbmTemplate.networkIsolationProof
+    : { required: false, status: 'not-required' };
+  const fixtureResults = selectedSubjects.map(subject => ({
+    fixtureId: 'fixture-1',
+    subject,
+    fileCorrect: true,
+    lineCorrect: true,
+  }));
+
+  const planInputs = {
+    schemaVersion: '1.0.0',
+    runId,
+    partialEvidence: excludedSubjects.length > 0,
+    selectedSubjects: [...selectedSubjects].sort(),
+    excludedSubjects: [...excludedSubjects].sort(),
+    manifestPath,
+    manifestHash,
+    manifestSchemaPath: '/synthetic/manifest.schema.json',
+    manifestSchemaHash: `sha256:${'2'.repeat(64)}`,
+    evidenceSchemaPath: DEFAULT_SCHEMA,
+    evidenceSchemaHash: `sha256:${'3'.repeat(64)}`,
+    pinnedRepositoryCommits: [{ repositoryId: 'repo', commit }],
+    subjectBinaryIdentity,
+    networkIsolationProof,
+    cbmVerification: cbmSelected ? {
+      required: true,
+      status: 'passed',
+      binaryIdentity: subjectBinaryIdentity.cbm,
+      networkIsolationProof,
+    } : { required: false, status: 'not-required' },
+    graphifyStatus: {
+      status: excludedSubjects.includes('graphify') ? 'excluded-subject' : 'blocked',
+      reason: 'bounded code-only invocation is not proven',
+      profilePath: '/synthetic/graphify-profiles.json',
+      profileSha256: '4'.repeat(64),
+      governancePath: '/synthetic/graphify-governance.json',
+      governanceSha256: '5'.repeat(64),
+    },
+    diskResult: { name: 'disk-budget', status: 'pass', detail: '4096 MB available' },
+    plannedWritePaths: [path.join(runDir, 'evidence')],
+    sourceStateHash: `sha256:${'6'.repeat(64)}`,
+    checks: [{ name: 'manifest-validation', status: 'pass', detail: 'fixture manifest valid' }],
+  };
+  const planSha256 = computePlanDigest(planInputs);
+  const artifact = { ...planInputs, planSha256, createdAt: '2026-08-03T10:00:00.000Z' };
+  const runPlanPath = path.join(runDir, 'run-plan.json');
+  const receiptPath = path.join(runDir, 'preflight-receipt.json');
+  writeJson(runPlanPath, artifact);
+  writeJson(receiptPath, artifact);
+  const preflightReceiptHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(receiptPath)).digest('hex')}`;
+
+  const evidence = minimalEvidence({
+    runId,
+    partialEvidence: excludedSubjects.length > 0,
+    selectedSubjects,
+    excludedSubjects,
+    pinnedRepositoryCommits: { repo: { repositoryId: 'repo', commit } },
+    manifestHash,
+    preflightReceiptHash,
+    planSha256,
+    subjectBinaryIdentity,
+    networkIsolationProof,
+    fixtureResults,
+    cleanupStatus: { runDirectory: runDir, removed: false },
+  });
+  const evidencePath = path.join(runDir, 'evidence', 'evidence.json');
+  writeJson(evidencePath, evidence);
+  return { tempRoot, runDir, manifestPath, runPlanPath, receiptPath, evidencePath, evidence, artifact };
 }
 
 // ---------------------------------------------------------------------------
@@ -163,6 +268,17 @@ test('missing required fields are rejected', () => {
   }
 });
 
+test('non-object evidence root fails closed without throwing', () => {
+  const { filePath, dir } = writeTempEvidence(null);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /evidence root must be a JSON object/.test(error)));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Test 5: Invalid runId pattern is rejected
 // ---------------------------------------------------------------------------
@@ -233,6 +349,7 @@ test('networkIsolationProof.selfTestPassed=false is rejected', () => {
 test('valid comprehensive evidence passes', () => {
   const evidence = minimalEvidence({
     runAt: '2026-08-03T10:00:00.000Z',
+    partialEvidence: false,
     selectedSubjects: ['cbm', 'graphify', 'exact-source'],
     excludedSubjects: [],
     pinnedRepositoryCommits: {
@@ -247,6 +364,8 @@ test('valid comprehensive evidence passes', () => {
     },
     subjectBinaryIdentity: {
       cbm: {
+        stablePath: '/synthetic/home/.local/bin/codebase-memory-mcp',
+        resolvedPath: '/synthetic/home/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp',
         sha256: 'e'.repeat(64),
         version: '2.0.0'
       },
@@ -256,8 +375,12 @@ test('valid comprehensive evidence passes', () => {
     },
     // Task 4: networkIsolationProof with new schema when CBM selected
     networkIsolationProof: {
+      required: true,
       status: 'passed',
-      adapter: 'sandbox-exec',
+      adapterIdentity: {
+        path: '/usr/bin/sandbox-exec',
+        sha256: 'a'.repeat(64)
+      },
       profilePath: '/path/to/profile.sb',
       profileSha256: 'f'.repeat(64),
       controlSucceeded: true,
@@ -370,5 +493,272 @@ test('non-empty violations array passes schema validation', () => {
     assert.deepEqual(result.errors, []);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('exact-source-only evidence accepts exact not-required network proof', () => {
+  const evidence = minimalEvidence({
+    partialEvidence: true,
+    selectedSubjects: ['exact-source'],
+    excludedSubjects: ['cbm', 'graphify'],
+    subjectBinaryIdentity: {},
+    networkIsolationProof: { required: false, status: 'not-required' },
+    fixtureResults: [{ fixtureId: 'fix-001', subject: 'exact-source', fileCorrect: true, lineCorrect: true }],
+  });
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, true, result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CBM exclusion rejects adapter and self-test data', () => {
+  const evidence = minimalEvidence({
+    partialEvidence: true,
+    selectedSubjects: ['exact-source'],
+    excludedSubjects: ['cbm', 'graphify'],
+    subjectBinaryIdentity: {},
+    networkIsolationProof: {
+      required: false,
+      status: 'not-required',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: 'a'.repeat(64) },
+      selfTestPassed: true,
+    },
+    fixtureResults: [{ fixtureId: 'fix-001', subject: 'exact-source', fileCorrect: true, lineCorrect: true }],
+  });
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /exactly.*not-required|additional propert/i.test(error)));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CBM evidence requires full binary identity and complete isolation proof', () => {
+  const evidence = minimalEvidence();
+  delete evidence.subjectBinaryIdentity.cbm.resolvedPath;
+  evidence.networkIsolationProof.sandboxedChildStarted = false;
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /resolvedPath|complete passed proof/i.test(error)));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('valid evidence binds to manifest, run plan, and receipt bytes', () => {
+  const bound = makeBoundRun();
+  try {
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, true, result.errors.join('; '));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('run directory basename mismatch fails binding', () => {
+  const bound = makeBoundRun();
+  try {
+    bound.evidence.runId = 'b8-1-different-run';
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /basename/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('run-plan runId mismatch fails even when artifact digests are internally consistent', () => {
+  const bound = makeBoundRun();
+  try {
+    const changedRunId = 'b8-1-altered-plan-run';
+    const artifacts = [];
+    for (const artifactPath of [bound.runPlanPath, bound.receiptPath]) {
+      const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+      artifact.runId = changedRunId;
+      const { planSha256: _oldDigest, createdAt: _createdAt, ...digestInputs } = artifact;
+      artifact.planSha256 = computePlanDigest(digestInputs);
+      writeJson(artifactPath, artifact);
+      artifacts.push(artifact);
+    }
+    bound.evidence.planSha256 = artifacts[0].planSha256;
+    bound.evidence.preflightReceiptHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(bound.receiptPath)).digest('hex')}`;
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /run-plan\.json runId/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('actual manifest SHA-256 mismatch fails binding', () => {
+  const bound = makeBoundRun();
+  try {
+    const manifest = JSON.parse(fs.readFileSync(bound.manifestPath, 'utf8'));
+    manifest.note = 'changed bytes';
+    writeJson(bound.manifestPath, manifest);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /actual manifest SHA-256/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('actual preflight receipt SHA-256 mismatch fails binding', () => {
+  const bound = makeBoundRun();
+  try {
+    fs.appendFileSync(bound.receiptPath, '\n');
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /actual preflight-receipt.*SHA-256/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('run-plan content mismatch fails digest binding', () => {
+  const bound = makeBoundRun();
+  try {
+    const runPlan = JSON.parse(fs.readFileSync(bound.runPlanPath, 'utf8'));
+    runPlan.diskResult.detail = 'different disk result';
+    writeJson(bound.runPlanPath, runPlan);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /recomputes to/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('malformed run artifacts fail closed instead of throwing', () => {
+  const bound = makeBoundRun();
+  try {
+    fs.writeFileSync(bound.runPlanPath, 'null');
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /run-plan\.json must contain a JSON object/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('receipt and plan deterministic inputs must match', () => {
+  const bound = makeBoundRun();
+  try {
+    const receipt = JSON.parse(fs.readFileSync(bound.receiptPath, 'utf8'));
+    receipt.graphifyStatus.reason = 'different reason';
+    writeJson(bound.receiptPath, receipt);
+    bound.evidence.preflightReceiptHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(bound.receiptPath)).digest('hex')}`;
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /deterministic plan inputs differ/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('pinned commit mismatch fails manifest binding', () => {
+  const bound = makeBoundRun();
+  try {
+    bound.evidence.pinnedRepositoryCommits.repo.commit = '9'.repeat(40);
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /pinnedRepositoryCommits/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('selected and excluded subject mismatch fails run binding', () => {
+  const bound = makeBoundRun();
+  try {
+    bound.evidence.selectedSubjects = ['graphify'];
+    bound.evidence.excludedSubjects = ['cbm', 'exact-source'];
+    bound.evidence.partialEvidence = true;
+    bound.evidence.fixtureResults = [{ fixtureId: 'fixture-1', subject: 'graphify', fileCorrect: true, lineCorrect: true }];
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /selectedSubjects do not match|excludedSubjects do not match/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('missing fixture result for selected subject fails', () => {
+  const bound = makeBoundRun();
+  try {
+    bound.evidence.fixtureResults = [];
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /missing fixtureResult/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('fixture result for excluded subject fails', () => {
+  const bound = makeBoundRun();
+  try {
+    bound.evidence.fixtureResults.push({ fixtureId: 'fixture-1', subject: 'cbm', fileCorrect: true, lineCorrect: true });
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /excluded subject/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('CBM identity and isolation proof must match the approved run plan', () => {
+  const bound = makeBoundRun(['cbm', 'exact-source']);
+  try {
+    bound.evidence.networkIsolationProof.profileSha256 = '7'.repeat(64);
+    writeJson(bound.evidencePath, bound.evidence);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /network isolation proof does not match/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('blocked Graphify can never support full selected-subject evidence', () => {
+  const bound = makeBoundRun(['graphify', 'exact-source']);
+  try {
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, { manifestPath: bound.manifestPath, runDir: bound.runDir });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /selected Graphify subject requires/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('non-string run-plan manifestPath fails closed instead of throwing', () => {
+  const bound = makeBoundRun(['exact-source']);
+  try {
+    const malformed = { ...bound.artifact, manifestPath: 42 };
+    malformed.planSha256 = computePlanDigest((({ planSha256, createdAt, ...inputs }) => inputs)(malformed));
+    writeJson(bound.runPlanPath, malformed);
+    const result = validateEvidence(bound.evidencePath, DEFAULT_SCHEMA, {
+      manifestPath: bound.manifestPath,
+      runDir: bound.runDir,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(error => /manifestPath must be a string/.test(error)));
+  } finally {
+    fs.rmSync(bound.tempRoot, { recursive: true, force: true });
   }
 });

@@ -7,16 +7,19 @@
  * Usage (CLI):
  *   node tools/validate-b8-1-benchmark-evidence.mjs --evidence=path/to/evidence.json
  *   node tools/validate-b8-1-benchmark-evidence.mjs --evidence=path/to/evidence.json --manifest=path/to/manifest.json
+ *   node tools/validate-b8-1-benchmark-evidence.mjs --evidence=path/to/evidence.json --manifest=path/to/manifest.json --run-dir=path/to/run
  *
  * Export:
- *   validateEvidence(evidencePath, schemaPath, { manifestPath }) → { valid, errors }
+ *   validateEvidence(evidencePath, schemaPath, { manifestPath, runDir }) → { valid, errors }
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { computePlanDigest } from './prepare-b8-1-context-memory-benchmark.mjs';
 
 // ---------------------------------------------------------------------------
 // Load Ajv from local repository, not n8n.
@@ -31,6 +34,40 @@ const DEFAULT_SCHEMA_PATH = path.resolve(
   import.meta.dirname,
   '../operations/specs/b8-1-context-memory-benchmark-evidence.schema.json'
 );
+const VALID_SUBJECTS = ['cbm', 'graphify', 'exact-source'];
+
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+}
+
+function sameValue(left, right) {
+  return canonicalJson(left) === canonicalJson(right);
+}
+
+function sameSet(left = [], right = []) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  return left.length === right.length && new Set(left).size === left.length
+    && left.every(value => right.includes(value));
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizePinnedCommits(value) {
+  const entries = Array.isArray(value) ? value : isRecord(value) ? Object.values(value) : [];
+  return entries
+    .filter(isRecord)
+    .map(entry => ({ repositoryId: entry.repositoryId, commit: entry.commit ?? entry.pinnedCommit }))
+    .sort((a, b) => String(a.repositoryId).localeCompare(String(b.repositoryId)));
+}
+
+function planDigestInputs(artifact) {
+  const { planSha256: _planSha256, createdAt: _createdAt, ...inputs } = artifact;
+  return inputs;
+}
 
 // ---------------------------------------------------------------------------
 // Core validation function
@@ -76,6 +113,10 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       errors.push(`Schema: ${err.instancePath || '(root)'} ${err.message}`);
     }
   }
+  if (!isRecord(evidence)) {
+    errors.push('Semantic: evidence root must be a JSON object');
+    return { valid: false, errors };
+  }
 
   // --- Semantic check 1: offline-only — optionalModelMediatedMetrics must be absent ---
   if ('optionalModelMediatedMetrics' in evidence) {
@@ -92,196 +133,278 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
     );
   }
 
-  // --- Semantic check 3: selectedSubjects and excludedSubjects must not overlap ---
-  if (Array.isArray(evidence.selectedSubjects) && Array.isArray(evidence.excludedSubjects)) {
-    const overlap = evidence.selectedSubjects.filter((s) =>
-      evidence.excludedSubjects.includes(s)
-    );
-    if (overlap.length > 0) {
-      errors.push(
-        `Semantic: subjects appear in both selectedSubjects and excludedSubjects: ${overlap.join(', ')}`
-      );
+  // --- Semantic checks 3-4: complete subject partition and CBM proof --------
+  const selectedSubjects = Array.isArray(evidence.selectedSubjects) ? evidence.selectedSubjects : [];
+  const excludedSubjects = Array.isArray(evidence.excludedSubjects) ? evidence.excludedSubjects : [];
+  const fixtureResults = Array.isArray(evidence.fixtureResults) ? evidence.fixtureResults : [];
+  const overlap = selectedSubjects.filter(subject => excludedSubjects.includes(subject));
+  if (overlap.length > 0) {
+    errors.push(`Semantic: subjects appear in both selectedSubjects and excludedSubjects: ${overlap.join(', ')}`);
+  }
+  const combinedSubjects = [...new Set([...selectedSubjects, ...excludedSubjects])].sort();
+  if (!sameSet(combinedSubjects, VALID_SUBJECTS)) {
+    errors.push('Semantic: selectedSubjects and excludedSubjects must form a complete partition of cbm, graphify, and exact-source');
+  }
+
+  const expectedPartialEvidence = excludedSubjects.length > 0;
+  if (evidence.partialEvidence !== expectedPartialEvidence) {
+    errors.push(`Semantic: partialEvidence must be ${expectedPartialEvidence} for the declared subject partition`);
+  }
+  if (excludedSubjects.includes('graphify') && evidence.partialEvidence !== true) {
+    errors.push('Semantic: Graphify exclusion is partial evidence and cannot represent full B8.1 completion');
+  }
+
+  const cbmSelected = selectedSubjects.includes('cbm');
+  const proof = evidence.networkIsolationProof;
+  const cbmIdentity = evidence.subjectBinaryIdentity?.cbm;
+  if (cbmSelected) {
+    if (!cbmIdentity) {
+      errors.push('Semantic: CBM is selected but subjectBinaryIdentity.cbm is missing');
+    }
+    const completeProof = proof?.required === true
+      && proof?.status === 'passed'
+      && typeof proof?.adapterIdentity?.path === 'string'
+      && /^[a-f0-9]{64}$/.test(proof?.adapterIdentity?.sha256 ?? '')
+      && typeof proof?.profilePath === 'string'
+      && /^[a-f0-9]{64}$/.test(proof?.profileSha256 ?? '')
+      && proof?.controlSucceeded === true
+      && proof?.sandboxedChildStarted === true
+      && proof?.sandboxedConnectionDenied === true
+      && proof?.selfTestPassed === true;
+    if (!completeProof) {
+      errors.push('Semantic: CBM is selected but networkIsolationProof is not a complete passed proof');
+    }
+  } else {
+    if (cbmIdentity) {
+      errors.push('Semantic: CBM not selected but subjectBinaryIdentity.cbm is present');
+    }
+    if (!sameValue(proof, { required: false, status: 'not-required' })) {
+      errors.push('Semantic: CBM not selected requires exactly {required:false,status:"not-required"} with no adapter or self-test data');
     }
   }
 
-  // --- Semantic check 4: networkIsolationProof semantics ---
-  // Task 4: When CBM is selected, require full isolation proof with all required fields.
-  // When CBM is NOT selected, require status="not-required" only.
-  if (evidence.networkIsolationProof !== undefined) {
-    const cbmSelected = Array.isArray(evidence.selectedSubjects) && evidence.selectedSubjects.includes('cbm');
-    const proof = evidence.networkIsolationProof;
-
-    if (cbmSelected) {
-      // CBM selected: require full proof with selfTestPassed=true
-      if (proof.status !== 'passed') {
-        errors.push(
-          `Semantic: CBM is selected but networkIsolationProof.status is "${proof.status}" (expected "passed")`
-        );
-      }
-      if (proof.selfTestPassed !== true) {
-        errors.push(
-          'Semantic: CBM is selected but networkIsolationProof.selfTestPassed is not true. ' +
-          'Evidence collected without a passing network isolation self-test is invalid.'
-        );
-      }
-    } else {
-      // CBM NOT selected: require status="not-required" only
-      if (proof.status !== 'not-required') {
-        errors.push(
-          `Semantic: CBM not selected but networkIsolationProof.status is "${proof.status}" ` +
-          '(expected "not-required" with no other fields)'
-        );
-      }
+  for (const [subject] of Object.entries(evidence.subjectBinaryIdentity ?? {})) {
+    if (excludedSubjects.includes(subject)) {
+      errors.push(`Semantic: excluded subject "${subject}" must not have binary identity data`);
+    }
+  }
+  for (const result of fixtureResults) {
+    if (!isRecord(result)) continue;
+    if (excludedSubjects.includes(result.subject)) {
+      errors.push(`Semantic: fixtureResult for excluded subject "${result.subject}" is not allowed`);
     }
   }
 
-  // --- Semantic check 4b: subjectBinaryIdentity.cbm when CBM is selected ---
-  // Task 4: When CBM is selected, require subjectBinaryIdentity.cbm.
-  // When CBM is NOT selected, it must not be present.
-  if (evidence.subjectBinaryIdentity !== undefined) {
-    const cbmSelected = Array.isArray(evidence.selectedSubjects) && evidence.selectedSubjects.includes('cbm');
-    if (cbmSelected && !evidence.subjectBinaryIdentity.cbm) {
-      errors.push(
-        'Semantic: CBM is selected but subjectBinaryIdentity.cbm is missing'
-      );
-    }
-    if (!cbmSelected && evidence.subjectBinaryIdentity.cbm) {
-      errors.push(
-        'Semantic: CBM not selected but subjectBinaryIdentity.cbm is present'
-      );
-    }
-  }
-
-  // --- Semantic check 5: fixture IDs against manifest (optional) ------------
+  // --- Semantic check 5: bind the actual manifest and fixture coverage ------
+  let manifest = null;
   if (options.manifestPath) {
-    let manifest;
     try {
-      manifest = JSON.parse(fs.readFileSync(options.manifestPath, 'utf8'));
+      const manifestBytes = fs.readFileSync(options.manifestPath);
+      manifest = JSON.parse(manifestBytes.toString('utf8'));
+      const actualManifestHash = `sha256:${crypto.createHash('sha256').update(manifestBytes).digest('hex')}`;
+      if (evidence.manifestHash !== actualManifestHash) {
+        errors.push(`Binding: actual manifest SHA-256 ${actualManifestHash} does not match evidence.manifestHash ${evidence.manifestHash}`);
+      }
     } catch (err) {
       errors.push(`Semantic: failed to read manifest file for fixture validation: ${err.message}`);
     }
+  }
 
-    if (manifest && Array.isArray(evidence.fixtureResults)) {
-      const knownFixtureIds = new Set(
-        (manifest.fixtures || []).map((f) => f.fixtureId || f.id)
-      );
+  if (manifest) {
+    const manifestFixtures = Array.isArray(manifest.fixtures) ? manifest.fixtures : [];
+    const fixtureIds = manifestFixtures.filter(isRecord).map(fixture => fixture.fixtureId || fixture.id);
+    const knownFixtureIds = new Set(fixtureIds);
+    const seenResults = new Set();
+    for (const result of fixtureResults) {
+      if (!isRecord(result)) continue;
+      const resultKey = `${result.subject}:${result.fixtureId}`;
+      if (!knownFixtureIds.has(result.fixtureId)) {
+        errors.push(`Semantic: fixtureResult references unknown fixtureId "${result.fixtureId}" not found in manifest`);
+      }
+      if (seenResults.has(resultKey)) {
+        errors.push(`Semantic: duplicate fixtureResult for ${resultKey}`);
+      }
+      seenResults.add(resultKey);
+    }
+    for (const subject of selectedSubjects) {
+      for (const fixtureId of fixtureIds) {
+        if (!seenResults.has(`${subject}:${fixtureId}`)) {
+          errors.push(`Semantic: missing fixtureResult for selected subject "${subject}" fixture "${fixtureId}"`);
+        }
+      }
+    }
 
-      if (knownFixtureIds.size > 0) {
-        for (const result of evidence.fixtureResults) {
-          if (!knownFixtureIds.has(result.fixtureId)) {
-            errors.push(
-              `Semantic: fixtureResult references unknown fixtureId "${result.fixtureId}" not found in manifest`
-            );
+    const manifestCommits = normalizePinnedCommits(
+      (Array.isArray(manifest.repositories) ? manifest.repositories : [])
+        .filter(isRecord)
+        .map(repo => ({ repositoryId: repo.repositoryId, commit: repo.pinnedCommit }))
+    );
+    if (!sameValue(normalizePinnedCommits(evidence.pinnedRepositoryCommits), manifestCommits)) {
+      errors.push('Binding: evidence pinnedRepositoryCommits do not match the actual manifest');
+    }
+  }
+
+  // --- Semantic check 6: bind evidence to the actual run artifacts ----------
+  if (options.runDir) {
+    const runDir = path.resolve(options.runDir);
+    const runDirBasename = path.basename(runDir);
+    if (!options.manifestPath) {
+      errors.push('Binding: --manifest is required when --run-dir is supplied');
+    }
+    if (evidence.runId && evidence.runId !== runDirBasename) {
+      errors.push(`Binding: evidence.runId "${evidence.runId}" does not match run directory basename "${runDirBasename}"`);
+    }
+
+    const runPlanPath = path.join(runDir, 'run-plan.json');
+    const receiptPath = path.join(runDir, 'preflight-receipt.json');
+    let runPlan = null;
+    let receipt = null;
+    try {
+      runPlan = JSON.parse(fs.readFileSync(runPlanPath, 'utf8'));
+      if (!isRecord(runPlan)) {
+        errors.push(`Binding: run-plan.json must contain a JSON object`);
+        runPlan = null;
+      }
+    } catch (err) {
+      errors.push(`Binding: run-plan.json missing or unparseable at ${runPlanPath}: ${err.message}`);
+    }
+    try {
+      const receiptBytes = fs.readFileSync(receiptPath);
+      receipt = JSON.parse(receiptBytes.toString('utf8'));
+      if (!isRecord(receipt)) {
+        errors.push(`Binding: preflight-receipt.json must contain a JSON object`);
+        receipt = null;
+      }
+      const actualReceiptHash = `sha256:${crypto.createHash('sha256').update(receiptBytes).digest('hex')}`;
+      if (evidence.preflightReceiptHash !== actualReceiptHash) {
+        errors.push(`Binding: actual preflight-receipt.json SHA-256 ${actualReceiptHash} does not match evidence.preflightReceiptHash ${evidence.preflightReceiptHash}`);
+      }
+    } catch (err) {
+      errors.push(`Binding: preflight-receipt.json missing or unparseable at ${receiptPath}: ${err.message}`);
+    }
+
+    const requiredPlanFields = [
+      'schemaVersion', 'runId', 'partialEvidence', 'selectedSubjects', 'excludedSubjects', 'manifestPath', 'manifestHash',
+      'manifestSchemaPath', 'manifestSchemaHash', 'evidenceSchemaPath', 'evidenceSchemaHash',
+      'pinnedRepositoryCommits', 'subjectBinaryIdentity', 'networkIsolationProof', 'cbmVerification', 'graphifyStatus',
+      'diskResult', 'plannedWritePaths', 'sourceStateHash', 'checks', 'planSha256',
+    ];
+    for (const [artifactName, artifact] of [['run-plan.json', runPlan], ['preflight-receipt.json', receipt]]) {
+      if (!artifact) continue;
+      for (const field of requiredPlanFields) {
+        if (!(field in artifact)) errors.push(`Binding: ${artifactName} is missing required field ${field}`);
+      }
+      if (!Array.isArray(artifact.selectedSubjects)
+        || !Array.isArray(artifact.excludedSubjects)
+        || !Array.isArray(artifact.plannedWritePaths)) {
+        errors.push(`Binding: ${artifactName} subject and planned-write fields must be arrays`);
+      }
+      if (!Array.isArray(artifact.checks) || artifact.checks.some(check =>
+        !isRecord(check)
+        || !sameSet(Object.keys(check), ['name', 'status', 'detail'])
+        || typeof check.name !== 'string'
+        || typeof check.status !== 'string'
+        || (check.detail !== null && typeof check.detail !== 'string')
+      )) {
+        errors.push(`Binding: ${artifactName} checks must contain full {name,status,detail} records`);
+      }
+    }
+
+    if (runPlan) {
+      const recomputedPlanSha256 = computePlanDigest(planDigestInputs(runPlan));
+      if (runPlan.planSha256 !== recomputedPlanSha256) {
+        errors.push(`Binding: run-plan.json content recomputes to ${recomputedPlanSha256}, not ${runPlan.planSha256}`);
+      }
+      if (runPlan.planSha256 !== evidence.planSha256) {
+        errors.push('Binding: run-plan.json planSha256 does not match evidence.planSha256');
+      }
+    }
+    if (receipt) {
+      const recomputedReceiptPlanSha256 = computePlanDigest(planDigestInputs(receipt));
+      if (receipt.planSha256 !== recomputedReceiptPlanSha256) {
+        errors.push(`Binding: preflight-receipt.json content recomputes to ${recomputedReceiptPlanSha256}, not ${receipt.planSha256}`);
+      }
+      if (receipt.planSha256 !== evidence.planSha256) {
+        errors.push('Binding: preflight-receipt.json planSha256 does not match evidence.planSha256');
+      }
+    }
+    if (runPlan && receipt && !sameValue(planDigestInputs(runPlan), planDigestInputs(receipt))) {
+      errors.push('Binding: run-plan.json and preflight-receipt.json deterministic plan inputs differ');
+    }
+
+    if (runPlan) {
+      if (runPlan.runId !== evidence.runId) {
+        errors.push('Binding: run-plan.json runId does not match evidence.runId');
+      }
+      if (options.manifestPath) {
+        if (typeof runPlan.manifestPath !== 'string') {
+          errors.push('Binding: run-plan.json manifestPath must be a string');
+        } else if (path.resolve(runPlan.manifestPath) !== path.resolve(options.manifestPath)) {
+          errors.push('Binding: run-plan.json manifestPath does not match --manifest');
+        }
+      }
+      if (runPlan.manifestHash !== evidence.manifestHash) {
+        errors.push('Binding: run-plan.json manifestHash does not match evidence.manifestHash');
+      }
+      if (!sameSet(runPlan.selectedSubjects ?? [], selectedSubjects)) {
+        errors.push('Binding: run-plan selectedSubjects do not match evidence selectedSubjects');
+      }
+      if (!sameSet(runPlan.excludedSubjects ?? [], excludedSubjects)) {
+        errors.push('Binding: run-plan excludedSubjects do not match evidence excludedSubjects');
+      }
+      if (runPlan.partialEvidence !== evidence.partialEvidence) {
+        errors.push('Binding: run-plan partialEvidence does not match evidence.partialEvidence');
+      }
+      if (!sameValue(normalizePinnedCommits(runPlan.pinnedRepositoryCommits), normalizePinnedCommits(evidence.pinnedRepositoryCommits))) {
+        errors.push('Binding: run-plan pinnedRepositoryCommits do not match evidence');
+      }
+      if (cbmSelected && !sameValue(runPlan.subjectBinaryIdentity?.cbm, cbmIdentity)) {
+        errors.push('Binding: CBM binary identity does not match run-plan.json');
+      }
+      if (!sameValue(runPlan.networkIsolationProof, proof)) {
+        errors.push('Binding: network isolation proof does not match run-plan.json');
+      }
+      if (selectedSubjects.includes('graphify') && runPlan.graphifyStatus?.status !== 'passed') {
+        errors.push('Binding: selected Graphify subject requires graphifyStatus.status="passed"; blocked Graphify cannot support full evidence');
+      }
+      if (excludedSubjects.includes('graphify') && runPlan.graphifyStatus?.status !== 'excluded-subject') {
+        errors.push('Binding: excluded Graphify subject requires graphifyStatus.status="excluded-subject"');
+      }
+      const expectedCbmVerification = cbmSelected ? {
+        required: true,
+        status: 'passed',
+        binaryIdentity: runPlan.subjectBinaryIdentity?.cbm,
+        networkIsolationProof: runPlan.networkIsolationProof,
+      } : { required: false, status: 'not-required' };
+      if (!sameValue(runPlan.cbmVerification, expectedCbmVerification)) {
+        errors.push('Binding: run-plan CBM verification is inconsistent with selected subjects and bound proof');
+      }
+      if (Array.isArray(runPlan.plannedWritePaths)) {
+        const brainRoot = path.resolve(runDir, '..', '..', '..', '..');
+        const benchmarkRoot = path.resolve(runDir, '..', '..', '..');
+        const allowedAncestors = new Set([
+          brainRoot,
+          benchmarkRoot,
+          path.join(benchmarkRoot, 'b8-1'),
+          path.join(benchmarkRoot, 'b8-1', 'runs'),
+        ]);
+        for (const plannedPath of runPlan.plannedWritePaths) {
+          if (typeof plannedPath !== 'string') {
+            errors.push('Binding: planned write paths must be strings');
+            continue;
+          }
+          const resolvedPlannedPath = path.resolve(plannedPath);
+          const relative = path.relative(runDir, resolvedPlannedPath);
+          const isRunPath = relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+          if (!isRunPath && !allowedAncestors.has(resolvedPlannedPath)) {
+            errors.push(`Binding: planned write path is outside the bound run or its exact benchmark ancestors: ${plannedPath}`);
           }
         }
       }
     }
-  }
 
-  // --- Semantic check 6: Bind evidence to run directory (Task 5) ---
-  if (options.runDir) {
-    const runDir = path.resolve(options.runDir);
-    const runDirBasename = path.basename(runDir);
-
-    // Verify run-directory basename equals evidence.runId
-    if (evidence.runId && evidence.runId !== runDirBasename) {
-      errors.push(
-        `Binding: evidence.runId "${evidence.runId}" does not match run directory basename "${runDirBasename}"`
-      );
-    }
-
-    // Verify run-plan.json exists and parses
-    const runPlanPath = path.join(runDir, 'run-plan.json');
-    let runPlan = null;
-    try {
-      runPlan = JSON.parse(fs.readFileSync(runPlanPath, 'utf8'));
-    } catch (err) {
-      errors.push(
-        `Binding: run-plan.json missing or unparseable at ${runPlanPath}: ${err.message}`
-      );
-    }
-
-    // Verify preflight-receipt.json exists and parses
-    const receiptPath = path.join(runDir, 'preflight-receipt.json');
-    let receipt = null;
-    try {
-      receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
-    } catch (err) {
-      errors.push(
-        `Binding: preflight-receipt.json missing or unparseable at ${receiptPath}: ${err.message}`
-      );
-    }
-
-    // Cross-check fields
-    if (runPlan && evidence.manifestHash) {
-      if (runPlan.manifestHash !== evidence.manifestHash) {
-        errors.push(
-          `Binding: run-plan.json manifestHash ${runPlan.manifestHash} does not match evidence.manifestHash ${evidence.manifestHash}`
-        );
-      }
-    }
-
-    if (receipt && evidence.preflightReceiptHash) {
-      if (receipt.manifestHash !== evidence.manifestHash) {
-        errors.push(
-          `Binding: preflight-receipt.json manifestHash does not match evidence.manifestHash`
-        );
-      }
-    }
-
-    // Verify planSha256 when present
-    if (runPlan && evidence.planSha256 && runPlan.planSha256) {
-      if (runPlan.planSha256 !== evidence.planSha256) {
-        errors.push(
-          `Binding: run-plan.json planSha256 ${runPlan.planSha256.slice(0, 16)}... ` +
-          `does not match evidence.planSha256 ${evidence.planSha256.slice(0, 16)}...`
-        );
-      }
-    }
-
-    // Verify selectedSubjects match
-    if (runPlan && evidence.selectedSubjects) {
-      const runSubjects = new Set(runPlan.selectedSubjects || []);
-      const evidenceSubjects = new Set(evidence.selectedSubjects);
-      if (runSubjects.size !== evidenceSubjects.size || ![...runSubjects].every(s => evidenceSubjects.has(s))) {
-        errors.push(
-          `Binding: run-plan selectedSubjects [${[...runSubjects]}] ` +
-          `do not match evidence selectedSubjects [${[...evidenceSubjects]}]`
-        );
-      }
-    }
-
-    // Verify excludedSubjects match
-    if (runPlan && evidence.excludedSubjects) {
-      const runExcluded = new Set(runPlan.excludedSubjects || []);
-      const evidenceExcluded = new Set(evidence.excludedSubjects);
-      if (runExcluded.size !== evidenceExcluded.size || ![...runExcluded].every(s => evidenceExcluded.has(s))) {
-        errors.push(
-          `Binding: run-plan excludedSubjects do not match evidence excludedSubjects`
-        );
-      }
-    }
-
-    // Verify CBM binary identity when CBM is selected
-    if (evidence.selectedSubjects && evidence.selectedSubjects.includes('cbm') && evidence.subjectBinaryIdentity?.cbm) {
-      if (runPlan && runPlan.cbmBinaryIdentity) {
-        if (runPlan.cbmBinaryIdentity.sha256 !== evidence.subjectBinaryIdentity.cbm.sha256) {
-          errors.push(
-            `Binding: CBM binary identity sha256 mismatch between run-plan and evidence`
-          );
-        }
-      }
-    }
-
-    // Verify network-isolation proof when CBM is selected
-    if (evidence.selectedSubjects && evidence.selectedSubjects.includes('cbm') && evidence.networkIsolationProof?.status === 'passed') {
-      if (runPlan && runPlan.networkProfileSha256) {
-        if (runPlan.networkProfileSha256 !== evidence.networkIsolationProof.profileSha256) {
-          errors.push(
-            `Binding: network profile sha256 mismatch between run-plan and evidence`
-          );
-        }
-      }
+    if (evidence.cleanupStatus?.runDirectory && path.resolve(evidence.cleanupStatus.runDirectory) !== runDir) {
+      errors.push('Binding: cleanupStatus.runDirectory does not match --run-dir');
     }
   }
 

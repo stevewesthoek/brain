@@ -1,9 +1,9 @@
 # B8.1 Context-memory benchmark plan
 
-**Status:** plan only — NOT complete, NOT authorized for execution
+**Status:** execution gate prepared — B8.1 and B8.2 remain incomplete and are NOT authorized for execution
 **Date:** 2026-08-03
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
-**Next step:** Execution requires the prerequisites in the "Execution prerequisites" section below.
+**Next step:** Execution requires the prerequisites in the "Execution prerequisites" section below, including explicit approval of the exact dry-run `planSha256`.
 
 ---
 
@@ -37,6 +37,8 @@ Do not duplicate fixture definitions in prose. The manifest is machine-validated
 - Validation: `node tools/validate-b8-1-benchmark-evidence.mjs`
 
 Evidence records must conform to this schema. Offline-only evidence must NOT contain model input/output token fields. Those belong exclusively to the separately-unauthorized `optionalModelMediatedMetrics` section.
+
+Evidence validation for a materialized run must supply both `--manifest` and `--run-dir`. The validator hashes the actual manifest and `preflight-receipt.json` bytes, recomputes the approved run-plan digest, and requires the run plan, receipt, and evidence to agree on the digest, subject partition, pinned commits, CBM identity/isolation proof, and fixture coverage. Evidence for an excluded subject is invalid.
 
 ---
 
@@ -77,10 +79,13 @@ Subjects are explicitly selected via `--subjects` flag:
 - A selected blocked subject prevents readiness and materialization (exit 1)
 - An unselected blocked subject is recorded as `excluded-subject`
 - CBM + exact-source only = partial evidence; does NOT complete B8.1
+- A successful dry-run is a preflight observation only. It is neither B8.1 execution authorization nor approval to materialize a run.
+- Materialization requires `--approved-plan-sha256` to equal the exact digest emitted by the matching dry-run. Missing or changed approval creates no run directory.
 - Partial evidence does NOT authorize B8.2
 - Full B8.1 requires the canonical three-way comparison OR a separate explicit decision that Graphify is ineligible
 - Graphify remains blocked or excluded until a bounded code-only invocation is proven
 - Never silently omit Graphify while reporting B8.1 complete
+- `partialEvidence` must be true whenever any canonical subject is excluded. In particular, Graphify exclusion can never be represented as full B8.1 evidence.
 
 ---
 
@@ -117,6 +122,9 @@ Every benchmark run is fully isolated under a single run directory:
 ```
 
 - Every cache and configuration path is per-run
+- `run-plan.json` and `preflight-receipt.json` bind the same deterministic inputs: subject partition, manifest and schema hashes, pinned commits, CBM verification, network adapter/profile identity, Graphify status/reason/profile hash, disk gate result, every benchmark-directory/run-artifact write path, source-state hash, and complete preflight check records.
+- Planned-write checks resolve existing ancestors physically, reject symlink escapes and protected-path overlap, and create the approved run directory exclusively; no unchecked sibling staging directory is used.
+- `createdAt` timestamps are observational metadata and are not plan-digest inputs.
 - No shared cache or configuration directory exists outside the run root
 - Cleanup targets one exact run ID only: `~/.brain/benchmark/b8-1/runs/<run-id>`
 - Never permit automatic deletion of the parent `~/.brain/benchmark/b8-1/`
@@ -163,7 +171,7 @@ Part B would involve feeding retrieval subject outputs as context into an AI mod
 
 ## Safety boundaries
 
-1. **Proven network isolation is mandatory for CBM** — Benchmark processes run with external network blocked via a fixed committed `sandbox-exec` profile (`operations/specs/b8-1-network-deny.sb`). The preflight harness runs a disposable self-test proving network denial before materialization proceeds. The Codebase Memory startup update request to `api.github.com` will fail non-fatally under isolation; this is expected behavior.
+1. **Proven network isolation is mandatory only for CBM** — Benchmark processes run with external network blocked via a fixed committed `sandbox-exec` profile (`operations/specs/b8-1-network-deny.sb`). The preflight harness runs a disposable self-test proving a sandboxed child started and received `EPERM`/`EACCES`; timeout, refusal, or launch failure never count as proof. Exact-source-only evidence must record exactly `{required:false,status:"not-required"}` and must not fabricate adapter or self-test data. The Codebase Memory startup update request to `api.github.com` will fail non-fatally under isolation; this is expected behavior.
 2. **No Mind content** — No file from `~/Repos/stevewesthoek/mind/` may be used as a benchmark source or fixture.
 3. **No source repository mutation** — Never modify the three source repositories. Create disposable per-run copies via `git archive` of pinned commits. Never use working-tree files as benchmark inputs — use only Git objects from pinned commits.
 4. **Disposable copies required for freshness tests** — Source-state invariants (HEAD, status porcelain, status SHA-256) are captured before and after materialization. Exact equality is required.
@@ -200,9 +208,10 @@ Before executing the benchmark (NOT authorized in this plan):
 
 1. Human approval for local benchmark run (B8.1 authorization)
 2. All selected subjects pass preflight gates (exit 0)
-3. All three source repositories at a known clean commit
-4. Proven network isolation (self-test passes)
+3. All three source repositories clean with `HEAD` exactly equal to their manifest-pinned commits
+4. Proven network isolation when CBM is selected (self-test passes); exact-source needs only the exact `not-required` record
 5. Valid explicit run ID supplied
+6. Explicit approval of the exact `planSha256` emitted for those deterministic inputs
 
 **Correct dependency order:**
 
@@ -223,6 +232,6 @@ Codebase Memory persistent client registration is not required. Use direct CLI i
 
 ## Status
 
-This document defines the benchmark plan. **B8.1 is NOT complete.** Execution requires the prerequisites above to be satisfied and a separate authorization decision.
+This document defines the benchmark and its execution gate. **B8.1 is NOT complete, B8.2 is NOT complete, and a passing dry-run does not authorize either task.** Execution requires the prerequisites above, an approved matching plan digest, and a separate authorization decision.
 
-P8 (B8.1–B8.6) is intentionally deferred and is not the current approved execution phase. This plan is filed as a preparatory artifact only.
+Graphify remains blocked because no exact bounded code-only executable contract and passing self-test exist. P8 (B8.1–B8.6) remains 0/6 accepted and is not the current approved execution phase. This plan is filed as a preparatory artifact only.
