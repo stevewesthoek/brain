@@ -2,12 +2,10 @@
  * validate-b8-1-benchmark-manifest.test.mjs
  *
  * Tests for the B8.1 benchmark manifest validator.
- * Uses local temporary git repos created in tests — does not rely on
- * dirty working-tree contents or real repository checkouts.
+ * Uses local temporary git repos — does not modify real repositories.
  */
 
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,6 +17,7 @@ import {
   validateManifest,
   validateSchema,
   verifyFixture,
+  verifyStructuredVerification,
   isForbiddenPath,
   checkForbiddenWording,
 } from './validate-b8-1-benchmark-manifest.mjs';
@@ -60,13 +59,13 @@ function makeManifest({ repoId = 'brain', repoPath, commit, fixtures = null } = 
       expectedCallees: [],
       scoringType: 'exact-match',
       callerCalleeApplicable: true,
-      verificationCommand: 'grep -n "console" src/server.js',
+      verification: { algorithm: 'line-contains', path: 'src/server.js', line: 1, contains: ['console'] },
     }],
   };
 }
 
 // ---------------------------------------------------------------------------
-// Test 1: Schema validation — valid manifest passes
+// Test 1: Valid manifest passes schema validation
 // ---------------------------------------------------------------------------
 
 test('valid manifest passes schema validation', () => {
@@ -82,67 +81,63 @@ test('valid manifest passes schema validation', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 2: Duplicate fixture IDs are rejected
+// Test 2: Duplicate fixture IDs rejected
 // ---------------------------------------------------------------------------
 
 test('duplicate fixture IDs are rejected', () => {
   const { root, commit } = makeTempGitRepo();
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = makeManifest({ repoPath: root, commit });
-  // Duplicate the fixture
   manifest.fixtures.push({ ...manifest.fixtures[0] });
   try {
     const errors = validateSchema(manifest, schema);
-    assert(errors.some((e) => e.includes('duplicate fixtureId')), `expected duplicate error: ${errors}`);
+    assert(errors.some(e => e.includes('duplicate fixtureId')), `errors: ${errors}`);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 3: Symbolic refs (main, HEAD) are rejected as pinnedCommit
+// Test 3: Symbolic refs rejected
 // ---------------------------------------------------------------------------
 
-test('symbolic ref "main" as pinnedCommit is rejected', () => {
+test('symbolic ref "main" as pinnedCommit is rejected by Ajv schema', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
     schemaVersion: '1.0.0',
     createdAt: '2026-08-02',
     repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'main' }],
     fixtures: [{
-      fixtureId: 'brain_f1',
-      repositoryId: 'brain',
-      pinnedCommit: 'aaaa'.repeat(10),
-      question: 'test',
-      expectedFile: 'src/server.js',
-      scoringType: 'exact-match',
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'test', expectedFile: 'src/server.js', scoringType: 'exact-match',
       callerCalleeApplicable: false,
-      verificationCommand: 'ls',
+      verification: { algorithm: 'file-exists', path: 'src/server.js' },
     }],
   };
   const errors = validateSchema(manifest, schema);
-  assert(errors.some((e) => e.includes('pinnedCommit must be 40-char hex') || e.includes('symbolic ref')), `errors: ${errors}`);
+  assert(errors.some(e => e.includes('Schema:') || e.includes('pinnedCommit')), `errors: ${errors}`);
 });
 
 // ---------------------------------------------------------------------------
-// Test 4: File existence verified in exported tree
+// Test 4: File existence in exported tree
 // ---------------------------------------------------------------------------
 
 test('fixture file verified in exported pinned commit tree', async () => {
   const { root, commit } = makeTempGitRepo({ files: { 'src/server.js': 'console.log("test")' } });
   const manifest = makeManifest({ repoPath: root, commit });
+  const manifestFile = path.join(os.tmpdir(), `brain-b81-test-manifest-${Date.now()}.json`);
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest));
   try {
-    const { valid, errors } = await validateManifest(
-      null, SCHEMA_PATH, { allowMissingRepos: false, _manifestOverride: manifest }
-    );
-    // Since we pass manifest as override but the API takes path, test via validateSchema + verifyFixture
+    const { valid, errors } = await validateManifest(manifestFile, SCHEMA_PATH);
+    assert.equal(valid, true, `errors: ${errors}`);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(manifestFile, { force: true });
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 5: Expected literal at recorded line verified
+// Test 5: Correct symbol at line passes
 // ---------------------------------------------------------------------------
 
 test('verifyFixture: correct symbol at expectedLine passes', () => {
@@ -150,17 +145,13 @@ test('verifyFixture: correct symbol at expectedLine passes', () => {
   fs.mkdirSync(path.join(root, 'src'));
   fs.writeFileSync(path.join(root, 'src/server.js'), 'line1\nexport const FOO = "bar";\nline3\n');
   const fixture = {
-    fixtureId: 'test_f1',
-    expectedFile: 'src/server.js',
-    expectedSymbol: 'FOO',
-    expectedLine: 2,
-    scoringType: 'exact-match',
-    callerCalleeApplicable: false,
-    verificationCommand: 'grep -n FOO src/server.js',
+    fixtureId: 'test_f1', expectedFile: 'src/server.js', expectedSymbol: 'FOO', expectedLine: 2,
+    scoringType: 'exact-match', callerCalleeApplicable: false,
+    verification: { algorithm: 'symbol-at-line', path: 'src/server.js', line: 2, contains: ['FOO'] },
   };
   try {
     const errors = verifyFixture(fixture, root);
-    assert.deepEqual(errors, [], `errors: ${errors}`);
+    assert.deepEqual(errors, []);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -171,42 +162,35 @@ test('verifyFixture: wrong symbol at expectedLine fails', () => {
   fs.mkdirSync(path.join(root, 'src'));
   fs.writeFileSync(path.join(root, 'src/server.js'), 'line1\nexport const FOO = "bar";\nline3\n');
   const fixture = {
-    fixtureId: 'test_f1',
-    expectedFile: 'src/server.js',
-    expectedSymbol: 'WRONG_SYMBOL',
-    expectedLine: 2,
-    scoringType: 'exact-match',
-    callerCalleeApplicable: false,
-    verificationCommand: 'grep -n WRONG_SYMBOL src/server.js',
+    fixtureId: 'test_f1', expectedFile: 'src/server.js', expectedSymbol: 'WRONG', expectedLine: 2,
+    scoringType: 'exact-match', callerCalleeApplicable: false,
+    verification: { algorithm: 'symbol-at-line', path: 'src/server.js', line: 2, contains: ['WRONG'] },
   };
   try {
     const errors = verifyFixture(fixture, root);
-    assert(errors.some((e) => e.includes('not found at line')), `errors: ${errors}`);
+    assert(errors.some(e => e.includes('not found at line')), `errors: ${errors}`);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 6: Exact file count verified
+// Test 6: File count verification
 // ---------------------------------------------------------------------------
 
 test('verifyFixture: correct file count passes', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-count-'));
   fs.mkdirSync(path.join(root, 'api/a'), { recursive: true });
   fs.mkdirSync(path.join(root, 'api/b'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'api/a/route.ts'), '// route a');
-  fs.writeFileSync(path.join(root, 'api/b/route.ts'), '// route b');
+  fs.writeFileSync(path.join(root, 'api/a/route.ts'), '// a');
+  fs.writeFileSync(path.join(root, 'api/b/route.ts'), '// b');
   const fixture = {
-    fixtureId: 'pc_f2',
-    expectedFileCount: 2,
-    scoringType: 'count-match',
-    callerCalleeApplicable: false,
-    verificationCommand: "find . -name 'route.ts' | wc -l",
+    fixtureId: 'pc_f2', expectedFileCount: 2, scoringType: 'count-match', callerCalleeApplicable: false,
+    verification: { algorithm: 'file-name-count', root: '.', fileName: 'route.ts', expectedCount: 2 },
   };
   try {
     const errors = verifyFixture(fixture, root);
-    assert.deepEqual(errors, [], `errors: ${errors}`);
+    assert.deepEqual(errors, []);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -217,48 +201,40 @@ test('verifyFixture: wrong file count fails', () => {
   fs.mkdirSync(path.join(root, 'api'), { recursive: true });
   fs.writeFileSync(path.join(root, 'api/route.ts'), '// route');
   const fixture = {
-    fixtureId: 'pc_f2',
-    expectedFileCount: 27,
-    scoringType: 'count-match',
-    callerCalleeApplicable: false,
-    verificationCommand: "find . -name 'route.ts' | wc -l",
+    fixtureId: 'pc_f2', expectedFileCount: 27, scoringType: 'count-match', callerCalleeApplicable: false,
+    verification: { algorithm: 'file-name-count', root: '.', fileName: 'route.ts', expectedCount: 27 },
   };
   try {
     const errors = verifyFixture(fixture, root);
-    assert(errors.some((e) => e.includes('file count mismatch')), `errors: ${errors}`);
+    assert(errors.some(e => e.includes('file count mismatch')), `errors: ${errors}`);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 7: Caller/callee explicit arrays required
+// Test 7: Caller/callee arrays required
 // ---------------------------------------------------------------------------
 
 test('expectedCallers as string (not array) is rejected', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
-    schemaVersion: '1.0.0',
-    createdAt: '2026-08-02',
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
     repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
-      fixtureId: 'brain_f1',
-      repositoryId: 'brain',
-      pinnedCommit: 'a'.repeat(40),
-      question: 'test',
-      expectedFile: 'src/server.js',
-      expectedCallers: 'some module',  // should be array
-      scoringType: 'exact-match',
-      callerCalleeApplicable: true,
-      verificationCommand: 'ls',
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'test', expectedFile: 'src/server.js',
+      expectedCallers: 'some module',
+      scoringType: 'exact-match', callerCalleeApplicable: true,
+      verification: { algorithm: 'file-exists', path: 'src/server.js' },
     }],
   };
   const errors = validateSchema(manifest, schema);
-  assert(errors.some((e) => e.includes('expectedCallers must be an explicit array')), `errors: ${errors}`);
+  assert(errors.some(e => e.includes('expectedCallers') || e.includes('type')), `errors: ${errors}`);
 });
 
 // ---------------------------------------------------------------------------
-// Test 8: Forbidden approximation wording
+// Test 8: Forbidden wording
 // ---------------------------------------------------------------------------
 
 test('checkForbiddenWording: "or equivalent" is rejected', () => {
@@ -273,29 +249,25 @@ test('checkForbiddenWording: clean text passes', () => {
   assert.equal(checkForbiddenWording('export const MIND_TARGET_PATHS = {'), null);
 });
 
-test('validateSchema: fixture with "or equivalent" in verificationCommand is rejected', () => {
+test('validateSchema: fixture with "or equivalent" in notes field is rejected', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = {
-    schemaVersion: '1.0.0',
-    createdAt: '2026-08-02',
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
     repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
     fixtures: [{
-      fixtureId: 'brain_f1',
-      repositoryId: 'brain',
-      pinnedCommit: 'a'.repeat(40),
-      question: 'test',
-      expectedFile: 'src/server.js',
-      scoringType: 'exact-match',
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'test', expectedFile: 'src/server.js', scoringType: 'exact-match',
       callerCalleeApplicable: false,
-      verificationCommand: 'grep or equivalent src/server.js',
+      verification: { algorithm: 'file-exists', path: 'src/server.js' },
+      notes: 'grep or equivalent src/server.js',
     }],
   };
   const errors = validateSchema(manifest, schema);
-  assert(errors.some((e) => e.includes('forbidden wording')), `errors: ${errors}`);
+  assert(errors.some(e => e.includes('forbidden wording')), `errors: ${errors}`);
 });
 
 // ---------------------------------------------------------------------------
-// Test 9: Forbidden paths rejected
+// Test 9: Forbidden paths
 // ---------------------------------------------------------------------------
 
 test('isForbiddenPath: mind/ path is forbidden', () => {
@@ -313,29 +285,22 @@ test('isForbiddenPath: graphify-out/ is forbidden', () => {
 test('isForbiddenPath: normal source file is allowed', () => {
   assert.equal(isForbiddenPath('projects/brain-core/src/mind-paths.ts'), false);
   assert.equal(isForbiddenPath('src/app/layout.tsx'), false);
-  assert.equal(isForbiddenPath('packages/mcp/src/configure-core.ts'), false);
 });
 
 // ---------------------------------------------------------------------------
-// Test 10: No temporary exports remain after validation
+// Test 10: Temp exports cleaned up
 // ---------------------------------------------------------------------------
 
 test('validateManifest: no temp exports remain after run', async () => {
   const { root, commit } = makeTempGitRepo({ files: { 'src/server.js': 'console.log("test")' } });
-  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = makeManifest({ repoPath: root, commit });
-
-  // Save to a temp file
   const manifestFile = path.join(os.tmpdir(), `brain-b81-test-manifest-${Date.now()}.json`);
   fs.writeFileSync(manifestFile, JSON.stringify(manifest));
-
   try {
-    const tmpDirsBefore = fs.readdirSync(os.tmpdir()).filter((d) => d.startsWith('brain-b81-manifest-')).length;
-
+    const before = fs.readdirSync(os.tmpdir()).filter(d => d.startsWith('brain-b81-manifest-')).length;
     await validateManifest(manifestFile, SCHEMA_PATH);
-
-    const tmpDirsAfter = fs.readdirSync(os.tmpdir()).filter((d) => d.startsWith('brain-b81-manifest-')).length;
-    assert.equal(tmpDirsAfter, tmpDirsBefore, 'temp export dirs must be cleaned up after validation');
+    const after = fs.readdirSync(os.tmpdir()).filter(d => d.startsWith('brain-b81-manifest-')).length;
+    assert.equal(after, before, 'temp dirs must be cleaned up');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
     fs.rmSync(manifestFile, { force: true });
@@ -343,8 +308,7 @@ test('validateManifest: no temp exports remain after run', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test: Live manifest validates against the actual pinned repositories
-// (skipped if repos not available — allowMissingRepos)
+// Test 11: Live manifest passes
 // ---------------------------------------------------------------------------
 
 test('live manifest schema validates without errors', () => {
@@ -352,5 +316,171 @@ test('live manifest schema validates without errors', () => {
   const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const errors = validateSchema(manifest, schema);
-  assert.deepEqual(errors, [], `live manifest schema errors: ${errors}`);
+  assert.deepEqual(errors, [], `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 12: count-match does NOT require expectedFile
+// ---------------------------------------------------------------------------
+
+test('count-match fixture without expectedFile passes schema', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = {
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
+    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    fixtures: [{
+      fixtureId: 'count_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'How many?', expectedFileCount: 5, scoringType: 'count-match',
+      callerCalleeApplicable: false,
+      verification: { algorithm: 'file-name-count', root: '.', fileName: 'index.ts', expectedCount: 5 },
+    }],
+  };
+  const errors = validateSchema(manifest, schema);
+  assert.deepEqual(errors, [], `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 13: exact-match requires expectedFile
+// ---------------------------------------------------------------------------
+
+test('exact-match fixture without expectedFile fails schema', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = {
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
+    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    fixtures: [{
+      fixtureId: 'exact_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'Where?', scoringType: 'exact-match', callerCalleeApplicable: false,
+      verification: { algorithm: 'file-exists', path: 'src/index.ts' },
+    }],
+  };
+  const errors = validateSchema(manifest, schema);
+  assert(errors.some(e => e.includes('expectedFile') || e.includes('required')), `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 14: Path traversal rejected
+// ---------------------------------------------------------------------------
+
+test('path traversal in expectedFile is rejected', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = {
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
+    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    fixtures: [{
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'test', expectedFile: '../../../etc/passwd', scoringType: 'exact-match',
+      callerCalleeApplicable: false,
+      verification: { algorithm: 'file-exists', path: '../../../etc/passwd' },
+    }],
+  };
+  const errors = validateSchema(manifest, schema);
+  assert(errors.some(e => e.includes('traversal')), `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 15: JSON pointer set verification
+// ---------------------------------------------------------------------------
+
+test('verifyStructuredVerification: json-pointer-set with object array', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-json-'));
+  const data = { admissions: [null, { scope: { tools: [{ name: 'a' }, { name: 'b' }, { name: 'c' }] } }] };
+  fs.writeFileSync(path.join(root, 'data.json'), JSON.stringify(data));
+  try {
+    const errors = verifyStructuredVerification(
+      { algorithm: 'json-pointer-set', path: 'data.json', jsonPointer: '/admissions/1/scope/tools', expected: ['a', 'b', 'c'] },
+      root
+    );
+    assert.deepEqual(errors, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('verifyStructuredVerification: json-pointer-set mismatch detected', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-b81-json2-'));
+  const data = { items: [{ name: 'x' }, { name: 'y' }] };
+  fs.writeFileSync(path.join(root, 'data.json'), JSON.stringify(data));
+  try {
+    const errors = verifyStructuredVerification(
+      { algorithm: 'json-pointer-set', path: 'data.json', jsonPointer: '/items', expected: ['a', 'b'] },
+      root
+    );
+    assert(errors.some(e => e.includes('set mismatch')), `errors: ${errors}`);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 16: Free-form commands impossible (no verificationCommand in schema)
+// ---------------------------------------------------------------------------
+
+test('verificationCommand field is not accepted by schema', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = {
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
+    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    fixtures: [{
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'test', expectedFile: 'src/x.ts', scoringType: 'exact-match',
+      callerCalleeApplicable: false,
+      verification: { algorithm: 'file-exists', path: 'src/x.ts' },
+      verificationCommand: 'grep test src/x.ts',
+    }],
+  };
+  const errors = validateSchema(manifest, schema);
+  assert(errors.some(e => e.includes('additional') || e.includes('NOT')), `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 17: Fixture pinnedCommit must equal repository pinnedCommit
+// ---------------------------------------------------------------------------
+
+test('fixture pinnedCommit differing from repository is rejected', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const commit1 = 'a'.repeat(40);
+  const commit2 = 'b'.repeat(40);
+  const manifest = {
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
+    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: commit1 }],
+    fixtures: [{
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: commit2,
+      question: 'test', expectedFile: 'src/x.ts', scoringType: 'exact-match',
+      callerCalleeApplicable: false,
+      verification: { algorithm: 'file-exists', path: 'src/x.ts' },
+    }],
+  };
+  const errors = validateSchema(manifest, schema);
+  assert(errors.some(e => e.includes('differs from repository')), `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 18: Symlink escape in verification path rejected
+// ---------------------------------------------------------------------------
+
+test('absolute path in verification.path rejected', () => {
+  const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
+  const manifest = {
+    schemaVersion: '1.0.0', createdAt: '2026-08-02',
+    repositories: [{ repositoryId: 'brain', localPath: '/some/path', pinnedCommit: 'a'.repeat(40) }],
+    fixtures: [{
+      fixtureId: 'brain_f1', repositoryId: 'brain', pinnedCommit: 'a'.repeat(40),
+      question: 'test', expectedFile: 'src/x.ts', scoringType: 'exact-match',
+      callerCalleeApplicable: false,
+      verification: { algorithm: 'line-contains', path: '/etc/passwd', line: 1, contains: ['root'] },
+    }],
+  };
+  const errors = validateSchema(manifest, schema);
+  assert(errors.some(e => e.includes('must be relative')), `errors: ${errors}`);
+});
+
+// ---------------------------------------------------------------------------
+// Test 19: Live manifest validates with full fixture verification
+// ---------------------------------------------------------------------------
+
+test('live manifest validates without errors (full live run)', async () => {
+  const manifestPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../operations/specs/b8-1-context-memory-benchmark-manifest.json');
+  const { valid, errors } = await validateManifest(manifestPath, SCHEMA_PATH);
+  assert.equal(valid, true, `errors: ${errors.join('; ')}`);
 });

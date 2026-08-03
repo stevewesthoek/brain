@@ -2,17 +2,8 @@
 /**
  * validate-b8-1-benchmark-manifest.mjs
  *
- * Validates the B8.1 context-memory benchmark manifest against:
- *   1. JSON Schema conformance
- *   2. Duplicate fixture IDs
- *   3. Missing or symbolic repository commits
- *   4. File existence in exported pinned commit trees
- *   5. Expected literals/symbols at recorded lines
- *   6. Exact file counts
- *   7. Deterministic caller/callee arrays (not prose)
- *   8. Forbidden approximation wording
- *   9. Forbidden paths (Mind, secrets, caches, runtime state, vendor output)
- *  10. Temporary export cleanup
+ * Validates the B8.1 context-memory benchmark manifest using real JSON Schema
+ * validation (Ajv 2020-12) plus semantic fixture verification against exported trees.
  *
  * NEVER modifies any source checkout.
  * Creates temporary git archive exports only, removed after validation.
@@ -20,10 +11,14 @@
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+
+const require = createRequire('/opt/homebrew/lib/node_modules/n8n/');
+const Ajv2020 = require('ajv/dist/2020');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -31,32 +26,19 @@ const DEFAULT_MANIFEST_PATH = path.join(REPO_ROOT, 'operations/specs/b8-1-contex
 const DEFAULT_SCHEMA_PATH = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.schema.json');
 
 // ---------------------------------------------------------------------------
-// Forbidden path prefixes — fixtures must never enter these areas
+// Forbidden path prefixes
 // ---------------------------------------------------------------------------
 
 const FORBIDDEN_PATH_PATTERNS = [
-  // Mind vault
-  /\/mind\//i,
-  /^mind\//i,
-  // Secrets / credentials
-  /\.env$/i,
-  /credentials/i,
-  /secrets/i,
-  /\.token$/i,
-  /\.pem$/i,
-  // Runtime state / caches
-  /\/\.brain\/cache\//i,
-  /\/Library\/Caches\//i,
-  /node_modules/,
-  // Generated history / vendor output
-  /graphify-out\//,
-  /dist\//,
-  // Working tree only outputs
+  /\/mind\//i, /^mind\//i,
+  /\.env$/i, /credentials/i, /secrets/i, /\.token$/i, /\.pem$/i,
+  /\/\.brain\/cache\//i, /\/Library\/Caches\//i, /node_modules/,
+  /graphify-out\//, /dist\//,
   /\.codebase-memory\//,
 ];
 
 function isForbiddenPath(filePath) {
-  return FORBIDDEN_PATH_PATTERNS.some((pattern) => pattern.test(filePath));
+  return FORBIDDEN_PATH_PATTERNS.some(p => p.test(filePath));
 }
 
 // ---------------------------------------------------------------------------
@@ -64,13 +46,8 @@ function isForbiddenPath(filePath) {
 // ---------------------------------------------------------------------------
 
 const FORBIDDEN_WORDING = [
-  'or equivalent',
-  'approximately',
-  'main function',
-  'a config file',
-  'the relevant route',
-  'some function',
-  'similar to',
+  'or equivalent', 'approximately', 'main function',
+  'a config file', 'the relevant route', 'some function', 'similar to',
 ];
 
 function checkForbiddenWording(text) {
@@ -82,65 +59,73 @@ function checkForbiddenWording(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Schema validation (minimal, without a full JSON Schema validator)
+// JSON Schema validation with Ajv 2020-12
 // ---------------------------------------------------------------------------
 
-function validateSchema(manifest, schema) {
-  const errors = [];
-  if (manifest.schemaVersion !== '1.0.0') errors.push('schemaVersion must be 1.0.0');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(manifest.createdAt ?? '')) errors.push('createdAt must be YYYY-MM-DD');
-  if (!Array.isArray(manifest.repositories) || manifest.repositories.length === 0) errors.push('repositories must be non-empty');
-  if (!Array.isArray(manifest.fixtures) || manifest.fixtures.length === 0) errors.push('fixtures must be non-empty');
-
-  for (const repo of manifest.repositories ?? []) {
-    if (!repo.repositoryId || !/^[a-z][a-z0-9-]*$/.test(repo.repositoryId)) errors.push(`repository: invalid repositoryId "${repo.repositoryId}"`);
-    if (!repo.localPath || !path.isAbsolute(repo.localPath)) errors.push(`${repo.repositoryId}: localPath must be absolute`);
-    if (!/^[a-f0-9]{40}$/.test(repo.pinnedCommit ?? '')) errors.push(`${repo.repositoryId}: pinnedCommit must be 40-char hex`);
-    // Reject symbolic refs
-    if (/^(main|master|HEAD|origin|develop|release)/.test(repo.pinnedCommit ?? '')) {
-      errors.push(`${repo.repositoryId}: pinnedCommit must not be a symbolic ref`);
-    }
+function validateSchemaWithAjv(manifest, schemaObj) {
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const validate = ajv.compile(schemaObj);
+  const valid = validate(manifest);
+  if (!valid) {
+    return (validate.errors || []).map(e => `Schema: ${e.instancePath || '/'} ${e.message}`);
   }
+  return [];
+}
 
+// ---------------------------------------------------------------------------
+// Semantic validation (beyond what JSON Schema catches)
+// ---------------------------------------------------------------------------
+
+function validateSchema(manifest, schemaObj) {
+  const errors = [];
+
+  // Run Ajv first
+  const ajvErrors = validateSchemaWithAjv(manifest, schemaObj);
+  errors.push(...ajvErrors);
+  if (ajvErrors.length > 0) return errors;
+
+  // Additional semantic checks
   const fixtureIds = new Set();
   for (const fixture of manifest.fixtures ?? []) {
-    if (!fixture.fixtureId || !/^[a-z][a-z0-9_]*$/.test(fixture.fixtureId)) {
-      errors.push(`fixture: invalid fixtureId "${fixture.fixtureId}"`);
-      continue;
-    }
     if (fixtureIds.has(fixture.fixtureId)) errors.push(`fixture: duplicate fixtureId "${fixture.fixtureId}"`);
     fixtureIds.add(fixture.fixtureId);
 
-    const repoMatch = (manifest.repositories ?? []).find((r) => r.repositoryId === fixture.repositoryId);
-    if (!repoMatch) errors.push(`${fixture.fixtureId}: repositoryId "${fixture.repositoryId}" not in repositories`);
-
-    if (!/^[a-f0-9]{40}$/.test(fixture.pinnedCommit ?? '')) errors.push(`${fixture.fixtureId}: pinnedCommit must be 40-char hex`);
-
-    if (!fixture.question) errors.push(`${fixture.fixtureId}: question is required`);
-
-    if (!['exact-match', 'set-match', 'count-match'].includes(fixture.scoringType)) {
-      errors.push(`${fixture.fixtureId}: invalid scoringType`);
-    }
-    if (typeof fixture.callerCalleeApplicable !== 'boolean') errors.push(`${fixture.fixtureId}: callerCalleeApplicable must be boolean`);
-    if (!fixture.verificationCommand) errors.push(`${fixture.fixtureId}: verificationCommand is required`);
-
-    // count-match must have expectedFileCount
-    if (fixture.scoringType === 'count-match' && typeof fixture.expectedFileCount !== 'number') {
-      errors.push(`${fixture.fixtureId}: count-match requires expectedFileCount`);
+    const repoMatch = (manifest.repositories ?? []).find(r => r.repositoryId === fixture.repositoryId);
+    if (!repoMatch) {
+      errors.push(`${fixture.fixtureId}: repositoryId "${fixture.repositoryId}" not in repositories`);
+      continue;
     }
 
-    // exact-match and set-match must have expectedFile
-    if (fixture.scoringType !== 'count-match' && !fixture.expectedFile) {
-      errors.push(`${fixture.fixtureId}: ${fixture.scoringType} requires expectedFile`);
+    // Fixture pinnedCommit must equal repository pinnedCommit
+    if (fixture.pinnedCommit && repoMatch.pinnedCommit && fixture.pinnedCommit !== repoMatch.pinnedCommit) {
+      errors.push(`${fixture.fixtureId}: pinnedCommit ${fixture.pinnedCommit.slice(0, 12)} differs from repository ${repoMatch.pinnedCommit.slice(0, 12)}`);
     }
 
-    // Check for forbidden wording
-    for (const field of ['question', 'expectedFile', 'expectedSymbol', 'expectedLiteral', 'verificationCommand', 'notes']) {
+    // Symbolic ref rejection
+    if (/^(main|master|HEAD|origin|develop|release)/.test(fixture.pinnedCommit ?? '')) {
+      errors.push(`${fixture.fixtureId}: pinnedCommit must not be a symbolic ref`);
+    }
+
+    // Path normalization checks
+    if (fixture.expectedFile) {
+      if (path.isAbsolute(fixture.expectedFile)) errors.push(`${fixture.fixtureId}: expectedFile must be relative`);
+      if (fixture.expectedFile.includes('..')) errors.push(`${fixture.fixtureId}: expectedFile contains path traversal`);
+      if (isForbiddenPath(fixture.expectedFile)) errors.push(`${fixture.fixtureId}: expectedFile enters forbidden area`);
+    }
+
+    // Verification path checks
+    if (fixture.verification?.path) {
+      if (path.isAbsolute(fixture.verification.path)) errors.push(`${fixture.fixtureId}: verification.path must be relative`);
+      if (fixture.verification.path.includes('..')) errors.push(`${fixture.fixtureId}: verification.path contains path traversal`);
+    }
+
+    // Forbidden wording
+    for (const field of ['question', 'expectedFile', 'expectedSymbol', 'expectedLiteral', 'notes']) {
       const found = checkForbiddenWording(fixture[field]);
       if (found) errors.push(`${fixture.fixtureId}: forbidden wording "${found}" in field "${field}"`);
     }
 
-    // Check caller/callee arrays are explicit arrays (not strings)
+    // Caller/callee must be arrays
     if (fixture.expectedCallers !== undefined && !Array.isArray(fixture.expectedCallers)) {
       errors.push(`${fixture.fixtureId}: expectedCallers must be an explicit array`);
     }
@@ -148,9 +133,19 @@ function validateSchema(manifest, schema) {
       errors.push(`${fixture.fixtureId}: expectedCallees must be an explicit array`);
     }
 
-    // Check fixture file path not in forbidden areas
-    if (fixture.expectedFile && isForbiddenPath(fixture.expectedFile)) {
-      errors.push(`${fixture.fixtureId}: expectedFile path enters forbidden area: ${fixture.expectedFile}`);
+    // callerCalleeApplicable with non-empty arrays: arrays must be verifiable
+    if (fixture.callerCalleeApplicable && fixture.expectedCallers?.length > 0) {
+      for (const caller of fixture.expectedCallers) {
+        if (path.isAbsolute(caller)) errors.push(`${fixture.fixtureId}: caller path must be relative: ${caller}`);
+        if (caller.includes('..')) errors.push(`${fixture.fixtureId}: caller path has traversal: ${caller}`);
+      }
+    }
+  }
+
+  // Repository symbolic ref rejection
+  for (const repo of manifest.repositories ?? []) {
+    if (/^(main|master|HEAD|origin|develop|release)/.test(repo.pinnedCommit ?? '')) {
+      errors.push(`${repo.repositoryId}: pinnedCommit must not be a symbolic ref`);
     }
   }
 
@@ -158,7 +153,109 @@ function validateSchema(manifest, schema) {
 }
 
 // ---------------------------------------------------------------------------
-// Git archive export — creates a temp dir, exports pinned commit, returns path
+// Structured verification execution
+// ---------------------------------------------------------------------------
+
+function verifyStructuredVerification(verification, exportedRoot) {
+  const errors = [];
+  const algo = verification.algorithm;
+
+  if (algo === 'line-contains' || algo === 'symbol-at-line') {
+    const filePath = path.join(exportedRoot, verification.path);
+    if (!fs.existsSync(filePath)) {
+      errors.push(`verification: file not found: ${verification.path}`);
+      return errors;
+    }
+    const lines = fs.readFileSync(filePath, 'utf8').split('\n');
+    const lineIdx = verification.line - 1;
+    if (lineIdx >= lines.length) {
+      errors.push(`verification: line ${verification.line} beyond file length ${lines.length}`);
+      return errors;
+    }
+    const lineText = lines[lineIdx];
+    for (const needle of verification.contains || []) {
+      if (!lineText.includes(needle)) {
+        errors.push(`verification: "${needle}" not found at line ${verification.line} of ${verification.path}: "${lineText.trim()}"`);
+      }
+    }
+  } else if (algo === 'file-name-count') {
+    const root = path.join(exportedRoot, verification.root || '.');
+    const count = countFiles(root, verification.fileName);
+    if (count !== verification.expectedCount) {
+      errors.push(`verification: file count mismatch for ${verification.fileName} (expected=${verification.expectedCount} actual=${count})`);
+    }
+  } else if (algo === 'json-pointer-set') {
+    const filePath = path.join(exportedRoot, verification.path);
+    if (!fs.existsSync(filePath)) {
+      errors.push(`verification: file not found: ${verification.path}`);
+      return errors;
+    }
+    let data;
+    try { data = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (e) {
+      errors.push(`verification: JSON parse error: ${e.message}`);
+      return errors;
+    }
+    const value = resolveJsonPointer(data, verification.jsonPointer);
+    if (value === undefined) {
+      errors.push(`verification: JSON pointer ${verification.jsonPointer} resolved to undefined`);
+      return errors;
+    }
+    const expected = verification.expected;
+    let actual;
+    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0].name) {
+      actual = value.map(v => v.name);
+    } else if (Array.isArray(value)) {
+      actual = value;
+    } else {
+      actual = [value];
+    }
+    const expectedSet = new Set(Array.isArray(expected) ? expected : [expected]);
+    const actualSet = new Set(actual);
+    if (expectedSet.size !== actualSet.size || ![...expectedSet].every(e => actualSet.has(e))) {
+      errors.push(`verification: set mismatch at ${verification.jsonPointer}: expected=[${[...expectedSet]}] actual=[${[...actualSet]}]`);
+    }
+  } else if (algo === 'file-exists') {
+    const filePath = path.join(exportedRoot, verification.path);
+    if (!fs.existsSync(filePath)) {
+      errors.push(`verification: file not found: ${verification.path}`);
+    }
+  }
+
+  return errors;
+}
+
+function resolveJsonPointer(obj, pointer) {
+  const parts = pointer.split('/').slice(1);
+  let current = obj;
+  for (const part of parts) {
+    const key = part.replace(/~1/g, '/').replace(/~0/g, '~');
+    if (current === undefined || current === null) return undefined;
+    if (Array.isArray(current)) {
+      const idx = parseInt(key, 10);
+      current = current[idx];
+    } else {
+      current = current[key];
+    }
+  }
+  return current;
+}
+
+function countFiles(root, name) {
+  let count = 0;
+  function walk(dir) {
+    try {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) walk(path.join(dir, entry.name));
+        else if (entry.name === name) count++;
+      }
+    } catch { /* skip inaccessible */ }
+  }
+  walk(root);
+  return count;
+}
+
+// ---------------------------------------------------------------------------
+// Git archive export
 // ---------------------------------------------------------------------------
 
 function exportCommit(repoPath, commit) {
@@ -172,60 +269,48 @@ function exportCommit(repoPath, commit) {
 }
 
 // ---------------------------------------------------------------------------
-// Fixture verification against an exported tree
+// Legacy verifyFixture (for backward compatibility with tests)
 // ---------------------------------------------------------------------------
 
 function verifyFixture(fixture, exportedRoot) {
   const errors = [];
 
+  if (fixture.verification) {
+    return verifyStructuredVerification(fixture.verification, exportedRoot);
+  }
+
   if (fixture.scoringType === 'count-match') {
-    // Count files matching the pattern in verificationCommand
-    const count = countFiles(exportedRoot, 'route.ts');
+    const count = countFiles(exportedRoot, fixture.verification?.fileName || 'route.ts');
     if (count !== fixture.expectedFileCount) {
       errors.push(`${fixture.fixtureId}: file count mismatch (expected=${fixture.expectedFileCount} actual=${count})`);
     }
     return errors;
   }
 
-  // exact-match or set-match: verify expectedFile exists
+  if (!fixture.expectedFile) return errors;
   const filePath = path.join(exportedRoot, fixture.expectedFile);
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
     errors.push(`${fixture.fixtureId}: expectedFile not found: ${fixture.expectedFile}`);
     return errors;
   }
 
-  // Verify expectedLine contains expectedSymbol or expectedLiteral
   if (fixture.expectedLine) {
     const lines = fs.readFileSync(filePath, 'utf8').split('\n');
     const lineIdx = fixture.expectedLine - 1;
     if (lineIdx >= lines.length) {
-      errors.push(`${fixture.fixtureId}: expectedLine ${fixture.expectedLine} beyond file length ${lines.length}`);
+      errors.push(`${fixture.fixtureId}: expectedLine ${fixture.expectedLine} beyond file length`);
     } else {
       const lineText = lines[lineIdx];
       if (fixture.expectedSymbol && !lineText.includes(fixture.expectedSymbol)) {
-        errors.push(`${fixture.fixtureId}: expectedSymbol "${fixture.expectedSymbol}" not found at line ${fixture.expectedLine}: "${lineText.trim()}"`);
+        errors.push(`${fixture.fixtureId}: expectedSymbol "${fixture.expectedSymbol}" not found at line ${fixture.expectedLine}`);
       }
       if (fixture.expectedLiteral && !lineText.includes(fixture.expectedLiteral)) {
-        errors.push(`${fixture.fixtureId}: expectedLiteral "${fixture.expectedLiteral}" not found at line ${fixture.expectedLine}: "${lineText.trim()}"`);
+        errors.push(`${fixture.fixtureId}: expectedLiteral not found at line ${fixture.expectedLine}`);
       }
     }
   }
 
   return errors;
-}
-
-function countFiles(root, name) {
-  let count = 0;
-  function walk(dir) {
-    try {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) walk(path.join(dir, entry.name));
-        else if (entry.name === name) count++;
-      }
-    } catch { /* skip inaccessible dirs */ }
-  }
-  walk(root);
-  return count;
 }
 
 // ---------------------------------------------------------------------------
@@ -237,68 +322,47 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
   const tmpDirs = [];
 
   try {
-    // Load manifest and schema
     let manifest;
-    try {
-      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    } catch (e) {
+    try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')); } catch (e) {
       errors.push(`manifest-parse-error: ${e.message}`);
       return { valid: false, errors };
     }
 
     let schema;
-    try {
-      schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
-    } catch (e) {
+    try { schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8')); } catch (e) {
       errors.push(`schema-parse-error: ${e.message}`);
       return { valid: false, errors };
     }
 
-    // Step 1: Schema validation
     const schemaErrors = validateSchema(manifest, schema);
     errors.push(...schemaErrors);
     if (errors.length > 0) return { valid: false, errors };
 
-    // Step 2: Per-repository export and fixture verification
     const exportedRoots = new Map();
 
     for (const repo of manifest.repositories) {
-      const repoPath = repo.localPath;
-      const commit = repo.pinnedCommit;
-
-      if (!fs.existsSync(repoPath)) {
-        if (allowMissingRepos) {
-          continue;
-        }
-        errors.push(`${repo.repositoryId}: repository not found at ${repoPath}`);
+      if (!fs.existsSync(repo.localPath)) {
+        if (allowMissingRepos) continue;
+        errors.push(`${repo.repositoryId}: repository not found at ${repo.localPath}`);
         continue;
       }
 
-      // Verify commit exists
       try {
-        execFileSync('git', ['-C', repoPath, 'rev-parse', '--verify', `${commit}^{commit}`], {
-          stdio: ['ignore', 'ignore', 'ignore'],
-        });
+        execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
       } catch {
-        errors.push(`${repo.repositoryId}: commit ${commit} not found in repository`);
+        errors.push(`${repo.repositoryId}: commit ${repo.pinnedCommit} not found`);
         continue;
       }
 
-      // Verify source checkout is not mutated (read HEAD only, no modification)
-      let headCommit;
-      try {
-        headCommit = execFileSync('git', ['-C', repoPath, 'rev-parse', 'HEAD'], {
-          encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-        }).trim();
-      } catch {
+      let headBefore;
+      try { headBefore = execFileSync('git', ['-C', repo.localPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {
         errors.push(`${repo.repositoryId}: cannot read HEAD`);
         continue;
       }
 
-      // Export the pinned commit to a temp dir
       let exportedRoot;
       try {
-        exportedRoot = exportCommit(repoPath, commit);
+        exportedRoot = exportCommit(repo.localPath, repo.pinnedCommit);
         tmpDirs.push(exportedRoot);
         exportedRoots.set(repo.repositoryId, exportedRoot);
       } catch (e) {
@@ -306,45 +370,37 @@ async function validateManifest(manifestPath, schemaPath, { allowMissingRepos = 
         continue;
       }
 
-      // Verify source checkout HEAD is unchanged after our export
       let headAfter;
-      try {
-        headAfter = execFileSync('git', ['-C', repoPath, 'rev-parse', 'HEAD'], {
-          encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-        }).trim();
-      } catch {
+      try { headAfter = execFileSync('git', ['-C', repo.localPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {
         errors.push(`${repo.repositoryId}: cannot read HEAD after export`);
         continue;
       }
-      if (headCommit !== headAfter) {
-        errors.push(`${repo.repositoryId}: HEAD changed during validation (before=${headCommit} after=${headAfter}) — source checkout was mutated`);
+      if (headBefore !== headAfter) {
+        errors.push(`${repo.repositoryId}: HEAD changed during validation`);
       }
     }
 
     if (errors.length > 0) return { valid: false, errors };
 
-    // Step 3: Verify fixtures against exported trees
     for (const fixture of manifest.fixtures) {
       const exportedRoot = exportedRoots.get(fixture.repositoryId);
       if (!exportedRoot) {
-        if (!allowMissingRepos) {
-          errors.push(`${fixture.fixtureId}: no exported tree for repository "${fixture.repositoryId}"`);
-        }
+        if (!allowMissingRepos) errors.push(`${fixture.fixtureId}: no exported tree for "${fixture.repositoryId}"`);
         continue;
       }
 
-      const fixtureErrors = verifyFixture(fixture, exportedRoot);
-      errors.push(...fixtureErrors);
+      if (fixture.verification) {
+        const verErrors = verifyStructuredVerification(fixture.verification, exportedRoot);
+        errors.push(...verErrors.map(e => `${fixture.fixtureId}: ${e}`));
+      } else {
+        const fixtureErrors = verifyFixture(fixture, exportedRoot);
+        errors.push(...fixtureErrors);
+      }
     }
 
   } finally {
-    // Step 4: Always clean up temp dirs
     for (const tmp of tmpDirs) {
-      try {
-        fs.rmSync(tmp, { recursive: true, force: true });
-      } catch {
-        // best-effort cleanup
-      }
+      try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* best effort */ }
     }
   }
 
@@ -362,7 +418,7 @@ const IS_MAIN = (
 );
 
 if (IS_MAIN) {
-  const manifestArg = process.argv.find((a) => a.startsWith('--manifest='));
+  const manifestArg = process.argv.find(a => a.startsWith('--manifest='));
   const manifestPath = manifestArg ? manifestArg.slice('--manifest='.length) : DEFAULT_MANIFEST_PATH;
   const allowMissingRepos = process.argv.includes('--allow-missing-repos');
 
@@ -374,10 +430,10 @@ if (IS_MAIN) {
       for (const e of errors) process.stdout.write(`error=${e}\n`);
       process.exitCode = 1;
     }
-  }).catch((err) => {
+  }).catch(err => {
     console.error('validate-b8-1-benchmark-manifest: unexpected error:', err.message);
     process.exit(2);
   });
 }
 
-export { validateManifest, validateSchema, verifyFixture, isForbiddenPath, checkForbiddenWording };
+export { validateManifest, validateSchema, verifyFixture, verifyStructuredVerification, isForbiddenPath, checkForbiddenWording };

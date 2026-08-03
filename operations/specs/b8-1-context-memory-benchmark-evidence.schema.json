@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "b8-1-context-memory-benchmark-evidence",
+  "title": "B8.1 Context-Memory Benchmark Evidence",
+  "description": "Offline-only evidence record for a single B8.1 benchmark run. Rejects model input/output token fields.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "runId",
+    "selectedSubjects",
+    "excludedSubjects",
+    "pinnedRepositoryCommits",
+    "manifestHash",
+    "preflightReceiptHash",
+    "subjectBinaryIdentity",
+    "networkIsolationProof",
+    "fixtureResults",
+    "offlineMetrics",
+    "violations",
+    "cleanupStatus"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0.0" },
+    "runId": { "type": "string", "pattern": "^b8-1-[a-zA-Z0-9._-]+$" },
+    "runAt": { "type": "string", "format": "date-time" },
+    "selectedSubjects": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] }
+    },
+    "excludedSubjects": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] }
+    },
+    "pinnedRepositoryCommits": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["commit", "repositoryId"],
+        "properties": {
+          "repositoryId": { "type": "string" },
+          "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+        }
+      }
+    },
+    "manifestHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "preflightReceiptHash": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "subjectBinaryIdentity": {
+      "type": "object",
+      "properties": {
+        "cbm": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "version": { "type": "string" }
+          }
+        },
+        "graphify": {
+          "type": "object",
+          "properties": {
+            "path": { "type": "string" },
+            "version": { "type": "string" }
+          }
+        }
+      }
+    },
+    "networkIsolationProof": {
+      "type": "object",
+      "required": ["adapter", "selfTestPassed", "profilePath"],
+      "properties": {
+        "adapter": { "type": "string" },
+        "selfTestPassed": { "type": "boolean" },
+        "profilePath": { "type": "string" },
+        "selfTestDetail": { "type": "string" }
+      }
+    },
+    "fixtureResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fixtureId", "subject", "fileCorrect", "lineCorrect"],
+        "properties": {
+          "fixtureId": { "type": "string" },
+          "subject": { "type": "string", "enum": ["cbm", "graphify", "exact-source"] },
+          "fileCorrect": { "type": "boolean" },
+          "lineCorrect": { "type": "boolean" },
+          "callerPrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+          "callerRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+          "calleePrecision": { "type": "number", "minimum": 0, "maximum": 1 },
+          "calleeRecall": { "type": "number", "minimum": 0, "maximum": 1 },
+          "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "offlineMetrics": {
+      "type": "object",
+      "properties": {
+        "serializedPayloadBytes": { "type": "integer", "minimum": 0 },
+        "pinnedTokenizerEstimate": { "type": "integer", "minimum": 0 },
+        "tokenizerName": { "type": "string" },
+        "tokenizerVersion": { "type": "string" },
+        "indexingDurationMs": { "type": "integer", "minimum": 0 },
+        "refreshDurationMs": { "type": "integer", "minimum": 0 },
+        "peakCpuPercent": { "type": "number", "minimum": 0 },
+        "peakMemoryMb": { "type": "number", "minimum": 0 },
+        "diskUsageMb": { "type": "number", "minimum": 0 },
+        "retrievalOperationCount": { "type": "integer", "minimum": 0 },
+        "fileAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "lineAccuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "setAccuracy": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "optionalModelMediatedMetrics": {
+      "type": "object",
+      "description": "Separately unauthorized. Must not appear in offline-only evidence.",
+      "properties": {
+        "modelInputTokens": { "type": "integer" },
+        "modelOutputTokens": { "type": "integer" },
+        "modelName": { "type": "string" },
+        "timeToAnswerMs": { "type": "integer" }
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string" },
+          "detail": { "type": "string" },
+          "timestamp": { "type": "string" }
+        }
+      }
+    },
+    "cleanupStatus": {
+      "type": "object",
+      "required": ["runDirectory", "removed"],
+      "properties": {
+        "runDirectory": { "type": "string" },
+        "removed": { "type": "boolean" },
+        "removedAt": { "type": "string" }
+      }
+    }
+  }
+}

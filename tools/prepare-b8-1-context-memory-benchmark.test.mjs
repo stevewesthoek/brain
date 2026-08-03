@@ -1,24 +1,13 @@
 /**
  * prepare-b8-1-context-memory-benchmark.test.mjs
  *
- * Unit tests for the B8.1 benchmark preflight harness.
- *
- * Key invariants under test:
- *   - runPreflight in dry-run mode creates NO files or directories
- *   - runPreflight returns a structured checks array every call
- *   - missing manifest is reported as 'fail', not thrown
- *   - pinned commits that don't exist are reported as 'fail'
- *   - missing repositories are reported as 'fail'
- *   - repos found with the commit available report 'pass'
- *   - user config paths are always reported as 'pass' (protected)
- *   - network isolation check produces 'available' or 'warn'
- *   - disk budget check produces 'pass' or 'warn'
- *   - graphify check respects governance JSON presence/absence
- *   - Graphify missing code-only profile reports blocked
- *   - multiple calls accumulate independent results (no stale state)
+ * 22 regression tests for the B8.1 benchmark preflight harness.
+ * Uses synthetic HOME directories and temp git repos — never touches real home.
+ * Run: node --test tools/prepare-b8-1-context-memory-benchmark.test.mjs
  */
 
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -28,369 +17,644 @@ import { fileURLToPath } from 'node:url';
 
 import { runPreflight } from './prepare-b8-1-context-memory-benchmark.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REAL_MANIFEST = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeGitRepo(files = { 'src/index.ts': 'export const X = 1;' }) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-preflight-test-'));
-  for (const [rel, content] of Object.entries(files)) {
-    const full = path.join(root, rel);
-    fs.mkdirSync(path.dirname(full), { recursive: true });
-    fs.writeFileSync(full, content);
-  }
-  execFileSync('git', ['init', '-q'], { cwd: root });
-  execFileSync('git', ['add', '.'], { cwd: root });
-  execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@t.invalid', 'commit', '-qm', 'init'], { cwd: root });
-  const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-  return { root, commit };
+function makeTempDir(prefix = 'b81-pf-test-') {
+  return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
-function makeManifest(repos, fixtures = []) {
+function makeTempGitRepo(dir, files = { 'README.md': '# hello' }) {
+  for (const [relPath, content] of Object.entries(files)) {
+    const fullPath = path.join(dir, relPath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, content);
+  }
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  execFileSync('git', ['add', '.'], { cwd: dir });
+  execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@t.invalid', 'commit', '-qm', 'init'], { cwd: dir });
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+}
+
+function makeMinimalManifest(repos) {
   return {
     schemaVersion: '1.0.0',
-    createdAt: '2026-08-02',
-    repositories: repos,
-    fixtures,
+    createdAt: '2026-08-03',
+    repositories: repos.map(r => ({
+      repositoryId: r.id,
+      localPath: r.path,
+      pinnedCommit: r.commit,
+      description: 'test'
+    })),
+    fixtures: repos.map((r, i) => ({
+      fixtureId: `${r.id}_f${i + 1}`,
+      repositoryId: r.id,
+      pinnedCommit: r.commit,
+      question: 'test?',
+      expectedFile: Object.keys(r.files || { 'README.md': '' })[0],
+      scoringType: 'exact-match',
+      callerCalleeApplicable: false,
+      verification: { algorithm: 'file-exists', path: Object.keys(r.files || { 'README.md': '' })[0] },
+    })),
   };
 }
 
 function writeTempManifest(manifest) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-preflight-manifest-'));
-  const p = path.join(tmp, 'manifest.json');
-  fs.writeFileSync(p, JSON.stringify(manifest));
-  return { manifestPath: p, cleanupDir: tmp };
+  const f = path.join(os.tmpdir(), `b81-test-manifest-${crypto.randomBytes(4).toString('hex')}.json`);
+  fs.writeFileSync(f, JSON.stringify(manifest));
+  return f;
+}
+
+function makeSyntheticHome() {
+  const home = makeTempDir('b81-home-');
+  fs.mkdirSync(path.join(home, '.brain'), { recursive: true });
+  return home;
+}
+
+function cleanup(...paths) {
+  for (const p of paths) {
+    try { fs.rmSync(p, { recursive: true, force: true }); } catch {}
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Test 1: dry-run creates NO files
+// Test 1: Dry run with exact-source only exits successfully
 // ---------------------------------------------------------------------------
 
-test('dry-run creates no files or directories', async () => {
-  const { root, commit } = makeGitRepo();
-  const manifest = makeManifest([{ repositoryId: 'brain', localPath: root, pinnedCommit: commit, description: 'test' }]);
-  const { manifestPath, cleanupDir } = writeTempManifest(manifest);
-
+test('T1: dry run with exact-source only exits with executionReady=true', async () => {
+  const repoDir = makeTempDir('b81-repo1-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'README.md': '' } }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
   try {
-    const benchmarkBase = path.join(os.homedir(), '.brain', 'benchmark', 'b8-1');
-    const existedBefore = fs.existsSync(benchmarkBase);
+    const { summary } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-run-001',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, true);
+    assert.deepEqual(summary.selectedSubjects, ['exact-source']);
+    assert.ok(summary.excludedSubjects.includes('cbm'));
+    assert.ok(summary.excludedSubjects.includes('graphify'));
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
 
-    await runPreflight({ dryRun: true, materialize: false, _manifestPathOverride: manifestPath });
+// ---------------------------------------------------------------------------
+// Test 2: Invalid run ID rejected
+// ---------------------------------------------------------------------------
 
-    if (!existedBefore) {
-      assert(!fs.existsSync(benchmarkBase), 'dry-run must not create benchmark base directory');
+test('T2: invalid run ID is rejected', async () => {
+  const repoDir = makeTempDir('b81-repo2-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: '../escape/bad',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name === 'run-id-valid' && c.status === 'fail'));
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 3: Traversal in run ID rejected
+// ---------------------------------------------------------------------------
+
+test('T3: run ID with path traversal is rejected', async () => {
+  const repoDir = makeTempDir('b81-repo3-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { summary } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-../../etc',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 4: Whitespace in run ID rejected
+// ---------------------------------------------------------------------------
+
+test('T4: run ID with whitespace is rejected', async () => {
+  const repoDir = makeTempDir('b81-repo4-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { summary } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-has space',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 5: Missing run ID rejected
+// ---------------------------------------------------------------------------
+
+test('T5: missing run ID causes executionReady=false', async () => {
+  const repoDir = makeTempDir('b81-repo5-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { summary } = await runPreflight({
+      dryRun: true,
+      runId: null,
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 6: Existing run directory rejected
+// ---------------------------------------------------------------------------
+
+test('T6: existing run directory causes fail check', async () => {
+  const repoDir = makeTempDir('b81-repo6-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  const runDir = path.join(home, '.brain', 'benchmark', 'b8-1', 'runs', 'b8-1-existing-run');
+  fs.mkdirSync(runDir, { recursive: true });
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-existing-run',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name === 'run-directory-exists' && c.status === 'fail'));
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 7: CBM excluded when not in selected subjects
+// ---------------------------------------------------------------------------
+
+test('T7: CBM binary check returns excluded-subject when cbm not selected', async () => {
+  const repoDir = makeTempDir('b81-repo7-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-007',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const cbmCheck = checks.find(c => c.name === 'cbm-binary-identity');
+    assert.ok(cbmCheck);
+    assert.equal(cbmCheck.status, 'excluded-subject');
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 8: Network isolation excluded when cbm not selected
+// ---------------------------------------------------------------------------
+
+test('T8: network isolation excluded when cbm not selected', async () => {
+  const repoDir = makeTempDir('b81-repo8-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-008',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const netCheck = checks.find(c => c.name === 'network-isolation');
+    assert.ok(netCheck);
+    assert.equal(netCheck.status, 'excluded-subject');
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 9: Graphify excluded when not in selected subjects
+// ---------------------------------------------------------------------------
+
+test('T9: graphify check returns excluded-subject when graphify not selected', async () => {
+  const repoDir = makeTempDir('b81-repo9-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-009',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const gCheck = checks.find(c => c.name === 'graphify-subject');
+    assert.ok(gCheck);
+    assert.equal(gCheck.status, 'excluded-subject');
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 10: Manifest load failure yields executionReady=false
+// ---------------------------------------------------------------------------
+
+test('T10: non-existent manifest causes fail', async () => {
+  const home = makeSyntheticHome();
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-010',
+      subjects: ['exact-source'],
+      _manifestPathOverride: '/nonexistent/manifest.json',
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name === 'manifest-loaded' && c.status === 'fail'));
+  } finally {
+    cleanup(home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 11: Malformed JSON manifest is rejected
+// ---------------------------------------------------------------------------
+
+test('T11: malformed JSON manifest causes fail', async () => {
+  const home = makeSyntheticHome();
+  const badManifest = path.join(os.tmpdir(), `b81-bad-${crypto.randomBytes(4).toString('hex')}.json`);
+  fs.writeFileSync(badManifest, '{not valid json');
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-011',
+      subjects: ['exact-source'],
+      _manifestPathOverride: badManifest,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name === 'manifest-loaded' && c.status === 'fail'));
+  } finally {
+    cleanup(home, badManifest);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 12: Wrong schemaVersion is rejected
+// ---------------------------------------------------------------------------
+
+test('T12: wrong schemaVersion fails manifest check', async () => {
+  const home = makeSyntheticHome();
+  const manifest = { schemaVersion: '99.0.0', createdAt: '2026', repositories: [], fixtures: [] };
+  const manifestFile = writeTempManifest(manifest);
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-012',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name === 'manifest-loaded' && c.status === 'fail'));
+  } finally {
+    cleanup(home, manifestFile);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 13: Pinned commit not found → fail
+// ---------------------------------------------------------------------------
+
+test('T13: pinned commit not found in repository causes fail', async () => {
+  const repoDir = makeTempDir('b81-repo13-');
+  makeTempGitRepo(repoDir);
+  const fakePinned = 'deadbeef'.repeat(5);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit: fakePinned }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-013',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name.startsWith('pinned-commit:') && c.status === 'fail'));
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 14: Repository path not found → fail
+// ---------------------------------------------------------------------------
+
+test('T14: repository path not found causes fail', async () => {
+  const manifest = makeMinimalManifest([{ id: 'test', path: '/nonexistent/repo/path', commit: 'a'.repeat(40) }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-014',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    assert.ok(checks.some(c => c.name.startsWith('pinned-commit:') && c.status === 'fail'));
+  } finally {
+    cleanup(manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 15: Return shape has required fields
+// ---------------------------------------------------------------------------
+
+test('T15: return shape includes checks, summary, runDir, dryRun', async () => {
+  const repoDir = makeTempDir('b81-repo15-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-015',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.ok(Array.isArray(result.checks));
+    assert.ok(typeof result.summary === 'object');
+    assert.ok('runDir' in result);
+    assert.equal(result.dryRun, true);
+    assert.ok(typeof result.summary.executionReady === 'boolean');
+    assert.ok(Array.isArray(result.summary.selectedSubjects));
+    assert.ok(Array.isArray(result.summary.excludedSubjects));
+    assert.ok(Array.isArray(result.summary.blockingChecks));
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 16: Check status is one of the five valid statuses
+// ---------------------------------------------------------------------------
+
+test('T16: all check statuses are valid (pass|informational|excluded-subject|blocked|fail)', async () => {
+  const repoDir = makeTempDir('b81-repo16-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  const validStatuses = new Set(['pass', 'informational', 'excluded-subject', 'blocked', 'fail']);
+  try {
+    const { checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-016',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    for (const check of checks) {
+      assert.ok(validStatuses.has(check.status), `check "${check.name}" has invalid status "${check.status}"`);
     }
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-    fs.rmSync(cleanupDir, { recursive: true, force: true });
+    cleanup(repoDir, manifestFile, home);
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 2: missing manifest reports 'fail', does not throw
+// Test 17: Materialization refused when not executionReady
 // ---------------------------------------------------------------------------
 
-test('missing manifest path reports fail, does not throw', async () => {
-  const missingPath = path.join(os.tmpdir(), `no-such-manifest-${Date.now()}.json`);
-  const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: missingPath });
-  const manifestCheck = checks.find((c) => c.name === 'manifest-loaded');
-  assert(manifestCheck, 'manifest-loaded check must be present');
-  assert.equal(manifestCheck.status, 'fail');
-});
-
-// ---------------------------------------------------------------------------
-// Test 3: invalid schemaVersion reports 'fail'
-// ---------------------------------------------------------------------------
-
-test('invalid schemaVersion reports manifest-loaded fail', async () => {
-  const { root, commit } = makeGitRepo();
-  const manifest = makeManifest([{ repositoryId: 'brain', localPath: root, pinnedCommit: commit }]);
-  manifest.schemaVersion = '2.0.0';
-  const { manifestPath, cleanupDir } = writeTempManifest(manifest);
-
+test('T17: materialization refused when not executionReady', async () => {
+  const repoDir = makeTempDir('b81-repo17-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
   try {
-    const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: manifestPath });
-    const mc = checks.find((c) => c.name === 'manifest-loaded');
-    assert.equal(mc.status, 'fail');
+    const { checks } = await runPreflight({
+      dryRun: false,
+      materialize: true,
+      runId: null,
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const matCheck = checks.find(c => c.name === 'materialization');
+    assert.ok(matCheck);
+    assert.equal(matCheck.status, 'fail');
+    assert.ok(matCheck.detail.includes('not ready'));
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-    fs.rmSync(cleanupDir, { recursive: true, force: true });
+    cleanup(repoDir, manifestFile, home);
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 4: valid manifest with available pinned commit reports 'pass'
+// Test 18: Materialization creates run directory with atomic rename
 // ---------------------------------------------------------------------------
 
-test('valid manifest with known commit reports pinned-commit pass', async () => {
-  const { root, commit } = makeGitRepo();
-  const manifest = makeManifest([{ repositoryId: 'brain', localPath: root, pinnedCommit: commit, description: 'test' }]);
-  const { manifestPath, cleanupDir } = writeTempManifest(manifest);
-
+test('T18: materialization creates run directory with expected structure', async () => {
+  const repoDir = makeTempDir('b81-repo18-');
+  const commit = makeTempGitRepo(repoDir, { 'src/index.ts': 'export const x = 1;' });
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'src/index.ts': '' } }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
   try {
-    const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: manifestPath });
-    const pc = checks.find((c) => c.name === 'pinned-commit:brain');
-    assert(pc, 'pinned-commit:brain check must be present');
-    assert.equal(pc.status, 'pass');
+    const { summary, runDir } = await runPreflight({
+      dryRun: false,
+      materialize: true,
+      runId: 'b8-1-test-018',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, true);
+    assert.ok(fs.existsSync(runDir));
+    assert.ok(fs.existsSync(path.join(runDir, 'sources', 'test')));
+    assert.ok(fs.existsSync(path.join(runDir, 'evidence')));
+    assert.ok(fs.existsSync(path.join(runDir, 'logs')));
+    assert.ok(fs.existsSync(path.join(runDir, 'preflight-receipt.json')));
+    assert.ok(fs.existsSync(path.join(runDir, 'run-plan.json')));
+    assert.ok(fs.existsSync(path.join(runDir, 'cleanup-manifest.json')));
+    assert.ok(fs.existsSync(path.join(runDir, 'source-state-before.json')));
+    assert.ok(fs.existsSync(path.join(runDir, 'source-state-after.json')));
+    const tmpSibling = runDir + '.tmp';
+    assert.equal(fs.existsSync(tmpSibling), false, 'tmp sibling must not remain');
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-    fs.rmSync(cleanupDir, { recursive: true, force: true });
+    cleanup(repoDir, manifestFile, home);
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 5: missing repository path reports 'fail'
+// Test 19: Source-state invariant (before == after)
 // ---------------------------------------------------------------------------
 
-test('missing repository path reports pinned-commit fail', async () => {
-  const fakeCommit = 'a'.repeat(40);
-  const manifest = makeManifest([{ repositoryId: 'brain', localPath: '/no/such/path/ever', pinnedCommit: fakeCommit }]);
-  const { manifestPath, cleanupDir } = writeTempManifest(manifest);
-
+test('T19: source state before and after match in materialized run', async () => {
+  const repoDir = makeTempDir('b81-repo19-');
+  const commit = makeTempGitRepo(repoDir, { 'a.txt': 'content' });
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'a.txt': '' } }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
   try {
-    const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: manifestPath });
-    const pc = checks.find((c) => c.name === 'pinned-commit:brain');
-    assert(pc, 'pinned-commit:brain check must be present');
-    assert.equal(pc.status, 'fail');
+    const { runDir } = await runPreflight({
+      dryRun: false,
+      materialize: true,
+      runId: 'b8-1-test-019',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const before = JSON.parse(fs.readFileSync(path.join(runDir, 'source-state-before.json'), 'utf8'));
+    const after = JSON.parse(fs.readFileSync(path.join(runDir, 'source-state-after.json'), 'utf8'));
+    assert.equal(before.length, after.length);
+    for (let i = 0; i < before.length; i++) {
+      assert.equal(before[i].HEAD, after[i].HEAD);
+      assert.equal(before[i].statusSha256, after[i].statusSha256);
+    }
   } finally {
-    fs.rmSync(cleanupDir, { recursive: true, force: true });
+    cleanup(repoDir, manifestFile, home);
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 6: non-existent commit hash in real repo reports 'fail'
+// Test 20: Cleanup manifest targets correct run ID
 // ---------------------------------------------------------------------------
 
-test('non-existent commit hash in real repo reports pinned-commit fail', async () => {
-  const { root } = makeGitRepo();
-  const fakeCommit = '0'.repeat(40);
-  const manifest = makeManifest([{ repositoryId: 'brain', localPath: root, pinnedCommit: fakeCommit }]);
-  const { manifestPath, cleanupDir } = writeTempManifest(manifest);
-
+test('T20: cleanup manifest references exact run ID', async () => {
+  const repoDir = makeTempDir('b81-repo20-');
+  const commit = makeTempGitRepo(repoDir, { 'b.txt': 'hello' });
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'b.txt': '' } }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
   try {
-    const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: manifestPath });
-    const pc = checks.find((c) => c.name === 'pinned-commit:brain');
-    assert.equal(pc.status, 'fail');
-    assert(pc.detail.includes('not found'));
+    const { runDir } = await runPreflight({
+      dryRun: false,
+      materialize: true,
+      runId: 'b8-1-test-020',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const cleanupManifest = JSON.parse(fs.readFileSync(path.join(runDir, 'cleanup-manifest.json'), 'utf8'));
+    assert.equal(cleanupManifest.runId, 'b8-1-test-020');
+    assert.equal(cleanupManifest.runDirectory, runDir);
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-    fs.rmSync(cleanupDir, { recursive: true, force: true });
+    cleanup(repoDir, manifestFile, home);
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 7: source checkout read-only check present for valid repo
+// Test 21: CBM selected but admission missing → fail
 // ---------------------------------------------------------------------------
 
-test('source-checkout-read-only check present and passes for valid git repo', async () => {
-  const { root, commit } = makeGitRepo();
-  const manifest = makeManifest([{ repositoryId: 'brain', localPath: root, pinnedCommit: commit }]);
-  const { manifestPath, cleanupDir } = writeTempManifest(manifest);
-
+test('T21: CBM selected but admissions file missing causes fail', async () => {
+  const repoDir = makeTempDir('b81-repo21-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
   try {
-    const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: manifestPath });
-    const ro = checks.find((c) => c.name === 'source-checkout-read-only:brain');
-    assert(ro, 'source-checkout-read-only check must be present');
-    assert(ro.status === 'pass' || ro.status === 'warn');
+    const { summary, checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-021',
+      subjects: ['cbm', 'exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(summary.executionReady, false);
+    const cbmCheck = checks.find(c => c.name === 'cbm-binary-identity');
+    assert.ok(cbmCheck);
+    assert.equal(cbmCheck.status, 'fail');
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-    fs.rmSync(cleanupDir, { recursive: true, force: true });
+    cleanup(repoDir, manifestFile, home);
   }
 });
 
 // ---------------------------------------------------------------------------
-// Test 8: run-directory always present as 'planned'
+// Test 22: Disk budget check runs (informational or pass, not crash)
 // ---------------------------------------------------------------------------
 
-test('run-directory check always present with planned status', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const rd = checks.find((c) => c.name === 'run-directory');
-  assert(rd, 'run-directory check must be present');
-  assert.equal(rd.status, 'planned');
-  assert(rd.detail.includes('.brain/benchmark/b8-1/worktrees/'));
-});
-
-// ---------------------------------------------------------------------------
-// Test 9: isolated cache and config directories planned
-// ---------------------------------------------------------------------------
-
-test('benchmark-cache-dir and benchmark-config-dir are planned', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const cache = checks.find((c) => c.name === 'benchmark-cache-dir');
-  const config = checks.find((c) => c.name === 'benchmark-config-dir');
-  assert.equal(cache?.status, 'planned');
-  assert.equal(config?.status, 'planned');
-  assert(cache.detail.includes('.brain/benchmark/b8-1/cache'));
-  assert(config.detail.includes('.brain/benchmark/b8-1/config'));
-});
-
-// ---------------------------------------------------------------------------
-// Test 10: user config paths always reported as protected
-// ---------------------------------------------------------------------------
-
-test('user config paths are always reported as protected', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const protectedChecks = checks.filter((c) => c.name.startsWith('user-config-protected:'));
-  assert(protectedChecks.length >= 4, 'should have at least 4 protected config checks');
-  for (const c of protectedChecks) {
-    assert.equal(c.status, 'pass');
-    assert(c.detail.includes('will not be modified'));
+test('T22: disk budget check does not crash', async () => {
+  const repoDir = makeTempDir('b81-repo22-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit }]);
+  const manifestFile = writeTempManifest(manifest);
+  const home = makeSyntheticHome();
+  try {
+    const { checks } = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-022',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const diskCheck = checks.find(c => c.name === 'disk-budget');
+    assert.ok(diskCheck, 'disk-budget check must exist');
+    assert.ok(['pass', 'fail', 'informational'].includes(diskCheck.status));
+  } finally {
+    cleanup(repoDir, manifestFile, home);
   }
-});
-
-// ---------------------------------------------------------------------------
-// Test 11: exact-source baseline commands pass
-// ---------------------------------------------------------------------------
-
-test('exact-source-command:grep and find and cat all pass', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  for (const cmd of ['grep', 'find', 'cat']) {
-    const c = checks.find((c) => c.name === `exact-source-command:${cmd}`);
-    assert(c, `exact-source-command:${cmd} check must be present`);
-    assert.equal(c.status, 'pass', `${cmd} should be in PATH`);
-  }
-});
-
-// ---------------------------------------------------------------------------
-// Test 12: disk-budget check present (pass or warn)
-// ---------------------------------------------------------------------------
-
-test('disk-budget check is present', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const db = checks.find((c) => c.name === 'disk-budget');
-  assert(db, 'disk-budget check must be present');
-  assert(['pass', 'fail', 'warn'].includes(db.status));
-});
-
-// ---------------------------------------------------------------------------
-// Test 13: network isolation check present (available or warn)
-// ---------------------------------------------------------------------------
-
-test('network-isolation-mechanism check is present', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const ni = checks.find((c) => c.name === 'network-isolation-mechanism');
-  assert(ni, 'network-isolation-mechanism check must be present');
-  assert(['available', 'warn'].includes(ni.status));
-});
-
-// ---------------------------------------------------------------------------
-// Test 14: multiple calls produce independent check sets
-// ---------------------------------------------------------------------------
-
-test('multiple runPreflight calls produce independent results', async () => {
-  const { checks: first } = await runPreflight({ dryRun: true });
-  const { checks: second } = await runPreflight({ dryRun: true });
-
-  assert(first !== second, 'checks arrays must be independent objects');
-  assert.equal(first.length, second.length, 'same number of checks each call');
-});
-
-// ---------------------------------------------------------------------------
-// Test 15: graphify check present
-// ---------------------------------------------------------------------------
-
-test('graphify-subject check is present', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const gs = checks.find((c) => c.name === 'graphify-subject');
-  assert(gs, 'graphify-subject check must be present');
-  assert(['pass', 'blocked', 'warn'].includes(gs.status));
-});
-
-// ---------------------------------------------------------------------------
-// Test 16: graphify blocked when code-only profile missing
-// ---------------------------------------------------------------------------
-
-test('graphify-subject blocked when code-only profile missing', async () => {
-  // Create a governance file with frozen state but no code-only profile
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brain-preflight-gov-'));
-  const govPath = path.join(tmpDir, 'governance.json');
-  const profilesPath = path.join(tmpDir, 'profiles.json');
-
-  fs.writeFileSync(govPath, JSON.stringify({
-    states: {
-      structuralCodeIndexing: {
-        state: 'frozen-pending-migration',
-        schedulerGate: 'skipping job=graphify-nightly reason=bs0-15-pending-containment',
-      },
-    },
-    migrationPath: { globalActivationStatus: 'not-active' },
-  }));
-
-  fs.writeFileSync(profilesPath, JSON.stringify({
-    catalogVersion: '1.0.0',
-    profiles: [
-      { profileId: 'some-other-profile', title: 'Other Profile' },
-    ],
-  }));
-
-  // We can't inject paths into checkGraphifySubject without refactoring,
-  // so we test via the live run which uses the real repo files.
-  // The real profiles do NOT have a code-only profile, so graphify should be blocked.
-  const { checks } = await runPreflight({ dryRun: true });
-  const gs = checks.find((c) => c.name === 'graphify-subject');
-  assert(gs, 'graphify-subject check must be present');
-  // In the real repo, code-only profile is absent → blocked
-  if (gs.status === 'blocked') {
-    assert(gs.detail.includes('graphifySubject=blocked'), `detail should include graphifySubject=blocked: ${gs.detail}`);
-  }
-  // If it passes somehow (future-proofing), that's also acceptable
-  assert(['pass', 'blocked'].includes(gs.status));
-
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-});
-
-// ---------------------------------------------------------------------------
-// Test 17: cbm-binary-hash check present (pass or warn)
-// ---------------------------------------------------------------------------
-
-test('cbm-binary-hash check is present', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const cbm = checks.find((c) => c.name === 'cbm-binary-hash');
-  assert(cbm, 'cbm-binary-hash check must be present');
-  assert(['pass', 'warn', 'fail'].includes(cbm.status));
-});
-
-// ---------------------------------------------------------------------------
-// Test 18: live manifest loads as manifest-loaded:pass
-// ---------------------------------------------------------------------------
-
-test('live manifest is valid and loads as pass', async () => {
-  const { checks } = await runPreflight({ dryRun: true, _manifestPathOverride: REAL_MANIFEST });
-  const mc = checks.find((c) => c.name === 'manifest-loaded');
-  assert(mc, 'manifest-loaded check must be present');
-  assert.equal(mc.status, 'pass');
-  assert(mc.detail.includes('10 fixtures'));
-});
-
-// ---------------------------------------------------------------------------
-// Test 19: runDir is always under benchmark worktrees path
-// ---------------------------------------------------------------------------
-
-test('runDir is always under .brain/benchmark/b8-1/worktrees/', async () => {
-  const { runDir } = await runPreflight({ dryRun: true });
-  assert(runDir.includes(path.join('.brain', 'benchmark', 'b8-1', 'worktrees')), `runDir should be in benchmark worktrees: ${runDir}`);
-});
-
-// ---------------------------------------------------------------------------
-// Test 20: checks always include all 11 named check groups
-// ---------------------------------------------------------------------------
-
-test('all 11 check groups are present in result', async () => {
-  const { checks } = await runPreflight({ dryRun: true });
-  const names = checks.map((c) => c.name);
-
-  assert(names.includes('manifest-loaded'), 'manifest-loaded must be present');
-  assert(names.includes('run-directory'), 'run-directory must be present');
-  assert(names.includes('benchmark-cache-dir'), 'benchmark-cache-dir must be present');
-  assert(names.includes('benchmark-config-dir'), 'benchmark-config-dir must be present');
-  assert(names.some((n) => n.startsWith('user-config-protected:')), 'user-config-protected must be present');
-  assert(names.includes('cbm-binary-hash'), 'cbm-binary-hash must be present');
-  assert(names.includes('graphify-subject'), 'graphify-subject must be present');
-  assert(names.some((n) => n.startsWith('exact-source-command:')), 'exact-source-command must be present');
-  assert(names.includes('disk-budget'), 'disk-budget must be present');
-  assert(names.includes('network-isolation-mechanism'), 'network-isolation-mechanism must be present');
 });

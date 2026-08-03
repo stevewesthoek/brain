@@ -2,16 +2,15 @@
 /**
  * prepare-b8-1-context-memory-benchmark.mjs
  *
- * Dry-run-only B8.1 preflight harness.
+ * Fail-closed B8.1 benchmark preflight and materialization harness.
  *
- * This MUST NOT execute any retrieval subject.
- * It MUST NOT start any MCP server, watcher, scheduler, Graphify process, or index.
- * It MUST NOT modify user configuration.
- * It MUST NOT create anything unless explicit --materialize flag is supplied.
+ * Exit codes:
+ *   0 = execution-ready (all selected-subject gates pass)
+ *   1 = blocked or failed gate
+ *   2 = internal or configuration error
  *
- * Usage:
- *   node tools/prepare-b8-1-context-memory-benchmark.mjs --dry-run
- *   node tools/prepare-b8-1-context-memory-benchmark.mjs --materialize
+ * This MUST NOT execute any retrieval subject, start any MCP server,
+ * watcher, scheduler, Graphify process, or modify user configuration.
  */
 
 import crypto from 'node:crypto';
@@ -24,300 +23,410 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const MANIFEST_PATH = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
+const ADMISSIONS_PATH = path.join(REPO_ROOT, 'operations/specs/mcp-provider-admissions.json');
+const NETWORK_DENY_PROFILE = path.join(REPO_ROOT, 'operations/specs/b8-1-network-deny.sb');
 const GRAPHIFY_GOVERNANCE_PATH = path.join(REPO_ROOT, 'operations/specs/graphify-transition-governance.json');
 const GRAPHIFY_PROFILES_PATH = path.join(REPO_ROOT, 'operations/specs/graphify-operational-profiles.json');
 
-const BENCHMARK_BASE = path.join(os.homedir(), '.brain', 'benchmark', 'b8-1');
-const BENCHMARK_WORKTREES = path.join(BENCHMARK_BASE, 'worktrees');
-const BENCHMARK_CACHE = path.join(BENCHMARK_BASE, 'cache');
-const BENCHMARK_CONFIG = path.join(BENCHMARK_BASE, 'config');
+const VALID_SUBJECTS = ['cbm', 'graphify', 'exact-source'];
+const RUN_ID_PATTERN = /^b8-1-[a-zA-Z0-9._-]+$/;
 
-// Protected user configuration paths — must NEVER be modified
-const PROTECTED_USER_CONFIGS = [
-  path.join(os.homedir(), '.claude.json'),
-  path.join(os.homedir(), '.codex', 'config.toml'),
-  path.join(os.homedir(), '.cursor'),
-  path.join(os.homedir(), '.gemini'),
-];
+function homeDir(override) { return override ?? os.homedir(); }
 
-// ---------------------------------------------------------------------------
-// Result accumulator (created per runPreflight call — not module-global)
-// ---------------------------------------------------------------------------
+function recordCheck(checks, name, status, detail = null) {
+  checks.push({ name, status, detail });
+}
 
-let _checks = [];
+function isValidRunId(runId) {
+  if (!runId || typeof runId !== 'string') return false;
+  if (runId.includes('/') || runId.includes('\\')) return false;
+  if (runId.includes('..')) return false;
+  if (/\s/.test(runId)) return false;
+  if (path.isAbsolute(runId)) return false;
+  if (!/^[a-zA-Z0-9._-]+$/.test(runId)) return false;
+  if (!RUN_ID_PATTERN.test(runId)) return false;
+  return true;
+}
 
-function recordCheck(name, status, detail = null) {
-  _checks.push({ name, status, detail });
+function loadAdmission() {
+  const admissions = JSON.parse(fs.readFileSync(ADMISSIONS_PATH, 'utf8'));
+  return admissions.admissions.find(a => a.admissionId === 'codebase-memory-mcp-brain');
+}
+
+function captureSourceState(manifest) {
+  const states = [];
+  for (const repo of manifest.repositories) {
+    const state = { repositoryId: repo.repositoryId, path: repo.localPath };
+    try {
+      state.HEAD = execFileSync('git', ['-C', repo.localPath, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      const porcelain = execFileSync('git', ['-C', repo.localPath, 'status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+      state.statusPorcelain = porcelain;
+      state.statusSha256 = crypto.createHash('sha256').update(porcelain).digest('hex');
+      state.pinnedCommit = repo.pinnedCommit;
+      try {
+        execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
+        state.pinnedCommitAvailable = true;
+      } catch { state.pinnedCommitAvailable = false; }
+    } catch (e) {
+      state.HEAD = null;
+      state.statusPorcelain = null;
+      state.statusSha256 = null;
+      state.pinnedCommit = repo.pinnedCommit;
+      state.pinnedCommitAvailable = false;
+    }
+    states.push(state);
+  }
+  return states;
 }
 
 // ---------------------------------------------------------------------------
-// Check 1: Load and validate benchmark manifest
+// Preflight checks
 // ---------------------------------------------------------------------------
 
-function checkManifest(manifestPathOverride) {
+function checkManifest(checks, manifestPathOverride) {
   try {
     const text = fs.readFileSync(manifestPathOverride ?? MANIFEST_PATH, 'utf8');
     const manifest = JSON.parse(text);
     if (manifest.schemaVersion !== '1.0.0') {
-      recordCheck('manifest-loaded', 'fail', 'schemaVersion mismatch');
+      recordCheck(checks, 'manifest-loaded', 'fail', 'schemaVersion mismatch');
       return null;
     }
-    recordCheck('manifest-loaded', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos`);
+    recordCheck(checks, 'manifest-loaded', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos`);
     return manifest;
   } catch (e) {
-    recordCheck('manifest-loaded', 'fail', e.message);
+    recordCheck(checks, 'manifest-loaded', 'fail', e.message);
     return null;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Check 2: Pinned commits locally available
-// ---------------------------------------------------------------------------
-
-function checkPinnedCommits(manifest) {
+function checkPinnedCommits(checks, manifest) {
   if (!manifest) return;
   for (const repo of manifest.repositories) {
     if (!fs.existsSync(repo.localPath)) {
-      recordCheck(`pinned-commit:${repo.repositoryId}`, 'fail', `repository not found at ${repo.localPath}`);
+      recordCheck(checks, `pinned-commit:${repo.repositoryId}`, 'fail', `repository not found at ${repo.localPath}`);
       continue;
     }
     try {
-      execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], {
-        stdio: ['ignore', 'ignore', 'ignore'],
-      });
-      recordCheck(`pinned-commit:${repo.repositoryId}`, 'pass', repo.pinnedCommit.slice(0, 12));
+      execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
+      recordCheck(checks, `pinned-commit:${repo.repositoryId}`, 'pass', repo.pinnedCommit.slice(0, 12));
     } catch {
-      recordCheck(`pinned-commit:${repo.repositoryId}`, 'fail', `commit ${repo.pinnedCommit} not found`);
+      recordCheck(checks, `pinned-commit:${repo.repositoryId}`, 'fail', `commit ${repo.pinnedCommit} not found`);
     }
   }
 }
 
-// ---------------------------------------------------------------------------
-// Check 3: Source checkouts will not be mutation targets
-// ---------------------------------------------------------------------------
-
-function checkSourceCheckoutsReadOnly(manifest) {
-  if (!manifest) return;
-  for (const repo of manifest.repositories) {
-    if (!fs.existsSync(repo.localPath)) continue;
-    // Verify HEAD matches or that we at least have a git repo (not a temp dir)
-    try {
-      execFileSync('git', ['-C', repo.localPath, 'status', '--porcelain'], {
-        encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      recordCheck(`source-checkout-read-only:${repo.repositoryId}`, 'pass', 'git repo, read-only proof: benchmark uses archive exports only');
-    } catch {
-      recordCheck(`source-checkout-read-only:${repo.repositoryId}`, 'warn', 'cannot verify git status — treat as read-only');
-    }
+function checkRunId(checks, runId, home) {
+  if (!runId) {
+    recordCheck(checks, 'run-id-valid', 'fail', 'run ID is required');
+    return null;
   }
-}
-
-// ---------------------------------------------------------------------------
-// Check 4: Disposable run directory calculation
-// ---------------------------------------------------------------------------
-
-function checkRunDirectory() {
-  const runId = crypto.randomBytes(4).toString('hex');
-  const runDir = path.join(BENCHMARK_WORKTREES, runId);
-  recordCheck('run-directory', 'planned', runDir);
+  if (!isValidRunId(runId)) {
+    recordCheck(checks, 'run-id-valid', 'fail', `invalid run ID: "${runId}"`);
+    return null;
+  }
+  const runDir = path.join(homeDir(home), '.brain', 'benchmark', 'b8-1', 'runs', runId);
+  if (fs.existsSync(runDir)) {
+    recordCheck(checks, 'run-directory-exists', 'fail', `run directory already exists: ${runDir}`);
+    return runDir;
+  }
+  recordCheck(checks, 'run-id-valid', 'pass', runId);
   return runDir;
 }
 
-// ---------------------------------------------------------------------------
-// Check 5: Isolated cache and config directories
-// ---------------------------------------------------------------------------
-
-function checkIsolatedDirectories() {
-  recordCheck('benchmark-cache-dir', 'planned', BENCHMARK_CACHE);
-  recordCheck('benchmark-config-dir', 'planned', BENCHMARK_CONFIG);
-}
-
-// ---------------------------------------------------------------------------
-// Check 6: User config is not on mutation path
-// ---------------------------------------------------------------------------
-
-function checkUserConfigNotMutated() {
-  for (const configPath of PROTECTED_USER_CONFIGS) {
-    recordCheck(`user-config-protected:${path.basename(configPath)}`, 'pass',
-      `protected: will not be modified (path=${configPath})`);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Check 7: Codebase Memory binary hash (without starting it)
-// ---------------------------------------------------------------------------
-
-function checkCodebaseMemoryBinary() {
-  const cbmBin = path.join(os.homedir(), '.local', 'bin', 'codebase-memory-mcp');
-  if (!fs.existsSync(cbmBin)) {
-    recordCheck('cbm-binary-hash', 'warn', `binary not found at ${cbmBin}`);
+function checkCbmBinary(checks, selectedSubjects, home) {
+  if (!selectedSubjects.includes('cbm')) {
+    recordCheck(checks, 'cbm-binary-identity', 'excluded-subject', 'cbm not selected');
     return;
   }
-  try {
-    const data = fs.readFileSync(cbmBin);
-    const hash = crypto.createHash('sha256').update(data).digest('hex');
-    const stat = fs.statSync(cbmBin);
-    recordCheck('cbm-binary-hash', 'pass', `sha256=${hash.slice(0, 16)}... size=${stat.size}`);
-  } catch (e) {
-    recordCheck('cbm-binary-hash', 'fail', e.message);
+  let admission;
+  try { admission = loadAdmission(); } catch (e) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `cannot load admissions: ${e.message}`);
+    return;
   }
+  if (!admission) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', 'codebase-memory-mcp-brain admission not found');
+    return;
+  }
+
+  const providerRoot = path.join(homeDir(home), '.local', 'lib', 'brain', 'providers', 'codebase-memory-mcp');
+  const version = admission.provider.version;
+  const expectedHash = admission.provider.artifacts[0].sha256;
+  const stablePath = path.join(homeDir(home), '.local', 'bin', 'codebase-memory-mcp');
+  const versionedPath = path.join(providerRoot, `v${version}`, 'codebase-memory-mcp');
+
+  if (!fs.existsSync(stablePath)) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `stable path not found: ${stablePath}`);
+    return;
+  }
+
+  let realPath;
+  try {
+    realPath = fs.realpathSync(stablePath);
+  } catch (e) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `cannot resolve symlink: ${e.message}`);
+    return;
+  }
+
+  if (!realPath.startsWith(providerRoot)) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `symlink escape: resolved to ${realPath}, not under ${providerRoot}`);
+    return;
+  }
+
+  if (!realPath.includes(`v${version}`)) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `unexpected version directory: ${realPath} does not contain v${version}`);
+    return;
+  }
+
+  let stat;
+  try { stat = fs.lstatSync(realPath); } catch (e) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `cannot stat: ${e.message}`);
+    return;
+  }
+
+  if (!stat.isFile()) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `not a regular file: ${realPath}`);
+    return;
+  }
+
+  if (!(stat.mode & 0o111)) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `not executable: ${realPath}`);
+    return;
+  }
+
+  let hash;
+  try {
+    const data = fs.readFileSync(realPath);
+    hash = crypto.createHash('sha256').update(data).digest('hex');
+  } catch (e) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `cannot hash: ${e.message}`);
+    return;
+  }
+
+  if (hash !== expectedHash) {
+    recordCheck(checks, 'cbm-binary-identity', 'fail', `hash mismatch: got ${hash.slice(0, 16)}... expected ${expectedHash.slice(0, 16)}...`);
+    return;
+  }
+
+  recordCheck(checks, 'cbm-binary-identity', 'pass', `sha256=${hash.slice(0, 16)}... version=v${version}`);
 }
 
-// ---------------------------------------------------------------------------
-// Check 8: Graphify subject readiness
-// ---------------------------------------------------------------------------
+function checkNetworkIsolation(checks, selectedSubjects) {
+  if (!selectedSubjects.includes('cbm')) {
+    recordCheck(checks, 'network-isolation', 'excluded-subject', 'cbm not selected — network isolation not required');
+    return;
+  }
 
-function checkGraphifySubject() {
-  // Check governance — must be frozen
+  const sbExec = spawnSync('which', ['sandbox-exec'], { encoding: 'utf8' });
+  if (sbExec.status !== 0) {
+    recordCheck(checks, 'network-isolation', 'blocked', 'sandbox-exec not found — cannot prove network isolation');
+    return;
+  }
+
+  if (!fs.existsSync(NETWORK_DENY_PROFILE)) {
+    recordCheck(checks, 'network-isolation', 'blocked', `network-deny profile not found at ${NETWORK_DENY_PROFILE}`);
+    return;
+  }
+
+  const selfTest = spawnSync('sandbox-exec', ['-f', NETWORK_DENY_PROFILE, '/usr/bin/curl', '-s', '--connect-timeout', '2', 'http://1.1.1.1'], {
+    encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  if (selfTest.status === 0) {
+    recordCheck(checks, 'network-isolation', 'blocked', 'self-test failed: curl succeeded under sandbox (network NOT denied)');
+    return;
+  }
+
+  recordCheck(checks, 'network-isolation', 'pass', `adapter=sandbox-exec; self-test=denied; profile=${path.basename(NETWORK_DENY_PROFILE)}`);
+}
+
+function checkGraphifySubject(checks, selectedSubjects) {
+  if (!selectedSubjects.includes('graphify')) {
+    recordCheck(checks, 'graphify-subject', 'excluded-subject', 'graphify not selected');
+    return;
+  }
+
   let governance = null;
-  try {
-    governance = JSON.parse(fs.readFileSync(GRAPHIFY_GOVERNANCE_PATH, 'utf8'));
-  } catch {
-    recordCheck('graphify-subject', 'blocked', 'governance file missing — cannot prove Graphify is safe to use');
+  try { governance = JSON.parse(fs.readFileSync(GRAPHIFY_GOVERNANCE_PATH, 'utf8')); } catch {
+    recordCheck(checks, 'graphify-subject', 'blocked', 'governance file missing');
     return;
   }
 
   const structuralState = governance.states?.structuralCodeIndexing?.state;
-  const schedulerGate = governance.states?.structuralCodeIndexing?.schedulerGate;
-  const isFrozen = structuralState?.includes('frozen');
-  const isGated = schedulerGate?.includes('skipping') || schedulerGate?.includes('bs0-15');
-
-  if (!isFrozen) {
-    recordCheck('graphify-subject', 'blocked', `structural indexing not frozen (state=${structuralState}) — must be frozen before benchmark`);
+  if (!structuralState?.includes('frozen')) {
+    recordCheck(checks, 'graphify-subject', 'blocked', `structural indexing not frozen (state=${structuralState})`);
     return;
   }
 
-  // Check code-only profile exists
   let profileExists = false;
   try {
     const profiles = JSON.parse(fs.readFileSync(GRAPHIFY_PROFILES_PATH, 'utf8'));
-    const codeOnly = (profiles.profiles ?? []).find((p) => p.profileId === 'code-only');
-    profileExists = Boolean(codeOnly);
-  } catch {
-    // Profile check is advisory
-  }
+    profileExists = Boolean((profiles.profiles ?? []).find(p => p.profileId === 'code-only'));
+  } catch { /* skip */ }
 
   if (!profileExists) {
-    recordCheck('graphify-subject', 'blocked',
-      'graphifySubject=blocked: code-only profile not found in graphify-operational-profiles.json — cannot prove bounded manual command exists without semantic synthesis');
+    recordCheck(checks, 'graphify-subject', 'blocked', 'code-only profile not found');
     return;
   }
 
-  // Check if graphify binary exists
   const result = spawnSync('which', ['graphify'], { encoding: 'utf8' });
-  const hasBinary = result.status === 0 && result.stdout.trim().length > 0;
-
-  if (!hasBinary) {
-    recordCheck('graphify-subject', 'blocked', 'graphifySubject=blocked: graphify binary not found in PATH');
+  if (result.status !== 0) {
+    recordCheck(checks, 'graphify-subject', 'blocked', 'graphify binary not found in PATH');
     return;
   }
 
-  recordCheck('graphify-subject', 'pass',
-    `structural-state=${structuralState}; scheduler-gate=${isGated ? 'skip-enforced' : 'present'}; code-only-profile=found; binary=found`);
+  recordCheck(checks, 'graphify-subject', 'pass', `state=${structuralState}; code-only-profile=found`);
 }
 
-// ---------------------------------------------------------------------------
-// Check 9: Exact-source baseline commands exist
-// ---------------------------------------------------------------------------
-
-function checkExactSourceBaseline() {
+function checkExactSource(checks, selectedSubjects) {
+  if (!selectedSubjects.includes('exact-source')) {
+    recordCheck(checks, 'exact-source-ready', 'excluded-subject', 'exact-source not selected');
+    return;
+  }
   const required = ['grep', 'find', 'cat'];
   for (const cmd of required) {
-    const result = spawnSync('which', [cmd], { encoding: 'utf8' });
-    if (result.status === 0) {
-      recordCheck(`exact-source-command:${cmd}`, 'pass', result.stdout.trim());
-    } else {
-      recordCheck(`exact-source-command:${cmd}`, 'fail', `${cmd} not found in PATH`);
+    const r = spawnSync('which', [cmd], { encoding: 'utf8' });
+    if (r.status !== 0) {
+      recordCheck(checks, 'exact-source-ready', 'fail', `${cmd} not found in PATH`);
+      return;
     }
   }
+  recordCheck(checks, 'exact-source-ready', 'pass', 'grep, find, cat available');
 }
 
-// ---------------------------------------------------------------------------
-// Check 10: Disk budget
-// ---------------------------------------------------------------------------
-
-function checkDiskBudget() {
-  const benchmarkParent = path.join(os.homedir(), '.brain');
-  const minRequiredMB = 2000; // 2 GB minimum
-
+function checkDiskBudget(checks, home) {
+  const benchmarkParent = path.join(homeDir(home), '.brain');
+  const minMB = 2000;
   try {
-    // Use df to check available space
     const dfResult = spawnSync('df', ['-m', benchmarkParent], { encoding: 'utf8' });
     if (dfResult.status === 0) {
       const lines = dfResult.stdout.trim().split('\n');
       if (lines.length >= 2) {
         const fields = lines[lines.length - 1].split(/\s+/);
-        const availableMB = parseInt(fields[3], 10);
-        if (availableMB >= minRequiredMB) {
-          recordCheck('disk-budget', 'pass', `${availableMB} MB available (minimum ${minRequiredMB} MB)`);
-        } else {
-          recordCheck('disk-budget', 'fail', `only ${availableMB} MB available (minimum ${minRequiredMB} MB required)`);
-        }
-        return;
+        const avail = parseInt(fields[3], 10);
+        if (avail >= minMB) { recordCheck(checks, 'disk-budget', 'pass', `${avail} MB available`); return; }
+        recordCheck(checks, 'disk-budget', 'fail', `only ${avail} MB (need ${minMB})`); return;
       }
     }
   } catch { /* fall through */ }
+  recordCheck(checks, 'disk-budget', 'informational', 'cannot determine disk space');
+}
 
-  recordCheck('disk-budget', 'warn', 'cannot determine available disk space — verify manually');
+function checkUserConfigProtected(checks) {
+  recordCheck(checks, 'user-config-protected', 'pass', 'protected paths: .claude.json, .codex, .cursor, .gemini');
 }
 
 // ---------------------------------------------------------------------------
-// Check 11: Network isolation mechanism
+// Materialization
 // ---------------------------------------------------------------------------
 
-function checkNetworkIsolation() {
-  // We can't enforce network isolation here — just verify we can document the requirement
-  // Check if any known network-isolation tools are available (pfctl, nft, iptables)
-  const isolationTools = ['pfctl', 'nft', 'iptables'];
-  const found = isolationTools.filter((tool) => {
-    const r = spawnSync('which', [tool], { encoding: 'utf8' });
-    return r.status === 0;
-  });
+function materialize(runDir, manifest, checks, home) {
+  const tmpDir = runDir + '.tmp';
+  try {
+    fs.mkdirSync(tmpDir, { recursive: true });
 
-  if (found.length > 0) {
-    recordCheck('network-isolation-mechanism', 'available', `tools found: ${found.join(', ')} — operator must configure isolation before benchmark`);
-  } else {
-    recordCheck('network-isolation-mechanism', 'warn', 'no network-isolation tool found in PATH — operator must verify or stop benchmark if network isolation cannot be proven');
+    const dirs = [
+      ...manifest.repositories.map(r => `sources/${r.repositoryId}`),
+      'subjects/cbm/cache', 'subjects/cbm/config', 'subjects/exact-source',
+      'evidence', 'logs'
+    ];
+    for (const d of dirs) fs.mkdirSync(path.join(tmpDir, d), { recursive: true });
+
+    const stateBefore = captureSourceState(manifest);
+    fs.writeFileSync(path.join(tmpDir, 'source-state-before.json'), JSON.stringify(stateBefore, null, 2));
+
+    for (const repo of manifest.repositories) {
+      if (!fs.existsSync(repo.localPath)) continue;
+      const destDir = path.join(tmpDir, 'sources', repo.repositoryId);
+      const tarPath = path.join(tmpDir, `_archive_${repo.repositoryId}.tar`);
+      execFileSync('git', ['-C', repo.localPath, 'archive', repo.pinnedCommit, '--', '.'], {
+        stdio: ['ignore', fs.openSync(tarPath, 'w'), 'ignore']
+      });
+      execFileSync('tar', ['-x', '-f', tarPath, '-C', destDir]);
+      fs.rmSync(tarPath, { force: true });
+    }
+
+    const stateAfter = captureSourceState(manifest);
+    fs.writeFileSync(path.join(tmpDir, 'source-state-after.json'), JSON.stringify(stateAfter, null, 2));
+
+    for (let i = 0; i < stateBefore.length; i++) {
+      const before = stateBefore[i];
+      const after = stateAfter[i];
+      if (before.HEAD !== after.HEAD || before.statusSha256 !== after.statusSha256) {
+        throw new Error(`source state changed for ${before.repositoryId}: HEAD ${before.HEAD} -> ${after.HEAD}, status ${before.statusSha256} -> ${after.statusSha256}`);
+      }
+    }
+
+    const preflightReceipt = { checks: checks.map(c => ({ name: c.name, status: c.status })), timestamp: new Date().toISOString() };
+    fs.writeFileSync(path.join(tmpDir, 'preflight-receipt.json'), JSON.stringify(preflightReceipt, null, 2));
+
+    const manifestText = fs.readFileSync(MANIFEST_PATH, 'utf8');
+    const manifestHash = crypto.createHash('sha256').update(manifestText).digest('hex');
+    const runPlan = {
+      runId: path.basename(runDir),
+      manifestHash: `sha256:${manifestHash}`,
+      repositories: manifest.repositories.map(r => ({ repositoryId: r.repositoryId, pinnedCommit: r.pinnedCommit })),
+      materialized: new Date().toISOString()
+    };
+    fs.writeFileSync(path.join(tmpDir, 'run-plan.json'), JSON.stringify(runPlan, null, 2));
+
+    const cleanupManifest = {
+      runId: path.basename(runDir),
+      runDirectory: runDir,
+      createdAt: new Date().toISOString(),
+      note: 'cleanup targets this exact directory only'
+    };
+    fs.writeFileSync(path.join(tmpDir, 'cleanup-manifest.json'), JSON.stringify(cleanupManifest, null, 2));
+
+    fs.renameSync(tmpDir, runDir);
+    recordCheck(checks, 'materialization', 'pass', `created ${runDir}`);
+  } catch (e) {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* best effort */ }
+    recordCheck(checks, 'materialization', 'fail', e.message);
+    throw e;
   }
 }
 
 // ---------------------------------------------------------------------------
-// Materialization (only if --materialize flag is supplied)
+// Main entry point
 // ---------------------------------------------------------------------------
 
-function materializeDirectories(runDir) {
-  const toCreate = [runDir, BENCHMARK_CACHE, BENCHMARK_CONFIG];
-  for (const dir of toCreate) {
-    fs.mkdirSync(dir, { recursive: true });
-    recordCheck(`materialized:${path.basename(dir)}`, 'created', dir);
+export async function runPreflight({ dryRun = true, materialize: doMaterialize = false, runId, subjects, _manifestPathOverride, _homeOverride } = {}) {
+  const checks = [];
+  const selectedSubjects = subjects ? subjects.filter(s => VALID_SUBJECTS.includes(s)) : ['cbm', 'graphify', 'exact-source'];
+  const allSubjects = new Set(VALID_SUBJECTS);
+  const excludedSubjects = [...allSubjects].filter(s => !selectedSubjects.includes(s));
+
+  const manifest = checkManifest(checks, _manifestPathOverride);
+  checkPinnedCommits(checks, manifest);
+  const runDir = checkRunId(checks, runId, _homeOverride);
+  checkCbmBinary(checks, selectedSubjects, _homeOverride);
+  checkNetworkIsolation(checks, selectedSubjects);
+  checkGraphifySubject(checks, selectedSubjects);
+  checkExactSource(checks, selectedSubjects);
+  checkDiskBudget(checks, _homeOverride);
+  checkUserConfigProtected(checks);
+
+  const blockingChecks = checks
+    .filter(c => c.status === 'fail' || c.status === 'blocked')
+    .map(c => c.name);
+
+  const executionReady = blockingChecks.length === 0 && runDir && !fs.existsSync(runDir);
+
+  if (doMaterialize && !dryRun) {
+    if (!executionReady) {
+      recordCheck(checks, 'materialization', 'fail', 'cannot materialize: execution not ready');
+    } else {
+      materialize(runDir, manifest, checks, _homeOverride);
+    }
   }
+
+  const summary = { executionReady, selectedSubjects, excludedSubjects, blockingChecks, runId: runId ?? null };
+  return { checks: [...checks], summary, runDir, dryRun };
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// CLI
 // ---------------------------------------------------------------------------
-
-export async function runPreflight({ dryRun = true, materialize = false, _manifestPathOverride } = {}) {
-  _checks = [];
-
-  const manifest = checkManifest(_manifestPathOverride);
-  checkPinnedCommits(manifest);
-  checkSourceCheckoutsReadOnly(manifest);
-  const runDir = checkRunDirectory();
-  checkIsolatedDirectories();
-  checkUserConfigNotMutated();
-  checkCodebaseMemoryBinary();
-  checkGraphifySubject();
-  checkExactSourceBaseline();
-  checkDiskBudget();
-  checkNetworkIsolation();
-
-  if (materialize && !dryRun) {
-    materializeDirectories(runDir);
-  }
-
-  return { checks: [..._checks], runDir, dryRun };
-}
 
 const IS_MAIN = (
   typeof process !== 'undefined' &&
@@ -326,38 +435,54 @@ const IS_MAIN = (
 );
 
 if (IS_MAIN) {
-  const isDryRun = process.argv.includes('--dry-run') || !process.argv.includes('--materialize');
-  const isMaterialize = process.argv.includes('--materialize');
+  const args = process.argv.slice(2);
+  const isDryRun = args.includes('--dry-run') || !args.includes('--materialize');
+  const doMaterialize = args.includes('--materialize');
 
-  if (isMaterialize && isDryRun) {
+  if (doMaterialize && args.includes('--dry-run')) {
     console.error('ERROR: Cannot specify both --dry-run and --materialize');
     process.exit(2);
   }
 
-  const { checks: results, runDir } = await runPreflight({ dryRun: isDryRun, materialize: isMaterialize, _manifestPathOverride: undefined });
-
-  console.log(`# B8.1 Benchmark Preflight Harness — ${isDryRun ? 'DRY RUN' : 'MATERIALIZE'}`);
-  console.log(`# Run directory (calculated, NOT created in dry-run): ${runDir}`);
-  console.log('');
-
-  let hasFailures = false;
-  for (const check of results) {
-    const status = check.status.toUpperCase().padEnd(8);
-    const detail = check.detail ? ` — ${check.detail}` : '';
-    console.log(`${status} ${check.name}${detail}`);
-    if (check.status === 'fail') hasFailures = true;
+  const runIdArg = args.find(a => a.startsWith('--run-id=') || a.startsWith('--run-id '));
+  let runId = null;
+  if (runIdArg?.startsWith('--run-id=')) runId = runIdArg.slice('--run-id='.length);
+  else {
+    const idx = args.indexOf('--run-id');
+    if (idx >= 0 && idx + 1 < args.length) runId = args[idx + 1];
   }
 
-  console.log('');
-  const passCount = results.filter((c) => c.status === 'pass' || c.status === 'created').length;
-  const failCount = results.filter((c) => c.status === 'fail').length;
-  const warnCount = results.filter((c) => c.status === 'warn').length;
-  const blockedCount = results.filter((c) => c.status === 'blocked').length;
-
-  console.log(`preflight-summary: pass=${passCount} fail=${failCount} warn=${warnCount} blocked=${blockedCount}`);
-  if (isDryRun) {
-    console.log('dry-run=true (no files created)');
+  const subjectsArg = args.find(a => a.startsWith('--subjects=') || a.startsWith('--subjects '));
+  let subjects = null;
+  if (subjectsArg?.startsWith('--subjects=')) subjects = subjectsArg.slice('--subjects='.length).split(',');
+  else {
+    const idx = args.indexOf('--subjects');
+    if (idx >= 0 && idx + 1 < args.length) subjects = args[idx + 1].split(',');
   }
 
-  if (hasFailures) process.exitCode = 1;
+  try {
+    const { checks, summary, runDir } = await runPreflight({
+      dryRun: isDryRun,
+      materialize: doMaterialize,
+      runId,
+      subjects,
+    });
+
+    console.log(`# B8.1 Benchmark Preflight — ${isDryRun ? 'DRY RUN' : 'MATERIALIZE'}`);
+    console.log('');
+
+    for (const check of checks) {
+      const status = check.status.toUpperCase().padEnd(16);
+      const detail = check.detail ? ` — ${check.detail}` : '';
+      console.log(`${status} ${check.name}${detail}`);
+    }
+
+    console.log('');
+    console.log(JSON.stringify(summary, null, 2));
+
+    if (!summary.executionReady) process.exitCode = 1;
+  } catch (e) {
+    console.error(`INTERNAL ERROR: ${e.message}`);
+    process.exitCode = 2;
+  }
 }

@@ -559,3 +559,79 @@ test('roadmap audit with 2026-08-02 addendum passes consistency check', () => {
   const out = execFileSync('node', [validator], { encoding: 'utf8' });
   assert.match(out, /^docs=pass$/m);
 });
+
+// ---------------------------------------------------------------------------
+// B8.1 hardening regression checks (Task 8 — document-consistency regressions)
+// ---------------------------------------------------------------------------
+
+test('shared benchmark cache directories in plan fail contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nThe benchmark cache is shared across runs at ~/.brain/benchmark/b8-1/cache for efficiency.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:shared-benchmark-cache-directories/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('broad parent-directory cleanup without run ID fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\ncleanup: rm -rf ~/.brain/benchmark/b8-1/ removes all benchmark state.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:broad-parent-directory-cleanup/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('model token fields in offline evidence description fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nOffline evidence records inputTokens and outputTokens from the model session.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:model-tokens-in-offline-evidence/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('prose fixtures competing with manifest fail contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\n**brain_F1** — Expected file: projects/brain-core/src/mind-paths.ts\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:prose-fixtures-compete-with-manifest/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('Graphify omitted while B8.1 called complete fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nB8.1 is complete with CBM and exact-source results.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:graphify-omitted-b81-complete/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('free-form verificationCommand in plan fails contradiction check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nEach fixture uses a verificationCommand string for shell evaluation.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidatorExpectFail(tempRoot);
+    assert.match(out, /benchmark-plan-contradiction:free-form-verification-commands/);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('per-run isolation wording with no shared cache passes contradiction checks', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nAll per-run caches under runs/<run-id>/subjects/cbm/cache/.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidator(tempRoot);
+    assert.match(out, /^docs=pass$/m);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});
+
+test('B8.1 NOT complete wording does not trigger graphify-omitted check', () => {
+  const plan = makeCleanBenchmarkPlan() + '\nB8.1 is NOT complete. Execution requires prerequisites.\n';
+  const tempRoot = makeTempRootWithBenchmarkPlan(plan);
+  try {
+    const out = runValidator(tempRoot);
+    assert.match(out, /^docs=pass$/m);
+  } finally { fs.rmSync(tempRoot, { recursive: true, force: true }); }
+});

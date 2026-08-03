@@ -1,0 +1,13 @@
+;; b8-1-network-deny.sb
+;; Fixed sandbox-exec profile for B8.1 benchmark network isolation.
+;; Denies all network access. Used by the preflight harness self-test
+;; to prove that benchmark child processes cannot reach external hosts.
+;;
+;; Usage: sandbox-exec -f operations/specs/b8-1-network-deny.sb <command>
+;;
+;; This profile MUST NOT be modified at runtime.
+;; The preflight harness verifies this file exists and uses it verbatim.
+
+(version 1)
+(allow default)
+(deny network*)

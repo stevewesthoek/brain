@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "createdAt": "2026-08-02",
+  "createdAt": "2026-08-03",
   "repositories": [
     {
       "repositoryId": "brain",
@@ -38,7 +38,12 @@
       ],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n 'export const MIND_TARGET_PATHS' projects/brain-core/src/mind-paths.ts",
+      "verification": {
+        "algorithm": "line-contains",
+        "path": "projects/brain-core/src/mind-paths.ts",
+        "line": 21,
+        "contains": ["MIND_TARGET_PATHS"]
+      },
       "notes": "MIND_INBOX_PATH does not exist at this commit. The canonical inbox path is MIND_TARGET_PATHS.inboxNew sourced from MIND_CANONICAL_PATHS. File sha256: 27c4efc80349434c2918bdde42bb45bde622f2e92056d78b23fa83b8a744647e"
     },
     {
@@ -60,7 +65,12 @@
       ],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n 'export async function classifyMindCaptureInbox' projects/mind-steward/src/classifier.ts",
+      "verification": {
+        "algorithm": "symbol-at-line",
+        "path": "projects/mind-steward/src/classifier.ts",
+        "line": 73,
+        "contains": ["classifyMindCaptureInbox"]
+      },
       "notes": "File sha256: 36d24d52eebc858eea146214a50efdaa1ab0ee2464b8b3f769bcc2022fcbf1d1"
     },
     {
@@ -79,7 +89,12 @@
       ],
       "scoringType": "set-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "python3 -c \"import json,sys; d=json.load(open('operations/specs/mcp-provider-admissions.json')); wb=[a for a in d['admissions'] if a.get('admissionId')=='workbench-for-brain'][0]; print([t['name'] for t in wb['scope']['tools']])\"",
+      "verification": {
+        "algorithm": "json-pointer-set",
+        "path": "operations/specs/mcp-provider-admissions.json",
+        "jsonPointer": "/admissions/1/scope/tools",
+        "expected": ["getWorkbenchStatus", "readWorkbenchContext", "runWorkbenchCommand"]
+      },
       "notes": "Three admitted tools: getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand. Environment variable: WORKBENCH_MCP_ALLOWED_TOOLS."
     },
     {
@@ -99,7 +114,12 @@
       ],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n '^function main' tools/validate-deletion-readiness.mjs",
+      "verification": {
+        "algorithm": "symbol-at-line",
+        "path": "tools/validate-deletion-readiness.mjs",
+        "line": 255,
+        "contains": ["main"]
+      },
       "notes": "Invocation: node tools/validate-deletion-readiness.mjs. File sha256: 414c67672696e7f546f5a86ee4fb135bb900167678884f468c70a4d8e7ba96d5"
     },
     {
@@ -123,7 +143,12 @@
       "expectedCallees": [],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n 'export const BRAIN_PROFILE_ALLOWED_TOOLS' packages/mcp/src/configure-core.ts",
+      "verification": {
+        "algorithm": "line-contains",
+        "path": "packages/mcp/src/configure-core.ts",
+        "line": 7,
+        "contains": ["BRAIN_PROFILE_ALLOWED_TOOLS"]
+      },
       "notes": "File sha256: 914d6a70541bfd138e1a9c53e58a7dfd874be3bc93da228c3c7390701d6dc89f. BRAIN_PROFILE_ALLOWED_COMMAND_KINDS is on line 8."
     },
     {
@@ -139,7 +164,12 @@
       "expectedCallees": [],
       "scoringType": "exact-match",
       "callerCalleeApplicable": false,
-      "verificationCommand": "grep -n 'export const MCP_ALLOWED_TOOLS_ENV' packages/mcp/src/scope.ts",
+      "verification": {
+        "algorithm": "line-contains",
+        "path": "packages/mcp/src/scope.ts",
+        "line": 7,
+        "contains": ["MCP_ALLOWED_TOOLS_ENV"]
+      },
       "notes": "File sha256: 4dd2731c09d146776a14b36d12755391257e90c22324063570272a4e821fae35"
     },
     {
@@ -157,7 +187,12 @@
       ],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n 'export default function RootLayout' src/app/layout.tsx",
+      "verification": {
+        "algorithm": "symbol-at-line",
+        "path": "src/app/layout.tsx",
+        "line": 74,
+        "contains": ["RootLayout"]
+      },
       "notes": "File sha256: bc882d1532602fb3a853b3acacc6e3683a1123afb8bcd53e1e2140382309d245"
     },
     {
@@ -168,7 +203,12 @@
       "expectedFileCount": 27,
       "scoringType": "count-match",
       "callerCalleeApplicable": false,
-      "verificationCommand": "find . -name 'route.ts' | wc -l | tr -d ' '",
+      "verification": {
+        "algorithm": "file-name-count",
+        "root": ".",
+        "fileName": "route.ts",
+        "expectedCount": 27
+      },
       "notes": "Total route.ts files across all directories (including admin/). API-only count under src/app/api/ is 22."
     },
     {
@@ -186,7 +226,12 @@
       ],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n 'export async function POST' src/app/api/webhook/stripe/route.ts",
+      "verification": {
+        "algorithm": "symbol-at-line",
+        "path": "src/app/api/webhook/stripe/route.ts",
+        "line": 9,
+        "contains": ["POST"]
+      },
       "notes": "File sha256: 997de32ecc6394909b7b24f2a4ca5b8ee4e43f1c0a28eb500c632c0b84abe828"
     },
     {
@@ -212,7 +257,12 @@
       ],
       "scoringType": "exact-match",
       "callerCalleeApplicable": true,
-      "verificationCommand": "grep -n 'export default prisma' src/libs/prisma.ts",
+      "verification": {
+        "algorithm": "symbol-at-line",
+        "path": "src/libs/prisma.ts",
+        "line": 7,
+        "contains": ["prisma"]
+      },
       "notes": "File sha256: b4728c627b8f635f3849e845625bf84348013e5bcb9346f4434a297aa567d510. DATABASE_URL environment variable provides connection string."
     }
   ]

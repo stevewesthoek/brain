@@ -333,6 +333,52 @@ function checkBenchmarkPlanContradictions(content, relativePath, errors) {
   if (/workbench[^.\n]{0,80}active-local/i.test(content)) {
     errors.push(`${relativePath}:benchmark-plan-contradiction:active-local-workbench-unresolved-entrypoint`);
   }
+
+  // Contradiction 7: shared benchmark cache/config directories outside per-run root
+  const hasSharedCache = /benchmark[^.\n]{0,60}cache[^.\n]{0,60}(?:shared|global|~\/\.brain\/benchmark\/b8-1\/cache)/i.test(content);
+  const hasPerRunPolicy = /per-run|runs\/<run-id>/i.test(content);
+  if (hasSharedCache && !hasPerRunPolicy) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:shared-benchmark-cache-directories`);
+  }
+
+  // Contradiction 8: broad parent-directory cleanup without exact run ID
+  if (/cleanup[^.\n]{0,80}rm -rf ~\/\.brain\/benchmark\/b8-1\/?["'`\s]/i.test(content) &&
+      !/runs\/<run-id>/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:broad-parent-directory-cleanup`);
+  }
+
+  // Contradiction 9: model token fields in offline evidence description
+  if (/offline[^.\n]{0,80}(?:inputTokens|outputTokens|model.*tokens)/i.test(content) &&
+      !/must NOT|must not|REJECT|reject|do not record/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:model-tokens-in-offline-evidence`);
+  }
+
+  // Contradiction 10: prose fixtures competing with manifest authority
+  if (/\*\*brain_F[0-9]\*\*.*Expected file:/im.test(content) ||
+      /\*\*wb_F[0-9]\*\*.*Expected file:/im.test(content) ||
+      /\*\*pc_F[0-9]\*\*.*Expected file:/im.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:prose-fixtures-compete-with-manifest`);
+  }
+
+  // Contradiction 11: Graphify omitted while B8.1 called complete
+  if (/B8\.1[^.\n]{0,80}complete/i.test(content) && !/NOT complete/i.test(content)) {
+    const mentionsGraphifyExclusion = /graphify[^.\n]{0,80}(?:excluded|blocked|ineligible|omitted)/i.test(content);
+    if (!mentionsGraphifyExclusion) {
+      errors.push(`${relativePath}:benchmark-plan-contradiction:graphify-omitted-b81-complete`);
+    }
+  }
+
+  // Contradiction 12: free-form verification commands (shell strings as fixture verification)
+  if (/verificationCommand/i.test(content) && !/removed|replaced|structured/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:free-form-verification-commands`);
+  }
+
+  // Contradiction 13: claims source exports occur when they do not (archive without per-run)
+  const claimsExports = /archive export|git archive/i.test(content);
+  const hasRunStructure = /runs\/<run-id>\/sources/i.test(content) || /per-run.*copies/i.test(content);
+  if (claimsExports && !hasRunStructure && !/pinned commit/i.test(content)) {
+    errors.push(`${relativePath}:benchmark-plan-contradiction:false-export-claim`);
+  }
 }
 
 // Verifies that the roadmap audit report contains the 2026-08-02 reconciliation addendum.

@@ -48,7 +48,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "expectedFile", "scoringType", "callerCalleeApplicable", "verificationCommand"],
+        "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "scoringType", "callerCalleeApplicable", "verification"],
         "additionalProperties": false,
         "properties": {
           "fixtureId": {
@@ -109,14 +109,85 @@
             "type": "boolean",
             "description": "Whether caller/callee accuracy applies to this fixture"
           },
-          "verificationCommand": {
-            "type": "string",
-            "description": "Deterministic shell command to verify the expected answer from an exported tree. No agent. No 'or equivalent'."
+          "verification": {
+            "type": "object",
+            "required": ["algorithm"],
+            "properties": {
+              "algorithm": {
+                "type": "string",
+                "enum": ["line-contains", "file-name-count", "json-pointer-set", "file-exists", "symbol-at-line"]
+              },
+              "path": {
+                "type": "string",
+                "description": "Relative path within exported tree"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "contains": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "root": {
+                "type": "string",
+                "description": "Relative root for file counting"
+              },
+              "fileName": {
+                "type": "string",
+                "description": "File name to count"
+              },
+              "expectedCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "jsonPointer": {
+                "type": "string",
+                "pattern": "^/"
+              },
+              "expected": {}
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "algorithm": { "const": "line-contains" } } },
+                "then": { "required": ["algorithm", "path", "line", "contains"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "file-name-count" } } },
+                "then": { "required": ["algorithm", "root", "fileName", "expectedCount"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "json-pointer-set" } } },
+                "then": { "required": ["algorithm", "path", "jsonPointer", "expected"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "file-exists" } } },
+                "then": { "required": ["algorithm", "path"] }
+              },
+              {
+                "if": { "properties": { "algorithm": { "const": "symbol-at-line" } } },
+                "then": { "required": ["algorithm", "path", "line", "contains"] }
+              }
+            ]
           },
           "notes": {
             "type": "string"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "scoringType": { "const": "count-match" } } },
+            "then": { "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "expectedFileCount", "scoringType", "callerCalleeApplicable", "verification"] }
+          },
+          {
+            "if": { "properties": { "scoringType": { "const": "exact-match" } } },
+            "then": { "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "expectedFile", "scoringType", "callerCalleeApplicable", "verification"] }
+          },
+          {
+            "if": { "properties": { "scoringType": { "const": "set-match" } } },
+            "then": { "required": ["fixtureId", "repositoryId", "pinnedCommit", "question", "expectedFile", "scoringType", "callerCalleeApplicable", "verification"] }
+          }
+        ]
       }
     }
   }
