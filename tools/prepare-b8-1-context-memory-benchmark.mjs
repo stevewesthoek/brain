@@ -21,6 +21,7 @@ import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
+  validateManifest,
   validateSchema,
   verifyStructuredVerification,
   verifyFixture,
@@ -103,16 +104,18 @@ function captureSourceState(manifest) {
 
 /**
  * Defect #7: Full manifest validation in preflight.
- * Loads and fully validates the manifest (schema + semantic) using the manifest validator.
+ * Loads and fully validates the manifest (schema + semantic + exported-tree fixtures).
  * This is fail-closed — any validation error blocks readiness.
+ *
+ * Async: validates manifest including fixture verification against exported pinned commits.
  */
-function checkManifest(checks, manifestPathOverride) {
+async function checkManifestAsync(checks, manifestPathOverride) {
   const resolvedPath = manifestPathOverride ?? MANIFEST_PATH;
   let manifestText;
   try {
     manifestText = fs.readFileSync(resolvedPath, 'utf8');
   } catch (e) {
-    recordCheck(checks, 'manifest-loaded', 'fail', e.message);
+    recordCheck(checks, 'manifest-validation', 'fail', e.message);
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
@@ -120,40 +123,31 @@ function checkManifest(checks, manifestPathOverride) {
   try {
     manifest = JSON.parse(manifestText);
   } catch (e) {
-    recordCheck(checks, 'manifest-loaded', 'fail', e.message);
+    recordCheck(checks, 'manifest-validation', 'fail', e.message);
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
-  // schemaVersion fast-fail (cheap, before full Ajv validation)
+  // schemaVersion fast-fail (cheap, before full validation)
   if (manifest.schemaVersion !== '1.0.0') {
-    recordCheck(checks, 'manifest-loaded', 'fail', 'schemaVersion mismatch');
+    recordCheck(checks, 'manifest-validation', 'fail', 'schemaVersion mismatch');
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
-  // Full JSON Schema + semantic validation
-  let schemaObj;
+  // Full validation: schema + semantic + exported-tree fixtures
   try {
-    schemaObj = JSON.parse(fs.readFileSync(MANIFEST_SCHEMA_PATH, 'utf8'));
-  } catch (e) {
-    recordCheck(checks, 'manifest-loaded', 'fail', `cannot load manifest schema: ${e.message}`);
-    return { manifest: null, manifestHash: null, manifestText: null };
-  }
-
-  // Call the real, imported validator — fail closed if it fails
-  try {
-    const schemaErrors = validateSchema(manifest, schemaObj);
-    if (schemaErrors.length > 0) {
-      recordCheck(checks, 'manifest-loaded', 'fail', `validation error: ${schemaErrors[0]}`);
+    const result = await validateManifest(resolvedPath, MANIFEST_SCHEMA_PATH, { allowMissingRepos: false });
+    if (!result.valid) {
+      recordCheck(checks, 'manifest-validation', 'fail', `validation error: ${result.errors[0]}`);
       return { manifest: null, manifestHash: null, manifestText: null };
     }
   } catch (e) {
-    console.error(`INTERNAL: manifest validator failed: ${e.message}`);
-    recordCheck(checks, 'manifest-loaded', 'fail', `validator error: ${e.message}`);
+    console.error(`INTERNAL: full manifest validator failed: ${e.message}`);
+    recordCheck(checks, 'manifest-validation', 'fail', `validator error: ${e.message}`);
     return { manifest: null, manifestHash: null, manifestText: null };
   }
 
   const manifestHash = crypto.createHash('sha256').update(manifestText).digest('hex');
-  recordCheck(checks, 'manifest-loaded', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos; sha256=${manifestHash.slice(0, 16)}...`);
+  recordCheck(checks, 'manifest-validation', 'pass', `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos; sha256=${manifestHash.slice(0, 16)}...`);
   return { manifest, manifestHash, manifestText };
 }
 
@@ -352,24 +346,55 @@ async function checkNetworkIsolationAsync(checks, selectedSubjects, opts = {}) {
       return null;
     }
 
-    // --- Step 3: Sandboxed connection — must be denied ---
-    // Use sandbox-exec with the deny profile to attempt the same connection.
-    // We use /usr/bin/nc (netcat) to attempt TCP connect and capture exit code.
+    // --- Step 3: Sandboxed connection — must be denied with EPERM/EACCES ---
+    // Use sandbox-exec with the deny profile and the child helper to test connection.
+    // The child helper returns structured JSON and specific exit codes.
+    const childPath = path.resolve(__dirname, 'lib', 'b8-1-network-isolation-child.mjs');
     const sandboxedTest = spawnSync(
       'sandbox-exec',
-      ['-f', NETWORK_DENY_PROFILE, '/usr/bin/nc', '-z', '-w', '2', '127.0.0.1', String(port)],
+      ['-f', NETWORK_DENY_PROFILE, 'node', childPath, String(port)],
       { encoding: 'utf8', timeout: 5000, stdio: ['ignore', 'pipe', 'pipe'] }
     );
 
-    // nc returns non-zero when connection fails; sandbox deny produces Operation not permitted
-    sandboxedResult = sandboxedTest.status === 0;
-    denialEvidence = sandboxedResult
-      ? 'nc succeeded under sandbox (network NOT denied)'
-      : (sandboxedTest.stderr || 'non-zero exit from nc under sandbox');
+    // Parse child output
+    let childStartupMarkerSeen = false;
+    let childResult = null;
+    const lines = sandboxedTest.stdout.split('\n');
+    for (const line of lines) {
+      if (line === 'CHILD_STARTUP_MARKER') {
+        childStartupMarkerSeen = true;
+      } else if (line.trim()) {
+        try {
+          childResult = JSON.parse(line);
+        } catch { /* ignore */ }
+      }
+    }
 
-    if (sandboxedResult) {
+    // Validate child startup
+    if (!childStartupMarkerSeen) {
       recordCheck(checks, 'network-isolation', 'blocked',
-        `self-test failed: sandboxed nc connected to 127.0.0.1:${port} — sandbox not denying network`);
+        `self-test failed: sandboxed child did not start (missing startup marker)`);
+      return null;
+    }
+
+    if (!childResult) {
+      recordCheck(checks, 'network-isolation', 'blocked',
+        `self-test failed: sandboxed child produced no output`);
+      return null;
+    }
+
+    // Accept ONLY exit code 1 (EPERM/EACCES) as proof of denial
+    sandboxedResult = childResult.exitCode === 1;
+    denialEvidence = childResult.error || childResult.result;
+
+    if (!sandboxedResult) {
+      const reason = childResult.exitCode === 0
+        ? 'sandboxed process connected (network NOT denied)'
+        : childResult.exitCode === 2
+        ? 'connection refused/timeout (inconclusive, not EPERM/EACCES)'
+        : `unexpected exit code ${childResult.exitCode} (${childResult.result})`;
+      recordCheck(checks, 'network-isolation', 'blocked',
+        `self-test failed: ${reason}`);
       return null;
     }
 
@@ -622,6 +647,95 @@ function parseAndValidateSubjects(rawSubjects) {
 }
 
 // ---------------------------------------------------------------------------
+// Plan digest computation (Task 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a deterministic, canonical plan object for approval binding.
+ * All inputs that affect the plan must be included so that any change produces a different digest.
+ *
+ * @param {object} manifest
+ * @param {string} manifestHash  - sha256 of manifest text
+ * @param {string} manifestSchemaHash  - sha256 of manifest schema
+ * @param {string[]} selectedSubjects
+ * @param {object|null} cbmIdentity  - when CBM is selected
+ * @param {object|null} networkProof  - when CBM is selected
+ * @param {string} runId
+ * @returns {object} canonical plan object
+ */
+function buildCanonicalPlan(manifest, manifestHash, manifestSchemaHash, selectedSubjects, cbmIdentity, networkProof, runId) {
+  const plan = {
+    schemaVersion: '1.0.0',
+    runId,
+    selectedSubjects: [...selectedSubjects].sort(), // canonical order
+    excludedSubjects: VALID_SUBJECTS.filter(s => !selectedSubjects.includes(s)).sort(),
+    manifestSha256: manifestHash,
+    manifestSchemaSha256: manifestSchemaHash,
+    pinnedRepositoryCommits: (manifest.repositories || [])
+      .map(r => ({ repositoryId: r.repositoryId, pinnedCommit: r.pinnedCommit }))
+      .sort((a, b) => a.repositoryId.localeCompare(b.repositoryId)),
+    graphifyBlockedOrExcluded: !selectedSubjects.includes('graphify'),
+  };
+
+  // Include CBM-specific fields only when CBM is selected
+  if (selectedSubjects.includes('cbm')) {
+    if (cbmIdentity) {
+      plan.cbmBinaryIdentity = {
+        version: cbmIdentity.version,
+        sha256: cbmIdentity.sha256,
+      };
+    }
+    if (networkProof) {
+      plan.networkProfileSha256 = networkProof.profileSha256;
+    }
+  }
+
+  // Planned write paths (deterministic order)
+  const plannedRelPaths = [
+    'run-plan.json',
+    'preflight-receipt.json',
+    'cleanup-manifest.json',
+    'source-state-before.json',
+    'source-state-after.json',
+    'evidence/',
+    'logs/',
+  ];
+  if (selectedSubjects.includes('exact-source')) {
+    plannedRelPaths.push('subjects/exact-source/');
+  }
+  if (selectedSubjects.includes('cbm')) {
+    plannedRelPaths.push('subjects/cbm/cache/', 'subjects/cbm/config/');
+  }
+  plan.plannedWritePaths = plannedRelPaths.sort();
+
+  return plan;
+}
+
+/**
+ * Compute the deterministic SHA-256 digest of a canonical plan.
+ * Canonicalizes keys alphabetically before hashing.
+ *
+ * @param {object} plan  - the canonical plan object
+ * @returns {string} 64-character lowercase hex SHA-256
+ */
+function computePlanDigest(plan) {
+  // Canonicalize: sort keys recursively
+  function canonicalize(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(canonicalize);
+    const sorted = {};
+    for (const key of Object.keys(obj).sort()) {
+      sorted[key] = canonicalize(obj[key]);
+    }
+    return sorted;
+  }
+
+  const canonical = canonicalize(plan);
+  const json = JSON.stringify(canonical, null, 0); // compact JSON
+  return crypto.createHash('sha256').update(json).digest('hex');
+}
+
+// ---------------------------------------------------------------------------
 // Materialization (defect #10: subject-aware directories)
 // ---------------------------------------------------------------------------
 
@@ -681,10 +795,10 @@ function validateExportedTree(manifest, repoId, exportedRoot, tmpDir) {
 
 
 /**
- * Defect #9: Manifest hash tracking in materialization.
- * Pass exact resolved manifest path and hashes through to the receipt.
+ * Defect #9 & Task 6: Manifest hash tracking and expanded plan/receipt.
+ * Pass exact resolved manifest path, hashes, and subject metadata through.
  */
-function materialize(runDir, manifest, manifestHash, manifestPath, checks, selectedSubjects, home) {
+function materialize(runDir, manifest, manifestHash, manifestPath, checks, selectedSubjects, home, cbmIdentity, networkProof, planSha256) {
   const tmpDir = runDir + '.tmp';
   try {
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -728,25 +842,27 @@ function materialize(runDir, manifest, manifestHash, manifestPath, checks, selec
       }
     }
 
-    // Defect #9: Record manifest path and hash in receipt
+    // Task 6: Expanded plan and receipt
     const schemaText = fs.existsSync(MANIFEST_SCHEMA_PATH) ? fs.readFileSync(MANIFEST_SCHEMA_PATH) : Buffer.alloc(0);
     const schemaHash = crypto.createHash('sha256').update(schemaText).digest('hex');
 
+    // Task 6: Expanded preflightReceipt with all checks
     const preflightReceipt = {
       schemaVersion: '1.0.0',
       runId: path.basename(runDir),
       selectedSubjects,
       excludedSubjects: VALID_SUBJECTS.filter(s => !selectedSubjects.includes(s)),
-      checks: checks.map(c => ({ name: c.name, status: c.status })),
+      checks: checks.map(c => ({ name: c.name, status: c.status, detail: c.detail })),
       manifestPath: path.resolve(manifestPath ?? MANIFEST_PATH),
       manifestHash: `sha256:${manifestHash}`,
       manifestSchemaPath: MANIFEST_SCHEMA_PATH,
       manifestSchemaHash: `sha256:${schemaHash}`,
+      planSha256,
       createdAt: new Date().toISOString(),
     };
     fs.writeFileSync(path.join(tmpDir, 'preflight-receipt.json'), JSON.stringify(preflightReceipt, null, 2));
 
-    // Defect #11: Expanded run-plan.json
+    // Task 6: Expanded run-plan.json with all deterministic inputs
     const runPlan = {
       schemaVersion: '1.0.0',
       runId: path.basename(runDir),
@@ -754,14 +870,30 @@ function materialize(runDir, manifest, manifestHash, manifestPath, checks, selec
       excludedSubjects: VALID_SUBJECTS.filter(s => !selectedSubjects.includes(s)),
       manifestPath: path.resolve(manifestPath ?? MANIFEST_PATH),
       manifestHash: `sha256:${manifestHash}`,
+      manifestSchemaPath: MANIFEST_SCHEMA_PATH,
       manifestSchemaHash: `sha256:${schemaHash}`,
+      planSha256,
       repositories: manifest.repositories.map(r => ({
         repositoryId: r.repositoryId,
         pinnedCommit: r.pinnedCommit,
       })),
-      plannedWritePaths: buildSubjectDirs(selectedSubjects, manifest).map(d => path.join(runDir, d)),
-      createdAt: new Date().toISOString(),
+      graphifyBlockedOrExcluded: !selectedSubjects.includes('graphify'),
     };
+
+    // Include CBM-specific fields only when CBM is selected
+    if (selectedSubjects.includes('cbm') && cbmIdentity) {
+      runPlan.cbmBinaryIdentity = {
+        version: cbmIdentity.version,
+        sha256: cbmIdentity.sha256,
+      };
+    }
+    if (selectedSubjects.includes('cbm') && networkProof) {
+      runPlan.networkProfileSha256 = networkProof.profileSha256;
+    }
+
+    runPlan.plannedWritePaths = buildSubjectDirs(selectedSubjects, manifest).map(d => path.join(runDir, d)).sort();
+    runPlan.createdAt = new Date().toISOString();
+
     fs.writeFileSync(path.join(tmpDir, 'run-plan.json'), JSON.stringify(runPlan, null, 2));
 
     const cleanupManifest = {
@@ -788,7 +920,7 @@ function materialize(runDir, manifest, manifestHash, manifestPath, checks, selec
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export async function runPreflight({ dryRun = true, materialize: doMaterialize = false, runId, subjects, _manifestPathOverride, _homeOverride, _diskBudgetHooks } = {}) {
+export async function runPreflight({ dryRun = true, materialize: doMaterialize = false, runId, subjects, approvedPlanSha256, _manifestPathOverride, _homeOverride, _diskBudgetHooks } = {}) {
   const checks = [];
 
   // Defect #4: Strict subject parsing — no defaults, no silent filtering
@@ -814,37 +946,9 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
   const allSubjects = new Set(VALID_SUBJECTS);
   const excludedSubjects = [...allSubjects].filter(s => !selectedSubjects.includes(s));
 
-  // Defect #7: Full manifest validation in preflight
-  let manifest = null;
-  let manifestHash = null;
+  // Defect #7: Full manifest validation in preflight — async call
   const resolvedManifestPath = _manifestPathOverride ?? MANIFEST_PATH;
-  {
-    let manifestText;
-    try {
-      manifestText = fs.readFileSync(resolvedManifestPath, 'utf8');
-    } catch (e) {
-      recordCheck(checks, 'manifest-loaded', 'fail', e.message);
-    }
-
-    if (manifestText !== undefined) {
-      try {
-        manifest = JSON.parse(manifestText);
-      } catch (e) {
-        recordCheck(checks, 'manifest-loaded', 'fail', e.message);
-      }
-    }
-
-    if (manifest !== null) {
-      if (manifest.schemaVersion !== '1.0.0') {
-        recordCheck(checks, 'manifest-loaded', 'fail', 'schemaVersion mismatch');
-        manifest = null;
-      } else {
-        manifestHash = crypto.createHash('sha256').update(manifestText).digest('hex');
-        recordCheck(checks, 'manifest-loaded', 'pass',
-          `${manifest.fixtures.length} fixtures across ${manifest.repositories.length} repos; sha256=${manifestHash.slice(0, 16)}...`);
-      }
-    }
-  }
+  const { manifest, manifestHash, manifestText } = await checkManifestAsync(checks, _manifestPathOverride);
 
   checkPinnedCommits(checks, manifest);
   const runDir = checkRunId(checks, runId, _homeOverride);
@@ -856,6 +960,15 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
 
   // Defect #6: Planned-write containment (replaces unconditional pass)
   checkPlannedWriteContainment(checks, runDir, selectedSubjects, _homeOverride);
+
+  // Task 2: Compute plan digest early
+  let planSha256 = null;
+  if (manifest && manifestHash) {
+    const schemaText = fs.existsSync(MANIFEST_SCHEMA_PATH) ? fs.readFileSync(MANIFEST_SCHEMA_PATH, 'utf8') : '';
+    const manifestSchemaHash = crypto.createHash('sha256').update(schemaText).digest('hex');
+    const plan = buildCanonicalPlan(manifest, manifestHash, manifestSchemaHash, selectedSubjects, cbmIdentity, networkProof, runId ?? '');
+    planSha256 = computePlanDigest(plan);
+  }
 
   let blockingChecks = checks
     .filter(c => c.status === 'fail' || c.status === 'blocked')
@@ -870,12 +983,25 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
     if (!canMaterialize) {
       recordCheck(checks, 'materialization', 'fail', 'cannot materialize: execution not ready');
     } else {
-      try {
-        materialize(runDir, manifest, manifestHash, resolvedManifestPath, checks, selectedSubjects, _homeOverride);
-        materialized = true;
-      } catch (e) {
-        // Error is already recorded in checks by materialize()
-        materialized = false;
+      // Task 2: Verify plan approval before materialization
+      if (!planSha256) {
+        recordCheck(checks, 'plan-approval', 'fail', 'cannot compute plan digest');
+        blockingChecks.push('plan-approval');
+      } else if (!approvedPlanSha256) {
+        recordCheck(checks, 'plan-approval', 'fail', `plan digest ${planSha256.slice(0, 16)}... must be approved via --approved-plan-sha256`);
+        blockingChecks.push('plan-approval');
+      } else if (approvedPlanSha256 !== planSha256) {
+        recordCheck(checks, 'plan-approval', 'fail', `approved digest mismatch: got ${approvedPlanSha256.slice(0, 16)}... expected ${planSha256.slice(0, 16)}...`);
+        blockingChecks.push('plan-approval');
+      } else {
+        // Approval matches — proceed with materialization
+        try {
+          materialize(runDir, manifest, manifestHash, resolvedManifestPath, checks, selectedSubjects, _homeOverride, cbmIdentity, networkProof, planSha256);
+          materialized = true;
+        } catch (e) {
+          // Error is already recorded in checks by materialize()
+          materialized = false;
+        }
       }
     }
 
@@ -888,7 +1014,15 @@ export async function runPreflight({ dryRun = true, materialize: doMaterialize =
   // executionReady means the last operation succeeded (or would succeed in dry-run)
   const executionReady = blockingChecks.length === 0;
 
-  const summary = { executionReady, materialized, selectedSubjects, excludedSubjects, blockingChecks, runId: runId ?? null };
+  const summary = {
+    executionReady,
+    materialized,
+    selectedSubjects,
+    excludedSubjects,
+    blockingChecks,
+    runId: runId ?? null,
+    planSha256,
+  };
   return { checks: [...checks], summary, runDir, dryRun };
 }
 
@@ -918,6 +1052,26 @@ if (IS_MAIN) {
   else {
     const idx = args.indexOf('--run-id');
     if (idx >= 0 && idx + 1 < args.length) runId = args[idx + 1];
+  }
+
+  // Parse --manifest argument
+  const manifestArg = args.find(a => a.startsWith('--manifest='));
+  let manifestPathOverride = null;
+  if (manifestArg?.startsWith('--manifest=')) {
+    manifestPathOverride = manifestArg.slice('--manifest='.length);
+  } else {
+    const idx = args.indexOf('--manifest');
+    if (idx >= 0 && idx + 1 < args.length) manifestPathOverride = args[idx + 1];
+  }
+
+  // Parse --approved-plan-sha256 argument
+  const planDigestArg = args.find(a => a.startsWith('--approved-plan-sha256='));
+  let approvedPlanSha256 = null;
+  if (planDigestArg?.startsWith('--approved-plan-sha256=')) {
+    approvedPlanSha256 = planDigestArg.slice('--approved-plan-sha256='.length);
+  } else {
+    const idx = args.indexOf('--approved-plan-sha256');
+    if (idx >= 0 && idx + 1 < args.length) approvedPlanSha256 = args[idx + 1];
   }
 
   // Defect #4: CLI must require explicit --subjects
@@ -950,6 +1104,8 @@ if (IS_MAIN) {
       materialize: doMaterialize,
       runId,
       subjects: subjectsRaw,
+      approvedPlanSha256,
+      _manifestPathOverride: manifestPathOverride,
     });
 
     console.log(`# B8.1 Benchmark Preflight — ${isDryRun ? 'DRY RUN' : 'MATERIALIZE'}`);

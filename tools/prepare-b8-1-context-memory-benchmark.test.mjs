@@ -325,7 +325,7 @@ test('T10: non-existent manifest causes fail', async () => {
       _homeOverride: home,
     });
     assert.equal(summary.executionReady, false);
-    assert.ok(checks.some(c => c.name === 'manifest-loaded' && c.status === 'fail'));
+    assert.ok(checks.some(c => c.name === 'manifest-validation' && c.status === 'fail'));
   } finally {
     cleanup(home);
   }
@@ -348,7 +348,7 @@ test('T11: malformed JSON manifest causes fail', async () => {
       _homeOverride: home,
     });
     assert.equal(summary.executionReady, false);
-    assert.ok(checks.some(c => c.name === 'manifest-loaded' && c.status === 'fail'));
+    assert.ok(checks.some(c => c.name === 'manifest-validation' && c.status === 'fail'));
   } finally {
     cleanup(home, badManifest);
   }
@@ -371,7 +371,7 @@ test('T12: wrong schemaVersion fails manifest check', async () => {
       _homeOverride: home,
     });
     assert.equal(summary.executionReady, false);
-    assert.ok(checks.some(c => c.name === 'manifest-loaded' && c.status === 'fail'));
+    assert.ok(checks.some(c => c.name === 'manifest-validation' && c.status === 'fail'));
   } finally {
     cleanup(home, manifestFile);
   }
@@ -397,7 +397,8 @@ test('T13: pinned commit not found in repository causes fail', async () => {
       _homeOverride: home,
     });
     assert.equal(summary.executionReady, false);
-    assert.ok(checks.some(c => c.name.startsWith('pinned-commit:') && c.status === 'fail'));
+    // Task 1: Full manifest validation now catches missing pinned commits during validation
+    assert.ok(checks.some(c => c.name === 'manifest-validation' && c.status === 'fail'));
   } finally {
     cleanup(repoDir, manifestFile, home);
   }
@@ -420,7 +421,8 @@ test('T14: repository path not found causes fail', async () => {
       _homeOverride: home,
     });
     assert.equal(summary.executionReady, false);
-    assert.ok(checks.some(c => c.name.startsWith('pinned-commit:') && c.status === 'fail'));
+    // Task 1: Full manifest validation now catches missing repositories during validation
+    assert.ok(checks.some(c => c.name === 'manifest-validation' && c.status === 'fail'));
   } finally {
     cleanup(manifestFile, home);
   }
@@ -523,11 +525,24 @@ test('T18: materialization creates run directory with expected structure', async
   const manifestFile = writeTempManifest(manifest);
   const home = makeSyntheticHome();
   try {
+    // Task 2: Get plan digest from dry-run first, then materialize with approval
+    const dryRun = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-018',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(dryRun.summary.executionReady, true);
+    const planSha256 = dryRun.summary.planSha256;
+    assert.ok(planSha256, 'planSha256 must be present in dry-run');
+
     const { summary, runDir } = await runPreflight({
       dryRun: false,
       materialize: true,
       runId: 'b8-1-test-018',
       subjects: ['exact-source'],
+      approvedPlanSha256: planSha256,
       _manifestPathOverride: manifestFile,
       _homeOverride: home,
     });
@@ -559,11 +574,22 @@ test('T19: source state before and after match in materialized run', async () =>
   const manifestFile = writeTempManifest(manifest);
   const home = makeSyntheticHome();
   try {
+    // Task 2: Get plan digest from dry-run first
+    const dryRun = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-019',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const planSha256 = dryRun.summary.planSha256;
+
     const { runDir } = await runPreflight({
       dryRun: false,
       materialize: true,
       runId: 'b8-1-test-019',
       subjects: ['exact-source'],
+      approvedPlanSha256: planSha256,
       _manifestPathOverride: manifestFile,
       _homeOverride: home,
     });
@@ -590,11 +616,22 @@ test('T20: cleanup manifest references exact run ID', async () => {
   const manifestFile = writeTempManifest(manifest);
   const home = makeSyntheticHome();
   try {
+    // Task 2: Get plan digest from dry-run first
+    const dryRun = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-test-020',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    const planSha256 = dryRun.summary.planSha256;
+
     const { runDir } = await runPreflight({
       dryRun: false,
       materialize: true,
       runId: 'b8-1-test-020',
       subjects: ['exact-source'],
+      approvedPlanSha256: planSha256,
       _manifestPathOverride: manifestFile,
       _homeOverride: home,
     });

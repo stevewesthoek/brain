@@ -47,15 +47,20 @@ function minimalEvidence(overrides = {}) {
     preflightReceiptHash: 'sha256:' + 'c'.repeat(64),
     subjectBinaryIdentity: {
       cbm: {
-        path: '/usr/local/bin/cbm',
         sha256: 'd'.repeat(64),
         version: '1.2.3'
       }
     },
+    // Task 4: networkIsolationProof requires specific fields when CBM is selected
     networkIsolationProof: {
-      adapter: 'pf',
-      selfTestPassed: true,
-      profilePath: '/etc/pf.conf'
+      status: 'passed',
+      adapter: 'sandbox-exec',
+      profilePath: '/path/to/profile.sb',
+      profileSha256: 'e'.repeat(64),
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true
     },
     fixtureResults: [
       {
@@ -242,20 +247,24 @@ test('valid comprehensive evidence passes', () => {
     },
     subjectBinaryIdentity: {
       cbm: {
-        path: '/usr/local/bin/cbm',
         sha256: 'e'.repeat(64),
         version: '2.0.0'
       },
       graphify: {
-        path: '/usr/local/bin/graphify',
         version: '1.5.0'
       }
     },
+    // Task 4: networkIsolationProof with new schema when CBM selected
     networkIsolationProof: {
-      adapter: 'pf',
+      status: 'passed',
+      adapter: 'sandbox-exec',
+      profilePath: '/path/to/profile.sb',
+      profileSha256: 'f'.repeat(64),
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
       selfTestPassed: true,
-      profilePath: '/etc/pf-b8-1.conf',
-      selfTestDetail: 'All outbound connections blocked; DNS returned NXDOMAIN'
+      selfTestDetail: 'All outbound connections blocked; loopback access denied with EPERM'
     },
     fixtureResults: [
       {

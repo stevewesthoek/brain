@@ -50,11 +50,13 @@
       "properties": {
         "cbm": {
           "type": "object",
+          "required": ["sha256", "version"],
           "properties": {
             "path": { "type": "string" },
             "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
             "version": { "type": "string" }
-          }
+          },
+          "additionalProperties": false
         },
         "graphify": {
           "type": "object",
@@ -63,17 +65,36 @@
             "version": { "type": "string" }
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "networkIsolationProof": {
-      "type": "object",
-      "required": ["adapter", "selfTestPassed", "profilePath"],
-      "properties": {
-        "adapter": { "type": "string" },
-        "selfTestPassed": { "type": "boolean" },
-        "profilePath": { "type": "string" },
-        "selfTestDetail": { "type": "string" }
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string", "const": "not-required" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["status", "adapter", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "properties": {
+            "status": { "type": "string", "const": "passed" },
+            "adapter": { "type": "string" },
+            "profilePath": { "type": "string" },
+            "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "controlSucceeded": { "type": "boolean", "const": true },
+            "sandboxedChildStarted": { "type": "boolean", "const": true },
+            "sandboxedConnectionDenied": { "type": "boolean", "const": true },
+            "selfTestPassed": { "type": "boolean", "const": true },
+            "selfTestDetail": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "fixtureResults": {
       "type": "array",
