@@ -1,70 +1,82 @@
 # Mind Steward
 
-Mind Steward maintains the `mind` vault through local capture classification, review suggestions, and maintenance reports.
+Mind Steward is a retained Brain-owned package for local, deterministic Mind maintenance analysis and presentation. Its default boundary is dry-run/report-only. It remains separate from Brain Core and uses the canonical Brain-owned path registry for active path and policy resolution.
+
+The package and repository configuration do not, by themselves, prove deployment, active scheduling, or continuous operation.
 
 ## Responsibilities
 
-- Read and enforce the `mind/router/` contract.
-- Classify new captures in `mind/capture/inbox/`.
-- Use the AI Model Selector with `local_only: true` for automatic capture classification.
-- Append review suggestions through the compile loop.
-- Write runtime reports under `brain/runtime/local/mind-steward/`.
-- Keep raw captures and source material intact.
+Current package responsibilities include:
 
-## Save-to-Mind Flow
+- classifying captures when an operator invokes the classifier;
+- producing deterministic dry-run contract and maintenance plans;
+- generating Markdown and JSON reports;
+- creating and presenting review previews;
+- evaluating wiki health;
+- generating maintenance-preview queues;
+- exposing local CLI presentation surfaces.
 
-```text
-Save to Mind
--> n8n writes Markdown to GitHub capture/inbox/
--> nightly local scheduler syncs missing inbox captures to this computer
--> Mind Steward classifies captures with local AI
--> Mind Steward appends review suggestions to wiki/log.md
-```
+Mind Steward does not autonomously move files, rewrite Mind content, update Kanban or task authority, or select durable destinations. Classifier apply mode remains disabled pending approval integration. Any durable change requires a separate exact approved execution path and its existing validation and rollback boundaries.
 
-Save to Mind does not trigger immediate classification. Classification runs during the nightly local scheduler.
+## Canonical path resolution
 
-## Local Classification
+Active path policy is resolved centrally through:
 
-Mind Steward requests a local model route from:
+- `operations/specs/infinite-brain-path-registry.json`
+- `tools/mind-canonical-path-registry.mjs`
+- `projects/mind-steward/src/path-registry.ts`
 
-```text
-http://127.0.0.1:4890/select
-```
+The active capture destinations used by Mind Steward are registry-derived:
 
-with:
+- intake: `inbox/new/`
+- failure queue: `inbox/failed/`
 
-```json
-{
-  "task_type": "mind_capture_classification",
-  "local_only": true,
-  "urgent": true
-}
-```
+The package also resolves other canonical paths, including the approved agent-context target, through registry path IDs rather than duplicating path policy in package code.
 
-The selected provider must be a local OpenAI-compatible endpoint such as Ollama.
+Legacy paths such as `capture/inbox/`, `capture/failed/`, `router/`, and `mind/router/` are not current active defaults. Registry-listed compatibility or historical paths may be read only within their explicit scoped policies; they are not durable-write destinations. `wiki/log.md` remains a registry-classified compatibility read/proposal ledger and produces no-op review items only.
 
-## Scripts
+## Execution and safety boundary
 
-```text
-tools/scripts/mind-steward-sync-inbox.sh
-tools/scripts/mind-steward-classify-captures.sh
-tools/scripts/mind-steward-dry-run-report.sh
-tools/scripts/mind-compile-loop.sh
-```
+- Dry-run/report-only behavior is the default.
+- Reports and previews are non-authoritative until reviewed.
+- Local model selection occurs only when the classifier is explicitly invoked by a caller.
+- Repository files and package code do not establish that a scheduler or workflow is actively deployed.
+- Retention does not authorize nightly execution, scheduling, watchers, production writes, or continuous automation.
+- Durable changes require a separate approved apply path; authority must not be inferred from a preview or report.
+- The package must not infer authority to edit Mind, `kanban.md`, `tasks.md`, raw source content, or runtime configuration.
+- Path and write policy are owned centrally by Brain contracts and are not duplicated inside Mind Steward.
 
-`mind-steward-sync-inbox.sh` fetches `origin/main` and copies missing `capture/inbox/*.md` files into the local vault without overwriting local files.
+## Package boundary
 
-`mind-steward-classify-captures.sh` classifies inbox captures through the AI Model Selector local-only route.
+Mind Steward remains separate from Brain Core. It has no package import dependency on Brain Core. The packages share canonical path and policy resolution through the Brain-owned registry, while retaining distinct responsibilities:
 
-## Safety
+- Mind Steward: local classifier, dry-run reports, preview presentation, wiki health, maintenance-preview queues, and CLI presentation.
+- Brain Core: API and adapter surfaces, proposal and approval adapters, scheduler views, and contained write boundaries.
 
-- No hosted, CLI-backed, or paid/API-backed provider for automatic capture classification.
-- No arbitrary shell execution from Mind notes.
-- No secrets or runtime logs in Mind.
-- Broad move/delete/archive/rewrite behavior requires an explicit approved apply path.
+Future migration or retirement requires separate Brain-owned evidence and approval. This README does not authorize either outcome.
 
 ## Validation
 
+Package scripts are defined in `package.json`:
+
 ```bash
-npm run ci
+npm --prefix projects/mind-steward run typecheck
+npm --prefix projects/mind-steward run test
+npm --prefix projects/mind-steward run ci
 ```
+
+Canonical registry validation:
+
+```bash
+node tools/mind-canonical-path-registry.mjs validate
+```
+
+## Evidence
+
+- `operations/reports/b1-5-mind-steward-package-boundary-2026-07-14.md`
+- `operations/reports/bs0-8-mind-steward-path-registry-migration-2026-07-14.md`
+- `operations/reports/bs0-9-brain-core-path-consumer-migration-2026-07-14.md`
+- `operations/specs/infinite-brain-path-registry.json`
+- `tools/mind-canonical-path-registry.mjs`
+- `projects/mind-steward/src/path-registry.ts`
+- `operations/runbooks/infinite-brain-roadmap-status.md`
