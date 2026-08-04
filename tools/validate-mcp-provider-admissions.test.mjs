@@ -186,6 +186,16 @@ test('live admission registry: passes validation without provider root', () => {
   assert.deepEqual(errors, [], `live registry errors: ${errors.join(', ')}`);
 });
 
+test('optional corpus limits must be positive integers', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].limits.maxSourceFiles = 0;
+  item.registry.admissions[0].limits.maxSourceBytes = 1.5;
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some((error) => error.includes('invalid optional limit maxSourceFiles')), `errors: ${errors}`);
+  assert(errors.some((error) => error.includes('invalid optional limit maxSourceBytes')), `errors: ${errors}`);
+  fs.rmSync(item.root, {recursive: true});
+});
+
 test('tool allowlist: rendered TOML includes all admitted snake_case tool names', async () => {
   const { renderProjectRegistration } = await import('./generate-mcp-project-registration.mjs');
   const tools = [

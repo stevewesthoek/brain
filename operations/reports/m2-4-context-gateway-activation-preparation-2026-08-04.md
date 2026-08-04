@@ -3,7 +3,7 @@
 **Status:** activation-prepared; actual activation blocked on explicit Steve Westhoek approval  
 **Canonical integration target:** Brain `main`  
 **Evidence branch:** `codex/mind-m7-m2-unblock`  
-**Provider source:** `753a2257bc65a2e16bf9847d244690813a4bd1cb`  
+**Provider source:** `ac624cfe98a7e56ab7056bd2eec916b85dc3099b`
 **Mind source observed:** `06de527423e05d4208cdcf485be92a2d1028c46d`
 
 ## Prepared state
@@ -14,8 +14,8 @@
 - Added an owner-local, no-network, credential-free stdio server.
 - Fixed the Mind root and allowed scopes in admission-owned environment.
 - Enforced the exact three-tool allowlist inside the provider.
-- Added an owner-only, revision-bound Steve approval-file gate for any
-  non-preparation startup.
+- Added an owner-only Steve approval-file gate bound to the provider revision,
+  exact Mind commit, and complete allowed-scope list for non-preparation startup.
 - Documented trigger, disable, rollback, post-disable verification, and manual
   unavailable-service fallback.
 
@@ -28,11 +28,11 @@ did not create an approval file.
 | Check | Observed result |
 |---|---|
 | Server identity | `mind-context` `1.0.0` |
-| Provider revision | `753a2257bc65a2e16bf9847d244690813a4bd1cb` |
+| Provider revision | `ac624cfe98a7e56ab7056bd2eec916b85dc3099b` |
 | Activation state | `preparation-only` |
 | Health | healthy |
 | Source HEAD / expected | both `06de527423e05d4208cdcf485be92a2d1028c46d` |
-| Bounded corpus | 552 Markdown sources across 9 fixed scopes |
+| Bounded corpus | 552 Markdown sources / 30,809,685 bytes across 9 fixed scopes |
 | Corpus SHA-256 | `50766f88c6b03d171b749c56d61ac27ae22829c67cda71c7adfbfd480e308637` |
 | Indexing | `read-through-no-persistent-index` |
 | Tracked in-scope working changes reported | 1 |
@@ -42,11 +42,12 @@ did not create an approval file.
 | Network | none |
 | Credentials inspected/relayed | false / false |
 
-Observed resolve readback returned three cited Mind sources with real SHA-256
-hashes and provenance binding provider revision, Mind HEAD, corpus digest,
+Observed resolve readback returned a cited Mind source with its real SHA-256
+hash and provenance binding provider revision, Mind HEAD, corpus digest,
 indexing mode, and request timestamp. State was explicitly
-`deployed=preparation-only`, `observed=live-readback`, and
-`verified=runtime-verified`; this is not claimed as activated production.
+`deployed=not-installed`, `observed=live-readback`, and
+`verified=runtime-verified`; this short-lived preparation process is not
+claimed as a client deployment or activated production.
 
 ## Freshness behavior
 
@@ -69,6 +70,8 @@ Provider tests and live tool discovery prove:
 
 - callers cannot supply or override root, scopes, credentials, external calls,
   or mutation-like fields;
+- discovery does not read out-of-scope Markdown and fails closed at the admitted
+  corpus, source-file, request, and response byte limits;
 - `.obsidian`, archives, history, runtime/generated/dependency directories, and
   secret-marked paths are excluded;
 - the provider exposes no write-capable tool or nested suboperation;

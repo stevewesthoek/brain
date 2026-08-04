@@ -91,6 +91,20 @@
               },
               "tools": { "type": "array" }
             }
+          },
+          "limits": {
+            "type": "object",
+            "required": ["startupTimeoutSeconds", "toolTimeoutSeconds", "maxRequestBytes", "maxResponseBytes"],
+            "properties": {
+              "startupTimeoutSeconds": { "type": "integer", "minimum": 1 },
+              "toolTimeoutSeconds": { "type": "integer", "minimum": 1 },
+              "maxRequestBytes": { "type": "integer", "minimum": 1 },
+              "maxResponseBytes": { "type": "integer", "minimum": 1 },
+              "maxSourceFiles": { "type": "integer", "minimum": 1 },
+              "maxSourceBytes": { "type": "integer", "minimum": 1 },
+              "maxCorpusBytes": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false

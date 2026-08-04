@@ -97,6 +97,7 @@ function validateAdmissionRegistryCore(registry, errors) {
     if ((scope?.tools ?? []).some((tool) => tool.name === 'runWorkbenchCommand' && tool.allowedSuboperations.length === 0)) errors.push(`${prefix}: runWorkbenchCommand requires exact suboperations`);
     const limits = admission?.limits;
     for (const field of ['startupTimeoutSeconds', 'toolTimeoutSeconds', 'maxRequestBytes', 'maxResponseBytes']) if (!Number.isInteger(limits?.[field]) || limits[field] <= 0) errors.push(`${prefix}: invalid limit ${field}`);
+    for (const field of ['maxSourceFiles', 'maxSourceBytes', 'maxCorpusBytes']) if (limits?.[field] !== undefined && (!Number.isInteger(limits[field]) || limits[field] <= 0)) errors.push(`${prefix}: invalid optional limit ${field}`);
     if (!Array.isArray(admission?.verification?.commands) || admission.verification.commands.length === 0) errors.push(`${prefix}: verification commands are required`);
     if (!admission?.revocation?.procedure || admission.revocation?.preserveEvidence !== true) errors.push(`${prefix}: revocation must preserve evidence`);
   }

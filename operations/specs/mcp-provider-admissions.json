@@ -213,16 +213,16 @@
       "provider": {
         "providerId": "mind-context",
         "repository": "stevewesthoek/brain",
-        "revision": "753a2257bc65a2e16bf9847d244690813a4bd1cb",
+        "revision": "ac624cfe98a7e56ab7056bd2eec916b85dc3099b",
         "sourceState": "committed",
         "version": "1.0.0",
         "entrypoint": "projects/mind-context/src/provider/server.mjs",
         "artifacts": [
-          { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "bac96f041489ddc22ee7cf0e9ddf9561abb716f7c6c3441ef76029abb6b5db23" },
-          { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "b6341ef283dff51810ed0de70cfbf4f7cfe4a5a63045a8902adebaf9e69c4bae" },
+          { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "541d78fb36cb0c156befd166b3135749679865967ddfd75cc7abb299eee35c2d" },
+          { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "e966228b2663fa4ea5a8afc124316dab3a392fd44d4a04cfde777b226c77e2bc" },
           { "path": "projects/mind-context/src/adapters/index.mjs", "sha256": "bfdb84ff893119079e75edb5146ae9451be85ea0a46931c45d692b18e0296ef4" },
-          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "24c426e8f1030b730316ed98fa623ac7ef2ebf52f5c0a6702697e6d535d3964a" },
-          { "path": "projects/mind-context/src/core/discover.mjs", "sha256": "2eac77e06161d62e1123184eae1c509ed2e25a7828475b7007911d5622b33f8a" },
+          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "6e5b8bc80b5bc41c649c294d1d6304e9505656ad53d2ff3b35601a6c3182a987" },
+          { "path": "projects/mind-context/src/core/discover.mjs", "sha256": "2648c2cc833a76abe7072fc132df3a3fae3dd639220ed958e513653550896378" },
           { "path": "projects/mind-context/src/core/policy.mjs", "sha256": "fb008dccdf147d54e99f6104f96ab7081aa191cd1ece863435a1c5561e708e6b" },
           { "path": "projects/mind-context/src/core/plan-context-pack.mjs", "sha256": "3eb281efca3398d09d3e75cc8bfe392414d037b08661a43d7df5e773ba5af5d4" },
           { "path": "projects/mind-context/src/context-pack.mjs", "sha256": "484842d2a59b29f27b88b6e1196db62d0959541c3181fca40dc462b889e02d95" }
@@ -247,7 +247,7 @@
           "MIND_CONTEXT_ALLOWED_SCOPES": "faith,knowledge,organizations,people,projects,resources,system,tasks,wiki",
           "MIND_CONTEXT_EXPECTED_HEAD": "06de527423e05d4208cdcf485be92a2d1028c46d",
           "MIND_CONTEXT_PREPARATION_MODE": "0",
-          "MIND_CONTEXT_PROVIDER_REVISION": "753a2257bc65a2e16bf9847d244690813a4bd1cb",
+          "MIND_CONTEXT_PROVIDER_REVISION": "ac624cfe98a7e56ab7056bd2eec916b85dc3099b",
           "MIND_CONTEXT_ROOT": "/Users/Office/Repos/stevewesthoek/mind"
         },
         "enforcementStatus": "provider-enforced",
@@ -262,18 +262,21 @@
         "startupTimeoutSeconds": 10,
         "toolTimeoutSeconds": 30,
         "maxRequestBytes": 65536,
-        "maxResponseBytes": 524288
+        "maxResponseBytes": 524288,
+        "maxSourceFiles": 2000,
+        "maxSourceBytes": 2097152,
+        "maxCorpusBytes": 67108864
       },
       "verification": {
         "commands": [
           "npm --prefix projects/mind-context test",
-          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=753a2257bc65a2e16bf9847d244690813a4bd1cb",
-          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision 753a2257bc65a2e16bf9847d244690813a4bd1cb --node <node-path> --output <project-config> --check"
+          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=ac624cfe98a7e56ab7056bd2eec916b85dc3099b",
+          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision ac624cfe98a7e56ab7056bd2eec916b85dc3099b --node <node-path> --output <project-config> --check"
         ],
         "evidence": [
-          "Provider implementation commit 753a2257bc65a2e16bf9847d244690813a4bd1cb; fixed-root, fixed-scope, no-network stdio service with three read-only tools and no mutation path.",
+          "Provider implementation commit ac624cfe98a7e56ab7056bd2eec916b85dc3099b; fixed-root, fixed-scope, no-network stdio service with three read-only tools and no mutation path.",
           "Authentication mode none is intentional for owner-local stdio: the process inherits the local OS account, reads no credentials, accepts no secret input, performs no credential relay, and requires a separate owner-only Steve Westhoek activation approval file outside repositories before non-preparation startup.",
-          "Preparation tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD drift rejection, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Candidate registration remains disabled until explicit activation approval."
+          "Preparation tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD drift rejection, pre-read scope enforcement, corpus/request/response caps, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Candidate registration remains disabled until exact provider revision, Mind commit, and scopes are explicitly approved."
         ]
       },
       "revocation": {

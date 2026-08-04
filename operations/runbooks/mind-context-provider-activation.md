@@ -3,7 +3,7 @@
 **State:** activation-prepared; candidate disabled  
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
-**Provider source lock:** `753a2257bc65a2e16bf9847d244690813a4bd1cb`
+**Provider source lock:** `ac624cfe98a7e56ab7056bd2eec916b85dc3099b`
 
 ## Boundary
 
@@ -51,12 +51,16 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvedAt": "<ISO-8601 timestamp>",
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
-  "providerRevision": "753a2257bc65a2e16bf9847d244690813a4bd1cb"
+  "providerRevision": "ac624cfe98a7e56ab7056bd2eec916b85dc3099b",
+  "mindCommit": "06de527423e05d4208cdcf485be92a2d1028c46d",
+  "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```
 
-The file must be mode `0600`. Brain must not create it until Steve explicitly
-approves activation after reviewing the candidate evidence.
+The file must be mode `0600`. Its timestamp and ID must be valid, and its
+provider revision, Mind commit, and complete sorted scope list must match the
+candidate exactly. Brain must not create it until Steve explicitly approves
+activation after reviewing the candidate evidence.
 
 ## Freshness and indexing
 
@@ -67,6 +71,9 @@ and returns `sourceHead`, `expectedMindHead`, `corpusSha256`, `indexedAt`, and
 source hash and corpus digest on the next call. A changed Mind HEAD fails closed
 with `source_revision_mismatch` until Brain reviews and repins the expected
 commit. Tracked in-scope working-tree changes are reported, not hidden.
+Discovery reads only admitted scopes and enforces 2,000-source, 2 MiB-per-file,
+and 64 MiB-corpus caps before retrieval; stdio requests and responses are also
+bounded by the admission's 64 KiB and 512 KiB limits.
 
 ## Activation trigger
 
