@@ -92,7 +92,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '3.0.0',
+    planVersion: planVersionOverride ?? '4.0.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -184,7 +184,7 @@ test('E4: v2 plan (missing planVersion) is rejected', async () => {
     fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify(plan, null, 2));
     const result = await runExecutor({ runId: 'b8-1-exec-e4', approvedPlanSha256: planSha256, _homeOverride: home });
     assert.equal(result.outcome, 'fail');
-    assert.ok(result.errors.some(e => /planVersion/i.test(e) || /3\.0\.0/i.test(e)));
+    assert.ok(result.errors.some(e => /planVersion/i.test(e) || /4\.0\.0/i.test(e)));
   } finally { cleanup(home); }
 });
 
@@ -350,7 +350,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '3.0.0');
+    assert.equal(receipt.executorVersion, '4.0.0');
   } finally { cleanup(home); }
 });
 
@@ -378,14 +378,14 @@ test('E16: buildFixtureEvidence constructs correct evidence record', () => {
     completedAt: '2026-08-04T00:00:00.042Z',
     subjectIdentity: { exactSource: true },
   };
-  const runMeta = { runId: 'b8-1-test', planVersion: '3.0.0', planSha256: 'a'.repeat(64) };
+  const runMeta = { runId: 'b8-1-test', planVersion: '4.0.0', planSha256: 'a'.repeat(64) };
   const ev = buildFixtureEvidence(fixture, result, 'exact-source', runMeta);
   assert.equal(ev.fixtureId, 'f1');
   assert.equal(ev.subject, 'exact-source');
   assert.equal(ev.assertion.passed, true);
   assert.equal(ev.assertion.expected, 'src/main.ts');
   assert.equal(ev.assertion.actual, 'src/main.ts');
-  assert.equal(ev.provenance.planVersion, '3.0.0');
+  assert.equal(ev.provenance.planVersion, '4.0.0');
   assert.equal(ev.provenance.runId, 'b8-1-test');
   assert.equal(ev.latencyMs, 42);
 });
@@ -394,7 +394,7 @@ test('E17: validateExecutorInputs rejects graphify subject', () => {
   const { valid, errors } = validateExecutorInputs({
     runId: 'b8-1-test',
     runDir: '/fake/run',
-    plan: { planVersion: '3.0.0', selectedSubjects: ['exact-source', 'graphify'] },
+    plan: { planVersion: '4.0.0', selectedSubjects: ['exact-source', 'graphify'] },
     approvedPlanSha256: 'a'.repeat(64),
     dryRun: false,
   });
@@ -410,9 +410,194 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '3.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '4.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
   } finally { cleanup(tmpDir); }
+});
+
+// ---------------------------------------------------------------------------
+// New tests: Defects 1-6
+// ---------------------------------------------------------------------------
+
+test('E19: dual-subject run produces 2×fixtureCount results (cbm + exact-source)', async () => {
+  const home = makeTempDir('b81-exec-e19-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'test?' },
+      { fixtureId: 'f2', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'src/main.ts', scoringType: 'exact-match', question: 'test?' },
+    ];
+    const { planSha256, syntheticManifest } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e19',
+      fixtures,
+      selectedSubjects: ['cbm', 'exact-source'],
+    });
+    const cbmAdapter = async () => ({ outcome: 'pass', actual: 'README.md', errors: [], fileCorrect: true, lineCorrect: true });
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e19',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _cbmAdapter: cbmAdapter,
+      _manifestOverride: syntheticManifest,
+    });
+    // 2 fixtures × 2 subjects = 4 results
+    assert.equal(result.fixtureResults.length, 4, `expected 4 fixture results (2 fixtures × 2 subjects), got ${result.fixtureResults.length}`);
+    const subjects = new Set(result.fixtureResults.map(f => f.subject));
+    assert.ok(subjects.has('cbm'), 'must have cbm results');
+    assert.ok(subjects.has('exact-source'), 'must have exact-source results');
+    const fixtureIds = new Set(result.fixtureResults.map(f => f.fixtureId));
+    assert.ok(fixtureIds.has('f1') && fixtureIds.has('f2'), 'must have results for both fixture IDs');
+  } finally { cleanup(home); }
+});
+
+test('E20: contract 4.0.0 rejects plan with planVersion 3.0.0', async () => {
+  const home = makeTempDir('b81-exec-e20-');
+  try {
+    const { runDir, planSha256 } = makeSyntheticRun(home, { runId: 'b8-1-exec-e20', fixtures: [], planVersionOverride: '3.0.0' });
+    const result = await runExecutor({ runId: 'b8-1-exec-e20', approvedPlanSha256: planSha256, _homeOverride: home });
+    assert.equal(result.outcome, 'fail');
+    assert.ok(result.errors.some(e => /planVersion|4\.0\.0/i.test(e)), `errors: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+test('E21: exact-source line-contains scoring returns fileCorrect and lineCorrect', async () => {
+  const home = makeTempDir('b81-exec-e21-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'src/main.ts',
+        scoringType: 'exact-match',
+        question: 'test?',
+        expectedLine: 3,
+        verification: {
+          algorithm: 'line-contains',
+          path: 'src/main.ts',
+          line: 3,
+          contains: ['export function main'],
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e21',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    // Write the file with 5 lines, target content at line 3
+    const sourcesDir = path.join(runDir, 'sources', 'test');
+    const mainPath = path.join(sourcesDir, 'src', 'main.ts');
+    fs.mkdirSync(path.dirname(mainPath), { recursive: true });
+    fs.writeFileSync(mainPath, 'line 1\nline 2\nexport function main() {}\nline 4\nline 5\n');
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e21',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'pass');
+    assert.equal(result.fixtureResults[0].fileCorrect, true, 'fileCorrect must be true');
+    assert.equal(result.fixtureResults[0].lineCorrect, true, 'lineCorrect must be true');
+  } finally { cleanup(home); }
+});
+
+test('E22: exact-source file-name-count scoring counts files', async () => {
+  const home = makeTempDir('b81-exec-e22-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        scoringType: 'count-match',
+        question: 'how many?',
+        verification: {
+          algorithm: 'file-name-count',
+          root: '.',
+          fileName: 'route.ts',
+          expectedCount: 2,
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e22',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    // Create 2 route.ts files in sources/test
+    const sourcesDir = path.join(runDir, 'sources', 'test');
+    fs.mkdirSync(path.join(sourcesDir, 'api'), { recursive: true });
+    fs.mkdirSync(path.join(sourcesDir, 'web'), { recursive: true });
+    fs.writeFileSync(path.join(sourcesDir, 'api', 'route.ts'), 'export const GET = () => {}');
+    fs.writeFileSync(path.join(sourcesDir, 'web', 'route.ts'), 'export const GET = () => {}');
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e22',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'pass', `result: ${result.fixtureResults[0].result}, errors: ${result.fixtureResults[0].errors?.join('; ')}`);
+    assert.equal(result.fixtureResults[0].fileCorrect, true, 'fileCorrect must be true for matching count');
+  } finally { cleanup(home); }
+});
+
+test('E23: aggregate evidence.json is written to run directory after execution', async () => {
+  const home = makeTempDir('b81-exec-e23-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'test?' },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e23',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    await runExecutor({
+      runId: 'b8-1-exec-e23',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    const evidencePath = path.join(runDir, 'evidence.json');
+    assert.ok(fs.existsSync(evidencePath), 'evidence.json must be written to run directory');
+    const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+    assert.equal(agg.schemaVersion, '1.0.0', 'aggregate evidence must have schemaVersion 1.0.0');
+    assert.equal(agg.runId, 'b8-1-exec-e23', 'aggregate evidence runId must match');
+    assert.ok(Array.isArray(agg.fixtureResults), 'fixtureResults must be an array');
+    assert.equal(agg.fixtureResults.length, 1, 'must have 1 fixture result');
+    assert.equal(typeof agg.offlineMetrics?.fileAccuracy, 'number', 'offlineMetrics.fileAccuracy must be a number');
+  } finally { cleanup(home); }
+});
+
+test('E24: timer is cleared when CBM adapter resolves before timeout', async () => {
+  const home = makeTempDir('b81-exec-e24-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'test?' },
+    ];
+    const { planSha256, syntheticManifest } = makeSyntheticRun(home, { runId: 'b8-1-exec-e24', fixtures, selectedSubjects: ['cbm'] });
+    let timerFiredAfterResolve = false;
+    // Adapter resolves fast; if timer leaks it would fire after test finishes
+    const fastAdapter = async () => {
+      await new Promise(r => setTimeout(r, 5));
+      return { outcome: 'pass', actual: 'README.md', errors: [], fileCorrect: true, lineCorrect: true };
+    };
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e24',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _cbmAdapter: fastAdapter,
+      _manifestOverride: syntheticManifest,
+    });
+    // Wait a small extra time to check timer doesn't fire spuriously
+    await new Promise(r => setTimeout(r, 20));
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'pass', 'fixture must pass');
+    // The key invariant: outcome is pass (no spurious timeout from leaked timer)
+    assert.notEqual(result.fixtureResults[0].result, 'timeout', 'must not be timeout — timer must be cleared');
+  } finally { cleanup(home); }
 });

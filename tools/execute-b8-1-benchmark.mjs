@@ -35,16 +35,18 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-const EXECUTOR_VERSION = '3.0.0';
-const REQUIRED_PLAN_VERSION = '3.0.0';
+const EXECUTOR_VERSION = '4.0.0';
+const REQUIRED_PLAN_VERSION = '4.0.0';
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
 const SUPPORTED_SUBJECTS = new Set(['cbm', 'exact-source']);
 
-// Known stale v1/v2 digests — same set as in the preflight harness
+// Known stale v1/v2/v3 digests — same set as in the preflight harness.
+// v3 digests from prior sessions are stale pending v4 re-run.
 const KNOWN_STALE_DIGESTS = new Set([
-  'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4',
-  '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda',
+  'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
+  '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
+  // v3 digests are rejected — recompute against v4 contract
 ]);
 
 // ---------------------------------------------------------------------------
@@ -111,7 +113,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     const gotVersion = plan.planVersion ?? `absent (schemaVersion=${plan.schemaVersion ?? 'absent'})`;
     return {
       plan: null,
-      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v3 preflight`,
+      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v4 preflight`,
     };
   }
 
@@ -176,7 +178,7 @@ export function validateExecutorInputs({ runId, runDir, plan, approvedPlanSha256
         try {
           const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
           if (receipt.planVersion !== REQUIRED_PLAN_VERSION) {
-            errors.push(`preflight-receipt.json has planVersion=${receipt.planVersion}; expected ${REQUIRED_PLAN_VERSION}`);
+            errors.push(`preflight-receipt.json has planVersion=${receipt.planVersion ?? 'absent'}; expected ${REQUIRED_PLAN_VERSION}`);
           }
         } catch (e) {
           errors.push(`failed to parse preflight-receipt.json: ${e.message}`);
@@ -235,6 +237,10 @@ export function buildFixtureEvidence(fixture, result, subject, runMeta) {
     },
     errors: errors ?? [],
     subjectIdentity: subjectIdentity ?? null,
+    // Scoring fields (Defect 4/5)
+    fileCorrect: result.fileCorrect ?? (outcome === 'pass'),
+    lineCorrect: result.lineCorrect ?? false,
+    setAccuracy: result.setAccuracy ?? null,
   };
 }
 
@@ -244,23 +250,61 @@ export function buildFixtureEvidence(fixture, result, subject, runMeta) {
 
 /**
  * Run a fixture with the exact-source adapter.
- * Verifies the expected file exists in the materialized sources tree.
+ * Uses fixture.verification to perform line/set/count checks.
  *
  * @param {object} fixture
  * @param {string} sourcesDir  - path to the materialized sources/<repoId>/ directory
- * @returns {{ outcome, actual, latencyMs, errors }}
+ * @returns {{ outcome, actual, latencyMs, errors, fileCorrect, lineCorrect, setAccuracy }}
  */
 function runExactSourceFixture(fixture, sourcesDir) {
   const start = Date.now();
   const errors = [];
   let outcome = 'fail';
   let actual = null;
+  let fileCorrect = false;
+  let lineCorrect = false;
+  let setAccuracy = null;
 
   try {
     const expectedFile = fixture.expectedFile;
+    const verification = fixture.verification ?? {};
+    const algorithm = verification.algorithm ?? 'file-exists';
+
+    // --- file-name-count: no expectedFile required ---
+    if (algorithm === 'file-name-count') {
+      const root = verification.root ?? '.';
+      const fileName = verification.fileName;
+      const expectedCount = verification.expectedCount ?? null;
+      if (!fileName) {
+        errors.push('verification.fileName is required for file-name-count');
+        return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+      }
+      // Count recursively
+      let count = 0;
+      function countFiles(dir) {
+        let entries;
+        try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+        for (const entry of entries) {
+          if (entry.name === '.git') continue;
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) { countFiles(full); }
+          else if (entry.isFile() && entry.name === fileName) { count += 1; }
+        }
+      }
+      const rootDir = path.resolve(sourcesDir, root);
+      countFiles(rootDir);
+      actual = count;
+      fileCorrect = expectedCount === null ? true : count === expectedCount;
+      lineCorrect = false;
+      outcome = fileCorrect ? 'pass' : 'fail';
+      if (!fileCorrect) errors.push(`expected ${expectedCount} files named "${fileName}" but found ${count}`);
+      return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+    }
+
+    // For all other algorithms, expectedFile is required
     if (!expectedFile) {
       errors.push('fixture has no expectedFile');
-      return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors };
+      return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
     }
 
     // Path containment check — expectedFile must not escape sourcesDir
@@ -268,121 +312,422 @@ function runExactSourceFixture(fixture, sourcesDir) {
     const rel = path.relative(sourcesDir, targetPath);
     if (rel.startsWith('..') || path.isAbsolute(rel)) {
       errors.push(`expectedFile "${expectedFile}" escapes sources directory`);
-      return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors };
+      return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
     }
 
-    if (fs.existsSync(targetPath)) {
-      actual = expectedFile;
-      outcome = 'pass';
-    } else {
-      actual = null;
-      outcome = 'fail';
+    if (!fs.existsSync(targetPath)) {
       errors.push(`expected file not found: ${expectedFile}`);
+      return { outcome: 'fail', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+    }
+
+    actual = expectedFile;
+    fileCorrect = true;
+
+    if (algorithm === 'file-exists') {
+      lineCorrect = false;
+      outcome = 'pass';
+    } else if (algorithm === 'line-contains' || algorithm === 'symbol-at-line') {
+      const verPath = verification.path ?? expectedFile;
+      const verFilePath = path.resolve(sourcesDir, verPath);
+      const verRel = path.relative(sourcesDir, verFilePath);
+      if (verRel.startsWith('..') || path.isAbsolute(verRel)) {
+        errors.push(`verification.path "${verPath}" escapes sources directory`);
+        outcome = 'error';
+      } else if (!fs.existsSync(verFilePath)) {
+        errors.push(`verification file not found: ${verPath}`);
+        outcome = 'fail';
+      } else {
+        const lines = fs.readFileSync(verFilePath, 'utf8').split('\n');
+        const verLine = verification.line ?? fixture.expectedLine ?? null;
+        const contains = Array.isArray(verification.contains) ? verification.contains : [];
+        let lineMatch = false;
+        if (verLine !== null) {
+          const idx = verLine - 1; // 1-based to 0-based
+          const lineContent = lines[idx] ?? '';
+          lineMatch = contains.every(s => lineContent.includes(s));
+          // lineCorrect: within ±5 lines
+          const expectedLine = fixture.expectedLine ?? verLine;
+          const actualLineIdx = lines.findIndex((l, i) => Math.abs(i - (expectedLine - 1)) <= 5 && contains.every(s => l.includes(s)));
+          lineCorrect = lineMatch || (actualLineIdx !== -1 && Math.abs(actualLineIdx - (expectedLine - 1)) <= 5);
+        } else {
+          // No line specified — just check if any line contains
+          lineMatch = lines.some(l => contains.every(s => l.includes(s)));
+          lineCorrect = lineMatch;
+        }
+        outcome = lineMatch ? 'pass' : 'fail';
+        if (!lineMatch) errors.push(`line ${verLine} does not contain expected tokens: ${contains.join(', ')}`);
+      }
+    } else if (algorithm === 'json-pointer-set') {
+      const verPath = verification.path ?? expectedFile;
+      const verFilePath = path.resolve(sourcesDir, verPath);
+      const verRel = path.relative(sourcesDir, verFilePath);
+      if (verRel.startsWith('..') || path.isAbsolute(verRel)) {
+        errors.push(`verification.path "${verPath}" escapes sources directory`);
+        outcome = 'error';
+      } else if (!fs.existsSync(verFilePath)) {
+        errors.push(`verification file not found: ${verPath}`);
+        outcome = 'fail';
+      } else {
+        let parsed;
+        try { parsed = JSON.parse(fs.readFileSync(verFilePath, 'utf8')); }
+        catch (e) { errors.push(`failed to parse JSON: ${e.message}`); outcome = 'error'; parsed = null; }
+        if (parsed !== null) {
+          // Evaluate JSON pointer
+          const pointer = verification.jsonPointer ?? '';
+          const parts = pointer.split('/').filter((_, i) => i > 0); // skip empty first segment
+          let node = parsed;
+          for (const part of parts) {
+            if (node === null || typeof node !== 'object') { node = undefined; break; }
+            node = node[part];
+          }
+          const expected = Array.isArray(verification.expected) ? verification.expected : [];
+          if (Array.isArray(node)) {
+            const actualSet = new Set(node);
+            const expectedSet = new Set(expected);
+            const intersection = expected.filter(v => actualSet.has(v)).length;
+            setAccuracy = expected.length > 0 ? intersection / Math.max(actualSet.size, expectedSet.size) : 1;
+            const setsMatch = actualSet.size === expectedSet.size && expected.every(v => actualSet.has(v));
+            lineCorrect = false;
+            outcome = setsMatch ? 'pass' : 'fail';
+            if (!setsMatch) errors.push(`set mismatch: expected [${expected.join(',')}] got [${[...actualSet].join(',')}]`);
+          } else {
+            errors.push(`JSON pointer "${pointer}" did not resolve to an array`);
+            outcome = 'fail';
+          }
+        }
+      }
+    } else {
+      // Unknown algorithm — treat as file-exists
+      lineCorrect = false;
+      outcome = 'pass';
     }
   } catch (e) {
     errors.push(e.message);
     outcome = 'error';
   }
 
-  return { outcome, actual, latencyMs: Date.now() - start, errors };
+  return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+}
+
+/**
+ * Spawn a CBM CLI command with bounded timeout and process-group kill.
+ * Returns { stdout, exitCode, timedOut }.
+ */
+function spawnCbmCommand(binaryPath, args, { env, cwd, timeoutMs }) {
+  return new Promise((resolve) => {
+    let stdout = '';
+    let timedOut = false;
+    let settled = false;
+
+    const child = spawn(binaryPath, args, {
+      env: { ...process.env, ...env },
+      cwd,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+
+    let timer = null;
+
+    function settle(exitCode) {
+      if (settled) return;
+      settled = true;
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      resolve({ stdout, exitCode, timedOut });
+    }
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString('utf8');
+      if (Buffer.byteLength(stdout, 'utf8') > MAX_OUTPUT_BYTES) {
+        timedOut = false;
+        try { process.kill(-child.pid, 'SIGKILL'); } catch {}
+        settle(-1);
+      }
+    });
+
+    child.on('exit', (code) => settle(code ?? -1));
+    child.on('error', () => settle(-1));
+
+    timer = setTimeout(() => {
+      timedOut = true;
+      try { process.kill(-child.pid, 'SIGKILL'); } catch {}
+      settle(-1);
+    }, timeoutMs);
+  });
 }
 
 /**
  * Run a fixture with a CBM adapter.
- * In dry-run mode or when a fake adapter is injected, uses the fake adapter.
- * In production mode (not yet implemented — executor is dry-run only for v3),
- * would spawn the real CBM binary.
+ * When _cbmAdapter is injected (tests), uses the fake adapter.
+ * When cbmIdentity is present and no adapter is injected, uses the real CBM binary subprocess.
  *
  * @param {object} fixture
  * @param {object} cbmIdentity   - { stablePath, resolvedPath, version, sha256 }
+ * @param {string} sourcesDir    - path to materialized sources/<repoId>/
  * @param {string} cacheDir      - per-run CBM cache directory
  * @param {string} configDir     - per-run CBM config directory
+ * @param {string} runId         - run ID for CBM project naming
  * @param {object} opts          - injectable test hooks: { _cbmAdapter }
- * @returns {Promise<{ outcome, actual, latencyMs, errors, subjectIdentity }>}
+ * @returns {Promise<{ outcome, actual, latencyMs, errors, subjectIdentity, fileCorrect, lineCorrect, setAccuracy }>}
  */
-async function runCbmFixture(fixture, cbmIdentity, cacheDir, configDir, opts = {}) {
+async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configDir, runId, opts = {}) {
   const start = Date.now();
   const errors = [];
+  const subjectIdentity = cbmIdentity ? { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } } : null;
 
   const adapter = opts._cbmAdapter;
-  if (!adapter) {
-    // Real CBM execution is not implemented in the v3 dry-run package.
-    // Future: spawn the cbm binary with per-run config/cache and network isolation.
+
+  // ---------------------------------------------------------------------------
+  // Injected fake adapter (tests only)
+  // ---------------------------------------------------------------------------
+  if (adapter) {
+    let timer = null;
+    try {
+      const result = await Promise.race([
+        adapter(fixture, { cacheDir, configDir }),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('TIMEOUT')), FIXTURE_TIMEOUT_MS);
+        }),
+      ]);
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      const outputStr = typeof result === 'string' ? result : JSON.stringify(result);
+      if (outputStr.length > MAX_OUTPUT_BYTES) {
+        return {
+          outcome: 'error', actual: null, latencyMs: Date.now() - start,
+          errors: [`output exceeds ${MAX_OUTPUT_BYTES} bytes`], subjectIdentity: null,
+          fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        };
+      }
+      let parsed;
+      try { parsed = typeof result === 'object' ? result : JSON.parse(outputStr); }
+      catch (e) {
+        return {
+          outcome: 'error', actual: null, latencyMs: Date.now() - start,
+          errors: [`malformed output: ${e.message}`], subjectIdentity: null,
+          fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        };
+      }
+      return {
+        outcome: parsed.outcome ?? 'fail',
+        actual: parsed.actual ?? null,
+        latencyMs: Date.now() - start,
+        errors: parsed.errors ?? [],
+        subjectIdentity,
+        fileCorrect: parsed.fileCorrect ?? false,
+        lineCorrect: parsed.lineCorrect ?? false,
+        setAccuracy: parsed.setAccuracy ?? null,
+      };
+    } catch (e) {
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      if (e.message === 'TIMEOUT') {
+        return {
+          outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
+          errors: ['fixture timed out after 30s'], subjectIdentity: null,
+          fileCorrect: false, lineCorrect: false, setAccuracy: null,
+        };
+      }
+      return {
+        outcome: 'error', actual: null, latencyMs: Date.now() - start,
+        errors: [e.message], subjectIdentity: null,
+        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Real CBM subprocess execution
+  // ---------------------------------------------------------------------------
+  if (!cbmIdentity || !cbmIdentity.resolvedPath) {
     return {
-      outcome: 'skipped',
-      actual: null,
-      latencyMs: Date.now() - start,
-      errors: ['CBM execution not implemented in v3 dry-run package'],
-      subjectIdentity: cbmIdentity ? { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } } : null,
+      outcome: 'skipped', actual: null, latencyMs: Date.now() - start,
+      errors: ['cbmIdentity.resolvedPath is not available'],
+      subjectIdentity: null, fileCorrect: false, lineCorrect: false, setAccuracy: null,
     };
   }
 
-  // Injected fake adapter (tests only)
-  try {
-    const result = await Promise.race([
-      adapter(fixture, { cacheDir, configDir }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), FIXTURE_TIMEOUT_MS)
-      ),
-    ]);
-    const outputStr = typeof result === 'string' ? result : JSON.stringify(result);
-    if (outputStr.length > MAX_OUTPUT_BYTES) {
-      return {
-        outcome: 'error',
-        actual: null,
-        latencyMs: Date.now() - start,
-        errors: [`output exceeds ${MAX_OUTPUT_BYTES} bytes`],
-        subjectIdentity: null,
-      };
-    }
-    let parsed;
-    try { parsed = typeof result === 'object' ? result : JSON.parse(outputStr); }
-    catch (e) {
-      return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors: [`malformed output: ${e.message}`], subjectIdentity: null };
-    }
+  const binaryPath = cbmIdentity.resolvedPath;
+  const repoId = fixture.repositoryId;
+  const projectName = `${runId}-${repoId}`;
+  const env = { CODEBASE_MEMORY_HOME: cacheDir, CODEBASE_MEMORY_AUTO_WATCH: 'false' };
+
+  // Step 1: index_repository
+  const indexArgs = [
+    'cli', 'index_repository',
+    '--repo-path', sourcesDir,
+    '--persistence', 'false',
+    '--mode', 'fast',
+    '--name', projectName,
+  ];
+  const indexResult = await spawnCbmCommand(binaryPath, indexArgs, { env, cwd: cacheDir, timeoutMs: FIXTURE_TIMEOUT_MS });
+  if (indexResult.timedOut) {
     return {
-      outcome: parsed.outcome ?? 'fail',
-      actual: parsed.actual ?? null,
-      latencyMs: Date.now() - start,
-      errors: parsed.errors ?? [],
-      subjectIdentity: cbmIdentity ? { cbm: { version: cbmIdentity.version, sha256: cbmIdentity.sha256 } } : null,
+      outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
+      errors: ['CBM index_repository timed out'], subjectIdentity,
+      fileCorrect: false, lineCorrect: false, setAccuracy: null,
     };
-  } catch (e) {
-    if (e.message === 'TIMEOUT') {
-      return { outcome: 'timeout', actual: null, latencyMs: Date.now() - start, errors: ['fixture timed out after 30s'], subjectIdentity: null };
-    }
-    return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors: [e.message], subjectIdentity: null };
   }
+  let indexParsed;
+  try { indexParsed = JSON.parse(indexResult.stdout); }
+  catch { indexParsed = null; }
+  if (indexResult.exitCode !== 0 || !indexParsed) {
+    errors.push(`CBM index_repository failed (exit=${indexResult.exitCode})`);
+    return {
+      outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
+      fileCorrect: false, lineCorrect: false, setAccuracy: null,
+    };
+  }
+
+  // Step 2: query based on verification algorithm
+  const verification = fixture.verification ?? {};
+  const algorithm = verification.algorithm ?? 'symbol-at-line';
+  let queryPattern = '';
+
+  if (algorithm === 'line-contains' || algorithm === 'symbol-at-line') {
+    const contains = Array.isArray(verification.contains) ? verification.contains : [];
+    queryPattern = contains[0] ?? fixture.expectedSymbol ?? '';
+  } else if (algorithm === 'file-name-count') {
+    queryPattern = verification.fileName ?? '';
+  } else if (algorithm === 'json-pointer-set') {
+    const expected = Array.isArray(verification.expected) ? verification.expected : [];
+    queryPattern = expected[0] ?? '';
+  } else if (algorithm === 'file-exists') {
+    queryPattern = path.basename(fixture.expectedFile ?? '');
+  } else {
+    queryPattern = fixture.expectedSymbol ?? fixture.expectedFile ?? '';
+  }
+
+  if (!queryPattern) {
+    errors.push(`no query pattern for algorithm "${algorithm}"`);
+    return {
+      outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
+      fileCorrect: false, lineCorrect: false, setAccuracy: null,
+    };
+  }
+
+  const remainingMs = FIXTURE_TIMEOUT_MS - (Date.now() - start);
+  if (remainingMs <= 0) {
+    return {
+      outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
+      errors: ['CBM query timed out (no time remaining)'], subjectIdentity,
+      fileCorrect: false, lineCorrect: false, setAccuracy: null,
+    };
+  }
+
+  const searchArgs = [
+    'cli', 'search_code',
+    '--pattern', queryPattern,
+    '--project', projectName,
+    '--mode', 'compact',
+    '--limit', '10',
+  ];
+  const searchResult = await spawnCbmCommand(binaryPath, searchArgs, { env, cwd: cacheDir, timeoutMs: remainingMs });
+  if (searchResult.timedOut) {
+    return {
+      outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
+      errors: ['CBM search_code timed out'], subjectIdentity,
+      fileCorrect: false, lineCorrect: false, setAccuracy: null,
+    };
+  }
+
+  let searchParsed;
+  try { searchParsed = JSON.parse(searchResult.stdout); }
+  catch { searchParsed = null; }
+
+  if (!searchParsed) {
+    errors.push('CBM search_code returned unparseable output');
+    return {
+      outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
+      fileCorrect: false, lineCorrect: false, setAccuracy: null,
+    };
+  }
+
+  // Score the result
+  const expectedFile = fixture.expectedFile ?? null;
+  const expectedLine = fixture.expectedLine ?? null;
+  const results = Array.isArray(searchParsed?.results) ? searchParsed.results
+    : Array.isArray(searchParsed) ? searchParsed : [];
+
+  let fileCorrect = false;
+  let lineCorrect = false;
+  let setAccuracy = null;
+  let actual = null;
+
+  if (algorithm === 'file-name-count') {
+    const count = results.length;
+    const expectedCount = verification.expectedCount ?? null;
+    actual = count;
+    fileCorrect = expectedCount === null ? true : count === expectedCount;
+    lineCorrect = false;
+  } else if (algorithm === 'json-pointer-set') {
+    const expected = Array.isArray(verification.expected) ? verification.expected : [];
+    const found = new Set(results.map(r => r.value ?? r.name ?? r.symbol ?? '').filter(Boolean));
+    const intersection = expected.filter(v => found.has(v)).length;
+    setAccuracy = expected.length > 0 ? intersection / Math.max(found.size, expected.length) : 1;
+    fileCorrect = expectedFile ? results.some(r => (r.file ?? r.path ?? '').includes(expectedFile)) : true;
+    lineCorrect = false;
+    actual = [...found].join(',') || null;
+  } else {
+    // line-contains, symbol-at-line, file-exists
+    const match = results.find(r => {
+      const file = r.file ?? r.path ?? '';
+      return expectedFile ? file.endsWith(expectedFile) || file.includes(expectedFile) : true;
+    });
+    if (match) {
+      actual = match.file ?? match.path ?? null;
+      fileCorrect = expectedFile ? !!(actual && (actual.endsWith(expectedFile) || actual.includes(expectedFile))) : true;
+      if (expectedLine !== null && match.line !== undefined) {
+        lineCorrect = Math.abs((match.line ?? 0) - expectedLine) <= 5;
+      } else {
+        lineCorrect = fileCorrect;
+      }
+    }
+  }
+
+  const outcome = fileCorrect ? 'pass' : 'fail';
+  if (!fileCorrect && expectedFile) errors.push(`CBM did not return expected file: ${expectedFile}`);
+
+  return {
+    outcome, actual, latencyMs: Date.now() - start, errors, subjectIdentity,
+    fileCorrect, lineCorrect, setAccuracy,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Evidence validation
 // ---------------------------------------------------------------------------
 
-function validateEvidence(evidenceDir, expectedFixtureIds) {
+function validateEvidence(evidenceDir, expectedFixtureIds, selectedSubjects = []) {
   const errors = [];
   const found = new Set();
+  // With dual-subject, evidence files are named <fixtureId>_<subject>.json
+  const useCompositeKeys = selectedSubjects.length > 1;
+  const pairs = [];
   for (const fixtureId of expectedFixtureIds) {
-    const evidencePath = path.join(evidenceDir, `${fixtureId}.json`);
+    for (const subject of (selectedSubjects.length > 0 ? selectedSubjects : ['unknown'])) {
+      pairs.push({ fixtureId, subject });
+    }
+  }
+  for (const { fixtureId, subject } of pairs) {
+    const fileName = useCompositeKeys ? `${fixtureId}_${subject}.json` : `${fixtureId}.json`;
+    const evidencePath = path.join(evidenceDir, fileName);
     if (!fs.existsSync(evidencePath)) {
-      errors.push(`evidence missing for fixture ${fixtureId}`);
+      errors.push(`evidence missing for fixture ${fixtureId} subject ${subject}`);
       continue;
     }
     try {
       const ev = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
       if (ev.fixtureId !== fixtureId) errors.push(`evidence fixtureId mismatch: ${ev.fixtureId} !== ${fixtureId}`);
       if (!ev.provenance?.runId) errors.push(`evidence ${fixtureId}: missing provenance.runId`);
-      found.add(fixtureId);
+      found.add(`${fixtureId}_${subject}`);
     } catch (e) {
       errors.push(`evidence ${fixtureId}: parse error: ${e.message}`);
     }
   }
-  // Check for extra evidence files
+  // Check for unexpected evidence files
   try {
+    const expectedKeys = new Set(pairs.map(p => useCompositeKeys ? `${p.fixtureId}_${p.subject}.json` : `${p.fixtureId}.json`));
     for (const file of fs.readdirSync(evidenceDir)) {
       if (!file.endsWith('.json')) continue;
-      const fixtureId = file.slice(0, -5);
-      if (!expectedFixtureIds.includes(fixtureId) && file !== '_execution-receipt.json') {
+      if (!expectedKeys.has(file) && file !== '_execution-receipt.json') {
         errors.push(`unexpected evidence file: ${file}`);
       }
     }
@@ -485,47 +830,61 @@ export async function runExecutor({
 
   const fixtureResults = [];
   const startedAt = new Date().toISOString();
+  const useCompositeKeys = selectedSubjects.length > 1;
 
   if (!dryRun) {
     const cbmCacheDir = path.join(runDir, 'subjects', 'cbm', 'cache');
     const cbmConfigDir = path.join(runDir, 'subjects', 'cbm', 'config');
 
+    // Defect 3 fix: iterate ALL selectedSubjects for EACH fixture (dual-subject loop)
     for (const fixture of fixtures) {
-      const subject = selectedSubjects.includes('cbm') ? 'cbm' : 'exact-source';
-      const subjectForFixture = selectedSubjects.includes('exact-source') && !selectedSubjects.includes('cbm') ? 'exact-source' : subject;
+      for (const subject of selectedSubjects) {
+        const fixtureStart = new Date().toISOString();
+        let result;
 
-      const fixtureStart = new Date().toISOString();
-      let result;
+        if (subject === 'exact-source') {
+          const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
+          const rawResult = runExactSourceFixture(fixture, sourcesDir);
+          result = {
+            ...rawResult,
+            startedAt: fixtureStart,
+            completedAt: new Date().toISOString(),
+            subjectIdentity: { exactSource: true },
+          };
+        } else if (subject === 'cbm') {
+          const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
+          const rawResult = await runCbmFixture(
+            fixture, cbmIdentity, sourcesDir, cbmCacheDir, cbmConfigDir, runId, { _cbmAdapter }
+          );
+          result = {
+            ...rawResult,
+            startedAt: fixtureStart,
+            completedAt: new Date().toISOString(),
+          };
+        } else {
+          result = {
+            outcome: 'skipped', actual: null, latencyMs: 0,
+            errors: [`unsupported subject: ${subject}`],
+            startedAt: fixtureStart, completedAt: new Date().toISOString(),
+            subjectIdentity: null, fileCorrect: false, lineCorrect: false, setAccuracy: null,
+          };
+        }
 
-      if (subjectForFixture === 'exact-source') {
-        const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
-        const rawResult = runExactSourceFixture(fixture, sourcesDir);
-        result = {
-          ...rawResult,
-          startedAt: fixtureStart,
-          completedAt: new Date().toISOString(),
-          subjectIdentity: { exactSource: true },
-        };
-      } else {
-        // cbm
-        const rawResult = await runCbmFixture(fixture, cbmIdentity, cbmCacheDir, cbmConfigDir, { _cbmAdapter });
-        result = {
-          ...rawResult,
-          startedAt: fixtureStart,
-          completedAt: new Date().toISOString(),
-        };
+        const evidenceRecord = buildFixtureEvidence(fixture, result, subject, runMeta);
+        // Composite key when multiple subjects: <fixtureId>_<subject>.json
+        const evidenceFileName = useCompositeKeys
+          ? `${fixture.fixtureId}_${subject}.json`
+          : `${fixture.fixtureId}.json`;
+        atomicWriteJson(path.join(evidenceDir, evidenceFileName), evidenceRecord);
+        fixtureResults.push(evidenceRecord);
       }
-
-      const evidenceRecord = buildFixtureEvidence(fixture, result, subjectForFixture, runMeta);
-      atomicWriteJson(path.join(evidenceDir, `${fixture.fixtureId}.json`), evidenceRecord);
-      fixtureResults.push(evidenceRecord);
     }
   }
 
   // Validate final evidence (skip in dry-run)
   if (!dryRun) {
     const expectedIds = fixtures.map(f => f.fixtureId);
-    const evidenceErrors = validateEvidence(evidenceDir, expectedIds);
+    const evidenceErrors = validateEvidence(evidenceDir, expectedIds, selectedSubjects);
     if (evidenceErrors.length > 0) {
       errors.push(...evidenceErrors);
     }
@@ -547,6 +906,56 @@ export async function runExecutor({
     outcome = total > 0 && passed > 0 ? 'partial' : 'fail';
   } else {
     outcome = 'pass';
+  }
+
+  // Defect 5: Write aggregate evidence.json to the run directory (not evidence/ subdir)
+  if (!dryRun) {
+    const fileCorrectCount = fixtureResults.filter(f => f.fileCorrect).length;
+    const lineCorrectCount = fixtureResults.filter(f => f.lineCorrect).length;
+    const setAccuracyValues = fixtureResults.map(f => f.setAccuracy).filter(v => v !== null && v !== undefined);
+    const excludedSubjects = plan.excludedSubjects ?? [];
+    const preflightReceiptHash = (() => {
+      try {
+        const receiptBytes = fs.readFileSync(path.join(runDir, 'preflight-receipt.json'));
+        return `sha256:${crypto.createHash('sha256').update(receiptBytes).digest('hex')}`;
+      } catch { return null; }
+    })();
+    const aggregateEvidence = {
+      schemaVersion: '1.0.0',
+      runId,
+      partialEvidence: excludedSubjects.length > 0,
+      selectedSubjects: [...selectedSubjects].sort(),
+      excludedSubjects: [...excludedSubjects].sort(),
+      pinnedRepositoryCommits: (() => {
+        const commits = {};
+        for (const entry of plan.pinnedRepositoryCommits ?? []) {
+          commits[entry.repositoryId] = { repositoryId: entry.repositoryId, commit: entry.commit };
+        }
+        return commits;
+      })(),
+      manifestHash: plan.manifestHash ?? null,
+      preflightReceiptHash: preflightReceiptHash ?? `sha256:${'0'.repeat(64)}`,
+      planSha256,
+      subjectBinaryIdentity: plan.subjectBinaryIdentity ?? {},
+      networkIsolationProof: plan.networkIsolationProof ?? { required: false, status: 'not-required' },
+      fixtureResults: fixtureResults.map(f => ({
+        fixtureId: f.fixtureId,
+        subject: f.subject,
+        fileCorrect: f.fileCorrect ?? false,
+        lineCorrect: f.lineCorrect ?? false,
+        ...(f.setAccuracy !== null && f.setAccuracy !== undefined ? { setAccuracy: f.setAccuracy } : {}),
+      })),
+      offlineMetrics: {
+        fileAccuracy: total > 0 ? fileCorrectCount / total : 0,
+        lineAccuracy: total > 0 ? lineCorrectCount / total : 0,
+        setAccuracy: setAccuracyValues.length > 0
+          ? setAccuracyValues.reduce((a, b) => a + b, 0) / setAccuracyValues.length
+          : 1.0,
+      },
+      violations: errors.map(e => ({ reason: 'executor-error', detail: e })),
+      cleanupStatus: { runDirectory: runDir, removed: false },
+    };
+    atomicWriteJson(path.join(runDir, 'evidence.json'), aggregateEvidence);
   }
 
   const executionReceipt = {

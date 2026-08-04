@@ -1,6 +1,6 @@
 # B8.1 Context-memory benchmark plan
 
-**Status:** execution gate prepared — B8.1 and B8.2 remain incomplete and are NOT authorized for execution
+**Status:** v4 contract ready — B8.1 and B8.2 remain incomplete and are NOT authorized for execution; v4 digest pending preflight run
 **Date:** 2026-08-03
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
 **Next step:** Execution requires the prerequisites in the "Execution prerequisites" section below, including explicit approval of the exact dry-run `planSha256`.

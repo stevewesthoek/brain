@@ -1,10 +1,13 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **v3 CONTRACT NOW ACTIVE (feature/b8-1-executor-v3)**
-> The v3 plan contract (`planVersion: '3.0.0'`) is implemented on branch `feature/b8-1-executor-v3`.
-> Both v1 and v2 digests are now **INVALID** and rejected by the v3 harness and executor.
-> A new v3 digest must be computed at actual preflight time using the v3 contract.
-> See `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json` for the v3 structure.
+> **v4 CONTRACT NOW ACTIVE (feature/b8-1-final-readiness-v2)**
+> The v4 plan contract (`planVersion: '4.0.0'`) is implemented on branch `feature/b8-1-final-readiness-v2`.
+> v1, v2, and v3 digests are now **INVALID** and rejected by the v4 harness and executor.
+> A new v4 digest must be computed at actual preflight time using the v4 contract.
+> See `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json` for the v4 structure.
+
+> **v3 DIGEST NOW STALE**: v3 digests from `feature/b8-1-executor-v3` are rejected by the v4 contract.
+> Recompute against v4 (`planVersion: '4.0.0'`) using the updated preflight harness.
 
 > **SOURCE ROOT CORRECTION**: An earlier version of this document implied source roots were cleaned up after the v2 dry-run. This was **incorrect**. Persistent source worktrees exist at `/Users/Office/.brain/benchmark/b8-1/source-roots/` and should be preserved. Source roots are persistent benchmark inputs, not ephemeral artifacts. See `operations/specs/b8-1-source-root-hardening.md`.
 
@@ -16,7 +19,9 @@
 
 ## Status
 
-**v3 contract ready — v3 digest not yet computed.** The bounded executor and v3 plan harness are on `feature/b8-1-executor-v3`. A new preflight run is required to compute the v3 digest before any execution or approval. No materialization, benchmark execution, or approval has occurred.
+**v4 contract ready — v4 digest not yet computed.** The bounded executor (v4.0.0) and v4 plan harness are on `feature/b8-1-final-readiness-v2`. A new preflight run is required to compute the v4 digest before any execution or approval. No materialization, benchmark execution, or approval has occurred.
+
+v4 changes from v3: dual-subject execution (all selectedSubjects run per fixture), real CBM subprocess adapter, exact-source full verification scoring, aggregate evidence.json, timer leak fix, contract version bump to 4.0.0, evidence validator v4 plan layout support.
 
 ## 1. Brain Main SHA
 
@@ -90,14 +95,21 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 ~~v1 (INVALID — path-dependent, do not use): `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~
 
-**v3 (pending — compute at next preflight run):**
+~~**v3 (INVALID — stale, rejected by v4 contract):**~~
+~~`COMPUTED_AT_PREFLIGHT`~~
+
+~~Run ID: `b8-1-canonical-authorization-20260804-v3`~~
+
+~~v3 plan structure: `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json`~~
+
+**v4 (pending — compute at next preflight run):**
 ```
 COMPUTED_AT_PREFLIGHT
 ```
 
-Run ID: `b8-1-canonical-authorization-20260804-v3`
+Run ID: `b8-1-canonical-authorization-20260804-final-v4`
 
-v3 plan structure: `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json`
+v4 plan structure: `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json`
 
 ## 8. Execution-Readiness Result
 

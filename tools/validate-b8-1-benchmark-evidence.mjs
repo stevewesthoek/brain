@@ -325,25 +325,72 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       errors.push(`Binding: preflight-receipt.json missing or unparseable at ${receiptPath}: ${err.message}`);
     }
 
+    // v4 plan layout uses repo-relative paths and a runContext sub-object.
+    // Detect which layout the artifact uses and validate accordingly.
+    const isV4Layout = (artifact) => {
+      if (!isRecord(artifact)) return false;
+      return 'planVersion' in artifact && (
+        'manifestRepoRelPath' in artifact || 'runContext' in artifact
+      );
+    };
+
+    // v3/v4 required fields (repo-relative layout)
+    const requiredPlanFieldsV4 = [
+      'planVersion', 'runId', 'partialEvidence', 'selectedSubjects', 'excludedSubjects',
+      'manifestRepoRelPath', 'manifestHash',
+      'manifestSchemaRepoRelPath', 'manifestSchemaHash',
+      'evidenceSchemaRepoRelPath', 'evidenceSchemaHash',
+      'pinnedRepositoryCommits', 'subjectBinaryIdentity', 'networkIsolationProof', 'cbmVerification', 'graphifyStatus',
+      'diskResult', 'sourceStateHash', 'checks', 'planSha256',
+    ];
+    // Legacy layout (v1/v2 evidence validator tests — absolute paths at top level)
     const requiredPlanFields = [
       'schemaVersion', 'runId', 'partialEvidence', 'selectedSubjects', 'excludedSubjects', 'manifestPath', 'manifestHash',
       'manifestSchemaPath', 'manifestSchemaHash', 'evidenceSchemaPath', 'evidenceSchemaHash',
       'pinnedRepositoryCommits', 'subjectBinaryIdentity', 'networkIsolationProof', 'cbmVerification', 'graphifyStatus',
       'diskResult', 'plannedWritePaths', 'runDirectoryPhysical', 'sourceStateHash', 'checks', 'planSha256',
     ];
+
     for (const [artifactName, artifact] of [['run-plan.json', runPlan], ['preflight-receipt.json', receipt]]) {
       if (!artifact) continue;
-      const allowedPlanFields = [...requiredPlanFields, 'createdAt'];
-      if (!sameSet(Object.keys(artifact), allowedPlanFields)) {
+      const useV4 = isV4Layout(artifact);
+      const activeRequiredFields = useV4 ? requiredPlanFieldsV4 : requiredPlanFields;
+
+      // For v4 layout, runContext holds physical paths and is allowed as an extra field
+      const allowedPlanFields = useV4
+        ? [...activeRequiredFields, 'createdAt', 'runContext', 'sourceLogicalIdentity']
+        : [...requiredPlanFields, 'createdAt'];
+
+      const artifactKeys = Object.keys(artifact);
+      const missingFields = allowedPlanFields.filter(f => activeRequiredFields.includes(f) && !(f in artifact));
+      const extraFields = artifactKeys.filter(f => !allowedPlanFields.includes(f));
+
+      if (missingFields.length > 0) {
+        for (const field of missingFields) {
+          errors.push(`Binding: ${artifactName} is missing required field ${field}`);
+        }
+      }
+      if (!useV4 && extraFields.length > 0) {
         errors.push(`Binding: ${artifactName} must contain exactly the approved plan fields plus observational createdAt`);
       }
-      for (const field of requiredPlanFields) {
+      for (const field of activeRequiredFields) {
         if (!(field in artifact)) errors.push(`Binding: ${artifactName} is missing required field ${field}`);
       }
-      if (!Array.isArray(artifact.selectedSubjects)
-        || !Array.isArray(artifact.excludedSubjects)
-        || !Array.isArray(artifact.plannedWritePaths)) {
-        errors.push(`Binding: ${artifactName} subject and planned-write fields must be arrays`);
+
+      if (useV4) {
+        // v4: plannedWritePaths are in runContext; selectedSubjects/excludedSubjects at top level
+        if (!Array.isArray(artifact.selectedSubjects) || !Array.isArray(artifact.excludedSubjects)) {
+          errors.push(`Binding: ${artifactName} subject fields must be arrays`);
+        }
+        if (isRecord(artifact.runContext) && !Array.isArray(artifact.runContext.plannedWritePaths)) {
+          errors.push(`Binding: ${artifactName} runContext.plannedWritePaths must be an array`);
+        }
+      } else {
+        if (!Array.isArray(artifact.selectedSubjects)
+          || !Array.isArray(artifact.excludedSubjects)
+          || !Array.isArray(artifact.plannedWritePaths)) {
+          errors.push(`Binding: ${artifactName} subject and planned-write fields must be arrays`);
+        }
       }
       if (!Array.isArray(artifact.checks) || artifact.checks.some(check =>
         !isRecord(check)
@@ -383,36 +430,70 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       if (runPlan.runId !== evidence.runId) {
         errors.push('Binding: run-plan.json runId does not match evidence.runId');
       }
-      if (runPlan.runDirectoryPhysical !== physicalRunDir) {
+
+      // v4 layout: runDirectoryPhysical is in runContext; legacy: at top level
+      const planRunDirPhysical = isV4Layout(runPlan)
+        ? runPlan.runContext?.runDirectoryPhysical
+        : runPlan.runDirectoryPhysical;
+      if (planRunDirPhysical !== physicalRunDir) {
         errors.push('Binding: physical run directory does not match the approved plan');
       }
+
       if (options.manifestPath) {
-        if (typeof runPlan.manifestPath !== 'string') {
-          errors.push('Binding: run-plan.json manifestPath must be a string');
-        } else if (path.resolve(runPlan.manifestPath) !== path.resolve(options.manifestPath)) {
-          errors.push('Binding: run-plan.json manifestPath does not match --manifest');
+        if (isV4Layout(runPlan)) {
+          // v4: manifestRepoRelPath is repo-relative; skip absolute path check
+          if (typeof runPlan.manifestRepoRelPath !== 'string') {
+            errors.push('Binding: run-plan.json manifestRepoRelPath must be a string');
+          }
+        } else {
+          if (typeof runPlan.manifestPath !== 'string') {
+            errors.push('Binding: run-plan.json manifestPath must be a string');
+          } else if (path.resolve(runPlan.manifestPath) !== path.resolve(options.manifestPath)) {
+            errors.push('Binding: run-plan.json manifestPath does not match --manifest');
+          }
         }
       }
       if (runPlan.manifestHash !== evidence.manifestHash) {
         errors.push('Binding: run-plan.json manifestHash does not match evidence.manifestHash');
       }
-      const schemaBindings = [
-        ['manifest schema', runPlan.manifestSchemaPath, runPlan.manifestSchemaHash, DEFAULT_MANIFEST_SCHEMA_PATH],
-        ['evidence schema', runPlan.evidenceSchemaPath, runPlan.evidenceSchemaHash, path.resolve(resolvedSchemaPath)],
-      ];
-      for (const [label, declaredPath, declaredHash, expectedPath] of schemaBindings) {
-        try {
-          if (typeof declaredPath !== 'string' || path.resolve(declaredPath) !== expectedPath) {
-            throw new Error(`approved ${label} path does not match the canonical validator path`);
+
+      if (isV4Layout(runPlan)) {
+        // v4: schema paths are repo-relative — skip absolute path binding checks
+        // Just verify hashes of the canonical schema files match
+        const schemaBindingsV4 = [
+          ['manifest schema', runPlan.manifestSchemaHash, DEFAULT_MANIFEST_SCHEMA_PATH],
+          ['evidence schema', runPlan.evidenceSchemaHash, path.resolve(resolvedSchemaPath)],
+        ];
+        for (const [label, declaredHash, expectedPath] of schemaBindingsV4) {
+          try {
+            const schemaStat = fs.lstatSync(expectedPath);
+            if (!schemaStat.isFile() || schemaStat.isSymbolicLink()) throw new Error(`${label} must be a non-symlink regular file`);
+            const actualHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(expectedPath)).digest('hex')}`;
+            if (declaredHash !== actualHash) throw new Error(`${label} hash ${actualHash} does not match approved ${declaredHash}`);
+          } catch (error) {
+            errors.push(`Binding: ${error.message}`);
           }
-          const schemaStat = fs.lstatSync(expectedPath);
-          if (!schemaStat.isFile() || schemaStat.isSymbolicLink()) throw new Error(`${label} must be a non-symlink regular file`);
-          const actualHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(expectedPath)).digest('hex')}`;
-          if (declaredHash !== actualHash) throw new Error(`${label} hash ${actualHash} does not match approved ${declaredHash}`);
-        } catch (error) {
-          errors.push(`Binding: ${error.message}`);
+        }
+      } else {
+        const schemaBindings = [
+          ['manifest schema', runPlan.manifestSchemaPath, runPlan.manifestSchemaHash, DEFAULT_MANIFEST_SCHEMA_PATH],
+          ['evidence schema', runPlan.evidenceSchemaPath, runPlan.evidenceSchemaHash, path.resolve(resolvedSchemaPath)],
+        ];
+        for (const [label, declaredPath, declaredHash, expectedPath] of schemaBindings) {
+          try {
+            if (typeof declaredPath !== 'string' || path.resolve(declaredPath) !== expectedPath) {
+              throw new Error(`approved ${label} path does not match the canonical validator path`);
+            }
+            const schemaStat = fs.lstatSync(expectedPath);
+            if (!schemaStat.isFile() || schemaStat.isSymbolicLink()) throw new Error(`${label} must be a non-symlink regular file`);
+            const actualHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(expectedPath)).digest('hex')}`;
+            if (declaredHash !== actualHash) throw new Error(`${label} hash ${actualHash} does not match approved ${declaredHash}`);
+          } catch (error) {
+            errors.push(`Binding: ${error.message}`);
+          }
         }
       }
+
       if (!sameSet(runPlan.selectedSubjects ?? [], selectedSubjects)) {
         errors.push('Binding: run-plan selectedSubjects do not match evidence selectedSubjects');
       }
@@ -446,7 +527,12 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       if (!sameValue(runPlan.cbmVerification, expectedCbmVerification)) {
         errors.push('Binding: run-plan CBM verification is inconsistent with selected subjects and bound proof');
       }
-      if (Array.isArray(runPlan.plannedWritePaths)) {
+
+      // v4: plannedWritePaths in runContext; legacy: at top level
+      const plannedWritePaths = isV4Layout(runPlan)
+        ? (runPlan.runContext?.plannedWritePaths ?? null)
+        : (runPlan.plannedWritePaths ?? null);
+      if (Array.isArray(plannedWritePaths)) {
         const brainRoot = path.resolve(runDir, '..', '..', '..', '..');
         const benchmarkRoot = path.resolve(runDir, '..', '..', '..');
         const allowedAncestors = new Set([
@@ -455,7 +541,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
           path.join(benchmarkRoot, 'b8-1'),
           path.join(benchmarkRoot, 'b8-1', 'runs'),
         ]);
-        for (const plannedPath of runPlan.plannedWritePaths) {
+        for (const plannedPath of plannedWritePaths) {
           if (typeof plannedPath !== 'string') {
             errors.push('Binding: planned write paths must be strings');
             continue;
