@@ -5,7 +5,7 @@
     {
       "repositoryId": "brain",
       "localPath": "../../../brain-next",
-      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
+      "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
       "description": "machine-brain — AI infrastructure, skills, runbooks (TypeScript + shell)",
       "excludedSymlinkPaths": [
         "operations/system-configs/claude/hooks/auto-handoff.sh",
@@ -18,13 +18,13 @@
     {
       "repositoryId": "workbench",
       "localPath": "../../../../prochattools/saas/workbench-private",
-      "pinnedCommit": "f482851457c4505bcbf98dd02c469728f61ab427",
+      "pinnedCommit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2",
       "description": "Workbench Private — full-stack TypeScript application"
     },
     {
       "repositoryId": "prochat",
       "localPath": "../../../../prochattools/web/prochat",
-      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
+      "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
       "description": "ProChat — Next.js TypeScript application"
     }
   ],
@@ -32,7 +32,7 @@
     {
       "fixtureId": "brain_f1",
       "repositoryId": "brain",
-      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
+      "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
       "question": "Where is MIND_TARGET_PATHS exported and what does it define?",
       "expectedFile": "projects/brain-core/src/mind-paths.ts",
       "expectedSymbol": "MIND_TARGET_PATHS",
@@ -56,7 +56,7 @@
     {
       "fixtureId": "brain_f2",
       "repositoryId": "brain",
-      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
+      "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
       "question": "Which function classifies a Mind task for routing?",
       "expectedFile": "projects/mind-steward/src/classifier.ts",
       "expectedSymbol": "classifyMindCaptureInbox",
@@ -83,7 +83,7 @@
     {
       "fixtureId": "brain_f3",
       "repositoryId": "brain",
-      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
+      "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
       "question": "What MCP tools does the Workbench admission allow?",
       "expectedFile": "operations/specs/mcp-provider-admissions.json",
       "expectedLiteral": "getWorkbenchStatus,readWorkbenchContext,runWorkbenchCommand",
@@ -102,12 +102,12 @@
         "jsonPointer": "/admissions/1/scope/tools",
         "expected": ["getWorkbenchStatus", "readWorkbenchContext", "runWorkbenchCommand"]
       },
-      "notes": "Three admitted tools: getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand. Environment variable: WORKBENCH_MCP_ALLOWED_TOOLS."
+      "notes": "Three admitted tools: getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand. Environment variable: WORKBENCH_MCP_ALLOWED_TOOLS. File sha256: 850a7b100580179e30e65d5a16c0fc5917c7d0e6c8894c69374b8aa2bc5789e2"
     },
     {
       "fixtureId": "brain_f4",
       "repositoryId": "brain",
-      "pinnedCommit": "257fd72c3f47a53afb23778ed860976fd2429c71",
+      "pinnedCommit": "f683edff753937944018dd00bf5494c85f62e881",
       "question": "What validator runs the deletion-readiness check?",
       "expectedFile": "tools/validate-deletion-readiness.mjs",
       "expectedSymbol": "main",
@@ -132,7 +132,7 @@
     {
       "fixtureId": "workbench_f1",
       "repositoryId": "workbench",
-      "pinnedCommit": "f482851457c4505bcbf98dd02c469728f61ab427",
+      "pinnedCommit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2",
       "question": "Where is BRAIN_PROFILE_ALLOWED_TOOLS defined and what value does it hold?",
       "expectedFile": "packages/mcp/src/configure-core.ts",
       "expectedSymbol": "BRAIN_PROFILE_ALLOWED_TOOLS",
@@ -161,7 +161,7 @@
     {
       "fixtureId": "workbench_f2",
       "repositoryId": "workbench",
-      "pinnedCommit": "f482851457c4505bcbf98dd02c469728f61ab427",
+      "pinnedCommit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2",
       "question": "Where are the MCP scope environment variable names defined?",
       "expectedFile": "packages/mcp/src/scope.ts",
       "expectedSymbol": "MCP_ALLOWED_TOOLS_ENV",
@@ -182,7 +182,7 @@
     {
       "fixtureId": "prochat_f1",
       "repositoryId": "prochat",
-      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
+      "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
       "question": "Where is the RootLayout component defined?",
       "expectedFile": "src/app/layout.tsx",
       "expectedSymbol": "RootLayout",
@@ -205,7 +205,7 @@
     {
       "fixtureId": "prochat_f2",
       "repositoryId": "prochat",
-      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
+      "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
       "question": "How many route.ts files exist in this repository?",
       "expectedFileCount": 27,
       "scoringType": "count-match",
@@ -221,7 +221,7 @@
     {
       "fixtureId": "prochat_f3",
       "repositoryId": "prochat",
-      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
+      "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
       "question": "Where is the Stripe webhook POST handler defined?",
       "expectedFile": "src/app/api/webhook/stripe/route.ts",
       "expectedSymbol": "POST",
@@ -244,7 +244,7 @@
     {
       "fixtureId": "prochat_f4",
       "repositoryId": "prochat",
-      "pinnedCommit": "e404821bfeef0868fef9f42a14ede4926aabe6ef",
+      "pinnedCommit": "85087d54f712b1333be7c620f23b6bcac9cde90b",
       "question": "Where is the database connection initialized?",
       "expectedFile": "src/libs/prisma.ts",
       "expectedSymbol": "prisma",

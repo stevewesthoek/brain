@@ -44,13 +44,14 @@ const VALID_SUBJECTS = ['cbm', 'graphify', 'exact-source'];
 const RUN_ID_PATTERN = /^b8-1-[a-zA-Z0-9._-]+$/;
 const GRAPHIFY_BLOCK_REASON = 'graphify requires exact executable identity, version digest, bounded arguments, and dry-run self-test — contract not yet defined';
 
-// Known stale v1/v2/v3 approval digests — these were path-dependent or from prior contracts.
+// Known stale v1/v2/v3/v4r approval digests — these were path-dependent or from prior contracts.
 // Any attempt to use these as --approved-plan-sha256 fails closed with a clear error.
-// v3 digests from prior sessions are stale pending v4 re-run.
+// v4r digest is stale pending v5 re-run.
 const KNOWN_STALE_DIGESTS = new Set([
   'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
   '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
   '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; v4r supersedes)
+  'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', // v4r (stale — stale pins; v5 supersedes)
 ]);
 
 // Paths that planned writes must never overlap
@@ -983,6 +984,13 @@ function parseAndValidateSubjects(rawSubjects) {
  *  - runContext sub-object holds run-local absolute paths (runDirectoryPhysical, plannedWritePaths)
  *    and is EXCLUDED from the digest; old v1/v2 approvals fail closed
  *  - repoRoot must be provided so repo-relative paths can be computed
+ *
+ * v5 changes from v4r:
+ *  - planVersion: '5.0.0' (new pins require new plan version)
+ *  - Updated source repository pins: brain f683edff/workbench bc490861/prochat 85087d54
+ *  - CBM HOME isolation: per-run configDir passed as HOME (not user's real HOME)
+ *  - Sandbox fail-closed: darwin executor verifies sandbox-exec + deny profile exist before running
+ *  - callerPrecision=null for exact-source (precision not computable without a predicted set)
  */
 export function buildCanonicalPlan({
   runId,
@@ -1030,7 +1038,7 @@ export function buildCanonicalPlan({
   }
 
   const digestFields = {
-    planVersion: '4.0.0',
+    planVersion: '5.0.0',
     runId,
     partialEvidence: excludedSubjects.length > 0,
     selectedSubjects: canonicalSelected,
@@ -1427,8 +1435,8 @@ export async function runPreflight({
         recordCheck(checks, 'plan-approval', 'fail', 'approved plan digest must be exactly 64 lowercase hexadecimal characters');
         blockingChecks.push('plan-approval');
       } else if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
-        // Fail closed on any known v1/v2 digest — they were path-dependent and are no longer valid
-        recordCheck(checks, 'plan-approval', 'fail', `stale v1/v2 approval digest rejected — recompute against v3 plan contract (planVersion 3.0.0)`);
+        // Fail closed on any known stale digest — they are from prior plan versions and are no longer valid
+        recordCheck(checks, 'plan-approval', 'fail', `stale approval digest rejected — recompute against v5 plan contract (planVersion 5.0.0)`);
         blockingChecks.push('plan-approval');
       } else if (approvedPlanSha256 !== planSha256) {
         recordCheck(checks, 'plan-approval', 'fail', `approved digest mismatch: got ${approvedPlanSha256.slice(0, 16)}... expected ${planSha256.slice(0, 16)}...`);

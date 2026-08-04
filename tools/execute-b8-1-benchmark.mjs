@@ -5,7 +5,7 @@
  * Bounded B8.1 benchmark executor.
  *
  * Responsibilities:
- *   - Verify an approved v3 plan digest against a materialized run
+ *   - Verify an approved v5 plan digest against a materialized run
  *   - Execute each fixture with bounded timeout/output using cbm or exact-source adapters
  *   - Record evidence atomically
  *   - Terminate children; produce execution and cleanup receipts
@@ -16,7 +16,7 @@
  *   - Modify user config (~/.claude.json, ~/.codex, etc.)
  *   - Use LLMs or remote APIs
  *   - Execute graphify
- *   - Accept v1/v2 plan approvals
+ *   - Accept v1/v2/v4r plan approvals
  *
  * Exit codes:
  *   0 = all fixtures passed (or dry-run succeeded)
@@ -35,8 +35,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-const EXECUTOR_VERSION = '4.0.0';
-const REQUIRED_PLAN_VERSION = '4.0.0';
+export const EXECUTOR_VERSION = '5.0.0';
+export const REQUIRED_PLAN_VERSION = '5.0.0';
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
 const SUPPORTED_SUBJECTS = new Set(['cbm', 'exact-source']);
@@ -46,10 +46,11 @@ const CBM_SEARCH_LIMIT = 50;
 const NETWORK_DENY_PROFILE_PATH = path.join(REPO_ROOT, 'operations', 'specs', 'b8-1-network-deny.sb');
 
 // Known stale digests — rejected at materialization and executor time.
-const KNOWN_STALE_DIGESTS = new Set([
+export const KNOWN_STALE_DIGESTS = new Set([
   'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
   '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
   '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; run-id v4r supersedes)
+  'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', // v4r (stale — stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes)
 ]);
 
 // ---------------------------------------------------------------------------
@@ -116,7 +117,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     const gotVersion = plan.planVersion ?? `absent (schemaVersion=${plan.schemaVersion ?? 'absent'})`;
     return {
       plan: null,
-      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v4 preflight`,
+      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v5 preflight`,
     };
   }
 
@@ -127,7 +128,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     return { plan: null, error: 'approvedPlanSha256 must be exactly 64 lowercase hexadecimal characters' };
   }
   if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
-    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v4r plan contract (run-id b8-1-canonical-authorization-20260804-final-v4r)' };
+    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v5 plan contract (run-id b8-1-canonical-authorization-20260804-final-v5)' };
   }
 
   // Recompute the digest from the stored plan fields (excluding planSha256/createdAt/runContext)
@@ -327,10 +328,12 @@ function computeExactSourceCallerCallee(fixture, sourcesDir) {
   const presentCallers = findPresent(expectedCallers);
   const presentCallees = findCalleePresent(expectedCallees);
 
-  // Precision = found / predicted; Recall = found / expected
-  const callerPrecision = expectedCallers.length > 0 ? presentCallers.length / expectedCallers.length : null;
+  // For exact-source: precision is not computable (no separate predicted set vs expected set).
+  // Only recall is computable: fraction of expected items that exist in the source tree.
+  // callerPrecision and calleePrecision are null — not computable from exact-source.
+  const callerPrecision = null;
   const callerRecall = expectedCallers.length > 0 ? presentCallers.length / expectedCallers.length : null;
-  const calleePrecision = expectedCallees.length > 0 ? presentCallees.length / expectedCallees.length : null;
+  const calleePrecision = null;
   const calleeRecall = expectedCallees.length > 0 ? presentCallees.length / expectedCallees.length : null;
 
   return { callerPrecision, callerRecall, calleePrecision, calleeRecall };
@@ -520,6 +523,24 @@ function runExactSourceFixture(fixture, sourcesDir) {
 }
 
 /**
+ * v5: Fail-closed sandbox availability check.
+ * Verifies that /usr/bin/sandbox-exec and the network-deny profile both exist.
+ * Returns { ok: true } or { ok: false, error: string }.
+ *
+ * @param {string} profilePath  - absolute path to the sandbox deny profile
+ * @returns {{ ok: boolean, error?: string }}
+ */
+export function checkSandboxAvailable(profilePath) {
+  if (!fs.existsSync('/usr/bin/sandbox-exec')) {
+    return { ok: false, error: 'sandbox-exec or deny profile not available — executor fails closed' };
+  }
+  if (!profilePath || !fs.existsSync(profilePath)) {
+    return { ok: false, error: 'sandbox-exec or deny profile not available — executor fails closed' };
+  }
+  return { ok: true };
+}
+
+/**
  * Spawn a command (optionally sandbox-wrapped) with bounded timeout and process-group kill.
  * Returns { stdout, stderr, exitCode, timedOut }.
  *
@@ -546,9 +567,9 @@ function spawnBounded(binaryPath, args, { env = {}, cwd, timeoutMs, sandboxProfi
 
     // Build a clean env — only pass through explicitly needed vars + CBM_CACHE_DIR
     // Defect 4: use CBM_CACHE_DIR (not CODEBASE_MEMORY_HOME/CODEBASE_MEMORY_AUTO_WATCH)
+    // v5: HOME is NOT inherited from user's real home; caller must supply a per-run synthetic HOME via env
     const childEnv = {
       PATH: process.env.PATH ?? '/usr/bin:/bin',
-      HOME: process.env.HOME ?? '',
       TMPDIR: process.env.TMPDIR ?? '/tmp',
       ...env,
     };
@@ -694,7 +715,8 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
   const projectName = `${runId}-${repoId}`;
 
   // Defect 4: use CBM_CACHE_DIR (not CODEBASE_MEMORY_HOME or CODEBASE_MEMORY_AUTO_WATCH)
-  const env = { CBM_CACHE_DIR: cacheDir };
+  // v5: HOME points to per-run configDir (synthetic, not user's real home)
+  const env = { CBM_CACHE_DIR: cacheDir, HOME: configDir };
   const sandboxProfile = fs.existsSync(NETWORK_DENY_PROFILE_PATH) ? NETWORK_DENY_PROFILE_PATH : undefined;
 
   // Defect 4: config set auto_watch false + verify, using admitted env var CBM_CACHE_DIR
@@ -705,6 +727,19 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
       fileCorrect: false, lineCorrect: false, setAccuracy: null,
     };
+  }
+
+  // v5: fail-closed sandbox check — only on darwin (sandbox-exec is macOS-specific)
+  if (process.platform === 'darwin' && !opts._repoIndexed.get('_sandboxChecked')) {
+    const sandboxCheckResult = checkSandboxAvailable(NETWORK_DENY_PROFILE_PATH);
+    if (!sandboxCheckResult.ok) {
+      return {
+        outcome: 'error', actual: null, latencyMs: Date.now() - start,
+        errors: [sandboxCheckResult.error], subjectIdentity,
+        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      };
+    }
+    opts._repoIndexed.set('_sandboxChecked', true);
   }
 
   if (!opts._repoIndexed.get('_configDone')) {

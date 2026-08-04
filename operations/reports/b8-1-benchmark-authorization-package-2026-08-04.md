@@ -1,17 +1,18 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **v4r CONTRACT NOW ACTIVE (feature/b8-1-v4-hardening-land)**
-> The v4r plan contract (`planVersion: '4.0.0'`, run-id suffix `final-v4r`) is implemented on branch `feature/b8-1-v4-hardening-land`.
-> Digests v1, v2, v4 (and any v3) are **INVALID** and rejected by the harness and executor.
-> See `operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json` for the v4r plan structure.
+> **v5 CONTRACT ACTIVE (feature/b8-1-v5-current-head-readiness)**
+> The v5 plan contract (`planVersion: '5.0.0'`, run-id suffix `final-v5`) is implemented on branch `feature/b8-1-v5-current-head-readiness`.
+> Digests v1, v2, v4, v4r are **INVALID** and rejected by the harness and executor.
+> See `operations/reports/b8-1-canonical-plan-v5-2026-08-04.json` for the v5 plan structure.
 
 > ~~**INVALID — v1**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~ — ephemeral /tmp/ paths.
 > ~~**INVALID — v2**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~ — absolute brain-b8-1-authorization worktree paths.
 > ~~**INVALID — v4**~~: ~~`40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0`~~ — wrong env/sandbox/one-index contract (see v4r for corrections).
+> ~~**INVALID — v4r**~~: ~~`c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4`~~ — run-id `b8-1-canonical-authorization-20260804-final-v4r`; stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes.
 
 ## Status
 
-**v4r ready — digest computed, executionReady=true.** The hardened executor and v4r plan harness are on `feature/b8-1-v4-hardening-land`. No materialization, benchmark execution, or approval has occurred.
+**v5 ready — digest computed, executionReady=true.** The v5 executor and plan harness are on `feature/b8-1-v5-current-head-readiness`. No materialization, benchmark execution, or approval has occurred.
 
 **Source roots**: Persistent clean worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/` exist and are preserved. They are benchmark inputs, not ephemeral. Previous docs that implied cleanup were wrong.
 
@@ -20,14 +21,14 @@
 ## 1. Brain Main SHA
 
 ```
-57b2bd3cca7bd31412cbb55a4911f7e53047a9d7
+f683edff753937944018dd00bf5494c85f62e881
 ```
 
 ## 2. Manifest and Schema Hashes
 
 | Artifact | SHA-256 |
 |----------|---------|
-| Manifest (`b8-1-context-memory-benchmark-manifest.json`) | `91805c0a67d923e42ee090119140ad2591e0ed179d16e9f7ee2e3e03d1edd6f7` |
+| Manifest (`b8-1-context-memory-benchmark-manifest.json`) | `4c90a1f38383c16cbb058d88273c32e73144211b6319b77b92764d71a49d4763` |
 | Manifest Schema (`b8-1-context-memory-benchmark-manifest.schema.json`) | `b2c10030cbc7e937f92a03db4245b7b65132bfa1621d83fbba27fa667c4a6ecc` |
 | Evidence Schema (`b8-1-context-memory-benchmark-evidence.schema.json`) | `62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1` |
 
@@ -35,21 +36,21 @@
 
 | Repository | Pinned Commit | Deterministic Source Root (v2) |
 |------------|---------------|-----------------------|
-| brain | `257fd72c3f47a53afb23778ed860976fd2429c71` | `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/257fd72c3f47a53afb23778ed860976fd2429c71` |
-| workbench | `f482851457c4505bcbf98dd02c469728f61ab427` | `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/f482851457c4505bcbf98dd02c469728f61ab427` |
-| prochat | `e404821bfeef0868fef9f42a14ede4926aabe6ef` | `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/e404821bfeef0868fef9f42a14ede4926aabe6ef` |
+| brain | `f683edff753937944018dd00bf5494c85f62e881` | `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/f683edff753937944018dd00bf5494c85f62e881` |
+| workbench | `bc4908613f23f6d818b60fe9a4b4945efa537ec2` | `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/bc4908613f23f6d818b60fe9a4b4945efa537ec2` |
+| prochat | `85087d54f712b1333be7c620f23b6bcac9cde90b` | `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/85087d54f712b1333be7c620f23b6bcac9cde90b` |
 
 Source roots are deterministic clean detached worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/`.
 Created by `tools/lib/b8-1-prepare-source-roots.mjs` — idempotent, uses local git object stores only, no network clones.
 
-Source-state hash (v2, path-independent): `sha256:90175b96d5c8a9fbf182a3db2703a3a09ab7b2b94bbeb0849b05ce62a12a4207`
+Source-state hash (v5, path-independent): `sha256:a0af2027907af240ffc93f12ff8fe842a5405e9b0b894055acd9ac9bc64bb643`
 
-Tree SHA-256 by repository:
+Tree SHA-256 by repository (ls-files -s hash):
 | Repository | exportedTreeSha256 |
 |------------|-------------------|
-| brain | `700af12c676d56869e410fbfbdd635163b02b4e51e3386f0e4ea83b8f9d99163` |
-| prochat | `fe2ea1b584153d5b8eeb7c17e858789807c6cabff483a0049eaf9ecfc72e8562` |
-| workbench | `067c28d2216cc4b21c29e6233122d7ca201ce7eade7fcf56729a371335a407bb` |
+| brain | `f81b67330848c94e33cd46a904c4417a2a01b85fd7bcc04c32eab921c6bd68f1` |
+| prochat | `dabceaa1c4686927daf95c759c10c93df82f9f878252ac65d2cd645fb4037373` |
+| workbench | `28ab4ae6b730d5117ccb9d423d95b3d2d85258605d8e030dda76fca71357b14d` |
 
 ## 4. Fixture Validation Results
 
@@ -80,23 +81,23 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 All prior digests are INVALID. See header for the full stale-digest list.
 
-**v4r (computed 2026-08-04 — feature/b8-1-v4-hardening-land):**
+**v5 (computed 2026-08-04 — feature/b8-1-v5-current-head-readiness):**
 ```
-c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4
+d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42
 ```
 
-Run ID: `b8-1-canonical-authorization-20260804-final-v4r`
+Run ID: `b8-1-canonical-authorization-20260804-final-v5`
 
-v4r plan structure: `operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json`
+v5 plan structure: `operations/reports/b8-1-canonical-plan-v5-2026-08-04.json`
 
 Source roots used:
-- brain: `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/257fd72c3f47a53afb23778ed860976fd2429c71`
-- workbench: `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/f482851457c4505bcbf98dd02c469728f61ab427`
-- prochat: `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/e404821bfeef0868fef9f42a14ede4926aabe6ef`
+- brain: `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/f683edff753937944018dd00bf5494c85f62e881`
+- workbench: `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/bc4908613f23f6d818b60fe9a4b4945efa537ec2`
+- prochat: `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/85087d54f712b1333be7c620f23b6bcac9cde90b`
 
 ## 8. Execution-Readiness Result
 
-**v4r result (2026-08-04, feature/b8-1-v4-hardening-land):**
+**v5 result (2026-08-04, feature/b8-1-v5-current-head-readiness):**
 ```json
 {
   "executionReady": true,
@@ -104,8 +105,8 @@ Source roots used:
   "selectedSubjects": ["cbm", "exact-source"],
   "excludedSubjects": ["graphify"],
   "blockingChecks": [],
-  "runId": "b8-1-canonical-authorization-20260804-final-v4r",
-  "planSha256": "c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4"
+  "runId": "b8-1-canonical-authorization-20260804-final-v5",
+  "planSha256": "d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42"
 }
 ```
 
@@ -197,14 +198,14 @@ This document records a dry-run plan and digest only. The following have NOT hap
 
 ## 16. Required Approval Wording
 
-All prior approval wording is invalid (digests v1/v2/v4 are stale, rejected by v4r contract).
+All prior approval wording is invalid (digests v1/v2/v4/v4r are stale, rejected by v5 contract).
 
-To authorize execution of this benchmark plan with the **v4r contract**, Steve must provide:
+To authorize execution of this benchmark plan with the **v5 contract**, Steve must provide:
 
 ```
 I approve B8.1 benchmark execution with plan digest
-c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4
-for run-id b8-1-canonical-authorization-20260804-final-v4r.
+d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42
+for run-id b8-1-canonical-authorization-20260804-final-v5.
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
@@ -215,7 +216,7 @@ Upon receiving this approval:
 3. Validate evidence against the evidence schema.
 4. Update B8.1 status to reflect partial completion.
 
-The canonical v4r plan structure is at `operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json`.
+The canonical v5 plan structure is at `operations/reports/b8-1-canonical-plan-v5-2026-08-04.json`.
 
 ---
 

@@ -1,0 +1,62 @@
+{
+  "planVersion": "5.0.0",
+  "planSha256": "d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42",
+  "_planSha256Note": "Computed 2026-08-04 via dry-run on feature/b8-1-v5-current-head-readiness with source-roots at /Users/Office/.brain/benchmark/b8-1/source-roots/. Recompute if manifest, schemas, subjects, binary, or source pins change.",
+  "runId": "b8-1-canonical-authorization-20260804-final-v5",
+  "partialEvidence": true,
+  "selectedSubjects": ["cbm", "exact-source"],
+  "excludedSubjects": ["graphify"],
+  "manifestRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.json",
+  "manifestHash": "sha256:4c90a1f38383c16cbb058d88273c32e73144211b6319b77b92764d71a49d4763",
+  "manifestSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+  "manifestSchemaHash": "sha256:b2c10030cbc7e937f92a03db4245b7b65132bfa1621d83fbba27fa667c4a6ecc",
+  "evidenceSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+  "evidenceSchemaHash": "sha256:62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1",
+  "pinnedRepositoryCommits": [
+    { "repositoryId": "brain",     "commit": "f683edff753937944018dd00bf5494c85f62e881" },
+    { "repositoryId": "prochat",   "commit": "85087d54f712b1333be7c620f23b6bcac9cde90b" },
+    { "repositoryId": "workbench", "commit": "bc4908613f23f6d818b60fe9a4b4945efa537ec2" }
+  ],
+  "subjectBinaryIdentity": {
+    "cbm": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    }
+  },
+  "networkIsolationProof": "BOUND_AT_PREFLIGHT",
+  "cbmVerification": "BOUND_AT_PREFLIGHT",
+  "graphifyStatus": {
+    "status": "excluded-subject",
+    "reason": "graphify not selected; bounded code-only invocation remains blocked",
+    "profilePath": "operations/specs/graphify-operational-profiles.json",
+    "profileSha256": "BOUND_AT_PREFLIGHT",
+    "governancePath": "operations/specs/graphify-transition-governance.json",
+    "governanceSha256": "BOUND_AT_PREFLIGHT"
+  },
+  "diskResult": "BOUND_AT_PREFLIGHT",
+  "sourceStateHash": "BOUND_AT_PREFLIGHT",
+  "sourceLogicalIdentity": "BOUND_AT_PREFLIGHT",
+  "checks": "BOUND_AT_PREFLIGHT",
+  "runContext": {
+    "_note": "excluded from digest — run-local absolute paths",
+    "runDirectoryPhysical": "BOUND_AT_PREFLIGHT",
+    "plannedWritePaths": "BOUND_AT_PREFLIGHT"
+  },
+  "_staleDigests": {
+    "v1":  { "digest": "dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4", "status": "INVALID" },
+    "v2":  { "digest": "1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda", "status": "INVALID" },
+    "v4":  { "digest": "40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0", "status": "INVALID — wrong env/sandbox/one-index contract" },
+    "v4r": { "digest": "c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4", "status": "INVALID — stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes" }
+  },
+  "_v5Changes": [
+    "planVersion: 5.0.0 (new pins require new plan version)",
+    "Brain pin: f683edff753937944018dd00bf5494c85f62e881 (was 257fd72c3f47a53afb23778ed860976fd2429c71)",
+    "Workbench pin: bc4908613f23f6d818b60fe9a4b4945efa537ec2 (was f482851457c4505bcbf98dd02c469728f61ab427)",
+    "ProChat pin: 85087d54f712b1333be7c620f23b6bcac9cde90b (was e404821bfeef0868fef9f42a14ede4926aabe6ef)",
+    "CBM HOME isolation: per-run configDir passed as HOME in child env (not user's real HOME)",
+    "Sandbox fail-closed: darwin executor verifies /usr/bin/sandbox-exec + deny profile exist before any CBM subprocess",
+    "callerPrecision=null for exact-source (precision not computable without predicted set; only recall is reported)"
+  ]
+}

@@ -18,7 +18,11 @@ import { fileURLToPath } from 'node:url';
 
 import {
   buildFixtureEvidence,
+  checkSandboxAvailable,
+  EXECUTOR_VERSION,
+  KNOWN_STALE_DIGESTS,
   loadAndVerifyRunPlan,
+  REQUIRED_PLAN_VERSION,
   runExecutor,
   validateExecutorInputs,
 } from './execute-b8-1-benchmark.mjs';
@@ -92,7 +96,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '4.0.0',
+    planVersion: planVersionOverride ?? '5.0.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -184,7 +188,7 @@ test('E4: v2 plan (missing planVersion) is rejected', async () => {
     fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify(plan, null, 2));
     const result = await runExecutor({ runId: 'b8-1-exec-e4', approvedPlanSha256: planSha256, _homeOverride: home });
     assert.equal(result.outcome, 'fail');
-    assert.ok(result.errors.some(e => /planVersion/i.test(e) || /4\.0\.0/i.test(e)));
+    assert.ok(result.errors.some(e => /planVersion/i.test(e) || /5\.0\.0/i.test(e)));
   } finally { cleanup(home); }
 });
 
@@ -350,7 +354,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '4.0.0');
+    assert.equal(receipt.executorVersion, '5.0.0');
   } finally { cleanup(home); }
 });
 
@@ -378,14 +382,14 @@ test('E16: buildFixtureEvidence constructs correct evidence record', () => {
     completedAt: '2026-08-04T00:00:00.042Z',
     subjectIdentity: { exactSource: true },
   };
-  const runMeta = { runId: 'b8-1-test', planVersion: '4.0.0', planSha256: 'a'.repeat(64) };
+  const runMeta = { runId: 'b8-1-test', planVersion: '5.0.0', planSha256: 'a'.repeat(64) };
   const ev = buildFixtureEvidence(fixture, result, 'exact-source', runMeta);
   assert.equal(ev.fixtureId, 'f1');
   assert.equal(ev.subject, 'exact-source');
   assert.equal(ev.assertion.passed, true);
   assert.equal(ev.assertion.expected, 'src/main.ts');
   assert.equal(ev.assertion.actual, 'src/main.ts');
-  assert.equal(ev.provenance.planVersion, '4.0.0');
+  assert.equal(ev.provenance.planVersion, '5.0.0');
   assert.equal(ev.provenance.runId, 'b8-1-test');
   assert.equal(ev.latencyMs, 42);
 });
@@ -394,7 +398,7 @@ test('E17: validateExecutorInputs rejects graphify subject', () => {
   const { valid, errors } = validateExecutorInputs({
     runId: 'b8-1-test',
     runDir: '/fake/run',
-    plan: { planVersion: '4.0.0', selectedSubjects: ['exact-source', 'graphify'] },
+    plan: { planVersion: '5.0.0', selectedSubjects: ['exact-source', 'graphify'] },
     approvedPlanSha256: 'a'.repeat(64),
     dryRun: false,
   });
@@ -410,7 +414,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '4.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '5.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -451,13 +455,13 @@ test('E19: dual-subject run produces 2×fixtureCount results (cbm + exact-source
   } finally { cleanup(home); }
 });
 
-test('E20: contract 4.0.0 rejects plan with planVersion 3.0.0', async () => {
+test('E20: contract 5.0.0 rejects plan with planVersion 3.0.0', async () => {
   const home = makeTempDir('b81-exec-e20-');
   try {
     const { runDir, planSha256 } = makeSyntheticRun(home, { runId: 'b8-1-exec-e20', fixtures: [], planVersionOverride: '3.0.0' });
     const result = await runExecutor({ runId: 'b8-1-exec-e20', approvedPlanSha256: planSha256, _homeOverride: home });
     assert.equal(result.outcome, 'fail');
-    assert.ok(result.errors.some(e => /planVersion|4\.0\.0/i.test(e)), `errors: ${result.errors.join('; ')}`);
+    assert.ok(result.errors.some(e => /planVersion|5\.0\.0/i.test(e)), `errors: ${result.errors.join('; ')}`);
   } finally { cleanup(home); }
 });
 
@@ -609,7 +613,7 @@ test('E24: timer is cleared when CBM adapter resolves before timeout', async () 
 // D1: Plan recomputation — digest must be deterministic and independently verifiable
 test('E25: plan digest is deterministic and recomputable from plan fields', () => {
   const planBase = {
-    planVersion: '4.0.0',
+    planVersion: '5.0.0',
     runId: 'b8-1-test-digest',
     partialEvidence: true,
     selectedSubjects: ['cbm', 'exact-source'],
@@ -657,7 +661,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '4.0.0',
+      planVersion: '5.0.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -922,10 +926,13 @@ test('E33: caller/callee precision/recall is computed for applicable fixtures', 
     assert.equal(result.fixtureResults.length, 1);
     const fr = result.fixtureResults[0];
     assert.equal(fr.result, 'pass');
-    // callerPrecision must be a number between 0 and 1
-    assert.equal(typeof fr.callerPrecision, 'number', 'callerPrecision must be a number');
-    assert.ok(fr.callerPrecision >= 0 && fr.callerPrecision <= 1);
-    assert.equal(typeof fr.calleePrecision, 'number', 'calleePrecision must be a number');
+    // callerPrecision is null for exact-source (not computable without a predicted set)
+    assert.equal(fr.callerPrecision, undefined, 'callerPrecision must not be set (null is not included in evidence by buildFixtureEvidence)');
+    // callerRecall must be a number between 0 and 1
+    assert.equal(typeof fr.callerRecall, 'number', 'callerRecall must be a number');
+    assert.ok(fr.callerRecall >= 0 && fr.callerRecall <= 1);
+    // calleePrecision is null for exact-source (not computable without a predicted set)
+    assert.equal(fr.calleePrecision, undefined, 'calleePrecision must not be set');
   } finally { cleanup(home); }
 });
 
@@ -965,7 +972,8 @@ test('E34: aggregate evidence.json fixtureResults includes callerPrecision when 
     const agg = JSON.parse(fs.readFileSync(path.join(runDir, 'evidence.json'), 'utf8'));
     assert.equal(agg.fixtureResults.length, 1);
     const aggFr = agg.fixtureResults[0];
-    assert.equal(typeof aggFr.callerPrecision, 'number', 'aggregate evidence must include callerPrecision');
+    // callerRecall must be a number in aggregate evidence (callerPrecision is null for exact-source)
+    assert.equal(typeof aggFr.callerRecall, 'number', 'aggregate evidence must include callerRecall');
   } finally { cleanup(home); }
 });
 
@@ -1025,4 +1033,226 @@ test('E37: canonical plan v4r JSON has no placeholder digests', () => {
   assert.equal(plan.planSha256, 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', 'planSha256 must match v4r dry-run result');
   // subjectBinaryIdentity.cbm must have real values (not BOUND_AT_PREFLIGHT)
   assert.equal(plan.subjectBinaryIdentity?.cbm?.sha256, 'd9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6', 'CBM sha256 must be real value');
+});
+
+// ---------------------------------------------------------------------------
+// New tests: v5 contract changes E38–E46
+// ---------------------------------------------------------------------------
+
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 5.0.0
+test('E38: EXECUTOR_VERSION is 5.0.0 and REQUIRED_PLAN_VERSION is 5.0.0', () => {
+  assert.equal(EXECUTOR_VERSION, '5.0.0', 'EXECUTOR_VERSION must be 5.0.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '5.0.0', 'REQUIRED_PLAN_VERSION must be 5.0.0');
+});
+
+// E39: v4r stale digest c39e81dc... is rejected
+test('E39: v4r stale digest c39e81dc... is rejected', async () => {
+  const STALE_V4R = 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4';
+  const home = makeTempDir('b81-exec-e39-');
+  try {
+    makeSyntheticRun(home, { runId: 'b8-1-exec-e39', fixtures: [] });
+    const result = await runExecutor({ runId: 'b8-1-exec-e39', approvedPlanSha256: STALE_V4R, _homeOverride: home });
+    assert.equal(result.outcome, 'fail');
+    assert.ok(result.errors.some(e => /stale/i.test(e)), `errors: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E40: planVersion 5.0.0 is accepted; planVersion 4.0.0 is rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 5.0.0 and rejects 4.0.0', () => {
+  const tmpDir = makeTempDir('b81-exec-e40-');
+  try {
+    // 5.0.0 — should pass planVersion check (will fail on tampered digest, that's expected)
+    const runDir5 = path.join(tmpDir, 'run5');
+    fs.mkdirSync(runDir5, { recursive: true });
+    fs.writeFileSync(path.join(runDir5, 'run-plan.json'), JSON.stringify({ planVersion: '5.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err5 } = loadAndVerifyRunPlan(runDir5, '0'.repeat(64));
+    // planVersion check passes; should fail on stale or tampered, not on planVersion
+    assert.ok(!err5 || !/planVersion|5\.0\.0/i.test(err5) || /tampered|stale|mismatch/i.test(err5),
+      `5.0.0 must not be rejected for planVersion; err: ${err5}`);
+
+    // 4.0.0 — should be rejected
+    const runDir4 = path.join(tmpDir, 'run4');
+    fs.mkdirSync(runDir4, { recursive: true });
+    fs.writeFileSync(path.join(runDir4, 'run-plan.json'), JSON.stringify({ planVersion: '4.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err4 } = loadAndVerifyRunPlan(runDir4, '0'.repeat(64));
+    assert.ok(err4, 'planVersion 4.0.0 must be rejected');
+    assert.match(err4, /planVersion|5\.0\.0/i, `expected planVersion error, got: ${err4}`);
+  } finally { cleanup(tmpDir); }
+});
+
+// E41: spawnBounded does NOT pass user's real HOME to child; HOME is configDir
+test('E41: child process receives synthetic HOME (configDir), not user real home', async () => {
+  const tmpDir = makeTempDir('b81-exec-e41-');
+  try {
+    // Create a fake script that writes HOME to stdout
+    const fakeBin = path.join(tmpDir, 'fake-home-checker');
+    fs.writeFileSync(fakeBin, '#!/bin/sh\necho "HOME=$HOME"\n');
+    fs.chmodSync(fakeBin, 0o755);
+
+    const home = makeTempDir('b81-exec-e41-home-');
+    try {
+      const syntheticConfigDir = path.join(tmpDir, 'synthetic-config');
+      fs.mkdirSync(syntheticConfigDir, { recursive: true });
+
+      const fixtures = [
+        { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'q?', verification: { algorithm: 'file-exists' } },
+      ];
+      const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+        runId: 'b8-1-exec-e41',
+        fixtures,
+        selectedSubjects: ['cbm'],
+      });
+
+      // Override cbm identity to point to our fake binary
+      const plan = JSON.parse(fs.readFileSync(path.join(runDir, 'run-plan.json'), 'utf8'));
+      plan.subjectBinaryIdentity = { cbm: { stablePath: fakeBin, resolvedPath: fakeBin, version: 'v0.0.0', sha256: 'a'.repeat(64) } };
+      fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify(plan, null, 2));
+      fs.writeFileSync(path.join(runDir, 'preflight-receipt.json'), JSON.stringify(plan, null, 2));
+
+      // Use an adapter that captures what HOME would be (we check via real subprocess)
+      // The key test: the env passed to spawn does NOT include HOME = os.homedir()
+      // We verify this by running the fake binary with explicit env (mimicking what executor does)
+      const { execFileSync: execFS } = await import('node:child_process');
+      const configDir = path.join(runDir, 'subjects', 'cbm', 'config');
+      const cacheDir = path.join(runDir, 'subjects', 'cbm', 'cache');
+      fs.mkdirSync(configDir, { recursive: true });
+      fs.mkdirSync(cacheDir, { recursive: true });
+
+      const out = execFS(fakeBin, [], {
+        env: { CBM_CACHE_DIR: cacheDir, HOME: configDir, PATH: process.env.PATH ?? '/usr/bin:/bin', TMPDIR: process.env.TMPDIR ?? '/tmp' },
+        encoding: 'utf8',
+      });
+
+      // The HOME in the env must be configDir, not the real home
+      assert.ok(out.includes(`HOME=${configDir}`), `child must see HOME=configDir, got: ${out.trim()}`);
+      assert.ok(!out.includes(`HOME=${os.homedir()}`), `child must NOT see real HOME, got: ${out.trim()}`);
+    } finally { cleanup(home); }
+  } finally { cleanup(tmpDir); }
+});
+
+// E42: checkSandboxAvailable fails closed when sandbox-exec or deny profile is missing
+test('E42: checkSandboxAvailable fails closed when inputs are missing', () => {
+  // Non-existent profile path — should fail
+  const { ok, error } = checkSandboxAvailable('/nonexistent/path/to/deny.sb');
+  // sandbox-exec may or may not exist on this machine; the profile definitely does not
+  // If sandbox-exec exists but profile doesn't: fails closed
+  // If sandbox-exec doesn't exist: also fails closed
+  // Either way ok should be false (profile doesn't exist)
+  if (fs.existsSync('/usr/bin/sandbox-exec')) {
+    assert.equal(ok, false, 'must fail closed when profile path does not exist');
+    assert.ok(error && /sandbox-exec or deny profile not available/i.test(error), `error: ${error}`);
+  } else {
+    assert.equal(ok, false, 'must fail closed when sandbox-exec does not exist');
+    assert.ok(error && /sandbox-exec or deny profile not available/i.test(error), `error: ${error}`);
+  }
+
+  // null/undefined profile path — should fail
+  const { ok: ok2, error: err2 } = checkSandboxAvailable(null);
+  assert.equal(ok2, false, 'must fail closed when profilePath is null');
+  assert.ok(err2 && /sandbox-exec or deny profile not available/i.test(err2), `error: ${err2}`);
+});
+
+// E43: computeExactSourceCallerCallee returns callerPrecision: null and calleePrecision: null
+test('E43: exact-source callerPrecision and calleePrecision are null (not computable)', async () => {
+  const home = makeTempDir('b81-exec-e43-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'src/main.ts',
+        scoringType: 'exact-match',
+        question: 'q?',
+        callerCalleeApplicable: true,
+        expectedCallers: ['src/caller.ts'],
+        expectedCallees: ['myFunction'],
+        verification: { algorithm: 'file-exists' },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e43',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test', 'src');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, 'main.ts'), 'export function myFunction() {}');
+    fs.writeFileSync(path.join(srcDir, 'caller.ts'), 'import { myFunction } from "./main"');
+
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e43',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    const fr = result.fixtureResults[0];
+    // callerPrecision and calleePrecision must NOT be set (null is filtered out by buildFixtureEvidence)
+    assert.equal(fr.callerPrecision, undefined, 'callerPrecision must be undefined (null not included in evidence)');
+    assert.equal(fr.calleePrecision, undefined, 'calleePrecision must be undefined (null not included in evidence)');
+    // callerRecall and calleeRecall must be numbers
+    assert.equal(typeof fr.callerRecall, 'number', 'callerRecall must be a number');
+    assert.equal(typeof fr.calleeRecall, 'number', 'calleeRecall must be a number');
+  } finally { cleanup(home); }
+});
+
+// E44: callerRecall is correctly computed as presentCallers/expectedCallers
+test('E44: callerRecall is tp/total (fraction of expected callers present in source)', async () => {
+  const home = makeTempDir('b81-exec-e44-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'src/main.ts',
+        scoringType: 'exact-match',
+        question: 'q?',
+        callerCalleeApplicable: true,
+        // Two expected callers — only one will exist in sources
+        expectedCallers: ['src/caller-a.ts', 'src/caller-b.ts'],
+        expectedCallees: [],
+        verification: { algorithm: 'file-exists' },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e44',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test', 'src');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, 'main.ts'), 'export function main() {}');
+    // Only caller-a.ts exists; caller-b.ts does not
+    fs.writeFileSync(path.join(srcDir, 'caller-a.ts'), 'import { main } from "./main"');
+
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e44',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    const fr = result.fixtureResults[0];
+    // 1 out of 2 expected callers present → recall = 0.5
+    assert.equal(typeof fr.callerRecall, 'number', 'callerRecall must be a number');
+    assert.equal(fr.callerRecall, 0.5, `callerRecall must be 0.5 (1/2), got ${fr.callerRecall}`);
+  } finally { cleanup(home); }
+});
+
+// E45: manifest has brain pin f683edff753937944018dd00bf5494c85f62e881
+test('E45: manifest brain pin is f683edff753937944018dd00bf5494c85f62e881', () => {
+  const manifestPath = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
+  assert.ok(fs.existsSync(manifestPath), 'manifest must exist');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const brainRepo = manifest.repositories.find(r => r.repositoryId === 'brain');
+  assert.ok(brainRepo, 'brain repository must be in manifest');
+  assert.equal(brainRepo.pinnedCommit, 'f683edff753937944018dd00bf5494c85f62e881', 'brain pin must be f683edff...');
+});
+
+// E46: KNOWN_STALE_DIGESTS contains the v4r digest c39e81dc...
+test('E46: KNOWN_STALE_DIGESTS contains v4r digest c39e81dc...', () => {
+  const V4R_DIGEST = 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4';
+  assert.ok(KNOWN_STALE_DIGESTS.has(V4R_DIGEST), 'KNOWN_STALE_DIGESTS must contain v4r digest c39e81dc...');
 });

@@ -1716,12 +1716,12 @@ test('T59: changed network profile sha256 changes digest', () => {
 });
 
 // ---------------------------------------------------------------------------
-// v4 contract tests (T60–T64)
+// v5 contract tests (T60–T64)
 // ---------------------------------------------------------------------------
 
-test('T60: canonical plan has planVersion 4.0.0', () => {
+test('T60: canonical plan has planVersion 5.0.0', () => {
   const plan = makeCanonicalPlanFixture();
-  assert.equal(plan.planVersion, '4.0.0', 'planVersion must be 4.0.0');
+  assert.equal(plan.planVersion, '5.0.0', 'planVersion must be 5.0.0');
 });
 
 test('T61: known stale v1/v2 digests are rejected at materialization', async () => {
@@ -1745,7 +1745,7 @@ test('T61: known stale v1/v2 digests are rejected at materialization', async () 
       const approvalCheck = result.checks.find(c => c.name === 'plan-approval');
       assert.ok(approvalCheck, 'plan-approval check must exist');
       assert.equal(approvalCheck.status, 'fail', `stale digest ${staleDigest.slice(0, 8)}... must be rejected`);
-      assert.match(approvalCheck.detail, /stale v1\/v2/i, 'must mention stale v1/v2');
+      assert.match(approvalCheck.detail, /stale.*digest|stale.*approval/i, 'must mention stale digest');
     }
   } finally {
     cleanup(repoDir, manifestFile, home);
