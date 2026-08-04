@@ -9,6 +9,13 @@ import {normalizeRepoRelativePath} from '../core/policy.mjs';
 
 export const PROVIDER_VERSION = '1.0.0';
 export const PROVIDER_BOUNDARY = 'project-scoped-read-only-activation-candidate';
+export const PROVIDER_LIMITS = Object.freeze({
+  maxRequestBytes: 65_536,
+  maxResponseBytes: 524_288,
+  maxSourceFiles: 2_000,
+  maxSourceBytes: 2 * 1024 * 1024,
+  maxCorpusBytes: 64 * 1024 * 1024,
+});
 export const MANUAL_FALLBACK = Object.freeze({
   mode: 'manual-targeted-read',
   automaticFallback: false,
@@ -71,15 +78,18 @@ function requireOwnedRoot(value) {
   return root;
 }
 
-function readApproval(file, providerRevision) {
+function readApproval(file, {providerRevision, expectedMindHead, scopes}) {
   if (!file || !path.isAbsolute(file)) throw new Error('activation_approval_file_required');
   const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error('activation_approval_file_must_be_owner_only');
   const approval = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (approval.approvedBy !== 'Steve Westhoek' || approval.scope !== 'mind-context-read-only' || approval.providerRevision !== providerRevision || approval.approved !== true) {
+  const approvedAt = Date.parse(approval.approvedAt);
+  const validId = typeof approval.approvalId === 'string' && /^[A-Za-z0-9._:-]{3,128}$/.test(approval.approvalId);
+  const approvedScopes = Array.isArray(approval.allowedScopes) ? [...approval.allowedScopes].sort() : [];
+  if (approval.approvedBy !== 'Steve Westhoek' || approval.scope !== 'mind-context-read-only' || approval.providerRevision !== providerRevision || approval.mindCommit !== expectedMindHead || JSON.stringify(approvedScopes) !== JSON.stringify(scopes) || approval.approved !== true || !Number.isFinite(approvedAt) || !validId) {
     throw new Error('activation_approval_invalid');
   }
-  return {approvedBy: approval.approvedBy, approvedAt: approval.approvedAt, approvalId: approval.approvalId};
+  return {approvedBy: approval.approvedBy, approvedAt: approval.approvedAt, approvalId: approval.approvalId, mindCommit: approval.mindCommit, allowedScopes: approvedScopes};
 }
 
 export function loadProviderConfig(env = process.env) {
@@ -92,7 +102,7 @@ export function loadProviderConfig(env = process.env) {
   const expectedTools = TOOL_DEFINITIONS.map((tool) => tool.name).sort();
   if (JSON.stringify(admittedTools) !== JSON.stringify(expectedTools)) throw new Error('provider_tool_allowlist_mismatch');
   if (String(env.MIND_CONTEXT_ALLOWED_SUBOPERATIONS ?? '') !== '') throw new Error('provider_suboperations_forbidden');
-  const approval = preparationMode ? null : readApproval(env.MIND_CONTEXT_ACTIVATION_APPROVAL_FILE, providerRevision);
+  const approval = preparationMode ? null : readApproval(env.MIND_CONTEXT_ACTIVATION_APPROVAL_FILE, {providerRevision, expectedMindHead, scopes});
   return Object.freeze({
     root,
     scopes,
@@ -106,9 +116,13 @@ export function loadProviderConfig(env = process.env) {
 }
 
 function sourceInventory(config) {
-  const sources = discoverSources({root: config.root, scopes: config.scopes});
+  const sources = discoverSources({root: config.root, scopes: config.scopes, limits: {
+    maxFiles: PROVIDER_LIMITS.maxSourceFiles,
+    maxSourceBytes: PROVIDER_LIMITS.maxSourceBytes,
+    maxBytes: PROVIDER_LIMITS.maxCorpusBytes,
+  }});
   const records = sources.map((source) => ({path: source.path, sha256: source.sha256})).sort((a, b) => a.path.localeCompare(b.path));
-  return {sourceCount: records.length, corpusSha256: sha256(records.map((item) => `${item.path}\0${item.sha256}`).join('\n'))};
+  return {sourceCount: records.length, sourceBytes: sources.reduce((sum, source) => sum + source.bytes, 0), corpusSha256: sha256(records.map((item) => `${item.path}\0${item.sha256}`).join('\n'))};
 }
 
 function sourceState(config) {
@@ -178,7 +192,7 @@ function decoratePack(payload, config, health) {
   };
   pack.state = {
     repository: 'implemented',
-    deployed: config.preparationMode ? 'preparation-only' : 'active-local',
+    deployed: config.preparationMode ? 'not-installed' : 'active-local',
     observed: 'live-readback',
     verified: health.healthy ? 'runtime-verified' : 'blocked',
   };
@@ -197,7 +211,7 @@ export function providerResolve(config, rawArgs) {
   const health = providerHealth(config);
   if (!health.coreAvailable) throw new Error('core_unavailable');
   if (!health.source.headMatchesExpected) throw new Error('source_revision_mismatch');
-  return decoratePack(resolveAdapter({...args, root: config.root, scopes: config.scopes, format: 'json'}), config, health);
+  return decoratePack(resolveAdapter({...args, root: config.root, scopes: config.scopes, format: 'json', discoveryLimits: {maxFiles: PROVIDER_LIMITS.maxSourceFiles, maxSourceBytes: PROVIDER_LIMITS.maxSourceBytes, maxBytes: PROVIDER_LIMITS.maxCorpusBytes}}), config, health);
 }
 
 export function providerExplain(config, rawArgs) {
@@ -205,7 +219,7 @@ export function providerExplain(config, rawArgs) {
   const health = providerHealth(config);
   if (!health.coreAvailable) throw new Error('core_unavailable');
   if (!health.source.headMatchesExpected) throw new Error('source_revision_mismatch');
-  return decoratePack(explainAdapter({...args, root: config.root, scopes: config.scopes, format: 'json'}), config, health);
+  return decoratePack(explainAdapter({...args, root: config.root, scopes: config.scopes, format: 'json', discoveryLimits: {maxFiles: PROVIDER_LIMITS.maxSourceFiles, maxSourceBytes: PROVIDER_LIMITS.maxSourceBytes, maxBytes: PROVIDER_LIMITS.maxCorpusBytes}}), config, health);
 }
 
 export function callProviderTool(config, name, args = {}) {

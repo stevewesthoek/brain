@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import readline from 'node:readline';
-import {callProviderTool, loadProviderConfig, PROVIDER_VERSION, TOOL_DEFINITIONS} from './runtime.mjs';
+import {callProviderTool, loadProviderConfig, PROVIDER_LIMITS, PROVIDER_VERSION, TOOL_DEFINITIONS} from './runtime.mjs';
 
 const PROTOCOL_VERSION = '2025-06-18';
 
@@ -11,6 +11,12 @@ function response(id, result) {
 
 function error(id, code, message) {
   return {jsonrpc: '2.0', id, error: {code, message}};
+}
+
+export function serializeBoundedResponse(result) {
+  const serialized = JSON.stringify(result);
+  if (Buffer.byteLength(serialized, 'utf8') <= PROVIDER_LIMITS.maxResponseBytes) return serialized;
+  return JSON.stringify(error(result.id ?? null, -32603, 'Response exceeds admitted byte limit'));
 }
 
 export function handleMessage(config, message) {
@@ -44,9 +50,15 @@ export function startServer({env = process.env, input = process.stdin, output = 
   lines.on('line', (line) => {
     if (!line.trim()) return;
     let result;
-    try { result = handleMessage(config, JSON.parse(line)); }
+    try {
+      if (Buffer.byteLength(line, 'utf8') > PROVIDER_LIMITS.maxRequestBytes) result = error(null, -32600, 'Request exceeds admitted byte limit');
+      else result = handleMessage(config, JSON.parse(line));
+    }
     catch { result = error(null, -32700, 'Parse error'); }
-    if (result) output.write(`${JSON.stringify(result)}\n`);
+    if (result) {
+      const serialized = serializeBoundedResponse(result);
+      output.write(`${serialized}\n`);
+    }
   });
   return {config, close: () => lines.close()};
 }

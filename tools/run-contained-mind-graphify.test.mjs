@@ -66,6 +66,13 @@ test('contained run uses exact Git corpus, excludes plugin internals, and publis
   assert.equal(fs.existsSync(path.join(result.currentPath, 'receipt.json')), true);
   const sources = JSON.parse(fs.readFileSync(path.join(result.currentPath, 'source-manifest.json'), 'utf8')).files.map((item) => item.path);
   assert.deepEqual(sources, ['system/current.md', 'tools/check.mjs']);
+  assert.throws(() => runContainedMindGraphify({
+    mindRoot: x.mind,
+    outputRoot,
+    graphifyBin: x.fake,
+    profileCatalog: x.profilePath,
+    authorizationId: AUTHORIZATION_ID,
+  }), /one_shot_authorization_already_consumed/);
 });
 
 test('contained run fails closed without the exact one-shot authorization', () => {

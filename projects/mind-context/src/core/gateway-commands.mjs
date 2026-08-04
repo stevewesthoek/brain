@@ -64,7 +64,7 @@ function collectContext(args) {
   const format = normalizeFormat(args.format);
   const maxItems = normalizePositiveInt(args.maxItems, 5);
   const maxTokens = normalizePositiveInt(args.maxTokens, 500);
-  const sources = discoverSources({root, scopes, forbiddenScopes});
+  const sources = discoverSources({root, scopes, forbiddenScopes, limits: args.discoveryLimits});
   if (sources.length === 0) throw new Error('insufficient_evidence');
   const plan = planContextPack({
     queryId: args.queryId ?? query,

@@ -16,8 +16,10 @@ function toSourceId(repoRelativePath) {
   return repoRelativePath.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'source';
 }
 
-function readMarkdownMetadata(root, repoRelativePath) {
+function readMarkdownMetadata(root, repoRelativePath, limits) {
   const absPath = path.join(root, repoRelativePath);
+  const bytes = fs.statSync(absPath).size;
+  if (limits?.maxSourceBytes && bytes > limits.maxSourceBytes) throw new Error(`source_bytes_cap_exceeded:${repoRelativePath}`);
   const buffer = fs.readFileSync(absPath);
   if (hasBinarySignature(buffer)) return null;
   const markdown = buffer.toString('utf8');
@@ -36,11 +38,12 @@ function readMarkdownMetadata(root, repoRelativePath) {
     scope: frontmatter.scope ?? (path.posix.dirname(repoRelativePath) || '.'),
     pathClass: frontmatter.pathClass ?? (repoRelativePath.includes('/canonical/') ? 'canonical' : 'supporting'),
     content: body,
+    bytes,
     sha256: crypto.createHash('sha256').update(buffer).digest('hex'),
   };
 }
 
-function walk(root, relativeDir, output) {
+function walk(root, relativeDir, output, limits, totals) {
   const absDir = path.join(root, relativeDir);
   if (!fs.existsSync(absDir)) return;
   const entries = fs.readdirSync(absDir, {withFileTypes: true}).sort((a, b) => a.name.localeCompare(b.name));
@@ -56,21 +59,27 @@ function walk(root, relativeDir, output) {
       continue;
     }
     if (entry.isDirectory()) {
-      walk(root, relativePath, output);
+      walk(root, relativePath, output, limits, totals);
       continue;
     }
     if (!isMarkdownPath(relativePath)) continue;
-    const source = readMarkdownMetadata(root, relativePath);
-    if (source) output.push(source);
+    const source = readMarkdownMetadata(root, relativePath, limits);
+    if (source) {
+      totals.files += 1;
+      totals.bytes += source.bytes;
+      if (limits?.maxFiles && totals.files > limits.maxFiles) throw new Error(`source_file_cap_exceeded:${totals.files}`);
+      if (limits?.maxBytes && totals.bytes > limits.maxBytes) throw new Error(`source_corpus_bytes_cap_exceeded:${totals.bytes}`);
+      output.push(source);
+    }
   }
 }
 
-export function discoverSources({root, scopes = [], forbiddenScopes = []} = {}) {
+export function discoverSources({root, scopes = [], forbiddenScopes = [], limits} = {}) {
   if (typeof root !== 'string' || !root || !fs.existsSync(root)) return [];
   const resolvedRoot = path.resolve(root);
   const allowedScopes = scopes.length > 0 ? scopes : ['.'];
   const discovered = [];
-  walk(resolvedRoot, '', discovered);
+  walk(resolvedRoot, '', discovered, limits, {files: 0, bytes: 0});
   const filtered = discovered.flatMap((source) => {
     const relative = normalizeRepoRelativePath(source.path);
     if (forbiddenScopes.some((scope) => scopeContainsPath(scope, relative))) return [];

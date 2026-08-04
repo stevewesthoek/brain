@@ -220,6 +220,19 @@ function enforceRetention(outputRoot, maxRuns) {
   for (const stale of runs.slice(maxRuns)) fs.rmSync(path.join(runsRoot, stale), { recursive: true, force: true });
 }
 
+function successfulAuthorizationReceipt(outputRoot, authorizationId) {
+  const runsRoot = path.join(outputRoot, 'runs');
+  if (!fs.existsSync(runsRoot)) return null;
+  for (const entry of fs.readdirSync(runsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('.staging-')) continue;
+    const receiptPath = path.join(runsRoot, entry.name, 'receipt.json');
+    if (!fs.existsSync(receiptPath)) continue;
+    const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+    if (receipt.status === 'success' && receipt.authorization?.id === authorizationId) return receiptPath;
+  }
+  return null;
+}
+
 export function runContainedMindGraphify(options) {
   const startedAt = new Date();
   if (options.authorizationId !== AUTHORIZATION_ID) throw new Error('one_shot_authorization_required');
@@ -232,6 +245,8 @@ export function runContainedMindGraphify(options) {
   if (profile.currentCommitsOnly !== true || profile.corpus?.sourceState !== 'exact-commit-git-archive') throw new Error('profile_not_exact_commit_contained');
   if (!Array.isArray(profile.corpus?.includedExtensions) || profile.corpus.includedExtensions.length === 0) throw new Error('profile_extension_allowlist_missing');
   const outputRoot = ensureOutputBoundary(options.outputRoot ?? path.join(BRAIN_ROOT, profile.operationalOutputRoot));
+  const consumedReceipt = successfulAuthorizationReceipt(outputRoot, AUTHORIZATION_ID);
+  if (consumedReceipt) throw new Error(`one_shot_authorization_already_consumed:${consumedReceipt}`);
   const sourceHeadBefore = git(mindRoot, ['rev-parse', 'HEAD']).trim();
   const brainCommit = git(BRAIN_ROOT, ['rev-parse', 'HEAD']).trim();
   const brainBranch = git(BRAIN_ROOT, ['branch', '--show-current']).trim();
@@ -253,6 +268,14 @@ export function runContainedMindGraphify(options) {
   const corpusRoot = path.join(staging, 'corpus');
   const graphRoot = path.join(corpusRoot, 'graphify-out');
   let publishedRun = null;
+  const authorizationLock = path.join(outputRoot, `.authorization-${AUTHORIZATION_ID}.lock`);
+  let authorizationLockFd;
+  try {
+    authorizationLockFd = fs.openSync(authorizationLock, 'wx', 0o600);
+  } catch (error) {
+    if (error?.code === 'EEXIST') throw new Error('one_shot_authorization_in_use');
+    throw error;
+  }
   try {
     fs.mkdirSync(staging, { recursive: false, mode: 0o700 });
     const inputBytes = exportCorpus(mindRoot, requestedCommit, tree.included, corpusRoot, baseCaps.maxBytes);
@@ -328,6 +351,9 @@ export function runContainedMindGraphify(options) {
     fs.rmSync(staging, { recursive: true, force: true });
     publishCurrent(outputRoot, publishedRun);
     enforceRetention(outputRoot, profile.retention.maxRuns);
+    fs.closeSync(authorizationLockFd);
+    authorizationLockFd = undefined;
+    fs.unlinkSync(authorizationLock);
     return { runId, runPath: publishedRun, currentPath: path.join(outputRoot, 'current'), receipt, acceptance, outputBytes };
   } catch (error) {
     if (fs.existsSync(staging)) fs.rmSync(staging, { recursive: true, force: true });
@@ -339,6 +365,9 @@ export function runContainedMindGraphify(options) {
       reason: error instanceof Error ? error.message : String(error), writesToMind: false,
     });
     throw error;
+  } finally {
+    if (authorizationLockFd !== undefined) fs.closeSync(authorizationLockFd);
+    if (fs.existsSync(authorizationLock)) fs.unlinkSync(authorizationLock);
   }
 }
 

@@ -4,8 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {execFileSync} from 'node:child_process';
-import {callProviderTool, loadProviderConfig, providerHealth, providerResolve, TOOL_DEFINITIONS} from '../src/provider/runtime.mjs';
-import {handleMessage} from '../src/provider/server.mjs';
+import {PassThrough} from 'node:stream';
+import {callProviderTool, loadProviderConfig, providerHealth, providerResolve, PROVIDER_LIMITS, TOOL_DEFINITIONS} from '../src/provider/runtime.mjs';
+import {handleMessage, serializeBoundedResponse, startServer} from '../src/provider/server.mjs';
 
 function git(root, args) {
   return execFileSync('git', ['-C', root, ...args], {encoding: 'utf8'}).trim();
@@ -100,11 +101,39 @@ test('activation fails closed without Steve approval and accepts an owner-only b
   const activeEnv = {...x.env, MIND_CONTEXT_PREPARATION_MODE: '0'};
   assert.throws(() => loadProviderConfig(activeEnv), /activation_approval_file_required/);
   const approval = path.join(x.root, 'approval.json');
-  write(approval, `${JSON.stringify({approved: true, approvedBy: 'Steve Westhoek', approvedAt: '2026-08-04T00:00:00.000Z', approvalId: 'test-approval', scope: 'mind-context-read-only', providerRevision: 'a'.repeat(40)})}\n`, 0o600);
+  write(approval, `${JSON.stringify({approved: true, approvedBy: 'Steve Westhoek', approvedAt: '2026-08-04T00:00:00.000Z', approvalId: 'test-approval', scope: 'mind-context-read-only', providerRevision: 'a'.repeat(40), mindCommit: x.head, allowedScopes: ['projects', 'system']})}\n`, 0o600);
   const config = loadProviderConfig({...activeEnv, MIND_CONTEXT_ACTIVATION_APPROVAL_FILE: approval});
   assert.equal(config.activationState, 'active-local-approved');
   fs.chmodSync(approval, 0o644);
   assert.throws(() => loadProviderConfig({...activeEnv, MIND_CONTEXT_ACTIVATION_APPROVAL_FILE: approval}), /owner_only/);
+});
+
+test('activation approval is bound to the exact Mind commit and scopes', () => {
+  const x = fixture();
+  const approval = path.join(x.root, 'approval.json');
+  const base = {approved: true, approvedBy: 'Steve Westhoek', approvedAt: '2026-08-04T00:00:00.000Z', approvalId: 'test-approval', scope: 'mind-context-read-only', providerRevision: 'a'.repeat(40), mindCommit: x.head, allowedScopes: ['projects', 'system']};
+  write(approval, `${JSON.stringify({...base, mindCommit: 'b'.repeat(40)})}\n`, 0o600);
+  assert.throws(() => loadProviderConfig({...x.env, MIND_CONTEXT_PREPARATION_MODE: '0', MIND_CONTEXT_ACTIVATION_APPROVAL_FILE: approval}), /activation_approval_invalid/);
+  write(approval, `${JSON.stringify({...base, allowedScopes: ['system']})}\n`, 0o600);
+  assert.throws(() => loadProviderConfig({...x.env, MIND_CONTEXT_PREPARATION_MODE: '0', MIND_CONTEXT_ACTIVATION_APPROVAL_FILE: approval}), /activation_approval_invalid/);
+});
+
+test('provider enforces corpus and stdio request byte bounds', async () => {
+  const x = fixture();
+  write(path.join(x.root, 'system', 'large.md'), `# Large\n${'x'.repeat(PROVIDER_LIMITS.maxSourceBytes)}`);
+  assert.throws(() => providerHealth(x.config), /source_bytes_cap_exceeded/);
+
+  const bounded = fixture();
+  const input = new PassThrough();
+  const output = new PassThrough();
+  let responseText = '';
+  output.on('data', (chunk) => { responseText += chunk.toString(); });
+  const server = startServer({env: bounded.env, input, output});
+  input.write(`${'x'.repeat(PROVIDER_LIMITS.maxRequestBytes + 1)}\n`);
+  await new Promise((resolve) => setImmediate(resolve));
+  server.close();
+  assert.match(responseText, /Request exceeds admitted byte limit/);
+  assert.match(serializeBoundedResponse({jsonrpc: '2.0', id: 9, result: 'x'.repeat(PROVIDER_LIMITS.maxResponseBytes)}), /Response exceeds admitted byte limit/);
 });
 
 test('MCP protocol exposes only the admitted read tools and returns live health/readback', () => {
@@ -116,6 +145,7 @@ test('MCP protocol exposes only the admitted read tools and returns live health/
   const readback = handleMessage(x.config, {jsonrpc: '2.0', id: 3, method: 'tools/call', params: {name: 'mind_context_resolve', arguments: {query: 'alpha'}}});
   assert.equal(readback.result.isError, false);
   assert.equal(readback.result.structuredContent.state.observed, 'live-readback');
+  assert.equal(readback.result.structuredContent.state.deployed, 'not-installed');
   const mutation = handleMessage(x.config, {jsonrpc: '2.0', id: 4, method: 'tools/call', params: {name: 'write_file', arguments: {}}});
   assert.equal(mutation.result.isError, true);
   assert.equal(mutation.result.structuredContent.code, 'tool_not_admitted');
