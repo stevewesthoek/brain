@@ -50,7 +50,7 @@ const GRAPHIFY_BLOCK_REASON = 'graphify requires exact executable identity, vers
 const KNOWN_STALE_DIGESTS = new Set([
   'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
   '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
-  // v3 digests — rejected by v4 contract; recompute at next preflight run
+  '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; v4r supersedes)
 ]);
 
 // Paths that planned writes must never overlap

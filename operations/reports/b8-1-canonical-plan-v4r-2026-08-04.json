@@ -1,0 +1,68 @@
+{
+  "planVersion": "4.0.0",
+  "planSha256": "c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4",
+  "_planSha256Note": "Computed 2026-08-04 via dry-run on feature/b8-1-v4-hardening-land with source-roots at /Users/Office/.brain/benchmark/b8-1/source-roots/. Recompute if manifest, schemas, subjects, binary, or source pins change.",
+  "runId": "b8-1-canonical-authorization-20260804-final-v4r",
+  "partialEvidence": true,
+  "selectedSubjects": ["cbm", "exact-source"],
+  "excludedSubjects": ["graphify"],
+  "manifestRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.json",
+  "manifestHash": "sha256:91805c0a67d923e42ee090119140ad2591e0ed179d16e9f7ee2e3e03d1edd6f7",
+  "manifestSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+  "manifestSchemaHash": "sha256:b2c10030cbc7e937f92a03db4245b7b65132bfa1621d83fbba27fa667c4a6ecc",
+  "evidenceSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+  "evidenceSchemaHash": "sha256:62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1",
+  "pinnedRepositoryCommits": [
+    { "repositoryId": "brain",     "commit": "257fd72c3f47a53afb23778ed860976fd2429c71" },
+    { "repositoryId": "prochat",   "commit": "e404821bfeef0868fef9f42a14ede4926aabe6ef" },
+    { "repositoryId": "workbench", "commit": "f482851457c4505bcbf98dd02c469728f61ab427" }
+  ],
+  "subjectBinaryIdentity": {
+    "cbm": {
+      "stablePath": "/Users/Office/.local/bin/codebase-memory-mcp",
+      "resolvedPath": "/Users/Office/.local/lib/brain/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp",
+      "version": "v0.9.0",
+      "sha256": "d9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6"
+    }
+  },
+  "networkIsolationProof": "BOUND_AT_PREFLIGHT",
+  "cbmVerification": "BOUND_AT_PREFLIGHT",
+  "graphifyStatus": {
+    "status": "excluded-subject",
+    "reason": "graphify not selected; bounded code-only invocation remains blocked",
+    "profilePath": "operations/specs/graphify-operational-profiles.json",
+    "profileSha256": "BOUND_AT_PREFLIGHT",
+    "governancePath": "operations/specs/graphify-transition-governance.json",
+    "governanceSha256": "BOUND_AT_PREFLIGHT"
+  },
+  "diskResult": "BOUND_AT_PREFLIGHT",
+  "sourceStateHash": "BOUND_AT_PREFLIGHT",
+  "sourceLogicalIdentity": "BOUND_AT_PREFLIGHT",
+  "checks": "BOUND_AT_PREFLIGHT",
+  "runContext": {
+    "_note": "excluded from digest — run-local absolute paths",
+    "runDirectoryPhysical": "BOUND_AT_PREFLIGHT",
+    "plannedWritePaths": "BOUND_AT_PREFLIGHT"
+  },
+  "_staleDigests": {
+    "v1": { "digest": "dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4", "status": "INVALID" },
+    "v2": { "digest": "1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda", "status": "INVALID" },
+    "v4": { "digest": "40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0", "status": "INVALID — wrong env/sandbox/one-index contract" }
+  },
+  "_v4rChanges": [
+    "CBM env: CBM_CACHE_DIR (replaces invalid CODEBASE_MEMORY_HOME)",
+    "CBM auto_watch: config set + verify via 'config get' before indexing (replaces CODEBASE_MEMORY_AUTO_WATCH env which binary ignores)",
+    "CBM sandbox: every CBM invocation wrapped in sandbox-exec with b8-1-network-deny.sb profile",
+    "CBM indexing: one index_repository per repository per run (not per fixture)",
+    "CBM search limit: 50 (was 10)",
+    "Exact-source: unknown algorithm rejected (not silently passed)",
+    "Exact-source: file-name-count root containment check before counting",
+    "Exact-source: outcome is exact-line match; lineCorrect is ±5 window (semantics separated)",
+    "Exact-source: RFC 6901 pointer segment unescaping (~0/~1)",
+    "Caller/callee precision/recall implemented and included in fixture evidence",
+    "Aggregate evidence.json: caller/callee metrics included in fixtureResults",
+    "Plan JSON: no placeholders in digest inputs; independently recomputable",
+    "KNOWN_STALE_DIGESTS: 40bb7b67... added (v4 stale)",
+    "Authorization report: truthful about source root persistence and benchmark-boundary writes"
+  ]
+}

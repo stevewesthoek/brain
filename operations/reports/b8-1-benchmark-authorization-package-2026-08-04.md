@@ -1,27 +1,21 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **v4 CONTRACT NOW ACTIVE (feature/b8-1-final-readiness-v2)**
-> The v4 plan contract (`planVersion: '4.0.0'`) is implemented on branch `feature/b8-1-final-readiness-v2`.
-> v1, v2, and v3 digests are now **INVALID** and rejected by the v4 harness and executor.
-> A new v4 digest must be computed at actual preflight time using the v4 contract.
-> See `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json` for the v4 structure.
+> **v4r CONTRACT NOW ACTIVE (feature/b8-1-v4-hardening-land)**
+> The v4r plan contract (`planVersion: '4.0.0'`, run-id suffix `final-v4r`) is implemented on branch `feature/b8-1-v4-hardening-land`.
+> Digests v1, v2, v4 (and any v3) are **INVALID** and rejected by the harness and executor.
+> See `operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json` for the v4r plan structure.
 
-> **v3 DIGEST NOW STALE**: v3 digests from `feature/b8-1-executor-v3` are rejected by the v4 contract.
-> Recompute against v4 (`planVersion: '4.0.0'`) using the updated preflight harness.
-
-> **SOURCE ROOT CORRECTION**: An earlier version of this document implied source roots were cleaned up after the v2 dry-run. This was **incorrect**. Persistent source worktrees exist at `/Users/Office/.brain/benchmark/b8-1/source-roots/` and should be preserved. Source roots are persistent benchmark inputs, not ephemeral artifacts. See `operations/specs/b8-1-source-root-hardening.md`.
-
-> ~~**SUPERSEDED DIGEST (INVALID — v1)**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~
-> This digest was computed with ephemeral `/tmp/` source root paths.
-
-> ~~**SUPERSEDED DIGEST (INVALID — v2)**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~
-> This digest was computed with absolute brain-b8-1-authorization worktree paths. Both v1 and v2 digests are path-dependent and **rejected by the v3 contract**.
+> ~~**INVALID — v1**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~ — ephemeral /tmp/ paths.
+> ~~**INVALID — v2**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~ — absolute brain-b8-1-authorization worktree paths.
+> ~~**INVALID — v4**~~: ~~`40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0`~~ — wrong env/sandbox/one-index contract (see v4r for corrections).
 
 ## Status
 
-**v4 contract ready — v4 digest not yet computed.** The bounded executor (v4.0.0) and v4 plan harness are on `feature/b8-1-final-readiness-v2`. A new preflight run is required to compute the v4 digest before any execution or approval. No materialization, benchmark execution, or approval has occurred.
+**v4r ready — digest computed, executionReady=true.** The hardened executor and v4r plan harness are on `feature/b8-1-v4-hardening-land`. No materialization, benchmark execution, or approval has occurred.
 
-v4 changes from v3: dual-subject execution (all selectedSubjects run per fixture), real CBM subprocess adapter, exact-source full verification scoring, aggregate evidence.json, timer leak fix, contract version bump to 4.0.0, evidence validator v4 plan layout support.
+**Source roots**: Persistent clean worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/` exist and are preserved. They are benchmark inputs, not ephemeral. Previous docs that implied cleanup were wrong.
+
+**v4r changes from v4**: CBM env uses `CBM_CACHE_DIR` (not `CODEBASE_MEMORY_HOME`); `auto_watch=false` set via `config set` then verified via `config get` (not via `CODEBASE_MEMORY_AUTO_WATCH` env which binary ignores); every CBM invocation sandbox-wrapped; one `index_repository` per repository per run (not per fixture); search limit raised to 50; unknown exact-source algorithms rejected; `file-name-count` root containment; RFC 6901 pointer unescaping; outcome vs lineCorrect semantics separated; caller/callee precision/recall implemented.
 
 ## 1. Brain Main SHA
 
@@ -84,32 +78,16 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 ## 7. Plan SHA-256
 
-> **v2 and v1 digests are now INVALID — rejected by v3 contract.** Recompute using the v3 preflight harness on `feature/b8-1-executor-v3`.
+All prior digests are INVALID. See header for the full stale-digest list.
 
-~~**v2 (INVALID — path-dependent, rejected by v3 contract):**~~
-~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~
-
-~~Run ID: `b8-1-canonical-authorization-20260804-v2`~~
-
-~~Canonical plan artifact: `operations/reports/b8-1-canonical-plan-v2-2026-08-04.json`~~
-
-~~v1 (INVALID — path-dependent, do not use): `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~
-
-~~**v3 (INVALID — stale, rejected by v4 contract):**~~
-~~`COMPUTED_AT_PREFLIGHT`~~
-
-~~Run ID: `b8-1-canonical-authorization-20260804-v3`~~
-
-~~v3 plan structure: `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json`~~
-
-**v4 (computed 2026-08-04 — feature/b8-1-final-readiness-v2):**
+**v4r (computed 2026-08-04 — feature/b8-1-v4-hardening-land):**
 ```
-40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0
+c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4
 ```
 
-Run ID: `b8-1-canonical-authorization-20260804-final-v4`
+Run ID: `b8-1-canonical-authorization-20260804-final-v4r`
 
-v4 plan structure: `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json`
+v4r plan structure: `operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json`
 
 Source roots used:
 - brain: `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/257fd72c3f47a53afb23778ed860976fd2429c71`
@@ -118,17 +96,7 @@ Source roots used:
 
 ## 8. Execution-Readiness Result
 
-~~v2 result (superseded):~~
-```json
-{
-  "executionReady": true,
-  "materialized": false,
-  "blockingChecks": [],
-  "runId": "b8-1-canonical-authorization-20260804-v2"
-}
-```
-
-**v4 result (2026-08-04):**
+**v4r result (2026-08-04, feature/b8-1-v4-hardening-land):**
 ```json
 {
   "executionReady": true,
@@ -136,12 +104,12 @@ Source roots used:
   "selectedSubjects": ["cbm", "exact-source"],
   "excludedSubjects": ["graphify"],
   "blockingChecks": [],
-  "runId": "b8-1-canonical-authorization-20260804-final-v4",
-  "planSha256": "40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0"
+  "runId": "b8-1-canonical-authorization-20260804-final-v4r",
+  "planSha256": "c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4"
 }
 ```
 
-All 12 preflight checks passed. 1 subject excluded (Graphify). No run directory created (dry-run only).
+All preflight checks passed. 1 subject excluded (Graphify). No run directory created (dry-run only).
 
 ## 9. Resource and Disk Gates
 
@@ -229,26 +197,25 @@ This document records a dry-run plan and digest only. The following have NOT hap
 
 ## 16. Required Approval Wording
 
-~~Stale v2 approval wording (INVALID — rejected by v4 contract):~~
-~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda` for run-id `b8-1-canonical-authorization-20260804-v2`~~
+All prior approval wording is invalid (digests v1/v2/v4 are stale, rejected by v4r contract).
 
-To authorize execution of this benchmark plan with the v4 contract, Steve must provide:
+To authorize execution of this benchmark plan with the **v4r contract**, Steve must provide:
 
 ```
 I approve B8.1 benchmark execution with plan digest
-40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0
-for run-id b8-1-canonical-authorization-20260804-final-v4.
+c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4
+for run-id b8-1-canonical-authorization-20260804-final-v4r.
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
 
 Upon receiving this approval:
-1. Run `--materialize` with the same source-root overrides (deterministic paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
+1. Run `--materialize` with the same source-root overrides (paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
 2. Execute the benchmark within the materialized run directory.
 3. Validate evidence against the evidence schema.
 4. Update B8.1 status to reflect partial completion.
 
-The canonical plan artifact is committed at `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json`.
+The canonical v4r plan structure is at `operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json`.
 
 ---
 

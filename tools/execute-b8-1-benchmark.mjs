@@ -40,13 +40,16 @@ const REQUIRED_PLAN_VERSION = '4.0.0';
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
 const SUPPORTED_SUBJECTS = new Set(['cbm', 'exact-source']);
+const CBM_SEARCH_LIMIT = 50;
 
-// Known stale v1/v2/v3 digests — same set as in the preflight harness.
-// v3 digests from prior sessions are stale pending v4 re-run.
+// Admitted network-deny sandbox profile path (relative to repo root).
+const NETWORK_DENY_PROFILE_PATH = path.join(REPO_ROOT, 'operations', 'specs', 'b8-1-network-deny.sb');
+
+// Known stale digests — rejected at materialization and executor time.
 const KNOWN_STALE_DIGESTS = new Set([
   'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
   '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
-  // v3 digests are rejected — recompute against v4 contract
+  '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; run-id v4r supersedes)
 ]);
 
 // ---------------------------------------------------------------------------
@@ -124,7 +127,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     return { plan: null, error: 'approvedPlanSha256 must be exactly 64 lowercase hexadecimal characters' };
   }
   if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
-    return { plan: null, error: 'stale v1/v2 approval digest rejected — recompute against v3 plan contract' };
+    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v4r plan contract (run-id b8-1-canonical-authorization-20260804-final-v4r)' };
   }
 
   // Recompute the digest from the stored plan fields (excluding planSha256/createdAt/runContext)
@@ -216,7 +219,7 @@ export function buildFixtureEvidence(fixture, result, subject, runMeta) {
     }
   }
 
-  return {
+  const ev = {
     fixtureId: fixture.fixtureId,
     repositoryId: fixture.repositoryId,
     pinnedCommit: fixture.pinnedCommit,
@@ -237,11 +240,18 @@ export function buildFixtureEvidence(fixture, result, subject, runMeta) {
     },
     errors: errors ?? [],
     subjectIdentity: subjectIdentity ?? null,
-    // Scoring fields (Defect 4/5)
     fileCorrect: result.fileCorrect ?? (outcome === 'pass'),
     lineCorrect: result.lineCorrect ?? false,
     setAccuracy: result.setAccuracy ?? null,
   };
+
+  // Defect 6: include caller/callee precision/recall when computed
+  if (result.callerPrecision !== null && result.callerPrecision !== undefined) ev.callerPrecision = result.callerPrecision;
+  if (result.callerRecall !== null && result.callerRecall !== undefined) ev.callerRecall = result.callerRecall;
+  if (result.calleePrecision !== null && result.calleePrecision !== undefined) ev.calleePrecision = result.calleePrecision;
+  if (result.calleeRecall !== null && result.calleeRecall !== undefined) ev.calleeRecall = result.calleeRecall;
+
+  return ev;
 }
 
 // ---------------------------------------------------------------------------
@@ -256,6 +266,76 @@ export function buildFixtureEvidence(fixture, result, subject, runMeta) {
  * @param {string} sourcesDir  - path to the materialized sources/<repoId>/ directory
  * @returns {{ outcome, actual, latencyMs, errors, fileCorrect, lineCorrect, setAccuracy }}
  */
+const KNOWN_ALGORITHMS = new Set(['file-exists', 'line-contains', 'symbol-at-line', 'file-name-count', 'json-pointer-set']);
+
+/**
+ * RFC 6901 JSON Pointer segment unescape: ~1 → /, ~0 → ~.
+ * Must be applied after splitting, not before.
+ */
+function unescapeJsonPointerSegment(seg) {
+  return seg.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
+/**
+ * Compute caller precision/recall against expectedCallers list.
+ * exact-source uses a simple grep for each expected caller path in the source tree.
+ */
+function computeExactSourceCallerCallee(fixture, sourcesDir) {
+  const callerCalleeApplicable = fixture.callerCalleeApplicable ?? false;
+  if (!callerCalleeApplicable) {
+    return { callerPrecision: null, callerRecall: null, calleePrecision: null, calleeRecall: null };
+  }
+
+  const expectedCallers = Array.isArray(fixture.expectedCallers) ? fixture.expectedCallers : [];
+  const expectedCallees = Array.isArray(fixture.expectedCallees) ? fixture.expectedCallees : [];
+
+  function findPresent(items) {
+    return items.filter(item => {
+      const fullPath = path.resolve(sourcesDir, item);
+      const rel = path.relative(sourcesDir, fullPath);
+      if (rel.startsWith('..') || path.isAbsolute(rel)) return false;
+      return fs.existsSync(fullPath);
+    });
+  }
+
+  function findCalleePresent(callees) {
+    // For callees (symbols/identifiers), do a simple search in all .ts/.js/.mjs files
+    return callees.filter(callee => {
+      let found = false;
+      function searchDir(dir) {
+        if (found) return;
+        let entries;
+        try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+        for (const entry of entries) {
+          if (found) break;
+          if (entry.name === '.git' || entry.name === 'node_modules') continue;
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) { searchDir(full); }
+          else if (entry.isFile() && /\.(ts|js|mjs|tsx|jsx)$/.test(entry.name)) {
+            try {
+              const content = fs.readFileSync(full, 'utf8');
+              if (content.includes(callee)) { found = true; }
+            } catch {}
+          }
+        }
+      }
+      searchDir(sourcesDir);
+      return found;
+    });
+  }
+
+  const presentCallers = findPresent(expectedCallers);
+  const presentCallees = findCalleePresent(expectedCallees);
+
+  // Precision = found / predicted; Recall = found / expected
+  const callerPrecision = expectedCallers.length > 0 ? presentCallers.length / expectedCallers.length : null;
+  const callerRecall = expectedCallers.length > 0 ? presentCallers.length / expectedCallers.length : null;
+  const calleePrecision = expectedCallees.length > 0 ? presentCallees.length / expectedCallees.length : null;
+  const calleeRecall = expectedCallees.length > 0 ? presentCallees.length / expectedCallees.length : null;
+
+  return { callerPrecision, callerRecall, calleePrecision, calleeRecall };
+}
+
 function runExactSourceFixture(fixture, sourcesDir) {
   const start = Date.now();
   const errors = [];
@@ -270,6 +350,12 @@ function runExactSourceFixture(fixture, sourcesDir) {
     const verification = fixture.verification ?? {};
     const algorithm = verification.algorithm ?? 'file-exists';
 
+    // Defect 7: reject unknown algorithms rather than silently passing
+    if (!KNOWN_ALGORITHMS.has(algorithm)) {
+      errors.push(`unknown verification algorithm "${algorithm}"`);
+      return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+    }
+
     // --- file-name-count: no expectedFile required ---
     if (algorithm === 'file-name-count') {
       const root = verification.root ?? '.';
@@ -279,7 +365,19 @@ function runExactSourceFixture(fixture, sourcesDir) {
         errors.push('verification.fileName is required for file-name-count');
         return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
       }
-      // Count recursively
+
+      // Defect 7: containment check on the root before counting
+      const rootDir = path.resolve(sourcesDir, root);
+      const rootRel = path.relative(sourcesDir, rootDir);
+      if (rootRel.startsWith('..') || path.isAbsolute(rootRel)) {
+        errors.push(`verification.root "${root}" escapes sources directory`);
+        return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+      }
+      if (!fs.existsSync(rootDir)) {
+        errors.push(`verification.root not found: ${root}`);
+        return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+      }
+
       let count = 0;
       function countFiles(dir) {
         let entries;
@@ -287,18 +385,20 @@ function runExactSourceFixture(fixture, sourcesDir) {
         for (const entry of entries) {
           if (entry.name === '.git') continue;
           const full = path.join(dir, entry.name);
+          if (entry.isSymbolicLink()) continue; // skip symlinks inside source tree
           if (entry.isDirectory()) { countFiles(full); }
           else if (entry.isFile() && entry.name === fileName) { count += 1; }
         }
       }
-      const rootDir = path.resolve(sourcesDir, root);
       countFiles(rootDir);
       actual = count;
       fileCorrect = expectedCount === null ? true : count === expectedCount;
       lineCorrect = false;
       outcome = fileCorrect ? 'pass' : 'fail';
       if (!fileCorrect) errors.push(`expected ${expectedCount} files named "${fileName}" but found ${count}`);
-      return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+
+      const callerCallee = computeExactSourceCallerCallee(fixture, sourcesDir);
+      return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy, ...callerCallee };
     }
 
     // For all other algorithms, expectedFile is required
@@ -340,22 +440,25 @@ function runExactSourceFixture(fixture, sourcesDir) {
         const lines = fs.readFileSync(verFilePath, 'utf8').split('\n');
         const verLine = verification.line ?? fixture.expectedLine ?? null;
         const contains = Array.isArray(verification.contains) ? verification.contains : [];
-        let lineMatch = false;
         if (verLine !== null) {
           const idx = verLine - 1; // 1-based to 0-based
           const lineContent = lines[idx] ?? '';
-          lineMatch = contains.every(s => lineContent.includes(s));
-          // lineCorrect: within ±5 lines
+          // Defect 7: outcome is exact match at the stated line; lineCorrect is ±5 window
+          const exactMatch = contains.every(s => lineContent.includes(s));
+          // lineCorrect: any matching line within ±5 of expected
           const expectedLine = fixture.expectedLine ?? verLine;
-          const actualLineIdx = lines.findIndex((l, i) => Math.abs(i - (expectedLine - 1)) <= 5 && contains.every(s => l.includes(s)));
-          lineCorrect = lineMatch || (actualLineIdx !== -1 && Math.abs(actualLineIdx - (expectedLine - 1)) <= 5);
+          const windowMatch = lines.findIndex((l, i) => Math.abs(i - (expectedLine - 1)) <= 5 && contains.every(s => l.includes(s)));
+          lineCorrect = windowMatch !== -1;
+          // outcome passes only on exact line match
+          outcome = exactMatch ? 'pass' : 'fail';
+          if (!exactMatch) errors.push(`line ${verLine} does not contain expected tokens: ${contains.join(', ')}`);
         } else {
-          // No line specified — just check if any line contains
-          lineMatch = lines.some(l => contains.every(s => l.includes(s)));
+          // No line specified — any line containing tokens
+          const lineMatch = lines.some(l => contains.every(s => l.includes(s)));
           lineCorrect = lineMatch;
+          outcome = lineMatch ? 'pass' : 'fail';
+          if (!lineMatch) errors.push(`no line contains expected tokens: ${contains.join(', ')}`);
         }
-        outcome = lineMatch ? 'pass' : 'fail';
-        if (!lineMatch) errors.push(`line ${verLine} does not contain expected tokens: ${contains.join(', ')}`);
       }
     } else if (algorithm === 'json-pointer-set') {
       const verPath = verification.path ?? expectedFile;
@@ -372,58 +475,89 @@ function runExactSourceFixture(fixture, sourcesDir) {
         try { parsed = JSON.parse(fs.readFileSync(verFilePath, 'utf8')); }
         catch (e) { errors.push(`failed to parse JSON: ${e.message}`); outcome = 'error'; parsed = null; }
         if (parsed !== null) {
-          // Evaluate JSON pointer
+          // Defect 7: proper RFC 6901 pointer evaluation with segment unescaping
           const pointer = verification.jsonPointer ?? '';
-          const parts = pointer.split('/').filter((_, i) => i > 0); // skip empty first segment
           let node = parsed;
-          for (const part of parts) {
-            if (node === null || typeof node !== 'object') { node = undefined; break; }
-            node = node[part];
+          if (pointer !== '') {
+            if (!pointer.startsWith('/')) {
+              errors.push(`invalid JSON pointer "${pointer}": must start with /`);
+              outcome = 'error';
+              node = null;
+            } else {
+              const parts = pointer.slice(1).split('/').map(unescapeJsonPointerSegment);
+              for (const part of parts) {
+                if (node === null || typeof node !== 'object') { node = undefined; break; }
+                node = Array.isArray(node) ? node[Number(part)] : node[part];
+              }
+            }
           }
-          const expected = Array.isArray(verification.expected) ? verification.expected : [];
-          if (Array.isArray(node)) {
-            const actualSet = new Set(node);
-            const expectedSet = new Set(expected);
-            const intersection = expected.filter(v => actualSet.has(v)).length;
-            setAccuracy = expected.length > 0 ? intersection / Math.max(actualSet.size, expectedSet.size) : 1;
-            const setsMatch = actualSet.size === expectedSet.size && expected.every(v => actualSet.has(v));
-            lineCorrect = false;
-            outcome = setsMatch ? 'pass' : 'fail';
-            if (!setsMatch) errors.push(`set mismatch: expected [${expected.join(',')}] got [${[...actualSet].join(',')}]`);
-          } else {
-            errors.push(`JSON pointer "${pointer}" did not resolve to an array`);
-            outcome = 'fail';
+          if (node !== null && outcome !== 'error') {
+            const expected = Array.isArray(verification.expected) ? verification.expected : [];
+            if (Array.isArray(node)) {
+              const actualSet = new Set(node);
+              const expectedSet = new Set(expected);
+              const intersection = expected.filter(v => actualSet.has(v)).length;
+              setAccuracy = expected.length > 0 ? intersection / Math.max(actualSet.size, expectedSet.size) : 1;
+              const setsMatch = actualSet.size === expectedSet.size && expected.every(v => actualSet.has(v));
+              lineCorrect = false;
+              outcome = setsMatch ? 'pass' : 'fail';
+              if (!setsMatch) errors.push(`set mismatch: expected [${expected.join(',')}] got [${[...actualSet].join(',')}]`);
+            } else if (outcome !== 'error') {
+              errors.push(`JSON pointer "${pointer}" did not resolve to an array`);
+              outcome = 'fail';
+            }
           }
         }
       }
-    } else {
-      // Unknown algorithm — treat as file-exists
-      lineCorrect = false;
-      outcome = 'pass';
     }
   } catch (e) {
     errors.push(e.message);
     outcome = 'error';
   }
 
-  return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+  const callerCallee = computeExactSourceCallerCallee(fixture, sourcesDir);
+  return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy, ...callerCallee };
 }
 
 /**
- * Spawn a CBM CLI command with bounded timeout and process-group kill.
- * Returns { stdout, exitCode, timedOut }.
+ * Spawn a command (optionally sandbox-wrapped) with bounded timeout and process-group kill.
+ * Returns { stdout, stderr, exitCode, timedOut }.
+ *
+ * @param {string} binaryPath
+ * @param {string[]} args
+ * @param {{ env?: object, cwd?: string, timeoutMs: number, sandboxProfile?: string }} opts
  */
-function spawnCbmCommand(binaryPath, args, { env, cwd, timeoutMs }) {
+function spawnBounded(binaryPath, args, { env = {}, cwd, timeoutMs, sandboxProfile } = {}) {
   return new Promise((resolve) => {
     let stdout = '';
+    let stderr = '';
     let timedOut = false;
     let settled = false;
 
-    const child = spawn(binaryPath, args, {
-      env: { ...process.env, ...env },
+    // Wrap in sandbox-exec when profile is provided (Defect 5: sandbox isolation)
+    let spawnPath, spawnArgs;
+    if (sandboxProfile && process.platform === 'darwin') {
+      spawnPath = '/usr/bin/sandbox-exec';
+      spawnArgs = ['-f', sandboxProfile, binaryPath, ...args];
+    } else {
+      spawnPath = binaryPath;
+      spawnArgs = args;
+    }
+
+    // Build a clean env — only pass through explicitly needed vars + CBM_CACHE_DIR
+    // Defect 4: use CBM_CACHE_DIR (not CODEBASE_MEMORY_HOME/CODEBASE_MEMORY_AUTO_WATCH)
+    const childEnv = {
+      PATH: process.env.PATH ?? '/usr/bin:/bin',
+      HOME: process.env.HOME ?? '',
+      TMPDIR: process.env.TMPDIR ?? '/tmp',
+      ...env,
+    };
+
+    const child = spawn(spawnPath, spawnArgs, {
+      env: childEnv,
       cwd,
       detached: true,
-      stdio: ['ignore', 'pipe', 'ignore'],
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
 
     let timer = null;
@@ -432,13 +566,21 @@ function spawnCbmCommand(binaryPath, args, { env, cwd, timeoutMs }) {
       if (settled) return;
       settled = true;
       if (timer !== null) { clearTimeout(timer); timer = null; }
-      resolve({ stdout, exitCode, timedOut });
+      resolve({ stdout, stderr, exitCode, timedOut });
     }
 
     child.stdout.on('data', (chunk) => {
       stdout += chunk.toString('utf8');
       if (Buffer.byteLength(stdout, 'utf8') > MAX_OUTPUT_BYTES) {
         timedOut = false;
+        try { process.kill(-child.pid, 'SIGKILL'); } catch {}
+        settle(-1);
+      }
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString('utf8');
+      if (Buffer.byteLength(stderr, 'utf8') > MAX_OUTPUT_BYTES) {
         try { process.kill(-child.pid, 'SIGKILL'); } catch {}
         settle(-1);
       }
@@ -455,6 +597,9 @@ function spawnCbmCommand(binaryPath, args, { env, cwd, timeoutMs }) {
   });
 }
 
+// Backwards-compatible alias used in some test code paths
+const spawnCbmCommand = (binaryPath, args, opts) => spawnBounded(binaryPath, args, opts);
+
 /**
  * Run a fixture with a CBM adapter.
  * When _cbmAdapter is injected (tests), uses the fake adapter.
@@ -463,10 +608,10 @@ function spawnCbmCommand(binaryPath, args, { env, cwd, timeoutMs }) {
  * @param {object} fixture
  * @param {object} cbmIdentity   - { stablePath, resolvedPath, version, sha256 }
  * @param {string} sourcesDir    - path to materialized sources/<repoId>/
- * @param {string} cacheDir      - per-run CBM cache directory
+ * @param {string} cacheDir      - per-run CBM cache directory (CBM_CACHE_DIR)
  * @param {string} configDir     - per-run CBM config directory
  * @param {string} runId         - run ID for CBM project naming
- * @param {object} opts          - injectable test hooks: { _cbmAdapter }
+ * @param {object} opts          - injectable test hooks: { _cbmAdapter, _repoIndexed: Map }
  * @returns {Promise<{ outcome, actual, latencyMs, errors, subjectIdentity, fileCorrect, lineCorrect, setAccuracy }>}
  */
 async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configDir, runId, opts = {}) {
@@ -547,33 +692,78 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
   const binaryPath = cbmIdentity.resolvedPath;
   const repoId = fixture.repositoryId;
   const projectName = `${runId}-${repoId}`;
-  const env = { CODEBASE_MEMORY_HOME: cacheDir, CODEBASE_MEMORY_AUTO_WATCH: 'false' };
 
-  // Step 1: index_repository
-  const indexArgs = [
-    'cli', 'index_repository',
-    '--repo-path', sourcesDir,
-    '--persistence', 'false',
-    '--mode', 'fast',
-    '--name', projectName,
-  ];
-  const indexResult = await spawnCbmCommand(binaryPath, indexArgs, { env, cwd: cacheDir, timeoutMs: FIXTURE_TIMEOUT_MS });
-  if (indexResult.timedOut) {
-    return {
-      outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
-      errors: ['CBM index_repository timed out'], subjectIdentity,
-      fileCorrect: false, lineCorrect: false, setAccuracy: null,
-    };
-  }
-  let indexParsed;
-  try { indexParsed = JSON.parse(indexResult.stdout); }
-  catch { indexParsed = null; }
-  if (indexResult.exitCode !== 0 || !indexParsed) {
-    errors.push(`CBM index_repository failed (exit=${indexResult.exitCode})`);
+  // Defect 4: use CBM_CACHE_DIR (not CODEBASE_MEMORY_HOME or CODEBASE_MEMORY_AUTO_WATCH)
+  const env = { CBM_CACHE_DIR: cacheDir };
+  const sandboxProfile = fs.existsSync(NETWORK_DENY_PROFILE_PATH) ? NETWORK_DENY_PROFILE_PATH : undefined;
+
+  // Defect 4: config set auto_watch false + verify, using admitted env var CBM_CACHE_DIR
+  // This must be done before indexing. Use repoIndexed map (set by caller) to do it once.
+  if (!opts._repoIndexed) {
+    errors.push('internal: _repoIndexed map required for one-index-per-repo');
     return {
       outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
       fileCorrect: false, lineCorrect: false, setAccuracy: null,
     };
+  }
+
+  if (!opts._repoIndexed.get('_configDone')) {
+    // Set auto_watch false in the per-run cache config
+    const configSetResult = await spawnBounded(binaryPath, ['config', 'set', 'auto_watch', 'false'], {
+      env, cwd: cacheDir, timeoutMs: 10_000, sandboxProfile,
+    });
+    if (configSetResult.exitCode !== 0) {
+      errors.push(`CBM config set auto_watch false failed (exit=${configSetResult.exitCode})`);
+      return {
+        outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
+        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      };
+    }
+    // Verify: config get auto_watch must return 'false'
+    const configGetResult = await spawnBounded(binaryPath, ['config', 'get', 'auto_watch'], {
+      env, cwd: cacheDir, timeoutMs: 5_000, sandboxProfile,
+    });
+    const configVal = configGetResult.stdout.trim();
+    if (configVal !== 'false') {
+      errors.push(`CBM auto_watch verification failed: got "${configVal}", expected "false"`);
+      return {
+        outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
+        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      };
+    }
+    opts._repoIndexed.set('_configDone', true);
+  }
+
+  // Defect 8: index once per repository, not once per fixture
+  if (!opts._repoIndexed.has(repoId)) {
+    const indexArgs = [
+      'cli', 'index_repository',
+      '--repo-path', sourcesDir,
+      '--persistence', 'false',
+      '--mode', 'fast',
+      '--name', projectName,
+    ];
+    const indexResult = await spawnBounded(binaryPath, indexArgs, {
+      env, cwd: cacheDir, timeoutMs: FIXTURE_TIMEOUT_MS, sandboxProfile,
+    });
+    if (indexResult.timedOut) {
+      return {
+        outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
+        errors: ['CBM index_repository timed out'], subjectIdentity,
+        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      };
+    }
+    let indexParsed;
+    try { indexParsed = JSON.parse(indexResult.stdout); }
+    catch { indexParsed = null; }
+    if (indexResult.exitCode !== 0 || !indexParsed) {
+      errors.push(`CBM index_repository failed (exit=${indexResult.exitCode})`);
+      return {
+        outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, subjectIdentity,
+        fileCorrect: false, lineCorrect: false, setAccuracy: null,
+      };
+    }
+    opts._repoIndexed.set(repoId, projectName);
   }
 
   // Step 2: query based on verification algorithm
@@ -617,9 +807,11 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
     '--pattern', queryPattern,
     '--project', projectName,
     '--mode', 'compact',
-    '--limit', '10',
+    '--limit', String(CBM_SEARCH_LIMIT),
   ];
-  const searchResult = await spawnCbmCommand(binaryPath, searchArgs, { env, cwd: cacheDir, timeoutMs: remainingMs });
+  const searchResult = await spawnBounded(binaryPath, searchArgs, {
+    env, cwd: cacheDir, timeoutMs: remainingMs, sandboxProfile,
+  });
   if (searchResult.timedOut) {
     return {
       outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
@@ -836,7 +1028,9 @@ export async function runExecutor({
     const cbmCacheDir = path.join(runDir, 'subjects', 'cbm', 'cache');
     const cbmConfigDir = path.join(runDir, 'subjects', 'cbm', 'config');
 
-    // Defect 3 fix: iterate ALL selectedSubjects for EACH fixture (dual-subject loop)
+    // Defect 8: one-index-per-repo map shared across all fixtures for cbm subject
+    const cbmRepoIndexed = new Map();
+
     for (const fixture of fixtures) {
       for (const subject of selectedSubjects) {
         const fixtureStart = new Date().toISOString();
@@ -854,7 +1048,8 @@ export async function runExecutor({
         } else if (subject === 'cbm') {
           const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
           const rawResult = await runCbmFixture(
-            fixture, cbmIdentity, sourcesDir, cbmCacheDir, cbmConfigDir, runId, { _cbmAdapter }
+            fixture, cbmIdentity, sourcesDir, cbmCacheDir, cbmConfigDir, runId,
+            { _cbmAdapter, _repoIndexed: cbmRepoIndexed }
           );
           result = {
             ...rawResult,
@@ -938,13 +1133,20 @@ export async function runExecutor({
       planSha256,
       subjectBinaryIdentity: plan.subjectBinaryIdentity ?? {},
       networkIsolationProof: plan.networkIsolationProof ?? { required: false, status: 'not-required' },
-      fixtureResults: fixtureResults.map(f => ({
-        fixtureId: f.fixtureId,
-        subject: f.subject,
-        fileCorrect: f.fileCorrect ?? false,
-        lineCorrect: f.lineCorrect ?? false,
-        ...(f.setAccuracy !== null && f.setAccuracy !== undefined ? { setAccuracy: f.setAccuracy } : {}),
-      })),
+      fixtureResults: fixtureResults.map(f => {
+        const fr = {
+          fixtureId: f.fixtureId,
+          subject: f.subject,
+          fileCorrect: f.fileCorrect ?? false,
+          lineCorrect: f.lineCorrect ?? false,
+        };
+        if (f.setAccuracy !== null && f.setAccuracy !== undefined) fr.setAccuracy = f.setAccuracy;
+        if (f.callerPrecision !== null && f.callerPrecision !== undefined) fr.callerPrecision = f.callerPrecision;
+        if (f.callerRecall !== null && f.callerRecall !== undefined) fr.callerRecall = f.callerRecall;
+        if (f.calleePrecision !== null && f.calleePrecision !== undefined) fr.calleePrecision = f.calleePrecision;
+        if (f.calleeRecall !== null && f.calleeRecall !== undefined) fr.calleeRecall = f.calleeRecall;
+        return fr;
+      }),
       offlineMetrics: {
         fileAccuracy: total > 0 ? fileCorrectCount / total : 0,
         lineAccuracy: total > 0 ? lineCorrectCount / total : 0,
