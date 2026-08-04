@@ -142,3 +142,51 @@ This re-validation run was performed to confirm the integration evidence from th
 | Observation 002 readiness | **confirmed** |
 
 No additional push required. Integration was fast-forward. No force used. Evidence branches preserved.
+
+---
+
+## Addendum — 2026-08-04 (fix/mind-claude-local-discovery-20260804)
+
+**Correction to "Observation 002 readiness" and "Claude Code discovery state" above.**
+
+The integration report's Phase 5 created `.mcp.json` at the Brain repo root. That file registers
+`mind-context` as a project-scoped server — but Claude Code only discovers it when a session is
+started from a **Brain** cwd. A Mind-started Claude Code session does not load Brain's `.mcp.json`
+and therefore could not discover the provider. The "Observation 002 readiness — confirmed" claim
+was premature.
+
+### Root cause
+
+Claude Code project-scoped `.mcp.json` discovery is keyed to the cwd at session start. Brain's
+`.mcp.json` only applies to Brain-started sessions. Mind `CLAUDE.md` forbids placing a `.mcp.json`
+in the Mind repo. The `local` scope in `~/.claude.json` (keyed to the Mind project path) is the
+correct mechanism — it was not configured at integration time.
+
+### Fix applied (2026-08-04, Brain main commit)
+
+Registered `mind-context` as a `local`-scope entry in `~/.claude.json` under
+`.projects./Users/Office/Repos/stevewesthoek/mind.mcpServers` using `claude mcp add --scope local`
+run from the Mind cwd. No file was created or modified in Mind.
+
+Live verification from Mind (`echo "..." | claude --print --allowedTools mcp__mind-context__mind_context_health`):
+
+| Check | Observed |
+|---|---|
+| Discovery | mind-context found in Mind-local Claude Code session |
+| `healthy` | `true` |
+| `readOnly` | `true` |
+| `fixtureOnly` | `false` |
+| `providerRevision` | `51e9091c7374e0642f4fe076b895c184152dd516` |
+| `sourceHead` | `2b59119dd119ecd965b66ce601db14cb32ca3852` |
+| `headMatchesExpected` | `true` |
+| `workingChangesInScope` | `0` |
+| Tools | `mind_context_health`, `mind_context_resolve`, `mind_context_explain` (3 only) |
+| Mind files changed | none |
+| `.mcp.json` in Mind | none |
+| Lingering provider process | none |
+
+**Observation 002 is now correctly unblocked.** The provider is discoverable from Mind-started
+sessions, healthy, revision-matched, and HEAD-matched.
+
+See `operations/runbooks/mind-context-provider-activation.md` §"Claude Code discovery — Brain-project
+versus Mind-local" for the exact add/remove/restore/post-disable procedure.

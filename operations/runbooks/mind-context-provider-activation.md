@@ -4,7 +4,7 @@
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
 **Provider source lock:** `51e9091c7374e0642f4fe076b895c184152dd516`
-**Mind source lock:** `08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e`
+**Mind source lock:** `2b59119dd119ecd965b66ce601db14cb32ca3852` (updated 2026-08-04; previous: `08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e`)
 
 ## Boundary
 
@@ -53,7 +53,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
   "providerRevision": "51e9091c7374e0642f4fe076b895c184152dd516",
-  "mindCommit": "08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e",
+  "mindCommit": "2b59119dd119ecd965b66ce601db14cb32ca3852",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```
@@ -111,6 +111,100 @@ authorized Mind entrypoint closure and completed
 enabled-client, live-readback, unavailable-service, mutation-rejection, and
 disable/restore checks. See
 `operations/reports/m2-4-context-gateway-activation-2026-08-04.md`.
+
+## Claude Code discovery — Brain-project versus Mind-local
+
+**Brain-project sessions** (cwd is any Brain worktree): `mind-context` is discovered
+via the Brain repo's `.mcp.json` (tracked file, project-scoped, approved by the user
+on first use). This file is for Brain-only sessions and does **not** make the provider
+available to Mind-started Claude Code sessions.
+
+**Mind-local sessions** (cwd is `/Users/Office/Repos/stevewesthoek/mind`): `mind-context`
+is registered as a `local`-scope entry in `~/.claude.json` under
+`.projects./Users/Office/Repos/stevewesthoek/mind.mcpServers`. This is a separate
+registration, stored outside Mind (no `.mcp.json` in Mind — forbidden by Mind `CLAUDE.md`).
+Mind-local registration is required before any Claude Code session started from Mind can
+discover and call the provider.
+
+The two registrations are independent and must both be maintained:
+
+| Context | Registration location | Scope |
+|---------|----------------------|-------|
+| Brain-started Claude Code | `brain-next/.mcp.json` (tracked) | project |
+| Mind-started Claude Code | `~/.claude.json` under Mind project key | local |
+
+### Exact add procedure (Mind-local)
+
+Run from the Mind cwd:
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/mind
+claude mcp add --scope local mind-context \
+  /opt/homebrew/Cellar/node/25.9.0_1/bin/node \
+  /Users/Office/Repos/stevewesthoek/brain-next/projects/mind-context/src/provider/server.mjs \
+  -e MIND_CONTEXT_ALLOWED_TOOLS=mind_context_health,mind_context_resolve,mind_context_explain \
+  -e MIND_CONTEXT_ALLOWED_SUBOPERATIONS= \
+  -e MIND_CONTEXT_ACTIVATION_APPROVAL_FILE=/Users/Office/.brain/approvals/mind-context-read-only.json \
+  -e MIND_CONTEXT_ALLOWED_SCOPES=faith,knowledge,organizations,people,projects,resources,system,tasks,wiki \
+  -e MIND_CONTEXT_EXPECTED_HEAD=<current-mind-pin> \
+  -e MIND_CONTEXT_PREPARATION_APPROVAL_FILE=/Users/Office/.brain/approvals/mind-context-preparation.json \
+  -e MIND_CONTEXT_PREPARATION_MODE=0 \
+  -e MIND_CONTEXT_PROVIDER_REVISION=51e9091c7374e0642f4fe076b895c184152dd516 \
+  -e MIND_CONTEXT_ROOT=/Users/Office/Repos/stevewesthoek/mind
+```
+
+This writes to `~/.claude.json` only. Do not create `.mcp.json` in Mind. Do not use global or user scope.
+
+Verify immediately:
+```bash
+claude mcp list  # from Mind cwd — must show mind-context
+python3 -c "
+import json
+with open('/Users/Office/.claude.json') as f: d = json.load(f)
+mc = d['projects']['/Users/Office/Repos/stevewesthoek/mind']['mcpServers']['mind-context']
+print('revision:', mc['env']['MIND_CONTEXT_PROVIDER_REVISION'])
+print('head:', mc['env']['MIND_CONTEXT_EXPECTED_HEAD'])
+"
+```
+
+### Exact remove procedure (Mind-local)
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/mind
+claude mcp remove mind-context --scope local
+# Verify:
+python3 -c "
+import json
+with open('/Users/Office/.claude.json') as f: d = json.load(f)
+mc = d['projects'].get('/Users/Office/Repos/stevewesthoek/mind', {}).get('mcpServers', {})
+print('mind-context present:', 'mind-context' in mc)  # should be False
+"
+```
+
+### Exact restore procedure
+
+Re-run the add procedure above with the current admitted Mind pin from
+`operations/system-configs/mcp/mind-context/claude-code-config.template.json`.
+After restore, verify health from Mind cwd:
+
+```bash
+cd /Users/Office/Repos/stevewesthoek/mind
+echo "Call mind_context_health and return the JSON." | claude --print \
+  --allowedTools "mcp__mind-context__mind_context_health"
+```
+
+Require `healthy=true`, `fixtureOnly=false`, `headMatchesExpected=true`, and matching
+`providerRevision` and `sourceHead` before declaring restore complete.
+
+### Post-disable verification (Mind-local)
+
+After removing the Mind-local registration:
+
+- `claude mcp list` from Mind shows no `mind-context` entry;
+- `~/.claude.json` has no `mind-context` key under the Mind project;
+- no background provider process (`pgrep -fl server.mjs` returns nothing);
+- Mind files are unchanged (`git -C /Users/Office/Repos/stevewesthoek/mind status --short` shows no Brain-introduced changes);
+- no `.mcp.json` appeared in Mind.
 
 ## Disable and rollback
 
