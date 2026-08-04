@@ -119,3 +119,26 @@ Live resolve returned 5 sources with real SHA-256 values and provenance binding 
 ## Observation 002 readiness
 
 Mind may now perform operational observation 002 using the live provider. The provider is healthy, the pin is current, and Claude Code discovery is registered. The fallback remains manual targeted reads when the provider is unavailable.
+
+---
+
+## Re-validation run — 2026-08-04 (post-context-restore)
+
+**Worktree:** `/Users/Office/Repos/stevewesthoek/brain-main-mind-integration-2026-08-04`
+**Branch:** `integration/brain-main-mind-activation-2026-08-04`
+**Brain main HEAD at validation:** `12560f403059f618cdaa6f2fa9151064675e9cfd`
+**origin/main HEAD:** `12560f403059f618cdaa6f2fa9151064675e9cfd` (identical — already pushed)
+
+This re-validation run was performed to confirm the integration evidence from the previous context window remains accurate after a session break. No new commits were required; the worktree was already clean and HEAD equaled origin/main.
+
+| Check | Result |
+|---|---|
+| Worktree clean | yes — `nothing to commit` |
+| HEAD = origin/main | yes — `12560f40` |
+| Provider revision | `51e9091c7374e0642f4fe076b895c184152dd516` confirmed |
+| Mind pin | `2b59119dd119ecd965b66ce601db14cb32ca3852` confirmed |
+| Claude Code `.mcp.json` present | yes — 3 read-only tools registered |
+| Integration report complete | yes — phases 1–8 documented |
+| Observation 002 readiness | **confirmed** |
+
+No additional push required. Integration was fast-forward. No force used. Evidence branches preserved.
