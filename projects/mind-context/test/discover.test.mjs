@@ -26,6 +26,14 @@ test('allowed scope included and ordered', () => {
   const sources = discoverSources({root, scopes: ['allowed/canonical']});
   assert.equal(sources.length, 2);
   assert.deepEqual(sources.map((source) => source.path), ['allowed/canonical/one.md', 'allowed/canonical/two.md']);
+  assert(sources.every((source) => source.authorizedScope === 'allowed/canonical'));
+  assert(sources.every((source) => /^[a-f0-9]{64}$/.test(source.sha256)));
+});
+
+test('parent scope is projected as the authorized scope for nested sources', () => {
+  const root = makeTree();
+  const [source] = discoverSources({root, scopes: ['allowed']});
+  assert.equal(source.authorizedScope, 'allowed');
 });
 
 test('forbidden scope excluded', () => {

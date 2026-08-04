@@ -4,6 +4,7 @@ test('deterministic repeated result',()=>assert.deepEqual(buildContextPack({quer
 test('authorized exact source has citation and hash',()=>{const p=buildContextPack({queryId:'q',scopes:['fixtures/canonical'],sources});assert.equal(p.sources[0].sourceId,'a');assert.match(p.sources[0].sha256,/^[a-f0-9]{64}$/);assert.ok(p.sources[0].citation)});
 test('conflict represented without resolution',()=>{const p=buildContextPack({queryId:'q',scopes:['fixtures/conflict'],sources});assert.equal(p.conflicts.length,1);assert.equal(p.freshness,'mixed')});
 test('unknown explicit for unavailable source',()=>{const p=buildContextPack({queryId:'q',scopes:['fixtures/missing'],sources});assert.deepEqual(p.unknowns,['answer-unavailable'])});
+test('unknown source freshness is not promoted to fresh',()=>{const p=buildContextPack({queryId:'q',scopes:['fixtures/canonical'],sources:[{...sources[0],freshness:'unknown'}]});assert.equal(p.freshness,'unknown')});
 test('budget truncation recorded',()=>{const p=buildContextPack({queryId:'q',scopes:['fixtures/conflict'],sources,maxItems:1});assert.equal(p.truncation.truncated,true)});
 test('forbidden source excluded',()=>{const p=buildContextPack({queryId:'q',scopes:['fixtures/canonical'],sources,forbiddenSources:['a']});assert.equal(p.sources.length,0);assert.equal(p.exclusions[0].sourceId,'a')});
 test('path traversal rejected',()=>assert.throws(()=>buildContextPack({queryId:'q',scopes:['fixtures'],sources:[{...sources[0],path:'fixtures/../outside'}]}),/path_escape/));

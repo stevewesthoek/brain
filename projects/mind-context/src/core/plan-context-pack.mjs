@@ -20,7 +20,7 @@ function buildSourceRecord(source) {
     citation: source.citation ?? `${source.path}#${source.line ?? 'L1'}`,
     sha256: source.sha256 ?? hashContent(source.content),
     freshness: source.freshness,
-    scope: source.scope,
+    scope: source.authorizedScope ?? source.scope,
     untrusted: source.untrusted ?? source.authority === 'untrusted',
   };
 }
@@ -41,11 +41,12 @@ export function planContextPack({
   const ranked = rankSources({query: query ?? queryId, sources: allowed});
   const budget = applyBudget({rankedSources: ranked, maxItems, maxTokens});
   const selected = budget.selected.map((item) => item.source ?? item);
-  const freshness = selected.length === 0
+  const freshnessValues = new Set(selected.map((source) => source.freshness));
+  const freshness = selected.length === 0 || freshnessValues.has('unknown')
     ? 'unknown'
-    : selected.some((source) => source.freshness === 'stale')
-      ? (selected.some((source) => source.freshness === 'fresh') ? 'mixed' : 'stale')
-      : 'fresh';
+    : freshnessValues.size > 1
+      ? 'mixed'
+      : selected[0].freshness;
   const pack = {
     packId: `pack-${queryId}`,
     version: '1.0',

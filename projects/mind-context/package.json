@@ -14,6 +14,7 @@
     "test": "node --test test/*.test.mjs",
     "smoke": "node --test test/smoke.test.mjs",
     "cli": "node src/cli/cli.mjs",
+    "provider": "node src/provider/server.mjs",
     "eval": "node src/evals/benchmark.mjs",
     "eval:gate": "node src/evals/gate.mjs"
   }

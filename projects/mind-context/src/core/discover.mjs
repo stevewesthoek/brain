@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {extractHeadings, extractLinks, parseFrontmatter, pickTitle} from './frontmatter.mjs';
@@ -35,6 +36,7 @@ function readMarkdownMetadata(root, repoRelativePath) {
     scope: frontmatter.scope ?? (path.posix.dirname(repoRelativePath) || '.'),
     pathClass: frontmatter.pathClass ?? (repoRelativePath.includes('/canonical/') ? 'canonical' : 'supporting'),
     content: body,
+    sha256: crypto.createHash('sha256').update(buffer).digest('hex'),
   };
 }
 
@@ -69,10 +71,13 @@ export function discoverSources({root, scopes = [], forbiddenScopes = []} = {}) 
   const allowedScopes = scopes.length > 0 ? scopes : ['.'];
   const discovered = [];
   walk(resolvedRoot, '', discovered);
-  const filtered = discovered.filter((source) => {
+  const filtered = discovered.flatMap((source) => {
     const relative = normalizeRepoRelativePath(source.path);
-    if (forbiddenScopes.some((scope) => scopeContainsPath(scope, relative))) return false;
-    return allowedScopes.some((scope) => scope === '.' || scopeContainsPath(scope, relative));
+    if (forbiddenScopes.some((scope) => scopeContainsPath(scope, relative))) return [];
+    const authorizedScope = allowedScopes
+      .filter((scope) => scope === '.' || scopeContainsPath(scope, relative))
+      .sort((a, b) => b.length - a.length)[0];
+    return authorizedScope ? [{...source, authorizedScope}] : [];
   });
   return filtered.sort((a, b) => a.path.localeCompare(b.path) || a.sourceId.localeCompare(b.sourceId));
 }
