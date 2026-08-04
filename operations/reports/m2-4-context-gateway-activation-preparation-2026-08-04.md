@@ -3,7 +3,7 @@
 **Status:** activation-prepared; actual activation blocked on explicit Steve Westhoek approval  
 **Canonical integration target:** Brain `main`  
 **Evidence branch:** `codex/mind-m7-m2-unblock`  
-**Provider source:** `ac624cfe98a7e56ab7056bd2eec916b85dc3099b`
+**Provider source:** `6f95613376b52e5b43cb532856a670deeccf7212`
 **Mind source observed:** `06de527423e05d4208cdcf485be92a2d1028c46d`
 
 ## Prepared state
@@ -16,26 +16,29 @@
 - Enforced the exact three-tool allowlist inside the provider.
 - Added an owner-only Steve approval-file gate bound to the provider revision,
   exact Mind commit, and complete allowed-scope list for non-preparation startup.
+- Added a separate expiring, bound preparation approval gate; its one-time
+  evidence file was removed immediately after the final preparation process.
 - Documented trigger, disable, rollback, post-disable verification, and manual
   unavailable-service fallback.
 
 ## Live preparation-only evidence
 
-The provider was launched directly as a short-lived stdio process with
-`MIND_CONTEXT_PREPARATION_MODE=1`. It was not installed in Codex or Claude and
-did not create an approval file.
+The provider was launched as a short-lived stdio process against a clean local
+clone of exact Mind commit `06de5274...`. It used a 30-minute preparation-only
+approval, which was removed after the run. It was not installed in Codex or
+Claude and no activation approval was created.
 
 | Check | Observed result |
 |---|---|
 | Server identity | `mind-context` `1.0.0` |
-| Provider revision | `ac624cfe98a7e56ab7056bd2eec916b85dc3099b` |
+| Provider revision | `6f95613376b52e5b43cb532856a670deeccf7212` |
 | Activation state | `preparation-only` |
 | Health | healthy |
 | Source HEAD / expected | both `06de527423e05d4208cdcf485be92a2d1028c46d` |
-| Bounded corpus | 552 Markdown sources / 30,809,685 bytes across 9 fixed scopes |
-| Corpus SHA-256 | `50766f88c6b03d171b749c56d61ac27ae22829c67cda71c7adfbfd480e308637` |
+| Bounded corpus | 552 Markdown sources / 30,793,901 bytes across 9 fixed scopes |
+| Corpus SHA-256 | `915122ab9172559977d80198367b9cf5a0c26442da532fd7f888d8244a0d1137` |
 | Indexing | `read-through-no-persistent-index` |
-| Tracked in-scope working changes reported | 1 |
+| Working changes in preparation clone | 0 |
 | Tools | health, resolve, explain only |
 | Mutation probe | rejected with `tool_not_admitted` |
 | Mutation path exposed | false |
@@ -51,10 +54,16 @@ claimed as a client deployment or activated production.
 
 ## Freshness behavior
 
-Tests prove that changing an allowed Markdown file changes both its source hash
-and the corpus digest on the next request. The live health response reported the
-current Mind HEAD and did not hide the existing tracked in-scope change. A HEAD
-mismatch rejects retrieval with `source_revision_mismatch`.
+Tests prove that committed allowed Markdown bytes produce real source and corpus
+hashes, while any tracked or untracked in-scope working change blocks retrieval
+with `source_worktree_not_clean`. A HEAD mismatch rejects retrieval with
+`source_revision_mismatch`.
+
+The canonical Mind worktree currently has one tracked admitted-scope change,
+`wiki/log.md`. Brain did not alter it. Therefore an activation pointed at the
+canonical Mind root will correctly remain unhealthy until Steve resolves that
+Mind-owned state or approves a different exact commit; the clean preparation
+clone proves behavior at the admitted HEAD without reading dirty bytes.
 
 ## Unavailable and fallback behavior
 
@@ -72,6 +81,8 @@ Provider tests and live tool discovery prove:
   or mutation-like fields;
 - discovery does not read out-of-scope Markdown and fails closed at the admitted
   corpus, source-file, request, and response byte limits;
+- raw unterminated stdio input is rejected while accumulating, before it can
+  exceed the request cap;
 - `.obsidian`, archives, history, runtime/generated/dependency directories, and
   secret-marked paths are excluded;
 - the provider exposes no write-capable tool or nested suboperation;

@@ -3,7 +3,7 @@
 **State:** activation-prepared; candidate disabled  
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
-**Provider source lock:** `ac624cfe98a7e56ab7056bd2eec916b85dc3099b`
+**Provider source lock:** `6f95613376b52e5b43cb532856a670deeccf7212`
 
 ## Boundary
 
@@ -51,7 +51,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvedAt": "<ISO-8601 timestamp>",
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
-  "providerRevision": "ac624cfe98a7e56ab7056bd2eec916b85dc3099b",
+  "providerRevision": "6f95613376b52e5b43cb532856a670deeccf7212",
   "mindCommit": "06de527423e05d4208cdcf485be92a2d1028c46d",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
@@ -62,6 +62,12 @@ provider revision, Mind commit, and complete sorted scope list must match the
 candidate exactly. Brain must not create it until Steve explicitly approves
 activation after reviewing the candidate evidence.
 
+Preparation is separately approval-gated. A preparation approval uses scope
+`mind-context-preparation`, binds the same provider revision, Mind commit, and
+scope list, and adds an `expiresAt` no more than one hour in the future. Remove
+that owner-only file immediately after the bounded preparation process. Setting
+`MIND_CONTEXT_PREPARATION_MODE=1` without it fails closed.
+
 ## Freshness and indexing
 
 The provider has no persistent index or watcher. Every health or retrieval call
@@ -71,6 +77,9 @@ and returns `sourceHead`, `expectedMindHead`, `corpusSha256`, `indexedAt`, and
 source hash and corpus digest on the next call. A changed Mind HEAD fails closed
 with `source_revision_mismatch` until Brain reviews and repins the expected
 commit. Tracked in-scope working-tree changes are reported, not hidden.
+Tracked or untracked changes in admitted scopes make health unhealthy and make
+resolve/explain fail with `source_worktree_not_clean`; retrieval never mixes a
+commit-bound approval with uncommitted bytes.
 Discovery reads only admitted scopes and enforces 2,000-source, 2 MiB-per-file,
 and 64 MiB-corpus caps before retrieval; stdio requests and responses are also
 bounded by the admission's 64 KiB and 512 KiB limits.
@@ -82,9 +91,11 @@ Activation requires all of the following:
 1. The provider/admission/evidence commit is integrated into canonical Brain
    `main`, and all admitted artifact digests validate.
 2. The disabled tracked Codex candidate is regenerated for the actual canonical
-   Brain root and checked against the admitted source export.
+   Brain runtime root; both the source export and the rendered runtime artifacts
+   must match their admitted digests.
 3. Steve Westhoek explicitly approves `mind-context-read-only` activation and
    the approval file above is created owner-only with that exact approval.
+   The canonical Mind worktree must also be clean in all admitted scopes.
 4. In a separate activation commit, set the admission to `active-local`,
    generate the project-scoped client config with `enabled=true`, and do not add
    any tool or scope.
