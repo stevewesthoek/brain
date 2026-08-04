@@ -272,7 +272,10 @@ export function runContainedMindGraphify(options) {
       timeout: baseCaps.maxRuntimeSeconds * 1000,
     });
     if (invocation.error?.code === 'ETIMEDOUT') throw new Error('graphify_runtime_cap_exceeded');
-    if (invocation.status !== 0) throw new Error(`graphify_failed:${(invocation.stderr || invocation.stdout || '').trim()}`);
+    if (invocation.status !== 0) {
+      const diagnostic = [invocation.stdout, invocation.stderr].filter(Boolean).join('\n').trim();
+      throw new Error(`graphify_failed:${diagnostic}`);
+    }
     const graphFile = path.join(graphRoot, 'graph.json');
     if (!fs.existsSync(graphFile)) throw new Error('graphify_graph_missing');
     const graphStats = validateGraph(graphFile, corpusRoot, sources, baseCaps);
