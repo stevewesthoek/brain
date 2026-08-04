@@ -37,6 +37,7 @@ function fixture() {
 const fs = require('node:fs'); const path = require('node:path');
 if (process.argv[2] === '--version') { console.log('graphify 9.9.9'); process.exit(0); }
 const corpus = process.argv[3]; const out = path.join(corpus, 'graphify-out'); fs.mkdirSync(out, {recursive:true});
+fs.writeFileSync(path.join(process.cwd(), '.graphify-run.lock'), 'staging only');
 const nodes=[]; const links=[]; function walk(dir){ for(const e of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,e.name); if(e.isDirectory()) walk(p); else if(!p.includes('graphify-out')){const rel=path.relative(corpus,p).replaceAll('\\\\','/'); nodes.push({id:rel,label:e.name,source_file:rel});}}} walk(corpus);
 if(nodes.length>1) links.push({source:nodes[0].id,target:nodes[1].id,relation:'contains',source_file:nodes[0].source_file});
 fs.writeFileSync(path.join(out,'graph.json'), JSON.stringify({nodes,links}));

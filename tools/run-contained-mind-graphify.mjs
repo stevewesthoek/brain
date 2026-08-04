@@ -325,7 +325,7 @@ export function runContainedMindGraphify(options) {
     if (outputBytes > baseCaps.maxOutputBytes) throw new Error(`output_bytes_cap_exceeded:${outputBytes}`);
     publishedRun = path.join(runsRoot, runId);
     fs.renameSync(finalRoot, publishedRun);
-    fs.rmdirSync(staging);
+    fs.rmSync(staging, { recursive: true, force: true });
     publishCurrent(outputRoot, publishedRun);
     enforceRetention(outputRoot, profile.retention.maxRuns);
     return { runId, runPath: publishedRun, currentPath: path.join(outputRoot, 'current'), receipt, acceptance, outputBytes };
