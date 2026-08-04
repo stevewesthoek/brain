@@ -127,7 +127,7 @@ function validateGovernanceNamespace(errors) {
 function main() {
   const catalog = readProfileCatalog();
   const errors = [];
-  if (catalog.catalogVersion !== '1.0.0') errors.push('catalogVersion must be 1.0.0');
+  if (catalog.catalogVersion !== '1.1.0') errors.push('catalogVersion must be 1.1.0');
   if (!Array.isArray(catalog.profiles) || catalog.profiles.length !== 2) errors.push('two bounded profiles are required');
   const brain = catalog.profiles?.find((profile) => profile.profileId === 'graphify-brain-architecture');
   const mind = catalog.profiles?.find((profile) => profile.profileId === 'graphify-mind-knowledge');
@@ -135,6 +135,18 @@ function main() {
   if (!mind) errors.push('missing mind knowledge profile');
   if (brain) validateProfile(brain, 'brain', errors);
   if (mind) validateProfile(mind, 'mind', errors);
+  if (mind) {
+    if (mind.corpus?.sourceState !== 'exact-commit-git-archive') errors.push('graphify-mind-knowledge: exact commit Git export is required');
+    for (const extension of ['.md', '.mjs', '.js', '.ts', '.sh', '.py']) {
+      if (!mind.corpus?.includedExtensions?.includes(extension)) errors.push(`graphify-mind-knowledge: missing included extension ${extension}`);
+    }
+    for (const exclusion of ['.obsidian', 'archive', 'history', 'generated']) {
+      if (!mind.corpus?.excluded?.some((entry) => entry.includes(exclusion))) errors.push(`graphify-mind-knowledge: missing knowledge-corpus exclusion ${exclusion}`);
+    }
+    if (mind.generator?.name !== 'graphifyy' || mind.generator?.executable !== 'graphify') errors.push('graphify-mind-knowledge: graphifyy executable identity is required');
+    if (!/^\d+\.\d+\.\d+$/.test(mind.generator?.version ?? '') || !/^[a-f0-9]{64}$/.test(mind.generator?.sha256 ?? '')) errors.push('graphify-mind-knowledge: exact generator version and sha256 are required');
+    if (mind.generator?.networkAccess !== false || mind.generator?.modelAccess !== false) errors.push('graphify-mind-knowledge: contained generator must not use network or models');
+  }
   validateProfileRegistryConsistency(catalog, errors);
   validateGovernanceNamespace(errors);
 

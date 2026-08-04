@@ -45,6 +45,20 @@ test('profile catalog excludes compatibility roots from corpus', () => {
   }
 });
 
+test('Mind profile binds exact Git export, knowledge corpus, and model-free generator identity', () => {
+  const profilePath = path.join(root, 'operations/specs/graphify-operational-profiles.json');
+  const catalog = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+  const mind = catalog.profiles.find((profile) => profile.profileId === 'graphify-mind-knowledge');
+  assert.equal(mind.corpus.sourceState, 'exact-commit-git-archive');
+  assert(mind.corpus.includedExtensions.includes('.md'));
+  assert(mind.corpus.includedExtensions.includes('.mjs'));
+  assert(mind.corpus.excluded.some((item) => item.includes('.obsidian')));
+  assert.equal(mind.generator.name, 'graphifyy');
+  assert.equal(mind.generator.networkAccess, false);
+  assert.equal(mind.generator.modelAccess, false);
+  assert.match(mind.generator.sha256, /^[a-f0-9]{64}$/);
+});
+
 test('governance JSON uses capability-based language — no obsolete B8 labels as current phase or next task', () => {
   const govPath = path.join(root, 'operations/specs/graphify-transition-governance.json');
   const gov = JSON.parse(fs.readFileSync(govPath, 'utf8'));
