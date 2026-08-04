@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import readline from 'node:readline';
 import {callProviderTool, loadProviderConfig, PROVIDER_LIMITS, PROVIDER_VERSION, TOOL_DEFINITIONS} from './runtime.mjs';
 
 const PROTOCOL_VERSION = '2025-06-18';
@@ -46,21 +45,46 @@ export function handleMessage(config, message) {
 
 export function startServer({env = process.env, input = process.stdin, output = process.stdout} = {}) {
   const config = loadProviderConfig(env);
-  const lines = readline.createInterface({input, crlfDelay: Infinity});
-  lines.on('line', (line) => {
+  let pending = Buffer.alloc(0);
+  let discardingOversizedLine = false;
+  const processLine = (lineBuffer) => {
+    const line = lineBuffer.toString('utf8').replace(/\r$/, '');
     if (!line.trim()) return;
     let result;
     try {
-      if (Buffer.byteLength(line, 'utf8') > PROVIDER_LIMITS.maxRequestBytes) result = error(null, -32600, 'Request exceeds admitted byte limit');
-      else result = handleMessage(config, JSON.parse(line));
+      result = handleMessage(config, JSON.parse(line));
     }
     catch { result = error(null, -32700, 'Parse error'); }
     if (result) {
       const serialized = serializeBoundedResponse(result);
       output.write(`${serialized}\n`);
     }
-  });
-  return {config, close: () => lines.close()};
+  };
+  const onData = (chunk) => {
+    let incoming = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    while (incoming.length > 0) {
+      const newline = incoming.indexOf(0x0a);
+      const segment = newline === -1 ? incoming : incoming.subarray(0, newline);
+      incoming = newline === -1 ? Buffer.alloc(0) : incoming.subarray(newline + 1);
+      if (discardingOversizedLine) {
+        if (newline !== -1) discardingOversizedLine = false;
+        continue;
+      }
+      if (pending.length + segment.length > PROVIDER_LIMITS.maxRequestBytes) {
+        pending = Buffer.alloc(0);
+        output.write(`${serializeBoundedResponse(error(null, -32600, 'Request exceeds admitted byte limit'))}\n`);
+        if (newline === -1) discardingOversizedLine = true;
+        continue;
+      }
+      pending = Buffer.concat([pending, segment]);
+      if (newline !== -1) {
+        processLine(pending);
+        pending = Buffer.alloc(0);
+      }
+    }
+  };
+  input.on('data', onData);
+  return {config, close: () => { input.off('data', onData); pending = Buffer.alloc(0); }};
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

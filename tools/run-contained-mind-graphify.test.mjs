@@ -55,7 +55,7 @@ fs.writeFileSync(path.join(out,'graph.json'), JSON.stringify({nodes,links}));
 test('contained run uses exact Git corpus, excludes plugin internals, and publishes receipt atomically', () => {
   const x = fixture();
   const outputRoot = path.join(x.brain, 'runtime', 'local', 'graphify', 'mind-knowledge');
-  const result = runContainedMindGraphify({ mindRoot: x.mind, outputRoot, graphifyBin: x.fake, profileCatalog: x.profilePath, authorizationId: AUTHORIZATION_ID });
+  const result = runContainedMindGraphify({ mindRoot: x.mind, outputRoot, approvedBrainRoot: x.brain, graphifyBin: x.fake, profileCatalog: x.profilePath, authorizationId: AUTHORIZATION_ID });
   assert.equal(result.acceptance.status, 'pass');
   assert.equal(result.acceptance.exactMindHead, true);
   assert.equal(result.acceptance.includedPluginInternals, 0);
@@ -69,10 +69,12 @@ test('contained run uses exact Git corpus, excludes plugin internals, and publis
   assert.throws(() => runContainedMindGraphify({
     mindRoot: x.mind,
     outputRoot,
+    approvedBrainRoot: x.brain,
     graphifyBin: x.fake,
     profileCatalog: x.profilePath,
     authorizationId: AUTHORIZATION_ID,
   }), /one_shot_authorization_already_consumed/);
+  assert.equal(fs.existsSync(path.join(outputRoot, 'authorization-ledger', `${AUTHORIZATION_ID}.json`)), true);
 });
 
 test('contained run fails closed without the exact one-shot authorization', () => {
@@ -80,8 +82,21 @@ test('contained run fails closed without the exact one-shot authorization', () =
   assert.throws(() => runContainedMindGraphify({
     mindRoot: x.mind,
     outputRoot: path.join(x.brain, 'runtime', 'local', 'graphify', 'mind-knowledge'),
+    approvedBrainRoot: x.brain,
     graphifyBin: x.fake,
     profileCatalog: x.profilePath,
     authorizationId: 'wrong',
   }), /one_shot_authorization_required/);
+});
+
+test('contained run rejects caller-selected lookalike output roots', () => {
+  const x = fixture();
+  assert.throws(() => runContainedMindGraphify({
+    mindRoot: x.mind,
+    outputRoot: path.join(x.root, 'lookalike', 'runtime', 'local', 'graphify', 'mind-knowledge'),
+    approvedBrainRoot: x.brain,
+    graphifyBin: x.fake,
+    profileCatalog: x.profilePath,
+    authorizationId: AUTHORIZATION_ID,
+  }), /output_root_outside_approved_boundary/);
 });

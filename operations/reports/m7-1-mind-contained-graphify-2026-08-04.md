@@ -29,7 +29,7 @@ non-authoritative navigation evidence.
 | Generator | `graphifyy 0.8.36` |
 | Generator SHA-256 | `e04e632a74629399b6db20a2e761f2ef8d8aa069e3f96f372fdb46ed884b47cf` |
 | Generator mode | `update <contained-corpus> --force --no-cluster` |
-| Network/model access | none / none |
+| Network/model access | model keys scrubbed and no model requested; OS egress was not independently sandboxed in the completed run |
 | Receipt SHA-256 | `d03f2fb3f16dfda2edc323f5166669607fc51389dac7e1ab387c88bae3379bee` |
 | Acceptance SHA-256 | `a27431d3381fd9131070627ddf58d60d7ed8d850a3a75b9d00565b8f32ac42b6` |
 | Source manifest SHA-256 | `6ce98a5b420efeaf8c15cc4654a10358456f6453b75f5ab081d7eaa5222ec912` |
@@ -65,6 +65,9 @@ snapshot.
 
 `currentExecutionAuthority` remains `none` for future runs. The authorization
 ID `M7.1-user-request-2026-08-04` covered one successful bounded Mind run only.
+The hardened runner now pins the canonical Brain runtime root, keeps a
+non-retained authorization-consumption ledger, requires exact corpus coverage,
+uses an allowlisted environment, and fails unless macOS denies network access.
 The nightly scheduler, broad structural indexing, and semantic synthesis remain
 inactive. A future refresh requires a new explicit authorization.
 

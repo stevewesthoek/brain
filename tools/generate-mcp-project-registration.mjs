@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { loadAdmissionRegistry, validateAdmissionRegistry } from './validate-mcp-provider-admissions.mjs';
 
@@ -22,14 +23,14 @@ export function renderProjectRegistration(admission, { providerRoot, credentialF
   const isCredentialFree = admission.authentication?.mode === 'none';
   const isExecutableDirect = isCredentialFree && admission.provider?.executable === true;
   const entrypoint = path.join(providerRoot, admission.provider.entrypoint);
-  const candidate = admission.status === 'candidate';
+  const active = admission.status === 'active-local';
   const lines = [
     `[mcp_servers.${admission.transport.serverName}]`,
     isExecutableDirect ? `command = ${quote(entrypoint)}` : `command = ${quote(nodeExecutable)}`,
     isExecutableDirect ? `args = []` : `args = [${quote(entrypoint)}]`,
     isExecutableDirect ? null : `cwd = ${quote(providerRoot)}`,
-    `enabled = ${candidate ? 'false' : 'true'}`,
-    `required = ${candidate ? 'false' : 'true'}`,
+    `enabled = ${active ? 'true' : 'false'}`,
+    `required = ${active ? 'true' : 'false'}`,
     `startup_timeout_sec = ${admission.limits.startupTimeoutSeconds}`,
     `tool_timeout_sec = ${admission.limits.toolTimeoutSeconds}`,
     'default_tools_approval_mode = "writes"',
@@ -46,6 +47,21 @@ export function renderProjectRegistration(admission, { providerRoot, credentialF
   }
   lines.push('');
   return lines.join('\n');
+}
+
+export function verifyRenderedRuntimeRoot(admission, providerRoot) {
+  const rootStat = fs.lstatSync(providerRoot);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error('Runtime provider root must be a non-symlink directory');
+  for (const artifact of admission.provider.artifacts ?? []) {
+    if (artifact.path.startsWith('archive:') || artifact.path.startsWith('npm:') || artifact.note?.includes('working-tree-only')) continue;
+    const file = path.resolve(providerRoot, artifact.path);
+    const relative = path.relative(providerRoot, file);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(`Runtime artifact escapes provider root: ${artifact.path}`);
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Runtime artifact is not a regular file: ${artifact.path}`);
+    const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    if (actual !== artifact.sha256) throw new Error(`Runtime artifact digest mismatch: ${artifact.path}`);
+  }
 }
 
 function requireOwnerOnlyFile(file, label) {
@@ -75,6 +91,7 @@ function main() {
     providerRevisions: providerRevision ? new Map([[admission.provider.providerId, providerRevision]]) : new Map(),
   });
   if (errors.length) throw new Error(errors.join('\n'));
+  verifyRenderedRuntimeRoot(admission, providerRoot);
   const isCredentialFree = admission.authentication?.mode === 'none';
   let credentialFile = null;
   if (!isCredentialFree) {

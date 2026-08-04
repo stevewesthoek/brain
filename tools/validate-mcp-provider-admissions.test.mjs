@@ -235,6 +235,27 @@ test('candidate registration is disabled and renders validated fixed non-secret 
   fs.rmSync(item.root, {recursive: true});
 });
 
+test('paused and revoked registrations render disabled', async () => {
+  const { renderProjectRegistration } = await import('./generate-mcp-project-registration.mjs');
+  const item = noneAuthAdmission();
+  for (const status of ['paused', 'revoked']) {
+    item.registry.admissions[0].status = status;
+    const rendered = renderProjectRegistration(item.registry.admissions[0], {providerRoot: '/opt', credentialFile: null, nodeExecutable: '/usr/bin/node'});
+    assert.match(rendered, /enabled = false/);
+    assert.match(rendered, /required = false/);
+  }
+  fs.rmSync(item.root, {recursive: true});
+});
+
+test('registration verifies the rendered runtime tree artifacts', async () => {
+  const { verifyRenderedRuntimeRoot } = await import('./generate-mcp-project-registration.mjs');
+  const item = noneAuthAdmission();
+  assert.doesNotThrow(() => verifyRenderedRuntimeRoot(item.registry.admissions[0], item.root));
+  fs.writeFileSync(path.join(item.root, 'dist/server.js'), 'runtime-tamper');
+  assert.throws(() => verifyRenderedRuntimeRoot(item.registry.admissions[0], item.root), /Runtime artifact digest mismatch/);
+  fs.rmSync(item.root, {recursive: true});
+});
+
 test('fixed environment cannot override the admitted tool allowlist binding', () => {
   const item = noneAuthAdmission();
   item.registry.admissions[0].scope.fixedEnvironment = {EXAMPLE_ALLOWED_TOOLS: 'broadened'};

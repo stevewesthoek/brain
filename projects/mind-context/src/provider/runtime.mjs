@@ -78,18 +78,20 @@ function requireOwnedRoot(value) {
   return root;
 }
 
-function readApproval(file, {providerRevision, expectedMindHead, scopes}) {
+function readApproval(file, {providerRevision, expectedMindHead, scopes, approvalScope, requireExpiry = false}) {
   if (!file || !path.isAbsolute(file)) throw new Error('activation_approval_file_required');
   const stat = fs.lstatSync(file);
   if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error('activation_approval_file_must_be_owner_only');
   const approval = JSON.parse(fs.readFileSync(file, 'utf8'));
   const approvedAt = Date.parse(approval.approvedAt);
+  const expiresAt = approval.expiresAt === undefined ? null : Date.parse(approval.expiresAt);
   const validId = typeof approval.approvalId === 'string' && /^[A-Za-z0-9._:-]{3,128}$/.test(approval.approvalId);
   const approvedScopes = Array.isArray(approval.allowedScopes) ? [...approval.allowedScopes].sort() : [];
-  if (approval.approvedBy !== 'Steve Westhoek' || approval.scope !== 'mind-context-read-only' || approval.providerRevision !== providerRevision || approval.mindCommit !== expectedMindHead || JSON.stringify(approvedScopes) !== JSON.stringify(scopes) || approval.approved !== true || !Number.isFinite(approvedAt) || !validId) {
+  const validExpiry = !requireExpiry || (Number.isFinite(expiresAt) && expiresAt > Date.now() && expiresAt - Date.now() <= 60 * 60 * 1000);
+  if (approval.approvedBy !== 'Steve Westhoek' || approval.scope !== approvalScope || approval.providerRevision !== providerRevision || approval.mindCommit !== expectedMindHead || JSON.stringify(approvedScopes) !== JSON.stringify(scopes) || approval.approved !== true || !Number.isFinite(approvedAt) || !validId || !validExpiry) {
     throw new Error('activation_approval_invalid');
   }
-  return {approvedBy: approval.approvedBy, approvedAt: approval.approvedAt, approvalId: approval.approvalId, mindCommit: approval.mindCommit, allowedScopes: approvedScopes};
+  return {approvedBy: approval.approvedBy, approvedAt: approval.approvedAt, expiresAt: approval.expiresAt ?? null, approvalId: approval.approvalId, scope: approvalScope, mindCommit: approval.mindCommit, allowedScopes: approvedScopes};
 }
 
 export function loadProviderConfig(env = process.env) {
@@ -102,7 +104,9 @@ export function loadProviderConfig(env = process.env) {
   const expectedTools = TOOL_DEFINITIONS.map((tool) => tool.name).sort();
   if (JSON.stringify(admittedTools) !== JSON.stringify(expectedTools)) throw new Error('provider_tool_allowlist_mismatch');
   if (String(env.MIND_CONTEXT_ALLOWED_SUBOPERATIONS ?? '') !== '') throw new Error('provider_suboperations_forbidden');
-  const approval = preparationMode ? null : readApproval(env.MIND_CONTEXT_ACTIVATION_APPROVAL_FILE, {providerRevision, expectedMindHead, scopes});
+  const approval = preparationMode
+    ? readApproval(env.MIND_CONTEXT_PREPARATION_APPROVAL_FILE, {providerRevision, expectedMindHead, scopes, approvalScope: 'mind-context-preparation', requireExpiry: true})
+    : readApproval(env.MIND_CONTEXT_ACTIVATION_APPROVAL_FILE, {providerRevision, expectedMindHead, scopes, approvalScope: 'mind-context-read-only'});
   return Object.freeze({
     root,
     scopes,
@@ -127,14 +131,14 @@ function sourceInventory(config) {
 
 function sourceState(config) {
   const sourceHead = git(config.root, ['rev-parse', 'HEAD']).trim();
-  const dirty = git(config.root, ['status', '--porcelain', '--untracked-files=no', '--', ...config.scopes]).split('\n').filter(Boolean);
-  return {sourceHead, expectedMindHead: config.expectedMindHead, headMatchesExpected: sourceHead === config.expectedMindHead, trackedChangesInScope: dirty.length, trackedChangePaths: dirty.map((line) => line.slice(3))};
+  const dirty = git(config.root, ['status', '--porcelain', '--untracked-files=all', '--', ...config.scopes]).split('\n').filter(Boolean);
+  return {sourceHead, expectedMindHead: config.expectedMindHead, headMatchesExpected: sourceHead === config.expectedMindHead, workingChangesInScope: dirty.length, workingChangePaths: dirty.map((line) => line.slice(3)), worktreeMatchesCommit: dirty.length === 0};
 }
 
 export function providerHealth(config) {
   const core = healthAdapter();
   const source = sourceState(config);
-  const inventory = sourceInventory(config);
+  const inventory = source.worktreeMatchesCommit ? sourceInventory(config) : {sourceCount: null, sourceBytes: null, corpusSha256: null};
   return {
     service: 'mind-context',
     providerVersion: PROVIDER_VERSION,
@@ -142,7 +146,7 @@ export function providerHealth(config) {
     boundary: PROVIDER_BOUNDARY,
     activationState: config.activationState,
     approval: config.approval,
-    healthy: core.coreAvailable && source.headMatchesExpected,
+    healthy: core.coreAvailable && source.headMatchesExpected && source.worktreeMatchesCommit,
     coreAvailable: core.coreAvailable,
     readOnly: true,
     fixtureOnly: false,
@@ -211,6 +215,7 @@ export function providerResolve(config, rawArgs) {
   const health = providerHealth(config);
   if (!health.coreAvailable) throw new Error('core_unavailable');
   if (!health.source.headMatchesExpected) throw new Error('source_revision_mismatch');
+  if (!health.source.worktreeMatchesCommit) throw new Error('source_worktree_not_clean');
   return decoratePack(resolveAdapter({...args, root: config.root, scopes: config.scopes, format: 'json', discoveryLimits: {maxFiles: PROVIDER_LIMITS.maxSourceFiles, maxSourceBytes: PROVIDER_LIMITS.maxSourceBytes, maxBytes: PROVIDER_LIMITS.maxCorpusBytes}}), config, health);
 }
 
@@ -219,6 +224,7 @@ export function providerExplain(config, rawArgs) {
   const health = providerHealth(config);
   if (!health.coreAvailable) throw new Error('core_unavailable');
   if (!health.source.headMatchesExpected) throw new Error('source_revision_mismatch');
+  if (!health.source.worktreeMatchesCommit) throw new Error('source_worktree_not_clean');
   return decoratePack(explainAdapter({...args, root: config.root, scopes: config.scopes, format: 'json', discoveryLimits: {maxFiles: PROVIDER_LIMITS.maxSourceFiles, maxSourceBytes: PROVIDER_LIMITS.maxSourceBytes, maxBytes: PROVIDER_LIMITS.maxCorpusBytes}}), config, health);
 }
 

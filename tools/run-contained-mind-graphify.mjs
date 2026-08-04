@@ -113,14 +113,25 @@ function verifyGenerator(profile, graphifyBin) {
   return { ...executable, version: profile.generator.version, sha256: actualSha256, versionText };
 }
 
-function ensureOutputBoundary(outputRoot) {
+function canonicalBrainRoot() {
+  const commonDirectory = git(BRAIN_ROOT, ['rev-parse', '--git-common-dir']).trim();
+  const resolvedCommon = path.resolve(BRAIN_ROOT, commonDirectory);
+  return path.basename(resolvedCommon) === '.git' ? path.dirname(resolvedCommon) : BRAIN_ROOT;
+}
+
+function ensureOutputBoundary(outputRoot, approvedBrainRoot = canonicalBrainRoot()) {
   const normalized = path.resolve(outputRoot);
-  if (!normalized.endsWith(path.join('runtime', 'local', 'graphify', 'mind-knowledge'))) throw new Error('output_root_outside_approved_boundary');
-  let current = normalized;
-  while (!fs.existsSync(current)) current = path.dirname(current);
-  if (fs.lstatSync(current).isSymbolicLink()) throw new Error('output_root_ancestor_symlink');
+  const approvedRoot = path.resolve(approvedBrainRoot);
+  const approvedStat = fs.lstatSync(approvedRoot);
+  if (!approvedStat.isDirectory() || approvedStat.isSymbolicLink()) throw new Error('approved_brain_root_invalid');
+  const expected = path.join(approvedRoot, 'runtime', 'local', 'graphify', 'mind-knowledge');
+  if (normalized !== expected) throw new Error('output_root_outside_approved_boundary');
   fs.mkdirSync(normalized, { recursive: true, mode: 0o700 });
-  if (fs.lstatSync(normalized).isSymbolicLink()) throw new Error('output_root_symlink');
+  let current = approvedRoot;
+  for (const segment of path.relative(approvedRoot, normalized).split(path.sep)) {
+    current = path.join(current, segment);
+    if (fs.lstatSync(current).isSymbolicLink()) throw new Error('output_root_ancestor_symlink');
+  }
   return normalized;
 }
 
@@ -189,10 +200,12 @@ function validateGraph(graphFile, corpusRoot, sourceManifest, caps) {
   const referenced = new Set();
   for (const item of [...nodes, ...edges]) {
     const source = normalizedGraphSource(item.source_file, corpusRoot);
-    if (!source) continue;
+    if (!source) throw new Error('graph_item_missing_source_file');
     if (!allowed.has(source)) throw new Error(`graph_references_non_corpus_source:${source}`);
     referenced.add(source);
   }
+  const missingSources = [...allowed].filter((source) => !referenced.has(source));
+  if (missingSources.length > 0) throw new Error(`graph_missing_corpus_sources:${missingSources.slice(0, 10).join(',')}`);
   const markdownReferenced = [...referenced].some((source) => source.toLowerCase().endsWith('.md'));
   const scriptReferenced = [...referenced].some((source) => /\.(mjs|cjs|js|ts|tsx|sh|py)$/i.test(source));
   if (!markdownReferenced) throw new Error('graph_missing_markdown_sources');
@@ -221,6 +234,8 @@ function enforceRetention(outputRoot, maxRuns) {
 }
 
 function successfulAuthorizationReceipt(outputRoot, authorizationId) {
+  const ledgerPath = path.join(outputRoot, 'authorization-ledger', `${authorizationId}.json`);
+  if (fs.existsSync(ledgerPath)) return ledgerPath;
   const runsRoot = path.join(outputRoot, 'runs');
   if (!fs.existsSync(runsRoot)) return null;
   for (const entry of fs.readdirSync(runsRoot, { withFileTypes: true })) {
@@ -244,7 +259,8 @@ export function runContainedMindGraphify(options) {
   const baseCaps = JSON.parse(fs.readFileSync(path.join(BRAIN_ROOT, 'operations/specs/graphify-operational-profile.json'), 'utf8')).caps;
   if (profile.currentCommitsOnly !== true || profile.corpus?.sourceState !== 'exact-commit-git-archive') throw new Error('profile_not_exact_commit_contained');
   if (!Array.isArray(profile.corpus?.includedExtensions) || profile.corpus.includedExtensions.length === 0) throw new Error('profile_extension_allowlist_missing');
-  const outputRoot = ensureOutputBoundary(options.outputRoot ?? path.join(BRAIN_ROOT, profile.operationalOutputRoot));
+  const approvedBrainRoot = path.resolve(options.approvedBrainRoot ?? canonicalBrainRoot());
+  const outputRoot = ensureOutputBoundary(options.outputRoot ?? path.join(approvedBrainRoot, profile.operationalOutputRoot), approvedBrainRoot);
   const consumedReceipt = successfulAuthorizationReceipt(outputRoot, AUTHORIZATION_ID);
   if (consumedReceipt) throw new Error(`one_shot_authorization_already_consumed:${consumedReceipt}`);
   const sourceHeadBefore = git(mindRoot, ['rev-parse', 'HEAD']).trim();
@@ -290,9 +306,22 @@ export function runContainedMindGraphify(options) {
       files: sources,
     };
     const sourceManifestBytes = Buffer.from(`${JSON.stringify(stableJson(sourceManifest), null, 2)}\n`);
-    const env = { ...process.env, GRAPHIFY_NO_TIPS: '1', GRAPHIFY_MAX_WORKERS: '4' };
-    for (const name of ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'GOOGLE_API_KEY', 'MOONSHOT_API_KEY', 'DEEPSEEK_API_KEY', 'MTPLX_API_KEY']) delete env[name];
-    const invocation = spawnSync(generator.resolved, ['update', corpusRoot, '--force', '--no-cluster'], {
+    const isolatedHome = path.join(staging, 'home');
+    const isolatedTmp = path.join(staging, 'tmp');
+    fs.mkdirSync(isolatedHome, {mode: 0o700});
+    fs.mkdirSync(isolatedTmp, {mode: 0o700});
+    const env = {
+      PATH: process.env.PATH ?? '/usr/bin:/bin',
+      HOME: isolatedHome,
+      TMPDIR: isolatedTmp,
+      LANG: process.env.LANG ?? 'C.UTF-8',
+      GRAPHIFY_NO_TIPS: '1',
+      GRAPHIFY_MAX_WORKERS: '4',
+    };
+    const sandboxExecutable = '/usr/bin/sandbox-exec';
+    if (!fs.existsSync(sandboxExecutable)) throw new Error('network_sandbox_unavailable');
+    const sandboxPolicy = '(version 1)(allow default)(deny network*)';
+    const invocation = spawnSync(sandboxExecutable, ['-p', sandboxPolicy, generator.resolved, 'update', corpusRoot, '--force', '--no-cluster'], {
       cwd: staging,
       env,
       encoding: 'utf8',
@@ -333,7 +362,7 @@ export function runContainedMindGraphify(options) {
       authorization: { id: AUTHORIZATION_ID, scope: 'one-bounded-mind-graphify-run', recurringAuthorityGranted: false },
       runner: { owner: 'brain-runtime', path: path.relative(BRAIN_ROOT, RUNNER_PATH), sha256: sha256File(RUNNER_PATH), brainCommit, brainBranch },
       profile: { id: profile.profileId, catalogVersion: catalog.catalogVersion, sha256: sha256File(catalogPath) },
-      generator: { name: profile.generator.name, version: generator.version, sha256: generator.sha256, arguments: profile.generator.arguments, networkAccess: false, modelAccess: false },
+      generator: { name: profile.generator.name, version: generator.version, sha256: generator.sha256, arguments: profile.generator.arguments, networkAccess: false, networkEnforcement: 'sandbox-exec-deny-network', modelAccess: false, environmentPolicy: 'allowlisted' },
       timestamps: { startedAt: startedAt.toISOString(), completedAt: completedAt.toISOString(), durationMs: completedAt.getTime() - startedAt.getTime() },
       source: { repository: 'mind', commit: requestedCommit, headBefore: sourceHeadBefore, headAfter: sourceHeadAfter, exactHead: true, workingTreeRead: false },
       corpus: { sourceManifestSha256: sha256Buffer(sourceManifestBytes), fileCount: sources.length, totalBytes: inputBytes, rules: profile.corpus },
@@ -351,6 +380,13 @@ export function runContainedMindGraphify(options) {
     fs.rmSync(staging, { recursive: true, force: true });
     publishCurrent(outputRoot, publishedRun);
     enforceRetention(outputRoot, profile.retention.maxRuns);
+    const ledgerRoot = path.join(outputRoot, 'authorization-ledger');
+    fs.mkdirSync(ledgerRoot, {recursive: true, mode: 0o700});
+    writeJson(path.join(ledgerRoot, `${AUTHORIZATION_ID}.json`), {
+      schemaVersion: '1.0.0', authorizationId: AUTHORIZATION_ID, status: 'consumed',
+      consumedAt: receipt.timestamps.completedAt, runId, receiptPath: path.join(publishedRun, 'receipt.json'),
+      receiptSha256: sha256File(path.join(publishedRun, 'receipt.json')),
+    });
     fs.closeSync(authorizationLockFd);
     authorizationLockFd = undefined;
     fs.unlinkSync(authorizationLock);

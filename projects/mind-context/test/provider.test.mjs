@@ -30,12 +30,15 @@ function fixture() {
   git(root, ['add', '.']);
   git(root, ['commit', '-qm', 'fixture']);
   const head = git(root, ['rev-parse', 'HEAD']);
+  const preparationApproval = path.join(root, 'preparation-approval.json');
+  write(preparationApproval, `${JSON.stringify({approved: true, approvedBy: 'Steve Westhoek', approvedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(), approvalId: 'test-preparation', scope: 'mind-context-preparation', providerRevision: 'a'.repeat(40), mindCommit: head, allowedScopes: ['projects', 'system']})}\n`, 0o600);
   const env = {
     MIND_CONTEXT_ROOT: root,
     MIND_CONTEXT_ALLOWED_SCOPES: 'projects,system',
     MIND_CONTEXT_PROVIDER_REVISION: 'a'.repeat(40),
     MIND_CONTEXT_EXPECTED_HEAD: head,
     MIND_CONTEXT_PREPARATION_MODE: '1',
+    MIND_CONTEXT_PREPARATION_APPROVAL_FILE: preparationApproval,
     MIND_CONTEXT_ALLOWED_TOOLS: 'mind_context_health,mind_context_resolve,mind_context_explain',
     MIND_CONTEXT_ALLOWED_SUBOPERATIONS: '',
   };
@@ -55,20 +58,19 @@ test('provider is fixed-scope, read-only, credential-free, and excludes private 
   assert.deepEqual(TOOL_DEFINITIONS.map((tool) => tool.name), ['mind_context_health', 'mind_context_resolve', 'mind_context_explain']);
 });
 
-test('provider performs live read-through indexing and hashes real source bytes', () => {
+test('provider hashes real source bytes and fails closed on working-tree drift', () => {
   const x = fixture();
   const first = providerResolve(x.config, {query: 'current provider state'});
   const firstHash = first.sources[0].sha256;
   const firstCorpus = providerHealth(x.config).source.corpusSha256;
   fs.appendFileSync(path.join(x.root, 'system', 'current.md'), 'Updated now.\n');
-  const second = providerResolve(x.config, {query: 'current provider state'});
-  const secondCorpus = providerHealth(x.config).source.corpusSha256;
-  assert.notEqual(second.sources[0].sha256, firstHash);
-  assert.notEqual(secondCorpus, firstCorpus);
-  assert.equal(second.provenance.indexingMode, 'read-through-no-persistent-index');
   const changedSource = providerHealth(x.config).source;
-  assert.equal(changedSource.trackedChangesInScope, 1);
-  assert.deepEqual(changedSource.trackedChangePaths, ['system/current.md']);
+  assert.equal(changedSource.workingChangesInScope, 1);
+  assert.deepEqual(changedSource.workingChangePaths, ['system/current.md']);
+  assert.equal(changedSource.corpusSha256, null);
+  assert.throws(() => providerResolve(x.config, {query: 'current provider state'}), /source_worktree_not_clean/);
+  assert.equal(typeof firstHash, 'string');
+  assert.equal(typeof firstCorpus, 'string');
 });
 
 test('caller cannot override root, scopes, or request mutation-like inputs', () => {
@@ -121,9 +123,19 @@ test('activation approval is bound to the exact Mind commit and scopes', () => {
   assert.throws(() => loadProviderConfig({...x.env, MIND_CONTEXT_PREPARATION_MODE: '0', MIND_CONTEXT_ACTIVATION_APPROVAL_FILE: approval}), /activation_approval_invalid/);
 });
 
+test('preparation mode fails closed without a short-lived bound approval', () => {
+  const x = fixture();
+  assert.throws(() => loadProviderConfig({...x.env, MIND_CONTEXT_PREPARATION_APPROVAL_FILE: undefined}), /activation_approval_file_required/);
+  const expired = path.join(x.root, 'expired-preparation.json');
+  write(expired, `${JSON.stringify({approved: true, approvedBy: 'Steve Westhoek', approvedAt: '2026-08-04T00:00:00.000Z', expiresAt: '2026-08-04T00:30:00.000Z', approvalId: 'expired-preparation', scope: 'mind-context-preparation', providerRevision: 'a'.repeat(40), mindCommit: x.head, allowedScopes: ['projects', 'system']})}\n`, 0o600);
+  assert.throws(() => loadProviderConfig({...x.env, MIND_CONTEXT_PREPARATION_APPROVAL_FILE: expired}), /activation_approval_invalid/);
+});
+
 test('provider enforces corpus and stdio request byte bounds', async () => {
   const x = fixture();
   write(path.join(x.root, 'system', 'large.md'), `# Large\n${'x'.repeat(PROVIDER_LIMITS.maxSourceBytes)}`);
+  git(x.root, ['add', 'system/large.md']);
+  git(x.root, ['commit', '-qm', 'large source']);
   assert.throws(() => providerHealth(x.config), /source_bytes_cap_exceeded/);
 
   const bounded = fixture();
@@ -132,8 +144,9 @@ test('provider enforces corpus and stdio request byte bounds', async () => {
   let responseText = '';
   output.on('data', (chunk) => { responseText += chunk.toString(); });
   const server = startServer({env: bounded.env, input, output});
-  input.write(`${'x'.repeat(PROVIDER_LIMITS.maxRequestBytes + 1)}\n`);
+  input.write('x'.repeat(PROVIDER_LIMITS.maxRequestBytes + 1));
   await new Promise((resolve) => setImmediate(resolve));
+  input.write('\n');
   server.close();
   assert.match(responseText, /Request exceeds admitted byte limit/);
   assert.match(serializeBoundedResponse({jsonrpc: '2.0', id: 9, result: 'x'.repeat(PROVIDER_LIMITS.maxResponseBytes)}), /Response exceeds admitted byte limit/);
