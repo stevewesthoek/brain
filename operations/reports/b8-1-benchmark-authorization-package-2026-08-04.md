@@ -1,5 +1,10 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
+> **SUPERSEDED DIGEST (INVALID)**: `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`
+> This digest was computed with ephemeral `/tmp/` source root paths that were deleted after the dry-run.
+> The `sourceStateHash` included the local filesystem path, making the digest path-dependent and
+> non-reproducible. **Do not approve this digest.** The v2 digest below supersedes it.
+
 ## Status
 
 **Execution-ready but NOT approved.** This document is an immutable proposal. No materialization, benchmark execution, or approval has occurred.
@@ -20,21 +25,31 @@
 
 ## 3. Source Repository Pins
 
-| Repository | Pinned Commit | Local Path (manifest) |
+| Repository | Pinned Commit | Deterministic Source Root (v2) |
 |------------|---------------|-----------------------|
-| brain | `257fd72c3f47a53afb23778ed860976fd2429c71` | `../../../brain-next` |
-| workbench | `f482851457c4505bcbf98dd02c469728f61ab427` | `../../../../prochattools/saas/workbench-private` |
-| prochat | `e404821bfeef0868fef9f42a14ede4926aabe6ef` | `../../../../prochattools/web/prochat` |
+| brain | `257fd72c3f47a53afb23778ed860976fd2429c71` | `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/257fd72c3f47a53afb23778ed860976fd2429c71` |
+| workbench | `f482851457c4505bcbf98dd02c469728f61ab427` | `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/f482851457c4505bcbf98dd02c469728f61ab427` |
+| prochat | `e404821bfeef0868fef9f42a14ede4926aabe6ef` | `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/e404821bfeef0868fef9f42a14ede4926aabe6ef` |
 
-Source-state hash: `sha256:df01cc866501ba2f38d45611c57091f6c95296e347c8f1ac91f5d45102920fc0`
+Source roots are deterministic clean detached worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/`.
+Created by `tools/lib/b8-1-prepare-source-roots.mjs` — idempotent, uses local git object stores only, no network clones.
+
+Source-state hash (v2, path-independent): `sha256:90175b96d5c8a9fbf182a3db2703a3a09ab7b2b94bbeb0849b05ce62a12a4207`
+
+Tree SHA-256 by repository:
+| Repository | exportedTreeSha256 |
+|------------|-------------------|
+| brain | `700af12c676d56869e410fbfbdd635163b02b4e51e3386f0e4ea83b8f9d99163` |
+| prochat | `fe2ea1b584153d5b8eeb7c17e858789807c6cabff483a0049eaf9ecfc72e8562` |
+| workbench | `067c28d2216cc4b21c29e6233122d7ca201ce7eade7fcf56729a371335a407bb` |
 
 ## 4. Fixture Validation Results
 
 Manifest validator: **PASS** — 10 fixtures across 3 repos validated against clean detached source roots at exact pinned commits.
 
-Test results:
+Test results (v2, with new T52–T59 tests):
 - `validate-b8-1-benchmark-manifest.test.mjs`: 38 pass, 0 fail
-- `prepare-b8-1-context-memory-benchmark.test.mjs`: 51 pass, 0 fail
+- `prepare-b8-1-context-memory-benchmark.test.mjs`: 59 pass, 0 fail
 - `validate-b8-1-benchmark-evidence.test.mjs`: 36 pass, 0 fail
 
 ## 5. Selected and Excluded Subjects
@@ -55,11 +70,16 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 ## 7. Plan SHA-256
 
+**v2 (canonical, path-independent — use this):**
 ```
-dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4
+1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda
 ```
 
-Run ID: `b8-1-canonical-authorization-20260804`
+Run ID: `b8-1-canonical-authorization-20260804-v2`
+
+Canonical plan artifact: `operations/reports/b8-1-canonical-plan-v2-2026-08-04.json`
+
+~~v1 (INVALID — path-dependent, do not use): `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~
 
 ## 8. Execution-Readiness Result
 
@@ -68,7 +88,7 @@ Run ID: `b8-1-canonical-authorization-20260804`
   "executionReady": true,
   "materialized": false,
   "blockingChecks": [],
-  "runId": "b8-1-canonical-authorization-20260804"
+  "runId": "b8-1-canonical-authorization-20260804-v2"
 }
 ```
 
@@ -78,7 +98,7 @@ All 12 preflight checks passed. 1 subject excluded (Graphify).
 
 - Disk budget: minimum 2000 MB available (verified via `df`)
 - Planned write containment: 21 paths confined to `/Users/Office/.brain`
-- Run directory: `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804`
+- Run directory: `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804-v2`
 
 ## 10. Network-Isolation Proof
 
@@ -108,7 +128,7 @@ Self-test result:
 ## 12. Materialization Layout
 
 ```
-/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804/
+/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804-v2/
 ├── _archive_brain.tar
 ├── _archive_prochat.tar
 ├── _archive_workbench.tar
@@ -164,17 +184,19 @@ To authorize execution of this benchmark plan, Steve must provide:
 
 ```
 I approve B8.1 benchmark execution with plan digest
-dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4
-for run-id b8-1-canonical-authorization-20260804.
+1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda
+for run-id b8-1-canonical-authorization-20260804-v2.
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
 
 Upon receiving this approval:
-1. Run `--materialize` with the same source-root overrides.
+1. Run `--materialize` with the same source-root overrides (deterministic paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
 2. Execute the benchmark within the materialized run directory.
 3. Validate evidence against the evidence schema.
 4. Update B8.1 status to reflect partial completion.
+
+The canonical plan artifact is committed at `operations/reports/b8-1-canonical-plan-v2-2026-08-04.json`.
 
 ---
 
