@@ -1,13 +1,22 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **SUPERSEDED DIGEST (INVALID)**: `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`
-> This digest was computed with ephemeral `/tmp/` source root paths that were deleted after the dry-run.
-> The `sourceStateHash` included the local filesystem path, making the digest path-dependent and
-> non-reproducible. **Do not approve this digest.** The v2 digest below supersedes it.
+> **v3 CONTRACT NOW ACTIVE (feature/b8-1-executor-v3)**
+> The v3 plan contract (`planVersion: '3.0.0'`) is implemented on branch `feature/b8-1-executor-v3`.
+> Both v1 and v2 digests are now **INVALID** and rejected by the v3 harness and executor.
+> A new v3 digest must be computed at actual preflight time using the v3 contract.
+> See `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json` for the v3 structure.
+
+> **SOURCE ROOT CORRECTION**: An earlier version of this document implied source roots were cleaned up after the v2 dry-run. This was **incorrect**. Persistent source worktrees exist at `/Users/Office/.brain/benchmark/b8-1/source-roots/` and should be preserved. Source roots are persistent benchmark inputs, not ephemeral artifacts. See `operations/specs/b8-1-source-root-hardening.md`.
+
+> ~~**SUPERSEDED DIGEST (INVALID — v1)**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~
+> This digest was computed with ephemeral `/tmp/` source root paths.
+
+> ~~**SUPERSEDED DIGEST (INVALID — v2)**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~
+> This digest was computed with absolute brain-b8-1-authorization worktree paths. Both v1 and v2 digests are path-dependent and **rejected by the v3 contract**.
 
 ## Status
 
-**Execution-ready but NOT approved.** This document is an immutable proposal. No materialization, benchmark execution, or approval has occurred.
+**v3 contract ready — v3 digest not yet computed.** The bounded executor and v3 plan harness are on `feature/b8-1-executor-v3`. A new preflight run is required to compute the v3 digest before any execution or approval. No materialization, benchmark execution, or approval has occurred.
 
 ## 1. Brain Main SHA
 
@@ -70,19 +79,31 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 ## 7. Plan SHA-256
 
-**v2 (canonical, path-independent — use this):**
-```
-1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda
-```
+> **v2 and v1 digests are now INVALID — rejected by v3 contract.** Recompute using the v3 preflight harness on `feature/b8-1-executor-v3`.
 
-Run ID: `b8-1-canonical-authorization-20260804-v2`
+~~**v2 (INVALID — path-dependent, rejected by v3 contract):**~~
+~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~
 
-Canonical plan artifact: `operations/reports/b8-1-canonical-plan-v2-2026-08-04.json`
+~~Run ID: `b8-1-canonical-authorization-20260804-v2`~~
+
+~~Canonical plan artifact: `operations/reports/b8-1-canonical-plan-v2-2026-08-04.json`~~
 
 ~~v1 (INVALID — path-dependent, do not use): `dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~
 
+**v3 (pending — compute at next preflight run):**
+```
+COMPUTED_AT_PREFLIGHT
+```
+
+Run ID: `b8-1-canonical-authorization-20260804-v3`
+
+v3 plan structure: `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json`
+
 ## 8. Execution-Readiness Result
 
+> Updated for v3: executionReady status applies to v3 preflight only. v2 status below is superseded.
+
+~~v2 result (superseded):~~
 ```json
 {
   "executionReady": true,
@@ -92,7 +113,7 @@ Canonical plan artifact: `operations/reports/b8-1-canonical-plan-v2-2026-08-04.j
 }
 ```
 
-All 12 preflight checks passed. 1 subject excluded (Graphify).
+All 12 preflight checks passed in v2 run. 1 subject excluded (Graphify). v3 execution-readiness must be re-verified.
 
 ## 9. Resource and Disk Gates
 

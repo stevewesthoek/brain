@@ -44,6 +44,13 @@ const VALID_SUBJECTS = ['cbm', 'graphify', 'exact-source'];
 const RUN_ID_PATTERN = /^b8-1-[a-zA-Z0-9._-]+$/;
 const GRAPHIFY_BLOCK_REASON = 'graphify requires exact executable identity, version digest, bounded arguments, and dry-run self-test — contract not yet defined';
 
+// Known stale v1/v2 approval digests — these were path-dependent and are rejected by the v3 contract.
+// Any attempt to use these as --approved-plan-sha256 fails closed with a clear error.
+const KNOWN_STALE_DIGESTS = new Set([
+  'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
+  '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
+]);
+
 // Paths that planned writes must never overlap
 const PROTECTED_PATHS_RELATIVE_TO_HOME = [
   '.claude.json',
@@ -247,18 +254,17 @@ function captureSourceState(manifest) {
         execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
         state.pinnedCommitAvailable = true;
       } catch { state.pinnedCommitAvailable = false; }
-      // Compute SHA-256 of the committed tree via git archive.
-      // The archive is piped through shasum in a shell subprocess — Node receives
-      // only the 64-char hex hash, not the full archive, so this works for
-      // large repos (>100MB) where spawnSync maxBuffer would overflow.
+      // Compute SHA-256 of the committed tree via git archive (shell-free).
+      // Reads the tar archive bytes directly into Node and hashes them with crypto.
+      // Guard: repos >500MB return null rather than causing OOM.
       try {
-        const archiveHashOut = execFileSync(
-          'sh',
-          ['-c', `git -C ${JSON.stringify(repo.localPath)} archive HEAD --format=tar | shasum -a 256`],
-          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1024 * 1024 }
+        const MAX_ARCHIVE_BYTES = 500 * 1024 * 1024; // 500MB guard
+        const archiveBuf = execFileSync(
+          'git',
+          ['-C', repo.localPath, 'archive', 'HEAD', '--format=tar'],
+          { encoding: 'buffer', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: MAX_ARCHIVE_BYTES }
         );
-        const hexMatch = archiveHashOut.trim().split(/\s+/)[0];
-        state.exportedTreeSha256 = /^[0-9a-f]{64}$/i.test(hexMatch) ? hexMatch.toLowerCase() : null;
+        state.exportedTreeSha256 = crypto.createHash('sha256').update(archiveBuf).digest('hex');
       } catch { state.exportedTreeSha256 = null; }
     } catch (e) {
       state.HEAD = null;
@@ -965,7 +971,17 @@ function parseAndValidateSubjects(rawSubjects) {
 // Plan digest computation (Task 2)
 // ---------------------------------------------------------------------------
 
-/** Build the complete deterministic input object approved before materialization. */
+/**
+ * Build the complete deterministic input object approved before materialization.
+ *
+ * v3 changes from v1/v2:
+ *  - planVersion: '3.0.0' replaces schemaVersion to avoid ambiguity with manifest schemaVersion
+ *  - Artifact paths stored as repo-relative strings (not absolute), so the same Brain commit
+ *    hashes identically from any clean worktree checkout path
+ *  - runContext sub-object holds run-local absolute paths (runDirectoryPhysical, plannedWritePaths)
+ *    and is EXCLUDED from the digest; old v1/v2 approvals fail closed
+ *  - repoRoot must be provided so repo-relative paths can be computed
+ */
 export function buildCanonicalPlan({
   runId,
   selectedSubjects,
@@ -985,6 +1001,7 @@ export function buildCanonicalPlan({
   sourceStateHash,
   sourceStateBefore,
   checks,
+  repoRoot,
 }) {
   const canonicalSelected = [...selectedSubjects].sort();
   const excludedSubjects = VALID_SUBJECTS.filter(s => !canonicalSelected.includes(s)).sort();
@@ -999,17 +1016,28 @@ export function buildCanonicalPlan({
     ? (networkProof ?? { required: true, status: 'failed' })
     : { required: false, status: 'not-required' };
 
-  return {
-    schemaVersion: '1.0.0',
+  // Compute repo-relative paths for artifact binding. When repoRoot is not provided
+  // (e.g. in tests that pass synthetic '/synthetic/...' paths), fall back to the
+  // absolute path so tests that pre-date v3 still work with their own assertions.
+  function toRepoRel(absPath) {
+    if (!repoRoot || !absPath) return absPath;
+    const rel = path.relative(repoRoot, path.resolve(absPath));
+    // If relative path escapes the repo root (starts with '..'), fall back to absolute
+    if (rel.startsWith('..') || path.isAbsolute(rel)) return absPath;
+    return rel;
+  }
+
+  const digestFields = {
+    planVersion: '3.0.0',
     runId,
     partialEvidence: excludedSubjects.length > 0,
     selectedSubjects: canonicalSelected,
     excludedSubjects,
-    manifestPath: path.resolve(manifestPath),
+    manifestRepoRelPath: toRepoRel(manifestPath),
     manifestHash: `sha256:${manifestHash}`,
-    manifestSchemaPath: path.resolve(manifestSchemaPath),
+    manifestSchemaRepoRelPath: toRepoRel(manifestSchemaPath),
     manifestSchemaHash: `sha256:${manifestSchemaHash}`,
-    evidenceSchemaPath: path.resolve(evidenceSchemaPath),
+    evidenceSchemaRepoRelPath: toRepoRel(evidenceSchemaPath),
     evidenceSchemaHash: `sha256:${evidenceSchemaHash}`,
     pinnedRepositoryCommits: (manifest.repositories || [])
       .map(r => ({ repositoryId: r.repositoryId, commit: r.pinnedCommit }))
@@ -1027,8 +1055,6 @@ export function buildCanonicalPlan({
     },
     graphifyStatus: canonicalize(graphifyStatus),
     diskResult: canonicalize(diskResult),
-    plannedWritePaths: [...plannedWritePaths].sort(),
-    runDirectoryPhysical,
     sourceStateHash: `sha256:${sourceStateHash}`,
     sourceLogicalIdentity: sourceStateBefore != null
       ? computeLogicalSourceIdentity(sourceStateBefore)
@@ -1039,17 +1065,29 @@ export function buildCanonicalPlan({
       detail: check.detail ?? null,
     })),
   };
+
+  // runContext is included in the output for audit purposes but EXCLUDED from the digest.
+  // These are run-local absolute paths that differ across worktrees and machines.
+  const runContext = {
+    runDirectoryPhysical,
+    plannedWritePaths: [...plannedWritePaths].sort(),
+  };
+
+  return { ...digestFields, runContext };
 }
 
 /**
  * Compute the deterministic SHA-256 digest of a canonical plan.
  * Canonicalizes keys alphabetically before hashing.
+ * runContext is excluded — it contains run-local absolute paths.
  *
- * @param {object} plan  - the canonical plan object
+ * @param {object} plan  - the canonical plan object (as returned by buildCanonicalPlan)
  * @returns {string} 64-character lowercase hex SHA-256
  */
 export function computePlanDigest(plan) {
-  const canonical = canonicalize(plan);
+  // Exclude runContext (run-local absolute paths) from digest computation
+  const { runContext: _excluded, ...digestFields } = plan;
+  const canonical = canonicalize(digestFields);
   const json = JSON.stringify(canonical, null, 0); // compact JSON
   return crypto.createHash('sha256').update(json).digest('hex');
 }
@@ -1130,8 +1168,10 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
     for (let current = path.dirname(runDir); !fs.existsSync(current); current = path.dirname(current)) {
       missingParents.push(current);
     }
-    const expectedPhysicalRunDir = canonicalPlan.runDirectoryPhysical;
-    if (!canonicalPlan.plannedWritePaths.includes(path.resolve(runDir))) {
+    // v3: runContext holds run-local fields (excluded from digest)
+    const expectedPhysicalRunDir = canonicalPlan.runContext?.runDirectoryPhysical ?? canonicalPlan.runDirectoryPhysical;
+    const effectivePlannedWritePaths = canonicalPlan.runContext?.plannedWritePaths ?? canonicalPlan.plannedWritePaths ?? [];
+    if (!effectivePlannedWritePaths.includes(path.resolve(runDir))) {
       throw new Error('run directory is not present in the approved planned-write set');
     }
     hooks._beforeMaterialize?.({ runDir });
@@ -1356,6 +1396,7 @@ export async function runPreflight({
       sourceStateHash,
       sourceStateBefore,
       checks,
+      repoRoot: REPO_ROOT,
     });
     planSha256 = computePlanDigest(canonicalPlan);
   }
@@ -1382,6 +1423,10 @@ export async function runPreflight({
         blockingChecks.push('plan-approval');
       } else if (typeof approvedPlanSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(approvedPlanSha256)) {
         recordCheck(checks, 'plan-approval', 'fail', 'approved plan digest must be exactly 64 lowercase hexadecimal characters');
+        blockingChecks.push('plan-approval');
+      } else if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
+        // Fail closed on any known v1/v2 digest — they were path-dependent and are no longer valid
+        recordCheck(checks, 'plan-approval', 'fail', `stale v1/v2 approval digest rejected — recompute against v3 plan contract (planVersion 3.0.0)`);
         blockingChecks.push('plan-approval');
       } else if (approvedPlanSha256 !== planSha256) {
         recordCheck(checks, 'plan-approval', 'fail', `approved digest mismatch: got ${approvedPlanSha256.slice(0, 16)}... expected ${planSha256.slice(0, 16)}...`);

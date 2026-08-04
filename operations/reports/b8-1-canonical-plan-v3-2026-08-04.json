@@ -1,0 +1,57 @@
+{
+  "_note": "v3 plan structure — actual digest computed at preflight time against the v3 contract. This document describes the fields and their source; it is NOT a materialized plan.",
+  "planVersion": "3.0.0",
+  "planSha256": "COMPUTED_AT_PREFLIGHT",
+  "runId": "b8-1-canonical-authorization-20260804-v3",
+  "partialEvidence": true,
+  "selectedSubjects": ["cbm", "exact-source"],
+  "excludedSubjects": ["graphify"],
+  "manifestRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.json",
+  "manifestHash": "sha256:91805c0a67d923e42ee090119140ad2591e0ed179d16e9f7ee2e3e03d1edd6f7",
+  "manifestSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-manifest.schema.json",
+  "manifestSchemaHash": "sha256:b2c10030cbc7e937f92a03db4245b7b65132bfa1621d83fbba27fa667c4a6ecc",
+  "evidenceSchemaRepoRelPath": "operations/specs/b8-1-context-memory-benchmark-evidence.schema.json",
+  "evidenceSchemaHash": "sha256:62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1",
+  "pinnedRepositoryCommits": [
+    { "repositoryId": "brain", "commit": "257fd72c3f47a53afb23778ed860976fd2429c71" },
+    { "repositoryId": "prochat", "commit": "e404821bfeef0868fef9f42a14ede4926aabe6ef" },
+    { "repositoryId": "workbench", "commit": "f482851457c4505bcbf98dd02c469728f61ab427" }
+  ],
+  "subjectBinaryIdentity": {
+    "cbm": {
+      "stablePath": "BOUND_AT_PREFLIGHT",
+      "resolvedPath": "BOUND_AT_PREFLIGHT",
+      "version": "v0.9.0",
+      "sha256": "BOUND_AT_PREFLIGHT"
+    }
+  },
+  "networkIsolationProof": "COMPUTED_AT_PREFLIGHT",
+  "cbmVerification": "COMPUTED_AT_PREFLIGHT",
+  "graphifyStatus": {
+    "status": "excluded-subject",
+    "reason": "graphify not selected; bounded code-only invocation remains blocked"
+  },
+  "diskResult": "COMPUTED_AT_PREFLIGHT",
+  "sourceStateHash": "COMPUTED_AT_PREFLIGHT",
+  "sourceLogicalIdentity": "COMPUTED_AT_PREFLIGHT",
+  "checks": "COMPUTED_AT_PREFLIGHT",
+  "runContext": {
+    "_note": "excluded from digest — run-local absolute paths",
+    "runDirectoryPhysical": "BOUND_AT_PREFLIGHT",
+    "plannedWritePaths": "BOUND_AT_PREFLIGHT"
+  },
+  "v1v2DigestsInvalid": true,
+  "v2Digest": "1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda",
+  "v2DigestStatus": "INVALID — path-dependent (brain-b8-1-authorization worktree paths), stale, rejected by v3 contract",
+  "v1Digest": "dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4",
+  "v1DigestStatus": "INVALID — path-dependent (/tmp/ source root paths), stale, rejected by v3 contract",
+  "v3ContractChanges": [
+    "planVersion: '3.0.0' replaces ambiguous schemaVersion at top level",
+    "Artifact paths stored as repo-relative strings (not absolute), so same Brain commit hashes identically from any clean worktree",
+    "runContext sub-object holds run-local absolute paths (runDirectoryPhysical, plannedWritePaths) and is excluded from digest",
+    "KNOWN_STALE_DIGESTS set rejects v1/v2 approval digests with clear error at materialization and executor time",
+    "Shell-free tree hashing (no sh -c | shasum) — uses Node crypto directly from git archive buffer",
+    "Bounded executor (execute-b8-1-benchmark.mjs) requires planVersion 3.0.0 and matching approved digest"
+  ],
+  "branchSource": "feature/b8-1-executor-v3"
+}

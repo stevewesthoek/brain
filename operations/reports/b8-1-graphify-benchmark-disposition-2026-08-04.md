@@ -23,6 +23,12 @@
   - A separate explicit Graphify code-only benchmark approval; or
   - A human decision that B8.1 partial evidence is sufficient for P8 progression.
 
+## v3 contract status (2026-08-04)
+
+**Graphify remains blocked in the v3 plan contract.** The `execute-b8-1-benchmark.mjs` executor on `feature/b8-1-executor-v3` explicitly rejects any plan that includes `graphify` in `selectedSubjects`. No change from v2 disposition.
+
+The v3 executor supports only `cbm` and `exact-source`. Graphify requires a separate bounded executable contract before it can be included in any B8.1 run.
+
 ## What this does NOT authorize
 
 - P8 activation

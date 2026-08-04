@@ -769,7 +769,7 @@ test('T23: identical canonical plan inputs produce identical digest', () => {
   assert.equal(computePlanDigest(first), computePlanDigest(second));
 });
 
-test('T24: subjects, manifest, schemas, binary, profile, and write paths change digest', () => {
+test('T24: subjects, manifest, schemas, binary, profile change digest; runContext is excluded', () => {
   const baseline = makeCanonicalPlanFixture();
   const baselineDigest = computePlanDigest(baseline);
   const mutations = [
@@ -789,12 +789,15 @@ test('T24: subjects, manifest, schemas, binary, profile, and write paths change 
         childIdentity: { ...baseline.networkIsolationProof.childIdentity, sha256: '0'.repeat(64) },
       },
     }),
-    makeCanonicalPlanFixture({ plannedWritePaths: [...baseline.plannedWritePaths, '/synthetic/run/new-path'] }),
-    makeCanonicalPlanFixture({ runDirectoryPhysical: '/synthetic/other-run' }),
   ];
   for (const mutated of mutations) {
-    assert.notEqual(computePlanDigest(mutated), baselineDigest);
+    assert.notEqual(computePlanDigest(mutated), baselineDigest, `mutation must change digest`);
   }
+
+  // v3: plannedWritePaths and runDirectoryPhysical are in runContext which is excluded from digest
+  // — same plan with different run-local paths must produce the SAME digest
+  const withDifferentRunContext = { ...baseline, runContext: { runDirectoryPhysical: '/other/run', plannedWritePaths: ['/other/a', '/other/b'] } };
+  assert.equal(computePlanDigest(withDifferentRunContext), baselineDigest, 'runContext must not affect digest');
 });
 
 test('T25: missing plan approval creates no run directory', async () => {
@@ -928,11 +931,14 @@ test('T30: materialized plan and receipt bind expanded deterministic inputs', as
     assert.match(runPlan.graphifyStatus.profileSha256, /^[a-f0-9]{64}$/);
     assert.equal(runPlan.diskResult.name, 'disk-budget');
     assert.match(runPlan.sourceStateHash, /^sha256:[a-f0-9]{64}$/);
-    assert.ok(runPlan.plannedWritePaths.every(plannedPath => path.isAbsolute(plannedPath)));
-    assert.ok(runPlan.plannedWritePaths.includes(materialized.runDir));
-    assert.ok(runPlan.plannedWritePaths.includes(path.join(home, '.brain')));
-    assert.ok(runPlan.plannedWritePaths.includes(path.join(home, '.brain', 'benchmark')));
-    assert.equal(runPlan.plannedWritePaths.some(plannedPath => plannedPath.endsWith('.tmp')), false);
+    // v3: plannedWritePaths and runDirectoryPhysical live under runContext
+    const { plannedWritePaths: rwp } = runPlan.runContext ?? {};
+    assert.ok(rwp, 'runContext.plannedWritePaths must be present');
+    assert.ok(rwp.every(plannedPath => path.isAbsolute(plannedPath)));
+    assert.ok(rwp.includes(materialized.runDir));
+    assert.ok(rwp.includes(path.join(home, '.brain')));
+    assert.ok(rwp.includes(path.join(home, '.brain', 'benchmark')));
+    assert.equal(rwp.some(plannedPath => plannedPath.endsWith('.tmp')), false);
     for (const check of runPlan.checks) {
       assert.deepEqual(Object.keys(check).sort(), ['detail', 'name', 'status']);
     }
@@ -1077,7 +1083,8 @@ test('T36: absent .brain directory is a digest-bound planned write before materi
     });
     assert.equal(materialized.summary.executionReady, true);
     const runPlan = JSON.parse(fs.readFileSync(path.join(materialized.runDir, 'run-plan.json'), 'utf8'));
-    assert.ok(runPlan.plannedWritePaths.includes(path.join(home, '.brain')));
+    // v3: plannedWritePaths live under runContext
+    assert.ok(runPlan.runContext?.plannedWritePaths?.includes(path.join(home, '.brain')));
   } finally {
     cleanup(repoDir, manifestFile, home);
   }
@@ -1706,4 +1713,88 @@ test('T59: changed network profile sha256 changes digest', () => {
     computePlanDigest(planB),
     'different network profile sha256 must produce different plan digest'
   );
+});
+
+// ---------------------------------------------------------------------------
+// v3 contract tests (T60–T64)
+// ---------------------------------------------------------------------------
+
+test('T60: canonical plan has planVersion 3.0.0', () => {
+  const plan = makeCanonicalPlanFixture();
+  assert.equal(plan.planVersion, '3.0.0', 'planVersion must be 3.0.0');
+});
+
+test('T61: known stale v1/v2 digests are rejected at materialization', async () => {
+  const repoDir = makeTempDir('b81-t61-');
+  const commit = makeTempGitRepo(repoDir);
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit }]));
+  const home = makeSyntheticHome();
+  const STALE_V2_DIGEST = '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda';
+  const STALE_V1_DIGEST = 'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4';
+  try {
+    for (const staleDigest of [STALE_V2_DIGEST, STALE_V1_DIGEST]) {
+      const result = await runPreflight({
+        dryRun: false,
+        materialize: true,
+        runId: 'b8-1-t61',
+        subjects: ['exact-source'],
+        approvedPlanSha256: staleDigest,
+        _manifestPathOverride: manifestFile,
+        _homeOverride: home,
+      });
+      const approvalCheck = result.checks.find(c => c.name === 'plan-approval');
+      assert.ok(approvalCheck, 'plan-approval check must exist');
+      assert.equal(approvalCheck.status, 'fail', `stale digest ${staleDigest.slice(0, 8)}... must be rejected`);
+      assert.match(approvalCheck.detail, /stale v1\/v2/i, 'must mention stale v1/v2');
+    }
+  } finally {
+    cleanup(repoDir, manifestFile, home);
+  }
+});
+
+test('T62: runContext is excluded from digest (path-independent)', () => {
+  const planA = makeCanonicalPlanFixture();
+  const planB = { ...planA, runContext: { runDirectoryPhysical: '/totally/different/path', plannedWritePaths: ['/other/a'] } };
+  assert.equal(
+    computePlanDigest(planA),
+    computePlanDigest(planB),
+    'runContext must not affect digest'
+  );
+});
+
+test('T63: repo-relative artifact paths are included in digest', () => {
+  const planA = makeCanonicalPlanFixture();
+  // Changing manifestRepoRelPath must change the digest
+  const planB = { ...planA, manifestRepoRelPath: 'operations/specs/different-manifest.json' };
+  assert.notEqual(
+    computePlanDigest(planA),
+    computePlanDigest(planB),
+    'manifestRepoRelPath must be included in digest'
+  );
+});
+
+test('T64: shell-free tree hashing produces consistent exportedTreeSha256', async () => {
+  const repoDir = makeTempDir('b81-t64-');
+  const commit = makeTempGitRepo(repoDir, { 'README.md': '# T64 tree hashing' });
+  const manifestFile = writeTempManifest(makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'README.md': '' } }]));
+  const homeA = makeSyntheticHome();
+  const homeB = makeSyntheticHome();
+  try {
+    const resultA = await runPreflight({ dryRun: true, runId: 'b8-1-t64-a', subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: homeA });
+    const resultB = await runPreflight({ dryRun: true, runId: 'b8-1-t64-b', subjects: ['exact-source'], _manifestPathOverride: manifestFile, _homeOverride: homeB });
+    // Both runs must produce the same exportedTreeSha256 (same repo, same commit)
+    const shaA = resultA.canonicalPlan?.sourceLogicalIdentity?.repositories?.[0]?.exportedTreeSha256;
+    const shaB = resultB.canonicalPlan?.sourceLogicalIdentity?.repositories?.[0]?.exportedTreeSha256;
+    assert.ok(shaA, 'exportedTreeSha256 must be computed');
+    assert.match(shaA, /^[a-f0-9]{64}$/, 'must be a 64-char hex hash');
+    assert.equal(shaA, shaB, 'same commit must produce same exportedTreeSha256');
+    // sourceLogicalIdentity (which feeds into sourceStateHash and plan digest) must be identical
+    assert.deepEqual(
+      resultA.canonicalPlan?.sourceLogicalIdentity,
+      resultB.canonicalPlan?.sourceLogicalIdentity,
+      'same repo+commit must produce identical sourceLogicalIdentity'
+    );
+  } finally {
+    cleanup(repoDir, manifestFile, homeA, homeB);
+  }
 });
