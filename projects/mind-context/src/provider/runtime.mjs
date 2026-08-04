@@ -54,7 +54,7 @@ function sha256(value) {
 }
 
 function git(root, args) {
-  return execFileSync('git', ['-C', root, ...args], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10_000}).trim();
+  return execFileSync('git', ['-C', root, ...args], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10_000});
 }
 
 function parseScopes(value) {
@@ -126,7 +126,7 @@ function sourceInventory(config) {
 }
 
 function sourceState(config) {
-  const sourceHead = git(config.root, ['rev-parse', 'HEAD']);
+  const sourceHead = git(config.root, ['rev-parse', 'HEAD']).trim();
   const dirty = git(config.root, ['status', '--porcelain', '--untracked-files=no', '--', ...config.scopes]).split('\n').filter(Boolean);
   return {sourceHead, expectedMindHead: config.expectedMindHead, headMatchesExpected: sourceHead === config.expectedMindHead, trackedChangesInScope: dirty.length, trackedChangePaths: dirty.map((line) => line.slice(3))};
 }

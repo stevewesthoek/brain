@@ -66,7 +66,9 @@ test('provider performs live read-through indexing and hashes real source bytes'
   assert.notEqual(second.sources[0].sha256, firstHash);
   assert.notEqual(secondCorpus, firstCorpus);
   assert.equal(second.provenance.indexingMode, 'read-through-no-persistent-index');
-  assert.equal(providerHealth(x.config).source.trackedChangesInScope, 1);
+  const changedSource = providerHealth(x.config).source;
+  assert.equal(changedSource.trackedChangesInScope, 1);
+  assert.deepEqual(changedSource.trackedChangePaths, ['system/current.md']);
 });
 
 test('caller cannot override root, scopes, or request mutation-like inputs', () => {
