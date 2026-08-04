@@ -44,6 +44,7 @@ function fixture() {
 
 test('provider is fixed-scope, read-only, credential-free, and excludes private internals', () => {
   const x = fixture();
+  write(path.join(x.root, 'private', 'out-of-scope.md'), `# Out of scope\n${'x'.repeat(PROVIDER_LIMITS.maxSourceBytes)}`);
   const health = providerHealth(x.config);
   assert.equal(health.healthy, true);
   assert.equal(health.fixtureOnly, false);

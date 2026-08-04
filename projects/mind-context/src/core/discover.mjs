@@ -43,13 +43,14 @@ function readMarkdownMetadata(root, repoRelativePath, limits) {
   };
 }
 
-function walk(root, relativeDir, output, limits, totals) {
+function walk(root, relativeDir, output, limits, totals, forbiddenScopes) {
   const absDir = path.join(root, relativeDir);
   if (!fs.existsSync(absDir)) return;
   const entries = fs.readdirSync(absDir, {withFileTypes: true}).sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
     const relativePath = normalizeRepoRelativePath(path.posix.join(relativeDir, entry.name).replace(/^\.\//, ''));
     if (isExcludedPath(relativePath)) continue;
+    if (forbiddenScopes.some((scope) => scopeContainsPath(scope, relativePath))) continue;
     const absPath = path.join(root, relativePath);
     const stats = fs.lstatSync(absPath);
     if (stats.isSymbolicLink()) {
@@ -59,7 +60,7 @@ function walk(root, relativeDir, output, limits, totals) {
       continue;
     }
     if (entry.isDirectory()) {
-      walk(root, relativePath, output, limits, totals);
+      walk(root, relativePath, output, limits, totals, forbiddenScopes);
       continue;
     }
     if (!isMarkdownPath(relativePath)) continue;
@@ -77,12 +78,39 @@ function walk(root, relativeDir, output, limits, totals) {
 export function discoverSources({root, scopes = [], forbiddenScopes = [], limits} = {}) {
   if (typeof root !== 'string' || !root || !fs.existsSync(root)) return [];
   const resolvedRoot = path.resolve(root);
-  const allowedScopes = scopes.length > 0 ? scopes : ['.'];
+  const allowedScopes = (scopes.length > 0 ? scopes : ['.']).map(normalizeRepoRelativePath);
+  const normalizedForbiddenScopes = forbiddenScopes.map(normalizeRepoRelativePath);
+  const walkScopes = allowedScopes
+    .sort((a, b) => a.length - b.length || a.localeCompare(b))
+    .filter((scope, index, all) => !all.slice(0, index).some((parent) => scopeContainsPath(parent, scope)));
   const discovered = [];
-  walk(resolvedRoot, '', discovered, limits, {files: 0, bytes: 0});
+  const totals = {files: 0, bytes: 0};
+  for (const scope of walkScopes) {
+    if (isExcludedPath(scope) || normalizedForbiddenScopes.some((forbidden) => scopeContainsPath(forbidden, scope))) continue;
+    const relativeScope = scope === '.' ? '' : scope;
+    const absoluteScope = path.join(resolvedRoot, relativeScope);
+    if (!fs.existsSync(absoluteScope)) continue;
+    const stat = fs.lstatSync(absoluteScope);
+    if (stat.isSymbolicLink()) {
+      const target = path.resolve(path.dirname(absoluteScope), fs.readlinkSync(absoluteScope));
+      if (!target.startsWith(resolvedRoot)) throw new Error('symlink_escape');
+      continue;
+    }
+    if (stat.isDirectory()) walk(resolvedRoot, relativeScope, discovered, limits, totals, normalizedForbiddenScopes);
+    else if (isMarkdownPath(relativeScope)) {
+      const source = readMarkdownMetadata(resolvedRoot, relativeScope, limits);
+      if (source) {
+        totals.files += 1;
+        totals.bytes += source.bytes;
+        if (limits?.maxFiles && totals.files > limits.maxFiles) throw new Error(`source_file_cap_exceeded:${totals.files}`);
+        if (limits?.maxBytes && totals.bytes > limits.maxBytes) throw new Error(`source_corpus_bytes_cap_exceeded:${totals.bytes}`);
+        discovered.push(source);
+      }
+    }
+  }
   const filtered = discovered.flatMap((source) => {
     const relative = normalizeRepoRelativePath(source.path);
-    if (forbiddenScopes.some((scope) => scopeContainsPath(scope, relative))) return [];
+    if (normalizedForbiddenScopes.some((scope) => scopeContainsPath(scope, relative))) return [];
     const authorizedScope = allowedScopes
       .filter((scope) => scope === '.' || scopeContainsPath(scope, relative))
       .sort((a, b) => b.length - a.length)[0];
