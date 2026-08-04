@@ -1,7 +1,8 @@
 {
   "_note": "v4 plan structure — actual digest computed at preflight time against the v4 contract. This document describes the fields and their source; it is NOT a materialized plan.",
   "planVersion": "4.0.0",
-  "planSha256": "COMPUTED_AT_PREFLIGHT",
+  "planSha256": "40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0",
+  "_planSha256Note": "Computed 2026-08-04 via dry-run with source-roots at /Users/Office/.brain/benchmark/b8-1/source-roots/. Recompute if manifest, schemas, subjects, or source pins change.",
   "runId": "b8-1-canonical-authorization-20260804-final-v4",
   "partialEvidence": true,
   "selectedSubjects": ["cbm", "exact-source"],

@@ -102,18 +102,21 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 ~~v3 plan structure: `operations/reports/b8-1-canonical-plan-v3-2026-08-04.json`~~
 
-**v4 (pending — compute at next preflight run):**
+**v4 (computed 2026-08-04 — feature/b8-1-final-readiness-v2):**
 ```
-COMPUTED_AT_PREFLIGHT
+40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0
 ```
 
 Run ID: `b8-1-canonical-authorization-20260804-final-v4`
 
 v4 plan structure: `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json`
 
-## 8. Execution-Readiness Result
+Source roots used:
+- brain: `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/257fd72c3f47a53afb23778ed860976fd2429c71`
+- workbench: `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/f482851457c4505bcbf98dd02c469728f61ab427`
+- prochat: `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/e404821bfeef0868fef9f42a14ede4926aabe6ef`
 
-> Updated for v3: executionReady status applies to v3 preflight only. v2 status below is superseded.
+## 8. Execution-Readiness Result
 
 ~~v2 result (superseded):~~
 ```json
@@ -125,7 +128,20 @@ v4 plan structure: `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json`
 }
 ```
 
-All 12 preflight checks passed in v2 run. 1 subject excluded (Graphify). v3 execution-readiness must be re-verified.
+**v4 result (2026-08-04):**
+```json
+{
+  "executionReady": true,
+  "materialized": false,
+  "selectedSubjects": ["cbm", "exact-source"],
+  "excludedSubjects": ["graphify"],
+  "blockingChecks": [],
+  "runId": "b8-1-canonical-authorization-20260804-final-v4",
+  "planSha256": "40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0"
+}
+```
+
+All 12 preflight checks passed. 1 subject excluded (Graphify). No run directory created (dry-run only).
 
 ## 9. Resource and Disk Gates
 
@@ -213,12 +229,15 @@ This document records a dry-run plan and digest only. The following have NOT hap
 
 ## 16. Required Approval Wording
 
-To authorize execution of this benchmark plan, Steve must provide:
+~~Stale v2 approval wording (INVALID — rejected by v4 contract):~~
+~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda` for run-id `b8-1-canonical-authorization-20260804-v2`~~
+
+To authorize execution of this benchmark plan with the v4 contract, Steve must provide:
 
 ```
 I approve B8.1 benchmark execution with plan digest
-1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda
-for run-id b8-1-canonical-authorization-20260804-v2.
+40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0
+for run-id b8-1-canonical-authorization-20260804-final-v4.
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
@@ -229,7 +248,7 @@ Upon receiving this approval:
 3. Validate evidence against the evidence schema.
 4. Update B8.1 status to reflect partial completion.
 
-The canonical plan artifact is committed at `operations/reports/b8-1-canonical-plan-v2-2026-08-04.json`.
+The canonical plan artifact is committed at `operations/reports/b8-1-canonical-plan-v4-2026-08-04.json`.
 
 ---
 
