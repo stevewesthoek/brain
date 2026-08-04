@@ -4,7 +4,7 @@
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
 **Provider source lock:** `51e9091c7374e0642f4fe076b895c184152dd516`
-**Mind source lock:** `d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f`
+**Mind source lock:** `08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e`
 
 ## Boundary
 
@@ -53,7 +53,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
   "providerRevision": "51e9091c7374e0642f4fe076b895c184152dd516",
-  "mindCommit": "d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f",
+  "mindCommit": "08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```
@@ -106,7 +106,8 @@ Activation requires all of the following:
    entrypoints.
 
 Steve Westhoek supplied the explicit activation approval on 2026-08-04. Brain
-recorded it as `M2.4-activation-2026-08-04-d64e8bd1-51e9091c` and completed
+recorded it as `M2.4-activation-2026-08-04-08b2d1a7-51e9091c` after the
+authorized Mind entrypoint closure and completed
 enabled-client, live-readback, unavailable-service, mutation-rejection, and
 disable/restore checks. See
 `operations/reports/m2-4-context-gateway-activation-2026-08-04.md`.

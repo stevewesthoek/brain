@@ -31,7 +31,7 @@ The current Infinite Brain program uses seven priorities owned strategically by 
 Priorities 1–7 are complete; P8 remains separately deferred and authorization-gated.
 The exact project-scoped `mind-context` Codex provider is active-local,
 owner-approved, read-only, and bound to provider `51e9091c...` plus Mind
-`d64e8bd1...`. Prefer it when healthy/current and use Mind's
+`08b2d1a7...`. Prefer it when healthy/current and use Mind's
 `system/agent-context/` manual targeted-read route when unavailable. The
 owner-ratified Graphify snapshot `20260804T000604198Z-06de527423e0` is a
 one-time non-authoritative M7.1 baseline; future execution authority is `none`.

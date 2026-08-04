@@ -245,7 +245,7 @@
         "fixedEnvironment": {
           "MIND_CONTEXT_ACTIVATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-read-only.json",
           "MIND_CONTEXT_ALLOWED_SCOPES": "faith,knowledge,organizations,people,projects,resources,system,tasks,wiki",
-          "MIND_CONTEXT_EXPECTED_HEAD": "d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f",
+          "MIND_CONTEXT_EXPECTED_HEAD": "08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e",
           "MIND_CONTEXT_PREPARATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-preparation.json",
           "MIND_CONTEXT_PREPARATION_MODE": "0",
           "MIND_CONTEXT_PROVIDER_REVISION": "51e9091c7374e0642f4fe076b895c184152dd516",
@@ -277,7 +277,7 @@
         "evidence": [
           "Provider implementation commit 51e9091c7374e0642f4fe076b895c184152dd516; fixed-root, fixed-scope, no-network stdio service with three read-only tools, bounded explain rankings, and no mutation path.",
           "Authentication mode none is intentional for owner-local stdio: the process inherits the local OS account, reads no credentials, accepts no secret input, performs no credential relay, and requires a separate owner-only Steve Westhoek activation approval file outside repositories before non-preparation startup.",
-          "Tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD and dirty/untracked worktree rejection, pre-read scope enforcement, raw-stream/corpus/response caps including a 602-source bounded explain regression, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Steve Westhoek approved activation on 2026-08-04 for provider revision 51e9091c7374e0642f4fe076b895c184152dd516, Mind commit d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f, and the exact nine-scope allowlist."
+          "Tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD and dirty/untracked worktree rejection, pre-read scope enforcement, raw-stream/corpus/response caps including a 602-source bounded explain regression, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Steve Westhoek approved activation on 2026-08-04 for provider revision 51e9091c7374e0642f4fe076b895c184152dd516 and the exact nine-scope allowlist; after the authorized Mind entrypoint closure, Brain repinned final live health to Mind commit 08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e."
         ]
       },
       "revocation": {

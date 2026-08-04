@@ -3,17 +3,18 @@
 **Status:** pass — active-local activation and disable/restore verified
 **Canonical Brain branch:** `main`
 **Provider source:** `51e9091c7374e0642f4fe076b895c184152dd516`
-**Mind source:** `d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f`
-**Approval:** `M2.4-activation-2026-08-04-d64e8bd1-51e9091c`
+**Mind source:** `08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e`
+**Approval:** `M2.4-activation-2026-08-04-08b2d1a7-51e9091c`
 
 ## Outcome
 
-Steve Westhoek explicitly approved activation on 2026-08-04. Brain retained the
-Mind-owned `wiki/log.md` audit history in commit `d64e8bd1...`, repinned the
-provider to that exact clean Mind HEAD, and activated the project-scoped Codex
-registration. The active approval file is outside repositories, owner-only
-mode `0600`, and bound to the exact provider revision, Mind commit, and sorted
-nine-scope allowlist.
+Steve Westhoek explicitly approved activation on 2026-08-04. Brain first
+retained the Mind-owned `wiki/log.md` audit history in commit `d64e8bd1...`,
+then Mind completed its authorized entrypoint and closure updates. Brain
+repinned final live health to resulting clean Mind HEAD `08b2d1a7...` without
+changing the tool or scope boundary. The active approval file is outside
+repositories, owner-only mode `0600`, and bound to the exact provider revision,
+Mind commit, and sorted nine-scope allowlist.
 
 The provider remains an owner-local, shell-free, no-network stdio process. It
 has no remote authentication dependency or credential relay. Its separate
@@ -47,10 +48,10 @@ health reported `mutationPathExposed=false`.
 |---|---|
 | Health | healthy |
 | Provider revision | `51e9091c7374e0642f4fe076b895c184152dd516` |
-| Source HEAD / expected | both `d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f` |
+| Source HEAD / expected | both `08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e` |
 | In-scope working changes | 0 |
-| Bounded corpus | 552 Markdown sources / 30,809,685 bytes |
-| Corpus SHA-256 | `50766f88c6b03d171b749c56d61ac27ae22829c67cda71c7adfbfd480e308637` |
+| Bounded corpus | 553 Markdown sources / 30,817,697 bytes |
+| Corpus SHA-256 | `1069c67091e3913470c1f1d227d7c30f9075179a92c30c33dae8038ca242e856` |
 | Indexing | `read-through-no-persistent-index` |
 | Persistent index or watcher | none |
 | Caller root/scope override | false / false |
@@ -68,7 +69,7 @@ indexing mode, and request timestamp. Its state was
 `repository=implemented`, `deployed=active-local`,
 `observed=live-readback`, and `verified=runtime-verified`.
 
-Live explain returned 3 of 552 ranked records with
+Live explain returned 3 of 553 ranked records with
 `rankingTruncated=true`. The provider regression suite now proves the same
 bounded behavior on a 602-source fixture, keeping the response below the
 admitted 512 KiB protocol limit.
