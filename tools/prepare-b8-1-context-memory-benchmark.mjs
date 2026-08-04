@@ -247,16 +247,49 @@ function captureSourceState(manifest) {
         execFileSync('git', ['-C', repo.localPath, 'rev-parse', '--verify', `${repo.pinnedCommit}^{commit}`], { stdio: ['ignore', 'ignore', 'ignore'] });
         state.pinnedCommitAvailable = true;
       } catch { state.pinnedCommitAvailable = false; }
+      // Compute SHA-256 of the committed tree via git archive.
+      // The archive is piped through shasum in a shell subprocess — Node receives
+      // only the 64-char hex hash, not the full archive, so this works for
+      // large repos (>100MB) where spawnSync maxBuffer would overflow.
+      try {
+        const archiveHashOut = execFileSync(
+          'sh',
+          ['-c', `git -C ${JSON.stringify(repo.localPath)} archive HEAD --format=tar | shasum -a 256`],
+          { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 1024 * 1024 }
+        );
+        const hexMatch = archiveHashOut.trim().split(/\s+/)[0];
+        state.exportedTreeSha256 = /^[0-9a-f]{64}$/i.test(hexMatch) ? hexMatch.toLowerCase() : null;
+      } catch { state.exportedTreeSha256 = null; }
     } catch (e) {
       state.HEAD = null;
       state.statusPorcelain = null;
       state.statusSha256 = null;
       state.pinnedCommit = repo.pinnedCommit;
       state.pinnedCommitAvailable = false;
+      state.exportedTreeSha256 = null;
     }
     states.push(state);
   }
   return states;
+}
+
+/**
+ * Project out path-dependent fields from source state entries.
+ * Returns a logical identity object whose SHA-256 is path-independent.
+ *
+ * @param {Array} states  - output of captureSourceState()
+ * @returns {{ schemaVersion: string, repositories: Array }}
+ */
+export function computeLogicalSourceIdentity(states) {
+  const logical = states.map(state => ({
+    repositoryId: state.repositoryId,
+    pinnedCommit: state.pinnedCommit,
+    HEAD: state.HEAD,
+    statusSha256: state.statusSha256,
+    pinnedCommitAvailable: state.pinnedCommitAvailable,
+    exportedTreeSha256: state.exportedTreeSha256 ?? null,
+  })).sort((a, b) => a.repositoryId.localeCompare(b.repositoryId));
+  return { schemaVersion: 2, repositories: logical };
 }
 
 // ---------------------------------------------------------------------------
@@ -950,6 +983,7 @@ export function buildCanonicalPlan({
   plannedWritePaths,
   runDirectoryPhysical,
   sourceStateHash,
+  sourceStateBefore,
   checks,
 }) {
   const canonicalSelected = [...selectedSubjects].sort();
@@ -996,6 +1030,9 @@ export function buildCanonicalPlan({
     plannedWritePaths: [...plannedWritePaths].sort(),
     runDirectoryPhysical,
     sourceStateHash: `sha256:${sourceStateHash}`,
+    sourceLogicalIdentity: sourceStateBefore != null
+      ? computeLogicalSourceIdentity(sourceStateBefore)
+      : null,
     checks: checks.map(check => ({
       name: check.name,
       status: check.status,
@@ -1114,11 +1151,11 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
     for (const d of dirs) fs.mkdirSync(path.join(runDir, d), { recursive: true });
 
     const stateBefore = captureSourceState(manifest);
-    const stateBeforeHash = hashCanonicalJson(stateBefore);
+    const stateBeforeHash = hashCanonicalJson(computeLogicalSourceIdentity(stateBefore));
     if (stateBeforeHash !== canonicalPlan.sourceStateHash.replace(/^sha256:/, '')) {
       throw new Error(`source state changed after approval: expected ${canonicalPlan.sourceStateHash}, got sha256:${stateBeforeHash}`);
     }
-    if (hashCanonicalJson(plannedSourceState) !== stateBeforeHash) {
+    if (hashCanonicalJson(computeLogicalSourceIdentity(plannedSourceState)) !== stateBeforeHash) {
       throw new Error('internal source-state binding mismatch before materialization');
     }
     fs.writeFileSync(path.join(runDir, 'source-state-before.json'), JSON.stringify(stateBefore, null, 2));
@@ -1164,7 +1201,7 @@ function materialize(runDir, manifest, checks, selectedSubjects, canonicalPlan, 
       }
     }
 
-    if (hashCanonicalJson(stateAfter) !== stateBeforeHash) {
+    if (hashCanonicalJson(computeLogicalSourceIdentity(stateAfter)) !== stateBeforeHash) {
       throw new Error(`source state hash changed during materialization for run ${path.basename(runDir)}`);
     }
 
@@ -1280,14 +1317,16 @@ export async function runPreflight({
       && state.statusPorcelain === ''
       && state.statusSha256
       && state.pinnedCommitAvailable
+      && state.exportedTreeSha256 != null
     );
     if (sourceStateReady) {
-      sourceStateHash = hashCanonicalJson(sourceStateBefore);
+      const logicalIdentity = computeLogicalSourceIdentity(sourceStateBefore);
+      sourceStateHash = hashCanonicalJson(logicalIdentity);
       recordCheck(checks, 'source-state-binding', 'pass', `sha256=${sourceStateHash.slice(0, 16)}...`);
     } else {
       const failures = sourceStateBefore
-        .filter(state => state.HEAD !== state.pinnedCommit || state.statusPorcelain !== '' || !state.pinnedCommitAvailable)
-        .map(state => `${state.repositoryId}: HEAD=${state.HEAD ?? 'unavailable'} pinned=${state.pinnedCommit} clean=${state.statusPorcelain === ''}`);
+        .filter(state => state.HEAD !== state.pinnedCommit || state.statusPorcelain !== '' || !state.pinnedCommitAvailable || state.exportedTreeSha256 == null)
+        .map(state => `${state.repositoryId}: HEAD=${state.HEAD ?? 'unavailable'} pinned=${state.pinnedCommit} clean=${state.statusPorcelain === ''} treeSha=${state.exportedTreeSha256 != null}`);
       recordCheck(checks, 'source-state-binding', 'fail', `source repositories must be clean at their pinned commits; ${failures.join('; ')}`);
     }
   }
@@ -1315,6 +1354,7 @@ export async function runPreflight({
       plannedWritePaths,
       runDirectoryPhysical: physicalPathThroughExistingAncestor(runDir),
       sourceStateHash,
+      sourceStateBefore,
       checks,
     });
     planSha256 = computePlanDigest(canonicalPlan);

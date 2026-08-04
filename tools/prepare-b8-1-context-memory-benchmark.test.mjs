@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   buildCanonicalPlan,
+  computeLogicalSourceIdentity,
   computePlanDigest,
   interpretSandboxedChildResult,
   parseSourceRootOverrideArgs,
@@ -1394,4 +1395,315 @@ test('T51: an approved dry-run plan materializes with the same exact source-root
     assert.equal(materialized.summary.materialized, true);
     assert.equal(execFileSync('git', ['-C', overrideDir, 'status', '--porcelain'], { encoding: 'utf8' }), '');
   } finally { cleanup(repoDir, overrideDir, manifestFile, home); }
+});
+
+// ---------------------------------------------------------------------------
+// Test 52: digest is stable when source root path changes but commit/tree are identical
+// ---------------------------------------------------------------------------
+
+test('T52: digest is stable when source root path changes but commit/tree are identical', async () => {
+  const repoA = makeTempDir('b81-t52-a-');
+  const repoB = makeTempDir('b81-t52-b-');
+  const homeA = makeSyntheticHome();
+  const homeB = makeSyntheticHome();
+  let manifestFileA = null;
+  let manifestFileB = null;
+  try {
+    // Create repo A and get its commit
+    const commit = makeTempGitRepo(repoA, { 'README.md': '# T52 test repo' });
+
+    // Create a worktree of the same commit at path B using git worktree
+    execFileSync('git', ['worktree', 'add', '--detach', repoB, commit], { cwd: repoA });
+
+    // Build two manifests pointing to the same commit but at different paths
+    const manifestA = makeMinimalManifest([{ id: 'test', path: repoA, commit, files: { 'README.md': '' } }]);
+    const manifestB = makeMinimalManifest([{ id: 'test', path: repoB, commit, files: { 'README.md': '' } }]);
+    manifestFileA = writeTempManifest(manifestA);
+    manifestFileB = writeTempManifest(manifestB);
+
+    const resultA = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t52-a',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFileA,
+      _homeOverride: homeA,
+    });
+    const resultB = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t52-b',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFileB,
+      _homeOverride: homeB,
+    });
+
+    // Both should be execution-ready
+    assert.equal(resultA.summary.executionReady, true, 'run A must be executionReady');
+    assert.equal(resultB.summary.executionReady, true, 'run B must be executionReady');
+
+    // sourceLogicalIdentity must be equal (path-independent)
+    assert.deepEqual(
+      resultA.canonicalPlan.sourceLogicalIdentity,
+      resultB.canonicalPlan.sourceLogicalIdentity,
+      'sourceLogicalIdentity must be equal regardless of path'
+    );
+
+    // The sourceStateHash must be equal (both use logical identity)
+    assert.equal(
+      resultA.canonicalPlan.sourceStateHash,
+      resultB.canonicalPlan.sourceStateHash,
+      'sourceStateHash must be equal regardless of source root path'
+    );
+  } finally {
+    // Remove worktree before cleaning up the main repo
+    try { execFileSync('git', ['worktree', 'remove', '--force', repoB], { cwd: repoA }); } catch {}
+    cleanup(repoA, repoB, homeA, homeB);
+    if (manifestFileA) cleanup(manifestFileA);
+    if (manifestFileB) cleanup(manifestFileB);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 53: dirty source root fails source-state binding
+// ---------------------------------------------------------------------------
+
+test('T53: dirty source root fails source-state binding', async () => {
+  const repoDir = makeTempDir('b81-t53-');
+  const home = makeSyntheticHome();
+  let manifestFile = null;
+  try {
+    const commit = makeTempGitRepo(repoDir, { 'README.md': '# T53' });
+    // Dirty the repo
+    fs.writeFileSync(path.join(repoDir, 'dirty.txt'), 'unstaged change');
+    const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'README.md': '' } }]);
+    manifestFile = writeTempManifest(manifest);
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t53',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false, 'dirty repo must block execution');
+    const bindingCheck = result.checks.find(c => c.name === 'source-state-binding');
+    assert.ok(bindingCheck, 'source-state-binding check must exist');
+    assert.equal(bindingCheck.status, 'fail', 'source-state-binding must fail for dirty repo');
+  } finally { cleanup(repoDir, home); if (manifestFile) cleanup(manifestFile); }
+});
+
+// ---------------------------------------------------------------------------
+// Test 54: wrong commit in source root fails source-state binding
+// ---------------------------------------------------------------------------
+
+test('T54: wrong commit in source root fails source-state binding', async () => {
+  const repoDir = makeTempDir('b81-t54-');
+  const home = makeSyntheticHome();
+  let manifestFile = null;
+  try {
+    const firstCommit = makeTempGitRepo(repoDir, { 'README.md': '# T54 first' });
+    // Make a second commit to advance HEAD
+    fs.writeFileSync(path.join(repoDir, 'README.md'), '# T54 second');
+    execFileSync('git', ['add', '.'], { cwd: repoDir });
+    execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@t.invalid', 'commit', '-qm', 'second'], { cwd: repoDir });
+    // pinnedCommit is the first commit, but HEAD is the second
+    const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit: firstCommit, files: { 'README.md': '' } }]);
+    manifestFile = writeTempManifest(manifest);
+    const result = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t54',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(result.summary.executionReady, false, 'wrong commit must block execution');
+    const bindingCheck = result.checks.find(c => c.name === 'source-state-binding');
+    assert.ok(bindingCheck, 'source-state-binding check must exist');
+    assert.equal(bindingCheck.status, 'fail', 'source-state-binding must fail when HEAD != pinnedCommit');
+  } finally { cleanup(repoDir, home); if (manifestFile) cleanup(manifestFile); }
+});
+
+// ---------------------------------------------------------------------------
+// Test 55: changed tree bytes (different commit at same path) change digest
+// ---------------------------------------------------------------------------
+
+test('T55: changed tree bytes (different commit at same path) change digest', async () => {
+  const repoDir = makeTempDir('b81-t55-');
+  const homeA = makeSyntheticHome();
+  const homeB = makeSyntheticHome();
+  let manifestFileA = null;
+  let manifestFileB = null;
+  try {
+    // First commit
+    const commitA = makeTempGitRepo(repoDir, { 'README.md': '# T55 version A' });
+    const manifestA = makeMinimalManifest([{ id: 'test', path: repoDir, commit: commitA, files: { 'README.md': '' } }]);
+    manifestFileA = writeTempManifest(manifestA);
+    const resultA = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t55-a',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFileA,
+      _homeOverride: homeA,
+    });
+    assert.equal(resultA.summary.executionReady, true, 'run A must be executionReady');
+
+    // Second commit with different content at the same path
+    fs.writeFileSync(path.join(repoDir, 'README.md'), '# T55 version B');
+    execFileSync('git', ['add', '.'], { cwd: repoDir });
+    execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@t.invalid', 'commit', '-qm', 'version B'], { cwd: repoDir });
+    const commitB = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
+
+    const manifestB = makeMinimalManifest([{ id: 'test', path: repoDir, commit: commitB, files: { 'README.md': '' } }]);
+    manifestFileB = writeTempManifest(manifestB);
+    const resultB = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t55-b',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFileB,
+      _homeOverride: homeB,
+    });
+    assert.equal(resultB.summary.executionReady, true, 'run B must be executionReady');
+
+    // Different commits = different tree bytes = different digest
+    assert.notEqual(
+      resultA.canonicalPlan.sourceStateHash,
+      resultB.canonicalPlan.sourceStateHash,
+      'different tree bytes must produce different sourceStateHash'
+    );
+    assert.notEqual(
+      resultA.canonicalPlan.sourceLogicalIdentity.repositories[0].exportedTreeSha256,
+      resultB.canonicalPlan.sourceLogicalIdentity.repositories[0].exportedTreeSha256,
+      'different commits must produce different exportedTreeSha256'
+    );
+  } finally {
+    cleanup(repoDir, homeA, homeB);
+    if (manifestFileA) cleanup(manifestFileA);
+    if (manifestFileB) cleanup(manifestFileB);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Test 56: stale approval (old digest) is rejected at materialization
+// ---------------------------------------------------------------------------
+
+test('T56: stale approval (old digest) is rejected at materialization', async () => {
+  const repoDir = makeTempDir('b81-t56-');
+  const home = makeSyntheticHome();
+  let manifestFile = null;
+  try {
+    const commit = makeTempGitRepo(repoDir, { 'README.md': '# T56' });
+    const manifest = makeMinimalManifest([{ id: 'test', path: repoDir, commit, files: { 'README.md': '' } }]);
+    manifestFile = writeTempManifest(manifest);
+
+    // Get valid digest from dry-run
+    const dryRun = await runPreflight({
+      dryRun: true,
+      runId: 'b8-1-t56',
+      subjects: ['exact-source'],
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(dryRun.summary.executionReady, true, 'dry-run must be executionReady');
+    const oldDigest = dryRun.summary.planSha256;
+
+    // Now make the repo dirty (stale approval)
+    fs.writeFileSync(path.join(repoDir, 'new-file.txt'), 'makes repo dirty');
+
+    // Try to materialize with the old (now stale) digest
+    const materialized = await runPreflight({
+      dryRun: false,
+      materialize: true,
+      runId: 'b8-1-t56',
+      subjects: ['exact-source'],
+      approvedPlanSha256: oldDigest,
+      _manifestPathOverride: manifestFile,
+      _homeOverride: home,
+    });
+    assert.equal(materialized.summary.executionReady, false, 'stale approval must be rejected');
+    assert.ok(materialized.summary.blockingChecks.length > 0, 'must have blocking checks');
+  } finally { cleanup(repoDir, home); if (manifestFile) cleanup(manifestFile); }
+});
+
+// ---------------------------------------------------------------------------
+// Test 57: changed subject selection changes digest
+// ---------------------------------------------------------------------------
+
+test('T57: changed subject selection changes digest', () => {
+  const planA = makeCanonicalPlanFixture({ selectedSubjects: ['cbm', 'exact-source'] });
+  const planB = makeCanonicalPlanFixture({ selectedSubjects: ['exact-source'] });
+  assert.notEqual(
+    computePlanDigest(planA),
+    computePlanDigest(planB),
+    'different subject selection must produce different plan digest'
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Test 58: changed binary sha256 changes digest
+// ---------------------------------------------------------------------------
+
+test('T58: changed binary sha256 changes digest', () => {
+  const planA = makeCanonicalPlanFixture({
+    cbmIdentity: {
+      stablePath: '/synthetic/.local/bin/codebase-memory-mcp',
+      resolvedPath: '/synthetic/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp',
+      version: 'v0.9.0',
+      sha256: '5'.repeat(64),
+    },
+  });
+  const planB = makeCanonicalPlanFixture({
+    cbmIdentity: {
+      stablePath: '/synthetic/.local/bin/codebase-memory-mcp',
+      resolvedPath: '/synthetic/providers/codebase-memory-mcp/v0.9.0/codebase-memory-mcp',
+      version: 'v0.9.0',
+      sha256: 'e'.repeat(64),  // different sha256
+    },
+  });
+  assert.notEqual(
+    computePlanDigest(planA),
+    computePlanDigest(planB),
+    'different binary sha256 must produce different plan digest'
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Test 59: changed network profile sha256 changes digest
+// ---------------------------------------------------------------------------
+
+test('T59: changed network profile sha256 changes digest', () => {
+  const planA = makeCanonicalPlanFixture({
+    networkProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: '6'.repeat(64) },
+      runtimeIdentity: { path: '/synthetic/node', sha256: 'b'.repeat(64), version: 'v24.0.0' },
+      childIdentity: { path: '/synthetic/b8-1-network-isolation-child.mjs', sha256: 'c'.repeat(64) },
+      profilePath: '/synthetic/b8-1-network-deny.sb',
+      profileSha256: '7'.repeat(64),
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true,
+      selfTestDetail: 'permission denial proven',
+    },
+  });
+  const planB = makeCanonicalPlanFixture({
+    networkProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: '6'.repeat(64) },
+      runtimeIdentity: { path: '/synthetic/node', sha256: 'b'.repeat(64), version: 'v24.0.0' },
+      childIdentity: { path: '/synthetic/b8-1-network-isolation-child.mjs', sha256: 'c'.repeat(64) },
+      profilePath: '/synthetic/b8-1-network-deny.sb',
+      profileSha256: 'f'.repeat(64),  // different profile sha256
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true,
+      selfTestDetail: 'permission denial proven',
+    },
+  });
+  assert.notEqual(
+    computePlanDigest(planA),
+    computePlanDigest(planB),
+    'different network profile sha256 must produce different plan digest'
+  );
 });
