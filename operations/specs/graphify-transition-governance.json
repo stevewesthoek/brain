@@ -114,12 +114,23 @@
       {
         "authorizationId": "M7.1-user-request-2026-08-04",
         "scope": "one-bounded-mind-graphify-run",
-        "status": "completed",
+        "status": "blocked-nonconforming-duplicate-publication",
         "completedAt": "2026-08-04T00:06:06.991Z",
         "mindCommit": "06de527423e05d4208cdcf485be92a2d1028c46d",
         "brainRunnerCommit": "38464719d96e9eced962c16982ed8bd4597dee66",
-        "receipt": "runtime/local/graphify/mind-knowledge/runs/20260804T000604198Z-06de527423e0/receipt.json",
-        "receiptSha256": "d03f2fb3f16dfda2edc323f5166669607fc51389dac7e1ab387c88bae3379bee",
+        "receipts": [
+          {
+            "path": "runtime/local/graphify/mind-knowledge/runs/20260804T000530178Z-06de527423e0/receipt.json",
+            "sha256": "5c641c52da57703029d81d3f78a5273af97e7aca146f4e27c75ab24074234bd1",
+            "postPublicationFailure": "ENOTEMPTY staging cleanup"
+          },
+          {
+            "path": "runtime/local/graphify/mind-knowledge/runs/20260804T000604198Z-06de527423e0/receipt.json",
+            "sha256": "d03f2fb3f16dfda2edc323f5166669607fc51389dac7e1ab387c88bae3379bee",
+            "postPublicationFailure": null
+          }
+        ],
+        "ownerDispositionRequired": true,
         "recurringAuthorityGranted": false
       }
     ],

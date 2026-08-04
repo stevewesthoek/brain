@@ -1,21 +1,27 @@
 # M7.1 Mind Contained Graphify Acceptance — 2026-08-04
 
-**Status:** pass — one bounded run completed; no recurring Graphify authority granted  
+**Status:** blocked — two success receipts exist under one-shot authority; owner disposition required
 **Owner:** Brain runtime  
 **Mind source:** `main` at `06de527423e05d4208cdcf485be92a2d1028c46d`  
 **Runner source:** `codex/mind-m7-m2-unblock` at `38464719d96e9eced962c16982ed8bd4597dee66`
 
 ## Outcome
 
-Brain executed one authorized contained `graphifyy` run from a clean Git-object
-export of exact Mind HEAD. The runner never read Mind working-tree files and
-wrote only under Brain's approved operational runtime root:
+Brain's contained executions used clean Git-object exports of exact Mind HEAD,
+never read Mind working-tree files, and wrote only under Brain's approved
+operational runtime root:
 
 `runtime/local/graphify/mind-knowledge/`
 
-The successful snapshot is atomically selected by `current`, which points to
+The currently selected snapshot is atomically selected by `current`, which points to
 `runs/20260804T000604198Z-06de527423e0`. Generated graph output remains
 non-authoritative navigation evidence.
+
+However, the one-shot lifecycle is nonconforming. The `00:05:30` invocation
+published a success receipt, then returned failure because staging cleanup hit
+`ENOTEMPTY`. Because the early runner did not consume authorization at
+publication, it was retried at `00:06:04` and published a second success receipt.
+Both are preserved; neither is being silently deleted or reclassified.
 
 ## Bound identities
 
@@ -34,6 +40,12 @@ non-authoritative navigation evidence.
 | Acceptance SHA-256 | `a27431d3381fd9131070627ddf58d60d7ed8d850a3a75b9d00565b8f32ac42b6` |
 | Source manifest SHA-256 | `6ce98a5b420efeaf8c15cc4654a10358456f6453b75f5ab081d7eaa5222ec912` |
 | Graph SHA-256 | `c17786ed9af9aa5bd49ce9103b1dd98250ea8b82c8a77cca99abce200cf54ea4` |
+
+The earlier published receipt is
+`runs/20260804T000530178Z-06de527423e0/receipt.json`, SHA-256
+`5c641c52da57703029d81d3f78a5273af97e7aca146f4e27c75ab24074234bd1`.
+It records the same 601-source acceptance but graph SHA-256
+`105ea351adcdb2b68360536097c626b7aa70ea680be14d6d87051c470e9c55ad`.
 
 ## Corpus and graph acceptance
 
@@ -56,15 +68,17 @@ credential/secret/backup-marked paths, and all unrelated binary extensions.
 
 ## Failure evidence
 
-Three earlier attempts failed closed before publication while containment edge
-cases were corrected. Their receipts remain under `failures/`; all record
-`writesToMind=false`. No failed attempt changed `current` or published a partial
-snapshot.
+Two earlier attempts failed closed before publication. A third failure receipt,
+for `00:05:30`, records the post-publication `ENOTEMPTY` cleanup error described
+above; that same run directory already contained a success receipt. All failure
+receipts record `writesToMind=false`.
 
 ## Authority after this run
 
 `currentExecutionAuthority` remains `none` for future runs. The authorization
-ID `M7.1-user-request-2026-08-04` covered one successful bounded Mind run only.
+ID `M7.1-user-request-2026-08-04` covered one successful bounded Mind run only,
+but two publications occurred. A mode-0600 non-retained ledger now marks the
+authorization consumed and records both receipts as a nonconforming duplicate.
 The hardened runner now pins the canonical Brain runtime root, keeps a
 non-retained authorization-consumption ledger, requires exact corpus coverage,
 uses an allowlisted environment, and fails unless macOS denies network access.
@@ -73,6 +87,7 @@ inactive. A future refresh requires a new explicit authorization.
 
 ## Mind handoff
 
-Mind may verify the operational receipt and hashes, record its first storage
-baseline, project the bounded latest-receipt reference into its authorized
-reports, and close M7.1. Brain did not modify Mind.
+Mind must not close M7.1 yet. Steve Westhoek must explicitly disposition the two
+preserved success receipts—for example, ratify the current `00:06:04` snapshot
+and classify `00:05:30` as a superseded post-publication-cleanup diagnostic.
+No further Graphify execution is needed or authorized. Brain did not modify Mind.
