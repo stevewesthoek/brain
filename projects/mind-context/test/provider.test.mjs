@@ -152,6 +152,27 @@ test('provider enforces corpus and stdio request byte bounds', async () => {
   assert.match(serializeBoundedResponse({jsonrpc: '2.0', id: 9, result: 'x'.repeat(PROVIDER_LIMITS.maxResponseBytes)}), /Response exceeds admitted byte limit/);
 });
 
+test('explain returns a bounded ranking for a large admitted corpus', () => {
+  const x = fixture();
+  for (let index = 0; index < 600; index += 1) {
+    write(path.join(x.root, 'projects', `source-${String(index).padStart(3, '0')}.md`), `# Source ${index}\nCurrent context source ${index}.\n`);
+  }
+  git(x.root, ['add', 'projects']);
+  git(x.root, ['commit', '-qm', 'large explain corpus']);
+  const head = git(x.root, ['rev-parse', 'HEAD']);
+  const approval = JSON.parse(fs.readFileSync(x.env.MIND_CONTEXT_PREPARATION_APPROVAL_FILE, 'utf8'));
+  approval.mindCommit = head;
+  write(x.env.MIND_CONTEXT_PREPARATION_APPROVAL_FILE, `${JSON.stringify(approval)}\n`, 0o600);
+  const config = loadProviderConfig({...x.env, MIND_CONTEXT_EXPECTED_HEAD: head});
+  const explanation = callProviderTool(config, 'mind_context_explain', {query: 'current context', maxItems: 3, maxTokens: 800});
+  assert.equal(explanation.ranking.length, 3);
+  assert.equal(explanation.rankingReturned, 3);
+  assert.equal(explanation.rankingTotal, 602);
+  assert.equal(explanation.rankingTruncated, true);
+  const response = serializeBoundedResponse({jsonrpc: '2.0', id: 10, result: explanation});
+  assert.doesNotMatch(response, /Response exceeds admitted byte limit/);
+});
+
 test('MCP protocol exposes only the admitted read tools and returns live health/readback', () => {
   const x = fixture();
   const init = handleMessage(x.config, {jsonrpc: '2.0', id: 1, method: 'initialize', params: {}});

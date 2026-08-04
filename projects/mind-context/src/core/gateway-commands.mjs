@@ -103,6 +103,7 @@ export function resolveContextCommand(args = {}) {
 
 export function explainContextCommand(args = {}) {
   const context = collectContext(args);
+  const ranking = context.plan.rankedSources.slice(0, context.maxItems);
   return {
     command: 'explain',
     packageVersion: PACKAGE_VERSION,
@@ -119,7 +120,7 @@ export function explainContextCommand(args = {}) {
       format: context.format,
     },
     pack: context.plan.pack,
-    ranking: context.plan.rankedSources.map(({source, score, components}) => ({
+    ranking: ranking.map(({source, score, components}) => ({
       sourceId: source.sourceId,
       path: source.path,
       citation: source.citation ?? `${source.path}#${source.line ?? 'L1'}`,
@@ -129,6 +130,9 @@ export function explainContextCommand(args = {}) {
       components,
       untrusted: source.untrusted ?? source.authority === 'untrusted',
     })),
+    rankingTotal: context.plan.rankedSources.length,
+    rankingReturned: ranking.length,
+    rankingTruncated: ranking.length < context.plan.rankedSources.length,
     exclusions: context.plan.exclusions,
     budget: context.plan.budget.budget,
     truncation: context.plan.budget.truncation,
