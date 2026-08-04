@@ -88,6 +88,10 @@ export function loadProviderConfig(env = process.env) {
   const providerRevision = requireRevision(env.MIND_CONTEXT_PROVIDER_REVISION, 'provider_revision');
   const expectedMindHead = requireRevision(env.MIND_CONTEXT_EXPECTED_HEAD, 'expected_mind_head');
   const preparationMode = env.MIND_CONTEXT_PREPARATION_MODE === '1';
+  const admittedTools = String(env.MIND_CONTEXT_ALLOWED_TOOLS ?? '').split(',').map((item) => item.trim()).filter(Boolean).sort();
+  const expectedTools = TOOL_DEFINITIONS.map((tool) => tool.name).sort();
+  if (JSON.stringify(admittedTools) !== JSON.stringify(expectedTools)) throw new Error('provider_tool_allowlist_mismatch');
+  if (String(env.MIND_CONTEXT_ALLOWED_SUBOPERATIONS ?? '') !== '') throw new Error('provider_suboperations_forbidden');
   const approval = preparationMode ? null : readApproval(env.MIND_CONTEXT_ACTIVATION_APPROVAL_FILE, providerRevision);
   return Object.freeze({
     root,
@@ -96,6 +100,7 @@ export function loadProviderConfig(env = process.env) {
     expectedMindHead,
     preparationMode,
     approval,
+    admittedTools,
     activationState: preparationMode ? 'preparation-only' : 'active-local-approved',
   });
 }
@@ -134,7 +139,7 @@ export function providerHealth(config) {
     secretsHandling: {committedSecrets: false, rawSecretInput: false, secretPathExclusion: true},
     source: {...source, ...inventory, indexingMode: 'read-through-no-persistent-index', indexedAt: new Date().toISOString()},
     scope: {root: config.root, allowedScopes: config.scopes, callerCanOverrideRoot: false, callerCanOverrideScopes: false, excludedPathClasses: ['.obsidian', 'archive', 'history', 'runtime', 'generated', 'node_modules', 'secret-marked paths']},
-    tools: TOOL_DEFINITIONS.map((tool) => ({name: tool.name, risk: 'read'})),
+    tools: config.admittedTools.map((name) => ({name, risk: 'read'})),
     mutationPathExposed: false,
     fallback: MANUAL_FALLBACK,
   };
@@ -204,6 +209,7 @@ export function providerExplain(config, rawArgs) {
 }
 
 export function callProviderTool(config, name, args = {}) {
+  if (!config.admittedTools.includes(name)) throw new Error('tool_not_admitted');
   if (name === 'mind_context_health') {
     if (Object.keys(args ?? {}).length > 0) throw new Error('health_arguments_forbidden');
     return providerHealth(config);

@@ -35,6 +35,8 @@ function fixture() {
     MIND_CONTEXT_PROVIDER_REVISION: 'a'.repeat(40),
     MIND_CONTEXT_EXPECTED_HEAD: head,
     MIND_CONTEXT_PREPARATION_MODE: '1',
+    MIND_CONTEXT_ALLOWED_TOOLS: 'mind_context_health,mind_context_resolve,mind_context_explain',
+    MIND_CONTEXT_ALLOWED_SUBOPERATIONS: '',
   };
   return {root, head, env, config: loadProviderConfig(env)};
 }
@@ -116,7 +118,7 @@ test('MCP protocol exposes only the admitted read tools and returns live health/
   assert.equal(readback.result.structuredContent.state.observed, 'live-readback');
   const mutation = handleMessage(x.config, {jsonrpc: '2.0', id: 4, method: 'tools/call', params: {name: 'write_file', arguments: {}}});
   assert.equal(mutation.result.isError, true);
-  assert.equal(mutation.result.structuredContent.code, 'tool_not_found');
+  assert.equal(mutation.result.structuredContent.code, 'tool_not_admitted');
 });
 
 test('health tool rejects arguments', () => {
