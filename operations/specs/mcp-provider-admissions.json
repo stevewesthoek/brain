@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAt": "2026-08-02",
+  "reviewedAt": "2026-08-04",
   "admissions": [
     {
       "admissionId": "codebase-memory-mcp-brain",
@@ -202,6 +202,82 @@
       },
       "revocation": {
         "procedure": "Disable or remove the generated project-scoped Workbench registration and remove its credential reference; retain provider source, admission history, and receipts.",
+        "preserveEvidence": true
+      }
+    },
+    {
+      "admissionId": "mind-context-for-brain",
+      "status": "candidate",
+      "owner": "brain-runtime",
+      "consumer": "brain",
+      "provider": {
+        "providerId": "mind-context",
+        "repository": "stevewesthoek/brain",
+        "revision": "753a2257bc65a2e16bf9847d244690813a4bd1cb",
+        "sourceState": "committed",
+        "version": "1.0.0",
+        "entrypoint": "projects/mind-context/src/provider/server.mjs",
+        "artifacts": [
+          { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "bac96f041489ddc22ee7cf0e9ddf9561abb716f7c6c3441ef76029abb6b5db23" },
+          { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "b6341ef283dff51810ed0de70cfbf4f7cfe4a5a63045a8902adebaf9e69c4bae" },
+          { "path": "projects/mind-context/src/adapters/index.mjs", "sha256": "bfdb84ff893119079e75edb5146ae9451be85ea0a46931c45d692b18e0296ef4" },
+          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "24c426e8f1030b730316ed98fa623ac7ef2ebf52f5c0a6702697e6d535d3964a" },
+          { "path": "projects/mind-context/src/core/discover.mjs", "sha256": "2eac77e06161d62e1123184eae1c509ed2e25a7828475b7007911d5622b33f8a" },
+          { "path": "projects/mind-context/src/core/policy.mjs", "sha256": "fb008dccdf147d54e99f6104f96ab7081aa191cd1ece863435a1c5561e708e6b" },
+          { "path": "projects/mind-context/src/core/plan-context-pack.mjs", "sha256": "3eb281efca3398d09d3e75cc8bfe392414d037b08661a43d7df5e773ba5af5d4" },
+          { "path": "projects/mind-context/src/context-pack.mjs", "sha256": "484842d2a59b29f27b88b6e1196db62d0959541c3181fca40dc462b889e02d95" }
+        ]
+      },
+      "transport": {
+        "kind": "stdio",
+        "serverName": "mind-context",
+        "projectScoped": true,
+        "shell": false,
+        "networkPolicy": "loopback-only"
+      },
+      "authentication": {
+        "mode": "none",
+        "relayAllowed": false
+      },
+      "scope": {
+        "toolAllowlistEnvironmentVariable": "MIND_CONTEXT_ALLOWED_TOOLS",
+        "suboperationAllowlistEnvironmentVariable": "MIND_CONTEXT_ALLOWED_SUBOPERATIONS",
+        "fixedEnvironment": {
+          "MIND_CONTEXT_ACTIVATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-read-only.json",
+          "MIND_CONTEXT_ALLOWED_SCOPES": "faith,knowledge,organizations,people,projects,resources,system,tasks,wiki",
+          "MIND_CONTEXT_EXPECTED_HEAD": "06de527423e05d4208cdcf485be92a2d1028c46d",
+          "MIND_CONTEXT_PREPARATION_MODE": "0",
+          "MIND_CONTEXT_PROVIDER_REVISION": "753a2257bc65a2e16bf9847d244690813a4bd1cb",
+          "MIND_CONTEXT_ROOT": "/Users/Office/Repos/stevewesthoek/mind"
+        },
+        "enforcementStatus": "provider-enforced",
+        "enforcementNote": "The provider rejects startup unless the admitted tool set matches exactly, fixes root and scopes at process launch, rejects caller root/scope/infrastructure arguments, and exposes no mutation tool or suboperation.",
+        "tools": [
+          { "name": "mind_context_health", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "mind_context_resolve", "risk": "read", "approval": "none", "allowedSuboperations": [] },
+          { "name": "mind_context_explain", "risk": "read", "approval": "none", "allowedSuboperations": [] }
+        ]
+      },
+      "limits": {
+        "startupTimeoutSeconds": 10,
+        "toolTimeoutSeconds": 30,
+        "maxRequestBytes": 65536,
+        "maxResponseBytes": 524288
+      },
+      "verification": {
+        "commands": [
+          "npm --prefix projects/mind-context test",
+          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=753a2257bc65a2e16bf9847d244690813a4bd1cb",
+          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision 753a2257bc65a2e16bf9847d244690813a4bd1cb --node <node-path> --output <project-config> --check"
+        ],
+        "evidence": [
+          "Provider implementation commit 753a2257bc65a2e16bf9847d244690813a4bd1cb; fixed-root, fixed-scope, no-network stdio service with three read-only tools and no mutation path.",
+          "Authentication mode none is intentional for owner-local stdio: the process inherits the local OS account, reads no credentials, accepts no secret input, performs no credential relay, and requires a separate owner-only Steve Westhoek activation approval file outside repositories before non-preparation startup.",
+          "Preparation tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD drift rejection, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Candidate registration remains disabled until explicit activation approval."
+        ]
+      },
+      "revocation": {
+        "procedure": "Set status to paused or revoked; keep the tracked candidate disabled; remove any generated project registration and owner-only activation approval file; set MIND_CONTEXT_CORE_DISABLED=1 for an already launched process; verify the client reports the provider unavailable and uses only the documented manual targeted-read fallback. Preserve admission, source, tests, and activation/disable receipts.",
         "preserveEvidence": true
       }
     }

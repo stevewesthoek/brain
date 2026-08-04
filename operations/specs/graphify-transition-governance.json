@@ -110,6 +110,18 @@
     "nextTask": "No current authorized next task. When canonical P8 is authorized, the sequence begins at canonical B8.1 (benchmark structural code-memory options). Historical out-of-sequence work (canary, candidate installation, design specs) does not satisfy or bypass the B8.1 prerequisite.",
     "historicalNextTaskAnnotation": "Historical pre-canonical label was: 'B8.5A (Brain-only contract spec) then B8.5 (Workbench adapter implementation)'. Historical B8.5 (Workbench CBM adapter) collides with canonical B8.5 (Convert Graphify to bounded event-driven semantic synthesis). These are different tasks.",
     "globalActivationStatus": "not-active",
+    "oneShotExecutions": [
+      {
+        "authorizationId": "M7.1-user-request-2026-08-04",
+        "scope": "one-bounded-mind-graphify-run",
+        "status": "completed",
+        "completedAt": "2026-08-04T00:06:06.991Z",
+        "mindCommit": "06de527423e05d4208cdcf485be92a2d1028c46d",
+        "brainRunnerCommit": "38464719d96e9eced962c16982ed8bd4597dee66",
+        "receipt": "runtime/local/graphify/mind-knowledge/current/receipt.json",
+        "recurringAuthorityGranted": false
+      }
+    ],
     "globalActivationBlockers": [
       "Canonical B8.2 (admit and install CBM as approved structural default) not yet authorized — candidate binary exists but is not approved default",
       "Approved Workbench CBM adapter deployment must be verified stable for at least seven days before retention gate consideration",

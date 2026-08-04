@@ -1,0 +1,21 @@
+# Generated project-scoped candidate for mind-context-for-brain.
+# Disabled until Steve Westhoek supplies the bound owner-only activation approval.
+[mcp_servers.mind-context]
+command = "/opt/homebrew/Cellar/node/25.9.0_1/bin/node"
+args = ["/Users/Office/Repos/stevewesthoek/brain/projects/mind-context/src/provider/server.mjs"]
+cwd = "/Users/Office/Repos/stevewesthoek/brain"
+enabled = false
+required = false
+startup_timeout_sec = 10
+tool_timeout_sec = 30
+default_tools_approval_mode = "writes"
+
+[mcp_servers.mind-context.env]
+MIND_CONTEXT_ALLOWED_TOOLS = "mind_context_health,mind_context_resolve,mind_context_explain"
+MIND_CONTEXT_ALLOWED_SUBOPERATIONS = ""
+MIND_CONTEXT_ACTIVATION_APPROVAL_FILE = "/Users/Office/.brain/approvals/mind-context-read-only.json"
+MIND_CONTEXT_ALLOWED_SCOPES = "faith,knowledge,organizations,people,projects,resources,system,tasks,wiki"
+MIND_CONTEXT_EXPECTED_HEAD = "06de527423e05d4208cdcf485be92a2d1028c46d"
+MIND_CONTEXT_PREPARATION_MODE = "0"
+MIND_CONTEXT_PROVIDER_REVISION = "753a2257bc65a2e16bf9847d244690813a4bd1cb"
+MIND_CONTEXT_ROOT = "/Users/Office/Repos/stevewesthoek/mind"

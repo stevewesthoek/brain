@@ -81,7 +81,16 @@
           },
           "scope": {
             "type": "object",
-            "required": ["toolAllowlistEnvironmentVariable", "suboperationAllowlistEnvironmentVariable", "tools"]
+            "required": ["toolAllowlistEnvironmentVariable", "suboperationAllowlistEnvironmentVariable", "tools"],
+            "properties": {
+              "toolAllowlistEnvironmentVariable": { "type": "string" },
+              "suboperationAllowlistEnvironmentVariable": { "type": "string" },
+              "fixedEnvironment": {
+                "type": "object",
+                "additionalProperties": { "type": "string" }
+              },
+              "tools": { "type": "array" }
+            }
           }
         },
         "additionalProperties": false

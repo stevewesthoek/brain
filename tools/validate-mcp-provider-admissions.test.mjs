@@ -209,3 +209,35 @@ test('tool allowlist: rendered TOML includes all admitted snake_case tool names'
   const expected = tools.join(',');
   assert(rendered.includes(expected), `tool allowlist mismatch.\nExpected: ${expected}\nGot: ${rendered}`);
 });
+
+test('candidate registration is disabled and renders validated fixed non-secret environment', async () => {
+  const { renderProjectRegistration } = await import('./generate-mcp-project-registration.mjs');
+  const item = noneAuthAdmission();
+  const admission = item.registry.admissions[0];
+  admission.status = 'candidate';
+  admission.scope.fixedEnvironment = {EXAMPLE_ROOT: '/opt/example', EXAMPLE_MODE: 'read-only'};
+  assert.deepEqual(validateAdmissionRegistry(item.registry), []);
+  const rendered = renderProjectRegistration(admission, {providerRoot: '/opt', credentialFile: null, nodeExecutable: '/usr/bin/node'});
+  assert.match(rendered, /enabled = false/);
+  assert.match(rendered, /required = false/);
+  assert.match(rendered, /EXAMPLE_MODE = "read-only"/);
+  assert.match(rendered, /EXAMPLE_ROOT = "\/opt\/example"/);
+  fs.rmSync(item.root, {recursive: true});
+});
+
+test('fixed environment cannot override the admitted tool allowlist binding', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].scope.fixedEnvironment = {EXAMPLE_ALLOWED_TOOLS: 'broadened'};
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some((error) => error.includes('must not override admission allowlist bindings')), `errors: ${errors}`);
+  fs.rmSync(item.root, {recursive: true});
+});
+
+test('fixed environment rejects cross-provider process controls and secret-bearing bindings', () => {
+  const item = noneAuthAdmission();
+  item.registry.admissions[0].scope.fixedEnvironment = {NODE_OPTIONS: '--import=evil', EXAMPLE_SECRET: 'value'};
+  const errors = validateAdmissionRegistry(item.registry);
+  assert(errors.some((error) => error.includes('must use provider prefix EXAMPLE_')), `errors: ${errors}`);
+  assert(errors.some((error) => error.includes('must not contain secret-bearing binding EXAMPLE_SECRET')), `errors: ${errors}`);
+  fs.rmSync(item.root, {recursive: true});
+});

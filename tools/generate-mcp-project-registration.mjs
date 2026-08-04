@@ -22,13 +22,14 @@ export function renderProjectRegistration(admission, { providerRoot, credentialF
   const isCredentialFree = admission.authentication?.mode === 'none';
   const isExecutableDirect = isCredentialFree && admission.provider?.executable === true;
   const entrypoint = path.join(providerRoot, admission.provider.entrypoint);
+  const candidate = admission.status === 'candidate';
   const lines = [
     `[mcp_servers.${admission.transport.serverName}]`,
     isExecutableDirect ? `command = ${quote(entrypoint)}` : `command = ${quote(nodeExecutable)}`,
     isExecutableDirect ? `args = []` : `args = [${quote(entrypoint)}]`,
     isExecutableDirect ? null : `cwd = ${quote(providerRoot)}`,
-    'enabled = true',
-    'required = true',
+    `enabled = ${candidate ? 'false' : 'true'}`,
+    `required = ${candidate ? 'false' : 'true'}`,
     `startup_timeout_sec = ${admission.limits.startupTimeoutSeconds}`,
     `tool_timeout_sec = ${admission.limits.toolTimeoutSeconds}`,
     'default_tools_approval_mode = "writes"',
@@ -40,6 +41,9 @@ export function renderProjectRegistration(admission, { providerRoot, credentialF
   }
   lines.push(`${admission.scope.toolAllowlistEnvironmentVariable} = ${quote(tools.join(','))}`);
   lines.push(`${admission.scope.suboperationAllowlistEnvironmentVariable} = ${quote(suboperations.join(','))}`);
+  for (const [name, value] of Object.entries(admission.scope.fixedEnvironment ?? {}).sort(([left], [right]) => left.localeCompare(right))) {
+    lines.push(`${name} = ${quote(value)}`);
+  }
   lines.push('');
   return lines.join('\n');
 }
@@ -57,12 +61,19 @@ function requireExecutableFile(file, label) {
 function main() {
   const admissionId = option('--admission');
   const providerRoot = requireAbsolute(option('--provider-root'), '--provider-root');
+  const verificationProviderRoot = option('--verification-provider-root')
+    ? requireAbsolute(option('--verification-provider-root'), '--verification-provider-root')
+    : providerRoot;
+  const providerRevision = option('--provider-revision');
   const nodeExecutable = fs.realpathSync(requireAbsolute(option('--node'), '--node'));
   const output = option('--output') ? requireAbsolute(option('--output'), '--output') : undefined;
   const registry = loadAdmissionRegistry(option('--registry') ?? undefined);
   const admission = registry.admissions.find((item) => item.admissionId === admissionId);
   if (!admission) throw new Error(`Unknown admission: ${admissionId}`);
-  const errors = validateAdmissionRegistry(registry, { providerRoots: new Map([[admission.provider.providerId, providerRoot]]) });
+  const errors = validateAdmissionRegistry(registry, {
+    providerRoots: new Map([[admission.provider.providerId, verificationProviderRoot]]),
+    providerRevisions: providerRevision ? new Map([[admission.provider.providerId, providerRevision]]) : new Map(),
+  });
   if (errors.length) throw new Error(errors.join('\n'));
   const isCredentialFree = admission.authentication?.mode === 'none';
   let credentialFile = null;
