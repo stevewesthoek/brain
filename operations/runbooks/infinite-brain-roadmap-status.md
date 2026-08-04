@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-03
-**Audited:** 2026-08-03 — merge-readiness gate audited without executing B8.1
+**Last verified:** 2026-08-04
+**Audited:** 2026-08-04 — Mind Context activation and contained Mind Graphify baseline verified; B8.1 remains unexecuted
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -16,7 +16,7 @@ This page reports reality. Roadmaps report order. Implementation plans report wo
 
 ## Current summary
 
-The Mind/Brain system is usable as a human-first vault with report-only and narrowly approval-gated Brain capabilities. It now has a validated retrieval evaluation corpus, context-pack schema, deterministic read-only retrieval core package, CLI command surface, trust-boundary enforcement, evaluation loader, metric calculator, fixed benchmark command, thin adapters, semantic-ranker gate, capability manifest, generated live status, the B4.4 one-status-view exposure, the first bounded measured-automation pilot batch, the B7.2-B7.7 simplification batch, and tested backup/restore/runtime recovery checks, but it still does not provide proven continuous automation value.
+The Mind/Brain system is usable as a human-first vault with report-only and narrowly approval-gated Brain capabilities. It now has a validated retrieval evaluation corpus, context-pack schema, deterministic read-only retrieval core package, CLI command surface, trust-boundary enforcement, an owner-approved project-scoped Mind Context MCP provider with live and unavailable readback evidence, evaluation loader, metric calculator, fixed benchmark command, semantic-ranker gate, capability manifest, generated live status, the B4.4 one-status-view exposure, the first bounded measured-automation pilot batch, the B7.2-B7.7 simplification batch, one owner-ratified contained Mind Graphify baseline, and tested backup/restore/runtime recovery checks, but it still does not provide proven continuous automation value.
 
 ## Current planning priority
 
@@ -41,7 +41,7 @@ obsolete-numbered artifacts remain evidence only and do not satisfy the
 canonical dependency chain. B8.1 is the first canonical task when P8 is
 explicitly authorized; it is not the current approved execution task.
 The merge-readiness audit did not execute the benchmark: B8.1 and B8.2 remain
-incomplete, Graphify remains blocked, and P8 remains 0/6 accepted. The exact
+incomplete, canonical P8 Graphify migration remains blocked, and P8 remains 0/6 accepted. The exact
 next action is explicit authorization for a benchmark plan digest; a dry-run
 alone does not authorize materialization or execution.
 The stabilization tasks remain separate from the existing B1, B2, and later
@@ -76,9 +76,10 @@ task IDs; existing B2 Context Gateway tasks are unchanged.
 - P8 context-memory efficiency and freshness is planned only. A Codebase
   Memory MCP candidate binary is installed (`~/.local/bin/codebase-memory-mcp`
   v0.9.0, SHA-256 d9fbdd7d, admission status: candidate); no approved default
-  activation, rollout, or scheduler change exists. Graphify structural
-  indexing is quiesced; `graphify-transition-governance.json` prohibits
-  deletion of `graphify-out/` (retained pending retention-gate clearance).
+  activation, rollout, or scheduler change exists. The one owner-ratified
+  contained Mind Graphify snapshot is accepted only as the M7.1 baseline;
+  future execution authority remains `none`, and it does not authorize P8
+  migration, scheduling, or deletion of the compatibility `graphify-out/` path.
 - Mind `M1.3` is complete (2026-07-31).
 - Mind `M1.4` is complete (2026-07-31): kanban.md retained as sole human task
   authority; tasks.md retired and non-authoritative.
@@ -101,6 +102,7 @@ exact-scope-approval-validator | brain-runtime | candidate | approval-gated | ca
 fixed-benchmark-command | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/evals/benchmark.mjs | npm --prefix projects/mind-context run eval | 2026-07-16 | metric-calculator | none | none | none | pass: operations/reports/b3-3-fixed-benchmark-command-2026-07-16.md
 fixture-only-thin-mcp-adapter | brain-runtime | verified | fixture-only | verified | unknown | observed | verified | projects/mind-context/src/adapters/index.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core, retrieval-trust-boundary | none | none | none | pass: operations/reports/b2-8-thin-adapters-2026-07-16.md
 metric-calculator | brain-runtime | verified | read-only | verified | unknown | observed | verified | projects/mind-context/src/evals/metrics.mjs | npm --prefix projects/mind-context test | 2026-07-16 | evaluation-loader | none | none | none | pass: operations/reports/b3-2-metric-calculator-2026-07-16.md
+mind-context-mcp-provider | brain-runtime | verified | read-only | verified | deployed | observed | verified | projects/mind-context/src/provider/server.mjs | npm --prefix projects/mind-context test | 2026-08-04 | context-gateway-core, retrieval-trust-boundary, provider-admission-validation | mcp-provider-admission:mind-context-for-brain=active-local | required | disable project registration and remove owner-only activation approval per operations/runbooks/mind-context-provider-activation.md | pass: operations/reports/m2-4-context-gateway-activation-2026-08-04.md
 provider-admission-validation | brain-runtime | verified | approval-gated | verified | configured | observed | verified | tools/validate-mcp-provider-admissions.mjs | node tools/validate-mcp-provider-admissions.mjs | 2026-07-16 | capability-state-validation | none | two-phase | node tools/validate-mcp-provider-admissions.mjs | pass: operations/reports/workbench-mcp-provider-admission-2026-07-15.md
 retrieval-corpus-validation | brain-runtime | verified | read-only | verified | unknown | observed | verified | tools/validate-retrieval-evaluation-corpus.mjs | node tools/validate-retrieval-evaluation-corpus.mjs | 2026-07-16 |  | none | none | none | pass: operations/reports/bs0-20-retrieval-evaluation-corpus-2026-07-16.md
 retrieval-trust-boundary | brain-runtime | verified | fixture-only | verified | unknown | observed | verified | projects/mind-context/src/core/plan-context-pack.mjs | npm --prefix projects/mind-context test | 2026-07-16 | context-gateway-core | none | none | none | pass: operations/reports/b2-7-trust-boundary-2026-07-16.md
@@ -148,7 +150,28 @@ Semantic-ranker smoke gate → pass
 Capability manifest inventory and generated live-status checks → pass
 ```
 
-The existing graph reports include low-signal Obsidian plugin or unlabeled broad-repo modules and must not be treated as current architecture truth.
+Older compatibility graph reports include low-signal Obsidian plugin or
+unlabeled broad-repo modules and are superseded for M7.1 by the owner-ratified
+contained snapshot. The accepted snapshot is still generated navigation
+evidence, not architecture authority.
+
+On 2026-08-04:
+
+```text
+Mind Context provider tests → 71 passed, 0 failed
+Mind Context provider build/check → pass
+Provider admission source/runtime verification → 1/1 verified, 0 incomplete
+Codex project discovery → enabled
+MCP initialize, tools/list, health, resolve, explain → pass
+Unknown write tool → rejected with tool_not_admitted
+Unavailable core → core_unavailable with manual-targeted-read fallback
+Temporary disable and approval withholding → startup prevented; active restore passed
+Contained Mind Graphify snapshot → owner-ratified; 601/601 corpus files represented; 0/29 plugin internals included
+```
+
+Evidence:
+`operations/reports/m2-4-context-gateway-activation-2026-08-04.md` and
+`operations/reports/m7-1-mind-contained-graphify-2026-08-04.md`.
 
 On 2026-07-31, Brain-only final verification passed Brain Core, Brain Console,
 Mind Steward, capability, contract, scheduler, retrieval, documentation,

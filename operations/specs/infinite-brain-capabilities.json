@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "reviewedAt": "2026-07-22",
+  "reviewedAt": "2026-08-04",
   "capabilities": [
     {
       "capabilityId": "retrieval-corpus-validation",
@@ -385,6 +385,41 @@
       "approvalRequirement": "none",
       "evidenceReferences": [
         "operations/reports/b2-8-thin-adapters-2026-07-16.md"
+      ]
+    },
+    {
+      "capabilityId": "mind-context-mcp-provider",
+      "displayName": "Mind Context MCP Provider",
+      "owner": "brain-runtime",
+      "description": "Owner-approved project-scoped stdio provider for fixed-scope read-only Mind retrieval with live freshness and manual unavailable fallback.",
+      "state": "verified",
+      "safetyMode": "read-only",
+      "contractId": "mcp-provider-admission",
+      "schemaPath": "operations/specs/mcp-provider-admissions.json",
+      "entrypoint": "projects/mind-context/src/provider/server.mjs",
+      "evidenceCommand": "npm --prefix projects/mind-context test",
+      "evidenceReport": "operations/reports/m2-4-context-gateway-activation-2026-08-04.md",
+      "lastVerified": "2026-08-04",
+      "dependencies": [
+        "context-gateway-core",
+        "retrieval-trust-boundary",
+        "provider-admission-validation"
+      ],
+      "featureFlag": "mcp-provider-admission:mind-context-for-brain=active-local",
+      "rollbackOrDisableCommand": "disable project registration and remove owner-only activation approval per operations/runbooks/mind-context-provider-activation.md",
+      "repositoryState": "verified",
+      "deployedState": "deployed",
+      "observedState": "observed",
+      "verifiedState": "verified",
+      "readScope": [
+        "projects/mind-context/src",
+        "operations/system-configs/mcp/mind-context"
+      ],
+      "writeScope": [],
+      "externalMutation": false,
+      "approvalRequirement": "required",
+      "evidenceReferences": [
+        "operations/reports/m2-4-context-gateway-activation-2026-08-04.md"
       ]
     },
     {

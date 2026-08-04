@@ -1,9 +1,10 @@
 # Mind Context Provider Activation
 
-**State:** activation-prepared; candidate disabled  
+**State:** active-local; activation and disable/restore verification passed
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
-**Provider source lock:** `6f95613376b52e5b43cb532856a670deeccf7212`
+**Provider source lock:** `51e9091c7374e0642f4fe076b895c184152dd516`
+**Mind source lock:** `d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f`
 
 ## Boundary
 
@@ -19,7 +20,7 @@ It exposes no write, apply, index, refresh, shell, arbitrary-path, credential,
 network, or mutation tool. Retrieval text remains untrusted data.
 
 ```text
-Codex project registration (disabled candidate)
+Codex project registration (active-local)
   -> fixed Node entrypoint at admitted Brain revision
   -> fixed Mind root + fixed nine-scope allowlist
   -> read-through Markdown discovery and SHA-256 hashing
@@ -51,16 +52,16 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvedAt": "<ISO-8601 timestamp>",
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
-  "providerRevision": "6f95613376b52e5b43cb532856a670deeccf7212",
-  "mindCommit": "06de527423e05d4208cdcf485be92a2d1028c46d",
+  "providerRevision": "51e9091c7374e0642f4fe076b895c184152dd516",
+  "mindCommit": "d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
 ```
 
 The file must be mode `0600`. Its timestamp and ID must be valid, and its
 provider revision, Mind commit, and complete sorted scope list must match the
-candidate exactly. Brain must not create it until Steve explicitly approves
-activation after reviewing the candidate evidence.
+candidate exactly. Brain created it only after Steve explicitly approved
+activation, and keeps it outside repositories with owner-only permissions.
 
 Preparation is separately approval-gated. A preparation approval uses scope
 `mind-context-preparation`, binds the same provider revision, Mind commit, and
@@ -104,8 +105,11 @@ Activation requires all of the following:
 6. Only after those live checks pass may Mind update its three authorized agent
    entrypoints.
 
-The current user request authorizes preparation but is not recorded as the
-explicit activation approval required by step 3.
+Steve Westhoek supplied the explicit activation approval on 2026-08-04. Brain
+recorded it as `M2.4-activation-2026-08-04-d64e8bd1-51e9091c` and completed
+enabled-client, live-readback, unavailable-service, mutation-rejection, and
+disable/restore checks. See
+`operations/reports/m2-4-context-gateway-activation-2026-08-04.md`.
 
 ## Disable and rollback
 

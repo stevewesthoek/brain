@@ -1,5 +1,8 @@
 # M2.4 Context Gateway Activation Preparation — 2026-08-04
 
+> Historical preparation record. Superseded by the approved activation evidence
+> in `m2-4-context-gateway-activation-2026-08-04.md`.
+
 **Status:** activation-prepared; actual activation blocked on explicit Steve Westhoek approval  
 **Canonical integration target:** Brain `main`  
 **Evidence branch:** `codex/mind-m7-m2-unblock`  

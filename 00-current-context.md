@@ -8,7 +8,7 @@ Agents should read this early when working on AI infrastructure, skills, configs
 
 ```yaml
 status: current
-last_reviewed: 2026-07-10
+last_reviewed: 2026-08-04
 owner: Steve Westhoek
 purpose: Keep AI sessions oriented on the Brain repo without loading the whole repo.
 ```
@@ -28,7 +28,13 @@ The `mind` repo contains Steve's personal knowledge, strategy, convictions, busi
 
 The current Infinite Brain program uses seven priorities owned strategically by `/Users/Office/Repos/stevewesthoek/mind/system/mind-roadmap.md`. Brain's executable projection lives in `operations/specs/infinite-brain-runtime-roadmap.md`, and live capability truth lives only in `operations/runbooks/infinite-brain-roadmap-status.md`.
 
-Priority 1 is active: align all path/schema contracts and agent instructions with the cleaned Mind structure. The Context Gateway is planned, not active. Until it passes evaluation, use Mind's `system/agent-context/` entrypoints and targeted reads.
+Priorities 1–7 are complete; P8 remains separately deferred and authorization-gated.
+The exact project-scoped `mind-context` Codex provider is active-local,
+owner-approved, read-only, and bound to provider `51e9091c...` plus Mind
+`d64e8bd1...`. Prefer it when healthy/current and use Mind's
+`system/agent-context/` manual targeted-read route when unavailable. The
+owner-ratified Graphify snapshot `20260804T000604198Z-06de527423e0` is a
+one-time non-authoritative M7.1 baseline; future execution authority is `none`.
 
 ## Current Always-Available AI Context Decision
 

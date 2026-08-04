@@ -1,6 +1,6 @@
 # M7.1 Mind Contained Graphify Acceptance — 2026-08-04
 
-**Status:** blocked — two success receipts exist under one-shot authority; owner disposition required
+**Status:** pass — duplicate publication explicitly dispositioned by Steve Westhoek
 **Owner:** Brain runtime  
 **Mind source:** `main` at `06de527423e05d4208cdcf485be92a2d1028c46d`  
 **Runner source:** `codex/mind-m7-m2-unblock` at `38464719d96e9eced962c16982ed8bd4597dee66`
@@ -21,7 +21,9 @@ However, the one-shot lifecycle is nonconforming. The `00:05:30` invocation
 published a success receipt, then returned failure because staging cleanup hit
 `ENOTEMPTY`. Because the early runner did not consume authorization at
 publication, it was retried at `00:06:04` and published a second success receipt.
-Both are preserved; neither is being silently deleted or reclassified.
+Both are preserved. On 2026-08-04 Steve Westhoek explicitly ratified the
+`00:06:04` snapshot and classified `00:05:30` as a superseded
+post-publication-cleanup diagnostic.
 
 ## Bound identities
 
@@ -87,7 +89,9 @@ inactive. A future refresh requires a new explicit authorization.
 
 ## Mind handoff
 
-Mind must not close M7.1 yet. Steve Westhoek must explicitly disposition the two
-preserved success receipts—for example, ratify the current `00:06:04` snapshot
-and classify `00:05:30` as a superseded post-publication-cleanup diagnostic.
-No further Graphify execution is needed or authorized. Brain did not modify Mind.
+Mind may record the accepted `00:06:04` receipt and storage baseline and close
+M7.1. The accepted graph matched Mind HEAD `06de5274...` at execution and
+acceptance time. Mind commit `d64e8bd1...` was created afterward solely to
+preserve the pre-existing compile-loop audit log, so it does not invalidate the
+ratified one-time baseline. No further Graphify execution is needed or
+authorized.

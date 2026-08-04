@@ -207,13 +207,13 @@
     },
     {
       "admissionId": "mind-context-for-brain",
-      "status": "candidate",
+      "status": "active-local",
       "owner": "brain-runtime",
       "consumer": "brain",
       "provider": {
         "providerId": "mind-context",
         "repository": "stevewesthoek/brain",
-        "revision": "6f95613376b52e5b43cb532856a670deeccf7212",
+        "revision": "51e9091c7374e0642f4fe076b895c184152dd516",
         "sourceState": "committed",
         "version": "1.0.0",
         "entrypoint": "projects/mind-context/src/provider/server.mjs",
@@ -221,7 +221,7 @@
           { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "14c6a20e0ef0b9ea33b44575c5ed016703b8de1332a92dda30cd3309767c5d82" },
           { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "0f942f4d58fa8bd6de792b9b5f10eeb9fdb1f07cbfb69075a5ffdc0c1e3015a1" },
           { "path": "projects/mind-context/src/adapters/index.mjs", "sha256": "bfdb84ff893119079e75edb5146ae9451be85ea0a46931c45d692b18e0296ef4" },
-          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "6e5b8bc80b5bc41c649c294d1d6304e9505656ad53d2ff3b35601a6c3182a987" },
+          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "61ad9f4a7dbcd4cd2b8870cd072ca44cde8bd4b2cd61287d05acddc55ad4db6b" },
           { "path": "projects/mind-context/src/core/discover.mjs", "sha256": "2648c2cc833a76abe7072fc132df3a3fae3dd639220ed958e513653550896378" },
           { "path": "projects/mind-context/src/core/policy.mjs", "sha256": "fb008dccdf147d54e99f6104f96ab7081aa191cd1ece863435a1c5561e708e6b" },
           { "path": "projects/mind-context/src/core/plan-context-pack.mjs", "sha256": "3eb281efca3398d09d3e75cc8bfe392414d037b08661a43d7df5e773ba5af5d4" },
@@ -245,10 +245,10 @@
         "fixedEnvironment": {
           "MIND_CONTEXT_ACTIVATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-read-only.json",
           "MIND_CONTEXT_ALLOWED_SCOPES": "faith,knowledge,organizations,people,projects,resources,system,tasks,wiki",
-          "MIND_CONTEXT_EXPECTED_HEAD": "06de527423e05d4208cdcf485be92a2d1028c46d",
+          "MIND_CONTEXT_EXPECTED_HEAD": "d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f",
           "MIND_CONTEXT_PREPARATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-preparation.json",
           "MIND_CONTEXT_PREPARATION_MODE": "0",
-          "MIND_CONTEXT_PROVIDER_REVISION": "6f95613376b52e5b43cb532856a670deeccf7212",
+          "MIND_CONTEXT_PROVIDER_REVISION": "51e9091c7374e0642f4fe076b895c184152dd516",
           "MIND_CONTEXT_ROOT": "/Users/Office/Repos/stevewesthoek/mind"
         },
         "enforcementStatus": "provider-enforced",
@@ -271,17 +271,17 @@
       "verification": {
         "commands": [
           "npm --prefix projects/mind-context test",
-          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=6f95613376b52e5b43cb532856a670deeccf7212",
-          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision 6f95613376b52e5b43cb532856a670deeccf7212 --node <node-path> --output <project-config> --check"
+          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=51e9091c7374e0642f4fe076b895c184152dd516",
+          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision 51e9091c7374e0642f4fe076b895c184152dd516 --node <node-path> --output <project-config> --check"
         ],
         "evidence": [
-          "Provider implementation commit 6f95613376b52e5b43cb532856a670deeccf7212; fixed-root, fixed-scope, no-network stdio service with three read-only tools and no mutation path.",
+          "Provider implementation commit 51e9091c7374e0642f4fe076b895c184152dd516; fixed-root, fixed-scope, no-network stdio service with three read-only tools, bounded explain rankings, and no mutation path.",
           "Authentication mode none is intentional for owner-local stdio: the process inherits the local OS account, reads no credentials, accepts no secret input, performs no credential relay, and requires a separate owner-only Steve Westhoek activation approval file outside repositories before non-preparation startup.",
-          "Preparation tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD and dirty/untracked worktree rejection, pre-read scope enforcement, raw-stream/corpus/response caps, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Preparation itself requires a short-lived bound approval. Candidate registration remains disabled until exact provider revision, Mind commit, and scopes are explicitly approved."
+          "Tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD and dirty/untracked worktree rejection, pre-read scope enforcement, raw-stream/corpus/response caps including a 602-source bounded explain regression, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Steve Westhoek approved activation on 2026-08-04 for provider revision 51e9091c7374e0642f4fe076b895c184152dd516, Mind commit d64e8bd1fd3666758ce140b1c1d8fb147fb39e1f, and the exact nine-scope allowlist."
         ]
       },
       "revocation": {
-        "procedure": "Set status to paused or revoked; keep the tracked candidate disabled; remove any generated project registration and owner-only activation approval file; set MIND_CONTEXT_CORE_DISABLED=1 for an already launched process; verify the client reports the provider unavailable and uses only the documented manual targeted-read fallback. Preserve admission, source, tests, and activation/disable receipts.",
+        "procedure": "Set status to paused or revoked; regenerate or remove the project registration; remove the owner-only activation approval file; set MIND_CONTEXT_CORE_DISABLED=1 for an already launched process; verify the client reports the provider unavailable and uses only the documented manual targeted-read fallback. Preserve admission, source, tests, and activation/disable receipts.",
         "preserveEvidence": true
       }
     }

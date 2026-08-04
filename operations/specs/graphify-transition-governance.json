@@ -114,7 +114,7 @@
       {
         "authorizationId": "M7.1-user-request-2026-08-04",
         "scope": "one-bounded-mind-graphify-run",
-        "status": "blocked-nonconforming-duplicate-publication",
+        "status": "completed-owner-ratified",
         "completedAt": "2026-08-04T00:06:06.991Z",
         "mindCommit": "06de527423e05d4208cdcf485be92a2d1028c46d",
         "brainRunnerCommit": "38464719d96e9eced962c16982ed8bd4597dee66",
@@ -130,7 +130,14 @@
             "postPublicationFailure": null
           }
         ],
-        "ownerDispositionRequired": true,
+        "ownerDispositionRequired": false,
+        "ownerDisposition": {
+          "approvedBy": "Steve Westhoek",
+          "approvedAt": "2026-08-04",
+          "acceptedRunId": "20260804T000604198Z-06de527423e0",
+          "supersededDiagnosticRunId": "20260804T000530178Z-06de527423e0",
+          "decision": "Ratify the 00:06:04 snapshot and classify 00:05:30 as a superseded post-publication-cleanup diagnostic."
+        },
         "recurringAuthorityGranted": false
       }
     ],
