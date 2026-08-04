@@ -142,6 +142,11 @@ function exportCorpus(repo, commit, selected, corpusRoot, maxBytes) {
     timeout: 120_000,
   });
   if (extract.status !== 0) throw new Error(`tar_extract_failed:${String(extract.stderr ?? '').trim()}`);
+  // Graphify inherits ignore files from the nearest ancestor VCS root. The
+  // operational runtime root lives inside Brain, whose `.gitignore` correctly
+  // excludes `runtime/`; mark this exported corpus as its own VCS boundary so
+  // Brain's ignore rules cannot erase the explicitly allowlisted Mind corpus.
+  fs.mkdirSync(path.join(corpusRoot, '.hg'), { mode: 0o700 });
   return totalBytes;
 }
 
