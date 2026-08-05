@@ -83,10 +83,10 @@ test('M2.4: admission status is active-local', () => {
   assert.equal(mcAdmission.status, 'active-local');
 });
 
-test('M2.4: provider revision is 51e9091c (live approved)', () => {
+test('M2.4: provider revision is 076b9f97 (live approved)', () => {
   assert.equal(
     mcAdmission.provider.revision,
-    '51e9091c7374e0642f4fe076b895c184152dd516'
+    '076b9f97030e1c90bc66ffbb61d29456b41ed69f'
   );
 });
 

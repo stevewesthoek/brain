@@ -52,7 +52,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvedAt": "<ISO-8601 timestamp>",
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
-  "providerRevision": "51e9091c7374e0642f4fe076b895c184152dd516",
+  "providerRevision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
   "mindCommit": "a21f9ed5d7270ae7dd939b93c5df525c933091f8",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
@@ -84,6 +84,15 @@ commit-bound approval with uncommitted bytes.
 Discovery reads only admitted scopes and enforces 2,000-source, 2 MiB-per-file,
 and 64 MiB-corpus caps before retrieval; stdio requests and responses are also
 bounded by the admission's 64 KiB and 512 KiB limits.
+
+## Health response field semantics
+
+The `boundary` field (`project-scoped-read-only-activation-candidate`) is a
+static implementation label describing the provider's fixed security boundary
+class. It does not change with activation state and does not indicate the
+provider is still a candidate. The dynamic lifecycle state is reported in
+`activationState` (`active-local-approved` when active). No provider code change
+is required solely to rename this field.
 
 ## Activation trigger
 
@@ -149,7 +158,7 @@ claude mcp add --scope local mind-context \
   -e MIND_CONTEXT_EXPECTED_HEAD=<current-mind-pin> \
   -e MIND_CONTEXT_PREPARATION_APPROVAL_FILE=/Users/Office/.brain/approvals/mind-context-preparation.json \
   -e MIND_CONTEXT_PREPARATION_MODE=0 \
-  -e MIND_CONTEXT_PROVIDER_REVISION=51e9091c7374e0642f4fe076b895c184152dd516 \
+  -e MIND_CONTEXT_PROVIDER_REVISION=076b9f97030e1c90bc66ffbb61d29456b41ed69f \
   -e MIND_CONTEXT_ROOT=/Users/Office/Repos/stevewesthoek/mind
 ```
 

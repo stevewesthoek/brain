@@ -190,3 +190,55 @@ sessions, healthy, revision-matched, and HEAD-matched.
 
 See `operations/runbooks/mind-context-provider-activation.md` §"Claude Code discovery — Brain-project
 versus Mind-local" for the exact add/remove/restore/post-disable procedure.
+
+---
+
+## Addendum — 2026-08-05: Provider Repin to 076b9f97
+
+The provider revisions above (`51e9091c`) are historical records of the initial
+activation on 2026-08-04. On 2026-08-05 Steve Westhoek authorized a provider
+repin advancing the active revision:
+
+| Field | Value |
+|-------|-------|
+| Active provider revision | `076b9f97030e1c90bc66ffbb61d29456b41ed69f` |
+| Mind pin | `a21f9ed5d7270ae7dd939b93c5df525c933091f8` |
+| Activation commit | `723d58c4295e66e1bfaaace8a6303f03a0f5474a` |
+| Approval ID | `M2.4-repin-2026-08-05-076b9f97` |
+| Approval mode | `0600` |
+
+**Retrieval controls added in 076b9f97:**
+
+- `scopeSubset`: strict array validation (1–9, unique, no traversal)
+- `authorityFilter`: `any` | `current` (canonical sources only)
+- `freshnessFilter`: `any` | `fresh` (current lifecycle only)
+- Generic metadata parsing: fenced YAML, bold-MD, H1-prologue skip
+- Key normalization and lifecycle phrase expansion
+- Authority derivation from lifecycle status
+
+**Live health (2026-08-05):**
+
+| Check | Result |
+|-------|--------|
+| `healthy` | `true` |
+| `readOnly` | `true` |
+| `fixtureOnly` | `false` |
+| `headMatchesExpected` | `true` |
+| `mutationPathExposed` | `false` |
+| `providerRevision` | `076b9f97030e1c90bc66ffbb61d29456b41ed69f` |
+| `sourceHead` | `a21f9ed5d7270ae7dd939b93c5df525c933091f8` |
+| Tools | 3 read-only |
+| `automaticFallback` | `false` |
+| Corpus SHA-256 | `b605eaad9ec1e995788d0a731cda74a1a4d462825af33262f9d82b34c092764b` |
+
+**Observation 003 handoff:** A representative system-scope resolve verified
+structural correctness (both canonical sources, no forbidden June reports, no
+non-system sources, real SHA-256 hashes, bounded budget). Mind may retry
+Observation 003 using the exact CTX-CON-006 payload against the activated
+provider. This addendum does not claim Observation 003 completion.
+
+**Boundary field note:** The health response `boundary` field
+(`project-scoped-read-only-activation-candidate`) is a static implementation
+label describing the provider's fixed security boundary. It does not change with
+activation state. The dynamic lifecycle state is `activationState`
+(`active-local-approved`). No provider code change is required for this naming.
