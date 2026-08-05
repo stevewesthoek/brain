@@ -1732,9 +1732,9 @@ test('T59: changed network profile sha256 changes digest', () => {
 // v5 contract tests (T60–T64)
 // ---------------------------------------------------------------------------
 
-test('T60: canonical plan has planVersion 5.0.0', () => {
+test('T60: canonical plan has planVersion 5.1.0', () => {
   const plan = makeCanonicalPlanFixture();
-  assert.equal(plan.planVersion, '5.0.0', 'planVersion must be 5.0.0');
+  assert.equal(plan.planVersion, '5.1.0', 'planVersion must be 5.1.0 (v5s)');
 });
 
 test('T61: known stale v1/v2 digests are rejected at materialization', async () => {
@@ -1881,4 +1881,109 @@ test('T68: verifier accepts a valid emitted plan and rejects tampered digest', (
   } finally {
     cleanup(tmpDir);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Shared digest contract tests (T69–T72) — v5s path-independence + allowlist
+// ---------------------------------------------------------------------------
+
+import {
+  projectForDigest,
+  findUnknownTopLevelFields,
+  DIGEST_ALLOWED_TOP_LEVEL,
+} from './lib/b8-1-plan-digest.mjs';
+
+test('T69: Brain-worktree paths stripped from networkIsolationProof in digest projection', () => {
+  const plan = makeCanonicalPlanFixture({
+    networkProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: '6'.repeat(64) },
+      runtimeIdentity: { path: '/opt/homebrew/bin/node', sha256: 'b'.repeat(64), version: 'v25.0.0' },
+      childIdentity: { path: '/Users/Office/Repos/brain-b8-1-v5s/tools/lib/b8-1-network-isolation-child.mjs', sha256: 'c'.repeat(64) },
+      profilePath: '/Users/Office/Repos/brain-b8-1-v5s/operations/specs/b8-1-network-deny.sb',
+      profileSha256: '7'.repeat(64),
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true,
+      selfTestDetail: 'permission denial proven',
+    },
+  });
+  const projected = projectForDigest(plan);
+  const proof = projected.networkIsolationProof;
+  // Brain-worktree paths must be stripped
+  assert.ok(!('profilePath' in proof), 'profilePath must be stripped from digest projection');
+  assert.ok(!('path' in (proof.childIdentity ?? {})), 'childIdentity.path must be stripped from digest projection');
+  // SHAs must remain
+  assert.equal(proof.profileSha256, '7'.repeat(64), 'profileSha256 must remain in projection');
+  assert.equal(proof.childIdentity?.sha256, 'c'.repeat(64), 'childIdentity.sha256 must remain in projection');
+  // External binary paths (adapter, runtime) are intentionally machine-bound — must remain
+  assert.equal(proof.adapterIdentity?.path, '/usr/bin/sandbox-exec', 'adapter path must remain (intentionally machine-bound)');
+  assert.equal(proof.runtimeIdentity?.path, '/opt/homebrew/bin/node', 'runtime path must remain (intentionally machine-bound)');
+});
+
+test('T70: Brain-worktree paths stripped from graphifyStatus in digest projection', () => {
+  const plan = makeCanonicalPlanFixture({
+    graphifyStatus: {
+      status: 'excluded-subject',
+      reason: 'graphify not selected',
+      profilePath: '/Users/Office/Repos/brain-b8-1-v5s/operations/specs/graphify-operational-profiles.json',
+      profileSha256: '8'.repeat(64),
+      governancePath: '/Users/Office/Repos/brain-b8-1-v5s/operations/specs/graphify-transition-governance.json',
+      governanceSha256: '9'.repeat(64),
+    },
+  });
+  const projected = projectForDigest(plan);
+  const gs = projected.graphifyStatus;
+  assert.ok(!('profilePath' in gs), 'graphifyStatus.profilePath must be stripped');
+  assert.ok(!('governancePath' in gs), 'graphifyStatus.governancePath must be stripped');
+  assert.equal(gs.profileSha256, '8'.repeat(64), 'graphifyStatus.profileSha256 must remain');
+  assert.equal(gs.governanceSha256, '9'.repeat(64), 'graphifyStatus.governanceSha256 must remain');
+});
+
+test('T71: same Brain commit from two different worktree paths produces identical digest', () => {
+  // Same content at different worktree paths — must produce identical digest
+  const sharedSha256 = 'c'.repeat(64);
+  const planA = makeCanonicalPlanFixture({
+    networkProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: '6'.repeat(64) },
+      runtimeIdentity: { path: '/opt/homebrew/bin/node', sha256: 'b'.repeat(64), version: 'v25.0.0' },
+      childIdentity: { path: '/worktree-A/tools/lib/b8-1-network-isolation-child.mjs', sha256: sharedSha256 },
+      profilePath: '/worktree-A/operations/specs/b8-1-network-deny.sb',
+      profileSha256: '7'.repeat(64),
+      controlSucceeded: true, sandboxedChildStarted: true, sandboxedConnectionDenied: true,
+      selfTestPassed: true, selfTestDetail: 'ok',
+    },
+  });
+  const planB = makeCanonicalPlanFixture({
+    networkProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: '6'.repeat(64) },
+      runtimeIdentity: { path: '/opt/homebrew/bin/node', sha256: 'b'.repeat(64), version: 'v25.0.0' },
+      childIdentity: { path: '/worktree-B/tools/lib/b8-1-network-isolation-child.mjs', sha256: sharedSha256 },
+      profilePath: '/worktree-B/operations/specs/b8-1-network-deny.sb',
+      profileSha256: '7'.repeat(64),
+      controlSucceeded: true, sandboxedChildStarted: true, sandboxedConnectionDenied: true,
+      selfTestPassed: true, selfTestDetail: 'ok',
+    },
+  });
+  assert.equal(computePlanDigest(planA), computePlanDigest(planB),
+    'different worktree paths with same content SHAs must produce identical digest');
+});
+
+test('T72: unknown top-level fields are detected by verifier allowlist', () => {
+  const plan = makeCanonicalPlanFixture();
+  // Add an unknown field
+  const withUnknown = { ...plan, _unknownField: 'some value', actuallyUnknownKey: 'bad' };
+  const unknownFields = findUnknownTopLevelFields(withUnknown);
+  assert.ok(unknownFields.includes('actuallyUnknownKey'), 'must detect unknown field not in allowlist');
+  // Annotation fields are not reported by findUnknownTopLevelFields (they are detected separately)
+  assert.ok(!unknownFields.includes('_unknownField'), '_annotation fields are handled separately');
+  // All fields in a clean fixture must be known
+  const cleanUnknown = findUnknownTopLevelFields(plan);
+  assert.equal(cleanUnknown.length, 0, 'clean fixture must have no unknown fields');
 });

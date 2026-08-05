@@ -29,6 +29,12 @@ import {
   removeDeclaredSymlinks,
   validateExportedTreeSymlinks,
 } from './validate-b8-1-benchmark-manifest.mjs';
+import {
+  PLAN_VERSION,
+  KNOWN_STALE_DIGESTS,
+  computePlanDigest,
+  canonicalize,
+} from './lib/b8-1-plan-digest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -44,16 +50,7 @@ const VALID_SUBJECTS = ['cbm', 'graphify', 'exact-source'];
 const RUN_ID_PATTERN = /^b8-1-[a-zA-Z0-9._-]+$/;
 const GRAPHIFY_BLOCK_REASON = 'graphify requires exact executable identity, version digest, bounded arguments, and dry-run self-test — contract not yet defined';
 
-// Known stale v1/v2/v3/v4r approval digests — these were path-dependent or from prior contracts.
-// Any attempt to use these as --approved-plan-sha256 fails closed with a clear error.
-// v4r digest is stale pending v5 re-run.
-const KNOWN_STALE_DIGESTS = new Set([
-  'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
-  '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
-  '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; v4r supersedes)
-  'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', // v4r (stale — stale pins; v5 supersedes)
-  'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42', // v5 (stale — path-dependent check detail in source-root-overrides; v5r supersedes)
-]);
+// KNOWN_STALE_DIGESTS is imported from tools/lib/b8-1-plan-digest.mjs (authoritative source).
 
 // Paths that planned writes must never overlap
 const PROTECTED_PATHS_RELATIVE_TO_HOME = [
@@ -82,15 +79,7 @@ function sha256File(filePath) {
   return sha256Buffer(fs.readFileSync(filePath));
 }
 
-function canonicalize(value) {
-  if (value === null || typeof value !== 'object') return value;
-  if (Array.isArray(value)) return value.map(canonicalize);
-  const sorted = {};
-  for (const key of Object.keys(value).sort()) {
-    sorted[key] = canonicalize(value[key]);
-  }
-  return sorted;
-}
+// canonicalize is imported from tools/lib/b8-1-plan-digest.mjs (authoritative source).
 
 function hashCanonicalJson(value) {
   return sha256Buffer(JSON.stringify(canonicalize(value)));
@@ -1025,8 +1014,21 @@ export function buildCanonicalPlan({
     version: cbmIdentity.version,
     sha256: cbmIdentity.sha256,
   } : null;
+  // Strip Brain-worktree-local paths from networkProof — keep content-addressable SHAs only.
+  // childIdentity.path and profilePath differ across worktrees; the verifier also strips them.
+  function stripNetworkProofPaths(proof) {
+    if (!proof || typeof proof !== 'object') return proof;
+    const { childIdentity, profilePath: _profilePath, ...rest } = proof;
+    const result = { ...rest };
+    if (childIdentity) {
+      const { path: _childPath, ...childRest } = childIdentity;
+      result.childIdentity = childRest;
+    }
+    return result;
+  }
+
   const canonicalNetworkProof = cbmSelected
-    ? (networkProof ?? { required: true, status: 'failed' })
+    ? stripNetworkProofPaths(networkProof ?? { required: true, status: 'failed' })
     : { required: false, status: 'not-required' };
 
   // Compute repo-relative paths for artifact binding. When repoRoot is not provided
@@ -1041,7 +1043,7 @@ export function buildCanonicalPlan({
   }
 
   const digestFields = {
-    planVersion: '5.0.0',
+    planVersion: PLAN_VERSION,
     runId,
     partialEvidence: excludedSubjects.length > 0,
     selectedSubjects: canonicalSelected,
@@ -1066,7 +1068,12 @@ export function buildCanonicalPlan({
       required: false,
       status: 'not-required',
     },
-    graphifyStatus: canonicalize(graphifyStatus),
+    graphifyStatus: (() => {
+      // Strip Brain-worktree-local paths — keep content-addressable SHAs only.
+      if (!graphifyStatus || typeof graphifyStatus !== 'object') return graphifyStatus;
+      const { profilePath: _pp, governancePath: _gp, ...rest } = graphifyStatus;
+      return canonicalize(rest);
+    })(),
     diskResult: canonicalize(diskResult),
     sourceStateHash: `sha256:${sourceStateHash}`,
     sourceLogicalIdentity: sourceStateBefore != null
@@ -1084,26 +1091,19 @@ export function buildCanonicalPlan({
   const runContext = {
     runDirectoryPhysical,
     plannedWritePaths: [...plannedWritePaths].sort(),
+    // Brain-worktree-local artifact paths (stripped from digest fields; content SHAs remain there)
+    networkDenyProfilePath: networkProof?.profilePath ?? null,
+    networkChildPath: networkProof?.childIdentity?.path ?? null,
+    graphifyProfilePath: graphifyStatus?.profilePath ?? null,
+    graphifyGovernancePath: graphifyStatus?.governancePath ?? null,
   };
 
   return { ...digestFields, runContext };
 }
 
-/**
- * Compute the deterministic SHA-256 digest of a canonical plan.
- * Canonicalizes keys alphabetically before hashing.
- * runContext is excluded — it contains run-local absolute paths.
- *
- * @param {object} plan  - the canonical plan object (as returned by buildCanonicalPlan)
- * @returns {string} 64-character lowercase hex SHA-256
- */
-export function computePlanDigest(plan) {
-  // Exclude runContext (run-local absolute paths) from digest computation
-  const { runContext: _excluded, ...digestFields } = plan;
-  const canonical = canonicalize(digestFields);
-  const json = JSON.stringify(canonical, null, 0); // compact JSON
-  return crypto.createHash('sha256').update(json).digest('hex');
-}
+// computePlanDigest is imported from tools/lib/b8-1-plan-digest.mjs (authoritative source).
+// It excludes runContext, planSha256, createdAt, annotation fields, and Brain-worktree paths.
+export { computePlanDigest };
 
 // ---------------------------------------------------------------------------
 // Materialization (defect #10: subject-aware directories)

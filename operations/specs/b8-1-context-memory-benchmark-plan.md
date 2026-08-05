@@ -1,6 +1,6 @@
 # B8.1 Context-memory benchmark plan
 
-**Status:** v5r contract ready — B8.1 and B8.2 remain incomplete and are NOT authorized for execution; v5r digest computed and independently verified, executionReady=true, pending approval
+**Status:** v5s contract ready — B8.1 and B8.2 remain incomplete and are NOT authorized for execution; v5s digest computed and independently verified, executionReady=true, pending approval
 **Date:** 2026-08-04
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
 **Next step:** Execution requires the prerequisites in the "Execution prerequisites" section below, including explicit approval of the exact dry-run `planSha256`.
@@ -107,7 +107,7 @@ The manifest paths are the fail-closed defaults. When a live checkout is dirty, 
 
 If any override is supplied, every manifest repository ID must be mapped exactly once. Each root must be an absolute, existing, non-symlink Git top level with empty `git status --porcelain` and `HEAD` exactly equal to the manifest pin. Unknown or missing IDs, traversal, a missing root, a dirty root, or a wrong commit fails preflight. The effective roots are captured in the digest-bound check records and source-state hash; no override mutates a checkout.
 
-Because physical override paths are digest inputs, an approved materialization must use the same exact roots recorded by the reviewed plan. If disposable roots were removed after planning, recreate clean detached checkouts at those exact paths and commits before using the approved digest; any different root mapping requires a new dry-run digest and new approval.
+Physical override paths are NOT digest inputs. The digest is path-independent: an approved plan and its digest are valid regardless of which physical path the Brain worktree occupies. Source-root override paths are captured in `runContext` (audit record only). An approved materialization must use source roots whose content-state SHA-256 matches the plan's `sourceStateHash`. If source roots were removed, recreate clean detached checkouts at the pinned commits; the same logical content produces the same hash regardless of physical path.
 
 ---
 

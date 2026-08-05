@@ -31,12 +31,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  PLAN_VERSION,
+  KNOWN_STALE_DIGESTS,
+  computePlanDigest,
+  canonicalize,
+} from './lib/b8-1-plan-digest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-export const EXECUTOR_VERSION = '5.0.0';
-export const REQUIRED_PLAN_VERSION = '5.0.0';
+export const EXECUTOR_VERSION = '5.1.0';
+export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
 const SUPPORTED_SUBJECTS = new Set(['cbm', 'exact-source']);
@@ -45,14 +51,8 @@ const CBM_SEARCH_LIMIT = 50;
 // Admitted network-deny sandbox profile path (relative to repo root).
 const NETWORK_DENY_PROFILE_PATH = path.join(REPO_ROOT, 'operations', 'specs', 'b8-1-network-deny.sb');
 
-// Known stale digests — rejected at materialization and executor time.
-export const KNOWN_STALE_DIGESTS = new Set([
-  'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4', // v1 (path-dependent tmp)
-  '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
-  '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; run-id v4r supersedes)
-  'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', // v4r (stale — stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes)
-  'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42', // v5 (stale — path-dependent check detail in source-root-overrides; v5r supersedes)
-]);
+// KNOWN_STALE_DIGESTS and computePlanDigest are imported from tools/lib/b8-1-plan-digest.mjs.
+export { KNOWN_STALE_DIGESTS };
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -60,19 +60,6 @@ export const KNOWN_STALE_DIGESTS = new Set([
 
 function sha256File(filePath) {
   return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
-}
-
-function canonicalize(value) {
-  if (value === null || typeof value !== 'object') return value;
-  if (Array.isArray(value)) return value.map(canonicalize);
-  const sorted = {};
-  for (const key of Object.keys(value).sort()) sorted[key] = canonicalize(value[key]);
-  return sorted;
-}
-
-function computePlanDigest(plan) {
-  const { runContext: _excluded, ...digestFields } = plan;
-  return crypto.createHash('sha256').update(JSON.stringify(canonicalize(digestFields))).digest('hex');
 }
 
 function atomicWriteJson(filePath, obj) {
@@ -118,7 +105,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     const gotVersion = plan.planVersion ?? `absent (schemaVersion=${plan.schemaVersion ?? 'absent'})`;
     return {
       plan: null,
-      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v5 preflight`,
+      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v5.1 preflight`,
     };
   }
 
@@ -129,7 +116,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     return { plan: null, error: 'approvedPlanSha256 must be exactly 64 lowercase hexadecimal characters' };
   }
   if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
-    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v5 plan contract (run-id b8-1-canonical-authorization-20260804-final-v5)' };
+    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v5.1.0 plan contract (run-id b8-1-canonical-authorization-20260805-final-v5s)' };
   }
 
   // Recompute the digest from the stored plan fields (excluding planSha256/createdAt/runContext)

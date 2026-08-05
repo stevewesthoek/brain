@@ -2,15 +2,18 @@
 /**
  * verify-b8-1-plan-digest.mjs
  *
- * Independent verifier for B8.1 canonical plans.
+ * Standalone independent verifier for B8.1 canonical plans.
  *
  * Loads a committed plan file produced by --write-plan, recomputes its
- * planSha256 from the digestInput fields (excluding planSha256, createdAt,
- * runContext, and _... annotation fields), and proves the stored planSha256
- * matches the recomputed value.
+ * planSha256 using the authoritative shared digest contract, and proves the
+ * stored planSha256 matches the recomputed value.
  *
  * This verifier does NOT rerun preflight. It is a standalone integrity check
  * that any reviewer can run against the committed plan file.
+ *
+ * All digest logic is imported from tools/lib/b8-1-plan-digest.mjs so this
+ * verifier uses the identical projection as preflight, executor, and evidence
+ * validator.
  *
  * Usage:
  *   node tools/verify-b8-1-plan-digest.mjs <plan-file>
@@ -22,87 +25,24 @@
  *   2 = parse error or bad invocation
  */
 
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  PLAN_VERSION,
+  KNOWN_STALE_DIGESTS,
+  DIGEST_ALLOWED_TOP_LEVEL,
+  computePlanDigest,
+  recomputeDigest,
+  findPlaceholders,
+  findUnknownTopLevelFields,
+} from './lib/b8-1-plan-digest.mjs';
 
-export const VERIFIER_VERSION = '1.0.0';
-export const REQUIRED_PLAN_VERSION = '5.0.0';
+export const VERIFIER_VERSION = '2.0.0';
+export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 
-// Fields excluded from the digest. These are run-local, observational, or
-// injected by materialization. They must never appear in digestInput.
-const EXCLUDED_FROM_DIGEST = new Set(['planSha256', 'createdAt', 'runContext']);
-
-// Annotation fields injected by the plan template (prefixed with _).
-// Their presence in a plan file indicates it was NOT produced by --write-plan.
-const ANNOTATION_PREFIX = '_';
-
-// Known stale digests — must not be accepted as valid.
-export const KNOWN_STALE_DIGESTS = new Set([
-  'dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4',
-  '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda',
-  '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0',
-  'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4',
-  'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42',
-]);
-
-function canonicalize(value) {
-  if (value === null || typeof value !== 'object') return value;
-  if (Array.isArray(value)) return value.map(canonicalize);
-  const sorted = {};
-  for (const key of Object.keys(value).sort()) sorted[key] = canonicalize(value[key]);
-  return sorted;
-}
-
-/**
- * Recompute the plan digest from a plan object.
- * Excludes planSha256, createdAt, runContext, and _annotation fields.
- *
- * @param {object} plan
- * @returns {{ digest: string, excludedFields: string[], annotationFields: string[] }}
- */
-export function recomputeDigest(plan) {
-  const excludedFields = [];
-  const annotationFields = [];
-  const digestInput = {};
-
-  for (const [key, value] of Object.entries(plan)) {
-    if (EXCLUDED_FROM_DIGEST.has(key)) {
-      excludedFields.push(key);
-      continue;
-    }
-    if (key.startsWith(ANNOTATION_PREFIX)) {
-      annotationFields.push(key);
-      continue;
-    }
-    digestInput[key] = value;
-  }
-
-  const digest = crypto
-    .createHash('sha256')
-    .update(JSON.stringify(canonicalize(digestInput)))
-    .digest('hex');
-
-  return { digest, excludedFields, annotationFields, digestInput };
-}
-
-/**
- * Scan a plan for BOUND_AT_PREFLIGHT placeholders in all string values.
- * Returns an array of field paths that contain placeholders.
- *
- * @param {any} value
- * @param {string} path
- * @returns {string[]}
- */
-export function findPlaceholders(value, fieldPath = '') {
-  if (typeof value === 'string' && value === 'BOUND_AT_PREFLIGHT') return [fieldPath];
-  if (value === null || typeof value !== 'object') return [];
-  if (Array.isArray(value)) {
-    return value.flatMap((v, i) => findPlaceholders(v, `${fieldPath}[${i}]`));
-  }
-  return Object.entries(value).flatMap(([k, v]) => findPlaceholders(v, fieldPath ? `${fieldPath}.${k}` : k));
-}
+// Re-export shared contract symbols for tests.
+export { KNOWN_STALE_DIGESTS, computePlanDigest, recomputeDigest, findPlaceholders, findUnknownTopLevelFields, DIGEST_ALLOWED_TOP_LEVEL };
 
 /**
  * Verify a plan file and prove its digest.
@@ -152,9 +92,9 @@ export function verifyPlanFile(planPath, expectedDigest = null) {
   }
 
   // Reject annotation fields (_xxx) — they indicate a template, not an emitted plan
-  const annotationKeys = Object.keys(plan).filter(k => k.startsWith(ANNOTATION_PREFIX));
-  if (annotationKeys.length > 0) {
-    errors.push(`plan contains annotation fields (${annotationKeys.join(', ')}) — this is a template file, not an emitted plan produced by --write-plan`);
+  const { annotationFields } = recomputeDigest(plan);
+  if (annotationFields.length > 0) {
+    errors.push(`plan contains annotation fields (${annotationFields.join(', ')}) — this is a template file, not an emitted plan produced by --write-plan`);
   }
 
   // Reject BOUND_AT_PREFLIGHT placeholders anywhere in the plan
@@ -163,16 +103,20 @@ export function verifyPlanFile(planPath, expectedDigest = null) {
     errors.push(`plan contains ${allPlaceholders.length} BOUND_AT_PREFLIGHT placeholder(s) at: ${allPlaceholders.join(', ')} — this is a template, not an emitted plan`);
   }
 
+  // Reject unknown top-level fields (explicit allowlist enforcement)
+  const unknownFields = findUnknownTopLevelFields(plan);
+  if (unknownFields.length > 0) {
+    errors.push(`plan contains unknown top-level field(s): ${unknownFields.join(', ')} — not in DIGEST_ALLOWED_TOP_LEVEL`);
+  }
+
   if (errors.length > 0) {
     return { ok: false, planSha256: plan.planSha256, errors, info };
   }
 
-  // Recompute digest
-  const { digest: recomputed, excludedFields, annotationFields } = recomputeDigest(plan);
+  // Recompute digest using the authoritative shared projection
+  const recomputed = computePlanDigest(plan);
   info.storedDigest = plan.planSha256;
   info.recomputedDigest = recomputed;
-  info.excludedFields = excludedFields;
-  info.annotationFieldsSkipped = annotationFields;
 
   if (recomputed !== plan.planSha256) {
     errors.push(`digest mismatch: stored ${plan.planSha256.slice(0, 16)}... recomputed ${recomputed.slice(0, 16)}...`);
@@ -249,8 +193,8 @@ if (IS_MAIN) {
 
   if (ok) {
     console.log(`PASS  planSha256: ${planSha256}`);
-    if (info.excludedFields?.length) {
-      console.log(`      excluded from digest: ${info.excludedFields.join(', ')}`);
+    if (info.storedDigest) {
+      console.log(`      verified via shared digest contract (tools/lib/b8-1-plan-digest.mjs)`);
     }
   } else {
     for (const err of errors) {

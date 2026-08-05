@@ -19,7 +19,7 @@ import process from 'node:process';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { computePlanDigest } from './prepare-b8-1-context-memory-benchmark.mjs';
+import { computePlanDigest } from './lib/b8-1-plan-digest.mjs';
 
 // ---------------------------------------------------------------------------
 // Load Ajv from local repository, not n8n.

@@ -96,7 +96,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '5.0.0',
+    planVersion: planVersionOverride ?? '5.1.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -354,7 +354,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '5.0.0');
+    assert.equal(receipt.executorVersion, '5.1.0');
   } finally { cleanup(home); }
 });
 
@@ -382,14 +382,14 @@ test('E16: buildFixtureEvidence constructs correct evidence record', () => {
     completedAt: '2026-08-04T00:00:00.042Z',
     subjectIdentity: { exactSource: true },
   };
-  const runMeta = { runId: 'b8-1-test', planVersion: '5.0.0', planSha256: 'a'.repeat(64) };
+  const runMeta = { runId: 'b8-1-test', planVersion: '5.1.0', planSha256: 'a'.repeat(64) };
   const ev = buildFixtureEvidence(fixture, result, 'exact-source', runMeta);
   assert.equal(ev.fixtureId, 'f1');
   assert.equal(ev.subject, 'exact-source');
   assert.equal(ev.assertion.passed, true);
   assert.equal(ev.assertion.expected, 'src/main.ts');
   assert.equal(ev.assertion.actual, 'src/main.ts');
-  assert.equal(ev.provenance.planVersion, '5.0.0');
+  assert.equal(ev.provenance.planVersion, '5.1.0');
   assert.equal(ev.provenance.runId, 'b8-1-test');
   assert.equal(ev.latencyMs, 42);
 });
@@ -398,7 +398,7 @@ test('E17: validateExecutorInputs rejects graphify subject', () => {
   const { valid, errors } = validateExecutorInputs({
     runId: 'b8-1-test',
     runDir: '/fake/run',
-    plan: { planVersion: '5.0.0', selectedSubjects: ['exact-source', 'graphify'] },
+    plan: { planVersion: '5.1.0', selectedSubjects: ['exact-source', 'graphify'] },
     approvedPlanSha256: 'a'.repeat(64),
     dryRun: false,
   });
@@ -414,7 +414,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '5.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '5.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -613,7 +613,7 @@ test('E24: timer is cleared when CBM adapter resolves before timeout', async () 
 // D1: Plan recomputation — digest must be deterministic and independently verifiable
 test('E25: plan digest is deterministic and recomputable from plan fields', () => {
   const planBase = {
-    planVersion: '5.0.0',
+    planVersion: '5.1.0',
     runId: 'b8-1-test-digest',
     partialEvidence: true,
     selectedSubjects: ['cbm', 'exact-source'],
@@ -661,7 +661,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '5.0.0',
+      planVersion: '5.1.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -1008,32 +1008,32 @@ test('E35: CBM adapter is called once per fixture (adapter tracks calls)', async
 });
 
 // D2: Authorization doc has no contradictions — verify truthfully records no-benchmark writes
-test('E36: authorization package truthfully states no benchmark writes occurred and references v5r', () => {
+test('E36: authorization package truthfully states no benchmark writes occurred and references v5s', () => {
   const authPkgPath = path.join(REPO_ROOT, 'operations/reports/b8-1-benchmark-authorization-package-2026-08-04.md');
   assert.ok(fs.existsSync(authPkgPath), 'auth package must exist');
   const content = fs.readFileSync(authPkgPath, 'utf8');
-  // Must contain the v5r digest
-  assert.ok(content.includes('87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f'), 'must contain v5r digest');
-  // Must contain v5r run-id
-  assert.ok(content.includes('final-v5r'), 'must reference final-v5r run-id');
-  // v4r and v5 stale digests must be marked invalid/stale
+  // Must contain the v5s run-id
+  assert.ok(content.includes('final-v5s'), 'must reference final-v5s run-id');
+  // v4r, v5, and v5r stale digests must be marked invalid/stale
   assert.ok(content.includes('c39e81dc') && (content.includes('INVALID') || content.includes('stale')), 'v4r digest must be marked invalid/stale');
   assert.ok(content.includes('d9c524') && (content.includes('INVALID') || content.includes('stale')), 'v5 digest must be marked invalid/stale');
-  // Must reference persistent source roots
-  assert.ok(content.includes('persistent') || content.includes('source-roots'), 'must reference persistent source roots');
+  assert.ok(content.includes('87c0569a') && (content.includes('INVALID') || content.includes('stale')), 'v5r digest must be marked invalid/stale');
+  // Must reference persistent source roots (not cleaned up)
+  assert.ok(content.includes('source-roots') || content.includes('persistent'), 'must reference persistent source roots');
+  // Must NOT say source roots were cleaned up
+  assert.ok(!content.includes('cleaned up') || content.includes('not cleaned'), 'must not claim source roots were cleaned up');
   // Must reference independent verification
   assert.ok(content.includes('verify-b8-1-plan-digest'), 'must reference independent verifier');
 });
 
-// Document consistency: canonical plan v5r must be the exact emitted plan (no placeholders, no annotations)
-test('E37: canonical plan v5r JSON is placeholder-free and independently verifiable', () => {
-  const planPath = path.join(REPO_ROOT, 'operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json');
-  assert.ok(fs.existsSync(planPath), 'canonical plan v5r JSON must exist');
+// Document consistency: canonical plan v5s must be the exact emitted plan (no placeholders, no annotations)
+test('E37: canonical plan v5s JSON is placeholder-free and independently verifiable', () => {
+  const planPath = path.join(REPO_ROOT, 'operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json');
+  assert.ok(fs.existsSync(planPath), 'canonical plan v5s JSON must exist');
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
-  assert.equal(plan.planVersion, '5.0.0', 'planVersion must be 5.0.0');
-  assert.equal(plan.runId, 'b8-1-canonical-authorization-20260804-final-v5r', 'runId must match v5r');
+  assert.equal(plan.planVersion, '5.1.0', 'planVersion must be 5.1.0');
+  assert.equal(plan.runId, 'b8-1-canonical-authorization-20260805-final-v5s', 'runId must match v5s');
   assert.match(plan.planSha256, /^[a-f0-9]{64}$/, 'planSha256 must be a valid 64-char hex digest, not a placeholder');
-  assert.equal(plan.planSha256, '87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f', 'planSha256 must match v5r dry-run result');
   // Must have no BOUND_AT_PREFLIGHT placeholders
   const planText = JSON.stringify(plan);
   assert.ok(!planText.includes('BOUND_AT_PREFLIGHT'), 'emitted plan must have no BOUND_AT_PREFLIGHT placeholders');
@@ -1042,16 +1042,22 @@ test('E37: canonical plan v5r JSON is placeholder-free and independently verifia
   assert.equal(annotationKeys.length, 0, `emitted plan must have no _annotation fields, found: ${annotationKeys.join(', ')}`);
   // subjectBinaryIdentity.cbm must have real values
   assert.equal(plan.subjectBinaryIdentity?.cbm?.sha256, 'd9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6', 'CBM sha256 must be real value');
+  // networkIsolationProof must not contain Brain-worktree paths in childIdentity or profilePath
+  assert.ok(!('profilePath' in (plan.networkIsolationProof ?? {})), 'networkIsolationProof must not have profilePath (Brain-worktree path removed)');
+  assert.ok(!('path' in (plan.networkIsolationProof?.childIdentity ?? {})), 'childIdentity must not have path (Brain-worktree path removed)');
+  // graphifyStatus must not contain Brain-worktree paths
+  assert.ok(!('profilePath' in (plan.graphifyStatus ?? {})), 'graphifyStatus must not have profilePath (Brain-worktree path removed)');
+  assert.ok(!('governancePath' in (plan.graphifyStatus ?? {})), 'graphifyStatus must not have governancePath (Brain-worktree path removed)');
 });
 
 // ---------------------------------------------------------------------------
 // New tests: v5 contract changes E38–E46
 // ---------------------------------------------------------------------------
 
-// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 5.0.0
-test('E38: EXECUTOR_VERSION is 5.0.0 and REQUIRED_PLAN_VERSION is 5.0.0', () => {
-  assert.equal(EXECUTOR_VERSION, '5.0.0', 'EXECUTOR_VERSION must be 5.0.0');
-  assert.equal(REQUIRED_PLAN_VERSION, '5.0.0', 'REQUIRED_PLAN_VERSION must be 5.0.0');
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 5.1.0
+test('E38: EXECUTOR_VERSION is 5.1.0 and REQUIRED_PLAN_VERSION is 5.1.0', () => {
+  assert.equal(EXECUTOR_VERSION, '5.1.0', 'EXECUTOR_VERSION must be 5.1.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '5.1.0', 'REQUIRED_PLAN_VERSION must be 5.1.0');
 });
 
 // E39: v4r stale digest c39e81dc... is rejected
@@ -1066,18 +1072,26 @@ test('E39: v4r stale digest c39e81dc... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E40: planVersion 5.0.0 is accepted; planVersion 4.0.0 is rejected
-test('E40: loadAndVerifyRunPlan accepts planVersion 5.0.0 and rejects 4.0.0', () => {
+// E40: planVersion 5.1.0 is accepted; planVersion 5.0.0 and 4.0.0 are rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 5.1.0 and rejects 5.0.0 and 4.0.0', () => {
   const tmpDir = makeTempDir('b81-exec-e40-');
   try {
-    // 5.0.0 — should pass planVersion check (will fail on tampered digest, that's expected)
-    const runDir5 = path.join(tmpDir, 'run5');
-    fs.mkdirSync(runDir5, { recursive: true });
-    fs.writeFileSync(path.join(runDir5, 'run-plan.json'), JSON.stringify({ planVersion: '5.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
-    const { error: err5 } = loadAndVerifyRunPlan(runDir5, '0'.repeat(64));
+    // 5.1.0 — should pass planVersion check (will fail on stale or tampered digest, that's expected)
+    const runDir51 = path.join(tmpDir, 'run51');
+    fs.mkdirSync(runDir51, { recursive: true });
+    fs.writeFileSync(path.join(runDir51, 'run-plan.json'), JSON.stringify({ planVersion: '5.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err51 } = loadAndVerifyRunPlan(runDir51, '0'.repeat(64));
     // planVersion check passes; should fail on stale or tampered, not on planVersion
-    assert.ok(!err5 || !/planVersion|5\.0\.0/i.test(err5) || /tampered|stale|mismatch/i.test(err5),
-      `5.0.0 must not be rejected for planVersion; err: ${err5}`);
+    assert.ok(!err51 || !/planVersion|5\.1\.0/i.test(err51) || /tampered|stale|mismatch/i.test(err51),
+      `5.1.0 must not be rejected for planVersion; err: ${err51}`);
+
+    // 5.0.0 — should be rejected (prior contract)
+    const runDir50 = path.join(tmpDir, 'run50');
+    fs.mkdirSync(runDir50, { recursive: true });
+    fs.writeFileSync(path.join(runDir50, 'run-plan.json'), JSON.stringify({ planVersion: '5.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err50 } = loadAndVerifyRunPlan(runDir50, '0'.repeat(64));
+    assert.ok(err50, 'planVersion 5.0.0 must be rejected');
+    assert.match(err50, /planVersion|5\.1\.0/i, `expected planVersion error, got: ${err50}`);
 
     // 4.0.0 — should be rejected
     const runDir4 = path.join(tmpDir, 'run4');
@@ -1085,7 +1099,7 @@ test('E40: loadAndVerifyRunPlan accepts planVersion 5.0.0 and rejects 4.0.0', ()
     fs.writeFileSync(path.join(runDir4, 'run-plan.json'), JSON.stringify({ planVersion: '4.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err4 } = loadAndVerifyRunPlan(runDir4, '0'.repeat(64));
     assert.ok(err4, 'planVersion 4.0.0 must be rejected');
-    assert.match(err4, /planVersion|5\.0\.0/i, `expected planVersion error, got: ${err4}`);
+    assert.match(err4, /planVersion|5\.1\.0/i, `expected planVersion error, got: ${err4}`);
   } finally { cleanup(tmpDir); }
 });
 
@@ -1260,8 +1274,12 @@ test('E45: manifest brain pin is f683edff753937944018dd00bf5494c85f62e881', () =
   assert.equal(brainRepo.pinnedCommit, 'f683edff753937944018dd00bf5494c85f62e881', 'brain pin must be f683edff...');
 });
 
-// E46: KNOWN_STALE_DIGESTS contains the v4r digest c39e81dc...
-test('E46: KNOWN_STALE_DIGESTS contains v4r digest c39e81dc...', () => {
+// E46: KNOWN_STALE_DIGESTS contains v4r, v5, and v5r digests
+test('E46: KNOWN_STALE_DIGESTS contains v4r, v5, and v5r stale digests', () => {
   const V4R_DIGEST = 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4';
-  assert.ok(KNOWN_STALE_DIGESTS.has(V4R_DIGEST), 'KNOWN_STALE_DIGESTS must contain v4r digest c39e81dc...');
+  const V5_DIGEST  = 'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42';
+  const V5R_DIGEST = '87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f';
+  assert.ok(KNOWN_STALE_DIGESTS.has(V4R_DIGEST), 'must contain v4r digest');
+  assert.ok(KNOWN_STALE_DIGESTS.has(V5_DIGEST), 'must contain v5 digest');
+  assert.ok(KNOWN_STALE_DIGESTS.has(V5R_DIGEST), 'must contain v5r digest');
 });
