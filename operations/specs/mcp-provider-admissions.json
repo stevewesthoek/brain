@@ -227,8 +227,20 @@
           { "path": "projects/mind-context/src/core/plan-context-pack.mjs", "sha256": "3eb281efca3398d09d3e75cc8bfe392414d037b08661a43d7df5e773ba5af5d4" },
           { "path": "projects/mind-context/src/context-pack.mjs", "sha256": "484842d2a59b29f27b88b6e1196db62d0959541c3181fca40dc462b889e02d95" }
         ],
-        "candidateRevision": "PENDING",
-        "candidateNote": "Actual-corpus remediation: H1-prologue parsing, key normalization, lifecycle phrase expansion, generic authority derivation, strict scopeSubset validation. Candidate awaits owner approval for provider repin."
+        "candidateRevision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
+        "candidateNote": "Actual-corpus remediation (2026-08-05): H1-prologue parsing, key normalization, lifecycle phrase expansion (active operational reference → current, superseded → stale), generic authority derivation (lifecycle=current → canonical), strict scopeSubset (array-only, 1–9, unique, no string/empty/duplicate). 159 tests pass. Candidate awaits owner approval for provider repin.",
+        "candidateArtifacts": [
+          { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "14c6a20e0ef0b9ea33b44575c5ed016703b8de1332a92dda30cd3309767c5d82" },
+          { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "67c969d9db5b210e2050d33698616531fb9c96123d903a7c26048701a5eeee84" },
+          { "path": "projects/mind-context/src/adapters/index.mjs", "sha256": "bfdb84ff893119079e75edb5146ae9451be85ea0a46931c45d692b18e0296ef4" },
+          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "14e30cd066ce8f05ed155a6163b01a957cc3ae1c207a1c468893785b6d501603" },
+          { "path": "projects/mind-context/src/core/discover.mjs", "sha256": "d918d56d4c020ecfb6680ed42adbbbfce867dfd8f85f115dde5af25b4fb8c4eb" },
+          { "path": "projects/mind-context/src/core/frontmatter.mjs", "sha256": "7cfd8a77a792b9d97b9d54b538ab72b015091b849ff400214abcd7c60ca5685a" },
+          { "path": "projects/mind-context/src/core/budget.mjs", "sha256": "a8337ad397a2eeb0675ee46867299f2b3f13b6d2bbd08ebf8b3da2aab907b61b" },
+          { "path": "projects/mind-context/src/core/policy.mjs", "sha256": "fb008dccdf147d54e99f6104f96ab7081aa191cd1ece863435a1c5561e708e6b" },
+          { "path": "projects/mind-context/src/core/plan-context-pack.mjs", "sha256": "3eb281efca3398d09d3e75cc8bfe392414d037b08661a43d7df5e773ba5af5d4" },
+          { "path": "projects/mind-context/src/context-pack.mjs", "sha256": "484842d2a59b29f27b88b6e1196db62d0959541c3181fca40dc462b889e02d95" }
+        ]
       },
       "transport": {
         "kind": "stdio",
