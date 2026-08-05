@@ -3,7 +3,7 @@
 **State:** active-local; activation and disable/restore verification passed
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
-**Provider source lock:** `51e9091c7374e0642f4fe076b895c184152dd516`
+**Provider source lock:** `076b9f97030e1c90bc66ffbb61d29456b41ed69f`
 **Mind source lock:** `a21f9ed5d7270ae7dd939b93c5df525c933091f8` (updated 2026-08-05; previous: `2b59119dd119ecd965b66ce601db14cb32ca3852`)
 
 ## Boundary

@@ -213,23 +213,11 @@
       "provider": {
         "providerId": "mind-context",
         "repository": "stevewesthoek/brain",
-        "revision": "51e9091c7374e0642f4fe076b895c184152dd516",
+        "revision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
         "sourceState": "committed",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "entrypoint": "projects/mind-context/src/provider/server.mjs",
         "artifacts": [
-          { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "14c6a20e0ef0b9ea33b44575c5ed016703b8de1332a92dda30cd3309767c5d82" },
-          { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "0f942f4d58fa8bd6de792b9b5f10eeb9fdb1f07cbfb69075a5ffdc0c1e3015a1" },
-          { "path": "projects/mind-context/src/adapters/index.mjs", "sha256": "bfdb84ff893119079e75edb5146ae9451be85ea0a46931c45d692b18e0296ef4" },
-          { "path": "projects/mind-context/src/core/gateway-commands.mjs", "sha256": "61ad9f4a7dbcd4cd2b8870cd072ca44cde8bd4b2cd61287d05acddc55ad4db6b" },
-          { "path": "projects/mind-context/src/core/discover.mjs", "sha256": "2648c2cc833a76abe7072fc132df3a3fae3dd639220ed958e513653550896378" },
-          { "path": "projects/mind-context/src/core/policy.mjs", "sha256": "fb008dccdf147d54e99f6104f96ab7081aa191cd1ece863435a1c5561e708e6b" },
-          { "path": "projects/mind-context/src/core/plan-context-pack.mjs", "sha256": "3eb281efca3398d09d3e75cc8bfe392414d037b08661a43d7df5e773ba5af5d4" },
-          { "path": "projects/mind-context/src/context-pack.mjs", "sha256": "484842d2a59b29f27b88b6e1196db62d0959541c3181fca40dc462b889e02d95" }
-        ],
-        "candidateRevision": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
-        "candidateNote": "Actual-corpus remediation (2026-08-05): H1-prologue parsing, key normalization, lifecycle phrase expansion (active operational reference → current, superseded → stale), generic authority derivation (lifecycle=current → canonical), strict scopeSubset (array-only, 1–9, unique, no string/empty/duplicate). 159 tests pass. Candidate awaits owner approval for provider repin.",
-        "candidateArtifacts": [
           { "path": "projects/mind-context/src/provider/server.mjs", "sha256": "14c6a20e0ef0b9ea33b44575c5ed016703b8de1332a92dda30cd3309767c5d82" },
           { "path": "projects/mind-context/src/provider/runtime.mjs", "sha256": "67c969d9db5b210e2050d33698616531fb9c96123d903a7c26048701a5eeee84" },
           { "path": "projects/mind-context/src/adapters/index.mjs", "sha256": "bfdb84ff893119079e75edb5146ae9451be85ea0a46931c45d692b18e0296ef4" },
@@ -262,7 +250,7 @@
           "MIND_CONTEXT_EXPECTED_HEAD": "a21f9ed5d7270ae7dd939b93c5df525c933091f8",
           "MIND_CONTEXT_PREPARATION_APPROVAL_FILE": "/Users/Office/.brain/approvals/mind-context-preparation.json",
           "MIND_CONTEXT_PREPARATION_MODE": "0",
-          "MIND_CONTEXT_PROVIDER_REVISION": "51e9091c7374e0642f4fe076b895c184152dd516",
+          "MIND_CONTEXT_PROVIDER_REVISION": "076b9f97030e1c90bc66ffbb61d29456b41ed69f",
           "MIND_CONTEXT_ROOT": "/Users/Office/Repos/stevewesthoek/mind"
         },
         "enforcementStatus": "provider-enforced",
@@ -285,14 +273,15 @@
       "verification": {
         "commands": [
           "npm --prefix projects/mind-context test",
-          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=51e9091c7374e0642f4fe076b895c184152dd516",
-          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision 51e9091c7374e0642f4fe076b895c184152dd516 --node <node-path> --output <project-config> --check"
+          "node tools/validate-mcp-provider-admissions.mjs --provider-root mind-context=<exported-provider-root> --provider-revision mind-context=076b9f97030e1c90bc66ffbb61d29456b41ed69f",
+          "node tools/generate-mcp-project-registration.mjs --admission mind-context-for-brain --provider-root <runtime-brain-root> --verification-provider-root <exported-provider-root> --provider-revision 076b9f97030e1c90bc66ffbb61d29456b41ed69f --node <node-path> --output <project-config> --check"
         ],
         "evidence": [
           "Provider implementation commit 51e9091c7374e0642f4fe076b895c184152dd516; fixed-root, fixed-scope, no-network stdio service with three read-only tools, bounded explain rankings, and no mutation path.",
           "Authentication mode none is intentional for owner-local stdio: the process inherits the local OS account, reads no credentials, accepts no secret input, performs no credential relay, and requires a separate owner-only Steve Westhoek activation approval file outside repositories before non-preparation startup.",
           "Tests prove real SHA-256 source hashing, read-through no-cache freshness, source-HEAD and dirty/untracked worktree rejection, pre-read scope enforcement, raw-stream/corpus/response caps including a 602-source bounded explain regression, plugin/archive/history/secret-path exclusions, unavailable-core fail-closed behavior, and manual targeted-read fallback. Steve Westhoek approved activation on 2026-08-04 for provider revision 51e9091c7374e0642f4fe076b895c184152dd516 and the exact nine-scope allowlist; after the authorized Mind entrypoint closure, Brain repinned final live health to Mind commit 08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e. Brain advanced the Mind pin to 2b59119dd119ecd965b66ce601db14cb32ca3852 (2026-08-04): four documentation-only commits (finalize M2.4/M7.1 evidence, harden completed roadmap contracts, post-closeout operational assurance, observation 001); none widen provider scope, grant mutation authority, change privacy boundaries, change provider code, change Graphify authority, introduce credentials, or alter Brain runtime configuration.",
-          "Retrieval remediation commit b9c726e1364a95e3ae01a1f80a138cd4b2347eb0 (2026-08-05): scope-subset narrowing, authorityFilter=any|current, freshnessFilter=any|fresh, generic metadata parsing (frontmatter → fenced YAML → bold MD), lifecycle normalization, authority/freshness filtering before ranking, citation-based budgeting. New source files: frontmatter.mjs, budget.mjs. Changed files: runtime.mjs (export validateReadArgs, new filter params in TOOL_DEFINITIONS and validation), gateway-commands.mjs (filter constants, filter functions, normalizeScopeSubset, collectContext updated), discover.mjs (parseGenericMetadata, normalizeLifecycle). 126 tests pass including CTX-CON-006 synthetic regression. Tool count remains 3. No mutation path exposed."
+          "Retrieval remediation commit b9c726e1364a95e3ae01a1f80a138cd4b2347eb0 (2026-08-05): scope-subset narrowing, authorityFilter=any|current, freshnessFilter=any|fresh, generic metadata parsing (frontmatter → fenced YAML → bold MD), lifecycle normalization, authority/freshness filtering before ranking, citation-based budgeting. New source files: frontmatter.mjs, budget.mjs. Changed files: runtime.mjs (export validateReadArgs, new filter params in TOOL_DEFINITIONS and validation), gateway-commands.mjs (filter constants, filter functions, normalizeScopeSubset, collectContext updated), discover.mjs (parseGenericMetadata, normalizeLifecycle). 126 tests pass including CTX-CON-006 synthetic regression. Tool count remains 3. No mutation path exposed.",
+          "Actual-corpus remediation commit 076b9f97030e1c90bc66ffbb61d29456b41ed69f (2026-08-05): H1-prologue parsing, key normalization, lifecycle phrase expansion, generic authority derivation, strict scopeSubset. 159 tests pass. Steve Westhoek authorized provider repin 2026-08-05T19:05:09Z (approvalId M2.4-repin-2026-08-05-076b9f97). Live verification: healthy=true, readOnly=true, fixtureOnly=false, headMatchesExpected=true, mutationPathExposed=false, providerRevision=076b9f97, sourceHead=a21f9ed5, 3 read-only tools, approval mode 0600, no lingering process. Resolve with scopeSubset=[system], authorityFilter=current, freshnessFilter=fresh returned 3 canonical/fresh system sources with real SHA-256 hashes, bounded budget (10 items/2000 tokens, used 3/124), corpus provenance b605eaad, no June reports, no non-system sources."
         ]
       },
       "revocation": {
