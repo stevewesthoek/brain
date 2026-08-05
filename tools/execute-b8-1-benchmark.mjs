@@ -51,6 +51,7 @@ export const KNOWN_STALE_DIGESTS = new Set([
   '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
   '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; run-id v4r supersedes)
   'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', // v4r (stale — stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes)
+  'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42', // v5 (stale — path-dependent check detail in source-root-overrides; v5r supersedes)
 ]);
 
 // ---------------------------------------------------------------------------

@@ -52,6 +52,7 @@ const KNOWN_STALE_DIGESTS = new Set([
   '1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda', // v2 (path-dependent brain-b8-1-authorization)
   '40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0', // v4 (stale — wrong env/sandbox/one-index; v4r supersedes)
   'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', // v4r (stale — stale pins; v5 supersedes)
+  'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42', // v5 (stale — path-dependent check detail in source-root-overrides; v5r supersedes)
 ]);
 
 // Paths that planned writes must never overlap
@@ -235,8 +236,10 @@ function applySourceRootOverrides(checks, manifest, sourceRootOverrides) {
       localPath: repositoryRootBindings[repo.repositoryId],
     })),
   };
+  // Use logical identity only (repositoryId@pinnedCommit) — physical paths are
+  // run-local and must not appear in the digest via check details.
   const detail = effectiveManifest.repositories
-    .map(repo => `${repo.repositoryId}=${repo.localPath}@${repo.pinnedCommit}`)
+    .map(repo => `${repo.repositoryId}@${repo.pinnedCommit}`)
     .sort()
     .join('; ');
   recordCheck(checks, 'source-root-overrides', 'pass', detail);
@@ -1522,6 +1525,21 @@ if (IS_MAIN) {
     if (idx >= 0 && idx + 1 < args.length) approvedPlanSha256 = args[idx + 1];
   }
 
+  // Parse --write-plan <path> — atomically persist the exact emitted plan to a file.
+  // Only valid with --dry-run (not --materialize). Rejected if preflight is not executionReady.
+  let writePlanPath = null;
+  const writePlanArg = args.find(a => a.startsWith('--write-plan='));
+  if (writePlanArg) {
+    writePlanPath = writePlanArg.slice('--write-plan='.length);
+  } else {
+    const idx = args.indexOf('--write-plan');
+    if (idx >= 0 && idx + 1 < args.length) writePlanPath = args[idx + 1];
+  }
+  if (writePlanPath && doMaterialize) {
+    console.error('ERROR: --write-plan may only be used with --dry-run, not --materialize');
+    process.exit(2);
+  }
+
   const { overrides: sourceRootOverrides, error: sourceRootOverrideError } = parseSourceRootOverrideArgs(args);
   if (sourceRootOverrideError) {
     console.error(`ERROR: ${sourceRootOverrideError}`);
@@ -1578,6 +1596,26 @@ if (IS_MAIN) {
       console.log('');
     }
     console.log(JSON.stringify(summary, null, 2));
+
+    // --write-plan: atomically persist the exact emitted plan (placeholder-free)
+    if (writePlanPath && canonicalPlan && summary.planSha256 && summary.executionReady) {
+      const emittedPlan = {
+        ...canonicalPlan,
+        planSha256: summary.planSha256,
+      };
+      const tmpPath = `${writePlanPath}.tmp`;
+      fs.writeFileSync(tmpPath, JSON.stringify(emittedPlan, null, 2));
+      fs.renameSync(tmpPath, writePlanPath);
+      console.log('');
+      console.log(`# Plan written to: ${writePlanPath}`);
+      console.log(`# planSha256: ${summary.planSha256}`);
+    } else if (writePlanPath && !summary.executionReady) {
+      console.error('ERROR: --write-plan skipped — preflight is not executionReady');
+      process.exitCode = 1;
+    } else if (writePlanPath && !canonicalPlan) {
+      console.error('ERROR: --write-plan skipped — no canonical plan was computed');
+      process.exitCode = 1;
+    }
 
     if (!summary.executionReady) process.exitCode = 1;
   } catch (e) {

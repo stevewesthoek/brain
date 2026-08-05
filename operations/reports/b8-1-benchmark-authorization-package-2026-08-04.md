@@ -1,20 +1,24 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **v5 CONTRACT ACTIVE (feature/b8-1-v5-current-head-readiness)**
-> The v5 plan contract (`planVersion: '5.0.0'`, run-id suffix `final-v5`) is implemented on branch `feature/b8-1-v5-current-head-readiness`.
-> Digests v1, v2, v4, v4r are **INVALID** and rejected by the harness and executor.
-> See `operations/reports/b8-1-canonical-plan-v5-2026-08-04.json` for the v5 plan structure.
+> **v5r CONTRACT ACTIVE (main — landed 2026-08-05)**
+> The v5r plan contract (`planVersion: '5.0.0'`, run-id suffix `final-v5r`) fixes all five canonical-plan integrity defects and is on `main` as of 2026-08-05.
+> Digests v1, v2, v4, v4r, and v5 are **INVALID** and rejected by the harness and executor.
+> The exact emitted v5r plan (placeholder-free, path-independent) is at `operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json`.
+> Verified independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json`
 
 > ~~**INVALID — v1**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~ — ephemeral /tmp/ paths.
 > ~~**INVALID — v2**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~ — absolute brain-b8-1-authorization worktree paths.
 > ~~**INVALID — v4**~~: ~~`40bb7b67dc91fb39b4e301b01d2ba0130f983356a2722db851e5326849b83ba0`~~ — wrong env/sandbox/one-index contract (see v4r for corrections).
-> ~~**INVALID — v4r**~~: ~~`c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4`~~ — run-id `b8-1-canonical-authorization-20260804-final-v4r`; stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes.
+> ~~**INVALID — v4r**~~: ~~`c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4`~~ — stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes.
+> ~~**INVALID — v5**~~: ~~`d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42`~~ — path-dependent check detail in source-root-overrides leaked physical paths into digest; v5r supersedes.
 
 ## Status
 
-**v5 ready — digest computed, executionReady=true.** The v5 executor and plan harness are on `feature/b8-1-v5-current-head-readiness`. No materialization, benchmark execution, or approval has occurred.
+**v5r ready — digest computed, executionReady=true, plan written and independently verified.** The v5r contract is on `main`. No materialization, benchmark execution, or approval has occurred.
 
 **Source roots**: Persistent clean worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/` exist and are preserved. They are benchmark inputs, not ephemeral. Previous docs that implied cleanup were wrong.
+
+**v5r changes from v5**: Five canonical-plan integrity defects fixed — (1) plan file is now an exact emitted plan produced by `--write-plan`, with no `BOUND_AT_PREFLIGHT` placeholders; (2) `computePlanDigest` correctly excludes `planSha256`, `createdAt`, `runContext`, and `_annotation` fields so independent recomputation is possible; (3) `source-root-overrides` check detail uses logical identity only (`repositoryId@pinnedCommit`), preventing physical path leakage into the digest; (4) docs updated to reference `main` instead of the feature branch; (5) digest `d9c524...` marked stale. New independent verifier `tools/verify-b8-1-plan-digest.mjs` added. `--write-plan <path>` flag added to CLI for atomic plan persistence.
 
 **v4r changes from v4**: CBM env uses `CBM_CACHE_DIR` (not `CODEBASE_MEMORY_HOME`); `auto_watch=false` set via `config set` then verified via `config get` (not via `CODEBASE_MEMORY_AUTO_WATCH` env which binary ignores); every CBM invocation sandbox-wrapped; one `index_repository` per repository per run (not per fixture); search limit raised to 50; unknown exact-source algorithms rejected; `file-name-count` root containment; RFC 6901 pointer unescaping; outcome vs lineCorrect semantics separated; caller/callee precision/recall implemented.
 
@@ -81,14 +85,19 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 All prior digests are INVALID. See header for the full stale-digest list.
 
-**v5 (computed 2026-08-04 — feature/b8-1-v5-current-head-readiness):**
+~~**v5 (STALE — path-dependent check detail; must not be approved):**~~
+~~`d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42`~~
+
+**v5r (computed 2026-08-05 — main, path-independent, independently verified):**
 ```
-d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42
+87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f
 ```
 
-Run ID: `b8-1-canonical-authorization-20260804-final-v5`
+Run ID: `b8-1-canonical-authorization-20260804-final-v5r`
 
-v5 plan structure: `operations/reports/b8-1-canonical-plan-v5-2026-08-04.json`
+Exact emitted plan: `operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json`
+
+Independent verification: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json`
 
 Source roots used:
 - brain: `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/f683edff753937944018dd00bf5494c85f62e881`
@@ -97,7 +106,7 @@ Source roots used:
 
 ## 8. Execution-Readiness Result
 
-**v5 result (2026-08-04, feature/b8-1-v5-current-head-readiness):**
+**v5r result (2026-08-05, main):**
 ```json
 {
   "executionReady": true,
@@ -105,8 +114,8 @@ Source roots used:
   "selectedSubjects": ["cbm", "exact-source"],
   "excludedSubjects": ["graphify"],
   "blockingChecks": [],
-  "runId": "b8-1-canonical-authorization-20260804-final-v5",
-  "planSha256": "d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42"
+  "runId": "b8-1-canonical-authorization-20260804-final-v5r",
+  "planSha256": "87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f"
 }
 ```
 
@@ -116,7 +125,7 @@ All preflight checks passed. 1 subject excluded (Graphify). No run directory cre
 
 - Disk budget: minimum 2000 MB available (verified via `df`)
 - Planned write containment: 21 paths confined to `/Users/Office/.brain`
-- Run directory: `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804-v2`
+- Run directory: `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804-final-v5r`
 
 ## 10. Network-Isolation Proof
 
@@ -146,7 +155,7 @@ Self-test result:
 ## 12. Materialization Layout
 
 ```
-/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804-v2/
+/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260804-final-v5r/
 ├── _archive_brain.tar
 ├── _archive_prochat.tar
 ├── _archive_workbench.tar
@@ -198,25 +207,26 @@ This document records a dry-run plan and digest only. The following have NOT hap
 
 ## 16. Required Approval Wording
 
-All prior approval wording is invalid (digests v1/v2/v4/v4r are stale, rejected by v5 contract).
+All prior approval wording is invalid (digests v1/v2/v4/v4r/v5 are stale, rejected by v5r contract).
 
-To authorize execution of this benchmark plan with the **v5 contract**, Steve must provide:
+To authorize execution of this benchmark plan with the **v5r contract**, Steve must provide:
 
 ```
 I approve B8.1 benchmark execution with plan digest
-d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42
-for run-id b8-1-canonical-authorization-20260804-final-v5.
+87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f
+for run-id b8-1-canonical-authorization-20260804-final-v5r.
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
 
 Upon receiving this approval:
-1. Run `--materialize` with the same source-root overrides (paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
-2. Execute the benchmark within the materialized run directory.
-3. Validate evidence against the evidence schema.
-4. Update B8.1 status to reflect partial completion.
+1. Verify independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json`
+2. Run `--materialize --approved-plan-sha256 87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f` with the same source-root overrides (paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
+3. Execute the benchmark within the materialized run directory.
+4. Validate evidence against the evidence schema.
+5. Update B8.1 status to reflect partial completion.
 
-The canonical v5 plan structure is at `operations/reports/b8-1-canonical-plan-v5-2026-08-04.json`.
+The exact emitted v5r plan (placeholder-free) is at `operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json`.
 
 ---
 

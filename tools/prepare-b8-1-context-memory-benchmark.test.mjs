@@ -23,6 +23,12 @@ import {
   parseSourceRootOverrideArgs,
   runPreflight,
 } from './prepare-b8-1-context-memory-benchmark.mjs';
+import {
+  verifyPlanFile,
+  findPlaceholders,
+  recomputeDigest,
+  KNOWN_STALE_DIGESTS as VERIFIER_STALE_DIGESTS,
+} from './verify-b8-1-plan-digest.mjs';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REAL_MANIFEST = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
@@ -1328,7 +1334,9 @@ test('T48: missing source-root override fails closed', async () => {
   } finally { cleanup(repoDir, manifestFile, home); }
 });
 
-test('T49: clean exact source-root override succeeds and changes the plan digest', async () => {
+test('T49: same commit at two different clean source-root paths produces the same digest (path-independent)', async () => {
+  // Defect 3 fix: source-root-overrides check detail must use only logical identity
+  // (repositoryId@pinnedCommit), not physical paths. Same content = same digest.
   const repoDir = makeTempDir('b81-override-success-source-');
   const commit = makeTempGitRepo(repoDir);
   const firstOverride = makeTempDir('b81-override-success-a-');
@@ -1357,7 +1365,12 @@ test('T49: clean exact source-root override succeeds and changes the plan digest
     assert.equal(first.summary.executionReady, true);
     assert.equal(second.summary.executionReady, true);
     assert.equal(first.checks.find(check => check.name === 'source-root-overrides')?.status, 'pass');
-    assert.notEqual(first.summary.planSha256, second.summary.planSha256);
+    // Path-independence guarantee: same commit at different physical paths = same digest
+    assert.equal(first.summary.planSha256, second.summary.planSha256,
+      'digest must be identical for same commit at different physical paths (path-independent)');
+    // The check detail must not contain physical path segments
+    const detail = first.checks.find(c => c.name === 'source-root-overrides')?.detail ?? '';
+    assert.ok(!detail.includes(firstOverride), 'check detail must not contain absolute physical path');
   } finally { cleanup(repoDir, firstOverride, secondOverride, manifestFile, home); }
 });
 
@@ -1796,5 +1809,76 @@ test('T64: shell-free tree hashing produces consistent exportedTreeSha256', asyn
     );
   } finally {
     cleanup(repoDir, manifestFile, homeA, homeB);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Plan integrity tests (T65–T68) — independent verifier + write-plan
+// ---------------------------------------------------------------------------
+
+test('T65: verifier rejects BOUND_AT_PREFLIGHT placeholders', () => {
+  const planWithPlaceholders = {
+    planVersion: '5.0.0',
+    planSha256: 'a'.repeat(64),
+    runId: 'b8-1-test',
+    networkIsolationProof: 'BOUND_AT_PREFLIGHT',
+    checks: 'BOUND_AT_PREFLIGHT',
+  };
+  const placeholders = findPlaceholders(planWithPlaceholders);
+  assert.ok(placeholders.length > 0, 'must detect BOUND_AT_PREFLIGHT placeholders');
+  assert.ok(placeholders.some(p => p.includes('networkIsolationProof')));
+  assert.ok(placeholders.some(p => p.includes('checks')));
+});
+
+test('T66: verifier rejects annotation fields (_xxx)', () => {
+  const { annotationFields } = recomputeDigest({
+    planVersion: '5.0.0',
+    runId: 'b8-1-test',
+    _planSha256Note: 'this is a template annotation',
+    _staleDigests: {},
+  });
+  assert.ok(annotationFields.includes('_planSha256Note'));
+  assert.ok(annotationFields.includes('_staleDigests'));
+});
+
+test('T67: verifier rejects d9c524... (known stale v5 digest)', () => {
+  const stale = 'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42';
+  assert.ok(VERIFIER_STALE_DIGESTS.has(stale), 'v5 stale digest must be in verifier stale set');
+  // Write a synthetic plan file with the stale digest and verify it fails
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'b81-t67-'));
+  const planPath = path.join(tmpDir, 'plan.json');
+  try {
+    fs.writeFileSync(planPath, JSON.stringify({ planVersion: '5.0.0', planSha256: stale, runId: 'b8-1-t67' }));
+    const { ok, errors } = verifyPlanFile(planPath);
+    assert.equal(ok, false);
+    assert.ok(errors.some(e => e.includes('stale')), `expected stale-digest error, got: ${errors.join('; ')}`);
+  } finally {
+    cleanup(tmpDir);
+  }
+});
+
+test('T68: verifier accepts a valid emitted plan and rejects tampered digest', () => {
+  // Build a minimal valid emitted plan (no annotations, no placeholders)
+  const plan = makeCanonicalPlanFixture({ selectedSubjects: ['exact-source'] });
+  const digest = computePlanDigest(plan);
+  const emittedPlan = { ...plan, planSha256: digest };
+
+  // Write to temp file and verify
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'b81-t68-'));
+  const planPath = path.join(tmpDir, 'plan.json');
+  try {
+    fs.writeFileSync(planPath, JSON.stringify(emittedPlan, null, 2));
+    const { ok, planSha256 } = verifyPlanFile(planPath);
+    assert.equal(ok, true, 'valid emitted plan must verify successfully');
+    assert.equal(planSha256, digest);
+
+    // Tamper: change a digest field and re-verify
+    const tampered = { ...emittedPlan, runId: 'b8-1-tampered' };
+    fs.writeFileSync(planPath, JSON.stringify(tampered, null, 2));
+    const { ok: ok2, errors } = verifyPlanFile(planPath);
+    assert.equal(ok2, false, 'tampered plan must fail verification');
+    assert.ok(errors.some(e => e.includes('mismatch')));
+  } finally {
+    cleanup(tmpDir);
   }
 });

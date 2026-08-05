@@ -1007,31 +1007,40 @@ test('E35: CBM adapter is called once per fixture (adapter tracks calls)', async
   } finally { cleanup(home); }
 });
 
-// D2: Authorization doc has no contradictions — verify Section 15 truthfully records no-benchmark writes
-test('E36: authorization package section 15 truthfully states no benchmark writes occurred', () => {
+// D2: Authorization doc has no contradictions — verify truthfully records no-benchmark writes
+test('E36: authorization package truthfully states no benchmark writes occurred and references v5r', () => {
   const authPkgPath = path.join(REPO_ROOT, 'operations/reports/b8-1-benchmark-authorization-package-2026-08-04.md');
   assert.ok(fs.existsSync(authPkgPath), 'auth package must exist');
   const content = fs.readFileSync(authPkgPath, 'utf8');
-  // Must contain the v4r digest
-  assert.ok(content.includes('c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4'), 'must contain v4r digest');
-  // Must reference persistent source roots (Defect 2: no false cleanup claim)
+  // Must contain the v5r digest
+  assert.ok(content.includes('87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f'), 'must contain v5r digest');
+  // Must contain v5r run-id
+  assert.ok(content.includes('final-v5r'), 'must reference final-v5r run-id');
+  // v4r and v5 stale digests must be marked invalid/stale
+  assert.ok(content.includes('c39e81dc') && (content.includes('INVALID') || content.includes('stale')), 'v4r digest must be marked invalid/stale');
+  assert.ok(content.includes('d9c524') && (content.includes('INVALID') || content.includes('stale')), 'v5 digest must be marked invalid/stale');
+  // Must reference persistent source roots
   assert.ok(content.includes('persistent') || content.includes('source-roots'), 'must reference persistent source roots');
-  // Must reference v4r run-id
-  assert.ok(content.includes('final-v4r'), 'must reference final-v4r run-id');
-  // v4 stale digest must be marked invalid
-  assert.ok(content.includes('40bb7b67') && (content.includes('INVALID') || content.includes('stale')), 'v4 digest must be marked invalid/stale');
+  // Must reference independent verification
+  assert.ok(content.includes('verify-b8-1-plan-digest'), 'must reference independent verifier');
 });
 
-// Document consistency: canonical plan v4r must have the correct planSha256 and no PENDING
-test('E37: canonical plan v4r JSON has no placeholder digests', () => {
-  const planPath = path.join(REPO_ROOT, 'operations/reports/b8-1-canonical-plan-v4r-2026-08-04.json');
-  assert.ok(fs.existsSync(planPath), 'canonical plan v4r JSON must exist');
+// Document consistency: canonical plan v5r must be the exact emitted plan (no placeholders, no annotations)
+test('E37: canonical plan v5r JSON is placeholder-free and independently verifiable', () => {
+  const planPath = path.join(REPO_ROOT, 'operations/reports/b8-1-canonical-plan-v5r-2026-08-05.json');
+  assert.ok(fs.existsSync(planPath), 'canonical plan v5r JSON must exist');
   const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
-  assert.equal(plan.planVersion, '4.0.0', 'planVersion must be 4.0.0');
-  assert.equal(plan.runId, 'b8-1-canonical-authorization-20260804-final-v4r', 'runId must match');
+  assert.equal(plan.planVersion, '5.0.0', 'planVersion must be 5.0.0');
+  assert.equal(plan.runId, 'b8-1-canonical-authorization-20260804-final-v5r', 'runId must match v5r');
   assert.match(plan.planSha256, /^[a-f0-9]{64}$/, 'planSha256 must be a valid 64-char hex digest, not a placeholder');
-  assert.equal(plan.planSha256, 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4', 'planSha256 must match v4r dry-run result');
-  // subjectBinaryIdentity.cbm must have real values (not BOUND_AT_PREFLIGHT)
+  assert.equal(plan.planSha256, '87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f', 'planSha256 must match v5r dry-run result');
+  // Must have no BOUND_AT_PREFLIGHT placeholders
+  const planText = JSON.stringify(plan);
+  assert.ok(!planText.includes('BOUND_AT_PREFLIGHT'), 'emitted plan must have no BOUND_AT_PREFLIGHT placeholders');
+  // Must have no _annotation fields
+  const annotationKeys = Object.keys(plan).filter(k => k.startsWith('_'));
+  assert.equal(annotationKeys.length, 0, `emitted plan must have no _annotation fields, found: ${annotationKeys.join(', ')}`);
+  // subjectBinaryIdentity.cbm must have real values
   assert.equal(plan.subjectBinaryIdentity?.cbm?.sha256, 'd9fbdd7d8570a77b2fb32453e00bd52a02627281309cd56003a4eccfcfe878d6', 'CBM sha256 must be real value');
 });
 
