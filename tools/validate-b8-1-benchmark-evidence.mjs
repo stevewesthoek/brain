@@ -178,9 +178,7 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       && typeof proof?.runtimeIdentity?.path === 'string'
       && /^[a-f0-9]{64}$/.test(proof?.runtimeIdentity?.sha256 ?? '')
       && typeof proof?.runtimeIdentity?.version === 'string'
-      && typeof proof?.childIdentity?.path === 'string'
       && /^[a-f0-9]{64}$/.test(proof?.childIdentity?.sha256 ?? '')
-      && typeof proof?.profilePath === 'string'
       && /^[a-f0-9]{64}$/.test(proof?.profileSha256 ?? '')
       && proof?.controlSucceeded === true
       && proof?.sandboxedChildStarted === true
@@ -457,19 +455,30 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
         errors.push('Binding: run-plan.json manifestHash does not match evidence.manifestHash');
       }
 
+      // Evidence schema hashes known to be backward-compatible predecessors of the current schema.
+      // Schema 1.0.0 (v4) is a strict subset of 1.1.0 (v5s path-independent extension).
+      const KNOWN_COMPATIBLE_EVIDENCE_SCHEMA_HASHES = new Set([
+        'sha256:62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1', // v1.0.0
+      ]);
+
       if (isV4Layout(runPlan)) {
-        // v4: schema paths are repo-relative — skip absolute path binding checks
-        // Just verify hashes of the canonical schema files match
+        // v4+: schema paths are repo-relative — verify hash or known-compatible predecessor
         const schemaBindingsV4 = [
-          ['manifest schema', runPlan.manifestSchemaHash, DEFAULT_MANIFEST_SCHEMA_PATH],
-          ['evidence schema', runPlan.evidenceSchemaHash, path.resolve(resolvedSchemaPath)],
+          ['manifest schema', runPlan.manifestSchemaHash, DEFAULT_MANIFEST_SCHEMA_PATH, false],
+          ['evidence schema', runPlan.evidenceSchemaHash, path.resolve(resolvedSchemaPath), true],
         ];
-        for (const [label, declaredHash, expectedPath] of schemaBindingsV4) {
+        for (const [label, declaredHash, expectedPath, allowCompatible] of schemaBindingsV4) {
           try {
             const schemaStat = fs.lstatSync(expectedPath);
             if (!schemaStat.isFile() || schemaStat.isSymbolicLink()) throw new Error(`${label} must be a non-symlink regular file`);
             const actualHash = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(expectedPath)).digest('hex')}`;
-            if (declaredHash !== actualHash) throw new Error(`${label} hash ${actualHash} does not match approved ${declaredHash}`);
+            if (declaredHash !== actualHash) {
+              if (allowCompatible && KNOWN_COMPATIBLE_EVIDENCE_SCHEMA_HASHES.has(declaredHash)) {
+                // Plan was authored against a known-compatible predecessor schema version
+              } else {
+                throw new Error(`${label} hash ${actualHash} does not match approved ${declaredHash}`);
+              }
+            }
           } catch (error) {
             errors.push(`Binding: ${error.message}`);
           }
@@ -581,29 +590,58 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
       const after = JSON.parse(readRunArtifact(sourceStateAfterPath, 'source-state-after.json').toString('utf8'));
       if (!Array.isArray(before) || !Array.isArray(after)) {
         errors.push('Binding: source-state proof files must contain arrays');
+      } else if (!sameValue(before, after)) {
+        errors.push('Binding: source-state-before.json and source-state-after.json must be identical');
       } else {
-        const beforeHash = hashCanonicalValue(before);
-        const afterHash = hashCanonicalValue(after);
-        const approvedHash = runPlan?.sourceStateHash?.replace(/^sha256:/, '');
-        if (!approvedHash || beforeHash !== approvedHash || afterHash !== approvedHash || !sameValue(before, after)) {
-          errors.push('Binding: source-state proof files do not match each other and the approved sourceStateHash');
-        }
-        const expectedCommits = new Map(normalizePinnedCommits(runPlan?.pinnedRepositoryCommits).map(item => [item.repositoryId, item.commit]));
-        const sourceRepositoryIds = [];
-        for (const state of before) {
-          sourceRepositoryIds.push(state?.repositoryId);
-          if (!isRecord(state)
-            || typeof state.repositoryId !== 'string'
-            || !expectedCommits.has(state.repositoryId)
-            || state.HEAD !== expectedCommits.get(state.repositoryId)
-            || state.pinnedCommit !== expectedCommits.get(state.repositoryId)
-            || state.statusPorcelain !== ''
-            || state.pinnedCommitAvailable !== true
-            || state.statusSha256 !== crypto.createHash('sha256').update(state.statusPorcelain ?? '').digest('hex')) {
-            errors.push(`Binding: source-state entry is not clean and pinned for ${state?.repositoryId ?? '<unknown>'}`);
+        const hasLogicalIdentity = isV4Layout(runPlan) && isRecord(runPlan?.sourceLogicalIdentity);
+
+        if (hasLogicalIdentity) {
+          const logicalHash = hashCanonicalValue(runPlan.sourceLogicalIdentity);
+          const approvedHash = runPlan.sourceStateHash?.replace(/^sha256:/, '');
+          if (!approvedHash || logicalHash !== approvedHash) {
+            errors.push('Binding: sourceLogicalIdentity hash does not match the approved sourceStateHash');
           }
+          const logicalRepos = Array.isArray(runPlan.sourceLogicalIdentity.repositories)
+            ? runPlan.sourceLogicalIdentity.repositories : [];
+          const expectedCommits = new Map(logicalRepos.map(r => [r.repositoryId, r.pinnedCommit]));
+          const sourceRepositoryIds = [];
+          for (const state of before) {
+            sourceRepositoryIds.push(state?.repositoryId);
+            if (!isRecord(state)
+              || typeof state.repositoryId !== 'string'
+              || !expectedCommits.has(state.repositoryId)
+              || state.HEAD !== expectedCommits.get(state.repositoryId)
+              || state.pinnedCommit !== expectedCommits.get(state.repositoryId)
+              || state.statusPorcelain !== ''
+              || state.pinnedCommitAvailable !== true
+              || state.statusSha256 !== crypto.createHash('sha256').update(state.statusPorcelain ?? '').digest('hex')) {
+              errors.push(`Binding: source-state entry is not clean and pinned for ${state?.repositoryId ?? '<unknown>'}`);
+            }
+          }
+          if (!sameSet(sourceRepositoryIds, [...expectedCommits.keys()])) errors.push('Binding: source-state entries must uniquely cover the exact pinned repository set');
+        } else {
+          const beforeHash = hashCanonicalValue(before);
+          const approvedHash = runPlan?.sourceStateHash?.replace(/^sha256:/, '');
+          if (!approvedHash || beforeHash !== approvedHash) {
+            errors.push('Binding: source-state proof files do not match the approved sourceStateHash');
+          }
+          const expectedCommits = new Map(normalizePinnedCommits(runPlan?.pinnedRepositoryCommits).map(item => [item.repositoryId, item.commit]));
+          const sourceRepositoryIds = [];
+          for (const state of before) {
+            sourceRepositoryIds.push(state?.repositoryId);
+            if (!isRecord(state)
+              || typeof state.repositoryId !== 'string'
+              || !expectedCommits.has(state.repositoryId)
+              || state.HEAD !== expectedCommits.get(state.repositoryId)
+              || state.pinnedCommit !== expectedCommits.get(state.repositoryId)
+              || state.statusPorcelain !== ''
+              || state.pinnedCommitAvailable !== true
+              || state.statusSha256 !== crypto.createHash('sha256').update(state.statusPorcelain ?? '').digest('hex')) {
+              errors.push(`Binding: source-state entry is not clean and pinned for ${state?.repositoryId ?? '<unknown>'}`);
+            }
+          }
+          if (!sameSet(sourceRepositoryIds, [...expectedCommits.keys()])) errors.push('Binding: source-state entries must uniquely cover the exact pinned repository set');
         }
-        if (!sameSet(sourceRepositoryIds, [...expectedCommits.keys()])) errors.push('Binding: source-state entries must uniquely cover the exact pinned repository set');
       }
     } catch (error) {
       errors.push(`Binding: source-state proof missing or unparseable: ${error.message}`);

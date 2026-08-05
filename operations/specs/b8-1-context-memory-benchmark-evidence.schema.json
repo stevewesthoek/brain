@@ -23,7 +23,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "string", "const": "1.0.0" },
+    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0"] },
     "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
     "runAt": { "type": "string", "format": "date-time" },
     "partialEvidence": { "type": "boolean" },
@@ -125,6 +125,48 @@
               "additionalProperties": false
             },
             "profilePath": { "type": "string", "minLength": 1 },
+            "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "controlSucceeded": { "type": "boolean", "const": true },
+            "sandboxedChildStarted": { "type": "boolean", "const": true },
+            "sandboxedConnectionDenied": { "type": "boolean", "const": true },
+            "selfTestPassed": { "type": "boolean", "const": true },
+            "selfTestDetail": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["required", "status", "adapterIdentity", "runtimeIdentity", "childIdentity", "profileSha256", "controlSucceeded", "sandboxedChildStarted", "sandboxedConnectionDenied", "selfTestPassed"],
+          "properties": {
+            "required": { "type": "boolean", "const": true },
+            "status": { "type": "string", "const": "passed" },
+            "adapterIdentity": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
+            "runtimeIdentity": {
+              "type": "object",
+              "required": ["path", "sha256", "version"],
+              "properties": {
+                "path": { "type": "string", "minLength": 1 },
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                "version": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "childIdentity": {
+              "type": "object",
+              "required": ["sha256"],
+              "properties": {
+                "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+              },
+              "additionalProperties": false
+            },
             "profileSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
             "controlSucceeded": { "type": "boolean", "const": true },
             "sandboxedChildStarted": { "type": "boolean", "const": true },

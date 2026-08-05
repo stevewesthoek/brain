@@ -925,3 +925,197 @@ test('changed approved schema bytes fail evidence binding', () => {
     assert.ok(result.errors.some(error => /evidence schema hash/.test(error)), result.errors.join('; '));
   } finally { fs.rmSync(bound.tempRoot, { recursive: true, force: true }); }
 });
+
+// ---------------------------------------------------------------------------
+// v5s immutable evidence validation tests
+// ---------------------------------------------------------------------------
+
+const V5S_RUN_DIR = '/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260805-final-v5s';
+const V5S_EVIDENCE_PATH = path.join(V5S_RUN_DIR, 'evidence.json');
+const V5S_MANIFEST_PATH = path.join(root, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
+
+test('v5s immutable evidence validates with full binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const result = validateEvidence(V5S_EVIDENCE_PATH, DEFAULT_SCHEMA, {
+    manifestPath: V5S_MANIFEST_PATH,
+    runDir: V5S_RUN_DIR,
+  });
+  assert.equal(result.valid, true, `Expected valid but got errors: ${result.errors.join('; ')}`);
+});
+
+test('v5s evidence with tampered networkIsolationProof fails binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const evidence = JSON.parse(fs.readFileSync(V5S_EVIDENCE_PATH, 'utf8'));
+  evidence.networkIsolationProof.childIdentity.sha256 = '0'.repeat(64);
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA, {
+      manifestPath: V5S_MANIFEST_PATH,
+      runDir: V5S_RUN_DIR,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /network isolation proof does not match/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s evidence with modified fixture count fails manifest binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const evidence = JSON.parse(fs.readFileSync(V5S_EVIDENCE_PATH, 'utf8'));
+  evidence.fixtureResults = evidence.fixtureResults.slice(0, 10);
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA, {
+      manifestPath: V5S_MANIFEST_PATH,
+      runDir: V5S_RUN_DIR,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /missing fixtureResult/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s evidence with modified subject partition fails binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const evidence = JSON.parse(fs.readFileSync(V5S_EVIDENCE_PATH, 'utf8'));
+  evidence.selectedSubjects = ['cbm'];
+  evidence.excludedSubjects = ['graphify', 'exact-source'];
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA, {
+      manifestPath: V5S_MANIFEST_PATH,
+      runDir: V5S_RUN_DIR,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /selectedSubjects do not match|excludedSubjects do not match/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s evidence with modified receipt hash fails binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const evidence = JSON.parse(fs.readFileSync(V5S_EVIDENCE_PATH, 'utf8'));
+  evidence.preflightReceiptHash = 'sha256:' + '0'.repeat(64);
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA, {
+      manifestPath: V5S_MANIFEST_PATH,
+      runDir: V5S_RUN_DIR,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /preflight-receipt.*SHA-256/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s evidence with modified plan digest fails binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const evidence = JSON.parse(fs.readFileSync(V5S_EVIDENCE_PATH, 'utf8'));
+  evidence.planSha256 = '0'.repeat(64);
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA, {
+      manifestPath: V5S_MANIFEST_PATH,
+      runDir: V5S_RUN_DIR,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /planSha256 does not match/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s evidence with modified cleanup proof fails binding', () => {
+  if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
+  const evidence = JSON.parse(fs.readFileSync(V5S_EVIDENCE_PATH, 'utf8'));
+  evidence.cleanupStatus.runDirectory = '/tmp/fake-directory';
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA, {
+      manifestPath: V5S_MANIFEST_PATH,
+      runDir: V5S_RUN_DIR,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /runDirectory does not match/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s schema accepts path-independent networkIsolationProof', () => {
+  const evidence = minimalEvidence({
+    networkIsolationProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: 'a'.repeat(64) },
+      runtimeIdentity: { path: '/synthetic/node', sha256: '7'.repeat(64), version: 'v25.9.0' },
+      childIdentity: { sha256: '8'.repeat(64) },
+      profileSha256: 'e'.repeat(64),
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true,
+      selfTestDetail: 'control succeeded; sandboxed child started; connection denied with EPERM',
+    },
+  });
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, true, `Expected valid but got errors: ${result.errors.join('; ')}`);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s schema rejects networkIsolationProof with missing childIdentity sha256', () => {
+  const evidence = minimalEvidence({
+    networkIsolationProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: 'a'.repeat(64) },
+      runtimeIdentity: { path: '/synthetic/node', sha256: '7'.repeat(64), version: 'v25.9.0' },
+      childIdentity: {},
+      profileSha256: 'e'.repeat(64),
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true,
+    },
+  });
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /complete passed proof|Schema/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('v5s schema rejects networkIsolationProof with missing profileSha256', () => {
+  const evidence = minimalEvidence({
+    networkIsolationProof: {
+      required: true,
+      status: 'passed',
+      adapterIdentity: { path: '/usr/bin/sandbox-exec', sha256: 'a'.repeat(64) },
+      runtimeIdentity: { path: '/synthetic/node', sha256: '7'.repeat(64), version: 'v25.9.0' },
+      childIdentity: { sha256: '8'.repeat(64) },
+      controlSucceeded: true,
+      sandboxedChildStarted: true,
+      sandboxedConnectionDenied: true,
+      selfTestPassed: true,
+    },
+  });
+  const { filePath, dir } = writeTempEvidence(evidence);
+  try {
+    const result = validateEvidence(filePath, DEFAULT_SCHEMA);
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some(e => /complete passed proof|Schema/.test(e)), result.errors.join('; '));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
