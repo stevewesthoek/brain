@@ -34,7 +34,14 @@ export const TOOL_DEFINITIONS = Object.freeze([
     description: 'Resolve a context pack from the provider-fixed Mind root and scopes.',
     inputSchema: {
       type: 'object', additionalProperties: false, required: ['query'],
-      properties: {query: {type: 'string', minLength: 1, maxLength: 1000}, maxItems: {type: 'integer', minimum: 1, maximum: 20}, maxTokens: {type: 'integer', minimum: 1, maximum: 4000}},
+      properties: {
+        query: {type: 'string', minLength: 1, maxLength: 1000},
+        maxItems: {type: 'integer', minimum: 1, maximum: 20},
+        maxTokens: {type: 'integer', minimum: 1, maximum: 4000},
+        scopeSubset: {type: 'array', items: {type: 'string'}, description: 'Exact subset of the admitted scopes to query (must be a non-empty subset of the fixed allowed scopes)'},
+        authorityFilter: {type: 'string', enum: ['any', 'current'], description: 'current = canonical sources only; any = all authority levels'},
+        freshnessFilter: {type: 'string', enum: ['any', 'fresh'], description: 'fresh = fresh+current lifecycle sources only; any = all freshness levels'},
+      },
     },
     annotations: {readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false},
   },
@@ -43,7 +50,14 @@ export const TOOL_DEFINITIONS = Object.freeze([
     description: 'Explain fixed-scope Mind Context Gateway ranking, exclusions, provenance, and freshness.',
     inputSchema: {
       type: 'object', additionalProperties: false, required: ['query'],
-      properties: {query: {type: 'string', minLength: 1, maxLength: 1000}, maxItems: {type: 'integer', minimum: 1, maximum: 20}, maxTokens: {type: 'integer', minimum: 1, maximum: 4000}},
+      properties: {
+        query: {type: 'string', minLength: 1, maxLength: 1000},
+        maxItems: {type: 'integer', minimum: 1, maximum: 20},
+        maxTokens: {type: 'integer', minimum: 1, maximum: 4000},
+        scopeSubset: {type: 'array', items: {type: 'string'}, description: 'Exact subset of the admitted scopes to query (must be a non-empty subset of the fixed allowed scopes)'},
+        authorityFilter: {type: 'string', enum: ['any', 'current'], description: 'current = canonical sources only; any = all authority levels'},
+        freshnessFilter: {type: 'string', enum: ['any', 'fresh'], description: 'fresh = fresh+current lifecycle sources only; any = all freshness levels'},
+      },
     },
     annotations: {readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false},
   },
@@ -163,9 +177,9 @@ export function providerHealth(config) {
   };
 }
 
-function validateReadArgs(args) {
+export function validateReadArgs(args) {
   if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('invalid_tool_arguments');
-  const allowed = new Set(['query', 'maxItems', 'maxTokens']);
+  const allowed = new Set(['query', 'maxItems', 'maxTokens', 'scopeSubset', 'authorityFilter', 'freshnessFilter']);
   for (const key of Object.keys(args)) if (!allowed.has(key)) throw new Error(`forbidden_tool_argument:${key}`);
   const query = String(args.query ?? '').trim();
   if (!query || query.length > 1000) throw new Error('invalid_query');
@@ -176,6 +190,21 @@ function validateReadArgs(args) {
     const maximum = key === 'maxItems' ? 20 : 4000;
     if (!Number.isInteger(value) || value < 1 || value > maximum) throw new Error(`invalid_${key}`);
     result[key] = value;
+  }
+  if (args.scopeSubset !== undefined) {
+    const subset = Array.isArray(args.scopeSubset) ? args.scopeSubset : [String(args.scopeSubset)];
+    for (const s of subset) if (String(s).includes('..') || String(s).startsWith('/')) throw new Error('invalid_scope_subset');
+    result.scopeSubset = subset;
+  }
+  if (args.authorityFilter !== undefined) {
+    const af = String(args.authorityFilter);
+    if (af !== 'any' && af !== 'current') throw new Error('invalid_authority_filter');
+    result.authorityFilter = af;
+  }
+  if (args.freshnessFilter !== undefined) {
+    const ff = String(args.freshnessFilter);
+    if (ff !== 'any' && ff !== 'fresh') throw new Error('invalid_freshness_filter');
+    result.freshnessFilter = ff;
   }
   return result;
 }
@@ -227,6 +256,7 @@ export function providerExplain(config, rawArgs) {
   if (!health.source.worktreeMatchesCommit) throw new Error('source_worktree_not_clean');
   return decoratePack(explainAdapter({...args, root: config.root, scopes: config.scopes, format: 'json', discoveryLimits: {maxFiles: PROVIDER_LIMITS.maxSourceFiles, maxSourceBytes: PROVIDER_LIMITS.maxSourceBytes, maxBytes: PROVIDER_LIMITS.maxCorpusBytes}}), config, health);
 }
+
 
 export function callProviderTool(config, name, args = {}) {
   if (!config.admittedTools.includes(name)) throw new Error('tool_not_admitted');

@@ -13,13 +13,9 @@ function parseScalar(value) {
   return trimmed.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
 }
 
-export function parseFrontmatter(markdown) {
-  if (typeof markdown !== 'string' || !markdown.startsWith('---\n')) return {data: {}, body: markdown ?? ''};
-  const end = markdown.indexOf('\n---\n', 4);
-  if (end === -1) return {data: {}, body: markdown};
-  const raw = markdown.slice(4, end).split('\n');
+function parseKeyValueLines(lines) {
   const data = {};
-  for (const line of raw) {
+  for (const line of lines) {
     const index = line.indexOf(':');
     if (index === -1) continue;
     const key = line.slice(0, index).trim();
@@ -27,7 +23,78 @@ export function parseFrontmatter(markdown) {
     if (!key) continue;
     data[key] = parseScalar(value);
   }
+  return data;
+}
+
+export function parseFrontmatter(markdown) {
+  if (typeof markdown !== 'string' || !markdown.startsWith('---\n')) return {data: {}, body: markdown ?? ''};
+  const end = markdown.indexOf('\n---\n', 4);
+  if (end === -1) return {data: {}, body: markdown};
+  const data = parseKeyValueLines(markdown.slice(4, end).split('\n'));
   return {data, body: markdown.slice(end + 5)};
+}
+
+// Parse initial fenced YAML block: ```yaml\n...\n```
+export function parseFencedYaml(markdown) {
+  if (typeof markdown !== 'string') return {data: {}, body: markdown ?? ''};
+  const match = markdown.match(/^```yaml\n([\s\S]*?)\n```\n?/);
+  if (!match) return {data: {}, body: markdown};
+  const data = parseKeyValueLines(match[1].split('\n'));
+  return {data, body: markdown.slice(match[0].length)};
+}
+
+// Parse leading bold Markdown metadata: **key:** value lines at the top of the document
+export function parseBoldMd(markdown) {
+  if (typeof markdown !== 'string') return {data: {}, body: markdown ?? ''};
+  const data = {};
+  let offset = 0;
+  const lines = markdown.split('\n');
+  for (const line of lines) {
+    const match = line.match(/^\*\*([^*:]+):\*\*\s*(.*)/);
+    if (!match) break;
+    const key = match[1].trim();
+    const value = match[2].trim();
+    if (key) data[key] = parseScalar(value);
+    offset += line.length + 1;
+  }
+  if (Object.keys(data).length === 0) return {data: {}, body: markdown};
+  return {data, body: markdown.slice(offset)};
+}
+
+// Generic metadata parser: tries YAML frontmatter, then fenced YAML, then bold MD
+export function parseGenericMetadata(markdown) {
+  if (typeof markdown !== 'string') return {data: {}, body: markdown ?? ''};
+  if (markdown.startsWith('---\n')) {
+    const result = parseFrontmatter(markdown);
+    if (Object.keys(result.data).length > 0) return result;
+  }
+  if (markdown.startsWith('```yaml\n')) {
+    const result = parseFencedYaml(markdown);
+    if (Object.keys(result.data).length > 0) return result;
+  }
+  const boldResult = parseBoldMd(markdown);
+  if (Object.keys(boldResult.data).length > 0) return boldResult;
+  return {data: {}, body: markdown};
+}
+
+// Normalize lifecycle/status fields to canonical current|stale|unknown
+export function normalizeLifecycle(value) {
+  const normalized = String(value ?? '').toLowerCase().trim();
+  switch (normalized) {
+    case 'current':
+    case 'active':
+    case 'latest':
+    case 'live':
+      return 'current';
+    case 'stale':
+    case 'archived':
+    case 'deprecated':
+    case 'outdated':
+    case 'old':
+      return 'stale';
+    default:
+      return 'unknown';
+  }
 }
 
 export function extractHeadings(markdown) {

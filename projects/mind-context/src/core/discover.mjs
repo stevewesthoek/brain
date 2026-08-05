@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {extractHeadings, extractLinks, parseFrontmatter, pickTitle} from './frontmatter.mjs';
+import {extractHeadings, extractLinks, parseGenericMetadata, normalizeLifecycle, pickTitle} from './frontmatter.mjs';
 import {isExcludedPath, normalizeRepoRelativePath, scopeContainsPath} from './policy.mjs';
 
 function isMarkdownPath(repoRelativePath) {
@@ -23,8 +23,9 @@ function readMarkdownMetadata(root, repoRelativePath, limits) {
   const buffer = fs.readFileSync(absPath);
   if (hasBinarySignature(buffer)) return null;
   const markdown = buffer.toString('utf8');
-  const {data: frontmatter, body} = parseFrontmatter(markdown);
+  const {data: frontmatter, body} = parseGenericMetadata(markdown);
   const headings = extractHeadings(body);
+  const rawLifecycle = frontmatter.lifecycle ?? frontmatter.status ?? '';
   return {
     sourceId: toSourceId(repoRelativePath),
     path: repoRelativePath,
@@ -34,6 +35,7 @@ function readMarkdownMetadata(root, repoRelativePath, limits) {
     links: extractLinks(body),
     freshness: frontmatter.freshness ?? 'unknown',
     authority: frontmatter.authority ?? 'supporting',
+    lifecycle: normalizeLifecycle(rawLifecycle),
     privacy: frontmatter.privacy ?? 'public',
     scope: frontmatter.scope ?? (path.posix.dirname(repoRelativePath) || '.'),
     pathClass: frontmatter.pathClass ?? (repoRelativePath.includes('/canonical/') ? 'canonical' : 'supporting'),

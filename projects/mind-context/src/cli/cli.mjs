@@ -3,7 +3,7 @@ import {explainContextCommand, healthContextCommand, renderContextGatewayOutput,
 function usage() {
   return [
     'Usage:',
-    '  npm --prefix projects/mind-context run cli -- resolve --query "..." --root PATH --scope SCOPE [--scope SCOPE] [--format json|markdown] [--max-items N] [--max-tokens N]',
+    '  npm --prefix projects/mind-context run cli -- resolve --query "..." --root PATH --scope SCOPE [--scope SCOPE] [--format json|markdown] [--max-items N] [--max-tokens N] [--scope-subset SCOPE] [--authority-filter any|current] [--freshness-filter any|fresh]',
     '  npm --prefix projects/mind-context run cli -- explain --query "..." --root PATH --scope SCOPE [options]',
     '  npm --prefix projects/mind-context run cli -- health [--format json|markdown]',
   ].join('\n');
@@ -20,8 +20,8 @@ function parseArgs(argv) {
     const eq = token.indexOf('=');
     const key = token.slice(2, eq === -1 ? undefined : eq);
     const value = eq === -1 ? argv[++i] ?? true : token.slice(eq + 1);
-    if (key === 'scope' || key === 'forbidden-scope') {
-      const listKey = key === 'scope' ? 'scopes' : 'forbiddenScopes';
+    if (key === 'scope' || key === 'forbidden-scope' || key === 'scope-subset') {
+      const listKey = key === 'scope' ? 'scopes' : key === 'forbidden-scope' ? 'forbiddenScopes' : 'scopeSubset';
       args[listKey] ??= [];
       args[listKey].push(String(value));
       continue;

@@ -49,6 +49,47 @@ function normalizeScopes(scopes) {
   return normalized;
 }
 
+const VALID_AUTHORITY_FILTERS = new Set(['any', 'current']);
+const VALID_FRESHNESS_FILTERS = new Set(['any', 'fresh']);
+
+function normalizeAuthorityFilter(value) {
+  if (value == null || value === '' || value === 'any') return 'any';
+  if (value === 'current') return 'current';
+  throw new Error('invalid_authority_filter');
+}
+
+function normalizeFreshnessFilter(value) {
+  if (value == null || value === '' || value === 'any') return 'any';
+  if (value === 'fresh') return 'fresh';
+  throw new Error('invalid_freshness_filter');
+}
+
+function normalizeScopeSubset(scopeSubset, allowedScopes) {
+  if (scopeSubset == null || (Array.isArray(scopeSubset) && scopeSubset.length === 0)) return null;
+  const subset = Array.isArray(scopeSubset) ? scopeSubset : [String(scopeSubset)];
+  for (const s of subset) {
+    if (String(s).includes('..') || String(s).startsWith('/') || String(s).includes('\\')) throw new Error('invalid_scope');
+    if (!allowedScopes.includes(s)) throw new Error('scope_subset_exceeds_allowed');
+  }
+  return subset;
+}
+
+const CURRENT_AUTHORITY_VALUES = new Set(['canonical']);
+
+function applyAuthorityFilter(sources, authorityFilter) {
+  if (authorityFilter === 'any') return sources;
+  return sources.filter((source) => CURRENT_AUTHORITY_VALUES.has(String(source.authority ?? '').toLowerCase()));
+}
+
+function applyFreshnessFilter(sources, freshnessFilter) {
+  if (freshnessFilter === 'any') return sources;
+  return sources.filter((source) => {
+    const freshness = String(source.freshness ?? '').toLowerCase();
+    const lifecycle = String(source.lifecycle ?? '').toLowerCase();
+    return freshness === 'fresh' || lifecycle === 'current';
+  });
+}
+
 function collectContext(args) {
   assertCoreAvailable();
   if (args.modelSuppliedAuthority === true) throw new Error('model_authority');
@@ -59,24 +100,30 @@ function collectContext(args) {
   for (const scope of forbiddenScopes) {
     if (String(scope).includes('..') || String(scope).startsWith('/') || String(scope).includes('\\')) throw new Error('invalid_scope');
   }
+  const scopeSubset = normalizeScopeSubset(args.scopeSubset ?? null, scopes);
+  const effectiveScopes = scopeSubset ?? scopes;
+  const authorityFilter = normalizeAuthorityFilter(args.authorityFilter);
+  const freshnessFilter = normalizeFreshnessFilter(args.freshnessFilter);
   const query = String(args.query ?? '').trim();
   if (!query) throw new Error('missing_query');
   const format = normalizeFormat(args.format);
   const maxItems = normalizePositiveInt(args.maxItems, 5);
   const maxTokens = normalizePositiveInt(args.maxTokens, 500);
-  const sources = discoverSources({root, scopes, forbiddenScopes, limits: args.discoveryLimits});
-  if (sources.length === 0) throw new Error('insufficient_evidence');
+  const sources = discoverSources({root, scopes: effectiveScopes, forbiddenScopes, limits: args.discoveryLimits});
+  const filteredByAuthority = applyAuthorityFilter(sources, authorityFilter);
+  const filteredSources = applyFreshnessFilter(filteredByAuthority, freshnessFilter);
+  if (filteredSources.length === 0) throw new Error('insufficient_evidence');
   const plan = planContextPack({
     queryId: args.queryId ?? query,
     query,
-    scopes,
-    sources,
+    scopes: effectiveScopes,
+    sources: filteredSources,
     forbiddenSources: args.forbiddenSources ?? [],
     maxItems,
     maxTokens,
     modelSuppliedAuthority: false,
   });
-  return {root, scopes, forbiddenScopes, query, format, maxItems, maxTokens, sources, plan};
+  return {root, scopes, effectiveScopes, forbiddenScopes, scopeSubset, authorityFilter, freshnessFilter, query, format, maxItems, maxTokens, sources, filteredSources, plan};
 }
 
 export function resolveContextCommand(args = {}) {
@@ -92,7 +139,11 @@ export function resolveContextCommand(args = {}) {
       query: context.query,
       root: context.root,
       scopes: context.scopes,
+      effectiveScopes: context.effectiveScopes,
       forbiddenScopes: context.forbiddenScopes,
+      scopeSubset: context.scopeSubset,
+      authorityFilter: context.authorityFilter,
+      freshnessFilter: context.freshnessFilter,
       maxItems: context.maxItems,
       maxTokens: context.maxTokens,
       format: context.format,
@@ -114,7 +165,11 @@ export function explainContextCommand(args = {}) {
       query: context.query,
       root: context.root,
       scopes: context.scopes,
+      effectiveScopes: context.effectiveScopes,
       forbiddenScopes: context.forbiddenScopes,
+      scopeSubset: context.scopeSubset,
+      authorityFilter: context.authorityFilter,
+      freshnessFilter: context.freshnessFilter,
       maxItems: context.maxItems,
       maxTokens: context.maxTokens,
       format: context.format,
