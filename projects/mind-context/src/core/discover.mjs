@@ -16,6 +16,13 @@ function toSourceId(repoRelativePath) {
   return repoRelativePath.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'source';
 }
 
+function deriveAuthority(frontmatter, lifecycle, pathClass) {
+  if (frontmatter.authority) return String(frontmatter.authority).toLowerCase();
+  if (pathClass === 'canonical') return 'canonical';
+  if (lifecycle === 'current') return 'canonical';
+  return 'supporting';
+}
+
 function readMarkdownMetadata(root, repoRelativePath, limits) {
   const absPath = path.join(root, repoRelativePath);
   const bytes = fs.statSync(absPath).size;
@@ -26,6 +33,10 @@ function readMarkdownMetadata(root, repoRelativePath, limits) {
   const {data: frontmatter, body} = parseGenericMetadata(markdown);
   const headings = extractHeadings(body);
   const rawLifecycle = frontmatter.lifecycle ?? frontmatter.status ?? '';
+  const lifecycle = normalizeLifecycle(rawLifecycle);
+  const pathClass = frontmatter.path_class ?? frontmatter.pathClass ?? (repoRelativePath.includes('/canonical/') ? 'canonical' : 'supporting');
+  const authority = deriveAuthority(frontmatter, lifecycle, pathClass);
+  const freshness = frontmatter.freshness ?? (lifecycle === 'current' ? 'fresh' : 'unknown');
   return {
     sourceId: toSourceId(repoRelativePath),
     path: repoRelativePath,
@@ -33,12 +44,12 @@ function readMarkdownMetadata(root, repoRelativePath, limits) {
     headings,
     frontmatter,
     links: extractLinks(body),
-    freshness: frontmatter.freshness ?? 'unknown',
-    authority: frontmatter.authority ?? 'supporting',
-    lifecycle: normalizeLifecycle(rawLifecycle),
+    freshness,
+    authority,
+    lifecycle,
     privacy: frontmatter.privacy ?? 'public',
     scope: frontmatter.scope ?? (path.posix.dirname(repoRelativePath) || '.'),
-    pathClass: frontmatter.pathClass ?? (repoRelativePath.includes('/canonical/') ? 'canonical' : 'supporting'),
+    pathClass,
     content: body,
     bytes,
     sha256: crypto.createHash('sha256').update(buffer).digest('hex'),

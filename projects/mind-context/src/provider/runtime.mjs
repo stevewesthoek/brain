@@ -38,7 +38,7 @@ export const TOOL_DEFINITIONS = Object.freeze([
         query: {type: 'string', minLength: 1, maxLength: 1000},
         maxItems: {type: 'integer', minimum: 1, maximum: 20},
         maxTokens: {type: 'integer', minimum: 1, maximum: 4000},
-        scopeSubset: {type: 'array', items: {type: 'string'}, description: 'Exact subset of the admitted scopes to query (must be a non-empty subset of the fixed allowed scopes)'},
+        scopeSubset: {type: 'array', items: {type: 'string'}, minItems: 1, maxItems: 9, uniqueItems: true, description: 'Exact subset of the admitted scopes to query (must be a non-empty subset of the fixed allowed scopes)'},
         authorityFilter: {type: 'string', enum: ['any', 'current'], description: 'current = canonical sources only; any = all authority levels'},
         freshnessFilter: {type: 'string', enum: ['any', 'fresh'], description: 'fresh = fresh+current lifecycle sources only; any = all freshness levels'},
       },
@@ -54,7 +54,7 @@ export const TOOL_DEFINITIONS = Object.freeze([
         query: {type: 'string', minLength: 1, maxLength: 1000},
         maxItems: {type: 'integer', minimum: 1, maximum: 20},
         maxTokens: {type: 'integer', minimum: 1, maximum: 4000},
-        scopeSubset: {type: 'array', items: {type: 'string'}, description: 'Exact subset of the admitted scopes to query (must be a non-empty subset of the fixed allowed scopes)'},
+        scopeSubset: {type: 'array', items: {type: 'string'}, minItems: 1, maxItems: 9, uniqueItems: true, description: 'Exact subset of the admitted scopes to query (must be a non-empty subset of the fixed allowed scopes)'},
         authorityFilter: {type: 'string', enum: ['any', 'current'], description: 'current = canonical sources only; any = all authority levels'},
         freshnessFilter: {type: 'string', enum: ['any', 'fresh'], description: 'fresh = fresh+current lifecycle sources only; any = all freshness levels'},
       },
@@ -192,9 +192,16 @@ export function validateReadArgs(args) {
     result[key] = value;
   }
   if (args.scopeSubset !== undefined) {
-    const subset = Array.isArray(args.scopeSubset) ? args.scopeSubset : [String(args.scopeSubset)];
-    for (const s of subset) if (String(s).includes('..') || String(s).startsWith('/')) throw new Error('invalid_scope_subset');
-    result.scopeSubset = subset;
+    if (!Array.isArray(args.scopeSubset)) throw new Error('invalid_scope_subset');
+    if (args.scopeSubset.length === 0 || args.scopeSubset.length > 9) throw new Error('invalid_scope_subset');
+    const seen = new Set();
+    for (const s of args.scopeSubset) {
+      if (typeof s !== 'string' || !s) throw new Error('invalid_scope_subset');
+      if (s.includes('..') || s.startsWith('/') || s.includes('\\')) throw new Error('invalid_scope_subset');
+      if (seen.has(s)) throw new Error('invalid_scope_subset');
+      seen.add(s);
+    }
+    result.scopeSubset = args.scopeSubset;
   }
   if (args.authorityFilter !== undefined) {
     const af = String(args.authorityFilter);

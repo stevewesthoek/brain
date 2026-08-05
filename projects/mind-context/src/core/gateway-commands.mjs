@@ -65,13 +65,19 @@ function normalizeFreshnessFilter(value) {
 }
 
 function normalizeScopeSubset(scopeSubset, allowedScopes) {
-  if (scopeSubset == null || (Array.isArray(scopeSubset) && scopeSubset.length === 0)) return null;
-  const subset = Array.isArray(scopeSubset) ? scopeSubset : [String(scopeSubset)];
-  for (const s of subset) {
-    if (String(s).includes('..') || String(s).startsWith('/') || String(s).includes('\\')) throw new Error('invalid_scope');
+  if (scopeSubset == null) return null;
+  if (!Array.isArray(scopeSubset)) throw new Error('invalid_scope_subset');
+  if (scopeSubset.length === 0) throw new Error('invalid_scope_subset');
+  if (scopeSubset.length > allowedScopes.length) throw new Error('scope_subset_exceeds_allowed');
+  const seen = new Set();
+  for (const s of scopeSubset) {
+    if (typeof s !== 'string') throw new Error('invalid_scope_subset');
+    if (s.includes('..') || s.startsWith('/') || s.includes('\\')) throw new Error('invalid_scope');
     if (!allowedScopes.includes(s)) throw new Error('scope_subset_exceeds_allowed');
+    if (seen.has(s)) throw new Error('invalid_scope_subset');
+    seen.add(s);
   }
-  return subset;
+  return scopeSubset;
 }
 
 const CURRENT_AUTHORITY_VALUES = new Set(['canonical']);

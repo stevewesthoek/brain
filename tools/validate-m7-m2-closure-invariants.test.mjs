@@ -83,17 +83,17 @@ test('M2.4: admission status is active-local', () => {
   assert.equal(mcAdmission.status, 'active-local');
 });
 
-test('M2.4: provider revision is b9c726e1 (retrieval-remediation)', () => {
+test('M2.4: provider revision is 51e9091c (live approved)', () => {
   assert.equal(
     mcAdmission.provider.revision,
-    'b9c726e1364a95e3ae01a1f80a138cd4b2347eb0'
+    '51e9091c7374e0642f4fe076b895c184152dd516'
   );
 });
 
-test('M2.4: Mind pin is 08b2d1a7', () => {
+test('M2.4: Mind pin is a21f9ed5', () => {
   assert.equal(
     mcAdmission.scope.fixedEnvironment.MIND_CONTEXT_EXPECTED_HEAD,
-    '08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e'
+    'a21f9ed5d7270ae7dd939b93c5df525c933091f8'
   );
 });
 

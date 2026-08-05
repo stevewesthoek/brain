@@ -13,12 +13,35 @@ function parseScalar(value) {
   return trimmed.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
 }
 
+const KEY_ALIASES = new Map([
+  ['last reviewed', 'last_reviewed'],
+  ['last-reviewed', 'last_reviewed'],
+  ['lastreviewd', 'last_reviewed'],
+  ['review after', 'review_after'],
+  ['review-after', 'review_after'],
+  ['freshness risk', 'freshness_risk'],
+  ['freshness-risk', 'freshness_risk'],
+  ['owner role', 'owner_role'],
+  ['owner-role', 'owner_role'],
+  ['depends on', 'depends_on'],
+  ['depends-on', 'depends_on'],
+  ['path class', 'path_class'],
+  ['path-class', 'path_class'],
+  ['pathclass', 'path_class'],
+]);
+
+function normalizeKey(raw) {
+  const lower = raw.toLowerCase().trim();
+  if (KEY_ALIASES.has(lower)) return KEY_ALIASES.get(lower);
+  return lower.replace(/[\s-]+/g, '_');
+}
+
 function parseKeyValueLines(lines) {
   const data = {};
   for (const line of lines) {
     const index = line.indexOf(':');
     if (index === -1) continue;
-    const key = line.slice(0, index).trim();
+    const key = normalizeKey(line.slice(0, index));
     const value = line.slice(index + 1);
     if (!key) continue;
     data[key] = parseScalar(value);
@@ -52,7 +75,7 @@ export function parseBoldMd(markdown) {
   for (const line of lines) {
     const match = line.match(/^\*\*([^*:]+):\*\*\s*(.*)/);
     if (!match) break;
-    const key = match[1].trim();
+    const key = normalizeKey(match[1]);
     const value = match[2].trim();
     if (key) data[key] = parseScalar(value);
     offset += line.length + 1;
@@ -61,7 +84,23 @@ export function parseBoldMd(markdown) {
   return {data, body: markdown.slice(offset)};
 }
 
+function skipPrologue(markdown) {
+  const lines = markdown.split('\n');
+  let offset = 0;
+  const maxPrologueLines = 5;
+  for (let i = 0; i < Math.min(lines.length, maxPrologueLines); i++) {
+    const line = lines[i];
+    if (/^#{1,6}\s/.test(line) || line.trim() === '') {
+      offset += line.length + 1;
+      continue;
+    }
+    break;
+  }
+  return offset > 0 ? markdown.slice(offset) : null;
+}
+
 // Generic metadata parser: tries YAML frontmatter, then fenced YAML, then bold MD
+// Applies at document start, then retries after skipping bounded H1/blank prologue
 export function parseGenericMetadata(markdown) {
   if (typeof markdown !== 'string') return {data: {}, body: markdown ?? ''};
   if (markdown.startsWith('---\n')) {
@@ -74,27 +113,39 @@ export function parseGenericMetadata(markdown) {
   }
   const boldResult = parseBoldMd(markdown);
   if (Object.keys(boldResult.data).length > 0) return boldResult;
+  const afterPrologue = skipPrologue(markdown);
+  if (afterPrologue !== null) {
+    if (afterPrologue.startsWith('---\n')) {
+      const result = parseFrontmatter(afterPrologue);
+      if (Object.keys(result.data).length > 0) return {data: result.data, body: result.body};
+    }
+    if (afterPrologue.startsWith('```yaml\n')) {
+      const result = parseFencedYaml(afterPrologue);
+      if (Object.keys(result.data).length > 0) return {data: result.data, body: result.body};
+    }
+    const boldAfter = parseBoldMd(afterPrologue);
+    if (Object.keys(boldAfter.data).length > 0) return {data: boldAfter.data, body: boldAfter.body};
+  }
   return {data: {}, body: markdown};
 }
+
+const CURRENT_LIFECYCLE_PHRASES = new Set([
+  'current', 'active', 'latest', 'live',
+  'active operational reference',
+  'active reference',
+  'operational',
+]);
+const STALE_LIFECYCLE_PHRASES = new Set([
+  'stale', 'archived', 'deprecated', 'outdated', 'old', 'superseded',
+]);
 
 // Normalize lifecycle/status fields to canonical current|stale|unknown
 export function normalizeLifecycle(value) {
   const normalized = String(value ?? '').toLowerCase().trim();
-  switch (normalized) {
-    case 'current':
-    case 'active':
-    case 'latest':
-    case 'live':
-      return 'current';
-    case 'stale':
-    case 'archived':
-    case 'deprecated':
-    case 'outdated':
-    case 'old':
-      return 'stale';
-    default:
-      return 'unknown';
-  }
+  if (!normalized) return 'unknown';
+  if (CURRENT_LIFECYCLE_PHRASES.has(normalized)) return 'current';
+  if (STALE_LIFECYCLE_PHRASES.has(normalized)) return 'stale';
+  return 'unknown';
 }
 
 export function extractHeadings(markdown) {
