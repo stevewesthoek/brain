@@ -3,7 +3,7 @@
 **State:** active-local; activation and disable/restore verification passed
 **Owner:** Brain runtime  
 **Canonical integration branch:** `main`  
-**Provider source lock:** `51e9091c7374e0642f4fe076b895c184152dd516`
+**Provider source lock:** `b9c726e1364a95e3ae01a1f80a138cd4b2347eb0`
 **Mind source lock:** `2b59119dd119ecd965b66ce601db14cb32ca3852` (updated 2026-08-04; previous: `08b2d1a7a4f7bc4b447350ee32be7b6da5e26b8e`)
 
 ## Boundary
@@ -52,7 +52,7 @@ Outside preparation mode, startup requires an owner-only regular JSON file at
   "approvedAt": "<ISO-8601 timestamp>",
   "approvalId": "<unique approval id>",
   "scope": "mind-context-read-only",
-  "providerRevision": "51e9091c7374e0642f4fe076b895c184152dd516",
+  "providerRevision": "b9c726e1364a95e3ae01a1f80a138cd4b2347eb0",
   "mindCommit": "2b59119dd119ecd965b66ce601db14cb32ca3852",
   "allowedScopes": ["faith", "knowledge", "organizations", "people", "projects", "resources", "system", "tasks", "wiki"]
 }
@@ -149,7 +149,7 @@ claude mcp add --scope local mind-context \
   -e MIND_CONTEXT_EXPECTED_HEAD=<current-mind-pin> \
   -e MIND_CONTEXT_PREPARATION_APPROVAL_FILE=/Users/Office/.brain/approvals/mind-context-preparation.json \
   -e MIND_CONTEXT_PREPARATION_MODE=0 \
-  -e MIND_CONTEXT_PROVIDER_REVISION=51e9091c7374e0642f4fe076b895c184152dd516 \
+  -e MIND_CONTEXT_PROVIDER_REVISION=b9c726e1364a95e3ae01a1f80a138cd4b2347eb0 \
   -e MIND_CONTEXT_ROOT=/Users/Office/Repos/stevewesthoek/mind
 ```
 
