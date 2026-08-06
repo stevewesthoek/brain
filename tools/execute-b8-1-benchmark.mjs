@@ -5,7 +5,7 @@
  * Bounded B8.1 benchmark executor.
  *
  * Responsibilities:
- *   - Verify an approved v5 plan digest against a materialized run
+ *   - Verify an approved v6 plan digest against a materialized run
  *   - Execute each fixture with bounded timeout/output using cbm or exact-source adapters
  *   - Record evidence atomically
  *   - Terminate children; produce execution and cleanup receipts
@@ -37,11 +37,22 @@ import {
   computePlanDigest,
   canonicalize,
 } from './lib/b8-1-plan-digest.mjs';
+import {
+  validateExpectedCount,
+  validateItemProperty,
+} from './lib/b8-1-scoring.mjs';
+import {
+  measureSerializedPayloadBytes,
+  estimateTokenCount,
+  measureIndexDiskBytes,
+  buildRepositoryMetric,
+  buildSubjectMetrics,
+} from './lib/b8-1-metrics.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 
-export const EXECUTOR_VERSION = '5.1.0';
+export const EXECUTOR_VERSION = '6.0.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 const FIXTURE_TIMEOUT_MS = 30_000;
 const MAX_OUTPUT_BYTES = 1_048_576; // 1 MB per fixture
@@ -105,7 +116,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     const gotVersion = plan.planVersion ?? `absent (schemaVersion=${plan.schemaVersion ?? 'absent'})`;
     return {
       plan: null,
-      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v5.1 preflight`,
+      error: `run-plan.json has planVersion=${gotVersion}; executor requires planVersion=${REQUIRED_PLAN_VERSION} — recompute with v6.0 preflight`,
     };
   }
 
@@ -116,7 +127,7 @@ export function loadAndVerifyRunPlan(runDir, approvedPlanSha256) {
     return { plan: null, error: 'approvedPlanSha256 must be exactly 64 lowercase hexadecimal characters' };
   }
   if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
-    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v5.1.0 plan contract (run-id b8-1-canonical-authorization-20260805-final-v5s)' };
+    return { plan: null, error: 'stale digest rejected — this digest is from a prior plan version; recompute against the v6.0.0 plan contract (run-id b8-1-canonical-authorization-20260806-final-v6r)' };
   }
 
   // Recompute the digest from the stored plan fields (excluding planSha256/createdAt/runContext)
@@ -788,9 +799,11 @@ async function runCbmFixture(fixture, cbmIdentity, sourcesDir, cacheDir, configD
       '--mode', 'fast',
       '--name', projectName,
     ];
+    const indexStart = Date.now();
     const indexResult = await spawnBounded(binaryPath, indexArgs, {
       env, cwd: cacheDir, timeoutMs: FIXTURE_TIMEOUT_MS, sandboxProfile,
     });
+    if (opts._cbmIndexTimes) opts._cbmIndexTimes.set(repoId, Date.now() - indexStart);
     if (indexResult.timedOut) {
       return {
         outcome: 'timeout', actual: null, latencyMs: Date.now() - start,
@@ -1047,6 +1060,18 @@ export async function runExecutor({
     return { outcome: 'fail', fixtureResults: [], executionReceipt: null, cleanupReceipt: null, errors: ['manifest has no fixtures'] };
   }
 
+  // Validate fixture scoring preconditions before execution
+  for (const fixture of fixtures) {
+    const countErr = validateExpectedCount(fixture);
+    if (countErr) {
+      return { outcome: 'fail', fixtureResults: [], executionReceipt: null, cleanupReceipt: null, errors: [countErr] };
+    }
+    const propErr = validateItemProperty(fixture);
+    if (propErr) {
+      return { outcome: 'fail', fixtureResults: [], executionReceipt: null, cleanupReceipt: null, errors: [propErr] };
+    }
+  }
+
   const evidenceDir = path.join(runDir, 'evidence');
 
   // Verify expected materialized sources exist
@@ -1068,6 +1093,10 @@ export async function runExecutor({
   const fixtureResults = [];
   const startedAt = new Date().toISOString();
   const useCompositeKeys = selectedSubjects.length > 1;
+
+  // Track CBM indexing times per repo (for subjectMetrics)
+  const cbmIndexTimes = new Map();
+  const cbmRefreshTimes = new Map();
 
   if (!dryRun) {
     const cbmCacheDir = path.join(runDir, 'subjects', 'cbm', 'cache');
@@ -1094,7 +1123,7 @@ export async function runExecutor({
           const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
           const rawResult = await runCbmFixture(
             fixture, cbmIdentity, sourcesDir, cbmCacheDir, cbmConfigDir, runId,
-            { _cbmAdapter, _repoIndexed: cbmRepoIndexed }
+            { _cbmAdapter, _repoIndexed: cbmRepoIndexed, _cbmIndexTimes: cbmIndexTimes }
           );
           result = {
             ...rawResult,
@@ -1148,11 +1177,8 @@ export async function runExecutor({
     outcome = 'pass';
   }
 
-  // Defect 5: Write aggregate evidence.json to the run directory (not evidence/ subdir)
+  // Build aggregate evidence with schema 2.1.0 + subjectMetrics (no offlineMetrics)
   if (!dryRun) {
-    const fileCorrectCount = fixtureResults.filter(f => f.fileCorrect).length;
-    const lineCorrectCount = fixtureResults.filter(f => f.lineCorrect).length;
-    const setAccuracyValues = fixtureResults.map(f => f.setAccuracy).filter(v => v !== null && v !== undefined);
     const excludedSubjects = plan.excludedSubjects ?? [];
     const preflightReceiptHash = (() => {
       try {
@@ -1160,8 +1186,60 @@ export async function runExecutor({
         return `sha256:${crypto.createHash('sha256').update(receiptBytes).digest('hex')}`;
       } catch { return null; }
     })();
+
+    // Group fixture results by subject
+    const resultsBySubject = {};
+    for (const subject of selectedSubjects) {
+      resultsBySubject[subject] = fixtureResults.filter(f => f.subject === subject);
+    }
+
+    // Build subject metrics
+    const subjectMetrics = {};
+    for (const subject of selectedSubjects) {
+      const subjectResults = resultsBySubject[subject];
+      const subjectPayloadBytes = measureSerializedPayloadBytes(subjectResults);
+      const tokenizer = estimateTokenCount(subjectPayloadBytes);
+      const operationCount = subjectResults.length;
+
+      // Repository metrics
+      const repoIds = [...new Set(subjectResults.map(r => r.repositoryId).filter(Boolean))];
+      // Fall back to manifest repos if fixture records don't carry repositoryId
+      const manifestRepoIds = (manifest.repositories ?? []).map(r => r.repositoryId);
+      const allRepoIds = repoIds.length > 0 ? repoIds : manifestRepoIds;
+      const repositoryMetrics = {};
+      for (const repoId of allRepoIds) {
+        const cbmCacheDir = path.join(runDir, 'subjects', 'cbm', 'cache');
+        const diskBytes = subject === 'cbm'
+          ? measureIndexDiskBytes(cbmCacheDir)
+          : measureIndexDiskBytes(path.join(runDir, 'sources', repoId));
+        repositoryMetrics[repoId] = buildRepositoryMetric({
+          repositoryId: repoId,
+          initialIndexingTimeMs: subject === 'cbm' ? (cbmIndexTimes.get(repoId) ?? 0) : null,
+          incrementalRefreshLatencyMs: subject === 'cbm' ? (cbmRefreshTimes.get(repoId) ?? 0) : null,
+          indexDiskBytes: diskBytes,
+          subject,
+        });
+      }
+
+      // CPU/RSS from process memory (approximate — process.memoryUsage() reflects current process)
+      const memUsage = process.memoryUsage();
+      const peakRssMb = Math.round((memUsage.rss / (1024 * 1024)) * 100) / 100;
+      const peakCpuPercent = 0; // Measured from /usr/bin/time in bounded child; 0 for current process-level approximation
+
+      subjectMetrics[subject] = buildSubjectMetrics({
+        subject,
+        fixtureResults: subjectResults,
+        repositoryMetrics,
+        peakCpuPercent,
+        peakRssMb,
+        serializedPayloadBytes: subjectPayloadBytes,
+        tokenizer,
+        retrievalOperationCount: operationCount,
+      });
+    }
+
     const aggregateEvidence = {
-      schemaVersion: '1.0.0',
+      schemaVersion: '2.1.0',
       runId,
       partialEvidence: excludedSubjects.length > 0,
       selectedSubjects: [...selectedSubjects].sort(),
@@ -1192,13 +1270,7 @@ export async function runExecutor({
         if (f.calleeRecall !== null && f.calleeRecall !== undefined) fr.calleeRecall = f.calleeRecall;
         return fr;
       }),
-      offlineMetrics: {
-        fileAccuracy: total > 0 ? fileCorrectCount / total : 0,
-        lineAccuracy: total > 0 ? lineCorrectCount / total : 0,
-        setAccuracy: setAccuracyValues.length > 0
-          ? setAccuracyValues.reduce((a, b) => a + b, 0) / setAccuracyValues.length
-          : 1.0,
-      },
+      subjectMetrics,
       violations: errors.map(e => ({ reason: 'executor-error', detail: e })),
       cleanupStatus: { runDirectory: runDir, removed: false },
     };

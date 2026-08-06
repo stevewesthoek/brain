@@ -22,7 +22,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0"] },
+    "schemaVersion": { "type": "string", "enum": ["1.0.0", "1.1.0", "2.0.0", "2.1.0"] },
     "runId": { "type": "string", "pattern": "^b8-1-(?!.*\\.\\.)[a-zA-Z0-9._-]+$" },
     "runAt": { "type": "string", "format": "date-time" },
     "partialEvidence": { "type": "boolean" },
@@ -359,6 +359,32 @@
                 "calleeRecall": { "type": "number", "minimum": 0, "maximum": 1 },
                 "callerCalleeF1": { "type": "number", "minimum": 0, "maximum": 1 }
               }
+            },
+            "repositoryMetrics": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^[a-z][a-z0-9-]*$": {
+                  "type": "object",
+                  "required": ["initialIndexingTimeMs", "incrementalRefreshLatencyMs", "indexDiskBytes"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "initialIndexingTimeMs": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "incrementalRefreshLatencyMs": {
+                      "oneOf": [
+                        {"type": "integer", "minimum": 0},
+                        {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["not-applicable"]}, "reason": {"type": "string"}}, "additionalProperties": false}
+                      ]
+                    },
+                    "indexDiskBytes": {"type": "integer", "minimum": 0}
+                  }
+                }
+              }
             }
           }
         }
@@ -496,8 +522,24 @@
         "properties": { "subjectMetrics": true, "offlineMetrics": false }
       },
       "else": {
-        "required": ["offlineMetrics"],
-        "properties": { "offlineMetrics": true, "subjectMetrics": false }
+        "if": {
+          "properties": { "schemaVersion": { "const": "2.1.0" } },
+          "required": ["schemaVersion"]
+        },
+        "then": {
+          "required": ["subjectMetrics"],
+          "properties": {
+            "offlineMetrics": false,
+            "subjectMetrics": {
+              "type": "object",
+              "minProperties": 1
+            }
+          }
+        },
+        "else": {
+          "required": ["offlineMetrics"],
+          "properties": { "offlineMetrics": true, "subjectMetrics": false }
+        }
       }
     }
   ]

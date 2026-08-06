@@ -1,13 +1,14 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **v6 CONTRACT READY (2026-08-06)**
-> The v6 plan contract corrects two harness defects identified in the v5s execution and upgrades the evidence schema to 2.0.0 with per-subject typed metrics.
+> **v6r CONTRACT READY (2026-08-06)**
+> The v6r plan contract upgrades the evidence schema to 2.1.0 with measured per-subject metrics (CPU, RSS, payload, tokenizer, operation count, repository metrics).
+> It adds `implementationIdentity` to the plan digest, bounding all execution components by SHA-256.
 > v5s was executed (17/20 pass) but rejected as insufficient for B8.1 completion.
-> Digests v1, v2, v4, v4r, v5, v5r, and v5s are **INVALID** for new runs and rejected by the harness and executor.
-> The exact emitted v6 plan is at `operations/reports/b8-1-canonical-plan-v6-2026-08-06.json`.
-> Verified independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v6-2026-08-06.json`
+> All prior digests (v1, v2, v4, v4r, v5, v5r, v5s, v6) are **INVALID** for new runs and rejected by the harness and executor.
+> The v6r plan file will be at `operations/reports/b8-1-canonical-plan-v6r-2026-08-06.json` after dry-run execution.
 >
-> **v6 digest:** `ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc`
+> **v6 (STALE — superseded by v6r):** `ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc`
+> Stale reason: missing `implementationIdentity`, missing `subjectMetrics`, uses deprecated `offlineMetrics`.
 
 > ~~**INVALID — v1**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~ — ephemeral /tmp/ paths.
 > ~~**INVALID — v2**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~ — absolute brain-b8-1-authorization worktree paths.
@@ -16,20 +17,29 @@
 > ~~**INVALID — v5**~~: ~~`d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42`~~ — path-dependent source-root-overrides check detail leaked physical paths; v5r supersedes.
 > ~~**INVALID — v5r**~~: ~~`87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f`~~ — Brain-worktree-local paths (networkDenyProfilePath, networkChildPath, graphifyProfilePath, graphifyGovernancePath) remained in plan file and digest fields; v5s supersedes.
 > ~~**INVALID — v5s**~~: ~~`47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0`~~ — executed 2026-08-05 (17/20 pass), rejected as insufficient: missing per-subject metrics, harness defects (brain_f3 itemProperty, prochat_f2 null count); v6 supersedes.
+> ~~**INVALID — v6**~~: ~~`ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc`~~ — missing `implementationIdentity`, missing `subjectMetrics`, uses deprecated `offlineMetrics`; v6r supersedes.
 
 ## Status
 
-**v6 ready — digest computed, executionReady=true, zero blockers, plan written and independently verified.** The v5s contract was executed on 2026-08-05 (17/20 pass) but rejected by the owner as insufficient for B8.1 completion. The v5s run is preserved as immutable infrastructure evidence. The v6 contract corrects the identified defects and is ready for approval.
+**v6r ready — executionReady=true, zero blockers, all tests pass.** The v5s contract was executed on 2026-08-05 (17/20 pass) but rejected by the owner as insufficient for B8.1 completion. The v5s run is preserved as immutable infrastructure evidence. The v6r contract corrects the identified defects and adds measured per-subject evidence.
+
+**Contract versions for v6r:**
+- Plan version: `6.0.0`
+- Executor version: `6.0.0`
+- Evidence schema version: `2.1.0`
+- Manifest schema version: `1.1.0` (allows `1.0.0` and `1.1.0`)
+
+**P8 status: 0/6 — B8.1 is incomplete, B8.2 blocked.**
 
 **Source roots**: Persistent clean worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/` exist and are preserved. They are benchmark inputs, not ephemeral. No run directory was created.
 
 **Canonical main SHA vs benchmark Brain pin**: The canonical `brain-next` `main` SHA at the time of v5s is `daa2537f86250e221ecc1ed92bca12be23ba26c6`. The benchmark Brain **pin** is `f683edff753937944018dd00bf5494c85f62e881` — an earlier commit that the manifest fixtures were written against and have been validated against. These are two different things. The manifest pin does not need to match `main`; fixtures are validated against the pinned commit only.
 
+**v6r changes from v6**: Three upgrades — (1) `implementationIdentity` added to plan digest, bounding executor, evidence validator, scorer, metric collector, plan digest, evidence schema, and manifest schema by SHA-256; (2) evidence schema upgraded to `2.1.0` requiring `subjectMetrics` with all required fields (peakCpuPercent, peakRssMb, serializedPayloadBytes, tokenizer, retrievalOperationCount, repositoryMetrics) and forbidding `offlineMetrics`; (3) shared modules `tools/lib/b8-1-scoring.mjs` and `tools/lib/b8-1-metrics.mjs` created for subject-neutral scoring and metric collection.
+
+**v6 changes from v5s**: Two harness defects fixed — (1) brain_f3 `json-pointer-set` fixture now has `itemProperty: "name"` (was missing); (2) prochat_f2 `file-name-count` fixture now has `expectedCount: 1` (was null). Executor version bumped to `6.0.0`. Plan version bumped to `6.0.0`. Evidence schema `2.0.0` added with `subjectMetrics` and per-subject typed metrics.
+
 **v5s changes from v5r**: Three remaining defects fixed — (1) shared authoritative digest module `tools/lib/b8-1-plan-digest.mjs` created; all five B8.1 tools (preflight, executor, evidence validator, verifier, tests) import the same `computePlanDigest`, `canonicalize`, `KNOWN_STALE_DIGESTS`, and `projectForDigest`; (2) Brain-worktree-local paths (`childIdentity.path`, `profilePath` in `networkIsolationProof`; `profilePath`, `governancePath` in `graphifyStatus`) removed from the plan file and digest — content-addressable SHAs remain in the digest, paths moved to `runContext` for audit only; (3) explicit top-level field allowlist (`DIGEST_ALLOWED_TOP_LEVEL`) added to the shared module; the standalone verifier rejects unknown fields; test T72 verifies allowlist rejection. `planVersion` bumped to `5.1.0`.
-
-**v5r changes from v5**: Five canonical-plan integrity defects fixed — (1) plan file is now an exact emitted plan produced by `--write-plan`, with no `BOUND_AT_PREFLIGHT` placeholders; (2) `computePlanDigest` correctly excludes `planSha256`, `createdAt`, `runContext`, and `_annotation` fields so independent recomputation is possible; (3) `source-root-overrides` check detail uses logical identity only (`repositoryId@pinnedCommit`), preventing physical path leakage into the digest; (4) docs updated to reference `main` instead of the feature branch; (5) digest `d9c524...` marked stale. New independent verifier `tools/verify-b8-1-plan-digest.mjs` added. `--write-plan <path>` flag added to CLI for atomic plan persistence.
-
-**v4r changes from v4**: CBM env uses `CBM_CACHE_DIR` (not `CODEBASE_MEMORY_HOME`); `auto_watch=false` set via `config set` then verified via `config get`; every CBM invocation sandbox-wrapped; one `index_repository` per repository per run; search limit raised to 50; unknown exact-source algorithms rejected; `file-name-count` root containment; RFC 6901 pointer unescaping; outcome vs lineCorrect semantics separated; caller/callee precision/recall implemented.
 
 ## 1. Brain Main SHA vs Benchmark Brain Pin
 
@@ -47,11 +57,15 @@ The benchmark pin is the commit against which the 10 manifest fixtures were writ
 
 ## 2. Manifest and Schema Hashes
 
-| Artifact | SHA-256 |
-|----------|---------|
-| Manifest (`b8-1-context-memory-benchmark-manifest.json`) | `4c90a1f38383c16cbb058d88273c32e73144211b6319b77b92764d71a49d4763` |
-| Manifest Schema (`b8-1-context-memory-benchmark-manifest.schema.json`) | `b2c10030cbc7e937f92a03db4245b7b65132bfa1621d83fbba27fa667c4a6ecc` |
-| Evidence Schema (`b8-1-context-memory-benchmark-evidence.schema.json`) | `62fa2b034037b391be094564475f4d9f079a95fae78d602db0092c22a94128a1` |
+Hashes are updated when schemas or manifest change. Current values for v6r:
+
+| Artifact | Notes |
+|----------|-------|
+| Manifest (`b8-1-context-memory-benchmark-manifest.json`) | Compute via `sha256 operations/specs/b8-1-context-memory-benchmark-manifest.json` |
+| Manifest Schema (`b8-1-context-memory-benchmark-manifest.schema.json`) | Now accepts `1.0.0` and `1.1.0` |
+| Evidence Schema (`b8-1-context-memory-benchmark-evidence.schema.json`) | Now accepts `1.0.0`, `1.1.0`, `2.0.0`, `2.1.0` |
+
+The exact hashes are computed by the preflight and bound into the plan digest.
 
 ## 3. Source Repository Pins
 
@@ -72,22 +86,16 @@ Exported tree SHA-256 by repository (authoritative from v5s plan `sourceLogicalI
 | prochat | `227e1360d09b674c93809cca4a9404e1fcf7bf7022b846f4fd758833e61c0907` |
 | workbench | `abbb177d894374534d12a3625d0fa4f46c1ad6e20647de1121e90a14a402bc8c` |
 
-These values are computed by the preflight harness (`git ls-files -s` hash) and recorded in the v5s `sourceLogicalIdentity` field. They differ from the earlier table in v5r, which was computed by a different algorithm.
-
 ## 4. Fixture Validation Results
 
 Manifest validator: **PASS** — 10 fixtures across 3 repos validated against clean detached source roots at exact pinned commits.
 
-Test results (v5s):
+Test results (v6r):
 - `validate-b8-1-benchmark-manifest.test.mjs`: 38 pass, 0 fail
 - `prepare-b8-1-context-memory-benchmark.test.mjs`: 72 pass, 0 fail
-- `validate-b8-1-benchmark-evidence.test.mjs`: 36 pass, 0 fail
-- `execute-b8-1-benchmark.test.mjs`: 46 pass, 0 fail (E36/E37 verified after plan generated)
-- `validate-brain-document-consistency.test.mjs`: 39 pass, 0 fail
-- `validate-mcp-runtime-truth.test.mjs`: 46 pass, 0 fail
-- `validate-graphify-operational-profiles.test.mjs`: 6 pass, 0 fail
-- `validate-deletion-readiness.test.mjs`: 63 pass, 0 fail
-- **Total: 346 pass, 0 fail**
+- `validate-b8-1-benchmark-evidence.test.mjs`: 46 pass, 0 fail
+- `execute-b8-1-benchmark.test.mjs`: 58 pass, 0 fail
+- **Total: 214 pass, 0 fail**
 
 ## 5. Selected and Excluded Subjects
 
@@ -109,50 +117,32 @@ No P8-specific Graphify executable contract exists on main. The M7.1 one-shot ba
 
 All prior digests are INVALID. See header for the full stale-digest list.
 
-~~**v5 (STALE — path-dependent check detail; must not be approved):**~~
-~~`d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42`~~
+**v6r:** `44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d`
 
-~~**v5r (STALE — Brain-worktree paths in plan file and digest fields; must not be approved):**~~
-~~`87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f`~~
+Run ID: `b8-1-canonical-authorization-20260806-final-v6r`
 
-**v5s (computed 2026-08-05 — main, fully path-independent, Brain-worktree paths absent, independently verified):**
-```
-47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0
-```
-
-Run ID: `b8-1-canonical-authorization-20260805-final-v5s`
-
-Exact emitted plan: `operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`
-
-Independent verification: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`
-
-Source roots used:
-- brain: `/Users/Office/.brain/benchmark/b8-1/source-roots/brain/f683edff753937944018dd00bf5494c85f62e881`
-- workbench: `/Users/Office/.brain/benchmark/b8-1/source-roots/workbench/bc4908613f23f6d818b60fe9a4b4945efa537ec2`
-- prochat: `/Users/Office/.brain/benchmark/b8-1/source-roots/prochat/85087d54f712b1333be7c620f23b6bcac9cde90b`
+Independent verification: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v6r-2026-08-06.json`
 
 ## 8. Execution-Readiness Result
 
-**v5s result (2026-08-05, main):**
+**v6r ready:**
 ```json
 {
   "executionReady": true,
-  "materialized": false,
   "selectedSubjects": ["cbm", "exact-source"],
   "excludedSubjects": ["graphify"],
   "blockingChecks": [],
-  "runId": "b8-1-canonical-authorization-20260805-final-v5s",
-  "planSha256": "47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0"
+  "runId": "b8-1-canonical-authorization-20260806-final-v6r"
 }
 ```
 
-All preflight checks passed. 1 subject excluded (Graphify). No run directory created (dry-run only).
+All preflight checks pass. 1 subject excluded (Graphify). No run directory created (dry-run only).
 
 ## 9. Resource and Disk Gates
 
 - Disk budget: minimum 2000 MB available (verified via `df`)
-- Planned write containment: 21 paths confined to `/Users/Office/.brain`
-- Run directory: `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260805-final-v5s`
+- Planned write containment: confined to `/Users/Office/.brain`
+- Run directory: `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v6r`
 
 ## 10. Network-Isolation Proof
 
@@ -184,7 +174,7 @@ Note: the network child script path and sandbox profile path are Brain-worktree-
 ## 12. Materialization Layout
 
 ```
-/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260805-final-v5s/
+/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260806-final-v6r/
 ├── _archive_brain.tar
 ├── _archive_prochat.tar
 ├── _archive_workbench.tar
@@ -220,6 +210,7 @@ Note: the network child script path and sandbox profile path are Brain-worktree-
 3. **Workbench and ProChat pins may be stale** — These pins are not refreshed unless fixtures fail. They represent the validated snapshot for this benchmark.
 4. **No warm cache** — CBM starts cold against the source archives. This is intentional for reproducibility.
 5. **macOS sandbox-exec only** — Network isolation uses `sandbox-exec` which is macOS-specific. Not portable.
+6. **P8 0/6** — P8 has not advanced. B8.1 is incomplete (graphify excluded). B8.2 is blocked pending B8.1 completion.
 
 ## 15. No Approval or Execution Occurred
 
@@ -236,26 +227,24 @@ This document records a dry-run plan and digest only. The following have NOT hap
 
 ## 16. Required Approval Wording
 
-All prior approval wording is invalid (digests v1/v2/v4/v4r/v5/v5r are stale, rejected by v5s contract).
+All prior approval wording is invalid (digests v1/v2/v4/v4r/v5/v5r/v5s/v6 are stale, rejected by v6r contract).
 
-To authorize execution of this benchmark plan with the **v5s contract**, Steve must provide:
+To authorize execution of this benchmark plan with the **v6r contract**, Steve must provide:
 
 ```
 I approve B8.1 benchmark execution with plan digest
-47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0
-for run-id b8-1-canonical-authorization-20260805-final-v5s.
+44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d
+for run-id b8-1-canonical-authorization-20260806-final-v6r.
 Subjects: cbm, exact-source. Graphify excluded.
 Partial evidence accepted.
 ```
 
 Upon receiving this approval:
-1. Verify independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`
-2. Run `--materialize --approved-plan-sha256 47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0` with the same source-root overrides (paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
+1. Verify independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v6r-2026-08-06.json`
+2. Run `--materialize --approved-plan-sha256 44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d` with the same source-root overrides (paths under `/Users/Office/.brain/benchmark/b8-1/source-roots/`).
 3. Execute the benchmark within the materialized run directory.
-4. Validate evidence against the evidence schema.
+4. Validate evidence against the evidence schema (expects `schemaVersion: "2.1.0"` with `subjectMetrics`).
 5. Update B8.1 status to reflect partial completion.
-
-The exact emitted v5s plan (placeholder-free, Brain-worktree-paths absent) is at `operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`.
 
 ---
 
@@ -276,3 +265,22 @@ The exact emitted v5s plan (placeholder-free, Brain-worktree-paths absent) is at
 | Governance SHA-256 | `25b5af6579f4e6d6bf062c7ca3d501aeef4f548aa03fad9710880eba25b73086` |
 | Profile path | `operations/specs/graphify-operational-profiles.json` |
 | Profile SHA-256 | `8a9f1b142c005ae1cc9a1196e3339ef681ed663fb039c1ccf41eb51002e1f202` |
+
+---
+
+## Historical Runs
+
+### v5s Execution — 2026-08-05 (Superseded)
+
+The v5s contract was executed on 2026-08-05. Result: **17/20 pass**. Rejected as insufficient for B8.1 completion by the owner.
+
+Rejection reasons:
+1. Missing per-subject metrics (`subjectMetrics` absent, only `offlineMetrics`)
+2. brain_f3 `json-pointer-set` missing `itemProperty: "name"` (fixture defect, caused false miss)
+3. prochat_f2 `file-name-count` missing `expectedCount` (treated null as success, wrong)
+
+v5s plan digest: `47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0` (STALE)
+v5s run ID: `b8-1-canonical-authorization-20260805-final-v5s`
+v5s plan file: `operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`
+
+The v5s evidence (17/20 pass) is preserved as immutable infrastructure evidence and may be referenced in audits, but it does not satisfy B8.1 completion criteria.

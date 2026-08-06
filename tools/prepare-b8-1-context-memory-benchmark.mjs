@@ -1042,6 +1042,30 @@ export function buildCanonicalPlan({
     return rel;
   }
 
+  // Build implementationIdentity — path-independent identity for all execution components.
+  // Uses repo-relative paths + SHA-256 hashes. Included in digest as-is.
+  let implementationIdentity = null;
+  if (repoRoot) {
+    const componentFiles = {
+      executor: 'tools/execute-b8-1-benchmark.mjs',
+      evidenceValidator: 'tools/validate-b8-1-benchmark-evidence.mjs',
+      scorer: 'tools/lib/b8-1-scoring.mjs',
+      metricCollector: 'tools/lib/b8-1-metrics.mjs',
+      planDigest: 'tools/lib/b8-1-plan-digest.mjs',
+      evidenceSchema: 'operations/specs/b8-1-context-memory-benchmark-evidence.schema.json',
+      manifestSchema: 'operations/specs/b8-1-context-memory-benchmark-manifest.schema.json',
+    };
+    implementationIdentity = {};
+    for (const [key, relPath] of Object.entries(componentFiles)) {
+      const absPath = path.join(repoRoot, relPath);
+      let sha256 = null;
+      try {
+        sha256 = crypto.createHash('sha256').update(fs.readFileSync(absPath)).digest('hex');
+      } catch { /* file may not exist in synthetic test environments */ }
+      implementationIdentity[key] = { repoRelPath: relPath, sha256 };
+    }
+  }
+
   const digestFields = {
     planVersion: PLAN_VERSION,
     runId,
@@ -1084,6 +1108,7 @@ export function buildCanonicalPlan({
       status: check.status,
       detail: check.detail ?? null,
     })),
+    ...(implementationIdentity !== null ? { implementationIdentity } : {}),
   };
 
   // runContext is included in the output for audit purposes but EXCLUDED from the digest.
@@ -1439,7 +1464,7 @@ export async function runPreflight({
         blockingChecks.push('plan-approval');
       } else if (KNOWN_STALE_DIGESTS.has(approvedPlanSha256)) {
         // Fail closed on any known stale digest — they are from prior plan versions and are no longer valid
-        recordCheck(checks, 'plan-approval', 'fail', `stale approval digest rejected — recompute against v5 plan contract (planVersion 5.0.0)`);
+        recordCheck(checks, 'plan-approval', 'fail', `stale approval digest rejected — recompute against v6 plan contract (planVersion 6.0.0)`);
         blockingChecks.push('plan-approval');
       } else if (approvedPlanSha256 !== planSha256) {
         recordCheck(checks, 'plan-approval', 'fail', `approved digest mismatch: got ${approvedPlanSha256.slice(0, 16)}... expected ${planSha256.slice(0, 16)}...`);

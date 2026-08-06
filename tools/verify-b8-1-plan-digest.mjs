@@ -25,6 +25,7 @@
  *   2 = parse error or bad invocation
  */
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,7 +39,7 @@ import {
   findUnknownTopLevelFields,
 } from './lib/b8-1-plan-digest.mjs';
 
-export const VERIFIER_VERSION = '2.0.0';
+export const VERIFIER_VERSION = '3.0.0';
 export const REQUIRED_PLAN_VERSION = PLAN_VERSION;
 
 // Re-export shared contract symbols for tests.
@@ -135,6 +136,38 @@ export function verifyPlanFile(planPath, expectedDigest = null) {
     }
     if (expectedDigest !== recomputed) {
       errors.push(`expected digest mismatch: provided ${expectedDigest.slice(0, 16)}... recomputed ${recomputed.slice(0, 16)}...`);
+      return { ok: false, planSha256: plan.planSha256, errors, info };
+    }
+  }
+
+  // Validate implementationIdentity hashes if present (v6+)
+  if (plan.implementationIdentity && typeof plan.implementationIdentity === 'object') {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const repoRoot = path.resolve(__dirname, '..');
+    for (const [key, entry] of Object.entries(plan.implementationIdentity)) {
+      if (!entry || typeof entry !== 'object') {
+        errors.push(`implementationIdentity.${key}: entry must be an object`);
+        continue;
+      }
+      if (typeof entry.repoRelPath !== 'string') {
+        errors.push(`implementationIdentity.${key}: repoRelPath must be a string`);
+        continue;
+      }
+      if (typeof entry.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(entry.sha256)) {
+        errors.push(`implementationIdentity.${key}: sha256 must be a 64-char hex string`);
+        continue;
+      }
+      const absPath = path.join(repoRoot, entry.repoRelPath);
+      try {
+        const actualSha256 = crypto.createHash('sha256').update(fs.readFileSync(absPath)).digest('hex');
+        if (actualSha256 !== entry.sha256) {
+          errors.push(`implementationIdentity.${key}: sha256 mismatch for ${entry.repoRelPath} — stored ${entry.sha256.slice(0, 16)}... actual ${actualSha256.slice(0, 16)}...`);
+        }
+      } catch (e) {
+        errors.push(`implementationIdentity.${key}: cannot read file ${entry.repoRelPath}: ${e.message}`);
+      }
+    }
+    if (errors.length > 0) {
       return { ok: false, planSha256: plan.planSha256, errors, info };
     }
   }

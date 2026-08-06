@@ -648,6 +648,91 @@ export function validateEvidence(evidencePath, schemaPath, options = {}) {
     }
   }
 
+  // --- Semantic check E53: schema 2.1.0 strict metric enforcement ---
+  if (evidence.schemaVersion === '2.1.0') {
+    // offlineMetrics must be absent
+    if ('offlineMetrics' in evidence) {
+      errors.push('Semantic(E53): offlineMetrics must not be present when schemaVersion is "2.1.0"');
+    }
+
+    // subjectMetrics must be present with at least one entry
+    const subjectMetrics = evidence.subjectMetrics;
+    if (!subjectMetrics || typeof subjectMetrics !== 'object' || Array.isArray(subjectMetrics)) {
+      errors.push('Semantic(E53): subjectMetrics must be a non-empty object when schemaVersion is "2.1.0"');
+    } else if (Object.keys(subjectMetrics).length === 0) {
+      errors.push('Semantic(E53): subjectMetrics must have at least one entry when schemaVersion is "2.1.0"');
+    } else {
+      for (const [subjectId, metrics] of Object.entries(subjectMetrics)) {
+        if (!isRecord(metrics)) {
+          errors.push(`Semantic(E53): subjectMetrics.${subjectId} must be an object`);
+          continue;
+        }
+        // These fields may NEVER be N/A
+        const numericOnlyFields = ['peakCpuPercent', 'peakRssMb', 'serializedPayloadBytes', 'retrievalOperationCount'];
+        for (const field of numericOnlyFields) {
+          if (!(field in metrics)) {
+            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} is required`);
+          } else if (typeof metrics[field] !== 'number') {
+            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.${field} must be numeric (not-applicable is forbidden)`);
+          }
+        }
+
+        // tokenizer must be an object with name, version, tokenCount — no N/A
+        if (!('tokenizer' in metrics)) {
+          errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer is required`);
+        } else {
+          const tok = metrics.tokenizer;
+          if (!isRecord(tok) || Array.isArray(tok)) {
+            errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer must be an object (not-applicable is forbidden)`);
+          } else {
+            if (typeof tok.name !== 'string' || tok.name.length === 0) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.name must be a non-empty string`);
+            }
+            if (typeof tok.version !== 'string' || tok.version.length === 0) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.version must be a non-empty string`);
+            }
+            if (typeof tok.tokenCount !== 'number' || !Number.isInteger(tok.tokenCount) || tok.tokenCount < 0) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.tokenizer.tokenCount must be a non-negative integer`);
+            }
+          }
+        }
+
+        // retrievalAccuracy must be present
+        if (!('retrievalAccuracy' in metrics)) {
+          errors.push(`Semantic(E53): subjectMetrics.${subjectId}.retrievalAccuracy is required`);
+        }
+
+        // repositoryMetrics must be present
+        if (!('repositoryMetrics' in metrics)) {
+          errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics is required`);
+        } else if (!isRecord(metrics.repositoryMetrics)) {
+          errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics must be an object`);
+        } else {
+          for (const [repoId, repoMetrics] of Object.entries(metrics.repositoryMetrics)) {
+            if (!isRecord(repoMetrics)) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId} must be an object`);
+              continue;
+            }
+            // indexDiskBytes must be numeric
+            if (typeof repoMetrics.indexDiskBytes !== 'number' || !Number.isInteger(repoMetrics.indexDiskBytes) || repoMetrics.indexDiskBytes < 0) {
+              errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.indexDiskBytes must be a non-negative integer`);
+            }
+            // For exact-source subject, initialIndexingTimeMs and incrementalRefreshLatencyMs may be N/A
+            // For cbm subject, they must be numeric
+            for (const timingField of ['initialIndexingTimeMs', 'incrementalRefreshLatencyMs']) {
+              const val = repoMetrics[timingField];
+              if (val === undefined || val === null) {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.${timingField} is required`);
+              } else if (subjectId !== 'exact-source' && typeof val !== 'number') {
+                errors.push(`Semantic(E53): subjectMetrics.${subjectId}.repositoryMetrics.${repoId}.${timingField} must be numeric for subject "${subjectId}"`);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 

@@ -96,7 +96,7 @@ function makeSyntheticRun(home, { runId, fixtures, selectedSubjects = ['exact-so
   }
 
   const planBase = {
-    planVersion: planVersionOverride ?? '5.1.0',
+    planVersion: planVersionOverride ?? '6.0.0',
     runId,
     partialEvidence: !selectedSubjects.includes('graphify'),
     selectedSubjects: [...selectedSubjects].sort(),
@@ -354,7 +354,7 @@ test('E14: execution receipt is written atomically and validates planSha256', as
     assert.equal(fs.existsSync(`${receiptPath}.tmp`), false, 'no .tmp file should remain');
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
     assert.equal(receipt.planSha256, planSha256, 'receipt planSha256 must match');
-    assert.equal(receipt.executorVersion, '5.1.0');
+    assert.equal(receipt.executorVersion, '6.0.0');
   } finally { cleanup(home); }
 });
 
@@ -414,7 +414,7 @@ test('E18: loadAndVerifyRunPlan rejects stale v1/v2 digests', () => {
   try {
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
-    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '5.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    fs.writeFileSync(path.join(runDir, 'run-plan.json'), JSON.stringify({ planVersion: '6.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error } = loadAndVerifyRunPlan(runDir, STALE);
     assert.ok(error, 'must return error for stale digest');
     assert.match(error, /stale/i);
@@ -569,11 +569,22 @@ test('E23: aggregate evidence.json is written to run directory after execution',
     const evidencePath = path.join(runDir, 'evidence.json');
     assert.ok(fs.existsSync(evidencePath), 'evidence.json must be written to run directory');
     const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
-    assert.equal(agg.schemaVersion, '1.0.0', 'aggregate evidence must have schemaVersion 1.0.0');
+    assert.equal(agg.schemaVersion, '2.1.0', 'aggregate evidence must have schemaVersion 2.1.0');
     assert.equal(agg.runId, 'b8-1-exec-e23', 'aggregate evidence runId must match');
     assert.ok(Array.isArray(agg.fixtureResults), 'fixtureResults must be an array');
     assert.equal(agg.fixtureResults.length, 1, 'must have 1 fixture result');
-    assert.equal(typeof agg.offlineMetrics?.fileAccuracy, 'number', 'offlineMetrics.fileAccuracy must be a number');
+    assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must NOT be present in schema 2.1.0');
+    assert.ok(typeof agg.subjectMetrics === 'object' && agg.subjectMetrics !== null, 'subjectMetrics must be present');
+    assert.ok('exact-source' in agg.subjectMetrics, 'subjectMetrics must have exact-source entry');
+    const sm = agg.subjectMetrics['exact-source'];
+    assert.equal(typeof sm.peakCpuPercent, 'number', 'peakCpuPercent must be numeric');
+    assert.equal(typeof sm.peakRssMb, 'number', 'peakRssMb must be numeric');
+    assert.equal(typeof sm.serializedPayloadBytes, 'number', 'serializedPayloadBytes must be numeric');
+    assert.equal(typeof sm.retrievalOperationCount, 'number', 'retrievalOperationCount must be numeric');
+    assert.ok(typeof sm.tokenizer === 'object', 'tokenizer must be an object');
+    assert.equal(typeof sm.tokenizer.tokenCount, 'number', 'tokenizer.tokenCount must be numeric');
+    assert.ok(typeof sm.retrievalAccuracy === 'object', 'retrievalAccuracy must be present');
+    assert.ok(typeof sm.repositoryMetrics === 'object', 'repositoryMetrics must be present');
   } finally { cleanup(home); }
 });
 
@@ -661,7 +672,7 @@ test('E26: tampered plan field changes stored digest and causes mismatch', () =>
     const runDir = path.join(tmpDir, 'run');
     fs.mkdirSync(runDir, { recursive: true });
     const plan = {
-      planVersion: '5.1.0',
+      planVersion: '6.0.0',
       runId: 'b8-1-exec-e26',
       selectedSubjects: ['exact-source'],
       planSha256: '0'.repeat(64), // will mismatch recomputed
@@ -1054,10 +1065,10 @@ test('E37: canonical plan v5s JSON is placeholder-free and independently verifia
 // New tests: v5 contract changes E38–E46
 // ---------------------------------------------------------------------------
 
-// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 5.1.0
-test('E38: EXECUTOR_VERSION is 5.1.0 and REQUIRED_PLAN_VERSION is 5.1.0', () => {
-  assert.equal(EXECUTOR_VERSION, '5.1.0', 'EXECUTOR_VERSION must be 5.1.0');
-  assert.equal(REQUIRED_PLAN_VERSION, '5.1.0', 'REQUIRED_PLAN_VERSION must be 5.1.0');
+// E38: EXECUTOR_VERSION and REQUIRED_PLAN_VERSION are 6.0.0
+test('E38: EXECUTOR_VERSION is 6.0.0 and REQUIRED_PLAN_VERSION is 6.0.0', () => {
+  assert.equal(EXECUTOR_VERSION, '6.0.0', 'EXECUTOR_VERSION must be 6.0.0');
+  assert.equal(REQUIRED_PLAN_VERSION, '6.0.0', 'REQUIRED_PLAN_VERSION must be 6.0.0');
 });
 
 // E39: v4r stale digest c39e81dc... is rejected
@@ -1072,26 +1083,26 @@ test('E39: v4r stale digest c39e81dc... is rejected', async () => {
   } finally { cleanup(home); }
 });
 
-// E40: planVersion 5.1.0 is accepted; planVersion 5.0.0 and 4.0.0 are rejected
-test('E40: loadAndVerifyRunPlan accepts planVersion 5.1.0 and rejects 5.0.0 and 4.0.0', () => {
+// E40: planVersion 6.0.0 is accepted; planVersion 5.1.0 and 4.0.0 are rejected
+test('E40: loadAndVerifyRunPlan accepts planVersion 6.0.0 and rejects 5.1.0 and 4.0.0', () => {
   const tmpDir = makeTempDir('b81-exec-e40-');
   try {
-    // 5.1.0 — should pass planVersion check (will fail on stale or tampered digest, that's expected)
+    // 6.0.0 — should pass planVersion check (will fail on stale or tampered digest, that's expected)
+    const runDir60 = path.join(tmpDir, 'run60');
+    fs.mkdirSync(runDir60, { recursive: true });
+    fs.writeFileSync(path.join(runDir60, 'run-plan.json'), JSON.stringify({ planVersion: '6.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
+    const { error: err60 } = loadAndVerifyRunPlan(runDir60, '0'.repeat(64));
+    // planVersion check passes; should fail on stale or tampered, not on planVersion
+    assert.ok(!err60 || !/planVersion|6\.0\.0/i.test(err60) || /tampered|stale|mismatch/i.test(err60),
+      `6.0.0 must not be rejected for planVersion; err: ${err60}`);
+
+    // 5.1.0 — should be rejected (prior contract)
     const runDir51 = path.join(tmpDir, 'run51');
     fs.mkdirSync(runDir51, { recursive: true });
     fs.writeFileSync(path.join(runDir51, 'run-plan.json'), JSON.stringify({ planVersion: '5.1.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err51 } = loadAndVerifyRunPlan(runDir51, '0'.repeat(64));
-    // planVersion check passes; should fail on stale or tampered, not on planVersion
-    assert.ok(!err51 || !/planVersion|5\.1\.0/i.test(err51) || /tampered|stale|mismatch/i.test(err51),
-      `5.1.0 must not be rejected for planVersion; err: ${err51}`);
-
-    // 5.0.0 — should be rejected (prior contract)
-    const runDir50 = path.join(tmpDir, 'run50');
-    fs.mkdirSync(runDir50, { recursive: true });
-    fs.writeFileSync(path.join(runDir50, 'run-plan.json'), JSON.stringify({ planVersion: '5.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
-    const { error: err50 } = loadAndVerifyRunPlan(runDir50, '0'.repeat(64));
-    assert.ok(err50, 'planVersion 5.0.0 must be rejected');
-    assert.match(err50, /planVersion|5\.1\.0/i, `expected planVersion error, got: ${err50}`);
+    assert.ok(err51, 'planVersion 5.1.0 must be rejected');
+    assert.match(err51, /planVersion|6\.0\.0/i, `expected planVersion error, got: ${err51}`);
 
     // 4.0.0 — should be rejected
     const runDir4 = path.join(tmpDir, 'run4');
@@ -1099,7 +1110,7 @@ test('E40: loadAndVerifyRunPlan accepts planVersion 5.1.0 and rejects 5.0.0 and 
     fs.writeFileSync(path.join(runDir4, 'run-plan.json'), JSON.stringify({ planVersion: '4.0.0', planSha256: '0'.repeat(64), runId: 'x' }, null, 2));
     const { error: err4 } = loadAndVerifyRunPlan(runDir4, '0'.repeat(64));
     assert.ok(err4, 'planVersion 4.0.0 must be rejected');
-    assert.match(err4, /planVersion|5\.1\.0/i, `expected planVersion error, got: ${err4}`);
+    assert.match(err4, /planVersion|6\.0\.0/i, `expected planVersion error, got: ${err4}`);
   } finally { cleanup(tmpDir); }
 });
 
@@ -1410,9 +1421,11 @@ test('E49: file-name-count with null/missing expectedCount causes error', async 
       _homeOverride: home,
       _manifestOverride: syntheticManifest,
     });
-    assert.equal(result.fixtureResults.length, 1);
-    assert.equal(result.fixtureResults[0].result, 'error', 'null expectedCount must produce error');
-    assert.ok(result.fixtureResults[0].errors.some(e => /expectedCount.*required/i.test(e)));
+    // With v6r, expectedCount validation runs before fixture execution (pre-execution gate)
+    // so outcome is 'fail' with 0 fixture results
+    assert.equal(result.outcome, 'fail', 'null expectedCount must cause fail outcome');
+    assert.ok(result.errors.some(e => /expectedCount.*required/i.test(e)),
+      `expected error about expectedCount, got: ${result.errors.join('; ')}`);
   } finally { cleanup(home); }
 });
 
@@ -1507,22 +1520,36 @@ test('E52: json-pointer-set itemProperty passes non-objects through unchanged', 
   } finally { cleanup(home); }
 });
 
-// E53: evidence schema v2.0.0 requires subjectMetrics and forbids offlineMetrics
+// E53: evidence schema enforces version-conditional metrics for 2.0.0 and 2.1.0
 test('E53: evidence schema enforces version-conditional metrics', () => {
   const schemaPath = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-evidence.schema.json');
   assert.ok(fs.existsSync(schemaPath), 'evidence schema must exist');
   const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
   assert.ok(schema.properties.schemaVersion.enum.includes('2.0.0'), 'schema must accept 2.0.0');
+  assert.ok(schema.properties.schemaVersion.enum.includes('2.1.0'), 'schema must accept 2.1.0');
   assert.ok(schema.properties.subjectMetrics, 'schema must define subjectMetrics');
   assert.ok(schema.properties.offlineMetrics, 'schema must still define offlineMetrics (backward compat)');
+
+  // 2.0.0 conditional
   const versionConditional = schema.allOf.find(c =>
     c.if?.properties?.schemaVersion?.const === '2.0.0'
   );
   assert.ok(versionConditional, 'must have a version conditional for 2.0.0');
   assert.ok(versionConditional.then.required.includes('subjectMetrics'), '2.0.0 must require subjectMetrics');
   assert.equal(versionConditional.then.properties.offlineMetrics, false, '2.0.0 must forbid offlineMetrics');
-  assert.ok(versionConditional.else.required.includes('offlineMetrics'), 'non-2.0.0 must require offlineMetrics');
-  assert.equal(versionConditional.else.properties.subjectMetrics, false, 'non-2.0.0 must forbid subjectMetrics');
+
+  // 2.1.0 conditional: nested in else of 2.0.0 conditional
+  const nested21 = versionConditional.else;
+  assert.ok(nested21, 'else branch of 2.0.0 conditional must exist');
+  assert.equal(nested21.if?.properties?.schemaVersion?.const, '2.1.0', 'nested if must match 2.1.0');
+  assert.ok(nested21.then.required.includes('subjectMetrics'), '2.1.0 must require subjectMetrics');
+  assert.equal(nested21.then.properties.offlineMetrics, false, '2.1.0 must forbid offlineMetrics');
+
+  // legacy (non-2.0.0, non-2.1.0): the else.else branch
+  const legacyElse = nested21.else;
+  assert.ok(legacyElse, 'must have legacy else for non-2.x versions');
+  assert.ok(legacyElse.required.includes('offlineMetrics'), 'non-2.x must require offlineMetrics');
+  assert.equal(legacyElse.properties.subjectMetrics, false, 'non-2.x must forbid subjectMetrics');
 });
 
 // E54: manifest brain_f3 fixture now has itemProperty: "name"
@@ -1543,4 +1570,100 @@ test('E55: manifest schema allows optional itemProperty in verification', () => 
   assert.ok(verProps.itemProperty, 'manifest schema must allow itemProperty');
   assert.equal(verProps.itemProperty.type, 'string');
   assert.equal(verProps.itemProperty.minLength, 1);
+});
+
+// E56: v6 stale digest ac5b3c79... is rejected (missing implementationIdentity, offlineMetrics only)
+test('E56: v6 stale digest ac5b3c79... is rejected', async () => {
+  const STALE_V6 = 'ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc';
+  const home = makeTempDir('b81-exec-e56-');
+  try {
+    makeSyntheticRun(home, { runId: 'b8-1-exec-e56', fixtures: [] });
+    const result = await runExecutor({ runId: 'b8-1-exec-e56', approvedPlanSha256: STALE_V6, _homeOverride: home });
+    assert.equal(result.outcome, 'fail');
+    assert.ok(result.errors.some(e => /stale/i.test(e)), `errors: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E57: aggregate evidence has schema 2.1.0 and subjectMetrics with all required fields
+test('E57: aggregate evidence schema 2.1.0 with full subjectMetrics for dual-subject run', async () => {
+  const home = makeTempDir('b81-exec-e57-');
+  try {
+    const fixtures = [
+      { fixtureId: 'f1', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'README.md', scoringType: 'exact-match', question: 'q?' },
+      { fixtureId: 'f2', repositoryId: 'test', pinnedCommit: '4'.repeat(40), expectedFile: 'src/main.ts', scoringType: 'exact-match', question: 'q?' },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e57',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    await runExecutor({
+      runId: 'b8-1-exec-e57',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    const evidencePath = path.join(runDir, 'evidence.json');
+    assert.ok(fs.existsSync(evidencePath));
+    const agg = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+    assert.equal(agg.schemaVersion, '2.1.0');
+    assert.ok(!('offlineMetrics' in agg), 'offlineMetrics must be absent');
+    const sm = agg.subjectMetrics?.['exact-source'];
+    assert.ok(sm, 'exact-source subjectMetrics must exist');
+    assert.equal(typeof sm.peakCpuPercent, 'number', 'peakCpuPercent must be numeric');
+    assert.equal(typeof sm.peakRssMb, 'number', 'peakRssMb must be numeric');
+    assert.equal(typeof sm.serializedPayloadBytes, 'number', 'serializedPayloadBytes must be numeric');
+    assert.equal(typeof sm.retrievalOperationCount, 'number', 'retrievalOperationCount must be numeric');
+    assert.equal(sm.retrievalOperationCount, 2, 'operation count equals fixture count');
+    assert.ok(typeof sm.tokenizer === 'object', 'tokenizer must be an object');
+    assert.equal(typeof sm.tokenizer.name, 'string', 'tokenizer.name must be a string');
+    assert.equal(typeof sm.tokenizer.version, 'string', 'tokenizer.version must be a string');
+    assert.equal(typeof sm.tokenizer.tokenCount, 'number', 'tokenizer.tokenCount must be numeric');
+    assert.ok(typeof sm.retrievalAccuracy === 'object', 'retrievalAccuracy must be present');
+    assert.ok(typeof sm.repositoryMetrics === 'object', 'repositoryMetrics must be present');
+    assert.ok('test' in sm.repositoryMetrics, 'repositoryMetrics must have test repo entry');
+    const repoM = sm.repositoryMetrics['test'];
+    // exact-source: initialIndexingTimeMs and incrementalRefreshLatencyMs are N/A objects
+    assert.equal(repoM.initialIndexingTimeMs?.status, 'not-applicable');
+    assert.equal(repoM.incrementalRefreshLatencyMs?.status, 'not-applicable');
+    assert.equal(typeof repoM.indexDiskBytes, 'number', 'indexDiskBytes must be numeric');
+  } finally { cleanup(home); }
+});
+
+// E58: missing expectedCount causes pre-execution failure (not per-fixture error)
+test('E58: validateExpectedCount fails before execution for file-name-count without expectedCount', async () => {
+  const home = makeTempDir('b81-exec-e58-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        scoringType: 'exact-match',
+        question: 'q?',
+        verification: { algorithm: 'file-name-count', fileName: 'index.ts' },
+        // expectedCount intentionally omitted
+      },
+    ];
+    const syntheticManifest = {
+      schemaVersion: '1.0.0',
+      createdAt: '2026-08-06',
+      repositories: [{ repositoryId: 'test', localPath: '/synthetic', pinnedCommit: '4'.repeat(40) }],
+      fixtures,
+    };
+    const { planSha256, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e58',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e58',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    // Must fail with a pre-execution validation error
+    assert.equal(result.outcome, 'fail', 'must fail when expectedCount is missing');
+    assert.ok(result.errors.some(e => /expectedCount.*required/i.test(e)), `expected error about expectedCount, got: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
 });
