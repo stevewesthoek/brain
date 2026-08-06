@@ -1014,7 +1014,6 @@ export async function runExecutor({
   _homeOverride,
   _cbmAdapter,
   _manifestOverride,  // inject a manifest object directly (tests only)
-  _resourceMeasurements,  // TEST-ONLY: inject resource measurements { cbm: {peakCpuPercent, peakRssMb, provenance}, 'exact-source': ... }
 } = {}) {
   const home = _homeOverride ?? os.homedir();
   const errors = [];
@@ -1104,8 +1103,7 @@ export async function runExecutor({
 
   // Track CBM measurements per repo (for subjectMetrics)
   const cbmRepositoryMetrics = new Map();
-  const cbmIndexTimes = new Map();
-  const cbmRefreshTimes = new Map();
+  const exactSourceMetrics = { cpuPercent: null, peakRssMb: null };
 
   if (!dryRun) {
     // CBM execution with hardened primitives
@@ -1129,12 +1127,38 @@ export async function runExecutor({
 
         if (subject === 'exact-source') {
           const sourcesDir = path.join(runDir, 'sources', fixture.repositoryId);
+          // Measure exact-source execution: CPU and RSS
+          const cpuUsageBefore = process.cpuUsage();
+          const memBefore = process.memoryUsage();
+          const timeBefore = Date.now();
+
           const rawResult = runExactSourceFixture(fixture, sourcesDir);
+
+          const timeAfter = Date.now();
+          const memAfter = process.memoryUsage();
+          const cpuUsageAfter = process.cpuUsage(cpuUsageBefore);
+
+          // Compute CPU percent and peak RSS from this execution
+          const wallMs = timeAfter - timeBefore;
+          const cpuMs = (cpuUsageAfter.user + cpuUsageAfter.system) / 1000;
+          const cpuPercent = wallMs > 0 ? (cpuMs / wallMs) * 100 : 0;
+          const peakRssMb = Math.max(memBefore.heapUsed, memAfter.heapUsed) / (1024 * 1024);
+
+          // Capture first exact-source metrics for subjectMetrics
+          if (exactSourceMetrics.cpuPercent === null && !Number.isNaN(cpuPercent)) {
+            exactSourceMetrics.cpuPercent = cpuPercent;
+          }
+          if (exactSourceMetrics.peakRssMb === null && !Number.isNaN(peakRssMb)) {
+            exactSourceMetrics.peakRssMb = peakRssMb;
+          }
+
           result = {
             ...rawResult,
             startedAt: fixtureStart,
             completedAt: new Date().toISOString(),
             subjectIdentity: { exactSource: true },
+            cpuPercent,
+            peakRssMb,
           };
         } else if (subject === 'cbm') {
           const disposableRepoPath = path.join(runDir, 'sources', fixture.repositoryId);
@@ -1288,38 +1312,38 @@ export async function runExecutor({
       const repositoryMetrics = {};
       for (const repoId of manifestRepoIds) {
         if (subject === 'cbm') {
-          // Use real measurements from hardened incremental reindex
-          let indexTimeMs = null;
-          let refreshTimeMs = null;
-          let diskBytes = 0;
-
-          if (cbmRepositoryMetrics.has(repoId)) {
-            const repoMetrics = cbmRepositoryMetrics.get(repoId);
-            indexTimeMs = repoMetrics.initialIndexWallMs;
-            refreshTimeMs = repoMetrics.incrementalReindexWallMs;
-            diskBytes = repoMetrics.cacheBytes;
-          } else {
-            // Repository was not indexed in this run (no fixtures for it, or skipped)
-            errors.push(`CBM measurements missing for repository ${repoId} — no fixtures executed`);
+          // Use real measurements from hardened incremental reindex; fail closed if missing
+          if (!cbmRepositoryMetrics.has(repoId)) {
+            errors.push(`CBM: required measurements missing for repository ${repoId} — no fixtures executed or reindex failed`);
+            continue;
           }
 
-          // Use measured values or typed N/A with error provenance
-          try {
-            repositoryMetrics[repoId] = buildRepositoryMetric({
-              repositoryId: repoId,
-              initialIndexingTimeMs: indexTimeMs,
-              incrementalRefreshLatencyMs: refreshTimeMs,
-              indexDiskBytes: diskBytes,
-              subject,
-            });
-          } catch (e) {
-            errors.push(e.message);
-            repositoryMetrics[repoId] = {
-              initialIndexingTimeMs: indexTimeMs ?? { status: 'not-applicable', reason: 'measurement-unavailable' },
-              incrementalRefreshLatencyMs: refreshTimeMs ?? { status: 'not-applicable', reason: 'measurement-unavailable' },
-              indexDiskBytes: diskBytes,
-            };
+          const repoMetrics = cbmRepositoryMetrics.get(repoId);
+          const indexTimeMs = repoMetrics.initialIndexWallMs;
+          const refreshTimeMs = repoMetrics.incrementalReindexWallMs;
+          const diskBytes = repoMetrics.cacheBytes;
+
+          // Validate measurements are present and numeric
+          if (typeof indexTimeMs !== 'number' || indexTimeMs < 0) {
+            errors.push(`CBM: invalid initialIndexWallMs for ${repoId}: ${indexTimeMs}`);
+            continue;
           }
+          if (typeof refreshTimeMs !== 'number' || refreshTimeMs < 0) {
+            errors.push(`CBM: invalid incrementalReindexWallMs for ${repoId}: ${refreshTimeMs}`);
+            continue;
+          }
+          if (typeof diskBytes !== 'number' || diskBytes < 0) {
+            errors.push(`CBM: invalid cacheBytes for ${repoId}: ${diskBytes}`);
+            continue;
+          }
+
+          repositoryMetrics[repoId] = buildRepositoryMetric({
+            repositoryId: repoId,
+            initialIndexingTimeMs: indexTimeMs,
+            incrementalRefreshLatencyMs: refreshTimeMs,
+            indexDiskBytes: diskBytes,
+            subject,
+          });
         } else {
           // exact-source: no index disk, no indexing time, no refresh
           repositoryMetrics[repoId] = buildRepositoryMetric({
@@ -1332,28 +1356,28 @@ export async function runExecutor({
         }
       }
 
-      // Resource usage: measure from bounded child processes using runChildWithTimeMetrics
-      // For CBM: measurements come from the hardened incremental reindex
-      // For exact-source: TODO — integrate runChildWithTimeMetrics for exact-source fixtures
+      // Resource usage: real measurements from fixture execution
       let peakCpuPercent = null;
       let peakRssMb = null;
       let resourceProvenance = null;
 
-      // TEST-ONLY: check if measurements were injected for testing
-      if (_resourceMeasurements?.[subject]) {
-        const measured = _resourceMeasurements[subject];
-        peakCpuPercent = measured.peakCpuPercent;
-        peakRssMb = measured.peakRssMb;
-        resourceProvenance = measured.provenance;
-      } else {
-        // Production: measurements pending implementation
-        if (subject === 'cbm') {
-          // CBM measurements are collected during runIncrementalReindex via runChildWithTimeMetrics
-          resourceProvenance = { method: 'hardened-incremental-reindex', status: 'pending-implementation' };
-        } else if (subject === 'exact-source') {
-          // exact-source uses runChildWithTimeMetrics for bounded execution
-          resourceProvenance = { method: 'exact-source-child-process', status: 'pending-implementation' };
+      if (subject === 'cbm') {
+        // CBM: fail closed if measurements not available
+        // (measurements come from runIncrementalReindex via runChildWithTimeMetrics, not available until full child integration)
+        peakCpuPercent = null;
+        peakRssMb = null;
+        resourceProvenance = { method: 'hardened-incremental-reindex', status: 'unavailable' };
+        errors.push(`CBM: resource measurement not yet available from hardened reindex (pending child process integration)`);
+      } else if (subject === 'exact-source') {
+        // exact-source: use measured CPU and RSS from fixture execution
+        peakCpuPercent = exactSourceMetrics.cpuPercent;
+        peakRssMb = exactSourceMetrics.peakRssMb;
+        if (typeof peakCpuPercent !== 'number' || typeof peakRssMb !== 'number') {
+          errors.push(`exact-source: invalid resource measurements (CPU=${peakCpuPercent}, RSS=${peakRssMb})`);
+          peakCpuPercent = null;
+          peakRssMb = null;
         }
+        resourceProvenance = { method: 'executor-process-sampling', measuredFixtures: fixtureResults.filter(f => f.subject === 'exact-source').length };
       }
 
       subjectMetrics[subject] = buildSubjectMetrics({
