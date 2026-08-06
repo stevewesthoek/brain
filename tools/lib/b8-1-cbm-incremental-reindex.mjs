@@ -395,8 +395,11 @@ export async function runCbmIndex(cbmExecutable, sourcePath, projectName, cacheD
 
 /**
  * Query CBM with search_code to verify marker visibility.
+ *
+ * Requires exact match: marker must be found in the exact target file path relative to repository root.
+ * Rejects marker visibility in other files.
  */
-export async function queryCbmMarker(cbmExecutable, projectName, marker, targetPath, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 30000) {
+export async function queryCbmMarker(cbmExecutable, projectName, marker, targetPath, disposableRepositoryPath, cacheDir, configDir, env = {}, sandboxProfile = null, timeout = 30000) {
   const searchArgs = [
     'cli', 'search_code',
     '--pattern', marker,
@@ -417,6 +420,16 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
   const envValidation = validateEnvironment(env, cacheDir, configDir, env.HOME);
   if (!envValidation.valid) {
     return { visible: false, reason: `environment invalid: ${envValidation.reason}` };
+  }
+
+  // Compute exact relative path for comparison
+  let exactRelativePath;
+  try {
+    const normalizedTarget = path.normalize(targetPath);
+    const normalizedRepo = path.normalize(disposableRepositoryPath);
+    exactRelativePath = path.relative(normalizedRepo, normalizedTarget);
+  } catch (e) {
+    return { visible: false, reason: `failed to compute relative path: ${e.message}` };
   }
 
   const result = await runChildWithTimeMetrics({
@@ -447,17 +460,13 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
       return { visible: false, reason: 'query output not array' };
     }
 
-    // Compute expected target path relative to repository
-    // (requires disposableRepositoryPath; pass it separately if needed)
-    // For now, use exact marker + exact filename (not basename substring)
+    // Exact match required: marker must be in the exact target file path, nowhere else
     const visible = output.some(r => {
       if (!r || typeof r !== 'object') return false;
       if (!r.text || !r.text.includes(marker)) return false;
-      // Exact match: result file must be the target filename
+      // Exact path match (relative to repository)
       const resultFile = r.file || '';
-      const targetFilename = path.basename(targetPath);
-      // Must be exact, not substring match
-      return resultFile === targetFilename;
+      return resultFile === exactRelativePath;
     });
 
     return {
@@ -634,7 +643,7 @@ export async function runIncrementalReindex(opts = {}) {
     result.incrementalReindexProvenance = reindexResult.measurementProvenance;
 
     // Step 4: Query for visibility
-    const visibilityResult = await queryCbmMarker(cbmExecutable, projectName, marker, targetFilePath, cacheDir, configDir, env, sandboxProfile, timeout);
+    const visibilityResult = await queryCbmMarker(cbmExecutable, projectName, marker, targetFilePath, disposableRepositoryPath, cacheDir, configDir, env, sandboxProfile, timeout);
     if (!visibilityResult.visible) {
       result.reason = `marker not visible after reindex: ${visibilityResult.reason || 'unknown'}`;
       result.markerQueryProvenance = visibilityResult.measurementProvenance;
