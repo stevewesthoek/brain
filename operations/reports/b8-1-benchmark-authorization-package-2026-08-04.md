@@ -1,10 +1,13 @@
 # B8.1 Benchmark Authorization Package — 2026-08-04
 
-> **v5s CONTRACT ACTIVE (main — landed 2026-08-05)**
-> The v5s plan contract (`planVersion: '5.1.0'`, run-id suffix `final-v5s`) introduces a shared authoritative digest module (`tools/lib/b8-1-plan-digest.mjs`) used by all five B8.1 tools and completes path-independence by removing Brain-worktree-local artifact paths from the plan file and digest.
-> Digests v1, v2, v4, v4r, v5, and v5r are **INVALID** and rejected by the harness and executor.
-> The exact emitted v5s plan (placeholder-free, path-independent, Brain-worktree-paths absent) is at `operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`.
-> Verified independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v5s-2026-08-05.json`
+> **v6 CONTRACT READY (2026-08-06)**
+> The v6 plan contract corrects two harness defects identified in the v5s execution and upgrades the evidence schema to 2.0.0 with per-subject typed metrics.
+> v5s was executed (17/20 pass) but rejected as insufficient for B8.1 completion.
+> Digests v1, v2, v4, v4r, v5, v5r, and v5s are **INVALID** for new runs and rejected by the harness and executor.
+> The exact emitted v6 plan is at `operations/reports/b8-1-canonical-plan-v6-2026-08-06.json`.
+> Verified independently: `node tools/verify-b8-1-plan-digest.mjs operations/reports/b8-1-canonical-plan-v6-2026-08-06.json`
+>
+> **v6 digest:** `ac5b3c79a9cce3e2463dceac8097dada7bb883f313ebef5e696078296a1359dc`
 
 > ~~**INVALID — v1**~~: ~~`dd36a9d5a150591aa3f4af571d4013ef18db07dc69d8abf2ad702f901665f9b4`~~ — ephemeral /tmp/ paths.
 > ~~**INVALID — v2**~~: ~~`1db09e76d406b6fa5ab69a3e86261efc54798178c6e7115dc50ac6d3203a9cda`~~ — absolute brain-b8-1-authorization worktree paths.
@@ -12,10 +15,11 @@
 > ~~**INVALID — v4r**~~: ~~`c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4`~~ — stale pins brain 257fd72c/workbench f482851/prochat e404821; v5 supersedes.
 > ~~**INVALID — v5**~~: ~~`d9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42`~~ — path-dependent source-root-overrides check detail leaked physical paths; v5r supersedes.
 > ~~**INVALID — v5r**~~: ~~`87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f`~~ — Brain-worktree-local paths (networkDenyProfilePath, networkChildPath, graphifyProfilePath, graphifyGovernancePath) remained in plan file and digest fields; v5s supersedes.
+> ~~**INVALID — v5s**~~: ~~`47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0`~~ — executed 2026-08-05 (17/20 pass), rejected as insufficient: missing per-subject metrics, harness defects (brain_f3 itemProperty, prochat_f2 null count); v6 supersedes.
 
 ## Status
 
-**v5s ready — digest computed, executionReady=true, plan written and independently verified.** The v5s contract is on `main`. No materialization, benchmark execution, or approval has occurred.
+**v6 ready — digest computed, executionReady=true, zero blockers, plan written and independently verified.** The v5s contract was executed on 2026-08-05 (17/20 pass) but rejected by the owner as insufficient for B8.1 completion. The v5s run is preserved as immutable infrastructure evidence. The v6 contract corrects the identified defects and is ready for approval.
 
 **Source roots**: Persistent clean worktrees at `/Users/Office/.brain/benchmark/b8-1/source-roots/` exist and are preserved. They are benchmark inputs, not ephemeral. No run directory was created.
 

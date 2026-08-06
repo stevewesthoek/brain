@@ -1,8 +1,8 @@
 # Infinite Brain Live Capability Status
 
 **Status:** canonical live status
-**Last verified:** 2026-08-04
-**Audited:** 2026-08-04 — Mind Context activation and contained Mind Graphify baseline verified; B8.1 remains unexecuted
+**Last verified:** 2026-08-06
+**Audited:** 2026-08-06 — B8.1 v5s executed (17/20 pass) but rejected as insufficient; two harness defects and one genuine CBM miss identified; v6 contract in preparation
 **Owner:** Brain operations
 **Roadmap:** `operations/specs/infinite-brain-runtime-roadmap.md`
 
@@ -40,10 +40,18 @@ migration. The existing candidate binary, preliminary indexes, and
 obsolete-numbered artifacts remain evidence only and do not satisfy the
 canonical dependency chain. B8.1 is the first canonical task when P8 is
 explicitly authorized; it is not the current approved execution task.
-The merge-readiness audit did not execute the benchmark: B8.1 and B8.2 remain
-incomplete, canonical P8 Graphify migration remains blocked, and P8 remains 0/6 accepted. The exact
-next action is explicit authorization for a benchmark plan digest; a dry-run
-alone does not authorize materialization or execution.
+B8.1 was executed on 2026-08-05 (run `b8-1-canonical-authorization-20260805-final-v5s`,
+17/20 pass). The owner rejected the v5s run as insufficient for B8.1 completion
+because: (1) evidence records only aggregate accuracy and per-fixture latency,
+not the per-subject indexing/refresh/CPU/RSS/disk/payload/tokenizer/operation
+metrics required by the plan; (2) two harness defects were identified
+(brain_f3 json-pointer-set resolves to objects not strings; prochat_f2
+assertion.expected=null passes incorrectly); (3) brain_f4 is a genuine CBM
+retrieval miss; (4) metrics are not partitioned per subject. The v5s run is
+preserved as valid infrastructure evidence but does not complete B8.1.
+B8.1 status: `executed-partial-needs-corrected-run`. B8.2 remains blocked.
+P8 remains 0/6 accepted. Graphify remains excluded. The next action is a
+corrected v6 contract execution with per-subject typed metrics.
 The stabilization tasks remain separate from the existing B1, B2, and later
 task IDs; existing B2 Context Gateway tasks are unchanged.
 

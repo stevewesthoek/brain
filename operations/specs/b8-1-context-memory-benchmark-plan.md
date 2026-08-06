@@ -1,9 +1,11 @@
 # B8.1 Context-memory benchmark plan
 
-**Status:** v5s contract ready — B8.1 and B8.2 remain incomplete and are NOT authorized for execution; v5s digest computed and independently verified, executionReady=true, pending approval
-**Date:** 2026-08-04
+**Status:** v6 contract ready — v5s executed (17/20 pass) but rejected as insufficient; two harness defects and one genuine CBM miss identified; v6 corrects evaluator and adds per-subject typed metrics
+**Date:** 2026-08-06 (v6); 2026-08-04 (v5s, superseded)
 **Dependency:** This plan does NOT authorize activation of any context-memory service.
-**Next step:** Execution requires the prerequisites in the "Execution prerequisites" section below, including explicit approval of the exact dry-run `planSha256`.
+**Next step:** v6 dry-run and digest approval required before materialization and execution.
+**v5s disposition:** Executed 2026-08-05; preserved as infrastructure evidence; rejected as insufficient for B8.1 completion (missing per-subject metrics, two harness defects, one genuine CBM miss).
+**v6 changes from v5s:** (1) evidence schema 2.0.0 requires `subjectMetrics` per-subject with typed not-applicable states; (2) `json-pointer-set` algorithm extended with generic `itemProperty` projection; (3) `file-name-count` rejects null `expectedCount`; (4) negative tests for malformed projections, null counts, duplicate metrics, fabricated N/A values.
 
 ---
 
@@ -247,4 +249,8 @@ Codebase Memory persistent client registration is not required. Use direct CLI i
 
 This document defines the benchmark and its execution gate. **B8.1 is NOT complete, B8.2 is NOT complete, and a passing dry-run does not authorize either task.** Execution requires the prerequisites above, an approved matching plan digest, and a separate authorization decision.
 
-Graphify remains blocked because no exact bounded code-only executable contract and passing self-test exist. P8 (B8.1–B8.6) remains 0/6 accepted and is not the current approved execution phase. This plan is filed as a preparatory artifact only.
+**v5s execution (2026-08-05):** Run `b8-1-canonical-authorization-20260805-final-v5s` produced 17/20 pass results. The owner rejected the run as insufficient for B8.1 completion. The run is preserved as immutable infrastructure evidence. Digest `47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0` is now stale for new execution (valid only for the historical v5s run).
+
+**v6 contract (2026-08-06):** Corrects two harness defects (`json-pointer-set` object projection, `file-name-count` null expectedCount), upgrades evidence schema to 2.0.0 with per-subject typed metrics, and prepares a fresh dry-run authorization cycle. The v5s run does not establish a preferred structural default for context-memory.
+
+Graphify remains blocked because no exact bounded code-only executable contract and passing self-test exist. P8 (B8.1–B8.6) remains 0/6 accepted and is not the current approved execution phase.

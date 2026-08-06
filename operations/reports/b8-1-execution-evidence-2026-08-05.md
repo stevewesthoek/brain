@@ -3,7 +3,7 @@
 **Run ID:** `b8-1-canonical-authorization-20260805-final-v5s`
 **Executed:** 2026-08-05T21:40:11Z – 2026-08-05T21:40:16Z (4.5s total)
 **Outcome:** partial (17/20 passed, 3 failed)
-**Status:** executed-awaiting-owner-disposition
+**Status:** executed-partial-needs-corrected-run
 **Branch:** `fix/b8-1-v5s-evidence-validation` (from canonical `main` at `9a6a6c60`)
 **Schema:** 1.1.0 (backward-compatible extension of 1.0.0 for v5s path-independence)
 **Validator:** PASS (all checks)
@@ -54,26 +54,28 @@
 
 ## Failed Fixture Classification
 
-All 3 failures are **benchmark-quality failures** — the infrastructure (isolation, execution, cleanup) succeeded completely; only the subject's search quality did not meet the fixture expectations.
+Infrastructure (isolation, execution, cleanup) succeeded completely. Of the 3 failures, two are harness defects and one is a genuine CBM retrieval miss.
 
-### 1. brain_f3 / exact-source — Set Algorithm Type Mismatch
+### 1. brain_f3 / exact-source — HARNESS DEFECT (json-pointer-set object projection)
 
 - **Algorithm:** json-pointer-set
-- **Error:** Expected string values `[getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand]` but JSON pointer resolved to object array
-- **Root cause:** Fixture `verification.expected` declares string tool names; the actual JSON structure at that pointer contains tool-definition objects with nested properties
-- **Classification:** Fixture definition mismatch (not a subject failure)
+- **Error:** Expected string values `[getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand]` but JSON pointer `/admissions/1/scope/tools` resolves to an array of objects (each with `name`, `risk`, `approval`, etc.)
+- **Root cause:** The fixture's `verification.expected` declares string tool names but the evaluator compared raw objects against strings. The fixture lacked an `itemProperty` directive to project objects to their `.name` field.
+- **Classification:** Harness defect — evaluator does not support object-to-property projection. Fixed in v6 contract with generic `itemProperty` extension.
+- **Not a subject failure** — exact-source correctly located the file and pointer.
 
-### 2. brain_f4 / cbm — File Not Found by CBM Index
+### 2. brain_f4 / cbm — GENUINE CBM RETRIEVAL MISS
 
 - **Error:** CBM search did not return expected file `tools/validate-deletion-readiness.mjs`
-- **Classification:** CBM retrieval quality — index did not surface this file for the query pattern
-- **exact-source passed** — file exists and was correctly located
+- **Classification:** Genuine CBM retrieval quality failure — the index did not surface this file for the query pattern
+- **exact-source passed** — file exists and was correctly located deterministically
 
-### 3. prochat_f2 / cbm — File-Count Algorithm Mismatch
+### 3. prochat_f2 / cbm — CBM COUNT MISMATCH (with harness defect context)
 
-- **Error:** CBM returned file count 4, expected null (file-name-count algorithm)
-- **Classification:** CBM retrieval quality — CBM returned results but count did not match expected
-- **exact-source passed** — counted 27 files (file exists, line not applicable)
+- **Error:** CBM returned file count 4, expected null (file-name-count algorithm). The manifest declares `expectedCount: 27`, but the evaluator recorded `assertion.expected=null` because it pulled from `verification.expectedCount` via the CBM adapter path which does not bind manifest-level `expectedFileCount`.
+- **Root cause:** The exact-source evaluator correctly bound `expectedCount: 27` from `verification.expectedCount` in the manifest and passed (27 found = 27 expected). The CBM adapter path does not execute file-name-count verification (CBM returns search results, not file counts), so the assertion recorded `expected=null`. The evaluator incorrectly auto-passes when `expectedCount` is null.
+- **Classification:** Compound — CBM genuinely returned only 4 matching files (retrieval quality), AND the harness had a null-expected-count pass-through defect. Fixed in v6 contract by rejecting null expected counts.
+- **exact-source passed** — counted exactly 27 files as expected.
 
 ## Evidence Integrity
 
@@ -131,22 +133,30 @@ Commit `67194307` on branch `release/brain-stabilization-v1` contains a prior ve
 
 | Milestone | Status |
 |-----------|--------|
-| B8.1 | executed-awaiting-owner-disposition |
+| B8.1 | executed-partial-needs-corrected-run |
 | P8 progress | 0/6 |
-| B8.2 | Not started |
+| B8.2 | Blocked (awaiting B8.1 completion) |
 | Graphify | Excluded |
-| Evidence | Partial (graphify excluded) |
+| Evidence | Partial (graphify excluded, metrics incomplete) |
 
-## Owner Disposition Request
+## Owner Disposition (2026-08-06)
 
-The evidence demonstrates:
+**Decision:** REJECTED as insufficient for B8.1 completion.
+
+The v5s run is preserved as valid infrastructure evidence demonstrating:
 - Infrastructure fully operational (network isolation, source integrity, process cleanup all verified)
 - 17/20 fixture results pass
-- 3 failures are benchmark-quality issues (not security or infrastructure failures)
 - All security invariants maintained without weakening
 
-Please select one:
+**Rejection reasons:**
+1. Evidence records only aggregate accuracy and per-fixture latency — not the per-subject indexing time, refresh latency, peak CPU/RSS, index disk use, payload bytes, tokenizer estimate, and operation count required by the benchmark plan
+2. Two harness defects identified (brain_f3 itemProperty missing; prochat_f2 null expectedCount pass-through)
+3. One genuine CBM retrieval miss (brain_f4) — legitimate subject quality failure
+4. Metrics are not partitioned per subject as required
+5. The run does not establish a preferred structural default for context-memory
 
-1. **Accept** — Advance P8 to 1/6
-2. **Accept with caveats** — Accept 17/20 as valid; flag 3 failures for B8.2 fixture refinement
-3. **Reject and rerun** — Specify which failures require re-execution
+**Next step:** v6 corrected contract with typed per-subject metrics, fixed evaluator, and re-execution.
+
+## Immutable Run Reference
+
+The v5s run directory at `/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-authorization-20260805-final-v5s` is immutable and must not be modified or deleted. It serves as historical infrastructure validation evidence.

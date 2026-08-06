@@ -100,6 +100,7 @@
         "algorithm": "json-pointer-set",
         "path": "operations/specs/mcp-provider-admissions.json",
         "jsonPointer": "/admissions/1/scope/tools",
+        "itemProperty": "name",
         "expected": ["getWorkbenchStatus", "readWorkbenchContext", "runWorkbenchCommand"]
       },
       "notes": "Three admitted tools: getWorkbenchStatus, readWorkbenchContext, runWorkbenchCommand. Environment variable: WORKBENCH_MCP_ALLOWED_TOOLS. File sha256: 850a7b100580179e30e65d5a16c0fc5917c7d0e6c8894c69374b8aa2bc5789e2"

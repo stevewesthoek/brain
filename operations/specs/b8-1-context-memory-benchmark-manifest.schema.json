@@ -154,7 +154,12 @@
                 "type": "string",
                 "pattern": "^/"
               },
-              "expected": {}
+              "expected": {},
+              "itemProperty": {
+                "type": "string",
+                "minLength": 1,
+                "description": "When the JSON pointer resolves to an array of objects, project each item to this property before set comparison"
+              }
             },
             "allOf": [
               {

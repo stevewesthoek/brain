@@ -934,13 +934,18 @@ const V5S_RUN_DIR = '/Users/Office/.brain/benchmark/b8-1/runs/b8-1-canonical-aut
 const V5S_EVIDENCE_PATH = path.join(V5S_RUN_DIR, 'evidence.json');
 const V5S_MANIFEST_PATH = path.join(root, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
 
-test('v5s immutable evidence validates with full binding', () => {
+test('v5s immutable evidence no longer validates against updated manifest (expected after v6 contract changes)', () => {
   if (!fs.existsSync(V5S_EVIDENCE_PATH)) return;
   const result = validateEvidence(V5S_EVIDENCE_PATH, DEFAULT_SCHEMA, {
     manifestPath: V5S_MANIFEST_PATH,
     runDir: V5S_RUN_DIR,
   });
-  assert.equal(result.valid, true, `Expected valid but got errors: ${result.errors.join('; ')}`);
+  // The v5s evidence was valid at execution time. The manifest and schema have since been
+  // updated for v6 (itemProperty added), so the hash binding correctly fails.
+  // This confirms the immutability contract: old evidence does not validate against new specs.
+  assert.equal(result.valid, false, 'v5s evidence must not validate against v6-updated manifest');
+  assert.ok(result.errors.some(e => /manifest SHA-256/.test(e) || /manifest schema hash/.test(e)),
+    `Expected manifest hash mismatch: ${result.errors.join('; ')}`);
 });
 
 test('v5s evidence with tampered networkIsolationProof fails binding', () => {

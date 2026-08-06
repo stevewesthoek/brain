@@ -356,6 +356,10 @@ function runExactSourceFixture(fixture, sourcesDir) {
         errors.push('verification.fileName is required for file-name-count');
         return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
       }
+      if (expectedCount === null) {
+        errors.push('verification.expectedCount is required for file-name-count algorithm');
+        return { outcome: 'error', actual: null, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy };
+      }
 
       // Defect 7: containment check on the root before counting
       const rootDir = path.resolve(sourcesDir, root);
@@ -383,7 +387,7 @@ function runExactSourceFixture(fixture, sourcesDir) {
       }
       countFiles(rootDir);
       actual = count;
-      fileCorrect = expectedCount === null ? true : count === expectedCount;
+      fileCorrect = count === expectedCount;
       lineCorrect = false;
       outcome = fileCorrect ? 'pass' : 'fail';
       if (!fileCorrect) errors.push(`expected ${expectedCount} files named "${fileName}" but found ${count}`);
@@ -485,7 +489,25 @@ function runExactSourceFixture(fixture, sourcesDir) {
           if (node !== null && outcome !== 'error') {
             const expected = Array.isArray(verification.expected) ? verification.expected : [];
             if (Array.isArray(node)) {
-              const actualSet = new Set(node);
+              const itemProperty = verification.itemProperty ?? null;
+              let projected = node;
+              if (itemProperty !== null) {
+                projected = node.map(item => {
+                  if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+                    return item[itemProperty];
+                  }
+                  return item;
+                });
+                // Reject if any projected value is undefined (property missing from object)
+                const missing = projected.filter(v => v === undefined);
+                if (missing.length > 0) {
+                  errors.push(`itemProperty "${itemProperty}" missing from ${missing.length} element(s)`);
+                  outcome = 'error';
+                  const callerCallee = computeExactSourceCallerCallee(fixture, sourcesDir);
+                  return { outcome, actual, latencyMs: Date.now() - start, errors, fileCorrect, lineCorrect, setAccuracy, ...callerCallee };
+                }
+              }
+              const actualSet = new Set(projected);
               const expectedSet = new Set(expected);
               const intersection = expected.filter(v => actualSet.has(v)).length;
               setAccuracy = expected.length > 0 ? intersection / Math.max(actualSet.size, expectedSet.size) : 1;

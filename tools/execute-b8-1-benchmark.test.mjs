@@ -1274,12 +1274,273 @@ test('E45: manifest brain pin is f683edff753937944018dd00bf5494c85f62e881', () =
   assert.equal(brainRepo.pinnedCommit, 'f683edff753937944018dd00bf5494c85f62e881', 'brain pin must be f683edff...');
 });
 
-// E46: KNOWN_STALE_DIGESTS contains v4r, v5, and v5r digests
-test('E46: KNOWN_STALE_DIGESTS contains v4r, v5, and v5r stale digests', () => {
+// E46: KNOWN_STALE_DIGESTS contains v4r, v5, v5r, and v5s digests
+test('E46: KNOWN_STALE_DIGESTS contains v4r, v5, v5r, and v5s stale digests', () => {
   const V4R_DIGEST = 'c39e81dcebdfb0caf7533508b7cea40fb7da0046d6dfef4349b4fd4f09a875a4';
   const V5_DIGEST  = 'd9c524837195df46259fbcb40fb77eec3bf38f4c81b8246663ad7e7067dcee42';
   const V5R_DIGEST = '87c0569a3b643cf628684b10b95ee76f0f2edc6fc2aa2261904075bec3b6ce3f';
+  const V5S_DIGEST = '47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0';
   assert.ok(KNOWN_STALE_DIGESTS.has(V4R_DIGEST), 'must contain v4r digest');
   assert.ok(KNOWN_STALE_DIGESTS.has(V5_DIGEST), 'must contain v5 digest');
   assert.ok(KNOWN_STALE_DIGESTS.has(V5R_DIGEST), 'must contain v5r digest');
+  assert.ok(KNOWN_STALE_DIGESTS.has(V5S_DIGEST), 'must contain v5s digest');
+});
+
+// ---------------------------------------------------------------------------
+// v6 contract tests: E47–E55 (harness defect fixes and negative tests)
+// ---------------------------------------------------------------------------
+
+// E47: json-pointer-set with itemProperty projects objects to named field
+test('E47: json-pointer-set with itemProperty projects objects to named field', async () => {
+  const home = makeTempDir('b81-exec-e47-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'data.json',
+        scoringType: 'set-match',
+        question: 'q?',
+        verification: {
+          algorithm: 'json-pointer-set',
+          path: 'data.json',
+          jsonPointer: '/items',
+          itemProperty: 'name',
+          expected: ['alpha', 'beta', 'gamma'],
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e47',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(srcDir, 'data.json'), JSON.stringify({
+      items: [
+        { name: 'alpha', type: 'a' },
+        { name: 'beta', type: 'b' },
+        { name: 'gamma', type: 'c' },
+      ],
+    }));
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e47',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'pass', `should pass with itemProperty projection: ${result.fixtureResults[0].errors?.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E48: json-pointer-set with malformed itemProperty (missing from elements) causes error
+test('E48: json-pointer-set with itemProperty missing from elements causes error', async () => {
+  const home = makeTempDir('b81-exec-e48-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'data.json',
+        scoringType: 'set-match',
+        question: 'q?',
+        verification: {
+          algorithm: 'json-pointer-set',
+          path: 'data.json',
+          jsonPointer: '/items',
+          itemProperty: 'nonexistent',
+          expected: ['alpha'],
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e48',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(srcDir, 'data.json'), JSON.stringify({
+      items: [{ name: 'alpha' }, { name: 'beta' }],
+    }));
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e48',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'error', 'missing itemProperty must produce error');
+    assert.ok(result.fixtureResults[0].errors.some(e => /itemProperty.*missing/i.test(e)));
+  } finally { cleanup(home); }
+});
+
+// E49: file-name-count with null expectedCount is rejected
+test('E49: file-name-count with null/missing expectedCount causes error', async () => {
+  const home = makeTempDir('b81-exec-e49-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        scoringType: 'count-match',
+        question: 'q?',
+        verification: {
+          algorithm: 'file-name-count',
+          root: '.',
+          fileName: 'route.ts',
+          // expectedCount intentionally omitted
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e49',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test');
+    fs.mkdirSync(path.join(srcDir, 'api'), { recursive: true });
+    fs.writeFileSync(path.join(srcDir, 'api', 'route.ts'), 'export const GET = () => {}');
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e49',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'error', 'null expectedCount must produce error');
+    assert.ok(result.fixtureResults[0].errors.some(e => /expectedCount.*required/i.test(e)));
+  } finally { cleanup(home); }
+});
+
+// E50: v5s stale digest is rejected for new runs
+test('E50: v5s stale digest 47ed2a03... is rejected', async () => {
+  const STALE_V5S = '47ed2a0392c7e8606980ca1bce2a796c9dbee4ae1e9f5ba7f8a373d7f1a7f4f0';
+  const home = makeTempDir('b81-exec-e50-');
+  try {
+    makeSyntheticRun(home, { runId: 'b8-1-exec-e50', fixtures: [] });
+    const result = await runExecutor({ runId: 'b8-1-exec-e50', approvedPlanSha256: STALE_V5S, _homeOverride: home });
+    assert.equal(result.outcome, 'fail');
+    assert.ok(result.errors.some(e => /stale/i.test(e)), `errors: ${result.errors.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E51: json-pointer-set without itemProperty still works with plain string arrays
+test('E51: json-pointer-set without itemProperty compares raw array directly', async () => {
+  const home = makeTempDir('b81-exec-e51-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'data.json',
+        scoringType: 'set-match',
+        question: 'q?',
+        verification: {
+          algorithm: 'json-pointer-set',
+          path: 'data.json',
+          jsonPointer: '/tags',
+          expected: ['fast', 'reliable'],
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e51',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(srcDir, 'data.json'), JSON.stringify({ tags: ['fast', 'reliable'] }));
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e51',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'pass', `plain array comparison must still pass: ${result.fixtureResults[0].errors?.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E52: json-pointer-set with itemProperty on mixed array (some non-objects) passes through non-objects
+test('E52: json-pointer-set itemProperty passes non-objects through unchanged', async () => {
+  const home = makeTempDir('b81-exec-e52-');
+  try {
+    const fixtures = [
+      {
+        fixtureId: 'f1',
+        repositoryId: 'test',
+        pinnedCommit: '4'.repeat(40),
+        expectedFile: 'data.json',
+        scoringType: 'set-match',
+        question: 'q?',
+        verification: {
+          algorithm: 'json-pointer-set',
+          path: 'data.json',
+          jsonPointer: '/items',
+          itemProperty: 'id',
+          expected: ['a', 'raw-string'],
+        },
+      },
+    ];
+    const { planSha256, syntheticManifest, runDir } = makeSyntheticRun(home, {
+      runId: 'b8-1-exec-e52',
+      fixtures,
+      selectedSubjects: ['exact-source'],
+    });
+    const srcDir = path.join(runDir, 'sources', 'test');
+    fs.writeFileSync(path.join(srcDir, 'data.json'), JSON.stringify({
+      items: [{ id: 'a' }, 'raw-string'],
+    }));
+    const result = await runExecutor({
+      runId: 'b8-1-exec-e52',
+      approvedPlanSha256: planSha256,
+      _homeOverride: home,
+      _manifestOverride: syntheticManifest,
+    });
+    assert.equal(result.fixtureResults.length, 1);
+    assert.equal(result.fixtureResults[0].result, 'pass', `mixed array must pass: ${result.fixtureResults[0].errors?.join('; ')}`);
+  } finally { cleanup(home); }
+});
+
+// E53: evidence schema v2.0.0 requires subjectMetrics and forbids offlineMetrics
+test('E53: evidence schema enforces version-conditional metrics', () => {
+  const schemaPath = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-evidence.schema.json');
+  assert.ok(fs.existsSync(schemaPath), 'evidence schema must exist');
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+  assert.ok(schema.properties.schemaVersion.enum.includes('2.0.0'), 'schema must accept 2.0.0');
+  assert.ok(schema.properties.subjectMetrics, 'schema must define subjectMetrics');
+  assert.ok(schema.properties.offlineMetrics, 'schema must still define offlineMetrics (backward compat)');
+  const versionConditional = schema.allOf.find(c =>
+    c.if?.properties?.schemaVersion?.const === '2.0.0'
+  );
+  assert.ok(versionConditional, 'must have a version conditional for 2.0.0');
+  assert.ok(versionConditional.then.required.includes('subjectMetrics'), '2.0.0 must require subjectMetrics');
+  assert.equal(versionConditional.then.properties.offlineMetrics, false, '2.0.0 must forbid offlineMetrics');
+  assert.ok(versionConditional.else.required.includes('offlineMetrics'), 'non-2.0.0 must require offlineMetrics');
+  assert.equal(versionConditional.else.properties.subjectMetrics, false, 'non-2.0.0 must forbid subjectMetrics');
+});
+
+// E54: manifest brain_f3 fixture now has itemProperty: "name"
+test('E54: manifest brain_f3 fixture has itemProperty for json-pointer-set', () => {
+  const manifestPath = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const brainF3 = manifest.fixtures.find(f => f.fixtureId === 'brain_f3');
+  assert.ok(brainF3, 'brain_f3 must exist in manifest');
+  assert.equal(brainF3.verification.algorithm, 'json-pointer-set');
+  assert.equal(brainF3.verification.itemProperty, 'name', 'brain_f3 must have itemProperty: "name"');
+});
+
+// E55: manifest schema allows itemProperty field in verification
+test('E55: manifest schema allows optional itemProperty in verification', () => {
+  const schemaPath = path.join(REPO_ROOT, 'operations/specs/b8-1-context-memory-benchmark-manifest.schema.json');
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+  const verProps = schema.properties.fixtures.items.properties.verification.properties;
+  assert.ok(verProps.itemProperty, 'manifest schema must allow itemProperty');
+  assert.equal(verProps.itemProperty.type, 'string');
+  assert.equal(verProps.itemProperty.minLength, 1);
 });
