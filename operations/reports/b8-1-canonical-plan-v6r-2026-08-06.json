@@ -259,5 +259,7 @@
     "graphifyProfilePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/specs/graphify-operational-profiles.json",
     "graphifyGovernancePath": "/Users/Office/Repos/stevewesthoek/brain-next/operations/specs/graphify-transition-governance.json"
   },
+  "_executionReady": true,
+  "_blockers": [],
   "planSha256": "44ebf1c49863d4cacaa6d26af348781473440f43b774ea69f52ae0aab6cc100d"
 }
