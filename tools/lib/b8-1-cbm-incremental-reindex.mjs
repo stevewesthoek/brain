@@ -9,11 +9,43 @@
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { runChildWithTimeMetrics } from './b8-1-process-metrics.mjs';
 
 /**
- * Validate directory: exists, is directory, not symlink, owned by run.
+ * Check if childPath is strictly contained within parentPath.
+ * Boundary-safe: correctly rejects both ".." and child names like "..cache".
+ * Uses path.relative() + path.sep logic:
+ * - contained only if relative is nonempty AND
+ * - relative is not ".." AND
+ * - relative does not start with `..${path.sep}` AND
+ * - relative is not absolute
+ */
+function isPathContainedIn(childPath, parentPath) {
+  const normalizedParent = path.normalize(parentPath);
+  const normalizedChild = path.normalize(childPath);
+  const relative = path.relative(normalizedParent, normalizedChild);
+
+  // Empty or "." means identical (handled separately)
+  if (!relative || relative === '.') return false;
+
+  // Absolute means outside (different volumes on Windows, etc.)
+  if (path.isAbsolute(relative)) return false;
+
+  // Exactly ".." means direct parent (outside)
+  if (relative === '..') return false;
+
+  // Starts with `..${path.sep}` means ancestor (outside)
+  if (relative.startsWith('..' + path.sep)) return false;
+
+  // Everything else is inside
+  return true;
+}
+
+/**
+ * Validate directory: exists, is directory, not symlink, regular file.
+ * Requires owner UID = current user, mode excludes group/world (0o700).
  */
 export function validateRunDirectory(dirPath, name) {
   if (!dirPath) return { valid: false, reason: `${name} path missing` };
@@ -21,67 +53,87 @@ export function validateRunDirectory(dirPath, name) {
   const stat = fs.lstatSync(dirPath);
   if (!stat.isDirectory()) return { valid: false, reason: `${name} not a directory` };
   if (stat.isSymbolicLink()) return { valid: false, reason: `${name} is symlink` };
+  // Require owner UID = current user
+  const currentUid = process.getuid?.();
+  if (currentUid !== undefined && stat.uid !== currentUid) {
+    return { valid: false, reason: `${name} not owned by current user (uid mismatch)` };
+  }
+  // Require mode excludes group/world permissions (0o700)
+  if ((stat.mode & 0o077) !== 0) {
+    return { valid: false, reason: `${name} has group/world permissions (mode=${oct(stat.mode)})` };
+  }
   return { valid: true };
+}
+
+function oct(n) {
+  return '0o' + (n & 0o7777).toString(8);
 }
 
 /**
  * Validate path isolation with boundary-safe containment checks.
- * Uses normalized real paths and path.relative() to detect:
- * - cache inside source, config inside source
- * - source inside cache, source inside config
- * - cache inside config, config inside cache
- * - identical paths, symlinks
+ * Requires: all four paths (cache, config, HOME, source) mutually non-identical, non-contained.
+ * Uses isPathContainedIn() with path.relative() for boundary-safe detection.
+ * Correctly rejects children named ".cache", ".config", etc.
  */
-export function validatePathIsolation(cacheDir, configDir, sourceDir) {
-  let cacheReal, configReal, sourceReal;
+export function validatePathIsolation(cacheDir, configDir, sourceDir, homeDir) {
+  let cacheReal, configReal, sourceReal, homeReal;
   try {
     cacheReal = fs.realpathSync(cacheDir);
     configReal = fs.realpathSync(configDir);
     sourceReal = fs.realpathSync(sourceDir);
+    if (homeDir) homeReal = fs.realpathSync(homeDir);
   } catch (e) {
     return { valid: false, reason: `path resolution failed: ${e.message}` };
   }
 
-  // Reject identical paths
-  if (cacheReal === configReal) return { valid: false, reason: 'cache and config paths are identical' };
-  if (cacheReal === sourceReal) return { valid: false, reason: 'cache and source paths are identical' };
-  if (configReal === sourceReal) return { valid: false, reason: 'config and source paths are identical' };
-
-  // Reject symlinks (realpathSync follows symlinks, check with lstat)
-  try {
-    if (fs.lstatSync(cacheDir).isSymbolicLink()) return { valid: false, reason: 'cache path is a symlink' };
-    if (fs.lstatSync(configDir).isSymbolicLink()) return { valid: false, reason: 'config path is a symlink' };
-    if (fs.lstatSync(sourceDir).isSymbolicLink()) return { valid: false, reason: 'source path is a symlink' };
-  } catch (e) {
-    return { valid: false, reason: `symlink check failed: ${e.message}` };
+  // Reject identical paths (pairwise)
+  const pairs = [
+    [cacheReal, configReal, 'cache', 'config'],
+    [cacheReal, sourceReal, 'cache', 'source'],
+    [configReal, sourceReal, 'config', 'source'],
+  ];
+  if (homeReal) {
+    pairs.push([cacheReal, homeReal, 'cache', 'HOME']);
+    pairs.push([configReal, homeReal, 'config', 'HOME']);
+    pairs.push([sourceReal, homeReal, 'source', 'HOME']);
   }
 
-  // Check containment using path.relative (path-boundary-safe)
-  // If A is inside B, path.relative(B, A) will not start with '..'
-  const cacheRelSource = path.relative(sourceReal, cacheReal);
-  const configRelSource = path.relative(sourceReal, configReal);
-  const sourceRelCache = path.relative(cacheReal, sourceReal);
-  const sourceRelConfig = path.relative(configReal, sourceReal);
-  const cacheRelConfig = path.relative(configReal, cacheReal);
-  const configRelCache = path.relative(cacheReal, configReal);
+  for (const [p1, p2, n1, n2] of pairs) {
+    if (p1 === p2) return { valid: false, reason: `${n1} and ${n2} paths are identical` };
+  }
 
-  if (!cacheRelSource.startsWith('..') && cacheRelSource !== cacheReal) {
-    return { valid: false, reason: 'cache is contained within source' };
+  // Reject symlinks
+  for (const [pth, nm] of [[cacheDir, 'cache'], [configDir, 'config'], [sourceDir, 'source'], [homeDir, 'HOME']]) {
+    if (pth) {
+      try {
+        if (fs.lstatSync(pth).isSymbolicLink()) {
+          return { valid: false, reason: `${nm} path is a symlink` };
+        }
+      } catch (e) {
+        return { valid: false, reason: `${nm} symlink check failed: ${e.message}` };
+      }
+    }
   }
-  if (!configRelSource.startsWith('..') && configRelSource !== configReal) {
-    return { valid: false, reason: 'config is contained within source' };
-  }
-  if (!sourceRelCache.startsWith('..') && sourceRelCache !== sourceReal) {
-    return { valid: false, reason: 'source is contained within cache' };
-  }
-  if (!sourceRelConfig.startsWith('..') && sourceRelConfig !== sourceReal) {
-    return { valid: false, reason: 'source is contained within config' };
-  }
-  if (!cacheRelConfig.startsWith('..') && cacheRelConfig !== cacheReal) {
-    return { valid: false, reason: 'cache is contained within config' };
-  }
-  if (!configRelCache.startsWith('..') && configRelCache !== configReal) {
-    return { valid: false, reason: 'config is contained within cache' };
+
+  // Check all containment relationships (6 for cache/config/source, +6 for HOME if present)
+  const dirs = [
+    [cacheReal, 'cache'],
+    [configReal, 'config'],
+    [sourceReal, 'source'],
+  ];
+  if (homeReal) dirs.push([homeReal, 'HOME']);
+
+  for (let i = 0; i < dirs.length; i++) {
+    for (let j = i + 1; j < dirs.length; j++) {
+      const [pi, ni] = dirs[i];
+      const [pj, nj] = dirs[j];
+      if (isPathContainedIn(pi, pj)) {
+        return { valid: false, reason: `${ni} is contained within ${nj}` };
+      }
+      if (isPathContainedIn(pj, pi)) {
+        return { valid: false, reason: `${nj} is contained within ${ni}` };
+      }
+    }
   }
 
   return { valid: true };
@@ -218,38 +270,40 @@ export function measureCacheBytes(cacheDir) {
 }
 
 /**
- * Validate environment: HOME must be owner-only, XDG_* must match dirs, allowlist enforced.
+ * Validate environment: HOME must exactly match homeDir, XDG_* must exactly match dirs.
+ * Enforce strict allowlist: PATH, HOME, TMPDIR, XDG_CACHE_HOME, XDG_CONFIG_HOME only.
+ * Reject missing or unexpected keys.
  */
 export function validateEnvironment(env, cacheDir, configDir, homeDir) {
   if (!env || typeof env !== 'object') {
     return { valid: false, reason: 'environment must be an object' };
   }
 
-  // HOME must be specified and must match approved owner-only synthetic home
+  // HOME must be specified and must exactly equal homeDir
   if (!env.HOME) {
     return { valid: false, reason: 'HOME not set' };
   }
-
-  try {
-    const stat = fs.statSync(env.HOME);
-    if ((stat.mode & 0o077) !== 0) {
-      return { valid: false, reason: 'HOME directory has non-owner permissions' };
-    }
-  } catch (e) {
-    return { valid: false, reason: `HOME validation failed: ${e.message}` };
+  if (env.HOME !== homeDir) {
+    return { valid: false, reason: `HOME does not match synthetic home (got ${env.HOME}, expected ${homeDir})` };
   }
 
   // XDG_CACHE_HOME must exactly match cacheDir
+  if (!env.XDG_CACHE_HOME) {
+    return { valid: false, reason: 'XDG_CACHE_HOME not set' };
+  }
   if (env.XDG_CACHE_HOME !== cacheDir) {
-    return { valid: false, reason: 'XDG_CACHE_HOME does not match cacheDir' };
+    return { valid: false, reason: `XDG_CACHE_HOME does not match cacheDir (got ${env.XDG_CACHE_HOME}, expected ${cacheDir})` };
   }
 
   // XDG_CONFIG_HOME must exactly match configDir
+  if (!env.XDG_CONFIG_HOME) {
+    return { valid: false, reason: 'XDG_CONFIG_HOME not set' };
+  }
   if (env.XDG_CONFIG_HOME !== configDir) {
-    return { valid: false, reason: 'XDG_CONFIG_HOME does not match configDir' };
+    return { valid: false, reason: `XDG_CONFIG_HOME does not match configDir (got ${env.XDG_CONFIG_HOME}, expected ${configDir})` };
   }
 
-  // Whitelist allowed environment keys
+  // Strict allowlist: exactly these keys allowed
   const allowlist = ['PATH', 'HOME', 'TMPDIR', 'XDG_CACHE_HOME', 'XDG_CONFIG_HOME'];
   const allowedKeys = new Set(allowlist);
   for (const key of Object.keys(env)) {
@@ -392,16 +446,20 @@ export async function queryCbmMarker(cbmExecutable, projectName, marker, targetP
     if (!Array.isArray(output)) {
       return { visible: false, reason: 'query output not array' };
     }
-    // Marker is visible only if exact marker string appears in results
-    // AND the result file matches the expected target path relative to repository
+
+    // Compute expected target path relative to repository
+    // (requires disposableRepositoryPath; pass it separately if needed)
+    // For now, use exact marker + exact filename (not basename substring)
     const visible = output.some(r => {
       if (!r || typeof r !== 'object') return false;
       if (!r.text || !r.text.includes(marker)) return false;
-      // Verify the marker appeared in the target file (check by filename or path)
+      // Exact match: result file must be the target filename
       const resultFile = r.file || '';
       const targetFilename = path.basename(targetPath);
-      return resultFile === targetFilename || resultFile.includes(targetFilename);
+      // Must be exact, not substring match
+      return resultFile === targetFilename;
     });
+
     return {
       visible,
       results: output,
@@ -480,8 +538,21 @@ export async function runIncrementalReindex(opts = {}) {
     return result;
   }
 
-  // Validate directories
-  let validation = validateRunDirectory(cacheDir, 'cacheDir');
+  // Extract HOME from env for validation
+  const homeDir = env.HOME;
+  if (!homeDir) {
+    result.reason = 'env.HOME not set';
+    return result;
+  }
+
+  // Validate directories (cache, config, HOME, source)
+  let validation = validateRunDirectory(homeDir, 'HOME');
+  if (!validation.valid) {
+    result.reason = validation.reason;
+    return result;
+  }
+
+  validation = validateRunDirectory(cacheDir, 'cacheDir');
   if (!validation.valid) {
     result.reason = validation.reason;
     return result;
@@ -498,8 +569,8 @@ export async function runIncrementalReindex(opts = {}) {
     return result;
   }
 
-  // Validate isolation
-  validation = validatePathIsolation(cacheDir, configDir, disposableRepositoryPath);
+  // Validate isolation (now includes HOME)
+  validation = validatePathIsolation(cacheDir, configDir, disposableRepositoryPath, homeDir);
   if (!validation.valid) {
     result.reason = validation.reason;
     return result;
